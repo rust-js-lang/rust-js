@@ -10,8 +10,9 @@ import { underLoad } from "../scripts/timing";
 import { expectSnapshot, root, run } from "./support";
 import { decodeMappings, lookup } from "./sourcemap";
 import { partSetting } from "./part-settings";
+import { wasmPath } from "../wasm/web/site.ts";
 
-const wasm = join(root, "wasm/target/wasm32-wasip1/release/rust-js.wasm");
+const wasm = wasmPath;
 if (partSetting("RUST_JS_REQUIRE_WASM") && !existsSync(wasm)) {
   throw new Error("WASM parity is required: build the compiler from the candidate sources with bun run wasm");
 }

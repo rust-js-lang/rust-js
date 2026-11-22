@@ -11,8 +11,14 @@ import { installedReact } from "../../tooling/build.js";
 import { target } from "../../tooling/cargo.js";
 import { reactLibs } from "../../tooling/crates.js";
 
-export const wasmPath = join(import.meta.dir, "../target/wasm32-wasip1/release/rust-js.wasm");
-export const sysrootDir = join(import.meta.dir, `../sysroot/lib/rustlib/${target}/lib`);
+/** What `bun run wasm` makes that the playground reads, by its path from
+ * the checkout: rust-js.wasm, and the sysroot it type-checks against. A
+ * mutation whose tests read them (`needs: "wasm"`) has each linked into
+ * its workspace, which copies only what git tracks (#2346). */
+export const wasmBuild = ["wasm/target/wasm32-wasip1/release/rust-js.wasm", "wasm/sysroot"] as const;
+const checkout = join(import.meta.dir, "../..");
+export const wasmPath = join(checkout, wasmBuild[0]);
+export const sysrootDir = join(checkout, wasmBuild[1], `lib/rustlib/${target}/lib`);
 const examplesDir = join(import.meta.dir, "../../examples");
 
 // The crates rustc loads to type-check a program against `std`. Found by

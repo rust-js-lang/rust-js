@@ -14,12 +14,12 @@
 // writes, as `bless-*` artifacts: applied here, to be read as a local bless
 // is, before they're committed.
 
-import { appendFileSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 
 import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
-import { changedSince, controlRuns, corpusCaseNames, type Mutation, mutationFile, mutations, TESTS_AS_IT_IS, testSet } from "./mutations";
+import { changedSince, controlRuns, corpusCaseNames, type Mutation, mutationFile, mutations, TESTS_AS_IT_IS, testSet, wasmSplit } from "./mutations";
 import { outcome, type Selection, selectChange, suiteFiles } from "./select";
 import { downloaded } from "./artifacts";
 import { browsers, caseFiles, dealtByGroup, drivesBrowser, fewestShards, type ShardFacts, shardFacts, shardTimings, testFileSeconds, timingsByShard, timingsUnder } from "./shard";
@@ -62,10 +62,23 @@ export function checkedSince(runs: Run[], branch: string, mutationsPassed: (run:
     )?.headSha;
 }
 
+/** The artifact the wasm job keeps its mutations' results in, beside the
+ * shards' `mutation-results-<k>` (check.yml's `wasm` job, #2346). */
+export const wasmResults = "mutation-results-wasm";
+
 /** What a run's mutation shards found, each `mutation-results-<k>`'s, of
  * the commit it ran at (`mutations.ts`'s `Results`), and how many shards
  * ran, each completed, passed or not. */
-export type RunResults = { run: Run; shards: number; completed: number; results: { commit: string; results: Record<string, string> }[]; latent?: string[] };
+export type RunResults = {
+  run: Run;
+  shards: number;
+  completed: number;
+  results: { commit: string; results: Record<string, string> }[];
+  latent?: string[];
+  /** The wasm job's, `mutation-results-wasm`'s: the mutations the shards
+   * left to it, judged where rust-js.wasm is (#2346). */
+  wasm?: { commit: string; results: Record<string, string> };
+};
 
 /** The last check of `main` this one's mutations follow: the newest whose
  * every mutation shard completed and kept what it found, each of that run's
@@ -77,15 +90,20 @@ export type RunResults = { run: Run; shards: number; completed: number; results:
  * last check whose mutations passed is the base, as before. The nightly
  * runs every mutation, whatever this says. */
 export function resultsBase(newestFirst: RunResults[]): { since: string; retry: string[] } | undefined {
-  for (const { run, shards, completed, results, latent = [] } of newestFirst) {
+  for (const { run, shards, completed, results, latent = [], wasm } of newestFirst) {
     if (run.status !== "completed" || !run.headSha || shards === 0 || completed !== shards || results.length !== shards) continue;
     if (!results.every((r) => r.commit === run.headSha)) continue;
+    // What the shards left to the wasm job is caught where its run, of the
+    // same commit, caught it; else, its job not run or not catching it, it
+    // runs again (#2346).
+    const caughtThere = wasm?.commit === run.headSha ? Object.entries(wasm.results).filter(([, result]) => result === "caught").map(([name]) => name) : [];
+    const passed = [...latent, ...caughtThere];
     // Not one it judged latent, surviving at its base too: no push's, filed
     // in the survivors' issue, and the nightly runs it. Retried, the 6–7 of
     // the crate tests held a shard up in every check, 40% of a check's
     // runner-minutes the mutations'. A push that changes its site or its
     // tests still runs it, `--changed`'s, whatever the retry list says.
-    const retry = results.flatMap((r) => Object.entries(r.results).filter(([name, result]) => result !== "caught" && !latent.includes(name)).map(([name]) => name));
+    const retry = results.flatMap((r) => Object.entries(r.results).filter(([name, result]) => result !== "caught" && !passed.includes(name)).map(([name]) => name));
     return { since: run.headSha, retry: [...new Set(retry)].sort() };
   }
   return undefined;
@@ -108,6 +126,7 @@ function runResults(limit = 6, looked = 30): RunResults[] {
     const dir = join(root, "target", "mutation-results", String(run.databaseId));
     const results: RunResults["results"] = [];
     const latent: string[] = [];
+    let wasm: RunResults["wasm"];
     // Its artifacts first, as a download of none asks again, three times.
     const kept = () =>
       (JSON.parse(gh(["api", `repos/{owner}/{repo}/actions/runs/${run.databaseId}/artifacts?per_page=100`, "--jq", "[.artifacts[].name]"])) as string[])
@@ -115,14 +134,16 @@ function runResults(limit = 6, looked = 30): RunResults[] {
     if (shardJobs.length > 0 && completed === shardJobs.length && kept()) {
       try {
         if (!downloaded(run.databaseId, ["--pattern=mutation-results-*", "--pattern=mutation-latent-*"], dir)) throw new Error(`run ${run.databaseId}'s results`);
-        for (const shard of readdirSync(dir).filter((name) => name.startsWith("mutation-results-"))) results.push(JSON.parse(readFileSync(join(dir, shard, "results.json"), "utf8")));
+        // Each shard's, `mutation-results-<k>`; and the wasm job's, apart (#2346).
+        for (const shard of readdirSync(dir).filter((name) => /^mutation-results-\d+$/.test(name))) results.push(JSON.parse(readFileSync(join(dir, shard, "results.json"), "utf8")));
+        if (existsSync(join(dir, wasmResults, "results.json"))) wasm = JSON.parse(readFileSync(join(dir, wasmResults, "results.json"), "utf8"));
         for (const shard of readdirSync(dir).filter((name) => name.startsWith("mutation-latent-"))) {
           const kept: { latent: { name: string }[] } = JSON.parse(readFileSync(join(dir, shard, "latent.json"), "utf8"));
           latent.push(...kept.latent.map(({ name }) => name));
         }
       } catch {}
     }
-    out.push({ run, shards: shardJobs.length, completed, results, latent });
+    out.push({ run, shards: shardJobs.length, completed, results, latent, wasm });
     if (resultsBase(out)) break;
   }
   return out;
@@ -448,6 +469,9 @@ async function plan(given?: string, testShardsGiven?: string) {
   const testTimes = plannedTestTimings();
   console.log(`test_timings=${testTimes ? encodedTestTimings(testTimes.seconds) : ""}`);
   console.log(`wasm=${touchesWasm(changed)}`);
+  // Whether any chosen mutation needs rust-js.wasm, which the wasm job
+  // judges after it builds it (`wasmSplit`, #2346).
+  console.log(`wasm_mutations=${mutating && wasmSplit(chosen, true).run.length > 0}`);
   console.log(`rustc=${touchesRustc(changed)}`);
   // The suite's selection (scripts/select.ts): by the newest test map of an
   // ancestor the cache kept, the diff from its commit, `since`'s change the

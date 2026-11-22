@@ -33,6 +33,7 @@ import { mutantsLock } from "./disk";
 import { ownCompiler } from "./own-compiler";
 import { acquire, holdLease, ownShare } from "./leases";
 import { makeSourceWorkspace, sourceMutation } from "./source-mutations";
+import { wasmPath } from "../wasm/web/site.ts";
 import { latentSurvivors, type Results } from "./latent-survivors";
 import { binaryHash, builtBinary, freshShare, unapplied, verdictKind } from "./mutant-builds";
 import { resultsFile, verdictOf, type Result as CrateResult, type Verdict } from "./crate-corpus";
@@ -66,7 +67,24 @@ export type Mutation = {
   /** What its tests run with besides, the iterator matrix's row that
    * catches it, `ITERATOR_MATRIX`'s (#1971). */
   env?: Record<string, string>;
+  /** What its tests read that only one job makes: `"wasm"`, rust-js.wasm,
+   * which CI's `wasm` job builds (`bun run wasm`), so it's judged there
+   * alone, `--wasm`, and elsewhere said to be (`wasmSplit`, #2346). */
+  needs?: "wasm";
 };
+
+/** What a run without the wasm says of a mutation that needs it: no
+ * verdict of its own, judged where the wasm is (#2346). */
+export const judgedInTheWasmJob = "judged in the wasm job: its tests read rust-js.wasm (`bun run wasm`, then `--wasm`)";
+
+/** Of `chosen`, those a run judges, and those it leaves to the wasm job:
+ * with the wasm, `--wasm`, the ones that need it alone; without, the rest,
+ * the ones that need it said to be judged there. One selection, one list,
+ * of either run (#2346). */
+export function wasmSplit<M extends Pick<Mutation, "needs">>(chosen: M[], wasm: boolean): { run: M[]; elsewhere: M[] } {
+  const needs = (m: M) => m.needs === "wasm";
+  return wasm ? { run: chosen.filter(needs), elsewhere: [] } : { run: chosen.filter((m) => !needs(m)), elsewhere: chosen.filter(needs) };
+}
 
 // Mutations are grouped by their repository source file. Each list's
 // explicit Mutation.file owns the path; a catalog filename is not inferred.
@@ -1326,12 +1344,18 @@ async function corpusMutantsRun(compiler: string, beside: <T>(work: () => Promis
 function writeResults(results: Map<string, string>, caughtBy: Map<string, string>) {
   const commit = Bun.spawnSync(["git", "rev-parse", "HEAD"], { cwd: root }).stdout.toString().trim();
   mkdirSync(work, { recursive: true });
-  const found: Results = { commit, results: Object.fromEntries(results), caughtBy: Object.fromEntries(caughtBy) };
+  // And those left to the wasm job, which the next check retries where
+  // its own results didn't catch them (`ci.ts`'s `resultsBase`, #2346).
+  const found: Results = { commit, results: { ...Object.fromEntries(results), ...Object.fromEntries(leftToTheWasmJob.map((name) => [name, judgedInTheWasmJob])) }, caughtBy: Object.fromEntries(caughtBy) };
   writeFileSync(join(work, "results.json"), JSON.stringify(found, null, 2) + "\n");
 }
 
+/** The mutations this run left to the wasm job (`wasmSplit`), which its
+ * results say so of. */
+let leftToTheWasmJob: string[] = [];
+
 /** The flags `main` takes alone. */
-const alone = ["--list", "--browser", "--corpus"];
+const alone = ["--list", "--browser", "--corpus", "--wasm"];
 
 /** The flags `main` takes with `=` and a value, each with the form it's
  * given in. */
@@ -2018,6 +2042,19 @@ async function main() {
   // `resultsBase`). One no longer listed is gone, not run.
   const also = (args.find((arg) => arg.startsWith("--also="))?.slice("--also=".length) ?? "").split(",").filter(Boolean);
   chosen = [...chosen, ...mutations.filter((m) => also.includes(m.name) && !chosen.includes(m))];
+  // Those whose tests read rust-js.wasm, judged where it is, `--wasm`, CI's
+  // wasm job's run of the same selection; said to be judged there by any
+  // other run (#2346).
+  const wasm = args.includes("--wasm");
+  const split = wasmSplit(chosen, wasm);
+  chosen = split.run;
+  leftToTheWasmJob = split.elsewhere.map((m) => m.name);
+  for (const m of split.elsewhere) console.log(`${m.name}\t${judgedInTheWasmJob}`);
+  if (wasm && chosen.length > 0) {
+    if (!existsSync(wasmPath)) throw new Error(`--wasm judges what reads rust-js.wasm, and there's none at ${wasmPath}: \`bun run wasm\` builds it`);
+    // A test that reads it fails without it, never skips (test/playground.test.ts).
+    process.env.RUST_JS_REQUIRE_WASM = "1";
+  }
   // Each against the whole corpus with its snapshots compared, whatever
   // tests it names, `--corpus`: a sweep of survivors, whose catching cases
   // `caughtBy` says, its retargets (ADR 0093, amended). Its settings,

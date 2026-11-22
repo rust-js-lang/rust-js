@@ -1425,3 +1425,36 @@ another file was always accepted as leaving the map's answer standing. An
 edit to the same file's other lines is the same kind of change. The
 backstop is the same too: CI's runs of every mutation, the nightly's whole
 map, and its drift check.
+
+## Amendment: a mutation that needs the WASM is judged in the wasm job (#2346, 2026-11-23)
+
+A mutation whose tests read rust-js.wasm, the playground's tests, read as
+survived wherever the wasm is absent, as they skip without it. That's
+locally, where building it needs a rust-lang/rust checkout, and in the
+mutation shards, which don't build it. A source mutation's workspace
+copies only what git tracks, so even a machine with the wasm didn't hand
+it to the mutant.
+
+Such a mutation says so, `needs: "wasm"`. The runner keeps one selection
+in two modes:
+
+- **Without `--wasm`**, everywhere else, it leaves them unrun, each said to
+  be "judged in the wasm job" in its results.
+- **With `--wasm`**, it judges them alone. It requires the wasm and sets
+  `RUST_JS_REQUIRE_WASM`, so a test that reads it fails rather than skips.
+  Each mutant's workspace links what the wasm build made, the wasm and its
+  sysroot (`wasmBuild`, wasm/web/site.ts).
+
+CI's `wasm` job runs `--wasm` after its build, with the shards' own
+arguments. `plan`'s `wasm_mutations` starts the job where the selection has
+one. The Nightly judges every one in its suite part's call, whose wasm job
+runs anyway: its mutations part's would hold one more runner beside its
+shards, past its budget (test/runners.test.ts). Its results, `mutation-results-wasm`, sit beside the shards': the next
+check retries what the shards left to it only where it didn't catch it, of
+the same commit (`resultsBase`). The first is `wasi-crate-files-emptied`.
+
+Its Rust half, a mutation of `cfg(target_os = "wasi")` code, which needs the
+wasm rebuilt per mutant, is left until such a mutation exists. A mutant of
+a module run as a script, whose top level throws before the load mark
+appended at its end, reads as not executed; a mutation there is placed where
+a test imports the module instead (#2346's notes).

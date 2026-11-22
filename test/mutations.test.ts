@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, failingOf, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
+import { againstWholeCorpus, failingOf, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -477,6 +477,23 @@ test("--retire measures the crate corpus with the mutant, held to its control", 
   expect(retire).toContain("crateVerdicts(mutant, false)");
 });
 
+// A mutation whose tests read rust-js.wasm is judged where the wasm is,
+// CI's wasm job's `--wasm` run, of the same selection as the shards'; any
+// other run says so of it and judges the rest (#2346). Each such mutation's
+// tests read the wasm, so the field is no exemption from judging.
+test("a mutation that needs the wasm is judged in the wasm job, and elsewhere said to be", () => {
+  const [plain, wasm]: { name: string; needs?: "wasm" }[] = [{ name: "plain" }, { name: "wasm", needs: "wasm" }];
+  expect(wasmSplit([plain, wasm], false)).toEqual({ run: [plain], elsewhere: [wasm] });
+  expect(wasmSplit([plain, wasm], true)).toEqual({ run: [wasm], elsewhere: [] });
+  const needing = mutations.filter((m) => m.needs === "wasm");
+  expect(needing.length).toBeGreaterThan(0);
+  for (const m of needing) {
+    const files = (m.tests ?? []).filter((arg) => arg.endsWith(".test.ts"));
+    expect([m.name, files.length > 0 && files.every((file) => readFileSync(join(root, file), "utf8").includes("wasmPath"))]).toEqual([m.name, true]);
+  }
+  expect(refusedFlags(["--wasm"])).toEqual([]);
+});
+
 test("each mutation list names one existing source file", () => {
   const owners = lists.flatMap(list => list.mutations.length ? [list.mutations[0].file] : []);
   expect(new Set(owners).size).toBe(owners.length);
@@ -804,7 +821,7 @@ test("a flag that takes a value, given none, is refused with its form", () => {
   expect(refusedFlags(["--changed"])).toEqual(["--changed takes a value: --changed=<base>"]);
   expect(refusedFlags(["--base="])).toEqual(["--base takes a value: --base=<commit>"]);
   expect(refusedFlags(["--changed=origin/main", "--list", "--browser", "--shard=2/16", "a-mutation"])).toEqual([]);
-  expect(refusedFlags(["--bogus"])[0]).toStartWith("no flag --bogus; there are --list, --browser, --corpus, --changed=<base>");
+  expect(refusedFlags(["--bogus"])[0]).toStartWith("no flag --bogus; there are --list, --browser, --corpus, --wasm, --changed=<base>");
   // A list's flag given `=` and nothing is an empty list: check.yml's form,
   // `--also={retry}` where none is retried; bare, it's refused.
   expect(refusedFlags(["--changed=0123abc", "--also=", "--base=0123abc"])).toEqual([]);

@@ -658,6 +658,8 @@ export const parts: Part[] = [
   { setting: "FUZZ_SEEDS", value: "6", runs: "push", by: ".github/workflows/readability-passes.yml" },
   { setting: "FUZZ_MIRI", value: "1", runs: "nightly", by: ".github/workflows/rustc-tests.yml", why: "each generated program run under Miri first, which needs the nightly toolchain's Miri, which the batch's job installs (#1085)" },
   { setting: "RUST_JS_REQUIRE_WASM", value: "1", runs: "push", by: ".github/workflows/check.yml" },
+  // A run of the mutations that need the wasm, the wasm job's (#2346).
+  { setting: "RUST_JS_REQUIRE_WASM", value: "1", runs: "push", by: "scripts/mutations.ts" },
   { setting: "RUST_JS_REQUIRE_MIRI", value: "1", runs: "nightly", by: ".github/workflows/rustc-tests.yml", why: "the reducer's tests that need Miri, which the fuzz job installs and no push's job has (#1104)" },
   { setting: "ITERATOR_MATRIX", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "every case, about 4 CPU-hours: a push runs its slice" },
   { setting: "TIDY_STAGES", value: "corpus", runs: "nightly", by: ".github/workflows/nightly.yml", why: "every corpus case after each of tidy's stages: a push of tidy runs nine" },

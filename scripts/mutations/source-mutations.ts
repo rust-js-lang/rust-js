@@ -7,4 +7,12 @@ export const mutations: Mutation[] = [
   {name: "source-flake-a-catch", breaks: "a source mutant's test that fails once and passes run again with it counts as a catch", file: "scripts/source-mutations.ts", find: "(tests) => test(workspace, env, tests)", replace: "async () => tested", tests: ["test/source-mutations.test.ts", "-t", "fails once and passes run again"]},
   {name: "source-bindings-unbuilt-judged", breaks: "a mutant of the bindings crates' Rust whose tests don't build them is judged, a survivor of tests that never compile it (#2105)", file: "scripts/source-mutations.ts", find: "  if (compiled && unbuilt.length > 0)", replace: "  if (false)", tests: ["test/source-mutations.test.ts", "-t", "a mutant of the bindings crates' Rust"]},
   {name: "source-bindings-marked", breaks: "a mutant of the bindings crates' Rust is given a JS mark of its load, which no Rust compiles (#2105)", file: "scripts/source-mutations.ts", find: "      writeFileSync(owner, compiled ? source : markSourceLoad(source, marker, mutation.name));", replace: "      writeFileSync(owner, markSourceLoad(source, marker, mutation.name));", tests: ["test/source-mutations.test.ts", "-t", "a mutant of the bindings crates' Rust"]},
+  {
+    name: "wasm-build-half-linked",
+    breaks: "a wasm mutation's workspace links rust-js.wasm but not the sysroot it type-checks against, so its control's compile fails and every such mutation is inconclusive (#2346)",
+    file: "scripts/source-mutations.ts",
+    find: "  for (const path of wasmBuild) {\n",
+    replace: "  for (const path of wasmBuild.slice(0, 1)) {\n",
+    tests: ["test/source-mutations.test.ts", "-t", "a wasm mutation's workspace links what the wasm build made"],
+  },
 ];

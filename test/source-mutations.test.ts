@@ -9,7 +9,8 @@ import {
   sourceWasLoaded,
 } from "../scripts/source-mutations";
 import { existsSync } from "node:fs";
-import { sourceMutation } from "../scripts/source-mutations";
+import { linkWasmBuild, sourceMutation } from "../scripts/source-mutations";
+import { wasmBuild } from "../wasm/web/site.ts";
 import { judgeTwice, mutate, type Mutation } from "../scripts/mutations";
 import { stopped } from "./child";
 import { passed, summary } from "../scripts/test-summary";
@@ -228,4 +229,18 @@ test("a mutant of the bindings crates' Rust is judged by the tests that build th
   expect((await executeSource(unbuilt, bindingsMutation)).result).toBe(
     "INCONCLUSIVE: test/owner.test.ts doesn't build the bindings crates (`buildReact`), so the mutant of builtins/src/lib.rs is never compiled",
   );
+});
+
+// A mutation whose tests read rust-js.wasm (`needs: "wasm"`) has what the
+// wasm build made linked into its workspace, which copies only what git
+// tracks: the wasm and the sysroot it type-checks against (#2346).
+test("a wasm mutation's workspace links what the wasm build made", () => {
+  const [from, workspace] = [fixture("wasm-built"), fixture("wasm-workspace")];
+  for (const path of wasmBuild) {
+    mkdirSync(join(from, path, ".."), { recursive: true });
+    if (path.endsWith(".wasm")) writeFileSync(join(from, path), "wasm");
+    else mkdirSync(join(from, path), { recursive: true });
+  }
+  linkWasmBuild(workspace, from);
+  expect(wasmBuild.map((path) => realpathSync(join(workspace, path)))).toEqual(wasmBuild.map((path) => realpathSync(join(from, path))));
 });

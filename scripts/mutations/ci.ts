@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     name: "latent-survivors-retried",
     breaks: "a check retries the mutations the last one judged latent, surviving at its base too, which hold a mutation shard up in every check though no push of theirs changes them",
     file: "scripts/ci.ts",
-    find: 'result !== "caught" && !latent.includes(name)',
+    find: 'result !== "caught" && !passed.includes(name)',
     replace: 'result !== "caught"',
     tests: ["test/ci.test.ts", "-t", "main's mutations follow"],
   },
@@ -257,5 +257,13 @@ export const mutations: Mutation[] = [
     find: "    const speed = ratios.length < 20 ? 1 : Math.min(2, Math.max(0.5, ratios[ratios.length >> 1]!));\n",
     replace: "    const speed = ratios.length < 1 ? 1 : Math.min(2, Math.max(0.5, ratios[ratios.length >> 1]!));\n",
     tests: ["test/shards.test.ts", "-t", "each shard's times are merged at the plan's speed"],
+  },
+  {
+    name: "wasm-results-unread",
+    breaks: "the wasm job's results are never read, so each mutation the shards left to it is retried by every check after, whatever it found (#2346)",
+    file: "scripts/ci.ts",
+    find: "    const caughtThere = wasm?.commit === run.headSha ? Object.entries(wasm.results).filter(([, result]) => result === \"caught\").map(([name]) => name) : [];\n",
+    replace: "    const caughtThere: string[] = [];\n",
+    tests: ["test/ci.test.ts", "-t", "main's mutations follow the last check"],
   },
 ];

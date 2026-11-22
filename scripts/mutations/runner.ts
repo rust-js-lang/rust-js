@@ -338,4 +338,12 @@ export const mutations: Mutation[] = [
     replace: "  const mode = \"\";\n",
     tests: ["test/shards.test.ts", "-t", "distinct test files and the corpus cases they name"],
   },
+  {
+    name: "wasm-mutations-judged-everywhere",
+    breaks: "a run without the wasm judges the mutations that need it too, whose tests skip where it's absent, so each reads as survived in the shards and locally (#2346)",
+    file: "scripts/mutations.ts",
+    find: "  return wasm ? { run: chosen.filter(needs), elsewhere: [] } : { run: chosen.filter((m) => !needs(m)), elsewhere: chosen.filter(needs) };\n",
+    replace: "  return wasm ? { run: chosen.filter(needs), elsewhere: [] } : { run: chosen, elsewhere: [] };\n",
+    tests: ["test/mutations.test.ts", "-t", "a mutation that needs the wasm is judged in the wasm job"],
+  },
 ];

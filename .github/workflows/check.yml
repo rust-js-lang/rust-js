@@ -104,6 +104,7 @@ jobs:
       mutation_timings: ${{ steps.plan.outputs.mutation_timings }}
       test_timings: ${{ steps.plan.outputs.test_timings }}
       wasm: ${{ steps.plan.outputs.wasm }}
+      wasm_mutations: ${{ steps.plan.outputs.wasm_mutations }}
       rustc: ${{ steps.plan.outputs.rustc }}
       tests: ${{ steps.plan.outputs.tests }}
       batch_base: ${{ steps.plan.outputs.batch_base }}
@@ -795,14 +796,20 @@ jobs:
   # end, and the snapshots and the playground it compiles, of a change to
   # what decides them (scripts/iteratorSlice.ts's `wasmPaths`, of
   # wasm/prebuilt.sh's inputs), as `plan` says: a doc's or a corpus case's
-  # change ran it, 13 min, to the answer it had. The nightly runs it.
+  # change ran it, 13 min, to the answer it had. The nightly runs it. And
+  # the mutations whose tests read the WASM, which the mutation shards
+  # leave to it (`needs: "wasm"`, #2346), of a change that chooses one.
   wasm:
     needs: plan
-    if: ${{ inputs.part != 'mutations' && (inputs.nightly || needs.plan.outputs.wasm == 'true') }}
+    if: ${{ (inputs.part != 'mutations' && (inputs.nightly || needs.plan.outputs.wasm == 'true')) || (!inputs.nightly && inputs.part != 'suite' && needs.plan.outputs.wasm_mutations == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      # All of the history: the mutations' selection is of where the
+      # change left main, as the shards' is.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
@@ -843,9 +850,28 @@ jobs:
         run: bun run wasm
       - wait: browser
       - name: Require native snapshots and browser parity
+        if: ${{ inputs.part != 'mutations' && (inputs.nightly || needs.plan.outputs.wasm == 'true') }}
         env:
           RUST_JS_REQUIRE_WASM: '1'
         run: bun test test/snapshots.test.ts test/playground.test.ts
+      # The shards' own selection, its mutations that need the WASM alone
+      # (`--wasm`); each other one the shards judge. The Nightly's, every
+      # one, in its suite part's call, whose job this already is: its
+      # mutations part's would hold one more runner beside its shards,
+      # past its budget (test/runners.test.ts).
+      - name: Judge the mutations that need the WASM
+        if: ${{ (inputs.nightly && inputs.part != 'mutations') || (!inputs.nightly && inputs.part != 'suite' && needs.plan.outputs.wasm_mutations == 'true') }}
+        env:
+          ARGS: ${{ !inputs.nightly && format('--changed={0} --also={1} --base={0}', needs.plan.outputs.since, needs.plan.outputs.retry) || '' }}
+        run: bun scripts/mutations.ts --wasm $ARGS
+      # What it found, beside the shards' (scripts/ci.ts's `wasmResults`):
+      # the next check retries what it didn't catch.
+      - if: ${{ always() && ((inputs.nightly && inputs.part != 'mutations') || (!inputs.nightly && inputs.part != 'suite' && needs.plan.outputs.wasm_mutations == 'true')) }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-results-wasm
+          path: target/mutants/results.json
+          if-no-files-found: ignore
 
   # rustc's tests, all of them, against the known failures (ADR 0089), of
   # a change to what they run (`rustcPaths`), as `plan` says: its eight

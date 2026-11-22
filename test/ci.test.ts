@@ -7,11 +7,11 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
-import { checkedSince, jsonLines, latestRuns, MUTATION_SHARDS, mutationJobsPassed, NET_JOBS, nets, netsSummary, alwaysRun, resultsBase } from "../scripts/ci";
+import { checkedSince, jsonLines, latestRuns, MUTATION_SHARDS, mutationJobsPassed, NET_JOBS, nets, netsSummary, alwaysRun, resultsBase, wasmResults } from "../scripts/ci";
 import { readersOf } from "./part-settings";
 import { downloaded } from "../scripts/artifacts";
 import { corpusRows, crashes, dependency, labelProblems, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
-import { mutations, refusedFlags } from "../scripts/mutations";
+import { judgedInTheWasmJob, mutations, refusedFlags } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability, variantFamilies } from "../scripts/checkFast";
 import { lostObject } from "../scripts/testMap";
 import { portRefusal, reactGate } from "../scripts/push";
@@ -746,6 +746,14 @@ test("main's mutations follow the last check whose shards kept their results, an
   // changes its site still runs: the check's `--changed`, the runner's own
   // set, beside `--also`, the retry list.
   expect(resultsBase([{ ...red, latent: ["b"] }])).toEqual({ since: "sha4", retry: ["d"] });
+  // What the shards left to the wasm job: caught where its run, of the
+  // same commit, caught it; else, its job not run or another commit's,
+  // retried (#2346).
+  const left = { ...red, results: [found("sha4", { a: "caught", w: judgedInTheWasmJob }), found("sha4", { c: "caught" })] };
+  expect(resultsBase([left])).toEqual({ since: "sha4", retry: ["w"] });
+  expect(resultsBase([{ ...left, wasm: found("sha4", { w: "caught" }) }])).toEqual({ since: "sha4", retry: [] });
+  expect(resultsBase([{ ...left, wasm: found("sha9", { w: "caught" }) }])).toEqual({ since: "sha4", retry: ["w"] });
+  expect(resultsBase([{ ...left, wasm: found("sha4", { w: "SURVIVED: its tests passed" }) }])).toEqual({ since: "sha4", retry: ["w"] });
   expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("format('--changed={0} --also={1} --base={0}', needs.plan.outputs.since, needs.plan.outputs.retry)");
 });
 
@@ -771,6 +779,19 @@ test("the WASM build, rustc's tests and the mutations run where what they run ch
   expect(check).toContain("if: ${{ inputs.part != 'mutations' && (inputs.nightly || needs.plan.outputs.wasm == 'true') }}");
   expect(check).toContain("if: ${{ inputs.part != 'mutations' && (inputs.nightly || needs.plan.outputs.rustc == 'true') }}");
   expect(check).toContain("if: ${{ inputs.part != 'suite' && (inputs.nightly || needs.plan.outputs.mutations == 'true') }}");
+  // And the mutations that need the WASM, in its job, of the shards' own
+  // selection, their results beside the shards' (#2346).
+  const wasmJob = check.slice(check.indexOf("\n  wasm:\n"), check.indexOf("\n  rustc:\n"));
+  expect(check).toContain("wasm_mutations: ${{ steps.plan.outputs.wasm_mutations }}");
+  expect(wasmJob).toContain("needs.plan.outputs.wasm_mutations == 'true'");
+  expect(wasmJob).toContain("fetch-depth: 0");
+  expect(wasmJob).toContain("bun scripts/mutations.ts --wasm $ARGS");
+  // The Nightly's in its suite part's call, whose wasm job runs anyway: its
+  // mutations part's would hold one more runner past its budget.
+  expect(wasmJob).toContain("(inputs.nightly && inputs.part != 'mutations') || (!inputs.nightly && inputs.part != 'suite' && needs.plan.outputs.wasm_mutations == 'true')");
+  expect(wasmJob).toContain("format('--changed={0} --also={1} --base={0}', needs.plan.outputs.since, needs.plan.outputs.retry)");
+  expect(wasmJob).toContain(`name: ${wasmResults}\n`);
+  expect(wasmJob.indexOf("bun run wasm")).toBeLessThan(wasmJob.indexOf("--wasm $ARGS"));
   expect(wasmInputs("INPUTS=(src Cargo.toml wasm/patches)\n")).toEqual(["src/**", "Cargo.toml", "wasm/patches/**"]);
   for (const file of ["crates/rust-js-lower/src/copies.rs", "wasm/patches/a.patch", "rust-toolchain.toml", "std/lib.rs", "test/snapshots/x.js", "examples/fib.rs"]) {
     expect([file, touchesWasm([file])]).toEqual([file, true]);

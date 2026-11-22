@@ -1,13 +1,16 @@
 // Tracked non-crate inputs of the existing mutation runner (#1848). A
 // workspace owns every source it may write; installed third-party packages
 // are read-only inputs, while workspace package links point inside the copy.
-import {existsSync,readFileSync,rmSync,writeFileSync} from "node:fs";
-import {join,resolve} from "node:path";
+import {existsSync,mkdirSync,readFileSync,rmSync,symlinkSync,writeFileSync} from "node:fs";
+import {dirname,join,resolve} from "node:path";
 import {Worker} from "node:worker_threads";
 import {bytesOf} from "../tooling/bounded.js";
 import { run, type Exit } from "../test/child";
 import type { Mutation } from "./mutations";
 import { underLoad } from "./timing";
+import { wasmBuild } from "../wasm/web/site.ts";
+
+const checkout = join(import.meta.dir, "..");
 
 /** Preparation excludes workspace copying. The real Intl trace takes 21–25 ms
  * from launch to exit; retain the existing 1 s scheduling floor, scaled by
@@ -72,6 +75,16 @@ export function unbuiltBy(root: string, tests: string[]): string[] {
   return tests.filter((arg) => /^test\/.*\.test\.tsx?$/.test(arg) && !readFileSync(join(root, arg), "utf8").includes("buildReact"));
 }
 
+/** What the wasm build made, which git doesn't track, so no workspace
+ * copies (`wasmBuild`): `from`'s, the checkout's, linked into `workspace`,
+ * for a mutation whose tests read it (`needs: "wasm"`, #2346). */
+export function linkWasmBuild(workspace: string, from = checkout) {
+  for (const path of wasmBuild) {
+    mkdirSync(dirname(join(workspace, path)), { recursive: true });
+    symlinkSync(join(from, path), join(workspace, path));
+  }
+}
+
 export type SourceRun = {
   passed: boolean;
   ran: number;
@@ -128,6 +141,7 @@ export async function sourceMutation(
     const began = performance.now();
     try {
       peak = Math.max(peak, await makeSourceWorkspace(root, workspace, files));
+      if (mutation.needs === "wasm") linkWasmBuild(workspace);
       const owner = join(workspace, mutation.file),
         marker = join(workspace, ".mutation-loaded");
       let source = readFileSync(owner, "utf8");

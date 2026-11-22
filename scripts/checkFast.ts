@@ -171,6 +171,10 @@ export const leftToCi: { run: string; why: string }[] = [
     why: "the snapshots and the playground with the WASM compiler (`RUST_JS_REQUIRE_WASM`), which only CI builds; check:fast runs both with the native one",
   },
   {
+    run: "bun scripts/mutations.ts --wasm",
+    why: "the mutations whose tests read the WASM compiler (`needs: \"wasm\"`), which only CI builds: check:fast's mutations say each is judged in the wasm job (#2346)",
+  },
+  {
     run: "uses: ./.github/workflows/rustc-tests.yml",
     why: "rustc's whole suite on 6 machines, and the mutations of all a check's changes: here `bun run test:rustc <dirs>`, and the mutations the change adds",
   },
