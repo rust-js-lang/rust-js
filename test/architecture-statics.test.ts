@@ -56,12 +56,12 @@ const statics: Record<string, Class> = {
   "src/lower/liveness.rs RUSTC_BODY_LIVENESS": "constant",
   "src/lower/recognition/std_paths.rs FIRST": "flag",
   "src/lower/recognition/std_steps.rs PARSED": "constant",
-  "src/lower/mir/census.rs RECORDS": "flag",
-  "src/lower/mir/census.rs CENSUS": "report",
-  "src/lower/mir/hints.rs NO_THIR_HINTS": "flag",
+  "src/lower/session/label_census.rs RECORDS": "flag",
+  "src/lower/session/label_census.rs CENSUS": "report",
+  "src/lower/session.rs NO_THIR_HINTS": "flag",
   "src/lower/mir/tidy.rs MADE": "identity",
-  "src/lower/mir/tidy/fired.rs RECORDS": "flag",
-  "src/lower/mir/tidy/fired.rs FIRED": "report",
+  "src/lower/session/tidy_fired.rs RECORDS": "flag",
+  "src/lower/session/tidy_fired.rs FIRED": "report",
   "src/lower/mir/tidy/moves.rs T1": "identity",
 };
 

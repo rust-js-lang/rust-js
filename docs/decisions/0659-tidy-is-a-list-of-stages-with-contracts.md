@@ -575,7 +575,7 @@ against native Rust in both builds, and the mutations
 passes that changed a body, and how many it changed, a line each,
 `stage/pass<TAB>bodies`, in `--tidy-passes`' order; a pass not listed
 changed nothing in that compile. It mirrors `--prepare-fired` (ADR 1087).
-`mir/tidy/fired.rs` records it, by statics, as `known.rs`' facts found
+`session/tidy_fired.rs` records it, by statics, as `known.rs`' facts found
 are, tidy's hints being JS's alone: `run_stage` keeps each body before a
 pass where the compile records, and counts the pass where the body after
 isn't `==` it. `Stmt`'s `==` compares facts as their readers see them and
@@ -612,7 +612,7 @@ each predecessor's terminator or, through the `Goto`s and `Drop`s one
 predecessor alone reaches, the `SwitchInt`, `Call` or guard's `FalseEdge`
 that chose the way, said "through drops" where drops were passed; and
 how many jumps reach it and the most loops and blocks one crosses.
-`mir/census.rs` records it by statics, as `--tidy-fired` does, of a
+`session/label_census.rs` records it by statics, as `--tidy-fired` does, of a
 body's own statements, not a closure's, which its own body records.
 
 `bun scripts/label-census.ts [--programs <start> <count> | --match-trees
@@ -632,7 +632,7 @@ then one a `Goto` reaches (29). Each row's fix is the emitter's, the
 decisions walk's, or none, a jump no structured form makes, one row at a
 time (#1461's design).
 
-Held by `mir/census.rs`' unit test of a kept block and a kept loop and
+Held by `session/label_census.rs`' unit test of a kept block and a kept loop and
 how far their jumps reach, a label the program wrote no row; mutations
 `label-census-loops-uncrossed` and `label-census-written-labels-counted`
 (`lower/mir/census.ts`).

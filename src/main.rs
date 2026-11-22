@@ -1005,7 +1005,7 @@ fn finish_build(prepared: Prepared, exit: ExitCode) -> Result<ExitCode, String> 
         }
         // Which of tidy's passes changed a body, and how many (#1461).
         if let Some(path) = &tidy_fired {
-            std::fs::write(path, lower::session::tidy_fired())
+            std::fs::write(path, lower::session::tidy_fired(&lower::tidy_pass_names()))
                 .map_err(|error| format!("can't write the tidy passes fired to {}: {error}", path.display()))?;
         }
         // Each compiler-made label kept, by its shape (#1461).

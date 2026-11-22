@@ -293,9 +293,9 @@ contracts (`mir/tidy/contracts.rs`), its jumps' and declarations' those of
 `js/validate.rs`, whose `module` checks each module's tree once more after
 preparation, its reads resolved too ([ADR 1143](decisions/1143-every-tree-checked-before-its-printed.md)).
 `rust-js --tidy-until <stage/pass>` and `scripts/tidy-trace.ts` show what each
-pass does to a crate's JS, and `--tidy-fired <file>` (`mir/tidy/fired.rs`)
+pass does to a crate's JS, and `--tidy-fired <file>` (`session/tidy_fired.rs`)
 and `scripts/tidy-fired.ts`, over the corpus, which passes changed a body;
-`--label-census <file>` (`mir/census.rs`) and `scripts/label-census.ts`,
+`--label-census <file>` (`session/label_census.rs`) and `scripts/label-census.ts`,
 each compiler-made label a body keeps, by the MIR shape that left it
 ([ADR 0659](decisions/0659-tidy-is-a-list-of-stages-with-contracts.md)).
 `mir/tidy/stability.rs` owns whether reading an expression across a call
@@ -321,7 +321,7 @@ and each std function's recogniser is left out in turn,
 `--without-recognizer <std path>`, the program refused or running the same
 ([ADR 1128](decisions/1128-what-no-recogniser-takes-is-refused-or-right.md));
 and tidy is told nothing of where the program writes its constructs,
-`--no-thir-hints` (`mir/hints.rs`), the program running the same
+`--no-thir-hints` (`session.rs`, which `mir/hints.rs` asks), the program running the same
 ([ADR 1144](decisions/1144-the-structurer-keeps-what-it-knows-if-measured-so.md), amended);
 and nothing MIR's intervals prove is taken, `--without-intervals`
 (`analysis/intervals/session.rs`), every check and wrap kept, the program

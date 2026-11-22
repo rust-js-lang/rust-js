@@ -18,7 +18,6 @@ mod copied;
 mod decided;
 mod decisions;
 mod destructuring;
-pub(super) mod fired;
 mod flags;
 mod jumps;
 #[cfg(test)]
@@ -183,9 +182,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
 /// checked (`js::validate::stages_checked`), what it ensures, checked. Whether `hints.until` stopped it.
 fn run_stage(body: &mut Vec<Stmt>, hints: &Hints, stage: &stages::Stage, name: &str) -> bool {
     for pass in stage.passes {
-        let was = fired::before(body);
+        let was = crate::lower::session::tidy_fired::before(body);
         (pass.run)(body, hints);
-        fired::after(was, body, || pass_name(name, pass));
+        crate::lower::session::tidy_fired::after(was, body, || pass_name(name, pass));
         if hints.until == Some(&*pass_name(name, pass)) {
             return true;
         }

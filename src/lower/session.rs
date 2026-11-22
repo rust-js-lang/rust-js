@@ -18,6 +18,12 @@ use rustc_span::def_id::DefId;
 
 use rust_js_program::collections::{IndexSet, OnceMap};
 
+// The compile's reports, which `mir` records into as it lowers: the labels
+// each body keeps (`--label-census`) and the tidy passes that fired
+// (`--tidy-fired`), the session's since #2299 moved them from `mir`.
+pub(in crate::lower) mod label_census;
+pub(in crate::lower) mod tidy_fired;
+
 /// What a lowering session finds once, and the flags of its run.
 pub(crate) struct Caches {
     /// The session's, by its rustc session's address: a read with another
@@ -133,20 +139,34 @@ pub(crate) fn drops_shadow(tcx: TyCtxt<'_>) -> String {
 /// Records which of tidy's passes change a body, for the rest of the
 /// compile: `--tidy-fired`'s (#1461).
 pub(crate) fn record_tidy_fired() {
-    super::mir::record_tidy_fired();
+    tidy_fired::record();
 }
 
 /// Each of tidy's passes that changed a body, and how many it changed, a
 /// line each, `stage/pass<TAB>bodies`, in the order they run: what
-/// `--tidy-fired` writes; nothing of a compile that records none.
-pub(crate) fn tidy_fired() -> String {
-    super::mir::tidy_fired_report(&super::mir::tidy_pass_names())
+/// `--tidy-fired` writes; nothing of a compile that records none. Of
+/// `names`, tidy's passes in the order they run, which the driver gives
+/// (`lower::tidy_pass_names`), tidy being `mir`'s.
+pub(crate) fn tidy_fired(names: &[String]) -> String {
+    tidy_fired::report(names)
 }
 
 /// Forgets, for the rest of the compile, where the program writes its
 /// constructs, which tidy reads its JS by: `--no-thir-hints` (ADR 1144).
 pub(crate) fn forget_thir_hints() {
-    super::mir::forget_thir_hints();
+    NO_THIR_HINTS.store(true, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// Whether this compile forgets where the program writes its constructs,
+/// `--no-thir-hints`: tidy is told nothing of them, its JS reads worse, and
+/// must run the same, as a readability hint carries no meaning (ADR 1144,
+/// amended: a net of `test/tidy-stages.test.ts`).
+static NO_THIR_HINTS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Whether tidy is told where the program writes its constructs.
+// helper: the compile's `--no-thir-hints` switch, asked by `mir::hints`, the session's since #2299 moved it there with the other switches
+pub(in crate::lower) fn thir_hints() -> bool {
+    !NO_THIR_HINTS.load(std::sync::atomic::Ordering::Relaxed)
 }
 
 /// Resolves std's paths before any body is lowered, for the rest of the
@@ -158,13 +178,13 @@ pub(crate) fn ask_std_paths_first() {
 /// Records which compiler-made labels each body keeps after tidy, by the
 /// MIR shape that left it: `--label-census`'s (#1461).
 pub(crate) fn record_label_census() {
-    super::mir::record_label_census();
+    label_census::record();
 }
 
 /// Each shape of a label kept and how many, a line each, `count<TAB>shape`,
 /// the most first: what `--label-census` writes.
 pub(crate) fn label_census() -> String {
-    super::mir::label_census_report()
+    label_census::report()
 }
 
 /// The address of `tcx`'s rustc session, one each session.

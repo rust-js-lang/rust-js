@@ -36,10 +36,11 @@ test("spill and fresh take a Base, never a word", () => {
 
 // Whether a label is MIR's, `bb12`, or one the program wrote, `'desc`, is
 // answered by `is_block_label` alone (ADR 0742): tidy's decisions had a
-// copy of its test.
+// copy of its test. A block label's word is read back to its block in one
+// place, the label census (`block_of_label`, `mir::queries`' until #2299).
 test("whether a label is MIR's is asked of is_block_label", () => {
   const tests = /strip_prefix\("bb"\)/;
-  expect(sources.filter(file => tests.test(read(file)))).toEqual(["src/lower/mir/queries.rs"]);
+  expect(sources.filter(file => tests.test(read(file)))).toEqual(["src/lower/session/label_census.rs"]);
 });
 
 // A `snake_case` name is made camelCase in one place, `camel_case`, and

@@ -301,19 +301,6 @@ pub(in crate::lower::mir) fn is_block_label(name: &js::Name) -> bool {
     name.is_block_label()
 }
 
-/// Whether `word` is spelled as `label` spells a block's label, `bb7`.
-fn spelled_as_block_label(word: &str) -> bool {
-    word.strip_prefix("bb")
-        .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
-}
-
-/// The block of a block label's word, `bb7`'s, `label`'s spelling read
-/// back: of the words the census keeps of block labels alone.
-pub(super) fn block_of_label(word: &str) -> Option<mir::BasicBlock> {
-    let index = word.strip_prefix("bb").filter(|_| spelled_as_block_label(word))?;
-    index.parse::<usize>().ok().map(mir::BasicBlock::from_usize)
-}
-
 /// Of a bounds check `msg`, the index whose element `target` reads or
 /// writes first, and whether it writes it: there, `$index(xs, i)` or
 /// `xs[$at(xs, i)]`, the check.

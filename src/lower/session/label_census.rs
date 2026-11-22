@@ -27,7 +27,7 @@ pub(in crate::lower) fn record() {
 
 /// Each `bbN` label `body`'s JS, `stmts`, keeps, noted by its shape: of
 /// its own statements alone, not a closure's, which its own body notes.
-pub(super) fn note(body: &Body<'_>, stmts: &[Stmt]) {
+pub(in crate::lower) fn note(body: &Body<'_>, stmts: &[Stmt]) {
     if !RECORDS.load(Ordering::Relaxed) {
         return;
     }
@@ -74,10 +74,7 @@ enum Around {
 fn walk(stmts: &[Stmt], around: &mut Vec<(Around, Option<String>)>, left: &mut BTreeMap<String, Left>) {
     for stmt in stmts {
         let label = |label: &Option<Name>| {
-            label
-                .clone()
-                .filter(super::queries::is_block_label)
-                .map(Name::into_word) // word: the census reports labels by spelling
+            label.clone().filter(|name| name.is_block_label()).map(Name::into_word) // word: the census reports labels by spelling
         };
         let (inside, kind, label, bodies): (Around, &'static str, Option<String>, Vec<&[Stmt]>) = match &stmt.kind {
             StmtKind::While { label: l, body, .. } => (Around::Loop, "while", label(l), vec![body]),
@@ -139,7 +136,7 @@ fn walk(stmts: &[Stmt], around: &mut Vec<(Around, Option<String>)>, left: &mut B
 /// `label`'s shape: what it labels, what decided each way to its block in
 /// MIR (`decider`), and how many jumps reach it and the most each crosses.
 fn key(body: &Body<'_>, label: &str, found: &Left) -> String {
-    let block = super::queries::block_of_label(label);
+    let block = block_of_label(label);
     let from = match block.filter(|&b| b.as_usize() < body.basic_blocks.len()) {
         Some(block) => {
             let mut kinds: Vec<String> = (body.basic_blocks.predecessors()[block].iter())
@@ -191,6 +188,19 @@ fn decider(body: &Body<'_>, mut block: BasicBlock) -> String {
             }
         }
     }
+}
+
+/// Whether `word` is spelled as `label` spells a block's label, `bb7`.
+fn spelled_as_block_label(word: &str) -> bool {
+    word.strip_prefix("bb")
+        .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
+}
+
+/// The block of a block label's word, `bb7`'s, `label`'s spelling read
+/// back: of the words the census keeps of block labels alone.
+fn block_of_label(word: &str) -> Option<BasicBlock> {
+    let index = word.strip_prefix("bb").filter(|_| spelled_as_block_label(word))?;
+    index.parse::<usize>().ok().map(BasicBlock::from_usize)
 }
 
 #[cfg(test)]

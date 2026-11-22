@@ -20,7 +20,6 @@ mod alternatives;
 mod assign;
 mod bounds;
 mod calls;
-mod census;
 // A body's control-flow graph, the base's (`analysis::cfg`, #2299).
 use crate::lower::analysis::cfg;
 mod closures;
@@ -51,7 +50,6 @@ use crate::lower::analysis::Mir;
 use crate::lower::analysis::mir_reads::presence::{ArgProof, Presence};
 use crate::lower::analysis::mir_reads::referred::referred_constant;
 mod queries;
-pub(in crate::lower) use hints::forget_thir_hints;
 pub(in crate::lower) use temporaries::held_names;
 mod rvalues;
 mod scopes;
@@ -64,8 +62,6 @@ mod threaded;
 mod tidy;
 mod tried_ints;
 mod vec_growth;
-pub(in crate::lower) use census::{record as record_label_census, report as label_census_report};
-pub(in crate::lower) use tidy::fired::{record as record_tidy_fired, report as tidy_fired_report};
 pub(super) use tidy::pass_names as tidy_pass_names;
 pub(in crate::lower) use tidy::settle_unthrown_catches;
 mod writer;
@@ -1237,7 +1233,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 commented: &state.commented,
             },
         );
-        census::note(mir_body, &out);
+        crate::lower::session::label_census::note(mir_body, &out);
         self.body_epilogue(&mut state, &mut out);
         Ok((params.into_inner(), out))
     }
