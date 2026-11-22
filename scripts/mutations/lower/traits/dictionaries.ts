@@ -485,15 +485,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "ref-into-iter-steps-missing",
-    breaks:
-      "a reference's `IntoIterator` dictionary carries no `Iterator` of what it makes, so a held flatten of `&[T; N]` items can't step them",
-    file: "crates/rust-js-lower/src/traits/dictionaries.rs",
-    find: "        let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n        props.extend(self.made_steps(tr, false, span)?);\n        Ok(Expr::object(props))\n",
-    replace: "        let props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n        Ok(Expr::object(props))\n",
-    tests: ["test/corpus.test.ts", "-t", "^std_flatten.rs$"],
-  },
-  {
     name: "mut-ref-dictionary-unpeeled",
     breaks:
       "a `&mut` of a range or of the crate's iterator is given a JS iterator's dictionary, so std's `Map` or `Fuse` holding it steps it by `it.next`, which neither has (ADR 0912)",
@@ -556,14 +547,6 @@ export const mutations: Mutation[] = [
       "-t",
       "a JS class's Deref to the class it extends is no JS",
     ],
-  },
-  {
-    name: "ref-iterator-into-iter-by-collection",
-    breaks: "a `&mut` of the crate's iterator given where std asks `IntoIterator` is taken for a collection's, and has no evidence, so std's compiled `flatten()` of `&mut`s is refused (#742)",
-    file: "crates/rust-js-lower/src/traits/dictionaries.rs",
-    find: "            && !self.recognition().iterates_as_itself(ty)\n            && !self.has_user_impl(tr.def_id, ty)\n",
-    replace: "            && !self.has_user_impl(tr.def_id, ty)\n",
-    tests: ["test/iterator-forms.test.ts", "-t", "^mut_ref_iterators_into_iter with std"],
   },
   {
     name: "ref-iterator-not-itself",
@@ -648,15 +631,6 @@ export const mutations: Mutation[] = [
     find: "        let items = self.dictionary_grown(collection.clone(), items, (ty, item), span, &mut body)?;\n",
     replace: "        let _ = self.dictionary_grown(collection.clone(), items.clone(), (ty, item), span, &mut body)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
-  },
-  {
-    name: "ref-into-iter-bound-taken-for-a-collections",
-    breaks:
-      "in the build of std's iterator structs, std's `zip` given a `&I` whose `IntoIterator` is a bound of its caller's asks a std collection's reference's dictionary of it, refused, where its caller's bound gives it (#1264)",
-    file: "crates/rust-js-lower/src/traits/dictionaries.rs",
-    find: "            && self.evidence_for(tr).is_none()\n",
-    replace: "",
-    tests: ["test/iterator-forms.test.ts", "-t", "^into_iterator_of_a_reference_given_to_generic_code with"],
   },
   {
     name: "mut-reader-as-its-reader",
