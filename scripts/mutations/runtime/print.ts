@@ -3,10 +3,36 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "stopped-line-held-behind-whole-lines",
+    breaks:
+      "what a line a caught panic stopped leaves unended is held, so a whole line `console.log` prints after it comes first (#2319)",
+    file: "crates/rust-js-program/src/runtime/print.js",
+    find: "  if (!stream?.write) return $print(text);\n  $flushStdout();\n  stream.write(text);\n",
+    replace: "  return $print(text);\n",
+    tests: ["test/corpus.test.ts", "-t", "^stopping_writers_where_a_panic_is_caught.rs$"],
+  },
+  {
+    name: "stdout-unended-written-at-once",
+    breaks:
+      "what `print!` leaves unended is written at once, so `print!(\"a\")` then `eprintln!(\"err\")` shows `a` first, where std's line writer holds it (#2319)",
+    file: "crates/rust-js-program/src/runtime/print.js",
+    find: "  if (end < 0) {\n    if (chunk.length === 0) return;\n    $stdoutHeld.push(chunk);\n",
+    replace: "  if (end < 0) {\n    if (chunk.length === 0) return;\n    globalThis.process.stdout.write(chunk);\n    return;\n    $stdoutHeld.push(chunk);\n",
+    tests: ["test/stream-order.test.ts", "-t", "stdout_held_past_stderr"],
+  },
+  {
+    name: "stdout-held-lost-at-exit",
+    breaks: "what stdout holds of a line left unended as the program ends is never written (#2319)",
+    file: "crates/rust-js-program/src/runtime/print.js",
+    find: "        globalThis.process.stdout._handle?.setBlocking?.(true);\n        $flushStdout();\n",
+    replace: "        globalThis.process.stdout._handle?.setBlocking?.(true);\n",
+    tests: ["test/stream-order.test.ts", "-t", "stdout_held_past_stderr"],
+  },
+  {
     name: "print-bytes-decoded-in-node",
     breaks: "bytes written to Node's stream are decoded and printed as text, a character split between writes lost",
     file: "crates/rust-js-program/src/runtime/print.js",
-    find: "  if (stream?.write) stream.write(Uint8Array.from(bytes));\n  else ",
+    find: "  if (stream?.write && error) stream.write(Uint8Array.from(bytes));\n  else if (stream?.write) $stdoutWrite(Uint8Array.from(bytes));\n  else ",
     replace: "  ",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
   },
@@ -54,7 +80,7 @@ export const mutations: Mutation[] = [
     name: "line-left-unended-lost",
     breaks: "what's left unended of a line, a `print!`'s or a panic's part-way, is never written (#1490)",
     file: "crates/rust-js-program/src/runtime/print.js",
-    find: "      $print(rest);\n    }\n    // What was written ahead",
+    find: "      $printUnheld(rest);\n    }\n    // What was written ahead",
     replace: "    }\n    // What was written ahead",
     tests: ["test/corpus.test.ts", "-t", "^printed_while_a_line_is_formatted.rs$"],
   },
@@ -126,7 +152,7 @@ export const mutations: Mutation[] = [
     name: "formatting-held-print-unwritten",
     breaks: "what a writer prints inside a `format!` made apart from the line is held when the `format!` ends, and the next line printed overtakes it: `format L1` then `<1>stepped 2` where Rust prints `<1>format L1` (#1534)",
     file: "crates/rust-js-program/src/runtime/print.js",
-    find: "    $printFrames.pop();\n    if ($printFrames.length === 0 && $lineHeld !== \"\") {\n      const rest = $lineHeld;\n      $lineHeld = \"\";\n      $print(rest);\n    }\n  }\n}\n// Bytes written",
+    find: "    $printFrames.pop();\n    if ($printFrames.length === 0 && $lineHeld !== \"\") {\n      const rest = $lineHeld;\n      $lineHeld = \"\";\n      $printUnheld(rest);\n    }\n  }\n}\n// Bytes written",
     replace: "    $printFrames.pop();\n  }\n}\n// Bytes written",
     tests: ["test/corpus.test.ts", "-t", "^format_made_apart_prints_before_the_next_line.rs$"],
   },

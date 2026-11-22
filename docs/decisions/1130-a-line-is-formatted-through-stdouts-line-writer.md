@@ -683,3 +683,41 @@ caught panic, was refused as std's `Pin` of `Pinned`
 native Rust; the pair is off test/neighbours-known.txt. Mutation
 `own-debug-of-std-type-composed` (`lower/display/debug.ts`).
 
+
+## Amendment: what `print!` leaves unended is held till its newline, a flush or the end (2026-11-22, #2319)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept.
+
+Only a line being formatted was held: `$print` wrote the rest to Node's
+stdout at once. std's stdout is a `LineWriter` for every write: what a
+`print!` or a `write_all` leaves after its last newline stays in its buffer
+till the next newline, an explicit `flush()`, or std's cleanup as the
+program ends (`main`'s return, `process::exit`, a panic's exit; not an
+abort), while stderr is written at once. So `print!("a");
+eprintln!("err")` shows `err` before `a`, which a terminal, reading both
+streams as one, shows (P0: output's order is observable).
+
+**`$write` and `$printBytes` hold what follows stdout's last newline,
+text or bytes as each was written (`$stdoutHeld`), and write it with the
+next newline, at `flush()`, and at the process's `exit`, its stream made to
+write at once there.** A stream's `flush()` is `StreamOp::Flush`, stdout's
+`$flushStdout()`, its writer dictionary's `flush` too. A stderr write never
+writes what's held, as Rust's doesn't. Where there's no stream, a
+browser's console, `$printed` already held it, written at its newline or
+the task's end, as there's no exit.
+
+What a line a caught panic stopped leaves unended, or a `format!` made as
+a line formats, is written at once, after what's held (`$printUnheld`): a
+crate that leaves no line unended itself prints its whole lines by
+`console.log`, which would otherwise come before it.
+
+A library's own whole lines, printed by `console.log` where it never
+leaves a line unended, aren't held behind its consumer's unended text:
+#1599's contract says it the other way only, a library that leaves one
+unended making its consumer print through `$print`. Held by
+`test/corpus/stdout_held_past_stderr.rs` in `test/stream-order.test.ts`,
+against native Rust through `2>&1` and as a browser's console, and the corpus's stopped writers; mutations
+`stdout-unended-written-at-once`, `stdout-held-lost-at-exit`,
+`stopped-line-held-behind-whole-lines` (`runtime/print.ts`) and `stdout-flush-writes-nothing`
+(`lower/format_args.ts`).

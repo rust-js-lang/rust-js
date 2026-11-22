@@ -960,7 +960,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 "write_fmt" => Some(Std::Stream(StreamOp::Write { error })),
                 "write_all" => Some(Std::Stream(StreamOp::WriteBytes { error })),
                 "write" => Some(Std::Stream(StreamOp::Written { error })),
-                "flush" => Some(Std::Stream(StreamOp::Nothing)),
+                "flush" => Some(Std::Stream(StreamOp::Flush { error })),
                 _ => None,
             };
         }

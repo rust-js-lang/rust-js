@@ -284,6 +284,10 @@ Where the program may leave a stream's line unended, a `print!` or a write
 to `io::stdout()`, each line it prints there is `$print(..)`, which keeps
 what's held before it, as a browser's console takes whole lines
 ([1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md)).
+What it leaves unended is held, as Rust's stdout, a line writer, holds it,
+till its newline, `io::stdout().flush()`, `$flushStdout()`, or the
+program's end, while stderr is written at once: `print!("a");
+eprintln!("err")` shows `err` first ([1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md#amendment-what-print-leaves-unended-is-held-till-its-newline-a-flush-or-the-end-2026-11-22-2319), amended, #2319).
 
 - **Every placeholder option is Rust's:** width, fill, alignment, sign, `#`,
   `0`, precision, `{:x}`, `{:b}`, `{:o}`, `{:e}`, positional and named

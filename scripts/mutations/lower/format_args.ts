@@ -9,6 +9,14 @@ const concat = [
 
 export const mutations: Mutation[] = [
   {
+    name: "stdout-flush-writes-nothing",
+    breaks: "`io::stdout().flush()` leaves what stdout holds of a line held, so stderr written after it comes first (#2319)",
+    file: "src/lower/format_args.rs",
+    find: "            StreamOp::Flush { error: false } => Expr::call(Expr::helper(\"$flushStdout\"), Vec::new()),\n",
+    replace: "",
+    tests: ["test/stream-order.test.ts", "-t", "stdout_held_past_stderr"],
+  },
+  {
     name: "format-lines-flattened",
     breaks:
       "a format string written across lines is a template of `\\n`s on one line",

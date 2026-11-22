@@ -6,6 +6,7 @@ import {
   $composed,
   $debugStr,
   $debugTuple,
+  $flushStdout,
   $fmtOrPanic,
   $fmtPrintFailed,
   $fmtWritten,
@@ -264,7 +265,7 @@ function main() {
     ),
     unitDebug,
   );
-  report("flush", $writeTagged(undefined), unitDebug);
+  report("flush", $writeTagged($flushStdout()), unitDebug);
   let s = "";
   s += "y";
   $print(`${shown($writeTagged(undefined), unitDebug, { fmt: (value) => "Error" })} ${s}\n`);

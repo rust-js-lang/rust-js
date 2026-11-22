@@ -13718,7 +13718,8 @@ export function $write(text, error) {
   if (error) $flushAhead();
   const stream = globalThis.process?.[error ? "stderr" : "stdout"];
   if (stream?.write) {
-    stream.write(text);
+    if (error) stream.write(text);
+    else $stdoutWrite(text);
     return;
   }
   const log = error ? console.error : console.log;
@@ -13733,6 +13734,52 @@ export function $write(text, error) {
     });
   }
   $printed[error] = rest;
+}
+// What std's stdout `LineWriter` holds of a line left unended, a
+// `print!`'s or a `write_all`'s, text or bytes, as each was written, till
+// the line's newline, a `flush()` or the process's exit, std's cleanup at
+// its end, where it's written; standard error, written at once, comes
+// before it (#2319). Where there's no stream, `$printed` holds it so.
+export let $stdoutHeld = [];
+export let $stdoutExits = false;
+// `chunk`, text or bytes, to stdout: what's held and the chunk up to its
+// last newline written, what's after held.
+export function $stdoutWrite(chunk) {
+  const end = typeof chunk === "string" ? chunk.lastIndexOf("\n") : chunk.lastIndexOf(10);
+  if (end < 0) {
+    if (chunk.length === 0) return;
+    $stdoutHeld.push(chunk);
+    if (!$stdoutExits) {
+      $stdoutExits = true;
+      globalThis.process.once("exit", () => {
+        globalThis.process.stdout._handle?.setBlocking?.(true);
+        $flushStdout();
+      });
+    }
+    return;
+  }
+  const stream = globalThis.process.stdout;
+  for (const held of $stdoutHeld) stream.write(held);
+  $stdoutHeld = [];
+  stream.write(chunk.slice(0, end + 1));
+  if (end + 1 < chunk.length) $stdoutWrite(chunk.slice(end + 1));
+}
+// What a line a panic stopped, or a `format!` made as one formats, leaves
+// unended, written at once, after what's held: a crate that leaves no line
+// unended itself prints its whole lines by `console.log`, which nothing
+// held would come before, so it isn't held behind them (#2319, #2320).
+export function $printUnheld(text) {
+  const stream = globalThis.process?.stdout;
+  if (!stream?.write) return $print(text);
+  $flushStdout();
+  stream.write(text);
+}
+// `io::stdout().flush()`: what's held, written.
+export function $flushStdout() {
+  const stream = globalThis.process?.stdout;
+  if (!stream?.write) return;
+  for (const held of $stdoutHeld) stream.write(held);
+  $stdoutHeld = [];
 }
 // std's stdout `LineWriter` (#1490, ADR 1130): what's written while a line
 // is formatted held till its newline, each whole line then written at once,
@@ -13905,7 +13952,7 @@ export function $printing(write) {
     if ($printFrames.length === 0 && $lineHeld !== "") {
       const rest = $lineHeld;
       $lineHeld = "";
-      $print(rest);
+      $printUnheld(rest);
     }
     // What was written ahead of a line a panic stopped, which never reaches
     // it (#1761).
@@ -13981,7 +14028,7 @@ export function $formatting(make) {
     if ($printFrames.length === 0 && $lineHeld !== "") {
       const rest = $lineHeld;
       $lineHeld = "";
-      $print(rest);
+      $printUnheld(rest);
     }
   }
 }
@@ -13992,7 +14039,8 @@ export const $decoders = [];
 export function $printBytes(bytes, error) {
   if (error) $flushAhead();
   const stream = globalThis.process?.[error ? "stderr" : "stdout"];
-  if (stream?.write) stream.write(Uint8Array.from(bytes));
+  if (stream?.write && error) stream.write(Uint8Array.from(bytes));
+  else if (stream?.write) $stdoutWrite(Uint8Array.from(bytes));
   else $write(($decoders[error] ??= new TextDecoder()).decode(Uint8Array.from(bytes), { stream: true }), error);
   return bytes.length;
 }
@@ -14004,7 +14052,7 @@ export const $stdoutWriter = {
   write: (_, bytes) => ({ TAG: "Ok", _0: $printBytes(bytes, 0) }),
   writeAll: (_, bytes) => void $printBytes(bytes, 0),
   writeFmt: (_, text) => $print(text),
-  flush: () => {},
+  flush: () => $flushStdout(),
 };
 export const $stderrWriter = {
   write: (_, bytes) => ({ TAG: "Ok", _0: $printBytes(bytes, 1) }),

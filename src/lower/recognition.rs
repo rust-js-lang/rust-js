@@ -630,9 +630,12 @@ pub enum Std {
 pub enum StreamOp {
     /// `io::stdout()` and `io::stderr()`: `undefined`.
     Open,
-    /// `stdout.lock()`, `out.flush()` and `write.unwrap()`: what it's called
-    /// on, run for its effects, and `undefined`.
+    /// `stdout.lock()` and `write.unwrap()`: what it's called on, run for
+    /// its effects, and `undefined`.
     Nothing,
+    /// `out.flush()`: of stdout, what its line writer holds of a line left
+    /// unended written, `$flushStdout()` (#2319); of stderr, nothing.
+    Flush { error: bool },
     /// `write!(out, ..)`: `print!` or `eprint!`.
     Write { error: bool },
     /// `out.write_all(bytes)`: those bytes written, `$printBytes(bytes,

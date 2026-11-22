@@ -18,6 +18,7 @@ const cases = [
   "stderr_between_a_writers_lines.rs",
   "stderr_inside_a_std_values_debug.rs",
   "line_printed_after_a_part_left_unended.rs",
+  "stdout_held_past_stderr.rs",
 ];
 
 for (const name of cases) {

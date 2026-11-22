@@ -261,6 +261,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => written,
                 }
             }
+            StreamOp::Flush { error: false } => Expr::call(Expr::helper("$flushStdout"), Vec::new()),
             _ => Expr::js_undefined(),
         }
     }
