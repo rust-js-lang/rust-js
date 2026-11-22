@@ -142,7 +142,7 @@ export function remapBits(bits: Uint8Array, from: string[], to: string[]): Uint8
 /** A change to a file: each hunk's lines of the map's commit, `[from,
  * count]`, a count of 0 lines added after `from`, and the lines it writes
  * there; or `new`, a file the commit didn't have. */
-export type Hunk = [from: number, count: number, added?: string[], removed?: string[]];
+export type Hunk = [from: number, count: number, added?: string[], removed?: string[], now?: number, nowCount?: number];
 
 /** A line that's a comment or blank, which changes no test's outcome but
  * a reader of the sources' (`readsSources`), which runs on every change. */
@@ -296,7 +296,11 @@ const declaring = (name: string) => new RegExp(`\\b(?:fn|const|static|struct|enu
 /** The prelude's functions, which a glob's call falls back to where the
  * crate's own of that name is no longer seen. */
 const preludeFunctions = new Set(["drop"]);
-export type Change = { file: string; hunks: Hunk[] | "new" };
+/** A file's change since the map's commit: `file` its path there, the
+ * map's, and its hunks in its lines there; `now` its path in the tree where
+ * git found it renamed, and `similarity` how alike the two are, git's
+ * percent (#2337). */
+export type Change = { file: string; hunks: Hunk[] | "new"; now?: string; similarity?: number };
 
 /** What a change runs: the files and cases it can affect, or all of them,
  * and why. */
@@ -939,6 +943,11 @@ export function reachOfFunctions(map: TestMap, functions: number[]): (unit: stri
 
 /** Each hunk of `git diff -U0`'s, by file: its lines of the old side, and
  * the lines it writes. */
+/** The diff the map's answers read, of what changed since its commit: its
+ * hunks bare, and a moved file as a rename, `-M`, so a move asks the map of
+ * the file's path there and of its edit alone (#2337). */
+export const changesDiff = ["diff", "-U0", "--no-color", "--no-ext-diff", "-M"];
+
 export function hunksOf(diff: string): Change[] {
   const changes: Change[] = [];
   let current: Change | undefined;
@@ -955,9 +964,14 @@ export function hunksOf(diff: string): Change[] {
     }
     if (current === undefined || current.hunks === "new") continue;
     if (!inHunks && line.startsWith("new file mode")) current.hunks = "new";
-    const hunk = /^@@ -(\d+)(?:,(\d+))? \+/.exec(line);
+    // A rename's header, `git diff -M`'s: its path there, the map's, is
+    // the `a/` path above, and its path now the tree's.
+    const similarity = !inHunks && /^similarity index (\d+)%$/.exec(line);
+    if (similarity) current.similarity = Number(similarity[1]);
+    if (!inHunks && line.startsWith("rename to ")) current.now = line.slice("rename to ".length);
+    const hunk = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(line);
     if (hunk && current.hunks !== "new") {
-      current.hunks.push([Number(hunk[1]), hunk[2] === undefined ? 1 : Number(hunk[2]), [], []]);
+      current.hunks.push([Number(hunk[1]), hunk[2] === undefined ? 1 : Number(hunk[2]), [], [], Number(hunk[3]), hunk[4] === undefined ? 1 : Number(hunk[4])]);
       inHunks = true;
     } else if (inHunks && line.startsWith("+") && current.hunks !== "new") current.hunks.at(-1)?.[2]?.push(line.slice(1));
     else if (inHunks && line.startsWith("-") && current.hunks !== "new") current.hunks.at(-1)?.[3]?.push(line.slice(1));
@@ -1151,7 +1165,7 @@ let headMapRead: ReturnType<typeof readHeadMap> | undefined;
 function readHeadMap(): { map: TestMap; changes: Change[] } | string {
   const map = nearestMap(mapStore, root, toolchainOf());
   if (map === undefined) return `${noMap}: \`bun run test-map\` records one`;
-  const diff = git(["diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", map.commit]).out;
+  const diff = git([...changesDiff, map.commit]).out;
   const untracked = git(["ls-files", "--others", "--exclude-standard"]).out.split("\n").filter(Boolean);
   return { map, changes: [...hunksOf(diff), ...untracked.map((file): Change => ({ file, hunks: "new" }))] };
 }
@@ -1165,18 +1179,48 @@ function said(map: TestMap, picked: Picked): Picked {
 /** The corpus cases whose compiles ran `file`'s lines `first` to `last`,
  * a mutation's site, by the map of HEAD or its nearest ancestor: the
  * mutation runner's snapshot judge's (#864). A derived fact, as of the map's
- * commit: a site whose file changed since can't be placed by it, nor one
- * outside a function's counted code, and is said so, `all`, never a stale
- * answer (ADR 0093, amended). What else changed since, another file's
- * code, leaves the cases the map says reach the site's as they were. */
+ * commit: a site whose own lines changed since can't be placed by it, nor
+ * one outside a function's counted code, and is said so, `all`, never a
+ * stale answer. What else changed since, another file's code or its own
+ * file's other lines, leaves the cases the map says reach the site's as
+ * they were: the site is placed at its lines there, `mapLines`, under its
+ * path there where its file moved (#2337; ADR 0093, amended). */
 export function casesReaching(file: string, first: number, last: number, cases: string[]): Picked {
   const found = headMap();
   if (typeof found === "string") return { kind: "all", why: found };
   const { map, changes } = found;
-  if (changes.some((change) => change.file === file)) return said(map, { kind: "all", why: `${file} changed since the map's commit` });
-  const site: Change = { file, hunks: [[first, last - first + 1]] };
-  return said(map, pick(map, [site], [], cases));
+  const change = changes.find((each) => (each.now ?? each.file) === file);
+  if (change === undefined) return said(map, pick(map, [{ file, hunks: [[first, last - first + 1]] }], [], cases));
+  const at = mapLines(change, first, last);
+  if (typeof at === "string") return said(map, { kind: "all", why: `${file} ${at}` });
+  return said(map, pick(map, [{ file: change.file, hunks: [[at[0], at[1] - at[0] + 1]] }], [], cases));
 }
+
+/** Where the lines `first` to `last` of a file as it is now were at the
+ * map's commit, by its change since: each unchanged line moved by the
+ * hunks before it. Or why it can't be said: the site's own lines changed,
+ * the file is new, or it moved far from what it was (below
+ * `placedSimilarity`), each of which a guess would answer stale. */
+export function mapLines(change: Change, first: number, last: number): [number, number] | string {
+  if (change.hunks === "new") return "is new since the map's commit";
+  if (change.now !== undefined && (change.similarity ?? 0) < placedSimilarity) return `moved from ${change.file}, ${change.similarity ?? 0}% alike, too unlike to place a line`;
+  let delta = 0;
+  for (const [from, count, , , now, nowCount] of change.hunks) {
+    if (now === undefined || nowCount === undefined) return "changed since the map's commit";
+    // Its lines now, `now` to `now + nowCount - 1`; a deletion's, none,
+    // between `now` and the next.
+    const end = nowCount === 0 ? now : now + nowCount - 1;
+    const touches = nowCount === 0 ? first <= now && now < last : now <= last && end >= first;
+    if (touches) return `changed at its lines since the map's commit, ${now}–${end}`;
+    if (end < first) delta += count - nowCount;
+  }
+  return [first + delta, last + delta];
+}
+
+/** How alike a moved file must be to the one at the map's commit, git's
+ * percent, for a line of it to be placed there: a move's edits, paths and
+ * visibility, keep #2299's cut's files 95 to 100% alike. */
+export const placedSimilarity = 90;
 
 /** The toolchain's `llvm-profdata` and `llvm-cov`, rustup's
  * `llvm-tools` component's. */

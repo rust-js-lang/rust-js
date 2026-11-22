@@ -44,7 +44,7 @@ import { machineStore } from "../test/bounded";
 import { importsOf } from "./iteratorSlice";
 import { expected, type JobTimes, readJobTimes } from "./jobTimes";
 import { machine, pushSuiteFiles } from "./shard";
-import { type Change, caseFiles, caseUnit, functionsOf, type Hunk, hunksOf, mapStore, nearestMap, noMap, pick, reachOfFunctions, readsOf, type TestMap, toolchainOf, unitsReaching } from "./testMap";
+import { type Change, caseFiles, caseUnit, changesDiff, functionsOf, type Hunk, hunksOf, mapStore, nearestMap, noMap, pick, reachOfFunctions, readsOf, type TestMap, toolchainOf, unitsReaching } from "./testMap";
 import { crateOf, isCompilerSource } from "./compiler-crates";
 
 const root = join(import.meta.dir, "..");
@@ -353,13 +353,13 @@ export function reachOf(files: string[]): Reach {
  * doesn't track. */
 export function changesBetween(from: string, to?: string): Change[] {
   if (to === undefined) return changesSince(from);
-  const diff = Bun.spawnSync(["git", "diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", from, to], { cwd: root, stdout: "pipe" }).stdout.toString();
+  const diff = Bun.spawnSync(["git", ...changesDiff, from, to], { cwd: root, stdout: "pipe" }).stdout.toString();
   return hunksOf(diff);
 }
 
 function changesSince(commit: string): Change[] {
   const git = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root, stdout: "pipe" }).stdout.toString();
-  const diff = git(["diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", commit]);
+  const diff = git([...changesDiff, commit]);
   const untracked = git(["ls-files", "--others", "--exclude-standard"]).split("\n").filter(Boolean);
   return [...hunksOf(diff), ...untracked.map((file): Change => ({ file, hunks: "new" }))];
 }

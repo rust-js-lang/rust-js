@@ -7,7 +7,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { ciMapOf, ciMapPrefix, hunksOf, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, carriedUnits, carryOf, remapBits, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
+import { changesDiff, ciMapOf, ciMapPrefix, hunksOf, mapLines, placedSimilarity, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, carriedUnits, carryOf, remapBits, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
 
 import { shard } from "../scripts/shard";
 import { caseShard, fixture, root } from "./support";
@@ -246,13 +246,56 @@ test("a diff's hunks are the lines of the map's commit it changes", () => {
     {
       file: "src/a.rs",
       hunks: [
-        [12, 1, ["    b();"], ["    a();"]],
-        [15, 0, ["    c();", "+++ d;"], []],
-        [20, 3, [], []],
+        [12, 1, ["    b();"], ["    a();"], 12, 1],
+        [15, 0, ["    c();", "+++ d;"], [], 16, 2],
+        [20, 3, [], [], 22, 1],
       ],
     },
     { file: "src/b.rs", hunks: "new" },
   ]);
+});
+
+// A moved file is the map's at its path there (#2337): git's renames, `-M`,
+// read as the old path with the edit's hunks, so a pure move selects
+// nothing and an edited one what its edit reaches, not everything; and the
+// snapshot judge places a site's unchanged lines at their lines there,
+// where they were. #2299's cut moved its files 95 to 100% alike, a path or
+// a visibility edited, and its tidy mutations' sites the map couldn't place.
+test("a moved file is the map's at its path there, its unchanged lines placed where they were", () => {
+  const dir = fixture("map-renames");
+  const git = (...args: string[]) => Bun.spawnSync(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", ...args], { cwd: dir }).stdout.toString();
+  git("init", "--quiet");
+  mkdirSync(join(dir, "src"), { recursive: true });
+  writeFileSync(join(dir, "src/a.rs"), Array.from({ length: 30 }, (_, i) => `fn f${i + 1}() -> u32 { ${i + 1} }`).join("\n") + "\n");
+  git("add", "-A");
+  git("commit", "--quiet", "-m", "the map's");
+  // Moved, a line put first and line 20 edited: 95% alike.
+  mkdirSync(join(dir, "src/moved"), { recursive: true });
+  git("mv", "src/a.rs", "src/moved/a.rs");
+  const lines = readFileSync(join(dir, "src/moved/a.rs"), "utf8").split("\n");
+  lines[19] = "fn f20() -> u32 { 200 }";
+  writeFileSync(join(dir, "src/moved/a.rs"), ["// moved", ...lines].join("\n"));
+  const [change, ...rest] = hunksOf(git(...changesDiff, "HEAD"));
+  expect(rest).toEqual([]);
+  expect(change).toMatchObject({ file: "src/a.rs", now: "src/moved/a.rs" });
+  expect(change!.similarity).toBeGreaterThanOrEqual(placedSimilarity);
+  // Lines 11 and 12 now were 10 and 11; line 21 now, the edited 20, isn't placed.
+  expect(mapLines(change!, 11, 12)).toEqual([10, 11]);
+  expect(mapLines(change!, 21, 21)).toStartWith("changed at its lines");
+  expect(mapLines(change!, 25, 26)).toEqual([24, 25]);
+  // Never a guess: too unlike, new, or a deletion inside the site.
+  expect(mapLines({ file: "a.rs", now: "b.rs", similarity: 60, hunks: [] }, 1, 2)).toStartWith("moved from a.rs, 60% alike");
+  expect(mapLines({ file: "a.rs", hunks: "new" }, 1, 2)).toBe("is new since the map's commit");
+  const deleted: Change = { file: "a.rs", hunks: [[5, 2, [], ["x", "y"], 4, 0]] };
+  expect(mapLines(deleted, 3, 6)).toStartWith("changed at its lines");
+  expect([mapLines(deleted, 1, 3), mapLines(deleted, 7, 8)]).toEqual([[1, 3], [9, 10]]);
+  // An identical move: the same lines.
+  expect(mapLines({ file: "a.rs", now: "b.rs", similarity: 100, hunks: [] }, 7, 9)).toEqual([7, 9]);
+  // Selection: a pure move selects what no change does; an edited one, what
+  // its edit would where it was.
+  expect(pick(map, [{ file: "src/a.rs", now: "src/z.rs", similarity: 100, hunks: [] }], files, cases)).toEqual(pick(map, [], files, cases));
+  const edit: Change["hunks"] = [[15, 0, ["    let x = 1;"], [], 15, 1]];
+  expect(pick(map, [{ file: "src/a.rs", now: "src/z.rs", similarity: 97, hunks: edit }], files, cases)).toEqual(pick(map, [{ file: "src/a.rs", hunks: edit }], files, cases));
 });
 
 test("a test that reads the compiler's sources is found, through what it imports", () => {
@@ -571,7 +614,7 @@ test("a comment, a new item nothing refers to, and a signature's visibility sele
   expect(one([29, 1, ["fn second(x: u64) -> u32 {"], ["fn second(x: u32) -> u32 {"]]).kind).toBe("all");
   // A diff's removed lines, which a hunk now keeps.
   expect(hunksOf("diff --git a/src/a.rs b/src/a.rs\n--- a/src/a.rs\n+++ b/src/a.rs\n@@ -29 +29 @@\n-fn second() {\n+pub fn second() {\n")).toEqual([
-    { file: "src/a.rs", hunks: [[29, 1, ["pub fn second() {"], ["fn second() {"]]] },
+    { file: "src/a.rs", hunks: [[29, 1, ["pub fn second() {"], ["fn second() {"], 29, 1]] },
   ]);
 });
 

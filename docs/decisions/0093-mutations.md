@@ -1393,3 +1393,35 @@ machine a shard gets. Held by `test/shards.test.ts`, "each shard's times
 are merged at the plan's speed, its machine's taken out"; mutations
 `shard-speed-kept-in-times`, `shard-speed-of-a-few` and
 `shard-times-one-folder`.
+
+## Amendment: a site is placed where its own lines didn't change, under the path its file had (2026-11-23, #2337, the lead's decision)
+
+The snapshot judge called a site unplaceable wherever its file had changed
+since the map's commit, and git's diff, `--no-renames`, called every moved
+file changed. So each of #2299's cut's tidy mutations was a survivor until
+the map was recorded again: nine on the cut's branch, and on `main`'s check,
+which raced the push's own map. Most of the cut's files moved 95 to 100%
+alike, with an import's path or a visibility edited.
+
+The judge, and the selection that reads the same diff, now ask the map in
+its own terms:
+
+- **A move is a rename.** The diff is `-M` (`changesDiff`, the one command
+  of both), and a renamed file's change is the map's path with the edit's
+  hunks in its lines there. A pure move selects nothing, and an edited one
+  selects what its edit would have selected where it was.
+- **A site is placed where its own lines didn't change.** `mapLines` moves
+  each line by the hunks before it, to its line at the map's commit, and the
+  map is asked there. That holds for a file edited in place too.
+- **Never a guess.** A site is `all`, with its reason, in each of these
+  cases:
+  - a hunk touches its lines, a deletion inside them included;
+  - its file is new;
+  - its file moved with git's similarity below `placedSimilarity`, 90%.
+
+This is the premise the judge already holds across files, not a new one.
+An edit elsewhere can change which cases reach a site, and an edit in
+another file was always accepted as leaving the map's answer standing. An
+edit to the same file's other lines is the same kind of change. The
+backstop is the same too: CI's runs of every mutation, the nightly's whole
+map, and its drift check.

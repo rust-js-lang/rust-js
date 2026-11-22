@@ -3,6 +3,46 @@
 import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
+    name: "moved-file-diffed-without-renames",
+    breaks: "the map's diffs read a moved file as a delete and a new file, so a move selects everything and its sites can't be placed (#2337)",
+    file: "scripts/testMap.ts",
+    find: "export const changesDiff = [\"diff\", \"-U0\", \"--no-color\", \"--no-ext-diff\", \"-M\"];",
+    replace: "export const changesDiff = [\"diff\", \"-U0\", \"--no-color\", \"--no-ext-diff\", \"--no-renames\"];",
+    tests: ["test/test-map.test.ts", "-t", "a moved file is the map's at its path there"],
+  },
+  {
+    name: "moved-file-path-now-unread",
+    breaks: "a rename's path now is never read, so the judge finds no change of a moved file's site and asks the map of a path it hasn't (#2337)",
+    file: "scripts/testMap.ts",
+    find: "    if (!inHunks && line.startsWith(\"rename to \")) current.now = line.slice(\"rename to \".length);\n",
+    replace: "",
+    tests: ["test/test-map.test.ts", "-t", "a moved file is the map's at its path there"],
+  },
+  {
+    name: "moved-line-placed-a-line-off",
+    breaks: "a site's line is placed one past where it was, past each hunk before it (#2337)",
+    file: "scripts/testMap.ts",
+    find: "    if (end < first) delta += count - nowCount;",
+    replace: "    if (end < first) delta += count - nowCount + 1;",
+    tests: ["test/test-map.test.ts", "-t", "a moved file is the map's at its path there"],
+  },
+  {
+    name: "edited-site-placed-anyway",
+    breaks: "a site whose own lines changed since the map is placed at lines that were other code (#2337)",
+    file: "scripts/testMap.ts",
+    find: "    if (touches) return `changed at its lines since the map's commit, ${now}–${end}`;",
+    replace: "    if (false) return `changed at its lines since the map's commit, ${now}–${end}`;",
+    tests: ["test/test-map.test.ts", "-t", "a moved file is the map's at its path there"],
+  },
+  {
+    name: "unlike-move-placed-anyway",
+    breaks: "a file that moved far from what it was has its lines placed by a guess (#2337)",
+    file: "scripts/testMap.ts",
+    find: "  if (change.now !== undefined && (change.similarity ?? 0) < placedSimilarity)",
+    replace: "  if (change.now !== undefined && (change.similarity ?? 0) < 0)",
+    tests: ["test/test-map.test.ts", "-t", "a moved file is the map's at its path there"],
+  },
+  {
     name: "test-map-merge-reads-one-part",
     breaks: "the merge of a recording's parts reads only the first, the other machines' tests lost",
     file: "scripts/testMap.ts",
