@@ -762,11 +762,27 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         )
     }
 
+    /// What `id`, a library's function, asks of its slots, as its manifest
+    /// says; of a library's trait impl, what its dictionary asks of the
+    /// impl's own type parameters, each of its methods' too, which the
+    /// dictionary calls given them: `I: TrustedLen` of a `Combinations<I>`'s
+    /// `next` growing its pool by `extend(it.by_ref().take(n))` (#2327).
     pub(super) fn type_facts(&self, id: DefId) -> Vec<(u32, super::recognition::TypeFact)> {
-        (self.item(id).into_iter().flat_map(|item| &item.calling.params))
-            .flat_map(|param| param.facts.iter().map(move |word| (param.index, word)))
-            .filter_map(|(index, word)| super::recognition::TypeFact::of_key(word).map(|fact| (index, fact)))
-            .collect()
+        let of = |id: DefId| {
+            (self.item(id).into_iter().flat_map(|item| &item.calling.params))
+                .flat_map(|param| param.facts.iter().map(move |word| (param.index, word)))
+                .filter_map(|(index, word)| super::recognition::TypeFact::of_key(word).map(|fact| (index, fact)))
+        };
+        let mut facts: Vec<_> = of(id).collect();
+        if matches!(self.tcx.def_kind(id), rustc_hir::def::DefKind::Impl { of_trait: true }) {
+            let count = self.tcx.generics_of(id).count() as u32;
+            for &item in self.tcx.associated_item_def_ids(id) {
+                facts.extend(of(item).filter(|&(index, _)| index < count));
+            }
+            facts.sort();
+            facts.dedup();
+        }
+        facts
     }
 
     /// What `module` imports library item `id` as, from where: by its

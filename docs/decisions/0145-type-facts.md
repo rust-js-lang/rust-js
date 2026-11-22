@@ -873,3 +873,57 @@ lists it as it lists every other fact. A type built of a slot is asked as
 the other trait facts are, where rustc can't say it there (`built_of`).
 Not the `Clone` dictionary, which every impl would carry for one
 specialization, and not a refusal: ADR 0324's amendment says the rest.
+
+## Amendment: what a JS iterator made of a held iterator steps asks (2026-11-23, #2327)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; this lifts a
+refusal and changes no answer.
+
+A call that makes a JS iterator of an iterator its caller holds, the
+crate's or a library's, holding the caller's type parameters, steps that
+iterator's impl: `total(pool)` of a `Pool<I>` given where a generic
+iterator goes, `pool.by_ref().fold(..)` of a `&mut` to one (ADR 0061).
+`stepped_params` followed those steps for the dictionaries the caller
+gives (`followed_held`, #1420), but the type facts' analysis followed only
+explicit calls and the dictionaries a call's bounds make, so what the
+impl asks of its parameters reached no caller: `Pool::next`'s
+`extend(self.it.by_ref().take(1))` asks whether `I` is `TrustedLen`, and
+lowering refused `pooled`, "`whether it's a `TrustedLen`` of a type
+parameter". itertools' `Combinations` and `Powerset::fold` are this shape.
+
+**Which held iterators' `next` a call's JS iterators step is one answer,
+`iterator_steps::held_iterators_stepped`**: `self` of an iterator's method,
+through a reference or a `Box` (`iterator_held`), and each type argument of
+a call of a function compiled here. `stepped_params` follows each for what
+it steps; **the type facts' analysis asks, for each, what that iterator's
+`Iterator` impl asks, as a dictionary of it would** (`of_held_iterators`,
+the same `of_evidence` a bound's dictionary asks through): of an impl the
+crate lowers, a call edge the fixpoint relays, as each method's asks are
+the impl's; of a library's, its manifest's. Not of std's iterators, which
+are the JS iterators they're made, stepped with no facts of what they
+hold, as `followed_held` follows none of their steps (ADR 0561). Bodies
+read from their MIR alone ask it too: a library's function its consumer
+compiles itself (ADR 0914), given a `Pool<I>`.
+
+**A library's trait impl asks what its methods ask of the impl's own type
+parameters** (`Foreign::type_facts` of an impl): a library's manifest
+lists each method's facts and none of an impl of a std trait, so a
+consumer giving the library's `Combinations<I>` where a generic iterator
+goes, or as an impl's `IntoIter` (`of_impl_entries`), asked nothing, and
+was refused the same way.
+
+The relay of what naming a callee asks, `Asking::of_call`, moved first to
+`analysis/type_facts/calls.rs` at type_facts.rs's cap (#1334).
+
+Tests: corpus case `iterator_held_by_generic_code_asking_trusted_len.rs`
+(both builds); crates pairs `library_iterator_growing_by_its_parameters_take`
+(itertools' shape: the library's own compile and a consumer holding its
+`Combinations<I>`) and `library_function_compiled_here_given_a_held_iterator`.
+No other snapshot moved. Mutations, each caught:
+`held-iterator-of-a-method-unlisted` and `held-iterator-given-unlisted`
+(`analysis/iterator_steps.ts`), `held-iterator-facts-unasked`
+(`analysis/type_facts/calls.ts`), `held-iterator-facts-of-mir-bodies-unasked`
+(`analysis/type_facts.ts`) and `library-impl-methods-facts-unread`
+(`library.ts`); the seven of `stepped_params` whose code moved into
+`steps_by` and `held_iterators_stepped` were re-pointed and are still
+caught.

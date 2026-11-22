@@ -7,6 +7,98 @@
 use super::*;
 
 impl<'tcx> Asking<'tcx> {
+    /// What `caller` asks by giving the dictionary of `impl_id` with
+    /// `impl_args`, for a callee's bound or as the steps of a JS iterator
+    /// it makes of an iterator it holds: what that impl asks of its type
+    /// parameters, of a caller's given it, the caller asks.
+    fn of_evidence(
+        &mut self,
+        tcx: TyCtxt<'tcx>,
+        foreign: &crate::library::Foreign<'_, 'tcx>,
+        typing_env: ty::TypingEnv<'tcx>,
+        caller: DefId,
+        (impl_id, impl_args): (DefId, ty::GenericArgsRef<'tcx>),
+    ) {
+        // An impl the crate lowers asks of a caller's parameter given
+        // it through the call edge below, as of a type built of them.
+        for (index, arg) in impl_args.iter().enumerate() {
+            if let Some(ty) = arg.as_type()
+                && let ty::Param(param) = ty.kind()
+                && !crate::traits::is_lowered_impl(foreign, impl_id)
+            {
+                for (at, fact) in foreign.type_facts(impl_id) {
+                    if at as usize == index {
+                        self.asked.insert((caller, param.index, fact));
+                    }
+                }
+            }
+        }
+        // Of one given a type of the caller's slots that isn't one of its
+        // type parameters, `impl<T: Iterator> Itertools for T` of an
+        // `<I as IntoIterator>::IntoIter`: what the impl asks of that,
+        // as of a call's (#794).
+        let names_slots = |at: usize| (impl_args.get(at).and_then(|arg| arg.as_type())).filter(|ty| ty.has_param());
+        let of_slots = |at: usize| names_slots(at).is_some_and(|ty| !matches!(ty.kind(), ty::Param(_)));
+        // And of a library's, its slots past its type parameters, a std
+        // associated type of one, `<T as Iterator>::Item` of
+        // `impl<T: Iterator> Itertools for T`, given `<I as
+        // Iterator>::Item` of the caller's `I`: its caller's, as a call's
+        // is (#1401).
+        let relayed = |at: usize| of_slots(at) || at >= impl_args.len();
+        // Of one given the caller's own type parameters too, the layouts
+        // of the types built of them its dictionary asks, `X2<W, u8>`'s
+        // of an `impl<W, G> AndNot for X2<W, G>` whose `Output` is
+        // `Self`, given `W` (#1430).
+        let given_params = (0..impl_args.len()).any(|at| names_slots(at).is_some());
+        match crate::traits::is_lowered_impl(foreign, impl_id) {
+            true if given_params => self.calls.push((caller, impl_id, impl_args)),
+            true => {}
+            false => {
+                for (at, fact) in foreign.type_facts(impl_id) {
+                    if !relayed(at as usize) {
+                        continue;
+                    }
+                    let slot = crate::traits::drop_slot(tcx, (foreign, &Default::default()), impl_id, at);
+                    for each in asked_of_caller(tcx, foreign, typing_env, (caller, impl_args), (slot, fact)) {
+                        self.ask(caller, each);
+                    }
+                }
+            }
+        }
+    }
+
+    /// What `caller` asks by calling `callee` with `args` where the call
+    /// makes a JS iterator of an iterator it holds, the crate's or a
+    /// library's, holding the caller's parameters, `Pool<I>` given where a
+    /// generic iterator goes: what that iterator's `Iterator` impl asks,
+    /// its `next`'s `I: TrustedLen` of an `extend(it.by_ref().take(1))`, as
+    /// a dictionary of it would (`held_iterators_stepped`, #2327).
+    pub(super) fn of_held_iterators(
+        &mut self,
+        (tcx, foreign, fns): (
+            TyCtxt<'tcx>,
+            &crate::library::Foreign<'_, 'tcx>,
+            &IndexMap<DefId, FnInfo>,
+        ),
+        typing_env: ty::TypingEnv<'tcx>,
+        caller: DefId,
+        call: (DefId, ty::GenericArgsRef<'tcx>),
+    ) {
+        let iterator = std_item(tcx, StdItem::Iterator);
+        for (held, _) in held_iterators_stepped(tcx, typing_env, fns, call) {
+            // Not std's, which is the JS iterator it's made, stepped with
+            // no facts of what it holds, as its steps are followed none
+            // (`followed_held`, ADR 0561).
+            if matches!(held.kind(), ty::Adt(adt, _) if crate::recognition::is_std_crate(tcx, adt.did())) {
+                continue;
+            }
+            let bound = ty::TraitRef::new(tcx, iterator, [held]);
+            if let Some(evidence) = evidence_impl(tcx, typing_env, bound) {
+                self.of_evidence(tcx, foreign, typing_env, caller, evidence);
+            }
+        }
+    }
+
     /// What `caller` asks by naming `callee` with `args`: a std function's
     /// facts, what the impls it gives dictionaries of ask, a library's as its
     /// manifest says, and a crate function's, followed once all are read.
@@ -114,52 +206,7 @@ impl<'tcx> Asking<'tcx> {
                 }
                 continue;
             };
-            // An impl the crate lowers asks of a caller's parameter given
-            // it through the call edge below, as of a type built of them.
-            for (index, arg) in impl_args.iter().enumerate() {
-                if let Some(ty) = arg.as_type()
-                    && let ty::Param(param) = ty.kind()
-                    && !crate::traits::is_lowered_impl(foreign, impl_id)
-                {
-                    for (at, fact) in foreign.type_facts(impl_id) {
-                        if at as usize == index {
-                            self.asked.insert((caller, param.index, fact));
-                        }
-                    }
-                }
-            }
-            // Of one given a type of the caller's slots that isn't one of its
-            // type parameters, `impl<T: Iterator> Itertools for T` of an
-            // `<I as IntoIterator>::IntoIter`: what the impl asks of that,
-            // as of a call's (#794).
-            let names_slots = |at: usize| (impl_args.get(at).and_then(|arg| arg.as_type())).filter(|ty| ty.has_param());
-            let of_slots = |at: usize| names_slots(at).is_some_and(|ty| !matches!(ty.kind(), ty::Param(_)));
-            // And of a library's, its slots past its type parameters, a std
-            // associated type of one, `<T as Iterator>::Item` of
-            // `impl<T: Iterator> Itertools for T`, given `<I as
-            // Iterator>::Item` of the caller's `I`: its caller's, as a call's
-            // is (#1401).
-            let relayed = |at: usize| of_slots(at) || at >= impl_args.len();
-            // Of one given the caller's own type parameters too, the layouts
-            // of the types built of them its dictionary asks, `X2<W, u8>`'s
-            // of an `impl<W, G> AndNot for X2<W, G>` whose `Output` is
-            // `Self`, given `W` (#1430).
-            let given_params = (0..impl_args.len()).any(|at| names_slots(at).is_some());
-            match crate::traits::is_lowered_impl(foreign, impl_id) {
-                true if given_params => self.calls.push((caller, impl_id, impl_args)),
-                true => {}
-                false => {
-                    for (at, fact) in foreign.type_facts(impl_id) {
-                        if !relayed(at as usize) {
-                            continue;
-                        }
-                        let slot = crate::traits::drop_slot(tcx, (foreign, &Default::default()), impl_id, at);
-                        for each in asked_of_caller(tcx, foreign, typing_env, (caller, impl_args), (slot, fact)) {
-                            self.ask(caller, each);
-                        }
-                    }
-                }
-            }
+            self.of_evidence(tcx, foreign, typing_env, caller, (impl_id, impl_args));
         }
         // A library's function, which asks what its manifest says: of a
         // caller's type parameter given it, or a std associated type of one,

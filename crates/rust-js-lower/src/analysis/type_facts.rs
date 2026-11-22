@@ -3,7 +3,7 @@
 //! of a map keyed by one (ADR 0466), and what std's unstable sort of them
 //! picks (ADR 0471), which a caller's type answers.
 
-use super::iterator_steps::{body_aggregates, body_fn_defs};
+use super::iterator_steps::{body_aggregates, body_fn_defs, held_iterators_stepped};
 use crate::recognition::{
     StdItem, TypeFact, bound_by_any, cached_key_pairs, debug_named, fact_specialization, is_unknown_where,
     map_of_param, phantom_named, pointer_target, points_at_dyn_any, points_at_dyn_debug, stable_sort_items, std_item,
@@ -75,6 +75,9 @@ pub(super) fn type_fact_params<'tcx>(
         // whether its sides are `TrustedLen` (ADR 0975).
         if body.thir.exprs.is_empty() {
             let mut named = body_fn_defs(body);
+            for &call in &named {
+                asking.of_held_iterators((tcx, foreign, fns), typing_env, caller, call);
+            }
             for held in body_aggregates(tcx, body) {
                 for &step in &steps {
                     // `Self` the struct, a step's own parameters, `fold`'s
@@ -247,6 +250,9 @@ pub(super) fn type_fact_params<'tcx>(
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
+            // What the JS iterators it makes of what it holds step asks
+            // (`of_held_iterators`).
+            asking.of_held_iterators((tcx, foreign, fns), typing_env, caller, (callee, args));
             // A compiled std struct given to a call as it's held, made
             // elsewhere, `a.by_ref()` of a `Fuse<T>` field: what lowering
             // steps it by where it's made knowing its back and its length

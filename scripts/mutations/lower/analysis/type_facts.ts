@@ -424,4 +424,13 @@ export const mutations: Mutation[] = [
     replace: "        .map(|((id, ty), asked)| (tcx.def_path_hash(id), id, std::hint::black_box((ty, format!(\"{ty:?}\"))).0, asked))\n",
     tests: ["test/phase-times.test.ts", "-t", "a lowering forces no walk of every crate"],
   },
+  {
+    name: "held-iterator-facts-of-mir-bodies-unasked",
+    breaks:
+      "a library's function its consumer compiles from its MIR, `last_of_pool`, given a `Pool<I>` it holds and giving it where a generic iterator goes, asks nothing of `I`, which `Pool`'s `next` asks is `TrustedLen`: refused (#2327)",
+    file: "crates/rust-js-lower/src/analysis/type_facts.rs",
+    find: "            for &call in &named {\n                asking.of_held_iterators((tcx, foreign, fns), typing_env, caller, call);\n",
+    replace: "            for &call in named.iter().filter(|_| false) {\n                asking.of_held_iterators((tcx, foreign, fns), typing_env, caller, call);\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_function_compiled_here_given_a_held_iterator$"],
+  },
 ];

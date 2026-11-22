@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a caller giving an impl's dictionary for a type of its slots that isn't one of its type parameters, `impl<T: Iterator> Itertools for T` of `<I as IntoIterator>::IntoIter`, asks none of what the impl asks, and is refused, as itertools' `free::sorted` and semver's were (#794)",
     file: "crates/rust-js-lower/src/analysis/type_facts/calls.rs",
-    find: "                true if given_params => self.calls.push((caller, impl_id, impl_args)),\n",
-    replace: "                true if given_params => {}\n",
+    find: "            true if given_params => self.calls.push((caller, impl_id, impl_args)),\n",
+    replace: "            true if given_params => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
   },
   {
@@ -146,16 +146,16 @@ export const mutations: Mutation[] = [
     name: "library-impl-associated-slot-unrelayed",
     breaks: "a library impl's fact of a std associated type of its parameter, `<T as Iterator>::Item` of `impl<T: Iterator> Tools for T`, isn't asked of a generic caller giving `<I as Iterator>::Item`, so its dictionary is refused, \"`size_of` of an associated type whose facts its caller's dictionary doesn't carry\" (#1401)",
     file: "crates/rust-js-lower/src/analysis/type_facts/calls.rs",
-    find: "            let relayed = |at: usize| of_slots(at) || at >= impl_args.len();\n",
-    replace: "            let relayed = |at: usize| of_slots(at);\n",
+    find: "        let relayed = |at: usize| of_slots(at) || at >= impl_args.len();\n",
+    replace: "        let relayed = |at: usize| of_slots(at);\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_default_given_an_associated_types_size$"],
   },
   {
     name: "dictionary-of-callers-params-relays-no-layout",
     breaks: "generic code that makes an impl's dictionary of its own type parameters, `X2<W, u8>`, relays none of the layouts of the types the impl builds of them, and is refused (#1430)",
     file: "crates/rust-js-lower/src/analysis/type_facts/calls.rs",
-    find: "                true if given_params => self.calls.push((caller, impl_id, impl_args)),\n",
-    replace: "                true if given_params && impl_args.iter().any(|arg| arg.as_type().is_some_and(|ty| !matches!(ty.kind(), ty::Param(_)) && ty.has_param())) => self.calls.push((caller, impl_id, impl_args)),\n",
+    find: "            true if given_params => self.calls.push((caller, impl_id, impl_args)),\n",
+    replace: "            true if given_params && impl_args.iter().any(|arg| arg.as_type().is_some_and(|ty| !matches!(ty.kind(), ty::Param(_)) && ty.has_param())) => self.calls.push((caller, impl_id, impl_args)),\n",
     tests: ["test/corpus.test.ts", "-t", "^supertrait_dictionary_asks_its_makers.rs$"],
   },
   {
@@ -181,5 +181,14 @@ export const mutations: Mutation[] = [
     find: "                && let Some(each @ Asked::Built(..)) = asked_of(tcx, foreign, typing_env, caller, (of, fact))\n",
     replace: "                && let Some(each @ Asked::Built(..)) = None::<Asked<'tcx>>\n",
     tests: ["test/corpus.test.ts", "-t", "^size_of_a_type_built_of_an_impls_parameters\\.rs$"],
+  },
+  {
+    name: "held-iterator-facts-unasked",
+    breaks:
+      "a call making a JS iterator of the crate's iterator holding the caller's `I`, `total(pool)` of a `Pool<I>`, relays nothing its impl asks, its `next`'s `I: TrustedLen` of an `extend(it.by_ref().take(1))`: refused (#2327)",
+    file: "crates/rust-js-lower/src/analysis/type_facts/calls.rs",
+    find: "            if let Some(evidence) = evidence_impl(tcx, typing_env, bound) {\n",
+    replace: "            if let Some(evidence) = evidence_impl(tcx, typing_env, bound).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_held_by_generic_code_asking_trusted_len.rs$"],
   },
 ];

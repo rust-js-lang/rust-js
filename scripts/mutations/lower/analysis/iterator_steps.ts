@@ -43,9 +43,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`skip_one`, which steps a `Doubled<I>` by its impl's `next`, is given no dictionary for `I`",
     file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
-    find: "                    follow_held(&mut stepped, &mut passed, self_ty, instance);\n                }\n                continue;\n",
+    find: "                    follow_held(&mut stepped, &mut passed, held, instance);\n                }\n                continue;\n",
     replace:
-      "                    if !fns.contains_key(&instance.def_id()) {\n                        follow_held(&mut stepped, &mut passed, self_ty, instance);\n                    }\n                }\n                continue;\n",
+      "                    if !fns.contains_key(&instance.def_id()) {\n                        follow_held(&mut stepped, &mut passed, held, instance);\n                    }\n                }\n                continue;\n",
     tests: adapters,
   },
   {
@@ -82,8 +82,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev()` of an `I` given as it is, whose `Self: DoubleEndedIterator` it asks, is given no `DoubleEndedIterator` dictionary",
     file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
-    find: "                        .filter(|p| p.self_ty().skip_binder() == self_param && is_iterator_extension(tcx, p.def_id()))\n",
-    replace: "                        .filter(|_| false)\n",
+    find: "                .filter(|p| p.self_ty().skip_binder() == self_param && is_iterator_extension(tcx, p.def_id()))\n",
+    replace: "                .filter(|_| false)\n",
     tests: extensions,
   },
   {
@@ -91,9 +91,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`next_back(&mut it)` of an `I` given as it is is given no `DoubleEndedIterator` dictionary",
     file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
-    find: "                Some(tr) if is_iterator_extension(tcx, tr) => match is_extension_entry(tcx, callee) {\n",
+    find: "        Some(tr) if is_iterator_extension(tcx, tr) => match is_extension_entry(tcx, callee) {\n",
     replace:
-      "                Some(tr) if false => match is_extension_entry(tcx, callee) {\n",
+      "        Some(tr) if false => match is_extension_entry(tcx, callee) {\n",
     tests: extensions,
   },
   {
@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`back(ends)`, which only steps its `I` from its back, is given its `Iterator` dictionary too",
     file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
-    find: "                    true => vec![tr],\n",
-    replace: "                    true => vec![tr, iterator],\n",
+    find: "            true => vec![tr],\n",
+    replace: "            true => vec![tr, iterator],\n",
     tests: ["test/corpus.test.ts", "-t", "^next_back_generic.rs$"],
     snapshots: true,
   },
@@ -120,8 +120,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`nth_back` of an `I` given as it is, run on a JS iterator made of it, is given no `Iterator` dictionary",
     file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
-    find: "                    false => vec![tr, iterator],\n",
-    replace: "                    false => vec![tr],\n",
+    find: "            false => vec![tr, iterator],\n",
+    replace: "            false => vec![tr],\n",
     tests: ["test/corpus.test.ts", "-t", "^extension_bound_iterators.rs$"],
   },
   {
@@ -364,9 +364,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a consumer's generic code stepping a library's iterator that holds its `I`, itertools' `Powerset` its `Combinations`, or the crate's own `Pairs<I>` one, isn't stepped by what the library's manifest says that iterator's `next` steps: refused, \"stepping `I`\" (#1420)",
     file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
-    find: "                    follow_held(&mut stepped, &mut passed, self_ty, instance);\n                }\n                continue;\n",
+    find: "                    follow_held(&mut stepped, &mut passed, held, instance);\n                }\n                continue;\n",
     replace:
-      "                    if fns.contains_key(&instance.def_id()) {\n                        follow_held(&mut stepped, &mut passed, self_ty, instance);\n                    }\n                }\n                continue;\n",
+      "                    if fns.contains_key(&instance.def_id()) {\n                        follow_held(&mut stepped, &mut passed, held, instance);\n                    }\n                }\n                continue;\n",
     tests: ["test/crates.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
   },
   {
@@ -374,9 +374,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's iterator holding a consumer's `I`, `Combinations<I>`, given where a generic iterator goes, `total(combs)`, is made a JS iterator its `next` steps, but `I` isn't stepped as the library's manifest says: refused, \"stepping `I`\" (#1420)",
     file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
-    find: "                    follow_held(&mut stepped, &mut passed, given, instance);\n",
+    find: "                follow_held(&mut stepped, &mut passed, held, instance);\n            }\n",
     replace:
-      "                    if fns.contains_key(&instance.def_id()) {\n                        follow_held(&mut stepped, &mut passed, given, instance);\n                    }\n",
+      "                if fns.contains_key(&instance.def_id()) {\n                    follow_held(&mut stepped, &mut passed, held, instance);\n                }\n            }\n",
     tests: ["test/crates.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
   },
   {
@@ -432,5 +432,23 @@ export const mutations: Mutation[] = [
     find: "                ) if def_id.is_local() => tcx.type_of(def_id).instantiate(tcx, args).skip_normalization(),\n",
     replace: "                ) if false => tcx.type_of(def_id).instantiate(tcx, args).skip_normalization(),\n",
     tests: ["test/corpus.test.ts", "-t", "^trait_method_impl_iterator_stepped_by_generic_code.rs$"],
+  },
+  {
+    name: "held-iterator-of-a-method-unlisted",
+    breaks:
+      "generic code's `pool.by_ref().fold(..)` of the crate's `Pool<I>`, made a JS iterator its `next` steps, which asks whether `I` is `TrustedLen`, asks its callers nothing of `I`: refused, \"`whether it's a `TrustedLen`` of a type parameter\" (#2327)",
+    file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
+    find: "        Some(self_ty) if !steps_by(tcx, callee).is_empty() => vec![crate::recognition::iterator_held(self_ty)],\n",
+    replace: "        Some(_) if !steps_by(tcx, callee).is_empty() => Vec::new(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_held_by_generic_code_asking_trusted_len.rs$"],
+  },
+  {
+    name: "held-iterator-given-unlisted",
+    breaks:
+      "generic code giving the crate's `Pool<I>` where a generic iterator goes, `total(pool)`, made a JS iterator its `next` steps, which asks whether `I` is `TrustedLen`, asks its callers nothing of `I`: refused (#2327)",
+    file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
+    find: "            Ok(Some(instance)) if fns.contains_key(&instance.def_id()) => instance.args.types().collect(),\n",
+    replace: "            Ok(Some(_)) => Vec::new(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_held_by_generic_code_asking_trusted_len.rs$"],
   },
 ];

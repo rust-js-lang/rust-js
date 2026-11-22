@@ -206,6 +206,7 @@ pub(crate) fn stepped_params<'tcx>(
             }
         }
         for (callee, args) in body_fn_defs(body) {
+            let held_stepped = held_iterators_stepped(tcx, typing_env, fns, (callee, args));
             // `C::from_iter(items)`, which `items.collect()` is (ADR 0160):
             // `items` stepped as `into_iter()` makes an iterator of them and
             // `collect` steps it, the crate's own by its `next` (#838).
@@ -288,32 +289,8 @@ pub(crate) fn stepped_params<'tcx>(
                 });
                 stepped.extend(iterables.map(|(param, _)| (caller, param.index, iterator)));
             }
-            // What it steps by: `Iterator`, of its own methods and
-            // `IntoIterator`'s, with the extensions one asks of its `Self`,
-            // `rev()`'s `DoubleEndedIterator`; or an extension, of
-            // `next_back` or `len`.
-            let by: Vec<DefId> = match tcx.trait_of_assoc(callee) {
-                Some(tr) if is_std_def(tcx, tr, StdItem::Iterator) || is_std_def(tcx, tr, StdItem::IntoIterator) => {
-                    let self_param = ty::Ty::new_param(tcx, 0, rustc_span::symbol::kw::SelfUpper);
-                    let asked = (tcx.clauses_of(callee).instantiate_identity(tcx).into_iter())
-                        .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
-                        .filter(|p| p.self_ty().skip_binder() == self_param && is_iterator_extension(tcx, p.def_id()))
-                        .map(|p| p.def_id());
-                    std::iter::once(iterator).chain(asked).collect()
-                }
-                // One's own entry, by its dictionary alone; another of its
-                // methods, run on a JS iterator made of it, by `Iterator` too
-                // (ADR 0488).
-                Some(tr) if is_iterator_extension(tcx, tr) => match is_extension_entry(tcx, callee) {
-                    true => vec![tr],
-                    false => vec![tr, iterator],
-                },
-                // Another std trait's method that asks its `Self` be an
-                // iterator, `TrustedRandomAccessNoCoerce::size`'s `where Self:
-                // Iterator`, compiled as a function over it (ADR 0975).
-                Some(tr) if is_std_crate(tcx, tr) && asks_self_iterator(tcx, callee, iterator) => vec![iterator],
-                _ => Vec::new(),
-            };
+            // What it steps by, as an iterator's method (`steps_by`).
+            let by = steps_by(tcx, callee);
             if !by.is_empty()
                 && let Some(self_ty) = args.types().next()
             {
@@ -403,10 +380,8 @@ pub(crate) fn stepped_params<'tcx>(
                 // is a JS iterator, stepped with no dictionary of it; what its
                 // compiled impl of an extension takes, `next_back`'s of `I:
                 // DoubleEndedIterator`, its manifest says.
-                if let Ok(Some(instance)) =
-                    crate::items::resolve_instance_in(tcx, typing_env, next, tcx.mk_args(&[self_ty.into()]))
-                {
-                    follow_held(&mut stepped, &mut passed, self_ty, instance);
+                for &(held, instance) in &held_stepped {
+                    follow_held(&mut stepped, &mut passed, held, instance);
                 }
                 continue;
             }
@@ -468,12 +443,8 @@ pub(crate) fn stepped_params<'tcx>(
             // The crate's iterator holding it, or a library's, given where a
             // generic iterator goes: a JS iterator, stepped by its impl's
             // `next` (ADR 0061), as `followed` says.
-            for given in resolved.args.types().filter(|t| !matches!(t.kind(), ty::Param(_))) {
-                if let Ok(Some(instance)) =
-                    crate::items::resolve_instance_in(tcx, typing_env, next, tcx.mk_args(&[given.into()]))
-                {
-                    follow_held(&mut stepped, &mut passed, given, instance);
-                }
+            for &(held, instance) in &held_stepped {
+                follow_held(&mut stepped, &mut passed, held, instance);
             }
         }
     }
@@ -716,6 +687,82 @@ fn followed_held<'tcx>(
     match followed(tcx, fns, foreign, instance.def_id(), instance.args)? {
         Followed::Library(_) if of_std => None,
         found => Some(found),
+    }
+}
+
+/// The iterators a call of `callee` with `args` holds that aren't a type
+/// parameter of its caller's, each with its `next`, which the JS iterator
+/// the call makes of it steps (ADR 0061): `self` of an iterator's method,
+/// through a reference or a `Box` (`iterator_held`), the crate's
+/// `Combinations<I>` of `it.by_ref().fold(..)`; and each type argument of a
+/// call of a function compiled here, a `Pool<I>` given where a generic
+/// iterator goes. The one answer of whose `next` a call steps, which
+/// `stepped_params` follows for what it steps of the caller's parameters
+/// (#1420) and the type-facts analysis for what it asks of them (#2327).
+/// Not of a std trait's method whose impl a fact picks, followed as that
+/// impl's methods are, `FuseImpl::next`'s (ADR 0561).
+pub(super) fn held_iterators_stepped<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    fns: &IndexMap<DefId, FnInfo>,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Vec<(ty::Ty<'tcx>, ty::Instance<'tcx>)> {
+    // `C::from_iter(items)`, which steps `items` as `into_iter()` makes an
+    // iterator of them (ADR 0160).
+    let (callee, args) = match crate::recognition::from_iter_given(tcx, callee, args) {
+        Some(given) => (
+            trait_method(tcx, std_item(tcx, StdItem::IntoIterator), "into_iter"),
+            tcx.mk_args(&[given.into()]),
+        ),
+        None => (callee, args),
+    };
+    if crate::recognition::fact_specialization(tcx, typing_env, callee, args).is_some() {
+        return Vec::new();
+    }
+    // Of each, a type parameter's resolves to no `next`, and is left out.
+    let held: Vec<ty::Ty<'tcx>> = match args.types().next() {
+        Some(self_ty) if !steps_by(tcx, callee).is_empty() => vec![crate::recognition::iterator_held(self_ty)],
+        _ => match crate::items::resolve_instance_in(tcx, typing_env, callee, args) {
+            Ok(Some(instance)) if fns.contains_key(&instance.def_id()) => instance.args.types().collect(),
+            _ => Vec::new(),
+        },
+    };
+    let next = trait_method(tcx, std_item(tcx, StdItem::Iterator), "next");
+    (held.into_iter())
+        .filter_map(|held| {
+            let instance = crate::items::resolve_instance_in(tcx, typing_env, next, tcx.mk_args(&[held.into()]));
+            Some((held, instance.ok()??))
+        })
+        .collect()
+}
+
+/// What a call of `callee`, an iterator's method, steps its `Self` by:
+/// `Iterator`, of its own methods and `IntoIterator`'s, with the extensions
+/// one asks of its `Self`, `rev()`'s `DoubleEndedIterator`; or an
+/// extension, of `next_back` or `len`. None of another function.
+fn steps_by(tcx: TyCtxt<'_>, callee: DefId) -> Vec<DefId> {
+    let iterator = std_item(tcx, StdItem::Iterator);
+    match tcx.trait_of_assoc(callee) {
+        Some(tr) if is_std_def(tcx, tr, StdItem::Iterator) || is_std_def(tcx, tr, StdItem::IntoIterator) => {
+            let self_param = ty::Ty::new_param(tcx, 0, rustc_span::symbol::kw::SelfUpper);
+            let asked = (tcx.clauses_of(callee).instantiate_identity(tcx).into_iter())
+                .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+                .filter(|p| p.self_ty().skip_binder() == self_param && is_iterator_extension(tcx, p.def_id()))
+                .map(|p| p.def_id());
+            std::iter::once(iterator).chain(asked).collect()
+        }
+        // One's own entry, by its dictionary alone; another of its
+        // methods, run on a JS iterator made of it, by `Iterator` too
+        // (ADR 0488).
+        Some(tr) if is_iterator_extension(tcx, tr) => match is_extension_entry(tcx, callee) {
+            true => vec![tr],
+            false => vec![tr, iterator],
+        },
+        // Another std trait's method that asks its `Self` be an
+        // iterator, `TrustedRandomAccessNoCoerce::size`'s `where Self:
+        // Iterator`, compiled as a function over it (ADR 0975).
+        Some(tr) if is_std_crate(tcx, tr) && asks_self_iterator(tcx, callee, iterator) => vec![iterator],
+        _ => Vec::new(),
     }
 }
 

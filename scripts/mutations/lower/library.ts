@@ -425,4 +425,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crates.test.ts", "-t", "a library's unread bound is given no dictionary by its consumer"],
   },
+  {
+    name: "library-impl-methods-facts-unread",
+    breaks:
+      "a library's iterator impl asks only what its manifest lists of the impl itself, none of its methods' facts, so a consumer giving the library's `Combinations<I>` where a generic iterator goes, or as an impl's `IntoIter`, asks its callers nothing of `I`, which its `next` asks is `TrustedLen`: refused (#2327)",
+    file: "crates/rust-js-lower/src/library.rs",
+    find: "                facts.extend(of(item).filter(|&(index, _)| index < count));\n",
+    replace: "                let _ = (item, count);\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_iterator_growing_by_its_parameters_take$"],
+  },
 ];
