@@ -27,6 +27,73 @@ background job of your own. Check `uptime` and stop or wait for anything else
 before each timed run, and give each number with its load. A timing taken
 under load isn't a measurement, and doesn't go in this ledger.
 
+## Where a check's time goes (#2296, 2026-11-22)
+
+Measured on the 12-core M6, quiet: nothing else ran, and the 1-minute load
+was under 1.5 before each run (1.39, 1.48, 1.48). Each run took the machine
+to a load of 13–19 itself. A compile given `RUST_JS_PHASE_TIMES=<file>`
+appends its phases' times (`src/phase_times.rs`). The corpus harness
+appends each case's steps to the same file (`test/corpus.test.ts`), and
+`bun scripts/phase-times.ts <file>` sums them. Times are each case's own,
+summed, under the run's 12-way parallelism; they're not the run's wall
+time. "Process start and exit" is the harness's compile less the phases
+the compiler measures from its `compile`'s start: the debug binary's load
+and rustc's libraries', mostly.
+
+**The corpus, 2,880 cases in 12 parts.** Cold means every JS run runs, as
+after a change to what's run. Warm means verified runs are skipped (ADR
+0567), as most checks see. Native outputs are kept in both.
+
+| step of a case | cold: s (share) | warm: s (share) | median ms cold / warm |
+|---|---:|---:|---:|
+| native run (kept output) | 116 (5%) | 101 (12%) | 38 / 34 |
+| compile | 557 (25%) | 378 (45%) | 164 / 113 |
+| compile as a library | 536 (24%) | 365 (43%) | 163 / 115 |
+| JS runs (node, minified, library) | 811 (36%) | 0 | 133 each |
+| bundle for the minified run | 216 (10%) | 0 | 77 |
+| compare | 1 (0%) | 1 (0%) | 0 |
+| **total** | **2,246, wall 198 s** | **849, wall 77 s** | |
+
+| a compile's phase (warm, program build) | s | share |
+|---|---:|---:|
+| rustc: parse and expand | 24 | 6% |
+| rustc: type check, MIR and borrow check | 33 | 9% |
+| lowering | 178 | 47% |
+| link | 4 | 1% |
+| prepare and print | 10 | 3% |
+| write, the crate's checks, rustc's rest | 11 | 3% |
+| process start and exit | 118 | 31% |
+
+The library build splits the same way (lowering 49%, start and exit 29%).
+The slowest cases are `matrix_integers.rs` and
+`saturating_ops_at_every_width.rs`, 2.6–3.4 s a compile warm, all lowering.
+
+**The whole check, `check:fast --all`:** 338 s wall, 2,767 job
+core-seconds, 12,651 compiles (5,698 the corpus'). Inside the compiler,
+1,761 s: lowering 67%, prepare and print 11%, rustc's front end 17%, link,
+write and the rest 5%. Process start and exit adds about 38 ms a compile,
+about 480 s. The jobs that take most: the crate corpus 215 core-s,
+`compat` 105, `next` 81, `crates` 71, `docs` 71, each corpus part
+about 60.
+
+**What it decides:**
+- **#2298's `Unlinked` cache** skips rustc and lowering on a back-end-only
+  change: about 62% of a corpus compile, as a process still starts to
+  link and print. But of the last 300 commits, 13
+  changed only the back end or the runtime, and 182 changed `lower/`. A
+  front-end change keyed into every case's `Unlinked` saves only the back
+  end, 4–5% of a compile, as verified runs already skip the JS runs. It
+  pays on about 4% of changes.
+- **Process start and exit is 30% of every compile**, and every case is
+  compiled twice. One process that compiles a case's program and library
+  builds together, sharing rustc's front end and the start, would save
+  about 45% of one of the two compiles, roughly 20% of a warm corpus run. A
+  process that compiles many cases would save most of the start. Both
+  serve every change, not 4% of them.
+- **Lowering is the largest phase**, 47% of a corpus compile and 67% of the
+  whole check's. Where #2294 cuts `lower/` next matters for build time;
+  for run time, lowering's own speed is where the time is.
+
 ## CI spend
 
 **Every GitHub Actions minute counts** (Tu, 2026-11-16), a standing

@@ -580,6 +580,13 @@ The ledger of every speed-up tried, with its numbers, its status (active, droppe
   machine;
   hand-rolled runs (a corpus shard in the background, a build then a test)
   are timed by nobody, and their slowness goes unseen.
+- **Where a compile's or a corpus case's time goes:** give the run
+  `RUST_JS_PHASE_TIMES=<file>`, and each compile appends its phases (rustc's
+  front end, lowering, link, prepare and print, write) and each corpus case
+  its steps (native run, compiles, JS runs, compare) to it. Then
+  `bun scripts/phase-times.ts <file>` sums them into tables. The last
+  measurement, and what it decided, is in
+  [docs/dev-loop.md](docs/dev-loop.md#where-a-checks-time-goes-2296-2026-11-22).
 - **Read a `⚠ slower than usual` line before going on**: find what made
   it slower, fix it or write it in the list below.
 - **When a step is slower than it needs to be**, fix it if it's yours to

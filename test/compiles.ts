@@ -75,6 +75,8 @@ const statOf = (path: string): Stat | undefined => {
 function compilerIdentity(program: string, env: Record<string, string | undefined>): { identity: string; file: Stat } | undefined {
   if (process.env.RUST_JS_MUTANT || capBytes(env) <= 0) return undefined;
   if (env.RUST_JS_DECISIONS ?? process.env.RUST_JS_DECISIONS) return undefined;
+  // Nor of one timed, whose phases a cached compile wouldn't give (#2296).
+  if (env.RUST_JS_PHASE_TIMES ?? process.env.RUST_JS_PHASE_TIMES) return undefined;
   return buildIdentity(program);
 }
 

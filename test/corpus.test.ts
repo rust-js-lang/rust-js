@@ -13,7 +13,7 @@
 //                                    └─ node ──────┘
 
 import { afterAll, beforeAll, expect, test } from "bun:test";
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { build } from "vite";
@@ -46,6 +46,27 @@ async function bundle(js: string, dir: string): Promise<string> {
   return join(outDir, "case.min.js");
 }
 
+// Where a case's time goes (#2296): each step's wall time, its native run,
+// its compiles, its JS runs and their comparing, where
+// `RUST_JS_PHASE_TIMES` names the file the compiler appends its own phases
+// to, a line a case appended there too; nothing measured without it.
+const timesFile = process.env.RUST_JS_PHASE_TIMES;
+let steps: [string, number][] = [];
+function timed<T>(step: string, run: () => T): T {
+  if (timesFile === undefined) return run();
+  const began = performance.now();
+  const ran = run();
+  steps.push([step, performance.now() - began]);
+  return ran;
+}
+async function timedAsync<T>(step: string, run: () => Promise<T>): Promise<T> {
+  if (timesFile === undefined) return run();
+  const began = performance.now();
+  const ran = await run();
+  steps.push([step, performance.now() - began]);
+  return ran;
+}
+
 /** What's wrong with a case: nothing, if native Rust does what its
  * directives say and the JS does what native Rust does, as it's compiled
  * and as it's shipped. */
@@ -55,7 +76,7 @@ async function check(file: string): Promise<string[]> {
   if (typeof want === "string") return [want];
   const dir = fixture(`corpus-${basename(file, ".rs")}`);
   if (snapshotsAlone) return snapshotAlone(file, want, dir);
-  const native = runNative(file, dir, want.edition, want.native);
+  const native = timed("native run", () => runNative(file, dir, want.edition, want.native));
   if (typeof native === "string") return [native];
   // Its runs, kept by what they ran (ADR 0567): the case, the JS, what
   // native Rust printed and how it ended, and what every case's share. The
@@ -71,7 +92,7 @@ async function check(file: string): Promise<string[]> {
     return [`native Rust ended ${show(native.outcome)}, but the directive says ${show(nativeOutcome)}`];
   }
 
-  const compiled = compileJs(file, dir, want.edition);
+  const compiled = timed("compile", () => compileJs(file, dir, want.edition));
   if (want.kind === "compile-fail") {
     if ("js" in compiled) return ["rust-js compiled it, but `compile-fail` says it can't"];
     // A rejection, not a crash, which may begin with the rejection it expects.
@@ -88,8 +109,9 @@ async function check(file: string): Promise<string[]> {
   const programKey = "js" in compiled ? ranKey("program", generatedTexts(dir, ["library", "production"])) : undefined;
   const programVerified = programKey !== undefined && verified(programKey);
   if ("js" in compiled && !programVerified) {
-    for (const [name, cmd] of runtimes) runs.push([name, runJs(cmd, compiled.js, dir, name)]);
-    runs.push(["node, minified", runJs([node ?? "node"], await bundle(compiled.js, dir), dir, "minified")]);
+    for (const [name, cmd] of runtimes) runs.push([name, timed(`JS run: ${name}`, () => runJs(cmd, compiled.js, dir, name))]);
+    const minified = await timedAsync("bundle", () => bundle(compiled.js, dir));
+    runs.push(["node, minified", timed("JS run: node, minified", () => runJs([node ?? "node"], minified, dir, "minified"))]);
   }
   if (want.kind === "ignore-rust-js") {
     // Wrong for now, rejected or answered otherwise, but not a crash.
@@ -100,6 +122,7 @@ async function check(file: string): Promise<string[]> {
     return passes ? [`it passes now: remove \`ignore-rust-js: ${want.reason}\``] : [];
   }
   if ("error" in compiled) return [`rust-js can't compile it:\n${compiled.error}`];
+  const compareBegan = performance.now();
   const snapshot = snapshotProblem(file, compiled.js);
   if (snapshot) problems.push(snapshot);
   const before = problems.length;
@@ -113,13 +136,14 @@ async function check(file: string): Promise<string[]> {
       problems.push(`${name} ended ${show(run.outcome)}, native Rust ${show(native.outcome)}`);
     }
   }
+  if (timesFile !== undefined) steps.push(["compare", performance.now() - compareBegan]);
   if (programKey !== undefined && !programVerified && problems.length === before) record(programKey, basename(file));
   // Built as a library, as a crate another crate uses is (ADR 0360): it
   // does what native Rust does too, or it's refused, as its directive says.
   // Every run builds every case so, each push's too (#1920), and says where
   // its `library-differs` is wrong: a change to what decides a library's JS
   // is seen where it's pushed, not by the next check's mutation shards.
-  const library = compileJs(file, dir, want.edition, true);
+  const library = timed("compile as a library", () => compileJs(file, dir, want.edition, true));
   if ("error" in library) {
     if (!want.libraryRefused) problems.push(`rust-js can't compile it as a library:\n${library.error}`);
     else if (library.kind === "crashed" || !library.error.includes(want.libraryRefused)) {
@@ -137,7 +161,7 @@ async function check(file: string): Promise<string[]> {
     }
     const libraryKey = ranKey("library", generatedTexts(join(dir, "library")));
     if (differs && !verified(libraryKey)) {
-      const run = runJs([node ?? "node"], library.js, dir, "library");
+      const run = timed("JS run: library", () => runJs([node ?? "node"], library.js, dir, "library"));
       if (!agree(run, native)) problems.push(`as a library, it ended ${show(run.outcome)}, native Rust ${show(native.outcome)}, or printed otherwise`);
       else record(libraryKey, basename(file));
     }
@@ -243,7 +267,12 @@ afterAll(() => {
 
 for (const name of caseShard(cases)) {
   test(name, async () => {
+    steps = [];
+    const began = performance.now();
     const problems = await check(join(corpus, name));
+    if (timesFile !== undefined) {
+      appendFileSync(timesFile, `${JSON.stringify({ case: name, total: performance.now() - began, steps })}\n`);
+    }
     failedCases += Number(problems.length > 0);
     expect(problems).toEqual([]);
   }, underLoad(120_000));

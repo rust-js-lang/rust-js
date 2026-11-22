@@ -67,6 +67,7 @@ mod node_session;
 mod output;
 mod packages;
 mod paths;
+mod phase_times;
 mod prepare;
 mod prettier;
 mod program;
@@ -338,6 +339,7 @@ impl Callbacks for RustJs {
     }
 
     fn after_expansion<'tcx>(&mut self, compiler: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+        phase_times::mark("rustc: parse and expand");
         // 0. `#[serde(..)]`, which only the expanded crate still has, read
         // before props' resolution asks for its HIR, which takes the
         // resolver's AST (ADR 0077).
@@ -380,6 +382,7 @@ impl Callbacks for RustJs {
 
         // 2. Run rustc's full analysis: type check, borrow check, lints.
         tcx.ensure_ok().analysis(());
+        phase_times::mark("rustc: type check, MIR and borrow check");
         if let Some(path) = &self.std_coverage
             && let Err(error) = std::fs::write(path, lower::std_coverage::report(tcx, &self.dependencies))
         {
@@ -443,10 +446,12 @@ impl Callbacks for RustJs {
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
+        phase_times::mark("lowering");
         if let Some(unlinked) = lowered
             && tcx.dcx().has_errors().is_none()
         {
             let linked = link::link(unlinked);
+            phase_times::mark("link");
             let sources = tcx
                 .sess
                 .source_map()
@@ -680,6 +685,9 @@ impl Drop for Stage {
 /// A build: rustc run with rust-js's callbacks, then what it made published
 /// and checked. Its error, whichever step's, `main` says.
 fn compile(build: command::Build) -> Result<ExitCode, String> {
+    // Where its time goes, where it's asked (#2296).
+    phase_times::start();
+    let timed = (build.input.display().to_string(), build.library);
     let read_settings = settings::read(&build.input, build.cargo)?;
     let mut dependencies = library::Dependencies::load(&build.dependencies, &build.output, &read_settings.dir)?;
     // Every crate's JS calls std's compiled bodies from `@rust-js/std`, but
@@ -827,6 +835,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         dep_info: !cargo && dep_info.is_some(),
     };
     let exit = run_resolving_props(&rustc_args, &mut callbacks);
+    phase_times::mark("rustc: the rest");
     if let Some(file) = &props_replayed {
         let replayed: String = jsx_syntax::resolved::replayed()
             .iter()
@@ -879,7 +888,10 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
                 }),
             ));
         }
-        plan.plan(linked, sources)?.publish()?;
+        let planned = plan.plan(linked, sources)?;
+        phase_times::mark("prepare and print");
+        planned.publish()?;
+        phase_times::mark("write");
         // Which facts a reader found, of lowering to printing, a line each,
         // where it's asked (ADR 1127): the driver's to write, as the
         // decisions' counts are, once all that reads a fact has run.
@@ -904,6 +916,17 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     // rust-js for each crate, so its driver is to run them, once (ADR 0117).
     if exit == ExitCode::SUCCESS && !cargo {
         hooks::check(&plan.settings, &plan.written)?;
+    }
+    phase_times::mark("the crate's checks");
+    if let Some((path, line)) = phase_times::line(Some(&timed.0), timed.1) {
+        let appended = (std::fs::OpenOptions::new().create(true).append(true).open(&path))
+            .and_then(|mut file| file.write_all(line.as_bytes()));
+        if let Err(error) = appended {
+            eprintln!(
+                "warning: rust-js: can't append the phase times to {}: {error}",
+                path.to_string_lossy()
+            );
+        }
     }
     Ok(exit)
 }
