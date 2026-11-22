@@ -126,9 +126,7 @@ its own.
   Difference 62,
   the user's decision. Tests normalize native's local prefix.
 - Some locations don't reach their helper yet, named `<unknown>` or the
-  caller's: a `#[track_caller]` std method called through a dictionary
-  or a runtime iterator, `Repeat`'s `count`, a generic `SliceIndex`'s
-  `index`, a generic `clamp` (#2324); a registry crate's sites,
+  caller's: a registry crate's sites,
   serde_json's `IndexMut` panics and std's vendored hashbrown's (#2325);
   and a `#[track_caller]` std function given as a value, which native
   Rust names by the `Fn` trait's shim (#2335). Each is a P0.
@@ -142,5 +140,6 @@ its own.
   #<issue> <why>`: compared but for where, and the corpus fails once it's
   native's. Its first run found 180 differences, 165 of them a minified
   bundle's copy of the runtime, and 13 sites std raises in its own code
-  the catalogue lacked; three cases wait, under #2324 and #2335. Mutations
+  the catalogue lacked; one case waits, under #2335 (#2324 placed the
+  others, ADR 0427 amended). Mutations
   of each rule.

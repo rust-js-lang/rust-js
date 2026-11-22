@@ -927,4 +927,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^size_hints_of_while_and_scan_adapters_made_in_place.rs$"],
   },
+  {
+    name: "count-of-a-repeat-unlocated",
+    breaks: "a `count` that may reach a `Repeat`'s own is given no location, so its panic is `<unknown>` (#2324)",
+    file: "crates/rust-js-mir/src/iter.rs",
+    find: "            return Ok(Expr::call_located(Expr::helper(\"$count\"), given, repeats));",
+    replace: "            return Ok(Expr::call_located(Expr::helper(\"$count\"), given, false && repeats));",
+    tests: ["test/binaries.test.ts", "-t", "a `Repeat`'s `count` and `last` name where they're called"],
+  },
 ];

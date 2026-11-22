@@ -138,7 +138,11 @@ function countOf(it, dropI, dropIItem) {
   const iter = it;
   let result;
   try {
-    result = $count(Iterator.from(iter), dropIItem);
+    result = $count(
+      Iterator.from(iter),
+      dropIItem,
+      "test/corpus/own_provided_methods_given_through_bounds.rs:88:8",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownCount) {
@@ -158,7 +162,13 @@ function lastOf(it, dropI, dropIItem) {
   const iter = it;
   let result;
   try {
-    result = $lastDropping(Iterator.from(iter), dropIItem, true);
+    result = $lastDropping(
+      Iterator.from(iter),
+      dropIItem,
+      true,
+      undefined,
+      "test/corpus/own_provided_methods_given_through_bounds.rs:92:8",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownLast) {

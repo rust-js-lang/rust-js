@@ -61,7 +61,11 @@ function skippedCount(it, IIterator, IsBox, dropI) {
   );
   let result;
   try {
-    result = $count(iter);
+    result = $count(
+      iter,
+      undefined,
+      "test/corpus/boxed_source_given_as_it_is_by_another_bound.rs:40:16",
+    );
   } catch (error) {
     $cleanup(() => {
       iter.return();
@@ -86,7 +90,7 @@ function skippedLast(it, IIterator, IsBox, dropI) {
   ).drop(1);
   let result;
   try {
-    result = $last(iter);
+    result = $last(iter, "test/corpus/boxed_source_given_as_it_is_by_another_bound.rs:44:24");
   } catch (error) {
     $cleanup(() => {
       iter.return();

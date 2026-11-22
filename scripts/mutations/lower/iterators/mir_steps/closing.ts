@@ -432,4 +432,20 @@ export const mutations: Mutation[] = [
     replace: "        Ok(closed)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_box_found_from_its_back_steps_the_box.rs$"],
   },
+  {
+    name: "last-of-a-repeat-unlocated",
+    breaks: "a `last` that may reach a `Repeat`'s own is given no location, so its panic is `<unknown>` (#2324)",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
+    find: "            return Ok(Expr::call_located(last, vec![it], repeats));",
+    replace: "            return Ok(Expr::call_located(last, vec![it], false && repeats));",
+    tests: ["test/binaries.test.ts", "-t", "a `Repeat`'s `count` and `last` name where they're called"],
+  },
+  {
+    name: "last-dropping-of-a-repeat-unlocated",
+    breaks: "a `last` of items with a destructor that may reach a `Repeat`'s own is given no location, so its panic is `<unknown>` (#2324)",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
+    find: "Ok(Expr::call_located(Expr::helper(\"$lastDropping\"), given, repeats))",
+    replace: "Ok(Expr::call_located(Expr::helper(\"$lastDropping\"), given, false && repeats))",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_drops_what_it_holds.rs$"],
+  },
 ];

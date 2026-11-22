@@ -60,7 +60,7 @@ function sumPastThree(it) {
       break;
     }
   }
-  return [n, $count(Iterator.from(it))];
+  return [n, $count(Iterator.from(it), undefined, "test/corpus/into_iter_of_ref_param.rs:53:12")];
 }
 
 export const refBagIntoIterator = {

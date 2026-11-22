@@ -56,7 +56,10 @@ function maybeIterator_nth(maybe, n) {
 
 // In generic code, of what it's given: the crate's own, an array's.
 function lastSkipped(it) {
-  return $last(iterator_skip($stepsOf(it), 3, $jsIterator));
+  return $last(
+    iterator_skip($stepsOf(it), 3, $jsIterator),
+    "test/corpus/own_nth_through_adapters.rs:55:16",
+  );
 }
 
 function main() {

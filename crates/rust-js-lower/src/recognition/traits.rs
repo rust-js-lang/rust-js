@@ -495,6 +495,27 @@ pub(crate) fn value_operator(tcx: TyCtxt<'_>, id: DefId) -> Option<Result<BinOp,
     .find_map(|(item, op)| tcx.is_lang_item(id, item).then_some(op))
 }
 
+/// Whether `id`, a trait method, is one whose std impls track their caller
+/// and whose model here raises a panic there, as rustc's monomorphized call
+/// of the impl does: integers' `Div::div` and `Rem::rem`, and their `/=`
+/// and `%=`, of a zero or `MIN / -1`; integers' `Ord::clamp`, of `min >
+/// max`; `SliceIndex::index` and `index_mut`, of an index out of bounds.
+/// Its dictionary's entries take the caller's location, and generic code's
+/// calls give it (ADR 0427, #2324); a method whose model raises nothing,
+/// `Add::add` that wraps, takes none.
+pub(crate) fn std_raises_at_caller(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    let Some(trait_) = tcx.trait_of_assoc(id) else {
+        return false;
+    };
+    let divides = |op: Option<BinOp>| matches!(op, Some(BinOp::Div | BinOp::Rem));
+    if divides(value_operator(tcx, trait_).and_then(Result::ok)) || divides(assign_operator(tcx, trait_)) {
+        return true;
+    }
+    let name = tcx.item_name(id);
+    (trait_ == std_item(tcx, StdItem::Ord) && name.as_str() == "clamp")
+        || (trait_ == std_item(tcx, StdItem::SliceIndex) && matches!(name.as_str(), "index" | "index_mut"))
+}
+
 pub(crate) fn implementable(tcx: TyCtxt<'_>, foreign: &crate::library::Foreign<'_, '_>, id: DefId) -> bool {
     operational(tcx, foreign, id)
         // A hand-written `Deserialize`'s visitor, its methods the reader's

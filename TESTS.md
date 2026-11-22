@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-23 (#2324, ADR 0427 amended): test/binaries.test.ts gains two tests, a panic std's impl raises at its caller through a dictionary (integers' `/` and `%`, `clamp` of integers, a `char`, a `String`'s default, a generic `SliceIndex`'s) and a `Repeat`'s `count` and `last`, directly, through generic code, nested in another count and after one caught; test/runtime-marks.test.ts, ten tests, a library's `Repeat` counted by its app; the corpus's `own_ne_max_min_clamp` and `repeat_drops_what_it_holds` compare their locations again.
+
 Changed on 2026-11-23 (#2343): test/std-sites.test.ts gains two tests: no committed JS rust-js wrote, std/, the runtime, the corpus's and the snapshots', names a machine's own copy of std's source or its home; and std's bodies, compiled into a fixture, name std's files `/rustc/<commit>/library/..`.
 
 Changed on 2026-11-23 (#2333, ADR 1184 amended): test/runtime-marks.test.ts, nine tests: the runtime makes no mark by `Symbol(..)`, all ten in runtime/marks.js, and each mark of a value one copy makes and another reads, an `Rc`'s, an array iterator's, a part's, chunks', a closure's clone's, an `IterMut` item's, a sliced `IntoIter`'s, run against native Rust with a library on a copy of the runtime of its own.

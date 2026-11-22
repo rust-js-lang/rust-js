@@ -46,7 +46,11 @@ function ownDoubleEndedIterator_nextBack(own) {
 }
 
 function evens(it) {
-  return $count(iterator_filter($stepsOf(it), (x) => x % 2 === 0, $jsIterator));
+  return $count(
+    iterator_filter($stepsOf(it), (x) => x % 2 === 0, $jsIterator),
+    undefined,
+    "test/corpus/flatten_asks_its_inner_iterators_hint.rs:40:31",
+  );
 }
 
 function main() {
@@ -91,7 +95,13 @@ function main() {
   ];
   it = $flatMap($iter(boxed), (item) => item);
   $next(it);
-  console.log(`of boxed: ${$count(it.filter((x) => x % 2 === 0))}`);
+  console.log(
+    `of boxed: ${$count(
+      it.filter((x) => x % 2 === 0),
+      undefined,
+      "test/corpus/flatten_asks_its_inner_iterators_hint.rs:61:56",
+    )}`,
+  );
 
   it = $lazyZip(
     $flatMap($iter([[0, 2]]), (item) =>

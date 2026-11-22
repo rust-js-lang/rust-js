@@ -250,6 +250,9 @@ const few = [
   // crate's iterator its caller makes knowing them, its dictionaries those
   // of the JS iterator it's made (#1604).
   "into_iter_bound_stepped_from_its_back.rs",
+  // A `Repeat`'s `count` reached through generic code, std's compiled one
+  // through its step table, given where it's called by the runtime (#2324).
+  "repeat_counted_where_called.rs",
 ];
 const which = partSetting("ITERATOR_FORMS");
 if (which !== undefined && which !== "corpus")

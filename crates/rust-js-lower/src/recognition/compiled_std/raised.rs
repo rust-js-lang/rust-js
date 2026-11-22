@@ -323,6 +323,14 @@ const RAISED: &[(&str, Option<&str>, Owner, &str)] = &[
         ),
         "",
     ),
+    // std's `Ord::clamp` default, its `assert!(min <= max)`, which doesn't
+    // track its caller as integers' and a `char`'s do.
+    (
+        "ordClamp",
+        None,
+        Owner::Default(StdCrate::Core, &["cmp", "Ord"]),
+        "clamp",
+    ),
     (
         "refCellEq",
         None,

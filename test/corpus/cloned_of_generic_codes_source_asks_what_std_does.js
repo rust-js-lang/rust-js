@@ -51,19 +51,34 @@ function refsIterator_nth(refs, n) {
   return item;
 }
 function skipCount(i) {
-  return $count($cloned(Iterator.from(i)).drop(1));
+  return $count(
+    $cloned(Iterator.from(i)).drop(1),
+    undefined,
+    "test/corpus/cloned_of_generic_codes_source_asks_what_std_does.rs:31:24",
+  );
 }
 function fuseCount(i, IFused) {
-  return $count(iterator_fuse($cloned(Iterator.from(i)), { next: $next, fold: $foldOf }, IFused));
+  return $count(
+    iterator_fuse($cloned(Iterator.from(i)), { next: $next, fold: $foldOf }, IFused),
+    undefined,
+    "test/corpus/cloned_of_generic_codes_source_asks_what_std_does.rs:34:23",
+  );
 }
 function fuseLast(i, IFused) {
-  return $last($cloned(Iterator.from(i)));
+  return $last(
+    $cloned(Iterator.from(i)),
+    "test/corpus/cloned_of_generic_codes_source_asks_what_std_does.rs:37:23",
+  );
 }
 function skipLast(i) {
   return Array.from($folded($cloned(Iterator.from(i)).drop(1))).at(-1);
 }
 function chainCount(i) {
-  return $count($lazyChain($cloned(Iterator.from(i)), $lazyRange(4, 6)));
+  return $count(
+    $lazyChain($cloned(Iterator.from(i)), $lazyRange(4, 6)),
+    undefined,
+    "test/corpus/cloned_of_generic_codes_source_asks_what_std_does.rs:43:28",
+  );
 }
 function takeNth(i) {
   return Array.from(
@@ -73,7 +88,11 @@ function takeNth(i) {
   )[0];
 }
 function peekCount(i) {
-  return $count(iterator_peekable($cloned(Iterator.from(i)), { next: $next, fold: $foldOf }));
+  return $count(
+    iterator_peekable($cloned(Iterator.from(i)), { next: $next, fold: $foldOf }),
+    undefined,
+    "test/corpus/cloned_of_generic_codes_source_asks_what_std_does.rs:49:27",
+  );
 }
 function zipped(i) {
   return $collectDropping(

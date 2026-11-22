@@ -74,7 +74,9 @@ function boxes() {
 }
 function boxed() {
   console.log(`a ${$flatMap($iter(boxes()), (item) => item).reduce((n) => n + 1, 0)}`);
-  console.log(`b ${$count($flatMap($iter(boxes()), (item) => item).drop(1))}`);
+  console.log(
+    `b ${$count($flatMap($iter(boxes()), (item) => item).drop(1), undefined, "test/corpus/dyn_wrapper_hides_the_crates_own_steps.rs:45:60")}`,
+  );
   console.log(
     `c ${$count(
       $lazyChain(
@@ -95,6 +97,8 @@ function boxed() {
           ownIterator_count,
         ),
       ),
+      undefined,
+      "test/corpus/dyn_wrapper_hides_the_crates_own_steps.rs:46:66",
     )}`,
   );
   const e = $flatMap($iter(boxes()), (item) => item);
@@ -216,15 +220,21 @@ function boxed() {
           }),
         },
       ),
+      undefined,
+      "test/corpus/dyn_wrapper_hides_the_crates_own_steps.rs:69:41",
     )}`,
   );
 }
 
 function counted(it) {
-  return $count(Iterator.from(it));
+  return $count(
+    Iterator.from(it),
+    undefined,
+    "test/corpus/dyn_wrapper_hides_the_crates_own_steps.rs:73:8",
+  );
 }
 function lasted(it) {
-  return $lastSome(Iterator.from(it));
+  return $lastSome(Iterator.from(it), "test/corpus/dyn_wrapper_hides_the_crates_own_steps.rs:76:8");
 }
 function wrapped() {
   const ownIntoIterator = {
@@ -341,6 +351,8 @@ function wrapped() {
         },
         ownIntoIterator,
       ),
+      undefined,
+      "test/corpus/dyn_wrapper_hides_the_crates_own_steps.rs:95:41",
     )}`,
   );
   console.log(

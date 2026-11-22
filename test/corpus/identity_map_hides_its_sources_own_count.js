@@ -18,7 +18,11 @@ function uptoIterator_count(upto) {
 }
 
 function counted(it) {
-  return $count(Iterator.from(it));
+  return $count(
+    Iterator.from(it),
+    undefined,
+    "test/corpus/identity_map_hides_its_sources_own_count.rs:23:8",
+  );
 }
 
 function main() {

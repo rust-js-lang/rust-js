@@ -29,12 +29,18 @@ function lDrop_drop(l) {
 }
 function main() {
   console.log(
-    `${$catchUnwind(() => $count($repeating([1], undefined, lDrop_drop), lDrop_drop)).TAG === "Err"}`,
+    `${$catchUnwind(() => $count($repeating([1], undefined, lDrop_drop), lDrop_drop, "test/corpus/repeat_count_panics.rs:16:49")).TAG === "Err"}`,
   );
   console.log(
     `${
       $catchUnwind(() => {
-        const last = $lastDropping($repeating([2], undefined, lDrop_drop), lDrop_drop);
+        const last = $lastDropping(
+          $repeating([2], undefined, lDrop_drop),
+          lDrop_drop,
+          undefined,
+          undefined,
+          "test/corpus/repeat_count_panics.rs:17:49",
+        );
         function map(l) {
           const result = l[0];
           lDrop_drop(l);
@@ -45,14 +51,18 @@ function main() {
     }`,
   );
   console.log(
-    `${$catchUnwind(() => $count($skipping($repeating([3], undefined, lDrop_drop), 2, lDrop_drop), lDrop_drop)).TAG === "Err"}`,
+    `${$catchUnwind(() => $count($skipping($repeating([3], undefined, lDrop_drop), 2, lDrop_drop), lDrop_drop, "test/corpus/repeat_count_panics.rs:18:57")).TAG === "Err"}`,
   );
   console.log(
     `${
       $catchUnwind(() =>
-        $count($enumerate($repeating([4], undefined, lDrop_drop)), (value) => {
-          lDrop_drop(value[1]);
-        }),
+        $count(
+          $enumerate($repeating([4], undefined, lDrop_drop)),
+          (value) => {
+            lDrop_drop(value[1]);
+          },
+          "test/corpus/repeat_count_panics.rs:19:61",
+        ),
       ).TAG === "Err"
     }`,
   );
@@ -68,7 +78,13 @@ function main() {
           },
           lDrop_drop,
         );
-        const result = $lastDropping(iter, lDrop_drop);
+        const result = $lastDropping(
+          iter,
+          lDrop_drop,
+          undefined,
+          undefined,
+          "test/corpus/repeat_count_panics.rs:20:56",
+        );
         iter.return();
         function map(l) {
           const result = l[0];
@@ -84,6 +100,8 @@ function main() {
       $catchUnwind(() =>
         $count(
           iterator_peekable($repeating(7), { next: $next, nth: $nth, last: $last, count: $count }),
+          undefined,
+          "test/corpus/repeat_count_panics.rs:21:60",
         ),
       ).TAG === "Err"
     }`,
@@ -103,16 +121,22 @@ function main() {
           }, error);
           throw error;
         }
-        return $count($lazyChain($closing(value, $dropEach(lDrop_drop)), repeat), lDrop_drop);
+        return $count(
+          $lazyChain($closing(value, $dropEach(lDrop_drop)), repeat),
+          lDrop_drop,
+          "test/corpus/repeat_count_panics.rs:22:75",
+        );
       }).TAG === "Err"
     }`,
   );
-  console.log(`${$catchUnwind(() => $last($repeating(8).drop(1))).TAG === "Err"}`);
+  console.log(
+    `${$catchUnwind(() => $last($repeating(8).drop(1), "test/corpus/repeat_count_panics.rs:23:57")).TAG === "Err"}`,
+  );
   function generic(x, TClone, dropT) {
     const iter = $repeating(x, (value) => TClone.clone(value), dropT);
     let result;
     try {
-      result = $count(iter, dropT);
+      result = $count(iter, dropT, "test/corpus/repeat_count_panics.rs:24:64");
     } catch (error) {
       $cleanup(() => {
         iter.return();

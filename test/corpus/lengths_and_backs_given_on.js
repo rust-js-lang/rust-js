@@ -48,7 +48,10 @@ function first(it) {
 
 function counted(it) {
   const had = $nextBackSome(it) != null;
-  return [had, $count(Iterator.from(it))];
+  return [
+    had,
+    $count(Iterator.from(it), undefined, "test/corpus/lengths_and_backs_given_on.rs:11:14"),
+  ];
 }
 
 function hint(it, IIterator, IClone) {

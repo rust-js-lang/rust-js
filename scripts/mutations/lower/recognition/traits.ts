@@ -720,4 +720,12 @@ export const mutations: Mutation[] = [
     replace: "        if Some(tr.self_ty().peel_refs())\n",
     tests: ["test/corpus.test.ts", "-t", "^ord_of_mut_refs.rs$"],
   },
+  {
+    name: "std-division-raises-nothing-at-its-caller",
+    breaks: "integers' `Div` and `Rem` aren't methods std's impls of which raise at their caller, so generic code's division panics `<unknown>` (#2324)",
+    file: "crates/rust-js-lower/src/recognition/traits.rs",
+    find: "    if divides(value_operator(tcx, trait_).and_then(Result::ok)) || divides(assign_operator(tcx, trait_)) {\n",
+    replace: "    if false && divides(value_operator(tcx, trait_).and_then(Result::ok)) {\n",
+    tests: ["test/binaries.test.ts", "-t", "through a dictionary, names generic"],
+  },
 ];

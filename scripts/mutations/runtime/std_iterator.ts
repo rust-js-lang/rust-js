@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     name: "std-iterator-last-not-taking",
     breaks: "std's compiled `Fuse::last` and `Peekable::last` leave their struct open, so its close drops what the crate's own `last` left a second time (#522)",
     file: "crates/rust-js-program/src/runtime/std_iterator.js",
-    find: "    last: steps.last && (() => step(taking(\"last\", () => steps.last(it)))),\n",
-    replace: "    last: steps.last && (() => step(steps.last(it))),\n",
+    find: "    last: steps.last && (() => step(taking(\"last\", () => steps.last(it, globalThis[$infiniteAtKey])))),\n",
+    replace: "    last: steps.last && (() => step(steps.last(it, globalThis[$infiniteAtKey]))),\n",
     tests: ["test/corpus.test.ts", "-t", "^last_takes_its_source.rs$"],
   },
   {
@@ -179,5 +179,21 @@ export const mutations: Mutation[] = [
     find: "    it.$knows = [back, len, rfold, nthBack, tryRfold, advanceBackBy].map((given, at) => given ?? known[at]);\n",
     replace: "    it.$knows = [back, len, rfold, nthBack, tryRfold, advanceBackBy];\n",
     tests: ["test/runtime-package.test.ts", "-t", "know its back"],
+  },
+  {
+    name: "step-last-given-no-location",
+    breaks: "a compiled step table's `last` isn't given where the `last` that reached it was called, so std's `Repeat`'s panics `<unknown>` (#2324)",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
+    find: "steps.last(it, globalThis[$infiniteAtKey])",
+    replace: "steps.last(it)",
+    tests: ["test/iterator-forms.test.ts", "-t", "^repeat_drops_what_it_holds with std's iterator structs$"],
+  },
+  {
+    name: "step-count-given-no-location",
+    breaks: "a compiled step table's `count` isn't given where the `count` that reached it was called, so std's `Repeat`'s panics `<unknown>` (#2324)",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
+    find: "steps.count(it, globalThis[$infiniteAtKey])",
+    replace: "steps.count(it)",
+    tests: ["test/iterator-forms.test.ts", "-t", "^repeat_counted_where_called with std's iterator structs$"],
   },
 ];

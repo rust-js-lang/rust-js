@@ -38,7 +38,11 @@ function ownIterator_fold(own, init, f) {
 }
 
 function counted(it) {
-  return $count(Iterator.from(it));
+  return $count(
+    Iterator.from(it),
+    undefined,
+    "test/corpus/flatten_of_options_counted_asks_no_hint.rs:46:8",
+  );
 }
 
 function main() {

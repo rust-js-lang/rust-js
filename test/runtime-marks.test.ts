@@ -33,7 +33,7 @@ test("the runtime's marks are registry symbols, declared in marks.js alone", () 
   }
   expect(made).toEqual([]);
   expect(registered.sort()).toEqual(
-    ["$arrayIterKey", "$cloneKey", "$countedKey", "$itemArray", "$itemIndex", "$partsOf", "$placeOfPart", "$raisedAt", "$slicedKey", "$stdoutKey", "$stringPayload"].map((name) => `marks.js ${name} named`),
+    ["$arrayIterKey", "$cloneKey", "$countedKey", "$infiniteAtKey", "$itemArray", "$itemIndex", "$partsOf", "$placeOfPart", "$raisedAt", "$slicedKey", "$stdoutKey", "$stringPayload"].map((name) => `marks.js ${name} named`),
   );
 });
 
@@ -444,5 +444,22 @@ test("what a library's copy of the runtime holds of a line its app's copy ends c
 `,
   );
   expect(native.stdout).toBe("lib 1 app end\nlib 2 lib line\napp lib 3 at exit");
+  expect([ran.stdout, ran.outcome]).toEqual([native.stdout, native.outcome]);
+});
+
+test("a `Repeat` a library's copy of the runtime made, counted by its app's copy, names where the app counts it, as native Rust's", () => {
+  // Where its `count` was called is held in `globalThis`, under a key every
+  // copy reads (#2324, #2333's rule).
+  const { native, ran } = twoCopies(
+    "repeat",
+    "pub fn forever(n: u32) -> std::iter::Repeat<u32> {\n    std::iter::repeat(n)\n}\n",
+    `fn main() {
+    println!("{}", metamorph_lib::forever(2).take(2).count());
+    println!("{}", metamorph_lib::forever(1).count());
+}
+`,
+  );
+  expect(native.stdout).toBe("2\n");
+  expect(native.outcome).toEqual({ panic: "iterator is infinite", at: expect.stringMatching(/program\.rs:3:46$/) });
   expect([ran.stdout, ran.outcome]).toEqual([native.stdout, native.outcome]);
 });

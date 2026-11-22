@@ -107,7 +107,7 @@ function lastOfFour(it, dropI) {
   );
   let result;
   try {
-    result = $last(iter);
+    result = $last(iter, "test/corpus/adapter_made_in_generic_code_asked_its_hint.rs:50:29");
   } catch (error) {
     $cleanup(() => {
       iter.return();

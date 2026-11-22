@@ -58,15 +58,23 @@ function countsIterator_count(counts) {
 }
 
 function counted(it) {
-  return $count(Iterator.from(it));
+  return $count(Iterator.from(it), undefined, "test/corpus/own_count_through_adapters.rs:54:8");
 }
 
 function skipCounted(it) {
-  return $count(iterator_skip($stepsOf(it), 1, $jsIteratorSome));
+  return $count(
+    iterator_skip($stepsOf(it), 1, $jsIteratorSome),
+    undefined,
+    "test/corpus/own_count_through_adapters.rs:58:16",
+  );
 }
 
 function fuseCounted(it, IFused) {
-  return $count(iterator_fuse($stepsOf(it), $jsIteratorSome, IFused));
+  return $count(
+    iterator_fuse($stepsOf(it), $jsIteratorSome, IFused),
+    undefined,
+    "test/corpus/own_count_through_adapters.rs:62:15",
+  );
 }
 
 function ds() {

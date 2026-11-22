@@ -362,11 +362,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         a: Expr,
         b: Option<Expr>,
         tr: ty::TraitRef<'tcx>,
+        at: Expr,
         span: Span,
     ) -> R<Expr> {
-        // std's impl tracks its caller, whose location a dictionary's entry
-        // isn't given yet: `undefined`, `<unknown>` (#2324).
-        Expr::raised_at(Expr::js_undefined(), || self.number_operator_at(op, a, b, tr, span))
+        // std's impl tracks its caller: where its panic is raised is what a
+        // dictionary's entry is given, generic code's caller's (#2324).
+        Expr::raised_at(at, || self.number_operator_at(op, a, b, tr, span))
     }
 
     /// `number_operator`'s, where its panics are raised given.
@@ -418,6 +419,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .find(|item| item.is_fn())
             .expect("an operator trait has a method");
         bindings::fn_name(self.tcx, method.def_id)
+    }
+
+    /// Where std's operator entry of `tr` raises its panic: of a method that
+    /// takes its caller's location (`std_raises_at_caller`), the location it's
+    /// given, its parameter after `params`, as each call through a dictionary
+    /// gives it (ADR 0427, #2324); of another, nowhere, `undefined`.
+    pub(super) fn entry_location(&self, tr: ty::TraitRef<'tcx>, params: &mut Vec<js::Pattern>) -> Expr {
+        let method = (self.tcx.associated_items(tr.def_id).in_definition_order())
+            .find(|item| item.is_fn())
+            .expect("an operator trait has a method");
+        match self.takes_caller_location(method.def_id) {
+            true => {
+                let location = self.fresh(Role::Location);
+                params.push(location.clone().into());
+                Expr::var(&location)
+            }
+            false => Expr::js_undefined(),
+        }
     }
 
     /// Told of a `==` whether its two `Option`s' `None` MIR says is the

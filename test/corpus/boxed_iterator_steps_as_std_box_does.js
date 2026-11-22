@@ -50,7 +50,7 @@ function boxedCount(b) {
 }
 
 function boxedLast(b) {
-  return $last(Iterator.from(b));
+  return $last(Iterator.from(b), "test/corpus/boxed_iterator_steps_as_std_box_does.rs:61:7");
 }
 
 const tIsT = { is: tIsT_is };
@@ -68,7 +68,10 @@ function countedThrough(b, IIterator, IsBox) {
 }
 
 function lastThrough(b, IIterator, IsBox) {
-  return $last($given(IsBox.is(b), IIterator));
+  return $last(
+    $given(IsBox.is(b), IIterator),
+    "test/corpus/boxed_iterator_steps_as_std_box_does.rs:79:12",
+  );
 }
 
 function main() {

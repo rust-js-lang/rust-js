@@ -16,14 +16,15 @@ function $nthSome(it, k) {
 // adapter's passing it on (#182): its item, or `undefined` for `None`. Of
 // generic code's, which may be JS's own, with no `last`, std's default,
 // its last item (#496).
-function $last(it) {
-  const step = $lastStep(it);
+// Of one that may be a `Repeat`, where it was called (`$count`'s, #2324).
+function $last(it, raisedAt = undefined) {
+  const step = $infinitelyAt(raisedAt, () => $lastStep(it));
   return step.done ? undefined : step.value;
 }
 
 // `it.last()` of items that look like `None`: its `Some` boxed (ADR 0051).
-function $lastSome(it) {
-  const step = $lastStep(it);
+function $lastSome(it, raisedAt = undefined) {
+  const step = $infinitelyAt(raisedAt, () => $lastStep(it));
   return step.done ? undefined : $some(step.value);
 }
 

@@ -715,6 +715,26 @@ impl Expr {
         Expr::new(ExprKind::Call(Box::new(callee), args))
     }
 
+    /// `Expr::call` of a helper whose location is given only where its call
+    /// asks (`runtime::location_where_asked`), `asked` whether this one does:
+    /// the location the lowering is at, where `raisedAt` is, an optional
+    /// parameter before it not given `undefined`, `$count(it, undefined,
+    /// "src/lib.rs:4:9")`; of one that doesn't, none (#2324).
+    pub fn call_located(callee: Expr, args: Vec<Expr>, asked: bool) -> Expr {
+        let mut args = args;
+        if asked
+            && let Some(helper) = callee.helper_name()
+            && let Some(at) = crate::runtime::location_where_asked(helper)
+            && let Some(location) = RAISED_AT.with_borrow(Clone::clone)
+        {
+            while args.len() < at {
+                args.push(Expr::js_undefined());
+            }
+            args.insert(at, location);
+        }
+        Expr::call(callee, args)
+    }
+
     /// Give this node a span, unless it already has one. Lowering calls
     /// this on every result, so the outermost node made for a Rust
     /// expression gets that expression's span.

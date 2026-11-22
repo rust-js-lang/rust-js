@@ -169,7 +169,13 @@ function lastsDoubleEndedIterator_nextBack(lasts) {
 }
 
 function lastOf(items) {
-  const last = $lastDropping($rev($rev(items)), dDrop_drop);
+  const last = $lastDropping(
+    $rev($rev(items)),
+    dDrop_drop,
+    undefined,
+    undefined,
+    "test/corpus/rev_of_rev_folds_its_source.rs:114:23",
+  );
   function map(d) {
     const result = d[0];
     dDrop_drop(d);

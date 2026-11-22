@@ -129,7 +129,11 @@ function relayed(iter, dropJItem) {
 }
 
 function counted(iter, IIterator, IClone) {
-  return $count($given(IClone.clone(iter), IIterator, true));
+  return $count(
+    $given(IClone.clone(iter), IIterator, true),
+    undefined,
+    "test/corpus/yielded_item_drops.rs:90:18",
+  );
 }
 
 function main() {

@@ -72,7 +72,7 @@ function heldIterator_nth(held, n) {
 }
 
 function lastOf(it) {
-  return $lastSome(Iterator.from(it));
+  return $lastSome(Iterator.from(it), "test/corpus/fold_through_try_fold_reaches_own_nth.rs:65:8");
 }
 
 function main() {

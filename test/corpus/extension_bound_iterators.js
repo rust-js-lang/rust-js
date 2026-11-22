@@ -53,7 +53,11 @@ const Ends = {
 };
 
 function outer(iter, IIterator, IDoubleEndedIterator, IClone) {
-  const count = $count($given(IClone.clone(iter), IIterator, true));
+  const count = $count(
+    $given(IClone.clone(iter), IIterator, true),
+    undefined,
+    "test/corpus/extension_bound_iterators.rs:50:30",
+  );
   return [IIterator.next(iter), IDoubleEndedIterator.next_back(iter), count];
 }
 

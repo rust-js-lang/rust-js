@@ -213,3 +213,40 @@ generic code; an entry whose impl reads none passes it on to nothing. A
 default, whose body decides, takes it as that body does; an impl that
 tracks its caller where its declaration doesn't is still refused in a
 library, as before (`std_types::location::tracked_without_default`).
+
+## Amendment: std's impls that track their caller, through a dictionary and a `Repeat` (2026-11-23, #2324)
+
+Where a trait's declaration doesn't track its caller but std's impls of it
+do, and rust-js's model of them raises a panic there, generic code's call
+gives its location, as rustc's monomorphized call of the impl does:
+integers' `Div::div` and `Rem::rem` and their `/=` and `%=`, integers' and a
+`char`'s `Ord::clamp`, and `SliceIndex::index` and `index_mut`. That's one
+owner's answer, `recognition::std_raises_at_caller`: such a method takes
+the location in every crate alike (`std_types::location::takes_location`),
+not only in one whose generic code calls it, as a library's generic
+`clamp` is given its app's dictionary, which took none and was handed the
+location for its drop (the corpus's library rewrite of
+`own_ne_max_min_clamp`),
+std's operator entries take it after their arguments and pass it to their
+helper, `div: (a, b, location) => $div(a, b, location)`, and an `Ord`'s and
+a `SliceIndex`'s dictionaries pass it on. `Ord::clamp`'s default doesn't
+track its caller, so a type on it, a `String`'s, names std's own assert,
+`$stdSites.ordClamp`, called directly or through a dictionary. A method
+whose model raises nothing, `Add::add`, which wraps, takes none.
+
+**A helper's location given only where its call asks.** The one parameter
+is `raisedAt`, and the runtime's own parameter list says how it's filled
+(`runtime::location_at`, `runtime::location_where_asked`): written
+`raisedAt`, `Expr::call` gives it at every call, as before; written
+`raisedAt = undefined`, never, but where the call says it may be needed,
+`Expr::call_located(callee, args, asked)`, a missing optional argument
+before it `undefined`. `$count`, `$last` and `$lastDropping`, whose panic
+only a `Repeat`'s own `count` or `last` raises, are asked where `recognition::may_be_repeat`
+says the receiver may be one: a type holding a `Repeat`, or a type
+parameter's, a projection's, an opaque type's or a `dyn`'s, so a concrete
+other's `count` is `$count(it)` as it was. The location reaches the
+`Repeat`'s own method through any adapter that passes the call on: held
+while `$count` or `$last` runs, in a slot of `globalThis` under a
+`Symbol.for` key of `runtime/marks.js`, which every copy of the runtime
+reads, and put back however the call ends, `$unwinds`'s on a panic.
+

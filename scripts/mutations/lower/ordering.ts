@@ -684,4 +684,20 @@ export const mutations: Mutation[] = [
     replace: "        let super::traits::Declared::Own(owner, _) = self.declared_param(index) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^default_copied_reads_its_own_params.rs$"],
   },
+  {
+    name: "generic-clamp-given-no-location",
+    breaks: "generic code's `clamp` through its dictionary gives no location, so an integer's raises `<unknown>` (#2324)",
+    file: "crates/rust-js-lower/src/ordering.rs",
+    find: "                args.push(self.caller_location(span));\n",
+    replace: "",
+    tests: ["test/binaries.test.ts", "-t", "through a dictionary, names generic"],
+  },
+  {
+    name: "default-clamp-raised-by-its-caller",
+    breaks: "a `String`'s `clamp`, std's default, which tracks no caller, names its caller's line, not std's (#2324)",
+    file: "crates/rust-js-lower/src/ordering.rs",
+    find: "            if ty.peel_refs().is_char() {\n                return Ok(Some(Expr::call_helper(\"$clampBy\", args)));",
+    replace: "            if true {\n                return Ok(Some(Expr::call_helper(\"$clampBy\", args)));",
+    tests: ["test/binaries.test.ts", "-t", "through a dictionary, names generic"],
+  },
 ];

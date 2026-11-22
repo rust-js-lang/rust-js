@@ -538,6 +538,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         std::mem::replace(&mut self.given.called_apart, apart)
     }
 
+    /// `lower` made where this body's given location is `location`, a
+    /// parameter of its own: a step table's entry of an impl that takes its
+    /// caller's location, which the runtime gives it (#2324).
+    pub(crate) fn with_given_location<T>(&mut self, location: Expr, lower: impl FnOnce(&mut Self) -> T) -> T {
+        let outer = self.given.caller_location.replace((self.frame.owner, location));
+        let made = lower(self);
+        self.given.caller_location = outer;
+        made
+    }
+
     /// Whether an impl's dictionary takes any of `evidence_params`': a const
     /// parameter's value, a bound's dictionary, a type's fact or a drop; not
     /// a caller's location, which only a `#[track_caller]` function takes. One

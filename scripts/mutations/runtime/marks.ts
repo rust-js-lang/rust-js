@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "const $itemIndex = Symbol(\"rust-js: the index an item's handle is at\");\n",
     tests: ["test/runtime-marks.test.ts", "-t", "mut_items\\.js\\ `\\$itemArray`"],
   },
+  {
+    name: "infinite-at-one-copys",
+    breaks: "where a `count` that may reach a `Repeat`'s own was called is held under a key one copy of the runtime made, so a library's `Repeat` counted by its app names none (#2324)",
+    file: "crates/rust-js-program/src/runtime/marks.js",
+    find: "const $infiniteAtKey = Symbol.for(\"rust-js: where a count or last that may reach a Repeat's own was called\");\n",
+    replace: "const $infiniteAtKey = Symbol(\"rust-js: where a count or last that may reach a Repeat's own was called\");\n",
+    tests: ["test/runtime-marks.test.ts", "-t", "a `Repeat` a library's copy"],
+  },
 ];

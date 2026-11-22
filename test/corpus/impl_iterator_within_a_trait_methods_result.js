@@ -190,7 +190,11 @@ function read(t, TSource) {
     const iter = it;
     let result;
     try {
-      result = $count(iter);
+      result = $count(
+        iter,
+        undefined,
+        "test/corpus/impl_iterator_within_a_trait_methods_result.rs:70:101",
+      );
     } catch (error) {
       $cleanup(() => {
         if (!iter.ownFold && !iter.ownCount) {

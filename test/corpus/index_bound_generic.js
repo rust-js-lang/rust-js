@@ -16,25 +16,33 @@ export function bufferIndexJ(JSliceIndexTSlice) {
 }
 
 function bufferIndexJ_index(buffer, index, location, JSliceIndexTSlice) {
-  return JSliceIndexTSlice.index(index, buffer.buffer);
+  return JSliceIndexTSlice.index(index, buffer.buffer, location);
 }
 
 function bufferIndexMutJ_indexMut(buffer, index, location, JSliceIndexTSlice) {
-  return JSliceIndexTSlice.indexMut(index, buffer.buffer);
+  return JSliceIndexTSlice.indexMut(index, buffer.buffer, location);
 }
 
 function pick(items, at, JSliceIndexU32Slice) {
-  return JSliceIndexU32Slice.index(at, items);
+  return JSliceIndexU32Slice.index(at, items, "test/corpus/index_bound_generic.rs:36:11");
 }
 
 function shout(items, at, JSliceIndexStringSlice) {
-  const value = JSliceIndexStringSlice.indexMut(at, items);
+  const value = JSliceIndexStringSlice.indexMut(
+    at,
+    items,
+    "test/corpus/index_bound_generic.rs:43:10",
+  );
   value.value += "!";
 }
 
 function reversedLen(items, part, JClone, JSliceIndexU32Slice) {
-  JSliceIndexU32Slice.indexMut(JClone.clone(part), items).value.reverse();
-  return JSliceIndexU32Slice.index(part, items).length;
+  JSliceIndexU32Slice.indexMut(
+    JClone.clone(part),
+    items,
+    "test/corpus/index_bound_generic.rs:50:10",
+  ).value.reverse();
+  return JSliceIndexU32Slice.index(part, items, "test/corpus/index_bound_generic.rs:51:10").length;
 }
 
 function second(items) {

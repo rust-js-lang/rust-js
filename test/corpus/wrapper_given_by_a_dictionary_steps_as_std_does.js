@@ -65,7 +65,11 @@ function total(it, IIterator, IsI) {
 
 function counted(it, IIterator, IsI) {
   it = IsI.is(it);
-  return $count($given(it, IIterator));
+  return $count(
+    $given(it, IIterator),
+    undefined,
+    "test/corpus/wrapper_given_by_a_dictionary_steps_as_std_does.rs:62:8",
+  );
 }
 
 function second(it, IIterator, IsI) {

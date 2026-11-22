@@ -150,6 +150,44 @@ test("a panic a `#[track_caller]` function raises itself names where it was call
   });
 }, 300_000);
 
+test("a panic std's impl raises at its caller, through a dictionary, names generic code's line", () => {
+  // std's impls track their caller where the trait doesn't, integers'
+  // `Div::div` and `Ord::clamp`: a dictionary's entry is given generic
+  // code's location, as rustc's monomorphized call of the impl is (#2324).
+  const generic = [
+    "fn halved<T: std::ops::Div<Output = T>>(a: T, b: T) -> T {\n    a / b\n}\n\nfn main() {\n    println!(\"{}\", halved(6u32, 2));\n    println!(\"{}\", halved(1u32, std::hint::black_box(0)));\n}\n",
+    "fn rest<T: std::ops::Rem<Output = T>>(a: T, b: T) -> T {\n    a % b\n}\n\nfn main() {\n    println!(\"{}\", rest(i32::MIN, std::hint::black_box(-1)));\n}\n",
+    "fn within<T: Ord>(x: T, low: T, high: T) -> T {\n    x.clamp(low, high)\n}\n\nfn main() {\n    println!(\"{}\", within(5, 1, 9));\n    println!(\"{}\", within(5, std::hint::black_box(9), 1));\n}\n",
+    // A `char`'s tracks its caller too; std's default, a `String`'s, through
+    // a dictionary or called itself, names its own line.
+    "fn within<T: Ord>(x: T, low: T, high: T) -> T {\n    x.clamp(low, high)\n}\n\nfn main() {\n    println!(\"{}\", within('m', 'a', 'z'));\n    println!(\"{}\", within('m', std::hint::black_box('z'), 'a'));\n}\n",
+    "fn within<T: Ord>(x: T, low: T, high: T) -> T {\n    x.clamp(low, high)\n}\n\nfn main() {\n    let (a, z) = (String::from(\"a\"), String::from(\"z\"));\n    println!(\"{}\", within(String::from(\"m\"), a.clone(), z.clone()));\n    println!(\"{}\", within(String::from(\"m\"), z, a));\n}\n",
+    "fn main() {\n    let (a, z) = (String::from(\"a\"), String::from(\"z\"));\n    println!(\"{}\", String::from(\"m\").clamp(std::hint::black_box(z), a));\n}\n",
+    // A generic `SliceIndex`'s, an item's and a range's.
+    "fn get<I: std::slice::SliceIndex<[u32]>>(v: &[u32], i: I) -> &I::Output {\n    &v[i]\n}\n\nfn main() {\n    let v = [1, 2, 3];\n    println!(\"{} {:?}\", get(&v, 1), get(&v, 1..2));\n    println!(\"{}\", get(&v, std::hint::black_box(7)));\n}\n",
+    "fn get<I: std::slice::SliceIndex<[u32]>>(v: &[u32], i: I) -> &I::Output {\n    &v[i]\n}\n\nfn main() {\n    let v = [1, 2, 3];\n    println!(\"{:?}\", get(&v, 2..std::hint::black_box(9)));\n}\n",
+  ];
+  generic.forEach((source, i) => {
+    expect(same(`generic${i}`, source).status).toBe(101);
+  });
+}, 300_000);
+
+test("a `Repeat`'s `count` and `last` name where they're called, through generic code and nested in another count too", () => {
+  // Its impl tracks its caller: the `count` or `last` that may reach it is
+  // given where it's called, held while it runs (#2324).
+  const total = "fn total<I: Iterator>(it: I) -> usize {\n    it.count()\n}\n\n";
+  const repeats = [
+    "fn main() {\n    println!(\"{:?}\", std::iter::repeat(3).take(2).last());\n    println!(\"{:?}\", std::iter::repeat(3).last());\n}\n",
+    "fn main() {\n    let n = std::iter::repeat(3).count();\n    println!(\"{n}\");\n}\n",
+    `${total}fn main() {\n    println!("{}", total(vec![1, 2].into_iter()));\n    println!("{}", total(std::iter::repeat(3)));\n}\n`,
+    `${total}fn main() {\n    let n = total([1, 2].iter().map(|_| total(std::iter::repeat(0).take(2))));\n    println!("{n}");\n    let m = total([1].iter().map(|_| std::iter::repeat(0).count()));\n    println!("{m}");\n}\n`,
+    `${total}fn main() {\n    let caught = std::panic::catch_unwind(|| total(std::iter::repeat(0)));\n    println!("{}", caught.is_err());\n    println!("{}", std::iter::repeat(1).count());\n}\n`,
+  ];
+  repeats.forEach((source, i) => {
+    expect(same(`repeat${i}`, source).status).toBe(101);
+  });
+}, 300_000);
+
 test("each panic std raises in its own code names std's line, as its hook does", () => {
   const kinds = [
     "let mut d: std::collections::VecDeque<u8> = [1, 2].into();\n    d.swap(0, std::hint::black_box(5));",

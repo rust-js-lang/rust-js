@@ -34,7 +34,11 @@ function howMany(items, dropI, dropIItem) {
   const iter = items;
   let result;
   try {
-    result = $count(Iterator.from(iter), dropIItem);
+    result = $count(
+      Iterator.from(iter),
+      dropIItem,
+      "test/corpus/generic_count_second_panic_aborts.rs:26:11",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownCount) {

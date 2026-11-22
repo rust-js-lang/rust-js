@@ -14,6 +14,7 @@ import {
   $partialOrd,
   $sortStable,
   $sortUnstable,
+  $stdSites,
 } from "@rust-js/std";
 
 const pairPartialOrd = $partialOrd({
@@ -181,7 +182,7 @@ function larger(a, b, TOrd) {
 }
 
 function clamped(x, low, high, TOrd) {
-  return TOrd.clamp(x, low, high);
+  return TOrd.clamp(x, low, high, "test/corpus/generic_compare_by_impls.rs:146:7");
 }
 
 function heaped(items, TOrd) {
@@ -258,7 +259,7 @@ function main() {
   console.log(`${pop == null ? "None" : `Some(${ownOpsDebug_fmt(pop)})`}`);
   console.log("concrete clamp own");
   console.log(
-    `${ownOpsDebug_fmt($clampBy([0], [1], [3], ownOpsPartialOrd, "test/corpus/generic_compare_by_impls.rs:197:32"))}`,
+    `${ownOpsDebug_fmt($clampBy([0], [1], [3], ownOpsPartialOrd, $stdSites.ordClamp[0]))}`,
   );
 
   const x = [1];

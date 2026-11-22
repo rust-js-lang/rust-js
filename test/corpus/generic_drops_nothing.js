@@ -58,11 +58,11 @@ export function wrapIndexI(ISliceIndexTSlice, dropT, dropI) {
   }));
 }
 function wrapIndexI_index(wrap, index, location, ISliceIndexTSlice, dropT, dropI) {
-  return ISliceIndexTSlice.index(index, wrap[0]);
+  return ISliceIndexTSlice.index(index, wrap[0], location);
 }
 
 function wrapIndexMutI_indexMut(wrap, index, location, ISliceIndexTSlice, dropT, dropI) {
-  return ISliceIndexTSlice.indexMut(index, wrap[0]);
+  return ISliceIndexTSlice.indexMut(index, wrap[0], location);
 }
 
 function main() {

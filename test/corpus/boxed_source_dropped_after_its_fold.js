@@ -150,7 +150,13 @@ function last(src, dropI) {
   );
   let result;
   try {
-    result = $lastDropping(iter, dDrop_drop);
+    result = $lastDropping(
+      iter,
+      dDrop_drop,
+      undefined,
+      undefined,
+      "test/corpus/boxed_source_dropped_after_its_fold.rs:105:54",
+    );
   } catch (error) {
     $cleanup(() => {
       iter.return();

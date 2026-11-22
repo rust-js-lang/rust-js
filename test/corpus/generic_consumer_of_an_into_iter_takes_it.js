@@ -104,7 +104,11 @@ function counted(iter, dropTIntoIter) {
   const iter$1 = $intoIter(iter);
   let result;
   try {
-    result = $count(iter$1);
+    result = $count(
+      iter$1,
+      undefined,
+      "test/corpus/generic_consumer_of_an_into_iter_takes_it.rs:68:22",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter$1.ownFold && !iter$1.ownCount) {
@@ -123,7 +127,7 @@ function last(iter, dropTIntoIter) {
   const iter$1 = $intoIter(iter);
   let result;
   try {
-    result = $last(iter$1);
+    result = $last(iter$1, "test/corpus/generic_consumer_of_an_into_iter_takes_it.rs:72:22");
   } catch (error) {
     $cleanup(() => {
       if (!iter$1.ownFold && !iter$1.ownLast) {

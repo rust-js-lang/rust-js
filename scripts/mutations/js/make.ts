@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "helper-given-no-location",
     breaks: "no helper call is given where its panic is raised, so each is refused as unlocated",
     file: "crates/rust-js-program/src/js/make.rs",
-    find: "            args.insert(at, location);\n",
-    replace: "            let _ = location;\n",
+    find: "        {\n            args.insert(at, location);\n",
+    replace: "        {\n            let _ = location;\n",
     tests: ["test/binaries.test.ts", "-t", "program's own code"],
   },
   {
@@ -371,5 +371,13 @@ export const mutations: Mutation[] = [
     find: "            ExprKind::Undefined | ExprKind::GivenUndefined | ExprKind::Null\n        )\n    }\n\n    /// Literals",
     replace: "            ExprKind::GivenUndefined | ExprKind::Null\n        )\n    }\n\n    /// Literals",
     tests: ["test/lowering-options.test.ts", "-t", "a filter by truth then a fallback is JS's"],
+  },
+  {
+    name: "asked-location-never-given",
+    breaks: "a call that asks for its helper's location where it's given only where asked, `$count`'s of what may be a `Repeat`, is given none, so its panic is `<unknown>` (#2324)",
+    file: "crates/rust-js-program/src/js/make.rs",
+    find: "            }\n            args.insert(at, location);\n",
+    replace: "            }\n            let _ = location;\n",
+    tests: ["test/binaries.test.ts", "-t", "a `Repeat`'s `count` and `last` name where they're called"],
   },
 ];

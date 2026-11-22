@@ -34,7 +34,11 @@ function ownIterator_sizeHint(own) {
 }
 
 function counted(it) {
-  return $count(Iterator.from(it));
+  return $count(
+    Iterator.from(it),
+    undefined,
+    "test/corpus/identity_map_hides_a_filters_count.rs:28:8",
+  );
 }
 
 function even(x) {

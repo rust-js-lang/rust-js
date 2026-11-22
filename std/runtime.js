@@ -4718,7 +4718,9 @@ export function $mulAddF32(a, b, c) {
 // that is `$some`'s (ADR 0051), then closed, as `last(self)` drops what
 // it has left at its end (#242). Of one given the crate's own `last`,
 // `ownLast`, that one, which drops what it passes itself (#182).
-export function $lastDropping(it, drop, boxed, ends) {
+// Of one that may be a `Repeat`, where it was called (`$count`'s, #2324).
+export function $lastDropping(it, drop, boxed, ends, raisedAt = undefined) {
+  if (raisedAt !== undefined) return $infinitelyAt(raisedAt, () => $lastDropping(it, drop, boxed, ends));
   const some = (item) => (boxed ? $some(item) : item);
   // Std's `Chain::last`: each side's own `last`, `a`'s then `b`'s, each
   // dropping what it passes; `b`'s where it has one, `a`'s dropped then,
@@ -4858,13 +4860,36 @@ export function $lastDropping(it, drop, boxed, ends) {
 // has one; else each item counted as it comes. Not a `count` that's a
 // field, an `$enumerate`'s, std's `Enumerate`'s, how many it's given (ADR
 // 0988): its count is `countItems`, its source's (#493).
-export function $count(it, drop) {
-  if (typeof it.count === "function") return it.count(drop);
-  if (it.countItems !== undefined) return it.countItems(drop);
-  return it.reduce((n, x) => {
-    drop?.(x);
-    return n + 1;
-  }, 0);
+// Of one that may be a `Repeat`, or reach one's own `count`, where it was
+// called, `raisedAt`, which that `count`'s panic names, as std's tracks
+// its caller (#2324).
+export function $count(it, drop, raisedAt = undefined) {
+  return $infinitelyAt(raisedAt, () => {
+    if (typeof it.count === "function") return it.count(drop);
+    if (it.countItems !== undefined) return it.countItems(drop);
+    return it.reduce((n, x) => {
+      drop?.(x);
+      return n + 1;
+    }, 0);
+  });
+}
+
+// Where the `count` or `last` that may reach a `Repeat`'s own was called,
+// held while `f` runs, which that one's panic names however many adapters
+// pass the call on (`$repeating`'s `infinite`, #2324): under
+// `$infiniteAtKey`, a slot of `globalThis` every copy of the runtime reads,
+// as a library's copy may have made the `Repeat` (#2333's rule); the one
+// it held before put back as `f` ends, however it ends, so a count inside
+// another's closure, or a panic unwinding through one, leaves none stale.
+export function $infinitelyAt(raisedAt, f) {
+  if (raisedAt === undefined) return f();
+  const outer = globalThis[$infiniteAtKey];
+  globalThis[$infiniteAtKey] = raisedAt;
+  const made = $unwinds(f, () => {
+    globalThis[$infiniteAtKey] = outer;
+  });
+  globalThis[$infiniteAtKey] = outer;
+  return made;
 }
 
 // `it.fold(init, f)` of a JS iterator whose `fold` is std's adapter's over
@@ -6153,14 +6178,15 @@ export function $nthSome(it, k) {
 // adapter's passing it on (#182): its item, or `undefined` for `None`. Of
 // generic code's, which may be JS's own, with no `last`, std's default,
 // its last item (#496).
-export function $last(it) {
-  const step = $lastStep(it);
+// Of one that may be a `Repeat`, where it was called (`$count`'s, #2324).
+export function $last(it, raisedAt = undefined) {
+  const step = $infinitelyAt(raisedAt, () => $lastStep(it));
   return step.done ? undefined : step.value;
 }
 
 // `it.last()` of items that look like `None`: its `Some` boxed (ADR 0051).
-export function $lastSome(it) {
-  const step = $lastStep(it);
+export function $lastSome(it, raisedAt = undefined) {
+  const step = $infinitelyAt(raisedAt, () => $lastStep(it));
   return step.done ? undefined : $some(step.value);
 }
 
@@ -14948,6 +14974,9 @@ export const $stdSites = {
   "sortTotalOrder": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/sort/shared/smallsort.rs:854:5"
   ],
+  "ordClamp": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cmp.rs:1166:9"
+  ],
   "refCellEq": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell.rs:1482:15",
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell.rs:1482:34"
@@ -15663,17 +15692,19 @@ export function $vecFromRaw(pointer, length) {
 // dictionary (ADR 0418): `usize`'s, its item, checked, and a handle on its
 // slot, as generic code's `&mut` is; a range's, those items, a copy as a
 // shared subslice is, and a view of them in a box, of each kind of range.
+// Each panic raised where generic code indexes, `raisedAt`, as std's impls
+// track their caller (#2324).
 export function $boundsIndex(start, end) {
   return {
-    index: (range, items) => $slice(items, start(range), undefined, end(range)),
-    indexMut: (range, items) => ({ value: $view(items, start(range), undefined, end(range)) }),
+    index: (range, items, raisedAt) => $slice(items, start(range), raisedAt, end(range)),
+    indexMut: (range, items, raisedAt) => ({ value: $view(items, start(range), raisedAt, end(range)) }),
   };
 }
 
 export const $sliceIndexes = {
   item: {
-    index: (index, items) => $index(items, index),
-    indexMut: (index, items) => $ptr(items, $at(items, index)),
+    index: (index, items, raisedAt) => $index(items, index, raisedAt),
+    indexMut: (index, items, raisedAt) => $ptr(items, $at(items, index, raisedAt)),
   },
   range: $boundsIndex((range) => range.start, (range) => range.end),
   from: $boundsIndex((range) => range.start, () => undefined),
@@ -19246,10 +19277,13 @@ export function $stdIterator(struct, steps, knows) {
     fold: steps.fold && ((init, f, unwind, ends) => taking("fold", () => steps.fold(it, init, f, unwind, ends))),
     // And its `try_fold`'s, given (#768).
     tryFold: steps.tryFold && ((init, f, broke, unwind, ends) => steps.tryFold(it, init, f, broke, unwind, ends)),
-    count: steps.count && ((drop) => taking("count", () => steps.count(it, drop))),
+    // Its `count` and `last`, given where the `count` or `last` that
+    // reached them was called, which one that may reach a `Repeat`'s holds
+    // (count.js's `$infinitelyAt`), and std's `Repeat`'s takes (#2324).
+    count: steps.count && (() => taking("count", () => steps.count(it, globalThis[$infiniteAtKey]))),
     advanceBy: steps.advanceBy === undefined ? advance : (m, drop) => steps.advanceBy(it, m, drop),
     nth: steps.nth && ((k) => step(steps.nth(it, k))),
-    last: steps.last && (() => step(taking("last", () => steps.last(it)))),
+    last: steps.last && (() => step(taking("last", () => steps.last(it, globalThis[$infiniteAtKey])))),
   });
   if (steps.nth !== undefined) $owns(it, "nth");
   if (steps.last !== undefined) $owns(it, "last");
@@ -22727,7 +22761,7 @@ export function $repeating(value, clone = (value) => value, drop) {
   const infinite = () =>
     $unwinds(
       () => {
-        throw new Error("iterator is infinite");
+        throw $panic("iterator is infinite", globalThis[$infiniteAtKey]);
       },
       () => it.return(),
     );
@@ -23551,6 +23585,10 @@ export const $placeOfPart = Symbol.for("rust-js: where a part of a slice is");
 // copy's `print!` held, its app's copy's line ends it (#2320).
 export const $stdoutKey = Symbol.for("rust-js: what stdout holds of a line left unended");
 
+// Where a `count` or `last` that may reach a `Repeat`'s own was called, a
+// slot of `globalThis` while it runs (count.js's `$infinitelyAt`, #2324).
+export const $infiniteAtKey = Symbol.for("rust-js: where a count or last that may reach a Repeat's own was called");
+
 export function $settle(promise) {
   return promise.then((value) => ({ TAG: "Ok", _0: value }), (e) => ({ TAG: "Err", _0: e }));
 }
@@ -23635,7 +23673,10 @@ export function $ord(dictionary) {
   const partialOrd = dictionary.PartialOrd;
   dictionary.max ??= (a, b, drop) => $maxOf(a, b, partialOrd(), drop);
   dictionary.min ??= (a, b, drop) => $minOf(a, b, partialOrd(), drop);
-  dictionary.clamp ??= (x, min, max, drop) => $clampBy(x, min, max, partialOrd(), undefined, undefined, drop);
+  // Where generic code's call is, given, unread: std's default doesn't
+  // track its caller, so its panic is std's own line (#2324).
+  dictionary.clamp ??= (x, min, max, raisedAt, drop) =>
+    $clampBy(x, min, max, partialOrd(), $stdSites.ordClamp[0], undefined, drop);
   return dictionary;
 }
 
@@ -23659,7 +23700,7 @@ export const $intsOrdered = /* @__PURE__ */ $ord({ PartialOrd: () => $partiallyO
 export const $charsOrdered = /* @__PURE__ */ $ord({
   PartialOrd: () => $partiallyOrdered,
   cmp: $cmp,
-  clamp: (x, min, max) => $clampBy(x, min, max, $partiallyOrdered, undefined, (c) => $debugStr(c, "'")),
+  clamp: (x, min, max, raisedAt) => $clampBy(x, min, max, $partiallyOrdered, raisedAt, (c) => $debugStr(c, "'")),
 });
 
 export function $toFixed(value, digits) {

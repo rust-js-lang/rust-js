@@ -79,7 +79,7 @@ function pickyFromIteratorI32_fromIter(it, dropI, dropIIntoIter) {
   const iter = $intoIter(it);
   let result;
   try {
-    result = $count(iter);
+    result = $count(iter, undefined, "test/corpus/fallible_collect_into_own_from_iter.rs:48:32");
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownCount) {

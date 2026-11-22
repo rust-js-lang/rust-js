@@ -32,7 +32,13 @@ function last(it, dropI) {
   const iter = it;
   let result;
   try {
-    result = $lastDropping(Iterator.from(iter), dDrop_drop);
+    result = $lastDropping(
+      Iterator.from(iter),
+      dDrop_drop,
+      undefined,
+      undefined,
+      "test/corpus/last_kept_drop_panics.rs:20:8",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownLast) {

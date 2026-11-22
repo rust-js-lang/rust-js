@@ -104,7 +104,13 @@ function skipped(src, dropI) {
   );
   let result;
   try {
-    result = $lastDropping(iter, dDrop_drop);
+    result = $lastDropping(
+      iter,
+      dDrop_drop,
+      undefined,
+      undefined,
+      "test/corpus/generic_box_own_last_taken_once.rs:61:25",
+    );
   } catch (error) {
     $cleanup(() => {
       iter.return();
@@ -148,7 +154,13 @@ function fused(src, IFused, dropI) {
   );
   let result;
   try {
-    result = $lastDropping(iter, dDrop_drop);
+    result = $lastDropping(
+      iter,
+      dDrop_drop,
+      undefined,
+      undefined,
+      "test/corpus/generic_box_own_last_taken_once.rs:66:31",
+    );
   } catch (error) {
     $cleanup(() => {
       iter.return();
@@ -195,7 +207,13 @@ function peeked(src, dropI) {
   const iter = it;
   let result;
   try {
-    result = $lastDropping(iter, dDrop_drop);
+    result = $lastDropping(
+      iter,
+      dDrop_drop,
+      undefined,
+      undefined,
+      "test/corpus/generic_box_own_last_taken_once.rs:73:16",
+    );
   } catch (error) {
     $cleanup(() => {
       iter.return();
@@ -239,7 +257,13 @@ function chained(src, dropI) {
   );
   let result;
   try {
-    result = $lastDropping(iter, dDrop_drop);
+    result = $lastDropping(
+      iter,
+      dDrop_drop,
+      undefined,
+      undefined,
+      "test/corpus/generic_box_own_last_taken_once.rs:78:41",
+    );
   } catch (error) {
     $cleanup(() => {
       iter.return();

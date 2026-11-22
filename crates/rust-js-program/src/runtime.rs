@@ -548,7 +548,24 @@ pub fn helper_of(name: &str) -> Option<Helper> {
 /// any optional one. `None` of a helper that raises none. The runtime's
 /// source is the one authority: each helper's own parameter list.
 pub fn location_at(name: &str) -> Option<usize> {
-    static AT: std::sync::LazyLock<IndexMap<&'static str, usize>> = std::sync::LazyLock::new(|| {
+    located(name).filter(|&(_, asked)| !asked).map(|(at, _)| at)
+}
+
+/// Where a helper `name` takes the location a panic it raises names only
+/// where its call asks for it: of its parameters, the one written
+/// `raisedAt = undefined`, which `Expr::call` never fills, and a call that
+/// may need it gives, `Expr::call_located`: `$count`'s, whose panic only a
+/// `Repeat`'s own `count` raises, located where the receiver may be one
+/// (#2324, ADR 0427 amended). `None` of another.
+pub fn location_where_asked(name: &str) -> Option<usize> {
+    located(name).filter(|&(_, asked)| asked).map(|(at, _)| at)
+}
+
+/// Of each helper that takes where its panic is raised, which parameter,
+/// and whether only where its call asks (`raisedAt = undefined`), read of
+/// its own parameter list, the one authority.
+fn located(name: &str) -> Option<(usize, bool)> {
+    static AT: std::sync::LazyLock<IndexMap<&'static str, (usize, bool)>> = std::sync::LazyLock::new(|| {
         (Helper::ALL.iter())
             .flat_map(|&helper| helper.source().lines())
             .filter_map(|line| {
@@ -557,8 +574,11 @@ pub fn location_at(name: &str) -> Option<usize> {
                     .find_map(|keyword| line.strip_prefix(keyword))?;
                 let (name, params) = rest.split_once('(')?;
                 let params = &params[..params.find(')')?];
-                let at = params.split(',').position(|param| param.trim() == "raisedAt")?;
-                name.starts_with('$').then_some((name, at))
+                let at = params
+                    .split(',')
+                    .position(|param| matches!(param.trim(), "raisedAt" | "raisedAt = undefined"))?;
+                let asked = params.split(',').nth(at)?.trim() != "raisedAt";
+                name.starts_with('$').then_some((name, (at, asked)))
             })
             .collect()
     });

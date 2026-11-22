@@ -86,7 +86,11 @@ function counted(it, dropI, dropIItem) {
   const iter = it;
   let result;
   try {
-    result = $count(Iterator.from(iter), dropIItem);
+    result = $count(
+      Iterator.from(iter),
+      dropIItem,
+      "test/corpus/flatten_count_takes_each_inner_count.rs:89:8",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownCount) {
@@ -107,13 +111,21 @@ function countedFromBothEnds(it) {
   console.log(
     `next ${next == null ? "None" : `Some(${next})`} back ${nextBack == null ? "None" : `Some(${nextBack})`}`,
   );
-  return $count(Iterator.from(it));
+  return $count(
+    Iterator.from(it),
+    undefined,
+    "test/corpus/flatten_count_takes_each_inner_count.rs:94:8",
+  );
 }
 
 function skippedFromItsBack(it) {
   const nextBack = $nextBack(it);
   console.log(`back ${nextBack == null ? "None" : `Some(${nextBack})`}`);
-  return $count(Iterator.from(it).drop(1));
+  return $count(
+    Iterator.from(it).drop(1),
+    undefined,
+    "test/corpus/flatten_count_takes_each_inner_count.rs:99:16",
+  );
 }
 
 function main() {

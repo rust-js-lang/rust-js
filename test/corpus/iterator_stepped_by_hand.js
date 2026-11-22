@@ -9,7 +9,11 @@ export function entry() {
 function firstTwo(it) {
   const a = $next(it);
   const b = $next(it);
-  return [a, b, $count(Iterator.from(it))];
+  return [
+    a,
+    b,
+    $count(Iterator.from(it), undefined, "test/corpus/iterator_stepped_by_hand.rs:7:15"),
+  ];
 }
 
 function main() {

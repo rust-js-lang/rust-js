@@ -8,7 +8,10 @@ export function entry() {
 
 function counted(it) {
   const had = $nextBackSome(it) != null;
-  return [had, $count(Iterator.from(it))];
+  return [
+    had,
+    $count(Iterator.from(it), undefined, "test/corpus/enumerate_counted_by_generic_code.rs:6:14"),
+  ];
 }
 
 function main() {

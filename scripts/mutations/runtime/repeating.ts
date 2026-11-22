@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "$repeatingN(clone(value), left, clone, drop)",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_cloned.rs$"],
   },
+  {
+    name: "repeat-panic-unlocated",
+    breaks: "a `Repeat`'s `count` and `last` panic naming no place, not where they were called (#2324)",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
+    find: "throw $panic(\"iterator is infinite\", globalThis[$infiniteAtKey]);",
+    replace: "throw $panic(\"iterator is infinite\", undefined);",
+    tests: ["test/binaries.test.ts", "-t", "a `Repeat`'s `count` and `last` name where they're called"],
+  },
 ];

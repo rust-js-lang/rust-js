@@ -943,6 +943,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => "clamp",
             };
             let mut args = values;
+            // Where its panic is raised, of a method whose impls track their
+            // caller, `clamp`'s, after its arguments, before the drop (ADR
+            // 0427, #2324).
+            if self.takes_caller_location(id) {
+                args.push(self.caller_location(span));
+            }
             args.extend(self.std_drop_function(ty, span)?);
             return Ok(Some(Expr::call(Expr::member(dictionary, name), args)));
         }
@@ -967,7 +973,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 args.push(show.unwrap_or_else(Expr::js_undefined));
             }
             args.extend(drop);
-            return Ok(Some(Expr::call_helper("$clampBy", args)));
+            // A `char`'s tracks its caller; std's default, `Ord::clamp`'s,
+            // doesn't, so its panic is std's own line (#2324).
+            if ty.peel_refs().is_char() {
+                return Ok(Some(Expr::call_helper("$clampBy", args)));
+            }
+            return Ok(Some(Expr::raised_at(Expr::std_site("ordClamp", 0), || {
+                Expr::call_helper("$clampBy", args)
+            })));
         }
         // `max` and `min` of a type with a destructor, std's `Ord::max`'s
         // `other < self`, the one it doesn't give back dropped, and both as

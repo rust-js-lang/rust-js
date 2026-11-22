@@ -91,7 +91,11 @@ function ownDoubleEndedIterator_nextBack(own) {
 }
 
 function skippedCount(it) {
-  return $count($lent($lent(it, "boxed")).drop(1));
+  return $count(
+    $lent($lent(it, "boxed")).drop(1),
+    undefined,
+    "test/corpus/generic_box_of_an_iterator_is_what_it_holds.rs:66:16",
+  );
 }
 
 function stepped(it) {

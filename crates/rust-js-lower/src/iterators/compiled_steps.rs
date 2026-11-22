@@ -387,8 +387,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<(Expr, bool)> {
         let next = trait_method(self.tcx, trait_id, method);
         let args = self.args_of(trait_id, crate::recognition::iterator_held(ty));
+        let instance = self.resolve_instance(next, args)?;
         // A generic `next` boxes a `Some` that looks like `None` (ADR 0051).
-        let boxed = self.resolve_instance(next, args)?.is_some_and(|instance| {
+        let boxed = instance.is_some_and(|instance| {
             let id = instance.def_id();
             let output = self
                 .tcx
@@ -406,12 +407,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .unwrap_or(output);
             self.option_of(output).is_some_and(|item| self.boxed_payload(item))
         });
-        let names: Vec<js::Name> = std::iter::once("iterator")
+        let mut names: Vec<js::Name> = std::iter::once("iterator")
             .chain(params.iter().copied())
             .map(|word| js::Name::declared(word.to_string()))
             .collect();
         let given: Vec<Expr> = names.iter().map(Expr::var).collect();
-        let call = self.impl_call(next, args, given, span)?;
+        // Of an impl that takes its caller's location, std's `Repeat`'s
+        // `last` and `count`, the location the runtime gives it, where the
+        // `count` or `last` that reaches it was called, its parameter after
+        // the others: rustc's monomorphized call gives it that (#2324).
+        let location = instance
+            .is_some_and(|instance| self.takes_caller_location(instance.def_id()))
+            .then(|| self.fresh(crate::Role::Location));
+        let call = match &location {
+            Some(location) => {
+                names.push(location.clone());
+                self.with_given_location(Expr::var(location), |cx| cx.impl_call(next, args, given, span))
+            }
+            None => self.impl_call(next, args, given, span),
+        };
+        let call = call?;
         let next = Expr::arrow(
             names.into_iter().map(Into::into).collect(),
             vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],

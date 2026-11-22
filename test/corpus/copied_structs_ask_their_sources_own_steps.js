@@ -44,7 +44,11 @@ function refsIterator_nth(refs, n) {
   return item;
 }
 function generic(i) {
-  return $count($copied(Iterator.from(i), (item) => ({ ...item })).drop(1));
+  return $count(
+    $copied(Iterator.from(i), (item) => ({ ...item })).drop(1),
+    undefined,
+    "test/corpus/copied_structs_ask_their_sources_own_steps.rs:34:24",
+  );
 }
 function main() {
   const items = [{ x: 1 }, { x: 2 }, { x: 3 }, { x: 4 }];

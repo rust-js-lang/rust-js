@@ -87,4 +87,12 @@ export const mutations: Mutation[] = [
     ],
     snapshots: true
   },
+  {
+    name: "asked-location-unread",
+    breaks: "a helper's location given only where its call asks, `raisedAt = undefined`, isn't read of its parameter list, so `$count` of what may be a `Repeat` is given none (#2324)",
+    file: "crates/rust-js-program/src/runtime.rs",
+    find: "matches!(param.trim(), \"raisedAt\" | \"raisedAt = undefined\")",
+    replace: "matches!(param.trim(), \"raisedAt\")",
+    tests: ["test/binaries.test.ts", "-t", "a `Repeat`'s `count` and `last` name where they're called"],
+  },
 ];

@@ -56,7 +56,11 @@ function twice(iter, IIterator, IClone, IExactSizeIterator, IItemSize) {
 }
 
 function ends(iter, IIterator, IClone, IDoubleEndedIterator) {
-  const count = $count($given(IClone.clone(iter), IIterator, true));
+  const count = $count(
+    $given(IClone.clone(iter), IIterator, true),
+    undefined,
+    "test/corpus/given_iterator_extensions.rs:48:30",
+  );
   return [IDoubleEndedIterator.next_back(iter), IIterator.next(iter), count];
 }
 

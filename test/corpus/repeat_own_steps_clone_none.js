@@ -33,7 +33,7 @@ function counted(x, n, TClone, dropT) {
   const iter = $repeating(x, (value) => TClone.clone(value), dropT).take(n);
   let result;
   try {
-    result = $count(iter, dropT);
+    result = $count(iter, dropT, "test/corpus/repeat_own_steps_clone_none.rs:22:23");
   } catch (error) {
     $cleanup(() => {
       iter.return();
@@ -52,7 +52,7 @@ function skipped(x, TClone, dropT) {
   );
   let result;
   try {
-    result = $count(iter, dropT);
+    result = $count(iter, dropT, "test/corpus/repeat_own_steps_clone_none.rs:26:28");
   } catch (error) {
     $cleanup(() => {
       iter.return();
@@ -65,7 +65,7 @@ function skipped(x, TClone, dropT) {
 
 function main() {
   console.log(
-    `${$count($repeating([0], (value) => lClone_clone(value), lDrop_drop).take(3), lDrop_drop)}`,
+    `${$count($repeating([0], (value) => lClone_clone(value), lDrop_drop).take(3), lDrop_drop, "test/corpus/repeat_own_steps_clone_none.rs:30:41")}`,
   );
   const take = $held($repeating([10], (value) => lClone_clone(value), lDrop_drop).take(5));
   try {
@@ -135,7 +135,7 @@ function main() {
     }, 0)}`,
   );
   console.log(
-    `${$count($skipping($repeating([50], (value) => lClone_clone(value), lDrop_drop).take(3), 1, lDrop_drop), lDrop_drop)}`,
+    `${$count($skipping($repeating([50], (value) => lClone_clone(value), lDrop_drop).take(3), 1, lDrop_drop), lDrop_drop, "test/corpus/repeat_own_steps_clone_none.rs:35:50")}`,
   );
   console.log(
     `${$count(
@@ -237,7 +237,7 @@ function main() {
     }, error);
     throw error;
   }
-  console.log(`${$count(held, lDrop_drop)}`);
+  console.log(`${$count(held, lDrop_drop, "test/corpus/repeat_own_steps_clone_none.rs:44:25")}`);
   const heldN = $held($repeatingN([130], 5, (value) => lClone_clone(value), lDrop_drop));
   let tmp$1;
   try {

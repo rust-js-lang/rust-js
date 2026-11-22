@@ -62,7 +62,12 @@ function summed(it, IIterator, IClone, PeekableClone) {
   const total = p.reduce((acc, x) => (acc + x) >>> 0, 0);
   const again = PeekableClone.clone(copy);
   const third = $nth($lent(again), 2);
-  return [total, $count(copy), third, $last(again)];
+  return [
+    total,
+    $count(copy, undefined, "test/corpus/std_peekable.rs:34:18"),
+    third,
+    $last(again, "test/corpus/std_peekable.rs:34:40"),
+  ];
 }
 
 function main() {

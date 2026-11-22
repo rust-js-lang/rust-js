@@ -18,8 +18,16 @@ export function entry() {
 /** Generic code's `/` and `%`, given a `Wrapping`: its dictionary's, std's. */
 function divided(a, b, TDiv, TRem, TCopy) {
   return [
-    TDiv.div(TCopy ? TCopy.copy(a) : a, TCopy ? TCopy.copy(b) : b),
-    TRem.rem(TCopy ? TCopy.copy(a) : a, TCopy ? TCopy.copy(b) : b),
+    TDiv.div(
+      TCopy ? TCopy.copy(a) : a,
+      TCopy ? TCopy.copy(b) : b,
+      "test/corpus/wrapping_ops_by_its_number_and_past_its_range.rs:69:6",
+    ),
+    TRem.rem(
+      TCopy ? TCopy.copy(a) : a,
+      TCopy ? TCopy.copy(b) : b,
+      "test/corpus/wrapping_ops_by_its_number_and_past_its_range.rs:69:13",
+    ),
   ];
 }
 

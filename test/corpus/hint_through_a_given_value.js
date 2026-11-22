@@ -28,7 +28,11 @@ function hint(it) {
 
 function passedOn(it, IIterator, IClone) {
   const copy = IClone.clone(it);
-  $count($given(copy, IIterator, true));
+  $count(
+    $given(copy, IIterator, true),
+    undefined,
+    "test/corpus/hint_through_a_given_value.rs:11:18",
+  );
   return hint($given(it, IIterator, true));
 }
 

@@ -130,4 +130,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_code_steps_adapters_as_std\\.rs$"],
   },
+  {
+    name: "last-dropping-location-unheld",
+    breaks: "`$lastDropping` given where it's called doesn't hold it while it runs, so a `Repeat`'s own `last` panics `<unknown>` (#2324)",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
+    find: "  if (raisedAt !== undefined) return $infinitelyAt(raisedAt, () => $lastDropping(it, drop, boxed, ends));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_drops_what_it_holds.rs$"],
+  },
 ];

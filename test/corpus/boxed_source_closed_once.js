@@ -53,7 +53,7 @@ function skippedCount(it, dropI) {
   );
   let result;
   try {
-    result = $count(iter);
+    result = $count(iter, undefined, "test/corpus/boxed_source_closed_once.rs:30:16");
   } catch (error) {
     $cleanup(() => {
       iter.return();

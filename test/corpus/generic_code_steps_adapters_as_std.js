@@ -123,7 +123,13 @@ function backThenLast(it, dropI, dropIItem) {
   const iter = it;
   let result;
   try {
-    result = $lastDropping(Iterator.from(iter), dropIItem, true);
+    result = $lastDropping(
+      Iterator.from(iter),
+      dropIItem,
+      true,
+      undefined,
+      "test/corpus/generic_code_steps_adapters_as_std.rs:96:8",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownLast) {
@@ -147,7 +153,13 @@ function last(it, dropI, dropIItem) {
   const iter = it;
   let result;
   try {
-    result = $lastDropping(Iterator.from(iter), dropIItem, true);
+    result = $lastDropping(
+      Iterator.from(iter),
+      dropIItem,
+      true,
+      undefined,
+      "test/corpus/generic_code_steps_adapters_as_std.rs:104:8",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownLast) {

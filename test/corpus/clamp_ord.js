@@ -9,6 +9,7 @@ import {
   $partialEq,
   $partialOrd,
   $partiallyOrdered,
+  $stdSites,
 } from "@rust-js/std";
 
 const sizePartialOrd = $partialOrd({
@@ -27,19 +28,13 @@ export function entry() {
 
 function main() {
   console.log(
-    `${$clampBy("m", "a", "f", $partiallyOrdered, "test/corpus/clamp_ord.rs:6:30", (c) => $debugStr(c, "'"))} ${$clampBy("q", "b", "k", $partiallyOrdered, "test/corpus/clamp_ord.rs:6:51")} ${$clampBy("a", "b", "k", $partiallyOrdered, "test/corpus/clamp_ord.rs:6:72")}`,
+    `${$clampBy("m", "a", "f", $partiallyOrdered, "test/corpus/clamp_ord.rs:6:30", (c) => $debugStr(c, "'"))} ${$clampBy("q", "b", "k", $partiallyOrdered, $stdSites.ordClamp[0])} ${$clampBy("a", "b", "k", $partiallyOrdered, $stdSites.ordClamp[0])}`,
   );
   console.log(
-    `${$clampBy("L", "S", "M", sizePartialOrd, "test/corpus/clamp_ord.rs:7:35")} ${$clampBy("S", "M", "L", sizePartialOrd, "test/corpus/clamp_ord.rs:7:68")}`,
+    `${$clampBy("L", "S", "M", sizePartialOrd, $stdSites.ordClamp[0])} ${$clampBy("S", "M", "L", sizePartialOrd, $stdSites.ordClamp[0])}`,
   );
-  const clamp = $clampBy(
-    [3, "x"],
-    [1, "a"],
-    [3, "b"],
-    tuplePartialOrd,
-    "test/corpus/clamp_ord.rs:8:31",
-  );
+  const clamp = $clampBy([3, "x"], [1, "a"], [3, "b"], tuplePartialOrd, $stdSites.ordClamp[0]);
   console.log(`(${clamp[0]}, ${$debugStr(clamp[1], "'")})`);
-  console.log(`${$clampBy("zz", "a", "m", $partiallyOrdered, "test/corpus/clamp_ord.rs:9:39")}`);
+  console.log(`${$clampBy("zz", "a", "m", $partiallyOrdered, $stdSites.ordClamp[0])}`);
 }
 //# sourceMappingURL=case.js.map

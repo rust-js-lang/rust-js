@@ -45,7 +45,7 @@ function splitFirst(iter, k, IItemSize, dropI, dropIItem) {
   let result;
   try {
     try {
-      result = $count(Iterator.from(iter), dropIItem);
+      result = $count(Iterator.from(iter), dropIItem, "test/corpus/take_destructors.rs:15:18");
     } catch (error) {
       $cleanup(() => {
         if (!iter.ownFold && !iter.ownCount) {

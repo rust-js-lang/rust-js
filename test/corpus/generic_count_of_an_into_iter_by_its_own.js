@@ -85,7 +85,11 @@ function counted(iter, dropTItem, dropTIntoIter) {
   const iter$1 = $intoIter(iter);
   let result;
   try {
-    result = $count(iter$1, dropTItem);
+    result = $count(
+      iter$1,
+      dropTItem,
+      "test/corpus/generic_count_of_an_into_iter_by_its_own.rs:87:22",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter$1.ownFold && !iter$1.ownCount) {
@@ -124,7 +128,11 @@ function countedAfterOne(iter, dropTItem, dropTIntoIter) {
   const iter$1 = it;
   let result;
   try {
-    result = $count(iter$1, dropTItem);
+    result = $count(
+      iter$1,
+      dropTItem,
+      "test/corpus/generic_count_of_an_into_iter_by_its_own.rs:93:8",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter$1.ownFold && !iter$1.ownCount) {
@@ -144,7 +152,11 @@ function countedFromAnOption(iter, dropTItem, dropTIntoIter) {
   const iter$1 = $someValue(held);
   let result;
   try {
-    result = $count(iter$1, dropTItem);
+    result = $count(
+      iter$1,
+      dropTItem,
+      "test/corpus/generic_count_of_an_into_iter_by_its_own.rs:98:19",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter$1.ownFold && !iter$1.ownCount) {
@@ -167,7 +179,11 @@ function countedFromAVec(iter, dropT, dropTItem, dropTIntoIter) {
     const iter = it;
     let result;
     try {
-      result = $count(iter, dropTItem);
+      result = $count(
+        iter,
+        dropTItem,
+        "test/corpus/generic_count_of_an_into_iter_by_its_own.rs:103:34",
+      );
     } catch (error) {
       $cleanup(() => {
         if (!iter.ownFold && !iter.ownCount) {
@@ -213,7 +229,11 @@ function countedPastAByRef(iter, dropTItem, dropTIntoIter) {
   const it = $held($intoIter(iter));
   let first;
   try {
-    first = $count($lent(it).take(1), dropTItem);
+    first = $count(
+      $lent(it).take(1),
+      dropTItem,
+      "test/corpus/generic_count_of_an_into_iter_by_its_own.rs:108:37",
+    );
   } catch (error) {
     $cleanup(() => {
       dropTIntoIter?.(it);
@@ -223,7 +243,11 @@ function countedPastAByRef(iter, dropTItem, dropTIntoIter) {
   const iter$1 = it;
   let result;
   try {
-    result = $count(iter$1, dropTItem);
+    result = $count(
+      iter$1,
+      dropTItem,
+      "test/corpus/generic_count_of_an_into_iter_by_its_own.rs:109:16",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter$1.ownFold && !iter$1.ownCount) {
@@ -242,7 +266,11 @@ function countedParam(it, dropI, dropIItem) {
   const iter = it;
   let result;
   try {
-    result = $count(Iterator.from(iter), dropIItem);
+    result = $count(
+      Iterator.from(iter),
+      dropIItem,
+      "test/corpus/generic_count_of_an_into_iter_by_its_own.rs:113:8",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownCount) {

@@ -85,7 +85,10 @@ function main() {
     undefined,
     ownDoubleEndedIterator_nthBack,
   );
-  const value$1 = $last($lent(lent, "lentUnsized").drop(1));
+  const value$1 = $last(
+    $lent(lent, "lentUnsized").drop(1),
+    "test/corpus/skip_last_of_a_lent_dyn.rs:51:37",
+  );
   console.log(`c ${value$1 == null ? "None" : `Some(${value$1})`}`);
   own = [4];
   lent = $iterator(
@@ -101,7 +104,10 @@ function main() {
     undefined,
     ownDoubleEndedIterator_nthBack,
   );
-  const value$2 = $last($lent(lent, "lentUnsized").drop(2));
+  const value$2 = $last(
+    $lent(lent, "lentUnsized").drop(2),
+    "test/corpus/skip_last_of_a_lent_dyn.rs:54:37",
+  );
   console.log(`d ${value$2 == null ? "None" : `Some(${value$2})`}`);
   own = [6];
   lent = $iterator(
@@ -133,7 +139,7 @@ function main() {
     undefined,
     ownDoubleEndedIterator_nthBack,
   );
-  const value$4 = $last($enumerate(lent).drop(1));
+  const value$4 = $last($enumerate(lent).drop(1), "test/corpus/skip_last_of_a_lent_dyn.rs:60:57");
   console.log(`enumerate ${value$4 == null ? "None" : `Some((${value$4[0]}, ${value$4[1]}))`}`);
   own = [5];
   lent = $iterator(
@@ -149,7 +155,10 @@ function main() {
     undefined,
     ownDoubleEndedIterator_nthBack,
   );
-  const value$5 = $last($rev($lent(lent, "lentUnsized")).drop(1));
+  const value$5 = $last(
+    $rev($lent(lent, "lentUnsized")).drop(1),
+    "test/corpus/skip_last_of_a_lent_dyn.rs:63:45",
+  );
   console.log(`rev ${value$5 == null ? "None" : `Some(${value$5})`}`);
   own = [5];
   lent = $iterator(
@@ -165,7 +174,10 @@ function main() {
     undefined,
     ownDoubleEndedIterator_nthBack,
   );
-  const value$6 = $last($lent(lent, "lentUnsized").drop(9));
+  const value$6 = $last(
+    $lent(lent, "lentUnsized").drop(9),
+    "test/corpus/skip_last_of_a_lent_dyn.rs:66:48",
+  );
   console.log(`past its end ${value$6 == null ? "None" : `Some(${value$6})`}`);
   console.log(`left ${own[0]}`);
 }

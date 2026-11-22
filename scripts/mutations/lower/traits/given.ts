@@ -245,4 +245,12 @@ export const mutations: Mutation[] = [
     replace: "    index.checked_sub(first).map(|own| (item, own))\n",
     tests: ["test/diagnostics.test.ts", "-t", "a trait's method that takes no destructor"],
   },
+  {
+    name: "given-location-unset",
+    breaks: "a step table's entry given the location by the runtime calls its impl with the place the table is made (#2324)",
+    file: "crates/rust-js-lower/src/traits/given.rs",
+    find: "        let outer = self.given.caller_location.replace((self.frame.owner, location));\n",
+    replace: "        let outer = self.given.caller_location.clone();\n        let _ = location;\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
 ];

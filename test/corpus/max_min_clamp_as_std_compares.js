@@ -12,6 +12,7 @@ import {
   $panic,
   $partialEq,
   $partialOrd,
+  $stdSites,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -160,7 +161,7 @@ function main() {
         [3],
         [5],
         dPartialOrd,
-        "test/corpus/max_min_clamp_as_std_compares.rs:88:53",
+        $stdSites.ordClamp[0],
         undefined,
         dDrop_drop,
       );
@@ -180,7 +181,7 @@ function main() {
         [3],
         [5],
         dPartialOrd,
-        "test/corpus/max_min_clamp_as_std_compares.rs:89:59",
+        $stdSites.ordClamp[0],
         undefined,
         dDrop_drop,
       );
@@ -200,7 +201,7 @@ function main() {
         [3],
         [5],
         dPartialOrd,
-        "test/corpus/max_min_clamp_as_std_compares.rs:90:59",
+        $stdSites.ordClamp[0],
         undefined,
         dDrop_drop,
       );
@@ -234,7 +235,7 @@ function main() {
         { a: [3], b: 0 },
         { a: [5], b: 0 },
         pPartialOrd,
-        "test/corpus/max_min_clamp_as_std_compares.rs:95:41",
+        $stdSites.ordClamp[0],
         undefined,
         (p) => {
           dDrop_drop(p.a);

@@ -1018,7 +1018,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.primitive_operands(tr)
         {
             let param = self.unspelled("value");
-            let params: Vec<js::Pattern> = match op {
+            let mut params: Vec<js::Pattern> = match op {
                 Ok(_) => vec![made_a.clone().into(), made_b.clone().into()],
                 Err(_) => vec![param.clone().into()],
             };
@@ -1026,7 +1026,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(_) => (Expr::var(&made_a), Some(Expr::var(&made_b))),
                 Err(_) => (Expr::var(&param), None),
             };
-            let value = self.number_operator(op, a, b, tr, span)?;
+            let at = self.entry_location(tr, &mut params);
+            let value = self.number_operator(op, a, b, tr, at, span)?;
             return Ok(Expr::object(vec![Prop::Field(
                 self.operator_entry(tr.def_id),
                 Expr::arrow(params, vec![StmtKind::Return(Some(value)).at(js::Span::NONE)]),
@@ -1041,16 +1042,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let cell = js::Name::declared("cell".to_string());
             let place = Expr::member(Expr::var(cell.clone()), js::HELD);
+            let mut params: Vec<js::Pattern> = vec![cell.into(), made_b.clone().into()];
+            let at = self.entry_location(tr, &mut params);
             let value = match self.primitive_operands(tr) {
-                true => self.number_operator(Ok(op), place.clone(), Some(Expr::var(&made_b)), tr, span)?,
+                true => self.number_operator(Ok(op), place.clone(), Some(Expr::var(&made_b)), tr, at, span)?,
                 false => Expr::bin(Op::Add, place.clone(), Expr::var(&made_b)),
             };
             return Ok(Expr::object(vec![Prop::Field(
                 self.operator_entry(tr.def_id),
-                Expr::arrow(
-                    vec![cell.into(), made_b.clone().into()],
-                    vec![StmtKind::Assign(place, value).at(js::Span::NONE)],
-                ),
+                Expr::arrow(params, vec![StmtKind::Assign(place, value).at(js::Span::NONE)]),
             )]));
         }
         if let Some(made) = self.conversion_dictionary(tr, span)? {

@@ -21,7 +21,11 @@ function ownIterator_sizeHint(own) {
 }
 
 function counted(it) {
-  return $count(Iterator.from(it));
+  return $count(
+    Iterator.from(it),
+    undefined,
+    "test/corpus/skip_of_a_filter_counts_by_its_count.rs:27:8",
+  );
 }
 
 function even(x) {

@@ -53,10 +53,13 @@ function $stdIterator(struct, steps, knows) {
     fold: steps.fold && ((init, f, unwind, ends) => taking("fold", () => steps.fold(it, init, f, unwind, ends))),
     // And its `try_fold`'s, given (#768).
     tryFold: steps.tryFold && ((init, f, broke, unwind, ends) => steps.tryFold(it, init, f, broke, unwind, ends)),
-    count: steps.count && ((drop) => taking("count", () => steps.count(it, drop))),
+    // Its `count` and `last`, given where the `count` or `last` that
+    // reached them was called, which one that may reach a `Repeat`'s holds
+    // (count.js's `$infinitelyAt`), and std's `Repeat`'s takes (#2324).
+    count: steps.count && (() => taking("count", () => steps.count(it, globalThis[$infiniteAtKey]))),
     advanceBy: steps.advanceBy === undefined ? advance : (m, drop) => steps.advanceBy(it, m, drop),
     nth: steps.nth && ((k) => step(steps.nth(it, k))),
-    last: steps.last && (() => step(taking("last", () => steps.last(it)))),
+    last: steps.last && (() => step(taking("last", () => steps.last(it, globalThis[$infiniteAtKey])))),
   });
   if (steps.nth !== undefined) $owns(it, "nth");
   if (steps.last !== undefined) $owns(it, "last");

@@ -118,6 +118,21 @@ test("a Peekable is made by std's own peekable, imported from @rust-js/std, and 
   expect(std).toContain("hint(peekable) {\n        return $peekableHint(peekable, SelfIterator);\n      },");
 });
 
+// A compiled step table's `count` and `last` take the iterator alone, and
+// the caller's location where std's impl takes it, `Repeat`'s, which the
+// runtime gives them (std_iterator.js, #2324); none reads a drop, which
+// the runtime's `count` was given and none read.
+test("a compiled step table's `count` and `last` take the iterator, and where std's impl takes it, the caller's location", () => {
+  const entries = new Set<string>();
+  for (const module of ["iter.js", "runtime.js"]) {
+    const std = readFileSync(join(stdDir, module), "utf8");
+    for (const [, name, params] of std.matchAll(/^ {6}(count|last)\(([^)]*)\) \{$/gm)) entries.add(`${name}(${params})`);
+  }
+  expect([...entries].sort()).toEqual(["count(iterator)", "count(iterator, location)", "last(iterator)", "last(iterator, location)"]);
+  const std = readFileSync(join(stdDir, "iter.js"), "utf8");
+  expect(std).toContain("last(iterator, location) {\n        return repeatIterator_last(iterator, location, TClone, dropT);");
+});
+
 // ADR 0564: a std body's JS is tidied as the app's is, though its optimized
 // MIR leaves what the app's MIR doesn't: `next_back`'s test of `option` after
 // its early return of it, which can't hold, is gone, as is a `bool`

@@ -4,7 +4,9 @@
 // that is `$some`'s (ADR 0051), then closed, as `last(self)` drops what
 // it has left at its end (#242). Of one given the crate's own `last`,
 // `ownLast`, that one, which drops what it passes itself (#182).
-function $lastDropping(it, drop, boxed, ends) {
+// Of one that may be a `Repeat`, where it was called (`$count`'s, #2324).
+function $lastDropping(it, drop, boxed, ends, raisedAt = undefined) {
+  if (raisedAt !== undefined) return $infinitelyAt(raisedAt, () => $lastDropping(it, drop, boxed, ends));
   const some = (item) => (boxed ? $some(item) : item);
   // Std's `Chain::last`: each side's own `last`, `a`'s then `b`'s, each
   // dropping what it passes; `b`'s where it has one, `a`'s dropped then,

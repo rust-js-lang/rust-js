@@ -293,4 +293,20 @@ export const mutations: Mutation[] = [
     replace: "            && crate::recognition::is_iterator_extension(self.tcx, trait_id)\n            && false\n        {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_of_an_iterator_passes_on_what_std_does\\.rs$"],
   },
+  {
+    name: "step-entry-location-unparametered",
+    breaks: "a compiled step table's entry of an impl that takes its caller's location, std's `Repeat`'s `last`, gives the place the table is made, `repeat.rs:65:5`, where native Rust names where `last` was called (#2324)",
+    file: "crates/rust-js-lower/src/iterators/compiled_steps.rs",
+    find: "            .is_some_and(|instance| self.takes_caller_location(instance.def_id()))\n            .then(",
+    replace: "            .is_some_and(|_| false)\n            .then(",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
+  {
+    name: "step-entry-location-not-given",
+    breaks: "a compiled step table's entry takes the location, but its call is given the place the table is made (#2324)",
+    file: "crates/rust-js-lower/src/iterators/compiled_steps.rs",
+    find: "                self.with_given_location(Expr::var(location), |cx| cx.impl_call(next, args, given, span))\n",
+    replace: "                self.impl_call(next, args, given, span)\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
 ];

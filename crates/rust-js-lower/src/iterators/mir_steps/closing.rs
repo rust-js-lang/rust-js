@@ -577,6 +577,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // as a panic unwinds, where a JS array made of it would leave it
         // (#653).
         let drops_none = item.is_none_or(|item| self.drops(item) == crate::drops::Drops::Nothing);
+        // Where it may reach a `Repeat`'s own `last`, which panics, where
+        // it's called, as std's tracks its caller (#2324).
+        let repeats = self.recognition().may_be_repeat(iter_ty);
         let unwinds_holding = self.drops(iter_ty) != crate::drops::Drops::Nothing && self.steps_may_panic(iter_ty);
         if drops_none
             && (self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)
@@ -584,7 +587,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 || unwinds_holding)
         {
             let boxed = item.is_some_and(|item| self.boxed_payload(item));
-            return Ok(Expr::call_helper(if boxed { "$lastSome" } else { "$last" }, vec![it]));
+            let last = Expr::helper(if boxed { "$lastSome" } else { "$last" });
+            return Ok(Expr::call_located(last, vec![it], repeats));
         }
         // Of items with a destructor, `$lastDropping`, which asks what std's
         // `last` asks itself, a `skip`'s `nth`, a `chain`'s sides' `last`,
@@ -595,10 +599,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => self.by_its_fold(it, iter_ty, false),
             false => it,
         };
-        self.last_value(it, item, span, made)
+        self.last_value(it, item, repeats, span, made)
     }
 
-    pub(crate) fn last_value(&mut self, it: Expr, item: Option<Ty<'tcx>>, span: Span, made: &mut Vec<Stmt>) -> R<Expr> {
+    /// `repeats`: whether it may reach a `Repeat`'s own `last`, given where
+    /// it's called (`Expr::call_located`, #2324).
+    pub(crate) fn last_value(
+        &mut self,
+        it: Expr,
+        item: Option<Ty<'tcx>>,
+        repeats: bool,
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         match item
             .map(|item| self.std_drop_function(item, span))
             .transpose()?
@@ -611,7 +624,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if item.is_some_and(|item| self.boxed_payload(item)) {
                     given.push(Expr::bool(true));
                 }
-                Ok(Expr::call_helper("$lastDropping", given))
+                Ok(Expr::call_located(Expr::helper("$lastDropping"), given, repeats))
             }
             None => {
                 let items = Expr::collected(it);

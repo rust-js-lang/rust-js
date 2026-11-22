@@ -219,7 +219,7 @@ function least(a, b, TOrd, dropT) {
 }
 
 function clamped(x, low, high, TOrd, dropT) {
-  return TOrd.clamp(x, low, high, dropT);
+  return TOrd.clamp(x, low, high, "test/corpus/own_ne_max_min_clamp.rs:208:7", dropT);
 }
 
 function main() {

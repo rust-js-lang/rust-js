@@ -131,6 +131,7 @@ function oddCount(src) {
       dDrop_drop,
     ),
     dDrop_drop,
+    "test/corpus/back_knowing_adapters_hint_and_try_fold.rs:88:34",
   );
 }
 

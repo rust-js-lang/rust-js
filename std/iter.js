@@ -1064,7 +1064,13 @@ export function peekableIterator_last(peekable, IIterator = { next: $next }, dro
   let result$1;
   try {
     try {
-      result$1 = $lastDropping($given(iter, IIterator, true), dropIItem, true);
+      result$1 = $lastDropping(
+        $given(iter, IIterator, true),
+        dropIItem,
+        true,
+        undefined,
+        "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/peekable.rs:72:19",
+      );
     } catch (error) {
       $cleanup(() => {
         if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
@@ -1172,7 +1178,11 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
     let tmp$1;
     try {
       try {
-        result$1 = $count($given(iter, IIterator, true), dropIItem);
+        result$1 = $count(
+          $given(iter, IIterator, true),
+          dropIItem,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/peekable.rs:50:44",
+        );
       } catch (error) {
         $cleanup(() => {
           if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
@@ -1207,7 +1217,11 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
     let result$1;
     try {
       try {
-        result$1 = $count($given(iter, IIterator, true), dropIItem);
+        result$1 = $count(
+          $given(iter, IIterator, true),
+          dropIItem,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/peekable.rs:51:31",
+        );
       } catch (error) {
         $cleanup(() => {
           if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
@@ -1814,7 +1828,11 @@ export function fuseIterator_count(fuse, IIterator = { next: $next }, dropI, dro
     const iter = $someValue(fuse.iter);
     let result;
     try {
-      result = $count($given(iter, IIterator, true), dropIItem);
+      result = $count(
+        $given(iter, IIterator, true),
+        dropIItem,
+        "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/fuse.rs:74:32",
+      );
     } catch (error) {
       $cleanup(() => {
         if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
@@ -2210,7 +2228,13 @@ export function fuseIterator_last(fuse, IIterator = { next: $next }, dropI, drop
     const iter = $someValue(fuse.iter);
     let result;
     try {
-      result = $lastDropping($given(iter, IIterator, true), dropIItem, true);
+      result = $lastDropping(
+        $given(iter, IIterator, true),
+        dropIItem,
+        true,
+        undefined,
+        "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/fuse.rs:66:32",
+      );
     } catch (error) {
       $cleanup(() => {
         if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
@@ -2700,7 +2724,11 @@ export function enumerateIterator_count(enumerate, IIterator = { next: $next }, 
   const iter = enumerate.iter;
   let result;
   try {
-    result = $count($given(iter, IIterator, true), dropIItem);
+    result = $count(
+      $given(iter, IIterator, true),
+      dropIItem,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/enumerate.rs:102:19",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
@@ -3848,7 +3876,10 @@ export function copiedIterator_last(copied, IIterator = { next: $next }, TCopy, 
   const iter = copied.it;
   let result;
   try {
-    result = $lastSome($given(iter, IIterator, true));
+    result = $lastSome(
+      $given(iter, IIterator, true),
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/copied.rs:89:17",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
@@ -3871,7 +3902,11 @@ export function copiedIterator_count(copied, IIterator = { next: $next }, TCopy,
   const iter = copied.it;
   let result;
   try {
-    result = $count($given(iter, IIterator, true));
+    result = $count(
+      $given(iter, IIterator, true),
+      undefined,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/copied.rs:93:17",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
@@ -7274,7 +7309,11 @@ export function skipIterator_count(skip, IIterator = { next: $next }, dropI, dro
   const iter = skip.iter;
   let result;
   try {
-    result = $count($given(iter, IIterator, true), dropIItem);
+    result = $count(
+      $given(iter, IIterator, true),
+      dropIItem,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/skip.rs:78:19",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!$took(IIterator.fold, iter) && !$took(IIterator.count, iter)) {
@@ -7323,7 +7362,13 @@ export function skipIterator_last(skip, IIterator = { next: $next }, dropI, drop
   const iter = skip.iter;
   let result;
   try {
-    result = $lastDropping($given(iter, IIterator, true), dropIItem, true);
+    result = $lastDropping(
+      $given(iter, IIterator, true),
+      dropIItem,
+      true,
+      undefined,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/skip.rs:87:19",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!$took(IIterator.fold, iter) && !$took(IIterator.last, iter)) {
@@ -8746,7 +8791,11 @@ export function chainIterator_count(
     let result;
     try {
       try {
-        result = $count($given(iter, AIterator, true), dropAItem);
+        result = $count(
+          $given(iter, AIterator, true),
+          dropAItem,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/chain.rs:89:26",
+        );
       } catch (error) {
         $cleanup(() => {
           if (!$took(AIterator.fold, iter) && !$took(AIterator.count, iter)) {
@@ -8776,7 +8825,11 @@ export function chainIterator_count(
     const iter = $someValue(chain.b);
     let result;
     try {
-      result = $count($given(iter, BIterator, true), dropAItem);
+      result = $count(
+        $given(iter, BIterator, true),
+        dropAItem,
+        "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/chain.rs:93:26",
+      );
     } catch (error) {
       $cleanup(() => {
         if (!$took(BIterator.fold, iter) && !$took(BIterator.count, iter)) {
@@ -9067,7 +9120,13 @@ export function chainIterator_last(
     let result;
     try {
       try {
-        result = $lastDropping($given(iter, AIterator, true), dropAItem, true);
+        result = $lastDropping(
+          $given(iter, AIterator, true),
+          dropAItem,
+          true,
+          undefined,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5",
+        );
       } catch (error) {
         $cleanup(() => {
           if (!$took(AIterator.fold, iter) && !$took(AIterator.last, iter)) {
@@ -9098,7 +9157,13 @@ export function chainIterator_last(
     let result;
     try {
       try {
-        result = $lastDropping($given(iter, BIterator, true), dropAItem, true);
+        result = $lastDropping(
+          $given(iter, BIterator, true),
+          dropAItem,
+          true,
+          undefined,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5",
+        );
       } catch (error) {
         $cleanup(() => {
           if (!$took(BIterator.fold, iter) && !$took(BIterator.last, iter)) {
@@ -12403,21 +12468,11 @@ export function repeat(elt, TClone, dropT) {
       advance(iterator, n) {
         return repeatIterator_advanceBy(iterator, n, TClone, dropT);
       },
-      last(iterator) {
-        return repeatIterator_last(
-          iterator,
-          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:65:5",
-          TClone,
-          dropT,
-        );
+      last(iterator, location) {
+        return repeatIterator_last(iterator, location, TClone, dropT);
       },
-      count(iterator) {
-        return repeatIterator_count(
-          iterator,
-          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:65:5",
-          TClone,
-          dropT,
-        );
+      count(iterator, location) {
+        return repeatIterator_count(iterator, location, TClone, dropT);
       },
       takes: ["last", "count"],
       close(iterator) {
@@ -16023,7 +16078,13 @@ export function flattenCompatIUIterator_last_last(last, iter, dropU, dropUItem) 
   let result$1;
   try {
     try {
-      result$1 = $lastDropping(Iterator.from(iter), dropUItem, true);
+      result$1 = $lastDropping(
+        Iterator.from(iter),
+        dropUItem,
+        true,
+        undefined,
+        "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/flatten.rs:620:18",
+      );
     } catch (error) {
       $cleanup(() => {
         if (!iter.ownFold && !iter.ownLast) {
@@ -16078,7 +16139,11 @@ export function iterator_last_some(_1, x, dropT) {
 export function flattenCompatIUIterator_count_count(acc, iter, dropU, dropUItem) {
   let result;
   try {
-    result = $count(Iterator.from(iter), dropUItem);
+    result = $count(
+      Iterator.from(iter),
+      dropUItem,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/flatten.rs:610:24",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownCount) {

@@ -25,7 +25,13 @@ function lastOf(it, dropI, dropIItem) {
   const iter = it;
   let result;
   try {
-    result = $lastDropping(Iterator.from(iter), dropIItem, true);
+    result = $lastDropping(
+      Iterator.from(iter),
+      dropIItem,
+      true,
+      undefined,
+      "test/corpus/flatten_of_options_given_to_generic_code.rs:14:8",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownLast) {

@@ -27,7 +27,7 @@ function $repeating(value, clone = (value) => value, drop) {
   const infinite = () =>
     $unwinds(
       () => {
-        throw new Error("iterator is infinite");
+        throw $panic("iterator is infinite", globalThis[$infiniteAtKey]);
       },
       () => it.return(),
     );

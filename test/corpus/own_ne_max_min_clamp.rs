@@ -1,5 +1,4 @@
 //@ run-fail: min > max. min = 3, max = 1
-//@ located-otherwise: #2324 a generic `clamp` through its dictionary is given no location
 // An impl's own `ne`, `max`, `min` and `clamp` are what `!=` and the
 // others run, as rustc calls them (#962): of generic code, through std's
 // impls that ask their parts' `!=` (a reference's, a `Box`'s, an `Rc`'s, a

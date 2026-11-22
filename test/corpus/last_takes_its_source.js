@@ -155,7 +155,13 @@ function end(it, dropI, dropIItem) {
   const iter = it;
   let result;
   try {
-    result = $lastDropping(Iterator.from(iter), dropIItem, true);
+    result = $lastDropping(
+      Iterator.from(iter),
+      dropIItem,
+      true,
+      undefined,
+      "test/corpus/last_takes_its_source.rs:116:8",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownLast) {

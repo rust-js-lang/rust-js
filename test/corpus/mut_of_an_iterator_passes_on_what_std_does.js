@@ -49,7 +49,11 @@ function sum(it) {
 }
 
 function counted(it) {
-  return $count(Iterator.from(it));
+  return $count(
+    Iterator.from(it),
+    undefined,
+    "test/corpus/mut_of_an_iterator_passes_on_what_std_does.rs:50:8",
+  );
 }
 
 function through(it) {

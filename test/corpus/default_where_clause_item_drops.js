@@ -138,7 +138,11 @@ function tHolding(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
         const iter = self;
         let result;
         try {
-          result = $count($given(iter, TIterator, true), dropTItem);
+          result = $count(
+            $given(iter, TIterator, true),
+            dropTItem,
+            "test/corpus/default_where_clause_item_drops.rs:51:14",
+          );
         } catch (error) {
           $cleanup(() => {
             if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
@@ -242,7 +246,11 @@ function tJoining(TIterator, dropT, dropTItem, dropTItemItem, dropTItemIntoIter)
         try {
           iter$1 = $intoIter(extra);
           try {
-            result$1 = $count(iter$1, dropUItem);
+            result$1 = $count(
+              iter$1,
+              dropUItem,
+              "test/corpus/default_where_clause_item_drops.rs:69:39",
+            );
           } catch (error) {
             $cleanup(() => {
               if (!iter$1.ownFold && !iter$1.ownCount) {

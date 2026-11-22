@@ -56,7 +56,13 @@ function lastOf(it, dropI) {
   const iter = it;
   let result;
   try {
-    result = $lastDropping(Iterator.from(iter), dDrop_drop);
+    result = $lastDropping(
+      Iterator.from(iter),
+      dDrop_drop,
+      undefined,
+      undefined,
+      "test/corpus/vec_last_takes_its_back.rs:33:8",
+    );
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownLast) {

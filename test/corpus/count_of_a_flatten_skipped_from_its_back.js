@@ -98,7 +98,11 @@ function skippedFromItsBack(it, IItemDebug, dropI, dropIItem) {
   const iter = $skipping($closing(Iterator.from(it), dropI, false), 1, dropIItem);
   let result;
   try {
-    result = $count(iter, dropIItem);
+    result = $count(
+      iter,
+      dropIItem,
+      "test/corpus/count_of_a_flatten_skipped_from_its_back.rs:52:16",
+    );
   } catch (error) {
     $cleanup(() => {
       iter.return();
@@ -133,7 +137,13 @@ function lastFromItsBack(it, dropI, dropIItem) {
   const iter = $skipping($closing(Iterator.from(it), dropI, false), 1, dropIItem);
   let result;
   try {
-    result = $lastDropping(iter, dropIItem, true);
+    result = $lastDropping(
+      iter,
+      dropIItem,
+      true,
+      undefined,
+      "test/corpus/count_of_a_flatten_skipped_from_its_back.rs:57:16",
+    );
   } catch (error) {
     $cleanup(() => {
       iter.return();

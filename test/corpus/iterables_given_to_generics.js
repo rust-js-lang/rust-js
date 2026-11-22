@@ -33,7 +33,7 @@ function bump(i) {
   }
 }
 function count(i) {
-  return $count($intoIter(i));
+  return $count($intoIter(i), undefined, "test/corpus/iterables_given_to_generics.rs:16:19");
 }
 function firsts(i, IItemDebug) {
   return $collectDropping(

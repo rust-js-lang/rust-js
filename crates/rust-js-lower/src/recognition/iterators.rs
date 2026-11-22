@@ -478,6 +478,24 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// and inner iterator, front and back (#709); and the values it clones,
     /// a `cloned()`'s items, a `repeat()`'s value, a `cycle()`'s iterator
     /// (#708). The one catalog of it (ADR 1089, amended).
+    /// Whether an iterator of type `ty` may be a `Repeat`, or reach one's
+    /// own `count` or `last`, which panic naming their caller, as std's
+    /// track it (#2324): one holding a `Repeat` anywhere in its type, or one
+    /// only a caller knows, a type parameter's, a projection's, an opaque
+    /// type's or a `dyn`'s. Its `$count` and `$last` are given where they're
+    /// called (`Expr::call_located`); a concrete other's never.
+    pub fn may_be_repeat(&self, ty: Ty<'tcx>) -> bool {
+        ty.walk()
+            .filter_map(|part| part.as_type())
+            .any(|part| match part.kind() {
+                ty::Adt(adt, _) => {
+                    std_item_in(self.tcx, adt.did(), StdPath::IterMod).is_some_and(|name| name.as_str() == "Repeat")
+                }
+                ty::Param(_) | ty::Alias(..) | ty::Dynamic(..) => true,
+                _ => false,
+            })
+    }
+
     pub(crate) fn stepping_work(&self, ty: Ty<'tcx>) -> Vec<SteppingWork<'tcx>> {
         use SteppingWork::{Clones, DropsExhausted, DropsItemsOf};
         let ty::Adt(adt, args) = ty.kind() else {

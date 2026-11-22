@@ -12,7 +12,17 @@ function passed(it) {
 
 function counted(it, IIterator, IClone) {
   return (
-    ($count($given(IClone.clone(it), IIterator, true)) + $count($given(it, IIterator, true))) >>> 0
+    ($count(
+      $given(IClone.clone(it), IIterator, true),
+      undefined,
+      "test/corpus/split_given_to_generic_code_bound_by_debug.rs:9:16",
+    ) +
+      $count(
+        $given(it, IIterator, true),
+        undefined,
+        "test/corpus/split_given_to_generic_code_bound_by_debug.rs:9:29",
+      )) >>>
+    0
   );
 }
 

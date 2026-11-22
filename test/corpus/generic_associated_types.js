@@ -49,7 +49,11 @@ function countdownContainer_items(countdown) {
 }
 
 function count(c, CContainer) {
-  return $count($given(CContainer.items(c), CContainer.IterIterator(), true));
+  return $count(
+    $given(CContainer.items(c), CContainer.IterIterator(), true),
+    undefined,
+    "test/corpus/generic_associated_types.rs:54:15",
+  );
 }
 
 function first(c, CContainer) {

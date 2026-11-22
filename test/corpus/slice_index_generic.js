@@ -15,11 +15,11 @@ export function smallIndexI(ISliceIndexU32Slice) {
   }));
 }
 function smallIndexI_index(small, index, location, ISliceIndexU32Slice) {
-  return ISliceIndexU32Slice.index(index, small.items);
+  return ISliceIndexU32Slice.index(index, small.items, location);
 }
 
 function smallIndexMutI_indexMut(small, index, location, ISliceIndexU32Slice) {
-  return ISliceIndexU32Slice.indexMut(index, small.items);
+  return ISliceIndexU32Slice.indexMut(index, small.items, location);
 }
 
 function main() {

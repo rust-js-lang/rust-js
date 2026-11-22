@@ -36,7 +36,11 @@ function tJoining(TIterator, dropT, dropTItem) {
       const iter = self;
       let result;
       try {
-        result = $count($given(iter, TIterator, true), dropTItem);
+        result = $count(
+          $given(iter, TIterator, true),
+          dropTItem,
+          "test/corpus/default_own_param_drops.rs:30:14",
+        );
       } catch (error) {
         $cleanup(() => {
           if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
@@ -55,7 +59,11 @@ function tJoining(TIterator, dropT, dropTItem) {
       let result;
       try {
         try {
-          result = $count($given(iter, TIterator, true), dropTItem);
+          result = $count(
+            $given(iter, TIterator, true),
+            dropTItem,
+            "test/corpus/default_own_param_drops.rs:37:14",
+          );
         } catch (error) {
           $cleanup(() => {
             if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
@@ -76,7 +84,7 @@ function tJoining(TIterator, dropT, dropTItem) {
       const iter$1 = $intoIter(extra);
       let result$1;
       try {
-        result$1 = $count(iter$1, dropUItem);
+        result$1 = $count(iter$1, dropUItem, "test/corpus/default_own_param_drops.rs:37:42");
       } catch (error) {
         $cleanup(() => {
           if (!iter$1.ownFold && !iter$1.ownCount) {
@@ -105,7 +113,11 @@ function tJoining(TIterator, dropT, dropTItem) {
       let n;
       try {
         try {
-          result = $count($given(iter, TIterator, true), dropTItem);
+          result = $count(
+            $given(iter, TIterator, true),
+            dropTItem,
+            "test/corpus/default_own_param_drops.rs:47:22",
+          );
         } catch (error) {
           $cleanup(() => {
             if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {
@@ -134,7 +146,11 @@ function tJoining(TIterator, dropT, dropTItem) {
       let result;
       try {
         try {
-          result = $count($given(iter, TIterator, true), dropTItem);
+          result = $count(
+            $given(iter, TIterator, true),
+            dropTItem,
+            "test/corpus/default_own_param_drops.rs:57:15",
+          );
         } catch (error) {
           $cleanup(() => {
             if (!$took(TIterator.fold, iter) && !$took(TIterator.count, iter)) {

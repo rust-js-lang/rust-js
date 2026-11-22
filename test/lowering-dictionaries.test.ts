@@ -598,7 +598,7 @@ pub fn clamps() -> (u32, char, bool, String) {
   expect(js).toContain("function sameItems(a, b, TPartialEq) {\n  return a.length === b.length && a.every((x, i) => !TPartialEq.ne(x, b[i]));");
   expect(js).toContain("function biggest(a, b, TOrd, dropT) {\n  return TOrd.max(a, b, dropT);");
   expect(js).toContain("function least(a, b, TOrd, dropT) {\n  return TOrd.min(a, b, dropT);");
-  expect(js).toContain("function clamped(x, low, high, TOrd, dropT) {\n  return TOrd.clamp(x, low, high, dropT);");
+  expect(js).toContain("function clamped(x, low, high, TOrd, dropT) {\n  return TOrd.clamp(x, low, high, \"lib.rs:54:7\", dropT);");
   expect(js).toContain("differ(1, 1, $strictlyEqual)");
   expect(js).toContain("clamped(9, 1, 3, $intsOrdered");
   expect(js).toContain(`clamped("z", "a", "c", $charsOrdered`);

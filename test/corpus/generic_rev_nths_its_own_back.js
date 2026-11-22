@@ -79,7 +79,13 @@ function skippedLast(it, dropI) {
   const iter = $skipping($rev($closing(it, dropI, false)), 1, dDrop_drop);
   let result;
   try {
-    result = $lastDropping(iter, dDrop_drop);
+    result = $lastDropping(
+      iter,
+      dDrop_drop,
+      undefined,
+      undefined,
+      "test/corpus/generic_rev_nths_its_own_back.rs:54:22",
+    );
   } catch (error) {
     $cleanup(() => {
       iter.return();

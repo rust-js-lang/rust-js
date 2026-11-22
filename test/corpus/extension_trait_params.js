@@ -58,7 +58,11 @@ function through(t, TReversed, TItemOrd) {
   return TReversed.reversed(t, TItemOrd);
 }
 function counted(t, TIterator, TReversed) {
-  return $count($given(t, TIterator, true));
+  return $count(
+    $given(t, TIterator, true),
+    undefined,
+    "test/corpus/extension_trait_params.rs:47:7",
+  );
 }
 function summed(t, TSummed) {
   return TSummed.total(t);

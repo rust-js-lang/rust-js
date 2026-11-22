@@ -57,7 +57,11 @@ function kept(_) {
 
 const Wrap = {
   countKept(wrap, IIterator) {
-    return $count($given(wrap.inner, IIterator, true).filter(kept));
+    return $count(
+      $given(wrap.inner, IIterator, true).filter(kept),
+      undefined,
+      "test/corpus/generic_map_folded_and_rfolded.rs:50:33",
+    );
   },
   lastKept(wrap, IIterator, IDoubleEndedIterator) {
     return $nextBackSome(

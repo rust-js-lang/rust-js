@@ -56,7 +56,11 @@ function ownDoubleEndedIterator_nextBack(own, IDoubleEndedIterator) {
 }
 
 function counted(it) {
-  return $count(Iterator.from(it));
+  return $count(
+    Iterator.from(it),
+    undefined,
+    "test/corpus/enumerate_count_of_an_iterator_stepped_from_its_back.rs:87:8",
+  );
 }
 
 function double(x) {

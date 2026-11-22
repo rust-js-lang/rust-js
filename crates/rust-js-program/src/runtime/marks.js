@@ -55,3 +55,7 @@ const $placeOfPart = Symbol.for("rust-js: where a part of a slice is");
 // runtime finds it, `globalThis` (print.js's `$stdoutState`): a library's
 // copy's `print!` held, its app's copy's line ends it (#2320).
 const $stdoutKey = Symbol.for("rust-js: what stdout holds of a line left unended");
+
+// Where a `count` or `last` that may reach a `Repeat`'s own was called, a
+// slot of `globalThis` while it runs (count.js's `$infinitelyAt`, #2324).
+const $infiniteAtKey = Symbol.for("rust-js: where a count or last that may reach a Repeat's own was called");

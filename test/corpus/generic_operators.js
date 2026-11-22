@@ -22,7 +22,11 @@ function affine(x, a, b, TMul, TAdd) {
 }
 
 function parts(a, b, TDiv, TRem, TSub) {
-  return [TDiv.div(a, b), TRem.rem(a, b), TSub.sub(a, b)];
+  return [
+    TDiv.div(a, b, "test/corpus/generic_operators.rs:22:6"),
+    TRem.rem(a, b, "test/corpus/generic_operators.rs:22:13"),
+    TSub.sub(a, b),
+  ];
 }
 
 function flip(x, TNeg) {
@@ -87,15 +91,15 @@ function main() {
   const value = parts(
     17n,
     5n,
-    { div: (a, b) => $bigDiv(a, b, undefined, -9223372036854775808n) },
-    { rem: (a, b) => $bigRem(a, b, undefined, -9223372036854775808n) },
+    { div: (a, b, location) => $bigDiv(a, b, location, -9223372036854775808n) },
+    { rem: (a, b, location) => $bigRem(a, b, location, -9223372036854775808n) },
     { sub: (a, b) => BigInt.asIntN(64, a - b) },
   );
   const value$1 = parts(
     -7,
     2,
-    { div: (a, b) => $div(a, b, undefined, -2147483648) | 0 },
-    { rem: (a, b) => $rem(a, b, undefined, -2147483648) | 0 },
+    { div: (a, b, location) => $div(a, b, location, -2147483648) | 0 },
+    { rem: (a, b, location) => $rem(a, b, location, -2147483648) | 0 },
     { sub: (a, b) => (a - b) | 0 },
   );
   console.log(

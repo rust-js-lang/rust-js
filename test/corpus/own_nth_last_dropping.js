@@ -49,7 +49,13 @@ function third(it) {
   return nth != null ? map(nth) : undefined;
 }
 function finalOne(it) {
-  const last = $lastDropping(Iterator.from(it), noisyDrop_drop);
+  const last = $lastDropping(
+    Iterator.from(it),
+    noisyDrop_drop,
+    undefined,
+    undefined,
+    "test/corpus/own_nth_last_dropping.rs:48:8",
+  );
   function map(n) {
     const result = n[0];
     noisyDrop_drop(n);

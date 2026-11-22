@@ -43,7 +43,9 @@ pub(crate) fn location_op(tcx: TyCtxt<'_>, id: DefId) -> Option<LocationOp> {
 /// Whether `id` takes its caller's location, the crate's, which
 /// `caller_locations` says (ADR 0427), or a library's, as its manifest
 /// does; or, in every crate alike, as one crate's generic call is given
-/// another's dictionary, a trait's method without a default whose
+/// another's dictionary, a trait method of std's whose impls raise their
+/// panic at their caller, `Div::div`, `Ord::clamp`, `SliceIndex::index`
+/// (`std_raises_at_caller`, #2324), or one without a default whose
 /// declaration tracks its caller, `Index::index`, as rustc's every impl of
 /// it does (#2350): the one question its parameters, its calls and its
 /// declaration ask.
@@ -53,7 +55,10 @@ pub(crate) fn takes_location(
     foreign: &crate::library::Foreign<'_, '_>,
     id: rustc_span::def_id::DefId,
 ) -> bool {
-    caller_locations.contains(&id) || foreign.takes_location(id) || tracked_without_default(tcx, id)
+    caller_locations.contains(&id)
+        || foreign.takes_location(id)
+        || crate::recognition::std_raises_at_caller(tcx, id)
+        || tracked_without_default(tcx, id)
 }
 
 /// Whether `id` is a trait's method without a default whose declaration

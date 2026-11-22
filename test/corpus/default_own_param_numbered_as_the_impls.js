@@ -50,7 +50,11 @@ function pairedCounting(dropI, dropU, dropIItem) {
       const iter = $intoIter(extra);
       let result;
       try {
-        result = $count(iter, dropUItem);
+        result = $count(
+          iter,
+          dropUItem,
+          "test/corpus/default_own_param_numbered_as_the_impls.rs:40:27",
+        );
       } catch (error) {
         $cleanup(() => {
           if (!iter.ownFold && !iter.ownCount) {

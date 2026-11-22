@@ -148,6 +148,9 @@ function lastInspected(src) {
       }),
     ),
     loudDrop_drop,
+    undefined,
+    undefined,
+    "test/corpus/capacity_kept_of_a_lent_adapter.rs:58:46",
   );
   function map(x) {
     const result = x[0];

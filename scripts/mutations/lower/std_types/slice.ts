@@ -487,4 +487,12 @@ export const mutations: Mutation[] = [  {
     tests: ["test/corpus.test.ts", "-t", "^from_fn_drops_what_it_made_where_its_closure_panics\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "generic-slice-index-given-no-location",
+    breaks: "generic code's index by a `SliceIndex` gives no location, so its panic is `<unknown>` (#2324)",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
+    find: "                    given.push(self.caller_location(span));\n",
+    replace: "",
+    tests: ["test/binaries.test.ts", "-t", "through a dictionary, names generic"],
+  },
 ];

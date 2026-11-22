@@ -77,8 +77,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a number's `Add` dictionary's entry is named for its `Output`, not `add`",
     file: "crates/rust-js-lower/src/traits/calls.rs",
-    find: "            .find(|item| item.is_fn())\n",
-    replace: "            .next()\n",
+    find: "            .in_definition_order()\n            .find(|item| item.is_fn())\n",
+    replace: "            .in_definition_order()\n            .next()\n",
     tests: ["test/corpus.test.ts", "-t", "generic_operators"],
   },
   {
@@ -633,5 +633,13 @@ export const mutations: Mutation[] = [
     find: "                            values.push(self.mut_ref_through_box(bound, own))\n",
     replace: "                            values.push(own)\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_iterator_through_a_reference_bound.rs$"],
+  },
+  {
+    name: "std-operator-entry-takes-no-location",
+    breaks: "std's operator entry takes no location, so the one generic code gives is lost and its panic is `<unknown>` (#2324)",
+    file: "crates/rust-js-lower/src/traits/calls.rs",
+    find: "                params.push(location.clone().into());\n",
+    replace: "",
+    tests: ["test/binaries.test.ts", "-t", "through a dictionary, names generic"],
   },
 ];

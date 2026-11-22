@@ -1218,7 +1218,10 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             {
                 given.push(drop);
             }
-            return Ok(Expr::call_helper("$count", given));
+            // Where it may reach a `Repeat`'s own `count`, which panics,
+            // where it's called, as std's tracks its caller (#2324).
+            let repeats = self.recognition().may_be_repeat(iter_ty);
+            return Ok(Expr::call_located(Expr::helper("$count"), given, repeats));
         }
         // Of a string's `chars()` made here, the string's, `Array.from(s)
         // .length`, as JS writes it: a count reads each `char` either way

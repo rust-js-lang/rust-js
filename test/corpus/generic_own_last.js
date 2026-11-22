@@ -43,19 +43,25 @@ function countIterator_last(count) {
 }
 
 function plain(it) {
-  return $lastSome(Iterator.from(it));
+  return $lastSome(Iterator.from(it), "test/corpus/generic_own_last.rs:32:8");
 }
 
 function skip(it) {
-  return $lastSome(iterator_skip($stepsOf(it), 1, $jsIteratorSome));
+  return $lastSome(
+    iterator_skip($stepsOf(it), 1, $jsIteratorSome),
+    "test/corpus/generic_own_last.rs:36:16",
+  );
 }
 
 function fuse(it, IFused) {
-  return $lastSome($stepsOf(it));
+  return $lastSome($stepsOf(it), "test/corpus/generic_own_last.rs:40:15");
 }
 
 function peek(it) {
-  return $lastSome(iterator_peekable($stepsOf(it), $jsIteratorSome));
+  return $lastSome(
+    iterator_peekable($stepsOf(it), $jsIteratorSome),
+    "test/corpus/generic_own_last.rs:44:19",
+  );
 }
 
 function chain(a, b) {
@@ -68,11 +74,15 @@ function chain(a, b) {
       1,
       $jsIteratorSome,
     ),
+    "test/corpus/generic_own_last.rs:48:24",
   );
 }
 
 function mapped(it) {
-  return $last(iterator_map($stepsOf(it), (x) => (x + 1) >>> 0, $jsIterator));
+  return $last(
+    iterator_map($stepsOf(it), (x) => (x + 1) >>> 0, $jsIterator),
+    "test/corpus/generic_own_last.rs:52:23",
+  );
 }
 
 function fuseNth(it, IFused) {

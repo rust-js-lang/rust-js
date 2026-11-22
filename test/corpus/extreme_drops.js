@@ -109,7 +109,7 @@ function finalOne(items, dropIItem, dropIIntoIter) {
   const iter = $intoIter(items);
   let result;
   try {
-    result = $lastDropping(iter, dropIItem, true);
+    result = $lastDropping(iter, dropIItem, true, undefined, "test/corpus/extreme_drops.rs:40:23");
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownLast) {
@@ -129,7 +129,7 @@ function howMany(items, dropI, dropIItem) {
   const iter = items;
   let result;
   try {
-    result = $count(Iterator.from(iter), dropIItem);
+    result = $count(Iterator.from(iter), dropIItem, "test/corpus/extreme_drops.rs:45:11");
   } catch (error) {
     $cleanup(() => {
       if (!iter.ownFold && !iter.ownCount) {

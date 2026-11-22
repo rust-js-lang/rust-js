@@ -54,7 +54,7 @@ function fusedLen(it, IFused) {
   const f = iterator_fuse($stepsOf(it), $jsIterator, IFused);
   $next(f);
   const left = fuseExactSizeIterator_len(f, { len: (iterator) => iterator.len() });
-  return [left, $count(f)];
+  return [left, $count(f, undefined, "test/corpus/fuse_enumerate_ends.rs:20:14")];
 }
 
 function fusedBack(it, IFused) {

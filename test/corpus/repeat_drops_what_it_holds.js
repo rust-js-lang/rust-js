@@ -145,11 +145,16 @@ function main() {
     }
   }
   console.log(`[${Array.from($repeating(2).take(3)).join(", ")}]`);
-  const counted = $catchUnwind(() => $count($repeating(5)));
+  const counted = $catchUnwind(() =>
+    $count($repeating(5), undefined, "test/corpus/repeat_drops_what_it_holds.rs:40:59"),
+  );
   console.log(`count panicked: ${counted.TAG === "Err"}`);
   const last = $lastDropping(
     $repeating([6], (value) => lClone_clone(value), lDrop_drop),
     lDrop_drop,
+    undefined,
+    undefined,
+    "test/corpus/repeat_drops_what_it_holds.rs:42:18",
   );
   if (last != null) {
     lDrop_drop(last);

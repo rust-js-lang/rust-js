@@ -22,7 +22,11 @@ function lengths(iters, HItemIntoIterator) {
       iterator_map(
         $stepsOf(iters),
         (i) =>
-          $count($given(HItemIntoIterator.intoIter(i), HItemIntoIterator.IntoIterIterator(), true)),
+          $count(
+            $given(HItemIntoIterator.intoIter(i), HItemIntoIterator.IntoIterIterator(), true),
+            undefined,
+            "test/corpus/associated_into_iter.rs:9:33",
+          ),
         $jsIteratorSome,
       ),
       4,

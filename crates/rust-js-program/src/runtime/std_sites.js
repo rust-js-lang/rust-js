@@ -129,6 +129,9 @@ const $stdSites = {
   "sortTotalOrder": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/sort/shared/smallsort.rs:854:5"
   ],
+  "ordClamp": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cmp.rs:1166:9"
+  ],
   "refCellEq": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell.rs:1482:15",
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell.rs:1482:34"

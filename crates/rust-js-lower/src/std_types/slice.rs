@@ -472,8 +472,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let tr = ty::TraitRef::new(self.tcx, slice_index, [generic_args.type_at(1), slice]);
                 let dictionary = self.dictionary(tr, span)?;
                 let method = if mutable { "index_mut" } else { "index" };
+                // std's impls track their caller: where generic code indexes,
+                // its panic's place (ADR 0427, #2324).
+                let mut given = vec![index, items];
+                if crate::recognition::std_raises_at_caller(
+                    self.tcx,
+                    crate::recognition::trait_method(self.tcx, slice_index, method),
+                ) {
+                    given.push(self.caller_location(span));
+                }
                 let method = crate::bindings::trait_method_name(self.tcx, slice_index, method);
-                let indexed = Expr::call(Expr::member(dictionary, method), vec![index, items]);
+                let indexed = Expr::call(Expr::member(dictionary, method), given);
                 // `index_mut` gives generic code's `&mut`, a box: where what
                 // it gives is known here, a bound's `IndexMut<J, Output =
                 // [u32]>`, what's in it, as a generic function's result is

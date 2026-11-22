@@ -31,7 +31,10 @@ function $ord(dictionary) {
   const partialOrd = dictionary.PartialOrd;
   dictionary.max ??= (a, b, drop) => $maxOf(a, b, partialOrd(), drop);
   dictionary.min ??= (a, b, drop) => $minOf(a, b, partialOrd(), drop);
-  dictionary.clamp ??= (x, min, max, drop) => $clampBy(x, min, max, partialOrd(), undefined, undefined, drop);
+  // Where generic code's call is, given, unread: std's default doesn't
+  // track its caller, so its panic is std's own line (#2324).
+  dictionary.clamp ??= (x, min, max, raisedAt, drop) =>
+    $clampBy(x, min, max, partialOrd(), $stdSites.ordClamp[0], undefined, drop);
   return dictionary;
 }
 
@@ -55,5 +58,5 @@ const $intsOrdered = /* @__PURE__ */ $ord({ PartialOrd: () => $partiallyOrdered,
 const $charsOrdered = /* @__PURE__ */ $ord({
   PartialOrd: () => $partiallyOrdered,
   cmp: $cmp,
-  clamp: (x, min, max) => $clampBy(x, min, max, $partiallyOrdered, undefined, (c) => $debugStr(c, "'")),
+  clamp: (x, min, max, raisedAt) => $clampBy(x, min, max, $partiallyOrdered, raisedAt, (c) => $debugStr(c, "'")),
 });
