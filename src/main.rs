@@ -136,6 +136,9 @@ struct RustJs {
     /// `--std-coverage <file>`: where to write how much of std's data
     /// structures rust-js lowers (ADR 0314).
     std_coverage: Option<PathBuf>,
+    /// `--std-catalogue <file>`: where to write the catalogue of std's
+    /// bodies `@rust-js/std` compiles, which `bun run std` keeps (#2305).
+    std_catalogue: Option<PathBuf>,
     /// `--std-bodies`: the crate is given std's bodies to lower, from the MIR
     /// of a `core` built to unwind (ADR 0561, #424).
     std_bodies: bool,
@@ -363,6 +366,11 @@ impl Callbacks for RustJs {
         phase_times::mark("rustc: type check, MIR and borrow check");
         if let Some(path) = &self.std_coverage
             && let Err(error) = std::fs::write(path, lower::std_coverage::report(tcx, &self.dependencies))
+        {
+            tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
+        }
+        if let Some(path) = &self.std_catalogue
+            && let Err(error) = std::fs::write(path, lower::compiled_std_catalogue(tcx))
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
@@ -808,6 +816,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
         declarations,
         manifest,
         std_coverage,
+        std_catalogue,
         std_bodies,
         tidy_until,
         tidy_fired,
@@ -870,6 +879,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
         &tidy_fired,
         &intervals_shadow,
         &drops_shadow,
+        &std_catalogue,
     ]
     .into_iter()
     .flatten()
@@ -885,6 +895,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
         metadata: metadata.is_some(),
         lowered: None,
         std_coverage,
+        std_catalogue,
         std_bodies,
         tidy_until,
         std_iterators,

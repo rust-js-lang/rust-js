@@ -6,7 +6,10 @@
 use super::*;
 
 mod rows;
+mod stored;
+
 pub(crate) use rows::Rows;
+pub(crate) use stored::catalogue;
 
 /// std's bodies rust-js compiles from the MIR of a `core` built to unwind
 /// (#424), into
@@ -798,10 +801,17 @@ pub(crate) fn compiled_provided_method(tcx: TyCtxt<'_>, trait_name: &'static str
 
 /// std's bodies compiled into `@rust-js/std`: the items `COMPILED_STD` and
 /// `COMPILED_STD_PROVIDED` name, each found in std, and the closures each
-/// makes, found as they're collected.
-pub(crate) fn compiled_std(tcx: TyCtxt<'_>) -> std::rc::Rc<Vec<DefId>> {
+/// makes, found as they're collected: a set, asked of each call's callee
+/// (`is_compiled_std`). The catalogue `bun run std` keeps, where its crates
+/// are this compile's, or else the walk of std's MIR it was made by (#2305,
+/// `stored.rs`); as a set, never by its order, which is the walk's alone:
+/// std's own build, which walks, compiles them in it.
+pub(crate) fn compiled_std(tcx: TyCtxt<'_>) -> std::rc::Rc<rust_js_program::collections::IndexSet<DefId>> {
     (crate::lower::session::caches(tcx).compiled)
-        .get_or_init(|| std::rc::Rc::new(find_compiled_std(tcx)))
+        .get_or_init(|| {
+            let called = |item| called_for_build(tcx, item);
+            std::rc::Rc::new(stored::kept(tcx, &called).unwrap_or_else(|| walk(tcx, &called)))
+        })
         .clone()
 }
 
@@ -848,11 +858,14 @@ pub(crate) fn compiled_rows(tcx: TyCtxt<'_>) -> std::rc::Rc<Rows> {
         .clone()
 }
 
-fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
+/// std's bodies `@rust-js/std` compiles of a build that calls the adapters
+/// `called` says, of std's MIR: each the catalog's rows name, and each
+/// private one a compiled body reaches, in the order found.
+fn walk(tcx: TyCtxt<'_>, called: &dyn Fn(StdPath) -> bool) -> rust_js_program::collections::IndexSet<DefId> {
     let rows = compiled_rows(tcx);
-    let mut found = Vec::new();
+    let mut found = rust_js_program::collections::IndexSet::default();
     for &((item, ..), ref methods) in &rows.iter {
-        if called_for_build(tcx, item) {
+        if called(item) {
             found.extend(methods);
         }
     }
@@ -863,28 +876,27 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
     let made_for_build = |method: &str| {
         (HELD_COMPILED.iter())
             .find(|&&(_, maker, _)| maker == method)
-            .is_none_or(|&(item, ..)| called_for_build(tcx, item))
+            .is_none_or(|&(item, ..)| called(item))
     };
     for &(trait_name, method) in COMPILED_STD_PROVIDED
         .iter()
         .filter(|&&(_, method)| made_for_build(method))
     {
-        found.push(rows.provided(trait_name, method));
+        found.insert(rows.provided(trait_name, method));
     }
     // `io`'s traits' provided methods (#1156): each a function over `Self`,
     // given its dictionary, as `Iterator`'s are.
     found.extend(&rows.io_provided);
     for &(id, makes) in &rows.fns {
-        if makes.is_none_or(|item| called_for_build(tcx, item)) {
-            found.push(id);
+        if makes.is_none_or(&called) {
+            found.insert(id);
         }
     }
     // And each function std keeps private that a compiled body calls,
     // `Fuse`'s `and_then_or_clear`, compiled with it, as its closures are:
     // no program can name it, so no recognizer can rewrite it.
     let mut at = 0;
-    while at < found.len() {
-        let def_id = found[at];
+    while let Some(&def_id) = found.get_index(at) {
         at += 1;
         if !tcx.is_mir_available(def_id) {
             continue;
@@ -893,29 +905,25 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
         // Of the blocks it runs, a precondition check's left out, as
         // rust-js reads `UbChecks` as off (ADRs 0364, 0917).
         let body = tcx.optimized_mir(def_id);
+        let blocks = crate::lower::std_coverage::reachable(tcx, body);
         // And each one std keeps private that it names as a value, which
         // what it's given to calls, `FlattenCompat::last`'s own `last` given
         // to its `iter_fold`, or a closure it makes holds, `into_item` in
         // an inlined `filter_map` (#645).
-        for value in named_fns(tcx, body) {
+        for value in named_fns(body, &blocks) {
             if matches!(tcx.def_kind(value), DefKind::Fn)
                 && !tcx.visibility(value).is_public()
                 && !super::io::answered_io_fn(tcx, value)
                 && tcx.is_mir_available(value)
-                && !found.contains(&value)
             {
-                found.push(value);
+                found.insert(value);
             }
         }
         // And the `Debug` of a type std keeps private that it shows through
         // a builder, `.field("inner", &self.inner)` of a `Flatten`'s
         // `FlattenCompat`, by the `&dyn Debug` it makes of it (#2252).
-        for shown in shown_private(tcx, typing_env, body) {
-            if !found.contains(&shown) {
-                found.push(shown);
-            }
-        }
-        for block in crate::lower::std_coverage::reachable(tcx, body) {
+        found.extend(shown_private(tcx, typing_env, body, &blocks));
+        for &block in &blocks {
             let Some(terminator) = &body.basic_blocks[block].terminator else {
                 continue;
             };
@@ -963,9 +971,8 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
                         && tcx.trait_impl_of_assoc(called).is_none())
                         || of_private_type(called))
                     && tcx.is_mir_available(called)
-                    && !found.contains(&called)
                 {
-                    found.push(called);
+                    found.insert(called);
                 }
             }
         }
@@ -973,9 +980,9 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
     found
 }
 
-/// Each function the constants of the blocks `body` runs name, as the value
-/// they are or one a closure they are holds.
-fn named_fns<'tcx>(tcx: TyCtxt<'tcx>, body: &rustc_middle::mir::Body<'tcx>) -> Vec<DefId> {
+/// Each function the constants of the blocks `body` runs, `blocks`, name,
+/// as the value they are or one a closure they are holds.
+fn named_fns<'tcx>(body: &rustc_middle::mir::Body<'tcx>, blocks: &[rustc_middle::mir::BasicBlock]) -> Vec<DefId> {
     use rustc_middle::mir;
     struct Named(Vec<DefId>);
     impl<'tcx> mir::visit::Visitor<'tcx> for Named {
@@ -990,19 +997,20 @@ fn named_fns<'tcx>(tcx: TyCtxt<'tcx>, body: &rustc_middle::mir::Body<'tcx>) -> V
         }
     }
     let mut named = Named(Vec::new());
-    for block in crate::lower::std_coverage::reachable(tcx, body) {
+    for &block in blocks {
         mir::visit::Visitor::visit_basic_block_data(&mut named, block, &body.basic_blocks[block]);
     }
     named.0
 }
 
 /// The `Debug::fmt` of each type std keeps private that `body` makes a
-/// `&dyn Debug` of where it runs, a builder's field's, `&self.inner` of a
+/// `&dyn Debug` of where it runs, of `blocks`, a builder's field's, `&self.inner` of a
 /// `FlattenCompat` (#2252): its impl's, as rustc selects it there.
 fn shown_private<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     body: &rustc_middle::mir::Body<'tcx>,
+    blocks: &[rustc_middle::mir::BasicBlock],
 ) -> Vec<DefId> {
     use rustc_middle::mir::{CastKind, Rvalue, StatementKind};
     use rustc_middle::ty::adjustment::PointerCoercion;
@@ -1011,7 +1019,7 @@ fn shown_private<'tcx>(
     };
     let fmt = super::trait_method(tcx, debug, "fmt");
     let mut shown = Vec::new();
-    for block in crate::lower::std_coverage::reachable(tcx, body) {
+    for &block in blocks {
         for statement in &body.basic_blocks[block].statements {
             let StatementKind::Assign(assign) = &statement.kind else {
                 continue;

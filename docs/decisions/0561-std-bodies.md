@@ -690,3 +690,52 @@ of a `Copied<Map<..>>`, a refusal of its own.
 Mutations `std-iterator-clone-unknowing`, `std-iterator-move-unknowing`,
 `std-iterator-knows-the-last-use-only` and `std-clone-unknowing` are each
 caught.
+
+## Amendment (2026-11-22, #2305): the catalogue is kept with std
+
+**Every compile used to walk std's MIR to find which of std's bodies
+`@rust-js/std` compiles:** the catalog's rows, and each private function a
+compiled body reaches (`compiled_std.rs`'s `walk`). That took about 6.3 ms
+of each compile's lowering, the same answer every time for a given std.
+(#2305's profile said 26 ms, 20% of compiler CPU, but it measured a
+release build under samply. The debug compiler the tests run measured
+8 ms before #2306, and 6.3 ms after.)
+
+**Now `bun run std` keeps the walk's answer in `std/compiled-std.json`,
+and every compile reads it.**
+
+- **What's stored.** The base group: what every adapter's roots reach but
+  `MEANING_ONLY`'s. Then each `MEANING_ONLY` adapter's group: what its
+  roots add to the base. Each id is stored by its `DefPathHash`, under the
+  name and hash of each crate the ids are of (core and alloc).
+- **Which compile reads it.** A compile whose loaded crates have those
+  names and hashes reads the base, plus the group of each adapter it calls
+  (`called_for_build`). Any other compile walks, as before: std's own build
+  among them, since its `core` is built to unwind. The walk stays the one
+  owner, and a mismatched key is a cache miss, never a second rule.
+- **Why groups combine.** The walk admits each body on its own conditions,
+  never by what else it found. So what a union of groups' roots reaches is
+  the union of their walks.
+- **Order.** The kept set's order isn't the walk's. Only std's own build
+  reads the order, as the order to compile in, and it walks. Every other
+  reader asks membership (`is_compiled_std`, `has_compiled_bodies`).
+- **How it's made.** `scripts/std.ts`'s `catalogueBuild` compiles an empty
+  crate with `--std-catalogue <file>`, which writes each group's walk. The
+  flag is dev-only, std's build's, as `--std-coverage` is: no host passes
+  it, as every compile reads the catalogue embedded in the compiler
+  (`include_str!`), as it reads std's manifest.
+- **Proof.**
+  - test/compiled-std.test.ts makes the catalogue again and compares it,
+    byte for byte. `bun run push`'s std check does too.
+  - A probe over the whole corpus compared the kept set with the walk in
+    every one of its 5,677 compiles: 0 differences, 14 of them taking
+    groups (Copied, Cloned, Successors).
+  - The compiler's build inputs (build.rs, CI's build cache key) include
+    the file, as they include std's manifest.
+- **Measured.** On the quiet 12-core M6, warm, against the same base: a
+  corpus run took 37 s → 33 s wall, and its compiles 367 s → 324 s summed.
+  Lowering went 264 s → 220 s.
+- **Also.** The walk's own bookkeeping is now an `IndexSet`, and each
+  body's reachable blocks are found once.
+- **Mutations:** `catalogue-crates-unchecked`, `catalogue-groups-unread`,
+  `catalogue-groups-unkept`.

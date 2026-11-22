@@ -49,7 +49,11 @@ pub fn bodies_of_build<'tcx>(tcx: TyCtxt<'tcx>, mut bodies: Vec<Body<'tcx>>, lib
 /// `std_sysroot`), with no THIR beside it,
 /// as a dictionary has none (`pipeline.rs`'s `no_body`).
 pub fn collect_std_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
-    foreign_bodies(tcx, crate::lower::recognition::compiled_std(tcx).to_vec()).0
+    foreign_bodies(
+        tcx,
+        crate::lower::recognition::compiled_std(tcx).iter().copied().collect(),
+    )
+    .0
 }
 
 /// A derived impl whose methods are lowered, written only where they're

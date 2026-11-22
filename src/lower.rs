@@ -1305,3 +1305,9 @@ fn module_symbol(module: LocalModId, export: &str) -> crate::js::Symbol {
         export: export.to_owned(),
     }
 }
+
+/// The catalogue of std's bodies `@rust-js/std` compiles, walked, which
+/// `bun run std` keeps (`--std-catalogue`, #2305).
+pub(crate) fn compiled_std_catalogue(tcx: TyCtxt<'_>) -> String {
+    recognition::catalogue(tcx)
+}

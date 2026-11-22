@@ -39,7 +39,7 @@ pub(crate) struct Caches {
     /// The std types whose bodies are compiled into `@rust-js/std`.
     pub compiled_types: OnceCell<IndexSet<DefId>>,
     /// std's bodies compiled into `@rust-js/std`, each found in std.
-    pub compiled: OnceCell<Rc<Vec<DefId>>>,
+    pub compiled: OnceCell<Rc<IndexSet<DefId>>>,
     /// The crate's types JS may hold a value of and give back
     /// (`declarations::js_holds`, #2024), found once.
     pub js_held: OnceCell<Rc<IndexSet<DefId>>>,

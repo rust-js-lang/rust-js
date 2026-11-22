@@ -12,7 +12,8 @@
 // it. Its manifest's crate hash is of its inputs alone, the same wherever and
 // however it's built (`Manifest::of_its_inputs`, #1094).
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 /** The command that compiles `<root>/std/lib.rs` into `<root>/std/` with
@@ -23,6 +24,21 @@ export function stdBuild(compiler: string, root: string): { cmd: string[]; cwd: 
   return { cmd, cwd: resolve(root) };
 }
 
+/** The catalogue of std's bodies `@rust-js/std` compiles, as `compiler`
+ * walks std's MIR, written to `out` (#2305): of an empty crate compiled as
+ * every crate is, of the toolchain's std, whose crates' hashes it keeps,
+ * not std's own build's, of a `core` built to unwind. */
+export function catalogueBuild(compiler: string, out: string): { code: number; stderr: string } {
+  const dir = mkdtempSync(join(tmpdir(), "rust-js-catalogue-"));
+  try {
+    writeFileSync(join(dir, "lib.rs"), "pub fn main() {}\n");
+    const p = spawnSync(compiler, [join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--std-catalogue", out, "--", "--edition=2024"], { encoding: "utf8" });
+    return { code: p.status ?? 1, stderr: p.stderr };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 /** The package's entry, of its manifest's modules: the helpers and each
  * module of std's bodies, re-exported. */
 export function stdEntry(manifest: { modules: { file: string }[] }): string {
@@ -31,7 +47,7 @@ export function stdEntry(manifest: { modules: { file: string }[] }): string {
 }
 
 /** The whole package in `<root>/std/` with `compiler`: its helpers, std's
- * bodies, and its entry. */
+ * bodies, its entry, and the catalogue of them every compile reads. */
 export function buildStd(compiler: string, root: string): { code: number; stderr: string } {
   const std = join(resolve(root), "std");
   const helpers = spawnSync(compiler, ["--runtime-module"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
@@ -45,7 +61,8 @@ export function buildStd(compiler: string, root: string): { code: number; stderr
   const bodies = spawnSync(cmd[0], cmd.slice(1), { cwd, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
   if (bodies.status !== 0) return { code: bodies.status ?? 1, stderr: bodies.stderr };
   writeFileSync(join(std, "index.js"), stdEntry(JSON.parse(readFileSync(join(std, "manifest.json"), "utf8"))));
-  return { code: 0, stderr: "" };
+  // What every compile reads of the catalogue, where it walked std's MIR.
+  return catalogueBuild(compiler, join(std, "compiled-std.json"));
 }
 
 if (import.meta.main) {

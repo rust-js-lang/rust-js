@@ -81,6 +81,11 @@ pub(crate) struct Build {
     pub manifest: Option<PathBuf>,
     /// `--std-coverage <file>` (ADR 0314).
     pub std_coverage: Option<PathBuf>,
+    /// `--std-catalogue <file>`: where to write the catalogue of std's
+    /// bodies `@rust-js/std` compiles, walked, which `bun run std` keeps
+    /// and every compile reads embedded (#2305): dev-only, std's build's,
+    /// as `--std-coverage` is.
+    pub std_catalogue: Option<PathBuf>,
     /// `--std-bodies`: the crate is `@rust-js/std`, given std's bodies to
     /// lower, each from the MIR of a `core` built to unwind (ADR 0561, #424).
     pub std_bodies: bool,
@@ -262,6 +267,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     }
     let manifest = valued(&mut ours, "--manifest", "a path")?.map(PathBuf::from);
     let std_coverage = valued(&mut ours, "--std-coverage", "a path")?.map(PathBuf::from);
+    let std_catalogue = valued(&mut ours, "--std-catalogue", "a path")?.map(PathBuf::from);
     let tidy_until = valued(&mut ours, "--tidy-until", "a pass, `stage/pass`")?;
     if let Some(pass) = &tidy_until
         && !crate::lower::tidy_pass_names().contains(pass)
@@ -332,6 +338,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         declarations,
         manifest,
         std_coverage,
+        std_catalogue,
         std_bodies,
         tidy_until,
         tidy_fired,

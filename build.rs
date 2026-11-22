@@ -28,6 +28,7 @@ fn main() {
         root.join("src"),
         root.join("crates"),
         root.join("std/manifest.json"),
+        root.join("std/compiled-std.json"),
         root.join("rust-toolchain.toml"),
         root.join("build.rs"),
         package.join("Cargo.toml"),
