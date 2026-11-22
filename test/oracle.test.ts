@@ -3,7 +3,10 @@
 
 import { expect, test } from "bun:test";
 
-import { decode, encode, expected, normalize, observe, same } from "./oracle";
+import { pathToFileURL } from "node:url";
+
+import { decode, encode, expected, normalize, observe, raisedWhereNativeIs, same } from "./oracle";
+import { helpersModule } from "./packages-of";
 
 const panics = (message: string) => () => {
   throw new Error(message);
@@ -78,3 +81,25 @@ test("what no Rust value is can't cross as one that is", () => {
   }
   expect(decode(encode(new Map()))).toEqual({ $js: "Map" });
 });
+
+// Where a panic was raised, as its hook names it (#2292): read of the
+// runtime's mark where a run says, compared where both say one, and a case
+// `located-otherwise` says differs told apart from one that's native's now.
+test("a panic's location is read where asked, compared where both say one", async () => {
+  const { $panic } = await import(pathToFileURL(helpersModule).href);
+  const raised = () => {
+    throw $panic("no", "src/lib.rs:4:9");
+  };
+  expect(observe(raised, true)).toEqual({ panic: "no", at: "src/lib.rs:4:9" });
+  expect(observe(raised)).toEqual({ panic: "no" });
+  expect(observe(panics("no"), true)).toEqual({ panic: "no", at: "<unknown>" });
+  const native = expected({ panic: "no", at: "src/lib.rs:4:9" });
+  expect(same(observe(raised, true), native)).toBe(true);
+  expect(same({ panic: "no", at: "src/lib.rs:4:8" }, native)).toBe(false);
+  // A harness that records none, or a native run that leaves it out.
+  expect(same({ panic: "no" }, native)).toBe(true);
+  expect(raisedWhereNativeIs(native, [observe(raised, true)])).toBe(true);
+  expect(raisedWhereNativeIs(native, [{ panic: "no", at: "<unknown>" }])).toBe(false);
+  expect(raisedWhereNativeIs(native, [])).toBe(false);
+});
+

@@ -111,6 +111,14 @@ export function expected(c: { value?: unknown; panic?: string; at?: string }): O
   return c.at === undefined ? { panic: c.panic } : { panic: c.panic, at: c.at };
 }
 
+/** Whether each of `outcomes`, a case's runs', is a panic raised where
+ * native Rust's, `native`, was, at least one: what a case `located-otherwise`
+ * says panics elsewhere must no longer do, its directive wrong (#2292). */
+export function raisedWhereNativeIs(native: Outcome | string, outcomes: (Outcome | string)[]): boolean {
+  const at = typeof native !== "string" && "at" in native ? native.at : undefined;
+  return outcomes.length > 0 && outcomes.every((outcome) => typeof outcome !== "string" && "at" in outcome && outcome.at === at);
+}
+
 /** Strictly the same: -0 isn't 0, 1n isn't 1, a `TypeError` isn't a panic.
  * Two panics' `at`s are compared where both say one: a harness that
  * records no location, `compiler.test`'s, and a case `located-otherwise`

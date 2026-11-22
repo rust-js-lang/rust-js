@@ -20,7 +20,7 @@ import { build } from "vite";
 
 import { excerpt } from "./child";
 import { cases, corpus, directives, type Directives } from "./corpus-cases";
-import { expected, same, type Outcome } from "./oracle";
+import { expected, raisedWhereNativeIs, same, type Outcome } from "./oracle";
 import { aborted, agree, compileBuilds, compileJs, node, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, caseShard, compiler, firstPart, fixture, root, helpersModule } from "./support";
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
@@ -148,9 +148,8 @@ async function check(file: string): Promise<string[]> {
     }
   }
   // Where it panics, native's in every run now: its directive is wrong.
-  const nativeAt = typeof located.outcome !== "string" && "at" in located.outcome ? located.outcome.at : undefined;
   // Of runs made now: one kept from a run verified before compares nothing here.
-  if (want.locatedOtherwise !== undefined && runs.length > 0 && runs.every(([, run]) => typeof run.outcome !== "string" && "at" in run.outcome && run.outcome.at === nativeAt)) {
+  if (want.locatedOtherwise !== undefined && raisedWhereNativeIs(located.outcome, runs.map(([, run]) => run.outcome))) {
     problems.push(`its panic is raised where native Rust's is now: remove \`located-otherwise: ${want.locatedOtherwise}\``);
   }
   if (timesFile !== undefined) steps.push(["compare", performance.now() - compareBegan]);
