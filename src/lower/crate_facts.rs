@@ -265,11 +265,11 @@ pub(in crate::lower) struct Settled<'tcx> {
 
 /// Whether a library's consumer needs a crate fact (#1671 change 4 M4):
 /// none of what the crate alone reads, or the contract's facts that carry
-/// it across, each with its scope (`crate::library::scopes`).
+/// it across, each with its scope (`rust_js_program::library::scopes`).
 #[cfg(test)]
 enum Carried {
     CrateOnly,
-    By(&'static [crate::library::scopes::ContractField]),
+    By(&'static [rust_js_program::library::scopes::ContractField]),
 }
 
 /// Each of the crate's facts, by whether a consumer needs it: a pattern
@@ -291,7 +291,7 @@ macro_rules! carried {
 }
 
 #[cfg(test)]
-use {crate::library::scopes::ContractField as F, Carried::*};
+use {Carried::*, rust_js_program::library::scopes::ContractField as F};
 
 #[cfg(test)]
 carried! {
@@ -377,7 +377,7 @@ mod tests {
                 for field in *fields {
                     let (fact, scope, _) = field.row();
                     assert!(
-                        scope != crate::library::scopes::FactScope::Holds,
+                        scope != rust_js_program::library::scopes::FactScope::Holds,
                         "{name} is carried by {fact}, a list"
                     );
                 }

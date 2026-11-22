@@ -271,7 +271,7 @@ of a function item's type, a variable's too, is the one left.
 
 Each fact of a library's contract declares its scope, and forgetting to
 is rustc's error under `cargo test` (ADR 1129, amended):
-`src/library/scopes.rs` gives each field of `Library`, `Calling`,
+`crates/rust-js-program/src/library/scopes.rs` gives each field of `Library`, `Calling`,
 `TypeParam` and `RefCellFacts`, and each variant of `ItemFact`,
 `ParamFact` and `FieldFact`, a `ContractField`, by a pattern that names
 every field and an exhaustive `match` of every variant. Each

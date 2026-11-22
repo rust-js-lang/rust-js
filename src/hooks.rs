@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use crate::format::Map;
-use crate::settings::{Fail, Settings};
+use rust_js_program::settings::{Fail, Settings};
 
 /// `code` and its `map`, a module's, which will be `js_path`, through each
 /// of the crate's transforms, in order. What one gives is kept only if it's

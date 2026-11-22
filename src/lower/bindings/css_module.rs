@@ -7,7 +7,7 @@
 //! getter naming the file's classes (#1512, ADR 1133).
 
 use super::{JsForm, is_binding, is_method, js_form, js_import, js_name};
-use crate::program::JsModules;
+use rust_js_program::program::JsModules;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
@@ -108,7 +108,7 @@ pub(in crate::lower) fn refuse_unverified(tcx: TyCtxt<'_>, js_modules: &dyn JsMo
 /// Whether `from` is a file of the app's a bundler reads as a CSS Module,
 /// `./site.module.css`.
 fn is_module_css(from: &str) -> bool {
-    crate::program::is_relative_specifier(from) && from.ends_with(".module.css")
+    rust_js_program::program::is_relative_specifier(from) && from.ends_with(".module.css")
 }
 
 /// The bindings of `classes`'s impls, in the order they're written.

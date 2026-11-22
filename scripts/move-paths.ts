@@ -400,7 +400,8 @@ export function widened(at = root): string[] {
     return true;
   };
   for (let round = 0; round < 20; round++) {
-    const built = Bun.spawnSync(["cargo", "build", "--quiet", "--message-format=json"], { cwd: at, stdout: "pipe", stderr: "pipe" });
+    // Every target, the tests' too, which name a crate's `testing` items.
+    const built = Bun.spawnSync(["cargo", "build", "--quiet", "--all-targets", "--message-format=json"], { cwd: at, stdout: "pipe", stderr: "pipe" });
     const sites = new Map<string, string | undefined>();
     type Span = { file_name: string; line_start: number; label?: string | null };
     const walk = (message: { message: string; code?: { code: string } | null; spans: Span[]; children: { message: string; spans: Span[] }[] }) => {

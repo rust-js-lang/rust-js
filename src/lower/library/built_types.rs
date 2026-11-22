@@ -2,8 +2,8 @@
 //! (#737): what its function asks the layout of, which no bound of it names,
 //! so a consumer reads it here and makes it of the types its call gives.
 
-use crate::library::TypeTemplate;
 use crate::lower::traits::{BuiltSlots, drop_items, drop_slot};
+use rust_js_program::library::TypeTemplate;
 use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;

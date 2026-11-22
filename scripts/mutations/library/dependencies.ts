@@ -1,4 +1,4 @@
-// Mutations of src/library/dependencies.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/library/dependencies.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "internal-imported-by-library-word",
     breaks:
       "a consumer imports a library's internal item by the library's own word, `LIMIT`, which it reserves in each module, so its own `static LIMIT` is `LIMIT$1` (#2017)",
-    file: "src/library/dependencies.rs",
+    file: "crates/rust-js-program/src/library/dependencies.rs",
     find: "                let name = if item.internal { export.clone() } else { item.export };\n",
     replace: "                let name = item.export;\n",
     tests: ["test/cross-crate-private-state.test.ts"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "types-only-module-needs-js",
     breaks: "a library's module of types alone, which has no JS, is refused as one whose JS isn't fingerprinted, so its consumer can't import its types (ADR 1005)",
-    file: "src/library/dependencies.rs",
+    file: "crates/rust-js-program/src/library/dependencies.rs",
     find: "                let written = match module.types_only {\n",
     replace: "                let written = match false {\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "module of types alone"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-type-without-declarations-imported",
     breaks: "a library's type is imported from a `.d.ts` its library was written without (ADR 0210, amended)",
-    file: "src/library/dependencies.rs",
+    file: "crates/rust-js-program/src/library/dependencies.rs",
     find: "m.module == declared.module && m.types.is_some()",
     replace: "m.module == declared.module",
     tests: ["test/declarations-libraries.test.ts"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-libraries-unchecked",
     breaks: "a consumer given a library but not the libraries that one was compiled against is compiled anyway",
-    file: "src/library/dependencies.rs",
+    file: "crates/rust-js-program/src/library/dependencies.rs",
     find: "        if let Some((library, used)) = needed.iter().find(|(_, used)| !result.libraries.contains_key(used)) {\n",
     replace: "        if let Some((library, used)) = needed.iter().find(|_| false) {\n",
     tests: ["test/crates.test.ts", "-t", "not the libraries"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-inputs-unchecked",
     breaks: "a library's manifest's inputs, the libraries it was made from, aren't checked: one made from another's old build is refused only by rustc's E0463, which doesn't say it's stale",
-    file: "src/library/dependencies.rs",
+    file: "crates/rust-js-program/src/library/dependencies.rs",
     find: "            for artifact in manifest.artifacts.iter().chain(&library.inputs) {",
     replace: "            for artifact in manifest.artifacts.iter() {",
     tests: ["test/crates.test.ts", "-t", "an edited library is what its consumers use once they're rebuilt, and refused before"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-old-abi-accepted",
     breaks: "a library of the ABI before every `Rc` was counted is loaded as if it counted them",
-    file: "src/library/dependencies.rs",
+    file: "crates/rust-js-program/src/library/dependencies.rs",
     find: "            if library.version != VERSION {\n",
     replace: "            if library.version != VERSION && library.version != 2 {\n",
     tests: ["test/cargo-link.test.ts", "-t", "a real Cargo dependency links functions"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "package-imported-wherever-installed",
     breaks: "a library's item its package's entry re-exports is imported by the package's name where Node finds no copy of the package from the consumer, or another's, which fails to load or is another module (ADR 1008)",
-    file: "src/library/dependencies.rs",
+    file: "crates/rust-js-program/src/library/dependencies.rs",
     find: ".filter(|package| crate::packages::installed(dir, &package.name).as_ref() == Some(&package.dir));",
     replace: ";",
     tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "package-subpath-unread",
     breaks: "a dependency's module its package's `exports` resolves a subpath to is imported by its file, `../../shared/src/flags.js`, where upstream's `shared/src/flags` is what the user decided (ADR 0770, amended)",
-    file: "src/library/dependencies.rs",
+    file: "crates/rust-js-program/src/library/dependencies.rs",
     find: "                let subpath = package.and_then(|package| package.subpath_specifier(path));\n",
     replace: "                let subpath: Option<String> = package.and(None);\n",
     tests: ["test/libraries.test.ts", "-t", "package's subpath"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "package-root-module-by-file",
     breaks: "an item of a package's root module, ADR 0414's `src/lib.js`, is imported by its file, `@acme/greet/src/lib.js`, where no path the crate writes names it, a method's type's, a second way beside the package's name (ADR 1008, amended)",
-    file: "src/library/dependencies.rs",
+    file: "crates/rust-js-program/src/library/dependencies.rs",
     find: "Some((name, entry)) if item.module.is_empty() =>",
     replace: "Some((name, entry)) if false =>",
     tests: ["test/libraries.test.ts", "-t", "compiles a library from npm"],
@@ -79,15 +79,15 @@ export const mutations: Mutation[] = [
     name: "std-library-keyed-by-std-crates",
     breaks:
       "`@rust-js/std` is kept by std's crates' names, so a program's library named `core` replaces it, and std's crates, found by the package's name, have no library (#455, ADR 1054)",
-    file: "src/library/dependencies.rs",
-    find: "        self.libraries\n            .insert(rust_js_program::runtime::PACKAGE.to_string(), exports);\n",
+    file: "crates/rust-js-program/src/library/dependencies.rs",
+    find: "        self.libraries.insert(crate::runtime::PACKAGE.to_string(), exports);\n",
     replace: '        for krate in ["core", "alloc", "std"] {\n            self.libraries.insert(krate.to_string(), exports.clone());\n        }\n',
     tests: ["test/crates.test.ts", "-t", "crate_named_core|library_closures_cloned_as_made"],
   },
   {
     name: "library-file-exports-unsaid",
     breaks: "what a library's module's file exports isn't read from its manifest, so a glob of every name of it lists them, not `export * from` (#629)",
-    file: "src/library/dependencies.rs",
+    file: "crates/rust-js-program/src/library/dependencies.rs",
     find: "                    exports.files.insert(from, names);\n",
     replace: "                    let _: (String, std::collections::BTreeSet<String>) = (from, names);\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of a library's module of every name its file exports is export \\* from"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-file-exports-with-default",
     breaks: "a library's module's file's default is counted among the names a glob of it must give, which a glob never does, so a glob of every name but the default of a module that has one, react-client's `console` config, lists them, where `export * from` gives each, and the default no more than the glob does (#629)",
-    file: "src/library/dependencies.rs",
+    file: "crates/rust-js-program/src/library/dependencies.rs",
     find: "                    .iter()\n                    .filter(|name| *name != \"default\")\n                    .cloned()\n",
     replace: "                    .iter()\n                    .cloned()\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of a library's module of every name its file exports is export \\* from"],
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     name: "library-types-only-module-namespaced",
     breaks:
       "a library's module of types alone, which has no JS, is a namespace a consumer's `pub use` of it re-exports from a file that isn't there, so the consumer's JS fails to load (#1420)",
-    file: "src/library/dependencies.rs",
+    file: "crates/rust-js-program/src/library/dependencies.rs",
     find: "m.module == named.module && !m.types_only);\n",
     replace: "m.module == named.module);\n",
     tests: ["test/glob-reexports.test.ts", "-t", "library's module is its namespace"],

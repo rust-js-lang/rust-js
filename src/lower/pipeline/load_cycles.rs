@@ -34,7 +34,7 @@ pub(super) type Modules<'m> = (
     &'m [ModuleJs],
     &'m IndexMap<DefId, FnInfo>,
     (&'m BTreeMap<Export, IndexSet<LocalModId>>, &'m [ReexportFrom]),
-    &'m dyn crate::program::JsModules,
+    &'m dyn rust_js_program::program::JsModules,
 );
 
 /// What the load cycles ask once `lowered`, the bodies lowered so far, are
@@ -292,7 +292,7 @@ pub(super) fn module_imports<'d>(
         impl Iterator<Item = &'d (LocalModId, LocalModId)>,
     ),
     (imported, reexports): (&BTreeMap<Export, IndexSet<LocalModId>>, &[ReexportFrom]),
-    js_modules: &dyn crate::program::JsModules,
+    js_modules: &dyn rust_js_program::program::JsModules,
 ) -> crate::lower::load_order::ModuleImports {
     let laid_out: Vec<_> = (places.iter())
         .map(|js| (js.module, (js.path.as_slice(), js.file.as_deref(), js.located)))

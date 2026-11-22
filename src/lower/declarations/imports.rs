@@ -40,7 +40,7 @@ pub(super) fn imports(
     ),
     (module, reexports, types): (
         rustc_span::def_id::LocalModId,
-        &[(rustc_span::Span, crate::program::Reexport)],
+        &[(rustc_span::Span, rust_js_program::program::Reexport)],
         &[crate::lower::reexports::TypeReexport],
     ),
 ) -> Vec<Value> {

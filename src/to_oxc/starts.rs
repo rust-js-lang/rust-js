@@ -229,8 +229,8 @@ pub(super) fn declared_class(n: &js::Namespace) -> Option<(js::Span, js::Span)> 
 /// gives, its comments that import's (rd752, #643).
 pub(super) fn of_no_js(
     module: &Module,
-    (text, file): (&str, &crate::program::Source),
-    c: &crate::program::Comment,
+    (text, file): (&str, &rust_js_program::program::Source),
+    c: &rust_js_program::program::Comment,
     starts: &[u32],
 ) -> bool {
     let mut after = c.hi as usize;

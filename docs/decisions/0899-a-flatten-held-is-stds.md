@@ -446,7 +446,7 @@ the hint of is held, std's struct.
 
 The manifest's `associated` entries now list `ConstSize` of each such
 type, which a consumer reads as the library's dictionaries carrying it, so
-the library ABI is 28 (`src/library.rs`' `VERSION`,
+the library ABI is 28 (`crates/rust-js-program/src/library.rs`' `VERSION`,
 `tooling/manifest.js`): a library built before carries none, and a
 consumer would read `undefined` where an impl gives an array.
 

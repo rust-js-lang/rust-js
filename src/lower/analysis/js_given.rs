@@ -317,7 +317,7 @@ pub(in crate::lower) fn flattened_by_name<'tcx>(
         .foreign
         .item(called.0)
         .and_then(|item| item.calling.param(flattened)))
-    .is_some_and(|param| param.has(crate::library::ParamFact::Unboxed));
+    .is_some_and(|param| param.has(rust_js_program::library::ParamFact::Unboxed));
     let destinations: Vec<mir::Local> = (body.basic_blocks.iter())
         .filter_map(|data| match &data.terminator().kind {
             mir::TerminatorKind::Call { func, destination, .. } if func.const_fn_def() == Some(called) => {

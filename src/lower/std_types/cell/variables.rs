@@ -438,7 +438,7 @@ pub(in crate::lower) fn crate_imported_variables(
     tcx: rustc_middle::ty::TyCtxt<'_>,
     fns: &IndexMap<rustc_span::def_id::DefId, crate::lower::FnInfo>,
     variables: &IndexSet<rustc_span::def_id::DefId>,
-    lowered: &mut [crate::program::UnlinkedModule],
+    lowered: &mut [rust_js_program::program::UnlinkedModule],
 ) {
     let symbol = |id: &rustc_span::def_id::DefId, export: &str| crate::lower::module_symbol(fns[id].module, export);
     let named: IndexSet<js::Symbol> = (variables.iter())

@@ -102,8 +102,9 @@ pub(crate) struct Caches {
     /// in its crate changes in place is copied by nowhere (ADR 0914). Its
     /// contract says them, so a consumer that changes one compiles the
     /// function itself (#2112's change D).
-    pub elided:
-        RefCell<rust_js_program::collections::IndexMap<DefId, std::collections::BTreeSet<crate::library::RcShape>>>,
+    pub elided: RefCell<
+        rust_js_program::collections::IndexMap<DefId, std::collections::BTreeSet<rust_js_program::library::RcShape>>,
+    >,
 }
 
 thread_local! {

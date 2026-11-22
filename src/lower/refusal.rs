@@ -71,7 +71,7 @@ pub(crate) fn uncompiled(tcx: TyCtxt<'_>, id: DefId) -> Option<String> {
         return None;
     }
     let metadata = tcx.used_crate_source(id.krate).rmeta.clone()?;
-    std::fs::read_to_string(crate::library::refusal(&metadata)).ok()
+    std::fs::read_to_string(rust_js_program::library::refusal(&metadata)).ok()
 }
 
 /// Why addressable memory is refused.

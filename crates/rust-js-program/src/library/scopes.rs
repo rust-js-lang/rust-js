@@ -13,7 +13,7 @@ use super::{Calling, FieldFact, ItemFact, Library, ParamFact, RefCellFacts, Type
 
 /// What makes a fact of the contract true.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum FactScope {
+pub enum FactScope {
     /// What the library's source declares, whatever its bodies or its
     /// callers do: a consumer can't link without it.
     Local,
@@ -32,7 +32,7 @@ pub(crate) enum FactScope {
 /// What a consumer that sees otherwise than a closed-world fact says
 /// does, and how, as its row says.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Differs {
+pub enum Differs {
     /// It reaches the same answer from its own view, or does what makes
     /// the library's answer hold of it.
     Agree(&'static str),
@@ -45,7 +45,7 @@ pub(crate) enum Differs {
 /// A fact of the contract: a field of one of its types, or a variant of
 /// one of its sets of facts.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum ContractField {
+pub enum ContractField {
     LibraryVersion,
     LibraryName,
     LibraryCrateId,
@@ -143,7 +143,7 @@ use ContractField::*;
 impl ContractField {
     /// Its row: its name, as the contract's types have it, its scope, and
     /// what it says.
-    pub(crate) fn row(self) -> (&'static str, FactScope, &'static str) {
+    pub fn row(self) -> (&'static str, FactScope, &'static str) {
         use Differs::*;
         use FactScope::*;
         match self {
@@ -581,12 +581,12 @@ impl ContractField {
 macro_rules! fields {
     ($struct:ident: $($field:ident => $fact:ident,)*) => {
         impl $struct {
-            fn named(&self) {
+            pub fn named(&self) {
                 let $struct { $($field),* } = self;
                 $(let _ = $field;)*
             }
 
-            const FIELDS: &[ContractField] = &[$($fact),*];
+            pub const FIELDS: &[ContractField] = &[$($fact),*];
         }
     };
 }
@@ -597,14 +597,14 @@ macro_rules! fields {
 macro_rules! variants {
     ($set:ident: $($variant:ident => $fact:ident,)*) => {
         impl $set {
-            fn field(self) -> ContractField {
+            pub fn field(self) -> ContractField {
                 match self {
                     $($set::$variant => $fact),*
                 }
             }
 
-            const VARIANTS: &[$set] = &[$($set::$variant),*];
-            const FIELDS: &[ContractField] = &[$($fact),*];
+            pub const VARIANTS: &[$set] = &[$($set::$variant),*];
+            pub const FIELDS: &[ContractField] = &[$($fact),*];
         }
     };
 }
@@ -729,7 +729,7 @@ variants! {
 
 /// Each fact of the contract, in the order of its types' fields and its
 /// sets' variants: the table's rows.
-pub(crate) fn every_field() -> impl Iterator<Item = ContractField> {
+pub fn every_field() -> impl Iterator<Item = ContractField> {
     [
         Library::FIELDS,
         Calling::FIELDS,
@@ -745,7 +745,7 @@ pub(crate) fn every_field() -> impl Iterator<Item = ContractField> {
 }
 
 /// The table of docs/library-contract.md, a row of each fact.
-pub(crate) fn table() -> String {
+pub fn table() -> String {
     let mut table = String::from("| Fact | Scope | What it says | A consumer that differs |\n|---|---|---|---|\n");
     for field in every_field() {
         let (name, scope, says) = field.row();
@@ -814,9 +814,9 @@ mod tests {
     /// `BLESS=1 cargo test contract_table` writes it.
     #[test]
     fn contract_table() {
-        let page = include_str!("../../docs/library-contract.md");
+        let page = include_str!("../../../../docs/library-contract.md");
         let (start, end) = (
-            "<!-- the facts: src/library/scopes.rs' table -->\n",
+            "<!-- the facts: crates/rust-js-program/src/library/scopes.rs' table -->\n",
             "<!-- end of the facts -->\n",
         );
         let from = page.find(start).expect("the table's start") + start.len();

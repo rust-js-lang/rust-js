@@ -1,8 +1,8 @@
 //! Owned compiler output. No rustc or printer types cross this boundary.
 
-use rust_js_program::collections::{IndexMap, IndexSet};
-use rust_js_program::js;
-use rust_js_program::runtime::Helper;
+use crate::collections::{IndexMap, IndexSet};
+use crate::js;
+use crate::runtime::Helper;
 
 use std::path::{Path, PathBuf};
 
@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 /// Whether a module specifier names a file, `./util.js`, `../lib.js`, and
 /// not a package, `react`: what lowering asks of a binding's module too
 /// (ADR 0914), and planning and printing of an import's.
-pub(crate) fn is_relative_specifier(specifier: &str) -> bool {
+pub fn is_relative_specifier(specifier: &str) -> bool {
     specifier.starts_with("./") || specifier.starts_with("../")
 }
 
@@ -203,7 +203,7 @@ pub struct Sources {
     pub text: String,
     pub files: Vec<Source>,
     /// Where each line of `text` starts, found once (`line_of`).
-    pub lines: std::sync::OnceLock<rust_js_program::lines::LineStarts>,
+    pub lines: std::sync::OnceLock<crate::lines::LineStarts>,
 }
 
 impl Sources {
@@ -214,9 +214,8 @@ impl Sources {
     }
 
     /// Where each line of `text` starts, found once.
-    pub fn line_starts(&self) -> &rust_js_program::lines::LineStarts {
-        self.lines
-            .get_or_init(|| rust_js_program::lines::LineStarts::of(&self.text))
+    pub fn line_starts(&self) -> &crate::lines::LineStarts {
+        self.lines.get_or_init(|| crate::lines::LineStarts::of(&self.text))
     }
 
     /// Which of `files` the arena's `line` is in: the last that starts at or

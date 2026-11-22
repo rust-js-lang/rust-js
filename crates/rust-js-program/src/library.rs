@@ -2,14 +2,14 @@
 //! item another crate can reach is in JS, and what a consumer can't work out
 //! from the types alone. Versioned on its own, beside the host manifest.
 
+use crate::collections::{IndexMap, IndexSet};
 use crate::manifest::{Compiler, Manifest};
-use rust_js_program::collections::{IndexMap, IndexSet};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::path::Path;
 mod dependencies;
-#[cfg(test)]
-pub(crate) mod scopes;
+#[cfg(any(test, feature = "testing"))]
+pub mod scopes;
 pub use dependencies::Dependencies;
 
 /// 3: every `Rc` and `Weak` is counted, `{ value, strong, weak }`, in a
@@ -1194,7 +1194,7 @@ impl Exports {
 
 /// `@rust-js/std`'s manifest, written by `bun run std` and committed beside
 /// its JS, built into the compiler that reads it: the one std its JS calls.
-const STD_MANIFEST: &str = include_str!("../std/manifest.json");
+const STD_MANIFEST: &str = include_str!("../../../std/manifest.json");
 
 /// Where a crate of crates.io's rust-js refused says why, beside the
 /// metadata rustc wrote of it, its types alone (ADR 0415), for a call into

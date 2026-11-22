@@ -6,9 +6,24 @@ use serde::{Deserialize, Serialize};
 
 pub const VERSION: u32 = 1;
 pub const ABI_VERSION: u32 = 1;
-/// This build of the compiler, a hash of what it's made of (`build.rs`, ADR
-/// 1004).
-pub const BUILD: &str = env!("RUST_JS_BUILD");
+/// This build of the compiler, a hash of what it's made of: the binary's
+/// `build.rs` makes it (ADR 1004), and gives it here as it starts
+/// (`set_build`), as this crate is built apart from it (ADR 1181).
+static BUILD: std::sync::OnceLock<&'static str> = std::sync::OnceLock::new();
+
+/// The compiler's build, `RUST_JS_BUILD`, given once as it starts.
+pub fn set_build(build: &'static str) {
+    BUILD
+        .set(build)
+        .expect("internal error: the compiler's build given twice (`manifest::set_build`)");
+}
+
+/// This build of the compiler, as it was given (`set_build`).
+pub fn build() -> &'static str {
+    BUILD
+        .get()
+        .expect("internal error: the compiler's build asked before `main` gave it (`manifest::set_build`)")
+}
 
 #[derive(PartialEq, Serialize, Deserialize)]
 pub struct Compiler {
@@ -27,7 +42,7 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn current() -> Self {
-        let toolchain = include_str!("../rust-toolchain.toml")
+        let toolchain = include_str!("../../../rust-toolchain.toml")
             .lines()
             .find_map(|line| line.strip_prefix("channel = "))
             .expect("the toolchain is pinned in the checked-in configuration")
@@ -39,7 +54,7 @@ impl Compiler {
             version: env!("CARGO_PKG_VERSION").to_owned(),
             toolchain,
             abi: ABI_VERSION,
-            build: Some(BUILD.to_owned()),
+            build: Some(build().to_owned()),
         }
     }
 }
@@ -142,7 +157,7 @@ impl Manifest {
     /// `@rust-js/std`'s, committed and built into the compiler, which reads
     /// it wherever the checkout is (ADR 0561).
     pub fn relative_to(mut self, dir: &Path) -> Self {
-        let rel = |path: &mut PathBuf| *path = PathBuf::from(rust_js_program::paths::relative(dir, path));
+        let rel = |path: &mut PathBuf| *path = PathBuf::from(crate::paths::relative(dir, path));
         rel(&mut self.input);
         rel(&mut self.output);
         self.sources.iter_mut().for_each(rel);
@@ -241,7 +256,7 @@ impl Manifest {
 
 /// An artifact's `hash`: what a build wrote, so a later one removes only
 /// what's still as written, and a consumer sees a library's file changed.
-pub(crate) fn fingerprint(bytes: &[u8]) -> String {
+pub fn fingerprint(bytes: &[u8]) -> String {
     // Stable across compiler releases; an ownership check, not a security hash.
     let hash = bytes.iter().fold(0xcbf29ce484222325_u64, |hash, byte| {
         (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3)

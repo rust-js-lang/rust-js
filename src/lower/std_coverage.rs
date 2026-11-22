@@ -52,7 +52,7 @@ impl Body {
 /// `- Vec::shrink_to` where it doesn't, each with what its body is made
 /// of, under `# Vec 35 of 160; bodies: 20 safe, 1 spec, 3 opaque, 10
 /// memory, 2 none`.
-pub fn report<'tcx>(tcx: TyCtxt<'tcx>, dependencies: &crate::library::Dependencies) -> String {
+pub fn report<'tcx>(tcx: TyCtxt<'tcx>, dependencies: &rust_js_program::library::Dependencies) -> String {
     let instances = super::Instances::default();
     let foreign = super::library::Foreign::new(tcx, dependencies, &instances, (Default::default(), false));
     let mut bodies = Bodies::default();

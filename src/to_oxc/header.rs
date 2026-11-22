@@ -66,12 +66,12 @@ pub(super) struct Docs {
 /// line apart its paragraphs, ` *` between; a `/*!` block `/**`. Where a
 /// line holds the `*/` that would end it, each line as JS writes it, `//`
 /// (`comments::in_js`), a blank line between two where the Rust has one.
-pub(super) fn docs(own: &[crate::program::Comment], text: &str) -> Docs {
+pub(super) fn docs(own: &[rust_js_program::program::Comment], text: &str) -> Docs {
     let blank_after = |hi: u32| {
         let rest = &text[hi as usize..];
         rest[..rest.len() - rest.trim_start().len()].matches('\n').count() > 1
     };
-    let written = |c: &crate::program::Comment| &text[c.lo as usize..c.hi as usize];
+    let written = |c: &rust_js_program::program::Comment| &text[c.lo as usize..c.hi as usize];
     let mut lines = Vec::new();
     let mut i = 0;
     while i < own.len() {
@@ -88,14 +88,14 @@ pub(super) fn docs(own: &[crate::program::Comment], text: &str) -> Docs {
                 }
                 said.push(&written(c)["//!".len()..]);
             }
-            match crate::comments::jsdoc(&said) {
+            match rust_js_program::comments::jsdoc(&said) {
                 Some(jsdoc) => lines.push(jsdoc),
                 None => {
                     for (j, c) in run.iter().enumerate() {
                         if j > 0 && blank_after(run[j - 1].hi) {
                             lines.push(String::new());
                         }
-                        lines.push(crate::comments::in_js(written(c)));
+                        lines.push(rust_js_program::comments::in_js(written(c)));
                     }
                 }
             }
@@ -186,7 +186,7 @@ pub(super) fn entries<'a>(module: &'a Module) -> Vec<Entry<'a>> {
         pairs.collect()
     }
     for package in &module.packages {
-        let relative = crate::program::is_relative_specifier(&package.from);
+        let relative = rust_js_program::program::is_relative_specifier(&package.from);
         let entry = |says| Entry {
             says,
             from: &package.from,
@@ -217,7 +217,7 @@ pub(super) fn entries<'a>(module: &'a Module) -> Vec<Entry<'a>> {
         }
     }
     for import in &module.imports {
-        let relative = crate::program::is_relative_specifier(&import.from);
+        let relative = rust_js_program::program::is_relative_specifier(&import.from);
         let entry = |says| Entry {
             says,
             from: &import.from,
@@ -261,7 +261,7 @@ pub(super) fn entries<'a>(module: &'a Module) -> Vec<Entry<'a>> {
         }
     }
     for reexport in &module.reexports {
-        let relative = crate::program::is_relative_specifier(&reexport.from);
+        let relative = rust_js_program::program::is_relative_specifier(&reexport.from);
         let written = |i: usize| (reexport.written.get(i).copied()).unwrap_or((js::Span::NONE, js::Span::NONE));
         // Of what the module imports from where it's re-exported from,
         // every name, imported at or above the re-export, its local
@@ -486,7 +486,7 @@ impl<'a> Cx<'a> {
 pub(super) fn among<'a>(
     body: &mut ArenaVec<'a, Statement<'a>>,
     made: Vec<(Statement<'a>, js::Span)>,
-    sources: &crate::program::Sources,
+    sources: &rust_js_program::program::Sources,
     b: &oxc_ast::builder::AstBuilder<'a>,
 ) -> bool {
     if made.is_empty() {

@@ -12,7 +12,7 @@ no program's JS changes, and no fact of the contract.
 
 The review asked for one canonical representation at every library
 boundary, so no closed-world fact crosses it. Sorting the contract's
-fields (`src/library.rs`, ABI 29) by what makes each true gave three
+fields (`crates/rust-js-program/src/library.rs`, ABI 29) by what makes each true gave three
 kinds: 16 of linkage and declared interface, 24 that summarise one
 function, impl or item, and 26 true only of what the library's whole
 crate does or never does. Those 26 are optimisations: `unboxed`,
@@ -65,7 +65,7 @@ what a consumer that differs does. A fact without its row fails
 
 The host reads every library's manifest through `tooling/manifest.js`'
 `parseManifest`, which checks each fact set against a list of the names
-it knows. Two lists had fallen behind `src/library.rs`: a type
+it knows. Two lists had fallen behind `crates/rust-js-program/src/library.rs`: a type
 parameter's marks lacked `shown_pretty`, `shown_hex` (#1331) and
 `counted` (#1234), and an item's facts lacked `arguments` and `this`. So
 a library with one of those facts was refused as "Invalid rust-js library
@@ -84,7 +84,7 @@ Crater goes from 6 of 415 tests as native back to 130.
 
 The review's change 4 asked that forgetting to decide a fact's kind be a
 compile error, not a markdown row a test reads back. Each fact is now a
-`ContractField` in `src/library/scopes.rs`, and its `FactScope` an
+`ContractField` in `crates/rust-js-program/src/library/scopes.rs`, and its `FactScope` an
 exhaustive match there: `Local` (this page's `linkage` before, what the
 source declares), `Summary`, `ClosedWorld` with what a consumer that
 differs does, `Agree`, `CompileOwn` or `Refuse`, each with its words,

@@ -749,8 +749,8 @@ pub(super) fn with_inside_comments(
 /// may be other comments only.
 pub(super) fn own_line_before_value(
     text: &str,
-    comments: &[crate::program::Comment],
-    c: &crate::program::Comment,
+    comments: &[rust_js_program::program::Comment],
+    c: &rust_js_program::program::Comment,
 ) -> Option<(u32, u32)> {
     let written = text.get(c.lo as usize..c.hi as usize)?;
     if !written.starts_with("/*") || written.contains('\n') {
@@ -807,8 +807,8 @@ pub(super) fn own_line_before_value(
 /// on from one.
 pub(super) fn own_line_before_block(
     text: &str,
-    comments: &[crate::program::Comment],
-    c: &crate::program::Comment,
+    comments: &[rust_js_program::program::Comment],
+    c: &rust_js_program::program::Comment,
 ) -> Option<(u32, u32)> {
     let written = text.get(c.lo as usize..c.hi as usize)?;
     if !written.starts_with("/*") || written.contains('\n') {
@@ -860,9 +860,9 @@ pub(super) fn own_line_before_block(
 /// only, each placed so in turn.
 pub(super) fn own_line_after_value(
     text: &str,
-    comments: &[crate::program::Comment],
+    comments: &[rust_js_program::program::Comment],
     value_ends: &IndexSet<u32>,
-    c: &crate::program::Comment,
+    c: &rust_js_program::program::Comment,
 ) -> Option<(u32, u32)> {
     let written = text.get(c.lo as usize..c.hi as usize)?;
     if !written.starts_with("//") {

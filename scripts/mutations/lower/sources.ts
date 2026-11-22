@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a block comment Rust nests is written in a function's JS, which ends it at its first `*/`",
     file: "src/lower/sources.rs",
-    find: "            && crate::comments::is_one_in_js(written)\n",
+    find: "            && rust_js_program::comments::is_one_in_js(written)\n",
     replace: "            && !written.is_empty()\n",
     tests: [
       "test/lowering-names.test.ts",

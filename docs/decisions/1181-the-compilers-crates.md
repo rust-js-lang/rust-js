@@ -158,3 +158,26 @@ M2 also settles what a crate move needs beyond paths:
 - **A runtime helper's JS** stays where its module is: the binary's unit
   tests that read `lent.js` and `std_iterator.js` include them from the
   crate's directory.
+
+M3 moves `program`, `comments`, `library`, `manifest`, `packages`,
+`settings` and `css_modules`, and with them their crates.io dependencies,
+serde, serde_json, lightningcss (`css_modules.rs` its one reader, so the
+binary and the playground's build no longer name it) and toml (natively
+only), versions more than one crate takes being the workspace's:
+
+- **The build's identity** stays `build.rs`'s (ADR 1003), the binary's: a
+  crate built apart has no `RUST_JS_BUILD`, so the binary gives it to
+  `manifest::set_build` as it starts, and `manifest::build()` reads it,
+  refusing to answer before; no second build script hashes the checkout.
+- **A test-support module** another crate's tests read, `library::scopes`
+  (the contract's facts, ADR 1129), is the `testing` feature's, its items
+  `pub`.
+- **`--widen` builds every target**, so what a crate's tests name of
+  another's is made `pub` too.
+- **A file it includes from the checkout**, `std/manifest.json`,
+  `docs/library-contract.md`, `rust-toolchain.toml`, is included by its
+  path from the crate's own directory.
+- **rustfmt lays a lengthened path out anew**, which can move a mutation's
+  `find` off its line: after a move, `bun scripts/format.ts`, then test
+  that each mutation applies (`test/mutations.test.ts -t applies`), and
+  repoint those that don't, as M2's push found eight.

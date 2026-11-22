@@ -84,7 +84,7 @@ pub(super) fn place(
     // A library's, by the name the module imports it as, `names`, or through its module's namespace, `Fiber.current` (rd114a, ADR
     // 1018), by what that exports it as.
     let exports: Vec<(String, String)> = (foreign.all())
-        .filter(|item| item.calling.has(crate::library::ItemFact::Variable) && item.member.is_none())
+        .filter(|item| item.calling.has(rust_js_program::library::ItemFact::Variable) && item.member.is_none())
         .flat_map(|item| std::iter::once((item.from.clone(), item.export.clone())).chain(item.rooted.clone()))
         .collect();
     let local = |export: &(String, String)| names?.get(export).map(String::as_str);

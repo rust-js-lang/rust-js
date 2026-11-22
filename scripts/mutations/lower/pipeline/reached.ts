@@ -212,8 +212,8 @@ export const mutations: Mutation[] = [
     name: "forwarding-method-reexport-comments-untaken",
     breaks: "a namespace's method re-exported from another module loses the comments in its body, and the second's above it (rd758)",
     file: "src/lower/pipeline/reached.rs",
-    find: "                    let holds = |r: &&crate::program::Reexport| r.span.lo <= written.lo && written.hi <= r.span.hi;\n",
-    replace: "                    let holds = |_: &&crate::program::Reexport| false;\n",
+    find: "                    let holds =\n                        |r: &&rust_js_program::program::Reexport| r.span.lo <= written.lo && written.hi <= r.span.hi;\n",
+    replace: "                    let holds = |_: &&rust_js_program::program::Reexport| false;\n",
     tests: ["test/method-forwarding.test.ts", "-t", "keeps its comments before the function it is"],
   },
 ];

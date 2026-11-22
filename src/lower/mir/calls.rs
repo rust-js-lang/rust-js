@@ -795,7 +795,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn leaves_out_some_alone(&self, (def_id, copy): (rustc_span::def_id::DefId, Option<usize>), p: u32) -> bool {
         if !def_id.is_local() {
             return (self.krate.foreign.item(def_id).and_then(|item| item.calling.param(p)))
-                .is_some_and(|param| param.has(crate::library::ParamFact::Unboxed));
+                .is_some_and(|param| param.has(rust_js_program::library::ParamFact::Unboxed));
         }
         let Some(at) = copy else { return false };
         let given = &self.krate.given.js_given;

@@ -1,11 +1,11 @@
-// Mutations of src/comments.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/comments.rs (ADR 0093).
 import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "inner-doc-kept-in-js",
     breaks: "a module's `//!` above its imports, and a `/*!` above its code, print as Rust writes them, `//! Where the app is: ..`, not JS's plain `// ..` (ADR 0444, amended)",
-    file: "src/comments.rs",
+    file: "crates/rust-js-program/src/comments.rs",
     find: "        (Some(rest), _) => format!(\"//{rest}\"),\n        (_, Some(rest)) => format!(\"/*{rest}\"),\n",
     replace: "",
     tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "head-comment-cut-inside-a-comment",
     breaks: "a file's leading block comment with a blank line in it is cut at that line, and rust-js writes an unterminated `/*` (#312)",
-    file: "src/comments.rs",
+    file: "crates/rust-js-program/src/comments.rs",
     find: "        && let Some(&(before, _)) = gaps.iter().rev().find(|&&(from, to)| blank(&text[from..to]))\n",
     replace: "        && let Some(before) = text[..end].rfind(\"\\n\\n\")\n",
     tests: ["test/lowering-comments.test.ts", "-t", "blank line in it is one comment"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "output-line-docs-carried",
     breaks: "a module's or an item's doc comment, `//!` or `///`, is taken for one the file starts with",
-    file: "src/comments.rs",
+    file: "crates/rust-js-program/src/comments.rs",
     find: "            if doc(\"///\", &[\"////\"]) || trimmed.starts_with(\"//!\") {",
     replace: "            if false {",
     tests: ["test/emission.test.ts", "-t", "leading comments"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "output-block-docs-carried",
     breaks: "an item's block doc comment, `/** .. */`, is taken for one the file starts with",
-    file: "src/comments.rs",
+    file: "crates/rust-js-program/src/comments.rs",
     find: "            if doc(\"/**\", &[\"/***\", \"/**/\"]) || trimmed.starts_with(\"/*!\") {",
     replace: "            if trimmed.starts_with(\"/*!\") {",
     tests: ["test/emission.test.ts", "-t", "leading comments"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "output-nested-comment-carried",
     breaks: "a block comment Rust nests is written in JS, which ends it at its first `*/`",
-    file: "src/comments.rs",
+    file: "crates/rust-js-program/src/comments.rs",
     find: "        Some(inner) => !inner.contains(\"/*\"),",
     replace: "        Some(_) => true,",
     tests: ["test/emission.test.ts", "-t", "leading comments"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "output-line-comment-js-ends",
     breaks: "a line comment with a bare carriage return, which JS ends there, is written, and its rest is code",
-    file: "src/comments.rs",
+    file: "crates/rust-js-program/src/comments.rs",
     find: "        None => !comment.contains(['\\r', '\\u{2028}', '\\u{2029}']),",
     replace: "        None => true,",
     tests: ["test/emission.test.ts", "-t", "leading comments"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "doc-comment-ended-early",
     breaks: "a `///` line with a `*/` is written in a JSDoc, which it ends, and its rest is code",
-    file: "src/comments.rs",
+    file: "crates/rust-js-program/src/comments.rs",
     find: "    if lines.iter().any(|line| line.contains(\"*/\")) {\n",
     replace: "    if false {\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "leading-run-above-code-kept",
     breaks: "a comment run right above the first code, a blank line after the license, stays in the header, a blank line between it and its code",
-    file: "src/comments.rs",
+    file: "crates/rust-js-program/src/comments.rs",
     find: "        && let Some(&(before, _)) = gaps.iter().rev().find(|&&(from, to)| blank(&text[from..to]))\n",
     replace: "        && let Some(&(before, _)) = gaps.iter().rev().find(|&&(from, to)| blank(&text[from..to])).filter(|_| false)\n",
     tests: ["test/emission.test.ts", "-t", "a file's leading comments are its JS's"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "safety-comment-written",
     breaks: "a `// SAFETY:` comment above an `unsafe` block is in the JS, of an `unsafe` JS has none of (ADR 0444, amended)",
-    file: "src/comments.rs",
+    file: "crates/rust-js-program/src/comments.rs",
     find: "            .is_some_and(|rest| rest.trim_start().starts_with(\"SAFETY:\"));\n",
     replace: "            .is_some_and(|_| false);\n",
     tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "safety-run-unended",
     breaks: "the line comments right below a `// SAFETY:` one, the rest of what it says, are in the JS",
-    file: "src/comments.rs",
+    file: "crates/rust-js-program/src/comments.rs",
     find: "        let out_of_js = said || continued;\n",
     replace: "        let out_of_js = said;\n",
     tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "safety-run-after-code",
     breaks: "a comment on its own line below a `// SAFETY:` one after code on its line is taken for the rest of it, and left out",
-    file: "src/comments.rs",
+    file: "crates/rust-js-program/src/comments.rs",
     find: "        run_end = (out_of_js && own_line && written.starts_with(\"//\")).then_some(hi);\n",
     replace: "        run_end = (out_of_js && written.starts_with(\"//\")).then_some(hi);\n",
     tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "doc-lines-apart",
     breaks: "each line of a `///` doc comment is a JSDoc of its own",
-    file: "src/comments.rs",
+    file: "crates/rust-js-program/src/comments.rs",
     find: "        .take_while(|c| c.doc && text[c.lo as usize..].starts_with(\"///\"))\n        .count();\n",
     replace: "        .take_while(|c| c.doc && text[c.lo as usize..].starts_with(\"///\"))\n        .count()\n        .min(1);\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],

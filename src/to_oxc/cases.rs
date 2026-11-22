@@ -273,7 +273,7 @@ pub(super) fn case_starts(module: &Module, source: &str) -> Vec<u32> {
 /// (`defaulted_switches`): the arm an `if`'s `else` or the `match` gone, so
 /// it's on a line of its own before the arm's first code, as one above the
 /// arm is, never lost (ADR 0629, amended, #574).
-pub(super) fn of_no_default(c: &crate::program::Comment, text: &str, defaulted: &[(u32, u32)]) -> bool {
+pub(super) fn of_no_default(c: &rust_js_program::program::Comment, text: &str, defaulted: &[(u32, u32)]) -> bool {
     let line_start = text[..c.lo as usize].rfind('\n').map_or(0, |i| i + 1);
     text[line_start..c.lo as usize].trim() == "_"
         && text[c.hi as usize..].trim_start().starts_with("=>")

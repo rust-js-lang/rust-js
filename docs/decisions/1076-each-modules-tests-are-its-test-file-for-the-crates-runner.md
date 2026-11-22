@@ -50,7 +50,7 @@ four. A file compiled alone, `rust-js --test x.rs`, reads the nearest
 none, is Node's. There's no flag besides it, nor any other name for it.
 
 - **The compiler owns what each runner's `test` is imported from**
-  (`src/settings.rs`'s `Runner::module`): `node:test`, `bun:test`, `vitest`,
+  (`crates/rust-js-program/src/settings.rs`'s `Runner::module`): `node:test`, `bun:test`, `vitest`,
   `@jest/globals`. Each test file imports it, by a name nothing of its
   module's is, `test as test$1` beside a `fn test` of the tests'.
 - **The manifest records it**, `"tests": { "runner", "module", "files" }`,

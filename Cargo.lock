@@ -1214,7 +1214,6 @@ dependencies = [
  "declare_clippy_lint",
  "imbl",
  "indexmap",
- "lightningcss",
  "oxc_allocator",
  "oxc_ast",
  "oxc_ast_visit",
@@ -1238,7 +1237,11 @@ name = "rust-js-program"
 version = "0.0.4"
 dependencies = [
  "indexmap",
+ "lightningcss",
  "rustc-hash",
+ "serde",
+ "serde_json",
+ "toml",
 ]
 
 [[package]]

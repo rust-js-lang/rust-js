@@ -10,6 +10,17 @@ publish = false
 [dependencies]
 indexmap.workspace = true
 rustc-hash.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+# The class names a CSS Module exports, which a binding of one is checked
+# against (#1512): pinned, its default features off, `css_modules.rs` its
+# one reader.
+lightningcss = { version = "=1.0.0-alpha.72", default-features = false }
+
+# A crate's settings, in its Cargo.toml (ADR 0117): read natively only. The
+# playground has none.
+[target.'cfg(not(target_os = "wasi"))'.dependencies]
+toml.workspace = true
 
 [features]
 # What a test makes and a compile never does, a `Name` or a `Pattern` of a

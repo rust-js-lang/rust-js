@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a module's file exports count what it exports its private state by, `$$SIDES`, so a glob's `pub use shapes::*` lists names where it's `export *` (#2017)",
     file: "src/output.rs",
-    find: "        .filter(|(_, exported)| !crate::library::is_internal_export(exported))\n",
+    find: "        .filter(|(_, exported)| !rust_js_program::library::is_internal_export(exported))\n",
     replace: "        .filter(|_| true)\n",
     tests: ["test/cross-crate-private-state.test.ts"],
   },
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     name: "package-specifier-linked",
     breaks: "a package's specifier, `@rust-js/std`, is a link to a file beside the module that isn't there",
     file: "src/output.rs",
-    find: "        .filter(|(_, _, specifier)| crate::program::is_relative_specifier(specifier))\n",
+    find: "        .filter(|(_, _, specifier)| rust_js_program::program::is_relative_specifier(specifier))\n",
     replace: "",
     tests: ["test/manifest.test.ts", "-t", "links are each relative specifier"],
   },

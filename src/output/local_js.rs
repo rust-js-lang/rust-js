@@ -4,9 +4,10 @@
 //! build read.
 
 use super::{absolute, in_source, js_path, located};
-use crate::{program, to_oxc};
+use crate::to_oxc;
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rust_js_program::paths::{parent_dir, specifier_file};
+use rust_js_program::program;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
@@ -172,7 +173,7 @@ impl program::JsModules for LocalJs {
             let source = std::fs::read_to_string(&file).map_err(|e| format!("reading {}: {e}", file.display()))?;
             self.loads.borrow_mut().insert(file.clone(), Some(Vec::new()));
             let name = file.file_name().map(|name| name.to_string_lossy().into_owned());
-            return crate::css_modules::exported_keys(&source, &name.unwrap_or_default());
+            return rust_js_program::css_modules::exported_keys(&source, &name.unwrap_or_default());
         }
         looked.dedup();
         let looked: Vec<String> = looked.iter().map(|file| file.display().to_string()).collect();
@@ -194,7 +195,7 @@ fn stem(file: &Path) -> String {
 /// modules, of `stems` (`LocalJs::loaded`), by its file or its directory's
 /// `index`; else a file, as Node and bundlers find one.
 fn imported<'s>(dir: &Path, specifier: &str, stems: &'s IndexMap<String, IndexSet<usize>>) -> Imported<'s> {
-    if !crate::program::is_relative_specifier(specifier) {
+    if !rust_js_program::program::is_relative_specifier(specifier) {
         return match specifier.starts_with(['#', '/']) || specifier.starts_with("file:") {
             true => Imported::Unknown,
             false => Imported::Package,

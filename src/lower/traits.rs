@@ -358,7 +358,7 @@ fn bound_of<'tcx>(
     if tcx.is_lang_item(tr.def_id, LangItem::Copy)
         && let ty::Param(param) = tr.self_ty().kind()
         && let Some(item) = foreign.item(id)
-        && !(item.calling.param(param.index)).is_some_and(|param| param.has(crate::library::ParamFact::Copy))
+        && !(item.calling.param(param.index)).is_some_and(|param| param.has(rust_js_program::library::ParamFact::Copy))
     {
         return None;
     }
@@ -370,7 +370,8 @@ fn bound_of<'tcx>(
         && match super::instances::seen_whole(tcx, id, super::instances::Fact::CopiedApart(foreign)) {
             true => super::analysis::clones_by_itself(tcx, foreign, given.clones, (id, param.index)),
             false => (foreign.item(id)).is_some_and(|item| {
-                !(item.calling.param(param.index)).is_some_and(|param| param.has(crate::library::ParamFact::Clone))
+                !(item.calling.param(param.index))
+                    .is_some_and(|param| param.has(rust_js_program::library::ParamFact::Clone))
             }),
         }
     {

@@ -59,7 +59,7 @@ pub(in crate::lower) fn jsdoc_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Strin
         .flat_map(|doc| doc.split('\n').map(str::to_string).collect::<Vec<_>>())
         .collect();
     let lines: Vec<&str> = docs.iter().map(String::as_str).collect();
-    crate::comments::jsdoc(&lines).filter(|_| !lines.is_empty())
+    rust_js_program::comments::jsdoc(&lines).filter(|_| !lines.is_empty())
 }
 
 /// The `//` and `/* */` comments written right before `def_id`'s item, past
@@ -108,7 +108,7 @@ fn leading_comments(tcx: TyCtxt<'_>, span: rustc_span::Span) -> Option<String> {
                     break;
                 }
                 let text = text.trim_end_matches('\r');
-                if !crate::comments::is_one_in_js(text) {
+                if !rust_js_program::comments::is_one_in_js(text) {
                     return None;
                 }
                 if blank {
@@ -150,7 +150,7 @@ fn leading_comments(tcx: TyCtxt<'_>, span: rustc_span::Span) -> Option<String> {
             (lo, lo + text.len())
         })
         .collect();
-    let mut left_out = crate::comments::left_out(before, &spans).into_iter();
+    let mut left_out = rust_js_program::comments::left_out(before, &spans).into_iter();
     found.retain(|text| text.is_empty() || !left_out.next().unwrap_or(false));
     found.dedup_by(|a, b| a.is_empty() && b.is_empty());
     while found.first().is_some_and(|text| text.is_empty()) {

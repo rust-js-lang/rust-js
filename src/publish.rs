@@ -13,10 +13,12 @@ pub(crate) struct Artifact {
 /// Write `artifacts` and remove what of `stale` is still as an older build
 /// wrote it, as an artifact plan has them: staged, the manifest last, and
 /// rolled back if any fails. A file edited since, or gone, is left.
-pub(crate) fn publish(artifacts: &[Artifact], stale: &[crate::manifest::Artifact]) -> Result<(), String> {
+pub(crate) fn publish(artifacts: &[Artifact], stale: &[rust_js_program::manifest::Artifact]) -> Result<(), String> {
     let stale: Vec<PathBuf> = stale
         .iter()
-        .filter(|old| std::fs::read(&old.file).is_ok_and(|bytes| crate::manifest::fingerprint(&bytes) == old.hash))
+        .filter(|old| {
+            std::fs::read(&old.file).is_ok_and(|bytes| rust_js_program::manifest::fingerprint(&bytes) == old.hash)
+        })
         .map(|old| old.file.clone())
         .collect();
     let stale = stale.as_slice();

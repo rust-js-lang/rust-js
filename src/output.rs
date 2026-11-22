@@ -4,12 +4,13 @@ use rust_js_program::collections::{IndexMap, IndexSet};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
-use crate::manifest::{self, Manifest, fingerprint};
+use rust_js_program::manifest::{self, Manifest, fingerprint};
 use rust_js_program::paths::{absolute, parent_dir, relative, relative_resolved, resolve, specifier_file};
 
 use crate::publish::Artifact;
-use crate::{program, to_oxc};
+use crate::to_oxc;
 use rust_js_program::js;
+use rust_js_program::program;
 
 mod local_js;
 mod refusal;
@@ -31,7 +32,7 @@ pub struct OutputPlan {
     /// what else the build read (`read`) and every file it writes.
     pub dep_info: Option<(PathBuf, DepInfo)>,
     /// The crate's settings for the JS (ADR 0117).
-    pub settings: crate::settings::Settings,
+    pub settings: rust_js_program::settings::Settings,
     /// `@rust-js/std`'s build, whose manifest is committed beside its JS:
     /// its paths relative to it (ADR 0561).
     pub std_bodies: bool,
@@ -61,7 +62,7 @@ pub struct OutputPlan {
     /// Of a crate Cargo builds, each module's JS in source and the package
     /// it's of there, which another package's module imports it by the
     /// subpath of (ADR 0770, amended).
-    scopes: IndexMap<Vec<String>, (PathBuf, Option<crate::packages::Scope>)>,
+    scopes: IndexMap<Vec<String>, (PathBuf, Option<rust_js_program::packages::Scope>)>,
 }
 
 /// What writes the build's record of what it read, given what else the
@@ -229,7 +230,7 @@ impl OutputPlan {
                     .find(|source| source.path.as_deref().map(resolve).as_ref() == Some(&file))
             });
             if let Some(source) = own
-                && let comments = crate::comments::leading_comments(&source.text)
+                && let comments = rust_js_program::comments::leading_comments(&source.text)
                 && !comments.is_empty()
             {
                 header.push_str("\n\n");
@@ -657,7 +658,7 @@ impl OutputPlan {
     /// `src/api.js` and `src/api/mod.rs`'s `src/api/mod.js`, or a `#[path]`
     /// module's beside its file; an inline module's, `mod inner { .. }`,
     /// where its file would be, `src/inner.js`.
-    fn in_source(&self, module: &crate::program::LoweredModule) -> Result<PathBuf, String> {
+    fn in_source(&self, module: &rust_js_program::program::LoweredModule) -> Result<PathBuf, String> {
         let extension = if self.jsx.contains(&module.path) { "jsx" } else { "js" };
         in_source(
             &self.input,
@@ -705,7 +706,7 @@ impl OutputPlan {
         if from_scope.as_ref().is_some_and(|own| own.dir == scope.dir) {
             return None;
         }
-        let found = crate::packages::installed(parent_dir(from_file), scope.name.as_deref()?);
+        let found = rust_js_program::packages::installed(parent_dir(from_file), scope.name.as_deref()?);
         (found.as_ref() == Some(&scope.dir))
             .then(|| scope.specifier())
             .flatten()
@@ -722,7 +723,7 @@ impl OutputPlan {
     /// file imports it: `./greet.js` is `../greet.js` one down. A package's
     /// name stays as it is.
     fn linked_specifier(&self, from: &[String], specifier: &str) -> String {
-        if !crate::program::is_relative_specifier(specifier) {
+        if !rust_js_program::program::is_relative_specifier(specifier) {
             return specifier.to_string();
         }
         let dir = parent_dir(&self.output);
@@ -740,7 +741,7 @@ impl OutputPlan {
             metadata: None,
             extra: Vec::new(),
             dep_info: None,
-            settings: crate::settings::Settings::default(),
+            settings: rust_js_program::settings::Settings::default(),
             std_bodies: false,
             toolchain: String::new(),
             prepare: Default::default(),
@@ -796,7 +797,7 @@ impl OutputPlan {
                                 .map(|(name, alias)| (from.clone(), name.clone(), alias.clone()))
                         })
                         .collect();
-                    Ok(crate::packages::Module {
+                    Ok(rust_js_program::packages::Module {
                         path: &module.path,
                         files,
                         in_source,
@@ -805,7 +806,7 @@ impl OutputPlan {
                     })
                 })
                 .collect::<Result<Vec<_>, String>>()?;
-            let read = crate::packages::read(&self.settings.dir, &modules, to_oxc::entry_exports)?;
+            let read = rust_js_program::packages::read(&self.settings.dir, &modules, to_oxc::entry_exports)?;
             library.package = read.package;
             let hand_written = read.hand_written;
             packaged.extend(read.files.iter().cloned());
@@ -825,7 +826,7 @@ impl OutputPlan {
         if self.settings.cargo {
             for module in &lowered.modules {
                 let in_source = absolute(&self.in_source(module)?)?;
-                let scope = crate::packages::scope(&in_source)?;
+                let scope = rust_js_program::packages::scope(&in_source)?;
                 self.scopes.insert(module.path.clone(), (in_source, scope));
             }
             let mut manifests: Vec<PathBuf> = (self.scopes.values())
@@ -1093,7 +1094,7 @@ impl OutputPlan {
 /// its `pub use`s of one of the crate's modules, as the entry re-exports
 /// it (`packages::reexports_each`), and nothing else of its own. It writes
 /// no JS of its own then (the user's decision, ADR 1008, amended).
-fn entry_is_root(package: &crate::packages::Package, module: &program::LoweredModule) -> bool {
+fn entry_is_root(package: &rust_js_program::packages::Package, module: &program::LoweredModule) -> bool {
     let mut reexports = Vec::new();
     for reexport in &module.reexports {
         let js::ImportFrom::Module(from) = &reexport.from else {
@@ -1109,7 +1110,7 @@ fn entry_is_root(package: &crate::packages::Package, module: &program::LoweredMo
         && module.aliases.is_empty()
         && module.packages.is_empty()
         && module.directives.is_empty()
-        && crate::packages::reexports_each(package, &reexports)
+        && rust_js_program::packages::reexports_each(package, &reexports)
 }
 
 /// Whether `reexport`, a glob's, `pub use m::*;`, re-exports each name
@@ -1155,7 +1156,7 @@ fn exports(module: &program::LoweredModule) -> Vec<String> {
     // Not what a library exports its private state by, for its consumers'
     // compiles alone (#2017).
     let aliased = (module.aliases.iter())
-        .filter(|(_, exported)| !crate::library::is_internal_export(exported))
+        .filter(|(_, exported)| !rust_js_program::library::is_internal_export(exported))
         .map(|(_, exported)| exported.clone());
     let own = own.chain(fields);
     own.chain(reexported).chain(default).chain(aliased).collect()
@@ -1184,7 +1185,7 @@ fn links(artifacts: &[Artifact], file: &std::path::Path, declarations: bool) -> 
     let code = std::str::from_utf8(&artifact.bytes).map_err(|e| e.to_string())?;
     to_oxc::module_specifiers(code, declarations)?
         .into_iter()
-        .filter(|(_, _, specifier)| crate::program::is_relative_specifier(specifier))
+        .filter(|(_, _, specifier)| rust_js_program::program::is_relative_specifier(specifier))
         .map(|(start, end, specifier)| {
             let file = specifier_file(parent_dir(file), &specifier)?;
             Ok(manifest::Link { start, end, file })

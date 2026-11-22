@@ -370,8 +370,10 @@ impl<'tcx> FnPointers<'tcx> {
     /// each one a consumer may read whose fn pointers may only be Rust
     /// functions (`rust_only`), which the consumer reads as the library's
     /// own (`FieldFact::RustFunctions`).
-    pub(in crate::lower) fn rust_fields(&self) -> impl Iterator<Item = (DefId, crate::library::FieldFact)> + '_ {
-        (self.rust_fields.iter()).map(|&field| (field, crate::library::FieldFact::RustFunctions))
+    pub(in crate::lower) fn rust_fields(
+        &self,
+    ) -> impl Iterator<Item = (DefId, rust_js_program::library::FieldFact)> + '_ {
+        (self.rust_fields.iter()).map(|&field| (field, rust_js_program::library::FieldFact::RustFunctions))
     }
 
     /// Of the crate's structs a consumer may reach, each field that holds a
@@ -758,7 +760,7 @@ fn held<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> Held<'tcx> {
                         // A library's field of its own Rust functions alone.
                         if recognition
                             .foreign
-                            .field_has(field.did, crate::library::FieldFact::RustFunctions)
+                            .field_has(field.did, rust_js_program::library::FieldFact::RustFunctions)
                         {
                             let mut theirs = Held::default();
                             walk(recognition, ty, seen, &mut theirs);

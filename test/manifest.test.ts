@@ -252,7 +252,7 @@ test("a library is refused without its manifest", () => {
 });
 
 // The library ABI the tooling reads, `LIBRARY_ABI` in tooling/manifest.js,
-// mirrors the compiler's, `src/library.rs`' `VERSION`: the std package's
+// mirrors the compiler's, `crates/rust-js-program/src/library.rs`' `VERSION`: the std package's
 // manifest, which the compiler writes and every compile checks is of its
 // `VERSION`, says the ABI the tooling takes.
 test("the tooling's library ABI is the compiler's", () => {
@@ -272,15 +272,15 @@ test("the tooling's library ABI is the compiler's", () => {
 // check:fast's load made one of its apps a fixture, never found again
 // (#1190).
 // Each fact a library tells its consumers says what makes it true, its
-// `FactScope` in src/library/scopes.rs, whose `cargo test` asks one of each
+// `FactScope` in crates/rust-js-program/src/library/scopes.rs, whose `cargo test` asks one of each
 // field and variant of the contract and makes docs/library-contract.md's
 // table of them (#1462, #1671 change 4 M4; ADR 1129, amended).
 // The host's check of a contract knows each fact the compiler writes: its
-// lists, `tooling/manifest.js`' mirror of `src/library.rs`' enums, are
+// lists, `tooling/manifest.js`' mirror of `crates/rust-js-program/src/library.rs`' enums, are
 // theirs, so a library whose type parameter is `counted` isn't refused as
 // an invalid contract (#1638: itertools' `rciter`).
-test("the host's check of a contract knows each fact src/library.rs writes", () => {
-  const source = readFileSync(join(repository, "src", "library.rs"), "utf8");
+test("the host's check of a contract knows each fact crates/rust-js-program/src/library.rs writes", () => {
+  const source = readFileSync(join(repository, "crates", "rust-js-program", "src", "library.rs"), "utf8");
   const snake = (name: string) => name.replace(/(?<!^)([A-Z])/g, "_$1").toLowerCase();
   const variants = (name: string) => {
     const body = new RegExp(`^pub enum ${name}[^{]*\\{\\n([\\s\\S]*?)\\n\\}`, "m").exec(source)?.[1];

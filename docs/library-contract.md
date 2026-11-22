@@ -1,6 +1,6 @@
 # What a library tells its consumers
 
-A compiled library is its JS and a contract, `src/library.rs`, in its
+A compiled library is its JS and a contract, `crates/rust-js-program/src/library.rs`, in its
 manifest: what rustc's metadata doesn't say of how its JS is called. This
 page lists every fact of that contract by **what makes it true**, since
 that decides what a consumer may rely on:
@@ -21,7 +21,7 @@ compile and its consumer's ([bug-clusters.md](bug-clusters.md)), so
 their agreement is netted: the consumer net and the metamorphic net's
 `library` rewrite of every corpus case, each night.
 
-**Adding a fact**: give it a `ContractField` in `src/library/scopes.rs`,
+**Adding a fact**: give it a `ContractField` in `crates/rust-js-program/src/library/scopes.rs`,
 which `cargo test` asks for of each field and variant of the contract,
 and its scope there, of a `closed-world` one what a consumer that
 differs does; the table below is made of them (`BLESS=1 cargo test
@@ -32,7 +32,7 @@ new one is m6-react's to see first (#1462).
 
 ## The facts
 
-<!-- the facts: src/library/scopes.rs' table -->
+<!-- the facts: crates/rust-js-program/src/library/scopes.rs' table -->
 | Fact | Scope | What it says | A consumer that differs |
 |---|---|---|---|
 | `Library.version` | local | the contract's own version; another is refused | |

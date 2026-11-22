@@ -9,7 +9,7 @@
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_span::def_id::LocalModId;
 
-use crate::program::{JsModules, ModuleAt};
+use rust_js_program::program::{JsModules, ModuleAt};
 
 pub(super) struct ModuleImports {
     edges: IndexMap<LocalModId, IndexSet<LocalModId>>,

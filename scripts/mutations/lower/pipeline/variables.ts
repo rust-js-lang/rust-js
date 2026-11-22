@@ -32,9 +32,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a consumer reads a library's variable's `value`, `hasBadMapPolyfill.value`, of a boolean (ADR 0270, amended)",
     file: "src/lower/pipeline/variables.rs",
-    find: "        .filter(|item| item.calling.has(crate::library::ItemFact::Variable) && item.member.is_none())\n",
+    find: "        .filter(|item| item.calling.has(rust_js_program::library::ItemFact::Variable) && item.member.is_none())\n",
     replace:
-      "        .filter(|item| item.calling.has(crate::library::ItemFact::Variable) && item.member.is_some())\n",
+      "        .filter(|item| item.calling.has(rust_js_program::library::ItemFact::Variable) && item.member.is_some())\n",
     tests: [
       "test/lowering-module-variables.test.ts",
       "-t",

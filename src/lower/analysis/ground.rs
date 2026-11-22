@@ -70,7 +70,7 @@ impl Harness {
 pub(in crate::lower) fn of<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[Body<'tcx>],
-    dependencies: &'a crate::library::Dependencies,
+    dependencies: &'a rust_js_program::library::Dependencies,
     (library, std_bodies): (bool, bool),
     instances: &'a super::super::Instances,
 ) -> Ground<'a, 'tcx> {

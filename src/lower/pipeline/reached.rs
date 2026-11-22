@@ -203,7 +203,7 @@ pub(super) fn forwarded<'tcx>(
 /// of 2026-11-04).
 pub(super) fn taken_into(
     tcx: TyCtxt<'_>,
-    (module, lowered): (LocalModId, &crate::program::LoweredModule),
+    (module, lowered): (LocalModId, &rust_js_program::program::LoweredModule),
     (of, fns): (&[&IndexMap<DefId, DefId>], &IndexMap<DefId, super::super::FnInfo>),
     sources: &super::super::sources::CapturedSources,
 ) -> Vec<(rust_js_program::js::Span, rust_js_program::js::Span)> {
@@ -218,8 +218,10 @@ pub(super) fn taken_into(
                     _ => None,
                 })?,
                 false => {
-                    let holds = |r: &&crate::program::Reexport| r.span.lo <= written.lo && written.hi <= r.span.hi;
-                    let named = |r: &&crate::program::Reexport| r.named.iter().any(|(_, a)| a == mine.exported());
+                    let holds =
+                        |r: &&rust_js_program::program::Reexport| r.span.lo <= written.lo && written.hi <= r.span.hi;
+                    let named =
+                        |r: &&rust_js_program::program::Reexport| r.named.iter().any(|(_, a)| a == mine.exported());
                     lowered.reexports.iter().find(holds).filter(named)?.span
                 }
             };

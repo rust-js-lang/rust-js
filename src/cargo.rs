@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use crate::command::{TARGET, flag_values};
-use crate::manifest::Compiler;
+use rust_js_program::manifest::Compiler;
 
 /// What running rust-js as it was run comes to.
 pub enum Invocation {
@@ -281,7 +281,9 @@ fn try_dependency(rustc: &str, given: &[String], flags: &[String]) -> Invocation
 /// them, and why, written beside its metadata, for a call into it to say.
 fn refused(rustc: &str, given: &[String], flags: &[String], why: String) -> Invocation {
     match (rustc_itself(rustc, given), metadata_path(flags)) {
-        (Invocation::Rustc(exit), Some(metadata)) => Invocation::Refused(exit, crate::library::refusal(&metadata), why),
+        (Invocation::Rustc(exit), Some(metadata)) => {
+            Invocation::Refused(exit, rust_js_program::library::refusal(&metadata), why)
+        }
         (checked, _) => checked,
     }
 }
@@ -552,7 +554,7 @@ fn verbose_version(rustc: &str) -> Invocation {
         abi,
         ..
     } = Compiler::current();
-    let build = crate::manifest::BUILD;
+    let build = rust_js_program::manifest::build();
     // What prints its `.d.ts`, which isn't in the binary (#675).
     let printer = match crate::typescript::printer() {
         Ok(printer) => printer.map(|hash| format!(", declarations {hash}")).unwrap_or_default(),

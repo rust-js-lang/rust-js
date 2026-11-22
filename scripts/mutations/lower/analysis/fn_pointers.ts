@@ -97,9 +97,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's contract says none of its fields holds only its own Rust functions, so a consumer's `Children.forEach(children, fn, undefined)` keeps its `undefined` (ADR 0330, amended, rd56)",
     file: "src/lower/analysis/fn_pointers.rs",
-    find: "        (self.rust_fields.iter()).map(|&field| (field, crate::library::FieldFact::RustFunctions))\n",
+    find: "        (self.rust_fields.iter()).map(|&field| (field, rust_js_program::library::FieldFact::RustFunctions))\n",
     replace:
-      "        (self.rust_fields.iter()).filter(|_| false).map(|&field| (field, crate::library::FieldFact::RustFunctions))\n",
+      "        (self.rust_fields.iter()).filter(|_| false).map(|&field| (field, rust_js_program::library::FieldFact::RustFunctions))\n",
     tests: [
       "test/crates.test.ts",
       "-t",
@@ -111,9 +111,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a consumer reads a library's field of its own Rust functions as any function's, so its call keeps a trailing `undefined` (ADR 0330, amended, rd56)",
     file: "src/lower/analysis/fn_pointers.rs",
-    find: "                            .field_has(field.did, crate::library::FieldFact::RustFunctions)\n",
+    find: "                            .field_has(field.did, rust_js_program::library::FieldFact::RustFunctions)\n",
     replace:
-      "                            .field_has(field.did, crate::library::FieldFact::RustFunctions)\n                            && false\n",
+      "                            .field_has(field.did, rust_js_program::library::FieldFact::RustFunctions)\n                            && false\n",
     tests: [
       "test/crates.test.ts",
       "-t",

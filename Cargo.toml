@@ -30,6 +30,11 @@ exclude = ["builtins", "examples", "next", "node", "react", "react-native", "scr
 # in (ADR 1098), with rustc's hasher.
 indexmap = "2"
 rustc-hash = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# A crate's settings, in its Cargo.toml (ADR 0117), and a source's: read
+# natively only, as the playground has none.
+toml = "1"
 
 # oxc prints the JS, formats it as oxfmt does, and builds source maps. It is
 # pre-1.0 and changes often: pin one release, and keep every use of its API in
@@ -40,8 +45,8 @@ rustc-hash = "2"
 rust-js-program = { path = "crates/rust-js-program" }
 indexmap.workspace = true
 rustc-hash.workspace = true
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde.workspace = true
+serde_json.workspace = true
 oxc_allocator = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
 oxc_ast = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
 oxc_ast_visit = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
@@ -53,20 +58,16 @@ oxc_regular_expression = { git = "https://github.com/oxc-project/oxc", tag = "cr
 oxc_sourcemap = "=8.1.2"
 oxc_span = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
 oxc_syntax = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
-# The class names a CSS Module exports, which a binding of one is checked
-# against (#1512): pinned, its default features off, `css_modules.rs` its
-# one reader.
-lightningcss = { version = "=1.0.0-alpha.72", default-features = false }
 imbl = { version = "7.0.2", default-features = false }
 
 # The unit tests' conveniences of owned output's crate (its `testing`).
 [dev-dependencies]
 rust-js-program = { path = "crates/rust-js-program", features = ["testing"] }
 
-# A crate's settings, in its Cargo.toml (ADR 0117): read natively only. The
+# A source's Cargo.toml, `rust-js fmt`'s edition: read natively only. The
 # playground has none.
 [target.'cfg(not(target_os = "wasi"))'.dependencies]
-toml = "1"
+toml.workspace = true
 # Clippy's lints, which `rust-js clippy` runs with rust-js's JSX and
 # liveness (ADR 0888): natively only, as the playground lints nothing. They
 # use rustc's internal crates, so they're the clippy the pinned release has:

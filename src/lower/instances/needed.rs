@@ -113,7 +113,7 @@ pub(in crate::lower) fn needed<'tcx>(
             let flattened =
                 (crate::lower::analysis::flattened_alike(&calls.recognition, (callee, args))).filter(|&p| {
                     (foreign.item(callee).and_then(|item| item.calling.param(p)))
-                        .is_some_and(|param| param.has(crate::library::ParamFact::Unboxed))
+                        .is_some_and(|param| param.has(rust_js_program::library::ParamFact::Unboxed))
                         && crate::lower::analysis::read_by_flatten(&calls.recognition, &mir.body, destination)
                 });
             let given = (caller, callee, args);
@@ -270,7 +270,7 @@ fn gives_more<'tcx>(
     counted: &dyn Fn(u32) -> bool,
     may_drop: &mut IndexMap<(DefId, u32), bool>,
 ) -> bool {
-    use crate::library::ParamFact;
+    use rust_js_program::library::ParamFact;
     let tcx = calls.tcx;
     let item = calls.foreign.item(callee);
     let takes = |index: u32, fact: ParamFact| {
@@ -322,7 +322,7 @@ fn gives_more<'tcx>(
         || counts_otherwise(calls, (caller, callee, args), &takes)
         // Its JS gives back the JS iterator of its `impl Iterator`, where the
         // crate's Rust reads what it reveals (ADR 1169, #1999).
-        || item.is_some_and(|item| item.calling.has(crate::library::ItemFact::ReturnsJs))
+        || item.is_some_and(|item| item.calling.has(rust_js_program::library::ItemFact::ReturnsJs))
         || super::failing::fails_given(calls.tcx, calls.foreign, calls.failing, (caller, callee, args))
 }
 
@@ -335,14 +335,14 @@ fn gives_more<'tcx>(
 fn counts_otherwise<'tcx>(
     calls: &Calls<'_, 'tcx>,
     (caller, callee, args): (DefId, DefId, ty::GenericArgsRef<'tcx>),
-    takes: &dyn Fn(u32, crate::library::ParamFact) -> bool,
+    takes: &dyn Fn(u32, rust_js_program::library::ParamFact) -> bool,
 ) -> bool {
     let tcx = calls.tcx;
     let env = ty::TypingEnv::post_analysis(tcx, caller);
     let counts = |pointee| calls.counted.counts(tcx, pointee);
     (crate::lower::analysis::params_counted(tcx, callee, Some((args, env)), &counts).into_iter()).any(
         |(index, (counted, pointees))| {
-            let exported = takes(index, crate::library::ParamFact::Counted);
+            let exported = takes(index, rust_js_program::library::ParamFact::Counted);
             counted != exported || (exported && pointees > 1)
         },
     )
@@ -357,7 +357,7 @@ fn counts_otherwise<'tcx>(
 fn items_given_drops<'tcx>(
     calls: &Calls<'_, 'tcx>,
     (caller, callee, args): (DefId, DefId, ty::GenericArgsRef<'tcx>),
-    takes: &dyn Fn(u32, crate::library::ParamFact) -> bool,
+    takes: &dyn Fn(u32, rust_js_program::library::ParamFact) -> bool,
 ) -> bool {
     let tcx = calls.tcx;
     let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
@@ -372,7 +372,7 @@ fn items_given_drops<'tcx>(
     items.into_iter().enumerate().any(|(at, item)| {
         if takes(
             crate::lower::traits::item_slot(tcx, callee, at),
-            crate::library::ParamFact::Drop,
+            rust_js_program::library::ParamFact::Drop,
         ) {
             return false;
         }
@@ -691,8 +691,9 @@ pub(in crate::lower) fn out_of_reach<'tcx>(
     // that module's JS can set: an import can't be assigned. Set, by `set`,
     // `take`, `replace`, `with_borrow_mut` or its cell lent by `with`, of
     // the type it holds.
-    let variable =
-        |def: DefId| (foreign.item(def)).is_some_and(|item| item.calling.has(crate::library::ItemFact::Variable));
+    let variable = |def: DefId| {
+        (foreign.item(def)).is_some_and(|item| item.calling.has(rust_js_program::library::ItemFact::Variable))
+    };
     let keys: Vec<DefId> = (read.iter().copied())
         .filter(|&def| !def.is_local() && variable(def))
         .collect();
@@ -727,7 +728,7 @@ pub(in crate::lower) fn out_of_reach<'tcx>(
         if !binding.is_local()
             && crate::lower::bindings::is_binding(tcx, binding)
             && let Some(((from, _), _)) = path.as_deref().and_then(crate::lower::bindings::js_import)
-            && crate::program::is_relative_specifier(&from)
+            && rust_js_program::program::is_relative_specifier(&from)
         {
             out.push(OutOfReach::RelativeBinding(binding, from));
         }

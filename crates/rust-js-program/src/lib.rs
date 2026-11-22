@@ -3,9 +3,16 @@
 //! the printer reads it; this crate knows neither.
 
 pub mod collections;
+pub mod comments;
+pub mod css_modules;
 pub mod decisions;
 pub mod js;
+pub mod library;
 pub mod lines;
+pub mod manifest;
 pub mod names;
+pub mod packages;
 pub mod paths;
+pub mod program;
 pub mod runtime;
+pub mod settings;

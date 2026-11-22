@@ -34,16 +34,16 @@ pub(super) fn argument_ends(module: &Module) -> Vec<(u32, u32)> {
 /// only what closes the call after it, `,` and `)`, and other comments:
 /// at its `)`, the call's end's last byte.
 pub(super) fn end_of(
-    c: &crate::program::Comment,
+    c: &rust_js_program::program::Comment,
     ends: &[(u32, u32)],
-    sources: &crate::program::Sources,
-    comments: &[crate::program::Comment],
+    sources: &rust_js_program::program::Sources,
+    comments: &[rust_js_program::program::Comment],
 ) -> Option<u32> {
     let closing = |hi: u32| {
         let mut code = c.hi;
         (comments.iter())
             .filter(|other| other.lo >= c.hi && other.hi <= hi)
-            .chain([&crate::program::Comment {
+            .chain([&rust_js_program::program::Comment {
                 lo: hi,
                 hi,
                 doc: false,
@@ -65,10 +65,10 @@ pub(super) fn end_of(
 /// `c`, which `end_of` places, as oxc writes it there: on a line of its
 /// own, before the `)`.
 pub(super) fn before_parenthesis(
-    c: &crate::program::Comment,
+    c: &rust_js_program::program::Comment,
     ends: &[(u32, u32)],
-    sources: &crate::program::Sources,
-    comments: &[crate::program::Comment],
+    sources: &rust_js_program::program::Sources,
+    comments: &[rust_js_program::program::Comment],
 ) -> oxc_ast::Comment {
     use oxc_ast::{CommentKind, CommentPosition};
     let kind = match sources.text[c.lo as usize..c.hi as usize].starts_with("/*") {
@@ -88,7 +88,11 @@ pub(super) fn before_parenthesis(
 /// writes an argument a line, `parts` being `part_starts`: inside the call,
 /// before the argument, as written, where oxc would write it on a line of
 /// its own (ADR 0708, amended, rd710).
-pub(super) fn before_argument(c: &crate::program::Comment, text: &str, parts: &IndexMap<u32, (u32, bool)>) -> bool {
+pub(super) fn before_argument(
+    c: &rust_js_program::program::Comment,
+    text: &str,
+    parts: &IndexMap<u32, (u32, bool)>,
+) -> bool {
     let written = &text[c.lo as usize..c.hi as usize];
     let rest = &text[c.hi as usize..];
     let at = c.hi as usize + (rest.len() - rest.trim_start_matches([' ', '\t']).len());

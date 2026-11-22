@@ -93,7 +93,7 @@ pub(in crate::lower) fn exports<'tcx>(
                 .then(|| crate::lower::default_exports::exported_as(tcx, id, info.exported()))
                 .filter(|exported| *exported != info.name),
             internal: false,
-            calling: crate::library::Calling {
+            calling: rust_js_program::library::Calling {
                 params: type_params(tcx, id, contracts),
                 facts: [
                     // An impl's dictionary, of a method that may fail, which a
@@ -147,7 +147,7 @@ pub(in crate::lower) fn exports<'tcx>(
                 member: None,
                 exported_as: alias.clone(),
                 internal: true,
-                calling: crate::library::Calling {
+                calling: rust_js_program::library::Calling {
                     facts: [
                         (
                             ItemFact::Lazy,
@@ -277,8 +277,8 @@ pub(in crate::lower) fn exports<'tcx>(
         reexported,
         modules,
         elided: {
-            let mut all: Vec<crate::library::Elided> = (elided.iter())
-                .map(|(&id, shapes)| crate::library::Elided {
+            let mut all: Vec<rust_js_program::library::Elided> = (elided.iter())
+                .map(|(&id, shapes)| rust_js_program::library::Elided {
                     key: key(tcx, id),
                     shapes: shapes.iter().cloned().collect(),
                 })
@@ -319,11 +319,11 @@ pub(in crate::lower) fn exports<'tcx>(
         // What each of its own traits' methods asks of its own slots, as its
         // JS of each takes them (#1612).
         trait_methods: {
-            let mut methods: Vec<crate::library::TraitMethod> = (contracts.type_facts.iter())
+            let mut methods: Vec<rust_js_program::library::TraitMethod> = (contracts.type_facts.iter())
                 .filter(|&(&id, facts)| {
                     id.is_local() && !facts.is_empty() && tcx.trait_of_assoc(id).is_some_and(|tr| tr.is_local())
                 })
-                .map(|(&id, facts)| crate::library::TraitMethod {
+                .map(|(&id, facts)| rust_js_program::library::TraitMethod {
                     key: key(tcx, id),
                     facts: facts
                         .iter()
@@ -337,9 +337,9 @@ pub(in crate::lower) fn exports<'tcx>(
         // What its traits' dictionaries carry of their associated types,
         // `type_fact_params`' own entry of each (ADR 0145, amended).
         associated: {
-            let mut associated: Vec<crate::library::Associated> = (contracts.type_facts.iter())
+            let mut associated: Vec<rust_js_program::library::Associated> = (contracts.type_facts.iter())
                 .filter(|&(&id, _)| id.is_local() && tcx.def_kind(id) == rustc_hir::def::DefKind::AssocTy)
-                .map(|(&id, facts)| crate::library::Associated {
+                .map(|(&id, facts)| rust_js_program::library::Associated {
                     key: key(tcx, id),
                     facts: facts.iter().map(|&(_, fact)| fact.key().to_string()).collect(),
                     carrier: None,
@@ -352,11 +352,15 @@ pub(in crate::lower) fn exports<'tcx>(
                 for &(assoc, fact) in facts {
                     by_assoc.entry(assoc).or_default().push(fact.key().to_string());
                 }
-                associated.extend(by_assoc.into_iter().map(|(assoc, facts)| crate::library::Associated {
-                    key: key(tcx, assoc),
-                    facts,
-                    carrier: Some(key(tcx, carrier)),
-                }));
+                associated.extend(
+                    by_assoc
+                        .into_iter()
+                        .map(|(assoc, facts)| rust_js_program::library::Associated {
+                            key: key(tcx, assoc),
+                            facts,
+                            carrier: Some(key(tcx, carrier)),
+                        }),
+                );
             }
             associated.sort_by(|a, b| (&a.carrier, &a.key).cmp(&(&b.carrier, &b.key)));
             associated
@@ -422,8 +426,8 @@ pub(in crate::lower) fn exports<'tcx>(
         // contract of, as each closure is asked of its own crate's, are
         // never read.
         cloned_closures: {
-            let mut closures: Vec<crate::library::ClonedClosure> = (cloned_closures.iter())
-                .map(|&(id, apart)| crate::library::ClonedClosure {
+            let mut closures: Vec<rust_js_program::library::ClonedClosure> = (cloned_closures.iter())
+                .map(|&(id, apart)| rust_js_program::library::ClonedClosure {
                     key: key(tcx, id),
                     apart,
                 })
@@ -446,12 +450,12 @@ pub(in crate::lower) fn exports<'tcx>(
 fn declared_types<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
-) -> Vec<crate::library::DeclaredType> {
+) -> Vec<rust_js_program::library::DeclaredType> {
     let declared = |id: DefId| match tcx.def_kind(id) {
         rustc_hir::def::DefKind::Trait => crate::lower::declarations::declared_methods(tcx, foreign, id).is_some(),
         _ => crate::lower::declarations::declares_type(tcx, id),
     };
-    let mut types: Vec<crate::library::DeclaredType> = (tcx.hir_crate_items(()).definitions())
+    let mut types: Vec<rust_js_program::library::DeclaredType> = (tcx.hir_crate_items(()).definitions())
         .map(|local| local.to_def_id())
         .filter(|&id| {
             declared(id)
@@ -461,7 +465,7 @@ fn declared_types<'tcx>(
         })
         .map(|id| {
             let name = crate::lower::declarations::type_name(tcx, id);
-            crate::library::DeclaredType {
+            rust_js_program::library::DeclaredType {
                 key: key(tcx, id),
                 module: module_path(tcx, tcx.parent_module_from_def_id(id.expect_local())),
                 default: crate::lower::default_exports::exported_as(tcx, id, &name) == "default",

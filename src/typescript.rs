@@ -6,7 +6,7 @@
 use std::path::{Path, PathBuf};
 
 use crate::node_session::{self, Failure};
-use crate::settings::Settings;
+use rust_js_program::settings::Settings;
 
 /// Where a build's `@rust-js/typescript` is, its module's file: `rust-js
 /// build`'s own, which it gives Cargo (ADR 0412).
@@ -43,7 +43,7 @@ pub fn printer() -> Result<Option<String>, String> {
         bytes.extend((read.len() as u64).to_le_bytes());
         bytes.extend(read);
     }
-    Ok(Some(crate::manifest::fingerprint(&bytes)))
+    Ok(Some(rust_js_program::manifest::fingerprint(&bytes)))
 }
 
 /// What a build that prints declarations reads of TypeScript, where

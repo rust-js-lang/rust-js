@@ -36,7 +36,7 @@ imports an item the entry re-exports by the package's name.
 says, in its contract, what its root re-exports of its modules; a
 consumer imports such an item by the package's name and the root's name
 for it, `import { Children } from "react"`, where Node finds that package
-from the consumer's directory.** One owner, `src/packages.rs`, reads a
+from the consumer's directory.** One owner, `crates/rust-js-program/src/packages.rs`, reads a
 crate's package and finds where Node finds one; `to_oxc::entry_exports`
 parses an entry.
 

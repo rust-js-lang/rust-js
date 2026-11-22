@@ -9,7 +9,7 @@
 //! binding crates of other names over one package are each their author's.
 
 use super::*;
-use crate::library::Bound;
+use rust_js_program::library::Bound;
 
 /// The packages the crate's JS imports through bindings, `bound_to`'s, each
 /// of its binding's crate, with those its libraries' imports do; the pairs

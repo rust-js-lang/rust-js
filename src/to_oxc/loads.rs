@@ -92,7 +92,7 @@ pub fn loaded_modules(code: &str) -> Option<Vec<String>> {
 /// JS, as a package's file is: its `export { .. } from`s and `export *
 /// from`s, and whether it's those alone. An error, where it isn't JS,
 /// Flow's types in it, saying where the parse stopped.
-pub fn entry_exports(code: &str) -> Result<crate::packages::Entry, String> {
+pub fn entry_exports(code: &str) -> Result<rust_js_program::packages::Entry, String> {
     let allocator = Allocator::default();
     let parsed = Parser::new(&allocator, code, SourceType::mjs().with_jsx(true)).parse();
     if let Some(error) = parsed.diagnostics.errors().next() {
@@ -101,7 +101,7 @@ pub fn entry_exports(code: &str) -> Result<crate::packages::Entry, String> {
         let text = code.lines().nth(line - 1).unwrap_or("").trim();
         return Err(format!("{error}, at line {line}: `{text}`"));
     }
-    let mut entry = crate::packages::Entry {
+    let mut entry = rust_js_program::packages::Entry {
         reexports: Vec::new(),
         own: Vec::new(),
         plain: true,
@@ -110,7 +110,7 @@ pub fn entry_exports(code: &str) -> Result<crate::packages::Entry, String> {
         match statement {
             Statement::ExportFromDeclaration(it) => {
                 for specifier in &it.specifiers {
-                    entry.reexports.push(crate::packages::Reexport::Named {
+                    entry.reexports.push(rust_js_program::packages::Reexport::Named {
                         from: it.source.value.to_string(),
                         name: specifier.local.name().to_string(),
                         exported: specifier.exported.name().to_string(),
@@ -119,7 +119,7 @@ pub fn entry_exports(code: &str) -> Result<crate::packages::Entry, String> {
             }
             Statement::ExportAllDeclaration(it) => match &it.exported {
                 Some(namespace) => entry.own.push(namespace.name().to_string()),
-                None => entry.reexports.push(crate::packages::Reexport::All {
+                None => entry.reexports.push(rust_js_program::packages::Reexport::All {
                     from: it.source.value.to_string(),
                 }),
             },

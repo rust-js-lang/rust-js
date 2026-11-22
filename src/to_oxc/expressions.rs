@@ -1162,7 +1162,7 @@ fn escape(c: char, raw: &mut String) {
 /// it, as a person's JS would be (ADR 0018, amended).
 pub(super) fn restore_sources<'a>(
     map: &'a SourceMap<'a>,
-    sources: &'a crate::program::Sources,
+    sources: &'a rust_js_program::program::Sources,
     paths: &'a IndexMap<usize, String>,
     primary: Option<usize>,
 ) -> SourceMap<'a> {

@@ -18,5 +18,5 @@ pub struct Built<'a> {
     pub tidy_until: Option<&'a str>,
     /// What the JS modules its bindings import load of the crate's modules
     /// (ADR 0031, amended).
-    pub js_modules: &'a dyn crate::program::JsModules,
+    pub js_modules: &'a dyn rust_js_program::program::JsModules,
 }

@@ -114,7 +114,7 @@ fn declares_default_class(module: &Module) -> bool {
 /// module's own, which the map names first.
 pub fn emit(
     module: &Module,
-    sources: &crate::program::Sources,
+    sources: &rust_js_program::program::Sources,
     path_of: &dyn Fn(usize) -> String,
     primary: Option<usize>,
     source_path: &str,
@@ -357,7 +357,7 @@ struct Commented {
 
 fn comments_of(
     module: &Module,
-    sources: &crate::program::Sources,
+    sources: &rust_js_program::program::Sources,
     (commented_at, declared_at): (&header::Places, &header::Places),
 ) -> Commented {
     use oxc_ast::{CommentKind, CommentPosition};
@@ -369,7 +369,7 @@ fn comments_of(
     let mut tops = IndexMap::default();
     let mut trailing = Vec::new();
     let mut arm_comments = Vec::new();
-    let mut inner: Vec<(crate::program::Comment, (u32, u32))> = Vec::new();
+    let mut inner: Vec<(rust_js_program::program::Comment, (u32, u32))> = Vec::new();
     let (spans, comment_ends, comments_before) = statement_spans(module);
     // Where each class's struct is, and its constructor function, which
     // what's before the struct is before.
@@ -455,17 +455,17 @@ fn comments_of(
         file_start += file.text.len() + 1;
         let end = start + file.text.len();
         // Past what it starts with, a license's, its header's (ADR 0383).
-        let past = (start + crate::comments::leading_comments(&file.text).len()) as u32;
+        let past = (start + rust_js_program::comments::leading_comments(&file.text).len()) as u32;
         let file_start = start;
         let in_file = |at: u32| at >= past && (at as usize) < end;
         // The module's own `//!`s, what its code is in, its file or an
         // inline `mod`'s braces, ends where the module's code does: above
         // its JS, its imports' too, and nowhere else (#486).
         let code = module.code;
-        let of_module = |c: &crate::program::Comment| {
+        let of_module = |c: &rust_js_program::program::Comment| {
             !code.is_none() && code.lo <= c.lo && c.inner == Some(code.hi) && c.lo >= past
         };
-        let own_docs: Vec<crate::program::Comment> = (file.comments.iter())
+        let own_docs: Vec<rust_js_program::program::Comment> = (file.comments.iter())
             .filter(|c| of_module(c) && c.written)
             .copied()
             .collect();
@@ -482,15 +482,16 @@ fn comments_of(
         // code's: placed as one on lines of its own (ADR 0280, amended).
         // And a block comment first on its line before a call's argument
         // there (`arguments::before_argument`, rd710).
-        let before_argument = |c: &crate::program::Comment| arguments::before_argument(c, &sources.text, &parts);
+        let before_argument =
+            |c: &rust_js_program::program::Comment| arguments::before_argument(c, &sources.text, &parts);
         // And one on a `_` arm's pattern of no `default:` (`cases::of_no_default`, #574).
-        let of_no_default = |c: &crate::program::Comment| cases::of_no_default(c, &sources.text, &defaulted);
+        let of_no_default = |c: &rust_js_program::program::Comment| cases::of_no_default(c, &sources.text, &defaulted);
         // And one in a function that's now a declaration elsewhere, whose
         // line has no JS: on a line of its own before the declaration (#535).
-        let in_taken = |c: &crate::program::Comment| {
+        let in_taken = |c: &rust_js_program::program::Comment| {
             (module.taken_into.iter()).any(|&(function, _)| function.lo <= c.lo && c.hi <= function.hi)
         };
-        let after_code = |c: &crate::program::Comment| {
+        let after_code = |c: &rust_js_program::program::Comment| {
             let line_start = sources.text[..c.lo as usize].rfind('\n').map_or(0, |i| i + 1);
             (!sources.text[line_start..c.lo as usize].trim().is_empty() || before_argument(c))
                 && !closing::of_left_out(c, &left_out, &sources.text, &file.comments)
@@ -566,7 +567,7 @@ fn comments_of(
                     column: (c.lo as usize - line_start) as u32,
                     inside,
                     before_value,
-                    text: crate::comments::in_js(written),
+                    text: rust_js_program::comments::in_js(written),
                     after_param,
                     before_link,
                     of_default,
@@ -596,7 +597,7 @@ fn comments_of(
                     column,
                     inside: false,
                     before_value: false,
-                    text: crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]),
+                    text: rust_js_program::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]),
                     after_param: None,
                     before_link: None,
                     of_default: false,
@@ -616,7 +617,7 @@ fn comments_of(
                     column,
                     inside: true,
                     before_value: false,
-                    text: crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]),
+                    text: rust_js_program::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]),
                     after_param: None,
                     before_link: None,
                     of_default: false,
@@ -626,7 +627,7 @@ fn comments_of(
                 });
             }
         }
-        let before_value = |c: &crate::program::Comment| {
+        let before_value = |c: &rust_js_program::program::Comment| {
             own_line_before_value(&sources.text, &file.comments, c).is_some()
                 || own_line_after_value(&sources.text, &file.comments, &value_ends, c).is_some()
                 || own_line_before_block(&sources.text, &file.comments, c).is_some()
@@ -638,7 +639,7 @@ fn comments_of(
                     column,
                     inside: true,
                     before_value: true,
-                    text: crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]),
+                    text: rust_js_program::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]),
                     after_param: None,
                     before_link: None,
                     of_default: false,
@@ -650,7 +651,7 @@ fn comments_of(
         }
         // Where the `if` is, the keyword, of a comment the code before which,
         // past other comments, is it: the comment is between it and its test.
-        let if_keyword = |c: &crate::program::Comment| {
+        let if_keyword = |c: &rust_js_program::program::Comment| {
             let mut end = c.lo as usize;
             loop {
                 let code = sources.text[file_start..end].trim_end();
@@ -669,17 +670,21 @@ fn comments_of(
                 }
             }
         };
-        let after_if = |c: &crate::program::Comment| if_keyword(c).is_some();
+        let after_if = |c: &rust_js_program::program::Comment| if_keyword(c).is_some();
         // One after a call's last argument, before its `)`, `f(a, b, // c\n)`:
         // there, where oxc writes a comment at the `)` (ADR 0708, amended).
         // A doc comment of an item with no JS, a `pub type`'s, is that
         // item's, which its declaration has, nowhere in the JS (ADR 0444,
         // amended).
-        let of_no_js = |c: &crate::program::Comment| starts::of_no_js(module, (&sources.text, file), c, &starts);
-        let own_line: Vec<&crate::program::Comment> = (file.comments.iter())
+        let of_no_js =
+            |c: &rust_js_program::program::Comment| starts::of_no_js(module, (&sources.text, file), c, &starts);
+        let own_line: Vec<&rust_js_program::program::Comment> = (file.comments.iter())
             .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !of_no_js(c) && !of_module(c))
             .collect();
-        let (ending, own_line): (Vec<&crate::program::Comment>, Vec<&crate::program::Comment>) = own_line
+        let (ending, own_line): (
+            Vec<&rust_js_program::program::Comment>,
+            Vec<&rust_js_program::program::Comment>,
+        ) = own_line
             .into_iter()
             .partition(|c| arguments::end_of(c, &argument_ends, sources, &file.comments).is_some());
         // One after an object literal's last field, before its `}` (ADR
@@ -693,7 +698,7 @@ fn comments_of(
                 .filter(|c| c.written)
                 .map(|c| arguments::before_parenthesis(c, &argument_ends, sources, &file.comments)),
         );
-        let mut attached: Vec<(crate::program::Comment, u32)> = (own_line.iter().copied())
+        let mut attached: Vec<(rust_js_program::program::Comment, u32)> = (own_line.iter().copied())
             .filter_map(|c| {
                 // Before a match arm, `IMMEDIATE_PRIORITY => -1.0`, its body's: a start whose text to the next is only a pattern and
                 // its `=>` is the arm's test, which an `else if` isn't a
@@ -704,7 +709,7 @@ fn comments_of(
                     let mut code = lo;
                     (file.comments.iter())
                         .filter(|other| other.lo >= lo && other.hi <= hi)
-                        .chain([&crate::program::Comment {
+                        .chain([&rust_js_program::program::Comment {
                             lo: hi,
                             hi,
                             doc: false,
@@ -724,7 +729,7 @@ fn comments_of(
                     let mut code = lo;
                     (file.comments.iter())
                         .filter(|other| other.lo >= lo && other.hi <= hi)
-                        .chain([&crate::program::Comment {
+                        .chain([&rust_js_program::program::Comment {
                             lo: hi,
                             hi,
                             doc: false,
@@ -910,7 +915,7 @@ fn comments_of(
         };
         // After the module's last code, to where its code ends, its file's
         // end or an inline `mod`'s `}`, only comments: its JS's end (ADR 0621).
-        let ends: Vec<crate::program::Comment> = (file.comments.iter())
+        let ends: Vec<rust_js_program::program::Comment> = (file.comments.iter())
             .filter(|c| c.lo >= past && !after_code(c) && !code.is_none() && code.lo <= c.lo && c.hi <= code.hi)
             .filter(|c| !of_module(c))
             .filter(|c| {
@@ -938,7 +943,7 @@ fn comments_of(
             })
             .map(|span| (span.lo, span.hi))
             .collect();
-        let unattached: Vec<(crate::program::Comment, (u32, u32))> = (file.comments.iter())
+        let unattached: Vec<(rust_js_program::program::Comment, (u32, u32))> = (file.comments.iter())
             .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !ends.iter().any(|e| e.lo == c.lo))
             .filter(|c| !of_module(c))
             .filter(|c| !attached.iter().any(|(a, _)| a.lo == c.lo) && !ending.iter().any(|e| e.lo == c.lo))
@@ -961,7 +966,7 @@ fn comments_of(
                 false => attached.push((c, lo)),
             }
         }
-        let mut starts_and_end: Vec<(u32, Vec<crate::program::Comment>)> = (starts.iter())
+        let mut starts_and_end: Vec<(u32, Vec<rust_js_program::program::Comment>)> = (starts.iter())
             .filter(|&&at| in_file(at))
             .map(|&at| (at, attached.iter().filter(|(_, a)| *a == at).map(|(c, _)| *c).collect()))
             .collect();
@@ -993,7 +998,7 @@ fn comments_of(
                 if !inside.is_empty() {
                     let texts = inside
                         .iter()
-                        .map(|c| crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]));
+                        .map(|c| rust_js_program::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]));
                     arm_comments.push((at, hi, operator, texts.collect()));
                 }
                 own = before;
@@ -1016,7 +1021,7 @@ fn comments_of(
             {
                 let texts = own
                     .iter()
-                    .map(|c| crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]));
+                    .map(|c| rust_js_program::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]));
                 arm_comments.push((at, hi, "}", texts.collect()));
                 continue;
             }
@@ -1027,7 +1032,7 @@ fn comments_of(
                 if !own.is_empty() {
                     let texts = own
                         .iter()
-                        .map(|c| crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]));
+                        .map(|c| rust_js_program::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]));
                     arm_comments.push((at, hi, operator, texts.collect()));
                 }
                 continue;
@@ -1060,12 +1065,12 @@ fn comments_of(
                 }
                 // A doc comment's lines, before one item: one JSDoc of them,
                 // or each as written where JS can't hold one (`jsdoc`).
-                let (run, mut lines) = crate::comments::doc_lines(&own[i..], &sources.text);
+                let (run, mut lines) = rust_js_program::comments::doc_lines(&own[i..], &sources.text);
                 if noinline && run > 0 && i + run == own.len() {
                     lines.push(NOINLINE);
                     said = true;
                 }
-                match crate::comments::jsdoc(&lines).filter(|_| run > 0) {
+                match rust_js_program::comments::jsdoc(&lines).filter(|_| run > 0) {
                     Some(jsdoc) => {
                         let lo = text.len() as u32;
                         text.push_str(&jsdoc);
@@ -1143,7 +1148,7 @@ fn comments_of(
                 // An inner doc comment, as JS writes it, `//` (`in_js`):
                 // oxc prints a comment's text from where its span is, so
                 // it's written past the source, as `FALLTHROUGH` is.
-                let js = crate::comments::in_js(&text[lo as usize..hi as usize]);
+                let js = rust_js_program::comments::in_js(&text[lo as usize..hi as usize]);
                 let (lo, hi) = match js != text[lo as usize..hi as usize] {
                     true => {
                         let at = text.len() as u32;
@@ -1195,7 +1200,7 @@ fn comments_of(
                 own_places.len() - 1
             }
         };
-        let js = crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]);
+        let js = rust_js_program::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]);
         let lo = text.len() as u32;
         text.push_str(&js);
         let kind = match (js.starts_with("/*"), js.contains('\n')) {

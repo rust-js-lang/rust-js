@@ -319,9 +319,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's contract says none of its fields is quiet, `fields` empty, so a consumer lends one unrefused (ADRs 0863, amended, 0906)",
     file: "src/lower/drops/ref_cells.rs",
-    find: "        (self.quiet_fields.iter()).map(|&field| (field, crate::library::FieldFact::Quiet))\n",
+    find: "        (self.quiet_fields.iter()).map(|&field| (field, rust_js_program::library::FieldFact::Quiet))\n",
     replace:
-      "        (self.quiet_fields.iter()).filter(|_| false).map(|&field| (field, crate::library::FieldFact::Quiet))\n",
+      "        (self.quiet_fields.iter()).filter(|_| false).map(|&field| (field, rust_js_program::library::FieldFact::Quiet))\n",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
   {

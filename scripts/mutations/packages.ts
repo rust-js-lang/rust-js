@@ -1,4 +1,4 @@
-// Mutations of src/packages.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/packages.rs (ADR 0093).
 import type { Mutation } from "../mutations";
 
 const test = ["test/libraries.test.ts", "-t", "entry re-exports"];
@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
   {
     name: "package-entry-default-unread",
     breaks: "a package's root is read of its first condition's entry, `react-server`'s, where an `import` resolves its `default` (ADR 1008, amended)",
-    file: "src/packages.rs",
+    file: "crates/rust-js-program/src/packages.rs",
     find: '            let default = conditions.get("default").map(default_target);\n',
     replace: '            let default = conditions.values().next().map(default_target);\n',
     tests: test,
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
   {
     name: "package-entry-unparsed-kept",
     breaks: "a package's entry oxc can't read, Flow's, is taken as re-exporting nothing, the file kept without a word, where it's refused, naming it (ADR 1008)",
-    file: "src/packages.rs",
+    file: "crates/rust-js-program/src/packages.rs",
     find: "        let parsed = parse(&code).map_err(|error| {\n",
     replace: "        let parsed = parse(&code).or_else(|_| parse(\"\")).map_err(|error| {\n",
     tests: test,
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
   {
     name: "package-entry-star-unread",
     breaks: "an entry's `export * from` re-exports nothing, so what it re-exports is imported by its file (ADR 1008)",
-    file: "src/packages.rs",
+    file: "crates/rust-js-program/src/packages.rs",
     find: "                starred.entry(export).or_default().insert(module.path);\n",
     replace: "",
     tests: test,
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
   {
     name: "package-entry-not-plain-read",
     breaks: "an entry that runs code of its own as it loads is imported by the package's name, which runs what the Rust doesn't (ADR 1008)",
-    file: "src/packages.rs",
+    file: "crates/rust-js-program/src/packages.rs",
     find: "    if !entry.plain {\n        return found;\n    }\n",
     replace: "",
     tests: test,
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
   {
     name: "entry-root-unmatched",
     breaks: "a crate's root that re-exports what its package's entry doesn't writes no JS, its re-exports lost (ADR 1008, amended)",
-    file: "src/packages.rs",
+    file: "crates/rust-js-program/src/packages.rs",
     find: "            .any(|export| &export.module == from && &export.export == name && &export.entry == alias)",
     replace: "            .all(|export| &export.module == from && &export.export == name && &export.entry == alias)",
     tests: test,
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
     name: "package-entry-through-unread",
     breaks:
       "an entry's re-export of a module's own `pub use`, React's `createElement` of ReactClient, is read of that module alone, so a consumer imports the item by its home's file and a root re-exporting it writes a second entry (rd755, ADR 1008, amended)",
-    file: "src/packages.rs",
+    file: "crates/rust-js-program/src/packages.rs",
     find: "    let exports = through(root_exports(dir, name, &json, modules, parse, &mut read)?, modules);\n",
     replace: "    let exports = root_exports(dir, name, &json, modules, parse, &mut read)?;\n",
     tests: test,
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     name: "package-entry-through-any-name",
     breaks:
       "of a module the entry re-exports from, each of its `pub use`s is taken as the entry's name, whichever it gives, so a consumer imports another item by it (rd755, ADR 1008, amended)",
-    file: "src/packages.rs",
+    file: "crates/rust-js-program/src/packages.rs",
     find: "            if alias == &export && !exports.contains_key(&key) {\n",
     replace: "            if !exports.contains_key(&key) {\n",
     tests: test,
@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
     name: "package-entry-through-one-hop",
     breaks:
       "an entry's re-export is followed through one module's `pub use` alone, not each that re-exports it in turn, so an item two modules re-export is imported by its home's file (rd755, ADR 1008, amended)",
-    file: "src/packages.rs",
+    file: "crates/rust-js-program/src/packages.rs",
     find: "                next.push((key, entry.clone()));\n",
     replace: "",
     tests: test,
@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
   {
     name: "package-subpath-any-target",
     breaks: "a module is imported by its package's subpath where `exports` resolves it to another file than its JS, `./lib/*`'s, which Node then doesn't find (ADR 0770, amended)",
-    file: "src/packages.rs",
+    file: "crates/rust-js-program/src/packages.rs",
     find: "            (target == file).then_some(subpath)\n",
     replace: "            Some(subpath)\n",
     tests: subpaths,
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
   {
     name: "package-subpath-extension-untried",
     breaks: "a module of a package whose `exports` keeps the extension, react-markup's `\"./src/*\": \"./src/*\"`, is imported by its file, `'../../../react-markup/src/..'`, not its subpath with the extension as upstream writes it (rd713)",
-    file: "src/packages.rs",
+    file: "crates/rust-js-program/src/packages.rs",
     find: "    [named.with_extension(\"\"), named.to_path_buf()]\n",
     replace: "    [named.with_extension(\"\")]\n",
     tests: ["test/libraries.test.ts", "-t", "subpath"],
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
   {
     name: "package-subpath-pattern-shortest",
     breaks: "of two `exports` patterns a subpath fits, the one whose part before its `*` is shorter is taken, where Node takes the longer (ADR 0770, amended)",
-    file: "src/packages.rs",
+    file: "crates/rust-js-program/src/packages.rs",
     find: "        .max_by_key(|(order, _, _)| *order)?;\n",
     replace: "        .min_by_key(|(order, _, _)| *order)?;\n",
     tests: subpaths,
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
   {
     name: "package-subpath-exact-key-unread",
     breaks: "a subpath `exports` names by its own key, `./src/flags`, is resolved by a pattern alone, another condition's, so the module is imported by its file (ADR 0770, amended)",
-    file: "src/packages.rs",
+    file: "crates/rust-js-program/src/packages.rs",
     find: "    if let Some(value) = exports.get(subpath).filter(|_| !subpath.contains('*')) {\n",
     replace: "    if let Some(value) = exports.get(subpath).filter(|_| false) {\n",
     tests: subpaths,
@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
   {
     name: "package-subpath-segments-unchecked",
     breaks: "a subpath whose pattern's part has a `node_modules` segment, which Node refuses, ERR_INVALID_MODULE_SPECIFIER, is imported by it (ADR 0770, amended)",
-    file: "src/packages.rs",
+    file: "crates/rust-js-program/src/packages.rs",
     find: "    if part.split(['/', '\\\\']).any(refused) {\n",
     replace: "    if false && part.split(['/', '\\\\']).any(refused) {\n",
     tests: subpaths,
@@ -116,7 +116,7 @@ export const mutations: Mutation[] = [
     name: "scope-past-nearest",
     breaks:
       "a file's package is the farthest `package.json` above it, a workspace's root, not the nearest, as Node scopes one, so a crate's module in another package is imported by its file (ADR 0770, amended)",
-    file: "src/packages.rs",
+    file: "crates/rust-js-program/src/packages.rs",
     find: "        .find(|dir| dir.join(\"package.json\").is_file())\n",
     replace: "        .filter(|dir| dir.join(\"package.json\").is_file())\n        .last()\n",
     tests: ["test/libraries.test.ts", "-t", "another package"],

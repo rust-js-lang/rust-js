@@ -283,7 +283,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a consumer gives a library's export a `TClone` its contract says it takes none of, `pairClone(1, [3], undefined, wrapDisplay)`, which puts `undefined` where its `UDisplay` is (ADR 0914, amended)",
     file: "src/lower/traits.rs",
-    find: "                !(item.calling.param(param.index)).is_some_and(|param| param.has(crate::library::ParamFact::Clone))\n",
+    find: "                !(item.calling.param(param.index))\n                    .is_some_and(|param| param.has(rust_js_program::library::ParamFact::Clone))\n",
     replace: "                false\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "contract says it takes"],
   },

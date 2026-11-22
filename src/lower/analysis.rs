@@ -224,7 +224,7 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Keep collecting lowering diagnostics after item-name validation fails.
     pub failed: bool,
     pub called_from_elsewhere: IndexSet<DefId>,
-    pub tests: crate::program::Tests,
+    pub tests: rust_js_program::program::Tests,
     pub paths: IndexMap<LocalModId, Vec<String>>,
     pub mutated: Mutated<'tcx>,
     /// The `Rc`s counted, whose counts the crate reads (ADR 0320).
@@ -287,7 +287,7 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub dictionaries_fail: bool,
     /// The npm packages its JS imports through bindings, its libraries'
     /// too (#1799).
-    pub bound: Vec<crate::library::Bound>,
+    pub bound: Vec<rust_js_program::library::Bound>,
     /// The throwing functions, whose result is a throwing JS call's (ADR 0644).
     pub throwing: IndexSet<DefId>,
     /// The functions that never unwind, whose call throws only where what
@@ -983,7 +983,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let variable = |key: DefId| {
         foreign
             .item(key)
-            .is_some_and(|item| item.calling.has(crate::library::ItemFact::Variable))
+            .is_some_and(|item| item.calling.has(rust_js_program::library::ItemFact::Variable))
     };
     let refused = plain_locals::outside_writes(tcx, all_bodies, &variable, &quiet);
     for &(span, key) in &refused {

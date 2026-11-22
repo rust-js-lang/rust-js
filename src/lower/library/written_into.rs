@@ -88,7 +88,7 @@ impl Foreign<'_, '_> {
     pub(in crate::lower) fn written_marks(&self, id: DefId) -> Vec<u32> {
         let item = (self.library(id.krate)).and_then(|library| library.items.get(&key(self.tcx, id)));
         (item.into_iter().flat_map(|item| item.calling.params.iter()))
-            .filter(|param| param.has(crate::library::ParamFact::WrittenInto))
+            .filter(|param| param.has(rust_js_program::library::ParamFact::WrittenInto))
             .map(|param| param.index)
             .collect()
     }

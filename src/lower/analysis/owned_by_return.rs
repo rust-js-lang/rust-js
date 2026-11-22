@@ -25,7 +25,7 @@
 //!
 //! Read of each body's MIR, as borrowck reads it, a function of the
 //! crate's that's no generic's; a library's of its contract, which says
-//! the same of its own (`crate::library::Calling::owned_by_return`).
+//! the same of its own (`rust_js_program::library::Calling::owned_by_return`).
 
 use super::self_handles::{Uses, assign_at, drops, whole};
 use crate::lower::recognition::{HandleStep, handle_step, rc_pointee, trait_holds_in};

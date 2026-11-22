@@ -1,7 +1,7 @@
 //! Capture normalized frontend files and translate spans into an owned arena.
 
-use crate::program::{Comment, Source, Sources};
 use rust_js_program::js;
+use rust_js_program::program::{Comment, Source, Sources};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 use rustc_span::def_id::LocalDefId;
@@ -431,7 +431,7 @@ fn comments(text: &str, start: u32) -> Vec<Comment> {
         // than Rust isn't written (`is_one_in_js`).
         let written = text[(at - start) as usize..][..token.len as usize].trim_end_matches('\r');
         if let Some(doc_style) = doc
-            && crate::comments::is_one_in_js(written)
+            && rust_js_program::comments::is_one_in_js(written)
         {
             found.push(Comment {
                 lo: at,
@@ -453,7 +453,7 @@ fn comments(text: &str, start: u32) -> Vec<Comment> {
     let spans: Vec<(usize, usize)> = (found.iter())
         .map(|c| ((c.lo - start) as usize, (c.hi - start) as usize))
         .collect();
-    for (c, left_out) in found.iter_mut().zip(crate::comments::left_out(text, &spans)) {
+    for (c, left_out) in found.iter_mut().zip(rust_js_program::comments::left_out(text, &spans)) {
         c.written = !left_out;
     }
     found

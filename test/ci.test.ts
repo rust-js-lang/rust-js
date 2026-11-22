@@ -26,7 +26,7 @@ import { programFlags, root } from "./support";
 import { miriCommand } from "./miri";
 
 // A compiler CI keeps is of what it's made of, build.rs's inputs, the one
-// list, the compiler's crates' too (ADR 1181): a key short of one, std/manifest.json, which src/library.rs
+// list, the compiler's crates' too (ADR 1181): a key short of one, std/manifest.json, which crates/rust-js-program/src/library.rs
 // includes (and std/compiled-std.json, the catalogue it reads, #2305), restored a binary of other sources. The suite's shards restore
 // the debug one so, as the release one is (check 43700659375: 136 s of
 // each shard's longest leg built it again of unchanged sources).

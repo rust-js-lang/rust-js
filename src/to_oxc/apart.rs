@@ -22,7 +22,7 @@ pub(super) fn apart(
     body: &[Statement<'_>],
     mut comments: Vec<oxc_ast::Comment>,
     (tops, declared): (&IndexMap<u32, u32>, &super::header::Places),
-    sources: &crate::program::Sources,
+    sources: &rust_js_program::program::Sources,
     end: u32,
 ) -> (Vec<oxc_ast::Comment>, Vec<bool>) {
     use oxc_span::GetSpan;

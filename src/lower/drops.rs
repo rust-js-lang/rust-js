@@ -416,7 +416,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for (index, params) in (given.iter()).filter(|(index, _)| {
                 item.calling
                     .param(*index)
-                    .is_some_and(|param| param.has(crate::library::ParamFact::NoDrop))
+                    .is_some_and(|param| param.has(rust_js_program::library::ParamFact::NoDrop))
             }) {
                 let Some(params) = params else {
                     let (path, name) = (self.tcx.def_path_str(callee), param_name(self.tcx, callee, *index));

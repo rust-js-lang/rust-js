@@ -9,7 +9,7 @@
 use rust_js_program::collections::{IndexMap, IndexSet};
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::program::Reexport;
+use rust_js_program::program::Reexport;
 use rustc_hir as hir;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;

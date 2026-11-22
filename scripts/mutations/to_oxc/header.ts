@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "module-doc-plain",
     breaks: "a module's `//!` lines are `//` lines, where upstream's files describe themselves in one JSDoc, React's ReactNoopServer's `/**\\n * This is a renderer of React ..` (rd644)",
     file: "src/to_oxc/header.rs",
-    find: "            match crate::comments::jsdoc(&said) {\n",
+    find: "            match rust_js_program::comments::jsdoc(&said) {\n",
     replace: "            match None::<String> {\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "one JSDoc"],
   },

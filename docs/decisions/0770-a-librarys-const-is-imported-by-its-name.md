@@ -100,7 +100,7 @@ is.** Elsewhere the relative `.js` path stays. rust-js reads `exports` and
 never writes it: what a package exports is its author's, the host's
 authority.
 
-- **One owner**, `src/packages.rs`, which reads `exports["."]` (ADR 1008):
+- **One owner**, `crates/rust-js-program/src/packages.rs`, which reads `exports["."]` (ADR 1008):
   `subpaths` resolves each module's subpath as Node's
   `PACKAGE_EXPORTS_RESOLVE` does, by its own key, else the pattern whose
   part before its `*` is longest, then whose key is, under the default

@@ -26,9 +26,9 @@ use super::analysis::{AnalyzedCrate, analyze_crate, nulled_params::NulledParams}
 use super::bindings::Export;
 use super::representation::{NonePlace, none_form};
 use super::{Body, CrateFacts, located, module_file};
-use crate::program::{LoweredModule, Unlinked, UnlinkedModule};
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rust_js_program::js::{self, Expr, Prop, StmtKind};
+use rust_js_program::program::{LoweredModule, Unlinked, UnlinkedModule};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
@@ -54,7 +54,7 @@ pub fn lower_crate<'tcx>(
     (all_bodies, initializers): (&mut [Body<'tcx>], &mut [Body<'tcx>]),
     serde_attrs: &super::SerdeAttributes,
     (dependencies, instances, made_where_used): (
-        &crate::library::Dependencies,
+        &rust_js_program::library::Dependencies,
         &super::Instances,
         &IndexSet<rustc_span::def_id::LocalDefId>,
     ),

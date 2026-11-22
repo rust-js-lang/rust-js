@@ -49,25 +49,18 @@ extern crate rustc_trait_selection;
 mod cargo;
 mod clippy;
 mod command;
-mod comments;
-mod css_modules;
 mod format;
 mod hooks;
 mod jsx_syntax;
-mod library;
 mod link;
 mod lower;
-mod manifest;
 mod node_session;
 mod output;
-mod packages;
 mod phase_times;
 mod prepare;
 mod prettier;
-mod program;
 mod publish;
 mod reachability;
-mod settings;
 #[cfg(not(target_os = "wasi"))]
 mod source_format;
 mod std_sysroot;
@@ -117,7 +110,7 @@ fn stable_crate_id(compiler: &Compiler, krate: &rustc_ast::Crate) -> StableCrate
 static RUSTC_TOOLS: OnceLock<for<'tcx> fn(TyCtxt<'tcx>, ()) -> RegisteredTools> = OnceLock::new();
 
 struct RustJs {
-    dependencies: library::Dependencies,
+    dependencies: rust_js_program::library::Dependencies,
     export_library: bool,
     /// `--tested`: a program that writes a contract too, which its
     /// integration tests read (ADR 1076, amended, #597).
@@ -519,6 +512,9 @@ impl RustJs {
 const STACK: usize = 256 * 1024 * 1024;
 
 fn main() -> ExitCode {
+    // What this build is made of, `build.rs`'s hash (ADR 1003), which owned
+    // output's crate writes in each manifest.
+    rust_js_program::manifest::set_build(env!("RUST_JS_BUILD"));
     // rustc's thread has the stack for it, unless `RUST_MIN_STACK` says
     // otherwise, as it does to rustc; and so has the thread that writes the
     // JS after rustc's ends, not the process's own, whose 8 MB rustc's
@@ -628,7 +624,7 @@ fn run() -> ExitCode {
         }
         // A CSS Module's binding, printed once for the app to keep (ADR 1133).
         Ok(command::Command::CssModuleBinding(specifier)) => {
-            let printed = css_modules::binding_of_file(&specifier);
+            let printed = rust_js_program::css_modules::binding_of_file(&specifier);
             return match printed {
                 Ok(binding) => {
                     print!("{binding}");
@@ -651,12 +647,13 @@ fn run() -> ExitCode {
         Ok(command::Command::VersionJson) => {
             println!(
                 "{}",
-                serde_json::to_string(&manifest::Compiler::current()).expect("serialize compiler identity")
+                serde_json::to_string(&rust_js_program::manifest::Compiler::current())
+                    .expect("serialize compiler identity")
             );
             return ExitCode::SUCCESS;
         }
         Ok(command::Command::Version) => {
-            let compiler = manifest::Compiler::current();
+            let compiler = rust_js_program::manifest::Compiler::current();
             println!(
                 "rust-js {} ({}; ABI {})",
                 compiler.version, compiler.toolchain, compiler.abi
@@ -670,8 +667,8 @@ fn run() -> ExitCode {
         }
         // A crate's checks of its JS as a host has it, once Cargo is done (ADR 0117).
         Ok(command::Command::Checks(checks)) => {
-            let checked =
-                settings::read(&checks.input, false).and_then(|settings| hooks::check(&settings, &checks.files));
+            let checked = rust_js_program::settings::read(&checks.input, false)
+                .and_then(|settings| hooks::check(&settings, &checks.files));
             return match checked {
                 Ok(()) => ExitCode::SUCCESS,
                 Err(error) => {
@@ -760,8 +757,9 @@ struct Prepared {
 
 /// What `build` compiles with, before rustc runs.
 fn prepare_build(build: command::Build) -> Result<Prepared, String> {
-    let read_settings = settings::read(&build.input, build.cargo)?;
-    let mut dependencies = library::Dependencies::load(&build.dependencies, &build.output, &read_settings.dir)?;
+    let read_settings = rust_js_program::settings::read(&build.input, build.cargo)?;
+    let mut dependencies =
+        rust_js_program::library::Dependencies::load(&build.dependencies, &build.output, &read_settings.dir)?;
     // Every crate's JS calls std's compiled bodies from `@rust-js/std`, but
     // that crate's own, which is them (ADR 0561).
     if !build.std_bodies {
@@ -853,7 +851,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
     }
     let command::Staged { metadata, dep_info, .. } = staged;
     let recorded = cargo.then(|| (manifest.clone(), metadata.clone()));
-    let settings = settings::Settings {
+    let settings = rust_js_program::settings::Settings {
         declarations,
         ..read_settings
     };

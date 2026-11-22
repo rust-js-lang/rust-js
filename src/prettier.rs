@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use serde::Deserialize;
 
 use crate::node_session::{self, Failure};
-use crate::settings::Settings;
+use rust_js_program::settings::Settings;
 
 /// The app's Prettier, found from where it is, given the files, writing
 /// what it lays out (`node_session`'s): for each file, its text,
@@ -164,7 +164,7 @@ pub fn identity(dirs: &[PathBuf]) -> Result<Option<String>, String> {
             add(&read(&plugin.manifest)?);
         }
     }
-    Ok(Some(crate::manifest::fingerprint(&bytes)))
+    Ok(Some(rust_js_program::manifest::fingerprint(&bytes)))
 }
 
 /// What the app's Prettier made of a build's files.

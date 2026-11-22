@@ -175,7 +175,7 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
     /// copies of out, may be a type the crate changes in place, or a `Vec`
     /// of it does. What the library changes too is none of them: its JS
     /// copies that as Rust does (rd606).
-    fn elided_changed(&self, elided: &[crate::library::RcShape]) -> bool {
+    fn elided_changed(&self, elided: &[rust_js_program::library::RcShape]) -> bool {
         let tcx = self.recognition.tcx;
         (elided.iter()).any(|shape| {
             (self.changed.mutated.iter().chain(self.changed.vecs))

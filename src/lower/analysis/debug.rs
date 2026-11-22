@@ -228,7 +228,7 @@ pub(super) fn reads_formatter_options(tcx: TyCtxt<'_>, body: &Body<'_>) -> bool 
 
 /// What the libraries the crate uses show of a `dyn Debug` they're given,
 /// as their manifests say (#1335).
-fn dyn_debug_shown(dependencies: &crate::library::Dependencies) -> super::Shown {
+fn dyn_debug_shown(dependencies: &rust_js_program::library::Dependencies) -> super::Shown {
     (dependencies.libraries.values()).fold(super::Shown::default(), |all, library| {
         all.with(super::Shown {
             pretty: library.dyn_debug_pretty,
@@ -247,7 +247,7 @@ fn dyn_debug_shown(dependencies: &crate::library::Dependencies) -> super::Shown 
 pub(super) fn writer_facts<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
-    dependencies: &crate::library::Dependencies,
+    dependencies: &rust_js_program::library::Dependencies,
     (library, std_bodies): (bool, bool),
 ) -> (WriterFacts, super::ShownParams<'tcx>) {
     let ids = all_bodies.iter().map(|body| body.def_id);

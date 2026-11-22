@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "publish-edited-removed",
     breaks: "an older build's file a person has edited since is removed as stale",
     file: "src/publish.rs",
-    find: "        .filter(|old| std::fs::read(&old.file).is_ok_and(|bytes| crate::manifest::fingerprint(&bytes) == old.hash))\n",
+    find: "        .filter(|old| {\n            std::fs::read(&old.file).is_ok_and(|bytes| rust_js_program::manifest::fingerprint(&bytes) == old.hash)\n        })\n",
     replace: "        .filter(|old| old.file.exists())\n",
     tests: ["test/publication.test.ts", "-t", "native: one changed since it was written"],
   },

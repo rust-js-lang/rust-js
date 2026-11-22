@@ -19,10 +19,10 @@ pub(super) use internal::{internal_exports, internal_state};
 
 use super::bindings::HeldBinding;
 use super::{FnInfo, module_path};
-use crate::library::{
+use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::library::{
     Dependencies, Held, HeldImport, Imported, Item, ItemFact, Library, NamedModule, RcShape, Reexported, VERSION,
 };
-use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LOCAL_CRATE, LocalModId};
 use std::collections::BTreeSet;
@@ -70,7 +70,7 @@ pub(super) fn shown_marks(
     dependencies: &Dependencies,
     id: DefId,
 ) -> Vec<(u32, super::analysis::Shown)> {
-    use crate::library::ParamFact;
+    use rust_js_program::library::ParamFact;
     let Some(item) =
         (dependencies.libraries.get(&library_key(tcx, id.krate))).and_then(|library| library.items.get(&key(tcx, id)))
     else {
@@ -97,7 +97,7 @@ pub(super) fn shown_marks(
 fn library_key(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> String {
     match super::recognition::std_crate(tcx, krate) {
         Some(_) => rust_js_program::runtime::PACKAGE.to_string(),
-        None => crate::library::key(tcx.crate_name(krate).as_str(), &crate_id(tcx, krate)),
+        None => rust_js_program::library::key(tcx.crate_name(krate).as_str(), &crate_id(tcx, krate)),
     }
 }
 
@@ -201,7 +201,7 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) merges_identities: &'a IndexSet<DefId>,
     /// The npm packages its JS imports through bindings, its libraries' too
     /// (#1799).
-    pub(super) bound: &'a [crate::library::Bound],
+    pub(super) bound: &'a [rust_js_program::library::Bound],
     /// Whether it makes a `dyn Any` of what drops (ADR 0691, amended).
     pub(super) makes_dropping_anys: bool,
     /// Whether it makes a `dyn Error` of what drops (ADR 0462, amended).
@@ -223,9 +223,9 @@ pub(super) struct Contracts<'a, 'tcx> {
     /// What it changes in place, which its JS copies (ADR 0914, amended).
     pub(super) changed: super::copies::Changed<'a, 'tcx>,
     /// What it does with its `RefCell`s (ADR 0863).
-    pub(super) ref_cells: crate::library::RefCellFacts,
+    pub(super) ref_cells: rust_js_program::library::RefCellFacts,
     /// What it says of its structs' fields (ADRs 0863, amended, 0906).
-    pub(super) fields: Vec<crate::library::Field>,
+    pub(super) fields: Vec<rust_js_program::library::Field>,
     /// The thread-locals made where they're first used (ADR 0037, amended).
     pub(super) lazy_locals: &'a IndexSet<rustc_span::def_id::LocalDefId>,
     /// The thread-locals whose value a builtin made, never replaced
@@ -263,8 +263,12 @@ pub(super) struct Contracts<'a, 'tcx> {
 /// What `id` asks of each of its type parameters that it asks anything of,
 /// by index, as its contract says them: a `dropT`, no destructor, type
 /// facts, and the traits it steps one by.
-fn type_params<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, contracts: &Contracts<'_, 'tcx>) -> Vec<crate::library::TypeParam> {
-    use crate::library::{ParamFact, TypeParam};
+fn type_params<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    id: DefId,
+    contracts: &Contracts<'_, 'tcx>,
+) -> Vec<rust_js_program::library::TypeParam> {
+    use rust_js_program::library::{ParamFact, TypeParam};
     let mut params: std::collections::BTreeMap<u32, TypeParam> = Default::default();
     fn param(params: &mut std::collections::BTreeMap<u32, TypeParam>, index: u32) -> &mut TypeParam {
         params.entry(index).or_insert_with(|| TypeParam {
@@ -332,7 +336,7 @@ fn type_params<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, contracts: &Contracts<'_, 'tc
             );
             continue;
         };
-        param(&mut params, first + at as u32).built = Some(crate::library::BuiltType { of });
+        param(&mut params, first + at as u32).built = Some(rust_js_program::library::BuiltType { of });
     }
     let mut params: Vec<_> = params.into_values().collect();
     for param in &mut params {
@@ -395,7 +399,7 @@ fn exported_as(name: &rust_js_program::js::Name) -> &str {
     name.word() // word: an item's export name, what its consumers import
 }
 
-pub(super) fn exported_names(modules: &[crate::program::UnlinkedModule]) -> Exported {
+pub(super) fn exported_names(modules: &[rust_js_program::program::UnlinkedModule]) -> Exported {
     let mut exported = IndexSet::default();
     for module in modules.iter().map(|unlinked| &unlinked.module) {
         let mut export = |name: &str| exported.insert((module.path.clone(), name.to_string()));
@@ -440,8 +444,9 @@ pub(super) fn fields(
     tcx: TyCtxt<'_>,
     ref_cells: Option<&super::drops::RefCells<'_>>,
     pointers: &super::analysis::FnPointers<'_>,
-) -> Vec<crate::library::Field> {
-    let mut facts: std::collections::BTreeMap<String, BTreeSet<crate::library::FieldFact>> = Default::default();
+) -> Vec<rust_js_program::library::Field> {
+    let mut facts: std::collections::BTreeMap<String, BTreeSet<rust_js_program::library::FieldFact>> =
+        Default::default();
     for (id, fact) in ref_cells
         .into_iter()
         .flat_map(|found| found.fields())
@@ -450,7 +455,7 @@ pub(super) fn fields(
         facts.entry(key(tcx, id)).or_default().insert(fact);
     }
     (facts.into_iter())
-        .map(|(key, facts)| crate::library::Field { key, facts })
+        .map(|(key, facts)| rust_js_program::library::Field { key, facts })
         .collect()
 }
 
@@ -624,7 +629,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// The library `krate`'s items are of, if it's one: `@rust-js/std` of
     /// std's crates, whatever their names, any other by its crate's name and
     /// identity (`library_key`).
-    fn library(&self, krate: rustc_span::def_id::CrateNum) -> Option<&'a crate::library::Exports> {
+    fn library(&self, krate: rustc_span::def_id::CrateNum) -> Option<&'a rust_js_program::library::Exports> {
         self.dependencies.libraries.get(&library_key(self.tcx, krate))
     }
 

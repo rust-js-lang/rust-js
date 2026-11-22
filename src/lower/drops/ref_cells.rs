@@ -70,7 +70,7 @@ pub(in crate::lower) struct RefCells<'tcx> {
     /// Each its types' fields hold, and its exported functions take and give.
     handed: IndexSet<Ty<'tcx>>,
     /// What each library it's compiled against does with its own (ADR 0863).
-    libraries: Vec<(String, crate::library::RefCellFacts)>,
+    libraries: Vec<(String, rust_js_program::library::RefCellFacts)>,
     /// Those of an object that are still `{ value }` (ADR 0863): every one,
     /// where generic code has a `RefCell<T>` of a type parameter's value,
     /// which may be any; and each made a `RefCell<dyn T>`, whose cell is
@@ -123,7 +123,7 @@ impl<'tcx> RefCells<'tcx> {
         &self,
         tcx: TyCtxt<'tcx>,
         ty: Ty<'tcx>,
-        kind: fn(&crate::library::RefCellFacts) -> &Vec<crate::library::RcShape>,
+        kind: fn(&rust_js_program::library::RefCellFacts) -> &Vec<rust_js_program::library::RcShape>,
     ) -> Option<&str> {
         (self.libraries.iter())
             .find(|(_, facts)| {
@@ -143,7 +143,7 @@ impl<'tcx> RefCells<'tcx> {
         recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
         borrows: &crate::lower::analysis::CellBorrows<'tcx>,
         drops: &dyn Fn(Ty<'tcx>) -> bool,
-    ) -> crate::library::RefCellFacts {
+    ) -> rust_js_program::library::RefCellFacts {
         let tcx = recognition.tcx;
         let shapes = |tys: &IndexSet<Ty<'tcx>>| crate::lower::library::shapes(tcx, tys.iter().copied());
         // Of a cell that may be a consumer's, one it reaches itself: a borrow
@@ -155,9 +155,9 @@ impl<'tcx> RefCells<'tcx> {
             .filter(|&&ty| self.quiet(recognition, borrows, (ty, true), drops))
             .copied()
             .collect();
-        crate::library::RefCellFacts {
+        rust_js_program::library::RefCellFacts {
             boxed: match self.boxed_all {
-                true => vec![crate::library::RcShape::default()],
+                true => vec![rust_js_program::library::RcShape::default()],
                 false => shapes(&self.boxed),
             },
             counted: shapes(&self.counted),
@@ -168,8 +168,8 @@ impl<'tcx> RefCells<'tcx> {
 
     /// What its contract says of its structs' fields (ADRs 0863, amended,
     /// 0906): each quiet one.
-    pub(in crate::lower) fn fields(&self) -> impl Iterator<Item = (DefId, crate::library::FieldFact)> + '_ {
-        (self.quiet_fields.iter()).map(|&field| (field, crate::library::FieldFact::Quiet))
+    pub(in crate::lower) fn fields(&self) -> impl Iterator<Item = (DefId, rust_js_program::library::FieldFact)> + '_ {
+        (self.quiet_fields.iter()).map(|&field| (field, rust_js_program::library::FieldFact::Quiet))
     }
 
     /// Whether a `RefCell` of type `ty` is the object it holds, not a
@@ -699,7 +699,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Whether a struct's field may be one some borrow of which meets
         // another: not one no body lends, binds, moves or holds a borrow of,
         // nor a library's its contract says is quiet.
-        let library_quiet = self.krate.foreign.fields_saying(crate::library::FieldFact::Quiet);
+        let library_quiet = self
+            .krate
+            .foreign
+            .fields_saying(rust_js_program::library::FieldFact::Quiet);
         let loud = |field: DefId| match field.as_local() {
             Some(_) => lent.contains_key(&field) || counted_fields.contains_key(&field) || derived.contains_key(&field),
             None => !library_quiet.contains_key(&crate::lower::library::item_key(tcx, field)),

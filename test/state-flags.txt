@@ -4,7 +4,7 @@
 # which only shrinks, as each becomes an enum with named transitions.
 src/command.rs	1
 crates/rust-js-program/src/js.rs	3
-src/library.rs	2
+crates/rust-js-program/src/library.rs	2
 src/lower.rs	2
 src/lower/analysis.rs	1
 src/lower/analysis/debug.rs	1
@@ -40,9 +40,9 @@ src/lower/serde.rs	1
 src/lower/session.rs	3
 src/lower/std_types/map.rs	1
 src/main.rs	1
-src/program.rs	3
+crates/rust-js-program/src/program.rs	3
 crates/rust-js-program/src/runtime/steps.js	2
-src/settings.rs	1
+crates/rust-js-program/src/settings.rs	1
 src/std_sysroot.rs	1
 src/to_oxc/arms.rs	1
 src/to_oxc/trailing.rs	1

@@ -57,7 +57,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .krate
                 .foreign
                 .item(def_id)
-                .is_some_and(|item| item.calling.has(crate::library::ItemFact::Lazy))
+                .is_some_and(|item| item.calling.has(rust_js_program::library::ItemFact::Lazy))
     }
 
     pub(super) fn fn_ref(&self, def_id: DefId) -> Expr {

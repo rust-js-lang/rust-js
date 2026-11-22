@@ -50,7 +50,7 @@ top-level module is of, for the tests and the scripts alike.
 | Crate | Holds | Depends on |
 | --- | --- | --- |
 | `rust-js` (`src/`) | the driver and the front end, and, until #2297 moves them, the rest of owned output and printing | every crate below |
-| `rust-js-program` (`crates/rust-js-program/`) | owned output: so far `collections.rs`, `lines.rs`, `decisions.rs`, `js.rs` with `js/`, `names.rs`, `paths.rs`, `runtime.rs` with the runtime's helpers, `runtime/*.js` | none of the compiler's |
+| `rust-js-program` (`crates/rust-js-program/`) | owned output: so far `collections.rs`, `lines.rs`, `decisions.rs`, `js.rs` with `js/`, `names.rs`, `paths.rs`, `runtime.rs` with the runtime's helpers, `runtime/*.js`, `program.rs`, `comments.rs`, `library.rs` with `library/`, `manifest.rs`, `packages.rs`, `settings.rs`, `css_modules.rs` | none of the compiler's |
 
 A module moves to a crate with `bun scripts/move-paths.ts <from> <to> ..`,
 which rewrites each path to it, a file's in the scripts, tests and docs and
@@ -72,13 +72,13 @@ crate's unit tests (`cargo test -p rust-js-program --lib`).
 | `rust-js clippy`'s lints, clippy's crates registered as rustc's (ADR 0888) | `src/clippy.rs` |
 | JSX syntax expansion and provenance; which components' props a glob or a prelude names are built by their companion, rustc's names verifying the syntax pass's prediction, and a replayed compile's held diagnostics (ADR 0213, amended) | `src/jsx_syntax.rs`, `src/jsx_syntax/`, `jsx_syntax/resolved.rs` |
 | Rust analysis and lowering | `src/lower.rs`, `src/lower/` (detailed below) |
-| Owned JS tree, source arena and comments | `crates/rust-js-program/src/js.rs`, `crates/rust-js-program/src/js/`, `src/program.rs`, `src/comments.rs` |
+| Owned JS tree, source arena and comments | `crates/rust-js-program/src/js.rs`, `crates/rust-js-program/src/js/`, `crates/rust-js-program/src/program.rs`, `crates/rust-js-program/src/comments.rs` |
 | Reachability, linking and names | `src/reachability.rs`, `src/link.rs`, `crates/rust-js-program/src/names.rs` |
 | The compiler's maps and sets, each walked in the order its entries were put in, never a hasher's (ADR 1098); a session's answers that never change, each kept as first found, `OnceMap` (ADR 1100) | `crates/rust-js-program/src/collections.rs` |
 | Readability and printing | `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/to_oxc/`, `src/format.rs`, `src/format/jsx_shape.rs` (each JSX element's children as React is given them, which a layout keeps, #1807), `vendor/oxc_formatter` (oxc's formatter, with JSX text's edge space beside a child never where a line breaks, #1807), `src/typescript.rs`, `src/prettier.rs`, `src/node_session.rs` (the Node session each of the last two runs, its JSON read whole as UTF-8, ADR 1079); `typescript/` owns the TypeScript declaration model, reading/printing and engine-classified standard-library selection (#1903) |
-| Library contracts, configuration, hooks and path utilities; a crate's npm package, what its entry re-exports (ADR 1008) and the subpaths its `exports` resolves (ADR 0770) | `src/library.rs`, `src/library/dependencies.rs` (the libraries a crate is compiled against, read and checked before it, and `@rust-js/std`'s), `src/settings.rs`, `src/hooks.rs`, `crates/rust-js-program/src/paths.rs`, `src/packages.rs` |
-| Artifact planning, manifest and publication; the program's own files lowering reads, `LocalJs` | `src/output.rs`, `src/output/`, `src/manifest.rs`, `src/publish.rs` |
-| The class names a CSS Module exports, the one thing read of a stylesheet, by Lightning CSS (ADR 1133) | `src/css_modules.rs` |
+| Library contracts, configuration, hooks and path utilities; a crate's npm package, what its entry re-exports (ADR 1008) and the subpaths its `exports` resolves (ADR 0770) | `crates/rust-js-program/src/library.rs`, `crates/rust-js-program/src/library/dependencies.rs` (the libraries a crate is compiled against, read and checked before it, and `@rust-js/std`'s), `crates/rust-js-program/src/settings.rs`, `src/hooks.rs`, `crates/rust-js-program/src/paths.rs`, `crates/rust-js-program/src/packages.rs` |
+| Artifact planning, manifest and publication; the program's own files lowering reads, `LocalJs` | `src/output.rs`, `src/output/`, `crates/rust-js-program/src/manifest.rs`, `src/publish.rs` |
+| The class names a CSS Module exports, the one thing read of a stylesheet, by Lightning CSS (ADR 1133) | `crates/rust-js-program/src/css_modules.rs` |
 | Runtime helper catalog and implementations | `crates/rust-js-program/src/runtime.rs`, `crates/rust-js-program/src/runtime/`; generated package in `runtime/` |
 | Test child outcomes, own-kill provenance, queued-exit drain and observed-overrun diagnostics | `test/child.ts`; `scripts/checkFast.ts` labels the owner's diagnostic with its job |
 | Source-owner controls, workspace lifetime and actual-load proof; filesystem copying, aliases and disk-floor checks | `scripts/source-mutations.ts`; `scripts/source-workspace.ts` is the one filesystem owner, executed on a worker under the existing runner slots |
@@ -224,7 +224,7 @@ binary uses rustc.
 | --- | --- | --- |
 | Driver | `main.rs`, `command.rs`, `cargo.rs`, `clippy.rs`, `std_sysroot.rs`, `worker.rs` (the tests' harness's compiles, a case's builds in one rustc session, [ADR 1182](decisions/1182-a-cases-builds-compile-in-one-rustc-session.md)) | Every layer |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | Front end and earlier-use owned data/utilities; no linking, preparation or publication |
-| Owned output | `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `prepare.rs`, `prepare/`, `output.rs`, `output/`, `publish.rs`, `manifest.rs`, `library.rs`, `settings.rs`, `hooks.rs`, `packages.rs`, `css_modules.rs`; the crate `rust-js-program` | Owned output; no rustc |
+| Owned output | `link.rs`, `reachability.rs`, `prepare.rs`, `prepare/`, `output.rs`, `output/`, `publish.rs`, `hooks.rs`; the crate `rust-js-program` | Owned output; no rustc |
 | Printing | `to_oxc.rs`, `to_oxc/`, `format.rs`, `format/`, `typescript.rs`, `prettier.rs`, `node_session.rs` | Printing and owned output; no rustc |
 
 The named orchestration exceptions are `output.rs`, which invokes the printing
@@ -796,7 +796,7 @@ the architecture test holds dispatcher sizes.
 ## Owned output and source origins
 
 `crates/rust-js-program/src/js.rs` defines a compiler-owned AST independent of rustc and oxc.
-`src/program.rs` carries modules, symbolic imports, declarations and a source
+`crates/rust-js-program/src/program.rs` carries modules, symbolic imports, declarations and a source
 arena. `src/lower/sources.rs` converts source information to owned text and
 spans, retaining origins across files and copied bodies. JSX expansion and
 formatting preserve or remap those origins.
@@ -831,14 +831,14 @@ map adjustment and final artifact assembly.
 
 ## Libraries and runtime
 
-A compiled library has JS plus a versioned `src/library.rs` contract embedded
+A compiled library has JS plus a versioned `crates/rust-js-program/src/library.rs` contract embedded
 in the host manifest; each fact of it says what makes it true, its scope in
-`src/library/scopes.rs`, and, of one true of the library's whole crate
+`crates/rust-js-program/src/library/scopes.rs`, and, of one true of the library's whole crate
 alone, what a consumer that differs does, of which
 [library-contract.md](library-contract.md)'s table is made ([ADR 1129](decisions/1129-a-fact-of-a-librarys-contract-says-what-makes-it-true.md)). It carries exported item identities, trait requirements,
 held bindings, input fingerprints and crate identity; rustc metadata alone
 cannot describe JS linkage. Of a crate whose directory has a `package.json`,
-`src/packages.rs` reads its package and what its entry re-exports, by
+`crates/rust-js-program/src/packages.rs` reads its package and what its entry re-exports, by
 `to_oxc::entry_exports`, as artifact planning asks; a consumer imports what
 the entry re-exports by the package's name where Node finds it and its Rust
 names it through the library's root, each module by its own paths (`Foreign::import_key`)
@@ -941,7 +941,7 @@ of operations beyond iterators (`ITERATOR_TABLE=unwind`,
 
 ## Publication
 
-`src/manifest.rs` is the compiler/host contract; `tooling/manifest.js` validates
+`crates/rust-js-program/src/manifest.rs` is the compiler/host contract; `tooling/manifest.js` validates
 it and remaps virtual paths as structured fields. It reports modules, imports,
 source destinations, artifacts, fingerprints and compiler identity, so hosts
 do not rediscover them by parsing generated JS or guessing filenames.

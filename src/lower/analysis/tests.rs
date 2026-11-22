@@ -21,7 +21,7 @@ use rustc_span::{Symbol, sym};
 use super::super::recognition::{StdItem, is_std_def};
 use super::super::{Body, FnInfo, module_path};
 use super::namespace_of;
-use crate::program::{TestFn, Tests};
+use rust_js_program::program::{TestFn, Tests};
 
 /// The tests: each marker names a function beside it, of the same name.
 /// One registered in another module's test file than its own module's is

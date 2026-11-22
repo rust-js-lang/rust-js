@@ -3,8 +3,8 @@
 //! #2112's change D): a consumer that changes one compiles its own.
 
 use super::{Foreign, key};
-use crate::library::RcShape;
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::library::RcShape;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 use std::collections::BTreeSet;

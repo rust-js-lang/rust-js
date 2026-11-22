@@ -298,7 +298,7 @@ filed are listed with their issue.
    that tidy's and preparation's moves take along, and printed where its
    node is; and generate each construct × comment position as a matrix.
    Owners: `src/to_oxc.rs` (`comments_of`), `src/to_oxc/trailing.rs`,
-   `starts.rs`, `openings.rs`, `src/comments.rs`.
+   `starts.rs`, `openings.rs`, `crates/rust-js-program/src/comments.rs`.
 3. **Structured control flow from MIR in one pass, labels only where
    needed** (readability, 62 fixes; #771: about 40% of generated functions
    print a label the Rust didn't write). The fixes are each a rule in one

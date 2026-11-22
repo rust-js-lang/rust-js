@@ -306,7 +306,7 @@ impl AtHand {
         let at_hand = self.keys.contains(&key)
             || (!key.is_local()
                 && (recognition.foreign.item(key))
-                    .is_some_and(|item| item.calling.has(crate::library::ItemFact::AtHand)));
+                    .is_some_and(|item| item.calling.has(rust_js_program::library::ItemFact::AtHand)));
         if !at_hand {
             return None;
         }

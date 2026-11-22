@@ -65,10 +65,10 @@ pub(super) fn left_out(module: &Module) -> Vec<js::Span> {
 /// Whether `c`'s line is only a field its object leaves out, of `left_out`,
 /// and comments: `env: None, // why`, `owner: None, /* why */`.
 pub(super) fn of_left_out(
-    c: &crate::program::Comment,
+    c: &rust_js_program::program::Comment,
     left_out: &[js::Span],
     text: &str,
-    comments: &[crate::program::Comment],
+    comments: &[rust_js_program::program::Comment],
 ) -> bool {
     let line_start = text[..c.lo as usize].rfind('\n').map_or(0, |i| i + 1);
     let line_end = text[c.hi as usize..]
@@ -127,17 +127,17 @@ pub(super) fn object_ends(module: &Module) -> Vec<ObjectEnd> {
 /// or after the fields it writes, past the last's value, of the innermost
 /// literal it's in, those after it each left out (rd321).
 pub(super) fn end_of(
-    c: &crate::program::Comment,
+    c: &rust_js_program::program::Comment,
     ends: &[ObjectEnd],
-    sources: &crate::program::Sources,
-    comments: &[crate::program::Comment],
+    sources: &rust_js_program::program::Sources,
+    comments: &[rust_js_program::program::Comment],
 ) -> Option<u32> {
     let closing = |hi: u32| {
         let mut code = c.hi;
         sources.text.get(hi as usize - 1..hi as usize) == Some("}")
             && (comments.iter())
                 .filter(|other| other.lo >= c.hi && other.hi < hi)
-                .chain([&crate::program::Comment {
+                .chain([&rust_js_program::program::Comment {
                     lo: hi - 1,
                     hi,
                     doc: false,
@@ -164,11 +164,11 @@ pub(super) fn end_of(
 /// object's `}` (`end_of`), each put in `closing` by that `}`: the rest,
 /// and where each taken starts, which nothing else places.
 pub(super) fn taken<'c>(
-    own_line: Vec<&'c crate::program::Comment>,
+    own_line: Vec<&'c rust_js_program::program::Comment>,
     (ends, closing): (&[ObjectEnd], &mut Closing),
-    sources: &crate::program::Sources,
-    comments: &[crate::program::Comment],
-) -> (Vec<&'c crate::program::Comment>, Vec<u32>) {
+    sources: &rust_js_program::program::Sources,
+    comments: &[rust_js_program::program::Comment],
+) -> (Vec<&'c rust_js_program::program::Comment>, Vec<u32>) {
     let mut rest = Vec::new();
     let mut taken = Vec::new();
     for c in own_line {
@@ -242,11 +242,11 @@ pub(super) type Exports = Vec<(u32, Vec<String>, bool)>;
 /// own, its declaration's (`.d.ts`); one of a struct another file
 /// declares, that file's.
 pub(super) fn exported<'c>(
-    own_line: Vec<&'c crate::program::Comment>,
+    own_line: Vec<&'c rust_js_program::program::Comment>,
     (module, exports): (&Module, &mut Exports),
-    sources: &crate::program::Sources,
+    sources: &rust_js_program::program::Sources,
     file: (usize, usize),
-) -> Vec<&'c crate::program::Comment> {
+) -> Vec<&'c rust_js_program::program::Comment> {
     let in_file = |span: js::Span| !span.is_none() && file.0 <= span.lo as usize && (span.hi as usize) <= file.1;
     let lists: Vec<(js::Span, Vec<u32>)> = (module.items.iter())
         .filter_map(|item| match item {

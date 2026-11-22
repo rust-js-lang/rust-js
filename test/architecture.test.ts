@@ -25,9 +25,8 @@ const layers = {
   driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/clippy.rs", "src/std_sysroot.rs", "src/source_format.rs", "src/source_format/",
     "src/phase_times.rs", "src/worker.rs"],
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
-  owned: ["src/library.rs", "src/library/", "src/reachability.rs", "src/link.rs", "src/program.rs", "src/comments.rs",
-    "src/prepare.rs", "src/prepare/", "src/output.rs", "src/output/", "src/publish.rs", "src/manifest.rs", "src/settings.rs", "src/hooks.rs",
-    "src/packages.rs", "src/css_modules.rs", "crates/rust-js-program/src/"],
+  owned: ["src/reachability.rs", "src/link.rs", "src/prepare.rs", "src/prepare/", "src/output.rs", "src/output/", "src/publish.rs", "src/hooks.rs",
+    "crates/rust-js-program/src/"],
   printing: ["src/to_oxc.rs", "src/to_oxc/", "src/format.rs", "src/format/", "src/typescript.rs", "src/prettier.rs", "src/node_session.rs"],
 };
 const layerOf = (file: string) =>
@@ -138,23 +137,23 @@ const usedModules = (file: string, text: string): string[] => {
 // `super::lower` in a top-level file was missed).
 test("the layer check finds a module however a file names it", () => {
   const cases: [string, string, string[]][] = [
-    ["src/manifest.rs", "use crate::lower::Body;", ["src/lower.rs"]],
-    ["src/manifest.rs", "use super::lower::Body;", ["src/lower.rs"]],
-    ["src/output.rs", "use crate::{lower::{self, Body}, program, to_oxc};", ["src/lower.rs", "src/program.rs", "src/to_oxc.rs"]],
-    ["src/lower/drops/types.rs", "use super::super::super::output::Plan;", ["src/output.rs"]],
+    ["src/cargo.rs", "use crate::lower::Body;", ["src/lower.rs"]],
+    ["src/cargo.rs", "use super::lower::Body;", ["src/lower.rs"]],
+    ["src/cargo.rs", "use crate::{lower::{self, Body}, command, jsx_syntax};", ["src/command.rs", "src/jsx_syntax.rs", "src/lower.rs"]],
+    ["src/lower/drops/types.rs", "use super::super::super::command::Plan;", ["src/command.rs"]],
     ["src/lower/drops/types.rs", "use super::super::traits::Route;", []],
     ["src/format.rs", 'mod tests {\n    use super::*;\n    fn f() { let s = "{"; let c = \'}\'; }\n}\nuse super::lower::Body;', ["src/lower.rs"]],
-    ["src/manifest.rs", '// crate::lower, in a comment\nfn f() { let s = "super::lower"; }', []],
+    ["src/cargo.rs", '// crate::lower, in a comment\nfn f() { let s = "super::lower"; }', []],
     ["src/main.rs", "use crate::cargo; mod tests { use super::lower; }", ["src/cargo.rs", "src/lower.rs"]],
-    ["src/manifest.rs", "use crate::*;\nfn sneak(_: lower::Body) {}", [WHOLE]],
-    ["src/manifest.rs", "use super::*;", [WHOLE]],
-    ["src/manifest.rs", "use crate as root;\nfn sneak(_: root::lower::Body) {}", [WHOLE]],
-    ["src/manifest.rs", "use crate::{self as root, output};", ["src/output.rs", WHOLE]],
+    ["src/cargo.rs", "use crate::*;\nfn sneak(_: lower::Body) {}", [WHOLE]],
+    ["src/cargo.rs", "use super::*;", [WHOLE]],
+    ["src/cargo.rs", "use crate as root;\nfn sneak(_: root::lower::Body) {}", [WHOLE]],
+    ["src/cargo.rs", "use crate::{self as root, command};", ["src/command.rs", WHOLE]],
     ["src/format.rs", "mod tests {\n    use super::*;\n}", []],
     ["src/lower/drops/types.rs", "use super::*;", []],
     ["src/lower/drops/types.rs", "use rust_js_program::{collections::IndexMap, lines};", ["crates/rust-js-program/src/collections.rs", "crates/rust-js-program/src/lines.rs"]],
     ["crates/rust-js-program/src/decisions.rs", "use crate::collections::IndexMap;", ["crates/rust-js-program/src/collections.rs"]],
-    ["src/worker.rs", "use crate::{finish_build, lower, output};", ["src/lower.rs", "src/main.rs", "src/output.rs"]],
+    ["src/worker.rs", "use crate::{finish_build, lower, command};", ["src/command.rs", "src/lower.rs", "src/main.rs"]],
   ];
   for (const [file, text, expected] of cases) expect(usedModules(file, text), text).toEqual(expected);
 });
@@ -316,7 +315,7 @@ test("oxc APIs stay behind the printing and formatting adapters", () => {
 // What a CSS Module exports is one function's, `exported_keys`, so another
 // parser can stand behind it (ADR 1133).
 test("Lightning CSS stays behind the one function that lists a CSS Module's keys", () => {
-  expect(sources.filter(file => /\blightningcss::/.test(read(file)))).toEqual(["src/css_modules.rs"]);
+  expect(sources.filter(file => /\blightningcss::/.test(read(file)))).toEqual(["crates/rust-js-program/src/css_modules.rs"]);
 });
 
 // Files are written by the publisher, and by the driver, which stages a
@@ -326,14 +325,14 @@ test("Lightning CSS stays behind the one function that lists a CSS Module's keys
 // lowering and artifact planning alone, and of four of the ways). And a
 // unit test's bless, `BLESS=1 cargo test contract_table`, which writes the
 // table of the library contract's page it holds the page to: the
-// compiler's tests', no build of it (src/library/scopes.rs, `cfg(test)`).
+// compiler's tests', no build of it (crates/rust-js-program/src/library/scopes.rs, `cfg(test)`).
 test("only the publisher and the driver write files", () => {
   const writes = /\bfs::(?:write|rename|remove_\w+|create_dir\w*|copy|hard_link)\b|\bFile::(?:create|options)\b|\bOpenOptions\b/;
   // And `rust-js fmt`, which writes the Rust it formats (ADR 1166); and
   // the unit tests that bless a table made of an owner, `BLESS=1 cargo
   // test`: the library contract's and the in-place forms' (ADR 1176).
   // And the worker, which redirects a build's output to its files (#2301).
-  const writers = ["src/publish.rs", "src/main.rs", "src/worker.rs", "src/std_sysroot.rs", "src/library/scopes.rs", "src/source_format.rs", "src/lower/iterators/in_place_forms.rs"];
+  const writers = ["src/publish.rs", "src/main.rs", "src/worker.rs", "src/std_sysroot.rs", "crates/rust-js-program/src/library/scopes.rs", "src/source_format.rs", "src/lower/iterators/in_place_forms.rs"];
   // Its code alone: a lowering of std's files names them in its comments
   // and in the paths it recognizes, `"std::fs::write"` (#1156).
   const code = (file: string) => read(file).replace(/\/\/.*$/gm, "").replace(/"(?:[^"\\\n]|\\.)*"/g, '""');
@@ -707,7 +706,7 @@ test("library identity checks and method tables stay in recognition", () => {
 // std's.
 test("std's crates are known by std_crate, not by their names", () => {
   const named = /\bsym::(?:core|alloc|std)\b|"(?:core|alloc|std)"\s*(?:\||\]|,)|==\s*"(?:core|alloc|std)"/;
-  for (const file of ["src/lower.rs", ...files("src/lower"), "src/library.rs"]) {
+  for (const file of ["src/lower.rs", ...files("src/lower"), "crates/rust-js-program/src/library.rs"]) {
     const text = read(file).replace(/\npub\(super\) fn std_path\([\s\S]*?\n\}\n/, "\n");
     expect(text, file).not.toMatch(named);
   }
@@ -992,11 +991,14 @@ test("a raw pointer is one by raw_pointee alone", () => {
 });
 
 test("native and WASI compiler dependency versions agree", () => {
+  // Each `serde*` and `oxc_*` dependency as it's resolved, a workspace's
+  // `x.workspace = true` its `[workspace.dependencies]`' (ADR 1181).
+  type Manifest = { dependencies: Record<string, unknown>; workspace?: { dependencies?: Record<string, unknown> } };
   const dependencies = (path: string) => {
-    const section = read(path).split("[dependencies]\n")[1].split(/\n\[/)[0];
-    return new Map(section.split("\n").filter(line => /^(?:serde|oxc_)/.test(line)).map(line => {
-      const equals = line.indexOf("=");
-      return [line.slice(0, equals).trim(), line.slice(equals + 1).trim()];
+    const manifest = Bun.TOML.parse(read(path)) as Manifest;
+    return new Map(Object.entries(manifest.dependencies).filter(([name]) => /^(?:serde|oxc_)/.test(name)).map(([name, spec]) => {
+      const inherited = typeof spec === "object" && spec !== null && (spec as { workspace?: boolean }).workspace === true;
+      return [name, inherited ? manifest.workspace!.dependencies![name] : spec];
     }));
   };
   expect(dependencies("wasm/Cargo.toml")).toEqual(dependencies("Cargo.toml"));
