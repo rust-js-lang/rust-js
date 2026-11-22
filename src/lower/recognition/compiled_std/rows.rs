@@ -56,6 +56,19 @@ fn unresolved(row: impl std::fmt::Debug) -> ! {
     )
 }
 
+/// The impls of `trait_def` for `adt`, in `all_impls`' order: an impl for
+/// an ADT is in the one bucket rustc keeps under its simplified type, so
+/// only that bucket is asked, where every impl of the trait was, `Iterator`'s
+/// hundreds for each row, 3.5% of the corpus's compiler time (#2312).
+fn impls_for(tcx: TyCtxt<'_>, trait_def: DefId, adt: DefId) -> Vec<DefId> {
+    use rustc_middle::ty::fast_reject::SimplifiedType;
+    let impls = tcx.trait_impls_of(trait_def);
+    let bucket = impls.non_blanket_impls().get(&SimplifiedType::Adt(adt));
+    (bucket.into_iter().flatten().copied())
+        .filter(|&imp| matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(of, _) if of.did() == adt))
+        .collect()
+}
+
 /// Each row of the catalog, resolved.
 pub(super) fn resolve(tcx: TyCtxt<'_>) -> Rows {
     let methods = |row: MethodRow| -> Vec<DefId> {
@@ -80,9 +93,7 @@ pub(super) fn resolve(tcx: TyCtxt<'_>) -> Rows {
                 let trait_def = std_iter_trait(tcx, trait_name)
                     .or_else(|| private_trait(trait_name))
                     .unwrap_or_else(|| unresolved(row));
-                tcx.all_impls(trait_def)
-                    .filter(|&imp| matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(of, _) if of.did() == adt))
-                    .collect()
+                impls_for(tcx, trait_def, adt)
             }
         };
         let found: Vec<DefId> = (impls.iter())

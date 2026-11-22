@@ -27,4 +27,12 @@ export const mutations: Mutation[] = [
     replace: "    let io = (COMPILED_STD_IO.iter().filter(|_| alloc || true).map(|&row| (row, methods(row))))\n",
     tests: ["test/std-paths.test.ts"],
   },
+  {
+    name: "catalog-impls-of-another-type",
+    breaks: "a row's impls are asked of another type's bucket, `str`'s, so `Map`'s `Iterator` impl and every other row of a trait resolve to nothing, an internal error every compile of std's bodies (#2312)",
+    file: "src/lower/recognition/compiled_std/rows.rs",
+    find: "    let bucket = impls.non_blanket_impls().get(&SimplifiedType::Adt(adt));\n",
+    replace: "    let bucket = impls.non_blanket_impls().get(&SimplifiedType::Str);\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
 ];
