@@ -3,4 +3,4 @@
 # rust-js's own crate, and no other, use them; and clippy's, which
 # `rust-js clippy` links (ADR 0888).
 [env]
-RUSTC_BOOTSTRAP = "rust_js,rust_js_lower,rust_js_mir,clippy_config,clippy_lints,clippy_utils,declare_clippy_lint"
+RUSTC_BOOTSTRAP = "rust_js,rust_js_lower,rust_js_mir,rust_js_jsx,clippy_config,clippy_lints,clippy_utils,declare_clippy_lint"

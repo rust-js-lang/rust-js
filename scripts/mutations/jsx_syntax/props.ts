@@ -1,11 +1,11 @@
-// Mutations of src/jsx_syntax/props.rs (ADR 0093).
+// Mutations of crates/rust-js-jsx/src/props.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "flattened-names-refused",
     breaks: "a name a flattened struct has is refused as the props' own",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "            Some(_) => \"NAME!(@slots [$($s)*] $flat [$($rest)* $name: $v,] $($tail)*)\",",
     replace: "            Some(_) => \"NAME { $name: $v, ..::core::panic!() }\",",
     tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "required-prop-defaulted",
     breaks: "a required prop not given is its type's default, not said missing",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "            \"(@slot required $name:literal []) => { ::core::compile_error!(concat!(\\\"missing prop `\\\", $name, \\\"` of `NAME`\\\")) }\"",
     replace: "            \"(@slot required $name:literal []) => { ::core::default::Default::default() }\"",
     tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "omitted-prop-defaulted",
     breaks: "a prop with a default not given is written, `size=\\\"md\\\"`, not left out",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "        arms.push(\"(@slot omitted $name:literal []) => { ::react::__omitted() }\".to_string());",
     replace: "        arms.push(\"(@slot omitted $name:literal []) => { ::core::default::Default::default() }\".to_string());",
     tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-field-given-whole-refused",
     breaks: "a component's own flattened props passed on whole, `props={props}`, are taken for a name of theirs",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "                \"(@slots [$($s:tt)*] [] [$($rest:tt)*] r#{field}: $v:expr, $($tail:tt)*) => {{ NAME!(@slots [$($s)*] [$v] [$($rest)*] $($tail)*) }}\"",
     replace: "                \"(@slots [$($s:tt)*] [] [$($rest:tt)*] r#{field}__never: $v:expr, $($tail:tt)*) => {{ NAME!(@slots [$($s)*] [$v] [$($rest)*] $($tail)*) }}\"",
     tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-field-and-props-both",
     breaks: "a flattened struct given whole and names of it too drops the names",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "                    \"(@slots [$($s:tt)*] [$whole:expr] [$($rest:tt)+]) => {{ ::core::compile_error!(\\\"give `{field}` or the props of it, not both\\\") }}\"",
     replace: "                    \"(@slots [$($s:tt)*] [$whole:expr] [$($rest:tt)+] @never) => {{ ::core::compile_error!(\\\"give `{field}` or the props of it, not both\\\") }}\"",
     tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "companion-flattened-last",
     breaks: "a companion writes its flattened field last, out of the struct's order, so an `if` of next/link's `Link` is `let tmp; if ..`",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "let (before, after) = (values[..*at].concat(), values[*at..].concat());",
     replace: "let (before, after) = (values.concat(), String::new());",
     tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev's SandboxShell shows its expand button"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "props-lifetimes-kept",
     breaks: "a props struct's `'static` form keeps its lifetimes, `LabelProps<'a>`, so a `thread_local!` component's caller still borrows for good",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "                statics.push(\"'static\".to_string());",
     replace: "                statics.push(name.clone());",
     tests: ["test/jsx-evaluation-order.test.ts", "-t", "thread_local component takes props"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "companion-written-default",
     breaks: "a struct with a Default written for it, React's attributes of any element, has no companion, so a flattened one isn't built",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "    let derives_default = derives_default || written_default.contains(&name);\n",
     replace: "",
     tests: ["test/jsx-imported-props.test.ts", "-t", "Default written for it"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "children-param-defaulted",
     breaks: "children of a type parameter left out are its `Default`, a type rustc can't infer",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "        } else if field_name == \"children\" && last.as_ref().is_some_and(|last| params.contains(last)) {",
     replace: "        } else if false && last.as_ref().is_some_and(|last| params.contains(last)) {",
     tests: ["test/jsx-types.test.ts", "-t", "children of a type parameter"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "any-node-children-moved",
     breaks: "children declared any node, `&'a dyn ReactNode`, are given as they are, not by reference",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "        let empty = if field_name == \"children\" && any_node(&field.ty) {",
     replace: "        let empty = if false && field_name == \"children\" && any_node(&field.ty) {",
     tests: ["test/jsx-types.test.ts", "-t", "children declared any node"]
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-any-node-children-moved",
     breaks: "children declared an `Option` of any node are given as they are, not `Some` by reference",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "        } else if field_name == \"children\" && optional_any_node {",
     replace: "        } else if false && optional_any_node {",
     tests: ["test/jsx-types.test.ts", "-t", "children declared any node"]
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "open-props-no-companion",
     breaks: "a struct of fields as visible as it, another module's component's props, has no companion to build it (#1794)",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "            // Every field as visible as it: built as its own components'.\n",
     replace: "            return None;\n",
     tests: ["test/jsx-imported-props.test.ts", "-t", "used, renamed, pathed"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "closed-props-companion-silent",
     breaks: "props of another module a field of which is private are rustc's `cannot find macro`, not rust-js's saying to make the fields visible (#1794)",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "        } else if matches!(item.vis.kind, ast::VisibilityKind::Inherited) {\n",
     replace: "        } else if true {\n",
     tests: ["test/jsx-imported-props.test.ts", "-t", "private field"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "closed-props-thought-open",
     breaks: "a struct a field of which is private has a companion that fills it where it's defined, past rustc's privacy (#1794)",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "        (ast::VisibilityKind::Public, _) | (_, ast::VisibilityKind::Inherited) => true,\n",
     replace: "        _ if true => true,\n        (ast::VisibilityKind::Public, _) | (_, ast::VisibilityKind::Inherited) => true,\n",
     tests: ["test/jsx-imported-props.test.ts", "-t", "private field"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "props-companion-takes-macro-name",
     breaks: "a struct of a module's macro's name is given a companion of it too, two macros of one name (#1794)",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "    if macros.contains(ident.as_str()) {\n        return None;\n    }\n",
     replace: "",
     tests: ["test/jsx-imported-props.test.ts", "-t", "macro's name"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "alias-no-companion",
     breaks: "a type alias another module's component takes as its props has no companion, `Titled!` not found (#1794)",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "    if target.is_empty() || macros.contains(alias.ident.as_str()) {\n",
     replace: "    if true || target.is_empty() || macros.contains(alias.ident.as_str()) {\n",
     tests: ["test/jsx-imported-props.test.ts", "-t", "used, renamed, pathed"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-given-props-companion",
     breaks: "a `#[rust_js::class]` struct is given a props companion beside its class's own macro, its name defined twice, E0428 (#1794)",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "    if attrs.iter().any(|attr| super::is_rust_js_attr(attr, \"class\")) {\n        return None;\n    }\n",
     replace: "",
     tests: ["test/class-components.test.ts", "test/classes.test.ts"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "sysroot-props-companioned",
     breaks: "std's `Range` as a component's props, named by a `use`, is built by a companion std doesn't have, `cannot find macro Range` (#1794, Codex's constraint)",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "            None => self.imports.get(props).is_some_and(|whole| compiled(whole)),\n",
     replace: "            None => self.imports.contains_key(props),\n",
     tests: ["test/jsx-imported-props.test.ts", "-t", "std's Range"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "extern-crate-props-literal",
     breaks: "another crate's props, which rust-js compiled with their companion, are built as a struct literal, their flattened attributes refused (#1794)",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "                || self.externs.contains(first)\n",
     replace: "",
     tests: ["test/jsx-imported-props.test.ts", "-t", "another crate's props"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "companion-unmarked",
     breaks: "a struct's companion carries no `#[rust_js::jsx_props]`, so rustc's names never find it, and a glob's library props type stays a literal (ADR 0213, amended)",
-    file: "src/jsx_syntax/props.rs",
+    file: "crates/rust-js-jsx/src/props.rs",
     find: "        \"#[doc(hidden)] #[allow(unused_macros)] #[rust_js::jsx_props] macro {name} {{ {} }}\",\n",
     replace: "        \"#[doc(hidden)] #[allow(unused_macros)] macro {name} {{ {} }}\",\n",
     tests: ["test/jsx-props-resolved.test.ts", "-t", "a glob imports"],

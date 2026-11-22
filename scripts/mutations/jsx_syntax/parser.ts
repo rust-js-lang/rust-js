@@ -1,11 +1,11 @@
-// Mutations of src/jsx_syntax/parser.rs (ADR 0093).
+// Mutations of crates/rust-js-jsx/src/parser.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "tag-element-unfinished",
     breaks: "a tag's JSX is of its DOM element, `Element<HTMLSpanElement>`, where an `Element` is wanted: a `<span>` or a `<b>` isn't a value of one type",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "            if intrinsic || tag {\n                expr = call(\n",
     replace: "            if false && tag {\n                expr = call(\n",
     tests: ["test/jsx-events.test.ts", "-t", "tag's element"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "props-macro-not-allowed",
     breaks: "a component's props `macro` writes `#[rust_js::jsx]` on an expression, which its expansion may not",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "        format!(\"#[allow_internal_unstable(stmt_expr_attributes)] macro {ident} {body}\"),\n",
     replace: "        format!(\"macro {ident} {body}\"),\n",
     tests: ["test/crates.test.ts","-t","component of another crate"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "struct-update-refused",
     breaks: "\`<Image src=.. {..Default::default()} />\` is an error, named props and a base",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "                struct_update = matches!(tokens.get(0), Some(TokenTree::Token(t, _)) if t.kind == TokenKind::DotDot);",
     replace: "                struct_update = false;",
     tests: ["test/jsx-props.test.ts", "-t", "named props and the rest from a base"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "struct-update-captured",
     breaks: "a component's named props, base and children are bound in a \`match\` first, which the JS keeps",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "            || (spread.is_some() && has_children && !struct_update)",
     replace: "            || (spread.is_some() && has_children)",
     tests: ["test/jsx-props.test.ts", "-t", "named props and the rest from a base"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "component-props-literal",
     breaks: "a component's props are a struct literal, where a flattened struct's names aren't its fields",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "    let mut companion = props.rsplit(\"::\").next().is_some_and(|name| built.contains(name)) || imported;\n",
     replace: "    let mut companion = props.rsplit(\"::\").next().is_some_and(|_| false) || imported;\n",
     tests: ["test/jsx-props-resolved.test.ts", "-t", "own props are predicted"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "tag-spread-moved-last",
     breaks: "an element's spread goes after the attributes written after it, `<Comp id className {...rest}>`, overriding them",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "                if i == spread_at\n",
     replace: "                if i == spread_at && false\n",
     tests: ["test/jsx-types.test.ts", "-t", "tag that.s a value"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "component-attrs-after-spread",
     breaks: "a component's named props after a spread aren't refused as such",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "                if !(intrinsic || local) && !self.is(TokenKind::Gt) && !self.is(TokenKind::Slash) {\n",
     replace: "                if false && !self.is(TokenKind::Gt) && !self.is(TokenKind::Slash) {\n",
     tests: ["test/jsx.test.ts", "-t", "spread followed by attribute"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "consumer-not-member",
     breaks: "`<THEME.Consumer>` is a component named `THEME::Consumer`, which isn't one, where it's the context's member",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "                consumer = member && segment == \"Consumer\";\n",
     replace: "",
     tests: ["test/jsx-types.test.ts", "-t", "by its Consumer, and a portal"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "consumer-arm-missing",
     breaks: "a context's macro has no `@consumer` arm, so `<THEME.Consumer>` matches none",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "        arms.push(arm(\n            \"@consumer\",\n            &call(&format!(\"::react::consumer({target})\"), consumed),\n        ));\n",
     replace: "",
     tests: ["test/jsx-types.test.ts", "-t", "by its Consumer, and a portal"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "literal-unchecked",
     breaks: "a literal of an attribute of a few strings isn't checked: `<img referrerPolicy=\"no-referer\">` compiles, as TypeScript's doesn't",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "                && !allowed.contains(&literal.symbol.as_str())\n",
     replace: "                && false\n",
     tests: ["test/jsx-types.test.ts", "-t", "literal of an attribute of a few strings"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "literal-of-any-tag",
     breaks: "a tag's own strings aren't told from another's: `<button type=\"sumbit\">`, of a `type` some tags take any string of, compiles",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "                && let Some(allowed) = literals::one_of(&name, &attr)\n",
     replace: "                && let Some(allowed) = literals::one_of(\"\", &attr)\n",
     tests: ["test/jsx-types.test.ts", "-t", "literal of an attribute of a few strings"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "local-component-as-tag",
     breaks: "a local of a component's function type is built as a DOM element's tag, `react::tag(Heading)`",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "let tag = local && local_props.is_none() &&",
     replace: "let tag = local &&",
     tests: ["test/jsx-types.test.ts", "-t", "function type is a tag"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "captured-base-copied",
     breaks: "a keyed component's `{..*props}` is captured as the struct read, not its reference, so it's each field read, not `{...props}`",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "if star.kind == TokenKind::Star && !rest.is_empty() =>",
     replace: "if false && star.kind == TokenKind::Star && !rest.is_empty() =>",
     tests: ["test/jsx-props.test.ts", "-t", "updated from a reference are spread"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "component-value-no-companion",
     breaks: "a `thread_local!` component a library's function made, next/router's `withRouter`'s, has no props companion, so `<Located prefix=.. />` isn't a tag",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "                \"MemoExoticComponent\" | \"LazyExoticComponent\" | \"ForwardRefExoticComponent\" | \"ComponentValue\" => {",
     replace: "                \"MemoExoticComponent\" | \"LazyExoticComponent\" | \"ForwardRefExoticComponent\" => {",
     tests: ["test/next.test.ts", "-t", "next build builds"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "held-component-static-props",
     breaks: "a `thread_local!` component takes only `'static` props, so a caller's borrowed `text` doesn't live long enough",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "    let held = matches!(item.kind, ItemKind::Static(_)) && companion",
     replace: "    let held = false && matches!(item.kind, ItemKind::Static(_)) && companion",
     tests: ["test/jsx-evaluation-order.test.ts", "-t", "thread_local component takes props"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "element-span-of-call",
     breaks: "an element is spanned by its whole `jsx!` call, not its `<tag`, so its JS maps to the call's line",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "        let span = self.tokens.get(self.at).map_or(self.span, TokenTree::span);\n        let indent = self.mark(indent);\n",
     replace: "        let span = self.span;\n        let indent = self.mark(indent);\n",
     tests: ["test/jsx.test.ts", "-t", "JSX preserves evaluation order and maps tags"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "children-one-flat-tuple",
     breaks: "an element's children are one flat tuple, which `ReactNode` is of up to twelve only",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "    while let Some(head) = parts.pop() {\n        tail = arguments(vec![head, tail], span);\n    }\n    tail\n",
     replace: "    if !parts.is_empty() {\n        parts.push(tail);\n        return arguments(parts, span);\n    }\n    tail\n",
     tests: ["test/jsx.test.ts", "-t", "no twelve-sibling tuple limit"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "component-children-uncaptured",
     breaks: "a component's children, where its props are captured, are read in the `match`'s arm, where its bindings, `__jsx0`, shadow the program's",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "        let children = if has_children { bind(children, span) } else { children };",
     replace: "        let children = children;",
     tests: ["test/jsx.test.ts", "-t", "component props, keys and children evaluate in source order"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "effectful-key-uncaptured",
     breaks: "a component's last attribute, a `key` that does something, `key={record(2)}`, is read after its children, where `.key(..)` is set",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "            .is_some_and(|at| at + 1 != attrs.len() || spread.is_some() || has_children)\n",
     replace: "            .is_some_and(|at| at + 1 != attrs.len())\n",
     tests: ["test/jsx.test.ts", "-t", "component props, keys and children evaluate in source order"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-component-untyped",
     breaks: "a generic component's props `macro` has no arm of its type arguments, so `<Generic::<i32> value={8} />` matches none",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "    } else if matches!(&item.kind, ItemKind::Fn(f) if !f.generics.params.is_empty()) {",
     replace: "    } else if false {",
     tests: ["test/jsx.test.ts", "-t", "JSX covers generic functions, memo"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "profiler-not-builtin",
     breaks: "`<Profiler>` is taken for a component of the program's, whose props `macro` isn't there, not React's built-in",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "            \"Profiler\" => Some(\"profiler\"),\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "JSX built-ins finish as elements"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "provider-member-unmatched",
     breaks: "a context's `<THEME.Provider>` has no arm in its `macro`, so it matches none",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "        arms.push(arm(\"@provider\", &call(&format!(\"::react::provider({target})\"), &value)));\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "work on React 18 while newer APIs stay gated"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
   {
     name: "effectful-ref-uncaptured",
     breaks: "a component's `ref` that does something, `ref={record(1); r}`, is read after its props, where it's written before them",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "            || (spread.is_some() && has_children && !struct_update)\n            || attrs\n                .iter()\n                .any(|(name, value, _)| name == \"ref\" && !does_nothing(value));",
     replace: "            || (spread.is_some() && has_children && !struct_update);",
     tests: ["test/jsx.test.ts", "-t", "forwarded refs keep their handle type"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
   {
     name: "jsx-statements-not-a-block",
     breaks: "a braced value of statements, `{let n = 5; n + 1}`, is read as one expression, which doesn't parse",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "                rust_expression(self.sess, if expression { value } else { block }, self.tags)\n",
     replace: "                rust_expression(self.sess, value, self.tags)\n",
     tests: ["test/jsx.test.ts", "-t", "JSX grammar: literals, empty forms"],
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
   {
     name: "local-spread-a-tag",
     breaks: "a capitalized local given its props whole, `<Selected {...()} />`, is taken for a tag's element, which a component isn't",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "        let tag = local && local_props.is_none() && !(attrs.is_empty() && !has_children && spread.is_some());",
     replace: "        let tag = local && local_props.is_none();",
     tests: ["test/jsx.test.ts", "-t", "JSX grammar: spread precedence"],
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
   {
     name: "const-component-unnamed",
     breaks: "a constant of a component's function type isn't a component JSX can name",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "        ItemKind::Const(c) => {\n            let TyKind::FnPtr(f) = &c.ty.kind else { return None };",
     replace: "        ItemKind::Const(c) if false => {\n            let TyKind::FnPtr(f) = &c.ty.kind else { return None };",
     tests: ["test/jsx-types.test.ts", "-t", "children declared any node"]
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
   {
     name: "lone-struct-update-whole",
     breaks: "a component given only `{..posts[0]}` takes the struct whole, a move out of the slice rustc refuses",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "            && !struct_update\n            && let Some(props) = spread.clone()",
     replace: "            && let Some(props) = spread.clone()",
     tests: ["test/jsx-props.test.ts", "-t", "props updated from a reference are spread"]
@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
   {
     name: "aria-attribute-unnamed",
     breaks: "`<div aria_label>` is rustc's \"no method named `aria_label`\", not what to write",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "            if intrinsic && let Some(rest) = attr.strip_prefix(\"aria_\").or_else(|| attr.strip_prefix(\"data_\")) {\n",
     replace: "            if false && let Some(rest) = attr.strip_prefix(\"aria_\").or_else(|| attr.strip_prefix(\"data_\")) {\n",
     tests: ["test/jsx.test.ts", "-t", "aria attribute in Rust's case"],
@@ -229,7 +229,7 @@ export const mutations: Mutation[] = [
   {
     name: "component-names-unrecorded",
     breaks: "a component's props as written aren't recorded, so `<Badge label_text>` is taken",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "        if !written.is_empty() {\n",
     replace: "        if false {\n",
     tests: ["test/jsx.test.ts", "-t", "names a component's prop as JSX"],
@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
   {
     name: "thread-local-names-first-only",
     breaks: "only a `thread_local!`'s first component is allowed its JSX name; a context after it is flagged",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "        starts = matches!(tree, TokenTree::Token(token, _) if token.kind == TokenKind::Semi);",
     replace: "        starts = false;",
     tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
@@ -245,7 +245,7 @@ export const mutations: Mutation[] = [
   {
     name: "thread-local-names-every-static",
     breaks: "every static of a `thread_local!` that declares a component is allowed a lowercase name, not only its components",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "        if starts && named.get(declaration) == Some(&true) {",
     replace: "        if starts {",
     tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-component-props-unread",
     breaks: "a class component's element is built of no props, `()`, where its impl's `Component<SurfaceProps>` says its props (rd331i)",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "                    Some(ast::AngleBracketedArg::Arg(ast::GenericArg::Type(ty))) => props_path(ty)?,\n",
     replace: "",
     tests: ["test/class-components.test.ts", "-t", "an element jsx! renders"],
@@ -261,7 +261,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-component-of-no-class",
     breaks: "a `#[rust_js::class]` struct that implements react's `Component` has no element, `<Surface ..>` a macro rustc can't find (rd331i)",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "                && attrs.iter().any(|attr| super::is_rust_js_attr(attr, \"class\")) =>",
     replace: "                && attrs.iter().any(|attr| super::is_rust_js_attr(attr, \"namespace\")) =>",
     tests: ["test/class-components.test.ts", "-t", "an element jsx! renders"],
@@ -269,7 +269,7 @@ export const mutations: Mutation[] = [
   {
     name: "host-type-element-unfinished",
     breaks: "a tag local's element is what it is while its props are set, a host type's `HostElement<P, I>`, where an `Element` is wanted (ADR 0220, amended)",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "            if intrinsic || tag {\n                expr = call(\n",
     replace: "            if intrinsic {\n                expr = call(\n",
     tests: ["test/class-components.test.ts", "-t", "a tag that's a string"],
@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-component-ref-a-prop",
     breaks: "a class component's `ref`, `<Gauge ref={..} />`, is a field of its props, which have none, where it's its instance, React's (ADR 1041, amended)",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "    } else if let ItemKind::Struct(class, ..) = &item.kind {\n",
     replace: "    } else if let ItemKind::Struct(class, ..) = &item.kind\n        && false\n    {\n",
     tests: ["test/class-components.test.ts", "-t", "ref is its instance"],
@@ -285,7 +285,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-elsewhere-unrefused",
     breaks: "an element of a class whose impl of `Component` is in another module than its struct is rustc's `cannot find macro`, not rust-js's word to move the impl (ADR 1041, amended)",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "    if classes.contains_key(ident.as_str())\n        || !ident.as_str().starts_with(char::is_uppercase)\n",
     replace: "    if true\n        || !ident.as_str().starts_with(char::is_uppercase)\n",
     tests: ["test/class-components.test.ts", "-t", "beside its struct"],
@@ -293,7 +293,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-symbol-any-tokens-used",
     breaks: "a symbol name of two paths, or of none, is written as a use, so rustc's error of the use is said where rust-js's of what to write would be",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "            if !path || args.tokens.is_empty() {",
     replace: "            if args.tokens.is_empty() {",
     tests: [
@@ -305,7 +305,7 @@ export const mutations: Mutation[] = [
   {
     name: "imported-props-a-literal",
     breaks: "a component of another module's or crate's props, `DeferredImage(props: ImageProps<'_, S>)`, builds them as a struct literal, which has no flattened field's attributes and no `Option` left out (#1794)",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: " || imported;\n",
     replace: " || false && imported;\n",
     // A replay builds them right, rustc's names telling (ADR 0213,
@@ -315,7 +315,7 @@ export const mutations: Mutation[] = [
   {
     name: "component-without-react",
     breaks: "a crate that isn't given react has components, its capitalized functions' props `impl ::react::Lifetimes`, `cannot find react` (#1810)",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "    sess.opts.crate_name.as_deref() == Some(\"react\") || sess.opts.externs.iter().any(|(name, _)| name == \"react\")\n",
     replace: "    let _ = sess;\n    true\n",
     tests: ["test/modules.test.ts", "-t", "a namespace import is named as the module of its bindings"],
@@ -323,7 +323,7 @@ export const mutations: Mutation[] = [
   {
     name: "glob-props-unpredicted",
     breaks: "a function component's props the syntax pass predicts a literal aren't recorded for rustc's names to verify, so a glob's library props type stays a literal, its flattened attributes rustc's E0560 (ADR 0213, amended)",
-    file: "src/jsx_syntax/parser.rs",
+    file: "crates/rust-js-jsx/src/parser.rs",
     find: "    if !companion && !props.is_empty() && !parameter(&props) && matches!(item.kind, ItemKind::Fn(_)) {\n",
     replace: "    if false && !companion && !props.is_empty() && !parameter(&props) && matches!(item.kind, ItemKind::Fn(_)) {\n",
     tests: ["test/jsx-props-resolved.test.ts", "-t", "a glob imports"],

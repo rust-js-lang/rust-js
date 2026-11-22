@@ -24,7 +24,7 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 const layers = {
   driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/clippy.rs", "src/std_sysroot.rs", "src/source_format.rs", "src/source_format/",
     "src/phase_times.rs", "src/worker.rs"],
-  front: ["crates/rust-js-lower/src/", "crates/rust-js-mir/src/", "src/pipeline.rs", "src/pipeline/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
+  front: ["crates/rust-js-lower/src/", "crates/rust-js-mir/src/", "src/pipeline.rs", "src/pipeline/", "crates/rust-js-jsx/src/"],
   owned: ["crates/rust-js-program/src/", "crates/rust-js-emit/src/output.rs", "crates/rust-js-emit/src/output/", "crates/rust-js-emit/src/publish.rs",
     "crates/rust-js-emit/src/hooks.rs"],
   printing: ["crates/rust-js-emit/src/lib.rs", "crates/rust-js-emit/src/to_oxc.rs", "crates/rust-js-emit/src/to_oxc/", "crates/rust-js-emit/src/format.rs", "crates/rust-js-emit/src/format/", "crates/rust-js-emit/src/typescript.rs", "crates/rust-js-emit/src/prettier.rs", "crates/rust-js-emit/src/node_session.rs"],
@@ -62,8 +62,9 @@ const orchestration: Record<string, string[]> = {
 // A name of no module is an item of the crate's root, its `main.rs`'s or
 // `lib.rs`'s: the driver's `finish_build`, which its worker calls (#2301).
 // The lowering's two crates are a module each, its root, as `lower` was one
-// before #2299's cut: what's inside each is the lowering's own.
-const wholeCrates = new Set(["rust-js-lower", "rust-js-mir"]);
+// before #2299's cut: what's inside each is the lowering's own; and JSX's,
+// as `jsx_syntax` was (#2294).
+const wholeCrates = new Set(["rust-js-lower", "rust-js-mir", "rust-js-jsx"]);
 const moduleFile = (crate: CompilerCrate, name: string) =>
   wholeCrates.has(crate.package)
     ? crate.rootFile
@@ -148,7 +149,7 @@ test("the layer check finds a module however a file names it", () => {
   const cases: [string, string, string[]][] = [
     ["src/cargo.rs", "use rust_js_lower::analysis::Body;", ["crates/rust-js-lower/src/lib.rs"]],
     ["src/cargo.rs", "use super::pipeline::Body;", ["src/pipeline.rs"]],
-    ["src/cargo.rs", "use crate::{pipeline::{self, Body}, command, jsx_syntax};", ["src/command.rs", "src/jsx_syntax.rs", "src/pipeline.rs"]],
+    ["src/cargo.rs", "use crate::{pipeline::{self, Body}, command, source_format};", ["src/command.rs", "src/pipeline.rs", "src/source_format.rs"]],
     ["src/pipeline/settle.rs", "use super::super::command::Plan;", ["src/command.rs"]],
     ["src/pipeline/settle.rs", "use super::driver::start_session;", []],
     ["src/command.rs", 'mod tests {\n    use super::*;\n    fn f() { let s = "{"; let c = \'}\'; }\n}\nuse super::pipeline::Body;', ["src/pipeline.rs"]],
@@ -233,7 +234,7 @@ test("the front end uses no phase after it", () => {
   // reaches none of them from the front end now, and `rust_js_mir::hooks`
   // is MIR's lowering's own (#2299).
   const later = /\b(?:rust_js_program|rust_js_emit)::(prepare|link|output|publish|manifest|settings|hooks|paths)\b|\bcrate::(prepare|link|output|publish|manifest|settings|paths)\b/;
-  const strays = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline"), "src/jsx_syntax.rs", ...files("src/jsx_syntax")]
+  const strays = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline"), ...files("crates/rust-js-jsx/src")]
     .filter(file => later.test(read(file)));
   expect(strays).toEqual([]);
 });

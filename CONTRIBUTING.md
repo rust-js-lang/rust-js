@@ -89,9 +89,10 @@ When contributing code:
   in the piece responsible for orchestration, and name it there as an
   exception. Avoid cycles between responsibilities.
 - **Code goes in its layer's crate.** The compiler is a workspace
-  ([ADR 1181](docs/decisions/1181-the-compilers-crates.md)): rustc's front
-  end in the binary, `src/`, and owned output and printing in `crates/`,
-  with no rustc. Name another crate's item by its crate's path,
+  ([ADR 1181](docs/decisions/1181-the-compilers-crates.md)): the driver in
+  the binary, `src/`; the front end, rustc's, in `crates/rust-js-jsx`,
+  `rust-js-lower` and `rust-js-mir`; and owned output and printing in
+  `crates/rust-js-program` and `rust-js-emit`, with no rustc. Name another crate's item by its crate's path,
   `rust_js_program::collections::IndexMap`; make `pub` only what another
   crate uses. Move a module between crates with `git mv`, then `bun
   scripts/move-paths.ts`; rebased onto a move, run `bun scripts/move-paths.ts

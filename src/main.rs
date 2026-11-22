@@ -49,7 +49,6 @@ extern crate rustc_trait_selection;
 mod cargo;
 mod clippy;
 mod command;
-mod jsx_syntax;
 mod phase_times;
 mod pipeline;
 #[cfg(not(target_os = "wasi"))]
@@ -186,11 +185,11 @@ struct Syntax;
 impl Callbacks for Syntax {
     fn config(&mut self, config: &mut rustc_interface::interface::Config) {
         register_tool(config);
-        jsx_syntax::resolved::held::install(config);
+        rust_js_jsx::resolved::held::install(config);
     }
 
     fn after_crate_root_parsing(&mut self, compiler: &Compiler, krate: &mut rustc_ast::Crate) -> Compilation {
-        jsx_syntax::expand(&compiler.sess, krate, stable_crate_id(compiler, krate));
+        rust_js_jsx::expand(&compiler.sess, krate, stable_crate_id(compiler, krate));
         Compilation::Continue
     }
 
@@ -198,8 +197,8 @@ impl Callbacks for Syntax {
     /// wrong: the compile stops there, before a literal is checked, for the
     /// replay that builds them by their companion (ADR 0213, amended).
     fn after_expansion<'tcx>(&mut self, _compiler: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
-        jsx_syntax::check_crate_id(tcx.stable_crate_id(LOCAL_CRATE));
-        match jsx_syntax::resolved::verify(tcx) {
+        rust_js_jsx::check_crate_id(tcx.stable_crate_id(LOCAL_CRATE));
+        match rust_js_jsx::resolved::verify(tcx) {
             true => Compilation::Stop,
             false => Compilation::Continue,
         }
@@ -232,7 +231,7 @@ struct Clippy {
 impl Callbacks for Clippy {
     fn config(&mut self, config: &mut rustc_interface::interface::Config) {
         register_tool(config);
-        jsx_syntax::resolved::held::install(config);
+        rust_js_jsx::resolved::held::install(config);
         // Again where the crate is compiled again (`run_resolving_props`).
         clippy::configure(config, self.value.clone());
     }
@@ -262,7 +261,7 @@ fn linted(_: Vec<String>, _: String) -> ExitCode {
 impl Callbacks for RustJs {
     fn config(&mut self, config: &mut rustc_interface::interface::Config) {
         register_tool(config);
-        jsx_syntax::resolved::held::install(config);
+        rust_js_jsx::resolved::held::install(config);
         // A file's record of its build names each crate it loaded, what it
         // read of them as much as of its sources (ADR 1099).
         if self.dep_info {
@@ -974,7 +973,7 @@ fn finish_build(prepared: Prepared, exit: ExitCode) -> Result<ExitCode, String> 
         cargo,
     } = prepared;
     if let Some(file) = &props_replayed {
-        let replayed: String = jsx_syntax::resolved::replayed()
+        let replayed: String = rust_js_jsx::resolved::replayed()
             .iter()
             .map(|name| format!("{name}\n"))
             .collect();
@@ -1090,9 +1089,9 @@ fn append_phase_times(input: Option<&str>, library: bool) {
 /// crate whose predictions hold is compiled once. rust-js's, `--rustc`'s and
 /// Clippy's, one way.
 fn run_resolving_props(args: &[String], callbacks: &mut (impl Callbacks + Send)) -> ExitCode {
-    jsx_syntax::resolved::begin();
+    rust_js_jsx::resolved::begin();
     let exit = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(args, callbacks));
-    match exit == ExitCode::SUCCESS && jsx_syntax::resolved::replay() {
+    match exit == ExitCode::SUCCESS && rust_js_jsx::resolved::replay() {
         true => rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(args, callbacks)),
         false => exit,
     }

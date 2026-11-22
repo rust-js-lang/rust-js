@@ -65,7 +65,7 @@ error[E0277]: `react::webapi::HTMLDivElement` takes no `href`
   `"no-referer"` isn't a `referrerPolicy`, which is one of "", "no-referrer",
   ..``, a `<button>`'s `type="sumbit"` and `aria-live="loud"` too. rust-js's
   JSX parser checks it against a table `react/literals.ts` writes from
-  @types/react, `src/jsx_syntax/literals.rs`, by the tag where tags differ:
+  @types/react, `crates/rust-js-jsx/src/literals.rs`, by the tag where tags differ:
   an `<input>`'s `type` takes any string. A value that isn't a literal, a
   `&str` variable, isn't checked, where TypeScript refuses a `string` there.
   (Amended: each took any text.)

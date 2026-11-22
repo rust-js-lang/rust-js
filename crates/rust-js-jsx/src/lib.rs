@@ -2,6 +2,21 @@
 //! Expand into typed React bindings before name resolution. Original tokens
 //! keep their spans; there are no intermediate source files to map through.
 
+#![feature(rustc_private)]
+
+extern crate rustc_ast;
+extern crate rustc_data_structures;
+extern crate rustc_driver;
+extern crate rustc_errors;
+extern crate rustc_expand;
+extern crate rustc_hir;
+extern crate rustc_interface;
+extern crate rustc_lint_defs;
+extern crate rustc_middle;
+extern crate rustc_parse;
+extern crate rustc_session;
+extern crate rustc_span;
+
 pub mod formatting;
 mod literals;
 mod parser;
@@ -181,24 +196,24 @@ struct Expand<'a> {
 /// its JSX read, shared by its clones, whose bindings rustc's lint is
 /// allowed of (ADR 0439, amended).
 #[derive(Clone, Default)]
-pub(super) struct TagNames {
+pub(crate) struct TagNames {
     names: IndexMap<String, Option<String>>,
     read: Rc<RefCell<IndexSet<String>>>,
 }
 
 impl TagNames {
-    pub(super) fn new() -> TagNames {
+    pub(crate) fn new() -> TagNames {
         TagNames::default()
     }
 
-    pub(super) fn extend(&mut self, names: IndexMap<String, Option<String>>) {
+    pub(crate) fn extend(&mut self, names: IndexMap<String, Option<String>>) {
         self.names.extend(names);
     }
 
     /// The local `name` JSX reads as its tag, `<Comp>`, if it's one, and
     /// what it's written to be, `Some(None)` of an element's tag: read, so
     /// its binding is allowed its name.
-    pub(super) fn read(&self, name: &str) -> Option<&Option<String>> {
+    pub(crate) fn read(&self, name: &str) -> Option<&Option<String>> {
         let found = self.names.get(name);
         if found.is_some() {
             self.read.borrow_mut().insert(name.to_string());

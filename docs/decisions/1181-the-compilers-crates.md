@@ -275,13 +275,13 @@ moves files and rewrites paths alone:
 
 ## Amendment: the lowering is two crates (#2299's cut, 2026-11-22)
 
-`crates/rust-js-lower/src/` is cut by the rules above, its last step:
+`src/lower/` is cut by the rules above, its last step:
 
-- **`rust-js-lower`**, the lowering's base: `crates/rust-js-lower/src/lib.rs` its root,
-  `crates/rust-js-lower/src/lib.rs`, and every module of `crates/rust-js-lower/src/`
+- **`rust-js-lower`**, the lowering's base: `src/lower.rs` its root,
+  `crates/rust-js-lower/src/lib.rs`, and every module of `src/lower/`
   but `mir` and the pipeline. `FnCx`, the analyses, recognition,
   representation and the session; it depends on `rust-js-program`.
-- **`rust-js-mir`**, MIR's lowering: `crates/rust-js-mir/src/lib.rs` and `mir/`, its
+- **`rust-js-mir`**, MIR's lowering: `src/lower/mir.rs` and `mir/`, its
   methods `MirCx`'s (commit 7); it depends on the base, which asks it only
   through `MirHooks` (commit 5), and on `rust-js-program`.
 - **The pipeline** is the binary's, the driver's side, `src/pipeline.rs`
@@ -314,5 +314,39 @@ What the rules above say, and what changed with it:
   and `lower/mir/`, each mutation's `file:` its path: the base's and
   MIR's files share names, so a list by its path below its crate's
   `src/` would be two crates' lists. The lowering's rules read the two
-  crates and the pipeline where they read `crates/rust-js-lower/src/`, each a module of
+  crates and the pipeline where they read `src/lower/`, each a module of
   the layer rules as `lower` was one.
+
+## Amendment: JSX is a crate, and `src/` the driver (#2294's finish line, 2026-11-22)
+
+`src/jsx_syntax.rs` and `src/jsx_syntax/` are `crates/rust-js-jsx`: `jsx!`'s
+expansion into typed React bindings, run before name resolution, its
+resolution's check, and its layout for `rust-js fmt`. It's a phase of the
+front end, as the lowering is: it reads rustc's AST, a `rustc_private`
+crate as the lowering's are (`RUSTC_BOOTSTRAP`, the shared rpath script,
+`wasm/jsx/`'s manifest for the playground), and depends on
+`rust-js-program` alone, its collections, with no edge to the lowering or
+to printing (test/architecture-crates.test.ts). Its users are the driver's
+callbacks, main.rs's, and `rust-js fmt`. Like `lower` before, it counts as
+one module of the layer rules, and its mutation lists stay in
+`scripts/mutations/jsx_syntax/`.
+
+What's left in `src/` is the driver, each module there for that reason:
+
+- `main.rs`, the compile, and its commands: `command.rs`, `cargo.rs`,
+  `clippy.rs`, and `source_format.rs` with `source_format/`, `rust-js fmt`,
+  a command as `clippy` is, which runs rustfmt and then JSX's layout.
+- `std_sysroot.rs`: the `--sysroot` the driver builds once and hands rustc
+  for std's bodies. Only main.rs uses it.
+- `phase_times.rs`: the driver's own phases' wall times (#2296). Only
+  main.rs and worker.rs mark them.
+- `worker.rs`: the tests' harness's compiles, a case's builds in one rustc
+  session (ADR 1182).
+- `pipeline.rs` and `pipeline/`: the session's driver side, by the cut's
+  design above. It starts each session with MIR's hooks and links its
+  modules.
+
+#2294's first criterion named the driver as "main, command, cargo,
+clippy, the pipeline's entry". That was a sketch, and this list is the
+driver. Each of the modules above is used by the driver alone, and none
+is a phase of the compile's own.

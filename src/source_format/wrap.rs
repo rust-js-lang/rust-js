@@ -19,8 +19,8 @@
 use std::ops::Range;
 
 use super::Job;
-use crate::jsx_syntax::formatting::Body;
-use crate::jsx_syntax::formatting::shape::{Attr, Child, Element, Piece};
+use rust_js_jsx::formatting::Body;
+use rust_js_jsx::formatting::shape::{Attr, Child, Element, Piece};
 
 /// `text`, its `jsx!` bodies indented already, with each laid out.
 pub(super) fn laid_out(job: &Job, text: &str) -> Result<String, String> {

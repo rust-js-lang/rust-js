@@ -1957,6 +1957,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust-js-jsx"
+version = "0.0.4"
+dependencies = [
+ "rust-js-program",
+ "rustc_ast",
+ "rustc_data_structures",
+ "rustc_driver_impl",
+ "rustc_errors",
+ "rustc_expand",
+ "rustc_hir",
+ "rustc_interface",
+ "rustc_lint_defs",
+ "rustc_middle",
+ "rustc_parse",
+ "rustc_session",
+ "rustc_span",
+]
+
+[[package]]
 name = "rust-js-lower"
 version = "0.0.4"
 dependencies = [
@@ -2044,6 +2063,7 @@ dependencies = [
  "imbl",
  "indexmap",
  "rust-js-emit",
+ "rust-js-jsx",
  "rust-js-lower",
  "rust-js-mir",
  "rust-js-program",

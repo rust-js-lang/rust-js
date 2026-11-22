@@ -1,6 +1,6 @@
 //! `rust-js fmt`, the one way to format a crate's Rust (#1901): the
 //! toolchain's rustfmt, as `cargo fmt` runs it, then the `jsx!` pass, which
-//! lays out what rustfmt leaves as it's written (`jsx_syntax::formatting`).
+//! lays out what rustfmt leaves as it's written (`rust_js_jsx::formatting`).
 //!
 //! ```text
 //!   rust-js fmt [--check] [--stdin] [paths..]
@@ -344,7 +344,7 @@ fn jsx_bodies(text: &str) -> Vec<std::ops::Range<usize>> {
 }
 
 /// The JSX pass of `source`, a file rustfmt formatted: its `jsx!` bodies
-/// laid out (`jsx_syntax::formatting`).
+/// laid out (`rust_js_jsx::formatting`).
 fn jsx(job: &Job, source: &str) -> Result<String, String> {
     let formatter = pass(job, source, false)?;
     formatter.output.ok_or_else(|| {
@@ -357,7 +357,7 @@ fn jsx(job: &Job, source: &str) -> Result<String, String> {
 
 /// Each `jsx!` body of `source`, a file the JSX pass laid out, with its
 /// shape.
-fn shapes(job: &Job, source: &str) -> Result<Vec<crate::jsx_syntax::formatting::Body>, String> {
+fn shapes(job: &Job, source: &str) -> Result<Vec<rust_js_jsx::formatting::Body>, String> {
     let formatter = pass(job, source, true)?;
     match formatter.output {
         Some(_) => Ok(formatter.bodies.unwrap_or_default()),
@@ -369,9 +369,9 @@ fn shapes(job: &Job, source: &str) -> Result<Vec<crate::jsx_syntax::formatting::
 }
 
 /// The JSX pass of `source`, with its bodies' shapes where `bodies` asks.
-fn pass(job: &Job, source: &str, bodies: bool) -> Result<crate::jsx_syntax::formatting::Formatter, String> {
+fn pass(job: &Job, source: &str, bodies: bool) -> Result<rust_js_jsx::formatting::Formatter, String> {
     let (edition, name) = (&job.edition, &job.name);
-    let mut formatter = crate::jsx_syntax::formatting::Formatter {
+    let mut formatter = rust_js_jsx::formatting::Formatter {
         input: Some((name.display().to_string(), source.to_string())),
         bodies: bodies.then(Vec::new),
         ..Default::default()

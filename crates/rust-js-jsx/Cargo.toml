@@ -1,0 +1,15 @@
+# JSX, the compiler's own syntax (#2294's finish line): `jsx!`'s expansion
+# into typed React bindings before name resolution, its resolution's check,
+# and its layout for `rust-js fmt`. A front-end phase the driver runs, as
+# it does the lowering: it reads rustc's AST and owned output's collections,
+# nothing of the lowering or the printing.
+[package]
+name = "rust-js-jsx"
+version = "0.0.4"
+edition = "2024"
+publish = false
+# A unit test binary's rpath to rustc's libraries (the checkout's script).
+build = "../../rustc-rpath.rs"
+
+[dependencies]
+rust-js-program = { path = "../rust-js-program" }

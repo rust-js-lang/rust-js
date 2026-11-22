@@ -21,6 +21,10 @@ const allowed: Record<string, string[]> = {
   // The lowering (#2299): its base reads owned output; MIR's builds on it.
   "rust-js-lower": ["rust-js-program"],
   "rust-js-mir": ["rust-js-lower", "rust-js-program"],
+  // JSX's expansion (#2294), a phase before the lowering the driver runs:
+  // it reads owned output's collections, nothing of the lowering's or of
+  // printing's.
+  "rust-js-jsx": ["rust-js-program"],
 };
 
 test("each crate depends only on the compiler's crates its layer may", () => {
@@ -40,15 +44,15 @@ test("each crate depends only on the compiler's crates its layer may", () => {
 // `.cargo/config.toml` lets only the binary have. rustc-hash, a crate of
 // its own that rustc's crates use too, is the compiler's maps' hasher.
 // The lowering's two crates are rustc's as the binary is (#2299): they read
-// its THIR and MIR.
-const rustcs = new Set(["rust-js-lower", "rust-js-mir"]);
-test("no crate but the binary and the lowering's uses rustc", () => {
+// its THIR and MIR; and JSX's, which expands rustc's AST (#2294).
+const rustcs = new Set(["rust-js-lower", "rust-js-mir", "rust-js-jsx"]);
+test("no crate but the binary, the lowering's and JSX's uses rustc", () => {
   const strays = compilerRustFiles()
     .filter((file) => crateOf(file) !== binary && !rustcs.has(crateOf(file)?.package ?? ""))
     .filter((file) => /\brustc_(?!hash::)\w+|#!\[feature|extern crate/.test(readFileSync(join(root, file), "utf8").replace(/\/\/.*$/gm, "")));
   expect(strays).toEqual([]);
-  // The binary's and the lowering's crates alone (#2299).
-  expect(readFileSync(join(root, ".cargo/config.toml"), "utf8").match(/rust_js_\w+/g)).toEqual(["rust_js_lower", "rust_js_mir"]);
+  // The binary's, the lowering's and JSX's crates alone (#2299, #2294).
+  expect(readFileSync(join(root, ".cargo/config.toml"), "utf8").match(/rust_js_\w+/g)).toEqual(["rust_js_lower", "rust_js_mir", "rust_js_jsx"]);
 });
 
 // Every Cargo package in the checkout is the binary, a member, its own
@@ -118,8 +122,7 @@ test("the front end names no crate but owned output's", () => {
       file.startsWith("crates/rust-js-mir/src/") ||
       file === "src/pipeline.rs" ||
       file.startsWith("src/pipeline/") ||
-      file === "src/jsx_syntax.rs" ||
-      file.startsWith("src/jsx_syntax/"),
+      file.startsWith("crates/rust-js-jsx/src/"),
   );
   expect(front.length).toBeGreaterThan(100);
   const front_crates = ["rust-js-program", "rust-js-lower", "rust-js-mir"];

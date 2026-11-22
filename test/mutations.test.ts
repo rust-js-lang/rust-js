@@ -202,7 +202,7 @@ test("every mutation's corpus, diagnostics and limitations tests are there", () 
 const unmutated: Record<string, string> = {
   "crates/rust-js-program/src/program.rs": "the types the phases hand each other, with no behavior of their own",
   "crates/rust-js-lower/src/shortcuts.rs": "one-line forwards to recognition, whose mutations hold the answers",
-  "src/jsx_syntax/literals.rs": "generated from @types/react; react-versions.test.ts holds it equal to its generator",
+  "crates/rust-js-jsx/src/literals.rs": "generated from @types/react; react-versions.test.ts holds it equal to its generator",
   "crates/rust-js-mir/src/tidy/contracts.rs": "a debug build's checks of what tidy leaves, which change no output; its unit tests, `cargo test`, break each",
 };
 

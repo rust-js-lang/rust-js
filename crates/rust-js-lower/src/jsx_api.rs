@@ -74,7 +74,7 @@ impl Uses<'_> {
 impl<'tcx> Uses<'tcx> {
     /// `{ #[rust_js::spelled("labelText")] let _ = (); component(C, props) }`:
     /// each name written of `props`' type, its field's JS name, the field
-    /// it gives by JSX's rule, `jsx_syntax::snake`, or one flattened in it.
+    /// it gives by JSX's rule, `rust_js_program::casing::snake`, or one flattened in it.
     fn component_props(&mut self, block: &'tcx hir::Block<'tcx>) {
         let [
             hir::Stmt {

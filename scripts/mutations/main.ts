@@ -119,8 +119,8 @@ export const mutations: Mutation[] = [
     name: "clippy-without-liveness",
     breaks: "`rust-js clippy` has no rust-js tool nor its liveness (ADR 0888): a struct JS reads is said never read, and `#[rust_js::..]` is an unknown tool",
     file: "src/main.rs",
-    find: "        register_tool(config);\n        jsx_syntax::resolved::held::install(config);\n        // Again where the crate is compiled again (`run_resolving_props`).\n",
-    replace: "        jsx_syntax::resolved::held::install(config);\n        // Again where the crate is compiled again (`run_resolving_props`).\n",
+    find: "        register_tool(config);\n        rust_js_jsx::resolved::held::install(config);\n        // Again where the crate is compiled again (`run_resolving_props`).\n",
+    replace: "        rust_js_jsx::resolved::held::install(config);\n        // Again where the crate is compiled again (`run_resolving_props`).\n",
     tests: ["test/clippy.test.ts", "-t", "rust-js clippy says what clippy finds"],
   },
   {
@@ -232,8 +232,8 @@ export const mutations: Mutation[] = [
     name: "props-never-replayed",
     breaks: "a compile stopped for a replay is never compiled again, so a crate of a glob's library props writes no JS (ADR 0213, amended)",
     file: "src/main.rs",
-    find: "    match exit == ExitCode::SUCCESS && jsx_syntax::resolved::replay() {\n",
-    replace: "    match exit == ExitCode::SUCCESS && false && jsx_syntax::resolved::replay() {\n",
+    find: "    match exit == ExitCode::SUCCESS && rust_js_jsx::resolved::replay() {\n",
+    replace: "    match exit == ExitCode::SUCCESS && false && rust_js_jsx::resolved::replay() {\n",
     tests: ["test/jsx-props-resolved.test.ts", "-t", "a glob imports"],
   },
   {

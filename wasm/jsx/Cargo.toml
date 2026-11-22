@@ -1,0 +1,26 @@
+# rust-js-jsx, JSX's expansion (#2294), built for WASI as ../Cargo.toml builds the
+# binary: its sources ../../crates/rust-js-jsx/src/, and rustc's crates from ../rustc,
+# which WASI's sysroot hasn't (`rustc_private` reads the host's alone).
+[package]
+name = "rust-js-jsx"
+version = "0.0.4"
+edition = "2024"
+publish = false
+
+[lib]
+path = "../../crates/rust-js-jsx/src/lib.rs"
+
+[dependencies]
+rust-js-program = { path = "../../crates/rust-js-program" }
+rustc_ast = { path = "../rustc/compiler/rustc_ast" }
+rustc_data_structures = { path = "../rustc/compiler/rustc_data_structures" }
+rustc_driver = { path = "../rustc/compiler/rustc_driver_impl", package = "rustc_driver_impl" }
+rustc_errors = { path = "../rustc/compiler/rustc_errors" }
+rustc_expand = { path = "../rustc/compiler/rustc_expand" }
+rustc_hir = { path = "../rustc/compiler/rustc_hir" }
+rustc_interface = { path = "../rustc/compiler/rustc_interface" }
+rustc_lint_defs = { path = "../rustc/compiler/rustc_lint_defs" }
+rustc_middle = { path = "../rustc/compiler/rustc_middle" }
+rustc_parse = { path = "../rustc/compiler/rustc_parse" }
+rustc_session = { path = "../rustc/compiler/rustc_session" }
+rustc_span = { path = "../rustc/compiler/rustc_span" }

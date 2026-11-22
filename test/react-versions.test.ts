@@ -114,7 +114,7 @@ test("attributes.rs is what react/attributes.ts makes of @types/react", () => {
 
 // The strings an attribute of a few takes, which JSX checks a literal against (ADR 0228).
 test("literals.rs is what react/literals.ts makes of @types/react", () => {
-  expect(generatorOutput("react/literals.ts")).toBe(readFileSync(join(root, "src/jsx_syntax/literals.rs"), "utf8"));
+  expect(generatorOutput("react/literals.ts")).toBe(readFileSync(join(root, "crates/rust-js-jsx/src/literals.rs"), "utf8"));
 }, underLoad(60_000));
 
 // A program for React 18.2 can't use what React 19.2 added: it's a compile

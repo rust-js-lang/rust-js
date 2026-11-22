@@ -1,11 +1,11 @@
-// Mutations of src/jsx_syntax.rs (ADR 0093).
+// Mutations of crates/rust-js-jsx/src/lib.rs (ADR 0093).
 import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "companion-macro-undocumented",
     breaks: "a crate that denies `missing_docs` fails to build: the props companion beside its `Default` struct is an undocumented public macro (#1098)",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "                    .push(self.allow(Symbol::intern(\"missing_docs\"), companion.span));\n",
     replace: "                    .truncate(usize::MAX);\n",
     tests: ["test/jsx.test.ts", "-t", "companion macro needs no docs"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "jsx-spans-unmarked",
     breaks: "JSX's `#[rust_js::jsx] f(..)` is an expression's attribute a stable release refuses",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "    let span = expanded(sess, span);\n",
     replace: "",
     // A test that builds the react crate in its body: the mutant can't, and
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "jsx-call-keeps-its-jsx",
     breaks: "an expression's `jsx!` keeps its JSX, which react's macro makes its placeholder, not the element",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "            mac.args.tokens = arm(rust, span);\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "JSX supports components across modules"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "tag-local-unseen",
     breaks: "a capitalized local of the function isn't a tag, and `<Comp>` asks for a component `Comp`'s macro",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "                self.0.insert(ident.to_string(), props.clone().filter(|_| typed));\n",
     replace: "                let _ = (ident, typed);\n",
     tests: ["test/jsx-types.test.ts", "-t", "tag that.s a value"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "export-default-dead",
     breaks: "a function only `js::export_default!` names is dead code to rustc, a warning in the editor's check",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "                item.attrs.push(self.allow(sym::dead_code, item.span));\n",
     replace: "",
     tests: ["test/editor-check.test.ts", "-t", "reads inside JSX"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "closure-tags-unseen",
     breaks: "`|Icon| jsx! { <Icon className=.. /> }` inside JSX takes `Icon` for a component's name: `cannot find macro \`Icon\``",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "if let ExprKind::Closure(_) = &expr.kind {",
     replace: "if let ExprKind::Closure(_) = &expr.kind\n                && false\n            {",
     tests: ["test/jsx-types.test.ts", "-t", "ElementType, rendered as a tag"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "local-component-type-unread",
     breaks: "`let Heading: fn(HProps<..>) -> JSX::Element` is read as a DOM element's tag, which a function isn't",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "[only] => parser::props_path(&only.ty).filter(|path| !path.is_empty()),",
     replace: "[_] => None,",
     tests: ["test/jsx-types.test.ts", "-t", "function type is a tag"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "thread-local-jsx-unexpanded",
     breaks: "a `thread_local!`'s `jsx!`, a module's constant element, is expanded by rustc as a plain rustc's placeholder, which rust-js can't call",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "            mac.args.tokens = self.jsx_calls(&mac.args.tokens);\n            return;\n",
     replace: "            return;\n",
     tests: ["test/jsx-evaluation-order.test.ts", "-t", "constant element is rendered"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "thread-local-nested-jsx-unexpanded",
     breaks: "a `thread_local!`'s `jsx!` inside a call, `Some(jsx! { .. })`, is left to rustc, as a plain rustc's placeholder",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "TokenTree::Delimited(*dspan, *spacing, *delim, self.jsx_calls(inner))",
     replace: "TokenTree::Delimited(*dspan, *spacing, *delim, inner.clone())",
     tests: ["test/jsx-evaluation-order.test.ts", "-t", "constant element is rendered"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "props-lifetimes-unsaid",
     breaks: "no props struct says its `'static` form, so a `thread_local!` component's companion has no `react::Lifetimes` of its props",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "if item.kind.ident().is_some_and(|ident| props.contains(ident.as_str())) {",
     replace: "if false && item.kind.ident().is_some_and(|ident| props.contains(ident.as_str())) {",
     tests: ["test/jsx-evaluation-order.test.ts", "-t", "thread_local component takes props"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "braced-jsx-statement-unended",
     breaks: "a braced `jsx! { .. }` statement before another in a block is a call with no `;` after it, which doesn't parse",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "                        mac.style == ast::MacStmtStyle::Braces && i + 1 < block.stmts.len(),",
     replace: "                        false,",
     tests: ["test/jsx.test.ts", "-t", "nested component JSX stays readable"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "inline-module-dir-unpushed",
     breaks: "a file module of an inline module, `mod inline { pub mod leaf; }`, is looked for beside it, `outer/leaf.rs`, not in its directory",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "                    self.dir.push(ident.as_str());\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "nested modules using Rust's directory and cfg rules"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "cfg-attr-path-unread",
     breaks: "a module's `#[cfg_attr(all(), path = \"alternate.rs\")]` is unread, so its file is looked for by its name",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "        let path_attr = attrs.iter().find(|a| a.has_name(sym::path)).and_then(|a| a.value_str());",
     replace: "        let path_attr = item.attrs.iter().find(|a| a.has_name(sym::path)).and_then(|a| a.value_str());",
     tests: ["test/jsx.test.ts", "-t", "nested modules using Rust's directory and cfg rules"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "disabled-crate-expanded",
     breaks: "a crate `#![cfg(any())]` disables still loads its modules and expands its JSX",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "    if configured_attrs(sess, &krate.attrs).is_none() {\n        return;\n    }\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "a disabled crate or module does not load"],
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
   {
     name: "disabled-file-module-expanded",
     breaks: "a module file whose own `#![cfg(any())]` disables it still loads its modules",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "        if configured_attrs(self.sess, &item.attrs).is_some()\n            && let ItemKind::Mod(_, _, ModKind::Loaded(items, _, _)) = &mut item.kind",
     replace: "        if let ItemKind::Mod(_, _, ModKind::Loaded(items, _, _)) = &mut item.kind",
     tests: ["test/jsx.test.ts", "-t", "a disabled crate or module does not load"],
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-jsx-unread",
     breaks: "JSX among a `vec!`'s items is left to rustc, an error",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "            && mac.path.segments.last().is_some_and(|s| s.ident.as_str() == \"vec\")",
     replace: "            && false",
     tests: ["test/jsx-types.test.ts", "-t", "vec!'s items"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   {
     name: "format-foreign-jsx-parsed",
     breaks: "another crate's `foreign::jsx!` is read as rust-js's JSX, and the formatter refuses a file whose macro isn't its grammar",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "        && !matches!(i.checked_sub(1).and_then(|at| trees.get(at)), Some(TokenTree::Token(sep, _)) if sep.kind == TokenKind::PathSep)\n",
     replace: "",
     tests: ["test/format.test.ts", "-t", "JSX formatter preserves literal contents, comments, other macros and skipped items"],
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
   {
     name: "component-name-lint-kept",
     breaks: "a component's capitalized name, `fn App()`, is flagged by rustc's lint, so each crate needs `#![allow(non_snake_case)]`",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "                    item.attrs.push(self.allow(Symbol::intern(\"non_snake_case\"), item.span));\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
   {
     name: "thread-local-names-flagged",
     breaks: "a `thread_local!`'s component, `static IconCopy = memo(..)`, is flagged for its JSX name",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "                mac.args.tokens = tokens;\n",
     replace: "                let _ = (mac, tokens);\n",
     tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
   {
     name: "component-private-props-flagged",
     breaks: "a component whose props are private, as react.dev's DiagramGroup's, is flagged for a private type in its interface",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "                        .push(self.allow(Symbol::intern(\"private_interfaces\"), item.span));\n",
     replace: "                        .push(self.allow(Symbol::intern(\"non_snake_case\"), item.span));\n",
     tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
   {
     name: "tag-local-flagged",
     breaks: "a capitalized local JSX reads as a tag, ReactART's `let Tag = ..; <Tag ..>`, is flagged by rustc's `non_snake_case` (rd331k; ADR 0439, amended)",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "        if !read.is_empty() {\n",
     replace: "        if false {\n",
     tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
   {
     name: "tag-local-of-a-parameter-flagged",
     breaks: "a parameter JSX reads as a tag, `fn tagged(Comp: &'static str)`, is flagged, a `let` alone allowed (rd331k)",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "            param.attrs.push(self.allow(param.span));\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
   {
     name: "every-capitalized-local-allowed",
     breaks: "every capitalized local is allowed its name, `let Unread = 1`, not only one JSX reads as a tag (rd331k)",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "                && self.read.contains(ident.as_str())\n",
     replace: "                && ident.as_str().starts_with(char::is_uppercase)\n",
     tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
   {
     name: "tag-read-unrecorded",
     breaks: "what JSX reads as a tag isn't recorded, so no binding of one is allowed its name (rd331k)",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "            self.read.borrow_mut().insert(name.to_string());\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-symbol-use-unwritten",
     breaks: "no use of a field's symbol name is written beside its struct: rustc never resolves it, an import or a static it alone uses is unused, and rust-js refuses each",
-    file: "src/jsx_syntax.rs",
+    file: "crates/rust-js-jsx/src/lib.rs",
     find: "            companions.extend(parser::field_symbol_uses(self.sess, item));\n",
     replace: "",
     tests: [

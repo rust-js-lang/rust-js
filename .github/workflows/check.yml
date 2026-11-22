@@ -494,7 +494,7 @@ jobs:
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked
       # The crates with no rustc in them, built for WASI (ADR 1181).
-      - run: cargo check --locked --target wasm32-wasip1 --workspace --exclude rust-js --exclude rust-js-lower --exclude rust-js-mir
+      - run: cargo check --locked --target wasm32-wasip1 --workspace --exclude rust-js --exclude rust-js-lower --exclude rust-js-mir --exclude rust-js-jsx
       # The Vite example's build, its committed JS against what rust-js
       # writes, then Vite's, by the compiler the example's plugin finds,
       # this checkout's: a job of its own spent most of its minutes

@@ -4,7 +4,7 @@
 # (test/architecture-calls.test.ts). A signature skipped leaves its
 # late-bound lifetimes bound, and a query asked of a type holding one
 # panics (#2022). Step done when none is left but what reads a shape.
-src/jsx_syntax/resolved.rs	1
+crates/rust-js-jsx/src/resolved.rs	1
 crates/rust-js-lower/src/lib.rs	3
 crates/rust-js-lower/src/aggregates.rs	1
 crates/rust-js-lower/src/analysis/cell_flow.rs	1

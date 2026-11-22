@@ -31,6 +31,7 @@ rust-js-emit = { path = "../crates/rust-js-emit" }
 # The lowering's crates, rustc's as the binary is: their WASI builds'
 # manifests, which take rustc's crates from ./rustc (#2299).
 rust-js-lower = { path = "lower" }
+rust-js-jsx = { path = "jsx" }
 rust-js-mir = { path = "mir" }
 # The MIR intervals' persistent maps (#2310, ADR 1183), as ../Cargo.toml's.
 imbl = { version = "7.0.2", default-features = false }
