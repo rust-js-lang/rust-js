@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "module-const-read-elsewhere-unexported",
+    breaks: "a private trait's impl's dictionary, its module's `const`, given to generic code by another module, isn't exported, and that module's import of it fails to load (#2323)",
+    file: "src/lower/pipeline/consts.rs",
+    find: "            read.export = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^private_trait_impl_read_by_another_module.rs$"],
+  },
+  {
     name: "static-lock-refused",
     breaks:
       "a static `Mutex`, `RwLock` or atomic is refused where it's one JS cell (#330)",

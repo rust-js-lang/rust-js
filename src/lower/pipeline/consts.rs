@@ -201,11 +201,13 @@ pub(super) fn lower_consts<'b, 'tcx>(
 }
 
 /// Each constant placed once the crate's bodies are lowered: those a body
-/// made, its module's; a numbered enum's variant, its module's `const` of
-/// its number, where something reads it or another module or crate may,
-/// exported then, as a `const` item is (ADR 0722, amended); and an
-/// inherent impl's, its type's object's, `S.ID`, as its methods are (ADR
-/// 0410).
+/// made, its module's, exported where another module reads it, a
+/// dictionary given nothing of a private trait's impl or of a library's the
+/// crate compiles itself (ADR 0914) as one of a public trait's is (#2323);
+/// a numbered enum's variant, its module's `const` of its number, where
+/// something reads it or another module or crate may, exported then, as a
+/// `const` item is (ADR 0722, amended); and an inherent impl's, its type's
+/// object's, `S.ID`, as its methods are (ADR 0410).
 pub(super) fn place_consts(
     tcx: TyCtxt<'_>,
     pass: &mut super::Pass,
@@ -218,13 +220,21 @@ pub(super) fn place_consts(
     (called_from_elsewhere, reached): (&IndexSet<DefId>, &IndexSet<DefId>),
     sources: &crate::lower::sources::CapturedSources,
 ) {
+    let read_elsewhere: IndexSet<DefId> = pass.references.iter().map(|&(_, id)| id).collect();
+    for &id in &read_elsewhere {
+        let info = &fns[&id];
+        if let Some(read) = (pass.local_consts.get_mut(&info.module))
+            .and_then(|consts| consts.iter_mut().find(|c| c.name.is(&info.name)))
+        {
+            read.export = true;
+        }
+    }
     for (module, consts) in pass.local_consts.drain(..) {
         const_items.entry(module).or_default().extend(consts);
     }
     // A numbered enum's variant, its module's `const` of its number, where
     // something reads it or another module or crate may, exported then, as
     // a `const` item is (ADR 0722, amended).
-    let read_elsewhere: IndexSet<DefId> = pass.references.iter().map(|&(_, id)| id).collect();
     for &variant in variants {
         let id = variant.to_def_id();
         let export =

@@ -161,3 +161,18 @@ it's none where they say it passes: `MIN` is its object.
 - Mutations `load-of-numbers-runs-code`, `load-of-a-getter-runs-nothing`
   (`lower/pipeline/load_cycles.ts`) and `named-constant-truth-unknown`
   (`lower/mir/queries.ts`).
+
+## Amendment: exported where another module reads it (#2323)
+
+A dictionary given nothing was exported only where its trait is public. A
+private trait's impl written in one module and given to generic code by
+another, or a library's impl the crate compiles itself (ADR 0914) that two
+of its modules ask, rand's `ChaCha20Core`'s `BlockRngCore` in `rngs::thread`
+and `rngs::std`, was its first module's `const`, which the other imported
+and which wasn't exported: the JS failed to load. `consts::place_consts`
+exports each `const` a body made that another module reads
+(`pass.references`), as it exports a numbered enum's variant (ADR 0722).
+No other program's JS changes: the corpus and the React port are as they
+were. Held by `test/corpus/private_trait_impl_read_by_another_module.rs`,
+against native Rust; mutation `module-const-read-elsewhere-unexported`
+(`lower/pipeline/consts.ts`).
