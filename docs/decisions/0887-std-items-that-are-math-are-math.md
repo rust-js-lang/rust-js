@@ -82,7 +82,7 @@ export const clz32 = typeof Math.clz32 !== "undefined" ? Math.clz32 : clz32Fallb
 ```
 
 **Only where `Math`'s answers the Rust one for every value of its type.**
-One table holds which, `src/lower/std_types/number/math.rs`, and the call,
+One table holds which, `crates/rust-js-lower/src/std_types/number/math.rs`, and the call,
 the value, `js::is_defined` and a constant's read all ask it:
 
 | Rust | `Math` | Why it's exact |
@@ -219,7 +219,7 @@ is, and what hands one to JS gives it no more than Rust does,
 amendment of rd289).
 
 **A function lent as a `&dyn Fn` is what it is taken as a `fn`**: one
-answer for both, `fn_item_pointer` (`src/lower/items.rs`), a binding's
+answer for both, `fn_item_pointer` (`crates/rust-js-lower/src/items.rs`), a binding's
 function (ADR 0602) or the `Math` function of the table, read where it's
 lent, `{ to: Math.log }`; any other, `&f64::round`, its arrow, as it was.
 A function item handed to an iterator by reference, `.map(&f64::ln)`, is

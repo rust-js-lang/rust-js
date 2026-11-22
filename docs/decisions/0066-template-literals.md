@@ -91,7 +91,7 @@ mutations unwrap any `String`, and keep a number's `fmt` an arrow.
   [ADR 0641](0641-concat-is-its-pieces-joined-by-plus.md)), each piece
   written across lines a template literal of them, as one literal is. A
   string written across lines and one in pieces are one kind of the JS
-  tree, `Written`, which `src/lower/literals.rs` makes, and a `static`'s
+  tree, `Written`, which `crates/rust-js-lower/src/literals.rs` makes, and a `static`'s
   string is written as a `const`'s.
 
 ## Amendment: strings alone are joined by `+`, and only strings

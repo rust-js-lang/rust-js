@@ -1408,13 +1408,13 @@ guard above). In a crate that asks an address, each is now a handle on the
 property JS keeps it in, at the offset rustc's layout gives it in its
 receiver: `$ptr(cell, "value", at)`, `$ptr(peekable, "peeked", at)`,
 `$ptr(r, "_0", at)`. The offset is the receiver's layout's own
-(`lent_offset`, src/lower/lent.rs): a `OnceCell`'s `inner.value` past
+(`lent_offset`, crates/rust-js-lower/src/lent.rs): a `OnceCell`'s `inner.value` past
 its `Option`'s tag or in its niche, a `LazyCell`'s state's `Init`
 payload, a `Peekable`'s item past both its `Option`s, a `Result`'s
 variant's field. In generic code, the offset every instance gives, and a
 refusal (#1478) where they differ. A `BinaryHeap`'s `PeekMut` is a handle
 on its buffer's first item, `$ptr(heap, 0)`. A raw pointer made of such a
-handle is the handle (`placed_by_lend`, src/lower/mir/rvalues.rs), not a
+handle is the handle (`placed_by_lend`, crates/rust-js-mir/src/rvalues.rs), not a
 handle on its `value`.
 
 These are new runtime handles on std's storage, so per #1458 their proof
@@ -1455,7 +1455,7 @@ Rust. A place that may hold a value or not there, or holds none after a
 move out with a pointer to it made, is refused: written over, it would
 change the value moved, and made, it would be another address. Only
 bodies that take such a pointer change: one owner, `rewritten_places`
-(src/lower/pointers.rs), says which writes, which the lowering writes and
+(crates/rust-js-lower/src/pointers.rs), says which writes, which the lowering writes and
 the crate's analysis of what changes in place reads, of the place and each
 object kept inside it, so a `Copy` value read out of one is copied (ADR
 0052). A raw pointer's pointee is counted already; an object it's inside,
@@ -1505,7 +1505,7 @@ call's made, as `get_or_init` and `peek` fill their slot as they're
 called, `$lentFrom(once, "value", 4, 0, once.value)`: the receiver's slot
 object as stored at the slot's offset in the receiver, `within` it where
 its object sits (an `Option` of a struct's past its tag), as `$storedValue`
-records a cell's. The catalog, `lends_object_of` (src/lower/lent.rs): a
+records a cell's. The catalog, `lends_object_of` (crates/rust-js-lower/src/lent.rs): a
 `OnceCell`'s value (`get`, `get_or_init`, `get_mut`), a `LazyCell`'s
 (`force`, `force_mut`), a `Peekable`'s peeked item (`peek`, `peek_mut`),
 a `Result`'s payload (`as_ref`, `as_mut`), its offset and `within` by its
@@ -1538,7 +1538,7 @@ raw pointer to `*r` asked its offset of the place `*r`, a deref, which says
 none: `$ptr(s, "n")`, whose address generic code then refused at run time
 ("the address of a field of a type its caller lays out"), #1479's program
 among them. Now a raw pointer to `*r` of a reference made once of a place
-takes that place's offset (`made_once_of`, src/lower/pointers/lending.rs):
+takes that place's offset (`made_once_of`, crates/rust-js-lower/src/pointers/lending.rs):
 `$ptr(s, "n", 4)`. #1479's program runs as native Rust does. Corpus case
 address_of_a_field_given_to_generic_code, mutation
 reborrowed-field-offset-unsaid.
@@ -1562,7 +1562,7 @@ address_of_a_field_given_to_generic_code, which found it, listed under
 Since then the pair is given its place's handle where it's made, in a crate
 that asks an address: a `&mut dyn` made of a `&mut` to a place JS can't
 share, a reference made once of the place through any reborrows, is
-`$withPlace(pair, $ptr(s, "n", 4))` (`dyn_with_place`, src/lower/mir/places.rs),
+`$withPlace(pair, $ptr(s, "n", 4))` (`dyn_with_place`, crates/rust-js-mir/src/places.rs),
 and `$ptr(pair, "value", 0)` is that handle, so #1519's program runs as
 native Rust does. The refusal stays for a pair made of a `&mut` traced to
 no place, a parameter's box or one read out of a field, naming #1527.
@@ -1577,7 +1577,7 @@ case address_of_a_field_given_to_generic_code's `&mut dyn` section, and the
 pointer made of it was refused (#1497's refusal). Now, in a crate that asks
 an address, an `Option` local of an unboxed payload a `&mut` to is a cell,
 whose `&mut` goes to `as_mut`, is a cell itself (`lent_by_option_as_mut`,
-src/lower/pointers.rs), and `as_mut` lends a handle on its place at the
+crates/rust-js-lower/src/pointers.rs), and `as_mut` lends a handle on its place at the
 `Some` payload's offset, `o.value == null ? undefined : $ptr(o, "value",
 4)` (`option_as_mut`, mir/dispatch/known_calls.rs): the same each call, so
 two pointers compare equal, a write through one is the `Option`'s, and its

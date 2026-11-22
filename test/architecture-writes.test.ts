@@ -19,7 +19,7 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 // each counted MIR's writes alone, so a `mut` parameter assigned once read
 // as never changing, and what was moved out of it read its new value (#99).
 test("a local written again is written_again's alone", () => {
-  const counting = files("src/lower").filter((file) => file.endsWith(".rs"))
+  const counting = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"))
     .flatMap((file) => read(file).split("\n").filter((line) => /writes\[[^\]]+\]\s*(>|>=)\s*[12]\b/.test(line)).map((line) => `${file}: ${line.trim()}`));
   expect(counting).toEqual([]);
 });
@@ -37,14 +37,14 @@ test("whether a local is written is body_queries' alone, a box's content its own
   const listed = [
     // `as` casts' known values: each `=` of the variable counted, beside
     // `changes`, whose count of every change it must equal, through a box too.
-    "src/lower/body_queries/whole_casts.rs: if let ExprKind::Assign { lhs, rhs } = expr.kind",
+    "crates/rust-js-lower/src/body_queries/whole_casts.rs: if let ExprKind::Assign { lhs, rhs } = expr.kind",
   ];
   const shapes = [
     /StatementKind::Assign\(assign\)[^{;]{0,120}?assign\.0\.projection\.is_empty\(\)\s*\{[^}]{0,200}?(\+= 1|contains_key\(&assign\.0\.local\))/g,
     /ExprKind::(?:Assign|AssignOp) \{ lhs[^}]*\}[^;]{0,240}?ExprKind::VarRef \{ id \}/g,
   ];
-  const found = files("src/lower")
-    .filter((file) => file.endsWith(".rs") && file !== "src/lower/body_queries/values.rs")
+  const found = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")]
+    .filter((file) => file.endsWith(".rs") && file !== "crates/rust-js-lower/src/body_queries/values.rs")
     .flatMap((file) => {
       const text = read(file);
       return shapes.flatMap((shape) =>
@@ -68,11 +68,11 @@ test("whether a tree sets a variable is js::Writes' alone", () => {
     // The first statement of a `catch` that sets the variable afresh.
     "crates/rust-js-program/src/js/applied/tried.rs: let first_set = caught.iter().position(|s| {",
     // Each mention of a temporary in a `switch` a case's assignment of it.
-    "src/lower/mir/tidy/switches.rs: .filter(",
+    "crates/rust-js-mir/src/tidy/switches.rs: .filter(",
     // The first mention of a variable in a `try`, its assignment.
-    "src/lower/mir/tidy/bindings.rs: StmtKind::Try(body, _) | StmtKind::TryCatch(body, _, _) => body.iter().find(|s| mentions(s) > 0).is_some_and(",
+    "crates/rust-js-mir/src/tidy/bindings.rs: StmtKind::Try(body, _) | StmtKind::TryCatch(body, _, _) => body.iter().find(|s| mentions(s) > 0).is_some_and(",
     // `let x; .. x = e;`'s first mention of `x`, the assignment it's declared at.
-    "src/lower/mir/tidy/bindings.rs: .find(|&j| js::mentions_of(&stmts[j..=j], name) > 0)",
+    "crates/rust-js-mir/src/tidy/bindings.rs: .find(|&j| js::mentions_of(&stmts[j..=j], name) > 0)",
   ];
   const searching = /(\.any\(|\.filter\(|\.position\(|\.find\(|\.take_while\(|\|=)[^;]{0,160}?StmtKind::Assign\([^;]{0,200}?ExprKind::Var\(\w+\)\s*if\s+(?:\*?\w+\s*==|\w+\.is\()/g;
   const found = compilerRustFiles()
@@ -96,7 +96,7 @@ test("which places a tree writes is js::Writes' alone", () => {
   const shapes = [
     // A statement that writes through a field or does something, which
     // may change what a decided test reads; a destructuring one counts.
-    "src/lower/mir/tidy/decided.rs: matches!(&s.kind, StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _) if !matches!(target.kind, ExprKind::Var(_)))",
+    "crates/rust-js-mir/src/tidy/decided.rs: matches!(&s.kind, StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _) if !matches!(target.kind, ExprKind::Var(_)))",
   ];
   const matching = /StmtKind::Assign\((\w+), _\) \| StmtKind::Compound\(_, \1, _\)/g;
   const found = compilerRustFiles()
@@ -114,6 +114,6 @@ test("which places a tree writes is js::Writes' alone", () => {
 // alone, so tidy reuses a binding it captures past it (#1168): the
 // dictionary's `extend` made its own beside it.
 test("a String's stepped extend is extend_text's alone", () => {
-  const making = files("src/lower").filter((file) => file.endsWith(".rs") && read(file).includes('"$extendText"'));
-  expect(making).toEqual(["src/lower/std_types/text.rs"]);
+  const making = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs") && read(file).includes('"$extendText"'));
+  expect(making).toEqual(["crates/rust-js-lower/src/std_types/text.rs"]);
 });

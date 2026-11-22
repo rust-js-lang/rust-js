@@ -1,11 +1,11 @@
-// Mutations of src/lower/aggregates.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/aggregates.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "accessor-field-a-function",
     breaks: "a `js::Accessor` field is its function, a method, not a getter, so `details.canceled` is the function and `{ ...details }` copies it (ADR 1164)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            if !super::recognition::is_js_accessor(self.tcx, adt.did()) {\n",
     replace: "            if true {\n",
     tests: ["test/js-accessor.test.ts", "-t", "a live own getter"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-error-value-thrown",
     breaks: "`let err: fmt::Result = Err(fmt::Error)` throws where it's made, where it's a value, its `is_ok()` `false` (#1011)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "                    _ if self.is_fmt_result(ty) => Expr::new_(Expr::helper(\"$FmtError\"), Vec::new()),\n",
     replace: "                    _ if self.is_fmt_result(ty) => Expr::call(Expr::helper(\"$fmtError\"), Vec::new()),\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_error_as_a_value.rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "untagged-null-made-a-string",
     breaks:
       "an untagged enum's `#[rust_js::null]` variant is made its name's string",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            && let Some(value) = super::untagged::unit_value(self.tcx, variant)\n",
     replace:
       "            && let Some(value) = super::untagged::unit_value(self.tcx, variant).map(|_| Expr::str(bindings::variant_name(self.tcx, variant)))\n",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     name: "replaced-node-default-made",
     breaks:
       "an update's base makes the default of the children it gives, `C::default()`, which needs a dictionary",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            let value = if replaced && self.is_node_param(field_ty) {",
     replace:
       "            let value = if false && replaced && self.is_node_param(field_ty) {",
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     name: "replaced-default-kept",
     breaks:
       "an update's base keeps the default of a field it gives, `tags: []`, so the base is kept, `base.id`",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "                if replaced && !value.has_effects() {",
     replace: "                if false && replaced && !value.has_effects() {",
     tests: ["test/jsx-props.test.ts", "-t", "and the component no dictionary"],
@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
     name: "untagged-constructor-tagged",
     breaks:
       "`.map(Src::Number)` makes tagged objects of an untagged enum's values",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        } else if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
     replace:
       "        } else if bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "otherwise-constructor-tagged",
     breaks:
       '`.map(Message::Other)` makes `{ type: "Other", _0: value }` of each, not the object',
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        } else if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
     replace: "        } else if self.untagged(ty).is_some() {\n",
     tests: [
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
     name: "fields-as-declared",
     breaks:
       "a struct literal's object lists its fields as declared, `{ info, log }` of `Logs { log, info }`, not as written",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        if variant.ctor_kind().is_some() || declared.len() < 2 {\n",
     replace: "        if true {\n",
     tests: [
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     name: "base-filled-first",
     breaks:
       'what `..Default::default()` fills is listed before what\'s written, `{ name: "", tags: [], size }`, and evaluated first',
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "                Some(written.iter().chain(filled).copied().collect::<Vec<usize>>())\n",
     replace:
       "                Some(filled.chain(written.iter()).copied().collect::<Vec<usize>>())\n",
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     name: "flattened-field-by-place",
     breaks:
       "a flattened field is found by its place in the object, which lists them as written: `Outer { inner, last, first }` spreads `last`",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        for prop in props {\n            match prop {\n                Prop::Field(name, value) if flattened(&name) => match value.kind {\n",
     replace:
       "        for (i, prop) in props.into_iter().enumerate() {\n            match prop {\n                Prop::Field(_, value) if { let _ = &flattened; bindings::is_flatten_field(self.tcx, ty, i) } => match value.kind {\n",
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
     name: "flattened-made-spread-literal",
     breaks:
       "a flattened struct made in place is spread, `{ ...{ line: 1 } }`, not its fields",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "                    js::ExprKind::Object(inner, inner_layout) => {\n",
     replace: "                    js::ExprKind::Object(inner, inner_layout) if false => {\n",
     tests: [
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
   {
     name: "adt-value-ordering-tag",
     breaks: "an `Ordering` MIR makes is its variant's name, not -1, 0 or 1",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        if let Some(n) = ordering_value(self.tcx, adt_def.did(), variant.name) {\n",
     replace:
       "        if false && let Some(n) = ordering_value(self.tcx, adt_def.did(), variant.name) {\n",
@@ -145,7 +145,7 @@ export const mutations: Mutation[] = [
   {
     name: "adt-value-fmt-ok-thrown",
     breaks: "a `fmt::Result`'s `Ok` from MIR is its error, as an `Err` is",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "                    true => Expr::js_undefined(),\n",
     replace: "                    true if false => Expr::js_undefined(),\n",
     tests: ["test/corpus.test.ts", "-t", "^(write_to_string|fmt_error_as_a_value).rs$"],
@@ -153,7 +153,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-unit-err-not-thrown",
     breaks: "an `io::Result<()>`'s `Err` is `undefined`, `Ok`",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: '                    _ => fields.into_iter().next().expect("an `io::Error`"),\n',
     replace: "                    _ => Expr::js_undefined(),\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
@@ -162,7 +162,7 @@ export const mutations: Mutation[] = [
     name: "pin-macro-helper-built",
     breaks:
       "what `pin!` pins, built, is a struct of std's rust-js refuses, not the value",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        if self.transparent(ty).is_some() {\n            let at",
     replace: "        if false {\n            let at",
     tests: ["test/snapshots.test.ts", "-t", "async"],
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
     name: "transparent-struct-built-of-marker",
     breaks:
       "a `#[repr(transparent)]` struct built of a marker and its field is the marker, `undefined`",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            let at = super::recognition::transparent_field(self.tcx, adt_def).unwrap_or(0);\n",
     replace: "            let at = 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
     name: "transparent-constructor-value-shaped",
     breaks:
       "a `#[repr(transparent)]` struct's constructor as a function makes an object of its field's shape, `{ pointer: p }` of a `NonNull`, where its value is its field",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        let value = if let Some(at) = transparent\n",
     replace:
       "        let value = if let Some(at) = transparent.filter(|_| false)\n",
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
     name: "registered-symbol-made-its-struct",
     breaks:
       "the registry's symbol made of a key, `SymbolFor(key)`, is its key's array, `[key]`, not `Symbol.for(key)`",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            return Ok(super::representation::symbol_for(key.clone()));\n",
     replace: "            return Ok(Expr::array(vec![key.clone()]));\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "Symbol.for its key"],
@@ -199,7 +199,7 @@ export const mutations: Mutation[] = [
     name: "registered-symbol-constructor-its-struct",
     breaks:
       "`.map(SymbolFor)` makes its key's array, `[value]`, not `Symbol.for(value)`",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            return Ok(super::representation::symbol_for_function());\n",
     replace: "            return Ok(Expr::array(Vec::new()));\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "Symbol.for its key"],
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
     name: "nullable-cell-made-undefined",
     breaks:
       "a nullable `Cell` field made `Cell::new(None)` is `{ value: undefined } ?? null`'s, its cell, not `null`",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        let cell = self.property_cell(Some(field), field_ty).is_some();\n",
     replace: "        let cell = !self.is_std_type(field_ty, StdItem::Cell) && self.property_cell(Some(field), field_ty).is_some();\n",
     tests: [
@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
     name: "optional-field-made-null-in-literal",
     breaks:
       "an optional nullable field made `None`, or `Cell::new(None)`, is `null` in its literal, not left out (ADR 0810)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        if form == NoneForm::Optional\n            && (given == Given::WrittenNone\n",
     replace: "        if false\n            && (given == Given::WrittenNone\n",
     tests: [
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     name: "optional-given-optional-coalesced",
     breaks:
       "an optional nullable field made of another's value is `{ name: abort.name ?? null }`, `null` where upstream's copy is `undefined` (ADR 0810, amended)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        let copied = given == Given::Optional && form == NoneForm::Optional;\n",
     replace: "        let copied = false;\n",
     tests: [
@@ -247,7 +247,7 @@ export const mutations: Mutation[] = [
     name: "optional-given-any-nullable",
     breaks:
       "a nullable field that isn't optional, made of an optional one's value, takes it as it is, `undefined` where it's absent, not `null` (ADR 0810, amended)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        let copied = given == Given::Optional && form == NoneForm::Optional;\n",
     replace: "        let copied = given == Given::Optional;\n",
     tests: [
@@ -260,7 +260,7 @@ export const mutations: Mutation[] = [
     name: "optional-written-none-unasked",
     breaks:
       "an optional nullable field's `Cell::new(None)` of what has drop glue, a temporary MIR makes, is `undefined ?? null` in its literal, not left out (ADR 0810, amended)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            && (given == Given::WrittenNone\n                || matches!(",
     replace: "            && (matches!(",
     tests: [
@@ -273,7 +273,7 @@ export const mutations: Mutation[] = [
     name: "optional-field-given-undefined",
     breaks:
       "an optional nullable field made with an `Option` that may be `None` is given it as it is, `{ label }`, there and `undefined` (ADR 0810, amended)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            if !matches!(form, NoneForm::Null | NoneForm::Optional) {\n",
     replace: "            if !matches!(form, NoneForm::Null) {\n",
     tests: [
@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
     name: "object-layout-ignored",
     breaks:
       "a struct literal written across lines, as rustfmt writes one too long for a line, is an object on one line, where React's is one field a line (ADR 0835)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            true => literal_layout(self.tcx, span),\n",
     replace: "            true => js::ObjectLayout::default(),\n",
     tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
   {
     name: "literal-comment-unseen",
     breaks: "a struct literal's comment between its braces isn't seen, and its object of one field is on one line where it's written across lines (ADR 0835, amended, rd665)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        commented,\n",
     replace: "        commented: commented && false,\n",
     tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
@@ -303,7 +303,7 @@ export const mutations: Mutation[] = [
     name: "const-object-layout-ignored",
     breaks:
       "a `const`'s struct literal written across lines is an object on one line, as rustc's value is, where one written in place is across lines (ADR 0835)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        *layout = js::ObjectLayout {\n            kept,\n            ..literal_layout(tcx, body.value.span)\n        };\n",
     replace: "",
     tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
@@ -312,7 +312,7 @@ export const mutations: Mutation[] = [
     name: "object-layout-of-a-tuple-variant",
     breaks:
       "a tuple variant's object is across lines where what it's given is, `Placed(if a {`, which has no literal of fields to write so (ADR 0835)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        adt.variant(variant_index).ctor_kind().is_none()\n",
     replace: "        true\n",
     tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
@@ -321,7 +321,7 @@ export const mutations: Mutation[] = [
     name: "commented-field-trailing-unread",
     breaks:
       "a comment after a field's value on its line, `v: Cell::new(None), // why`, isn't the field's, so its `None` is left out with it",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "                .map(|tail| tail.find('\\n').map_or(next, |n| value.end + n));\n",
     replace: "                .map(|_| value.end);\n",
     tests: [
@@ -334,7 +334,7 @@ export const mutations: Mutation[] = [
     name: "nullable-refcell-made-undefined",
     breaks:
       "a nullable plain `RefCell` field's `None` is left out where it's made, `{ tag }`, where upstream's `child: null` is what React's JS tests `=== null`",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        let cell = self.property_cell(Some(field), field_ty).is_some();\n",
     replace: "        let cell = self.is_std_type(field_ty, StdItem::Cell);\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "no body borrows"],
@@ -343,7 +343,7 @@ export const mutations: Mutation[] = [
     name: "object-literal-without-methods",
     breaks:
       "an object of methods' literal holds its fields alone, `{ queries: 0 }`, so `scope.containsNode(..)` isn't a function (ADR 0943)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            for method in super::classes::own_methods(self.tcx, adt_def.did()) {\n",
     replace:
       "            for method in super::classes::own_methods(self.tcx, adt_def.did()).into_iter().skip(1) {\n",
@@ -357,7 +357,7 @@ export const mutations: Mutation[] = [
     name: "symbol-for-value-an-arrow",
     breaks:
       "`js::SymbolFor` as a value is an arrow, `(value) => Symbol.for(value)`, not `Symbol.for`, React's `const symbolFor = Symbol.for` (ADR 0964)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        if super::recognition::is_symbol_for_constructor(self.tcx, def_id) {\n",
     replace: "        if false {\n",
     tests: [
@@ -370,7 +370,7 @@ export const mutations: Mutation[] = [
     name: "cell-fields-unknown",
     breaks:
       "no field is known to hold a cell where its struct literal is made, so `destroy: undefined` is left out, `{}`",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "                kept.extend(cells);\n",
     replace: "",
     tests: [
@@ -383,7 +383,7 @@ export const mutations: Mutation[] = [
     name: "commented-none-left-out",
     breaks:
       "a `None` field a comment is written on is left out, and its comment with it, `v: undefined, // why` gone",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "                kept = (self.commented_fields(&adt_def, variant_index, span).into_iter())\n",
     replace: "                kept = (self.commented_fields(&adt_def, variant_index, span).into_iter().filter(|_| false))\n",
     tests: [
@@ -396,7 +396,7 @@ export const mutations: Mutation[] = [
     name: "commented-optional-none-kept",
     breaks:
       "an optional field's `None` a comment is written after on its line keeps its key, `owner: undefined, // why`, so `js::has(&info, \"owner\")` is `true` for a comment's sake (ADR 0280, amended, 2026-11-03)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "                        !(variant.fields.iter().nth(i)).is_some_and(|field| bindings::is_optional(self.tcx, field))\n",
     replace: "                        true\n",
     tests: ["test/lowering-comment-fields.test.ts", "-t", "a comment after an optional field's None changes no key"],
@@ -405,7 +405,7 @@ export const mutations: Mutation[] = [
     name: "field-docs-of-any-literal",
     breaks:
       "a struct made in two places prints its field's doc comment at each literal, a copy of the declaration's in each (ADR 0444, amended)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "                if adt_def.is_struct() && self.krate.struct_literals.get(&adt_def.did()) == Some(&1) {\n",
     replace: "                if adt_def.is_struct() {\n",
     tests: [
@@ -418,7 +418,7 @@ export const mutations: Mutation[] = [
     name: "field-docs-of-std",
     breaks:
       "a range, `a..b`, std's `Range` literal, prints std's `/** The lower bound of the range (inclusive). */` before its `start` (ADR 0444, amended)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            && adt.did().is_local()\n",
     replace: "",
     tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
@@ -427,7 +427,7 @@ export const mutations: Mutation[] = [
     name: "field-docs-left-out",
     breaks:
       "React's prototype object's `isPersistent` is printed without upstream's `/** Checks if this event should be released back into the pool. */` its struct's field documents (ADR 0444, amended)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            let fields = js::WrittenFields { docs, written };\n",
     replace: "            let fields = js::WrittenFields { docs: { let _ = docs; Vec::new() }, written };\n",
     tests: [
@@ -439,7 +439,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-starts-unwritten",
     breaks: "an object's field is placed where its JS value is, not where its literal writes it: the comment before `create_instance: Box::new({ .. })` is before `return {`, and the blank lines before it and `isPrimaryRenderer` are lost (rd296)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            let fields = js::WrittenFields { docs, written };\n",
     replace: "            let fields = js::WrittenFields { docs, written: { let _ = written; Vec::new() } };\n",
     tests: ["test/corpus.test.ts", "-t", "^object_field_comments.rs$"],
@@ -448,7 +448,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-symbol-default-base-named",
     breaks: "an update of a derived `Default`'s base names a field a symbol names by text",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            Shape::Object(fields) if fields.iter().all(|(key, _)| key.symbol_item().is_none()) => Some(",
     replace: "            Shape::Object(fields) => Some(",
     tests: [
@@ -461,7 +461,7 @@ export const mutations: Mutation[] = [
     name: "value-field-default-undefined",
     breaks:
       "a derived `Default` of a nullable field of what may be `undefined` is `undefined`, its `Some` (rd645)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            Some((NoneForm::Value, _)) => Expr::null(),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
@@ -470,7 +470,7 @@ export const mutations: Mutation[] = [
     name: "value-field-key-left-out",
     breaks:
       "a literal's `undefined` of a nullable field of what may be `undefined`, its `Some`, is left out, `{ name: \"some\" }` (rd645)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "                kept.extend(values);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
@@ -479,7 +479,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-tag-kept",
     breaks: "a keyed enum's variant is made with a `TAG` too (#504)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        let tag = (adt_def.is_enum() && !keyed).then(|| {\n",
     replace: "        let tag = (adt_def.is_enum()).then(|| {\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "intersection"],
@@ -487,7 +487,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-keys-dropped",
     breaks: "a keyed enum's variant holding `None` is made without its key, so it isn't told (#504)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "                if keyed {\n                    kept.extend(",
     replace: "                if false {\n                    kept.extend(",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_const.rs$"],
@@ -495,7 +495,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-inner-kept-lost",
     breaks: "a keyed enum's variant made in its parent, flattened, leaves out its `undefined` keys (#504)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "                        layout.kept.extend(inner_layout.kept);\n",
     replace: "                        drop(inner_layout);\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_const.rs$"],
@@ -503,7 +503,7 @@ export const mutations: Mutation[] = [
   {
     name: "const-object-kept-lost",
     breaks: "a module's constant of a keyed enum's variant leaves out its `undefined` keys (#504)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "        let kept = std::mem::take(&mut layout.kept);\n",
     replace: "        let kept = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_const.rs$"],
@@ -512,7 +512,7 @@ export const mutations: Mutation[] = [
     name: "nullable-field-default-undefined",
     breaks:
       "a derived `Default` of a nullable field leaves its `None` `undefined`, which a `=== null` test reads as a `Some` (rd647)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "            Some((form @ (NoneForm::Null | NoneForm::Optional), field)) => {\n",
     replace: "            Some((form @ (NoneForm::Null | NoneForm::Optional), field)) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
@@ -520,7 +520,7 @@ export const mutations: Mutation[] = [
   {
     name: "present-key-left-out",
     breaks: "a `#[rust_js::present]` field's `None` is left out where its struct is made, `{ value: 3 }`, where its key is to be written, `point: undefined` (ADR 1161, #1845)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "                kept.extend(present);\n",
     replace: "                let _ = present;\n",
     tests: ["test/present-slots.test.ts", "-t", "a present field"],
@@ -529,7 +529,7 @@ export const mutations: Mutation[] = [
     name: "placed-part-made-bare",
     breaks:
       "a tuple struct's field held in a place of its own is made as the value, not a place, whose own steps throw (#2255)",
-    file: "src/lower/aggregates.rs",
+    file: "crates/rust-js-lower/src/aggregates.rs",
     find: "                    .map(|(i, value)| self.holding_part(value, ty, i, tys[i]))\n",
     replace: "                    .map(|(_, value)| value)\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],

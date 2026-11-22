@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/tidy/decisions/defaults.rs (ADR 0364).
+// Mutations of crates/rust-js-mir/src/tidy/decisions/defaults.rs (ADR 0364).
 import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "default-value-of-a-call",
     breaks:
       "a value a block gives last that's a call's is given first, the call made first",
-    file: "src/lower/mir/tidy/decisions/defaults.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "            && given_first(value)\n",
     replace: "",
     tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "default-value-read-before",
     breaks: "a value read in the block before its end is given first",
-    file: "src/lower/mir/tidy/decisions/defaults.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "            && js::mentions_of(rest, x) == given\n",
     replace: "",
     tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     name: "default-value-set-not-left",
     breaks:
       "a value the block sets and goes on from is given first, then set over",
-    file: "src/lower/mir/tidy/decisions/defaults.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "                    if !breaks || value.mentions_name(self.x) {\n",
     replace: "                    if false && !breaks || value.mentions_name(self.x) {\n",
     tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     name: "default-value-past-a-bare-break",
     breaks:
       "a value some arms give is given first where an arm that does nothing, `_ => {}`, leaves the block without one: React's `invokeCallback = true` for every object (issue #219)",
-    file: "src/lower/mir/tidy/decisions/defaults.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "                    if !k.checked_sub(1).is_some_and(|p| gives(&stmts[p])) {\n",
     replace: "                    if false {\n",
     tests: [
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
     name: "default-value-past-another-jump",
     breaks:
       "a flag a loop's `break` or `continue` leaves the block with is given first, and read after it given",
-    file: "src/lower/mir/tidy/decisions/defaults.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "                    if !self.local && !inside.holds(label.as_ref(), is_continue) {\n",
     replace: "                    if false {\n",
     tests: [
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     name: "default-value-past-a-return",
     breaks:
       "a flag a closure captures is given first where another arm returns from the closure, or panics in a `catch_unwind`",
-    file: "src/lower/mir/tidy/decisions/defaults.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "                StmtKind::Return(_) | StmtKind::Throw(_) if !self.local => return None,\n",
     replace: "                StmtKind::Return(_) | StmtKind::Throw(_) => 0,\n",
     tests: [
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     name: "default-value-over-a-call",
     breaks:
       "a value is given first over a call that reads it, through a closure, before the block gives it",
-    file: "src/lower/mir/tidy/decisions/defaults.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "                _ if self.local || stmt.only_makes_values() => 0,\n",
     replace: "                _ => 0,\n",
     tests: [
@@ -84,7 +84,7 @@ export const mutations: Mutation[] = [
     name: "default-value-over-a-guard",
     breaks:
       "a value is given first over a guard whose call reads it, through a closure",
-    file: "src/lower/mir/tidy/decisions/defaults.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "        let quiet = |e: &Expr| self.local || !e.may_throw();\n",
     replace: "        let quiet = |_: &Expr| true;\n",
     tests: [
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
     name: "default-value-local-anywhere",
     breaks:
       "a variable declared before the block is taken as seen by nothing, though a closure made since reads it",
-    file: "src/lower/mir/tidy/decisions/defaults.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "        .is_some_and(|at| js::mentions_of(&before[at + 1..], x) == 0)\n",
     replace: "        .is_some()\n",
     tests: [
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     name: "default-value-never-local",
     breaks:
       "a `let`'s value, which nothing sees before the block, isn't given first: `let v = if let .. { q } else { 0 }` keeps its block",
-    file: "src/lower/mir/tidy/decisions/defaults.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "                local: declared_unread(&stmts[..i], x),\n",
     replace: "                local: false,\n",
     tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
     name: "empty-array-not-given-first",
     breaks:
       "a `let` of a `match` whose arms' failures share a last `_ => Vec::new()` keeps MIR's labeled block, `bb17: { .. break bb17; .. entries = []; }`, as the playground's `prepare` did (#556)",
-    file: "src/lower/mir/tidy/decisions/defaults.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "    value.is_constant() || matches!(&value.kind, ExprKind::Array(items, ..) if items.is_empty())\n",
     replace: "    value.is_constant()\n",
     tests: ["test/corpus.test.ts", "-t", "^let_match_empty_default.rs$"],
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
     name: "default-copied-into-no-branch",
     breaks:
       "a `match`'s `_ => fallback`, a variable, keeps MIR's labeled block, `bb10: { .. break bb10; .. n = fallback; }`, not the assignment in each branch that fails to it (#567)",
-    file: "src/lower/mir/tidy/decisions/defaults.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "        } else if copied_into_branches(stmts, i) {\n",
     replace: "        } else if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^let_match_variable_default.rs$"],

@@ -17,18 +17,18 @@ const walk = (directory: string) => {
     else if (path.endsWith(".rs")) files.push(path);
   }
 };
-walk(join(root, "src/lower"));
-files.push(join(root, "src/lower.rs"));
-const sources = new Map(files.map(file => [relative(root, file).replace("src/lower/", ""), readFileSync(file, "utf8")]));
+for (const dir of ["crates/rust-js-lower/src", "crates/rust-js-mir/src", "src/pipeline"]) walk(join(root, dir));
+files.push(join(root, "src/pipeline.rs"));
+const sources = new Map(files.map(file => [relative(root, file).replace("crates/rust-js-lower/src/", ""), readFileSync(file, "utf8")]));
 const names = [...sources.keys()].sort();
 const count = (text: string, pattern: RegExp) => (text.match(pattern) ?? []).length;
 const section = (title: string, lines: string[]) => console.log(`\n## ${title}\n${lines.join("\n") || "(none)"}`);
 
 section(
   "Largest modules, in lines",
-  fileSizes(["src/lower", "src/lower.rs"])
+  fileSizes(["crates/rust-js-lower/src", "crates/rust-js-mir/src", "src/pipeline", "src/pipeline.rs"])
     .slice(0, 15)
-    .map(([file, lines]) => `${String(lines).padStart(5)}  ${file.replace("src/lower/", "")}`),
+    .map(([file, lines]) => `${String(lines).padStart(5)}  ${file.replace("crates/rust-js-lower/src/", "")}`),
 );
 
 // Each function's state is grouped by concern, and each group has an owner.

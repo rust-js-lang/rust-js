@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/scopes.rs (ADR 1043).
+// Mutations of crates/rust-js-mir/src/scopes.rs (ADR 1043).
 import type { Mutation } from "../../../mutations";
 
 const scopes = ["test/corpus.test.ts", "-t", "scope_struct"];
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-method-copy-unnested",
     breaks: "a copy of a function its callers need declares its scope's methods' own JS, not the copies its calls of them need, `put(item)` for `put($some(item))` (#500)",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "                    copies.insert(method, copy);",
     replace: "                    copies.insert(method, copy.and(None));",
     tests: scopes,
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-functions-before-their-value",
     breaks: "a scope struct's methods' functions are declared before its value's `let`, not after it",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "                list.splice(last + 1..last + 1, std::mem::take(&mut functions));",
     replace: "                list.splice(0..0, std::mem::take(&mut functions));",
     tests: scopes,
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-function-takes-self",
     breaks: "a scope struct's method's function takes the value it closes over as a parameter, which no call gives it",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "                params.remove(0);\n",
     replace: "",
     tests: scopes,
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-function-names-its-own",
     breaks: "a scope struct's method's function names its variables apart from none of its function's, a `counter` of its own hiding the one it closes over",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "            names: self.names.borrow().clone(),\n",
     replace: "            names: Default::default(),\n",
     tests: scopes,
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-fields-of-a-value-read-whole",
     breaks: "a scope struct's value its JS reads whole, `$fieldCell(tally, \"n\")`, is made variables of its fields, the object it reads gone",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "    if whole || rebound || reads != fields_read + aliases || declared != holders.len() {",
     replace: "    if rebound || declared != holders.len() {",
     tests: scopes,
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-field-written-a-const",
     breaks: "a scope struct's field its functions write is a `const`, which writing throws of",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "                    match (written.contains(&key), e) {",
     replace: "                    match (false, e) {",
     tests: scopes,
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-field-handle-unwritten",
     breaks: "a scope struct's field a handle writes, `&mut counter.n`, is a `const`, though `js::Writes::places` says it's written",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "            js::ExprKind::Member(of, key) if held(&of) => _ = written.insert(key),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_kept.rs$"],
@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-field-param-assigned",
     breaks: "a scope struct's field a parameter gives is that parameter where the function assigns it after, `step += 1`",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "if param_names.contains(&p) && !assigned(p) && !written.contai",
     replace: "if param_names.contains(&p) && !written.contai",
     tests: scopes,
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-field-param-written",
     breaks: "a scope struct's field a parameter gives and its functions write is that parameter, which the function reads after, changed",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "                js::ExprKind::Var(p)\n                    if param_names.contains(&p) && !assigned(p) && !written.contains(&key) && !refused.contains(p) =>\n                {",
     replace: "                js::ExprKind::Var(p)\n                    if param_names.contains(&p) && !assigned(p) =>\n                {",
     tests: scopes,
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-fields-named-unapart",
     breaks: "a scope struct's field's variable is named as its field, not spelled by preparation, where the function has a variable of that name, `parts`: two variables of one spelling",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "                        _ => js::Name::declared(key.clone()).spelled_later(k),\n",
     replace: "                        _ => js::Name::declared(key.clone()),\n",
     tests: scopes,
@@ -90,15 +90,15 @@ export const mutations: Mutation[] = [
   {
     name: "scope-field-param-read-where-hidden",
     breaks: "a scope struct's field a parameter of its name gives is read as that parameter in a method that declares its own of that spelling first, which would take the read (`js::scopes::not_read_as_themselves`, ADR 1150)",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "        if not.is_empty() {\n",
     replace: "        if true {\n",
-    unitTests: "lower::mir::scopes::tests::a_parameter_a_method_s_own_would_take_is_no_field",
+    unitTests: "scopes::tests::a_parameter_a_method_s_own_would_take_is_no_field",
   },
   {
     name: "scope-field-of-a-local-copied",
     breaks: "a scope struct's field made of a local of its name, React's Flight server's `{ model, reader, id }`, is a copy of it, `const model$1 = model`, not that local (a holder of its value, `Name::derived`, which preparation folds)",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "                        Some(js::ExprKind::Var(v)) if v.is(&key) => {\n",
     replace: "                        Some(js::ExprKind::Var(v)) if false && v.is(&key) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^scope_struct_fields_of_locals.rs$"],
@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-field-of-a-reassigned-local",
     breaks: "a scope struct's field made of a local the program assigns again after its move, `count = Cell::new(100)`, is that local, so the new value overwrites the field's: a wrong answer (#2036)",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "                    state.locals.writes[local] == 1 && state.locals.reads[local] == 1 && !state.locals.borrowed[local]\n",
     replace: "                    state.locals.reads[local] == 1 && !state.locals.borrowed[local]\n",
     tests: ["test/corpus.test.ts", "-t", "^scope_struct_field_of_a_reassigned_local.rs$"],
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-field-reads-kept",
     breaks: "a read of a scope struct's field stays its property's, of the object its variables replace",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "            *e = Expr::var(&names[key]);",
     replace: "            let _ = &names;",
     tests: scopes,
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
     name: "scope-copies-kept",
     breaks:
       "a copy of a scope's field the program names as the field is kept, `const controller = controller$1;`, its variable named apart, where upstream's processReply reads `replyLifetimeController` (ADR 1043, amended)",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "    js::each_block_mut(out, &mut |list| copies_read_through(list, &held));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^scope_field_copies.rs$"],
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
     name: "scope-copies-past-calls",
     breaks:
       "a copy of a scope's field read after a call that sets the field again, `bump(); log.push(`was ${at}`)`, is read through the field, `99` where Rust's copy was `5` (ADR 1043, amended)",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "                self.stopped |= e.has_effects();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^scope_field_copies.rs$"],
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     name: "scope-copies-past-writes",
     breaks:
       "a copy of a scope's field read after a statement whose order isn't followed, a write of the field, is read through it (ADR 1043, amended)",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "                _ => self.stopped = true,\n",
     replace: "                _ => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^scope_field_copies.rs$"],
@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
     name: "scope-copies-set-unfolded",
     breaks:
       "a field set to a copy the program names as it, `const controller = base * 3; controller$1 = controller;`, is kept apart, where upstream's is `replyLifetimeController = new AbortController();` (ADR 1043, amended)",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "                Some((a.clone(), target.clone(), Some(e.clone())))\n",
     replace: "                None\n",
     tests: ["test/corpus.test.ts", "-t", "^scope_field_copies.rs$"],
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
     name: "scope-copies-branches-in-turn",
     breaks:
       "an `if`'s branches are walked one after the other, its `else` after what its `then` does, so `if (controller != null) { controller.abort(..) }`'s copy is kept (ADR 1043, amended)",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "                    (self.seen, self.stopped) = (seen, stopped);\n",
     replace: "                    self.stopped = stopped;\n",
     tests: ["test/corpus.test.ts", "-t", "^scope_field_copies.rs$"],
@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
     name: "scope-copies-after-branch-effects",
     breaks:
       "what's after an `if` whose branch calls what sets the field, `if (again) { bump(); } log.push(`maybe ${at}`)`, is taken for before it, `99` where Rust's copy was `5` (ADR 1043, amended)",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "                    self.stopped |= then.1;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^scope_field_copies.rs$"],
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     name: "scope-copies-objects-unordered",
     breaks:
       "an object's fields aren't read in order, so `listen({ signal: controller + 1 })` keeps the copy, where upstream's `{signal: replyLifetimeController.signal}` reads the variable (ADR 1043, amended)",
-    file: "src/lower/mir/scopes.rs",
+    file: "crates/rust-js-mir/src/scopes.rs",
     find: "                    .all(|p| matches!(p, js::Prop::Field(..) | js::Prop::Spread(_))) =>\n",
     replace: "                    .all(|_| false) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^scope_field_copies.rs$"],

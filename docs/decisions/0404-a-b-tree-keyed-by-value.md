@@ -229,7 +229,7 @@ Rust's behaviour is kept.
   `$ordTreeMap(cmp)` and `$ordTreeSet(cmp)`: `$OrdTree`, crates/rust-js-program/src/runtime/ord_tree.js,
   a port of alloc/src/collections/btree (rustc 1.99). Its nodes hold up to
   eleven entries (B = 6), each searched from its first, `cmp(given, held)`.
-  The owner is `tree_of_nodes` (src/lower/std_types/map.rs). A quiet and
+  The owner is `tree_of_nodes` (crates/rust-js-lower/src/std_types/map.rs). A quiet and
   total order keeps `$ordMap`, a sorted array, now halving only, which no
   one sees (ADR 0262, none).
 - **Its operations are std's, node for node:**

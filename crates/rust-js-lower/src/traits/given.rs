@@ -1,0 +1,629 @@
+//! What a function was given: a trait's default body copied into an impl,
+//! in the impl's terms, and its dictionaries, facts and location.
+
+use super::*;
+use crate::temporary_names::{Base, Role};
+use rustc_middle::ty::consts::ConstExt as _;
+
+/// What a copied default body replaced of the given of the item it's
+/// lowered in, its evidence, arguments, const parameters and caller's
+/// location, and how many facts it had, to put back when it's done.
+pub(crate) struct GivenScope<'tcx> {
+    evidence: Vec<(ty::TraitRef<'tcx>, Expr)>,
+    self_args: Option<ty::GenericArgsRef<'tcx>>,
+    const_params: Vec<(u32, Expr)>,
+    caller_location: Option<(DefId, Expr)>,
+    facts: usize,
+}
+
+/// What a copied default body is given (ADRs 0049, 0135, 0427, 0466): the
+/// impl's evidence and arguments for its trait's parameters, its const
+/// parameters, the location its caller gives, and the facts of its own
+/// type parameters, after the item's.
+pub struct DefaultGiven<'tcx> {
+    pub(crate) evidence: Vec<(ty::TraitRef<'tcx>, Expr)>,
+    pub(crate) self_args: ty::GenericArgsRef<'tcx>,
+    pub(crate) const_params: Vec<(u32, Expr)>,
+    pub(crate) caller_location: Option<(DefId, Expr)>,
+    pub(crate) type_facts: Vec<(Ty<'tcx>, TypeFact, Expr)>,
+}
+
+/// The arguments a trait's default, `default`, is copied into the impl
+/// `imp` with (ADR 0049), of `args`, its trait's parameters the impl's
+/// arguments for them: its own parameters, each the parameter itself,
+/// numbered after the impl's, as in the impl's terms none of them is one of
+/// the impl's numbered as it is, `U` of `fn counted_with<U>` and the impl's
+/// `V` of `Paired<I, V>` (#804). The one mapping of a default into an
+/// impl's terms: its body's, its slots' (`slot_bounds`), its drops'.
+pub(crate) fn default_args<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    imp: DefId,
+    default: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> ty::GenericArgsRef<'tcx> {
+    let generics = tcx.generics_of(default);
+    let (parent, first) = (generics.parent_count, tcx.generics_of(imp).count());
+    tcx.mk_args_from_iter(args.iter().enumerate().map(|(at, arg)| {
+        if at < parent {
+            return arg;
+        }
+        let param = generics.param_at(at, tcx);
+        let index = (first + at - parent) as u32;
+        match param.kind {
+            ty::GenericParamDefKind::Lifetime => arg,
+            ty::GenericParamDefKind::Type { .. } => Ty::new_param(tcx, index, param.name).into(),
+            ty::GenericParamDefKind::Const { .. } => {
+                ty::Const::new_param(tcx, ty::ParamConst::new(index, param.name)).into()
+            }
+        }
+    }))
+}
+
+/// `default_args`' inverse: of a type parameter of `default` copied into
+/// an impl with `args` (`default_args`' own), `index` in the impl's terms,
+/// its index in the default's own generics, `T` 1 of `fn f<T, U>` after its
+/// trait's `Self`, where the impl's terms number it after the impl's own,
+/// `T` 2 of `impl<A, B>` (#2273). `None` of one of the impl's own, which
+/// the default has none of.
+pub(crate) fn default_param<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    default: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+    index: u32,
+) -> Option<u32> {
+    let parent = tcx.generics_of(default).parent_count;
+    (parent..args.len())
+        .find(|&at| args[at].as_type().and_then(crate::generic_facts::type_parameter_of) == Some(index))
+        .map(|at| at as u32)
+}
+
+/// Of an impl's method, `method`, its own type parameter `index` as the
+/// trait's method it implements numbers it, after the trait's parameters
+/// where the impl's numbers it after the impl's: `I` 2 of `fn via<U, I>` in
+/// `impl Via for Y` as `Via::via`'s, 2 too, and in `impl<A> Via for W<A>`,
+/// 3 of the impl's, 2 of the trait's (#2276). `None` of one of the impl's
+/// own parameters, or of a method that implements no trait's.
+pub(crate) fn trait_method_param(tcx: TyCtxt<'_>, method: DefId, index: u32) -> Option<(DefId, u32)> {
+    let imp = tcx.trait_impl_of_assoc(method)?;
+    let item = tcx.associated_item(method).trait_item_def_id()?;
+    let first = tcx.generics_of(imp).count() as u32;
+    let parent = tcx.generics_of(item).parent_count as u32;
+    index.checked_sub(first).map(|own| (item, parent + own))
+}
+
+/// A type parameter of the body being lowered, as the function that
+/// declares it numbers it (`FnCx::declared_param`): the one key of each
+/// per-parameter fact the crate's analysis found, `(owner, index)`.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum Declared {
+    /// The function's own, or its trait's `Self`, by its index there.
+    Own(DefId, u32),
+    /// In a trait's default copied into an impl, one of the impl's own
+    /// parameters, which the default has none of: the impl's type holds it,
+    /// as its trait's `Self` (ADR 0551), and no fact of the default's is of it.
+    Impls,
+}
+
+/// Where a trait's default, `default`, copied into the impl `imp` with
+/// `args` (`default_args`), is lowered, in the impl's terms, as its body is
+/// (#803), and its types there are known (ADR 0107): the impl's bounds, and
+/// the default's own where clause in those terms, `T::Item: IntoIterator`
+/// of its `Self::Item: IntoIterator`, its `Self: Sized` the impl's `T:
+/// Sized` (ADR 0541), and its own parameters', numbered after the impl's
+/// (#804). Not its trait's own `Self: Trait`, which would be chosen over the
+/// impl that meets it. The one environment of a copied default: its
+/// lowering's, and the analysis's of what it asks (`type_facts`).
+pub(crate) fn default_typing_env<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    imp: DefId,
+    default: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> ty::TypingEnv<'tcx> {
+    let own = ty::TypingEnv::post_analysis(tcx, default);
+    let impl_env = ty::TypingEnv::post_analysis(tcx, imp);
+    // Each as the impl's bounds say it is, `I::Item` of a `Wrapper<I>`'s
+    // `Self::Item`.
+    let in_impl = (tcx.clauses_of(default).clauses.iter()).map(|&(clause, _)| {
+        let clause = ty::EarlyBinder::bind(tcx, clause)
+            .instantiate(tcx, args)
+            .skip_normalization();
+        (tcx.try_normalize_erasing_regions(impl_env, ty::Unnormalized::new_wip(clause))).unwrap_or(clause)
+    });
+    let in_impl = ty::elaborate::elaborate(tcx, in_impl);
+    let mut seen = IndexSet::default();
+    let bounds = (impl_env.param_env.caller_bounds())
+        .chain(in_impl)
+        .filter(|&clause| seen.insert(clause));
+    let param_env = ty::ParamEnv::new(tcx, bounds);
+    ty::TypingEnv::new(param_env, own.typing_mode())
+}
+
+/// `mir`, a trait's default's or a closure's in it, in the terms of the
+/// impl it's copied into, `args` of them (`default_args`), each type
+/// normalized where `typing_env` says what it is,
+/// `<Enumerated<P> as Pull>::Out` its impl's `(usize, P::Out)` (#803).
+pub fn default_mir<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    mir: &crate::analysis::Mir<'tcx>,
+    args: ty::GenericArgsRef<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+) -> crate::analysis::Mir<'tcx> {
+    use rustc_middle::ty::TypeFoldable;
+    let mut normal = ty::BottomUpFolder {
+        tcx,
+        ty_op: |t: Ty<'tcx>| match t.has_aliases() && !t.has_escaping_bound_vars() {
+            true => (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(t))).unwrap_or(t),
+            false => t,
+        },
+        lt_op: |r| r,
+        ct_op: |c| c,
+    };
+    let mut made = mir.instantiated(tcx, args);
+    made.body = made.body.fold_with(&mut normal);
+    made.promoted = made
+        .promoted
+        .into_iter()
+        .map(|body| body.fold_with(&mut normal))
+        .collect();
+    made
+}
+
+/// The arguments `body`, a copied default or a closure made in it, is read
+/// in the impl's terms with: the default's (`default_args`), and a
+/// closure's own generics past them, its kind, signature and captures, as
+/// they are, which its MIR and THIR may name, `minmax_by`'s `|_| ()` in
+/// itertools (#828).
+pub fn default_body_args<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    args: ty::GenericArgsRef<'tcx>,
+    body: DefId,
+) -> ty::GenericArgsRef<'tcx> {
+    let own = ty::GenericArgs::identity_for_item(tcx, body);
+    tcx.mk_args_from_iter(args.iter().chain(own.iter().skip(args.len())))
+}
+
+/// Whether `clause`, a trait's bound or an associated type's equality,
+/// names only type and const parameters `named` says of, by index: of a
+/// default's, its trait's alone, the impl's in its terms, or its own alone
+/// (`default_args`). Any other clause, none.
+pub(crate) fn names_only<'tcx>(clause: ty::Clause<'tcx>, named: impl Fn(u32) -> bool) -> bool {
+    let parts: Vec<ty::GenericArg<'tcx>> = match clause.kind().skip_binder() {
+        ty::ClauseKind::Trait(bound) => bound.trait_ref.args.to_vec(),
+        ty::ClauseKind::Projection(equal) => (equal.projection_term.args.iter())
+            .chain(equal.term.as_type().map(Into::into))
+            .collect(),
+        _ => return false,
+    };
+    (parts.iter().flat_map(|part| part.walk())).all(|part| match part.kind() {
+        ty::GenericArgKind::Type(t) => !matches!(t.kind(), ty::Param(p) if !named(p.index)),
+        ty::GenericArgKind::Const(c) => !matches!(c.kind(), ty::ConstKind::Param(p) if !named(p.index)),
+        ty::GenericArgKind::Lifetime(_) => true,
+    })
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Enter a trait's default body copied into an impl (ADR 0049): it's
+    /// given `evidence`, and the impl's arguments for its trait's
+    /// parameters, `self_args`, which resolve in the typing environment
+    /// of the item it's lowered in, the impl's.
+    pub(crate) fn enter_default(&mut self, given: DefaultGiven<'tcx>) -> GivenScope<'tcx> {
+        let DefaultGiven {
+            evidence,
+            self_args,
+            const_params,
+            caller_location,
+            type_facts,
+        } = given;
+        let facts = self.given.type_facts.len();
+        self.given.type_facts.extend(type_facts);
+        GivenScope {
+            evidence: std::mem::replace(&mut self.given.evidence, evidence),
+            self_args: self.given.self_args.replace(self_args),
+            const_params: std::mem::replace(&mut self.given.const_params, const_params),
+            caller_location: std::mem::replace(&mut self.given.caller_location, caller_location),
+            facts,
+        }
+    }
+
+    /// Leave the copied default `enter_default` entered.
+    pub(crate) fn leave_default(&mut self, scope: GivenScope<'tcx>) {
+        self.given.evidence = scope.evidence;
+        self.given.self_args = scope.self_args;
+        self.given.const_params = scope.const_params;
+        self.given.caller_location = scope.caller_location;
+        self.given.type_facts.truncate(scope.facts);
+    }
+
+    /// Lower what's given nothing of this item's, a recursive type's own
+    /// function of its module (`recursive_fns`): what it's given, set
+    /// aside, which `restore_given` gives back.
+    pub(crate) fn set_given_aside(&mut self) -> super::super::Given<'tcx> {
+        std::mem::take(&mut self.given)
+    }
+
+    /// What `set_given_aside` set aside, given again.
+    pub(crate) fn restore_given(&mut self, given: super::super::Given<'tcx>) {
+        self.given = given;
+    }
+
+    /// `resolve_instance` of a call whose arguments a copied default's
+    /// `Self` was replaced in (ADR 0049): they're the impl's, which resolve in
+    /// the impl's typing environment, as its own body's types don't.
+    pub fn resolve_self_instance(
+        &self,
+        def_id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+    ) -> R<Option<ty::Instance<'tcx>>> {
+        // The impl's, with the default's own bounds, which its own type
+        // parameters need, `[B]: Index<PatternID>` (ADR 0560).
+        let typing_env = self.typing_env;
+        crate::items::resolve_instance_in(self.tcx, typing_env, def_id, args).map_err(crate::refusal::emitted)
+    }
+
+    /// Is this a trait's default body copied into an impl (ADR 0049), whose
+    /// type parameters are its trait's?
+    /// The const parameters' values this function was given, by index: of
+    /// an impl's dictionary, the impl's, which a default copied into it, in
+    /// its terms, names (ADR 0135).
+    pub(crate) fn impl_const_params(&self) -> Vec<(u32, Expr)> {
+        self.given.const_params.clone()
+    }
+
+    /// In a trait's default copied into an impl, the arguments it's copied
+    /// with (`default_args`), which its body and each closure in it are in
+    /// the terms of.
+    pub fn copied_default_args(&self) -> Option<ty::GenericArgsRef<'tcx>> {
+        self.given.self_args
+    }
+
+    pub(crate) fn in_copied_default(&self) -> bool {
+        self.given.self_args.is_some()
+    }
+
+    /// Type parameter `index` of the body being lowered, as the function
+    /// that declares it numbers it, which its facts are keyed by: the one
+    /// answer every per-parameter read asks, unboxed, compared, given as it
+    /// is (#2273). Of a trait's default copied into an impl, whose types are
+    /// in the impl's terms (`default_args`), its own by the default's
+    /// numbering (`default_param`), the impl's none of the default's.
+    pub(crate) fn declared_param(&self, index: u32) -> Declared {
+        let owner = self.tcx.typeck_root_def_id(self.frame.owner);
+        if !self.in_copied_default() {
+            return Declared::Own(owner, index);
+        }
+        let args = self.copied_default_args().expect("a copied default's arguments");
+        match default_param(self.tcx, owner, args, index) {
+            Some(own) => Declared::Own(owner, own),
+            None => Declared::Impls,
+        }
+    }
+
+    /// `ty`, of the body being lowered, in the terms of the function that
+    /// declares its type parameters (`declared_param`), which a question of
+    /// that function's clauses asks: of a default copied into an impl, its
+    /// own parameters renumbered as the default numbers them, and the
+    /// impl's own past every one of the default's, so they name none of its
+    /// (#2273).
+    pub(crate) fn declared_ty(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
+        if !self.in_copied_default() {
+            return ty;
+        }
+        let tcx = self.tcx;
+        let owner = tcx.typeck_root_def_id(self.frame.owner);
+        let generics = tcx.generics_of(owner);
+        let count = generics.count() as u32;
+        let mut folder = ty::BottomUpFolder {
+            tcx,
+            ty_op: |part: Ty<'tcx>| match crate::generic_facts::type_parameter(part) {
+                Some(param) => match self.declared_param(param.index) {
+                    Declared::Own(_, index) => Ty::new_param(tcx, index, param.name),
+                    Declared::Impls => Ty::new_param(tcx, count + param.index, param.name),
+                },
+                None => part,
+            },
+            lt_op: |region| region,
+            ct_op: |konst| konst,
+        };
+        ty::TypeFoldable::fold_with(ty, &mut folder)
+    }
+
+    /// How many generic parameters the body being lowered names, by the
+    /// numbering its types have, `declared_param`'s indexes: of a default
+    /// copied into an impl, the impl's and then its own (`default_args`),
+    /// up to its last own one, as no fact is of the impl's.
+    pub(crate) fn frame_param_count(&self) -> u32 {
+        let owner = self.tcx.typeck_root_def_id(self.frame.owner);
+        let generics = self.tcx.generics_of(owner);
+        let Some(args) = self.copied_default_args() else {
+            return generics.count() as u32;
+        };
+        (args.iter().skip(generics.parent_count))
+            .filter_map(|arg| crate::generic_facts::type_parameter_of(arg.as_type()?))
+            .map(|index| index + 1)
+            .max()
+            .unwrap_or(0)
+    }
+
+    /// The first dictionary this function was given whose bound `which`
+    /// says is the one: `T: Copy`'s, or a codec's (ADRs 0049, 0081).
+    pub(crate) fn given_evidence(&self, which: impl Fn(ty::TraitRef<'tcx>) -> bool) -> Option<Expr> {
+        self.given
+            .evidence
+            .iter()
+            .find(|&&(tr, _)| which(tr))
+            .map(|(_, value)| value.clone())
+    }
+
+    /// The names of the dictionaries this function was given whose bound
+    /// `keep` says, `SSource` of an `S: Source`, each a variable it reads.
+    pub(crate) fn given_dictionaries(&self, keep: impl Fn(ty::TraitRef<'tcx>) -> bool) -> IndexSet<js::Name> {
+        (self.given.evidence.iter())
+            .filter(|(tr, _)| keep(*tr))
+            .filter_map(|(_, value)| match &value.kind {
+                js::ExprKind::Var(name) => Some(name.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// The names what this function was given reads, its parameters after
+    /// its own or, in a copied default, its impl's, which its body's top
+    /// can read: its dictionaries, `TTouch`, and what one made of them reads,
+    /// a copied default's `holderTouch(TTouch)`; its const parameters'
+    /// values, facts, caller's location and drops (ADR 0979, amended).
+    pub(crate) fn given_names(&self) -> IndexSet<js::Name> {
+        let given = (self.given.evidence.iter().map(|(_, value)| value))
+            .chain(self.given.const_params.iter().map(|(_, value)| value))
+            .chain(self.given.type_facts.iter().map(|(_, _, value)| value))
+            .chain(self.given.caller_location.iter().map(|(_, value)| value));
+        let mut names: IndexSet<js::Name> = self.given_drops().into_iter().collect();
+        for value in given {
+            value.clone().each_mut(&mut |part| {
+                if let js::ExprKind::Var(name) = &part.kind {
+                    names.insert(name.clone());
+                }
+            });
+        }
+        names
+    }
+
+    /// Whether type parameter `index` is a `FusedIterator`, as its caller
+    /// says, `IFused` (ADR 0543): `None` where none says, which is `false`,
+    /// a generic iterator's `Fuse` cleared as it ends, as most are (ADR
+    /// 0473). The one answer, of a `fuse()` and of a callee asking it.
+    pub(crate) fn fused_fact(&self, index: u32) -> Option<Expr> {
+        self.given_type_fact(index, TypeFact::Fused)
+    }
+
+    /// `lower` run under `typing_env` given `facts` too, a type's facts and
+    /// the values that give them, then as it was: a dictionary's entry
+    /// lowered as generic code is, of a type parameter of its own, bound
+    /// there alone (`collecting_entry`, #1239).
+    pub(crate) fn with_given_facts<T>(
+        &mut self,
+        typing_env: ty::TypingEnv<'tcx>,
+        facts: Vec<(Ty<'tcx>, TypeFact, Expr)>,
+        lower: impl FnOnce(&mut Self) -> T,
+    ) -> T {
+        let saved = std::mem::replace(&mut self.typing_env, typing_env);
+        let before = self.given.type_facts.len();
+        self.given.type_facts.extend(facts);
+        let made = lower(self);
+        self.given.type_facts.truncate(before);
+        self.typing_env = saved;
+        made
+    }
+
+    /// The fact of type parameter `index` this function was given, `TSize`
+    /// (ADR 0145): `given_fact_of` the parameter, so one given of a type the
+    /// bounds here normalize to it is its too, a copied default's `<W<I> as
+    /// Iterator>::Item` of `impl<I, T> Tools for W<I> where I:
+    /// Iterator<Item = T>`, the impl's `T` (#2012).
+    pub(crate) fn given_type_fact(&self, index: u32, fact: TypeFact) -> Option<Expr> {
+        let given = self.param_type(index).and_then(|param| self.given_fact_of(param, fact));
+        rust_js_program::decisions::record("type-fact-given", if given.is_some() { "given" } else { "none" });
+        given
+    }
+
+    /// Type parameter `index` of the function being lowered, as a type: the
+    /// one its given facts name, else its generics'.
+    fn param_type(&self, index: u32) -> Option<Ty<'tcx>> {
+        let named = (self.given.type_facts.iter())
+            .map(|&(of, _, _)| of)
+            .find(|of| matches!(of.kind(), ty::Param(p) if p.index == index));
+        named.or_else(|| {
+            let generics = self.tcx.generics_of(self.item);
+            ((index as usize) < generics.count())
+                .then(|| self.tcx.mk_param_from_def(generics.param_at(index as usize, self.tcx)))
+                .and_then(|param| param.as_type())
+        })
+    }
+
+    /// The fact of `of` this function was given (ADR 0145, 0466): one given
+    /// of a type the bounds here normalize as they normalize `of`, `of`
+    /// itself among them, so a copied default's `<Self as
+    /// Iterator>::Item`, the impl's slot, is the `<T as TupleCollect>::Item`
+    /// its where clause, `Self: Iterator<Item = T::Item>`, says it is,
+    /// itertools' `collect_tuple` (#828), and a type parameter's is what's
+    /// given of a projection that normalizes to it (#2012); else what its
+    /// trait's dictionary carries (`carried_super_fact`). Two given of types
+    /// that normalize alike are facts of one type, so which is read is the
+    /// same.
+    pub(crate) fn given_fact_of(&self, of: Ty<'tcx>, fact: TypeFact) -> Option<Expr> {
+        let normal = |ty: Ty<'tcx>| {
+            let ty = self.tcx.erase_and_anonymize_regions(ty);
+            (self.tcx)
+                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))
+                .unwrap_or(ty)
+        };
+        let of = normal(of);
+        (self.given.type_facts.iter())
+            .filter(|&&(_, given, _)| given == fact)
+            .find(|&&(at, _, _)| normal(at) == of)
+            .map(|(_, _, value)| value.clone())
+            .or_else(|| self.carried_super_fact(of, fact))
+    }
+
+    /// What the dictionary of `Self` of the trait whose default is being
+    /// lowered over `Self`, a library's for its consumers' impls, carries of
+    /// `of`, an associated type of a std supertrait of its `Self`, where it
+    /// carries `fact` of it (#990): `None` of another, and in a copy of a
+    /// default in an impl, which is given it as its slot.
+    fn carried_super_fact(&self, of: Ty<'tcx>, fact: TypeFact) -> Option<Expr> {
+        let ty::Alias(
+            _,
+            alias @ ty::AliasTy {
+                kind: ty::Projection { def_id },
+                ..
+            },
+        ) = *of.kind()
+        else {
+            return None;
+        };
+        if self.in_copied_default() {
+            return None;
+        }
+        let carrier = self.tcx.trait_of_assoc(self.tcx.typeck_root_def_id(self.item))?;
+        let self_ty = alias.self_ty();
+        if !matches!(self_ty.kind(), ty::Param(param) if param.index == 0)
+            || !self.carried_super(carrier).contains(&(def_id, fact))
+        {
+            return None;
+        }
+        let dictionary = self.evidence_for(ty::TraitRef::new(self.tcx, carrier, [self_ty]))?;
+        Some(Expr::member(
+            dictionary,
+            crate::traits::super_item_fact_key(self.tcx, def_id, fact),
+        ))
+    }
+
+    /// What the dictionaries of `trait_id` carry of a std supertrait's
+    /// associated types of their `Self` (#990): of the crate's own trait,
+    /// what its defaults ask; of a library's, what its manifest says.
+    pub(crate) fn carried_super(&self, trait_id: DefId) -> Vec<(DefId, TypeFact)> {
+        match trait_id.is_local() {
+            true => self.krate.carried_super.get(&trait_id).cloned().unwrap_or_default(),
+            false => self.krate.foreign.carried_super(trait_id),
+        }
+    }
+
+    /// The caller's location this body was given, of a function that takes
+    /// one, in its own body, not a closure in it (ADR 0427).
+    pub(crate) fn given_location(&self) -> Option<Expr> {
+        let (owner, location) = self.given.caller_location.as_ref()?;
+        (*owner == self.frame.owner).then(|| location.clone())
+    }
+
+    /// Whether an impl's dictionary takes any of `evidence_params`': a const
+    /// parameter's value, a bound's dictionary, a type's fact or a drop; not
+    /// a caller's location, which only a `#[track_caller]` function takes. One
+    /// that takes none is its module's `const` (ADR 0592).
+    pub(crate) fn takes_evidence(&self, id: DefId) -> bool {
+        self.takes_more_than_drops(id) || !self.drops_taken(id).is_empty()
+    }
+
+    /// Whether `id` takes evidence besides its drops: a const parameter's
+    /// value, a bound's dictionary or a type's fact, without which a call
+    /// of it can't be made; a drop it's not given it doesn't do.
+    pub(crate) fn takes_more_than_drops(&self, id: DefId) -> bool {
+        !const_params(self.tcx, id).is_empty()
+            || !bounds(self.tcx, self.krate.foreign, self.krate.given, id).is_empty()
+            || !self.facts_asked(id).is_empty()
+    }
+
+    /// Whether what `id`, an impl's method, takes besides its drops is of
+    /// its own parameters, not only its impl's: a const's value, a bound's
+    /// dictionary or a fact of one, `B: Clone` of a fold's `B`. What it takes
+    /// of its impl's a caller gives of the type it knows, the sides'
+    /// dictionaries of an `Either<L, R>`'s `rfold` (#475); of its own, a
+    /// caller giving it no type of them, the runtime's fold, can't. A slot's
+    /// is its own where its type names one of its own (#840).
+    pub(crate) fn takes_of_its_own(&self, id: DefId) -> bool {
+        let impls = self.tcx.generics_of(id).parent_count as u32;
+        let of_its_own = |ty: Ty<'tcx>| {
+            ty.walk()
+                .filter_map(|arg| arg.as_type())
+                .any(|part| matches!(part.kind(), ty::Param(param) if param.index >= impls))
+        };
+        const_params(self.tcx, id).iter().any(|param| param.index >= impls)
+            || bounds(self.tcx, self.krate.foreign, self.krate.given, id)
+                .iter()
+                .any(|tr| tr.args.types().any(of_its_own))
+            // A fact of a slot of its own: a type parameter of its own, or an
+            // associated type or a type built of one; not of its impl's,
+            // `<I as Iterator>::Item`'s layout of a `MultiProduct<I>`'s
+            // `last`, which a caller gives of the type it knows (#840).
+            || (self.facts_asked(id).iter()).any(|&(index, _)| of_its_own(drop_slot(self.tcx, self.slots(), id, index)))
+    }
+
+    /// What a body takes after its own parameters, `evidence_slots`'
+    /// order, each named and given to what lowers it: its caller's
+    /// location, `location` (ADR 0427); a const parameter's value, `N` (ADR
+    /// 0107); a bound's dictionary, `IIterator`, `writeT` and `readT` of a
+    /// generic codec's (ADR 0081), `XConvertF64` of two impls of one trait;
+    /// a fact of a type parameter, `TSize` (ADR 0145); and a drop function,
+    /// `dropT` (ADR 0098), `dropIIntoIter` of a std trait's associated type
+    /// (ADR 0421).
+    pub fn evidence_params(&mut self, id: DefId) -> Vec<js::Pattern> {
+        self.give_drop_slots(drop_items(self.tcx, self.krate.foreign, id));
+        let mut params: Vec<js::Pattern> = Vec::new();
+        for slot in self.evidence_slots(id, Scope::Whole) {
+            let name = match slot {
+                Slot::Location => {
+                    let name = self.fresh(Role::Location);
+                    self.given.caller_location = Some((id, Expr::var(&name)));
+                    name
+                }
+                Slot::Const(index) => {
+                    let param = self.tcx.generics_of(id).param_at(index as usize, self.tcx);
+                    let name = self.fresh(Base::Named(param.name.as_str()));
+                    self.given.const_params.push((index, Expr::var(&name)));
+                    name
+                }
+                Slot::Bound(tr) => {
+                    let name = self.fresh(Base::Named(&bound_word(self.tcx, tr)));
+                    self.given.evidence.push((tr, Expr::var(&name)));
+                    // A std body's default, where a call gives none (ADR 0995).
+                    if let Some(default) = self.default_dictionary(id, tr.def_id) {
+                        params.push(js::Pattern::Defaulted(name, plain_dictionary(default)));
+                        continue;
+                    }
+                    name
+                }
+                Slot::Fact(index, fact) => {
+                    let of = drop_slot(self.tcx, self.slots(), id, index);
+                    let name = self.fresh(Base::Named(&format!("{}{}", drop_word(self.tcx, of), fact.text())));
+                    self.given.type_facts.push((of, fact, Expr::var(&name)));
+                    name
+                }
+                Slot::Drop(index) => {
+                    let ty = drop_slot(self.tcx, self.slots(), id, index);
+                    let name = self.fresh(Base::Prefixed(Role::Drop, &drop_word(self.tcx, ty)));
+                    self.give_drop_param(index, name.clone(), ty);
+                    name
+                }
+            };
+            params.push(name.into());
+        }
+        params
+    }
+
+    /// A const argument's value (ADR 0107): `3`, or the caller's own `N`.
+    pub fn const_arg(&self, c: ty::Const<'tcx>, span: Span) -> R<Expr> {
+        let c = self
+            .tcx
+            .normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(c));
+        let value = match c.kind() {
+            ty::ConstKind::Param(p) => self
+                .given
+                .const_params
+                .iter()
+                .find(|&&(index, _)| index == p.index)
+                .map(|(_, value)| value.clone()),
+            _ => c
+                .try_to_value()
+                .and_then(|value| const_js(self.tcx, &self.krate.flattened.keyed, value)),
+        };
+        value.ok_or_else(|| self.unsupported(span, "this const argument"))
+    }
+}

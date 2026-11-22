@@ -185,7 +185,7 @@ the copy matrix.
 **The one rule: the reader is present exactly where the side's
 `TrustedRandomAccessNoCoerce` fact, by which std's zip takes the index
 path, may be `true`.** `trait_fact_may_hold` in
-`src/lower/std_types/number/generic.rs` answers that, beside
+`crates/rust-js-lower/src/std_types/number/generic.rs` answers that, beside
 `type_fact_value`, which makes the fact. For a type parameter, the answer
 is whether its caller gives the fact (`IRandomAccess`); rustc takes a bare
 parameter for no. For a type whose fact is what it holds' (`held_facts`:

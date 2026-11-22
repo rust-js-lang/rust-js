@@ -1,11 +1,11 @@
-// Mutations of src/lower/std_types/cow.rs (ADR 0319).
+// Mutations of crates/rust-js-lower/src/std_types/cow.rs (ADR 0319).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "cow-to-mut-shares",
     breaks: "`to_mut()` changes what the `Cow` borrowed, not a clone of it",
-    file: "src/lower/std_types/cow.rs",
+    file: "crates/rust-js-lower/src/std_types/cow.rs",
     find: "            StmtKind::Assign(value.clone(), clone).at(js_span),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cows"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "cow-into-owned-shares",
     breaks:
       "`into_owned()` of a borrowed slice is the slice, which a push then changes",
-    file: "src/lower/std_types/cow.rs",
+    file: "crates/rust-js-lower/src/std_types/cow.rs",
     find: "            return Ok(Expr::cond(borrowed, clone, value));\n",
     replace: "            return Ok(value);\n",
     tests: ["test/corpus.test.ts", "-t", "^cows"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     name: "cow-side-through-refs-unread",
     breaks:
       '`&cow == &"a"`, a `Cow` behind a reference, compares the reference\'s `_0`',
-    file: "src/lower/std_types/cow.rs",
+    file: "crates/rust-js-lower/src/std_types/cow.rs",
     find: "        let (inner, inner_ty) = self.through_refs(value.clone(), ty);\n",
     replace: "        let (inner, inner_ty) = (value.clone(), ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^cow_compare.rs$"],
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     name: "cow-from-variant-swapped",
     breaks:
       "`Cow::from` of a reference is `Owned`, and of what owns `Borrowed`",
-    file: "src/lower/std_types/cow.rs",
+    file: "crates/rust-js-lower/src/std_types/cow.rs",
     find: "            let variant = rustc_abi::VariantIdx::from_usize(usize::from(owned));\n",
     replace:
       "            let variant = rustc_abi::VariantIdx::from_usize(usize::from(!owned));\n",
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
   {
     name: "cow-texts-as-objects",
     breaks: "a `String` made of `Cow<str>`s joins the `Cow`s themselves, `[object Object]` (#495)",
-    file: "src/lower/std_types/cow.rs",
+    file: "crates/rust-js-lower/src/std_types/cow.rs",
     find: "        if !self.recognition().is_cow(item) {\n            return items;\n",
     replace: "        if true {\n            return items;\n",
     tests: ["test/corpus.test.ts", "-t", "^cow_texts_joined.rs$"],

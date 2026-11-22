@@ -144,7 +144,7 @@ wrote as it was given; `next`'s `string | import("next/image").StaticImageData`
 did too.
 
 **The value of `#[rust_js::types]` is a TypeScript type, which one reader,
-`src/lower/declarations/written.rs`, reads into the declaration model's
+`crates/rust-js-lower/src/declarations/written.rs`, reads into the declaration model's
 parts**, printed by TypeScript as every other type is (ADR 0207):
 
 | Written | Read |

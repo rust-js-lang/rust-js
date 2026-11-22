@@ -1,11 +1,11 @@
-// Mutations of src/lower/recognition/fmt.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/recognition/fmt.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "stderr-is-stdout",
     breaks: "a write to standard error goes to standard output",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: "        Some(StdPath::IoStderr | StdPath::IoStderrLock) => Some(true),",
     replace: "        Some(StdPath::IoStderr | StdPath::IoStderrLock) => Some(false),",
     tests: ["test/corpus.test.ts", "-t", "std_odds"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-result-unwrap-refused",
     breaks: "`write!(..).unwrap()` of a `fmt::Result` is an error",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: '        "unwrap" => FmtResultAnswer::Unwrap,',
     replace: '        "unwrap_" => FmtResultAnswer::Unwrap,',
     tests: ["test/corpus.test.ts", "-t", "write_to_string"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-result-unwrap-err-refused",
     breaks: "`write!(..).expect_err(..)` of a `fmt::Result`, chrono's, is refused",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: '        "unwrap_err" | "expect_err" => FmtResultAnswer::UnwrapErr,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fmt_result_unwrap_err"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-result-is-ok-false",
     breaks: "`is_ok()` of a `fmt::Result`, always `Ok`, is `false`",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: '        "is_ok" => FmtResultAnswer::Is(true),',
     replace: '        "is_ok" => FmtResultAnswer::Is(false),',
     tests: ["test/corpus.test.ts", "-t", "write_to_string"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     name: "debug-struct-builder-unknown",
     breaks:
       "`f.debug_struct(\"P\")`'s builder isn't known, and a writer's `Debug` of a struct by one is refused",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: '        "DebugStruct" => DebugBuilder::Struct,\n',
     replace: "",
     tests: [
@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
     name: "builder-entries-unknown",
     breaks:
       "a `Debug` builder's `entries(..)` isn't known, and a writer's list of them is refused",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: '        "entries" => BuilderStep::Entries,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "pretty_debug|std_methods"],
@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
     name: "formatter-method-unknown",
     breaks:
       "a `Formatter`'s own methods, `f.width()`, `f.pad(s)`, aren't known as its",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: "            ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Formatter))\n",
     replace:
       "            ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec))\n",
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "write-result-ok-refused",
     breaks: "`ok()` of a write's `io::Result<()>`, `Some(())`, is refused",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: '        "ok" => FmtResultAnswer::Ok,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-dyn-writer-unknown",
     breaks: "a `Box<dyn Write>` as a `Write` has no dictionary, and is refused",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: '            return Some("$dynWriter");\n',
     replace: "            return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-result-unwrap-or-refused",
     breaks: "`unwrap_or(())` of a write's result is refused",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: '        "unwrap_or" | "unwrap_or_default" => FmtResultAnswer::UnwrapOr,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_write_impl.rs$"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     name: "phantom-named-shallow",
     breaks:
       "a struct of the crate's holding a `PhantomData<K>`, `{:?}` of it written in place, asks no name of `K`",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: "        ty::Adt(adt, args) if adt.did().is_local() => {\n",
     replace:
       "        ty::Adt(adt, args) if adt.did().is_local() && false => {\n",
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-result-map-unknown",
     breaks: "`map(f)` of a `fmt::Result`, writeable's, is refused",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: '        "map" => FmtResultAnswer::Map,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fmt_result_map.rs$"],
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     name: "error-cause-as-description",
     breaks:
       "an `Error`'s `cause` is std's `description`, its text, not its `source`",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: '        _ if is_std_method(tcx, id, StdItem::Error, "cause") => Some(true),\n',
     replace:
       '        _ if is_std_method(tcx, id, StdItem::Error, "cause") => Some(false),\n',
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     name: "closure-not-a-writer",
     breaks:
       "a closure that writes to the `Formatter` it's given isn't a writer: `|f| write!(f, \"-\")` takes a box",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: "        if self.tcx.def_kind(def_id) == DefKind::Closure {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
@@ -131,7 +131,7 @@ export const mutations: Mutation[] = [
     name: "formatted-parts-under-binders",
     breaks:
       "a type only a binder inside holds, `&'a u32` of a `for<'a> fn(&'a u32)` or `&'a dyn Display` of a `dyn for<'a> FnMut(&'a dyn Display)`, is taken for one formatted, and rustc's trait selection, asked of it, crashes (#1111)",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: "        .filter(|part| !rustc_middle::ty::TypeVisitableExt::has_escaping_bound_vars(part))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(closure_writes_captured_formatter|debug_of_a_fn_pointers_holder).rs$"],
@@ -139,7 +139,7 @@ export const mutations: Mutation[] = [
   {
     name: "shared-file-no-writer",
     breaks: "a `&File` given to generic code's `W: Write` has no writer, refused (#1397)",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: "        if super::is_file_handle(self.tcx, ty) {\n",
     replace: "        if super::is_file_handle(self.tcx, ty) && !ty.is_ref() {\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_file_shared.rs$"],
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-of-a-text-unread",
     breaks: "a `println!` of a text alone, `Arguments::from_str(\"done\\n\")`, is taken to leave its line unended, so a program of `println!`s alone prints each line by `$print` (#1599)",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: "        if matches!(name.as_str(), \"from_str\" | \"from_str_nonconst\"))\n",
     replace: "        if matches!(name.as_str(), \"from_str_x\"))\n",
     tests: [
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
   {
     name: "user-write-char-unrouted",
     breaks: "`w.write_char(c)` of a writer that keeps std's is an error, not its `write_str`",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: '                name => name == "write_char" && self.has_user_impl(trait_, ty),\n',
     replace: '                _ => false,\n',
     tests: ["test/corpus.test.ts", "-t", "user_fmt_write"],
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
   {
     name: "write-to-string-unrecognized",
     breaks: "`write!(s, ..)` into a `String` is an error, not `s += ..`",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: '                "write_fmt" | "write_str" | "write_char" => Some(Std::PushStr),',
     replace: '                "write_fmt_" => Some(Std::PushStr),',
     tests: ["test/corpus.test.ts", "-t", "write_to_string"],
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
   {
     name: "dictionary-write-inline",
     breaks: "generic code's `write!` into a `W: fmt::Write` writes each piece into its `write_str`, past the writer's own `write_fmt`, which Rust calls",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: "        super::is_write_fmt(self.tcx, def_id)\n            && (generic_args",
     replace: "        false\n            && (generic_args",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_own_write_fmt.rs$"],
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
   {
     name: "dictionary-write-by-its-recogniser",
     breaks: "a `write!` into a `W: fmt::Write` gives the writer's dictionary the `Arguments`' text where `write_fmt`'s recogniser is left out, and its `writeFmt` throws `make is not a function` (#1891)",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: "        if self.is_fmt_write(def_id) || self.writes_through_a_dictionary(def_id, generic_args) {\n",
     replace: "        if self.is_fmt_write(def_id) {\n",
     tests: ["test/tidy-stages.test.ts", "-t", "gives it the Arguments' function, without write_fmt's recogniser"],
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
   {
     name: "dictionary-write-of-any-writer",
     breaks: "a `write!` into a writer of the crate's own, its type known, is taken as one a dictionary says, and given the `Arguments`' function where std writes it a piece at a time",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: "            && (generic_args.types().next()).is_some_and(|writer| super::known_by_a_dictionary(writer.peel_refs()))\n    }\n\n    /// `&mut Formatter<'_>`.",
     replace: "            && (generic_args.types().next()).is_some()\n    }\n\n    /// `&mut Formatter<'_>`.",
     tests: ["test/corpus.test.ts", "-t", "^(generic_writers|write_to_string|writer_sink_own_write_fmt)\\.rs$"],
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
   {
     name: "formatted-adt-not-through-references",
     breaks: "a formatting impl of a reference to the crate's type, `impl Display for &ByRef`, is of no type, so its dictionary carries no `fmtInto` and generic code's write of it throws (#1798)",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: "            ty::Ref(_, inner, _) => inner,\n            ty::Adt(adt, args) if adt.is_fundamental() => args.types().next()?,\n",
     replace: "            ty::Ref(..) => break,\n            ty::Adt(adt, args) if adt.is_fundamental() => args.types().next()?,\n",
     tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
   {
     name: "formatted-adt-not-through-boxes",
     breaks: "a formatting impl of a `Box` of the crate's type is std's `Box`'s, so its writer isn't framed and a write of it into a writer is refused (#1798)",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: "            ty::Adt(adt, args) if adt.is_fundamental() => args.types().next()?,\n",
     replace: "            ty::Adt(adt, args) if false && adt.is_fundamental() => args.types().next()?,\n",
     tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
     name: "generic-fmt-result-unnormalized",
     breaks:
       "a trait's `Result<Self::Output, Self::Err>` is taken as a `fmt::Result` only as written, not with the impl's projections resolved, so `finish`'s `Ok(())` is given generic code as `undefined`, whose `TAG` it reads (#2057)",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: "    let given = (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(given))).unwrap_or(given);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^visitor_err_a_fmt_error_driven_by_generic_code.rs$"],
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
     name: "inlined-text-made-by-its-last",
     breaks:
       "an inlined `Arguments::from_str` is taken to be made by its scope's last statement, a storage end, so it isn't called again and `Skip::advance_back_by`'s `assert!` message is refused: std's `Skip` isn't compiled whole (#1569, #2125)",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: "    let &made_at = its.iter().rev().find(|&&at| !is_storage(at))?;\n",
     replace: "    let &made_at = its.last()?;\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-private-writer-trait-unsupported",
     breaks: "a writer's call of a trait's method std keeps private, `Zip`'s `ZipFmt::fmt`, is refused where `@rust-js/std` compiles its impls (#2252)",
-    file: "src/lower/recognition/fmt.rs",
+    file: "crates/rust-js-lower/src/recognition/fmt.rs",
     find: "(std_crate(tcx, t.krate).is_some() && std_private(tcx, t))",
     replace: "(std_crate(tcx, t.krate).is_some() && std_private(tcx, t) && false)",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],

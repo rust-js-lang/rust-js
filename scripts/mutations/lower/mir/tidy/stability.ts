@@ -1,27 +1,27 @@
-// Mutations of src/lower/mir/tidy/stability.rs: expression stability across calls.
+// Mutations of crates/rust-js-mir/src/tidy/stability.rs: expression stability across calls.
 import type {Mutation} from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "plain-param-called-at-once-not-shadowing",
     breaks: "a function called at once whose parameter names a plain value's variable apart, `((q) => q.title)(other)`, reads its parameter's field as the plain value's, moved past calls (#2315)",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "        plain.shadowed.push(path);\n",
     replace: "        let _ = path;\n        plain.shadowed.clear();\n",
-    unitTests: "lower::mir::tidy::literal_movement_tests::plain_reads_are_own_and_imports_less_changing_and_shadowed",
+    unitTests: "tidy::literal_movement_tests::plain_reads_are_own_and_imports_less_changing_and_shadowed",
   },
   {
     name: "plain-imports-changing-ignored",
     breaks: "an import whose fields change in place, a library's changing static, is read as plain, its read moved past a write (#1028)",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "(self.imports.is_some_and(|imports| imports.contains(path)) && !self.changing.contains(path))",
     replace: "self.imports.is_some_and(|imports| imports.contains(path))",
-    unitTests: "lower::mir::tidy::literal_movement_tests::plain_reads_are_own_and_imports_less_changing_and_shadowed",
+    unitTests: "tidy::literal_movement_tests::plain_reads_are_own_and_imports_less_changing_and_shadowed",
   },
   {
     name: "mir-tidy-stable-literal-arguments-kept",
     breaks: "stable fresh object and array arguments prevent later native getter expressions from remaining at the call site",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(..) => inert_element(e, set),",
     replace: "ExprKind::Jsx(_) => inert_element(e, set),",
     tests: ["test/lowering-native-aggregate-arguments.test.ts"],
@@ -29,16 +29,16 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-literal-contents-unchecked",
     breaks: "a literal's getters, computed keys, spreads or closure-written contents are treated as stable",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(..) => inert_element(e, set),",
     replace: "ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(..) => true,",
-    unitTests: "lower::mir::tidy::literal_movement_tests::fresh_literals_require_stable_contents",
+    unitTests: "tidy::literal_movement_tests::fresh_literals_require_stable_contents",
   },
   {
     name: "mir-tidy-inlined-past-changed-reads",
     breaks:
       "a temporary that does something is written past reads of what it changes, `d.n + reset(d)`",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "    let plain_root = matches!(&root.kind, ExprKind::Var(v) if plain.contains(&js::Path::var(v)) && !set.contains(v));\n",
     replace: "    let plain_root = true;\n",
     tests: ["test/corpus.test.ts", "-t", "assignment_order"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-constant-objects-block",
     breaks:
       "a call isn't read in place past an object of constants before it, `const _3 = unquoted(..)`",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "        ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(..) => inert_element(e, set),\n",
     replace:
       "        ExprKind::Object(..) if e.is_made_of_constants() => false,\n        ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(..) => inert_element(e, set),\n",
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
     name: "plain-field-blocks-inline",
     breaks:
       "a prop MIR holds for a borrow stays a `const _14`, read past `meta.tag` of a plain value",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "    let plain_root = matches!(&root.kind, ExprKind::Var(v) if plain.contains(&js::Path::var(v)) && !set.contains(v));\n",
     replace: "    let plain_root = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^(chars_given_to_helpers|held_peekable).rs$"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-import-blocks-inline",
     breaks:
       "a prop MIR holds for a borrow stays a `const _13`, read past an imported tag, `<Seo>`",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "        ExprKind::Symbol(_) => true,\n        ExprKind::Arrow(..)",
     replace: "        ExprKind::Arrow(..)",
     tests: [
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-sibling-element-blocks",
     breaks:
       "a prop MIR holds for a borrow stays a `const _16`, read past a sibling element, `<Search isOpen={show} />`",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "        ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(..) => inert_element(e, set),\n",
     replace: "        ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(..) => !matches!(&e.kind, ExprKind::Jsx(_)) && inert_element(e, set),\n",
     tests: [
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-closure-made-blocks",
     breaks:
       "a closure's making, `const value = () => ..`, blocks props held before it, `const value$3 = cn(..)`",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "        ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,\n        ExprKind::Member(of, _) => {\n",
     replace: "        ExprKind::Member(of, _) => {\n",
     tests: [
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-choice-blocks",
     breaks:
       'a conditional of parameters, `selected ? "page" : undefined`, blocks a prop held after it',
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "        ExprKind::Cond(a, b, c) => past(a) && past(b) && past(c),\n",
     replace: "",
     tests: [
@@ -139,7 +139,7 @@ export const mutations: Mutation[] = [
     name: "inert-element-chosen-not",
     breaks:
       "a child chosen of elements, `open ? <b /> : <i />`, stops classes held for a later child being read in place",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "        ExprKind::Cond(a, b, c) => [a, b, c].iter().all(|e| inert_element(e, changing)),\n",
     replace: "",
     tests: ["test/snapshots.test.ts", "-t", "^apis"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     name: "spread-items-not-read-past-calls",
     breaks:
       "`...first` of an array whose items nothing changes stops a later call's value being read in place",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "            if !set.contains(v) && plain.contains(&js::Path::items(v))),\n",
     replace: "            if !set.contains(v) && false),\n",
     tests: [
@@ -162,7 +162,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-template-unread-past",
     breaks:
       "text made of what calls can't change, `${a} ${b}`, isn't read past a call, and what follows it stays a function called in place",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "        ExprKind::Template(_, values, _) => values.iter().all(past),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^format_args_order.rs$"],
@@ -172,7 +172,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-pure-call-unread-past",
     breaks:
       "a call of the runtime's that only reads, `$debugStr(s)`, isn't read past a call",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "        ExprKind::Call(callee, args) if callee.helper_name().is_some_and(rust_js_program::runtime::is_pure) => {\n            args.iter().all(past)\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^text_edits.rs$"],
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-item-unread-past",
     breaks:
       "an item of a plain value, `pair[0]`, isn't read past a call, as its field is, and what follows stays a function called in place",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "        ExprKind::Index(_, index) => plain_root && past(index),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^const_generic_traits.rs$"],
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     name: "tidy-applied-call-not-past",
     breaks:
       "a function called at once on a held value is taken to read what a call may change, and the `Option` formatted after it stays a function called in place",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "            past(given) && read_past_calls(result, set, &plain.shadowing(js::Path::var(param)))\n",
     replace: "            false\n",
     tests: ["test/corpus.test.ts", "-t", "^iter_next_back.rs$"],
@@ -201,7 +201,7 @@ export const mutations: Mutation[] = [
   {
     name: "plain-iterator-spread-passes",
     breaks: "a spread of a plain value that's an iterator, a function's `inspect(see)`, is taken to do nothing, so `[...it, probe(9)]` runs `see` before `probe(9)` where Rust makes the chain's argument first (#1015)",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "            if !set.contains(v) && plain.contains(&js::Path::items(v))),\n",
     replace: "            if !set.contains(v) && (plain.contains(&js::Path::var(v)) || plain.contains(&js::Path::items(v)))),\n",
     tests: ["test/corpus.test.ts", "-t", "^inspect_by_a_function_before_a_chain_argument.rs$"],
@@ -210,7 +210,7 @@ export const mutations: Mutation[] = [
     name: "plain-field-of-a-struct-beside-a-cell-not-read-past-calls",
     breaks:
       "a struct literal of a struct with a `Cell` beside its plain fields hoists each value after a call into a temporary, `const value$2 = shouldSet(t) ? ..; return { .., text: value$2 }`, as its plain field `instance.id` isn't taken as unchanged by the call (#1045)",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "                || (plain_field(e, plain) && matches!(&root.kind, ExprKind::Var(v) if !set.contains(v)))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "literal_of_a_struct_beside_a_cell"],
@@ -219,7 +219,7 @@ export const mutations: Mutation[] = [
   {
     name: "js-global-unknown-to-tidy",
     breaks: "a JS global lowering named, `Math` of `Math.max`, is taken to change past a call, so a read of it is held apart (#1674)",
-    file: "src/lower/mir/tidy/stability.rs",
+    file: "crates/rust-js-mir/src/tidy/stability.rs",
     find: "                    && (of.facts.has(js::Known::BuiltIn) || of.facts.has(js::Known::Lasting))",
     replace: "                    && of.facts.has(js::Known::Lasting)",
     tests: ["test/effects.test.ts", "-t", "held past a JS global's read"],

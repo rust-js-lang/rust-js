@@ -156,7 +156,7 @@ pass on to the iterator they hold was decided in four places:
 Each could drift from the others, and test/passed-on.test.ts held only the
 last two to std's source.
 
-There is now one catalog, `PASSED_ON` in src/lower/recognition/passed_on.rs.
+There is now one catalog, `PASSED_ON` in crates/rust-js-lower/src/recognition/passed_on.rs.
 It is keyed by std's method name, with one column per wrapper (`Wrapper`):
 the iterator's own method (`Passed::Own`), its `try_fold` or `try_rfold`
 never stopped (`Passed::ByTry`, a sized `&mut I`'s `fold` and `rfold`), or

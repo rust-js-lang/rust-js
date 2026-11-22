@@ -1,4 +1,4 @@
-// Mutations of src/lower/representation/nones.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/representation/nones.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 // The corpus's cases of how a place holds `None`.
@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
   {
     name: "binding-type-param-not-null-param",
     breaks: "a binding's parameter of a type parameter that takes `null`, a `Map`'s `set(key, value: V)` (ADR 0884, amended), isn't one of `null_params`, so MIR isn't asked whether what it's given is `null` or a value, and `map.set(key, value)` is `value ?? null`",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "    if bindings::nullable_params(tcx, def_id).is_empty() && !bindings::is_binding(tcx, def_id) {\n",
     replace: "    if bindings::nullable_params(tcx, def_id).is_empty() {\n",
     tests: ["test/js-collections.test.ts", "-t", "set as it is"],
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
   {
     name: "nullable-place-stores-undefined",
     breaks: "a `#[rust_js::nullable]` place stores what's written as it's given, a `None` `undefined`, which its reads' `=== null` miss (#819)",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "            NoneForm::Null | NoneForm::Optional => true,\n",
     replace: "            NoneForm::Optional => true,\n            NoneForm::Null => false,\n",
     tests: nones,
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-field-none-as-null",
     breaks: "a nullable optional field is taken for a nullable one, so a literal's `None` is `null`, where it's left out, `undefined` (ADR 0810, #819)",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "        (true, true) => NoneForm::Optional,\n",
     replace: "        (true, true) => NoneForm::Null,\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
   {
     name: "held-value-field-none-undefined",
     breaks: "a nullable field of a value never `null` that may be `undefined` is taken for a plain one, so its default is `undefined`, not `null` (rd645, #819)",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "        return NoneForm::Value;\n",
     replace: "        return NoneForm::Undefined;\n",
     tests: nones,
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
   {
     name: "nested-some-none-undefined",
     breaks: "a nested `Option`'s `Some(None)` is stored `undefined`, its `None`, not `null` (ADR 1017, #819)",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "            NoneForm::Nested => NoneForm::Null,\n",
     replace: "            NoneForm::Nested => NoneForm::Undefined,\n",
     tests: nones,
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   {
     name: "nullable-binding-arg-undefined",
     breaks: "a binding's argument it names `#[rust_js::nullable(..)]` is given its `None` `undefined`, not `null` (ADR 0275, #819)",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "            bindings::takes_nullable(tcx, def_id, i)\n                && payload.is_none_or(|payload| bindings::holds_none_as_null(tcx, payload)),\n",
     replace: "            false && payload.is_none_or(|payload| bindings::holds_none_as_null(tcx, payload)),\n",
     tests: nones,
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
   {
     name: "nullable-param-undefined",
     breaks: "a parameter its function names `#[rust_js::nullable(..)]` is set `undefined` for `None`, which its body's `=== null` misses (ADR 0861, #819)",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "        NonePlace::Param(def_id, i) => NoneForm::null_if(null_params(tcx, def_id).contains(&i)),\n",
     replace: "        NonePlace::Param(def_id, i) => NoneForm::null_if(false && null_params(tcx, def_id).contains(&i)),\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
   {
     name: "any-value-set-nulled",
     breaks: "a map of any value's `set` writes `value ?? null` (#443)",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "                && payload.is_none_or(|payload| bindings::holds_none_as_null(tcx, payload)),\n",
     replace: "                && payload.is_none_or(|_| true),\n",
     tests: [
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
     name: "none-given-by-the-crates-nullable-function",
     breaks:
       "the crate's `#[rust_js::nullable]` function, which gives a nullable field of an object JS made as it is, `undefined` too, is taken to give only `null`, so `childOf(holder) !== null` holds of `{}` (a wrong answer, ADR 0298, amended)",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "        NonePlace::CallResult(def_id) if !bindings::is_binding(tcx, def_id) || tcx.trait_of_assoc(def_id).is_some() => {\n",
     replace: "        NonePlace::CallResult(def_id) if tcx.trait_of_assoc(def_id).is_some() => {\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "None it can be"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "nullable-binding-result-either",
     breaks: "a binding's `#[rust_js::nullable]` result, `node.textContent`, is taken to give either `None`, tested `!= null`, not `!== null` as its `T | null` says (ADR 0298, amended, #819)",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "        NonePlace::CallResult(def_id) if bindings::nullable_result(tcx, def_id) => NoneForm::Null,\n",
     replace: "        NonePlace::CallResult(def_id) if bindings::nullable_result(tcx, def_id) => NoneForm::Either,\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "None it can be"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-binding-result-either",
     breaks: "a binding's `#[rust_js::none_undefined]` result, `window.event`, is taken to give either `None`, tested `!= null`, not `=== undefined` as its `T | undefined` says (ADR 0298, amended, #819)",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "        NonePlace::CallResult(def_id) if bindings::none_undefined_result(tcx, def_id) => NoneForm::Undefined,\n",
     replace: "        NonePlace::CallResult(def_id) if bindings::none_undefined_result(tcx, def_id) => NoneForm::Either,\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "None it can be"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "plain-binding-result-undefined",
     breaks: "a binding's result it declares neither way, which JS gives `null` too, is trusted `undefined`, so a `null` it gives reads as a `Some` (a wrong answer, ADR 0298, amended, #819)",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "        NonePlace::CallResult(_) => NoneForm::Either,\n",
     replace: "        NonePlace::CallResult(_) => NoneForm::Undefined,\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "None it can be"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "crate-written-null-untrusted",
     breaks: "a nullable field the crate alone writes, `null` or a value wherever it's read, says nothing, so it's tested `== null`, not `=== null` (rd647, #819)",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "            (NoneForm::Null, Writers::Crate | Writers::Exact) => Some(js::OnlyNone::Null),\n",
     replace: "            (NoneForm::Null, Writers::Exact) => Some(js::OnlyNone::Null),\n            (NoneForm::Null, Writers::Crate) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   {
     name: "exact-undefined-untrusted",
     breaks: "a `None` that's exactly `undefined`, `window.event`'s, says nothing, so it's tested `!= null`, not `=== undefined` (ADR 0298, amended, #819)",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "            (NoneForm::Undefined, Writers::Exact) => Some(js::OnlyNone::Undefined),\n",
     replace: "            (NoneForm::Undefined, Writers::Exact) => None,\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "None it can be"],
@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
   {
     name: "nullable-local-cell-undefined",
     breaks: "a nullable thread-local's cell is taken for a plain one's, so what's written through its lend is stored as it's given, `current = noneOf(1)` (#541, #819)",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "        NonePlace::LocalCell(key) => NoneForm::null_if(bindings::nullable_local_cell(tcx, key)),\n",
     replace: "        NonePlace::LocalCell(_) => NoneForm::Undefined,\n",
     tests: ["test/lowering-nullable-borrows.test.ts", "-t", "written through a borrow"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
     name: "strict-optional-field",
     breaks:
       "an optional nullable field, absent until it's set, is tested `=== null`, its absent `None` a `Some` (rd647)",
-    file: "src/lower/representation/nones.rs",
+    file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "            (NoneForm::Null, Writers::Crate | Writers::Exact) => Some(js::OnlyNone::Null),\n",
     replace: "            (NoneForm::Null | NoneForm::Optional, Writers::Crate | Writers::Exact) => Some(js::OnlyNone::Null),\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],

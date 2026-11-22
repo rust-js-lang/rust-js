@@ -1,0 +1,1019 @@
+//! Tidy's values: arrays, handles, callbacks and cells, as JS writes them.
+
+use super::*;
+use rust_js_program::collections::{IndexMap, IndexSet};
+
+mod handles;
+pub(super) use handles::{handles_in_place, read_handles};
+
+/// A string's iterator made here and held in a variable read once, where
+/// it's lent, `const cs = name[Symbol.iterator](); .. $lent(cs).take(2)`:
+/// itself, `cs.take(2)`, as one made where it's lent is (`array_values`).
+/// It has no `return()` a lending keeps from being called, and nothing
+/// else steps it (#1955).
+pub(super) fn lent_held_strings(body: &mut [Stmt]) {
+    let mut held = Vec::new();
+    js::each_list(body, &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Const(name, e) | StmtKind::Let(name, Some(e)) = &stmt.kind
+                && rust_js_lower::iterators::made_string_iterator(e)
+            {
+                held.push(name.clone());
+            }
+        }
+    });
+    for name in held {
+        if js::mentions_of(body, &name) != 1 {
+            continue;
+        }
+        js::each_expr_mut(body, &mut |e| {
+            if rust_js_lower::iterators::lent_variable(e) == Some(&name) {
+                *e = Expr {
+                    span: e.span,
+                    ..Expr::var(name.clone())
+                };
+            }
+        });
+    }
+}
+
+/// `$iter(xs).filter(f)`, an array's `$iter`, which knows where it is, made
+/// for an iterator helper alone, which nothing else steps: `xs.values()
+/// .filter(f)`, the array's own iterator.
+pub(super) fn array_values(e: &mut Expr) {
+    // A string's iterator made here, lent, `$lent(s[Symbol.iterator]())`,
+    // its variable read where it's made: itself, which has no `return()` to
+    // close, and which nothing else holds (#1186).
+    if let Some(it) = rust_js_lower::iterators::lent_string_iterator(e) {
+        *e = Expr {
+            span: e.span,
+            ..it.clone()
+        };
+        return;
+    }
+    // The runtime's `chars()` made here and collected, `Array.from($chars(s))`:
+    // the string's, `Array.from(s)`, the same `char`s; and from its back,
+    // `Array.from($rev($chars(s)))`, those reversed, `Array.from(s)
+    // .toReversed()` (#1186).
+    if let Some(it) = e.collected_of() {
+        let rev = rust_js_lower::iterators::reversed_of(it);
+        if let Some(s) = rust_js_lower::iterators::chars_made_of(rev.unwrap_or(it)) {
+            let collected = Expr::collected(s.clone());
+            *e = Expr {
+                span: e.span,
+                ..match rev {
+                    Some(_) => Expr::call(Expr::member(collected, "toReversed"), vec![]),
+                    None => collected,
+                }
+            };
+            return;
+        }
+    }
+    // Each array of a lazy `flatMap`, `(item) => $iter(item)`, left lazy:
+    // the array, which an iterator's `flatMap` steps the same.
+    if let ExprKind::Call(callee, args) = &mut e.kind
+        && matches!(&callee.kind, ExprKind::Member(_, m) if m == "flatMap")
+        && let [f] = args.as_mut_slice()
+        && let ExprKind::Arrow(params, body) = &mut f.kind
+        && let [js::Pattern::Name(param)] = params.as_slice()
+        && let [
+            Stmt {
+                kind: StmtKind::Return(Some(each)),
+                ..
+            },
+        ] = body.as_mut_slice()
+        && rust_js_lower::iterators::is_stepped_items(each)
+        && matches!(&iterated(each.clone()).kind, ExprKind::Var(v) if v == param)
+    {
+        *each = Expr::var(param);
+    }
+    // The rest of a string's `chars()` not stepped, `$restStr($iter(cs))`:
+    // all of them, `cs.join("")`, which may be a `char`'s case
+    // mapping's, below.
+    if let ExprKind::Call(callee, args) = &e.kind
+        && callee.helper_name() == Some("$restStr")
+        && let [it] = &args[..]
+        && rust_js_lower::iterators::is_stepped_items(it)
+        && let ExprKind::Call(_, items) = &it.kind
+        && let [items] = &items[..]
+    {
+        *e = Expr {
+            span: e.span,
+            ..Expr::builtin(items.clone(), "join", vec![Expr::str("")])
+        };
+    }
+    // A string's characters joined, `Array.from(c.toUpperCase()).join("")`,
+    // a `char`'s capital collected: the string (`Known::Chars`).
+    if let ExprKind::Call(callee, args) = &e.kind
+        && let ExprKind::Member(chars, join) = &callee.kind
+        && join == "join"
+        && matches!(&args[..], [Expr { kind: ExprKind::Str(sep), .. }] if sep.is_empty())
+        && chars.facts.has(rust_js_program::js::Known::Chars)
+        && let ExprKind::Call(_, of) = &chars.kind
+        && let [text] = &of[..]
+    {
+        *e = Expr {
+            span: e.span,
+            ..text.clone()
+        };
+        return;
+    }
+    // Each item with its index, `enumerate()`'s `.map((x, i) => [i, x])`:
+    // the array's `entries()`.
+    if let ExprKind::Call(callee, args) = &e.kind
+        && let ExprKind::Member(it, name) = &callee.kind
+        && name == "map"
+        && let [pair] = &args[..]
+        && pairs_index(pair)
+        && rust_js_lower::iterators::is_stepped_items(it)
+        && let ExprKind::Call(_, items) = &it.kind
+        && let [items] = &items[..]
+    {
+        *e = Expr {
+            span: e.span,
+            ..Expr::builtin(items.clone(), "entries", Vec::new())
+        };
+        return;
+    }
+    if let ExprKind::Call(callee, _) = &mut e.kind
+        && let ExprKind::Member(it, name) = &mut callee.kind
+        && matches!(
+            name.as_str(),
+            "map" | "filter" | "flatMap" | "forEach" | "some" | "every" | "find" | "take" | "drop" | "reduce"
+        )
+        && rust_js_lower::iterators::is_stepped_items(it)
+        && let ExprKind::Call(_, args) = &mut it.kind
+        && args.len() == 1
+    {
+        let items = args.pop().expect("one");
+        **it = Expr::builtin(items, "values", Vec::new());
+    }
+}
+
+/// Whether `f` is `(x, i) => [i, x]`, an item paired with its index.
+pub(super) fn pairs_index(f: &Expr) -> bool {
+    fn var(e: &Expr) -> Option<&js::Name> {
+        match &e.kind {
+            ExprKind::Var(v) => Some(v),
+            _ => None,
+        }
+    }
+    if let ExprKind::Arrow(params, body) = &f.kind
+        && let [x, i] = &params[..]
+        && let [
+            Stmt {
+                kind: StmtKind::Return(Some(pair)),
+                ..
+            },
+        ] = &body[..]
+        && let ExprKind::Array(items, ..) = &pair.kind
+        && let [first, second] = &items[..]
+    {
+        return x.name().is_some_and(|x| var(second) == Some(x)) && i.name().is_some_and(|i| var(first) == Some(i));
+    }
+    false
+}
+
+/// `((e) => e.data)(r._0)`, an arrow called where it's made: what
+/// `calls::applied` makes of it, its value, where it can, of what `body`
+/// changes as it is.
+pub(super) fn applied_arrows(body: &mut Vec<Stmt>) {
+    let changing = super::changing(body);
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Call(callee, args) = &e.kind
+            && matches!(callee.kind, ExprKind::Arrow(..))
+            && let Some(applied) = applied_in_place(callee, args, &changing)
+        {
+            *e = Expr {
+                span: e.span,
+                ..applied
+            };
+        }
+    });
+}
+
+/// `f`, an arrow, called with `args` where it's made, as `calls::applied`
+/// makes a value of it, asked with what nothing in the body changes, not
+/// `changing`: none where it's left an arrow called, `((l) => { ..
+/// })(take)`, which no person writes.
+pub(super) fn applied_in_place(f: &Expr, args: &[Expr], changing: &IndexSet<js::Name>) -> Option<Expr> {
+    let applied = rust_js_lower::calls::applied(f.clone(), args.to_vec(), &|v| !changing.contains(v));
+    let called = matches!(&applied.kind, ExprKind::Call(g, _) if matches!(g.kind, ExprKind::Arrow(..)));
+    (!called).then_some(applied)
+}
+
+/// `xs.map(f)` of `xs.map((x, i) => f(x, i))`, an array method's callback
+/// that `passed_on` says is the function it passes on to (ADR 0279).
+pub(super) fn passed_on(e: &mut Expr, forwarding: &[rust_js_lower::passed_on::Forwarding]) {
+    let ExprKind::Call(callee, args) = &mut e.kind else {
+        return;
+    };
+    let ExprKind::Member(_, name) = &callee.kind else {
+        return;
+    };
+    let [f] = &mut args[..] else { return };
+    if let Some(taker) = rust_js_lower::passed_on::Taker::array_method(name)
+        && let Some(g) = rust_js_lower::passed_on::passed_on(f, taker, forwarding)
+    {
+        *f = g;
+    }
+}
+
+/// `$index(xs, i); xs[i] = v;`, an element's place MIR checks, then sets:
+/// `xs[$at(xs, i)] = v;`, the place `$at` checks, with the message `$index`
+/// was given. `v` is made before
+/// either, as Rust makes it.
+pub(super) fn checked_sets(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        if let StmtKind::Expr(check) = &stmts[i].kind
+            && let ExprKind::Call(f, args) = &check.kind
+            && f.helper_name() == Some("$index")
+            && let [items, index, failure @ ..] = &args[..]
+            && let StmtKind::Assign(target, _) = &stmts[i + 1].kind
+            && let ExprKind::Index(of, at) = &target.kind
+            && js::same_path(of, items)
+            && (js::same_path(at, index) || at.as_int().is_some() && at.as_int() == index.as_int())
+        {
+            // A `VecDeque`'s message, `failure`, with it.
+            let at = [vec![items.clone(), index.clone()], failure.to_vec()].concat();
+            let checked = Expr::index(items.clone(), Expr::call_helper("$at", at));
+            if let StmtKind::Assign(target, _) = &mut stmts[i + 1].kind {
+                *target = Expr {
+                    span: target.span,
+                    ..checked
+                };
+            }
+            stmts.remove(i);
+            continue;
+        }
+        i += 1;
+    }
+}
+
+/// `{ ...a, ...{ ...b } }` or `<X {...{ ...b }} />`, a spread of an object of
+/// spreads alone: those spreads, `{ ...a, ...b }`, which give what it gives,
+/// each read where it was; and an array's spread of an array, its items.
+pub(super) fn spread_spreads(e: &mut Expr) {
+    if let ExprKind::Array(items, ..) = &mut e.kind {
+        *items = (std::mem::take(items).into_iter())
+            .flat_map(|item| match item {
+                Expr {
+                    kind: ExprKind::Spread(inner),
+                    ..
+                } if matches!(inner.kind, ExprKind::Array(..)) => {
+                    let ExprKind::Array(inner, ..) = inner.kind else {
+                        unreachable!("matched")
+                    };
+                    inner
+                }
+                item => vec![item],
+            })
+            .collect();
+        return;
+    }
+    let props = match &mut e.kind {
+        ExprKind::Object(props, ..) => props,
+        ExprKind::Jsx(jsx) => &mut jsx.props,
+        _ => return,
+    };
+    // Down to what's spread, `{...{ ...{ ...b } }}`'s `b`, a copy made of a
+    // copy, as an element captured twice spills its props.
+    let flat = |prop: &js::Prop| {
+        matches!(prop, js::Prop::Spread(Expr { kind: ExprKind::Object(inner, ..), .. })
+            if inner.iter().all(|p| matches!(p, js::Prop::Spread(_))))
+    };
+    while props.iter().any(flat) {
+        *props = (std::mem::take(props).into_iter())
+            .flat_map(|prop| match prop {
+                js::Prop::Spread(Expr {
+                    kind: ExprKind::Object(inner, ..),
+                    ..
+                }) if inner.iter().all(|p| matches!(p, js::Prop::Spread(_))) => inner,
+                prop => vec![prop],
+            })
+            .collect();
+    }
+}
+
+/// A map of an array's items nothing reads, `next_back` having stepped its
+/// source instead: no statement, as making it does nothing. And a map of
+/// what its maker said is a JS iterator (`Known::Iterator`, `iterators::
+/// lazily_mapped`), which `next_back` or `rfind` made again: lazy, so
+/// making it runs nothing, never an array's eager `map` (#805).
+pub(super) fn unread_maps(body: &mut Vec<Stmt>) {
+    let mut read: IndexSet<js::Name> = IndexSet::default();
+    js::visit_stmt_names(body, &mut |name| {
+        read.insert(name.clone());
+    });
+    js::statement_lists(body, &mut |stmts| {
+        stmts.retain(|s| {
+            !matches!(&s.kind, StmtKind::Const(name, value)
+                if !read.contains(name) && (iterators::is_items_map(value) || iterators::lazily_mapped(value)))
+        });
+    });
+    // And MIR's `let` and the assignment a call's `try` holds, `let _5; try
+    // { _5 = _6.map(f); } ..`, its only mention (#805).
+    let mut assigned = Vec::new();
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Assign(target, value) = &stmt.kind
+                && let ExprKind::Var(name) = &target.kind
+                && iterators::lazily_mapped(value)
+            {
+                assigned.push(name.clone());
+            }
+        }
+    });
+    let gone: IndexSet<js::Name> = (assigned.into_iter())
+        .filter(|name| js::mentions_of(body, name) == 1)
+        .collect();
+    if gone.is_empty() {
+        return;
+    }
+    js::statement_lists(body, &mut |stmts| {
+        stmts.retain(|s| match &s.kind {
+            StmtKind::Assign(target, _) => !matches!(&target.kind, ExprKind::Var(name) if gone.contains(name)),
+            StmtKind::Let(name, None) => !gone.contains(name),
+            _ => true,
+        });
+    });
+}
+
+/// `t = [undefined, f()]`, a list MIR held while it took its other items
+/// out, `format_args!`'s of a value it read first: of one item left, read
+/// only as `t[1]`, the item, `t = f()`, read as `t` (ADR 0512).
+pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
+    // Each list with holes, by its name, its one item's index, and whether
+    // it's assigned, not declared with it.
+    let mut lists: Vec<(js::Name, i128, bool)> = Vec::new();
+    js::each_list(body, &mut |stmts| {
+        for stmt in stmts.iter() {
+            let (name, value, assigned) = match &stmt.kind {
+                StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name.clone(), value, false),
+                StmtKind::Assign(
+                    Expr {
+                        kind: ExprKind::Var(name),
+                        ..
+                    },
+                    value,
+                ) => (name.clone(), value, true),
+                _ => continue,
+            };
+            let ExprKind::Array(items, ..) = &value.kind else {
+                continue;
+            };
+            let left: Vec<usize> = (0..items.len())
+                .filter(|&i| !matches!(items[i].kind, ExprKind::Undefined))
+                .collect();
+            if let [at] = left.as_slice()
+                && items.len() > 1
+            {
+                lists.push((name, *at as i128, assigned));
+            }
+        }
+    });
+    for (name, at, assigned) in lists {
+        let read = |e: &Expr| {
+            matches!(&e.kind, ExprKind::Index(of, index)
+                if matches!(&of.kind, ExprKind::Var(v) if *v == name) && index.as_int() == Some(at))
+        };
+        // Each read of it one of its item's, and it made once.
+        let mut rest = body.clone();
+        js::each_expr_mut(&mut rest, &mut |e| {
+            if read(e) {
+                *e = Expr::js_undefined();
+            }
+        });
+        if js::mentions_of(&rest, &name) != usize::from(assigned)
+            || js::mentions_of(body, &name) == usize::from(assigned)
+        {
+            continue;
+        }
+        js::statement_lists(body, &mut |stmts| {
+            for stmt in stmts.iter_mut() {
+                let value = match &mut stmt.kind {
+                    StmtKind::Const(n, value) | StmtKind::Let(n, Some(value)) if *n == name => value,
+                    StmtKind::Assign(
+                        Expr {
+                            kind: ExprKind::Var(n), ..
+                        },
+                        value,
+                    ) if *n == name => value,
+                    _ => continue,
+                };
+                if let ExprKind::Array(items, ..) = &mut value.kind {
+                    *value = std::mem::replace(&mut items[at as usize], Expr::taken());
+                }
+            }
+        });
+        js::each_expr_mut(body, &mut |e| {
+            if read(e) {
+                *e = Expr {
+                    span: e.span,
+                    ..Expr::var(name.clone())
+                };
+            }
+        });
+    }
+}
+
+/// `const x = { value: undefined };`, a cell a pointer is taken to, declared
+/// before its value (ADR 0407), and its first mention in the same block its
+/// value set, `x.value = 1;`, of what doesn't read `x`: `const x = { value:
+/// 1 };` there, nothing before it having it.
+pub(super) fn first_cell_values(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        let StmtKind::Const(name, value) = &stmts[i].kind else {
+            i += 1;
+            continue;
+        };
+        let empty = matches!(&value.kind, ExprKind::Object(props, ..)
+            if matches!(props.as_slice(), [js::Prop::Field(key, held)] if key == js::HELD && matches!(held.kind, ExprKind::Undefined)));
+        let name = name.clone();
+        let first = (i + 1..stmts.len()).find(|&j| js::mentions_of(&stmts[j..=j], &name) > 0);
+        let set = first.and_then(|j| match &stmts[j].kind {
+            StmtKind::Assign(target, value)
+                if matches!(&target.kind, ExprKind::Member(cell, key)
+                    if key == js::HELD && matches!(&cell.kind, ExprKind::Var(v) if *v == name))
+                    && !value.mentions_name(&name) =>
+            {
+                Some((j, value.clone()))
+            }
+            _ => None,
+        });
+        match (empty, set) {
+            (true, Some((j, value))) => {
+                let span = stmts[j].span;
+                stmts[j] = StmtKind::Const(name, Expr::object(vec![js::Prop::Field(js::HELD.into(), value)])).at(span);
+                stmts.remove(i);
+            }
+            _ => i += 1,
+        }
+    }
+}
+
+/// `const n = { value: x }`, a cell, and `const m = n`, its clones, whose
+/// `value` alone is read and set, by those names: `let n = x`, `n` where
+/// each reads its `value` (ADR 0287). Nothing else has it, so nothing else
+/// sees it change; its closures, which share the `let`, too. A cell or a
+/// clone a closure makes is its own body's, tidied before its function's.
+pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
+    let mut cells: Vec<js::Name> = Vec::new();
+    let mut clones: IndexMap<js::Name, js::Name> = IndexMap::default();
+    js::each_list(body, &mut |stmts| {
+        for stmt in stmts {
+            match &stmt.kind {
+                StmtKind::Const(name, value)
+                    if matches!(&value.kind, ExprKind::Object(props, ..)
+                        if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
+                {
+                    cells.push(name.clone());
+                }
+                StmtKind::Const(name, value) if let ExprKind::Var(of) = &value.kind => {
+                    clones.insert(name.clone(), of.clone());
+                }
+                _ => {}
+            }
+        }
+    });
+    // Not one declared again, whose `value` isn't the cell's.
+    let mut bound: IndexMap<js::Name, usize> = IndexMap::default();
+    js::each_block_mut(&mut body.clone(), &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {
+                *bound.entry(name.clone()).or_default() += 1;
+            }
+        }
+    });
+    js::each_expr(body, &mut |e| {
+        if let ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) = &e.kind {
+            for name in params.iter().flat_map(|p| p.bound()) {
+                *bound.entry(name.clone()).or_default() += 1;
+            }
+        }
+    });
+    cells.retain(|c| bound.get(c).copied().unwrap_or(0) <= 1);
+    // Each clone, to its cell.
+    let cell_of = |name: &js::Name| {
+        let mut name = name;
+        for _ in 0..clones.len() + 1 {
+            if cells.contains(name) {
+                return Some(name.clone());
+            }
+            name = clones.get(name)?;
+        }
+        None
+    };
+    let named: IndexMap<js::Name, js::Name> = (cells.iter().chain(clones.keys()))
+        .filter_map(|n| cell_of(n).map(|c| (n.clone(), c)))
+        .collect();
+    if named.is_empty() {
+        return;
+    }
+    // Each read of the names, and each read of a `value` of one, or one a
+    // clone is made of: the same, or one is read otherwise.
+    let mut reads: IndexMap<js::Name, usize> = IndexMap::default();
+    js::visit_stmt_names(body, &mut |v| {
+        if let Some(cell) = named.get(v) {
+            *reads.entry(cell.clone()).or_default() += 1;
+        }
+    });
+    let mut kept: IndexMap<js::Name, usize> = IndexMap::default();
+    let mut each = body.clone();
+    js::each_expr_mut(&mut each, &mut |e| {
+        if let ExprKind::Member(of, key) = &e.kind
+            && key == js::HELD
+            && let ExprKind::Var(v) = &of.kind
+            && let Some(cell) = named.get(v)
+        {
+            *kept.entry(cell.clone()).or_default() += 1;
+        }
+    });
+    js::each_block_mut(&mut each, &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Const(name, value) = &stmt.kind
+                && let ExprKind::Var(of) = &value.kind
+                && named.contains_key(name)
+                && let Some(cell) = named.get(of)
+            {
+                *kept.entry(cell.clone()).or_default() += 1;
+            }
+        }
+    });
+    let plain: IndexSet<&js::Name> = cells.iter().filter(|c| reads.get(*c) == kept.get(*c)).collect();
+    if plain.is_empty() {
+        return;
+    }
+    let of_plain = |v: &js::Name| named.get(v).filter(|c| plain.contains(c)).cloned();
+    js::each_block_mut(body, &mut |stmts| {
+        stmts.retain(|stmt| {
+            !matches!(&stmt.kind, StmtKind::Const(name, value)
+            if matches!(value.kind, ExprKind::Var(_)) && !plain.contains(name) && of_plain(name).is_some())
+        });
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::Const(name, value) = &mut stmt.kind
+                && plain.contains(name)
+                && let ExprKind::Object(props, ..) = &mut value.kind
+                && let Some(js::Prop::Field(_, init)) = props.pop()
+            {
+                stmt.kind = StmtKind::Let(name.clone(), Some(init));
+            }
+        }
+    });
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Member(of, key) = &e.kind
+            && key == js::HELD
+            && let ExprKind::Var(v) = &of.kind
+            && let Some(cell) = of_plain(v)
+        {
+            *e = Expr {
+                span: e.span,
+                ..Expr::var(&cell)
+            };
+        }
+    });
+}
+
+/// `const old = result; result = ""; return old;`, a take of a cell, a
+/// `replace` of a variable, returned: `return result;`, as React's
+/// renderToString's `result.take()` is upstream's `return result;` (rd598).
+/// The write is of a `let` the body declares at its top, declared nowhere
+/// else, so once the body returns, only its closures can see the variable:
+/// where none reads it, each only writing it, `result = chunk` or, of text
+/// or a number the take left, `result += chunk`, nothing reads it after
+/// the `return`, and a write nothing reads changes nothing. Not where a
+/// handle is made on it, nor where a `finally` reads it, which runs after
+/// the `return`. Case none (ADR 0262): no program can tell it was written.
+pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
+    let mut declared: IndexMap<js::Name, usize> = IndexMap::default();
+    js::each_declared_name(body, &mut |name| *declared.entry(name.clone()).or_default() += 1);
+    let lets: IndexSet<&js::Name> = (body.iter())
+        .filter_map(|stmt| match &stmt.kind {
+            StmtKind::Let(name, _) if declared.get(name) == Some(&1) => Some(name),
+            _ => None,
+        })
+        .collect();
+    if lets.is_empty() {
+        return;
+    }
+    let mut mentions: IndexMap<js::Name, usize> = IndexMap::default();
+    js::visit_stmt_names(body, &mut |name| *mentions.entry(name.clone()).or_default() += 1);
+    // Each reset returned, the variable's name and whether the take left
+    // text or a number, which an append reads only to write.
+    let mut resets: Vec<(js::Name, bool)> = Vec::new();
+    js::each_list(body, &mut |stmts| {
+        for window in stmts.windows(3) {
+            if let Some((name, reset)) = returned_reset(window, &mentions)
+                && lets.contains(name)
+            {
+                let appended = matches!(
+                    reset.kind,
+                    ExprKind::Str(_) | ExprKind::Num(_) | ExprKind::BigInt(_) | ExprKind::BigUint(_)
+                );
+                resets.push((name.clone(), appended));
+            }
+        }
+    });
+    if resets.is_empty() {
+        return;
+    }
+    let writes = js::Writes::of(body);
+    let mut finally_read: IndexSet<js::Name> = IndexSet::default();
+    js::each_list(body, &mut |stmts| {
+        for stmt in stmts {
+            if let StmtKind::Try(_, finally) = &stmt.kind {
+                js::visit_stmt_names(finally, &mut |name| {
+                    finally_read.insert(name.clone());
+                });
+            }
+        }
+    });
+    let unread: IndexSet<js::Name> = (resets.into_iter())
+        .filter(|(name, appended)| {
+            !writes.handles(name) && !finally_read.contains(name) && !read_by_closures(body, name, *appended)
+        })
+        .map(|(name, _)| name)
+        .collect();
+    if unread.is_empty() {
+        return;
+    }
+    js::statement_lists(body, &mut |stmts| {
+        let mut i = 0;
+        while i + 2 < stmts.len() {
+            match returned_reset(&stmts[i..i + 3], &mentions) {
+                Some((name, _)) if unread.contains(name) => {
+                    let StmtKind::Const(_, value) = &stmts[i].kind else {
+                        unreachable!("a reset's read")
+                    };
+                    let returned = StmtKind::Return(Some(value.clone())).at(stmts[i + 2].span);
+                    stmts.splice(i..i + 3, [returned]);
+                }
+                _ => {}
+            }
+            i += 1;
+        }
+    });
+}
+
+/// `const old = x; x = c; return old;` of a constant `c`, `old` read
+/// nowhere else: `x`, and `c`.
+fn returned_reset<'a>(stmts: &'a [Stmt], mentions: &IndexMap<js::Name, usize>) -> Option<(&'a js::Name, &'a Expr)> {
+    let [read, written, returned] = stmts else { return None };
+    let StmtKind::Const(old, value) = &read.kind else {
+        return None;
+    };
+    let ExprKind::Var(name) = &value.kind else { return None };
+    let StmtKind::Assign(target, reset) = &written.kind else {
+        return None;
+    };
+    let StmtKind::Return(Some(of)) = &returned.kind else {
+        return None;
+    };
+    let same = matches!(&target.kind, ExprKind::Var(v) if v == name) && name != old;
+    let read_once = matches!(&of.kind, ExprKind::Var(v) if v == old) && mentions.get(old) == Some(&1);
+    (same && read_once && reset.is_constant()).then_some((name, reset))
+}
+
+/// Whether a closure in `body`, or a function declared in it, reads
+/// `name`, past writing it with what reads nothing of it, or appending to
+/// it where `appended`.
+fn read_by_closures(body: &[Stmt], name: &js::Name, appended: bool) -> bool {
+    let unread = |value: &Expr| !value.mentions_name(name);
+    let of_it = |target: &Expr| matches!(&target.kind, ExprKind::Var(v) if v == name);
+    // `x = x + e`, which preparation writes `x += e`.
+    let append = |value: &Expr| matches!(&value.kind, ExprKind::Binary(Op::Add, to, more) if of_it(to) && unread(more));
+    let mut body = body.to_vec();
+    js::each_block_mut(&mut body, &mut |stmts| {
+        stmts.retain(|stmt| match &stmt.kind {
+            StmtKind::Assign(target, value) => !(of_it(target) && (unread(value) || appended && append(value))),
+            StmtKind::Compound(Op::Add, target, value) => !(appended && of_it(target) && unread(value)),
+            _ => true,
+        })
+    });
+    let mut read = false;
+    js::each_expr(&body, &mut |e| {
+        if let ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(_) = &e.kind {
+            read |= e.mentions_name(name);
+        }
+    });
+    js::each_block_mut(&mut body, &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Function(function) = &stmt.kind {
+                function.visit_names(&mut |v| read |= v == name);
+            }
+        }
+    });
+    read
+}
+
+/// `let map; try { .. map = (d) => { .. }; .. } catch ..`, a closure made
+/// between calls one `try` covers, set once there and read after: made
+/// where its `let` is, `function map(d) { .. }`, as it's written where
+/// calls unwind apart. Making a closure neither throws nor reads anything, and a
+/// closure reads what it captures where it's called, so it's made earlier
+/// alike; but not one that reads a name declared in that `try`, which isn't
+/// there before it (#769).
+pub(super) fn arrows_out_of_tries(body: &mut Vec<Stmt>) {
+    js::statement_lists(body, &mut |stmts| {
+        let mut i = 0;
+        while i < stmts.len() {
+            let StmtKind::Let(name, None) = &stmts[i].kind else {
+                i += 1;
+                continue;
+            };
+            let name = name.clone();
+            // Set once, there alone, as `js::Writes` counts its sets (ADR 1088).
+            if js::Writes::count(&stmts[i + 1..], &name) != 1 {
+                i += 1;
+                continue;
+            }
+            let Some(j) = (i + 1..stmts.len()).find(|&j| js::mentions_of(std::slice::from_ref(&stmts[j]), &name) > 0)
+            else {
+                i += 1;
+                continue;
+            };
+            let (StmtKind::Try(block, _) | StmtKind::TryCatch(block, _, _)) = &stmts[j].kind else {
+                i += 1;
+                continue;
+            };
+            let Some(k) = block
+                .iter()
+                .position(|s| js::mentions_of(std::slice::from_ref(s), &name) > 0)
+            else {
+                i += 1;
+                continue;
+            };
+            let StmtKind::Assign(target, value) = &block[k].kind else {
+                i += 1;
+                continue;
+            };
+            let arrow = matches!(&target.kind, ExprKind::Var(v) if *v == name)
+                && matches!(value.kind, ExprKind::Arrow(..) | ExprKind::AsyncArrow(..));
+            // What the `try` declares, which the closure mustn't read.
+            let mut declared: Vec<js::Name> = Vec::new();
+            let mut others = block.clone();
+            others.remove(k);
+            js::each_declared_name(&others, &mut |n| declared.push(n.clone()));
+            if !arrow || declared.iter().any(|d| value.mentions_name(d)) {
+                i += 1;
+                continue;
+            }
+            let (StmtKind::Try(block, _) | StmtKind::TryCatch(block, _, _)) = &mut stmts[j].kind else {
+                unreachable!("matched")
+            };
+            let StmtKind::Assign(_, value) = block.remove(k).kind else {
+                unreachable!("matched")
+            };
+            let span = stmts[i].span;
+            let (params, body, is_async) = match value.kind {
+                ExprKind::Arrow(params, body) => (params, body, false),
+                ExprKind::AsyncArrow(params, body) => (params, body, true),
+                _ => unreachable!("matched"),
+            };
+            let function = js::Function {
+                name: name.clone(),
+                params,
+                body,
+                export: false,
+                is_async,
+                noinline: false,
+                span: value.span,
+                name_span: span,
+                param_spans: Vec::new(),
+                set_apart: false,
+            };
+            // Where its `let` was, not between the `try` and what's before
+            // it, which a `try` after may be merged with; it reads what it
+            // captures where it's called, inside the `try`.
+            stmts[i] = StmtKind::Function(Box::new(function)).at(span);
+            i += 1;
+        }
+    });
+}
+
+/// `const tick = () => { … }; useEffect(tick, [count]);`, a closure only a
+/// hook's function is: written there, a function its `let` names, `function
+/// tick() { … }`; one that reads what its name is given apart from, `step`
+/// of `step$1`, too, which the speller keeps apart (ADR 0297, amended).
+pub(super) fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &IndexSet<js::Name>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        if let StmtKind::Const(name, value) = &stmts[i].kind
+            && callbacks.contains(name)
+            && matches!(value.kind, ExprKind::Arrow(..) | ExprKind::AsyncArrow(..))
+            && !value.mentions_name(name)
+            && js::mentions_of(&stmts[i + 1..], name) == 1
+        {
+            let span = stmts[i].span;
+            let StmtKind::Const(name, value) = stmts.remove(i).kind else {
+                unreachable!("matched")
+            };
+            let (params, body, is_async) = match value.kind {
+                ExprKind::Arrow(params, body) => (params, body, false),
+                ExprKind::AsyncArrow(params, body) => (params, body, true),
+                _ => unreachable!("matched"),
+            };
+            let function = js::Function {
+                name: name.clone(),
+                params,
+                body,
+                export: false,
+                is_async,
+                noinline: false,
+                span: value.span,
+                name_span: span,
+                param_spans: Vec::new(),
+                set_apart: false,
+            };
+            let mut function = Some(function);
+            js::each_expr_mut(&mut stmts[i..], &mut |e| {
+                if matches!(&e.kind, ExprKind::Var(v) if *v == name)
+                    && let Some(function) = function.take()
+                {
+                    *e = Expr {
+                        facts: js::Facts::NONE,
+                        kind: ExprKind::Function(Box::new(function)),
+                        span: e.span,
+                        held_as: Default::default(),
+                    };
+                }
+            });
+            continue;
+        }
+        i += 1;
+    }
+}
+
+/// A writer's body (ADR 0054), `let f = ""` first: each way through that
+/// writes once and gives it back, `return s`; a first write the string's
+/// start, `let f = s`; no `f` at all where nothing's left to write it.
+pub(crate) fn writer_body(out: &mut Vec<Stmt>, name: &js::Name) {
+    let Some(at) = out.iter().position(|s| {
+        matches!(&s.kind, StmtKind::Let(n, Some(e)) if n == name && matches!(&e.kind, ExprKind::Str(t) if t.is_empty()))
+    }) else {
+        return;
+    };
+    let made = out.remove(at);
+    let mut rest = out.split_off(at);
+    returned_unwritten(&mut rest, name);
+    if js::mentions_of(&rest, name) > 0 {
+        match rest.first().map(|s| &s.kind) {
+            Some(StmtKind::Assign(target, value))
+                if matches!(&target.kind, ExprKind::Var(v) if v == name)
+                    && let ExprKind::Binary(Op::Add, lhs, first) = &value.kind
+                    && matches!(&lhs.kind, ExprKind::Var(v) if v == name) =>
+            {
+                let first = (**first).clone();
+                let span = rest[0].span;
+                rest[0] = StmtKind::Let(name.into(), Some(first)).at(span);
+            }
+            _ => rest.insert(0, made),
+        }
+    }
+    out.extend(rest);
+}
+
+/// `((result) => body)(e)`, a function written to read a value more than
+/// once, `{:?}` of a `Result` (`display::applied`), given what isn't a
+/// variable: `e` held first, `const _$1 = e;`, and `body` in place of the
+/// call, reading it, as a value read twice is held everywhere else, which
+/// `readable_temporaries` then names. Of each statement, in the order it
+/// evaluates what it's made of, while what it evaluates first may be read
+/// after it, `read_past_calls`; not where a test decides whether it runs.
+pub(super) fn applied_values(stmts: &mut Vec<Stmt>, set: &IndexSet<js::Name>, plain: &super::Plain) {
+    let mut i = 0;
+    while i < stmts.len() {
+        let name = js::Name::made_temporary("value");
+        // What's evaluated first: an assignment's target, which `out += ..`
+        // reads, then the value.
+        let (root, mut before) = match &mut stmts[i].kind {
+            StmtKind::Expr(e)
+            | StmtKind::Const(_, e)
+            | StmtKind::Let(_, Some(e))
+            | StmtKind::Return(Some(e))
+            | StmtKind::Throw(e) => (
+                e,
+                Before {
+                    past: true,
+                    reads: true,
+                },
+            ),
+            StmtKind::Assign(target, e) | StmtKind::Compound(_, target, e) => {
+                let before = Before {
+                    past: read_past_calls(target, set, plain),
+                    reads: target.only_reads(),
+                };
+                (e, before)
+            }
+            _ => {
+                i += 1;
+                continue;
+            }
+        };
+        // Taken out, and the statement looked at again, for the next.
+        if let Some(value) = first_applied(root, &mut before, &name, set, plain) {
+            let span = stmts[i].span;
+            stmts.insert(i, StmtKind::Const(name, value).at(span));
+        }
+        i += 1;
+    }
+}
+
+/// The first `((p) => body)(e)` in `e`, in the order it's evaluated, while
+/// all evaluated before it, `before`, may be read after it: `e`, taken out
+/// and held as `name`, and the call `body` of it.
+fn first_applied(
+    e: &mut Expr,
+    before: &mut Before,
+    name: &js::Name,
+    set: &IndexSet<js::Name>,
+    plain: &super::Plain,
+) -> Option<Expr> {
+    if !before.past && !before.reads {
+        return None;
+    }
+    if let ExprKind::Call(callee, args) = &e.kind
+        && let ExprKind::Arrow(params, body) = &callee.kind
+        && let [js::Pattern::Name(param)] = params.as_slice()
+        && let [
+            Stmt {
+                kind: StmtKind::Return(Some(result)),
+                ..
+            },
+        ] = body.as_slice()
+        && let [value] = args.as_slice()
+        && !value.reads_same()
+        // Before what's evaluated before it: past what reads the same after
+        // it, or, doing nothing itself, past what only reads.
+        && (before.past || before.reads && !value.has_effects())
+        && let Some(read) = result.substitute_in_callbacks(&|n: &js::Name| (n == param).then(|| Expr::var(name)))
+    {
+        let value = value.clone();
+        *e = Expr { span: e.span, ..read };
+        return Some(value);
+    }
+    let found = match &mut e.kind {
+        ExprKind::Template(_, values, _) | ExprKind::Array(values, ..) => values
+            .iter_mut()
+            .find_map(|value| first_applied(value, before, name, set, plain)),
+        ExprKind::Call(callee, args) | ExprKind::New(callee, args) => first_applied(callee, before, name, set, plain)
+            .or_else(|| {
+                args.iter_mut()
+                    .find_map(|arg| first_applied(arg, before, name, set, plain))
+            }),
+        // A test decides whether what's after it runs: only it.
+        ExprKind::Binary(Op::And | Op::Or | Op::Coalesce, a, _) | ExprKind::Cond(a, ..) => {
+            first_applied(a, before, name, set, plain)
+        }
+        ExprKind::Binary(_, a, b) => {
+            first_applied(a, before, name, set, plain).or_else(|| first_applied(b, before, name, set, plain))
+        }
+        ExprKind::Unary(_, a) | ExprKind::Stringed(a) | ExprKind::Converted(_, a) => {
+            first_applied(a, before, name, set, plain)
+        }
+        _ => None,
+    };
+    // What it is, evaluated whole before what's after it.
+    if found.is_none() {
+        before.past &= read_past_calls(e, set, plain);
+        before.reads &= e.only_reads();
+    }
+    found
+}
+
+/// What a statement evaluates before a point in it: whether all of it reads
+/// the same after a call, `read_past_calls`, and whether it only reads.
+pub(super) struct Before {
+    past: bool,
+    reads: bool,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // A cell a callback's parameter shadows stays a cell: of `const item =
+    // { value: 5 }; item.value = 6; f((item) => item.value)`, the callback's
+    // `item` is its own, whose `value` isn't the cell's. Since M2 a name
+    // lowering makes is the item's own, so only a tree used again declares
+    // one twice, till M3's S7 gives each copy binders of its own.
+    #[test]
+    fn a_cell_a_callback_shadows_stays_a_cell() {
+        let at = |kind: StmtKind| kind.at(js::Span::NONE);
+        let held = |of: Expr| Expr::member(of, js::HELD);
+        let cell = Expr::object(vec![js::Prop::Field(js::HELD.into(), Expr::int(5))]);
+        let callback = Expr::arrow(
+            vec![js::Pattern::Name("item".into())],
+            vec![at(StmtKind::Return(Some(held(Expr::var("item")))))],
+        );
+        let mut body = vec![
+            at(StmtKind::Const("item".into(), cell.clone())),
+            at(StmtKind::Assign(held(Expr::var("item")), Expr::int(6))),
+            at(StmtKind::Expr(Expr::call(Expr::var("f"), vec![callback]))),
+        ];
+        plain_cells(&mut body);
+        assert!(matches!(&body[0].kind, StmtKind::Const(name, value) if name.is("item") && *value == cell));
+    }
+}

@@ -1,8 +1,8 @@
-// Mutations of src/lower/analysis/intervals/keys.rs, a map's key held
+// Mutations of crates/rust-js-lower/src/analysis/intervals/keys.rs, a map's key held
 // where its `contains_key` showed it (ADR 1137, #1672 M3, step 5).
 import type { Mutation } from "../../../../mutations";
 
-const file = "src/lower/analysis/intervals/keys.rs";
+const file = "crates/rust-js-lower/src/analysis/intervals/keys.rs";
 const tests = ["test/intervals-shadow.test.ts", "-t", "contains_key"];
 
 export const mutations: Mutation[] = [

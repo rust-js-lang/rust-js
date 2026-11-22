@@ -54,7 +54,7 @@ export type Mutation = {
   tests?: string[];
   /** Or, where no program the compiler is given reaches its code, the
    * `cargo test` filter whose unit tests must: a test's path, or its
-   * module's, from the crate's root, `lower::mir::tidy::jumps::tests::x`.
+   * module's, from the crate's root, `tidy::jumps::tests::x`.
    * A mutation names this or `tests`, not both (#915). */
   unitTests?: string;
   /** A non-crate source generator prerequisite, charged as a build. */
@@ -111,8 +111,8 @@ export const readabilityOwners = [
   "crates/rust-js-emit/src/typescript.rs",
   "crates/rust-js-emit/src/prettier.rs",
   "crates/rust-js-emit/src/node_session.rs",
-  "src/lower/mir/tidy.rs",
-  "src/lower/mir/tidy/**",
+  "crates/rust-js-mir/src/tidy.rs",
+  "crates/rust-js-mir/src/tidy/**",
 ];
 
 /** Whether `file` is of `readabilityOwners`. */
@@ -239,8 +239,8 @@ export async function harnessChangedSince(base: string): Promise<boolean> {
 
 /** The module of a source file `file` of one of the compiler's crates, as
  * a `cargo test` filter of its crate's unit tests names it from the
- * crate's root (`unitTarget`), `src/lower/mir/tidy/jumps.rs`'s
- * `lower::mir::tidy::jumps`, `crates/rust-js-program/src/js/name.rs`'s
+ * crate's root (`unitTarget`), `crates/rust-js-mir/src/tidy/jumps.rs`'s
+ * `tidy::jumps`, `crates/rust-js-program/src/js/name.rs`'s
  * `js::name`; a crate's root's is `""`. Nothing for a file that isn't the
  * compiler's Rust. */
 export function unitTestsModule(file: string): string | undefined {
@@ -407,6 +407,7 @@ export const crateFiles = [
   "Cargo.toml",
   "Cargo.lock",
   "build.rs",
+  "rustc-rpath.rs",
   "rust-toolchain.toml",
   // The compiler's crates (ADR 1181): the binary's sources and each other
   // crate's directory, its manifest with its sources.

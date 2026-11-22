@@ -1,4 +1,4 @@
-// Mutations of src/lower/copies/stored.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/copies/stored.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 const value = ["test/crates.test.ts", "-t", "three crates: library_value_changed_by_another_library"];
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-shared",
     breaks: "a library hands out what it stores itself, `return ORIGIN;`, which another library given it changes in place (#1907)",
-    file: "src/lower/copies/stored.rs",
+    file: "crates/rust-js-lower/src/copies/stored.rs",
     find: "        self.krate.library\n            && !self.krate.compiled_once\n",
     replace: "        false\n            && !self.krate.compiled_once\n",
     tests: value,
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-thread-local-unseen",
     breaks: "a thread-local's `with`'s value isn't what a library stores, so `home()` hands out `HOME` itself, which `mid::marked` changes (#1907)",
-    file: "src/lower/copies/stored.rs",
+    file: "crates/rust-js-lower/src/copies/stored.rs",
     find: "            return pointer.as_usize() == 2 && self.thread_local_reader(body.source.def_id());\n",
     replace: "            return false;\n",
     tests: value,
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-parameters-stored",
     breaks: "what a parameter's reference or a closure's capture reads is taken for what a library stores, so primitives' `computePosition(.., { ...boundary }, ..)` copies again what no crate changes (#1907, #1871)",
-    file: "src/lower/copies/stored.rs",
+    file: "crates/rust-js-lower/src/copies/stored.rs",
     find: "            return pointer.as_usize() == 2 && self.thread_local_reader(body.source.def_id());\n",
     replace: "            return true;\n",
     tests: ["test/deep-chain.test.ts"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-parts-read-copied",
     breaks: "a stored value whose number alone is read is copied, `const mark = { ...shared }; return mark.n;` (#1907)",
-    file: "src/lower/copies/stored.rs",
+    file: "crates/rust-js-lower/src/copies/stored.rs",
     find: "                Rvalue::Use(op, _) if read(op) => self.local_escapes(body, dest.local, 0),\n",
     replace: "                Rvalue::Use(op, _) if read(op) => true,\n",
     tests: ["test/library-kept-copies.test.ts", "-t", "kept value"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-dictionary-copied",
     breaks: "what a library stores given to a WebIDL operation's dictionary parameter is copied, `decoder.decode(undefined, { ...STREAMING })`, though WebIDL reads it into an IDL value and keeps nothing (#1907)",
-    file: "src/lower/copies/stored.rs",
+    file: "crates/rust-js-lower/src/copies/stored.rs",
     find: "        matches!(param.kind(), ty::Adt(adt, _) if bindings::is_dictionary(tcx, adt.did()))\n",
     replace: "        matches!(param.kind(), ty::Adt(adt, _) if false && bindings::is_dictionary(tcx, adt.did()))\n",
     tests: ["test/library-kept-copies.test.ts", "-t", "dictionary"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-any-uncopied",
     breaks: "what a library stores given to a binding's parameter of any value is as it is, `postMessage(SAVED)`, which the platform may keep (#1907)",
-    file: "src/lower/copies/stored.rs",
+    file: "crates/rust-js-lower/src/copies/stored.rs",
     find: "        if !bindings::is_binding(tcx, callee) {\n            return false;\n        }\n",
     replace: "        if !bindings::is_binding(tcx, callee) {\n            return false;\n        }\n        if true {\n            return true;\n        }\n",
     tests: ["test/library-kept-copies.test.ts", "-t", "dictionary"],
@@ -55,15 +55,15 @@ export const mutations: Mutation[] = [
   {
     name: "stored-std-form-copied",
     breaks: "std's value of a form of its own is taken for a plain object, so a library's stored `fmt::Arguments`, a JS function, is spread into an object, `TypeError: args is not a function` (#1907)",
-    file: "src/lower/copies/stored.rs",
-    find: "            ty::Adt(adt, _) if !crate::lower::recognition::is_std_crate(self.tcx, adt.did()) => {\n",
-    replace: "            ty::Adt(adt, _) if true || !crate::lower::recognition::is_std_crate(self.tcx, adt.did()) => {\n",
+    file: "crates/rust-js-lower/src/copies/stored.rs",
+    find: "            ty::Adt(adt, _) if !crate::recognition::is_std_crate(self.tcx, adt.did()) => {\n",
+    replace: "            ty::Adt(adt, _) if true || !crate::recognition::is_std_crate(self.tcx, adt.did()) => {\n",
     tests: ["test/corpus.test.ts", "-t", "formatter_write_fmt_of_held_arguments"],
   },
   {
     name: "stored-guard-unseen",
     breaks: "what a `RefCell`'s guard or an `Rc` points at isn't what a library stores, so `got(&shared)` hands out the `Mark` the consumer's `Rc` holds, which `mid::marked` changes (#1907)",
-    file: "src/lower/copies/stored.rs",
+    file: "crates/rust-js-lower/src/copies/stored.rs",
     find: "        if holds {\n            return true;\n        }\n",
     replace: "        if false && holds {\n            return true;\n        }\n",
     tests: value,
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-literal-stored",
     breaks: "a literal a library reads, `*b\"abc%20\"`, is taken for what it stores, `[97, 98, 99, 37, 50, 48].slice()` (#1923)",
-    file: "src/lower/copies/stored.rs",
+    file: "crates/rust-js-lower/src/copies/stored.rs",
     find: "            mir::Const::Val(..) => false,\n",
     replace: "            mir::Const::Val(..) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^(slice_to_owned|str_mut).rs$"],
@@ -79,15 +79,15 @@ export const mutations: Mutation[] = [
   {
     name: "stored-new-box-stored",
     breaks: "what a box `Box::new` made holds is taken for what a library stores, `const before = { ...p };` (#1923)",
-    file: "src/lower/copies/stored.rs",
-    find: "        if crate::lower::recognition::is_std_def(tcx, callee, StdItem::BoxNew) {\n            return false;\n",
-    replace: "        if crate::lower::recognition::is_std_def(tcx, callee, StdItem::BoxNew) {\n            return true;\n",
+    file: "crates/rust-js-lower/src/copies/stored.rs",
+    find: "        if crate::recognition::is_std_def(tcx, callee, StdItem::BoxNew) {\n            return false;\n",
+    replace: "        if crate::recognition::is_std_def(tcx, callee, StdItem::BoxNew) {\n            return true;\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_copy_written_whole.rs$"],
   },
   {
     name: "stored-stepped-array-escapes",
     breaks: "a constant a `for` loop only steps through is copied, `for (const shape of SHAPES.slice())` (#1923)",
-    file: "src/lower/copies/stored.rs",
+    file: "crates/rust-js-lower/src/copies/stored.rs",
     find: "        !self.holds_plain_object(item, 0)\n            && destination.projection.is_empty()\n",
     replace: "        false\n            && destination.projection.is_empty()\n",
     tests: ["test/corpus.test.ts", "-t", "^sort_stable_seen.rs$"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-stepped-objects-shared",
     breaks: "a constant of objects a `for` loop steps through is read as it is, and each item it gives out is the constant's own, which JS then changes (#1923)",
-    file: "src/lower/copies/stored.rs",
+    file: "crates/rust-js-lower/src/copies/stored.rs",
     find: "        !self.holds_plain_object(item, 0)\n            && destination.projection.is_empty()\n",
     replace: "        destination.projection.is_empty()\n",
     tests: ["test/library-kept-copies.test.ts", "-t", "literal, new box and constant"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-stepped-by-anything",
     breaks: "an array's iterator lent to any call, not only `Iterator::next`, is taken for one only stepped (#1923)",
-    file: "src/lower/copies/stored.rs",
+    file: "crates/rust-js-lower/src/copies/stored.rs",
     find: "                        && func.const_fn_def().is_some_and(|(callee, _)| self.tcx.is_lang_item(callee, LangItem::IteratorNext))\n",
     replace: "",
     tests: ["test/library-kept-copies.test.ts", "-t", "literal, new box and constant"],

@@ -1,4 +1,4 @@
-// Mutations of src/lower/drops/uses.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/drops/uses.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "instance-value-drops-unsettled",
     breaks:
       "an instance's value given its drop, `firstLoud`, keeps its drop's argument unsettled: rust-js refuses its own output (#974)",
-    file: "src/lower/drops/uses.rs",
+    file: "crates/rust-js-lower/src/drops/uses.rs",
     find: "            js::each_expr_mut(&mut function.body, &mut |e| keep_arguments(e, &kept));\n        }\n        module_fns",
     replace: "        }\n        module_fns",
     tests: ["test/corpus.test.ts", "-t", "^function_value_drops_by_need.rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "drops-by-need-passed-ignored",
     breaks:
       "a drop passed on to a function that uses it isn't kept, so `discard` drops nothing",
-    file: "src/lower/drops/uses.rs",
+    file: "crates/rust-js-lower/src/drops/uses.rs",
     find: "                if kept.contains(&to) && kept.insert(from) {\n",
     replace:
       "                if false && kept.contains(&to) && kept.insert(from) {\n",
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     name: "drops-by-need-names-of-one-gathered",
     breaks:
       "of a function's copies lowered apart, the names gathered last replace the others', so a copy's `dropE` stays its parameter: base64's crate refused (ADR 1150)",
-    file: "src/lower/drops/uses.rs",
+    file: "crates/rust-js-lower/src/drops/uses.rs",
     find: "        for (id, names) in other.names {\n            self.names.entry(id).or_default().extend(names);\n        }\n",
     replace: "        self.names.extend(other.names);\n",
     tests: ["test/cross-crate-copies.test.ts", "-t", "copies each leave out the drops they don't use"],
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
   {
     name: "drops-by-need-uses-unnoted",
     breaks: "a drop a body uses isn't kept, so `pick` drops nothing",
-    file: "src/lower/drops/uses.rs",
+    file: "crates/rust-js-lower/src/drops/uses.rs",
     find: "        observed.used.extend(\n            self.drop_state\n                .used_drops\n                .iter()\n                .filter_map(own)\n                .map(|param| (id, param)),\n        );\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "drops_by_need"],
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     name: "drops-by-need-passed-as-used",
     breaks:
       "a drop passed on counts as used, so `hand_on`, which passes its value on to itself and to `keep`, takes a drop neither uses, `handOn(value, steps, dropT)`",
-    file: "src/lower/drops/uses.rs",
+    file: "crates/rust-js-lower/src/drops/uses.rs",
     find: "        if !self.in_copied_default() && self.krate.takes_used_drops.contains(self.item) {\n",
     replace:
       "        if false && !self.in_copied_default() && self.krate.takes_used_drops.contains(self.item) {\n",
@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
   {
     name: "drops-by-need-params-kept",
     breaks: "a function keeps the drop parameters it doesn't use",
-    file: "src/lower/drops/uses.rs",
+    file: "crates/rust-js-lower/src/drops/uses.rs",
     find: "if unused.contains(name)));\n",
     replace: "if false && unused.contains(name)));\n",
     tests: ["test/crates.test.ts", "-t", "takes the drops its body uses"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
     name: "drops-by-need-arguments-kept",
     breaks:
       "a call still gives a drop its callee doesn't take, before one it does, as `discard`'s of `pick`",
-    file: "src/lower/drops/uses.rs",
+    file: "crates/rust-js-lower/src/drops/uses.rs",
     find: "kept.contains(&(local(item), index)).then_some(*drop)",
     replace:
       "Some(if kept.contains(&(local(item), index)) { *drop } else { Expr::js_undefined() })",
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     name: "drops-by-need-arrow-kept",
     breaks:
       "a function given as a value stays an arrow that passes its parameters on, `(arg0) => keep(arg0)`",
-    file: "src/lower/drops/uses.rs",
+    file: "crates/rust-js-lower/src/drops/uses.rs",
     find: "    if made && let Some(callee) = passed_on(e, Taker::Made, &[]) {\n",
     replace:
       "    if !made && let Some(callee) = passed_on(e, Taker::Made, &[]) {\n",
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     name: "generic-drop-not-given",
     breaks:
       "a generic function given a value with a destructor isn't given its drop, and never drops it",
-    file: "src/lower/drops/uses.rs",
+    file: "crates/rust-js-lower/src/drops/uses.rs",
     find: "        let drop = drop?.unwrap_or_else(Expr::js_undefined);\n",
     replace: "        let drop = drop.map(|_| Expr::js_undefined())?;\n",
     tests: ["test/corpus.test.ts", "-t", "drop_generic"],
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
     name: "instance-takes-unused-drops",
     breaks:
       "a library's function the crate compiles itself takes every drop its callers give, used or not, `pick(a, b, dropA, dropB)` (ADRs 0300, 0914)",
-    file: "src/lower/drops/uses.rs",
+    file: "crates/rust-js-lower/src/drops/uses.rs",
     find: "                    (id.is_local() || foreign.is_instance(id))\n",
     replace: "                    id.is_local()\n",
     tests: ["test/crates.test.ts", "-t", "takes the drops its body uses"],

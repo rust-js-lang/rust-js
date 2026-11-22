@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/given_arguments.rs (ADR 0093): an
+// Mutations of crates/rust-js-mir/src/given_arguments.rs (ADR 0093): an
 // `fmt::Arguments` given on, a function of its text (#1565).
 import type { Mutation } from "../../../mutations";
 
@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-on-arguments-made-whole",
     breaks: "an `Arguments` given on is its text, made where the macro is written, so its writers print before the callee's own output, and once though it's written twice",
-    file: "src/lower/mir/given_arguments.rs",
+    file: "crates/rust-js-mir/src/given_arguments.rs",
     find: "        matches!(known, Some(Std::FmtNew | Std::FmtStr))\n",
     replace: "        false && matches!(known, Some(Std::FmtNew | Std::FmtStr))\n",
     tests: grid,
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-on-operands-made-late",
     breaks: "an `Arguments` given on evaluates its operands where it's formatted, each time, so an operand's effect runs again and a `Cell` read where it's made is read late",
-    file: "src/lower/mir/given_arguments.rs",
+    file: "crates/rust-js-mir/src/given_arguments.rs",
     find: "                    && !value.is_constant()\n",
     replace: "                    && !value.is_constant()\n                    && false\n",
     tests: grid,
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-on-arguments-uncalled",
     breaks: "std's formatting given an `Arguments` that's a function writes the function, not its text",
-    file: "src/lower/mir/given_arguments.rs",
+    file: "crates/rust-js-mir/src/given_arguments.rs",
     find: "        let called = Expr::call(given, Vec::new());\n",
     replace: "        let called = given;\n",
     tests: grid,
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-on-failing-partial-lost",
     breaks: "an `Arguments` given on whose writer fails loses what it made before the `Err`, `[B` where native Rust has `[aB`",
-    file: "src/lower/mir/given_arguments.rs",
+    file: "crates/rust-js-mir/src/given_arguments.rs",
     find: "            Value::Fmt(_, _, text) => (text, true),\n",
     replace: "            Value::Fmt(_, _, text) => (text, false),\n",
     tests: grid,
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-to-a-writer-failing-text-lost",
     breaks: "an `Arguments` given to a writer whose value fails loses what it wrote before the `Err` where it's made a `String`'s text, `\"\"` where native Rust has `\"x1y\"`",
-    file: "src/lower/mir/given_arguments.rs",
+    file: "crates/rust-js-mir/src/given_arguments.rs",
     find: "            match fails || self.krate.failing.any {\n",
     replace: "            match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_given_on.rs$"],
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-form-given-of-text",
     breaks: "an `Arguments` made where it's written into a writer, its text, is taken for the function that writes into the sink it claims, `$writingInto(f, \"b1\")`",
-    file: "src/lower/mir/given_arguments.rs",
+    file: "crates/rust-js-mir/src/given_arguments.rs",
     find: "                    if arguments_use(&recognition, body, local) != ArgumentsUse::GivenOn {\n",
     replace: "                    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_pieces.rs$"],
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-form-of-a-place-unseen",
     breaks: "an `Arguments` read of a field, `Display::fmt(&self.0, f)`, kept so, is refused as made elsewhere",
-    file: "src/lower/mir/given_arguments.rs",
+    file: "crates/rust-js-mir/src/given_arguments.rs",
     find: "                    Some(from) if read(from) => {}\n",
     replace: "                    Some(from) if read(from) => return false,\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-form-of-a-constant-unseen",
     breaks: "a constant `Arguments` written into a writer is refused as made elsewhere",
-    file: "src/lower/mir/given_arguments.rs",
+    file: "crates/rust-js-mir/src/given_arguments.rs",
     find: "            return operand.constant().is_some();\n",
     replace: "            return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-form-of-a-call-result-unseen",
     breaks: "an `Arguments` a function returned, `given(format_args!(..))`, written into a writer, is refused as made elsewhere",
-    file: "src/lower/mir/given_arguments.rs",
+    file: "crates/rust-js-mir/src/given_arguments.rs",
     find: "                Some(_) => continue,\n",
     replace: "                Some(_) => return false,\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
@@ -80,15 +80,15 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-sink-form-where-nothing-arms",
     breaks: "an `Arguments` given on is the function that writes into a sink where nothing arms one, its only use its text, where its template reads plainly",
-    file: "src/lower/mir/given_arguments.rs",
-    find: "        written.arguments.arms\n            && crate::lower::analysis::given_to_a_write(\n",
-    replace: "        true\n            && crate::lower::analysis::given_to_a_write(\n",
+    file: "crates/rust-js-mir/src/given_arguments.rs",
+    find: "        written.arguments.arms\n            && rust_js_lower::analysis::given_to_a_write(\n",
+    replace: "        true\n            && rust_js_lower::analysis::given_to_a_write(\n",
     tests: ["test/corpus.test.ts", "-t", "^arguments_kept_by_a_generic_std_function.rs$"],
   },
   {
     name: "arguments-given-as-a-parameter-unrefused",
     breaks: "an `fmt::Arguments` a function is given, given on to a type parameter a call writes into a writer, isn't refused: its template, whose write throws (#1793)",
-    file: "src/lower/mir/given_arguments.rs",
+    file: "crates/rust-js-mir/src/given_arguments.rs",
     find: "                && self.krate.written.writes_at(&recognition, callee, i)\n                && !self.sink_form_given(state.body, operand)\n",
     replace: "                && self.krate.written.writes_at(&recognition, callee, i)\n                && false\n",
     tests: ["test/limitations.test.ts", "-t", "given as a parameter"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-held-in-an-array-unfollowed",
     breaks: "an array of `fmt::Arguments` a body makes, given to a generic writer's `&[T]`, isn't taken as made of what's written into the sink, so it's refused where it compiles (#1745)",
-    file: "src/lower/mir/given_arguments.rs",
+    file: "crates/rust-js-mir/src/given_arguments.rs",
     find: "                    Rvalue::Aggregate(_, operands) => {\n                        for operand in operands.iter() {\n",
     replace: "                    Rvalue::Aggregate(_, operands) if false => {\n                        for operand in operands.iter() {\n",
     tests: ["test/corpus.test.ts", "-t", "^arguments_given_to_a_generic_writer.rs$"],
@@ -104,8 +104,8 @@ export const mutations: Mutation[] = [
   {
     name: "own-write-fmt-by-trait-path",
     breaks: "a std trait's method that resolves to the crate's own `write_fmt` is taken for std's, so an `Arguments` it reads as text is given as its text, `args()`, where its body calls the function it takes, `args is not a function`, without `write_fmt`'s recogniser (#2058)",
-    file: "src/lower/mir/given_arguments.rs",
-    find: "            && !crate::lower::recognition::is_std_crate(self.tcx, instance.def_id())\n",
+    file: "crates/rust-js-mir/src/given_arguments.rs",
+    find: "            && !rust_js_lower::recognition::is_std_crate(self.tcx, instance.def_id())\n",
     replace: "            && false\n",
     tests: ["test/tidy-stages.test.ts", "-t", "own_write_fmt"],
   },

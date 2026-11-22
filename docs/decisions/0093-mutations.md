@@ -18,7 +18,7 @@ didn't, and the generator was taught what it lacked.
 **`scripts/mutations.ts` puts known bugs back, one at a time, and runs the
 tests named for each against the compiler built with it.** The mutations
 are in `scripts/mutations/`, one list for each source file, at its path
-from `src/`: `src/lower/traits.rs`'s in `scripts/mutations/lower/traits.ts`,
+from `src/`: `crates/rust-js-lower/src/traits.rs`'s in `scripts/mutations/lower/traits.ts`,
 so code that moves takes its mutations with it. (Amended: one list for
 all, 3,400 lines by its 400th.) A mutation is a
 change to one place in the compiler's source, found exactly as it's
@@ -355,7 +355,7 @@ snapshots catch it, six of its 12 parts each stopping at a case whose JS differs
 
 Some code is reached by no program the compiler is given, so no corpus
 case or `bun test` file can catch a bug put back in it: #895's two clears
-of `tidied` in `src/lower/mir/tidy/jumps.rs`, whose rewrites no MIR-made
+of `tidied` in `crates/rust-js-mir/src/tidy/jumps.rs`, whose rewrites no MIR-made
 body reaches, are each held by a unit test in that file, and removing
 either fails `cargo test`. The runner ran `bun test` alone, so the catalog
 couldn't hold them.
@@ -938,7 +938,7 @@ push` runs it. A mutation that was renamed, or moved to another list,
 isn't removed: it is matched by its file and `find`. Nor is one whose code
 went with it, a refactor's whose mutation is folded into another's: it
 can't apply. The rule's first push found one, a refactor of
-src/lower/traits/given.rs that removed the line its mutation changed. A script's mutation is outside the rule: its tests run
+crates/rust-js-lower/src/traits/given.rs that removed the line its mutation changed. A script's mutation is outside the rule: its tests run
 in a copy of the tree with it, and are its evidence. This supersedes
 #1979's evidence by hand above. The runtime retirement's rule, a run of
 the tree pushed, still holds of the push.
@@ -1059,7 +1059,7 @@ verdict removes a mutation (`recorded`). A change's run, per push, locally
 and in CI's check, judges once, as before: a flake that hides a survivor
 there doesn't land a wrong answer, only delays the survivor's finding to
 the next recorded run, and confirming there cost half again: the 42
-mutations of `src/lower/drops/inlined.rs` on the Mac mini took 112 s and
+mutations of `crates/rust-js-lower/src/drops/inlined.rs` on the Mac mini took 112 s and
 104 s judged once, 166 s and 164 s confirmed, as each caught mutant's
 failing test runs again and a mutant's compiles are never cached; a
 change's mutations are most of CI's minutes.
@@ -1180,11 +1180,11 @@ Two limits, each met in the first sweep:
 The first sweep removed three sites, each silent in every run above, at
 a1b0d7aac, and in rustc's `iterators/`, `for-loop-while/`,
 `array-slice-vec/` and `closures/` (179 that pass): `mapped-adapter-hint-refused` and `mapped-hint-refused`
-(src/lower/mir/iter.rs, a map's `size_hint()` of std's adapter of a
+(crates/rust-js-mir/src/iter.rs, a map's `size_hint()` of std's adapter of a
 source whose hint is std's: each such map is now a `$Steps`, the unmapped
 arm's, or a JS adapter `in_place_adapter_hint` answers, so an unknown one
 is refused, as any other), and `in-place-part-copied-held`
-(src/lower/iterators/clones.rs, a `copied()` cloned in place: a
+(crates/rust-js-lower/src/iterators/clones.rs, a `copied()` cloned in place: a
 `cycle()` of one is refused before it, "`cycle()` of a
 `Copied<Map<..>>`", and a part cloned apart is std's compiled struct).
 `own-bindings-of-its-name-counted`, the fourth of the coverage run, was

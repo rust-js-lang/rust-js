@@ -1,4 +1,4 @@
-// Mutations of src/lower/analysis/plain_locals.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/analysis/plain_locals.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "plain-locals-boxed",
     breaks:
       "a thread-local only read and set in its own module keeps its `{ value }`, `const COUNT = { value: 0 }`",
-    file: "src/lower/analysis/plain_locals.rs",
+    file: "crates/rust-js-lower/src/analysis/plain_locals.rs",
     find: "let mut plain: IndexSet<LocalDefId> = keys.collect();",
     replace:
       "let mut plain: IndexSet<LocalDefId> = keys.filter(|_| false).collect();",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "fn-given-never-quiet",
     breaks:
       "a function given to `with_borrow` keeps its thread-local a cell, React's scheduler's `CURRENT_TASK.with_borrow(Clone::clone)` a `$withBorrow`",
-    file: "src/lower/analysis/plain_locals.rs",
+    file: "crates/rust-js-lower/src/analysis/plain_locals.rs",
     find: "        _ => fn_def(thir[f].ty).map(|(f, f_args)| Given::Fn(f, f_args)),\n",
     replace: "        _ => None,\n",
     tests: ["test/lowering-cells.test.ts", "-t", "given a function to run"],
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     name: "local-with-never-quiet",
     breaks:
       "a thread-local a `with` lends its cell, used in place, `COUNT.with(|count| count.set(count.get() + 1))`, keeps its `{ value }`, and exported, is refused (ADR 0270, amended)",
-    file: "src/lower/analysis/plain_locals.rs",
+    file: "crates/rust-js-lower/src/analysis/plain_locals.rs",
     find: "                && let lends = (is_local_borrow(tcx, id) || is_local_with(tcx, id))\n                && (lends || local_key_access(tcx, id).is_some())\n",
     replace:
       "                && let lends = is_local_borrow(tcx, id)\n                && (lends || local_key_access(tcx, id).is_some())\n",
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     name: "local-with-unasked",
     breaks:
       "what a `with` runs is never asked whether it borrows its cell: `LABEL.with(|label| label.borrow().len())` is its module's variable, its borrows uncounted (ADR 0270, amended)",
-    file: "src/lower/analysis/plain_locals.rs",
+    file: "crates/rust-js-lower/src/analysis/plain_locals.rs",
     find: "                && let lends = (is_local_borrow(tcx, id) || is_local_with(tcx, id))\n                && (lends || local_key_access(tcx, id).is_some())\n",
     replace:
       "                && let lends = is_local_borrow(tcx, id)\n                && (lends || is_local_with(tcx, id) || local_key_access(tcx, id).is_some())\n",
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     name: "outside-writes-allowed",
     breaks:
       "another module's `flags::ENABLED.set(true)` of an exported cell compiles, a write to an import JS can't make (ADR 0270, amended)",
-    file: "src/lower/analysis/plain_locals.rs",
+    file: "crates/rust-js-lower/src/analysis/plain_locals.rs",
     find: "                && !read.contains(&id)\n                && holds_a_value(tcx, def_id)\n",
     replace:
       "                && !read.contains(&id)\n                && holds_a_value(tcx, def_id)\n                && false\n",
@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
     name: "outside-borrow-mut-a-read",
     breaks:
       "another module's `with_borrow_mut` of an exported `RefCell<String>` is taken for a read, and compiles (ADR 0270, amended)",
-    file: "src/lower/analysis/plain_locals.rs",
+    file: "crates/rust-js-lower/src/analysis/plain_locals.rs",
     find: '                && tcx.item_name(id).as_str() != "with_borrow_mut"\n',
     replace: "",
     tests: [
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     name: "outside-array-refused",
     breaks:
       "another module's push to an exported `RefCell<Vec<u32>>`, the array its JS is, is refused as a write (ADR 0270, amended)",
-    file: "src/lower/analysis/plain_locals.rs",
+    file: "crates/rust-js-lower/src/analysis/plain_locals.rs",
     find: "            !super::super::drops::holds_itself(tcx, held.type_at(0))\n",
     replace: "            !held.is_empty()\n",
     tests: [
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
     name: "outside-borrow-unquiet-read",
     breaks:
       "a consumer's `with_borrow` of a library's variable whose closure calls the library's code is read as the variable, where nothing counts its borrows (ADR 0270, amended)",
-    file: "src/lower/analysis/plain_locals.rs",
+    file: "crates/rust-js-lower/src/analysis/plain_locals.rs",
     find: "                        given(thir, args[1]).is_some_and(|given| quiet(given, def_id, false))\n",
     replace: "                        given(thir, args[1]).is_some()\n",
     tests: [
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     name: "static-mut-outside-writes-allowed",
     breaks:
       "another module's `counter::LINES = 3` of a `pub static mut` compiles, a write to an import JS can't make (ADR 0096, amended)",
-    file: "src/lower/analysis/plain_locals.rs",
+    file: "crates/rust-js-lower/src/analysis/plain_locals.rs",
     find: "            if let Some(def_id) = super::validation::static_of(thir, written)\n",
     replace:
       "            if let Some(def_id) = super::validation::static_of(thir, written).filter(|_| false)\n",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     name: "static-mut-outside-pointer-allowed",
     breaks:
       "another module's `&raw mut counter::LINES` compiles, a handle on its box where its module's JS is its `export let` (ADR 0096, amended)",
-    file: "src/lower/analysis/plain_locals.rs",
+    file: "crates/rust-js-lower/src/analysis/plain_locals.rs",
     find: "                ExprKind::RawBorrow { arg, .. } => arg,\n",
     replace: "",
     tests: [
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
     name: "static-mut-no-variable",
     breaks:
       "a `static mut` isn't its module's variable: a `pub` one is `export const LINES = { value: 0 }`, which a JS importer reads as the box (ADR 0096, amended)",
-    file: "src/lower/analysis/plain_locals.rs",
+    file: "crates/rust-js-lower/src/analysis/plain_locals.rs",
     find: "        return !tcx.is_foreign_item(key);\n",
     replace: "        return false;\n",
     tests: [
@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
     name: "with-borrow-held-mutably",
     breaks:
       "a thread-local's `with_borrow` is held as a mutable borrow, which another `with_borrow` JS may run asks of, so React's DEV dispatcher read around `setH` stays a checked cell (ADR 0580, amended)",
-    file: "src/lower/analysis/plain_locals.rs",
+    file: "crates/rust-js-lower/src/analysis/plain_locals.rs",
     find: '                    let mutable = tcx.item_name(id).as_str() != "with_borrow";\n',
     replace: "                    let mutable = true;\n",
     tests: [
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
     name: "quiet-library-key-unasked",
     breaks:
       "a library's thread-local is taken as borrowed quietly though a consumer's `with_borrow` runs the library's code that sets it, which Rust's `BorrowMutError` stops and JS wouldn't (ADR 0863, amended, gap rd76)",
-    file: "src/lower/analysis/plain_locals.rs",
+    file: "crates/rust-js-lower/src/analysis/plain_locals.rs",
     find: "                *lent.entry(key).or_insert(true) &= quietly;\n",
     replace:
       "                *lent.entry(key).or_insert(true) &= quietly || true;\n",

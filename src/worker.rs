@@ -38,7 +38,7 @@ use rustc_driver::{Callbacks, Compilation};
 use rustc_interface::interface::Compiler;
 use rustc_middle::ty::TyCtxt;
 
-use crate::{RustJs, command, finish_build, front, lower, phase_times, prepare_build, run_resolving_props};
+use crate::{RustJs, command, finish_build, front, phase_times, pipeline, prepare_build, run_resolving_props};
 
 /// A job: each build's arguments.
 #[derive(serde::Deserialize)]
@@ -251,12 +251,12 @@ impl Callbacks for Shared<'_, '_> {
         // Each build's bodies copied once, before borrowck steals them,
         // and their MIR read once: in the first build's lowering session,
         // as its own compile reads them in it, and filtered by each.
-        let session = lower::pipeline::start_session(tcx, self.builds[0].session_flags());
-        let mut copied = lower::copied_bodies(tcx);
-        let mut initializers = lower::collect_initializers(tcx);
-        lower::collect_mir(tcx, &mut copied);
-        lower::collect_mir(tcx, &mut initializers);
-        let mut bodies = lower::bodies_of_build(tcx, copied.clone(), self.builds[0].library_filter());
+        let session = pipeline::start_session(tcx, self.builds[0].session_flags());
+        let mut copied = rust_js_lower::copied_bodies(tcx);
+        let mut initializers = rust_js_lower::collect_initializers(tcx);
+        rust_js_lower::collect_mir(tcx, &mut copied);
+        rust_js_lower::collect_mir(tcx, &mut initializers);
+        let mut bodies = rust_js_lower::bodies_of_build(tcx, copied.clone(), self.builds[0].library_filter());
         tcx.ensure_ok().analysis(());
         phase_times::mark("rustc: type check, MIR and borrow check");
         let mut given = initializers.clone();
@@ -273,8 +273,8 @@ impl Callbacks for Shared<'_, '_> {
             }
             self.ran = i + 1;
             let build = &mut self.builds[i];
-            let _session = lower::pipeline::start_session(tcx, build.session_flags());
-            let mut bodies = lower::bodies_of_build(tcx, copied.clone(), build.library_filter());
+            let _session = pipeline::start_session(tcx, build.session_flags());
+            let mut bodies = rust_js_lower::bodies_of_build(tcx, copied.clone(), build.library_filter());
             let mut given = initializers.clone();
             build.lower_build(tcx, (&mut bodies, &mut given), &serde_attrs);
         }

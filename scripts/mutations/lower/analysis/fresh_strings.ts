@@ -1,11 +1,11 @@
-// Mutations of src/lower/analysis/fresh_strings.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/analysis/fresh_strings.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "fresh-string-touched-unseen",
     breaks: "a `String` read or written before the call is still proved fresh-empty, so a crate's reader sees reads of none of its capacity (#1297)",
-    file: "src/lower/analysis/fresh_strings.rs",
+    file: "crates/rust-js-lower/src/analysis/fresh_strings.rs",
     find: "            if touches(string.local, |v| v.visit_statement(statement, location)) {\n                return false;\n",
     replace: "            if touches(string.local, |v| v.visit_statement(statement, location)) {\n                continue;\n",
     tests: [
@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
   {
     name: "fresh-string-past-the-start",
     breaks: "a `String` the body is given, made before it, is proved fresh-empty (#1297)",
-    file: "src/lower/analysis/fresh_strings.rs",
+    file: "crates/rust-js-lower/src/analysis/fresh_strings.rs",
     find: "        if block == mir::START_BLOCK {\n            return false;\n",
     replace: "        if block == mir::START_BLOCK {\n            continue;\n",
     tests: [
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "fresh-string-borrowck-reads-touch",
     breaks: "a `let`'s `FakeRead` of a `String` is taken as a read of it, so the idiom `let mut s = String::new(); r.read_to_string(&mut s)` of a crate's reader is refused (#1297)",
-    file: "src/lower/analysis/fresh_strings.rs",
+    file: "crates/rust-js-lower/src/analysis/fresh_strings.rs",
     find: "            if borrowck_only(statement) {\n                continue;\n            }\n",
     replace: "",
     tests: [
@@ -41,8 +41,8 @@ export const mutations: Mutation[] = [
   {
     name: "fresh-string-any-maker",
     breaks: "a `String` made by any call, `String::from(\">\")`, is proved fresh-empty (#1297)",
-    file: "src/lower/analysis/fresh_strings.rs",
-    find: "            .is_some_and(|(callee, args)| crate::lower::recognition::makes_empty_string(tcx, callee, args))\n",
+    file: "crates/rust-js-lower/src/analysis/fresh_strings.rs",
+    find: "            .is_some_and(|(callee, args)| crate::recognition::makes_empty_string(tcx, callee, args))\n",
     replace: "            .is_some_and(|_| true)\n",
     tests: [
       "test/diagnostics.test.ts",
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "fresh-string-reference-written",
     breaks: "a `String` written through its reference before the call is proved fresh-empty (#1297)",
-    file: "src/lower/analysis/fresh_strings.rs",
+    file: "crates/rust-js-lower/src/analysis/fresh_strings.rs",
     find: "        if uses(body, reference) != 2 {\n",
     replace: "        if uses(body, reference) < 2 {\n",
     tests: [
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
   {
     name: "fresh-string-moved-in-unseen",
     breaks: "a `String` made fresh in a temporary and moved into a field, `let mut held = (String::new(), 7)`, isn't proved fresh-empty, so a crate's reader read into it is refused (#1297)",
-    file: "src/lower/analysis/fresh_strings.rs",
+    file: "crates/rust-js-lower/src/analysis/fresh_strings.rs",
     find: "    moved.projection.is_empty().then_some(*moved)\n",
     replace: "    moved.projection.is_empty().then_some(*moved).filter(|_| false)\n",
     tests: [
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "fresh-string-moved-in-unchecked",
     breaks: "a `String` written in a temporary before it's moved into a field is proved fresh-empty, so a crate's reader sees reads of none of its capacity (#1297)",
-    file: "src/lower/analysis/fresh_strings.rs",
+    file: "crates/rust-js-lower/src/analysis/fresh_strings.rs",
     find: "                if !made_empty_before(tcx, body, moved, location) {\n",
     replace: "                if moved.local == string.local && !made_empty_before(tcx, body, moved, location) {\n",
     tests: [
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
   {
     name: "fresh-string-dead-borrow-touches",
     breaks: "a borrow of a `String` nothing uses, `{ let _r = &mut s; }`, is taken as touching it, so the idiom's read of a crate's reader into it after is refused (#1489's metamorphic rewrite)",
-    file: "src/lower/analysis/fresh_strings.rs",
+    file: "crates/rust-js-lower/src/analysis/fresh_strings.rs",
     find: "            if dead_borrow(body, statement, string.local) {\n",
     replace: "            if false && dead_borrow(body, statement, string.local) {\n",
     tests: [
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "fresh-string-box-unfollowed",
     breaks: "a `String` made fresh and boxed, `Box::new(String::new())`, read into through the `Box`, isn't proved fresh-empty, so a crate's reader read into it is refused (#1489's metamorphic rewrite)",
-    file: "src/lower/analysis/fresh_strings.rs",
+    file: "crates/rust-js-lower/src/analysis/fresh_strings.rs",
     find: "                if let Some(boxed) = boxed_into(tcx, data.terminator(), string) {\n",
     replace: "                if let Some(boxed) = boxed_into(tcx, data.terminator(), string).filter(|_| false) {\n",
     tests: [

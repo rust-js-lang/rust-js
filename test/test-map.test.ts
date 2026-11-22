@@ -121,7 +121,7 @@ test("a constant's value, an array's length with it, is the change of the functi
   // src/a.rs: function 0 at 10-20 names `FLIPPED` at 15; the constant at 22-26.
   const text = Array.from({ length: 50 }, (_, i) => `// line ${i + 1}`);
   text[14] = "    let flipped = FLIPPED.iter();";
-  text[21] = "pub(in crate::lower) const FLIPPED: [&str; 2] = [";
+  text[21] = "pub(crate) const FLIPPED: [&str; 2] = [";
   text[22] = '    "a",';
   text[23] = '    "b",';
   text[24] = "];";
@@ -131,13 +131,13 @@ test("a constant's value, an array's length with it, is the change of the functi
     text: (file) => (file === "src/a.rs" ? text.join("\n") : undefined),
     naming: (word) => (word === "FLIPPED" ? [{ file: "src/a.rs", line: 15 }, { file: "src/a.rs", line: 22 }, { file: "src/a.rs", line: 27 }, ...also] : []),
   });
-  const grown: Change = { file: "src/a.rs", hunks: [[22, 1, ["pub(in crate::lower) const FLIPPED: [&str; 3] = ["], ["pub(in crate::lower) const FLIPPED: [&str; 2] = ["]], [24, 0, ['    "c",'], []]] };
+  const grown: Change = { file: "src/a.rs", hunks: [[22, 1, ["pub(crate) const FLIPPED: [&str; 3] = ["], ["pub(crate) const FLIPPED: [&str; 2] = ["]], [24, 0, ['    "c",'], []]] };
   const asFunction = pick(map, [{ file: "src/a.rs", hunks: [[15, 1]] }], files, cases);
   expect(pick(map, [grown], files, cases, sources())).toEqual({ ...asFunction, why: expect.any(String) } as never);
   // Read where no function is, another constant's initializer: everything.
   expect(pick(map, [grown], files, cases, sources([{ file: "src/a.rs", line: 45 }])).kind).toBe("all");
   // Its type changed past its length: everything.
-  const retyped: Change = { file: "src/a.rs", hunks: [[22, 1, ["pub(in crate::lower) const FLIPPED: [String; 2] = ["], ["pub(in crate::lower) const FLIPPED: [&str; 2] = ["]]] };
+  const retyped: Change = { file: "src/a.rs", hunks: [[22, 1, ["pub(crate) const FLIPPED: [String; 2] = ["], ["pub(crate) const FLIPPED: [&str; 2] = ["]]] };
   expect(pick(map, [retyped], files, cases, sources()).kind).toBe("all");
 });
 

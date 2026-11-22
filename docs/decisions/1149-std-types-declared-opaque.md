@@ -32,7 +32,7 @@ export const ORIGIN: LazyLock<Point>;
 export function xOf(point: LazyLock<Point>): number;
 ```
 
-One catalog, `src/lower/declarations/std_types.rs`'s `OPAQUE`, says which
+One catalog, `crates/rust-js-lower/src/declarations/std_types.rs`'s `OPAQUE`, says which
 std types are declared so: a crate's declarations name each by it, and
 `rust-js --std-declarations` writes `@rust-js/std`'s `index.d.ts` of it,
 which `bun run std` commits beside `runtime.js` and the package names as

@@ -1,4 +1,4 @@
-// Mutations of src/lower/refusal.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/refusal.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "memory-refusal-unsaid",
     breaks:
       "a refusal of addressable memory, a transmute, says only that its call isn't supported",
-    file: "src/lower/refusal.rs",
+    file: "crates/rust-js-lower/src/refusal.rs",
     find: '        (true, _) => format!("rust-js does not support addressable memory yet: {what}"),\n',
     replace:
       '        (true, _) => format!("rust-js does not support {what} yet"),\n',
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "memory-type-unsaid",
     breaks:
       "a raw pointer's type is refused as any type is, not as addressable memory",
-    file: "src/lower/refusal.rs",
+    file: "crates/rust-js-lower/src/refusal.rs",
     find: "        Refused::Type(_, ty) => is_memory_type(tcx, ty),\n",
     replace: "        Refused::Type(_, _) => false,\n",
     tests: ["test/diagnostics.test.ts", "-t", "unsupported type"],
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     name: "memory-feature-unsaid",
     breaks:
       "a static's raw address is refused as any feature is, not as addressable memory",
-    file: "src/lower/refusal.rs",
+    file: "crates/rust-js-lower/src/refusal.rs",
     find: "        Refused::Memory(_) => true,\n",
     replace: "        Refused::Memory(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^static_raw_address.rs$"],
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "refusal-reason-dropped",
     breaks:
       "a refusal's reason, why a derive of an open union is refused, is left out",
-    file: "src/lower/refusal.rs",
+    file: "crates/rust-js-lower/src/refusal.rs",
     find: '        (false, Refused::Because(_, why)) => format!("rust-js does not support {what} yet: {why}"),\n',
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "a derive of an open union"],
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     name: "refusal-uncompiled-unsaid",
     breaks:
       "a call into a crate of crates.io's rust-js couldn't compile doesn't say why it isn't compiled",
-    file: "src/lower/refusal.rs",
+    file: "crates/rust-js-lower/src/refusal.rs",
     find: '        error = error.with_note(format!(\n            "its crate is its types alone',
     replace:
       '        let _ = (format!(\n            "its crate is its types alone',
@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
   {
     name: "open-call-issue-unnamed",
     breaks: "a refused call an open issue covers doesn't name it, `calling \`std::thread::spawn\` yet`, so whoever meets it can't find what's left to do (guide limitations.md)",
-    file: "src/lower/refusal.rs",
+    file: "crates/rust-js-lower/src/refusal.rs",
     find: '    format!("calling `{}`{}", tcx.def_path_str(id), issue.unwrap_or_default())\n',
     replace: '    format!("calling `{}`", tcx.def_path_str(id))\n',
     tests: ["test/diagnostics.test.ts", "-t", "a thread's spawn"],
@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
   {
     name: "thread-refusal-unnamed",
     breaks: "a thread's start is refused without naming ADR 1126, which says why (ADR 1126)",
-    file: "src/lower/refusal.rs",
+    file: "crates/rust-js-lower/src/refusal.rs",
     find: "        OpenCall::Thread => \" (ADR 1126)\",\n",
     replace: "        OpenCall::Thread => \"\",\n",
     tests: ["test/diagnostics.test.ts", "-t", "a thread.s spawn"],
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
   {
     name: "impl-of-an-uncompiled-trait-unexplained",
     breaks: "an impl of a trait of a crate rust-js couldn't compile is refused without saying why its crate isn't compiled, as a call into it says (#1420)",
-    file: "src/lower/refusal.rs",
+    file: "crates/rust-js-lower/src/refusal.rs",
     find: "    if let Refused::Call(id) | Refused::Implementing(id) = refused\n",
     replace: "    if let Refused::Call(id) = refused\n",
     tests: ["test/registry-crates.test.ts", "-t", "types alone, and a call"],

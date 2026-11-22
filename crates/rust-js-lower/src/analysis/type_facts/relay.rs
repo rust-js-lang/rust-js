@@ -1,0 +1,172 @@
+//! What one function's ask asks of its callers (ADR 0145): a fact of a
+//! slot, of a type built of its slots, or one its trait's dictionaries
+//! carry, said in a caller's terms, and the sets the fixpoint keeps them
+//! in. Split from type_facts.rs by concept, as a file is at most 1500
+//! lines.
+
+use super::*;
+
+/// A fact a function asks: of one of its slots, a type parameter's or an
+/// associated type's, by its index; or the layout of a type built of them,
+/// `Held<J>` of a `Vec<Held<J>>` collected in place, by the type, its
+/// index decided once every one of its function's is found (#737), which
+/// every caller gives, as the collect's `Vec` grows by its size wherever
+/// it's called (#796); or what its trait's dictionaries carry of an
+/// associated type of the crate's trait or a library's, `<S as
+/// Source>::Iter`'s (ADR 0145).
+#[derive(Clone, Debug)]
+pub(super) enum Asked<'tcx> {
+    Slot(u32, TypeFact),
+    Built(ty::Ty<'tcx>, TypeFact),
+    Carried(DefId, TypeFact),
+}
+
+/// Whether `ty`, of no slot of its own, is built of a function's, a type
+/// whose layout rustc can't say there, as only its caller knows it,
+/// `Held<J>`: a fact asked of it, its size or alignment, or what std's
+/// unstable sort picks by it, `sort_by_cached_key`'s `(K, usize)`'s (#925),
+/// is its caller's.
+pub(super) fn built_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    ty: ty::Ty<'tcx>,
+    fact: TypeFact,
+) -> bool {
+    if crate::recognition::known_by_bounds(ty) || !ty.has_param() {
+        return false;
+    }
+    // A std trait std's zip is specialized on, which a type built of its
+    // slots may have only as its callers' types say, `vec::IntoIter<<I as
+    // Iterator>::Item>`'s `TrustedRandomAccessNoCoerce`, a `Copy` item's
+    // (#1389): not one rustc says here, of any types given (#1385).
+    if matches!(
+        fact,
+        TypeFact::RandomAccess | TypeFact::RandomAccessNoCoerce | TypeFact::TrustedLen | TypeFact::TriviallyCloned
+    ) {
+        return crate::recognition::fact_trait(tcx, fact)
+            .is_some_and(|fact_trait| crate::recognition::trait_holds_in(tcx, typing_env, ty, fact_trait).is_none());
+    }
+    matches!(
+        fact,
+        TypeFact::Size | TypeFact::Room | TypeFact::Align | TypeFact::Sort | TypeFact::StableSort
+    ) && tcx.layout_of(typing_env.as_query_input(ty)).is_err()
+}
+
+/// Where `caller` asks `(of, fact)`, `of` in its own terms: a slot's, or
+/// a built type's (`built_of`); none of a type it knows.
+pub(super) fn asked_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::library::Foreign<'_, 'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    caller: DefId,
+    (of, fact): (ty::Ty<'tcx>, TypeFact),
+) -> Option<Asked<'tcx>> {
+    if let Some(slot) = slot_of(tcx, foreign, caller, of) {
+        return Some(Asked::Slot(slot, fact));
+    }
+    // Of an associated type whose trait's dictionaries carry it, theirs,
+    // wherever a callee asks it of what it's given, a flatten's items'
+    // constant size of `(1..4).flat_map(S::hidden)` (#1312, #1341).
+    if let Some(assoc) = carried_by(foreign, of)
+        && carries(foreign, assoc, fact)
+    {
+        return Some(Asked::Carried(assoc, fact));
+    }
+    built_of(tcx, typing_env, of, fact).then(|| Asked::Built(tcx.erase_and_anonymize_regions(of), fact))
+}
+
+/// Each function's built types it asks a layout of, by the type: the facts.
+pub(super) type BuiltAsks<'tcx> = IndexMap<(DefId, ty::Ty<'tcx>), std::collections::BTreeSet<TypeFact>>;
+
+/// What its trait's dictionaries carry of each associated type, by the
+/// type and the fact.
+pub(super) type CarriedAsks = IndexSet<(DefId, TypeFact)>;
+
+/// How deep a type built of a function's slots may hold one type
+/// constructor within itself, where its layout is relayed to callers:
+/// zerocopy's `impl<T: KnownLayout> KnownLayout for MaybeUninit<T>`, whose
+/// `MaybeUninit` is `MaybeUninit<T::MaybeUninit>`, asks one wider of its
+/// makers each round, `MaybeUninit<MaybeUninit<..>>`, which never settles
+/// (#1430). Past it, the layout isn't relayed: a caller that would have to
+/// give it is refused where it's lowered, as one no caller gives.
+const NESTED_AT_MOST: usize = 8;
+
+/// Whether `ty` holds a type constructor, or an associated type's
+/// projection, `<<T as Shape>::Uninit as Shape>::Uninit`, or a tuple,
+/// `((T, T), (T, T))`, within itself more than `NESTED_AT_MOST` deep,
+/// `held` the constructors around it, `tuples` how many tuples. A tuple
+/// counts too: a key of a tuple of a type parameter a caller makes of its
+/// own key grows one wider each round, which never settles, doubling as
+/// it goes (#1708).
+fn nests_past_bound(ty: ty::Ty<'_>, held: &mut Vec<DefId>) -> bool {
+    nests_past(ty, held, 0)
+}
+
+fn nests_past(ty: ty::Ty<'_>, held: &mut Vec<DefId>, tuples: usize) -> bool {
+    let constructed = match ty.kind() {
+        ty::Adt(adt, args) => Some((adt.did(), *args)),
+        ty::Alias(_, alias) => match alias.kind {
+            ty::Projection { def_id } => Some((def_id, alias.args)),
+            _ => None,
+        },
+        _ => None,
+    };
+    if let Some((id, args)) = constructed {
+        if held.iter().filter(|&&held| held == id).count() >= NESTED_AT_MOST {
+            return true;
+        }
+        held.push(id);
+        let past = args.types().any(|part| nests_past(part, held, tuples));
+        held.pop();
+        return past;
+    }
+    match ty.kind() {
+        ty::Tuple(parts) => tuples >= NESTED_AT_MOST || parts.iter().any(|part| nests_past(part, held, tuples + 1)),
+        ty::Ref(_, inner, _) | ty::Array(inner, _) | ty::Slice(inner) => nests_past(*inner, held, tuples),
+        _ => false,
+    }
+}
+
+/// `caller` asks `asked`: whether that's new.
+pub(super) fn ask<'tcx>(
+    (asked, built, carried): (
+        &mut IndexSet<(DefId, u32, TypeFact)>,
+        &mut BuiltAsks<'tcx>,
+        &mut CarriedAsks,
+    ),
+    caller: DefId,
+    each: Asked<'tcx>,
+) -> bool {
+    match each {
+        Asked::Carried(assoc, fact) => carried.insert((assoc, fact)),
+        Asked::Slot(index, fact) => asked.insert((caller, index, fact)),
+        Asked::Built(ty, ..) if nests_past_bound(ty, &mut Vec::new()) => false,
+        Asked::Built(ty, fact) => built.entry((caller, ty)).or_default().insert(fact),
+    }
+}
+
+/// What a caller asks of its own where its call given `args` asks a fact
+/// of `slot`, of its callee's in its own terms, a type
+/// parameter, an associated type (`drop_slot`) or a type built of them:
+/// its slots', `I::Item`'s of a flatten's `ConstSize` (ADR 0899), or each's
+/// a type is the facts of, `I`'s `TrustedLen` of a `&mut I` (ADR 0975), or
+/// a type's built of them (#737); none of a type it knows.
+pub(super) fn asked_of_caller<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::library::Foreign<'_, 'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    (caller, args): (DefId, ty::GenericArgsRef<'tcx>),
+    (slot, fact): (ty::Ty<'tcx>, TypeFact),
+) -> Vec<Asked<'tcx>> {
+    use crate::recognition::held_facts;
+    let here = |ty: ty::Ty<'tcx>| {
+        let ty = ty::EarlyBinder::bind(tcx, ty)
+            .instantiate(tcx, args)
+            .skip_normalization();
+        tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
+            .unwrap_or(ty)
+    };
+    (held_facts(tcx, typing_env, here(slot), fact).into_iter())
+        .filter_map(|each| asked_of(tcx, foreign, typing_env, caller, each))
+        .collect()
+}

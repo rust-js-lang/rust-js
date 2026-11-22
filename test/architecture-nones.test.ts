@@ -28,9 +28,9 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 // `holds_value`, `holds_nested` and `nullable_option`, answer another
 // question, a declared payload's shape, and aren't held here.
 test("whether a `None` is `null` is none_form's alone", () => {
-  const owner = "src/lower/representation/nones.rs";
-  const lowering = files("src/lower").filter((file) =>
-    file.endsWith(".rs") && file !== owner && file !== "src/lower/bindings.rs" && !file.startsWith("src/lower/bindings/"));
+  const owner = "crates/rust-js-lower/src/representation/nones.rs";
+  const lowering = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) =>
+    file.endsWith(".rs") && file !== owner && file !== "crates/rust-js-lower/src/bindings.rs" && !file.startsWith("crates/rust-js-lower/src/bindings/"));
   // Its code, not its comments, nor its unit tests, whose fixtures make facts.
   const code = (file: string) => read(file).split("#[cfg(test)]")[0].split("\n").filter((line) => !/^\s*\/\//.test(line));
   const predicates = "is_nullable|null_where_made|declared_null_or_value|nullable_local|nullable_local_cell|nullable_local_option|null_result|nullable_result|optional_result|nullable_params|takes_nullable|takes_nullable_entries|holds_none_as_null|nullable_init|nulled_param";
@@ -49,7 +49,7 @@ test("whether a `None` is `null` is none_form's alone", () => {
       .map((line) => `${file}: ${line.trim()}`));
   expect(making).toEqual([]);
   const nullStored = lowering.filter((file) => code(file).some((line) => /\.with\((?:js::)?Known::NullStored\)/.test(line)));
-  expect(nullStored).toEqual(["src/lower/representation/cells.rs"]);
+  expect(nullStored).toEqual(["crates/rust-js-lower/src/representation/cells.rs"]);
 });
 
 // What may look like `None` by its type is `options.rs`'s one answer,
@@ -59,7 +59,7 @@ test("whether a `None` is `null` is none_form's alone", () => {
 // `Some(None)` as a `Some`, wrong answers, and refused a class of no
 // fields (#832). `bindings` asks it, never the shapes it's made of.
 test("what may look like None is may_look_like_none's alone", () => {
-  const asking = files("src/lower/bindings").concat("src/lower/bindings.rs").filter((file) => file.endsWith(".rs"))
+  const asking = files("crates/rust-js-lower/src/bindings").concat("crates/rust-js-lower/src/bindings.rs").filter((file) => file.endsWith(".rs"))
     .flatMap((file) => read(file).split("\n")
       .filter((line) => !/^\s*\/\//.test(line) && /\b(?:holds_nullish|weak_pointee|rc_pointee|known_by_bounds)\(/.test(line))
       .map((line) => `${file}: ${line.trim()}`));
@@ -80,8 +80,8 @@ test("what a test proved of a read is presence's, asked where it's used, never c
   // The proofs are asked by `presence` alone, outside the analysis that
   // makes them.
   const askers = lines(/\.(?:proved_present|proved_defined|present_item_read|capture_read_proved|field_read_proved|ended_present)\(/)
-    .filter((file) => !file.startsWith("src/lower/mir/nulled"));
-  expect([...new Set(askers)]).toEqual(["src/lower/mir/none_forms.rs"]);
+    .filter((file) => !file.startsWith("crates/rust-js-mir/src/nulled"));
+  expect([...new Set(askers)]).toEqual(["crates/rust-js-mir/src/none_forms.rs"]);
 });
 
 // That a test says an `Option` is there is MIR's alone to say (#1933):
@@ -93,7 +93,7 @@ test("what a test proved of a read is presence's, asked where it's used, never c
 // amended). What's left of tidy's is MIR's facts, kept where it moves a
 // read (`alias_variables`' `only_none`).
 test("tidy decides no Option is there from a test of it", () => {
-  const tidy = files("src/lower/mir/tidy").concat("src/lower/mir/tidy.rs").filter((file) => file.endsWith(".rs"));
+  const tidy = files("crates/rust-js-mir/src/tidy").concat("crates/rust-js-mir/src/tidy.rs").filter((file) => file.endsWith(".rs"));
   const found = tidy.flatMap((file) =>
     read(file).split("\n")
       .filter((line) => !/^\s*\/\//.test(line) && /\bfn (?:present_in|nulled_as_they_are|shown_present|shown_defined|unnulled)\b|implies\(&known, &Expr::bin\(Op::LooseNe/.test(line))
@@ -147,7 +147,7 @@ test("no mark of presence, nor an answer that asks marks", () => {
 // its form alone too (`binding_calls.rs`' `surely_there`, #2112 S3f); and
 // tidy's `tested_option` asks the `SomeWhere`'s `there` (S3d).
 test("the marks are asked only where MIR isn't at hand", () => {
-  expect(read("src/lower/drops/inlined.rs")).not.toMatch(/Known::(?:Defined|Present)/);
-  expect(read("src/lower/std_types/cell/variables.rs")).toContain("store_again(js::Undefined::ByForm)");
+  expect(read("crates/rust-js-lower/src/drops/inlined.rs")).not.toMatch(/Known::(?:Defined|Present)/);
+  expect(read("crates/rust-js-lower/src/std_types/cell/variables.rs")).toContain("store_again(js::Undefined::ByForm)");
 });
 

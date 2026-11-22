@@ -67,7 +67,7 @@ The JS tree's string written otherwise than as one literal on one line is
 one kind, `Written`, of its pieces, `StrPiece { text, lines }`: the
 `Lines` of a string across lines is a `Written` of one piece. `Expr::
 written` makes a single piece on one line a `Str`, so a string has one
-form for each way it's written. `src/lower/literals.rs`'s
+form for each way it's written. `crates/rust-js-lower/src/literals.rs`'s
 `string_literal` is the one answer of what pieces a literal is written as,
 asked by THIR's literals, MIR's constants and a `const`'s or `static`'s
 value (`const_string`), where three functions in `lower.rs` answered

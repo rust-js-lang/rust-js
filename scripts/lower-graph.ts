@@ -1,4 +1,4 @@
-// src/lower/'s internal dependency graph (#2295, #2294's step 1a): which of
+// crates/rust-js-lower/src/'s internal dependency graph (#2295, #2294's step 1a): which of
 // its top-level submodules (mir, analysis, recognition, ...) name which
 // items of which others, by rust-analyzer's resolution of every name, its
 // SCIP index, never by matching text. Says the cycles between submodules,
@@ -107,16 +107,23 @@ function documents(bytes: Uint8Array): Document[] {
   return found;
 }
 
-/** The folder whose submodules are the graph's nodes: src/lower/, or one
- * of its submodules', `--within mir`'s src/lower/mir/. */
-const scope = flag("--within") === undefined ? "src/lower" : `src/lower/${flag("--within")}`;
-const rootName = scope.slice(scope.lastIndexOf("/") + 1);
+/** The folder whose submodules are the graph's nodes: the lowering's base
+ * crate, crates/rust-js-lower/src/, whose `mir` and `pipeline`, crates of
+ * their own since #2299's cut, are a node each; or `--within mir`'s
+ * crates/rust-js-mir/src/, its own submodules the nodes. */
+const within = flag("--within");
+const scope = within === undefined ? "crates/rust-js-lower/src" : within === "mir" ? "crates/rust-js-mir/src" : `crates/rust-js-lower/src/${within}`;
+const rootName = within ?? "lower";
 
-/** The submodule of `scope` a file is of: `src/lower/mir.rs` and
- * `src/lower/mir/..` are `mir`; the scope's own file, `src/lower.rs`, is
- * its root, `lower`. */
+/** The submodule of `scope` a file is of: the scope's root file, `lib.rs`
+ * or `<within>.rs`, is its root, `lower`; with no `--within`, MIR's
+ * lowering's crate is `mir` and the driver's pipeline `pipeline`. */
 function moduleOf(path: string): string | undefined {
-  if (path === `${scope}.rs`) return rootName;
+  if (path === `${scope}/lib.rs` || path === `${scope}.rs`) return rootName;
+  if (within === undefined) {
+    if (path.startsWith("crates/rust-js-mir/src/")) return "mir";
+    if (path === "src/pipeline.rs" || path.startsWith("src/pipeline/")) return "pipeline";
+  }
   if (!path.startsWith(`${scope}/`)) return undefined;
   const m = /^([^/]+?)(?:\.rs|\/.*)$/.exec(path.slice(scope.length + 1));
   return m?.[1];

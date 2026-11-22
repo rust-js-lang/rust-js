@@ -1148,7 +1148,7 @@ Held by corpus `switch_of_an_optional_bool.rs` against native Rust
 returns, a guarded `Some`, whose `_` takes a value too, a loop's `break` and `continue` of `None`, and an `Option<u32>`'s
 `None` arm, an `if`), `option_bool_exact.js` re-blessed, the guide's
 basics.md, the unit test `a_none_is_a_default_but_of_a_break`
-(`src/lower/mir/tidy.rs`), and the mutations `bool-option-no-switch`,
+(`crates/rust-js-mir/src/tidy.rs`), and the mutations `bool-option-no-switch`,
 `bool-option-guarded-switch` (`hints/constants.ts`) and `none-undefaulted`
 (`switches.ts`). No program has a `None` of a `break;` in the `else`, as
 the branch that leaves is the `if` first (ADR 0237), so the unit test alone

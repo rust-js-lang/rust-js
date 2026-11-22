@@ -16,7 +16,7 @@ runs:
       uses: actions/cache@v6
       with:
         path: target/${{ inputs.profile }}/rust-js
-        key: rust-js-${{ inputs.profile }}-${{ runner.os }}-${{ hashFiles('src/**', 'crates/**', 'std/manifest.json', 'std/compiled-std.json', 'rust-toolchain.toml', 'build.rs', 'Cargo.toml', 'Cargo.lock') }}
+        key: rust-js-${{ inputs.profile }}-${{ runner.os }}-${{ hashFiles('src/**', 'crates/**', 'std/manifest.json', 'std/compiled-std.json', 'rust-toolchain.toml', 'build.rs', 'rustc-rpath.rs', 'Cargo.toml', 'Cargo.lock') }}
     - if: steps.binary.outputs.cache-hit != 'true'
       name: Install the pinned Rust toolchain
       shell: bash

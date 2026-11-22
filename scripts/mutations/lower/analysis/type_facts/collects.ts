@@ -1,4 +1,4 @@
-// Mutations of src/lower/analysis/type_facts/collects.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/analysis/type_facts/collects.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "in-place-unasked",
     breaks:
       "generic code's `src.map(f).collect()` of items with a destructor asks its caller nothing of `I`, so it's refused, \"the buffer std collects an iterator in place in of a type parameter\" (#672)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "    let source = held_facts(tcx, typing_env, iter, TypeFact::InPlace);\n",
     replace: "    let source = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "in-place-items-layout-unasked",
     breaks:
       "generic code's collect into a `Vec<T>` asks its caller no `TSize` or `TAlign`, so it's refused, \"`size_of` of a type parameter\" (#672)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "            asked.extend(asked_of(tcx, foreign, typing_env, caller, (dest, fact)));\n",
     replace: "            let _ = (dest, fact);\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "in-place-default-unlifted",
     breaks:
       "a trait's default that collects `self` into a `Vec`, `sorted(self)`, compiled as a library, asks its blanket impl's dictionary nothing of `I`, so it's refused, \"the buffer std collects an iterator in place in of a type parameter\" (#672)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "            asked.push((imp, each));\n",
     replace: "            let _ = each;\n",
     tests: ["test/corpus.test.ts", "-t", "^extension_trait_params.rs$"],
@@ -33,8 +33,8 @@ export const mutations: Mutation[] = [
     name: "copied-default-analysed-in-its-own-env",
     breaks:
       "a trait's default copied into an impl collects in the impl's terms where only the impl's bounds hold, so what it collects isn't known there and asks nothing, and the collect is refused (#737)",
-    file: "src/lower/analysis/type_facts/collects.rs",
-    find: "            typing_env: crate::lower::traits::default_typing_env(tcx, imp, default, in_impl),\n",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
+    find: "            typing_env: crate::traits::default_typing_env(tcx, imp, default, in_impl),\n",
     replace: "            typing_env: ty::TypingEnv::post_analysis(tcx, imp),\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type_relayed.rs$"],
   },
@@ -42,8 +42,8 @@ export const mutations: Mutation[] = [
     name: "copied-default-analysed-in-trait-numbers",
     breaks:
       "the analysis numbers a copied default's own parameters as its trait does, where its lowering numbers them after the impl's, so what it asks of them is another's (#804)",
-    file: "src/lower/analysis/type_facts/collects.rs",
-    find: "        let in_impl = crate::lower::traits::default_args(tcx, imp, default, in_impl);\n",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
+    find: "        let in_impl = crate::traits::default_args(tcx, imp, default, in_impl);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(in_place_collect_of_a_built_type_relayed|default_own_param_drops|default_own_param_numbered_as_the_impls).rs$"],
   },
@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
     name: "copied-default-own-asks-the-impls",
     breaks:
       "what a copied default asks of its own parameter, numbered after the impl's, is asked of the impl, which hasn't it, and rustc crashes (#804)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "            if !matches!(&each, Asked::Built(ty, ..) if names_params(*ty, |index| index >= first)) {\n",
     replace: "            if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^default_own_param_numbered_as_the_impls.rs$"],
@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
     name: "copied-default-own-asks-unasked",
     breaks:
       "what a copied default asks of its own parameter, the layout of a `Held<U>` it collects in place, is asked of no one, and the collect is refused (#804)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "        if own {\n            asked.push((caller, each));\n",
     replace: "        if own && false {\n            asked.push((caller, each));\n",
     tests: ["test/corpus.test.ts", "-t", "^default_own_param_numbered_as_the_impls.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
     name: "grown-size-unasked",
     breaks:
       "generic code's collect into a `Vec` of a type parameter's iterator asks its caller no `TSize`, so it's refused, \"`size_of` of a type parameter\" (#796)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "        asked.extend(grown_asked(\n            recognition,\n            typing_env,\n            owner,\n            (callee, args),\n            keeps_capacity,\n        ));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
     name: "grown-size-of-a-built-type-unasked",
     breaks:
       "generic code's collect into a `Vec<(T, u8)>` of a type parameter's iterator asks its caller no layout of `(T, u8)`, so it's refused, \"`size_of` of a type parameter\" (#796)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "    size.into_iter().collect()\n",
     replace: "    size.into_iter().filter(|each| matches!(each, Asked::Slot(..))).collect()\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "super-item-collect-uncarried",
     breaks: "a trait's default's collect of `Self` isn't given its items' layout by its dictionary, so the library's default compiled over `Self` is refused (#990)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "                    carried_super.insert((trait_id, assoc, *fact));\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-growth-size-unasked",
     breaks: "in a crate that keeps capacities, generic code that pushes to a `Vec<T>` asks its caller no `TSize`, so it's refused, \"`size_of` of a type parameter\" (#1180)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "    if let Some(item) = grown {\n",
     replace: "    if let Some(item) = grown.filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-collect-unasked",
     breaks: "generic code's `collect()` into a `Vec` asks its caller no `IVecCollect`, so it collects as it did, an endless `TrustedLen` stepped before its \"capacity overflow\" (#1239)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "            Some(this) => Vec::from_iter(asked_of(tcx, foreign, typing_env, owner, (this, TypeFact::VecCollect))),\n",
     replace:
       "            Some(_) if true => Vec::new(),\n            Some(this) => Vec::from_iter(asked_of(tcx, foreign, typing_env, owner, (this, TypeFact::VecCollect))),\n",
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-collect-asks-in-place-too",
     breaks: "a collect `IVecCollect` answers asks `IInPlace` of its iterator too, a parameter its JS takes for nothing (#1239)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "        let mut asked = match vec_collected(recognition, typing_env, (callee, args)) {\n",
     replace: "        let mut asked = match vec_collected(recognition, typing_env, (callee, args)).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
@@ -119,14 +119,14 @@ export const mutations: Mutation[] = [
   {
     name: "instance-default-asked-through-copies",
     breaks: "a library's default the crate compiles itself as a function over `Self`, an instance, is asked its collect's facts only through the crate's impls that copy it, none, so its `collect()` of `Self` into a `Vec` is refused, \"the buffer std collects an iterator in place in\", itertools' `collect_vec` (#1370)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "        .filter(|_| tcx.defaultness(caller).has_value() && !instance_over_self(tcx, foreign, caller));\n",
     replace: "        .filter(|_| tcx.defaultness(caller).has_value());\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_default_collects_self_in_place"],
   },  {
     name: "instance-over-self-though-copied",
     breaks: "a library's default the crate compiles itself is a function over `Self` asking its own facts though the crate's impls copy it, whose dictionaries give them already, so each impl's entry takes them again, read nowhere (#990, #1370, #1409)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "            .all(|imp| tcx.impl_item_implementor_ids(imp).contains_key(&default))\n",
     replace: "            .all(|_| true)\n",
     tests: ["test/crates.test.ts", "-t", "a library's default the crate's impls copy takes no fact of its own"],
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
   {
     name: "grown-item-size-asked-of-a-param-alone",
     breaks: "a call that grows a `Vec` of an associated type's items, `I::Item`, asks its caller no size, so generic code isn't given it and `capacity()` refuses the `Vec` (#1260)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "        .then(|| revealed.grown_vec_item(callee, args))\n        .flatten();\n",
     replace: "        .then(|| revealed.grown_vec_item(callee, args))\n        .flatten()\n        .filter(|item| matches!(item.kind(), ty::Param(_)));\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_an_associated_types_items.rs$"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-room-unasked",
     breaks: "a generic collect counted by the program asks its caller no `Room`, so its room is checked by its count alone and no `capacity overflow` panics where std's does (#1436)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "                !shunted && revealed.grows_as_vec(output) && revealed.counted_by_program(iter)\n",
     replace: "                false\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_room_of_generic_items.rs$"],
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
   {
     name: "table-room-of-a-collect-unasked",
     breaks: "a generic collect into a hash table by a count the program gives asks its caller no entry layout, so its room is checked by its count alone (#1437)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "        && let Some(Room::Entries(entry)) = revealed.room_of(output, dest)\n",
     replace: "        && let Some(Room::Entries(entry)) = None::<Room<'tcx>>\n",
     tests: ["test/corpus.test.ts", "-t", "^table_room_of_generic_entries.rs$"],
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
   {
     name: "table-room-of-an-extend-unasked",
     breaks: "a generic `extend` of a hash table by a count the program gives asks its caller no entry layout, so its room is checked by its count alone (#1437)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "        && let Some((iter, Room::Entries(entry))) = revealed.extend_room(into.peel_refs(), iterable)\n",
     replace: "        && let Some((iter, Room::Entries(entry))) = None::<(ty::Ty<'tcx>, Room<'tcx>)>\n",
     tests: ["test/corpus.test.ts", "-t", "^table_room_of_generic_entries.rs$"],
@@ -166,15 +166,15 @@ export const mutations: Mutation[] = [
   {
     name: "table-room-of-a-from-iterator-dictionary-unasked",
     breaks: "a call giving a `B: FromIterator` a generic hash table's dictionary asks its caller no entry layout, so the dictionary's `from_iter` checks the table's room by its count alone and runs on where hashbrown panics `Hash table capacity overflow` (#1450)",
-    file: "src/lower/analysis/type_facts/collects.rs",
-    find: "    if !crate::lower::recognition::is_std_crate(tcx, callee) {\n",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
+    find: "    if !crate::recognition::is_std_crate(tcx, callee) {\n",
     replace: "    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^table_room_of_generic_entries.rs$"],
   },
   {
     name: "in-place-asked-of-a-bounds-collect",
     breaks: "a collect a `B: FromIterator` bound's dictionary makes asks its caller the items' in-place layout, `IItemSize` and `IItemAlign`, which nothing reads (#1443)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "        || collected_through_a_bound(tcx, typing_env, output)\n",
     replace: "",
     tests: ["test/lowering-generic-iterators.test.ts", "-t", "asks no in-place layout"],
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-place-asked-of-a-linked-list",
     breaks: "a collect into a `LinkedList`, which std extends as each item comes, asks its caller the items' in-place layout, which nothing reads (#1443)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "        || recognition.extends_as_each_comes(output)\n",
     replace: "",
     tests: ["test/lowering-generic-iterators.test.ts", "-t", "asks no in-place layout"],
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
   {
     name: "built-collect-trusted-unasked",
     breaks: "generic code's collect into a `Vec` of an iterator built of its type parameters asks its callers nothing of whether it's `TrustedLen` (#1614)",
-    file: "src/lower/analysis/type_facts/collects.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "        asked.extend(trusted_asked(\n",
     replace: "        drop(trusted_asked(\n",
     tests: ["test/corpus.test.ts", "-t", "^trait_default_flat_map_of_arrays_collects_trusted.rs$"],
@@ -198,9 +198,9 @@ export const mutations: Mutation[] = [
   {
     name: "extend-trusted-unasked",
     breaks: "generic code's `Vec::extend` asks its callers no `ITrustedLen`, so it's given none and steps a `TrustedLen` map by `next`, its closure's capture dropped after the source's rest as it panics (#1805)",
-    file: "src/lower/analysis/type_facts/collects.rs",
-    find: "    if !extend || !recognition.is_std_type(this, crate::lower::recognition::StdItem::Vec) {\n",
-    replace: "    if true || !extend || !recognition.is_std_type(this, crate::lower::recognition::StdItem::Vec) {\n",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
+    find: "    if !extend || !recognition.is_std_type(this, crate::recognition::StdItem::Vec) {\n",
+    replace: "    if true || !extend || !recognition.is_std_type(this, crate::recognition::StdItem::Vec) {\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^extend_in_generic_code_drops_a_maps_closure_first.rs$"],
   },

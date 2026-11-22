@@ -168,7 +168,7 @@ and its fields are, and its fields' structs' fields, as a struct given a
 binding's are; and what their bodies use: each function, constant,
 static, struct made, method called and field read they name, through
 their closures, walked from them as rustc walks from what it starts at,
-which never starts there (`src/lower/liveness.rs`, `used_by_classes`). So
+which never starts there (`crates/rust-js-lower/src/liveness.rs`, `used_by_classes`). So
 the shim is private, as upstream's is, and lint-clean, and its JS,
 `function AbortControllerShim()`, is no export, as upstream's isn't.
 

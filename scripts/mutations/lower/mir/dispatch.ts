@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/dispatch.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/dispatch.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 const given1840 = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     name: "trait-method-value-takes-generic-forms",
     breaks:
       "a trait's method as a value, `Tally::bump`, reads generic code's box of its `&mut self` where its callers give the object",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        let generic_forms = forms == Forms::Generic\n            && tcx.trait_of_assoc(def_id).is_none()\n            && self.krate.foreign.item(def_id).is_some();",
     replace: "        let generic_forms = forms == Forms::Generic;",
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer\\.rs$"],
@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     name: "library-fn-value-takes-callers-forms",
     breaks:
       "a library's generic function as a value, given to generic code as an `F`, takes its callers' forms, and generic code's handle of a slice's pointer is wrapped again, `measured(p)` reading `undefined`",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                        Some((form, given)) => self.form_back(form, given, Expr::var(p)),",
     replace: "                        Some(_) => Expr::var(p),",
     tests: ["test/crates.test.ts", "-t", "library_generic_fn_item_forms"],
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
   {
     name: "held-function-write-error-uncaught",
     breaks: "a function a variable holds, `let held = named; held()`, that gives back a write's error isn't caught, so `{:?}` of it throws (#1042)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            return Ok(Value::Expr(self.fmt_result_value(def_id, generic_args, called)));\n",
     replace: "            return Ok(Value::Expr(called));\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_giving_back_a_write_error.rs$"],
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
   {
     name: "nested-flatten-unread",
     breaks: "`flatten()` of a nested field is `$someValue(..)` of its box, not `entry.value` (#470)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            && self.recognition().classify(def_id, generic_args) == Some(Std::OptionFlatten)\n        {\n            let place = x.place().expect(\"a place\");\n",
     replace: "            && self.recognition().classify(def_id, generic_args) == Some(Std::OptionFlatten)\n            && false\n        {\n            let place = x.place().expect(\"a place\");\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     name: "binding-impl-by-dictionary",
     breaks:
       "a std trait's method whose impl is a binding's, a `Duplex`'s `as_ref()` of its `Writable`, is called through a dictionary, which rust-js refuses, where it's the binding, the object itself (rd588)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "self.impl_binding(def_id, args).is_some()\n    }\n",
     replace: "false\n    }\n",
     tests: [
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     name: "pointer-binding-none-left-out",
     breaks:
       "a trailing `None` given a pointer the crate makes of a binding's function, whose parameter isn't optional, is left out, `max(1)` of `Math.max`'s, which gives `1`, not `NaN` (ADR 0330)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            .filter(|&f| bindings::is_binding(self.tcx, f))\n",
     replace: "            .filter(|_| false)\n",
     tests: [
@@ -68,16 +68,16 @@ export const mutations: Mutation[] = [
     name: "pointer-arguments-given",
     breaks:
       "a trailing `()` or `None` given a function pointer JS may have made is an argument, `finish(undefined)` of `finish(())` (ADRs 0441, 0443)",
-    file: "src/lower/mir/dispatch.rs",
-    find: "            false => crate::lower::calls::given_to_js_but(&mut exprs, absent),\n",
-    replace: "            false => crate::lower::calls::given_to_js(&mut exprs),\n",
+    file: "crates/rust-js-mir/src/dispatch.rs",
+    find: "            false => rust_js_lower::calls::given_to_js_but(&mut exprs, absent),\n",
+    replace: "            false => rust_js_lower::calls::given_to_js(&mut exprs),\n",
     tests: ["test/none-given.test.ts", "-t", "a function value's trailing None"],
   },
   {
     name: "defined-unread",
     breaks:
       "`js::is_defined(set_immediate)` is a call of `setImmediate`'s binding, not a `typeof`",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        if let Some(defined) = self.mir_defined(state, def_id, args, span, out)? {\n",
     replace: "        if let Some(defined) = None::<Expr> {\n",
     tests: [
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
     name: "mir-fmt-result-unwrapped",
     breaks:
       "`write!(s, ..).unwrap()` unwraps the nothing an `Ok` `fmt::Result` is in JS, as if it were a `Result`",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        if self.of_never_failing(def_id, &arg_tys) {\n",
     replace: "        if false && self.of_never_failing(def_id, &arg_tys) {\n",
     tests: ["test/corpus.test.ts", "-t", "string_pushes"],
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-called-value-returns-nothing",
     breaks: "the arrow that calls a std function as a value returns nothing",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        body.push(StmtKind::Return(Some(value)).at(self.js_span(span)));\n        let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();\n",
     replace:
       "        let _ = value;\n        let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();\n",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-fn-pointer-call-refused",
     breaks: "a call through a function pointer from MIR is refused",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        let call = Value::Expr(Expr::call(callee, exprs));\n        let call = self.called_unbound(state, (call, Called::Pointer(fn_ptr)))?;\n",
     replace:
       '        let _ = (callee, exprs);\n        let call: Value<\'tcx> = return Err(self.unsupported(span, "a call"));\n',
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     name: "mir-omitted-prop-called",
     breaks:
       "a prop `jsx!` isn't given calls react's `__omitted`, which isn't JS's",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        if bindings::is_omitted(tcx, def_id) {\n",
     replace: "        if false && bindings::is_omitted(tcx, def_id) {\n",
     tests: [
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-untagged-into-called",
     breaks: "`into()` to an untagged enum whose `from` is the variant of its argument, a binding crate's, calls `Into::into`, which isn't JS's",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                || self.recognition().calls_from_giving_its_argument(def_id, generic_args))\n",
     replace: "                || false)\n",
     tests: [
@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
     name: "mir-flattened-read-boxed",
     breaks:
       "a read whose `Option` only `.flatten()` reads is an `Option` of an `Option`, refused",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            && self.flattened_by(state, destination)\n",
     replace: "            && false\n",
     tests: [
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-flattened-copy-reread",
     breaks: "a copy of a flattened read, the item itself, is boxed again",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                    Some(Std::OptionCloned) => item_itself() && self.flattened_by(state, *made),\n",
     replace: "                    Some(Std::OptionCloned) => false,\n",
     tests: [
@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-await-unawaited",
     breaks: "`.await` of a promise is the promise, not what it resolves to",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        let awaited = Expr::await_(self.through_refs(awaited, pointer).0);\n",
     replace: "        let awaited = self.through_refs(awaited, pointer).0;\n",
     tests: ["test/compiler.test.ts", "-t", "async code becomes"],
@@ -187,7 +187,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-async-closure-call-refused",
     breaks: "calling an `async` closure, `AsyncFn::async_call`, is refused",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                || tcx.async_fn_trait_kind_from_def_id(fn_trait).is_some())\n",
     replace: "                || false)\n",
     tests: ["test/lowering-async.test.ts", "-t", "an async closure"],
@@ -196,7 +196,7 @@ export const mutations: Mutation[] = [
     name: "mir-imported-binding-called-static",
     breaks:
       "a JS function a variable holds, `js::import!(f).await`'s, is called as its static import",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        if let Operand::Copy(_) | Operand::Move(_) = func\n",
     replace:
       "        if false && let Operand::Copy(_) | Operand::Move(_) = func\n",
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
     name: "mir-own-name-called",
     breaks:
       "`section.as_str()` from MIR is `Section.as_str(section)`, not `section`",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            && (self.gives_its_argument(self.callee(def_id, generic_args).0)\n",
     replace: "            && (false\n",
     tests: [
@@ -219,7 +219,7 @@ export const mutations: Mutation[] = [
     name: "mir-binding-trait-dispatched",
     breaks:
       "a binding default method called through a generic from MIR is a dictionary's, `{}.rule_id(error)`, which throws",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        bindings::is_binding(self.tcx, def_id) || self.impl_binding",
     replace: "        self.impl_binding",
     tests: [
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
     name: "mir-default-base-called",
     breaks:
       "an update's derived `Default` base is its `default()` called, which a generic component's `children: C` needs a dictionary for, refused",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            && let Some(fields) = self.default_base_at(span)?\n",
     replace:
       "            && false\n            && let Some(fields) = self.default_base_at(span)?\n",
@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
     name: "mir-fn-value-param-value",
     breaks:
       "a std function's value whose receiver its type names none of, `.map(u8::is_ascii_lowercase)`, names its arrow's parameter `value`, not by its type, `n`",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "self.fresh(self.parameter_name(inputs[i].peel_refs()))",
     replace: "self.fresh(Role::Value)",
     tests: ["test/corpus.test.ts", "-t", "^byte_ascii.rs$"],
@@ -260,7 +260,7 @@ export const mutations: Mutation[] = [
     name: "mir-dyn-error-from-refused",
     breaks:
       '`"too big".into()` into a `Box<dyn Error>` is refused from MIR, not `{ value, impl: $stringError() }`',
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            && let Some(dictionary) = self.dyn_error_from(to, from, span)?\n            && let [value] = &values[..]\n",
     replace:
       "            && let Some(dictionary) = self.dyn_error_from(to, from, span)?\n            && let [value] = &values[..0]\n",
@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
     name: "mir-call-refusal-own-words",
     breaks:
       "MIR's refusal of a call it can't lower says so in its own words, not the one a `compile-fail` case expects of rust-js",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        Err(refuse(self.tcx, span, Refused::Call(def_id)))\n",
     replace: '        Err(self.unsupported(span, "this call, from its MIR"))\n',
     tests: ["test/corpus.test.ts", "-t", "str_circumfix_closure"],
@@ -279,7 +279,7 @@ export const mutations: Mutation[] = [
     name: "mir-param-dictionary-of-ref-refused",
     breaks:
       "`w.write_char(c)` of a generic writer from MIR, its dictionary's, is refused",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                        || (generic_args.types().next()).is_some_and(|t| known_by_a_dictionary(t.peel_refs())))))\n",
     replace: "                        || false)))\n",
     tests: ["test/corpus.test.ts", "-t", "generic_writers"],
@@ -288,7 +288,7 @@ export const mutations: Mutation[] = [
     name: "mir-generic-method-result-boxed",
     breaks:
       "MIR's `checked.push(1)` through the crate's generic `deref_mut` pushes to its box",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                let call = self.generic_result_values(self.callee(def_id, generic_args), call, span)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
     name: "mir-iter-made-dropped",
     breaks:
       "MIR's `last()` of what looks like `None` reads items it never holds",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                    out.extend(made);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
@@ -306,7 +306,7 @@ export const mutations: Mutation[] = [
     name: "mir-call-takes-unchecked",
     breaks:
       "MIR's `m.get(\"a\")` through the crate's `Borrow`, and `v.extend(bag)` of its `IntoIterator`, compile, wrong",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        self.check_call_takes(def_id, generic_args, span)?;\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "MIR refuses a map's key looked up"],
@@ -314,7 +314,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-json-calls-refused",
     breaks: "MIR's `serde_json::Value` operations and `to_value` are refused",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        Ok(Value::Expr(self.json_call_values(operation, exprs, used, span, out)?))\n",
     replace:
       '        Err(self.unsupported(span, &format!("serde_json of {}, from its MIR", exprs.len())))\n',
@@ -324,7 +324,7 @@ export const mutations: Mutation[] = [
     name: "variadic-value-rest-unpassed",
     breaks:
       "a trait's `&mut self` C-variadic method as a value gives the method none of what it's given past the rest",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            values.push(Value::Expr(Expr::spread(Expr::var(rest))));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
@@ -333,7 +333,7 @@ export const mutations: Mutation[] = [
     name: "some-equality-loose",
     breaks:
       "an `Option` compared with a `Some(..)` is `==`, where `===` answers the same",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            Value::Expr(e) if strict => Ok(Value::Expr(js::strict_equality(e))),\n",
     replace:
       "            Value::Expr(e) if false && strict => Ok(Value::Expr(js::strict_equality(e))),\n",
@@ -343,7 +343,7 @@ export const mutations: Mutation[] = [
     name: "some-equality-of-any",
     breaks:
       "an `==` of two `Option`s, either of which may be `null` or `undefined`, is `===`",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                place.projection.is_empty() && state.facts.options().made_some.contains(&place.local)\n",
     replace:
       "                place.projection.is_empty() || state.facts.options().made_some.contains(&place.local)\n",
@@ -353,16 +353,16 @@ export const mutations: Mutation[] = [
     name: "clone-from-through-dictionary",
     breaks:
       "std's `clone_from` is asked of a `Clone` dictionary, which has only `clone`, and refused",
-    file: "src/lower/mir/dispatch.rs",
-    find: "        known != Some(Std::CloneFrom) && !crate::lower::recognition::is_fmt_method(self.tcx, def_id)\n",
-    replace: "        !crate::lower::recognition::is_fmt_method(self.tcx, def_id)\n",
+    file: "crates/rust-js-mir/src/dispatch.rs",
+    find: "        known != Some(Std::CloneFrom) && !rust_js_lower::recognition::is_fmt_method(self.tcx, def_id)\n",
+    replace: "        !rust_js_lower::recognition::is_fmt_method(self.tcx, def_id)\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
   },
   {
     name: "crate-impl-iterator-route",
     breaks:
       "a copied default's `self.next()` of the crate's iterator is stepped as a JS iterator",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        Ok(!self.resolves_to_crate(def_id, generic_args)?\n",
     replace: "        Ok(true\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
@@ -371,7 +371,7 @@ export const mutations: Mutation[] = [
     name: "mir-associated-type-as-mut-refused",
     breaks:
       "`as_mut()` of an associated type, `T::Buffer`, is refused, not its dictionary's",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "(generic_args.types().next()).is_some_and(|t| known_by_a_dictionary(t.peel_refs()))",
     replace: "(generic_args.types().next()).is_some_and(|t| matches!(t.peel_refs().kind(), ty::Param(_)))",
     tests: ["test/corpus.test.ts", "-t", "^associated_type_as_mut.rs$"],
@@ -380,7 +380,7 @@ export const mutations: Mutation[] = [
     name: "await-pinned-cell",
     breaks:
       "`.await` of a pinned `&mut` to a future awaits its handle, not the promise",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        let pointer = self.recognition().pinned(ty).unwrap_or(ty);\n        let awaited = self.value_expr(awaited, span)?;",
     replace:
       "        let pointer = ty;\n        let awaited = self.value_expr(awaited, span)?;",
@@ -390,7 +390,7 @@ export const mutations: Mutation[] = [
     name: "own-into-future-uncalled",
     breaks:
       "`.await` of an `IntoFuture` of the crate's awaits the value, not what its `into_future` makes",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        if self.recognition().own_into_future(ty)\n",
     replace: "        if false\n",
     tests: ["test/compiler.test.ts", "-t", "async code"],
@@ -398,8 +398,8 @@ export const mutations: Mutation[] = [
   {
     name: "mir-ctor-call-unapplied",
     breaks: "a constructor called from MIR is its arrow, not what it makes",
-    file: "src/lower/mir/dispatch.rs",
-    find: "            return Ok(Value::Expr(crate::lower::calls::apply(made, exprs)));\n",
+    file: "crates/rust-js-mir/src/dispatch.rs",
+    find: "            return Ok(Value::Expr(rust_js_lower::calls::apply(made, exprs)));\n",
     replace:
       "            let _ = exprs;\n            return Ok(Value::Expr(made));\n",
     tests: ["test/corpus.test.ts", "-t", "function_values"],
@@ -408,18 +408,18 @@ export const mutations: Mutation[] = [
     name: "mir-cmp-max-refused",
     breaks:
       "`cmp::max(a, b)` of what isn't a number is refused from MIR, not `Ord::max(a, b)`'s",
-    file: "src/lower/mir/dispatch.rs",
-    find: "        if known.is_none()\n            && let Some(max) = crate::lower::recognition::cmp_extreme(tcx, def_id)\n",
+    file: "crates/rust-js-mir/src/dispatch.rs",
+    find: "        if known.is_none()\n            && let Some(max) = rust_js_lower::recognition::cmp_extreme(tcx, def_id)\n",
     replace:
-      "        if false\n            && let Some(max) = crate::lower::recognition::cmp_extreme(tcx, def_id)\n",
+      "        if false\n            && let Some(max) = rust_js_lower::recognition::cmp_extreme(tcx, def_id)\n",
     tests: ["test/corpus.test.ts", "-t", "std_methods"],
   },
   {
     name: "called-value-not-by-name",
     breaks:
       "a crate's function as a value, called through MIR, is an arrow calling it, not it by name",
-    file: "src/lower/mir/dispatch.rs",
-    find: "        Ok(crate::lower::passed_on::passed_on(&arrow, taker, &[]).unwrap_or(arrow))\n",
+    file: "crates/rust-js-mir/src/dispatch.rs",
+    find: "        Ok(rust_js_lower::passed_on::passed_on(&arrow, taker, &[]).unwrap_or(arrow))\n",
     replace: "        Ok(arrow)\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer.rs$"],
     snapshots: true,
@@ -427,7 +427,7 @@ export const mutations: Mutation[] = [
   {
     name: "await-unsettled-dropped",
     breaks: "an awaited thenable stays in the box `$settled` put it in",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: '            true => Expr::call_helper("$unsettled", vec![awaited]),\n',
     replace: "            true => awaited,\n",
     tests: ["test/lowering-async.test.ts", "-t", "thenable"],
@@ -436,17 +436,17 @@ export const mutations: Mutation[] = [
     name: "rest-value-pointer-call-unspread",
     breaks:
       'a `fn` of rest arguments is called with them as one array, `log(["named", 1])`',
-    file: "src/lower/mir/dispatch.rs",
-    find: "        if rest {\n            crate::lower::calls::spread_rest(&mut exprs);\n",
+    file: "crates/rust-js-mir/src/dispatch.rs",
+    find: "        if rest {\n            rust_js_lower::calls::spread_rest(&mut exprs);\n",
     replace:
-      "        if false {\n            crate::lower::calls::spread_rest(&mut exprs);\n",
+      "        if false {\n            rust_js_lower::calls::spread_rest(&mut exprs);\n",
     tests: ["test/js-object.test.ts", "-t", "console is a value"],
   },
   {
     name: "nullable-param-nulled-unasked",
     breaks:
       "what a binding with a nullable parameter is given isn't asked whether it's `null` or a value already: `Object.create(Object.prototype ?? null)`",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            true => (operands.iter())\n",
     replace: "            true => Vec::new().into_iter()\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "a nullable Cell field's None is null where it's made"],
@@ -455,7 +455,7 @@ export const mutations: Mutation[] = [
     name: "thrown-given-tested",
     breaks:
       "what's given the thrown downcast tests it first, `x?.stack`, as though it may be `None`",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        if !subject.projection.is_empty() || !state.facts.options().thrown.contains_key(&subject.local) {\n",
     replace: "        if true {\n",
     tests: [
@@ -468,7 +468,7 @@ export const mutations: Mutation[] = [
     name: "thrown-mapped-unboxed",
     breaks:
       "`map` of the thrown downcast to what looks like `None` gives it unboxed, `None` where it's `Some(None)`",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        let boxed = known == Std::OptionMap && self.option_of(output)",
     replace: "        let boxed = false && self.option_of(output)",
     tests: [
@@ -481,7 +481,7 @@ export const mutations: Mutation[] = [
     name: "unwrapped-where-made-never",
     breaks:
       "a throwing call's `Result` made in each branch and unwrapped is never the calls, so `if first { parse(a) } else { parse(b) }.unwrap()` keeps `$unwrapOk(first ? $try(..) : $try(..))`",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                made = true;\n",
     replace: "                made = false;\n",
     tests: [
@@ -494,7 +494,7 @@ export const mutations: Mutation[] = [
     name: "unwrapped-past-what-runs",
     breaks:
       "a call's `Result` is taken as unwrapped where it's made past what runs between, a `println!`, so its throw goes before what Rust runs first, uncaught",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                    _ => return false,\n                }\n            }\n            false\n",
     replace:
       "                    _ => block = unwrap,\n                }\n            }\n            false\n",
@@ -508,7 +508,7 @@ export const mutations: Mutation[] = [
     name: "unwrapped-of-any-call",
     breaks:
       "a branch's call that doesn't throw, a Rust function's `Result`, is taken as one that does, so its `Ok` object is the `unwrap()`'s value",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                let throws = destination.projection.is_empty()\n                    && fn_def(",
     replace:
       "                let throws = destination.projection.is_empty()\n                    || fn_def(",
@@ -522,7 +522,7 @@ export const mutations: Mutation[] = [
     name: "unwrapped-of-an-assigned-result",
     breaks:
       "a branch that makes its `Result`, `Ok(None)`, isn't a write the rule sees, so the other branch's call is taken as all that gives it",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "StatementKind::Assign(assign) if assign.0.local == local))\n            {\n                return false;\n",
     replace:
       "StatementKind::Assign(assign) if assign.0.local == local))\n            {\n                continue;\n",
@@ -536,7 +536,7 @@ export const mutations: Mutation[] = [
     name: "reads-through-flattened-copy-unmarked",
     breaks:
       "a copy of a flattened read, the item itself, isn't marked flattened, so the `flatten()` of it reads an `Option` of an `Option`",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                state.flattened.locals.insert(destination.local);\n                true\n",
     replace: "                true\n",
     tests: [
@@ -549,7 +549,7 @@ export const mutations: Mutation[] = [
     name: "registered-equality-loose",
     breaks:
       '`from_value(x) == Some(SymbolFor("k"))` is `x == Symbol.for("k")`, true of an object that turns into the symbol, which isn\'t one',
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            .is_some_and(|equality| self.frame.facts.registered_equalities.contains(&equality)))\n",
     replace: "            .is_some_and(|equality| false && self.frame.facts.registered_equalities.contains(&equality)))\n",
     tests: [
@@ -562,8 +562,8 @@ export const mutations: Mutation[] = [
     name: "getter-pending-past-lookup",
     breaks:
       "a getter's read MIR holds is read inside a binding's method call, after the method's lookup",
-    file: "src/lower/mir/dispatch.rs",
-    find: "        if crate::lower::binding_calls::method_may_be_a_getters(self.tcx, callee.0)\n            && operands",
+    file: "crates/rust-js-mir/src/dispatch.rs",
+    find: "        if rust_js_lower::binding_calls::method_may_be_a_getters(self.tcx, callee.0)\n            && operands",
     replace: "        if false\n            && operands",
     tests: [
       "test/lowering-moves.test.ts",
@@ -575,7 +575,7 @@ export const mutations: Mutation[] = [
     name: "extension-step-of-in-place-compiled",
     breaks:
       "an in-place `map()`'s `rfold`, which the recognizers' JS iterator is, calls std's compiled `rfold` of a struct it isn't",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            || self.steps_adapter_in_place(def_id, generic_args, receiver))\n",
     replace: ")\n",
     tests: [
@@ -588,7 +588,7 @@ export const mutations: Mutation[] = [
     name: "in-place-maker-compiled",
     breaks:
       "an `inspect()` made in place, given to `chain`, is std's compiled struct, not the recognizers' JS iterator",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            && !self.adapter_in_place(def_id, span))\n",
     replace: ")\n",
     snapshots: true,
@@ -603,10 +603,10 @@ export const mutations: Mutation[] = [
     name: "no-iterator-made-unwrapped",
     breaks:
       "std's `StepBy` `StepBy::new` made where it's no iterator stays a plain struct in `step_by`, which then can't be stepped (ADR 0917)",
-    file: "src/lower/mir/dispatch.rs",
-    find: "                if crate::lower::recognition::makes_no_iterator(self.tcx, callee.0)\n",
+    file: "crates/rust-js-mir/src/dispatch.rs",
+    find: "                if rust_js_lower::recognition::makes_no_iterator(self.tcx, callee.0)\n",
     replace:
-      "                if false && crate::lower::recognition::makes_no_iterator(self.tcx, callee.0)\n",
+      "                if false && rust_js_lower::recognition::makes_no_iterator(self.tcx, callee.0)\n",
     tests: [
       "test/std-package.test.ts",
       "-t",
@@ -617,7 +617,7 @@ export const mutations: Mutation[] = [
     name: "own-pointer-given-undefined",
     breaks:
       "a fn pointer that may only be the crate's function is given a trailing `undefined`, `DISPATCHER.marked(1, undefined)` of a unit struct, not React's `dispatcher.useState()`",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        match pointers.rust_only(self.tcx, fn_ptr) {\n",
     replace: "        match false && pointers.rust_only(self.tcx, fn_ptr) {\n",
     tests: [
@@ -631,10 +631,10 @@ export const mutations: Mutation[] = [
     name: "optional-cell-set-coalesced",
     breaks:
       "an optional nullable cell field set to another's `get()` is `created.debugTask = returnFiber.debugTask ?? null`, `null` where upstream copies `undefined` (ADR 0810, amended)",
-    file: "src/lower/mir/dispatch.rs",
-    find: "                    crate::lower::aggregates::Given::Optional => optional,\n",
+    file: "crates/rust-js-mir/src/dispatch.rs",
+    find: "                    rust_js_lower::aggregates::Given::Optional => optional,\n",
     replace:
-      "                    crate::lower::aggregates::Given::Optional => false,\n",
+      "                    rust_js_lower::aggregates::Given::Optional => false,\n",
     tests: [
       "test/lowering-optional-fields.test.ts",
       "-t",
@@ -645,7 +645,7 @@ export const mutations: Mutation[] = [
     name: "optional-cell-set-any-target",
     breaks:
       "a nullable cell field that isn't optional, set to an optional one's `get()`, stores `undefined` where it holds `null` or a value (ADR 0810, amended)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                .is_some_and(|field| bindings::is_optional(self.tcx, field));\n",
     replace: "                .is_some();\n",
     tests: [
@@ -658,7 +658,7 @@ export const mutations: Mutation[] = [
     name: "index-of-a-binding-impl-refused",
     breaks:
       "a binding's `impl Index`, TypeScript's index signature, isn't the binding its method declares, so ReactDOMSelect's `options[i].value` is refused as calling `std::ops::Index::index` (rd68)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            ty::InstanceKind::Item(item) if bindings::is_binding(tcx, item) => Some((item, instance.args)),\n",
     replace: "",
     tests: ["test/webapi-bindings.test.ts", "-t", "index signature is Index"],
@@ -667,7 +667,7 @@ export const mutations: Mutation[] = [
     name: "newtype-from-unresolved",
     breaks:
       "a trait's `from` called is asked of as it's named, not as the impl it resolves to, so `EventPriority::from(lane)` is called",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            && (self.gives_its_argument(self.callee(def_id, generic_args).0)\n",
     replace: "            && (self.gives_its_argument(def_id)\n",
     tests: ["test/corpus.test.ts", "-t", "^newtype_conversions.rs$"],
@@ -677,7 +677,7 @@ export const mutations: Mutation[] = [
     name: "map-to-itself-names-its-function",
     breaks:
       "a map that's the option itself, `lane.map(EventPriority::from)`, names its function, which is then written though nothing calls it (ADR 0584, amended)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            && let [option, _] = operands\n",
     replace:
       "            && let [option, _] = operands\n            && false\n",
@@ -691,7 +691,7 @@ export const mutations: Mutation[] = [
     name: "nested-option-eq-loose",
     breaks:
       "two held `Option`s of `Option`s are compared `==`, so `None` and `Some(None)` are equal (ADR 1017)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            Expr::bin(Op::Eq, a, b)\n        } else {\n",
     replace: "            Expr::bin(Op::LooseEq, a, b)\n        } else {\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
@@ -700,7 +700,7 @@ export const mutations: Mutation[] = [
     name: "nested-option-eq-nones-unseen",
     breaks:
       "two held `Option`s of `Option`s of strings are compared as `Option<String>`s, so `None` and `Some(None)` are equal (ADR 1017)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            Expr::cond(none, Expr::bin(Op::Eq, a, b), both)\n",
     replace: "            { let _ = (none, a, b); both }\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
@@ -709,7 +709,7 @@ export const mutations: Mutation[] = [
     name: "nested-option-box-unpeeled",
     breaks:
       "two held `Option`s of `Option<Box<u32>>`s are compared through `$eq`, where `===` is their `==` (ADR 1017)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            && (held.is_box() || self.is_rc(held) && self.counted_rc(held).is_none())\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
@@ -719,7 +719,7 @@ export const mutations: Mutation[] = [
     name: "nested-option-is-some-flipped",
     breaks:
       "`is_some()` of an `Option` of an `Option` held as its payload is `last === undefined`, a wrong answer",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            let op = if known == Std::IsSome { Op::Ne } else { Op::Eq };\n",
     replace:
       "            let op = if known == Std::IsSome { Op::Eq } else { Op::Ne };\n",
@@ -729,7 +729,7 @@ export const mutations: Mutation[] = [
     name: "nested-option-eq-some-none-undefined",
     breaks:
       "`last == Some(None)` of an `Option` of an `Option` held as its payload is `last === undefined`, its `None`'s test, a wrong answer",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            return Ok(Some(Expr::bin(op, x, Expr::null())));\n",
     replace:
       "            return Ok(Some(Expr::bin(op, x, Expr::js_undefined())));\n",
@@ -738,16 +738,16 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-pointer-left-out",
     breaks: "a call through a pointer that may be a function reading `js::arguments()` leaves out its trailing `undefined`s (rd332)",
-    file: "src/lower/mir/dispatch.rs",
-    find: "            _ if counts => crate::lower::calls::given_to_js(&mut exprs),\n",
-    replace: "            _ if false => crate::lower::calls::given_to_js(&mut exprs),\n",
+    file: "crates/rust-js-mir/src/dispatch.rs",
+    find: "            _ if counts => rust_js_lower::calls::given_to_js(&mut exprs),\n",
+    replace: "            _ if false => rust_js_lower::calls::given_to_js(&mut exprs),\n",
     tests: ["test/arguments.test.ts"],
   },
   {
     name: "nulled-param-calls-unrecorded",
     breaks:
       "no call of a function with an own nullable parameter is seen, so none is found given `null` or a value at each, `!= null` still (rd613)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            self.nulled_call_seen(caller, callee.0, (&declared, &given_on));\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "each call gives null or a value"],
@@ -756,7 +756,7 @@ export const mutations: Mutation[] = [
     name: "nulled-param-foreign-uncoalesced",
     breaks:
       "a consumer's call of a library's function whose nullable parameter its body tests `!== null` gives it what may be `undefined` as it is (rd613)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                if form == NoneForm::Null && nulled.get(i) != Some(&true) {\n",
     replace: "                if false {\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "nullable parameter its calls give null"],
@@ -765,7 +765,7 @@ export const mutations: Mutation[] = [
     name: "nulled-param-foreign-nulled-coalesced",
     breaks:
       "a consumer's call of a library's function whose nullable parameter is `null` at each call gives what's `null` or a value already `?? null` too (rd613)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                if form == NoneForm::Null && nulled.get(i) != Some(&true) {\n",
     replace: "                if form == NoneForm::Null {\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "nullable parameter its calls give null"],
@@ -774,7 +774,7 @@ export const mutations: Mutation[] = [
     name: "held-is-some-undefined",
     breaks:
       "`is_some()` of a nullable field of what may be `undefined`, through a reference, is `!== undefined`, its `Some` a `None` (rd645)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            let none = self.held_none(x.ty(state.body, self.tcx));\n",
     replace: "            let none = Expr::js_undefined();\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
@@ -783,7 +783,7 @@ export const mutations: Mutation[] = [
     name: "strict-is-none-of-a-borrow-loose",
     breaks:
       "`state.clones.borrow().is_none()` of a field that's `null` or a value is `== null` (rd647)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        if let Some(tested) = self.null_or_value_tested(state, callee, operands, span, out)? {\n",
     replace: "        if let Some(tested) = self.null_or_value_tested(state, callee, operands, span, out)?.filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
@@ -793,7 +793,7 @@ export const mutations: Mutation[] = [
     name: "given-on-recorded-as-found",
     breaks:
       "a call that gives on the caller's own nullable parameter, not yet found `null` or a value, is recorded as giving what may be `undefined`, so no parameter given one is ever found so (rd624, ADR 0861, amended)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            self.nulled_call_seen(caller, callee.0, (&declared, &given_on));\n",
     replace: "            self.nulled_call_seen(caller, callee.0, (&nulled, &given_on));\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "each call gives null or a value"],
@@ -801,7 +801,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-undropped-as-it-unwinds",
     breaks: "a function std is given by value and calls by `&mut`, a `for_each`'s, isn't dropped as a panic in the call unwinds, and leaks what it holds (#719)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                self.dropped_unwinding(&held, span)?,\n",
     replace: "                Vec::new(),\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_folded_by_value_panics.rs$"],
@@ -809,7 +809,7 @@ export const mutations: Mutation[] = [
   {
     name: "consumed-function-dropped-after",
     breaks: "a closure `$consume` drops is dropped again after the call, twice (#734)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            if !(when.is_none() && consumed) {\n",
     replace: "            if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
@@ -817,7 +817,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-method-call-unasked",
     breaks: "a call that resolves to a body compiled into `@rust-js/std` but is lowered as std's iterator method, a `Rev`'s `rfold`, drops nothing of the function it's given, a closure that holds what has a destructor, leaked (#754)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            || (self.tcx.trait_of_assoc(def_id).is_some()\n                && self.std_iterator_call(def_id, generic_args, &values, span)?);\n",
     replace: "            || false;\n",
     tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
@@ -825,15 +825,15 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-through-the-trait-call",
     breaks: "a formatting trait's `fmt` of std's impl goes by the trait call, whose dictionary entry gives text and takes no `Formatter`, where no recogniser takes it (#1477)",
-    file: "src/lower/mir/dispatch.rs",
-    find: "        known != Some(Std::CloneFrom) && !crate::lower::recognition::is_fmt_method(self.tcx, def_id)\n",
+    file: "crates/rust-js-mir/src/dispatch.rs",
+    find: "        known != Some(Std::CloneFrom) && !rust_js_lower::recognition::is_fmt_method(self.tcx, def_id)\n",
     replace: "        known != Some(Std::CloneFrom)\n",
     tests: ["test/tidy-stages.test.ts", "-t", "a formatting trait's fmt is refused without its recogniser"],
   },
   {
     name: "given-to-a-writer-made-text",
     breaks: "an `Arguments` given to a function that writes it into a writer is the function that makes its text, which the writer's sink isn't armed for",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            made if given_on => self.arguments_given_on(made, sink, span),\n",
     replace: "            made if given_on => self.arguments_given_on(made, sink && false, span),\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_given_on.rs$"],
@@ -841,7 +841,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-writer-fn-value-takes-its-formatter",
     breaks: "a library's generic writer function's instance as a value takes its `Formatter`, which its JS doesn't, so a call through the pointer gives its dictionary `undefined` (#1710)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        if let Some(at) = self.recognition().formatter_param(def_id)\n            && let evidence = self.evidence_args(def_id, args, span)?\n",
     replace: "        if let Some(at) = None::<usize>\n            && let evidence = self.evidence_args(def_id, args, span)?\n",
     tests: ["test/crates.test.ts", "-t", "library_writer_fn_pointer_at_an_instance"],
@@ -849,7 +849,7 @@ export const mutations: Mutation[] = [
   {
     name: "binding-arguments-given-as-they-are",
     breaks: "a binding's optional argument of what JS may have given `null` is given it as it is (#1840)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            self.ones_given_to_a_binding(state, binding, operands, &mut values, span)?;\n",
     replace: "",
     tests: given1840,
@@ -857,7 +857,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-arguments-given-as-they-are",
     breaks: "a trait object's method, its impl JS's where JS made its pair, is given JS's `null` as it is (#1840)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            self.ones_given_to_a_dyn(state, callee, operands, &mut values, span)?;\n",
     replace: "",
     tests: given1840,
@@ -865,7 +865,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-arguments-given-as-they-are",
     breaks: "a fn pointer JS gave is called with JS's `null` as it is (#1840)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            self.ones_given_to_a_pointer(state, fn_ptr, &operands[1..], &mut exprs[1..]);\n",
     replace: "",
     tests: ["test/none-given.test.ts", "-t", "a WebIDL operation's trailing None"],
@@ -873,7 +873,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-call-of-each-count-unmade",
     breaks: "a pointer JS gave, called of a trailing `None` known where it runs, is given `undefined`, `f(a, undefined)`, which a JS function counting what it's given tells from `f(a)` (#1876)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        let laddered = pointers.may_be(self.tcx, fn_ptr).is_none() && !counts;\n",
     replace: "        let laddered = false && pointers.may_be(self.tcx, fn_ptr).is_none() && !counts;\n",
     tests: ["test/none-given.test.ts", "-t", "a function value's trailing None"],
@@ -881,7 +881,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-somes-unseen",
     breaks: "a pointer JS gave, given `Some(b)`, tests what's there, `b != null ? f(a, b) : f(a)` (#1876)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "            None => self.arg_proofs(state, &operands[1..]),\n",
     replace: "            None => Vec::new(),\n",
     tests: ["test/none-given.test.ts", "-t", "a function value's trailing None"],
@@ -889,7 +889,7 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-fn-given-once-undropped",
     breaks: "a `Box<dyn Fn()>` holding a value with a destructor, given to an `F: FnOnce`, is given as it is, so what it took is never dropped, after the call or as it unwinds (#2033)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                for at in self.boxes_called_once((def_id, generic_args), arg_tys) {\n",
     replace: "                for at in self.boxes_called_once((def_id, generic_args), arg_tys).into_iter().filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_fn_given_to_a_once_callee_drops.rs$"],
@@ -897,7 +897,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-value-fallback-mixed",
     breaks: "a library's value whose function names some parameters names the rest `a`, `b`, `(a, string)`, not by type, `(s, string)` (#1328)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                None if (inputs.len() == 1 || !named.is_empty())\n",
     replace: "                None if (inputs.len() == 1)\n",
     tests: ["test/corpus.test.ts", "-t", "^string_edits_given_as_functions.rs$"],
@@ -906,7 +906,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-value-fallback-type-name-taken",
     breaks: "a library's value's parameter named by type takes another's own name, `f64::powf`'s `(n, n$1)` (#1328)",
-    file: "src/lower/mir/dispatch.rs",
+    file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                        .any(|name| name == self.parameter_name(inputs[i].peel_refs()).text()) =>\n",
     replace: "                        .any(|name| name == self.parameter_name(inputs[i].peel_refs()).text() && false) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_shapes_shared.rs$"],

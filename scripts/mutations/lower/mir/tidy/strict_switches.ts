@@ -1,7 +1,7 @@
-// Mutations of src/lower/mir/tidy/strict_switches.rs (ADR 0958).
+// Mutations of crates/rust-js-mir/src/tidy/strict_switches.rs (ADR 0958).
 import type { Mutation } from "../../../../mutations";
 
-const file = "src/lower/mir/tidy/strict_switches.rs";
+const file = "crates/rust-js-mir/src/tidy/strict_switches.rs";
 const switches = [
   "test/lowering-strict-switches.test.ts",
   "-t",

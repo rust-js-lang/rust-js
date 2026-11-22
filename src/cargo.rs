@@ -627,10 +627,10 @@ mod tests {
             "rust-js: rust-js can't read the module it wrote: Invalid Character: a bug of rust-js's"
         );
         let panic =
-            b"\nthread 'rustc' panicked at src/lower.rs:1:1:\nindex out of bounds\nnote: run with `RUST_BACKTRACE=1`\n";
+            b"\nthread 'rustc' panicked at crates/rust-js-lower/src/lib.rs:1:1:\nindex out of bounds\nnote: run with `RUST_BACKTRACE=1`\n";
         assert_eq!(
             refused_for(panic),
-            "rust-js crashed: thread 'rustc' panicked at src/lower.rs:1:1: index out of bounds"
+            "rust-js crashed: thread 'rustc' panicked at crates/rust-js-lower/src/lib.rs:1:1: index out of bounds"
         );
         assert_eq!(refused_for(b""), "rust-js refused it, and said nothing of why");
     }

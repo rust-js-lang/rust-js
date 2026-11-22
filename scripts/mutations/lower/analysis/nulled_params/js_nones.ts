@@ -1,9 +1,9 @@
-// Mutations of src/lower/analysis/nulled_params/js_nones.rs (#1840, #1843;
+// Mutations of crates/rust-js-lower/src/analysis/nulled_params/js_nones.rs (#1840, #1843;
 // ADR 0030, amended): which of the crate's `Option`s may hold a `None` JS
 // gave, `null`, which an exit gives `?? undefined`.
 import type { Mutation } from "../../../../mutations";
 
-const file = "src/lower/analysis/nulled_params/js_nones.rs";
+const file = "crates/rust-js-lower/src/analysis/nulled_params/js_nones.rs";
 const given = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
 const corpus = ["test/corpus.test.ts", "-t", "^none_given_to_an_optional_argument.rs$"];
 // Since a binding's argument is a call of each count (#1842), a
@@ -142,8 +142,8 @@ export const mutations: Mutation[] = [
   {
     name: "js-error-none-trusted-undefined",
     breaks: "a `JsError`'s `None`, a caught `null`, is taken for `undefined` alone, as `Unknown`'s is, so a binding given it is given `null` where Rust gives no argument, past its default parameter (#1905)",
-    file: "src/lower/analysis/nulled_params/js_nones.rs",
-    find: "            && !crate::lower::recognition::is_js_error_type(tcx, of.did()))\n",
+    file: "crates/rust-js-lower/src/analysis/nulled_params/js_nones.rs",
+    find: "            && !crate::recognition::is_js_error_type(tcx, of.did()))\n",
     replace: "            && true)\n",
     tests: ["test/js-errors.test.ts", "-t", "caught from throw null"],
   },
@@ -151,15 +151,15 @@ export const mutations: Mutation[] = [
     name: "js-error-holds-no-none",
     breaks: "what JS threw holds no `Option`'s `None`, so `.err()` of a caught `null` leaves an export as `null`, not `undefined` (#1939)",
     file,
-    find: "                if crate::lower::recognition::is_js_error_type(tcx, adt.did()) {\n                    found.types.insert(ty);\n",
-    replace: "                if false && crate::lower::recognition::is_js_error_type(tcx, adt.did()) {\n                    found.types.insert(ty);\n",
+    find: "                if crate::recognition::is_js_error_type(tcx, adt.did()) {\n                    found.types.insert(ty);\n",
+    replace: "                if false && crate::recognition::is_js_error_type(tcx, adt.did()) {\n                    found.types.insert(ty);\n",
     tests: ["test/js-errors.test.ts", "-t", "leaves for JS as undefined, each way"],
   },
   {
     name: "object-deref-unfollowed",
     breaks: "a JS object's `Deref` to the class it extends is taken for another crate's value, its `null` unknown, so a `Some` of an error `new` made is coalesced at an exit (#2112, ADR 0024)",
-    file: "src/lower/analysis/nulled_params/js_nones.rs",
-    find: "            if crate::lower::recognition::is_js_object_deref(tcx, tcx.parent(target))\n",
+    file: "crates/rust-js-lower/src/analysis/nulled_params/js_nones.rs",
+    find: "            if crate::recognition::is_js_object_deref(tcx, tcx.parent(target))\n",
     replace: "            if false\n",
     tests: ["test/one-none-exits.test.ts", "-t", "a Some of an error new made, given"],
   },

@@ -18,11 +18,11 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 // fn` evaluated for a const generic's argument (#1281), and `back_stepped`
 // asked it directly where `self_handles` asked it guarded.
 test("a body's local is asked if the program named it by `analysis::user_variable` alone", () => {
-  const asking = ["src/lower.rs", ...files("src/lower")]
-    .filter((file) => file.endsWith(".rs") && file !== "src/lower/analysis/mir_reads/user_variable.rs")
+  const asking = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")]
+    .filter((file) => file.endsWith(".rs") && file !== "crates/rust-js-lower/src/analysis/mir_reads/user_variable.rs")
     .filter((file) => /\.is_user_variable\(\)/.test(read(file)));
   expect(asking).toEqual([]);
-  expect(read("src/lower/analysis/mir_reads/user_variable.rs")).toContain("matches!(decl.local_info, mir::ClearCrossCrate::Set(_)) && decl.is_user_variable()");
+  expect(read("crates/rust-js-lower/src/analysis/mir_reads/user_variable.rs")).toContain("matches!(decl.local_info, mir::ClearCrossCrate::Set(_)) && decl.is_user_variable()");
 });
 
 // Whether a call's `Result` is only given on by `?`, so its error may be
@@ -31,17 +31,17 @@ test("a body's local is asked if the program named it by `analysis::user_variabl
 // it. The files that read `?`'s `Try::branch` may only shrink; a new
 // reader of what a call's `Result` is given to asks `result_use`.
 test("what a call's Result is given to is asked of `analysis::result_use` alone", () => {
-  const reading = ["src/lower.rs", ...files("src/lower")]
+  const reading = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")]
     .filter((file) => file.endsWith(".rs") && read(file).includes("TryTraitBranch"));
   expect(reading).toEqual([
-    "src/lower/analysis/fmt_failures.rs",
-    "src/lower/analysis/mir_reads/result_use.rs",
-    "src/lower/mir/dispatch.rs",
-    "src/lower/mir/patterns.rs",
-    "src/lower/recognition/types.rs",
+    "crates/rust-js-lower/src/analysis/fmt_failures.rs",
+    "crates/rust-js-lower/src/analysis/mir_reads/result_use.rs",
+    "crates/rust-js-lower/src/recognition/types.rs",
+    "crates/rust-js-mir/src/dispatch.rs",
+    "crates/rust-js-mir/src/patterns.rs",
   ]);
-  expect(["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs") && /fn given_on\b/.test(read(file)))).toEqual([]);
-  for (const file of ["src/lower/mir/writer.rs", "src/lower/mir/dispatch.rs"]) expect(read(file)).toContain("result_use(");
+  expect([...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs") && /fn given_on\b/.test(read(file)))).toEqual([]);
+  for (const file of ["crates/rust-js-mir/src/writer.rs", "crates/rust-js-mir/src/dispatch.rs"]) expect(read(file)).toContain("result_use(");
 });
 
 // Whether a writer's `Debug` builders and derived `Debug` are written step
@@ -52,15 +52,15 @@ test("what a call's Result is given to is asked of `analysis::result_use` alone"
 // `writes_through_a_sink` alone, where a builder's made, and only
 // `display/streamed.rs` names the builders' helpers.
 test("a builder is streamed where the sink fact says, and the fact is `prints.rs`' alone", () => {
-  const lower = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
-  expect(lower.filter((file) => /\.through_sink\b/.test(read(file)))).toEqual(["src/lower/analysis/prints.rs"]);
-  expect(lower.filter((file) => /prints\.writes_through_sink\(/.test(read(file)))).toEqual(["src/lower/display/printing.rs"]);
-  expect(lower.filter((file) => /Taken::Streamed\(/.test(read(file)))).toEqual(["src/lower/mir/writer.rs"]);
-  expect(lower.filter((file) => /"\$debug(List|Set|Map|Struct|Tuple)"/.test(read(file)))).toEqual(["src/lower/display/streamed.rs"]);
-  const writer = read("src/lower/mir/writer.rs");
+  const lower = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"));
+  expect(lower.filter((file) => /\.through_sink\b/.test(read(file)))).toEqual(["crates/rust-js-lower/src/analysis/prints.rs"]);
+  expect(lower.filter((file) => /prints\.writes_through_sink\(/.test(read(file)))).toEqual(["crates/rust-js-lower/src/display/printing.rs"]);
+  expect(lower.filter((file) => /Taken::Streamed\(/.test(read(file)))).toEqual(["crates/rust-js-mir/src/writer.rs"]);
+  expect(lower.filter((file) => /"\$debug(List|Set|Map|Struct|Tuple)"/.test(read(file)))).toEqual(["crates/rust-js-lower/src/display/streamed.rs"]);
+  const writer = read("crates/rust-js-mir/src/writer.rs");
   const made = writer.indexOf("let taken = Taken::Streamed(builder);");
   expect(writer.lastIndexOf("if self.writes_through_a_sink(state) {", made)).toBeGreaterThan(writer.lastIndexOf("fn ", made));
-  const prints = read("src/lower/analysis/prints.rs");
+  const prints = read("crates/rust-js-lower/src/analysis/prints.rs");
   expect(prints).toContain("failing.contains(&body.def_id)");
   expect(prints).not.toMatch(/failing_fns|makes_err|fmt_failures::/);
 });
@@ -70,10 +70,10 @@ test("a builder is streamed where the sink fact says, and the fact is `prints.rs
 // where the `Arguments` is made and where std is given one, and nowhere
 // reconstructs it from the JS a `format_args!` became.
 test("an Arguments' text or function is `mir::arguments_use`'s answer alone", () => {
-  const lower = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
+  const lower = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"));
   const asking = lower.filter((file) => /\barguments_use\(|\bholds_text\(/.test(read(file)));
-  expect(asking).toEqual(["src/lower/analysis/mir_reads/arguments_use.rs", "src/lower/mir/given_arguments.rs", "src/lower/mir/std_calls/written_into.rs", "src/lower/mir/std_calls.rs"]);
-  expect(read("src/lower/mir/dispatch.rs")).toContain("self.makes_arguments_given_on(state, known, destination)");
+  expect(asking).toEqual(["crates/rust-js-lower/src/analysis/mir_reads/arguments_use.rs", "crates/rust-js-mir/src/given_arguments.rs", "crates/rust-js-mir/src/std_calls/written_into.rs", "crates/rust-js-mir/src/std_calls.rs"]);
+  expect(read("crates/rust-js-mir/src/dispatch.rs")).toContain("self.makes_arguments_given_on(state, known, destination)");
 });
 
 // rustc's own drop elaboration of a body is taken in one place,
@@ -81,8 +81,8 @@ test("an Arguments' text or function is `mir::arguments_use`'s answer alone", ()
 // body's `Mir` for the shadow that compares it with rust-js's,
 // `mir/elaborated.rs`' `--drops-shadow`, and what will consume it.
 test("rustc's elaborated body is taken by `analysis/prepared.rs` alone", () => {
-  const reading = ["src/lower.rs", ...files("src/lower")]
-    .filter((file) => file.endsWith(".rs") && file !== "src/lower/analysis/prepared.rs")
+  const reading = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")]
+    .filter((file) => file.endsWith(".rs") && file !== "crates/rust-js-lower/src/analysis/prepared.rs")
     .filter((file) => /\bmir_drops_elaborated_and_const_checked\b/.test(read(file)));
   expect(reading).toEqual([]);
 });
@@ -99,9 +99,9 @@ test("only body_queries/values.rs answers a local's one write", () => {
         (m) => `${file}: ${m[1]}`,
       ),
     );
-  expect(answers.filter((found) => !found.startsWith("src/lower/body_queries/values.rs"))).toEqual([]);
-  expect(answers).toContain("src/lower/body_queries/values.rs: assigned_once");
-  expect(answers).toContain("src/lower/body_queries/values.rs: the_write");
+  expect(answers.filter((found) => !found.startsWith("crates/rust-js-lower/src/body_queries/values.rs"))).toEqual([]);
+  expect(answers).toContain("crates/rust-js-lower/src/body_queries/values.rs: assigned_once");
+  expect(answers).toContain("crates/rust-js-lower/src/body_queries/values.rs: the_write");
 });
 
 // Each item of the lowering has one path (#2294's crate split, as #2297's
@@ -113,21 +113,21 @@ test("only body_queries/values.rs answers a local's one write", () => {
 const reExports = (path: string, text: string): string[] =>
   text.split("\n").flatMap((line) => /^\s*pub(\([^)]*\))? use (crate|super)::/.test(line) ? [`${path}:${line.trim()}`] : []);
 test("the lowering re-exports no other module's item, each item one path", () => {
-  expect(reExports("a.rs", "pub(in crate::lower) use crate::lower::analysis::Mir;\npub(super) use super::x::y;\npub use self::child::z;\nuse crate::lower::analysis::cfg;\nmod child;\npub use child::w;"))
-    .toEqual(["a.rs:pub(in crate::lower) use crate::lower::analysis::Mir;", "a.rs:pub(super) use super::x::y;"]);
-  const found = ["src/lower.rs", ...files("src/lower")]
+  expect(reExports("a.rs", "pub(crate) use crate::lower::analysis::Mir;\npub(super) use super::x::y;\npub use self::child::z;\nuse crate::lower::analysis::cfg;\nmod child;\npub use child::w;"))
+    .toEqual(["a.rs:pub(crate) use crate::lower::analysis::Mir;", "a.rs:pub(super) use super::x::y;"]);
+  const found = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")]
     .filter((file) => file.endsWith(".rs"))
     .flatMap((file) => reExports(file, read(file)));
   expect(found).toEqual([
-    "src/lower/analysis.rs:pub(super) use super::recognition::from_serde_derive;",
-    "src/lower/analysis.rs:pub(super) use super::recognition::serde_impl;",
-    "src/lower/representation/options.rs:pub(in crate::lower) use super::nones::{NoneForm, NonePlace, Writers, none_form, null_params};",
-    "src/lower/representation.rs:pub(super) use super::recognition::ordering_value;",
-    "src/lower/serde.rs:pub(super) use super::recognition::Json;",
-    "src/lower/serde.rs:pub(super) use super::recognition::serde_trait;",
-    "src/lower/traits.rs:pub(super) use super::recognition::operational;",
-    "src/lower/traits.rs:pub(super) use super::recognition::implementable;",
-    "src/lower/traits.rs:pub(super) use super::recognition::is_operator;",
+    "crates/rust-js-lower/src/analysis.rs:pub(super) use super::recognition::from_serde_derive;",
+    "crates/rust-js-lower/src/analysis.rs:pub(super) use super::recognition::serde_impl;",
+    "crates/rust-js-lower/src/representation/options.rs:pub use super::nones::{NoneForm, NonePlace, Writers, none_form, null_params};",
+    "crates/rust-js-lower/src/representation.rs:pub(super) use super::recognition::ordering_value;",
+    "crates/rust-js-lower/src/serde.rs:pub(super) use super::recognition::Json;",
+    "crates/rust-js-lower/src/serde.rs:pub(super) use super::recognition::serde_trait;",
+    "crates/rust-js-lower/src/traits.rs:pub(super) use super::recognition::operational;",
+    "crates/rust-js-lower/src/traits.rs:pub(super) use super::recognition::implementable;",
+    "crates/rust-js-lower/src/traits.rs:pub(super) use super::recognition::is_operator;",
   ]);
 });
 
@@ -140,11 +140,11 @@ test("the lowering re-exports no other module's item, each item one path", () =>
 // driver's files never name them, `lower::<module>::`.
 test("the root names neither mir nor the pipeline, and its facade is the driver's one path", () => {
   const code = (text: string) => text.split("\n").filter((line) => !/^\s*\/\//.test(line)).join("\n");
-  const root = code(read("src/lower.rs"));
+  const root = code(read("crates/rust-js-lower/src/lib.rs"));
   expect(root.match(/(?<!rustc_middle::)\b(?:mir|pipeline)::[\w{]+/g) ?? []).toEqual([]);
   const facade = [...root.matchAll(/^pub(?:\(crate\))? use (\w+)::/gm)].map((m) => m[1]!);
   expect(facade.length).toBeGreaterThan(0);
-  const driver = files("src").filter((file) => file.endsWith(".rs") && file !== "src/lower.rs" && !file.startsWith("src/lower/"));
+  const driver = files("src").filter((file) => file.endsWith(".rs") && file !== "crates/rust-js-lower/src/lib.rs" && !file.startsWith("crates/rust-js-lower/src/"));
   const reached = driver.flatMap((file) =>
     facade.filter((module) => new RegExp(`\\blower::${module}::`).test(code(read(file)))).map((module) => `${file} lower::${module}::`),
   );

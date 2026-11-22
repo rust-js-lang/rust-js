@@ -1,4 +1,4 @@
-// Mutations of src/lower/pipeline.rs (ADR 0093).
+// Mutations of src/pipeline.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "nulled-seen-unsettled",
     breaks:
       "what a body saw of the calls of the crate's functions with own nullable parameters is never settled, so none is found given `null` or a value at each, `!= null` still (#1671 change 4, M2)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "        settled.nulled.settle(seen);\n",
     replace: "        drop(seen);\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "each call gives null or a value"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "module-fns-made-unsettled",
     breaks:
       "the module's functions a body made are never settled, so none is written, and each call of one reads what nothing declares (#1671 change 4, M2)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "        settled.module_fns.settle(made);\n        settled.nulled.settle(seen);\n",
     replace: "        settled.nulled.settle(seen);\n",
     tests: ["test/corpus.test.ts", "-t", "^recursive_fns_per_module.rs$"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "type-reexport-an-import",
     breaks:
       "every re-export rustc lists, a type's too, which has no JS, is an import in the load-order graph, as fdec315a7 had it, so a `pub` thread-local made of the re-exporting module's function is refused as in an import cycle (rd116)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "        .flat_map(|(&module, (_, reexports))| reexports.iter().map(move |(_, from, _)| (module, from.clone())))\n",
     replace:
       "        .flat_map(|(&module, _)| (tcx.module_children_local(module.to_local_def_id()).iter()).filter(|c| !c.reexport_chain.is_empty()).filter_map(|c| c.res.opt_def_id()?.as_local()).filter_map(|id| Some((module, js::ImportFrom::Module(paths.get(&tcx.parent_module_from_def_id(id))?.clone())))).collect::<Vec<_>>())\n",
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "types-only-root-unwritten",
     breaks:
       "a crate whose root has no JS, `pub trait Marker {} impl Marker for u32 {}`, writes no `lib.js`, the entry a host and a package import (ADR 1005)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "            lowered.types_only = module != CRATE_MOD_ID\n",
     replace: "            lowered.types_only = true\n",
     tests: [
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
     name: "types-only-module-written-as-js",
     breaks:
       "a module of types alone writes a JS file of nothing and its map beside its `.d.ts`, where the user decided it's Rust and a `.d.ts` (ADR 1005)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "            lowered.types_only = module != CRATE_MOD_ID\n                && lowered.items.is_empty()\n",
     replace:
       "            lowered.types_only = false\n                && lowered.items.is_empty()\n",
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     name: "default-class-exported-by-name",
     breaks:
       "a class that's its module's default is `export function Complex` too",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                    class.export = false;\n",
     replace: "",
     tests: [
@@ -70,17 +70,17 @@ export const mutations: Mutation[] = [
     name: "class-declared-nowhere",
     breaks:
       "a class's struct isn't where it's declared, so its `///` doc isn't its constructor function's (ADR 0761)",
-    file: "src/lower/pipeline.rs",
-    find: "                                    .map_or(js::Span::NONE, |adt| sources.item_span(tcx, adt)),\n",
+    file: "src/pipeline.rs",
+    find: "                                .map_or(js::Span::NONE, |adt| sources.item_span(tcx, adt)),\n",
     replace:
-      "                                    .map_or(js::Span::NONE, |_| js::Span::NONE),\n",
+      "                                .map_or(js::Span::NONE, |_| js::Span::NONE),\n",
     tests: ["test/classes.test.ts", "-t", "doc is its constructor function's"],
   },
   {
     name: "default-constant-read-undeclared",
     breaks:
       'a constant `js::export_default!` holds, read by its name in its own module, is only `export default "19.3.0";`, so the read is of a name JS hasn\'t, a `ReferenceError`',
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                default_declared: default_declared && read_default.is_none(),\n",
     replace: "                default_declared,\n",
     tests: [
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
     name: "default-constant-read-exported",
     breaks:
       "a `pub` constant the default holds, read in its own module, is exported by its name too, where it's the default alone",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                    constant.export = false;\n",
     replace: "                    let _ = &mut constant.export;\n",
     tests: [
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     name: "own-alias-exported-by-name",
     breaks:
       "a function its module exports as `unstable_now` is `export function getCurrentTime` too (ADR 0596, amended)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                    js::Item::Function(function) if aliased(&function.name) => function.export = false,\n",
     replace:
       "                    js::Item::Function(function) if false && aliased(&function.name) => function.export = false,\n",
@@ -116,7 +116,7 @@ export const mutations: Mutation[] = [
     name: "own-alias-constant-exported-by-name",
     breaks:
       "a constant its module exports as `MAX_LIMIT` is `export const LIMIT` too (ADR 0596, amended)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                    js::Item::Const(constant) if aliased(&constant.name) => constant.export = false,\n",
     replace:
       "                    js::Item::Const(constant) if false && aliased(&constant.name) => constant.export = false,\n",
@@ -126,9 +126,9 @@ export const mutations: Mutation[] = [
     name: "library-codec-unused",
     breaks:
       "a library lowers only the codecs it uses itself, so its consumers can't read its types",
-    file: "src/lower/pipeline.rs",
-    find: "                    (used.contains(&id) || (library && super::library::reachable(tcx, id))) && queued.insert(id)\n",
-    replace: "                    used.contains(&id) && queued.insert(id)\n",
+    file: "src/pipeline.rs",
+    find: " (used.contains(&id) || (library && library::reachable(tcx, id))) && queued.insert(id)",
+    replace: "                    used.contains(&id) && queued.insert(id)",
     tests: [
       "test/crates.test.ts",
       "test/cargo-workspace.test.ts",
@@ -140,8 +140,8 @@ export const mutations: Mutation[] = [
     name: "library-derive-pruned",
     breaks:
       "`@rust-js/std` leaves out a derived impl only its consumers reach, a std adapter's `Clone` (ADR 0561)",
-    file: "src/lower/pipeline.rs",
-    find: "                .filter(|&id| exports_reachable && super::library::reachable(tcx, id)),\n",
+    file: "src/pipeline.rs",
+    find: "                .filter(|&id| exports_reachable && library::reachable(tcx, id)),\n",
     replace: "                .filter(|_| false),\n",
     tests: ["test/std-package.test.ts"],
   },
@@ -149,16 +149,16 @@ export const mutations: Mutation[] = [
     name: "library-derive-kept-for-consumers",
     breaks:
       "a library writes a derived impl only its consumers reach, `tagDebug`, which its program doesn't, so its JS changes when another crate uses it (ADR 0914, amended)",
-    file: "src/lower/pipeline.rs",
-    find: "                .filter(|&id| exports_reachable && super::library::reachable(tcx, id)),\n",
+    file: "src/pipeline.rs",
+    find: "                .filter(|&id| exports_reachable && library::reachable(tcx, id)),\n",
     replace:
-      "                .filter(|&id| export_library && super::library::reachable(tcx, id)),\n",
+      "                .filter(|&id| export_library && library::reachable(tcx, id)),\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "initializer-a-function",
     breaks: "a static's initializer is made a function, not the static's value",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: ".or_else(|| initializer.then_some(local))",
     replace: ".or_else(|| (initializer && false).then_some(local))",
     tests: ["test/corpus.test.ts", "-t", "static_fns"],
@@ -167,16 +167,16 @@ export const mutations: Mutation[] = [
     name: "on-load-a-function",
     breaks:
       "`js::on_load!`'s body is a function nothing calls, `function on_load()`, not what the module runs when it's loaded",
-    file: "src/lower/pipeline.rs",
-    find: "None if super::bindings::is_on_load(tcx, def_id) =>",
-    replace: "None if false && super::bindings::is_on_load(tcx, def_id) =>",
+    file: "src/pipeline.rs",
+    find: "None if bindings::is_on_load(tcx, def_id) =>",
+    replace: "None if false && bindings::is_on_load(tcx, def_id) =>",
     tests: ["test/modules.test.ts", "-t", "js::on_load!"],
   },
   {
     name: "path-module-unseen",
     breaks:
       "a `#[path]` module isn't told apart, its JS where its module path says",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                located: located(tcx, module),\n",
     replace: "                located: false,\n",
     tests: ["test/modules.test.ts", "-t", "path. module's JS is beside"],
@@ -185,7 +185,7 @@ export const mutations: Mutation[] = [
     name: "unshown-debug-kept",
     breaks:
       "a derived `Debug` nothing shows is in the JS anyway, a function no one calls",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "        .filter(|(id, _)| !derived.contains(id) || reached.contains(id))",
     replace:
       "        .filter(|(id, _)| true || !derived.contains(id) || reached.contains(id))",
@@ -199,8 +199,8 @@ export const mutations: Mutation[] = [
     name: "private-type-object-exported",
     breaks:
       "a type's object is exported though none of its methods is, `export const Tally`, where only its module uses it",
-    file: "src/lower/pipeline.rs",
-    find: "                        namespace.export |= super::classes::exports_its_type(tcx, def_id, export, elsewhere);\n",
+    file: "src/pipeline.rs",
+    find: "                        namespace.export |= classes::exports_its_type(tcx, def_id, export, elsewhere);\n",
     replace: "                        namespace.export = true;\n",
     tests: [
       "test/modules.test.ts",
@@ -212,7 +212,7 @@ export const mutations: Mutation[] = [
     name: "dictionary-jsx-unmarked",
     breaks:
       "an impl whose copied default renders JSX is written to a `.js` file, which a JS tool won't parse",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                 jsx: cx.jsx",
     replace: "                 jsx: false",
     tests: [
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
     name: "named-expression-shadows",
     breaks:
       "a named function expression reading what's named as it is reads itself: `<Count>` in `Count` renders the unmemoized function",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                        function.name = function.name.spelled_later(def_id.index.as_usize());\n",
     replace: "",
     tests: [
@@ -238,7 +238,7 @@ export const mutations: Mutation[] = [
     name: "anon-const-visibility",
     breaks:
       "a `const { .. }` block's visibility is asked, which it has none of",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                    export: (tcx.def_kind(key) != DefKind::AnonConst && tcx.visibility(key).is_public())",
     replace: "                    export: (tcx.visibility(key).is_public())",
     tests: ["test/corpus.test.ts", "-t", "slice_uninit"],
@@ -247,7 +247,7 @@ export const mutations: Mutation[] = [
     name: "static-mut-initializer-unboxed",
     breaks:
       "a `static mut` of a function is its initializer's value, not its `{ value }`, which its module's variable is made of (ADR 0096, amended)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                    Some(mutability) if mutability.is_mut() => Expr::object(vec![Prop::Field(js::HELD.into(), value)]),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^static_mut_fns.rs$"],
@@ -256,7 +256,7 @@ export const mutations: Mutation[] = [
     name: "consumer-keeps-no-capacity",
     breaks:
       "a consumer of a library that asks capacity keeps none, so what it gives the library has its length's",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "    let keeps_capacity = asks_capacity || foreign.keeps_capacity() || std_bodies;\n",
     replace: "    let keeps_capacity = asks_capacity || std_bodies;\n",
     tests: ["test/crates.test.ts", "-t", "asks a Vec its capacity"],
@@ -265,7 +265,7 @@ export const mutations: Mutation[] = [
     name: "any-function-inlined",
     breaks:
       "a function of the crate's called once, not a `Drop`'s, is inlined where it's called",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                                .is_some_and(|imp| tcx.impl_opt_trait_id(imp) == Some(t))\n",
     replace:
       "                                .is_none_or(|imp| tcx.impl_opt_trait_id(imp) == Some(t))\n",
@@ -275,7 +275,7 @@ export const mutations: Mutation[] = [
     name: "drop-called-elsewhere-inlined",
     breaks:
       "a `Drop` dropped once in its module and once in another is inlined in its own, and the other imports a function that's gone",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                        && !called_elsewhere.contains(&id)\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
@@ -283,7 +283,7 @@ export const mutations: Mutation[] = [
   {
     name: "dictionary-cache-unmade",
     breaks: "a generic dictionary's cache is never made, and reading it throws",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                consts.push(constant(cache_of[&def_id].clone(), cache, false));\n",
     replace: "                let _ = cache;\n",
     tests: [
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
   {
     name: "drops-observed-dropped",
     breaks: "what a function's lowering found of drops is gathered",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "        drops_observed.gather(cx.drops_observed.take());\n",
     replace: "        let _ = cx.drops_observed.take();\n",
     tests: ["test/crates.test.ts", "-t", "drops_by_need"],
@@ -305,7 +305,7 @@ export const mutations: Mutation[] = [
     name: "named-default-exported-by-name",
     breaks:
       "a `pub fn` `js::export_default!(page)` names is `export function page` as well as the default, two exports of one item",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: ".filter(|f| f.name.is(&name)) {\n                    function.export = false;\n",
     replace: ".filter(|f| f.name.is(&name)) {\n",
     tests: [
@@ -318,10 +318,10 @@ export const mutations: Mutation[] = [
     name: "named-default-constant-exported-by-name",
     breaks:
       "a `pub` thread-local `js::export_default!(REPORT_GLOBAL_ERROR)` names is `export const reportGlobalError = ..;` as well as `export default reportGlobalError;`, where upstream has the default alone",
-    file: "src/lower/pipeline.rs",
-    find: "            if let Some(own) = default_export.filter(|&own| super::bindings::held_path(tcx, own).is_none()) {\n",
+    file: "src/pipeline.rs",
+    find: "            if let Some(own) = default_export.filter(|&own| bindings::held_path(tcx, own).is_none()) {\n",
     replace:
-      "            if let Some(own) = default_export.filter(|&own| super::bindings::held_path(tcx, own).is_none() && default_declared) {\n",
+      "            if let Some(own) = default_export.filter(|&own| bindings::held_path(tcx, own).is_none() && default_declared) {\n",
     tests: [
       "test/declarations.test.ts",
       "-t",
@@ -332,7 +332,7 @@ export const mutations: Mutation[] = [
     name: "aliased-default-undeclared",
     breaks:
       "a default constant its module's `pub use` names by another name isn't declared, so `export { VERSION as RELEASE }` names nothing",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: " && (read_at_home.contains(&held) || aliased(held))",
     replace: " && read_at_home.contains(&held)",
     tests: [
@@ -345,7 +345,7 @@ export const mutations: Mutation[] = [
     name: "lazy-local-runs-at-load",
     breaks:
       "a thread-local made where it's first used is taken as code its module's load runs, so what it reads of another module's `const`s is their value, not their name",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "        .filter(|(_, key)| !lazy_locals.contains(*key))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_made_where_used.rs$"],
@@ -355,7 +355,7 @@ export const mutations: Mutation[] = [
     name: "load-relowered-twice",
     breaks:
       "a body lowered again, its values read, is a second item beside the first",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                    Some(earlier) => earlier.1 = lowered,\n",
     replace:
       "                    Some(_) => lowered_items.push((def_id, lowered)),\n",
@@ -369,7 +369,7 @@ export const mutations: Mutation[] = [
     name: "consumers-dictionary-refused-in-cycle",
     breaks:
       "a dictionary no code of its crate reads, `updateDisplay`, is refused in an import cycle of its modules, which can't reach it",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "            if reached_here.contains(&def_id) {\n                pass.dictionary_consts.push((module, def_id));\n",
     replace:
       "            if true {\n                pass.dictionary_consts.push((module, def_id));\n",
@@ -379,7 +379,7 @@ export const mutations: Mutation[] = [
     name: "asked-instances-ignored",
     breaks:
       "what a consumer's lowering asks it to compile isn't, and the placeholder it gave a reference is its JS (ADR 0914, amended)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "    if !asked.is_empty() && tcx.dcx().has_errors().is_none() {\n",
     replace:
       "    if false && !asked.is_empty() && tcx.dcx().has_errors().is_none() {\n",
@@ -388,7 +388,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-methods-lowered-apart",
     breaks: "a scope struct's methods are lowered as its type's object too, whose calls of each other call no function",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "        .filter(|b| scopes.of_method(b.def_id).is_none())\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "scope_struct"],
@@ -396,7 +396,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-constant-of-code-module-level",
     breaks: "a type's constant lowered as code is its module's constant, which shadows the module's own of that name, `export const MIN = MIN` (#513)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                    false if info.owner.is_some() => _ = owned_consts.insert(key.to_def_id(), constant),\n",
     replace: "                    false if false => _ = owned_consts.insert(key.to_def_id(), constant),\n",
     tests: ["test/corpus.test.ts", "-t", "^type_constant_of_a_module_constant.rs$"],
@@ -405,7 +405,7 @@ export const mutations: Mutation[] = [
     name: "library-ref-cells-unasked-unsaid",
     breaks:
       "a library none of whose bodies asks what its `RefCell`s are says none of its fields quiet, so a consumer's closure writes one through its one cell, `$fieldCell(metadata, \"action\")` (rd418)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "    if export_library\n        && ref_cells.get().is_none()\n",
     replace: "    if false\n        && ref_cells.get().is_none()\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "a library none of whose bodies borrows a RefCell says its quiet fields"],
@@ -413,7 +413,7 @@ export const mutations: Mutation[] = [
   {
     name: "program-guesses-as-a-library",
     breaks: "a program compiled for its tests guesses what any consumer gives it, as a library does, so its tests run other JS than `rust-js build` ships (ADR 1076, amended, #597)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "    let library = export_library && !program;\n",
     replace: "    let library = export_library;\n",
     tests: ["test/rust-js-test-programs.test.ts", "-t", "as rust-js build does"],
@@ -421,7 +421,7 @@ export const mutations: Mutation[] = [
   {
     name: "program-dictionary-consts-unsaid",
     breaks: "a program's contract says its dictionaries carry no constant, so a test that reads one its own generic code reads, of a type parameter, is refused (#597)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "    let tested = program.then(|| (&generic_consts, own_traits()));\n",
     replace: "    let no_consts = IndexSet::default();\n    let tested = program.then(|| (&no_consts, own_traits()));\n",
     tests: ["test/rust-js-test-programs.test.ts", "-t", "as rust-js build does"],
@@ -429,7 +429,7 @@ export const mutations: Mutation[] = [
   {
     name: "program-dyns-drop-nothing-unsaid",
     breaks: "a program's contract says none of its traits' `dyn`s drops nothing, so a test's `dyn` of one, of what drops, is never dropped (#597)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "    let tested = program.then(|| (&generic_consts, own_traits()));\n",
     replace: "    let tested = program.then(|| (&generic_consts, Vec::new()));\n",
     tests: ["test/rust-js-test-programs.test.ts", "-t", "makes a dyn of the program's trait"],
@@ -438,7 +438,7 @@ export const mutations: Mutation[] = [
     name: "forwarder-comments-untaken",
     breaks:
       "a function re-exported in its place loses the comments in its body, `// Passed on.`, which are the re-export's (ADR 1064, amended, the user's decision of 2026-11-04)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                reached::taken_into(tcx, (module, &lowered), (&[&forwarded, &forwarders], &fns), &sources);\n",
     replace: "                reached::taken_into(tcx, (module, &lowered), (&[&forwarded], &fns), &sources);\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "is its re-export"],
@@ -446,15 +446,15 @@ export const mutations: Mutation[] = [
   {
     name: "type-declarations-printed",
     breaks: "a comment above a binding of no JS and a struct after it, before the code, is lost, the struct's body ending what it's before (#643)",
-    file: "src/lower/pipeline.rs",
-    find: "                .chain(super::sources::declarations(tcx, module).map(|at| (at, false)))\n",
+    file: "src/pipeline.rs",
+    find: "                .chain(sources::declarations(tcx, module).map(|at| (at, false)))\n",
     replace: "",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a comment above a binding and a type of no JS"],
   },
   {
     name: "library-closure-clones-unsaid",
     breaks: "a library's contract lists none of its closures, so its consumer decides of each itself, and its `$clone(f)` of one its library made a plain function throws (#1202)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                        cloned_closures: closure_facts.clones(),\n",
     replace: "                        cloned_closures: Vec::new(),\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
@@ -463,16 +463,16 @@ export const mutations: Mutation[] = [
     name: "pipeline-capacity-unasked",
     breaks:
       "the crate's own read of a `Vec`'s capacity isn't told to what decides which library functions it compiles itself: what a library that keeps none grows has its length for its capacity, silently (#1180's (5))",
-    file: "src/lower/pipeline.rs",
-    find: "            .asking_capacity(asks_capacity);\n",
-    replace: "            .asking_capacity(false);\n",
+    file: "src/pipeline.rs",
+    find: "        .asking_capacity(asks_capacity);\n",
+    replace: "        .asking_capacity(false);\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
   },
   {
     name: "std-bodies-keep-no-capacity",
     breaks:
       "`@rust-js/std`'s bodies grow a `Vec` as a JS array does, though its manifest says they keep capacities, so `read_until` into an empty `Vec` gives `4 4` where std gives `4 8` (#1339)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "    let keeps_capacity = asks_capacity || foreign.keeps_capacity() || std_bodies;\n",
     replace: "    let keeps_capacity = asks_capacity || foreign.keeps_capacity();\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
@@ -480,7 +480,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-read-unsettled",
     breaks: "an untagged enum's method that reads each variant's field, lowered first, isn't settled for its callers, which call it, `Parent.children(parentInstance)`, where its read of the value given is written (rd317; #1671 change 4 M2)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "                    settled.field_reads.insert(def_id, read);\n",
     replace: "                    _ = (def_id, read);\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_field_of_each_variant.rs$"],
@@ -489,7 +489,7 @@ export const mutations: Mutation[] = [
   {
     name: "asked-ungathered",
     breaks: "what of its libraries a body found the crate compiles itself isn't gathered, so the crate isn't lowered again with it, and the hole where it's called is refused, a library's item its JS doesn't export (ADR 0914, amended; ADR 1148)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "        drops_observed.gather(cx.drops_observed.take());\n        asked.extend(cx.asked_of_libraries.take());\n",
     replace: "        drops_observed.gather(cx.drops_observed.take());\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "merge what its consumer compares"],
@@ -497,7 +497,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-into-left-ungathered",
     breaks: "a dictionary the lowering left without `fmtInto` isn't gathered into the contract's `makes_fmt_dyns`, so a consumer's write of the `dyn` isn't refused and throws (#1797)",
-    file: "src/lower/pipeline.rs",
+    file: "src/pipeline.rs",
     find: "    let fmt_into_left = lowered_items.iter().any(|(_, item)| item.dependencies.fmt_into_left);\n",
     replace: "    let fmt_into_left = false;\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's dyn Debug written through generic code"],

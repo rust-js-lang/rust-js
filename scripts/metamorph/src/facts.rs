@@ -5,7 +5,7 @@
 //! crate does elsewhere: a crate that asks an address records where each
 //! object is, one that asks a capacity keeps each `Vec`'s, and the corpus
 //! writes each case in a crate that does neither. Each fact's owner is
-//! `src/lower/analysis.rs`' `AnalyzedCrate`:
+//! `crates/rust-js-lower/src/analysis.rs`' `AnalyzedCrate`:
 //!
 //! - `fact-addresses`: a pointer made a number, `p as usize`
 //!   (`StoredPlaces::asks`, `stored_places.rs`);

@@ -1,4 +1,4 @@
-// Mutations of src/lower/parameter_names.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/parameter_names.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "inlined-guard-named-by-number",
     breaks:
       "a drop's guard inlined while it's a temporary, `_3`, is read by its number, `const 3 = ..`, which JS can't read, at every tidy stage before its names",
-    file: "src/lower/parameter_names.rs",
+    file: "crates/rust-js-lower/src/parameter_names.rs",
     find: "!n.starts_with('_') && rust_js_program::names::is_identifier(n) && ",
     replace: "!n.starts_with('_') && ",
     tests: ["test/tidy-stages.test.ts", "-t", "^drop_guard_name_shared after"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "drop-guard-kept-word",
     breaks: "a value kept to be dropped, `_in`, is read as `in`, a word JS keeps, spelled `in$1` where its `_` stays (`parameter_names::unmarked`)",
-    file: "src/lower/parameter_names.rs",
+    file: "crates/rust-js-lower/src/parameter_names.rs",
     find: " && rust_js_program::names::js_ident(n) == *n\n",
     replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_kept_words.rs$"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameter-underscore-kept",
     breaks: "a parameter's `_`, Rust's mark of one unused, is in its JS name, `describeClientReference(_ref)`",
-    file: "src/lower/parameter_names.rs",
+    file: "crates/rust-js-lower/src/parameter_names.rs",
     find: "        false => unmarked.to_string(),\n",
     replace: "        false => named.clone(),\n",
     tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameter-underscore-reserved",
     breaks: "`_new` without its `_` is `new`, a word JS keeps, given apart as `new$`",
-    file: "src/lower/parameter_names.rs",
+    file: "crates/rust-js-lower/src/parameter_names.rs",
     find: "    match taken() {",
     replace: "    match !taken() {",
     tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameter-underscore-collides",
     breaks: "`_x` beside an `x` is `x` too, so one is `x$1`",
-    file: "src/lower/parameter_names.rs",
+    file: "crates/rust-js-lower/src/parameter_names.rs",
     find: "    match taken() {",
     replace: "    match rust_js_program::names::js_ident(unmarked) == unmarked {",
     tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameter-read-unmarked",
     breaks: "a parameter the body reads loses its `_` too, so upstream's read `_current` is `current`",
-    file: "src/lower/parameter_names.rs",
+    file: "crates/rust-js-lower/src/parameter_names.rs",
     find: "    if reads_parameter(tcx, function, name) {\n",
     replace: "    if false && reads_parameter(tcx, function, name) {\n",
     tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameter-read-in-closure-unseen",
     breaks: "a closure's read of its function's parameter isn't the function's, so `_seen` read only by `|| _seen` is `seen`",
-    file: "src/lower/parameter_names.rs",
+    file: "crates/rust-js-lower/src/parameter_names.rs",
     find: "            if let rustc_hir::ExprKind::Closure(closure) = expr.kind {\n                intravisit::walk_body(self, self.tcx.hir_body(closure.body));\n",
     replace: "            if let rustc_hir::ExprKind::Closure(closure) = expr.kind {\n                let _ = closure;\n",
     tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameter-async-move-read",
     breaks: "an `async fn`'s move of its parameter into its future is a read, so its unread `_arg` keeps its `_`",
-    file: "src/lower/parameter_names.rs",
+    file: "crates/rust-js-lower/src/parameter_names.rs",
     find: "                && init.span.is_desugaring(rustc_span::DesugaringKind::Async)\n",
     replace: "                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^future_sizes.rs$"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameter-read-of-mir-unseen",
     breaks: "a library's function its consumer compiles from MIR loses a read parameter's `_`, `currentOr(current, ..)` where its library's JS keeps `_current`",
-    file: "src/lower/parameter_names.rs",
+    file: "crates/rust-js-lower/src/parameter_names.rs",
     find: "        uses.visit_body(body);\n        return uses.1;\n",
     replace: "        uses.visit_body(body);\n        return false;\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "Copy bound takes a copy"],
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameter-closure-bindings-unseen",
     breaks: "a closure's binding isn't its function's, so `_base` beside a closure's `base` is `base`, which the closure's shadows",
-    file: "src/lower/parameter_names.rs",
+    file: "crates/rust-js-lower/src/parameter_names.rs",
     find: "                if self.inside || self.tcx.is_descendant_of(self.function, id) {",
     replace: "                if self.tcx.is_descendant_of(self.function, id) {",
     tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameter-sibling-closure-bindings-seen",
     breaks: "a closure beside another sees its bindings, so `|_instance| false` beside `|instance, _callback| ..` keeps its `_`",
-    file: "src/lower/parameter_names.rs",
+    file: "crates/rust-js-lower/src/parameter_names.rs",
     find: "                if self.inside || self.tcx.is_descendant_of(self.function, id) {",
     replace: "                if true {",
     tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameter-inner-closure-bindings-unseen",
     breaks: "a closure's own closures' bindings aren't its, so `|_v|` around a `|v|` is `v`, which the inner one shadows",
-    file: "src/lower/parameter_names.rs",
+    file: "crates/rust-js-lower/src/parameter_names.rs",
     find: "                    let inside = self.inside || id == self.function;",
     replace: "                    let inside = self.inside;",
     tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameter-name-ignored",
     breaks: "a parameter's `#[rust_js::name = \"Context\"]` is silently ignored, `useContext(context)`",
-    file: "src/lower/parameter_names.rs",
+    file: "crates/rust-js-lower/src/parameter_names.rs",
     find: "    given.unwrap_or_else(|| default_parameter_name(tcx, function, name))\n",
     replace: "    let _ = given;\n    default_parameter_name(tcx, function, name)\n",
     tests: ["test/bindings.test.ts", "-t", "a parameter's rust_js::name is its JS name"],
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameter-drop-read",
     breaks: "a library's generic function its consumer compiles from MIR keeps the `_` of a parameter only its drop reads, `pick(a, _b, dropB)` where its library's JS is `pick(a, b)` (ADR 0678, amended)",
-    file: "src/lower/parameter_names.rs",
+    file: "crates/rust-js-lower/src/parameter_names.rs",
     find: "                self.1 |= local == self.0 && context.is_use() && !dropped;\n",
     replace: "                self.1 |= local == self.0 && context.is_use();\n",
     tests: ["test/crates.test.ts", "-t", "a library's generic function takes the drops its body uses"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-parameter-underscore-kept",
     breaks: "a fn pointer's `_sum` is declared `_sum`, where its JS name, as a function's is, is `sum` (ADR 0678)",
-    file: "src/lower/parameter_names.rs",
+    file: "crates/rust-js-lower/src/parameter_names.rs",
     find: "        Some(unmarked) => unmarked.to_string(),\n",
     replace: "        Some(_) => rust_js_program::names::js_ident(&named),\n",
     tests: ["test/declarations-function-types.test.ts"],

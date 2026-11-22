@@ -1,10 +1,10 @@
-// Mutations of src/lower/analysis/self_handles/value_cells.rs (ADR 0317,
+// Mutations of crates/rust-js-lower/src/analysis/self_handles/value_cells.rs (ADR 0317,
 // amended, rd621): callbacks an executor makes taken to read its call's
 // value where one may read the cell before it's set, or the value read
 // isn't the variable's.
 import type { Mutation } from "../../../../mutations";
 
-const file = "src/lower/analysis/self_handles/value_cells.rs";
+const file = "crates/rust-js-lower/src/analysis/self_handles/value_cells.rs";
 const guards = ["test/corpus.test.ts", "-t", "^value_cell_read_in_its_executor.rs$"];
 
 export const mutations: Mutation[] = [

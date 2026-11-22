@@ -1,8 +1,8 @@
-// Mutations of src/lower/analysis/intervals/captures.rs, what the MIR
+// Mutations of crates/rust-js-lower/src/analysis/intervals/captures.rs, what the MIR
 // intervals know of a closure's captures where it's made (ADR 1137, #1701).
 import type { Mutation } from "../../../../mutations";
 
-const file = "src/lower/analysis/intervals/captures.rs";
+const file = "crates/rust-js-lower/src/analysis/intervals/captures.rs";
 const tests = ["test/lowering-integer-ranges.test.ts", "-t", "what it was made with"];
 
 export const mutations: Mutation[] = [

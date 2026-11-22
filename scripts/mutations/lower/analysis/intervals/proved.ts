@@ -1,8 +1,8 @@
-// Mutations of src/lower/analysis/intervals/proved.rs, what the MIR
+// Mutations of crates/rust-js-lower/src/analysis/intervals/proved.rs, what the MIR
 // intervals prove of a body at its fixed point (ADR 1137).
 import type { Mutation } from "../../../../mutations";
 
-const file = "src/lower/analysis/intervals/proved.rs";
+const file = "crates/rust-js-lower/src/analysis/intervals/proved.rs";
 const tests = ["test/intervals-shadow.test.ts"];
 
 export const mutations: Mutation[] = [
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
   {
     name: "array-length-untyped",
     breaks: "an array's length isn't its type's, so `&keys[..6]` of a `[i32; 11]` keeps its check, a call-bounds line",
-    file: "src/lower/analysis/intervals/proved.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/proved.rs",
     find: "        let typed = (self.length(self.body.local_decls[slice].ty)).map_or(0, |n| n.lo);\n",
     replace: "        let typed = 0;\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "a table is as long"],
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
   {
     name: "length-holder-least-unread",
     breaks: "what holds a table's length gives none of its least, so `board[0]` of `vec![row; height]` where callers give `height` at least 2 keeps its check, a call-bounds line",
-    file: "src/lower/analysis/intervals/proved.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/proved.rs",
     find: "            .filter_map(|(&w, _)| state.intervals[w].map(|n| n.lo));\n",
     replace: "            .filter_map(|(&w, _)| state.intervals[w].map(|_| 0));\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "a table is as long"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
   {
     name: "below-a-length-holder-unread",
     breaks: "an index below an integer that holds a slice's length isn't below the length, so `sums[i]` under `i < count` of `vec![0; count]` keeps its check, a call-bounds line",
-    file: "src/lower/analysis/intervals/proved.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/proved.rs",
     find: "                            Term::Int(w) => state.length_of(w) == Some(s),\n",
     replace: "                            Term::Int(w) => false && state.length_of(w) == Some(s),\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "a table is as long"],
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
   {
     name: "below-through-an-integer-unfollowed",
     breaks: "`i < m` and `m <= len` aren't joined, so `heap[index]` under `index < half_length <= length` keeps its check (ADR 1168, #1948)",
-    file: "src/lower/analysis/intervals/proved.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/proved.rs",
     find: "                || (state.below.iter()).any(|&(x, y, first)| {\n",
     replace: "                || false && (state.below.iter()).any(|&(x, y, first)| {\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-end-present-of-any",
     breaks: "a slice's `last()` is proved `Some` though nothing knows the slice not empty, so an emptied `Vec`'s `last().unwrap()` gives `undefined` where native Rust panics (#1860)",
-    file: "src/lower/analysis/intervals/proved.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/proved.rs",
     find: "                && self.least_known(&state, slice) >= 1\n",
     replace: "                && self.least_known(&state, slice) >= 0\n",
     tests: ["test/corpus.test.ts", "-t", "^split_collected_is_never_empty.rs$"],

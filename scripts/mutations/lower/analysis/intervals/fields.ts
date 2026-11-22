@@ -1,9 +1,9 @@
-// Mutations of src/lower/analysis/intervals/fields.rs, a struct's fields a
+// Mutations of crates/rust-js-lower/src/analysis/intervals/fields.rs, a struct's fields a
 // reference parameter is read through, or a `RefCell` guard lends, as
 // locals (ADR 1137, #1672 M3, step 5, #1815).
 import type { Mutation } from "../../../../mutations";
 
-const file = "src/lower/analysis/intervals/fields.rs";
+const file = "crates/rust-js-lower/src/analysis/intervals/fields.rs";
 const tests = ["test/intervals-shadow.test.ts", "-t", "a struct's fields read through"];
 const guardTests = ["test/corpus.test.ts", "-t", "refcell_guard_fields"];
 
@@ -27,7 +27,7 @@ export const mutations: Mutation[] = [
   {
     name: "fields-kept-beside-a-mut-reference-used-whole",
     breaks: "a `&mut` parameter used whole keeps its fields as locals, so `node.children[0]` past `reset(node)` is taken in bounds, a proved-call-bounds line, and would read past an emptied field",
-    file: "src/lower/analysis/intervals/fields.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/fields.rs",
     find: "    let frozen = |pointer: Local| matches!(*body.local_decls[pointer].ty.kind(), ty::Ref(_, to, ty::Mutability::Not) if to.is_freeze(tcx, typing_env));\n",
     replace: "    let frozen = |pointer: Local| matches!(*body.local_decls[pointer].ty.kind(), ty::Ref(..));\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "a shared reference's fields"],
@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
   {
     name: "fields-of-a-shared-reference-used-whole-forgotten",
     breaks: "a shared reference parameter used whole keeps none of its fields as locals, so `node.children[0]` under `node.children.len() == 1` beside `node` returned keeps its check, a call-bounds line",
-    file: "src/lower/analysis/intervals/fields.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/fields.rs",
     find: "        !uses.written.contains(&pointer) && (!uses.whole.contains(&pointer) || frozen(pointer))\n",
     replace: "        !uses.written.contains(&pointer) && (!uses.whole.contains(&pointer) || (false && frozen(pointer)))\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "a shared reference's fields"],
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
   {
     name: "fields-of-a-written-parameter",
     breaks: "a shared reference parameter the body makes another's, `h = other`, keeps its fields as locals, so `h.items[k]` under `k < h.items.len()` past it is unchecked and reads `undefined` where Rust panics (#1878)",
-    file: "src/lower/analysis/intervals/fields.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/fields.rs",
     find: "            if place.projection.is_empty() && context.is_mutating_use() {\n",
     replace: "            if false && place.projection.is_empty() && context.is_mutating_use() {\n",
     tests: ["test/bounds-matrix.test.ts", "-t", "slice_field, tested below"],

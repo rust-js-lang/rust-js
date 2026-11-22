@@ -1,11 +1,11 @@
-// Mutations of src/lower/mir.rs (ADR 0364).
+// Mutations of crates/rust-js-mir/src/lib.rs (ADR 0364).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "undefined-literal-default-unpromoted",
     breaks: "an undefined-only parameter's leading literal default isn't its JS parameter's default, though its \`unwrap_or\` is read as present, so \`padded(3)\` is \`NaN\` (#2081)",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        if let Some(literal) = self.literal_defaults(mir_body).get(&local) {\n",
     replace: "        if let Some(literal) = self.literal_defaults(mir_body).get(&local).filter(|_| false) {\n",
     tests: ["test/arguments.test.ts", "-t", "entry literal default"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "mir-drop-uses-unnoted",
     breaks:
       "a generic function from MIR isn't given the drop functions it uses, so what it drops isn't",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        self.note_drop_uses(def_id);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "arm_temporaries"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     name: "mir-alike-reassigned",
     breaks:
       "a variable assigned again reads alike, so JSX reads it later than Rust does",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "            if written_apart(&state, local, |place| self.whole(mir_body, place)) {\n",
     replace: "            if false {\n",
     tests: [
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     name: "mir-props-taken-whole",
     breaks:
       "props a pattern takes apart are taken whole, so a flattened field is all of them and a field's default is lost",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "            params[i] = pattern;\n",
     replace: "",
     tests: [
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-async-fn-arrow-called",
     breaks: "an `async fn` is refused, not its coroutine's body",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        if is_async {\n",
     replace: "        if false {\n",
     tests: ["test/compiler.test.ts", "-t", "async code becomes"],
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     name: "mir-on-load-returns",
     breaks:
       "an `on_load!` body from MIR returns at its module's top, which JS has no `return` at",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "                        stmt.kind = StmtKind::Break(Some(label.clone()));\n",
     replace: "",
     tests: ["test/lowering-bindings.test.ts", "-t", "on_load body's loop"],
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     name: "mir-local-functions-undeclared",
     breaks:
       "a function written in a body is declared nowhere from MIR, so what calls it reads nothing",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        self.place_written(written, &mut out);\n",
     replace: "",
     tests: [
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
     name: "async-params-whole",
     breaks:
       "an `async fn`'s parameter pattern is `__arg0` and a `const params = __arg0.params;`",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "            tidy::destructured_params(&mut params, &mut out);\n",
     replace: "",
     tests: [
@@ -100,7 +100,7 @@ export const mutations: Mutation[] = [
     name: "mir-imports-not-plain",
     breaks:
       "an import's member, `tags.link`, made before a branch that calls, is held, `const link = tags.link`, not read where it's given",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "            let paths = names.values().map(|name| js::Path::var(&js::Name::module(name)));\n",
     replace: "            let paths = names.values().filter(|_| false).map(|name| js::Path::var(&js::Name::module(name)));\n",
     tests: [
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
     name: "mir-array-items-not-plain",
     breaks:
       "an array of JS's values isn't known to keep its items past calls, so `[...first, ...]` holds what's made after",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "                self.locals.mir.plain.insert(js::Path::items(name));\n",
     replace: "",
     tests: [
@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
     name: "mir-props-default-taken-whole",
     breaks:
       "a component's props with a default taken whole from MIR are read without it, `props.target` undefined, not refused",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "            self.check_props_taken_apart(param.ty, param.pat.as_deref(), param.ty_span.unwrap_or(span))?;\n",
     replace: "",
     tests: [
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
     name: "mir-unread-param-named-temporary",
     breaks:
       "a parameter the program names nothing and reads nowhere is `_2`, not `_`",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        if unnamed(&state.locals, local) {\n",
     replace: "        if false && unnamed(&state.locals, local) {\n",
     tests: [
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     name: "mir-plain-fields-unknown",
     breaks:
       "a plain field of a struct holding a `Cell`, `q.title`, isn't known to read the same",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "            self.locals.mir.plain.extend(fields);\n",
     replace: "            drop(fields);\n",
     tests: ["test/corpus.test.ts", "-t", "^let_else_read_truth.rs$"],
@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
     name: "mir-plain-through-mut",
     breaks:
       "a field through a `&mut`, `e.n`, is taken as unchanged, read after what sets it",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "            let through_mut = matches!(\n",
     replace: "            let through_mut = false && matches!(\n",
     tests: [
@@ -187,7 +187,7 @@ export const mutations: Mutation[] = [
     name: "mir-props-drop-reads-counted",
     breaks:
       "the drops of a parameter's moved-out parts count as reads of it, so its pattern isn't taken, `{ label, rest }`",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "            let drops = 2 * dropped.iter().filter(|&&local| local == arg).count();",
     replace:
       "            let drops = 0 * dropped.iter().filter(|&&local| local == arg).count();",
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
     name: "mir-param-type-unchecked",
     breaks:
       "MIR's parameter of a `*const str`, a pointer to text JS has no address of, compiles",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "            self.check_value_ty(ty, def_span)?;\n",
     replace: "",
     tests: [
@@ -218,7 +218,7 @@ export const mutations: Mutation[] = [
     name: "mir-closure-drops-unchecked",
     breaks:
       "MIR's closure holding a destructor, given away uncalled, is never dropped",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        self.check_drop_facts()?;\n",
     replace: "",
     tests: ["test/traits.test.ts", "-t", "closure assigned"],
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-fn-directive-lost",
     breaks: "MIR's function loses its `js::directive!`",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        out.splice(0..0, self.directives(body.def_id));\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "js::directive! in a body"],
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-fn-directives-dropped",
     breaks: "a function's `js::directive!` is written nowhere",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        out.splice(0..0, self.directives(body.def_id));\n",
     replace: "        out.splice(0..0, Vec::new());\n",
     tests: ["test/modules.test.ts", "-t", "in a body is the body"],
@@ -242,7 +242,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointed-local-declared-plain",
     breaks: "a local a pointer's taken to, declared first, is no cell",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "                    match state.facts.pointed().locals.contains(&local) {\n                        true => StmtKind::Const(\n",
     replace:
       "                    match false {\n                        true => StmtKind::Const(\n",
@@ -252,7 +252,7 @@ export const mutations: Mutation[] = [
     name: "variadic-rest-unmade",
     breaks:
       "a C-variadic function's last parameter takes one argument, not the rest",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "            params.push(js::Pattern::Rest(name));\n",
     replace: "            params.push(js::Pattern::Name(name));\n",
     tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
@@ -261,8 +261,8 @@ export const mutations: Mutation[] = [
     name: "variadic-evidence-after-rest",
     breaks:
       "a C-variadic function given a dictionary is compiled, its dictionary after what gathers the rest",
-    file: "src/lower/mir.rs",
-    find: "        if super::recognition::is_c_variadic(self.tcx, def_id) && !evidence.is_empty() {\n",
+    file: "crates/rust-js-mir/src/lib.rs",
+    find: "        if rust_js_lower::recognition::is_c_variadic(self.tcx, def_id) && !evidence.is_empty() {\n",
     replace: "        if false {\n",
     tests: [
       "test/diagnostics.test.ts",
@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     name: "settled-undeclared",
     breaks:
       "a value settled before a drop is assigned to a variable nothing declares, and JS throws",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        out.extend(state.settled_lets().chain(lowered));\n",
     replace: "        out.extend(lowered);\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_guard_drop.rs$"],
@@ -282,8 +282,8 @@ export const mutations: Mutation[] = [
   {
     name: "noinline-unmarked",
     breaks: "a function marked `#[inline(never)]` isn't `@noinline`",
-    file: "src/lower/mir.rs",
-    find: "                noinline: super::recognition::is_noinline(self.tcx, def_id),\n",
+    file: "crates/rust-js-mir/src/lib.rs",
+    find: "                noinline: rust_js_lower::recognition::is_noinline(self.tcx, def_id),\n",
     replace: "                noinline: false,\n",
     tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
   },
@@ -291,10 +291,10 @@ export const mutations: Mutation[] = [
     name: "rest-value-parameter-allowed",
     breaks:
       "a Rust function taking rest arguments as a value is compiled, which a `fn` pointer's call would give only the first of",
-    file: "src/lower/mir.rs",
-    find: "            if super::bindings::is_rest_value(self.tcx, ty) && !(closure && Some(local) == last) {\n",
+    file: "crates/rust-js-mir/src/lib.rs",
+    find: "            if rust_js_lower::bindings::is_rest_value(self.tcx, ty) && !(closure && Some(local) == last) {\n",
     replace:
-      "            if super::bindings::is_rest_value(self.tcx, ty) && !(Some(local) == last) {\n",
+      "            if rust_js_lower::bindings::is_rest_value(self.tcx, ty) && !(Some(local) == last) {\n",
     tests: [
       "test/js-object.test.ts",
       "-t",
@@ -305,10 +305,10 @@ export const mutations: Mutation[] = [
     name: "rest-not-gathered",
     breaks:
       "a function whose last parameter is `#[rust_js::rest]` takes the array whole, `function total(xs)`, where JS gives it its items",
-    file: "src/lower/mir.rs",
-    find: "        if (super::recognition::is_c_variadic(self.tcx, def_id) || self.takes_rest(def_id) || rest_value)\n",
+    file: "crates/rust-js-mir/src/lib.rs",
+    find: "        if (rust_js_lower::recognition::is_c_variadic(self.tcx, def_id) || self.takes_rest(def_id) || rest_value)\n",
     replace:
-      "        if (super::recognition::is_c_variadic(self.tcx, def_id) || rest_value)\n",
+      "        if (rust_js_lower::recognition::is_c_variadic(self.tcx, def_id) || rest_value)\n",
     tests: [
       "test/rest-parameters.test.ts",
       "-t",
@@ -319,7 +319,7 @@ export const mutations: Mutation[] = [
     name: "rest-before-dictionary",
     breaks:
       "a function whose last parameter is `#[rust_js::rest]` is given its dictionaries after the rest, which gathers them",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        if self.takes_rest(def_id) && !evidence.is_empty() {\n",
     replace: "        if false {\n",
     tests: [
@@ -332,19 +332,19 @@ export const mutations: Mutation[] = [
     name: "rest-value-closure-refused",
     breaks:
       "a closure's last parameter of rest arguments as a value is refused, as a function's is, so React's `cache` can't give JS a function of its arguments",
-    file: "src/lower/mir.rs",
-    find: "            if super::bindings::is_rest_value(self.tcx, ty) && !(closure && Some(local) == last) {\n",
-    replace: "            if super::bindings::is_rest_value(self.tcx, ty) {\n",
+    file: "crates/rust-js-mir/src/lib.rs",
+    find: "            if rust_js_lower::bindings::is_rest_value(self.tcx, ty) && !(closure && Some(local) == last) {\n",
+    replace: "            if rust_js_lower::bindings::is_rest_value(self.tcx, ty) {\n",
     tests: ["test/rest-parameters.test.ts", "-t", "React's cache"],
   },
   {
     name: "rest-value-closure-not-last-allowed",
     breaks:
       "a closure's rest arguments as a value before its last parameter is compiled, a rest parameter JS refuses before another",
-    file: "src/lower/mir.rs",
-    find: "            if super::bindings::is_rest_value(self.tcx, ty) && !(closure && Some(local) == last) {\n",
+    file: "crates/rust-js-mir/src/lib.rs",
+    find: "            if rust_js_lower::bindings::is_rest_value(self.tcx, ty) && !(closure && Some(local) == last) {\n",
     replace:
-      "            if super::bindings::is_rest_value(self.tcx, ty) && !closure {\n",
+      "            if rust_js_lower::bindings::is_rest_value(self.tcx, ty) && !closure {\n",
     tests: [
       "test/rest-parameters.test.ts",
       "-t",
@@ -355,17 +355,17 @@ export const mutations: Mutation[] = [
     name: "rest-value-closure-not-gathered",
     breaks:
       "a closure of rest arguments as a value takes one array, `(args) =>`, where JS's callers give its arguments one by one",
-    file: "src/lower/mir.rs",
-    find: "        if (super::recognition::is_c_variadic(self.tcx, def_id) || self.takes_rest(def_id) || rest_value)\n",
+    file: "crates/rust-js-mir/src/lib.rs",
+    find: "        if (rust_js_lower::recognition::is_c_variadic(self.tcx, def_id) || self.takes_rest(def_id) || rest_value)\n",
     replace:
-      "        if (super::recognition::is_c_variadic(self.tcx, def_id) || self.takes_rest(def_id))\n",
+      "        if (rust_js_lower::recognition::is_c_variadic(self.tcx, def_id) || self.takes_rest(def_id))\n",
     tests: ["test/rest-parameters.test.ts", "-t", "React's cache"],
   },
   {
     name: "param-spans-unknown",
     breaks:
       "a function's parameters map nowhere, and a comment before one is lost (ADR 0708, amended)",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "                    .is_some_and(|b| b.params.len() == params.len()) =>\n",
     replace:
       "                    .is_some_and(|b| b.params.len() == usize::MAX) =>\n",
@@ -379,7 +379,7 @@ export const mutations: Mutation[] = [
     name: "unnamed-last-params-kept",
     breaks:
       "React's `function findNextSibling(child, _, _$1, _$2)`, a private function's last `_`s kept",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        {\n            params.pop();\n        }\n",
     replace: "        {\n            break;\n        }\n",
     tests: [
@@ -392,7 +392,7 @@ export const mutations: Mutation[] = [
     name: "unnamed-last-params-of-generics-too",
     breaks:
       "a generic function's last `_` is left out though its dictionaries are given after it, `id(_, TAny)` reading the value as its dictionary",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "            || tcx.generics_of(def_id).count() != 0\n",
     replace: "",
     tests: [
@@ -405,7 +405,7 @@ export const mutations: Mutation[] = [
     name: "unnamed-last-params-of-exported-too",
     breaks:
       "an exported function's last `_`s are left out too, its declaration's arity changed for JS callers",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "            || tcx.visibility(def_id).is_public()\n",
     replace: "",
     tests: [
@@ -418,7 +418,7 @@ export const mutations: Mutation[] = [
     name: "mir-drops-not-hoisted",
     breaks:
       "a function lowered from its MIR declares a drop function at each drop, `dropNode` once in each `catch`, not once at its top (#306)",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        out.splice(0..0, drops_read(hoisted, &out));\n",
     replace: "        let _ = hoisted;\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_functions.rs$"],
@@ -428,7 +428,7 @@ export const mutations: Mutation[] = [
     name: "mir-drops-unread-kept",
     breaks:
       "a drop function whose drop tidy took out is declared at its function's top anyway, `list`'s `dropList` (#306)",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        .filter(|def| name(def).is_none_or(|n| read.contains(&n)))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^drop_functions.rs$"],
@@ -437,7 +437,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-fields-kept-an-object",
     breaks: "a function's scope struct's fields stay its object's properties, `reply.nextPartId`, not its variables",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "            scopes::scope_fields(&value, (&params, &moved_once), &mut out);",
     replace: "            let _ = (value, &params, moved_once);",
     tests: ["test/corpus.test.ts", "-t", "scope_struct_functions"],
@@ -446,7 +446,7 @@ export const mutations: Mutation[] = [
   {
     name: "plain-names-of-changing-imports",
     breaks: "every import is plain to tidy, a library's changing static's too, its read moved past a write (#1028)",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        let changing = (self.dependencies.borrow().changing_imports.iter())\n",
     replace: "        let changing = (self.dependencies.borrow().changing_imports.iter().filter(|_| false))\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
@@ -454,7 +454,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointed-param-assumed-a-cell",
     breaks: "a parameter taken by value whose address is taken is read as the cell its callers never make, `$ptr(n, \"value\", 0)` of a number, which throws (#1381)",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        if !boxed && state.facts.pointed().locals.contains(&local) {\n",
     replace: "                if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_parameter_taken_by_value\\.rs$"],
@@ -462,7 +462,7 @@ export const mutations: Mutation[] = [
   {
     name: "extern-c-panic-unwinds",
     breaks: "a panic out of an `extern \"C\"` function unwinds as any panic does, and `catch_unwind` catches it, where Rust aborts (#1582)",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        ) && !self.krate.never_unwinding.contains(&def_id)\n",
     replace: "        ) && false\n",
     tests: ["test/corpus.test.ts","-t","^panic_out_of_an_extern_c_function_aborts.rs$"],
@@ -470,7 +470,7 @@ export const mutations: Mutation[] = [
   {
     name: "extern-c-wrapped-where-nothing-panics",
     breaks: "an `extern \"C\"` function that can't panic is wrapped in a `try` that aborts, where it reads as the source does (#1582)",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "        ) && !self.krate.never_unwinding.contains(&def_id)\n",
     replace: "        )\n",
     tests: ["test/corpus.test.ts","-t","^panic_out_of_an_extern_c_function_aborts.rs$"],
@@ -479,7 +479,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-writer-lends-a-cell",
     breaks: "a writer that writes through a sink lends a cell over its variable to a struct or generic code, whose append makes the sink a string: `f.write is not a function` (#1637)",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "                true => state.in_place.insert(alias, Expr::var(&name)),\n",
     replace: "                true => state.refs.insert(alias, Expr::var(&name)),\n",
     tests: ["test/corpus.test.ts","-t","^held_formatter_prints.rs$"],
@@ -487,7 +487,7 @@ export const mutations: Mutation[] = [
   {
     name: "on-load-top-names-left-spelled",
     breaks: "what an `on_load!` body declares at its top keeps the word lowering gave it, so two bodies that bind `x` declare it twice at the module's top, which JS won't load (#2070)",
-    file: "src/lower/mir.rs",
+    file: "crates/rust-js-mir/src/lib.rs",
     find: "                let to = name.spelled_apart();\n                js::replaced(&mut out, &name, &to);\n",
     replace: "                let _ = name;\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "on_load bodies that bind one name"],

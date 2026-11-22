@@ -1,0 +1,1311 @@
+//! More of `char`'s and `str`'s methods, `parse`, and slicing by a range
+//! (ADR 0063). A `char` is a one-character string (ADR 0034), and its
+//! Unicode questions are asked of Rust's own tables, as a JS engine's may
+//! be another Unicode version's: `c.is_whitespace()` is `$isWhitespace(c)`
+//! (#1888, ADR 1163).
+
+use crate::temporary_names::Role;
+use rust_js_program::collections::IndexSet;
+
+use crate::calls::Call;
+use crate::recognition::{Std, TrimFixBy, trait_method};
+use crate::representation::Num;
+use crate::std_types::range::RangeKind;
+use crate::{FnCx, R};
+use rust_js_program::js;
+use rust_js_program::js::result;
+use rust_js_program::js::{Expr, ExprKind, Op, Stmt, StmtKind};
+use rustc_hir::attrs::lang_items::LangItem;
+use rustc_middle::ty::{self, Ty};
+use rustc_span::Span;
+
+/// A `String` changed in place, its place given the new string, as JS
+/// strings don't change (ADR 0149).
+#[derive(Clone, Copy, PartialEq)]
+pub enum StringEdit {
+    /// `s.pop()`: the last `char`, or `None`.
+    Pop,
+    /// `s.remove(at)`: the `char` at a byte offset.
+    Remove,
+    Truncate,
+    /// `s.insert(at, c)` and `s.insert_str(at, t)`.
+    Insert,
+    Retain,
+    Clear,
+    /// `s.split_off(at)`, `s.drain(range)`: what they take out (ADR 0323).
+    SplitOff,
+    Drain,
+    ReplaceRange,
+    ExtendFromWithin,
+    /// A `char`'s `make_ascii_uppercase()` or `make_ascii_lowercase()` (ADR 0327).
+    AsciiCase {
+        upper: bool,
+    },
+    /// A `PathBuf`'s text changed (ADR 0405): `push(p)` and
+    /// `set_file_name(n)`; `pop()` and `set_extension(e)`, whether it did.
+    PathPush,
+    PathPop,
+    SetExtension,
+    SetFileName,
+}
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum TextOp {
+    /// A `char` question, as a regular expression it matches.
+    Is(&'static str),
+    /// A `char` question Unicode's tables answer, by Rust's own tables, the
+    /// helper that asks them, `$isAlphabetic(c)` (#1888, ADR 1163).
+    Unicode(&'static str),
+    IsAscii,
+    ToAsciiUpper,
+    ToAsciiLower,
+    ToDigit,
+    IsDigit,
+    SplitWhitespace,
+    /// `c.to_uppercase()`: its `char`s, as Rust's tables map it (`ß` is `SS`).
+    CharCase(bool),
+    /// `s.to_uppercase()` and `s.to_lowercase()`, as Rust's tables map it.
+    StrCase(bool),
+    Lines,
+    /// `s.as_bytes()` and `s.bytes()`: its UTF-8 bytes, lent, `$utf8Bytes(s)`,
+    /// one array of a long text's, kept, never written (ADR 0126, amended,
+    /// #1184): copied where it's owned, as a slice lent is.
+    Bytes,
+    /// `s.into_bytes()`, `into_boxed_bytes()` and `Vec::from(s)`: its UTF-8
+    /// bytes, owned, an array of their own (ADR 0126).
+    IntoBytes,
+    /// `s.as_ptr()`: a pointer to the first of those bytes, where it's only
+    /// read through, which a copy reads the same (ADR 0407).
+    BytesPointer,
+    /// `s.split(|c| ..)` and `s.contains(|c| ..)`: a closure as the pattern.
+    SplitBy,
+    /// `s.splitn(n, |c| ..)`: of a closure, its first pieces and the rest whole.
+    SplitNBy,
+    ContainsBy,
+    /// `find(p)` or `rfind(p)`, `starts_with(p)` or `ends_with(p)`, of a
+    /// predicate of a `char` (ADR 0157).
+    FindBy(bool),
+    /// `s.matches(p)` of a predicate of a `char`, or `rmatches`, `true`:
+    /// each `char` it holds of.
+    MatchesBy(bool),
+    StartsBy {
+        end: bool,
+    },
+    /// Of a predicate of a `char` too (#118): `rsplit(p)`, or `rsplitn(n,
+    /// p)`, `true`; `split_terminator(p)`, or `rsplit_terminator`, `true`;
+    /// `split_inclusive(p)`; `match_indices(p)`, or `rmatch_indices`,
+    /// `true`; `split_once(p)`, or `rsplit_once`, `true`; `strip_prefix(p)`,
+    /// or `strip_suffix`, `true`; `replace(p, to)`, or `replacen(p, to, n)`,
+    /// `true`.
+    RsplitBy(bool),
+    SplitTerminatorBy(bool),
+    SplitInclusiveBy,
+    MatchIndicesBy(bool),
+    SplitOnceBy(bool),
+    StripBy(bool),
+    ReplaceBy(bool),
+    SplitAsciiWhitespace,
+    /// `s.get(range)`: `&s[range]`, or `None` where that would panic.
+    StrGet,
+    /// `&mut s[range]` of a string, `get_unchecked_mut(range)`, and
+    /// `slice_mut_unchecked(a, b)` (`bounds`): that part of it, written
+    /// in place (ADR 0334).
+    StrPart {
+        bounds: bool,
+    },
+    /// `s.get_mut(range)`: that part, or `None` where `&mut s[range]`
+    /// would panic.
+    StrGetMut,
+    /// `s.split_at_mut(at)`, or `split_at_mut_checked` (`checked`): the
+    /// parts before and after the byte `at`.
+    StrSplitAtMut {
+        checked: bool,
+    },
+    /// `s.slice_unchecked(a, b)`: `&s[a..b]`.
+    StrSliceBounds,
+    /// `v.get(range)` of a slice: `&v[range]`, or `None` where that would panic.
+    SliceGet,
+    /// `v.split_at(mid)` of a slice: `(&v[..mid], &v[mid..])`; or
+    /// `split_at_checked` (`checked`), `None` past the end.
+    SliceSplitAt {
+        checked: bool,
+    },
+    /// `v.split_first()`, or `split_last()` (`last`): the item and a copy
+    /// of the rest, or `None` of an empty slice.
+    SliceSplitFirst {
+        last: bool,
+    },
+    /// `char::from_u32_unchecked(n)`: the code point `n` is.
+    CharFromCode,
+    /// `str::from_utf8(bytes)`, or `String::from_utf8` (`owned`) (ADR 0172).
+    FromUtf8 {
+        owned: bool,
+    },
+    /// `str::from_utf8_unchecked(bytes)`: valid UTF-8's text.
+    Utf8Unchecked,
+    /// `str::from_utf8_mut(bytes)`, or `from_utf8_unchecked_mut`
+    /// (`unchecked`): a `&mut str` read and written through the bytes
+    /// (ADR 0334).
+    FromUtf8Mut {
+        unchecked: bool,
+    },
+    /// `String::from_utf8_lossy(bytes)`: a `Cow`.
+    Utf8Lossy,
+    /// A byte slice's `escape_ascii()`: its text (ADR 0341).
+    EscapeAscii,
+    /// `ascii::escape_default(b)` and `b.escape_ascii()` of a byte: its
+    /// escape's bytes, an array, which std's iterator steps (ADR 0558).
+    EscapeByte,
+    /// A byte slice's `utf8_chunks()`: each run of valid text and the bad
+    /// bytes after it, `{ valid, invalid }`.
+    Utf8Chunks,
+    /// A part of a `Utf8Error`, `FromUtf8Error` or `Cow<str>`, as the runtime
+    /// makes it: `validUpTo`, `error`, `bytes`, `_0`.
+    Utf8Part(&'static str),
+    /// `e.kind()` of a `ParseIntError`, which is its message: its kind.
+    ParseErrorKind,
+    /// `v.starts_with(prefix)`, or `ends_with` (`end`), of a slice whose items
+    /// compare by value.
+    SliceStartsWith {
+        end: bool,
+    },
+    /// `a.eq_ignore_ascii_case(b)` of bytes.
+    BytesAsciiEq,
+    IsCharBoundary,
+    /// A `char`'s `len_utf8()`, or `len_utf16()`.
+    CharLen {
+        utf16: bool,
+    },
+    /// `char::from(b)` of a `u8`: the `char` of that code point.
+    CharFromByte,
+    Parse,
+    /// `&v[a..b]` of a slice, an array or a `Vec`.
+    Slice,
+    /// A `VecDeque`'s `range(a..b)`: its items in the range, checked as
+    /// `slice::range` checks it, its end first (#1937).
+    DequeRange,
+    /// `&s[a..b]` of a string: by its UTF-8 bytes (ADR 0138).
+    StrSlice,
+    /// `s.len()`: its UTF-8 bytes.
+    ByteLen,
+    /// `s.reserve(n)`, `reserve_exact(n)` of a `String`: room for its bytes
+    /// and `n` more asked (ADR 0774).
+    Reserve,
+    /// `s.find(p)`, or `s.rfind(p)` if `true`: where, in UTF-8 bytes.
+    Find(bool),
+    /// `s.char_indices()`: each `char`, with where it starts in UTF-8 bytes.
+    CharIndices,
+    /// `v.drain(a..b)`: those items, taken out of `v`.
+    Drain,
+    /// `v.splice(a..b, items)`: those items, taken out of `v`, `items` in
+    /// their place (ADR 0315).
+    Splice,
+    /// `v.extend_from_within(a..b)`: a copy of those items, pushed (ADR 0315).
+    ExtendFromWithin,
+    /// `s.splitn(n, p)`: its first pieces, and the rest whole (ADR 0150).
+    SplitN,
+    /// `s.rsplit(p)`, or `s.rsplitn(n, p)` if `true`: searched from the end.
+    Rsplit(bool),
+    SplitTerminator,
+    /// A `str`'s splits and searches from the end, its ASCII trims, and
+    /// UTF-16 (ADR 0323).
+    SplitInclusive,
+    RsplitTerminator,
+    RmatchIndices,
+    Rmatches,
+    StrSplitAtChecked,
+    EncodeUtf16,
+    FromUtf16 {
+        lossy: bool,
+    },
+    CharBoundaryNear {
+        ceil: bool,
+    },
+    TrimAscii {
+        start: bool,
+        end: bool,
+    },
+    /// A `char`'s or a `str`'s `escape_default()`, `escape_debug()` or
+    /// `escape_unicode()`, as text; a `char`'s `encode_utf8(&mut buf)`, and
+    /// `char::decode_utf16(units)` (ADR 0327).
+    Escape {
+        kind: &'static str,
+    },
+    EncodeUtf8,
+    /// `c.encode_utf16(&mut buf)`: its UTF-16 units at the start of `buf`,
+    /// and the `&mut [u16]` of them (#118).
+    CharEncodeUtf16,
+    DecodeUtf16,
+    /// `s.split_at(at)`: by a UTF-8 byte offset.
+    SplitAt,
+    /// `s.match_indices(p)`: where, in UTF-8 bytes, and what.
+    MatchIndices,
+    Matches,
+    /// `s.trim_matches(p)`, or its `start` or `end` only.
+    TrimMatches {
+        start: bool,
+        end: bool,
+    },
+}
+
+/// How many UTF-16 units `units` is, a string's `encode_utf16()` made in
+/// place, `$encodeUtf16(s)`, a JS iterator of it or not, counted:
+/// `s.length`, which counts them, as JS reads a string's length (ADR
+/// 0632). `None` of what's held, which a `next()` may have stepped.
+pub fn utf16_length(units: &Expr) -> Option<Expr> {
+    let units = crate::iterators::from_iterator(units.clone()).unwrap_or_else(|units| *units);
+    let ExprKind::Call(callee, args) = &units.kind else {
+        return None;
+    };
+    let [text] = args.as_slice() else { return None };
+    (callee.helper_name() == Some("$encodeUtf16")).then(|| Expr::member(text.clone(), "length"))
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The text a string is extended by, `s.extend(items)`'s, of `items` of
+    /// type `ty` whose steps can't panic and that hold nothing to drop
+    /// (`extended_text`): its items', each a `char` or a string, joined,
+    /// `items.join("")` of an array, `Array.from(items).join("")` of another
+    /// iterable, as `iterable_items` steps it, a range's or a B-tree's in
+    /// order (ADR 0445).
+    fn joined_text(&mut self, items: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        let items = self.iterable_items(items, ty, span, out)?;
+        let ty = ty.peel_refs();
+        let items = match ty.is_array() || ty.is_slice() || self.is_vec_like(ty) {
+            true => items,
+            false => Expr::builtin(Expr::js_global("Array"), "from", vec![items]),
+        };
+        let items = self.cow_texts(items, self.iterable_item(ty));
+        Ok(Expr::builtin(items, "join", vec![Expr::str("")]))
+    }
+
+    /// `s.extend(items)`, `items` of type `ty`, written to `place`: of an
+    /// iterator whose steps may panic or that holds what drops, each piece
+    /// appended as it's stepped, `$extendText(it, (piece) => { s += piece;
+    /// })`, as std's `for_each` pushes each, so a panic part-way leaves what
+    /// came before pushed (#1127), and what's left of it closed as it
+    /// unwinds, which `Array.from` doesn't, its source never dropped (#1126);
+    /// else its text joined and appended once (`joined_text`), as nothing
+    /// tells the two apart.
+    pub fn extended_text(&mut self, place: &Expr, items: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<()> {
+        let js_span = self.js_span(span);
+        let stepped = self.implements_iterator(ty)
+            && (self.steps_may_panic(ty) || self.drops(ty) != crate::drops::Drops::Nothing);
+        if !stepped {
+            let text = self.joined_text(items, ty, span, out)?;
+            crate::display::append_written(place, text, false, js_span, out);
+            return Ok(());
+        }
+        let items = self.iterable_items(items, ty, span, out)?;
+        let pieces = self.cow_texts(items, self.iterable_item(ty));
+        let piece = self.fresh(Role::Piece);
+        let mut push = Vec::new();
+        crate::display::append_written(place, Expr::var(&piece), false, js_span, &mut push);
+        out.push(StmtKind::Expr(extend_text(pieces, &piece, push)).at(js_span));
+        Ok(())
+    }
+
+    /// `s.trim()`, `trim_start()` or `trim_end()`, by Unicode's White_Space, as
+    /// Rust's `char::is_whitespace` has it: `$trim(s)`, which trims U+0085
+    /// and keeps U+FEFF, where JS's `trim()` does the other (ADR 0183).
+    pub(crate) fn trimmed(&mut self, s: Expr, start: bool, end: bool) -> Expr {
+        let name = match (start, end) {
+            (true, true) => "$trim",
+            (true, false) => "$trimStart",
+            _ => "$trimEnd",
+        };
+        Expr::call(Expr::helper(name), vec![s])
+    }
+
+    /// `edit` of a string whose text is `current`, of what it's `given`:
+    /// its new text, and what it took out, if it takes anything (ADR 0364).
+    /// Of a closure it's given that may unwind, `unwinds`, what it leaves
+    /// where that panics is written to `current` first (`$retainText`, #1171).
+    pub fn string_edit_values(
+        &mut self,
+        edit: StringEdit,
+        (current, unwinds): (Expr, bool),
+        mut given: Vec<Expr>,
+        out: &mut Vec<Stmt>,
+    ) -> (Expr, Option<Expr>) {
+        let helper = |name: &'static str, mut list: Vec<Expr>| {
+            list.insert(0, current.clone());
+            Expr::call(Expr::helper(name), list)
+        };
+        match edit {
+            StringEdit::Clear => (Expr::str(""), None),
+            StringEdit::Truncate => (helper("$strTruncate", given), None),
+            StringEdit::Insert => (helper("$insertStr", given), None),
+            StringEdit::ReplaceRange => (helper("$replaceRange", given), None),
+            StringEdit::ExtendFromWithin => (helper("$strExtendWithin", given), None),
+            StringEdit::AsciiCase { upper } => (helper("$asciiCase", vec![Expr::bool(upper)]), None),
+            StringEdit::PathPush => (helper("$pathJoin", given), None),
+            StringEdit::SetFileName => (helper("$pathSetFileName", given), None),
+            // Of a closure that may panic, std's `String::retain` leaves
+            // what it kept of the characters before (#1171).
+            StringEdit::Retain if unwinds => {
+                let kept = self.fresh(Role::Kept);
+                let set = vec![StmtKind::Assign(current.clone(), Expr::var(&kept)).at(js::Span::NONE)];
+                given.push(Expr::arrow(vec![kept.into()], set));
+                (helper("$retainText", given), None)
+            }
+            StringEdit::Retain => {
+                let kept = Expr::call(
+                    Expr::member(
+                        Expr::builtin(Expr::js_global("Array"), "from", vec![current.clone()]),
+                        "filter",
+                    ),
+                    given,
+                );
+                (Expr::builtin(kept, "join", vec![Expr::str("")]), None)
+            }
+            StringEdit::Pop
+            | StringEdit::Remove
+            | StringEdit::SplitOff
+            | StringEdit::Drain
+            | StringEdit::PathPop
+            | StringEdit::SetExtension => {
+                let (name, label) = match edit {
+                    StringEdit::Pop => ("$strPop", Role::Popped),
+                    StringEdit::SplitOff => ("$strSplitOff", Role::Split),
+                    StringEdit::Drain => ("$strDrain", Role::Drained),
+                    StringEdit::PathPop => ("$pathPop", Role::Popped),
+                    StringEdit::SetExtension => ("$pathSetExtension", Role::Set),
+                    _ => ("$strRemove", Role::Removed),
+                };
+                let pair = helper(name, given);
+                let pair = self.spill(label, pair, out);
+                (
+                    Expr::index(pair.clone(), Expr::int(0)),
+                    Some(Expr::index(pair, Expr::int(1))),
+                )
+            }
+        }
+    }
+
+    /// A string's or a slice's method of its arguments' values, `tys`
+    /// their types (ADR 0364).
+    pub fn text_values(
+        &mut self,
+        op: TextOp,
+        mut values: Vec<Expr>,
+        tys: &[Ty<'tcx>],
+        generic_args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        // A set of `char`s as a pattern is the predicate of being one of
+        // them, as a closure or a function is a predicate (ADR 0157).
+        // Its pattern's argument, after `splitn`'s count.
+        let at = if matches!(op, TextOp::SplitNBy | TextOp::RsplitBy(true)) {
+            2
+        } else {
+            1
+        };
+        // Of a pattern that runs the program's code, its search asked as it's
+        // stepped, std's iterator, `$lazySplitBy` (#1501); else the array of
+        // what it finds, which reads the same.
+        let runs_code = tys
+            .get(at)
+            .is_some_and(|&pattern| self.recognition().pattern_runs_code(pattern));
+        let lazy = |eager: &'static str, lazy: &'static str| if runs_code { lazy } else { eager };
+        if matches!(
+            op,
+            TextOp::SplitBy
+                | TextOp::SplitNBy
+                | TextOp::ContainsBy
+                | TextOp::FindBy(_)
+                | TextOp::MatchesBy(_)
+                | TextOp::StartsBy { .. }
+                | TextOp::TrimMatches { .. }
+                | TextOp::RsplitBy(_)
+                | TextOp::SplitTerminatorBy(_)
+                | TextOp::SplitInclusiveBy
+                | TextOp::MatchIndicesBy(_)
+                | TextOp::SplitOnceBy(_)
+                | TextOp::StripBy(_)
+                | TextOp::ReplaceBy(_)
+        ) && let Some(pattern) = tys.get(at)
+            && let ty::Array(item, _) | ty::Slice(item) = pattern.peel_refs().kind()
+            && item.is_char()
+        {
+            let set = values[at].clone();
+            let c = self.fresh(Role::C);
+            let one_of = Expr::builtin(set, "includes", vec![Expr::var(&c)]);
+            values[at] = Expr::arrow(vec![c.into()], vec![StmtKind::Return(Some(one_of)).at(js::Span::NONE)]);
+        }
+        let mut values = values.into_iter();
+        let mut arg = || values.next().expect("rustc checked the arguments");
+        let method = |object: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(object, name), list);
+        let call = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
+        let case = |upper: bool| if upper { "$toUppercase" } else { "$toLowercase" };
+        Ok(match op {
+            TextOp::Is(regex) => method(Expr::regex(regex), "test", vec![arg()]),
+            TextOp::Unicode(helper) => call(helper, vec![arg()]),
+            TextOp::IsAscii => {
+                let code = method(arg(), "charCodeAt", vec![Expr::int(0)]);
+                Expr::bin(Op::Lt, code, Expr::int(128))
+            }
+            TextOp::ToAsciiUpper | TextOp::ToAsciiLower => {
+                let (letters, case) = match op {
+                    TextOp::ToAsciiUpper => ("/[a-z]/", "toUpperCase"),
+                    _ => ("/[A-Z]/", "toLowerCase"),
+                };
+                let param = js::Name::declared("letter".to_string());
+                let letter = Expr::arrow(
+                    vec![param.clone().into()],
+                    vec![
+                        StmtKind::Return(Some(method(Expr::var(param), case, Vec::new())))
+                            .at(rust_js_program::js::Span::NONE),
+                    ],
+                );
+                method(arg(), "replace", vec![Expr::regex(letters), letter])
+            }
+            TextOp::ToDigit | TextOp::IsDigit => {
+                let digit = Expr::call(Expr::helper("$toDigit"), vec![arg(), arg()]);
+                if op == TextOp::IsDigit {
+                    Expr::bin(Op::Ne, digit, Expr::js_undefined())
+                } else {
+                    digit
+                }
+            }
+            // Rust's whitespace, by its table: JS's `\s` has U+FEFF (#1888).
+            TextOp::SplitWhitespace => call("$splitWhitespace", vec![arg()]),
+            TextOp::CharCase(upper) => chars(call(case(upper), vec![arg()])),
+            TextOp::StrCase(upper) => call(case(upper), vec![arg()]),
+            TextOp::SplitBy => Expr::call(Expr::helper(lazy("$splitBy", "$lazySplitBy")), vec![arg(), arg()]),
+            TextOp::RsplitBy(limited) => {
+                let s = arg();
+                let n = limited.then(&mut arg);
+                let mut list = vec![s, arg()];
+                list.extend(n);
+                call(lazy("$rsplitBy", "$lazyRsplitBy"), list)
+            }
+            TextOp::SplitTerminatorBy(rev)
+            | TextOp::MatchIndicesBy(rev)
+            | TextOp::SplitOnceBy(rev)
+            | TextOp::StripBy(rev) => {
+                let mut list = vec![arg(), arg()];
+                if rev {
+                    list.push(Expr::bool(true));
+                }
+                let helper = match op {
+                    TextOp::SplitTerminatorBy(_) => lazy("$splitTerminatorBy", "$lazySplitTerminatorBy"),
+                    TextOp::MatchIndicesBy(_) => lazy("$matchIndicesBy", "$lazyMatchIndicesBy"),
+                    TextOp::SplitOnceBy(_) => "$splitOnceBy",
+                    _ => "$stripBy",
+                };
+                call(helper, list)
+            }
+            TextOp::SplitInclusiveBy => call(lazy("$splitInclusiveBy", "$lazySplitInclusiveBy"), vec![arg(), arg()]),
+            TextOp::ReplaceBy(limited) => {
+                let mut list = vec![arg(), arg(), arg()];
+                if limited {
+                    list.push(arg());
+                }
+                call("$replaceBy", list)
+            }
+            TextOp::MatchesBy(rev) => {
+                let mut list = vec![arg(), arg()];
+                if rev {
+                    list.push(Expr::bool(true));
+                }
+                Expr::call(Expr::helper(lazy("$matchesBy", "$lazyMatchesBy")), list)
+            }
+            TextOp::SplitNBy => {
+                let (s, n, matches) = (arg(), arg(), arg());
+                Expr::call(Expr::helper(lazy("$splitBy", "$lazySplitBy")), vec![s, matches, n])
+            }
+            TextOp::ContainsBy => {
+                let chars = Expr::builtin(Expr::js_global("Array"), "from", vec![arg()]);
+                method(chars, "some", vec![arg()])
+            }
+            TextOp::Lines => Expr::call(Expr::helper("$lines"), vec![arg()]),
+            // `$utf8Bytes(s)`: an array of `u8`s, as a slice of them is, one
+            // of a long text's kept, never written (#1184); a pointer to its
+            // first, only read through (`check_text_pointer`).
+            TextOp::Bytes => call("$utf8Bytes", vec![arg()]),
+            TextOp::BytesPointer => call("$ptr", vec![call("$utf8Bytes", vec![arg()]), Expr::int(0)]),
+            // `Array.from(new TextEncoder().encode(s))`: owned, its own; of a
+            // crate that keeps capacities, whose capacity is its string's,
+            // which isn't kept, not known (#1180).
+            TextOp::IntoBytes if self.krate.keeps_capacity => call("$untracked", vec![utf8_bytes(arg())]),
+            TextOp::IntoBytes => utf8_bytes(arg()),
+            TextOp::SplitN => call("$splitN", vec![arg(), arg(), arg()]),
+            TextOp::Rsplit(limited) => {
+                let mut list = vec![arg()];
+                let limit = limited.then(&mut arg);
+                list.push(arg());
+                list.extend(limit);
+                call("$rsplit", list)
+            }
+            TextOp::SplitTerminator => call("$splitTerminator", vec![arg(), arg()]),
+            TextOp::SplitInclusive => call("$splitInclusive", vec![arg(), arg()]),
+            TextOp::RsplitTerminator => call("$rsplitTerminator", vec![arg(), arg()]),
+            TextOp::RmatchIndices => call("$rmatchIndices", vec![arg(), arg()]),
+            TextOp::Rmatches => call("$rmatches", vec![arg(), arg()]),
+            TextOp::StrSplitAtChecked => call("$splitAtChecked", vec![arg(), arg()]),
+            TextOp::EncodeUtf16 => call("$encodeUtf16", vec![arg()]),
+            // Its `char`s, as a case mapping's (ADR 0971).
+            TextOp::Escape { kind: "default", .. } => chars(call("$escapeDefault", vec![arg()])),
+            TextOp::Escape { kind: "unicode", .. } => chars(call("$escapeUnicode", vec![arg()])),
+            TextOp::Escape { .. } => chars(call("$escapeDebug", vec![arg()])),
+            // Its `&mut str`, read and written through `buf`'s bytes, as
+            // `from_utf8_mut`'s (ADR 0334).
+            TextOp::EncodeUtf8 => call("$encodeUtf8", vec![arg(), arg()]),
+            TextOp::CharEncodeUtf16 => call("$encodeCharUtf16", vec![arg(), arg()]),
+            TextOp::DecodeUtf16 => call("$decodeUtf16", vec![arg()]),
+            TextOp::FromUtf16 { lossy: false } => call("$fromUtf16", vec![arg()]),
+            TextOp::FromUtf16 { lossy: true } => call("$fromUtf16Lossy", vec![arg()]),
+            TextOp::CharBoundaryNear { ceil: false } => call("$floorCharBoundary", vec![arg(), arg()]),
+            TextOp::CharBoundaryNear { ceil: true } => call("$ceilCharBoundary", vec![arg(), arg()]),
+            // ASCII whitespace, `u8::is_ascii_whitespace`'s, which isn't JS's.
+            TextOp::TrimAscii { start, end } => {
+                let regex = match (start, end) {
+                    (true, true) => "/^[\\t\\n\\f\\r ]+|[\\t\\n\\f\\r ]+$/g",
+                    (true, false) => "/^[\\t\\n\\f\\r ]+/",
+                    _ => "/[\\t\\n\\f\\r ]+$/",
+                };
+                Expr::call(Expr::member(arg(), "replace"), vec![Expr::regex(regex), Expr::str("")])
+            }
+            TextOp::SplitAt => call("$splitAt", vec![arg(), arg()]),
+            TextOp::StrSliceBounds => call("$strSlice", vec![arg(), arg(), arg()]),
+            TextOp::StrPart { .. } | TextOp::StrGetMut | TextOp::StrSplitAtMut { .. } => {
+                return Err(self.unsupported(span, "a part of a string, of its value alone"));
+            }
+            TextOp::Reserve => return Err(self.unsupported(span, "a `String`'s room, of its value alone")),
+            TextOp::SliceSplitAt { checked } => {
+                let mut list = vec![arg(), arg()];
+                if checked {
+                    list.push(Expr::bool(true));
+                }
+                call("$sliceSplitAt", list)
+            }
+            // `v.length === 0 ? undefined : [v[0], v.slice(1)]`.
+            TextOp::SliceSplitFirst { last } => {
+                let items = arg();
+                let items = if items.reads_same() {
+                    items
+                } else {
+                    self.spill(Role::Items, items, out)
+                };
+                let length = Expr::member(items.clone(), "length");
+                let empty = Expr::bin(Op::Eq, length.clone(), Expr::int(0));
+                let (item, rest) = match last {
+                    false => (Expr::int(0), vec![Expr::int(1)]),
+                    true => (
+                        Expr::bin(Op::Sub, length, Expr::int(1)),
+                        vec![Expr::int(0), Expr::int(-1)],
+                    ),
+                };
+                let split = Expr::array(vec![
+                    Expr::index(items.clone(), item),
+                    Expr::builtin(items, "slice", rest),
+                ]);
+                Expr::cond(empty, Expr::js_undefined(), split)
+            }
+            TextOp::CharFromCode => Expr::builtin(Expr::js_global("String"), "fromCodePoint", vec![arg()]),
+            TextOp::FromUtf8 { owned } => {
+                let mut list = vec![arg()];
+                if owned {
+                    list.push(Expr::bool(true));
+                }
+                call("$fromUtf8", list)
+            }
+            TextOp::Utf8Unchecked => call("$utf8Decode", vec![arg()]),
+            TextOp::FromUtf8Mut { unchecked } => {
+                let mut list = vec![arg()];
+                if unchecked {
+                    list.push(Expr::bool(true));
+                }
+                call("$fromUtf8Mut", list)
+            }
+            TextOp::Utf8Lossy => call("$utf8Lossy", vec![arg()]),
+            TextOp::EscapeAscii => call("$escapeAscii", vec![arg()]),
+            TextOp::EscapeByte => call("$escapeAscii", vec![Expr::array(vec![arg()])]),
+            TextOp::Utf8Chunks => call("$utf8Chunks", vec![arg()]),
+            TextOp::Utf8Part(name) => Expr::member(arg(), name),
+            TextOp::ParseErrorKind => call("$parseErrorKind", vec![arg()]),
+            TextOp::SliceStartsWith { end } => {
+                let mut list = vec![arg(), arg()];
+                let eq = self.item_eq((generic_args.type_at(0), generic_args.type_at(0)), true, span)?;
+                if end || eq.is_some() {
+                    list.push(Expr::bool(end));
+                }
+                list.extend(eq);
+                call("$sliceStartsWith", list)
+            }
+            TextOp::BytesAsciiEq => call("$bytesAsciiEq", vec![arg(), arg()]),
+            TextOp::MatchIndices => call("$matchIndices", vec![arg(), arg()]),
+            TextOp::Matches => call("$matches", vec![arg(), arg()]),
+            TextOp::TrimMatches { start, end } => {
+                let mut list = vec![arg(), arg()];
+                if !(start && end) {
+                    list.extend([Expr::bool(start), Expr::bool(end)]);
+                }
+                call("$trimMatches", list)
+            }
+            TextOp::Parse => {
+                let target = generic_args
+                    .types()
+                    .next()
+                    .ok_or_else(|| self.unsupported(span, "this `parse`"))?;
+                self.parse_as(arg(), target, span, out)?
+            }
+            TextOp::ByteLen => Expr::call(Expr::helper("$byteLen"), vec![arg()]),
+            TextOp::FindBy(last) => call("$findBy", vec![arg(), arg(), Expr::bool(last)]),
+            TextOp::StartsBy { end } => call("$startsBy", vec![arg(), arg(), Expr::bool(end)]),
+            // Rust's ASCII whitespace: space, tab, line feed, form feed and
+            // carriage return, not JS's `\s`.
+            TextOp::SplitAsciiWhitespace => {
+                let pieces = method(arg(), "split", vec![Expr::regex("/[\\t\\n\\f\\r ]+/")]);
+                let param = js::Name::declared("word".to_string());
+                let word = Expr::bin(Op::Ne, Expr::var(param.clone()), Expr::str(""));
+                let nonempty = Expr::arrow(
+                    vec![param.into()],
+                    vec![StmtKind::Return(Some(word)).at(js::Span::NONE)],
+                );
+                method(pieces, "filter", vec![nonempty])
+            }
+            TextOp::IsCharBoundary => {
+                let unit = call("$charBoundary", vec![arg(), arg()]);
+                Expr::bin(Op::Ne, unit, Expr::js_undefined())
+            }
+            TextOp::CharLen { utf16: false } => call("$byteLen", vec![arg()]),
+            TextOp::CharLen { utf16: true } => Expr::member(arg(), "length"),
+            TextOp::CharFromByte => Expr::builtin(Expr::js_global("String"), "fromCharCode", vec![arg()]),
+            TextOp::Find(last) => {
+                let name = if last { "$rfind" } else { "$find" };
+                Expr::call(Expr::helper(name), vec![arg(), arg()])
+            }
+            TextOp::CharIndices => Expr::call(Expr::helper("$charIndices"), vec![arg()]),
+            TextOp::Slice
+            | TextOp::DequeRange
+            | TextOp::StrSlice
+            | TextOp::StrGet
+            | TextOp::SliceGet
+            | TextOp::Drain
+            | TextOp::Splice
+            | TextOp::ExtendFromWithin => {
+                return Err(self.unsupported(span, "a range of a string or a slice, of its value alone"));
+            }
+        })
+    }
+
+    /// `s.parse::<T>()`: a `Result`, whose `Err` is the error's message,
+    /// which is what its `to_string()` gives.
+    pub(crate) fn parse_as(&mut self, text: Expr, target: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        if let Some(num) = Num::of(target) {
+            if num == Num::F64 {
+                return Ok(Expr::call(Expr::helper("$parseF64"), vec![text]));
+            }
+            // The digits' nearest `f32`, which through an `f64` alone can be
+            // missed (ADR 0122).
+            if num == Num::F32 {
+                return Ok(Expr::call(Expr::helper("$parseF32"), vec![text]));
+            }
+            let (lo, hi) = num.range();
+            // A 64-bit one is read as a BigInt, exactly (ADR 0086).
+            let name = if num.big() { "$parseBig" } else { "$parseInt" };
+            let parsed = Expr::call(Expr::helper(name), vec![text, num.literal(lo), num.literal(hi as i128)]);
+            // A `NonZero`'s, an error of `0` (ADR 0177).
+            if crate::recognition::is_non_zero_ty(target) {
+                let zero = Expr::str("number would be zero for non-zero type");
+                return Ok(Expr::call(Expr::helper("$nonZeroOk"), vec![parsed, zero]));
+            }
+            return Ok(parsed);
+        }
+        if target.is_bool() {
+            return Ok(Expr::call(Expr::helper("$parseBool"), vec![text]));
+        }
+        if target.is_char() {
+            return Ok(Expr::call(Expr::helper("$parseChar"), vec![text]));
+        }
+        if self.is_lang_adt(target, LangItem::String) {
+            return Ok(result::ok(text));
+        }
+        // A type's own `FromStr`: its `from_str`, called (ADR 0159), or one
+        // only a caller knows, a `T`'s or an `S::Item`'s, its dictionary's
+        // (ADR 0161, #1605). Not std's of another type, which has no
+        // dictionary but this.
+        if let Some(from_str) = self.recognition().std_from_str()
+            && (self.is_unknown(target) || self.has_user_impl(from_str, target))
+        {
+            let method = trait_method(self.tcx, from_str, "from_str");
+            let args = self.tcx.mk_args(&[target.into()]);
+            if let Some(call) = self.trait_call(method, args, vec![text], false, span, out)? {
+                return Ok(call);
+            }
+        }
+        let issue = crate::recognition::open_text(self.tcx, target).map(crate::refusal::issue_of);
+        Err(self.unsupported(span, &format!("`parse` to a `{target}`{}", issue.unwrap_or_default())))
+    }
+
+    /// A `Vec`'s range, read as `range_read` reads it, `range`, replaced by
+    /// `rest`, `$splice(v, a, b, items)`, or pushed again, `v.push(
+    /// ...$copyRange(v, a, b))` (ADR 0315), each a clone, by `clone`, where
+    /// a clone is more than the value (ADR 0507). Of all of it, `..`,
+    /// `range` is the `Vec` itself.
+    pub fn range_edit(
+        &mut self,
+        op: TextOp,
+        range: Expr,
+        rest: Vec<Expr>,
+        (clone, lazy): (Option<Expr>, bool),
+    ) -> Expr {
+        let mut list = match range.kind {
+            js::ExprKind::Call(_, list) => list,
+            kind => vec![
+                Expr {
+                    kind,
+                    span: range.span,
+                    facts: js::Facts::NONE,
+                    held_as: Default::default(),
+                },
+                Expr::int(0),
+            ],
+        };
+        let items = list[0].clone();
+        // Checked as `slice::range` checks it, its end first, not as
+        // `&v[a..b]` is: `$extend(v, $copyRange(v, a, b))`, each pushed, as
+        // a call's spread of more than JS's bound of arguments throws (#334).
+        if op == TextOp::ExtendFromWithin {
+            let copied = Expr::call(Expr::helper("$copyRange"), list);
+            let copied = match clone {
+                Some(clone) => Expr::builtin(copied, "map", vec![clone]),
+                None => copied,
+            };
+            return Expr::call_helper("$extend", vec![items, copied]);
+        }
+        // Of `a..=b`, `$drain(v, a, b + 1, true)`'s: its `true` the
+        // helper's last argument, past what drops each item, if any (#1935).
+        let inclusive = (list.len() == 4).then(|| list.pop()).flatten();
+        if list.len() == 2 {
+            list.push(Expr::member(items, "length"));
+        }
+        list.extend(rest);
+        if let Some(inclusive) = inclusive {
+            if lazy && list.len() == 4 {
+                list.push(Expr::js_undefined());
+            }
+            list.push(inclusive);
+        }
+        Expr::call(Expr::helper(if lazy { "$splicing" } else { "$splice" }), list)
+    }
+
+    /// `&s[range]` of places of `s` in JS's units, `range` a `range_ty`:
+    /// `s.slice(a, b)`, which can't panic, as each is in bounds and on a
+    /// boundary, and the range's end isn't before its start (ADR 0642).
+    pub fn sliced_in_units(
+        &mut self,
+        s: Expr,
+        (range, range_ty): (Expr, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let (start, end, _) = self.range_value_bounds(range, range_ty, span, out)?;
+        if start.as_int() == Some(0) && end.is_none() {
+            return Ok(s);
+        }
+        Ok(Expr::call(
+            Expr::member(s, "slice"),
+            std::iter::once(start).chain(end).collect(),
+        ))
+    }
+
+    /// `items` in `range`, a `range_ty`, as `op` takes them, of their
+    /// values (ADR 0364); `in_bounds` where the body's ranges show it is
+    /// (ADR 0806).
+    pub fn slice_range_values(
+        &mut self,
+        (op, in_bounds): (TextOp, bool),
+        items: Expr,
+        (range, range_ty): (Expr, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let (start, end, inclusive) = self.range_value_bounds(range, range_ty, span, out)?;
+        Ok(self.sliced((op, in_bounds), items, start, (end, inclusive)))
+    }
+
+    /// `items` from `start` to `end`, or to their end, as `op` takes them.
+    /// A slice's range the body's ranges show in bounds, which can't panic,
+    /// is JS's own, `items.slice(start, end)` (ADR 0806).
+    fn sliced(
+        &mut self,
+        (op, in_bounds): (TextOp, bool),
+        items: Expr,
+        start: Expr,
+        (end, inclusive): (Option<Expr>, Option<Expr>),
+    ) -> Expr {
+        let name = match op {
+            TextOp::Drain => "$drain",
+            TextOp::StrSlice => "$strSlice",
+            TextOp::StrGet => "$strGet",
+            TextOp::SliceGet => "$sliceGet",
+            TextOp::DequeRange => "$sliceRange",
+            _ => "$slice",
+        };
+        // `&s[..]` of a string: all of it, which is never out of bounds, nor
+        // inside a character.
+        if matches!(op, TextOp::StrSlice | TextOp::StrGet) && start.as_int() == Some(0) && end.is_none() {
+            return items;
+        }
+        // `&v[..]` of a slice: all of it, never out of bounds (ADR 0335).
+        if name == "$slice" && start.as_int() == Some(0) && end.is_none() {
+            return items;
+        }
+        if matches!(op, TextOp::Slice | TextOp::DequeRange) && in_bounds {
+            return self.slice_part(items, start, end);
+        }
+        // `v.drain(a..b)` the body's ranges show in bounds, which can't
+        // panic: JS's own, `v.splice(a, b - a)`, what it takes out (ADR
+        // 0881).
+        if op == TextOp::Drain && in_bounds {
+            let count = match (start.as_int(), end) {
+                (_, None) => None,
+                (Some(0), Some(end)) => Some(end),
+                (_, Some(end)) => Some(Expr::bin(Op::Sub, end, start.clone())),
+            };
+            return Expr::call(
+                Expr::member(items, "splice"),
+                std::iter::once(start).chain(count).collect(),
+            );
+        }
+        let mut list = vec![items, start];
+        list.extend(end);
+        // A `get`'s `None` says nothing of the range.
+        if !matches!(op, TextOp::StrGet | TextOp::SliceGet) {
+            list.extend(inclusive);
+        }
+        Expr::call_helper(name, list)
+    }
+
+    /// Of `cell`, a `&mut str`'s, and what's `given`, a range's bounds or a
+    /// `split_at_mut`'s index: the part.
+    pub fn str_part_values(&mut self, op: TextOp, cell: Expr, given: Vec<Expr>) -> Expr {
+        let mut list = vec![cell];
+        list.extend(given);
+        let name = match op {
+            TextOp::StrSplitAtMut { checked } => {
+                if checked {
+                    list.push(Expr::bool(true));
+                }
+                "$strSplitAtMut"
+            }
+            TextOp::StrGetMut => "$strGetMut",
+            _ => "$strPart",
+        };
+        Expr::call(Expr::helper(name), list)
+    }
+
+    /// `range_bounds`'s, of a range's value, a `range_ty`.
+    pub fn range_value_bounds(
+        &mut self,
+        value: Expr,
+        range_ty: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<(Expr, Option<Expr>, Option<Expr>)> {
+        let Some(kind) = self.range_kind(range_ty) else {
+            return Err(self.unsupported(span, "slicing by this range"));
+        };
+        // `..=1` is `..2`.
+        let past = |end: Expr| match end.as_int() {
+            Some(n) => Expr::int(n + 1),
+            None => Expr::bin(Op::Add, end, Expr::int(1)),
+        };
+        // A range of one bound, `start(log, 1)..`, read once: the bound
+        // itself, whatever it does, where the range is made, `$slice(items,
+        // start(log, 1))`, no `range` of it first.
+        let parts = match self.range_literal_bound(&value, kind) {
+            Some(bound) => vec![bound],
+            None => self.range_parts(value, kind, out),
+        };
+        // Of `a..=b`, the helper's last argument, `true`: past the end, core
+        // says `b` itself, not `b + 1` (#1935).
+        let inclusive = || Some(Expr::bool(true));
+        Ok(match (kind, parts.as_slice()) {
+            (RangeKind::Exclusive, [start, end]) => (start.clone(), Some(end.clone()), None),
+            (RangeKind::Inclusive, [start, end]) => (start.clone(), Some(past(end.clone())), inclusive()),
+            (RangeKind::From, [start]) => (start.clone(), None, None),
+            (RangeKind::To, [end]) => (Expr::int(0), Some(end.clone()), None),
+            (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(past(end.clone())), inclusive()),
+            _ => (Expr::int(0), None, None),
+        })
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A string's method (ADRs 0034, 0063): `None` if `known` is another.
+    pub(crate) fn string_call(
+        &mut self,
+        known: Std,
+        call: Call<'_, 'tcx>,
+        values: &mut std::vec::IntoIter<Expr>,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let Call {
+            def_id,
+            generic_args,
+            tys,
+            span,
+            ..
+        } = call;
+        let mut arg = || values.next().expect("rustc checked the arguments");
+        Ok(Some(match known {
+            // A string's `char`s, lazy (#1186): JS's own string iterator,
+            // which steps them as Rust's do, where only its front is
+            // stepped; else the runtime's, which knows its back and its rest.
+            Std::Chars => {
+                let made = self.tcx.instantiate_bound_regions_with_erased(
+                    self.tcx
+                        .fn_sig(def_id)
+                        .instantiate(self.tcx, generic_args)
+                        .skip_normalization(),
+                );
+                let s = arg();
+                match self.chars_asked_whole(made.output()) {
+                    true => Expr::call_helper("$chars", vec![s]),
+                    false => crate::iterators::string_iterator(s),
+                }
+            }
+            // A `String`'s `+`: text joined to what's added (ADR 0639, amended).
+            Std::Concat => Expr::text_joined(arg(), arg()),
+            Std::Method(name) => {
+                let this = arg();
+                let mut rest: Vec<Expr> = (1..tys.len()).map(|_| arg()).collect();
+                // An array's `map` by the identity in JS, `String::from` of a
+                // `&str`: the array, or a copy where one may be told apart
+                // (`mapped_as_itself`, #1882).
+                if name == "map"
+                    && rest.first().is_some_and(Expr::is_identity)
+                    && let ty::Array(_, len) = tys[0].kind()
+                    && let Some(output) = generic_args.types().last()
+                {
+                    let to = Ty::new_array_with_const_len(self.tcx, output, *len);
+                    return Ok(Some(self.mapped_as_itself(this, tys[0], to)));
+                }
+                // An array's `map` of what has a destructor, an item or what
+                // it's mapped to: `$arrayMap`, which drops what was made and
+                // what's left where the closure panics part-way, as std's
+                // guard and `IntoIter` do (#1586). JS's own `map` drops
+                // neither: kept where the closure can't panic, an arrow that
+                // gives what can't throw, `(value) => [value]`.
+                let can_panic = match &rest.first().map(|f| &f.kind) {
+                    Some(js::ExprKind::Arrow(_, body)) => !matches!(body.as_slice(),
+                        [stmt] if matches!(&stmt.kind, StmtKind::Return(Some(e)) if !e.may_throw())),
+                    _ => true,
+                };
+                if name == "map"
+                    && can_panic
+                    && let ty::Array(item, _) = tys[0].kind()
+                    && let Some(output) = generic_args.types().last()
+                    && (self.has_drops(*item) || self.has_drops(output))
+                {
+                    let mut dropper = |ty: Ty<'tcx>| -> R<Expr> {
+                        if !self.has_drops(ty) {
+                            return Ok(Expr::js_undefined());
+                        }
+                        let mut dropped = Vec::new();
+                        let name = self.fresh(crate::Base::Named("item"));
+                        self.drop_value(Expr::var(&name), ty, span, &mut dropped)?;
+                        Ok(Expr::arrow(vec![name.clone().into()], dropped))
+                    };
+                    let (made, left) = (dropper(output)?, dropper(*item)?);
+                    return Ok(Some(Expr::call_helper(
+                        "$arrayMap",
+                        vec![this, rest.remove(0), made, left],
+                    )));
+                }
+                // `replacen`'s count: of one, the first, JS's `replace`; of
+                // another, `$replacen`'s first that many.
+                if name == "replace" {
+                    if !matches!(rest[2].kind, js::ExprKind::Num(n) if n == 1.0) {
+                        return Ok(Some(Expr::call(Expr::helper("$replacen"), [vec![this], rest].concat())));
+                    }
+                    rest.truncate(2);
+                }
+                // A pattern that may be empty, which Rust matches at each
+                // char's boundary and JS between UTF-16 units (ADR 0063).
+                let may_be_empty = matches!(name, "replaceAll" | "split")
+                    && !generic_args.types().next().is_some_and(|p| p.is_char())
+                    && !matches!(&rest[0].kind, js::ExprKind::Str(s) if !s.is_empty());
+                if may_be_empty {
+                    let helper = if name == "split" { "$split" } else { "$replace" };
+                    return Ok(Some(Expr::call(Expr::helper(helper), [vec![this], rest].concat())));
+                }
+                if matches!(name, "replaceAll" | "replace") {
+                    rest[1] = replacement(rest[1].clone());
+                }
+                Expr::read(this, name, rest)
+            }
+            Std::StripPrefix | Std::StripSuffix | Std::SplitOnce | Std::RsplitOnce => {
+                let name = match known {
+                    Std::StripPrefix => "$stripPrefix",
+                    Std::StripSuffix => "$stripSuffix",
+                    Std::SplitOnce => "$splitOnce",
+                    _ => "$rsplitOnce",
+                };
+                Expr::call(Expr::helper(name), vec![arg(), arg()])
+            }
+            Std::StripCircumfix => Expr::call(Expr::helper("$stripCircumfix"), vec![arg(), arg(), arg()]),
+            // `s.trim_prefix(p)`, Rust 1.100's: its strip by `p`, else `s`
+            // itself, read once, `$stripPrefix(s, p) ?? s` (#1656).
+            Std::TrimFix { suffix, by } => {
+                let receiver = arg();
+                let receiver = match receiver.reads_same() {
+                    true => receiver,
+                    false => self.spill(Role::Text, receiver, out),
+                };
+                let pattern = arg();
+                let stripped = match by {
+                    TrimFixBy::Text => Expr::call(
+                        Expr::helper(if suffix { "$stripSuffix" } else { "$stripPrefix" }),
+                        vec![receiver.clone(), pattern],
+                    ),
+                    // As `strip_prefix` of it is, a set of `char`s its predicate.
+                    TrimFixBy::Predicate => self.text_values(
+                        TextOp::StripBy(suffix),
+                        vec![receiver.clone(), pattern],
+                        tys,
+                        generic_args,
+                        span,
+                        out,
+                    )?,
+                    TrimFixBy::Items => {
+                        let item = match tys[0].peel_refs().kind() {
+                            ty::Slice(item) => *item,
+                            _ => return Err(self.unsupported(span, "trimming this slice")),
+                        };
+                        let mut list = vec![receiver.clone(), pattern, Expr::bool(suffix)];
+                        list.extend(self.item_eq((item, item), true, span)?);
+                        Expr::call(Expr::helper("$sliceStrip"), list)
+                    }
+                };
+                Expr::bin(Op::Coalesce, stripped, receiver)
+            }
+            Std::StringNew => Expr::str(""),
+            Std::Trim { start, end } => self.trimmed(arg(), start, end),
+            Std::AsciiCase { upper } => {
+                let mut list = vec![arg()];
+                if upper {
+                    list.push(Expr::bool(true));
+                }
+                Expr::call(Expr::helper("$asciiCase"), list)
+            }
+            Std::AsciiEq => {
+                let (a, b) = (arg(), arg());
+                Expr::bin(
+                    Op::Eq,
+                    Expr::call(Expr::helper("$asciiCase"), vec![a]),
+                    Expr::call(Expr::helper("$asciiCase"), vec![b]),
+                )
+            }
+            Std::ToString => {
+                let (value, ty) = (arg(), generic_args.type_at(0));
+                // A generic `T: ToString`'s, through its dictionary, where it
+                // has no `Display` bound to show it with (ADR 0049).
+                let display = ty::TraitRef::new(self.tcx, self.display_trait(), [ty]);
+                let to_string_trait = self
+                    .to_string_trait()
+                    .expect("a `to_string` call's crate has `ToString`");
+                let to_string = ty::TraitRef::new(self.tcx, to_string_trait, [ty]);
+                let text = match self.is_unknown(ty) && !self.has_evidence(display) {
+                    true if let Some(dictionary) = self.evidence_for(to_string) => {
+                        let name = crate::bindings::trait_method_name(self.tcx, to_string_trait, "to_string");
+                        Expr::call(Expr::member(dictionary, name), vec![value])
+                    }
+                    _ => self.display_string(value, ty, span)?,
+                };
+                // Of what may print as it's formatted, made as a line may be
+                // formatted: apart from it (#1490).
+                match self.shown_may_print(ty) {
+                    true => self.made_apart_from_the_line(text),
+                    false => text,
+                }
+            }
+            _ => return Ok(None),
+        }))
+    }
+}
+
+/// `s.find(p)` and `s.rfind(p)`, `s.len()` and `c.len_utf8()`, of places
+/// in JS's units (ADR 0642): JS's own, `s.indexOf(p)`, `s.lastIndexOf(p)`
+/// and `length`, an `Option` found `-1` where it's `None` (`found`).
+/// `None` of another `op`.
+pub fn of_places(op: TextOp, mut values: Vec<Expr>) -> Option<Expr> {
+    let of = values.remove(0);
+    Some(match op {
+        TextOp::Find(last) => Expr::call(Expr::member(of, if last { "lastIndexOf" } else { "indexOf" }), values),
+        TextOp::ByteLen | TextOp::CharLen { utf16: false } => Expr::member(of, "length"),
+        _ => return None,
+    })
+}
+
+/// That `at`, a place found in units, is one, its `Option`'s `Some`: `at
+/// !== -1`, as `indexOf` says none (ADR 0642).
+pub fn found(at: Expr) -> Expr {
+    Expr::bin(Op::Ne, at, Expr::int(-1))
+}
+
+/// `s.strip_prefix(p)`, or `strip_suffix` (`!prefix`), read as a test and
+/// a cut (ADR 0642): `s.startsWith(p)`, and where it holds, `s.slice(n)`,
+/// `n` the pattern's length in units, a literal's, or `p.length`; of a
+/// suffix, `s.endsWith(p)` and `s.slice(0, -n)`. Neither counts anything
+/// a program can see.
+pub fn cut(s: Expr, p: Expr, units: Option<usize>, prefix: bool) -> (Expr, Expr) {
+    let test = Expr::call(
+        Expr::member(s.clone(), if prefix { "startsWith" } else { "endsWith" }),
+        vec![p.clone()],
+    );
+    let slice = |list: Vec<Expr>| Expr::builtin(s.clone(), "slice", list);
+    let cut = match (units, prefix) {
+        (Some(0), _) => s.clone(),
+        (Some(n), true) => slice(vec![Expr::int(n as i128)]),
+        (Some(n), false) => slice(vec![Expr::int(0), Expr::int(-(n as i128))]),
+        (None, true) => slice(vec![Expr::member(p, "length")]),
+        (None, false) => {
+            let rest = Expr::bin(Op::Sub, Expr::member(s.clone(), "length"), Expr::member(p, "length"));
+            slice(vec![Expr::int(0), rest])
+        }
+    };
+    (test, cut)
+}
+
+/// A replacement as the text it is, as Rust's is: JS reads `$&` and `$1` in
+/// a string as what's matched, so a `$` written out is doubled, and one not
+/// written out is a function's, `() => r`, whose text JS takes as it is
+/// (ADR 0034).
+fn replacement(to: Expr) -> Expr {
+    match &to.kind {
+        js::ExprKind::Str(text) => Expr::str(text.replace('$', "$$")),
+        _ => Expr::arrow(Vec::new(), vec![js::StmtKind::Return(Some(to)).at(js::Span::NONE)]),
+    }
+}
+
+/// What a `Vec`'s range is read as for `range_edit`: `splice`'s taken out,
+/// as `drain`'s, `extend_from_within`'s copied, as `&v[a..b]`'s.
+pub fn range_read(op: TextOp) -> TextOp {
+    match op {
+        TextOp::Splice => TextOp::Drain,
+        _ => TextOp::Slice,
+    }
+}
+
+/// Text's UTF-8 bytes, owned, `Array.from(new TextEncoder().encode(s))`: an
+/// array of `u8`s of its own, `into_bytes()`'s.
+pub(crate) fn utf8_bytes(text: Expr) -> Expr {
+    let encoder = Expr::new_(Expr::global("TextEncoder"), Vec::new());
+    let encoded = Expr::call(Expr::member(encoder, "encode"), vec![text]);
+    Expr::builtin(Expr::js_global("Array"), "from", vec![encoded])
+}
+
+/// `s += a; s += b;`, a `String` of the body's own appended to twice, one
+/// after the other, is `s += a + b`, as JS writes text built up, where one
+/// of them is text written out and the other one value, or text too (ADR
+/// 0652):
+/// `a` and `b` are text, JS's `+` of them is the same text, and makes them
+/// left to right, `a` then `b`, as the two did. `b` is made before `a` is
+/// appended, so not where it reads `s`, which would see `a` there; nor in a
+/// `try`, whose `catch` or `finally` would see `s` without `a` where `b`
+/// throws. Nothing else can see `s` before it's appended to: Rust lends it
+/// to nothing while it's changed. Two pieces of text written out are one,
+/// `t += "!?"`.
+pub fn appended(stmts: &mut Vec<Stmt>, text: &IndexSet<js::Name>) {
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        if let Some((s, a)) = append_of(&stmts[i], text)
+            && let Some((t, b)) = append_of(&stmts[i + 1], text)
+            && s == t
+            && !b.mentions_name(s)
+            && values(a) + values(b) <= 1
+        {
+            let pieces = match (&a.kind, &b.kind) {
+                (ExprKind::Str(a), ExprKind::Str(b)) => Expr::str(format!("{a}{b}")),
+                _ => Expr::bin(Op::Add, a.clone(), b.clone()),
+            };
+            let s = s.clone();
+            stmts[i].kind = StmtKind::Assign(Expr::var(s.clone()), Expr::bin(Op::Add, Expr::var(s), pieces));
+            stmts.remove(i + 1);
+            continue;
+        }
+        i += 1;
+    }
+    for stmt in stmts.iter_mut() {
+        match &mut stmt.kind {
+            StmtKind::If(_, a, b) => {
+                appended(a, text);
+                if let Some(b) = b {
+                    appended(b, text);
+                }
+            }
+            StmtKind::While { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::For { body, .. }
+            | StmtKind::Labeled(_, body) => appended(body, text),
+            StmtKind::DoWhile { body, .. } => appended(body, text),
+            StmtKind::Switch { cases, default, .. } => {
+                js::case_lists_mut(cases, default).for_each(|body| appended(body, text));
+            }
+            // What a `try` runs is what its `catch` or `finally` may see
+            // part of; they themselves are seen by nothing after.
+            StmtKind::Try(_, after) | StmtKind::TryCatch(_, _, after) => appended(after, text),
+            // A function's are its own body's.
+            StmtKind::Function(_)
+            | StmtKind::Const(..)
+            | StmtKind::Let(..)
+            | StmtKind::Destructure { .. }
+            | StmtKind::Assign(..)
+            | StmtKind::Compound(..)
+            | StmtKind::Expr(_)
+            | StmtKind::Break(_)
+            | StmtKind::Continue(_)
+            | StmtKind::Directive(_)
+            | StmtKind::Comments
+            | StmtKind::Return(_)
+            | StmtKind::Throw(_) => {}
+        }
+    }
+}
+
+/// How many of what `+` joins in `e` aren't text written out: an append of
+/// one, and the text around it, `"\n    at " + callSite.toString()`, is
+/// one, where two, `a + "\n" + b`, read better appended one at a time.
+fn values(e: &Expr) -> usize {
+    match &e.kind {
+        ExprKind::Str(_) | ExprKind::Written(_) => 0,
+        ExprKind::Binary(Op::Add, a, b) => values(a) + values(b),
+        _ => 1,
+    }
+}
+
+/// The `String` `stmt` appends to, `s = s + a`, and what it appends.
+fn append_of<'s>(stmt: &'s Stmt, text: &IndexSet<js::Name>) -> Option<(&'s js::Name, &'s Expr)> {
+    let StmtKind::Assign(target, value) = &stmt.kind else {
+        return None;
+    };
+    let (ExprKind::Var(s), ExprKind::Binary(Op::Add, to, appended)) = (&target.kind, &value.kind) else {
+        return None;
+    };
+    (text.contains(s) && matches!(&to.kind, ExprKind::Var(t) if t == s)).then_some((s, &**appended))
+}
+
+/// The `char`s of `text`, an array made here, `Array.from(text)`: a case
+/// mapping's or a text escape's (`Known::Chars`, ADR 0971).
+fn chars(text: Expr) -> Expr {
+    Expr {
+        facts: rust_js_program::js::Facts::of(rust_js_program::js::Known::Chars),
+        ..Expr::builtin(Expr::js_global("Array"), "from", vec![text])
+    }
+}
+
+/// `$extendText(pieces, (piece) => { ..push })`: each piece appended as it's
+/// stepped, by `push`, the one form of a `String`'s `extend` that steps its
+/// iterator (#1127); its callback run by `$extendText` alone as it steps,
+/// kept no more after (`Known::RunsInItsCall`, #1168).
+pub(crate) fn extend_text(pieces: Expr, piece: &js::Name, push: Vec<Stmt>) -> Expr {
+    let mut push = Expr::arrow(vec![piece.clone().into()], push);
+    push.facts = push.facts.with(js::Known::RunsInItsCall);
+    Expr::call_helper("$extendText", vec![pieces, push])
+}

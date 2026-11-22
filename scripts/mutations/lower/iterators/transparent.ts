@@ -1,4 +1,4 @@
-// Mutations of src/lower/iterators/transparent.rs (ADR 0093): which chains
+// Mutations of crates/rust-js-lower/src/iterators/transparent.rs (ADR 0093): which chains
 // are transparent (#1673), each answer held by its count.
 import type { Mutation } from "../../../mutations";
 
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-crate-iterator-unseen",
     breaks: "an `Iterator` of the crate's in a chain is taken as no reason, so `Counter(0).map(..)` counts as held",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "args.types().any(crate_iterator)",
     replace: "args.types().any(crate_iterator) && false",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-library-iterator-unseen",
     breaks: "a library's `Iterator` in a chain is no reason, as only the crate's are, so `c().take(2).flat_map(|_| c().skip(2))` of a library's `Count` is JS's helpers, whose `drop(2)` asks its own `nth(2)` where std's `try_fold` asks `nth(1)` (#2067)",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "    (ty.walk().filter_map(|part| part.as_type())).any(|part| recognition.is_user_iterator(part))\n",
     replace: "    (ty.walk().filter_map(|part| part.as_type()))\n        .any(|part| matches!(part.kind(), ty::Adt(adt, _) if adt.did().is_local()) && recognition.is_user_iterator(part))\n",
     tests: ["test/cross-crate-iterators.test.ts", "-t", "a library's iterator skipped in a flat_map is asked its own nth as std asks it"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-opaque-iterator-unrevealed",
     breaks: "an `impl Iterator` the crate's function returns is no reason, its iterator unrevealed, so `c().take(2).flat_map(|_| c().skip(2))` of a `Count` behind it is JS's helpers, whose `drop(2)` asks its own `nth(2)` where std's `try_fold` asks `nth(1)` (#2072)",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "    (ty.walk().filter_map(|part| part.as_type())).any(|part| recognition.is_user_iterator(part))\n",
     replace: "    (ty.walk().filter_map(|part| part.as_type())).any(|part| matches!(part.kind(), ty::Adt(..)) && recognition.is_user_iterator(part))\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_iterator_own_nth_skipped_in_a_flat_map.rs$"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-held-unseen",
     breaks: "a chain that starts on an iterator held apart, `evens(&v).count()`, is taken as starting on another source",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "        } else if source.is_some_and(|s| is_iterator(thir[s].ty) && !plain(s)) {\n",
     replace: "        } else if false && source.is_some_and(|s| is_iterator(thir[s].ty) && !plain(s)) {\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-any-source-plain",
     breaks: "a chain on any source is taken as on an array, so a `BTreeSet`'s `iter().sum()` is admitted",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "    matches!(ty.kind(), ty::Array(..) | ty::Slice(_))\n",
     replace: "    true || matches!(ty.kind(), ty::Array(..) | ty::Slice(_))\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-escapes-unseen",
     breaks: "an iterator a chain gives back, `evens`' `v.iter().filter(..)`, is taken as consumed where it's made",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "        } else if is_iterator(thir[root].ty)\n            && !thir[root].span.is_desugaring(DesugaringKind::ForLoop)\n",
     replace: "        } else if false\n            && !thir[root].span.is_desugaring(DesugaringKind::ForLoop)\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-for-loop-escapes",
     breaks: "a `for` loop's chain is taken as escaping, so `for x in v.iter().rev()` isn't admitted",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "            && !thir[root].span.is_desugaring(DesugaringKind::ForLoop)\n            && extended_by(root).is_none()\n",
     replace: "            && extended_by(root).is_none()\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-loops-next-counted",
     breaks: "a `for` loop's own `next` is counted as a chain of its own, held",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "    for &root in links.iter().filter(|&&e| !inner.contains(&e) && !loops_next(e)) {\n",
     replace: "    for &root in links.iter().filter(|&&e| !inner.contains(&e)) {\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-each-link-a-chain",
     breaks: "each link of a chain is counted as a chain of its own",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "    for &root in links.iter().filter(|&&e| !inner.contains(&e) && !loops_next(e)) {\n",
     replace: "    for &root in links.iter().filter(|&&e| !loops_next(e)) {\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
@@ -78,15 +78,15 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-unproved-unseen",
     breaks: "an iterator method no table proves, `product`, is taken as proved, so its chain is admitted",
-    file: "src/lower/iterators/transparent.rs",
-    find: "            .any(|(callee, ..)| iterator_method(callee) && !crate::lower::recognition::is_proved_link(tcx, callee))\n",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
+    find: "            .any(|(callee, ..)| iterator_method(callee) && !crate::recognition::is_proved_link(tcx, callee))\n",
     replace: "            .any(|(callee, ..)| iterator_method(callee) && false)\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
   },
   {
     name: "transparent-order-unseen",
     breaks: "an adapter's argument run as it's given, `chain(more(&v))`, is taken as inert (#1015)",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "        } else if chain.iter().any(|&e| !arguments_inert(thir, e)) {\n",
     replace: "        } else if false {\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-capacity-unseen",
     breaks: "a `Vec` collected in a crate that reads capacities is admitted, its hand-written capacity not std's (#1635)",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "        } else if keeps_capacity\n            && (recognition.is_std_type(thir[root].ty, StdItem::Vec) || extended_by(root) == Some(true))\n",
     replace: "        } else if false\n            && (recognition.is_std_type(thir[root].ty, StdItem::Vec) || extended_by(root) == Some(true))\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-closure-argument-run",
     breaks: "a closure given to an adapter is taken as run where it's given, so every `map(|x| ..)` is kept out for its order",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "        ExprKind::Closure(_)\n",
     replace: "        ExprKind::Loop { .. }\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-range-maker-a-link",
     breaks: "`RangeInclusive::new`, which makes a chain's source, is taken as a link, so `(1..=3).map(..)` starts on its bound, not a range",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "        let makes = is_iterator(thir[e].ty) && !is_plain_source(&recognition, thir[e].ty.peel_refs());\n",
     replace: "        let makes = is_iterator(thir[e].ty);\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-range-argument-run",
     breaks: "a value made of inert ones, `drain(..)`'s range, is taken as run where it's given, so the chain is kept out for its order",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "        ExprKind::Adt(ref adt) =>",
     replace: "        ExprKind::Adt(ref adt) if false =>",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
@@ -126,15 +126,15 @@ export const mutations: Mutation[] = [
   {
     name: "binding-boxed-source-held",
     breaks: "a chain on a binding's boxed iterator, JS's own, `js_values(..).map(..)`, is counted held, not admitted (#1681's step ii)",
-    file: "src/lower/iterators/transparent.rs",
-    find: "    boxed_dyn && crate::lower::bindings::is_binding(tcx, callee)\n",
-    replace: "    boxed_dyn && crate::lower::bindings::is_binding(tcx, callee) && false\n",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
+    find: "    boxed_dyn && crate::bindings::is_binding(tcx, callee)\n",
+    replace: "    boxed_dyn && crate::bindings::is_binding(tcx, callee) && false\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted"],
   },
   {
     name: "capacity-admits-an-inexact-hint",
     breaks: "a `Vec` collected, where capacities are read, by an iterator whose hand-written hint isn't std's lower bound, `chars()`'s, is admitted, so its capacity may be another (#1635)",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "                recognition.grows_by_exact_len(collected)\n",
     replace: "                true\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-extend-escapes",
     breaks: "a chain given to a `Vec`'s `extend`, std's own consumer, as known as `collect()`, is taken for escaping, so the widened flip makes React's `rects.extend((0..n).map(f))` std's compiled `Map`, a port shape moved (#1681's change 2)",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "            && extended_by(root).is_none()\n",
     replace: "            && true\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-extend-capacity-unasked",
     breaks: "a `Vec` extended by a chain whose hint isn't std's lower bound, a string's `chars()`'s map, in a crate that reads capacities, is admitted, its capacity unasked as a collect's is (#1681's change 2)",
-    file: "src/lower/iterators/transparent.rs",
+    file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "            && (recognition.is_std_type(thir[root].ty, StdItem::Vec) || extended_by(root) == Some(true))\n",
     replace: "            && recognition.is_std_type(thir[root].ty, StdItem::Vec)\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],

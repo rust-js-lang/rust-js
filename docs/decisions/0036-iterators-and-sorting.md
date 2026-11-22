@@ -402,7 +402,7 @@ $sortStable(loud, (a, b) => loudOrd_cmp(a, b) < 0, "general8", 8);
 ```
 
 **Whether a sort's calls can be seen has one owner each**:
-- `order_seen(T)` (src/lower/ordering.rs), `order_may_panic`'s shape with
+- `order_seen(T)` (crates/rust-js-lower/src/ordering.rs), `order_may_panic`'s shape with
   "seen" for "may panic" (`order_may`, now the one walk of both): an impl
   of the crate's or a library's any of whose methods isn't quiet, a derived
   one as its fields', std's types as what they hold, a type parameter's, a
@@ -421,7 +421,7 @@ $sortStable(loud, (a, b) => loudOrd_cmp(a, b) < 0, "general8", 8);
   `Option`'s tests and `map` of a quiet function, a clone of text, and
   JS's `localeCompare` (a builtins binding that reads only). An exhaustive
   `match`'s impossible branch, which never runs, is no way to be seen.
-- `stable_sort_seen` (src/lower/std_types/slice.rs) asks them: of `sort()`,
+- `stable_sort_seen` (crates/rust-js-lower/src/std_types/slice.rs) asks them: of `sort()`,
   the items' order; of `sort_by`, the comparator, unless it orders by UTF-16
   units, JS's own string order (ADR 0945); of `sort_by_key`, the key's
   function, its order and its drop, which runs after each comparison; of a
@@ -482,8 +482,8 @@ total order", where JS's `sort` ended and printed another order.
 
 **JS's `sort` stays only of a quiet comparison that is a total order**
 (`stable_sort_is_std`, beside `call_seen` and `order_seen`):
-- `call_total(F)` (src/lower/ordering.rs): a closure or function whose body
-  `orders_totally` (src/lower/body_queries.rs) says gives one: `Ord::cmp` of
+- `call_total(F)` (crates/rust-js-lower/src/ordering.rs): a closure or function whose body
+  `orders_totally` (crates/rust-js-lower/src/body_queries.rs) says gives one: `Ord::cmp` of
   a type `order_total` says orders totally, a float's `total_cmp`, JS's
   `localeCompare`, `Equal`, and their `reverse()`, `then(..)` and
   `then_with(f)` of a total `f`; `then` written out, `if o != Equal { o }

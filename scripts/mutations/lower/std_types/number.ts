@@ -1,4 +1,4 @@
-// Mutations of src/lower/std_types/number.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/std_types/number.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "square-of-a-getter-read-twice",
     breaks:
       "`window.scroll_y().powi(2)` is `window.scrollY * window.scrollY`, its getter run twice",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "    place(e) && !e.has_effects()\n",
     replace: "    place(e)\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "a square of a field"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "square-of-a-field-helper",
     breaks: "`point.x.powi(2)` is `$powi(point.x, 2)`, not `point.x * point.x`",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "            js::ExprKind::Member(of, _) => place(of),\n",
     replace: "",
     tests: ["test/lowering-numbers.test.ts", "-t", "a square of a field"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     name: "powf-of-one-as-js",
     breaks:
       "`1f64.powf(n)` is `1 ** n`, NaN of an infinite or NaN power, where Rust's is 1",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                    (js::ExprKind::Num(n), _) if n.abs() != 1.0 => rounded(Expr::bin(Op::Pow, a, b)),\n",
     replace:
       "                    (js::ExprKind::Num(n), _) => rounded(Expr::bin(Op::Pow, a, b)),\n",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
   {
     name: "powf-of-a-constant-helper",
     breaks: "`2f64.powf(n)` is `$powf(2, n)`, not `2 ** n`",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                    (js::ExprKind::Num(n), _) if n.abs() != 1.0 => rounded(Expr::bin(Op::Pow, a, b)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^powf_of_a_constant.rs$"],
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
   {
     name: "powi-any-power-a-square",
     breaks: "`x.powi(3)` of a variable is `x * x`, its square",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                (x, n) if n.as_int() == Some(2) && read_twice(&x) => Expr::bin(Op::Mul, x.clone(), x),\n",
     replace:
       "                (x, n) if n.as_int().is_some() && read_twice(&x) => Expr::bin(Op::Mul, x.clone(), x),\n",
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
   {
     name: "powi-square-helper",
     breaks: "a variable's `powi(2)` is `$powi(x, 2)`, not `x * x`",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                (x, n) if n.as_int() == Some(2) && read_twice(&x) => Expr::bin(Op::Mul, x.clone(), x),\n",
     replace:
       "                (x, n) if false && n.as_int() == Some(2) && read_twice(&x) => Expr::bin(Op::Mul, x.clone(), x),\n",
@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
   {
     name: "max-value-the-min",
     breaks: "an integer's `max_value()` is its `MIN` (#327)",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "            return Ok(num.literal(if max { hi as i128 } else { lo }));\n",
     replace: "            return Ok(num.literal(if max { lo } else { lo }));\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "min_value"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
     name: "bit-width-of-its-own-width",
     breaks:
       "a narrow integer's `bit_width()` is its own bits less `Math.clz32`'s zeros, which count 32 bits: `u8`'s is off by 24 (#317)",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                Expr::bin(Op::Sub, Expr::int(32), math(clz32, vec![bits(arg())]))\n",
     replace:
       "                Expr::bin(Op::Sub, Expr::int(num.bits().into()), math(clz32, vec![bits(arg())]))\n",
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
     name: "big-bit-width-of-32",
     breaks:
       "a 64- or 128-bit integer's `bit_width()` is 32 less its leading zeros (#317)",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "            NumOp::BitWidth => Expr::bin(\n                Op::Sub,\n                Expr::int(num.bits().into()),\n",
     replace:
       "            NumOp::BitWidth => Expr::bin(\n                Op::Sub,\n                Expr::int(32),\n",
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     name: "powi-f32-rounded-once",
     breaks:
       "`x.powi(n)` of an `f32` multiplies as doubles, where compiler-rt rounds each product",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "            NumOp::Powi if num == Num::F32 =>",
     replace: "            NumOp::Powi if false && num == Num::F32 =>",
     tests: ["test/corpus.test.ts", "-t", "f32\\.rs"],
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
   {
     name: "exp2-is-exp",
     breaks: "`x.exp2()` is `e ** x`",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "            NumOp::Exp2 => rounded(Expr::bin(Op::Pow, Expr::num(2.0), arg())),",
     replace:
       "            NumOp::Exp2 => rounded(Expr::bin(Op::Pow, Expr::num(std::f64::consts::E), arg())),",
@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
     name: "float-signum-math-sign",
     breaks:
       "a float's `signum()` is JS's `Math.sign`, which gives 0 of 0, where Rust's gives 1",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "num.float() => h",
     replace: "false && num.float() => h",
     tests: ["test/corpus.test.ts", "-t", "number_methods"],
@@ -116,7 +116,7 @@ export const mutations: Mutation[] = [
     name: "midpoint-floor",
     breaks:
       "an integer's `midpoint` rounds down, where Rust's rounds toward zero: `(-7).midpoint(0)` is -4",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: '            NumOp::Midpoint => math(\n                "trunc",',
     replace: '            NumOp::Midpoint => math(\n                "floor",',
     tests: ["test/corpus.test.ts", "-t", "number_methods"],
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
   {
     name: "checked-shift-unchecked",
     breaks: "`checked_shl` past the width is the wrapped shift, not `None`",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(num.bits().into()));",
     replace: "                let fits = Expr::bool(true);",
     tests: ["test/corpus.test.ts", "-t", "integer_families"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
     name: "overflowing-neg-unsigned",
     breaks:
       "an unsigned `overflowing_neg` of 0 says it overflowed, and of anything else that it didn't",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                    Expr::bin(Op::Ne, x.clone(), Expr::int(0))",
     replace: "                    Expr::bin(Op::Eq, x.clone(), Expr::int(0))",
     tests: ["test/corpus.test.ts", "-t", "integer_families"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     name: "rotate-signed-bits-unmasked",
     breaks:
       "a negative `i32`'s `rotate_left` rotates its JS number, not its 32 bits",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                        Num::I32 => Expr::bin(Op::UShr, x, Expr::int(0)),",
     replace: "                        Num::I32 => x,",
     tests: ["test/corpus.test.ts", "-t", "integer_bits"],
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
   {
     name: "big-helpers-width-dropped",
     breaks: "a 128-bit `pow`, `leading_zeros` or `count_ones` counts 64 bits",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "            if num.bits() == 128 {\n                list.push(Expr::int(128));",
     replace:
       "            if num.bits() == 0 {\n                list.push(Expr::int(128));",
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
   {
     name: "big-checked-shift-at-64",
     breaks: "a 128-bit `checked_shl` is `None` past 64",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(i128::from(num.bits())));",
     replace:
       "                let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(64));",
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
   {
     name: "f32-normal-by-f64",
     breaks: "an `f32`'s `is_normal()` is by an `f64`'s smallest normal",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                    Num::F32 => f64::from(f32::MIN_POSITIVE),",
     replace: "                    Num::F32 => f64::MIN_POSITIVE,",
     tests: ["test/corpus.test.ts", "-t", "float_normal"],
@@ -177,7 +177,7 @@ export const mutations: Mutation[] = [
     name: "ascii-range-from-zero-open",
     breaks:
       "a byte's ASCII range from 0 leaves out its top, `is_ascii()` false of 127",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "(0, _) => Expr::bin(Op::Le, b.clone(), int(hi)),",
     replace: "(0, _) => Expr::bin(Op::Lt, b.clone(), int(hi)),",
     tests: ["test/corpus.test.ts", "-t", "byte_ascii"],
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
     name: "ascii-upper-adds",
     breaks:
       "a byte's `to_ascii_uppercase()` moves a letter further from its case",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "true => (b'a', b'z', Op::Sub),",
     replace: "true => (b'a', b'z', Op::Add),",
     tests: ["test/corpus.test.ts", "-t", "byte_ascii"],
@@ -195,7 +195,7 @@ export const mutations: Mutation[] = [
     name: "powf-as-js-pow",
     breaks:
       "`1.0.powf(f64::INFINITY)` is NaN, as JS's `**` has it, where Rust's is 1",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: '                    _ => rounded(helper("$powf", vec![a, b])),',
     replace: "                    _ => rounded(Expr::bin(Op::Pow, a, b)),",
     tests: ["test/corpus.test.ts", "-t", "matrix_floats"],
@@ -204,7 +204,7 @@ export const mutations: Mutation[] = [
     name: "next-power-unchecked-none",
     breaks:
       "`next_power_of_two()` past its width is `undefined`, not `0`, as release Rust wraps",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                    false => Expr::bin(Op::Coalesce, next, Expr::int(0)),\n",
     replace: "                    false => next,\n",
     tests: ["test/corpus.test.ts", "-t", "^next_power_of_two.rs$"],
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
     name: "mul-add-f32-as-f64",
     breaks:
       "`mul_add` of `f32`s rounds to an `f64`, and a tie an `f32` can't hold rounds twice",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: '            NumOp::MulAdd if num == Num::F32 => helper("$mulAddF32", vec![arg(), arg(), arg()]),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^mul_add.rs$"],
@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
   {
     name: "saturating-neg-past-max",
     breaks: "`i8::MIN.saturating_neg()` is 128, past `MAX`",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: '                let saturated = math("min", vec![exact, Expr::int(hi)]);\n',
     replace: "                let saturated = exact;\n",
     tests: ["test/corpus.test.ts", "-t", "^unchecked_and_saturating_neg.rs$"],
@@ -230,7 +230,7 @@ export const mutations: Mutation[] = [
     name: "saturating-abs-as-neg",
     breaks:
       "`(-9i32).saturating_abs()` is its negation, not its absolute value",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: '                    true => math("abs", vec![operand]),\n',
     replace:
       "                    true => Expr::unary(UnaryOp::Neg, operand),\n",
@@ -239,7 +239,7 @@ export const mutations: Mutation[] = [
   {
     name: "big-saturating-neg-unclamped",
     breaks: "`i64::MIN.saturating_neg()` is past `MAX`",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: '                helper("$clamp", vec![exact, lo, hi])\n',
     replace: "                exact\n",
     tests: ["test/corpus.test.ts", "-t", "^unchecked_and_saturating_neg.rs$"],
@@ -247,7 +247,7 @@ export const mutations: Mutation[] = [
   {
     name: "float-log-base-inverted",
     breaks: "`8f64.log(2.0)` is the base's logarithm over the number's, 1/3",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: '            NumOp::Log => rounded(Expr::bin(Op::Div, math("log", vec![arg()]), math("log", vec![arg()]))),\n',
     replace:
       '            NumOp::Log => rounded({ let (x, b) = (arg(), arg()); Expr::bin(Op::Div, math("log", vec![b]), math("log", vec![x])) }),\n',
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
     name: "copysign-of-positive-zero",
     breaks:
       "`3f64.copysign(-0.0)` is `3`: the sign of a negative zero isn't read",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: '                let negative = helper("$signNegative", vec![arg()]);\n                Expr::cond(negative, Expr::unary(UnaryOp::Neg, x.clone()), x)\n',
     replace:
       "                let negative = Expr::bin(Op::Lt, arg(), Expr::num(0.0));\n                Expr::cond(negative, Expr::unary(UnaryOp::Neg, x.clone()), x)\n",
@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
     name: "f32-midpoint-unrounded",
     breaks:
       "an `f32`'s `midpoint` is the `f64` halfway, not rounded to an `f32`",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                rounded(Expr::bin(Op::Div, Expr::bin(Op::Add, arg(), arg()), Expr::int(2)))\n",
     replace:
       "                Expr::bin(Op::Div, Expr::bin(Op::Add, arg(), arg()), Expr::int(2))\n",
@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
     name: "saturating-neg-negative-zero",
     breaks:
       "`saturating_neg` of 0 is JS's `-0`, `Math.min(-0, MAX)`, which an `f64` made of it shows",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                if zero {\n                    Expr::bin(Op::BitOr, saturated, Expr::int(0))\n                } else {\n                    saturated\n                }\n",
     replace: "                saturated\n",
     tests: ["test/corpus.test.ts", "-t", "^product_sign.rs$"],
@@ -285,7 +285,7 @@ export const mutations: Mutation[] = [
   {
     name: "cast-sign-same-type",
     breaks: "`cast_unsigned()` casts to its own type, so `-1i8` stays `-1`",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                self.cast(a, ty, other, span)?\n",
     replace: "                self.cast(a, ty, ty, span)?\n",
     tests: ["test/corpus.test.ts", "-t", "^int_div_sign_methods.rs$"],
@@ -293,7 +293,7 @@ export const mutations: Mutation[] = [
   {
     name: "unbounded-shr-unsigned-fill",
     breaks: "`unbounded_shr` past the width of a negative is 0, not -1",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                    true => Expr::cond(Expr::bin(Op::Lt, a, num.literal(0)), num.literal(-1), num.literal(0)),\n",
     replace: "                    true => num.literal(0),\n",
     tests: ["test/corpus.test.ts", "-t", "^int_shift_multiple_methods.rs$"],
@@ -302,7 +302,7 @@ export const mutations: Mutation[] = [
     name: "unbounded-shift-masked",
     breaks:
       "`unbounded_shl` past the width shifts by the amount masked, as `wrapping_shl` does, not 0",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                Expr::cond(past, filled, shifted)\n",
     replace: "                shifted\n",
     tests: ["test/corpus.test.ts", "-t", "^int_shift_multiple_methods.rs$"],
@@ -310,7 +310,7 @@ export const mutations: Mutation[] = [
   {
     name: "overflowing-abs-unflagged",
     breaks: "`MIN.overflowing_abs()` says it didn't wrap",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                Expr::array(vec![wrapped, at_min])\n",
     replace: "                Expr::array(vec![wrapped, Expr::bool(false)])\n",
     tests: ["test/corpus.test.ts", "-t", "^int_overflow_sign_methods.rs$"],
@@ -318,7 +318,7 @@ export const mutations: Mutation[] = [
   {
     name: "add-other-saturate-wraps",
     breaks: "`saturating_add_signed` past the range wraps",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: '                    SignMode::Saturating => helper("$saturate", vec![exact, lo, hi]),\n',
     replace: "                    SignMode::Saturating => num.wrap(exact),\n",
     tests: ["test/corpus.test.ts", "-t", "^int_overflow_sign_methods.rs$"],
@@ -327,7 +327,7 @@ export const mutations: Mutation[] = [
     name: "signed-diff-unsigned-range",
     breaks:
       "`checked_signed_diff` checks against the unsigned range, so a negative difference is none",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                    vec![Expr::bin(Op::Sub, a, b), num.literal(-half), num.literal(half - 1)],\n",
     replace:
       "                    vec![Expr::bin(Op::Sub, a, b), num.literal(0), num.literal(half - 1)],\n",
@@ -337,7 +337,7 @@ export const mutations: Mutation[] = [
     name: "overflowing-pow-of-wrapped",
     breaks:
       "`overflowing_pow` compares the wrapped power with the range, never past it",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: '                let exact = helper("$powExact", vec![a.clone(), n.clone()]);\n',
     replace: "                let exact = num.literal(0);\n",
     tests: ["test/corpus.test.ts", "-t", "^int_overflow_sign_methods.rs$"],
@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [
     name: "math-call-unasked",
     breaks:
       "an `f64`'s `sqrt` call isn't `Math`'s by the table, and `i32::unsigned_abs` reaches a call no arm lowers",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "        if let Some(name) = math::function(op, num) {\n",
     replace:
       "        if let Some(name) = math::function(op, num).filter(|_| false) {\n",
@@ -356,7 +356,7 @@ export const mutations: Mutation[] = [
     name: "clz32-argument-kept-wrapped",
     breaks:
       "`(lanes as u32).leading_zeros()` is `Math.clz32(lanes >>> 0)`, a wrap `clz32` makes itself (ADR 0895)",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: '                "clz32" => values.into_iter().map(operators::bits_operand).collect(),\n',
     replace: '                "clz32" => values,\n',
     tests: [
@@ -369,7 +369,7 @@ export const mutations: Mutation[] = [
     name: "isolate-lowest-one-unnegated",
     breaks:
       "`lanes.isolate_lowest_one()` is `lanes & lanes`, its every bit (ADR 0156, amended)",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                    false => self.unary(UnOp::Neg, a.clone(), ty, span)?,\n",
     replace: "                    false => a.clone(),\n",
     tests: [
@@ -382,7 +382,7 @@ export const mutations: Mutation[] = [
     name: "isolate-highest-one-top-unsigned",
     breaks:
       "a signed `isolate_highest_one()` shifts `2^(bits - 1)`, which an `i64`'s `>>` doesn't fill with its sign: `-1i64`'s is `2^63` (ADR 0156, amended)",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                        let top = num.literal(if num.signed() { lo } else { 1 << (num.bits() - 1) });\n",
     replace:
       "                        let top = num.literal(1 << (num.bits() - 1));\n",
@@ -392,7 +392,7 @@ export const mutations: Mutation[] = [
     name: "isolate-one-receiver-read-twice",
     breaks:
       "`(a + b).isolate_lowest_one()` computes its receiver twice, `((a + b) | 0) & -((a + b) | 0)`",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "            (NumOp::IsolateOne { highest }, None) => {\n                let a = if a.reads_same() {\n                    a\n                } else {\n                    self.spill(Role::Value, a, out)\n                };\n",
     replace: "            (NumOp::IsolateOne { highest }, None) => {\n",
     tests: [
@@ -405,7 +405,7 @@ export const mutations: Mutation[] = [
     name: "rotate-32-by-the-runtime",
     breaks:
       "a 32-bit integer rotated by a constant is `$rotateBits(x, 15, 32, true)`, not JS's `(x << 15) | (x >>> 17)` (createFastHashJS)",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "            NumOp::RotateBits { left } if matches!(num, Num::I32 | Num::U32) => {\n",
     replace:
       "            NumOp::RotateBits { left } if false && matches!(num, Num::I32 | Num::U32) => {\n",
@@ -416,7 +416,7 @@ export const mutations: Mutation[] = [
     name: "rotate-32-u32-signed",
     breaks:
       "a `u32` rotated by shifts is JS's 32 bits signed, `0xdeadbeef.rotate_left(15)` a negative number (createFastHashJS)",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                    Num::U32 => Expr::bin(Op::UShr, rotated, Expr::int(0)),\n",
     replace: "                    Num::U32 => rotated,\n",
     tests: ["test/corpus.test.ts", "-t", "^rotate_32_shifts.rs$"],
@@ -425,7 +425,7 @@ export const mutations: Mutation[] = [
     name: "rotate-32-unreduced",
     breaks:
       "a rotate by 32 is `((x << 32) | (x >>> 0)) >>> 0`, which JS's shifts by 5 bits make `x`, not `x` itself (createFastHashJS)",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                let Some(by) = n.as_int().map(|n| n.rem_euclid(32)) else {\n",
     replace: "                let Some(by) = n.as_int() else {\n",
     tests: ["test/corpus.test.ts", "-t", "^rotate_32_shifts.rs$"],
@@ -434,7 +434,7 @@ export const mutations: Mutation[] = [
   {
     name: "rotate-32-right-turned",
     breaks: "`x.rotate_right(13)` rotates left by 13 (createFastHashJS)",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                    false => (32 - by, by),\n",
     replace: "                    false => (by, 32 - by),\n",
     tests: ["test/corpus.test.ts", "-t", "^rotate_32_shifts.rs$"],
@@ -442,7 +442,7 @@ export const mutations: Mutation[] = [
   {
     name: "f32-euclid-quotient-unrounded",
     breaks: "an `f32`'s `div_euclid` isn't given `Math.fround`, so its quotient is truncated as an `f64` (a wrong answer, #960)",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "            NumOp::FloatEuclid { rem: false } if num == Num::F32 => rounded(helper(\n",
     replace: "            NumOp::FloatEuclid { rem: false } if false => rounded(helper(\n",
     tests: ["test/corpus.test.ts", "-t", "^f32_div_euclid_rounds_its_quotient.rs$"],
@@ -450,7 +450,7 @@ export const mutations: Mutation[] = [
   {
     name: "overflowing-euclid-of-the-other",
     breaks: "`overflowing_div_euclid` gives `overflowing_rem_euclid`'s remainder, and the other way round (#940)",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "                helper(\"$overflowingEuclid\", vec![a, b, min, Expr::bool(div)])\n",
     replace: "                helper(\"$overflowingEuclid\", vec![a, b, min, Expr::bool(!div)])\n",
     tests: ["test/corpus.test.ts", "-t", "^overflowing_euclid.rs$"],
@@ -458,7 +458,7 @@ export const mutations: Mutation[] = [
   {
     name: "wrapping-rhs-always-indexed",
     breaks: "an `op=` of a `Wrapping` by its number reads `1[0]`, `undefined`, as if it were a `Wrapping` (#1439)",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "        let rhs = rhs.map(|(rhs, ty)| match self.recognition().int_newtype(ty.peel_refs()) {\n",
     replace: "        let rhs = rhs.map(|(rhs, ty)| match Some(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^wrapping_ops_by_its_number_and_past_its_range.rs$"],
@@ -466,7 +466,7 @@ export const mutations: Mutation[] = [
   {
     name: "newtype-method-result-always-wrapped",
     breaks: "a `Saturating`'s method that gives a number, `count_ones()`, gives a `[x]`, so `+ 1` joins text (#1434)",
-    file: "src/lower/std_types/number.rs",
+    file: "crates/rust-js-lower/src/std_types/number.rs",
     find: "        Ok(match self.recognition().int_newtype(output) {\n",
     replace: "        Ok(match Some(output) {\n",
     tests: ["test/corpus.test.ts", "-t", "^saturating_ops_at_every_width.rs$"],

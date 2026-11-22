@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/nulled.rs (ADR 0093): what's `null` or a
+// Mutations of crates/rust-js-mir/src/nulled.rs (ADR 0093): what's `null` or a
 // value already, moved from rvalues.rs's with rd632.
 import type { Mutation } from "../../../mutations";
 
@@ -11,7 +11,7 @@ export const mutations: Mutation[] = [
   {
     name: "with-closure-return-unseen",
     breaks: "a thread-local's `with_borrow(f)` of a closure whose every return is `null` or a value isn't known so, and is stored `value ?? null`",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            && self.returns_null_or_value(f)\n        {\n            return (Given::Nulled, None);\n        }\n        // An `Option`'s `take()`",
     replace: "            && false\n        {\n            return (Given::Nulled, None);\n        }\n        // An `Option`'s `take()`",
     tests: ["test/lowering-nullable-borrows.test.ts", "-t", "cloned\\(\\) of what"],
@@ -19,15 +19,15 @@ export const mutations: Mutation[] = [
   {
     name: "and-then-null-giving-unseen",
     breaks: "an `and_then` of a crate function that gives `null` for `None` isn't known `null` or a value, so it's stored `(c != null ? f(c) : null) ?? null`",
-    file: "src/lower/mir/nulled.rs",
-    find: "                    crate::lower::calls::gives_null_for_none(self.tcx, f)\n",
-    replace: "                    false && crate::lower::calls::gives_null_for_none(self.tcx, f)\n",
+    file: "crates/rust-js-mir/src/nulled.rs",
+    find: "                    rust_js_lower::calls::gives_null_for_none(self.tcx, f)\n",
+    replace: "                    false && rust_js_lower::calls::gives_null_for_none(self.tcx, f)\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "an and_then of a nullable function is stored as it is"],
   },
   {
     name: "and-then-closure-unseen",
     breaks: "an `and_then` of a closure whose every return is `null` or a value isn't known so, and is stored `value ?? null`",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                ty::Closure(f, _) => self.returns_null_or_value(f),\n                _ => false,\n            }\n",
     replace: "                ty::Closure(_, _) => false,\n                _ => false,\n            }\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_a_mapped_option.rs$"],
@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-nulled-param-unseen",
     breaks: "a closure's parameter a nullable thread-local's `with` lends isn't known `null` or a value, so it's given `d ?? null`",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            && self.nulled_seen.borrow().lent_nulled(state.body.source.def_id())\n",
     replace: "            && false\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local's lent value"],
@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-not-handed",
     breaks: "what a nullable thread-local's `with` lends a closure isn't handed to its lowering",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "        if state.facts.quiet_cells().lent_nulled.contains(&closure) {\n",
     replace: "        if false {\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local's lent value"],
@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
   {
     name: "cloned-not-given",
     breaks: "an `Option<&T>`'s `cloned()` of what's `null` or a value isn't known so, and a nullable parameter each call gives one, a `bind` of a `cloned()`, React's completeRoot's, is tested `!= null`, not `!== null` (ADR 0861, amended)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            && self.clone_keeps_none(state.body.local_decls[local].ty)\n        {\n            return self.stored_in(state, &option.node, seen);\n",
     replace: "            && self.clone_keeps_none(state.body.local_decls[local].ty)\n        {\n            return (Given::Unknown, None);\n",
     tests: ["test/lowering-nullable-borrows.test.ts", "-t", "cloned\\(\\) of what"],
@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
   {
     name: "captures-nulled-though-written",
     breaks: "a closure that writes what it captured, `prev_task = None`, is taken to read what its maker gave, so it stores Rust's `None` as `undefined`, which the crate's `=== null` reads as a `Some` (#1933 step 4 (F))",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            && !self.writes_its_captures(state))\n",
     replace: "            )\n",
     tests: ["test/corpus.test.ts", "-t", "^captured_nulled_local_stored_in_a_closure.rs$"],
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-on-param-unsaid",
     breaks: "which own nullable parameter is given on isn't said, so it's `null` or a value at that call whatever its own calls give (rd624)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                .then(|| place.local.as_usize() - 1);\n",
     replace: "                .then(|| place.local.as_usize() - 1)\n                .filter(|_| false);\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_param_passed_on.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
     name: "nullable-local-read-unnulled",
     breaks:
       "a nullable thread-local read whole or taken, `KEY.with_borrow(Clone::clone)`, `KEY.take()`, kept in a guard's field is restored `?? null`, as if it may be `undefined` (rd523)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "        if self.reads_nullable_local(state, block, local) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_restores_nullable_fields.rs$"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
     name: "nullable-local-read-unknown",
     breaks:
       "no call is a nullable thread-local's whole read, so what it gives may be `undefined`, `return searchTarget ?? null` (ADRs 0861, 0949)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "        state.facts.quiet_cells().nullable.contains_key(&block)\n",
     replace: "        false && state.facts.quiet_cells().nullable.contains_key(&block)\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable parameter, a nullable thread-local"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     name: "mir-nullable-field-coalesced",
     breaks:
       "a `#[rust_js::nullable]` field moved into another, `p.code`, is `p.code ?? null`",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                    ) == NoneForm::Null =>\n                {\n                    Given::Nulled\n",
     replace: "                    ) == NoneForm::Null && false =>\n                {\n                    Given::Nulled\n",
     tests: [
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
     name: "optional-field-read-nulled",
     breaks:
       "an optional nullable field's value, `undefined` where it's absent, is given to a nullable field as it is, not `null` (ADR 0810)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                    ) == NoneForm::Null =>\n                {\n                    Given::Nulled\n",
     replace: "                    ).stores_null() =>\n                {\n                    Given::Nulled\n",
     tests: [
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     name: "optional-read-coalesced",
     breaks:
       "an optional nullable field's value given another optional nullable field is `abort.name ?? null`, `null` where upstream's copy is `undefined` (ADR 0810, amended)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                Some(field) if bindings::is_optional(self.tcx, field) => Given::Optional,\n",
     replace:
       "                Some(field) if bindings::is_optional(self.tcx, field) => Given::Unknown,\n",
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     name: "mir-nullable-moved-through-unseen",
     breaks:
       "a field's value moved through a temporary, as MIR moves it, is `?? null` again",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                    Rvalue::Use(operand, _) => self.stored_in(state, operand, seen),\n",
     replace: "                    Rvalue::Use(..) => (Given::Unknown, None),\n",
     tests: [
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     name: "mir-nullable-some-coalesced",
     breaks:
       "a `Some(..)` given to a `#[rust_js::nullable]` field is `?? null` too",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                        if fields.len() == 1\n",
     replace: "                        if fields.len() == 0\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a let set only to values is returned as it is"],
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     name: "mir-null-none-coalesced",
     breaks:
       "a nullable field of an `Option` made `null` where it's `None` is `?? null` again",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "        if state.facts.options().none_forms.made_null(place.local) {\n",
     replace: "        if false {\n",
     tests: [
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
     name: "mir-nullable-clone-renulled",
     breaks:
       "a clone of a nullable field given to one from MIR is `m.rule_id ?? null`",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "        if self.clone_keeps_none(state.body.local_decls[local].ty)\n",
     replace: "        if false && self.clone_keeps_none(state.body.local_decls[local].ty)\n",
     tests: ["test/lowering-options.test.ts", "-t", "nullable field's clone"],
@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
     name: "own-nullable-param-maybe-undefined",
     breaks:
       "a `#[rust_js::nullable(..)]` parameter given on isn't said given on, so a function each call of which gives it one is never found `null` or a value, `!= null` (ADR 0861, amended, #601)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "        if self.own_nullable_param(state, place) {\n            let param = (place.projection.is_empty() && !self.tcx.is_closure_like(state.body.source.def_id()))\n                .then(|| place.local.as_usize() - 1);\n            return (Given::Nulled, param);\n        }\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "each call gives null or a value"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
     name: "stored-given-of-a-parameter",
     breaks:
       "what a parameter assigned once stores is asked of that assignment alone, though it holds its caller's value too, so `reassigned(undefined, false)` tests `reason !== null` (rd632; `x = x;` is followed once, `seen`, since rustc's nll/issue-50461-used-mut-from-moves overflowed the stack)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "        if local.as_usize() <= state.body.arg_count || seen.contains(&local) {\n",
     replace: "        if seen.contains(&local) {\n",
     tests: rd632,
@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
     name: "cell-new-of-some-unknown",
     breaks:
       "a `Cell::new(Some(reducer))` of a nullable field is taken to maybe be `undefined`, `lastRenderedReducer: reducer ?? null` (ADR 0841, amended)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            return self.stored_in(state, &arg.node, seen);\n        }\n        // A clone of such,",
     replace:
       "            return (Given::Unknown, None);\n        }\n        // A clone of such,",
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
     name: "optional-cell-get-unknown",
     breaks:
       "an optional nullable cell field's `get()` given another is `?? null`, `d._debugThenableState ?? null` (ADR 0810, amended)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            true => Given::Optional,\n            false\n                if self.cell_field_read_defined",
     replace: "            true => Given::Unknown,\n            false\n                if self.cell_field_read_defined",
     tests: [
@@ -221,17 +221,17 @@ export const mutations: Mutation[] = [
     name: "identity-map-stored-unknown",
     breaks:
       "a nullable parameter's `map(js::unknown)`, its own value, is stored `?? null`, not as given, `this.target = nativeEventTarget;` (rd94)",
-    file: "src/lower/mir/nulled.rs",
-    find: "        if known == Some(crate::lower::Std::OptionMap)\n",
+    file: "crates/rust-js-mir/src/nulled.rs",
+    find: "        if known == Some(rust_js_lower::Std::OptionMap)\n",
     replace:
-      "        if known == Some(crate::lower::Std::OptionMap) && false\n",
+      "        if known == Some(rust_js_lower::Std::OptionMap) && false\n",
     tests: ["test/js-constructors.test.ts", "-t", "identity map"],
   },
   {
     name: "shared-ref-given-unknown",
     breaks:
       "a shared reference to a nullable field is read as of what may be `undefined`, `previousInstance = instance ?? null` (ADR 1017)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                    Rvalue::Ref(_, BorrowKind::Shared, of) => self.stored_in(state, &Operand::Copy(*of), seen),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
     name: "reborrow-given-unknown",
     breaks:
       "a reborrow of a reference to a nullable field, `&*instance`, is read as of what may be `undefined` (ADR 1017)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            return self.stored_in(state, &Operand::Copy(Place::from(place.local)), seen);\n",
     replace: "            return (Given::Unknown, None);\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
   {
     name: "constructed-get-unknown",
     breaks: "a nullable field each constructor of its struct sets first, read for another nullable cell, is given `?? null`: `twice.both = response.moduleLoading ?? null` (rd628)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                if self.cell_field_read_defined(base.ty, i.as_usize())\n                    || self.krate.constructed.contains(&field.did) =>\n",
     replace: "                if self.cell_field_read_defined(base.ty, i.as_usize()) =>\n",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
   {
     name: "returns-nulled-unfound",
     breaks: "a function of the crate's whose every return is `null` or a value, `getEventTarget`'s `target.parentNode` or `target`, isn't found so, so the nullable parameter its result is given is tested `!= null` (rd632)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            self.nulled_seen.borrow_mut().returned_nulled(id);\n",
     replace: "",
     tests: rd632,
@@ -266,7 +266,7 @@ export const mutations: Mutation[] = [
   {
     name: "returns-nulled-past-an-exit",
     breaks: "a function JS or a consumer calls, whose exit gives its `None` back `undefined`, is found to return `null` or a value, so what its result is given is tested `!== null` and reads a property of `undefined` (#2055)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            !exit || self.none_trusted(state, &given)\n",
     replace: "            true\n",
     tests: ["test/corpus.test.ts", "-t", "nulled_return_of_a_pub_fn_given_on"],
@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
   {
     name: "returns-own-param-nulled",
     breaks: "a function that returns its own nullable parameter, given what may be `undefined`, is taken as returning `null` or a value, so `dispatchGivenBack(givenBack(text))` tests `undefined !== null` and reads its `id` (rd632)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                    self.written_given(state, mir::RETURN_PLACE, write, &mut Vec::new()) == (Given::Nulled, None)\n",
     replace: "                    self.written_given(state, mir::RETURN_PLACE, write, &mut Vec::new()).0 == Given::Nulled\n",
     tests: corpus632,
@@ -282,7 +282,7 @@ export const mutations: Mutation[] = [
   {
     name: "writes-nulled-any",
     breaks: "a variable written more than once is `null` or a value where one of its writes is, so `if profiling { reason() } else { None }`'s `undefined` is tested `!== null` (rd632)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                    .all(|write| self.written_given(state, local, write, &mut seen.clone()) == (Given::Nulled, None))\n",
     replace: "                    .any(|write| self.written_given(state, local, write, &mut seen.clone()) == (Given::Nulled, None))\n",
     tests: corpus632,
@@ -290,7 +290,7 @@ export const mutations: Mutation[] = [
   {
     name: "writes-nulled-unfollowed",
     breaks: "a variable written more than once, each write `null` or a value, isn't taken as so, `if profiling { reason() } else { js::null() }`'s, tested `!= null` (rd632)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            true => (Given::Nulled, None),\n            false => (Given::Unknown, None),\n",
     replace: "            true => (Given::Unknown, None),\n            false => (Given::Unknown, None),\n",
     tests: rd632,
@@ -298,15 +298,15 @@ export const mutations: Mutation[] = [
   {
     name: "as-deref-unfollowed",
     breaks: "a shared `as_deref()` of an `Option` that's `null` or a value isn't taken as so, `parentFragmentInstances.as_deref()`'s parameter tested `== null` (rd632)",
-    file: "src/lower/mir/nulled.rs",
-    find: "        if known == Some(crate::lower::Std::Pointee)\n",
-    replace: "        if known == Some(crate::lower::Std::Pointee) && false\n",
+    file: "crates/rust-js-mir/src/nulled.rs",
+    find: "        if known == Some(rust_js_lower::Std::Pointee)\n",
+    replace: "        if known == Some(rust_js_lower::Std::Pointee) && false\n",
     tests: rd632,
   },
   {
     name: "bound-tuple-unnulled",
     breaks: "a `function::bind` of a function with a nullable parameter, each bound, records each item as `null` or a value, what JS gave too, so `given(root, undefined)`'s bound function tests `undefined !== null` (rd632)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                    (Given::Nulled, param) => (true, param),\n                    _ => (false, None),\n",
     replace: "                    (Given::Nulled, param) => (true, param),\n                    _ => (true, None),\n",
     tests: bound632,
@@ -314,7 +314,7 @@ export const mutations: Mutation[] = [
   {
     name: "bound-call-unrecorded",
     breaks: "a `function::bind` of a function with a nullable parameter, each bound, isn't seen as its call, so the parameter is never found `null` or a value, `complete(root, reason)` tested `!= null` (rd632)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "        self.nulled_call_seen(caller, f, (&nulled, &given_on));\n",
     replace: "",
     tests: bound632,
@@ -322,7 +322,7 @@ export const mutations: Mutation[] = [
   {
     name: "alike-as-deref-unsaid",
     breaks: "a `let`'s `as_deref()` given a nullable parameter of the crate's own isn't said to be, so the `let` is never `null` for `None` and `measure(previous)` stays `!= null` (rd632)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                    reads.push((of, toward.contains(&destination.local)));\n",
     replace: "                    reads.push((of, false));\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "read by a nullable parameter and alike"],
@@ -330,7 +330,7 @@ export const mutations: Mutation[] = [
   {
     name: "alike-is-some-unread",
     breaks: "a `let`'s `is_some()`, which reads `null` and `undefined` alike, isn't counted, so the `let` is never `null` for `None` (rd632)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                Some(Std::IsSome | Std::IsNone) if locals.reads[arg.local] == 1 && lent.contains_key(&arg.local) => {\n",
     replace: "                Some(Std::IsSome | Std::IsNone) if false => {\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "read by a nullable parameter and alike"],
@@ -338,15 +338,15 @@ export const mutations: Mutation[] = [
   {
     name: "alike-map-or-unread",
     breaks: "a `let`'s `map_or`, which reads `null` and `undefined` alike, isn't counted, so the `let` is never `null` for `None` (rd632)",
-    file: "src/lower/mir/nulled.rs",
-    find: "                Some(Std::Comb(crate::lower::combinators::Comb::MapOr)) if option(arg.local) => {\n",
-    replace: "                Some(Std::Comb(crate::lower::combinators::Comb::MapOr)) if false => {\n",
+    file: "crates/rust-js-mir/src/nulled.rs",
+    find: "                Some(Std::Comb(rust_js_lower::combinators::Comb::MapOr)) if option(arg.local) => {\n",
+    replace: "                Some(Std::Comb(rust_js_lower::combinators::Comb::MapOr)) if false => {\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "read by a nullable parameter and alike"],
   },
   {
     name: "cast-of-a-nulled-unfollowed",
     breaks: "a `js::cast` of an `Option` that's `null` or a value isn't taken as so, so hydrateRoot's `options ?? null` is `options != null ? (options ?? null) : null` (rd632)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "        bindings::is_binding(self.tcx, def_id) && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This)\n",
     replace: "        bindings::is_binding(self.tcx, def_id) && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This) && false\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a cast of an Option is what it's given"],
@@ -355,7 +355,7 @@ export const mutations: Mutation[] = [
     name: "strict-through-a-borrow-unseen",
     breaks:
       "a `RefCell` field's `borrow()` isn't followed to the field, so `clones.as_ref()` is tested `== null` (rd647)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                    }) => place.projection.is_empty(),\n",
     replace: "                    }) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
@@ -365,7 +365,7 @@ export const mutations: Mutation[] = [
     name: "strict-through-a-guard-deref-unseen",
     breaks:
       "a guard's `Deref` isn't followed to its `RefCell` field, so `clones.as_ref()` is tested `== null` (rd647)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                    _ => deref && !place.projection.is_empty(),\n",
     replace: "                    _ => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
@@ -375,7 +375,7 @@ export const mutations: Mutation[] = [
     name: "strict-cell-get-unseen",
     breaks:
       "a nullable `Cell` field's `get()` is tested `!= null` (rd647)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                Some(Std::Pointee | Std::CellGet)\n",
     replace: "                Some(Std::Pointee)\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
@@ -384,7 +384,7 @@ export const mutations: Mutation[] = [
   {
     name: "caught-ok-unknown",
     breaks: "what `catch_unwind(f)` gives is taken to be maybe `undefined`, so a nullable function returns `activeElement ?? null` (rd16)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            && let Some(caught) = self.caught_function(state, place.local)\n",
     replace: "            && let Some(caught) = self.caught_function(state, place.local).filter(|_| false)\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "catch_unwind gives"],
@@ -392,7 +392,7 @@ export const mutations: Mutation[] = [
   {
     name: "caught-closure-returns-unnoted",
     breaks: "a closure's returns aren't noted, so `catch_unwind(f)` of one gives `f() ?? null` (rd16)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "        if (id != self.item && !self.tcx.is_closure_like(id))\n",
     replace: "        if id != self.item\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "catch_unwind gives"],
@@ -400,31 +400,31 @@ export const mutations: Mutation[] = [
   {
     name: "caught-in-assert-unwind-safe-unseen",
     breaks: "a closure `catch_unwind` is given in an `AssertUnwindSafe` isn't seen, so getActiveElement's keeps its `?? null` (rd16)",
-    file: "src/lower/mir/nulled.rs",
-    find: "            ty::Adt(adt, args) if crate::lower::recognition::is_assert_unwind_safe(self.tcx, adt.did()) => {\n",
-    replace: "            ty::Adt(adt, args) if false && crate::lower::recognition::is_assert_unwind_safe(self.tcx, adt.did()) => {\n",
+    file: "crates/rust-js-mir/src/nulled.rs",
+    find: "            ty::Adt(adt, args) if rust_js_lower::recognition::is_assert_unwind_safe(self.tcx, adt.did()) => {\n",
+    replace: "            ty::Adt(adt, args) if false && rust_js_lower::recognition::is_assert_unwind_safe(self.tcx, adt.did()) => {\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "catch_unwind gives"],
   },
   {
     name: "caught-by-any-call",
     breaks: "the `Ok` of any call given a function is taken for what that function returns, though `attempt(found)` gives `Ok(maybe())`, `undefined` (rd16)",
-    file: "src/lower/mir/nulled.rs",
-    find: "        if crate::lower::recognition::unwind_op(self.tcx, def_id)\n            != Some(crate::lower::std_types::unwind::UnwindOp::Catch)\n        {\n",
+    file: "crates/rust-js-mir/src/nulled.rs",
+    find: "        if rust_js_lower::recognition::unwind_op(self.tcx, def_id)\n            != Some(rust_js_lower::std_types::unwind::UnwindOp::Catch)\n        {\n",
     replace: "        if false {\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "catch_unwind gives"],
   },
   {
     name: "or-fallback-unchecked",
     breaks: "`a.or(b)` is taken for `null` or a value where `a` is alone, so `found().or(maybe())` gives `undefined` (rd16)",
-    file: "src/lower/mir/nulled.rs",
-    find: "                crate::lower::combinators::Comb::Or => self.stored_in(state, &fallback.node, seen).0 == Given::Nulled,\n",
-    replace: "                crate::lower::combinators::Comb::Or => true,\n",
+    file: "crates/rust-js-mir/src/nulled.rs",
+    find: "                rust_js_lower::combinators::Comb::Or => self.stored_in(state, &fallback.node, seen).0 == Given::Nulled,\n",
+    replace: "                rust_js_lower::combinators::Comb::Or => true,\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "catch_unwind gives"],
   },
   {
     name: "or-else-fallback-unchecked",
     breaks: "`a.or_else(f)` is taken for `null` or a value where `a` is alone, so `found().or_else(maybe)` gives `undefined` (rd16)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "                    ty::Closure(f, _) | ty::FnDef(f, _) => self.returns_null_or_value(*f),\n",
     replace: "                    ty::Closure(..) | ty::FnDef(..) => true,\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "catch_unwind gives"],
@@ -432,15 +432,15 @@ export const mutations: Mutation[] = [
   {
     name: "or-else-unknown",
     breaks: "`a.or_else(f)` of two that are each `null` or a value is taken to be maybe `undefined`, so `catch_unwind(|| found().or_else(found))` keeps `?? null` (rd16)",
-    file: "src/lower/mir/nulled.rs",
-    find: "            comb @ (crate::lower::combinators::Comb::Or | crate::lower::combinators::Comb::OrElse),\n",
-    replace: "            comb @ crate::lower::combinators::Comb::Or,\n",
+    file: "crates/rust-js-mir/src/nulled.rs",
+    find: "            comb @ (rust_js_lower::combinators::Comb::Or | rust_js_lower::combinators::Comb::OrElse),\n",
+    replace: "            comb @ rust_js_lower::combinators::Comb::Or,\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "catch_unwind gives"],
   },
   {
     name: "or-subject-asked",
     breaks: "`a.or(b)` is `null` or a value only where `a` is too, so `component_stack.or(js::null())` of a field JS may leave out is given to `createCapturedValueFromError` and stored `stack ?? null` (#689)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            && let [_, fallback] = args\n        {\n",
     replace: "            && let [option, fallback] = args\n            && self.stored_in(state, &option.node, seen).0 == Given::Nulled\n        {\n",
     tests: or689,
@@ -448,15 +448,15 @@ export const mutations: Mutation[] = [
   {
     name: "field-take-unknown",
     breaks: "a nullable field's `take()` and `replace(v)` may give `undefined`, so a call given `root.pending.take()` stores `stack ?? null` (#689)",
-    file: "src/lower/mir/nulled.rs",
-    find: "        if let Some(crate::lower::Std::OptionTake | crate::lower::Std::OptionReplace) = known\n",
-    replace: "        if false\n            && let Some(crate::lower::Std::OptionTake | crate::lower::Std::OptionReplace) = known\n",
+    file: "crates/rust-js-mir/src/nulled.rs",
+    find: "        if let Some(rust_js_lower::Std::OptionTake | rust_js_lower::Std::OptionReplace) = known\n",
+    replace: "        if false\n            && let Some(rust_js_lower::Std::OptionTake | rust_js_lower::Std::OptionReplace) = known\n",
     tests: or689,
   },
   {
     name: "field-take-of-any-place",
     breaks: "a `take()` of any place is what the place held, so a nullable parameter's second `stack.take()`, `undefined`, is stored as it is (#689)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            && matches!(place.projection.last(), Some(PlaceElem::Field(..)))\n",
     replace: "",
     tests: or689,
@@ -464,7 +464,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-take-unchecked",
     breaks: "a `take()` of a plain field, which JS may leave out, is taken for `null` or a value, so `undefined` is stored as it is (#689)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            && self.stored_in(state, &Operand::Copy(place), seen).0 == Given::Nulled\n        {\n            return (Given::Nulled, None);\n        }\n        // A `Cell`'s or",
     replace: "        {\n            return (Given::Nulled, None);\n        }\n        // A `Cell`'s or",
     tests: or689,
@@ -473,7 +473,7 @@ export const mutations: Mutation[] = [
     name: "nullable-ref-as-given",
     breaks:
       "a `&mut` to a nullable place is its place alone, so what's written through it, a callee's box copied back, `mem::swap`, is stored as it is, `fiber.owner = slot.value` (#541)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "|| !form.stores_null() {\n",
     replace: "|| true {\n",
     tests: ["test/lowering-nullable-borrows.test.ts", "-t", "written through a borrow"],
@@ -482,8 +482,8 @@ export const mutations: Mutation[] = [
     name: "nullable-assigned-undefined",
     breaks:
       "a nullable field assigned `None`, `context.label = None`, is `undefined`, where its cell's `set` writes `null` (ADR 0810)",
-    file: "src/lower/mir/nulled.rs",
-    find: "            Some(field) => crate::lower::representation::none_form(\n                self.tcx,\n                crate::lower::representation::NonePlace::Field(field, None),\n            ),\n",
+    file: "crates/rust-js-mir/src/nulled.rs",
+    find: "            Some(field) => rust_js_lower::representation::none_form(\n                self.tcx,\n                rust_js_lower::representation::NonePlace::Field(field, None),\n            ),\n",
     replace: "            Some(_) => NoneForm::Undefined,\n",
     tests: [
       "test/lowering-nullable.test.ts",
@@ -495,7 +495,7 @@ export const mutations: Mutation[] = [
     name: "own-nullable-param-set-undefined",
     breaks:
       "a function's own nullable parameter set to `None` is `undefined`, `children = undefined`, where its callback is to be given `null` (ADR 0861)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            None => self.own_param_none_form(state, place),\n",
     replace: "            None => NoneForm::Undefined,\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
@@ -504,7 +504,7 @@ export const mutations: Mutation[] = [
     name: "got-mut-written-undefined",
     breaks:
       "a nullable `RefCell` field written through its `get_mut` is `undefined` for `None`, not `null` (ADR 0863)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            .or_else(|| self.field_got_mut(state, place))\n",
     replace: "",
     tests: ["test/lowering-nullable.test.ts", "-t", "a nullable RefCell field"],
@@ -513,7 +513,7 @@ export const mutations: Mutation[] = [
     name: "nullable-item-written-undefined",
     breaks:
       "a nullable field's `Vec<Option<T>>` item set `None` by index is `undefined`, where React's JS tests `=== null`",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            .or_else(|| self.field_item(state, place));\n",
     replace: "            ;\n",
     tests: [
@@ -526,7 +526,7 @@ export const mutations: Mutation[] = [
     name: "own-nullable-param-taken-as-found",
     breaks:
       "a function's own nullable parameter is stored as it is whether or not each call gives it `null` or a value, so a `None` a call gives `undefined` is stored `undefined` in a nullable field tested `=== null`, a `Some` (ADR 0861, amended)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            (Given::Nulled, Some(param)) if !self.settled.nulled.is_nulled(state.body.source.def_id(), param) => {\n",
     replace: "            (Given::Nulled, Some(param)) if false && !self.settled.nulled.is_nulled(state.body.source.def_id(), param) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_param_stored.rs$"],
@@ -535,7 +535,7 @@ export const mutations: Mutation[] = [
     name: "strict-class-field-unset",
     breaks:
       "a class's nullable field its constructors don't each set first is tested `=== null`, though it's absent until set (rd647)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "        let writers = match self.krate.constructed.contains(&field.did)\n",
     replace: "        let writers = match true\n",
     tests: ["test/js-constructors.test.ts", "-t", "each constructor sets first"],
@@ -544,7 +544,7 @@ export const mutations: Mutation[] = [
     name: "strict-field-of-a-js-given-struct",
     breaks:
       "a nullable field of a struct only JS gives is tested `=== null`, so a `{}` JS gives reads `undefined` as a `Some` (rd647)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            || self.krate.cell_borrows.pointers().only_the_crate_makes(adt.did())\n        {\n            true => Writers::Crate,\n",
     replace: "            || true\n        {\n            true => Writers::Crate,\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
@@ -553,7 +553,7 @@ export const mutations: Mutation[] = [
     name: "strict-type-parameter-field",
     breaks:
       "a nullable field of a type parameter's value is tested `=== null`, though generic code stores the `undefined` it's given (rd647)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "        none_form(self.tcx, NonePlace::Field(field, Some(declared))).trust(writers)\n",
     replace: "        none_form(self.tcx, NonePlace::Field(field, None)).trust(writers)\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
@@ -561,7 +561,7 @@ export const mutations: Mutation[] = [
   {
     name: "refcell-guard-deref-unknown",
     breaks: "what a `RefCell`'s guard derefs to says nothing of the field it borrowed, so `let child = current.child.borrow().clone(); work.child.replace(child)` of a nullable `child` stores `child ?? null` (#1933)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            && (self.is_std_type(receiver, StdItem::RefCellRef) || self.is_std_type(receiver, StdItem::RefCellRefMut))\n",
     replace: "            && false\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "RefCell field"],
@@ -569,15 +569,15 @@ export const mutations: Mutation[] = [
   {
     name: "cell-field-held-unknown",
     breaks: "what a nullable cell field held, `RefCell::replace`'s and `take()`'s old value and a `Cell`'s `get()`, says nothing to the nulled owner, so `task.keyPath = prevKeyPath` is tidy's answer of `prevKeyPath ?? null` (#1933)",
-    file: "src/lower/mir/nulled.rs",
-    find: "        if let Some(crate::lower::Std::CellGet | crate::lower::Std::CellTake | crate::lower::Std::CellReplace) = known\n",
-    replace: "        if let Some(crate::lower::Std::CellGet | crate::lower::Std::CellTake | crate::lower::Std::CellReplace) = known && false\n",
+    file: "crates/rust-js-mir/src/nulled.rs",
+    find: "        if let Some(rust_js_lower::Std::CellGet | rust_js_lower::Std::CellTake | rust_js_lower::Std::CellReplace) =\n            known\n",
+    replace: "        if let Some(rust_js_lower::Std::CellGet | rust_js_lower::Std::CellTake | rust_js_lower::Std::CellReplace) =\n            known && false\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "old value and get"],
   },
   {
     name: "stored-given-presence-unasked",
     breaks: "an `Option` a test proved where it's stored in a nullable place may still be `undefined` to it, `return value ?? null` where `value.is_some() && flag` holds (#1933, #2112 C S4)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "            Given::Unknown if self.presence(state, operand) != super::Presence::Unknown => Given::Nulled,\n",
     replace: "",
     tests: ["test/lowering-nullable-tests.test.ts", "test/lowering-nullable-truthy.test.ts"],
@@ -585,7 +585,7 @@ export const mutations: Mutation[] = [
   {
     name: "capture-nones-unrecorded",
     breaks: "a closure's capture isn't told the one `None` its maker gave it, so `move || name.is_none()` of a local `None` is tested `== null`, not `=== undefined` (#2112 C S5)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "        seen.captures_nones(closure, nones);\n",
     replace: "        seen.captures_nones(closure, vec![None; nones.len()]);\n",
     tests: ["test/corpus.test.ts", "-t", "^option_none_forms_through_captures.rs$"],
@@ -594,7 +594,7 @@ export const mutations: Mutation[] = [
   {
     name: "capture-lent-unfollowed",
     breaks: "a borrow of a closure's capture, what `is_some(&self)` is given of it, isn't followed to the capture, so its test is loose (#2112 C S5)",
-    file: "src/lower/mir/nulled.rs",
+    file: "crates/rust-js-mir/src/nulled.rs",
     find: "        self.capture_read(state, *of)\n    }\n",
     replace: "        self.capture_read(state, *of).filter(|_| false)\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^option_none_forms_through_captures.rs$"],

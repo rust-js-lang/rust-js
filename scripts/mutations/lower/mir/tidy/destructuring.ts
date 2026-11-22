@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/tidy/destructuring.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/tidy/destructuring.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "async-parts-before-other-copies",
     breaks:
       "an `async fn`'s pattern parameter after another, `(n, (a, b))`, isn't taken apart where it's given, its body's copy of `n` first: `const a = _2[0]; const b = _2[1];`",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "                    *bound != name && matches!(&value.kind, ExprKind::Var(v) if *v != name && given.contains(v))\n",
     replace: "                    false\n",
     tests: ["test/lowering-async.test.ts", "-t", "pattern parameter after another"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "tuple-part-read-after-its-object-set",
     breaks: "`match (v.pop(), x.0)`'s `x.0` is read where an arm binds it, after a guard's `x.0 += 10` (#1035)",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "            (!inert(item) || reads_parts_set(item))\n",
     replace: "            !inert(item)\n",
     tests: ["test/corpus.test.ts", "-t", "^field_rewrite_singles.rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "tuple-part-set-through-a-handle-unseen",
     breaks: "`match (v.pop(), x.0)`'s `x.0` is read after a guard's call is given a handle on it that sets it (#1035)",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "                    parts_set.insert(v.clone());\n",
     replace: "                    let _ = v;\n",
     tests: ["test/corpus.test.ts", "-t", "^field_rewrite_singles.rs$"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "tuple-part-set-through-an-alias-unseen",
     breaks: "`match (v.pop(), x.0)`'s `x.0` is read after a guard's call is given a `&mut dyn` pair made on `x$1`, another name of `x`, that sets it (#1035)",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "            parts_set.insert(of.clone());\n",
     replace: "            break;\n",
     tests: ["test/corpus.test.ts", "-t", "^tuple_part_set_through_a_dyn.rs$"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "tuple-part-alias-of-a-part-unseen",
     breaks: "another name of a part of the object a tuple's part reads, `const item = x[0];` a `&mut dyn`'s pair is made on, isn't followed to the object (#1035)",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "                    let mut root = value;\n                    while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {\n                        root = of;\n                    }\n",
     replace: "                    let root = value;\n",
     tests: ["test/corpus.test.ts", "-t", "^tuple_part_set_through_a_dyn.rs$"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
     name: "indexed-item-a-part",
     breaks:
       "an item Rust's index reads of a temporary, `_5[0]` of `completedSegments.borrow()[0]`, is taken apart as a tuple's part, `const [contentSegment] = $borrow(completedSegments);` (ADR 0598, amended)",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "                && !e.facts.has(js::Known::Indexed)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^an_index_is_no_pattern.rs$"],
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     name: "assigned-parts-left-apart",
     breaks:
       "a tuple assigned to variables, `(a, b) = e`, reads `const [_18, _19] = e; a = _18; b = _19;`, not `[a, b] = e;` (#331)",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "        if !distinct || parts.iter().any(|part| js::mentions_of(&stmts[after..], part) > 0) {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^tuple_assigned_to_variables.rs$"],
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     name: "named-let-part-of-a-pattern",
     breaks:
       "`let payload = &lazy.payload; let init = lazy.init;` is `const { _payload: payload, _init: init } = lazy;`",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound)) {\n",
     replace:
       "        if false && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound)) {\n",
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
     name: "rust-js-names-in-a-pattern",
     breaks:
       "`Cell::new(update.lane.get())`'s read ahead of the next field's is `const { lane: value, tag: value$1 } = update;`, names the program never gave (ADR 0598, amended)",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound)) {\n",
     replace:
       "        if false && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound)) {\n",
@@ -92,7 +92,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-destructured-kept",
     breaks:
       "`const _5 = e; const a = _5[0]; const b = _5[1];` stays, not `const [a, b] = e;`",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "        let enough = count >= if made || bound { 1 } else { 2 };\n",
     replace: "        let enough = !made && false;\n",
     tests: [
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-destructured-variable-kept",
     breaks:
       "`const a = t[0]; const b = t[1];` of a variable stays, not `const [a, b] = t;`",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "                (v.clone(), i)\n",
     replace: "                (v.clone(), i + stmts.len())\n",
     tests: [
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-array-parts-kept",
     breaks:
       "a tuple made where it's taken apart, `let (a, b) = (x, 6)`, isn't split into its parts, `const a = x; const b = 6;`: the array is made and read by its index (calculator's and unzip_into_maps' snapshots)",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "            stmts.splice(i..first + count, each);\n            continue;\n",
     replace:
       "            let _ = each;\n            i += 1;\n            continue;\n",
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-params-not-destructured",
     breaks:
       "`(_2) => { const i = _2[0]; const c = _2[1]; … }` stays, not `([i, c]) => …`",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "        body.drain(start..start + count);\n        *param = pattern;\n",
     replace: "        let _ = pattern;\n",
     tests: [
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-default-part-unstarted",
     breaks:
       "parts read with a default don't start a pattern, `const className = p.k === undefined ? d : p.k;` stays",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "        ExprKind::Cond(_, _, read) => read,\n",
     replace: "        ExprKind::Cond(_, _, read) if false => read,\n",
     tests: [
@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-deref-param-kept",
     breaks: "`|&n|` stays `(_2) => { const n = _2; … }`",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "            *param = js::Pattern::Name(name.clone());\n            body.remove(0);\n",
     replace: "            break;\n",
     tests: [
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
     name: "one-field-pattern-kept-apart",
     breaks:
       "a `let` pattern of one field of a named variable is `const message = error.message;`",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "let enough = count >= if made || bound { 1 } else { 2 };",
     replace: "let enough = count >= if made { 1 } else { 2 };",
     tests: [
@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-tuple-set-through",
     breaks:
       "a tuple MIR sets an item of, `t[0] = x`, is read as its items, which crashes printing what's assigned",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "        if writes.replaces(&t) || writes.changes(&t) || indexed == 0 ||",
     replace: "        if indexed == 0 ||",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_temporary"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
     name: "nested-pattern-flat-only",
     breaks:
       "a closure's pattern of a pattern stays `(_2) => { const name = _2[1].name; .. }`, not `([n, { name }]) => ..`",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "        _ if group.iter().all(|(rest, ..)| !rest.is_empty()) => Some((nested_pattern(group)?, None)),",
     replace: "        _ if false => Some((nested_pattern(group)?, None)),",
     tests: [
@@ -202,7 +202,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-part-named-twice",
     breaks:
       "MIR's two names of one part are taken apart as one, `const [b] = x`, the first lost",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "        if parts.iter().any(|(p, ..)| *p == part) {\n            break;\n        }\n",
     replace: "",
     tests: ["test/lowering-names.test.ts", "-t", "two names of one field"],
@@ -211,7 +211,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-async-param-copied",
     breaks:
       "MIR's `async fn` copies its parameter where its body starts, `let n$1 = n`",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "        && js::mentions_of(body, param) == 1\n",
     replace: "        && false\n",
     tests: [
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     name: "tuple-acting-parts-unheld",
     breaks:
       "a tuple matched whose part calls, `(v.pop(), n > 3)`, calls it where each part is read, more than once",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "            if twice || last.is_some_and(|last| k < last && !fixed(item) || k == last) {\n",
     replace:
       "            if twice || false && last.is_some_and(|last| k < last && !fixed(item) || k == last) {\n",
@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
   {
     name: "tuple-earlier-reads-unheld",
     breaks: "`v.len()` of `(v.len(), v.pop())` is read after the pop",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "            if twice || last.is_some_and(|last| k < last && !fixed(item) || k == last) {\n",
     replace: "            if twice || last.is_some_and(|last| k == last) {\n",
     tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
@@ -242,7 +242,7 @@ export const mutations: Mutation[] = [
     name: "tuple-part-member-fixed",
     breaks:
       "a property read before a call, `v.length`, is taken for what no call changes",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "                    ExprKind::Member(of, _) => math(of),\n",
     replace: "                    ExprKind::Member(..) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
@@ -251,7 +251,7 @@ export const mutations: Mutation[] = [
     name: "tuple-part-set-after",
     breaks:
       "a variable a guard sets after the tuple is made is read as the guard left it",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "if !js::Writes::sets(after, v) && !set_elsewhere.contains(v))",
     replace: "if !set_elsewhere.contains(v))",
     tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
@@ -260,7 +260,7 @@ export const mutations: Mutation[] = [
     name: "constants-first-unmoved",
     breaks:
       "a `let`'s parts with a drop flag between, `const b = items[1]; let d$live = true; const d = items[3];`, aren't one pattern",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "        let moved = constants_first(stmts, i, first, &name);\n",
     replace: "        let moved = 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^array_partial_moves.rs$"],
@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
     name: "parameter-constants-unmoved",
     breaks:
       "a parameter's parts with drop flags between, `([a, b, c, d], i)`, are `_1`, read part by part",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "        constants_first(body, 0, 0, &name);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_partial_moves.rs$"],
@@ -280,7 +280,7 @@ export const mutations: Mutation[] = [
     name: "parameter-constants-unskipped",
     breaks:
       "a parameter's parts after its drop flags aren't its pattern: it's `_1`",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "                StmtKind::Let(bound, Some(value)) => value.is_constant() && *bound != name,\n",
     replace: "                StmtKind::Let(..) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^array_partial_moves.rs$"],
@@ -290,7 +290,7 @@ export const mutations: Mutation[] = [
     name: "constants-first-trailing",
     breaks:
       "a constant's `let` after a value's parts, or after a temporary with none, moves before it",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "    while constants.last().map(|&k| k + 1) == Some(end) {\n",
     replace: "    while false {\n",
     tests: ["test/corpus.test.ts", "-t", "^array_partial_moves.rs$"],
@@ -300,7 +300,7 @@ export const mutations: Mutation[] = [
     name: "conditional-tuples-kept-whole",
     breaks:
       "`let (a, b) = if c { (x, y) } else { (z, w) };` is `const [a, b] = c ? [x, y] : [z, w];`, two arrays made, where upstream's trackHydrated assigns two variables in each branch (rd45)",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "            && matches!(value.kind, ExprKind::Cond(..))\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^tuple_of_an_if_taken_apart.rs$"],
@@ -310,7 +310,7 @@ export const mutations: Mutation[] = [
     name: "conditional-tuples-else-dropped",
     breaks:
       "a tuple of an `if`'s value taken apart assigns its parts in the `then` branch alone, so the `else`'s values are never given (a wrong answer, rd45)",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "                StmtKind::If((**test).clone(), then, Some(otherwise)).at(value.span),\n",
     replace:
       "                StmtKind::If((**test).clone(), then, None).at(value.span),\n",
@@ -320,7 +320,7 @@ export const mutations: Mutation[] = [
     name: "assigned-tuples-kept-whole",
     breaks:
       "a tuple each branch ends making of parts it held first, `(value.take(), reason.take())`, is an array made and read item by item, `tmp = [old, old$1]; .. const a = tmp[0];` (rd524)",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "        if let Some(count) = assigned_tuple(stmts, i) {\n",
     replace: "        if let Some(count) = None::<usize> {\n",
     tests: ["test/corpus.test.ts", "-t", "^tuple_of_taken_parts.rs$"],
@@ -330,7 +330,7 @@ export const mutations: Mutation[] = [
     name: "assigned-tuples-held-twice-moved",
     breaks:
       "a part held once and given twice, `(n, n)`, is moved to the first's assignment, so the second reads a `const` that's gone (a wrong answer, rd524)",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "                    && reads_in_items(held) == 1\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^tuple_of_taken_parts.rs$"],
@@ -339,7 +339,7 @@ export const mutations: Mutation[] = [
     name: "destructured-items-of-any-part",
     breaks:
       "the second destructuring takes apart any part read, one property too, `const { value: wrap } = WRAP;`, which then makes a `static mut` a box",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "        let other = items && (made || !indexed || count < 2);\n",
     replace: "        let other = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^(static_mut|calculator).rs$"],
@@ -349,7 +349,7 @@ export const mutations: Mutation[] = [
     name: "destructured-items-left-apart",
     breaks:
       "a tuple `match`'s item's parts are read one by one, `const module = tests[0]; const files = tests[1];`, not `const [module, files] = tests;`",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "        let other = items && (made || !indexed || count < 2);\n",
     replace: "        let other = items;\n",
     tests: ["test/corpus.test.ts", "-t", "^tuple_match_item_destructured.rs$"],
@@ -358,7 +358,7 @@ export const mutations: Mutation[] = [
   {
     name: "tuple-item-read-twice-written-twice",
     breaks: "a tuple item read more than once, a conditional `{:?}` of `r.ok()` reads twice, is written at each read, `(r.TAG === \"Ok\" ? r._0 : undefined) == null ? .. : `Some(${r.TAG === \"Ok\" ? r._0 : undefined})``, not named once (#869)",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "            let twice = reads[k] > 1 && !item.reads_same() && !makes;\n",
     replace: "            let twice = false && !makes;\n",
     tests: ["test/corpus.test.ts", "-t", "^ranges_end_at_a_diverging_call\\.rs$"],
@@ -367,7 +367,7 @@ export const mutations: Mutation[] = [
   {
     name: "tuple-item-copy-shared",
     breaks: "a tuple item that makes an array, read twice, each read a copy of its own, is held once and shared by both, `const value = [[5], [6]]` given to a deque and looped over, where a change of one copy would show in the other (#869)",
-    file: "src/lower/mir/tidy/destructuring.rs",
+    file: "crates/rust-js-mir/src/tidy/destructuring.rs",
     find: "            let twice = reads[k] > 1 && !item.reads_same() && !makes;\n",
     replace: "            let twice = reads[k] > 1 && !item.reads_same() && (makes || !makes);\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_forwarded_to_its_value\\.rs$"],

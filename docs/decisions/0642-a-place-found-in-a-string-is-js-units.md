@@ -43,7 +43,7 @@ way to search a string and cut it, where the port has to choose.
 from UTF-16 units; ADR 0138's helpers, exact in bytes, everywhere else.**
 One question decides it, of each MIR local: whether it's only a place in
 the string it was found in, `offsets::in_units`, answered by an analysis of
-the body's MIR (`src/lower/mir/offsets.rs`), which every lowering of these
+the body's MIR (`crates/rust-js-mir/src/offsets.rs`), which every lowering of these
 methods asks:
 
 ```rust

@@ -1,0 +1,163 @@
+//! A drop as a function: std's, a type's own, and one held.
+
+use super::*;
+use crate::calls::apply;
+use crate::temporary_names::{Base, Role};
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `drop_function` of a `ty` a std function drops itself, `truncate`'s
+    /// items or `insert`'s old value: of a type parameter whose drop this
+    /// function isn't given, none, one its callers give none with a
+    /// destructor (ADR 0190).
+    pub fn std_drop_function(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let drop = self.drop_function(ty, span)?;
+        if drop.is_none() {
+            self.require_no_drops(ty);
+        }
+        Ok(drop)
+    }
+
+    /// The function that drops a `ty`, which a generic function is given for
+    /// its type parameter: its `drop` itself, when that's all its drop is,
+    /// `noisyDrop_drop`, or an arrow; a type parameter's is the one this
+    /// function was given. None for a type with nothing to drop.
+    pub fn drop_function(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        self.drop_function_of(ty, None, span)
+    }
+
+    /// `drop(value)`, a `ty` a std function drops itself dropped as an
+    /// expression, where no statement can be: its drop called,
+    /// `noisyDrop_drop(value)`, or of a drop that may be none, its caller's
+    /// for a type parameter, `dropT?.(value)`, or an impl's dictionary's for
+    /// an associated type, `IItemIntoIterator.$dropIntoIter?.(value)`, each
+    /// none where the type has nothing to drop (ADRs 0106, 0178, 0421), as
+    /// `drop_value` drops them. None for a type with nothing to drop.
+    pub(crate) fn std_drop_call(&mut self, ty: Ty<'tcx>, value: Expr, span: Span) -> R<Option<Expr>> {
+        let Some((drop, given)) = self.found_drop(ty, None, span)? else {
+            self.require_no_drops(ty);
+            return Ok(None);
+        };
+        Ok(Some(match given {
+            true => Expr::optional_call(drop, vec![value]),
+            false => apply(drop, vec![value]),
+        }))
+    }
+
+    /// `drop_function`'s, its parameter `param` where it's given one, else
+    /// named for its type, `(noisy) => ..`.
+    pub(crate) fn drop_function_of(&mut self, ty: Ty<'tcx>, param: Option<&str>, span: Span) -> R<Option<Expr>> {
+        Ok(self.found_drop(ty, param, span)?.map(|(drop, _)| drop))
+    }
+
+    /// `drop_function_of`'s, and whether it's one that may be none where
+    /// it's run: given by the caller, `dropT`, or held by an impl's
+    /// dictionary, `ZZone.$dropOffset`, either of which is none of a type
+    /// with nothing to drop.
+    fn found_drop(&mut self, ty: Ty<'tcx>, param: Option<&str>, span: Span) -> R<Option<(Expr, bool)>> {
+        if let ty::Param(_) = ty.kind() {
+            return Ok(self.use_given_drop(ty).map(|drop| (drop, true)));
+        }
+        if let Some(drop) = self.use_given_drop(ty) {
+            return Ok(Some((drop, true)));
+        }
+        match self.drops(ty) {
+            Drops::Nothing => return Ok(None),
+            Drops::Unsupported(t, what) => return Err(self.unsupported(span, &describe(t, what))),
+            Drops::Runs => {}
+        }
+        if let Some(drop) = self.item_drop(ty) {
+            return Ok(Some((drop, true)));
+        }
+        // Of what drops as an array's items: `$dropEach(drop)`, its item's
+        // drop, which a slice it passes over is dropped by, front to back,
+        // the rest though one panics (#234, #416, #1854). Not of a drop that
+        // may be none where it's run, a caller's `dropT`, which its loop
+        // asks, `dropT?.(item)`.
+        if let Some(item) = self.dropped_as_items(ty)
+            && let Some((each, false)) = self.found_drop(item, None, span)?
+        {
+            return Ok(Some((Expr::call_helper("$dropEach", vec![each]), false)));
+        }
+        let param = match (param, ty.kind()) {
+            (Some(param), _) => self.fresh(Base::Named(param)),
+            (None, ty::Adt(adt, _)) => self.fresh(Base::Named(&lower_first(self.tcx.item_name(adt.did()).as_str()))),
+            (None, _) => self.fresh(Role::Value),
+        };
+        let mut body = Vec::new();
+        self.drop_value(Expr::var(&param), ty, span, &mut body)?;
+        // `(noisy) => noisyDrop_drop(noisy)` is `noisyDrop_drop`.
+        if let [
+            Stmt {
+                kind: StmtKind::Expr(call),
+                ..
+            },
+        ] = body.as_slice()
+            && let js::ExprKind::Call(callee, args) = &call.kind
+            && let [arg] = args.as_slice()
+            && matches!(&arg.kind, js::ExprKind::Var(name) if *name == param)
+            && callee.is_named()
+        {
+            return Ok(Some(((**callee).clone(), false)));
+        }
+        Ok(Some((Expr::arrow(vec![param.into()], body), false)))
+    }
+
+    /// The function that drops what generic code holds of a `ty`: `ty`'s
+    /// drop function, or where its caller made it a JS iterator, `iterated`,
+    /// `$iterator(value, next)`, one that drops `value`, its `of` (ADR 0421);
+    /// of a type parameter, `$given`'s, which is the value itself where its
+    /// dictionary's steps are its own, `$givenDrop(drop)`, the drop of the
+    /// value it was made of, or of it (#766), which keeps each item's own
+    /// drop, `drop.each`, what a `Vec`'s slice it passes over is dropped by
+    /// (#718).
+    pub(crate) fn held_drop_function(&mut self, ty: Ty<'tcx>, iterated: bool, span: Span) -> R<Option<Expr>> {
+        // Of std's compiled struct, which a dictionary makes the JS iterator
+        // it is, `$knowing(struct, ..)` (#1292): its own (#1296).
+        if !iterated || !self.has_drops(ty) || crate::recognition::is_compiled_std_iterator(self.tcx, ty) {
+            return self.drop_function(ty, span);
+        }
+        // A type parameter's, or an associated type's of one, `I::IntoIter`
+        // of an `IntoIterator` held as it is (ADR 0552): `$given`'s, which
+        // is the value itself where its dictionary steps it (#766, #966).
+        if crate::recognition::known_by_bounds(ty) {
+            let Some(drop) = self.drop_function(ty, span)? else {
+                return Ok(None);
+            };
+            return Ok(Some(Expr::call_helper("$givenDrop", vec![drop])));
+        }
+        let param = self.fresh(Role::It);
+        let mut body = Vec::new();
+        self.drop_value(Expr::member(Expr::var(&param), "of"), ty, span, &mut body)?;
+        Ok(Some(Expr::arrow(vec![param.into()], body)))
+    }
+
+    /// Whether dropping a `ty` reads it once, so a value that isn't a
+    /// variable can be dropped where it's made: `noisyDrop_drop(["x"])`.
+    fn drops_once(&self, ty: Ty<'tcx>) -> bool {
+        match ty.kind() {
+            // Its drop drops what it holds, not the function.
+            ty::Closure(..) | ty::Coroutine(..) | ty::CoroutineClosure(..) => true,
+            ty::Adt(_, args) if ty.is_box() || self.recognition().pinned(ty).is_some() => {
+                self.drops_once(args.type_at(0))
+            }
+            ty::Adt(adt, args) => {
+                self.tcx
+                    .adt_destructor(adt.did())
+                    .is_some_and(|d| self.runs_drop(d.did))
+                    && adt.is_struct()
+                    && adt.all_fields().all(|f| !self.has_drops(self.field_ty(f, args)))
+            }
+            _ => false,
+        }
+    }
+
+    /// `value`, which `drop_value` may read more than once, in a `const`
+    /// first unless it reads the same each time, or is read once.
+    pub fn droppable(&mut self, value: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>) -> Expr {
+        if value.reads_same() || self.drops_once(ty) {
+            value
+        } else {
+            self.spill(Role::Value, value, out)
+        }
+    }
+}

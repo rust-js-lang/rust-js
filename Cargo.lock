@@ -1215,6 +1215,8 @@ dependencies = [
  "imbl",
  "indexmap",
  "rust-js-emit",
+ "rust-js-lower",
+ "rust-js-mir",
  "rust-js-program",
  "rustc-hash",
  "serde",
@@ -1238,6 +1240,30 @@ dependencies = [
  "oxc_sourcemap",
  "oxc_span",
  "oxc_syntax",
+ "rust-js-program",
+ "rustc-hash",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rust-js-lower"
+version = "0.0.4"
+dependencies = [
+ "imbl",
+ "indexmap",
+ "rust-js-program",
+ "rustc-hash",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rust-js-mir"
+version = "0.0.4"
+dependencies = [
+ "indexmap",
+ "rust-js-lower",
  "rust-js-program",
  "rustc-hash",
  "serde",

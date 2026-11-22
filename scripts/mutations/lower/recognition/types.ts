@@ -1,4 +1,4 @@
-// Mutations of src/lower/recognition/types.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/recognition/types.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "js-object-itself-unknown",
     breaks:
       "`JsObject`, what `Kind::Object` holds, isn't a JS object, so its `Deref` to the `Unknown` it is isn't the object itself",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "        if self.is_js_object_itself(ty) {\n            return true;\n        }\n",
     replace: "",
     tests: [
@@ -19,7 +19,7 @@ export const mutations: Mutation[] = [
     name: "js-type-of-struct-unrecognized",
     breaks:
       "`pub struct Element(PhantomData<JsObject>)` is a Rust struct to copy, not a JS object, now `JsObject` is a struct",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            && marked.types().next().is_some_and(|t| matches!(t.kind(), ty::Foreign(_)) || self.is_js_object_itself(t)))\n",
     replace:
       "            && marked.types().next().is_some_and(|t| matches!(t.kind(), ty::Foreign(_))))\n",
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
     name: "field-projection-kept",
     breaks:
       "a field whose type is `K::Value` stays that projection where its struct is used, and a value of the struct is an error",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "        if !rustc_middle::ty::TypeVisitableExt::has_aliases(&ty) || !self.consts_typed(ty) {\n            return ty;\n        }",
     replace: "        if true {\n            return ty;\n        }",
     tests: ["test/corpus.test.ts", "-t", "associated_type_fields"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     name: "parse-error-by-name",
     breaks:
       "a crate's own `struct ParseIntError` is taken for std's by its name, and shown as std's `ParseIntError { kind: .. }`",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: '        matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)\n            && ["ParseIntError"',
     replace: '        matches!(ty.kind(), ty::Adt(adt, _) if ["ParseIntError"',
     tests: [
@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
     name: "deque-length-unknown",
     breaks:
       "a `VecDeque`'s `args[i]` in `for i in 0..args.len()` is `$index(args, i)`",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: " || is_std_def(tcx, adt.did(), StdItem::VecDeque))\n",
     replace: ")\n",
     tests: ["test/lowering-loops.test.ts", "-t", "Console's loops"],
@@ -59,7 +59,7 @@ export const mutations: Mutation[] = [
   {
     name: "linked-list-not-array",
     breaks: "a `LinkedList` is its nodes' raw pointers, refused, not an array",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "    StdItem::LinkedList,\n];\n",
     replace: "];\n",
     tests: ["test/corpus.test.ts", "-t", "linked_lists"],
@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
   {
     name: "cow-path-refused",
     breaks: "a `Cow<Path>` is refused",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            || self.is_path_like(borrowed) && self.is_path_like(owned)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cows"],
@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
   {
     name: "exact-chunks-mut-no-remainder",
     breaks: "a `ChunksExactMut`'s `into_remainder()` is an error",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: " | StdPath::SliceChunksExactMut",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
@@ -84,7 +84,7 @@ export const mutations: Mutation[] = [
     name: "escape-ascii-not-bytes",
     breaks:
       "a byte slice's `escape_ascii()` isn't the array of its escape's bytes: `{}` of it is refused (ADR 0971)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "Some(StdPath::AsciiEscapeDefault | StdPath::SliceEscapeAscii)",
     replace: "Some(StdPath::AsciiEscapeDefault)",
     tests: ["test/corpus.test.ts", "-t", "slice_bytes_text"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
     name: "deref-target-unknown",
     breaks:
       "a JS class's `Deref` to the class it extends isn't followed, so a method of the class it extends, `CSSStyleDeclaration`'s `setProperty` of a `CSSStyleProperties`, is refused (rd232)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "        .filter_by_name_unhygienic(sym::Target)\n",
     replace: "        .filter_by_name_unhygienic(sym::value)\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "a path from a value asks its member"],
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     name: "boxed-slice-iter-unknown",
     breaks:
       "a `Box<[T]>`'s `into_iter()`, by value or through a `&` or a `&mut`, is refused",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "        ty.boxed_ty().is_some_and(|inner| inner.is_array() || inner.is_slice())\n",
     replace: "        ty.boxed_ty().is_some_and(|inner| inner.is_array())\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_slice_iter.rs$"],
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
   {
     name: "var-error-unknown",
     breaks: "a `VarError` isn't shown as std shows it",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "is_std_path(self.tcx, adt.did(), StdPath::EnvVarError)",
     replace: "is_std_path(self.tcx, adt.did(), StdPath::EnvVarError) && false",
     tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
     name: "range-inclusive-end-excluded",
     breaks:
       "`2..=5`'s end is `Excluded`, one short: a B-tree's `range(2..=3)` of constants misses `3`, and `&b[2..=3]` through a generic `SliceIndex` is `$sliceIndexes.range`'s",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: '        _ if lang(LangItem::RangeInclusiveStruct) => (Field("Included", "start"), Field("Included", "end")),\n',
     replace:
       '        _ if lang(LangItem::RangeInclusiveStruct) => (Field("Included", "start"), Field("Excluded", "end")),\n',
@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
   {
     name: "bound-pair-items-swapped",
     breaks: "a pair of `Bound`s' start is its end",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "        _ if matches!(ty.kind(), ty::Tuple(items) if items.len() == 2) => (Item(0), Item(1)),\n",
     replace:
       "        _ if matches!(ty.kind(), ty::Tuple(items) if items.len() == 2) => (Item(1), Item(0)),\n",
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     name: "clock-number-arithmetic",
     breaks:
       "a time's `-=` is its number's `-`, wrapped to 128 bits, not its own",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "    Num::of(ty).is_some() && !is_duration_ty(ty) && clock_type_of(ty).is_none()\n",
     replace: "    Num::of(ty).is_some() && !is_duration_ty(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^clock.rs$"],
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     name: "hashed-non-zero-as-itself",
     breaks:
       "a `NonZero` is hashed as its own type, `write_NonZero<u32>`, not as its number",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(_, args) if is_non_zero_ty(ty) => Hashed::Number(args.type_at(0)),\n",
     replace:
       "            ty::Adt(_, args) if is_non_zero_ty(ty) => Hashed::Number(ty),\n",
@@ -161,7 +161,7 @@ export const mutations: Mutation[] = [
   {
     name: "hashed-ordering-unknown",
     breaks: "an `Ordering` isn't hashed, as its `i8`",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(..) if self.is_lang_adt(ty, LangItem::OrderingEnum) => Hashed::Number(self.tcx.types.i8),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
     name: "index-mut-unasked",
     breaks:
       "`index_mut` asks nothing of a `Vec`'s length, so `queue[i] = x` doesn't show `i` below it, and a drain to it after is `$drain(queue, 0, i)`, not `queue.splice(0, i)`",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "        if !tcx.is_lang_item(trait_, LangItem::Index) && !tcx.is_lang_item(trait_, LangItem::IndexMut) {\n",
     replace: "        if !tcx.is_lang_item(trait_, LangItem::Index) {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_vec_bounds.rs$"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
     name: "held-types-no-async-block",
     breaks:
       "an `async move` block's future holds nothing, so its body drops none of what it took",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "        ty::Coroutine(def_id, args) => (def_id, args.as_coroutine().upvar_tys()),\n",
     replace: "",
     tests: [
@@ -194,7 +194,7 @@ export const mutations: Mutation[] = [
     name: "held-types-no-async-closure",
     breaks:
       "an `async` closure holds nothing, so dropping it drops none of what it took",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "        ty::CoroutineClosure(def_id, args) => (def_id, args.as_coroutine_closure().upvar_tys()),\n",
     replace: "",
     tests: [
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
   {
     name: "string-drain-unrecognised",
     breaks: "a string Drain steps as chars() do",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "StdPath::StringDrain))",
     replace: "StdPath::StringDrain) && false)",
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
@@ -215,7 +215,7 @@ export const mutations: Mutation[] = [
     name: "dyn-any-send-of-any",
     breaks:
       "a `dyn Any` without `Send` is an unwind's payload's, so its own `&JsError` isn't found",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: '                if traits.auto_traits().any(|id| self.tcx.is_diagnostic_item(Symbol::intern("Send"), id)))\n',
     replace:
       '                if traits.auto_traits().all(|id| self.tcx.is_diagnostic_item(Symbol::intern("Send"), id)))\n',
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
     name: "path-components-not-items",
     breaks:
       "`next_back()` of a path's `components()` is refused, not an array's",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "StdPath::PathIter | StdPath::PathComponents | StdPath::PathAncestors",
     replace: "StdPath::PathIter | StdPath::PathAncestors",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     name: "repeat-of-any-is-js",
     breaks:
       "a slice's `repeat` is taken as a string's, JS's own, unchecked and no array's method",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            .is_some_and(|imp| tcx.type_of(imp).instantiate_identity().skip_normalization().is_str())\n",
     replace: "            .is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
@@ -243,7 +243,7 @@ export const mutations: Mutation[] = [
     name: "holds-dyn-any-never",
     breaks:
       "what's lent `&mut` to a payload isn't seen to hold a `dyn Any`, so a payload changed is resumed as what was thrown (rd550)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            if traits.principal_def_id().is_some() && traits.principal_def_id() == any_trait(tcx))\n        })\n",
     replace: "            if false)\n        })\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_payload_where_read.rs$"],
@@ -251,7 +251,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-filter-unrecognized",
     breaks: "an `Option`'s `filter` isn't a present item, so what it shows of a `Vec` isn't known (rd376)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            Some(PresentItem::Filtered)\n",
     replace: "            None\n",
     tests: ["test/corpus.test.ts", "-t", "^filtered_not_empty.rs$"],
@@ -261,7 +261,7 @@ export const mutations: Mutation[] = [
     name: "phantom-data-hash-unrecognized",
     breaks:
       "a derived `Hash` of a struct holding a `PhantomData<K>`, litemap's `LiteMap`, is refused at `Hash::hash` of the marker, which std's impl writes nothing of (#514)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(..) if self.is_lang_adt(ty, LangItem::PhantomData) => Hashed::Tuple(Vec::new()),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
     name: "grows-as-vec-without-btree-set",
     breaks:
       "a `BTreeSet` isn't one whose `from_iter` grows a `Vec`, so a collect into one never asks the crate's iterator its `size_hint`, where native asks at 1, 5 and 9 (#797)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "    StdItem::BTreeSet,\n    StdItem::BTreeMap,\n];\n",
     replace: "    StdItem::BTreeMap,\n];\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_as_vec_asks_hint.rs$"],
@@ -278,7 +278,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-hint-unasked",
     breaks: "a `cycle()` of an array's items isn't seen to ask its source's hint, so its `size_hint()` is refused (#1179)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "Some(StdPath::IterCycle | StdPath::IterSkipWhile",
     replace: "Some(StdPath::IterSkipWhile",
     tests: ["test/corpus.test.ts", "-t", "^cycle_size_hint.rs$"],
@@ -287,7 +287,7 @@ export const mutations: Mutation[] = [
     name: "c-string-unhashed",
     breaks:
       "hashing a `CStr` or a `CString` through a `Hasher` is refused, its `Hash` not `[c_char]`'s (#1157)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(..) if is_c_string_like(self.tcx, ty) => Hashed::Slice(self.tcx.types.u8),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^c_strings_hashed_and_their_errors_cloned.rs$"],
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
     name: "c-string-hashed-without-its-nul",
     breaks:
       "a `CStr`'s hash is of its bytes without the nul, where std's `[c_char]` holds it (#1157)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(..) if is_c_string_like(self.tcx, ty) => Hashed::Slice(self.tcx.types.u8),\n",
     replace: "            ty::Adt(..) if is_c_string_like(self.tcx, ty) => Hashed::Text,\n",
     tests: ["test/corpus.test.ts", "-t", "^c_strings_hashed_and_their_errors_cloned.rs$"],
@@ -306,7 +306,7 @@ export const mutations: Mutation[] = [
     name: "other-try-as-written",
     breaks:
       "`?` of a `ControlFlow` or a type parameter's `Try` in std's bodies is read as an `Option`'s, not by its dictionary (ADR 0913)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "    matches!(ty.kind(), ty::Adt(adt, _)\n        if tcx.is_lang_item(adt.did(), LangItem::Option) || is_std_def(tcx, adt.did(), StdItem::Result))\n",
     replace: "    true || matches!(ty.kind(), ty::Adt(adt, _)\n        if tcx.is_lang_item(adt.did(), LangItem::Option) || is_std_def(tcx, adt.did(), StdItem::Result))\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
@@ -314,7 +314,7 @@ export const mutations: Mutation[] = [
   {
     name: "question-mark-written-of-from-residual-misread",
     breaks: "a `?`'s `FromResidual::from_residual` is asked of its `Self`, not the residual it's given, so std's compiled body of it is sought for a `Result`'s `?` (#1156)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "        _ if tcx.is_lang_item(id, LangItem::TryTraitFromResidual) => args.types().nth(1),\n",
     replace: "        _ if tcx.is_lang_item(id, LangItem::TryTraitFromResidual) => None,\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
@@ -322,7 +322,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-hash-unrecognized",
     breaks: "std's ranges have no `Hash` rust-js writes, refused as a key or hashed (#1361)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(_, args) if let Some(kind) = self.range_kind(ty) => Hashed::Range(kind, args.types().next()),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^ranges_hashed_as_std_derives.rs$"],
@@ -330,7 +330,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-held-not-found",
     breaks: "what an `io::Error` holds is looked for in core's own impls alone, not alloc's and std's, which write `into_inner`, so it's taken to hold nothing that drops",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: ".iter().chain(incoherent))",
     replace: ".iter().chain(incoherent.iter().take(0)))",
     tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
@@ -338,7 +338,7 @@ export const mutations: Mutation[] = [
   {
     name: "lazy-adapters-hintless",
     breaks: "`size_hint()` of a held `skip_while`, `take_while`, `map_while` or `scan`, the runtime's `$Steps`, is refused (#1169)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "Some(StdPath::IterCycle | StdPath::IterSkipWhile | StdPath::IterTakeWhile | StdPath::IterMapWhile | StdPath::IterScan)",
     replace: "Some(StdPath::IterCycle)",
     tests: ["test/corpus.test.ts", "-t", "^held_lazy_adapters_hint.rs$"],
@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-struct-hash-unwritten",
     breaks: "a `Reverse` or a `Wrapping` around a key whose `Hash` is its own has no `Hash` rust-js writes, refused as a key (#1289)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "                if adt.is_struct()\n                    && is_std_crate(self.tcx, adt.did())\n",
     replace: "                if false\n                    && adt.is_struct()\n                    && is_std_crate(self.tcx, adt.did())\n",
     tests: ["test/corpus.test.ts", "-t", "^std_keys_around_their_own_hash.rs$"],
@@ -354,7 +354,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-enum-hash-unwritten",
     breaks: "a `Bound`, a `Poll` or a `ControlFlow` around a key whose `Hash` is its own is refused as a key (#1289)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "                if adt.is_enum()\n                    && is_std_crate(self.tcx, adt.did())\n",
     replace: "                if false\n                    && adt.is_enum()\n                    && is_std_crate(self.tcx, adt.did())\n",
     tests: ["test/corpus.test.ts", "-t", "^std_keys_around_their_own_hash.rs$"],
@@ -362,7 +362,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-wrapped-hash-unwritten",
     breaks: "a `ManuallyDrop` key has no `Hash` rust-js writes, refused (#1289)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(..) if let Some(held) = self.std_wrapped(ty) => Hashed::Held(held),\n",
     replace: "            ty::Adt(..) if let Some(held) = self.std_wrapped(ty).filter(|_| false) => Hashed::Held(held),\n",
     tests: ["test/corpus.test.ts", "-t", "^std_keys_around_their_own_hash.rs$"],
@@ -370,7 +370,7 @@ export const mutations: Mutation[] = [
   {
     name: "pin-hash-unwritten",
     breaks: "a `Pin<Box<K>>` key has no `Hash` rust-js writes, refused (#1289)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(..) if let Some(target) = self.pinned_target(ty) => match target {\n",
     replace: "            ty::Adt(..) if let Some(target) = self.pinned_target(ty).filter(|_| false) => match target {\n",
     tests: ["test/corpus.test.ts", "-t", "^std_keys_around_their_own_hash.rs$"],
@@ -378,7 +378,7 @@ export const mutations: Mutation[] = [
   {
     name: "pin-of-any-pointer-hashed-as-it",
     breaks: "a `Pin` of the crate's own pointer is hashed by the pointer's own `Hash`, its tag too, where std's hashes its target (#1435)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "                super::PinTarget::Deref(pointer, target) => Hashed::Target(pointer, target),\n",
     replace: "                super::PinTarget::Deref(pointer, _) => Hashed::Held(pointer),\n",
     tests: ["test/corpus.test.ts", "-t", "^pins_compare_and_hash_their_targets.rs$"],
@@ -386,7 +386,7 @@ export const mutations: Mutation[] = [
   {
     name: "cow-hash-unwritten",
     breaks: "a `Cow` key around a key whose `Hash` is its own is refused (#1289)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(..) if let Some((borrowed, _)) = self.cow_parts(ty) => Hashed::Borrowed(borrowed),\n",
     replace: "            ty::Adt(..) if let Some((borrowed, _)) = self.cow_parts(ty).filter(|_| false) => Hashed::Borrowed(borrowed),\n",
     tests: ["test/corpus.test.ts", "-t", "^std_keys_around_their_own_hash.rs$"],
@@ -394,7 +394,7 @@ export const mutations: Mutation[] = [
   {
     name: "clock-hash-unwritten",
     breaks: "a `Duration`'s or an `Instant`'s `Hash` is refused (#1447)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(..) if is_duration_ty(ty) || clock_type_of(ty) == Some(ClockType::Instant) => {\n",
     replace: "            ty::Adt(..) if false && is_duration_ty(ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^std_types_hashed_as_std_does.rs$"],
@@ -402,7 +402,7 @@ export const mutations: Mutation[] = [
   {
     name: "system-time-hash-truncated",
     breaks: "a `SystemTime` before the epoch hashes its seconds truncated, not floored as wasm32's timespec has them (#1447)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(..) if clock_type_of(ty) == Some(ClockType::System) => Hashed::Nanoseconds { before_epoch: true },\n",
     replace: "            ty::Adt(..) if clock_type_of(ty) == Some(ClockType::System) => Hashed::Nanoseconds { before_epoch: false },\n",
     tests: ["test/corpus.test.ts", "-t", "^std_types_hashed_as_std_does.rs$"],
@@ -410,7 +410,7 @@ export const mutations: Mutation[] = [
   {
     name: "os-text-hash-unwritten",
     breaks: "an `OsString`'s `Hash` is refused (#1447)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(..) if self.is_os_text(ty) => Hashed::OsText,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_types_hashed_as_std_does.rs$"],
@@ -418,7 +418,7 @@ export const mutations: Mutation[] = [
   {
     name: "discriminant-hashed-as-u8",
     breaks: "a `Discriminant` hashes as a `u8`, not its enum's discriminant type (#1447)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(_, args) if self.is_discriminant(ty) => Hashed::Number(args.type_at(0).discriminant_ty(self.tcx)),\n",
     replace: "            ty::Adt(..) if self.is_discriminant(ty) => Hashed::Number(self.tcx.types.u8),\n",
     tests: ["test/corpus.test.ts", "-t", "^std_types_hashed_as_std_does.rs$"],
@@ -426,7 +426,7 @@ export const mutations: Mutation[] = [
   {
     name: "fieldless-std-hash-unwritten",
     breaks: "`PhantomPinned`'s `Hash` is refused (#1447)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "                    && adt.non_enum_variant().fields.is_empty()\n",
     replace: "                    && adt.non_enum_variant().fields.is_empty()\n                    && false\n",
     tests: ["test/corpus.test.ts", "-t", "^std_types_hashed_as_std_does.rs$"],
@@ -434,7 +434,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-hash-unwritten",
     breaks: "a `Path`'s `Hash` is refused (#1447)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(..) if self.compares_by_components(ty) => Hashed::PathText,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_types_hashed_as_std_does.rs$"],
@@ -442,7 +442,7 @@ export const mutations: Mutation[] = [
   {
     name: "layout-hash-unwritten",
     breaks: "a `Layout`'s `Hash` is refused (#1447)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(..) if self.layout(ty) == Some(true) => Hashed::Layout,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_types_hashed_as_std_does.rs$"],
@@ -450,7 +450,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-id-hash-unwritten",
     breaks: "a `TypeId`'s `Hash` is refused (#1447)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(..) if self.is_type_id(ty) => Hashed::Text,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_types_hashed_as_std_does.rs$"],
@@ -458,7 +458,7 @@ export const mutations: Mutation[] = [
   {
     name: "closure-pattern-runs-no-code",
     breaks: "a closure pattern is taken to run no code, so a `str`'s search by it is the array of what it finds, asking it of every `char` before the first piece (#1501)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Closure(..) | ty::FnPtr(..) => true,\n",
     replace: "            ty::Closure(..) => false,\n            ty::FnPtr(..) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^str_searches_ask_a_closure_as_they_step.rs$"],
@@ -466,7 +466,7 @@ export const mutations: Mutation[] = [
   {
     name: "crate-fn-pattern-runs-no-code",
     breaks: "a function of the crate's as a pattern is taken to run no code, as std's are, so its search asks it of every `char` first (#1501)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::FnDef(def_id, _) => !self.is_std(*def_id),\n",
     replace: "            ty::FnDef(..) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^str_searches_ask_a_closure_as_they_step.rs$"],
@@ -474,7 +474,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-normalized-where-consts-untyped",
     breaks: "a field's projection in another body's terms, `<Buf<SIZE> as Measured>::Metadata`, is normalized in an env that hasn't `SIZE`'s type, where rustc crashes, `cannot find SIZE in param-env` (#1618)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "has_aliases(&ty) || !self.consts_typed(ty) {",
     replace: "has_aliases(&ty) {",
     tests: ["test/corpus.test.ts", "-t", "^const_generic_impl_reached_by_a_trait_default_where_caught.rs$"],
@@ -482,7 +482,7 @@ export const mutations: Mutation[] = [
   {
     name: "text-escape-any-of-str",
     breaks: "a type under `std::str` is an escape whatever its name, as `a && b && c || d` groups, so a `str::Chars` is taken for one and `collect()`'s capacity of it is an escape's",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "        && (std_path_under(tcx, adt.did(), StdPath::CharMod) || std_path_under(tcx, adt.did(), StdPath::StrMod)))\n",
     replace: "        && std_path_under(tcx, adt.did(), StdPath::CharMod) || std_path_under(tcx, adt.did(), StdPath::StrMod))\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_text_patterns.rs$"],
@@ -490,7 +490,7 @@ export const mutations: Mutation[] = [
   {
     name: "reported-by-std-result-unknown",
     breaks: "a `Result`'s `report()` isn't std's to rust-js, so it's refused, where std writes it: `Error: {err:?}` of an `Err`, then `1` (#2292)",
-    file: "src/lower/recognition/types.rs",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
     find: "            ty::Adt(_, args) if self.is_result(ty) => self.reported_by_std(args.type_at(0)),\n",
     replace: "            ty::Adt(_, _) if self.is_result(ty) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "process_termination_reports"],

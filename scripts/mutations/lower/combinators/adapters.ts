@@ -1,4 +1,4 @@
-// Mutations of src/lower/combinators/adapters.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/combinators/adapters.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,15 +6,15 @@ export const mutations: Mutation[] = [
     name: "zip-by-index-unasked",
     breaks:
       "a zip of two `TrustedRandomAccess` sides is the general `$lazyZip`: `v.iter().map(f).zip(w.iter())` runs `f` once more than std, which stops at the shorter (ADR 0973)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "        if crate::lower::recognition::zips_by_index(self.tcx, self.typing_env, a_ty, b_ty) {\n",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
+    find: "        if crate::recognition::zips_by_index(self.tcx, self.typing_env, a_ty, b_ty) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_by_index.rs$"],
   },
   {
     name: "inspect-skipped",
     breaks: "`inspect(f)` doesn't call `f`",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                let inspected = StmtKind::Expr(Expr::call(f, vec![item.clone()])).at(js::Span::NONE);\n",
     replace: "                let inspected = StmtKind::Expr(f).at(js::Span::NONE);\n",
     tests: ["test/corpus.test.ts", "-t", "std_methods"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     name: "items-never-cells",
     breaks:
       "a closure taking `&mut` text or numbers is given them, not cells: `a.value` is `undefined`",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "            .is_some_and(|item| self.mut_ref_form(item).is_cell())\n",
     replace: "            .is_some_and(|item| false && self.mut_ref_form(item).is_cell())\n",
     tests: ["test/corpus.test.ts", "-t", "vec_edits"],
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     name: "items-cells-by-object",
     breaks:
       "`dedup_by` of `Rc`s, objects whose `&mut` is a cell, gives the closure each `Rc` where it reads a cell's `value`: a `TypeError` (#906)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "            .is_some_and(|item| self.mut_ref_form(item).is_cell())\n",
     replace: "            .is_some_and(|item| !self.is_object(item))\n",
     tests: ["test/corpus.test.ts", "-t", "^dedup_by_drops_as_it_finds.rs$"],
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     name: "resize-shares-copies",
     breaks:
       "`resize(n, vec![1])` fills with one array, so a change to one is every one's",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: '        let clone = match self.needs_clone(item) {\n            true => Some(self.clone_fn("item", item, span)?),\n',
     replace:
       "        let clone = match self.needs_clone(item) {\n            true => None,\n",
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
   {
     name: "flatten-arrays-lazy",
     breaks: "arrays of arrays flattened stay a lazy `flatMap`, never `flat()`",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                    item.is_array() || item.is_slice() || self.is_vec_like(item)\n",
     replace: "                    false\n",
     tests: [
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
     name: "insert-front-helper",
     breaks:
       "`anchors.insert(0, x)` is `anchors.splice(0, 0, x)` where the ranges show it in bounds, `$insertAt(anchors, 0, x)` where not, not `anchors.unshift(x)`",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: '        Some(0) => Expr::call(Expr::member(subject, "unshift"), vec![value]),\n',
     replace: "",
     tests: [
@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
   {
     name: "step-by-passed-undropped",
     breaks: "what `step_by` steps over isn't dropped",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                        .at(js::Span::NONE),\n                        StmtKind::Expr(dropped).at(js::Span::NONE),\n                        StmtKind::Return(Some(Expr::bool(false))).at(js::Span::NONE),\n",
     replace:
       "                        .at(js::Span::NONE),\n                        StmtKind::Return(Some(Expr::bool(false))).at(js::Span::NONE),\n",
@@ -84,7 +84,7 @@ export const mutations: Mutation[] = [
   {
     name: "dedup-by-identity",
     breaks: "`dedup` of structs compares them by `===`",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: '            None if self.eq_is_identity(item) => Expr::call(Expr::helper("$dedup"), vec![items]),\n',
     replace:
       '            None => Expr::call(Expr::helper("$dedup"), vec![items]),\n',
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "dedup-undropped",
     breaks: "`dedup` drops none of the repeats it takes out",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                    Expr::optional_args(vec![items, same], vec![drop]),\n",
     replace: "                    vec![items, same],\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "resize-undropped",
     breaks: "`resize` drops none of what it cuts off",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "            Expr::optional_args(list, vec![size, clone, drop]),\n",
     replace: "            Expr::optional_args(list, vec![size, clone]),\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-inner-unclosed",
     breaks: "`flat_map`'s inner iterators drop none of what they haven't given",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "        let Some(drop) = self.closing_drop(inner, span)? else {\n            return Ok(None);\n",
     replace:
       "        let Some(drop) = None::<Expr> else {\n            return Ok(None);\n",
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   {
     name: "flatten-vecs-unclosed",
     breaks: "`flatten` of `Vec`s drops none of an inner one's it hasn't given",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                Some(item) if let Some(each) = self.closed_inner(None, item, span)? => {\n",
     replace:
       "                Some(item) if false && let Some(each) = self.closed_inner(None, item, span)? => {\n",
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     name: "flat-map-of-options-js",
     breaks:
       "`flat_map` of a function that gives an `Option` is JS's `flatMap`, which throws of a number",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                if let Some((_, payload, true)) = self.recognition().flattened_options(output) {\n",
     replace: "                if let Some((_, payload, true)) = None::<(Ty<'tcx>, Ty<'tcx>, bool)> {\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_drops.rs$"],
@@ -137,7 +137,7 @@ export const mutations: Mutation[] = [
     name: "kept-options-boxed",
     breaks:
       "what `filter_map` and `map_while` keep that looks like `None` stays in its box",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: '            true => method(items, "map", vec![Expr::helper("$someValue")]),\n',
     replace: "            true => items,\n",
     tests: ["test/corpus.test.ts", "-t", "^map_while_drops.rs$"],
@@ -145,7 +145,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-option-payload-unboxed",
     breaks: "`flat_map` of `Option`s keeps a `Some(None)` in its box",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: '                    unboxed(somes(method(items, "map", vec![next()])), Some(payload))\n',
     replace: '                    unboxed(somes(method(items, "map", vec![next()])), None)\n',
     tests: ["test/corpus.test.ts", "-t", "^map_while_drops.rs$"],
@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
     name: "scan-eager",
     breaks:
       "`scan` of a lazy chain lists it first, its closures run past where `scan` ends",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                let mut args = vec![items, init, f];\n",
     replace:
       '                let mut args = vec![method(items, "toArray", Vec::new()), init, f];\n',
@@ -163,7 +163,7 @@ export const mutations: Mutation[] = [
   {
     name: "scan-kept-boxed",
     breaks: "what `scan` keeps that looks like `None` stays in its box",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                match generic_args.types().nth(2).is_some_and(|ty| self.boxed_payload(ty)) {\n",
     replace: "                match generic_args.types().nth(2).is_some_and(|ty| false && self.boxed_payload(ty)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^scan_lazy_drops.rs$"],
@@ -172,7 +172,7 @@ export const mutations: Mutation[] = [
     name: "step-by-zero-unchecked",
     breaks:
       "`step_by(0)` of a step known only at run time doesn't panic, as std asserts it doesn't, and reads no item, `i % 0` being NaN",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: '                    _ => self.spill(Role::Step, Expr::call(Expr::helper("$step"), vec![n]), out),\n',
     replace: '                    _ => self.spill(Role::Step, n, out),\n',
     tests: ["test/corpus.test.ts", "-t", "^step_by_zero.rs$"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
     name: "partition-copies-shared",
     breaks:
       "`partition` of `&T`s into collections of `T` holds the same `Copy` structs, so changing one changes the original",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                    Some(copy) => method(items, \"map\", vec![copy]),",
     replace: "                    Some(_) => items,",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
     name: "flat-map-iterator-as-iterable",
     breaks:
       "`flat_map` of a range or the crate's iterator gives `.flatMap` the value, whose fields it steps, or which isn't iterable, where its items are what's stepped",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "        if self.range_kind(inner).is_some() || self.is_user_iterator(inner) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_inner_iterables.rs$"],
@@ -199,8 +199,8 @@ export const mutations: Mutation[] = [
     name: "flatten-result-as-iterable",
     breaks:
       "`flatten` of `Result`s gives `.flatMap` each `{ TAG, _0 }`, which isn't iterable, where its `Ok` value is its one item",
-    file: "src/lower/combinators/adapters.rs",
-    find: "        if self.is_std_type(inner, crate::lower::recognition::StdItem::Result) {\n",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
+    find: "        if self.is_std_type(inner, crate::recognition::StdItem::Result) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_inner_iterables.rs$"],
   },
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
     name: "scan-object-state-boxed",
     breaks:
       "`scan` of a struct's or a tuple's state gives its closure a box of it, which it reads as the state, `acc.sum` of the box",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                let handle = state_ty.is_none_or(|state| self.handles_mut(state));\n",
     replace: "                let handle = state_ty.is_none_or(|state| true || self.handles_mut(state));\n",
     tests: ["test/corpus.test.ts", "-t", "^scan_object_state.rs$"],
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
     name: "flatten-some-boxed",
     breaks:
       "`flatten` of `Option<Option<T>>` items keeps each `Some(None)` boxed, `Some([object Object])`",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                    unboxed(somes(items), Some(payload))\n",
     replace: "                    unboxed(somes(items), None.filter(|_: &Ty<'tcx>| payload == payload))\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_boxed_options.rs$"],
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
     name: "nth-some-unboxed",
     breaks:
       "`nth` of items that may look like `None` gives a `None` item as `None` itself, where it's `Some(None)`",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: '                    first = method(first, "map", vec![Expr::helper("$some")]);\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_results.rs$"],
@@ -235,7 +235,7 @@ export const mutations: Mutation[] = [
     name: "flatten-btree-unordered",
     breaks:
       "`flatten` of `BTreeSet`s steps each in its JS set's order, where a JS caller's `Set` may not be in its keys' (ADR 0404, amended)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "        if self.is_sorted(inner) {\n            return self.in_order_of(value, inner, span).map(Some);\n        }\n",
     replace: "",
     tests: [
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
     name: "map-while-fused",
     breaks:
       "`map_while` is a map then a `take_while`, which stays ended after a `None`, where Rust's `MapWhile` steps on",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: 'Expr::call(Expr::helper("$lazyMapWhile"), vec![items, next(), present()])',
     replace:
       'Expr::call(Expr::helper("$lazyTakeWhile"), vec![method(items, "map", vec![next()]), present()])',
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
   {
     name: "unzip-into-a-map-refused",
     breaks: "`unzip` into a map or a set is refused",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                if !sides.iter().all(|&side| self.is_vec_like(side) || self.is_map(side)) {\n",
     replace:
       "                if !sides.iter().all(|&side| self.is_vec_like(side)) {\n",
@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
   {
     name: "nth-own-unboxed",
     breaks: "nth's Some(None) is boxed",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: 'Expr::call_helper(if boxed { "$nthSome" } else { "$nth" }, vec![items, next()])',
     replace: 'Expr::call_helper("$nth", vec![items, next()])',
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
   {
     name: "resize-room-unasked",
     breaks: "`resize(n)` past `isize::MAX` bytes is no panic",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: '        let size = self.room_size_of(&list[1], item);\n        Ok(Expr::call(\n            Expr::helper("$resize"),\n',
     replace:
       '        let size = self.room_size_of(&list[1], item).filter(|_| false);\n        Ok(Expr::call(\n            Expr::helper("$resize"),\n',
@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
   {
     name: "resize-with-room-unasked",
     breaks: "`resize_with(n, f)` past `isize::MAX` bytes is no panic",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: '        let size = self.room_size_of(&list[1], item);\n        let drop = self.items_drop(ty, span)?;\n        Ok(Expr::call(\n            Expr::helper("$resizeWith"),\n',
     replace:
       '        let size = self.room_size_of(&list[1], item).filter(|_| false);\n        let drop = self.items_drop(ty, span)?;\n        Ok(Expr::call(\n            Expr::helper("$resizeWith"),\n',
@@ -295,7 +295,7 @@ export const mutations: Mutation[] = [
   {
     name: "resize-with-given-no-drop",
     breaks: "`resize_with` of items with a destructor is given no drop",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "        let size = self.room_size_of(&list[1], item);\n        let drop = self.items_drop(ty, span)?;\n",
     replace:
       "        let size = self.room_size_of(&list[1], item);\n        let drop: Option<Expr> = None;\n",
@@ -305,7 +305,7 @@ export const mutations: Mutation[] = [
     name: "flatten-items-not-converted",
     breaks:
       "`flatten()` in generic code of `I::Item: IntoIterator` steps each item as a JS iterator, which an `Option`'s isn't",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "        if let Some(items) = self.items_by_dictionary(value.clone(), inner, span)? {\n            return Ok(Some(items));\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^associated_into_iterator_flattened_from_its_back.rs$"],
@@ -315,7 +315,7 @@ export const mutations: Mutation[] = [
     name: "inspect-throw-keeps-item",
     breaks:
       "an `inspect` whose closure panics leaves the item it was given undropped (#423)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                if throws && let Some(dropped) = self.item_drop_call(receiver_ty, item.clone(), span)? {",
     replace:
       "                if false && let Some(dropped) = self.item_drop_call(receiver_ty, item.clone(), span)? {",
@@ -325,7 +325,7 @@ export const mutations: Mutation[] = [
     name: "partition-given-no-drop",
     breaks:
       "a `partition` whose predicate panics drops none of what it held, given no drop (#423)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                let mut args = vec![items, next()];\n                args.extend(self.item_drop_of(receiver_ty, span)?);\n",
     replace: "                let args = vec![items, next()];\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -333,7 +333,7 @@ export const mutations: Mutation[] = [
   {
     name: "inserted-none-left-out",
     breaks: "`v.insert(1, None)` is `v.splice(1, 0)`, which inserts nothing, a wrong answer (ADR 0330, amended)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "    let value = value.given_item();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^trailing_none_items.rs$"],
@@ -341,7 +341,7 @@ export const mutations: Mutation[] = [
   {
     name: "never-nan-text-unmarked",
     breaks: "a `===` of text isn't known never to compare a NaN, so `any` of a `String` compared with one value stays `some`, not `includes` (rd353, ADR 0966, amended)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "        if self.eq_is_identity(ty) || self.eq_by_address(ty) {\n",
     replace: "        if false && (self.eq_is_identity(ty) || self.eq_by_address(ty)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^any_of_one_value_is_includes.rs$"],
@@ -352,7 +352,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-own-count-js",
     breaks: "a flatten of inner iterators whose own `count` it reaches is JS's `flatMap`, which has no `count`, so each is counted by `next` (#736)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "        let own_count = [OwnStep::Count, OwnStep::Last]\n",
     replace: "        let own_count = [OwnStep::Last]\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
@@ -360,7 +360,7 @@ export const mutations: Mutation[] = [
   {
     name: "lazy-scan-state-undropped",
     breaks: "a lazy `scan()`'s state with a destructor is never dropped, where Rust drops it with the `Scan` (#760)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                if let Some(state) = state_drops {\n                    self.drop_value(Expr::var(&made_state), state, span, &mut dropped)?;\n                }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^scan_drops_its_function_and_state.rs$"],
@@ -368,7 +368,7 @@ export const mutations: Mutation[] = [
   {
     name: "lazy-scan-function-undropped",
     breaks: "a lazy `scan()`'s function with a destructor is never dropped, where Rust drops it with the `Scan` (#760)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                if let Some(function) = function_drops {\n                    self.drop_value(f.clone(), function, span, &mut dropped)?;\n                }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^scan_drops_its_function_and_state.rs$"],
@@ -376,8 +376,8 @@ export const mutations: Mutation[] = [
   {
     name: "inspect-item-undropped-as-it-panics",
     breaks: "an `inspect(f)` whose `f` panics drops nothing of the item it was given, which Rust's `inspect` drops as it unwinds (#423, #938)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                    inspected = crate::lower::drops::dropped_unwinding(\n                        inspected,\n                        dropped,\n                        js::Span::NONE,\n                        &mut self.catch_names(),\n                    );\n",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
+    find: "                    inspected =\n                        crate::drops::dropped_unwinding(inspected, dropped, js::Span::NONE, &mut self.catch_names());\n",
     replace: "                    let _ = dropped;\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
@@ -385,7 +385,7 @@ export const mutations: Mutation[] = [
   {
     name: "unzip-drops-ungiven",
     breaks: "`unzip` of items with a destructor isn't given their drops, so what it unzipped before a panic is leaked (#1150)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                if let Some(last) = drops.iter().rposition(Option::is_some) {\n",
     replace: "                if let Some(last) = drops.iter().rposition(Option::is_some).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
@@ -394,7 +394,7 @@ export const mutations: Mutation[] = [
     name: "vec-insert-drop-unpassed",
     breaks:
       "a `Vec`'s `insert` past its end isn't given its item's drop, so what it took is never dropped as it panics (#1171)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "        Ok(inserted(subject, at, value, false, drop))\n",
     replace: "        Ok(inserted(subject, at, value, false, None))\n",
     tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
@@ -402,7 +402,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-write-result-tagged",
     breaks: "`flatten()` of writes' results reads each as `{ TAG }`, `undefined.TAG` (#1410)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "            true => Expr::js_undefined(),\n            false => rust_js_program::js::result::held(result),\n",
     replace: "            _ => rust_js_program::js::result::held(result),\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
@@ -410,7 +410,7 @@ export const mutations: Mutation[] = [
   {
     name: "result-items-test-tagged",
     breaks: "`flatten()` and std's `Flatten` struct's `IntoIterator` of writes' results read each as `{ TAG }`, `undefined.TAG` (#1410)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "        let ok = self.variant_test(result.clone(), ty, adt, rustc_abi::VariantIdx::ZERO, false);\n",
     replace: "        let ok = rust_js_program::js::result::is(result.clone(), true);\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^write_result_items.rs$|^write_result_items with"],
@@ -418,7 +418,7 @@ export const mutations: Mutation[] = [
   {
     name: "partition-copies-by-clone",
     breaks: "`partition` of `&T`s into a collection of `T`s calls a hand-written `Clone` of a `Copy` `T` before its predicate, which std's `extend_one` never does",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                    Some(ty::Ref(_, item, _)) if into == Some(item) => self.bits_copy_fn(item),\n",
     replace: "                    Some(ty::Ref(_, item, _)) if into == Some(item) => Some(self.clone_fn(\"item\", item, span)?),\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
@@ -427,7 +427,7 @@ export const mutations: Mutation[] = [
     name: "flatten-own-last-unasked",
     breaks:
       "a flatten whose inner iterators' `last` is the crate's own is JS's `flatMap` where its `count` isn't, so its `last` never asks theirs (#2123)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "        let own_count = [OwnStep::Count, OwnStep::Last]\n",
     replace: "        let own_count = [OwnStep::Count]\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_steps_its_inners_as_std.rs$"],
@@ -436,7 +436,7 @@ export const mutations: Mutation[] = [
     name: "flatten-of-iterators-bypasses-its-form",
     breaks:
       "a flatten of what are JS iterators already, `Box<dyn Iterator>`s or flattens, is JS's `flatMap` whatever `flattened_form` says, so a filter's `count` of it never asks their hint, where std's `FlattenCompat::size_hint` does (#2207)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                        Some(item) => self.flat_mapped(items, each, (item, output), own_count),\n",
     replace: "                        Some(_) => method(items, \"flatMap\", vec![each]),\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_asks_its_inner_iterators_hint.rs$"],
@@ -444,7 +444,7 @@ export const mutations: Mutation[] = [
   {
     name: "flatten-fusing-ignores-callers",
     breaks: "a flatten of a source only a caller knows is given `$unfused` whatever its caller says, not `$unfusedUnless(IFused)`, so a fused source is dropped at its first `None` (#2242)",
-    file: "src/lower/combinators/adapters.rs",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "                Some(fused) => vec![Expr::call_helper(\"$unfusedUnless\", vec![fused])],\n",
     replace: "                Some(_) => vec![Expr::helper(\"$unfused\")],\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_flatten_of_a_source_fused_as_its_caller_says.rs$"],

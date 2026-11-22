@@ -546,7 +546,7 @@ matrix's are, under their issues, and only shrink.
 
 ## Amendment: the lowering's iterator value, step by step (2026-11-05, #730 phase 3)
 
-Owner (b) lands as `src/lower/iterators/value.rs`'s `IterValue`, in nine
+Owner (b) lands as `crates/rust-js-lower/src/iterators/value.rs`'s `IterValue`, in nine
 steps, each its own commit. The user decided two things: the value sits
 beside each MIR local's `Expr`, and its facts are kept per local only. A
 struct's field, a closure's capture and a return fall back to the type's
@@ -1546,7 +1546,7 @@ write and ask. A first diff of them against std found five wrong answers
 `advance_back_by`, and `copied()`/`cloned()` with each other's `last` and
 `count`), and rows of `asked_of` that over- or under-claim.
 
-**std's steps are one catalog, `src/lower/recognition/std_steps.txt`,
+**std's steps are one catalog, `crates/rust-js-lower/src/recognition/std_steps.txt`,
 made from std alone by `test/std-steps.test.ts`**, never by hand
 (`BLESS=1` writes it again, its diff what the toolchain's std changed):
 

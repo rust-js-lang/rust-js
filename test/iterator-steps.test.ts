@@ -5,7 +5,7 @@
 // `nth(1)` (#2051), and a `filter`'s keeps what its accumulator holds as
 // a stage panics (#2056). Every step is `$stepNames`, lent.js's, the one
 // list; what a `&mut I` and a `Box<I>` pass on is std's steps' catalog's
-// (src/lower/recognition/std_steps.rs).
+// (crates/rust-js-lower/src/recognition/std_steps.rs).
 // A step a wrapper doesn't pass on says why here, so a sixth one can't be
 // missed: `$closing` lacked `tryFold`, and `$flattenEnds` `tryFold` and
 // what `last` takes, `inners`, which `$flatMap` had (#2051).
@@ -181,7 +181,7 @@ for (const [name, make] of [
 // Each of the runtime's adapters asks of what it holds what std's adapter
 // asks, step by step: its trace, over sources that write every step and
 // record each they're asked with its argument, is std's, the catalog's
-// (src/lower/recognition/std_steps.txt, test/std-steps.test.ts, #2112), in
+// (crates/rust-js-lower/src/recognition/std_steps.txt, test/std-steps.test.ts, #2112), in
 // each of its runs of the sources' lengths. Each step is asked as the
 // lowering asks it, by the runtime's helper where it has one. A form made
 // for one end steps none from the other: one with no `back` isn't asked a
@@ -340,7 +340,7 @@ const same = (x: unknown) => x;
 const odd = (x: number) => x % 2 === 1;
 const present = (item: unknown) => item != null;
 /** Each form lowering makes a std adapter as in place, by std's name and
- * the form's, as src/lower/iterators/in_place_forms.txt names them, made
+ * the form's, as crates/rust-js-lower/src/iterators/in_place_forms.txt names them, made
  * as it's emitted: the table both ways (Change A step 3, #2112). */
 const forms: [std: string, form: string, make: (s: Sources) => any][] = [
   ...["Map", "Cloned", "Inspect"].flatMap((name): [string, string, (s: Sources) => any][] => [
@@ -415,11 +415,11 @@ const lentForms: [std: string, form: string, make: (s: Sources) => any][] = [
   ["Box<dyn I>", "$stepsAround", (s) => std.$stepsAround(s.src())],
 ];
 
-/** The in-place forms' table, src/lower/iterators/in_place_forms.txt: of
+/** The in-place forms' table, crates/rust-js-lower/src/iterators/in_place_forms.txt: of
  * each std type and form, where it's chosen; each `Where`'s APIs; and the
  * form of each std type made knowing its hint alone (`hint <std> | <form>`,
  * #2209). */
-const table = readFileSync(join(import.meta.dir, "../src/lower/iterators/in_place_forms.txt"), "utf8").split("\n");
+const table = readFileSync(join(import.meta.dir, "../crates/rust-js-lower/src/iterators/in_place_forms.txt"), "utf8").split("\n");
 const hintRows = table.filter((line) => line.startsWith("hint ")).map((line) => line.slice("hint ".length).split(" | "));
 const chosen = new Map(
   table.filter((line) => !line.startsWith("#") && !line.startsWith("hint ") && line.includes(" | ")).map((line) => {
@@ -576,7 +576,7 @@ for (const [method, form, ask] of consumerForms) {
 }
 
 // The net runs each pair of the in-place forms' owner, and nothing else:
-// src/lower/iterators/in_place_forms.txt's rows are the forms above, both
+// crates/rust-js-lower/src/iterators/in_place_forms.txt's rows are the forms above, both
 // ways, so a form the owner gains is run, and one the net runs is the
 // owner's (Change A step 3, #2112).
 test("the net runs each in-place form the owner names, and only those", () => {

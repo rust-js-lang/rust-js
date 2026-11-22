@@ -1,11 +1,11 @@
-// Mutations of src/lower/mir/stored.rs (ADR 0562, #1089, #1110, #1113).
+// Mutations of crates/rust-js-mir/src/stored.rs (ADR 0562, #1089, #1110, #1113).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "stored-items-unrecorded",
     breaks: "a borrow of a `Vec` records none of its items, so a field's address through its iterator's reference is its item's own allocation's, not `8` past the buffer's start (#1113)",
-    file: "src/lower/mir/stored.rs",
+    file: "crates/rust-js-mir/src/stored.rs",
     find: "        .filter(|&item| stored.records(item));\n",
     replace: "        .filter(|&item| stored.records(item) && false);\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_(a_field_where_its_object_is_stored|an_item_std_lends).rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-slice-item-recorded",
     breaks: "an item of a shared subslice, a copy of its items (ADR 0063), is recorded as stored in the copy, `$stored($ptr(left, 0), 12)` before each read of one, where it's read in place, `$index(left, 0)`; its address is native Rust's since #1185's records, so the form holds it (#1109)",
-    file: "src/lower/mir/stored.rs",
+    file: "crates/rust-js-mir/src/stored.rs",
     find: "!self.field_is_its_base(from) && !from.ty.is_slice() && stored.records(to.ty)",
     replace: "!self.field_is_its_base(from) && stored.records(to.ty)",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_item_std_lends.rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "rooted-place-temporary-unmade",
     breaks: "a nested place whose root is what a `Deref` gives, `(*cell.borrow())[2].a`, reads the temporary holding it by its name, `_25`, which no JS declares: a `ReferenceError` (#1110)",
-    file: "src/lower/mir/stored.rs",
+    file: "crates/rust-js-mir/src/stored.rs",
     find: "        if pending {\n            self.flush(state, out)?;\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(address_of_a_nested_field_through_a_deref|pointer_into_a_borrow_read).rs$"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "nested-place-unrooted",
     breaks: "a raw pointer to a place reached through more than one field or item is given no root, so its address is the inner object's own, 4096 from the root's where native Rust's is 8 (#1089)",
-    file: "src/lower/mir/stored.rs",
+    file: "crates/rust-js-mir/src/stored.rs",
     find: "        (place.projection.len() - start >= 2).then_some(start)\n",
     replace: "        (place.projection.len() - start >= 99).then_some(start)\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field.rs$"],
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
   {
     name: "nested-place-index-unscaled",
     breaks: "a nested place's index that's a variable's is its offset as it is, not times its item's size, `items[i].b` at `i` where native Rust's is `i * 8` (#1089)",
-    file: "src/lower/mir/stored.rs",
+    file: "crates/rust-js-mir/src/stored.rs",
     find: "                _ => scaled.push(Expr::bin(js::Op::Mul, index, Expr::int(i128::from(item)))),\n",
     replace: "                _ => scaled.push(index),\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field.rs$"],
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
   {
     name: "nested-place-field-offset-lost",
     breaks: "a nested place's field steps add no offset, `o.inner.a` at `o.inner`'s, where native Rust's is 4 past it (#1089)",
-    file: "src/lower/mir/stored.rs",
+    file: "crates/rust-js-mir/src/stored.rs",
     find: "                    bytes += layout.fields.offset(field.index()).bytes();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field.rs$"],
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-within-dropped",
     breaks: "a record says nothing of where in its slot the object is, so an `Option`'s payload is at the `Option`'s own address, `0` where wasm32 gives `4` (#1114)",
-    file: "src/lower/mir/stored.rs",
+    file: "crates/rust-js-mir/src/stored.rs",
     find: "    let within = (within > 0).then_some(within);\n",
     replace: "    let within = (within > u64::MAX).then_some(within);\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_option_payload.rs$"],
@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-held-local-unrecorded",
     breaks: "a local held in a cell of its own, an `Option` of an object whose place a pointer is made of, records nothing of its payload there, its own allocation, `4096` where wasm32 gives `4` (#1114)",
-    file: "src/lower/mir/stored.rs",
+    file: "crates/rust-js-mir/src/stored.rs",
     find: "        let held_local = start == 0\n",
     replace: "        let held_local = false && start == 0\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_option_payload.rs$"],
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-property-cell-unrecorded",
     breaks: "a struct's `RefCell` field of a number, which holds it, records nothing of where its value is past its borrow flag, so a pointer to it is refused where it runs (#1114)",
-    file: "src/lower/mir/stored.rs",
+    file: "crates/rust-js-mir/src/stored.rs",
     find: "            && self.lends_at_block_end(state, whole);\n",
     replace: "            && self.lends_at_block_end(state, whole) && false;\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_what_a_cell_lends.rs$"],
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-variant-field-unrecorded",
     breaks: "a variant's field is recorded nowhere, its object its own allocation, `4100` where wasm32 gives `8` (#1114)",
-    file: "src/lower/mir/stored.rs",
+    file: "crates/rust-js-mir/src/stored.rs",
     find: "!self.field_is_its_base(from) && !from.ty.is_slice() && stored.records(to.ty)",
     replace: "from.variant_index.is_none() && !from.ty.is_slice() && stored.records(to.ty)",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_variant_field.rs$"],

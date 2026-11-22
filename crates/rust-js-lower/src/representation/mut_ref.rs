@@ -1,0 +1,473 @@
+//! What a `&mut` to a value is in JS, `MutRefForm`: the one answer every
+//! operation on one asks, a whole write, a move out, a copy back, a
+//! reborrow, a std call's handle and a declaration's type (ADR 1086). The
+//! predicates it's made of are this module's alone: two of them answered
+//! one question differently, `Cell::from_mut`'s and a parameter's (#614).
+
+use super::super::FnCx;
+use super::super::recognition::{StdItem, is_std_def};
+use rust_js_program::js::{self, Expr};
+use rustc_abi::VariantIdx;
+use rustc_ast::Mutability;
+use rustc_middle::ty::{self, Ty};
+use rustc_span::def_id::DefId;
+use serde_json::{Value, json};
+
+/// What a `&mut` to a value of some type is in JS (ADR 1086). Each
+/// operation on a `&mut` asks it by a method of its own here, whose match
+/// names every form, so a form an operation doesn't say what it does of is
+/// a compile error, not a silent choice. Not comparable: a site that asked
+/// `== MutRefForm::Box` chose for every other form, a new one too (#821).
+#[derive(Clone, Copy, Debug)]
+pub enum MutRefForm {
+    /// A box, `{ value }`, of a value JS can't change in place: a number,
+    /// a `String`, an enum with a fieldless variant, a counted `Rc`, a
+    /// flattened state, a `&mut` to a plain object (ADRs 0072, 0074, 0147,
+    /// #478). Its `value` is the place.
+    Box,
+    /// A box, `{ value }`, of a type parameter, which may be a number, as
+    /// generic code is compiled once (ADR 0099). Where its caller has an
+    /// object, it's given an in-place cell of it, `$cellOf` (ADR 0454).
+    GenericBox,
+    /// The object itself, which a write of the whole changes in place,
+    /// `$assign` (ADRs 0025, 0147).
+    Object,
+    /// A guard, the object of the cell it guards (ADR 0328): the object,
+    /// whose write of the whole in place would write what the cell holds.
+    Guard,
+    /// A type parameter of the function being lowered given as it is (ADR
+    /// 0411): its caller's own value, written in place, `$assign` (ADR 0481).
+    GivenAsItIs,
+    /// The value itself, which is changed only by calling or stepping it: a
+    /// JS function (ADR 0099), an iterator, or a type parameter bound by one
+    /// (ADR 0061).
+    Itself,
+}
+
+impl MutRefForm {
+    /// A cell, a box or a handle, `{ value }`, whose `value` is the place
+    /// the `&mut` points at (ADR 0099).
+    pub fn is_cell(self) -> bool {
+        match self {
+            MutRefForm::Box | MutRefForm::GenericBox => true,
+            MutRefForm::Object | MutRefForm::Guard | MutRefForm::GivenAsItIs | MutRefForm::Itself => false,
+        }
+    }
+
+    /// What `*r` reads through the `&mut` is the same JS value as `r`: the
+    /// object, a guard's object, what's given as it is, or the value
+    /// itself; not a cell's, whose read is its `value` (#1311).
+    pub fn read_is_itself(self) -> bool {
+        match self {
+            MutRefForm::Object | MutRefForm::Guard | MutRefForm::GivenAsItIs | MutRefForm::Itself => true,
+            MutRefForm::Box | MutRefForm::GenericBox => false,
+        }
+    }
+
+    /// Generic code's box, `{ value }` of a type parameter (ADR 0099), which
+    /// a caller of an object gives an in-place cell of it, `$cellOf`, and a
+    /// dictionary's entry adapts (ADR 0454).
+    pub(crate) fn is_generic_box(self) -> bool {
+        match self {
+            MutRefForm::GenericBox => true,
+            MutRefForm::Box | MutRefForm::Object | MutRefForm::Guard | MutRefForm::GivenAsItIs | MutRefForm::Itself => {
+                false
+            }
+        }
+    }
+
+    /// The `&mut` is the object it points at, a JS object: changes through
+    /// it change the one object (ADR 0025).
+    pub fn is_the_object(self) -> bool {
+        match self {
+            MutRefForm::Object | MutRefForm::Guard => true,
+            MutRefForm::Box | MutRefForm::GenericBox | MutRefForm::GivenAsItIs | MutRefForm::Itself => false,
+        }
+    }
+
+    /// The `&mut` is the value it points at, changed only by calling or
+    /// stepping it: a JS function or a JS iterator, which what's given one
+    /// may make one of; of any other form the place, never a new value made
+    /// of it (#638).
+    pub(crate) fn is_the_value(self) -> bool {
+        match self {
+            MutRefForm::Itself => true,
+            MutRefForm::Box
+            | MutRefForm::GenericBox
+            | MutRefForm::Object
+            | MutRefForm::Guard
+            | MutRefForm::GivenAsItIs => false,
+        }
+    }
+
+    /// A write of the whole through the `&mut` changes what it points at in
+    /// place, `$assign`: the one answer of `*r = v` and of `mem::replace`
+    /// and the like, `$take` (ADRs 0147, 0411, 0553).
+    pub fn written_in_place(self) -> bool {
+        match self {
+            MutRefForm::Object | MutRefForm::GivenAsItIs => true,
+            MutRefForm::Box | MutRefForm::GenericBox | MutRefForm::Guard | MutRefForm::Itself => false,
+        }
+    }
+
+    /// The TypeScript type a declaration gives a `&mut` of this form to
+    /// what's declared `pointee`: a cell's `{ value: T }`, or the pointee's
+    /// own (#619).
+    pub(crate) fn ts_type(self, pointee: Value) -> Value {
+        match self.is_cell() {
+            true => held_ts(pointee),
+            false => pointee,
+        }
+    }
+}
+
+/// `{ value: T }`: what holds a `value` of `ty`, a cell or a box (ADRs
+/// 0023, 0074), as its JS reads it, `js::HELD`.
+pub fn held_ts(ty: Value) -> Value {
+    let value = json!({ "kind": "property", "name": js::HELD, "optional": false, "readonly": false, "type": ty });
+    json!({ "kind": "object", "members": [value] })
+}
+
+/// What lowering's representation makes of the types in an item's
+/// signature, asked of a context of that item, as its body is lowered in,
+/// so a declaration says what its JS is (#619, #620, ADR 1077, amended):
+/// one answer, lowering's own.
+pub struct SignatureForms<'a, 'tcx> {
+    /// What a `&mut` to the type is, in the item's signature: `mut_ref_form`'s
+    /// answer, as `param_is_box`'s of a parameter (ADRs 0074, 0099).
+    pub mut_ref: &'a dyn Fn(DefId, Ty<'tcx>) -> MutRefForm,
+    /// The trait a `dyn` of the type is a pair of, `{ value, impl }`, its
+    /// value and its impl's dictionary: `dynamic_trait`'s answer (ADR 0049).
+    pub pair_trait: &'a dyn Fn(DefId, Ty<'tcx>) -> Option<DefId>,
+    /// What a function's JS takes and gives, as a JS caller calls it:
+    /// `js_signature`'s answer, every declaration path's (ADR 1091).
+    pub signature: &'a dyn Fn(DefId) -> super::super::signatures::JsSignature<'tcx>,
+    /// Whether an `Option` of the type boxes its `Some`, `$some(v)`, as it
+    /// may look like `None`: `boxed_payload`'s answer (ADR 0051, #842).
+    pub boxed: &'a dyn Fn(DefId, Ty<'tcx>) -> bool,
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What a `&mut` to a `ty` is, in the function being lowered (ADR 1086).
+    pub fn mut_ref_form(&self, ty: Ty<'tcx>) -> MutRefForm {
+        self.mut_ref_form_in(ty, self.typing_env.param_env)
+    }
+
+    /// `mut_ref_form`, of a type of another function's, whose type
+    /// parameters `param_env` says what they're bound by: a callee's.
+    pub(crate) fn mut_ref_form_in(&self, ty: Ty<'tcx>, param_env: ty::ParamEnv<'tcx>) -> MutRefForm {
+        let form = self.mut_ref_form_of(ty, param_env);
+        let answer = match form {
+            MutRefForm::Box => "box",
+            MutRefForm::GenericBox => "generic-box",
+            MutRefForm::Object => "object",
+            MutRefForm::Guard => "guard",
+            MutRefForm::GivenAsItIs => "given-as-it-is",
+            MutRefForm::Itself => "itself",
+        };
+        rust_js_program::decisions::record_typed("mut-ref-form", answer, crate::recognition::kind_of(self.tcx, ty));
+        form
+    }
+
+    fn mut_ref_form_of(&self, ty: Ty<'tcx>, param_env: ty::ParamEnv<'tcx>) -> MutRefForm {
+        // Another function's type in its own terms: its projections
+        // normalized there, as they can't be here, where its parameters
+        // aren't (ADR 1086). And a type only it knows first.
+        let ty = match param_env == self.typing_env.param_env {
+            true => ty,
+            false => {
+                let there = ty::TypingEnv::new(param_env, ty::TypingMode::non_body_analysis());
+                (self.tcx)
+                    .try_normalize_erasing_regions(there, ty::Unnormalized::new_wip(ty))
+                    .unwrap_or(ty)
+            }
+        };
+        // A box of an iterator, `&mut Box<I>`, is what a `&mut I` is: a
+        // `Box` is what it holds in JS, and a `&mut` to it is lent to what
+        // steps it, `by_ref()` and generic code, as the iterator's is (the
+        // user's decision, #1314, amending #1222).
+        if let Some(inner) = ty.boxed_ty()
+            && crate::recognition::trait_holds_in(
+                self.tcx,
+                ty::TypingEnv::new(param_env, ty::TypingMode::non_body_analysis()),
+                inner,
+                crate::recognition::std_item(self.tcx, crate::recognition::StdItem::Iterator),
+            ) == Some(true)
+        {
+            return self.mut_ref_form_in(inner, param_env);
+        }
+        if self.is_generic_boxed(ty, param_env) {
+            MutRefForm::GenericBox
+        } else if self.is_boxable(ty, param_env) {
+            MutRefForm::Box
+        } else if self.is_guard(ty) {
+            MutRefForm::Guard
+        } else if self.is_object(ty) {
+            MutRefForm::Object
+        // Given as it is is of the function being lowered's own type
+        // parameters, which another function's are not.
+        } else if param_env == self.typing_env.param_env && self.iterator_given_as_it_is(ty) {
+            MutRefForm::GivenAsItIs
+        } else {
+            MutRefForm::Itself
+        }
+    }
+
+    /// Whether `ty` is an enum the crate's classes flatten, a state
+    /// (`bindings::Flattened::states`, ADR 1044): a `&mut` to one is a box,
+    /// whose `value` may be its class's object, lent `{ value: chunk }`, or
+    /// a handle on its keys, its guard's (#478).
+    pub fn is_flattened_state(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if self.krate.flattened.states.contains(&adt.did()))
+    }
+
+    /// What's moved out whole of a place of an `item`, `old` its read, where
+    /// a write of the whole follows, `replace`'s, `take`'s and `swap`'s: of a
+    /// flattened state, a copy of its variant's keys (`state_copied`), as
+    /// the place may be its class's object, which the write then changes
+    /// (#658, #659); of an object or a type parameter, a copy apart,
+    /// `$apart(old)`, as the cell may be an in-place one, `Cell::from_mut`'s
+    /// or a dictionary's `&mut Self::Out`, `$cellOf(object)`, whose write
+    /// changes the object its `value` gave in place (#527, ADR 0454,
+    /// amended); of any other, `old`.
+    pub fn moved_out(&self, old: Expr, item: Ty<'tcx>) -> Expr {
+        if let ty::Adt(adt, _) = item.kind()
+            && self.is_flattened_state(item)
+        {
+            return self.state_copied(old, item, *adt);
+        }
+        match self.is_unknown(item) || self.mut_ref_form(item).written_in_place() {
+            true => Expr::call_helper("$apart", vec![old]),
+            false => old,
+        }
+    }
+
+    /// What's moved out whole of a cell that holds its value, `old` its
+    /// read, `into_inner`'s or a field's cell moved: of a flattened state,
+    /// whose cell is its class's object's keys, a copy of its variant's
+    /// (`state_copied`), which the object written again doesn't change
+    /// (#687); of any other, `old`, the value it held, which no write
+    /// changes in place.
+    pub fn moved_out_of_cell(&self, old: Expr, item: Ty<'tcx>) -> Expr {
+        match item.kind() {
+            ty::Adt(adt, _) if self.is_flattened_state(item) => self.state_copied(old, item, *adt),
+            _ => old,
+        }
+    }
+
+    /// A copy of a flattened state's keys, `of` the object they're on, that
+    /// its variant has, chosen by its tag, as a value of it made in JS has
+    /// them: `of.status === "pending" ? { status: of.status, tries: of.tries
+    /// } : { status: of.status, value: of.value }`, never a key an earlier
+    /// variant left on the object (the user's decision, 2026-11-04, ADR
+    /// 1044). Variants of the same keys are one copy, tested together; of
+    /// one copy, no test.
+    fn state_copied(&self, of: Expr, ty: Ty<'tcx>, adt: ty::AdtDef<'tcx>) -> Expr {
+        let tag = super::super::bindings::tag_key(self.tcx, adt.did());
+        let mut copies: Vec<(Vec<String>, Vec<VariantIdx>)> = Vec::new();
+        for (index, variant) in adt.variants().iter_enumerated() {
+            let keys: Vec<String> = (variant.fields.iter())
+                .map(|field| super::super::bindings::field_key(self.tcx, field).text().to_string())
+                .collect();
+            match copies.iter_mut().find(|(those, _)| *those == keys) {
+                Some((_, variants)) => variants.push(index),
+                None => copies.push((keys, vec![index])),
+            }
+        }
+        let copy = |keys: &[String]| {
+            let keys = std::iter::once(&tag).chain(keys);
+            let props = keys.map(|key| js::Prop::Field(key.clone(), Expr::member(of.clone(), key)));
+            Expr::object(props.collect())
+        };
+        let (last, earlier) = copies.split_last().expect("an enum of variants");
+        earlier.iter().rev().fold(copy(&last.0), |otherwise, (keys, variants)| {
+            let test = self.variants_test(of.clone(), ty, adt, variants, &[], (false, None));
+            Expr::cond(test, copy(keys), otherwise)
+        })
+    }
+
+    /// Is `output`, what a std call gives, a `&mut` that's a place, not a
+    /// value made a JS iterator of: one to an iterator in a place, `&mut
+    /// items[1]` of a `Vec<Range<i32>>`'s, is what `mut_ref_form` says, the
+    /// place, which `r.next()` would otherwise step apart from the item
+    /// (#638); of one that's the value itself, a std iterator's, that value.
+    /// One to a type only a caller knows, a guard's `&mut I`, is the place
+    /// of the JS iterator its caller gave, which `*guard = other` writes
+    /// (#1016).
+    pub fn std_lends_a_place(&self, output: Ty<'tcx>) -> bool {
+        matches!(*output.kind(), ty::Ref(_, inner, Mutability::Mut)
+            if !self.mut_ref_form(inner).is_the_value() || self.is_unknown(inner))
+    }
+
+    /// Is a `&mut` of a `ty` a handle, `{ value }`, where std gives one to a
+    /// closure, `retain_mut`'s: a cell's, or of a
+    /// type only a caller knows, which generic code reads through its
+    /// `value`, a box's (ADR 0454). Of a type parameter bound by `FnMut` or
+    /// `Iterator`, or given as it is, a handle where `mut_ref_form` says the
+    /// value itself (ADR 1086).
+    pub(crate) fn handles_mut(&self, ty: Ty<'tcx>) -> bool {
+        self.mut_ref_form(ty).is_cell() || self.is_unknown(ty)
+    }
+
+    /// A value JS can't change in place, a `&mut` to which is a box.
+    fn is_boxable(&self, ty: Ty<'tcx>, param_env: ty::ParamEnv<'tcx>) -> bool {
+        // What an `impl Trait` is, a returned closure's the closure.
+        let ty = self.reveal(ty);
+        // A `Pin` is its pointer (ADR 0329), and a `&mut` to a pinned
+        // reference the pin, which only what it points at is changed through.
+        if let Some(pointer) = self.recognition().pinned(ty) {
+            return !self.mut_is_the_pin(ty) && self.is_boxable(pointer, param_env);
+        }
+        // A `&mut` to a value JS can't change in place is a cell, which can't
+        // be changed in place either: a `&mut` to it, a cell of the cell. A
+        // `&mut` to a plain object is the object, which a write of the whole
+        // through a `&mut` to it, `*r = &mut other`, makes another: a cell
+        // too, rust_decimal's `impl AddAssign for &mut Decimal`'s `&mut self`.
+        // Not of an iterator or a function, each the JS one it steps or calls
+        // (ADRs 0071, 0099). Of a slice, a cell of its view, as a `&mut &[T]`
+        // is a cell of its: a write of the whole re-points it, `*buf = &mut
+        // take(buf)[n..]`, std's `Write for &mut [u8]`, and a write through
+        // it writes what it views, both seen by the caller (#1282).
+        if let ty::Ref(_, inner, Mutability::Mut) = *ty.kind() {
+            let plain_object = self.is_object(inner)
+                && !self.is_callable(inner)
+                && !self.implements_iterator(inner)
+                && !self.is_generic_iter(inner);
+            return self.mut_ref_form_in(inner, param_env).is_cell() || plain_object;
+        }
+        // A shared reference to an object, a map's say: a write of the whole
+        // through a `&mut` to it, `*r = &other`, makes it another, never
+        // changes what it was to, as `$assign` would (#1021): a cell, as one
+        // to a struct's array is.
+        if let ty::Ref(_, inner, Mutability::Not) = *ty.kind()
+            && self.is_object(inner)
+            && !inner.is_slice()
+            && !self.is_callable(inner)
+            && !self.implements_iterator(inner)
+        {
+            return true;
+        }
+        // A counted `Rc` or its `Weak`, an object its owners share (ADR 0523), or a
+        // flattened state, its class's keys (#478): a `&mut` to one is a cell.
+        let shared = self.counted_rc(ty).is_some() || self.counted_weak(ty).is_some() || self.is_flattened_state(ty);
+        // Its own function's types in its own terms, another's in that one's.
+        let typing_env = match param_env == self.typing_env.param_env {
+            true => self.typing_env,
+            false => ty::TypingEnv::new(param_env, ty::TypingMode::non_body_analysis()),
+        };
+        !self.recognition().is_unknown_in(ty, typing_env)
+            && (!self.is_object(ty) || shared)
+            // A `&mut dyn FnMut()` is the function (ADR 0099).
+            && !self.is_callable(ty)
+            && self.unsupported_part(ty).is_none()
+    }
+
+    /// A type parameter a `&mut` is to, `&mut T` or `&mut Self`, where `param_env`
+    /// says what it's bound by: a box, whatever it is (ADR 0099), since generic
+    /// code is compiled once and `T` may be a number. Not one that's a JS
+    /// function or a JS iterator already: a closure, whose `&mut` is the
+    /// closure, or an iterator (ADR 0061).
+    fn is_generic_boxed(&self, ty: Ty<'tcx>, param_env: ty::ParamEnv<'tcx>) -> bool {
+        let typing_env = ty::TypingEnv::new(param_env, ty::TypingMode::non_body_analysis());
+        self.recognition().is_unknown_in(ty, typing_env)
+            && !self.declared_bounds(ty, param_env).into_iter().any(|id| {
+                self.tcx.fn_trait_kind_from_def_id(id).is_some()
+                    || is_std_def(self.tcx, id, StdItem::Iterator)
+                    || is_std_def(self.tcx, id, StdItem::IntoIterator)
+            })
+    }
+
+    /// A `&mut` to a value JS can't change in place, as a value: a cell, a box
+    /// or a handle, whose `value` is the place it points at (ADR 0099).
+    pub fn is_cell(&self, ty: Ty<'tcx>) -> bool {
+        matches!(*ty.kind(), ty::Ref(_, inner, Mutability::Mut) if self.mut_ref_form(inner).is_cell())
+    }
+
+    /// A value of type `ty` seen through its references, as the code that
+    /// shows, compares or orders one reads it: a `&` is the value (ADR 0023),
+    /// a `&mut` to a value JS can't change in place a cell, whose `value` it
+    /// is (ADR 0099), or the place of a `Handle` on one.
+    pub fn through_refs(&self, value: Expr, ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
+        self.through_refs_until(value, ty, &|_| false)
+    }
+
+    /// `through_refs`, not past a reference `stop` says, one with a
+    /// formatting impl of its own (`shown_through`, #1798).
+    pub(crate) fn through_refs_until(
+        &self,
+        mut value: Expr,
+        mut ty: Ty<'tcx>,
+        stop: &dyn Fn(Ty<'tcx>) -> bool,
+    ) -> (Expr, Ty<'tcx>) {
+        while let ty::Ref(_, inner, mutability) = *ty.kind()
+            && !stop(ty)
+        {
+            if mutability == Mutability::Mut && self.mut_ref_form(inner).is_cell() {
+                value = match value.kind {
+                    js::ExprKind::Handle(place, _) => *place,
+                    _ => Expr::held(value),
+                };
+            }
+            ty = inner;
+        }
+        (value, ty)
+    }
+
+    /// What a call that gives what it's given gives (`Std::Same`), of a
+    /// `given` and an `output`: the value as it is, where both are behind a
+    /// `&mut`'s cell or neither is. Where only what it's given is, std's
+    /// `AsRef` or `Borrow` of a `&mut T`, `s.as_ref()` of an `s: &mut
+    /// String`, its `&` is to what's in the cell, its `value` (#1486).
+    pub(crate) fn same_as(&self, value: Expr, given: Ty<'tcx>, output: Ty<'tcx>) -> Expr {
+        let shared = matches!(output.kind(), ty::Ref(_, _, Mutability::Not));
+        match shared && self.has_cell_layer(given) && !self.has_cell_layer(output) {
+            true => self.through_refs(value, given).0,
+            false => value,
+        }
+    }
+
+    /// Is one of the references `ty` is behind a `&mut` cell, so that its JS
+    /// value is an object, not what it points at (ADR 0099)?
+    pub(crate) fn has_cell_layer(&self, mut ty: Ty<'tcx>) -> bool {
+        while let ty::Ref(_, inner, mutability) = *ty.kind() {
+            if mutability == Mutability::Mut && self.mut_ref_form(inner).is_cell() {
+                return true;
+            }
+            ty = inner;
+        }
+        false
+    }
+
+    /// What `fn_id`'s parameter `i` is, a `&mut`'s form in `fn_id`'s own
+    /// terms; `None` of a parameter that's no `&mut`.
+    pub(crate) fn param_form(&self, fn_id: DefId, i: usize) -> Option<MutRefForm> {
+        let args = ty::GenericArgs::identity_for_item(self.tcx, fn_id);
+        self.param_form_of(fn_id, args, self.tcx.param_env(fn_id), i)
+    }
+
+    /// What `fn_id`'s parameter `i` is, given `args`, where `param_env`
+    /// says what they are: a copied default's in its impl's terms
+    /// (`traits::default_args`); `None` of a parameter that's no `&mut`.
+    pub(crate) fn param_form_of(
+        &self,
+        fn_id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        param_env: ty::ParamEnv<'tcx>,
+        i: usize,
+    ) -> Option<MutRefForm> {
+        let inputs = (self.tcx.fn_sig(fn_id).instantiate(self.tcx, args))
+            .skip_normalization()
+            .skip_binder()
+            .inputs();
+        match inputs.get(i).map(|input| *input.kind()) {
+            Some(ty::Ref(_, inner, Mutability::Mut)) => Some(self.mut_ref_form_in(inner, param_env)),
+            _ => None,
+        }
+    }
+
+    /// Is `fn_id`'s parameter `i` a box: a `&mut` to a value JS can't change in
+    /// place (ADR 0074), or to a type parameter (ADR 0099)?
+    pub fn param_is_box(&self, fn_id: DefId, i: usize) -> bool {
+        self.param_form(fn_id, i).is_some_and(MutRefForm::is_cell)
+    }
+}

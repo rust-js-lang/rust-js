@@ -1,4 +1,4 @@
-// Mutations of src/lower/default_exports.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/default_exports.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "default-export-unwritten",
     breaks:
       "a Rust route's module has no default export, which Next.js takes as its page",
-    file: "src/lower/default_exports.rs",
+    file: "crates/rust-js-lower/src/default_exports.rs",
     find: "                default.export = Some(function);\n                default.declared",
     replace:
       "                let _ = function;\n                default.declared",
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
   {
     name: "default-of-another-refused",
     breaks: "`js::export_default!` of another module's function is an error",
-    file: "src/lower/default_exports.rs",
+    file: "crates/rust-js-lower/src/default_exports.rs",
     find: "            Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {\n",
     replace:
       "            Some(function) if false && unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {\n",
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     name: "bound-global-default-refused",
     breaks:
       "`js::export_default!(assign)` of a global binding is refused as no function of its module's",
-    file: "src/lower/default_exports.rs",
+    file: "crates/rust-js-lower/src/default_exports.rs",
     find: "            Some(function) if unset && super::bindings::held_path(tcx, function).is_some() => {\n",
     replace:
       "            Some(function) if false && unset && super::bindings::held_path(tcx, function).is_some() => {\n",
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     name: "default-class-refused",
     breaks:
       "`js::export_default!(Complex)` of a class is refused, not `export default Complex;`",
-    file: "src/lower/default_exports.rs",
+    file: "crates/rust-js-lower/src/default_exports.rs",
     find: "                            (_, Some(Res::Def(DefKind::Struct, class))) if super::classes::is_class(tcx, class) => {\n",
     replace:
       "                            (_, Some(Res::Def(DefKind::Struct, class))) if false => {\n",
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     name: "default-never-declared",
     breaks:
       "`js::export_default! { fn noop() {} }` is `function noop() {} export default noop;`",
-    file: "src/lower/default_exports.rs",
+    file: "crates/rust-js-lower/src/default_exports.rs",
     find: "    held_by_default(tcx, function) && tcx.get_attrs_by_path(function, &path).next().is_some()\n",
     replace:
       "    false && tcx.get_attrs_by_path(function, &path).next().is_some()\n",
@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
   {
     name: "default-of-the-function-unseen",
     breaks: "`js::export_default! { fn noop() {} }` exports nothing",
-    file: "src/lower/default_exports.rs",
+    file: "crates/rust-js-lower/src/default_exports.rs",
     find: "            if held_by_default(tcx, def.to_def_id()) {\n                return (Some(def.to_def_id()), tcx.def_span(def));\n",
     replace:
       "            if false {\n                return (Some(def.to_def_id()), tcx.def_span(def));\n",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     name: "default-export-function-only",
     breaks:
       "`js::export_default!(Memoized)` of a `thread_local!` memo'd component is an error, not `export default Memoized;`",
-    file: "src/lower/default_exports.rs",
+    file: "crates/rust-js-lower/src/default_exports.rs",
     find: "Some(Res::Def(DefKind::Fn | DefKind::Const | DefKind::Static { .. }, function)),",
     replace: "Some(Res::Def(DefKind::Fn | DefKind::Static { .. }, function)),",
     tests: ["test/declarations.test.ts", "-t", "thread-local default"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     name: "default-constant-unheld",
     breaks:
       "a `const` the macro holds isn't the default itself, so it's refused as no function of its module",
-    file: "src/lower/default_exports.rs",
+    file: "crates/rust-js-lower/src/default_exports.rs",
     find: "        DefKind::Const => tcx.item_name(def) != kw::Underscore,\n",
     replace: "        DefKind::Const => false,\n",
     tests: [
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     name: "default-exported-as-name",
     breaks:
       "a `pub use` of a module's default re-exports it by its name, `export { noop } from \"./noop.js\"`, which that module doesn't export",
-    file: "src/lower/default_exports.rs",
+    file: "crates/rust-js-lower/src/default_exports.rs",
     find: '        return "default".to_string();\n',
     replace: "        return name.to_string();\n",
     tests: [
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     name: "own-alias-importer-by-name",
     breaks:
       "another module imports `{ getCurrentTime }` of a module that exports it as `unstable_now` alone (ADR 0596, amended)",
-    file: "src/lower/default_exports.rs",
+    file: "crates/rust-js-lower/src/default_exports.rs",
     find: "        Some(alias) => alias.exported,\n",
     replace: "        Some(_) => name.to_string(),\n",
     tests: [
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     name: "own-alias-of-another-module",
     breaks:
       "`pub use crate::scheduler::get_current_time;` in another module is taken for that module's own alias",
-    file: "src/lower/default_exports.rs",
+    file: "crates/rust-js-lower/src/default_exports.rs",
     find: "            let own = (named.as_local()).is_some_and(|local| tcx.parent_module_from_def_id(local) == module);\n",
     replace: "            let own = named.as_local().is_some();\n",
     tests: [
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
     name: "own-alias-dropped",
     breaks:
       "`pub use self::current_time as unstable_now` exports nothing by `unstable_now`",
-    file: "src/lower/default_exports.rs",
+    file: "crates/rust-js-lower/src/default_exports.rs",
     find: "            Some((alias.item, (info.name.clone(), alias.exported.clone())))\n",
     replace:
       "            Some((alias.item, (info.name.clone(), alias.exported.clone()))).filter(|_| false)\n",
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
     name: "export-named-apart-unaliased",
     breaks:
       "an export named apart, `delete$`, is never written `export { delete$ as delete }`, so its module exports nothing by `delete` (#338)",
-    file: "src/lower/default_exports.rs",
+    file: "crates/rust-js-lower/src/default_exports.rs",
     find: "        .filter_map(|(&id, info)| Some((id, (info.name.clone(), info.export.clone()?))))\n",
     replace:
       "        .filter_map(|(&id, info)| Some((id, (info.name.clone(), info.export.clone().filter(|_| false)?))))\n",
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
   {
     name: "then-alias-allowed",
     breaks: "a `pub use` of the module's own function as `then` compiles, and its module is a thenable (#1068, ADR 1106)",
-    file: "src/lower/default_exports.rs",
+    file: "crates/rust-js-lower/src/default_exports.rs",
     find: "        super::bindings::then_export_refused(tcx, tcx.def_span(alias.item), &what, &alias.exported);\n",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "a module's own function by a pub use as then"],

@@ -1,11 +1,11 @@
-// Mutations of src/lower/iterators/ends.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/iterators/ends.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "sort-comparator-by-cmp",
     breaks: "JS's `sort` of a quiet order is given `cmp`, where std's sort asks `<`, `partial_cmp`'s (#937)",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "                    let compare = self.cmp_fn(elem, true, span)?;\n                    self.sort_by_compare(items, compare, elem)\n",
     replace: "                    let compare = self.cmp_fn(elem, false, span)?;\n                    self.sort_by_compare(items, compare, elem)\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "repeat-uncloned",
     breaks:
       "`repeat(vec![0])` gives the one `Vec` each time, where Rust clones it",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: '                let clone = match self.needs_clone(item) {\n                    true => Some(self.clone_fn("value", item, span)?),\n',
     replace:
       "                let clone = match self.needs_clone(item) {\n                    true => None,\n",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "successors-unboxed",
     breaks:
       "a generic `successors` gives its boxed `Some`s, not what's in them",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "                let boxed = self.boxed_payload(item);\n                let mut list: Vec<Expr>",
     replace:
       "                let boxed = self.boxed_payload(item) && false;\n                let mut list: Vec<Expr>",
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-last-unboxed",
     breaks: "`last()` of `()`s is `undefined`, and reads as `None`",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "            Some(item) if self.boxed_payload(item) => {\n                let items = if items.reads_same() {",
     replace:
       "            Some(item) if false && self.boxed_payload(item) => {\n                let items = if items.reads_same() {",
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
   {
     name: "string-sort-by-units",
     breaks: "`sort()` of strings is JS's, by UTF-16 units",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "                } else if elem.is_bool() {",
     replace:
       "                } else if elem.is_bool() || self.is_string_like(elem) {",
@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
     name: "last-is-first",
     breaks:
       '`path.split("/").last()` is the first piece, `.at(0)`, not the last',
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "            _ => Expr::builtin(items, \"at\", vec![Expr::int(-1)]),",
     replace: "            _ => Expr::builtin(items, \"at\", vec![Expr::int(0)]),",
     tests: [
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     name: "repeat-drop-ungiven",
     breaks:
       "`repeat`'s value is never dropped, as its iterator isn't given its drop",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "                let args = Expr::optional_args(list, vec![clone, drop]);\n",
     replace: "                let args = Expr::optional_args(list, vec![clone]);\n",
     tests: [
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
     name: "extreme-by-unboxed",
     breaks:
       "`max_by()` and its kind of items that may look like `None` isn't boxed, so the greatest `None` is no item, `None` where native Rust has `Some(None)`",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "        let boxed = self.boxed_payload(item);\n        let drop = self.std_drop_function(item, span)?;\n",
     replace:
       "        let boxed = false;\n        let drop = self.std_drop_function(item, span)?;\n",
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-n-is-repeat",
     breaks: "`repeat_n` is `repeat`'s, given its count as its clone",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "                    _ => repeating_n(args),\n",
     replace: "                    _ => Expr::call(Expr::helper(\"$repeating\"), args),\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_and_peek_mut.rs$"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     name: "successors-drop-not-given",
     breaks:
       "`successors` of a value with a destructor isn't given its item's drop, so what it holds is never dropped",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "                        self.drop_function(item, span)?\n",
     replace: "                        None\n",
     tests: ["test/corpus.test.ts", "-t", "^successors_drops.rs$"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     name: "nullable-sort-by-js",
     breaks:
       "a sort of items that can be `None` is JS's own `sort`, which puts each `undefined` last without asking the comparator, where `None` is first",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: '            true => Expr::call(Expr::helper("$sort"), vec![items, compare]),\n',
     replace:
       '            true => Expr::call(Expr::member(items, "sort"), vec![compare]),\n',
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     name: "zip-function-side-as-given",
     breaks:
       "`std::iter::zip`'s second side is given as it is, so a range's `{ start, end }` or an `Option`'s value is zipped, not their items",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "                let b = self.iterable_items(b, tys[1], span, out)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_function.rs$"],
@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-while-rejected-undropped",
     breaks: "the item `take_while` stops at isn't dropped",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "        exprs.extend(self.std_drop_function(item, span)?);\n",
     replace: "        let _ = item;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
     name: "mir-filter-discarded-undropped",
     breaks:
       "MIR's `filter` of items with a destructor leaves those it discards undropped",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "            Some(drop) => Expr::call_helper(\"$filterDropping\", vec![it, test, drop]),\n",
     replace: "            Some(_) => Expr::call(Expr::member(it, \"filter\"), vec![test]),\n",
     tests: ["test/corpus.test.ts", "-t", "collect_drops"],
@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-by-ends-lost",
     breaks: "`max_by`'s and its kind's function that holds what has a destructor is given its helper nothing to drop it by, so it's never dropped (#734)",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "            (drop, Some(ends), None) => args.extend([drop.unwrap_or_else(Expr::js_undefined), ends]),\n",
     replace: "            (drop, Some(_), None) => args.extend(drop),\n",
     tests: ["test/corpus.test.ts", "-t", "^max_by_drops_its_function_first.rs$"],
@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
   {
     name: "max-by-drops-none",
     breaks: "`max_by` of items with a destructor drops none it passes over",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "            return self.extreme_by(helper, vec![items, f], item, (ends, None), span);\n",
     replace: "            return Ok(Expr::call(Expr::helper(helper), vec![items, f]));\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-by-listed",
     breaks: "`max_by_key` lists every item before its key is made of the first",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "        let key_drop = self.std_drop_function(key, span)?;\n",
     replace: "        let items = Expr::call(Expr::member(items, \"toArray\"), Vec::new());\n        let key_drop = self.std_drop_function(key, span)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^consumers_step_each.rs$"],
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
   {
     name: "max-by-key-drop-unpassed",
     breaks: "`max_by_key`'s helper isn't given its key's drop: no key with a destructor is ever dropped (#776)",
-    file: "src/lower/iterators/ends.rs",
+    file: "crates/rust-js-lower/src/iterators/ends.rs",
     find: "        self.extreme_by(helper, vec![items, f, compare], item, (ends, key_drop), span)\n",
     replace: "        let _ = key_drop;\n        self.extreme_by(helper, vec![items, f, compare], item, (ends, None), span)\n",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],

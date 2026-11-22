@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/hints.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/hints.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 const fallthrough = [
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "switch-constants-unvalued",
     breaks:
       "a `match` of the registry's symbols in a `Some`, `Some(A | B)`, is no `switch` that takes `None` to its `default`, its `if (symbolFor != null)` kept (#221)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                    _ => self.constant_values(&arm.pattern, present).is_some(),\n",
     replace: "                    _ => false,\n",
     tests: [
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
     name: "guard-before-its-constants-unjoined",
     breaks:
       "a guarded arm that does nothing before an arm of its constants alone, `I if legacy_off => {}` then `I => { .. }`, makes no `switch` of its `match`, React's completeWork an `if` chain in labeled blocks (ADR 0905, amended)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                            && self.does_nothing(arms[i].body)\n",
     replace: "                            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_does_nothing.rs$"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     name: "switch-last-name-an-if-chain",
     breaks:
       "a `match` of constants whose last arm is a name, `current => current`, is an `if` chain or its `?:`, not upstream's `switch` with that arm its `default` (ADR 0629, amended)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                            thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. }\n                                if i == last && guard.is_none() =>\n",
     replace:
       "                            thir::PatKind::Wild\n                                if i == last && guard.is_none() =>\n",
@@ -49,8 +49,8 @@ export const mutations: Mutation[] = [
     name: "typeof-nullish-no-case",
     breaks:
       "`Kind::Undefined` and `Kind::Null`, which have no fields, aren't cases of a `switch (typeof value)`",
-    file: "src/lower/mir/hints.rs",
-    find: "                && crate::lower::untagged::told_by_kind(self.tcx, adt_def.variant(*variant_index))\n",
+    file: "crates/rust-js-mir/src/hints.rs",
+    find: "                && rust_js_lower::untagged::told_by_kind(self.tcx, adt_def.variant(*variant_index))\n",
     replace:
       "                && !adt_def.variant(*variant_index).fields.is_empty()\n",
     tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
@@ -59,8 +59,8 @@ export const mutations: Mutation[] = [
     name: "typeof-switch-present-unknown",
     breaks:
       "a `switch` of `classify(Some(value))` isn't told it's there, so its object's case leaves out `null`",
-    file: "src/lower/mir/hints.rs",
-    find: "                let present = crate::lower::body_queries::given_present(self.tcx, self.frame.thir, scrutinee).is_some();\n",
+    file: "crates/rust-js-mir/src/hints.rs",
+    find: "                let present =\n                    rust_js_lower::body_queries::given_present(self.tcx, self.frame.thir, scrutinee).is_some();\n",
     replace: "                let present = false;\n",
     tests: [
       "test/lowering-switches.test.ts",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     name: "pattern-tests-nested",
     breaks:
       "`(Some(x), Some(y))`'s tests are `if (p != null) { if (q != null) {` nested",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                    std::iter::once((tested, tested))\n                        .chain(guards)\n",
     replace:
       "                    std::iter::empty()\n                        .chain(guards)\n",
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-guard-conditions-unknown",
     breaks: "a guarded arm's pattern test and its guard stay nested `if`s",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                        let guard = self.frame.thir[arm].guard?;\n",
     replace:
       "                        let guard = self.frame.thir[arm].guard.filter(|_| false)?;\n",
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
     name: "while-hint-span-whole",
     breaks:
       "a `while` in a closure isn't known as one: its desugared test's span, of another body, isn't the loop's",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                            && w.span.source_callsite().source_equal(written)\n",
     replace:
       "                            && w.span.source_callsite() == written\n",
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
     name: "mir-continue-alone-only",
     breaks:
       "only an `if` of a `continue` alone is known written so, not one that ends with one",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "let only = match (block.stmts.last(), block.expr) {",
     replace:
       "let only = match (block.stmts.last().filter(|_| block.stmts.len() == 1), block.expr) {",
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
     name: "mir-let-else-continue-unwritten",
     breaks:
       "a `let \u2026 else { continue; }` from MIR isn't one the program wrote: `if (current) { .. }` around the rest, not the guard",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "        let lets = if of_else { Vec::new() } else { self.let_else_jumps(jump) };\n",
     replace: "        let lets = Vec::new();\n",
     tests: [
@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
     name: "mir-else-continues-of-thens",
     breaks:
       "an `else`'s written `continue` isn't known, so `} else { ..; continue; }` at a turn's end loses it (ADR 0684, amended)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "        let else_continues = self.jump_ifs(&continue_of, true);\n",
     replace: "        let else_continues = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
     name: "mir-else-breaks-unknown",
     breaks:
       "an `else`'s written `break` isn't known, so React DOM's replayUnblockedFormActions' `} else { break; }` prints `return;` (ADR 0684, amended)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "        let else_breaks = self.jump_ifs(&break_of, true);\n",
     replace: "        let else_breaks = Vec::new();\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "tidy takes"],
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
     name: "mir-match-arm-jumps-unknown",
     breaks:
       "a `match`'s `None => break` in the loop a function ends with isn't known, so React DOM's hideOrUnhideDehydratedBoundary prints MIR's `return;` (rd165b)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "        let arm_breaks = (self.jump_arms(&break_of, false).into_iter())\n",
     replace: "        let arm_breaks = (Vec::<(js::Span, js::Span, js::Span)>::new().into_iter())\n",
     tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
@@ -169,7 +169,7 @@ export const mutations: Mutation[] = [
     name: "mir-match-arm-jump-of-blocks-end-unknown",
     breaks:
       "an arm of a `match` that ends a block with a `break`, `None => { ..; break; }`, isn't known, so it prints MIR's `return;` (rd165b)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                        only = stripped(match (block.stmts.last(), block.expr) {\n",
     replace: "                        only = stripped(match (None::<&thir::StmtId>, block.expr) {\n",
     tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
     name: "mir-label-of-scope",
     breaks:
       "MIR's labeled loop in a scope of its own is named `bbN`, not its label",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "Some((self.strip(value), self.label_apart(e.span, written_label(&label))))\n",
     replace: "Some((value, self.label_apart(e.span, written_label(&label))))\n",
     tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
@@ -188,7 +188,7 @@ export const mutations: Mutation[] = [
     name: "switch-of-two-arms",
     breaks:
       'a `match` of two cases is a `switch`, `switch (s) { case "a": .. default: .. }`, not the `if` of two ways',
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "const SWITCH_CASES: usize = 3;\n",
     replace: "const SWITCH_CASES: usize = 2;\n",
     tests: [
@@ -201,7 +201,7 @@ export const mutations: Mutation[] = [
     name: "switch-of-a-guard",
     breaks:
       "a guarded arm is a case where a later arm does something, `1 if n > 0 => 1, .., _ => 3`, which a failed guard leaves for after the `switch`, not the arms after it",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                                guard.is_none() || falls[i] || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])\n",
     replace: "                                true\n",
     tests: [
@@ -214,7 +214,7 @@ export const mutations: Mutation[] = [
     name: "switch-guard-refused",
     breaks:
       "a guarded arm after which only `_ => {}` comes isn't a case, so React's `match` of seven constants is an `if` chain",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                                guard.is_none() || falls[i] || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])\n",
     replace: "                                guard.is_none() || falls[i]\n",
     tests: [
@@ -227,7 +227,7 @@ export const mutations: Mutation[] = [
     name: "switch-guard-later-arms-unasked",
     breaks:
       "a guarded arm is a case where a later arm could take its constant, `C if on => 30, .., _ => 0`, so a failed guard gives nothing, not `0`",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "            !self.may_match_alike(pattern, &arm.pattern)\n",
     replace: "            true\n",
     tests: [
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
     name: "switch-guard-later-wild-unread",
     breaks:
       "a guarded arm is a case where the `_` after it does something, `_ => 0`, which a failed guard then doesn't",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                    && self.does_nothing(arm.body))\n",
     replace: "                    )\n",
     tests: [
@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [
     name: "switch-guard-variants-alike",
     breaks:
       "a later arm of another variant may take a guarded arm's, so the `match` is an `if` chain",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "            ) => x == y && (xs.iter().zip(ys)).all(|(x, y)| self.may_match_alike(&x.pattern, &y.pattern)),\n",
     replace: "            ) => true,\n",
     tests: [
@@ -266,7 +266,7 @@ export const mutations: Mutation[] = [
     name: "switch-guard-constants-alike",
     breaks:
       "a later arm of another constant may take a guarded arm's, so the `match` is an `if` chain",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                (Some(x), Some(y)) => x == y,\n",
     replace: "                (Some(_), Some(_)) => true,\n",
     tests: [
@@ -279,7 +279,7 @@ export const mutations: Mutation[] = [
     name: "switch-of-a-value-in-place",
     breaks:
       "a `match` whose value is read in place is a `switch` of a temporary, `let tmp; switch (n) { .. } f(tmp)`, not its `?:`",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                    || self.read_in_place(hir_id)\n",
     replace: "",
     tests: [
@@ -292,7 +292,7 @@ export const mutations: Mutation[] = [
     name: "switch-cases-counted-as-arms",
     breaks:
       "a `match` of one arm of several constants and a `_` is two arms, so no `switch`, though it's a case of each",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                let cases: usize = arms.iter().map(SwitchArm::cases).sum();\n",
     replace: "                let cases: usize = arms.len();\n",
     tests: [
@@ -305,7 +305,7 @@ export const mutations: Mutation[] = [
     name: "typeof-switch-of-bindings-unseen",
     breaks:
       "an arm that names its variant's value, `Kind::String(text)`, the value itself, is no case, so a `match` of what a value is stays an `if` chain",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                        thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. }\n                    )\n",
     replace:
       "                        thir::PatKind::Wild\n                    )\n",
@@ -319,7 +319,7 @@ export const mutations: Mutation[] = [
     name: "typeof-array-counted-a-case",
     breaks:
       "an arm of `Kind::Array`, an `if` before the `switch`, counts a case, so `String`, `Array` and `_` are a `switch` of two",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                .filter(|c| !matches!(c, Constant::Kind(TypeofCase::Tested(_) | TypeofCase::Inside(..))))\n",
     replace: "",
     tests: [
@@ -332,7 +332,7 @@ export const mutations: Mutation[] = [
     name: "range-arm-tests-apart",
     breaks:
       "a range pattern's two bounds are an `if` in an `if`, not `score >= 90 && score <= 100`",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                        .chain(patterns)\n",
     replace: "                        .chain(patterns.take(0))\n",
     tests: [
@@ -345,7 +345,7 @@ export const mutations: Mutation[] = [
     name: "or-pattern-cases-each",
     breaks:
       'an arm of `Kind::Object(_) | Kind::Array(_)` has the cases of each, which its test, `typeof value === "object"`, isn\'t, so the `match` is no `switch`',
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                let (adt, args, mut variants) = each.next()??;\n",
     replace:
       "                let (adt, args, mut variants) = each.next()??;\n                return None;\n",
@@ -359,7 +359,7 @@ export const mutations: Mutation[] = [
     name: "mir-labeled-block-breaks-unfound",
     breaks:
       "no `break` the program wrote is known of the block it labeled, which is MIR's `bb41` (ADR 0742)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                block.breaks.push(self.js_span(e.span));\n",
     replace: "",
     tests: [
@@ -372,9 +372,9 @@ export const mutations: Mutation[] = [
     name: "held-guard-not-a-case",
     breaks:
       "a `match js::classify(value)` whose object arm's guard holds stays an `if` chain, not a `switch` (ADR 0790)",
-    file: "src/lower/mir/hints.rs",
-    find: "                            .filter(|&guard| !held.contains(&crate::lower::body_queries::strip(self.frame.thir, guard)))\n",
-    replace: "                            .filter(|&guard| true || !held.contains(&crate::lower::body_queries::strip(self.frame.thir, guard)))\n",
+    file: "crates/rust-js-mir/src/hints.rs",
+    find: "!held.contains(&rust_js_lower::body_queries::strip(self.frame.thir, guard))\n",
+    replace: "true || !held.contains(&rust_js_lower::body_queries::strip(self.frame.thir, guard))\n",
     tests: [
       "test/lowering-labels.test.ts",
       "-t",
@@ -385,7 +385,7 @@ export const mutations: Mutation[] = [
     name: "written-ifs-unseen",
     breaks:
       "no `if` is one the program wrote, so one an earlier test decides is folded away with its comment",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                thir::ExprKind::If { cond, .. } if !e.span.from_expansion() => {\n                    Some(self.js_span(self.frame.thir[cond].span))\n",
     replace:
       "                thir::ExprKind::If { cond, .. } if !e.span.from_expansion() && false => {\n                    Some(self.js_span(self.frame.thir[cond].span))\n",
@@ -399,7 +399,7 @@ export const mutations: Mutation[] = [
     name: "switch-falls-nowhere",
     breaks:
       "no guarded arm falls to the next arm's case, so React's `getComponentNameFromFiber` is an `if` chain",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "        values.iter().all(|v| next.contains(v)) && next.iter().any(|v| !values.contains(v))\n",
     replace: "        false && values.iter().all(|v| next.contains(v))\n",
     tests: fallthrough,
@@ -408,7 +408,7 @@ export const mutations: Mutation[] = [
     name: "switch-fallen-to-names-all",
     breaks:
       "the arm a guarded arm falls to keeps the constants the one before names, which MIR tests only there, so the `match` stays an `if` chain",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                                    .filter(|(_, value)| !before.contains(value))\n",
     replace: "",
     tests: fallthrough,
@@ -417,7 +417,7 @@ export const mutations: Mutation[] = [
     name: "switch-guard-to-default-no-fall",
     breaks:
       "a guarded arm just before a last `_` that does something isn't a case, so React's `describeFiber` is an `if` chain",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                                || (i + 1 == last\n",
     replace: "                                || (false && i + 1 == last\n",
     tests: toDefault,
@@ -426,7 +426,7 @@ export const mutations: Mutation[] = [
     name: "switch-default-after-fall-unvalued",
     breaks:
       "the `_` a guarded arm falls to is asked the values of its constants, which it has none of, so the `match` is an `if` chain",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                            true if constants.is_empty() => constants,\n",
     replace: "",
     tests: toDefault,
@@ -435,7 +435,7 @@ export const mutations: Mutation[] = [
     name: "mir-loop-breaks-of-blocks",
     breaks:
       "the `if`s of a `break` the program wrote are of its labeled blocks' `break`s, not its loops', so a comment before a loop's `break` is before the loop (#298)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "matches!(kind, thir::ExprKind::Break { label, .. } if !labeled.contains(&label.local_id));\n",
     replace:
       "matches!(kind, thir::ExprKind::Break { label, .. } if labeled.contains(&label.local_id));\n",
@@ -449,7 +449,7 @@ export const mutations: Mutation[] = [
     name: "written-label-snake-case",
     breaks:
       "the program's `'get_tag` is `get_tag:` in JS, not camelCase as every name is (ADR 0944)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "    rust_js_program::casing::camel_case(label.ident.name.as_str().trim_start_matches('\\''))\n",
     replace:
       "    label.ident.name.as_str().trim_start_matches('\\'').to_string()\n",
@@ -459,7 +459,7 @@ export const mutations: Mutation[] = [
     name: "match-arms-no-else",
     breaks:
       "a two-arm `match` is no `if` the program wrote with an `else`, so its last arm follows a guard, `if (current == null) { ..; return ..; } wip.lanes = ..;`, not React's `if (..) { .. } else { .. }` (ADR 0237, amended, the user's decision)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                } if arms.len() == 2\n",
     replace: "                } if arms.len() == 2 && false\n",
     tests: ["test/corpus.test.ts", "-t", "^match_last_arm_else.rs$"],
@@ -469,7 +469,7 @@ export const mutations: Mutation[] = [
     name: "match-arm-jump-alone-an-else",
     breaks:
       "a `match` whose arm is a jump alone, `None => break`, is an `if` with an `else`, which takes the loop's way out from its `while` (ADR 0237, amended)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                    && !arms.iter().any(|&arm| self.jump_alone(self.frame.thir[arm].body))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^loop_exit_code_after.rs$"],
@@ -479,7 +479,7 @@ export const mutations: Mutation[] = [
     name: "question-exit-not-a-guard",
     breaks:
       "React's findHostInstance, `let host_fiber = host_fiber?;` of an `Option<Rc<T>>`, is `if (hostFiber != null) { return ..; } return null;`, the guard turned (q1, ADR 0879, amended)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "            .chain(tries)\n",
     replace: "",
     tests: ["test/lowering-written-elses.test.ts", "-t", "guard first"],
@@ -488,7 +488,7 @@ export const mutations: Mutation[] = [
     name: "arm-exit-not-a-guard",
     breaks:
       "React's trackDeletedPairViewTransitions, `let pairs = match e { Some(p) if .. => p, _ => { return; } };`, is the rest inside `if (pairs != null && pairs.size !== 0) { .. }`, its comment lost (ag6, ADR 0879, amended)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "            .chain(arm_exits)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^match_arm_guard_first.rs$"],
@@ -498,7 +498,7 @@ export const mutations: Mutation[] = [
     name: "else-if-links-unrecorded",
     breaks:
       'no `else if` is a link of a chain, so a function\'s value of one keeps its last link folded, `else { return thing === "" ? .. : .. }`, half a chain (ADR 0969, amended, rd23)',
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                    thir::ExprKind::If { cond, .. } => Some(self.js_span(self.frame.thir[cond].span)),\n",
     replace:
       "                    thir::ExprKind::If { cond, .. } => Some(self.js_span(self.frame.thir[cond].span)).filter(|_| false),\n",
@@ -508,7 +508,7 @@ export const mutations: Mutation[] = [
     name: "guard-read-not-a-case",
     breaks:
       "React DOM's SimpleEventPlugin, `name if ANIMATION_END.with(|e| e == name) => ..`, is no case, so the `match` is an `if` chain, a labeled block where a guarded arm falls through, not `case ANIMATION_END:` (rd113, ADR 0629 amended)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                            && let Some(reads) = self.reads_compared(guard, var)\n",
     replace:
       "                            && let Some(reads) = self.reads_compared(guard, var).filter(|_| false)\n",
@@ -519,7 +519,7 @@ export const mutations: Mutation[] = [
     name: "guard-read-of-a-local",
     breaks:
       "a guard comparing what's matched with a parameter, `n if n == limit`, is a case of it, `case limit:`, where the user decided only a thread-local's or a `static`'s read is (rd113, ADR 0629 amended)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                thir::ExprKind::StaticRef { .. } => true,\n",
     replace:
       "                thir::ExprKind::StaticRef { .. } | thir::ExprKind::VarRef { .. } => true,\n",
@@ -530,7 +530,7 @@ export const mutations: Mutation[] = [
     name: "guard-read-of-any-cell",
     breaks:
       "a guard comparing what's matched with a parameter's `Cell`, `n if n == cell.get()`, is a case of it, `case cell.value:`, not only a thread-local's `get()` (rd113, ADR 0629 amended)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                                .is_std_type(thir[key].ty.peel_refs(), StdItem::LocalKey)\n",
     replace:
       "                                .is_std_type(thir[key].ty.peel_refs(), StdItem::LocalKey) || true\n",
@@ -541,7 +541,7 @@ export const mutations: Mutation[] = [
     name: "or-guard-of-reads-no-case",
     breaks:
       "SimpleEventPlugin's `name if ANIMATION_END.with(..) || ANIMATION_START.with(..)` is no case, so its `match` is a labeled block's `if` chain, not `case ANIMATION_END: case ANIMATION_START:` (rd118, ADR 0905 amended)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "            return Some(self.reads_compared(lhs, name)? + self.reads_compared(rhs, name)?);\n",
     replace: "            return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_guards_fall_twice.rs$"],
@@ -551,7 +551,7 @@ export const mutations: Mutation[] = [
     name: "let-else-pattern-no-condition",
     breaks:
       "a `let … else` of a tuple of patterns tests each part in an `if` of its own, React's noop dumpTree's `if (root != null) { if (rootContainer != null) { ..the rest..; return; } }` and the `else`'s body after it, not `if (root == null || rootContainer == null) { ..; return; }` (rd299)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                    let pattern = self.js_span(pattern.span);\n                    Some((pattern, pattern))\n",
     replace: "                    let _ = pattern;\n                    None\n",
     tests: ["test/corpus.test.ts", "-t", "^let_else_tuple_guard.rs$"],
@@ -561,7 +561,7 @@ export const mutations: Mutation[] = [
     name: "panicking-arm-an-else",
     breaks:
       "a match arm that only panics, react-art's appendInitialChild's `Child::Text(_) => panic!(..)`, is a branch: `if (..) { throw .. } else { child.inject(..) }`, not a guard and the rest after it (ADR 0237)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                _ => return self.frame.thir[body].ty.is_never(),\n",
     replace: "                _ => return false,\n",
     tests: ["test/lowering-written-elses.test.ts", "-t", "panics is a guard"],
@@ -570,7 +570,7 @@ export const mutations: Mutation[] = [
     name: "statement-match-folded",
     breaks:
       "a `match` written as a statement, each arm setting a late `let`, React's ViewTransitions' `if (clones === null) { previousMeasurements = null; } else { .. }`, is one conditional, `previous = clones == null ? undefined : ..` (rd647)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                } if e.ty.is_unit() && !arms.is_empty() => {\n",
     replace: "                } if false && e.ty.is_unit() && !arms.is_empty() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^match_statement_arms.rs$"],
@@ -580,7 +580,7 @@ export const mutations: Mutation[] = [
     name: "statement-match-of-a-desugaring",
     breaks:
       "a `match` a desugaring writes, a `for`'s or a `?`'s, is kept as a statement's `if` too, so a value's `match` inside a `for` stays an `if` of its arms (rd647)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                    match_source: rustc_hir::MatchSource::Normal,\n                    ..\n                } if e.ty.is_unit() && !arms.is_empty() => {\n",
     replace: "                    ..\n                } if e.ty.is_unit() && !arms.is_empty() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^match_statement_arms.rs$"],
@@ -590,7 +590,7 @@ export const mutations: Mutation[] = [
     name: "mir-match-arm-continues-unknown",
     breaks:
       "a `match` of strings in a loop whose arms `continue`, more of the turn after it, is an `if` chain, the rest an `else`, not a `switch` whose cases `continue` (#518)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "        let arm_continues = self.jump_arms(&continue_of, true);\n",
     replace: "        let arm_continues = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
@@ -600,7 +600,7 @@ export const mutations: Mutation[] = [
     name: "mir-match-arm-continue-of-its-pattern",
     breaks:
       "an arm that `continue`s is known by its pattern alone, so an or-pattern's arm, whose `continue` MIR jumps to past the block of its alternatives, `\"HTML\" | \"HEAD\" => { ..; continue; }`, isn't (#518)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "                    let written = self.js_span(self.frame.thir[arm].span);\n",
     replace: "                    let written = self.js_span(self.frame.thir[arm].pattern.span);\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
@@ -609,15 +609,15 @@ export const mutations: Mutation[] = [
   {
     name: "no-thir-hints-told-anyway",
     breaks: "`--no-thir-hints` tells tidy where the program writes its constructs all the same, so the tidy-stages variant without them tries the JS as built, and a meaning a hint carries goes unseen (#1766, ADR 1144, amended)",
-    file: "src/lower/mir/hints.rs",
-    find: "        // None, of `--no-thir-hints` (ADR 1144).\n        if !crate::lower::session::thir_hints() {\n",
+    file: "crates/rust-js-mir/src/hints.rs",
+    find: "        // None, of `--no-thir-hints` (ADR 1144).\n        if !rust_js_lower::session::thir_hints() {\n",
     replace: "        // None, of `--no-thir-hints` (ADR 1144).\n        if false {\n",
     tests: ["test/tidy-stages.test.ts", "-t", "without the THIR hints isn't its JS"],
   },
   {
     name: "shadowing-label-one-with-its-outer",
     breaks: "a loop's label written inside a loop or a block of its word is taken for the outer's, so a `break 'a` of the inner leaves the outer, a loop that never ends (#1969)",
-    file: "src/lower/mir/hints.rs",
+    file: "crates/rust-js-mir/src/hints.rs",
     find: "            k => rust_js_program::names::given_apart(&word, k),\n",
     replace: "            _ => word,\n",
     tests: ["test/corpus.test.ts", "-t", "^label_shadowing_its_enclosing_label.rs$"],

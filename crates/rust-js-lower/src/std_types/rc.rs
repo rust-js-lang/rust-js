@@ -1,0 +1,568 @@
+//! A counted `Rc` or `Arc` (ADR 0320): `{ value, strong, weak }`, which its
+//! clones and `Weak`s share, where the crate reads its counts; of a `dyn`,
+//! its pair with its counts (ADR 0520); of a `#[rust_js::class]`, the
+//! instance itself, its box hidden beside it (#1228). Every other is the
+//! value it points at (ADR 0023). The one owner of how each is held, read,
+//! made and counted (`RcForm`).
+
+use crate::calls::apply;
+use crate::temporary_names::Role;
+use rustc_middle::ty::{self, GenericArgsRef, Ty};
+use rustc_span::Span;
+use rustc_span::def_id::DefId;
+
+use crate::recognition::{rc_pointee, weak_pointee};
+use crate::{FnCx, R, Std};
+use rust_js_program::js::{Expr, Op, Prop, Stmt, StmtKind};
+
+/// How a counted `Rc` of a pointee is held (ADRs 0320, 0520, #1228).
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub(crate) enum RcForm {
+    /// `{ value, strong, weak }`.
+    Box,
+    /// A `dyn`'s pair with its counts, `{ value, impl, strong, weak }`.
+    Pair,
+    /// A class's instance itself, which JS calls its methods on, its box
+    /// hidden beside it, `instance[$countedKey]`, whose `value` is the instance.
+    Instance,
+    /// A type parameter's, which a counted class may be: either of the
+    /// two, told apart as it runs, `$countedValue(rc)` and `$countedBox(rc)`.
+    Either,
+}
+
+/// Which of its counts an `Rc` or a `Weak` is asked.
+#[derive(Clone, Copy, PartialEq)]
+pub(crate) enum RcCount {
+    Strong,
+    Weak,
+}
+
+/// What only a counted `Rc` or its `Weak` answers.
+#[derive(Clone, Copy, PartialEq)]
+pub enum RcOp {
+    StrongCount,
+    WeakCount,
+    PtrEq,
+    Downgrade,
+    GetMut,
+    MakeMut,
+    TryUnwrap,
+    IntoInner,
+    UnwrapOrClone,
+    NewCyclic,
+    /// `Rc::map(this, f)`, Rust 1.100's (#1656).
+    Map,
+    WeakNew,
+    Upgrade,
+    WeakStrongCount,
+    WeakWeakCount,
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether `==` of two `rc`s, `Rc`s or `Arc`s of `pointee`, asks
+    /// whether they're one allocation first, as std's `RcEqIdent` does of
+    /// an `Eq` value: `Some(None)` where it does, `Some(Some(fact))` where
+    /// the caller's type says, its `TEq` (#931), `None` where it doesn't.
+    pub(crate) fn rc_eq_first(&mut self, rc: Ty<'tcx>, pointee: Ty<'tcx>, span: Span) -> R<Option<Option<Expr>>> {
+        let eq = crate::recognition::std_item(self.tcx, crate::recognition::StdItem::Eq);
+        match self.recognition().trait_holds(pointee, eq) {
+            Some(true) => {
+                self.check_rc_allocations(&rc.to_string(), pointee, span)?;
+                Ok(Some(None))
+            }
+            Some(false) => Ok(None),
+            None => Ok(Some(Some(self.type_fact_value(
+                pointee,
+                crate::recognition::TypeFact::Eq,
+                span,
+            )?))),
+        }
+    }
+
+    /// Refused where `==` of two `rc`s of `pointee`, an `Eq` value whose
+    /// `eq` runs the crate's code, would ask whether they're one allocation
+    /// first, but JS can't tell two apart: an `Rc` whose counts nothing
+    /// reads is its value, whose `===` is its allocation's only where it's
+    /// an object (#930). Of a caller's type, the `TEq` it gives (#931).
+    pub(crate) fn check_rc_allocations(&self, rc: &str, pointee: Ty<'tcx>, span: Span) -> R<()> {
+        if self.custom_eq(pointee)
+            && !self.eq_is_identity(pointee)
+            && !self.krate.counted.counts(self.tcx, pointee)
+            && !self.is_object(pointee)
+        {
+            return Err(self.unsupported(
+                span,
+                &format!("`==` of two `{rc}`s, which std compares by address first, of a value that isn't an object in JS (#930): compare the values, `*a == *b`, which calls its `eq` as std does for two allocations"),
+            ));
+        }
+        Ok(())
+    }
+
+    /// How a counted `Rc` of `pointee` is held: a `dyn`'s pair, a class's
+    /// instance, or a box; of a type parameter a counted class of the
+    /// crate's may be, either, told apart as it runs (#1228).
+    pub(crate) fn rc_form(&self, pointee: Ty<'tcx>) -> RcForm {
+        if let ty::Dynamic(predicates, ..) = pointee.kind()
+            && self.recognition().is_pair_dyn(predicates)
+        {
+            return RcForm::Pair;
+        }
+        if let ty::Adt(..) = pointee.kind() {
+            return match counted_as_instance(self.tcx, pointee) {
+                true => RcForm::Instance,
+                false => RcForm::Box,
+            };
+        }
+        match self.krate.counted.may_be_counted_class(self.tcx, pointee) {
+            true => RcForm::Either,
+            false => RcForm::Box,
+        }
+    }
+
+    /// A count of a counted `rc` of `pointee`, an `Rc` or, of a `Weak`, the
+    /// box it is: its own field, or its box's, a class instance's hidden one.
+    pub(crate) fn rc_count(&self, rc: Expr, pointee: Ty<'tcx>, count: RcCount) -> Expr {
+        let field = match count {
+            RcCount::Strong => "strong",
+            RcCount::Weak => "weak",
+        };
+        match self.rc_form(pointee) {
+            RcForm::Box | RcForm::Pair => Expr::member(rc, field),
+            RcForm::Instance | RcForm::Either => Expr::member(Expr::call_helper("$countedBox", vec![rc]), field),
+        }
+    }
+
+    /// What a counted `Rc` points at, if `ty` is one.
+    pub fn counted_rc(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        rc_pointee(self.tcx, ty).filter(|&pointee| self.krate.counted.counts(self.tcx, pointee))
+    }
+
+    /// What a counted `Weak` points at, if `ty` is one: a `Weak` of a
+    /// counted `Rc`'s. Every other is what its `Rc` is, the value itself,
+    /// or `null` of a `Weak::new()` (ADR 0843).
+    pub(crate) fn counted_weak(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        weak_pointee(self.tcx, ty).filter(|&pointee| self.krate.counted.counts(self.tcx, pointee))
+    }
+
+    /// Refused, a binding's call of a counted `Rc` or `Weak` among its type
+    /// arguments, `WeakMap<K, Rc<T>>::get` (ADR 0850): JS's value is the
+    /// counted box, which what JS gives back a Rust owner of, `get`'s
+    /// `Rc`, would drop without the clone that counted it. An uncounted one
+    /// is the value it points at, which JS holds as Rust shares it. And of a
+    /// `RefCell` that's its `{ value }` box, not the object it holds, as
+    /// `ref_cells` says (ADR 0962).
+    pub(crate) fn check_given_to_js(&self, def_id: DefId, generic_args: GenericArgsRef<'tcx>, span: Span) -> R<()> {
+        if !crate::bindings::is_binding(self.tcx, def_id) {
+            return Ok(());
+        }
+        let refused = |what: String, why: &str| {
+            Err(crate::refusal::refuse(
+                self.tcx,
+                span,
+                crate::refusal::Refused::Because(&format!("{what} given to JS or taken from it"), why),
+            ))
+        };
+        let counted = (generic_args.types())
+            .flat_map(|ty| ty.walk())
+            .filter_map(|part| part.as_type())
+            .find(|&part| self.counted_rc(part).is_some() || self.counted_weak(part).is_some());
+        if let Some(rc) = counted {
+            return refused(
+                format!("a counted `{rc}`"),
+                "JS holds the box that counts it, which counts no clone JS makes; an `Rc` is the value it points at where the crate reads no count and drops nothing it points at (ADR 0844)",
+            );
+        }
+        // A `RefCell` JS holds that's its `{ value }` box, not the object it
+        // holds; not one a function JS is given captures, which JS holds
+        // only the function of (ADR 0962).
+        let boxed = generic_args.types().find_map(|ty| {
+            let mut walk = ty.walk();
+            while let Some(part) = walk.next() {
+                let Some(part) = part.as_type() else { continue };
+                match part.kind() {
+                    ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..) | ty::Dynamic(..) | ty::Coroutine(..) => {
+                        walk.skip_current_subtree()
+                    }
+                    ty::Adt(adt, _)
+                        if crate::recognition::is_std_def(
+                            self.tcx,
+                            adt.did(),
+                            crate::recognition::StdItem::RefCell,
+                        ) && !self.is_value_cell(part) =>
+                    {
+                        return Some(part);
+                    }
+                    _ => {}
+                }
+            }
+            None
+        });
+        if let Some(cell) = boxed {
+            return refused(
+                format!("a `{cell}`"),
+                "JS would hold its `{ value }` box, not what it holds; a `RefCell` is the object it holds where that's an array, a map, a set or a struct's object no generic code or `dyn` boxes (ADR 0863)",
+            );
+        }
+        Ok(())
+    }
+
+    /// What an uncounted `Weak` points at, if `ty` is one (ADR 0843).
+    pub(crate) fn uncounted_weak(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        weak_pointee(self.tcx, ty).filter(|&pointee| !self.krate.counted.counts(self.tcx, pointee))
+    }
+
+    /// `Weak::new()`, and `Weak`'s `Default`, of a `Weak` type `weak`: a
+    /// counted one's, `$weakNone`, the one each is, so two are `ptr_eq`;
+    /// or an uncounted one's `null` (ADR 0843).
+    pub(crate) fn weak_to_nothing(&self, weak: Ty<'tcx>) -> Expr {
+        match self.counted_weak(weak) {
+            Some(_) => Expr::helper("$weakNone"),
+            None => Expr::null(),
+        }
+    }
+
+    /// `Rc::new(value)` of a counted box: `{ value, strong: 1, weak: 0 }`.
+    fn new_rc(value: Expr) -> Expr {
+        Expr::object(vec![
+            Prop::Field(rust_js_program::js::HELD.into(), value),
+            Prop::Field("strong".into(), Expr::int(1)),
+            Prop::Field("weak".into(), Expr::int(0)),
+        ])
+    }
+
+    /// A counted `Rc` of a `dyn` made of its pair, `{ value, impl }`: the
+    /// pair with its counts, `{ value, impl, strong: 1, weak: 0 }`, the
+    /// pair's own fields where it's made here, else `{ ...pair, .. }`.
+    fn new_counted_pair(pair: Expr) -> Expr {
+        let mut props = match pair.kind {
+            rust_js_program::js::ExprKind::Object(props, ..) => props,
+            _ => vec![Prop::Spread(pair)],
+        };
+        props.push(Prop::Field("strong".into(), Expr::int(1)));
+        props.push(Prop::Field("weak".into(), Expr::int(0)));
+        Expr::object(props)
+    }
+
+    /// `Rc::make_mut(&mut place)` of an `Rc` of `item`: the place given the
+    /// one `$makeMut` gives, and what it points to (ADR 0364).
+    pub fn make_mut_values(&mut self, place: Expr, item: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        let mut given = vec![place.clone(), self.clone_arg(item, span)?];
+        given.extend(self.drop_function(item, span)?);
+        let made = Expr::call(Expr::helper("$makeMut"), given);
+        out.push(StmtKind::Assign(place.clone(), made).at(self.js_span(span)));
+        Ok(self.through_rc(place, item))
+    }
+
+    /// An `Rc`'s or a `Weak`'s function, of its arguments' values, `tys`
+    /// their types, giving an `output` (ADR 0364).
+    pub fn rc_values(
+        &mut self,
+        op: RcOp,
+        (values, tys, output): (Vec<Expr>, &[Ty<'tcx>], Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let pointee = tys.first().and_then(|first| {
+            let first = first.peel_refs();
+            self.counted_rc(first).or(self.counted_weak(first))
+        });
+        let mut values = values.into_iter();
+        let helper = |name: &'static str, args: Vec<Expr>| Expr::call_helper(name, args);
+        Ok(match op {
+            // An uncounted `Weak` is what its `Rc` is, the value itself, and
+            // one to nothing `null`: nothing asks whether it's alive, so it
+            // needs no count; `Weak::ptr_eq` is `===` of either (ADR 0843).
+            RcOp::Downgrade if self.uncounted_weak(output).is_some() => values.next().expect("an `Rc`"),
+            RcOp::WeakNew => self.weak_to_nothing(output),
+            RcOp::NewCyclic => {
+                let f = values.next().expect("a function");
+                let pointee = rc_pointee(self.tcx, output).expect("an `Rc`");
+                match self.rc_form(pointee) {
+                    RcForm::Instance => helper("$newCyclic", vec![f, Expr::bool(true)]),
+                    // Of a type parameter a counted class may be, as its
+                    // caller says, `TInstance` (#1423).
+                    RcForm::Either => {
+                        let instance = self.type_fact_value(pointee, crate::recognition::TypeFact::Instance, span)?;
+                        helper("$newCyclic", vec![f, instance])
+                    }
+                    RcForm::Box | RcForm::Pair => helper("$newCyclic", vec![f]),
+                }
+            }
+            // `f` of what it points at, `this` dropped after it, or as it
+            // unwinds (`dropped_unwinding`), and what `f` gives in an `Rc`
+            // of its own, as std's:
+            // its reuse of the allocation where nothing else holds it is
+            // unseen.
+            RcOp::Map => {
+                let (rc, f) = (values.next().expect("an `Rc`"), values.next().expect("a function"));
+                let this = tys[0];
+                let item = rc_pointee(self.tcx, this).expect("an `Rc`");
+                let rc = if rc.reads_same() {
+                    rc
+                } else {
+                    self.spill(Role::Rc, rc, out)
+                };
+                let through = match pointee {
+                    Some(_) => self.counted_pointee(rc.clone(), item),
+                    None => rc.clone(),
+                };
+                let mapped = apply(f, vec![through]);
+                let mapped = match self.std_drop_call(this, rc, span)? {
+                    None => mapped,
+                    Some(dropped) => {
+                        let js_span = self.js_span(span);
+                        let name = self.fresh(Role::Mapped);
+                        out.push(StmtKind::Let(name.clone(), None).at(js_span));
+                        let body = vec![StmtKind::Assign(Expr::var(&name), mapped).at(js_span)];
+                        let dropped = StmtKind::Expr(dropped).at(js_span);
+                        out.extend(crate::drops::dropped_unwinding(
+                            body,
+                            vec![dropped.clone()],
+                            js_span,
+                            &mut self.catch_names(),
+                        ));
+                        out.push(dropped);
+                        Expr::var(&name)
+                    }
+                };
+                match self.counted_rc(output) {
+                    Some(made) => self.new_counted_rc(mapped, made, span)?,
+                    None => mapped,
+                }
+            }
+            RcOp::MakeMut => return Err(self.unsupported(span, "`Rc::make_mut`, of its value alone")),
+            // The same box, a counted one's, or an uncounted one's JS object,
+            // whose `===` is its identity (ADR 0582).
+            RcOp::PtrEq => {
+                let (rc, other) = (values.next().expect("an `Rc`"), values.next().expect("another"));
+                Expr::bin(Op::Eq, rc, other)
+            }
+            _ => {
+                let rc = values.next().expect("an `Rc`");
+                // A `&mut` to one is its place's box (ADR 0523).
+                let rc = match tys.first().map(|t| t.kind()) {
+                    Some(ty::Ref(_, _, ty::Mutability::Mut)) => Expr::held(rc),
+                    _ => rc,
+                };
+                let item = pointee.expect("a counted `Rc` or a `Weak`");
+                match op {
+                    RcOp::PtrEq => unreachable!("an arm of its own"),
+                    RcOp::StrongCount => self.rc_count(rc, item, RcCount::Strong),
+                    RcOp::WeakCount => self.rc_count(rc, item, RcCount::Weak),
+                    // A `Weak`'s, the box it is, whichever form its `Rc` is.
+                    RcOp::WeakStrongCount => Expr::member(rc, "strong"),
+                    RcOp::WeakWeakCount => helper("$weakCount", vec![rc]),
+                    RcOp::Downgrade => helper("$downgrade", vec![rc]),
+                    RcOp::Upgrade => helper("$upgrade", vec![rc]),
+                    RcOp::TryUnwrap => helper("$tryUnwrap", vec![rc]),
+                    RcOp::IntoInner => helper("$intoInner", vec![rc]),
+                    RcOp::UnwrapOrClone => {
+                        let mut given = vec![rc, self.clone_arg(item, span)?];
+                        given.extend(self.drop_function(item, span)?);
+                        helper("$unwrapOrClone", given)
+                    }
+                    // `Some` of a `&mut` to what it points at, if it's the only
+                    // `Rc` and nothing's weak to it.
+                    RcOp::GetMut if self.boxed_payload(item) => {
+                        return Err(self.unsupported(span, &format!("`Rc::get_mut` of an `Rc<{item}>`")));
+                    }
+                    RcOp::GetMut => {
+                        let rc = if rc.reads_same() {
+                            rc
+                        } else {
+                            self.spill(Role::Rc, rc, out)
+                        };
+                        let only = Expr::bin(
+                            Op::And,
+                            Expr::bin(Op::Eq, self.rc_count(rc.clone(), item, RcCount::Strong), Expr::int(1)),
+                            Expr::bin(Op::Eq, self.rc_count(rc.clone(), item, RcCount::Weak), Expr::int(0)),
+                        );
+                        let given = self.through_rc(rc, item);
+                        Expr::cond(only, given, Expr::js_undefined())
+                    }
+                    RcOp::WeakNew | RcOp::NewCyclic | RcOp::Map | RcOp::MakeMut => unreachable!("lowered above"),
+                }
+            }
+        })
+    }
+
+    /// A `&mut` to what a counted `Rc` points at: the object itself, or for
+    /// a number or text, the `Rc`, whose `value` it is (ADR 0074).
+    /// What a counted `Rc` of `pointee` points at, as JS reads it: its
+    /// `value`; of a `dyn`'s, its pair, the `Rc` itself, `{ value, impl,
+    /// strong, weak }` (ADR 0520). The one answer, of each that reads it.
+    /// Of a class's, the instance, the `Rc` itself; of a type parameter a
+    /// counted class may be, `$countedValue(rc)` (#1228).
+    pub(crate) fn counted_pointee(&self, rc: Expr, pointee: Ty<'tcx>) -> Expr {
+        match self.rc_form(pointee) {
+            RcForm::Pair | RcForm::Instance => rc,
+            RcForm::Either => Expr::call_helper("$countedValue", vec![rc]),
+            RcForm::Box => Expr::held(rc),
+        }
+    }
+
+    fn through_rc(&self, rc: Expr, item: Ty<'tcx>) -> Expr {
+        match self.rc_form(item) {
+            RcForm::Box if self.mut_ref_form(item).is_cell() => rc,
+            _ => self.counted_pointee(rc, item),
+        }
+    }
+
+    /// `Rc::new(value)` of a counted one of `pointee`, held as `rc_form`
+    /// says: `{ value, strong: 1, weak: 0 }`, or a class's instance with its
+    /// box hidden beside it, `$countedInstance(value)` (#1228); of a type
+    /// parameter a counted class may be, as its caller says it is,
+    /// `$countedNew(value, TInstance)` (#1423).
+    pub(crate) fn new_counted_rc(&mut self, value: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
+        match self.rc_form(pointee) {
+            RcForm::Instance => Ok(Expr::call_helper("$countedInstance", vec![value])),
+            RcForm::Either => {
+                let instance = self.type_fact_value(pointee, crate::recognition::TypeFact::Instance, span)?;
+                Ok(Expr::call_helper("$countedNew", vec![value, instance]))
+            }
+            RcForm::Pair | RcForm::Box => Ok(Self::new_rc(value)),
+        }
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `Rc::new(x)` or `*rc` of a counted `Rc`, each `Std::Same` of one that
+    /// isn't: `{ value: x, strong: 1, weak: 0 }`, or `rc.value`.
+    pub(crate) fn counted_same(
+        &mut self,
+        def_id: DefId,
+        generic_args: GenericArgsRef<'tcx>,
+        value: Expr,
+        span: Span,
+    ) -> R<Option<Expr>> {
+        let Some((new, pointee)) = self.recognition().rc_same(def_id, generic_args) else {
+            return Ok(None);
+        };
+        if !self.krate.counted.counts(self.tcx, pointee) {
+            return Ok(None);
+        }
+        Ok(Some(match new {
+            // Of a `Box<dyn T>`'s pair, `Rc::from(b)`: that pair counted,
+            // `{ ...b, strong: 1, weak: 0 }`, as `counted_pointee` reads it
+            // (ADR 0520), not the box held whole (#399).
+            true if self.rc_form(pointee) == RcForm::Pair => Self::new_counted_pair(value),
+            true => self.new_counted_rc(value, pointee, span)?,
+            false => self.counted_pointee(value, pointee),
+        }))
+    }
+
+    /// `counted_same_of`, of the function `def_id` of `generic_args`.
+    pub(super) fn counted_same_by(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> Option<bool> {
+        let (new, pointee) = self.recognition().rc_same(def_id, generic_args)?;
+        self.krate.counted.counts(self.tcx, pointee).then_some(new)
+    }
+
+    /// A value as `kind`, `{}`'s or `{:?}`'s, shows it: through its
+    /// references (ADR 0099), and its counted `Rc`s, guards and pins,
+    /// `through_boxes_until`'s; not past a layer with an impl of its
+    /// formatting trait of its own, `impl Display for &ByRef`, which shows
+    /// it (#1798).
+    pub fn shown_through(&self, value: Expr, ty: Ty<'tcx>, kind: Std) -> (Expr, Ty<'tcx>) {
+        let own = |ty: Ty<'tcx>| self.formats_itself(kind, ty);
+        let (value, ty) = self.through_refs_until(value, ty, &own);
+        self.through_boxes_until(value, ty, &own)
+    }
+
+    /// Whether `ty`, a reference, a `Box` or a `Pin`, has an impl of the
+    /// formatting trait `kind` shows by of its own, not std's that passes it
+    /// on to what it holds (#1798).
+    // helper: delegates to its owner's answer (#2172)
+    pub(crate) fn formats_itself(&self, kind: Std, ty: Ty<'tcx>) -> bool {
+        (self.fmt_trait_of(kind)).is_some_and(|tr| self.recognition().formats_itself(tr, ty))
+    }
+
+    /// `ty` through its references as `kind` shows it, `through_refs_until`'s
+    /// type: not past one with an impl of its own (#1798).
+    pub fn shown_ref_type(&self, kind: Std, ty: Ty<'tcx>) -> Ty<'tcx> {
+        match self.fmt_trait_of(kind) {
+            Some(tr) => self.recognition().refs_shown_by(tr, ty),
+            None => ty.peel_refs(),
+        }
+    }
+
+    /// `through_boxes_until`, read only until what's left is `to`: what `AsRef<to>`
+    /// or `Borrow<to>` of a `ty` gives, a `Box<Rc<str>>`'s `Rc<str>` the
+    /// counted `Rc` itself, an `Rc<str>`'s `str` what it points at (#1503,
+    /// #1518).
+    pub(crate) fn through_boxes_to(&self, value: Expr, ty: Ty<'tcx>, to: Ty<'tcx>) -> Expr {
+        let erased = |ty: Ty<'tcx>| self.tcx.erase_and_anonymize_regions(ty);
+        let to = erased(to.peel_refs());
+        self.through_boxes_until(value, ty, &|ty| erased(ty) == to).0
+    }
+
+    /// What a counted `Rc` points at, or a guard guards, through any others:
+    /// its `value`, as `{}` and `{:?}` show it (ADRs 0320, 0328), and what a
+    /// `Pin`'s pointer does (ADR 0329); a `Box`'s or another `Rc`'s, which is
+    /// it in JS (ADR 0023). Any other value is itself. Not past what `stop`
+    /// says, its references neither.
+    fn through_boxes_until(
+        &self,
+        mut value: Expr,
+        mut ty: Ty<'tcx>,
+        stop: &dyn Fn(Ty<'tcx>) -> bool,
+    ) -> (Expr, Ty<'tcx>) {
+        loop {
+            if stop(ty) {
+                return (value, ty);
+            }
+            if let Some(pointer) = self.recognition().pinned(ty) {
+                (value, ty) = self.through_refs_until(value, pointer, stop);
+                continue;
+            }
+            let inside = match ty.kind() {
+                ty::Adt(_, args) if self.is_guard(ty) => args.types().next().expect("what it guards"),
+                ty::Adt(_, args) => match self.counted_rc(ty) {
+                    Some(pointee) => pointee,
+                    None if self.shows_inside(ty) => {
+                        (value, ty) = self.through_refs_until(value, args.type_at(0), stop);
+                        continue;
+                    }
+                    None => return (value, ty),
+                },
+                _ => return (value, ty),
+            };
+            // A guard's `value`, an `Rc`'s what it points at (ADR 0520); a
+            // reference it holds, an `Rc<&T>`'s, is shown as references are,
+            // through it, a `&mut`'s cell read (ADR 0504, #228, #1577). A
+            // guard of a `RefCell` of an object is the object (ADR 0863).
+            value = match self.is_guard(ty) {
+                true if self.guards_value_cell(ty) => value,
+                true => Expr::held(value),
+                false => self.counted_pointee(value, inside),
+            };
+            (value, ty) = self.through_refs_until(value, inside, stop);
+        }
+    }
+}
+
+/// What a counted class's `Rc::new` makes, `$countedInstance(value)`, is made
+/// of: its instance, `value`, which a constructor sets on `this` (#1228).
+pub(crate) fn counted_instance_made(made: &Expr) -> Option<&Expr> {
+    match &made.kind {
+        rust_js_program::js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$countedInstance") => {
+            match args.as_slice() {
+                [value] => Some(value),
+                _ => None,
+            }
+        }
+        _ => None,
+    }
+}
+
+/// `instance` counted as a class's `Rc` is, its box hidden beside it,
+/// `$countedInstance(this)` of a constructor's (#1228).
+pub(crate) fn counted_instance(instance: Expr) -> Expr {
+    Expr::call_helper("$countedInstance", vec![instance])
+}
+
+/// Whether a counted `Rc` of `pointee` is the instance itself, a
+/// `#[rust_js::class]`'s, which JS calls its methods on and its
+/// declarations name as the class (#1228): `RcForm::Instance`.
+pub(crate) fn counted_as_instance(tcx: rustc_middle::ty::TyCtxt<'_>, pointee: Ty<'_>) -> bool {
+    matches!(pointee.kind(), ty::Adt(adt, _) if crate::classes::is_class(tcx, adt.did()))
+}

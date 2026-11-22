@@ -1,11 +1,11 @@
-// Mutations of src/lower/mir/tidy/bindings.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/tidy/bindings.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "destructured-temporary-unnamed",
     breaks: "a temporary a `const` takes apart, `const { value: _4 } = $borrow(cell)`, isn't named after the variable that takes it, `const chunk = _4` (rd439)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                } => match pattern.bound()[..] {\n",
     replace: "                } if false => match pattern.bound()[..] {\n",
     tests: ["test/corpus.test.ts", "-t", "counted_guard_value_named"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "clone-alias-of-a-variable-kept",
     breaks:
       "an `Rc`'s clone of a variable bound once is a variable of its own, `const closing = response;`, where it's the same object, read by its name (the user's decision, rd616; ADR 0846 amended)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a))\n",
     replace: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_clone_aliases.rs$"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "clone-alias-of-a-variable-set-again",
     breaks:
       "a clone of a variable set after is read by the variable's name, its new value: `close 4` where Rust's clone closes the first `Rc`, `close 3` (rd616)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a))\n",
     replace: "        .filter(|(_, a)| bindings(body, a, false) == 1)\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_clone_aliases.rs$"],
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     name: "clone-alias-kept",
     breaks:
       "an `Rc`'s clone of a parameter is a variable of its own, `const resolved = payload`, where it's the same object, read by its name (ADR 0846)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                && fixed.contains(a)\n                && clones.contains(b)\n",
     replace:
       "                && fixed.contains(a)\n                && clones.contains(b)\n                && false\n",
@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
     name: "clone-alias-of-a-reassigned-parameter",
     breaks:
       "a clone of a parameter given another value after is read by the parameter's name, the other value: `payload.status = 9` of `first.status.set(9)`",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "        .filter(|name| !rebinds(body, name))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_shared_by_closures.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     name: "clone-alias-of-any-const",
     breaks:
       "any `const b = a` of a parameter is read as `a`, the name the program gave `b` lost: `const gas = n`'s `gas`",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                && fixed.contains(a)\n                && clones.contains(b)\n",
     replace: "                && fixed.contains(a)\n",
     tests: ["test/corpus.test.ts", "-t", "^sort_unstable_adversary.rs$"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
     name: "tidy-effectful-init-dropped",
     breaks:
       "`let a = made(1); a = 2;` is `let a = 2;`, and `made(1)` never runs",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "is_none_or(|e| !e.has_effects())",
     replace: "is_none_or(|e| true || !e.has_effects())",
     tests: ["test/corpus.test.ts", "-t", "declarations_assigned_later"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     name: "tidy-declaration-past-read",
     breaks:
       "a `let` moves to its next assignment past a read of it, which reads it before it's declared",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                    .find(|&j| js::mentions_of(&stmts[j..=j], name) > 0)\n",
     replace:
       "                    .find(|&j| matches!(stmts[j].kind, StmtKind::Assign(..)) && js::mentions_of(&stmts[j..=j], name) > 0)\n",
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-alias-kept",
     breaks:
       "a `const` read once, by another `const` of it, stays a name for a name",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                            && js::mentions_of(&stmts[j..], a) == 1\n",
     replace: "                            && false\n",
     tests: ["test/lowering-loops.test.ts", "-t", "stepped by hand"],
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-alias-variables-kept",
     breaks: "`const _5 = TName;` stays, not `TName` where `_5` is read",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                if !kept {\n",
     replace: "                if false {\n",
     tests: [
@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-named-temporary-kept-binding",
     breaks:
       "the `const found = _4;` a temporary's renaming took stays, `const found = found;`",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "    stmts.retain(|s| {\n        !matches!(&s.kind, StmtKind::Const(n, value)\n            if n == b && matches!(&value.kind, ExprKind::Var(v) if v == a))\n    });\n",
     replace: "",
     tests: [
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-let-not-into-branch",
     breaks:
       "a `let` one branch alone names is declared before the `if`, not in the branch",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "            if let Some(branch) = branch {\n",
     replace: "            if let Some(branch) = branch.filter(|_| false) {\n",
     tests: [
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-loop-let-outside",
     breaks:
       "a `let` a loop's body assigns before it's read is declared outside the loop, `let start;`",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "            && !looped_reads(&stmts[first], &name)\n",
     replace: "            && false\n",
     tests: [
@@ -145,7 +145,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-let-outside-label",
     breaks: "a `let` only a labeled block names stays before it, `let _7;`",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "        if alone && let StmtKind::Labeled(_, body) = &mut stmts[first].kind {\n",
     replace:
       "        if false && alone && let StmtKind::Labeled(_, body) = &mut stmts[first].kind {\n",
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
     name: "loop-let-branch-assigned-not-sunk",
     breaks:
       "a `let` a loop's branch makes from MIR stays one `let` before the loop, not a `const` in the branch",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                && (alone && assigned(then) && otherwise.as_deref().is_none_or(assigned)",
     replace: "                && (false",
     tests: [
@@ -169,7 +169,7 @@ export const mutations: Mutation[] = [
     name: "alias-takes-prop-name",
     breaks:
       "a named variable moved into a held prop takes the prop's name, `const code = ..`, and is read away",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b) || named) {",
     replace: "                if false {",
     tests: [
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
     name: "forwarded-value-kept",
     breaks:
       "a value a `try` makes in each branch stays a temporary's, `children = tmp` after it",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "            && last_assigns(&stmts[i + 1..=i + 1], t)\n",
     replace: "            && false\n",
     tests: [
@@ -199,7 +199,7 @@ export const mutations: Mutation[] = [
     name: "alias-takes-temporary-name",
     breaks:
       "a variable the program names, `const props = {..}`, aliased by a temporary, takes the temporary's place and is read away",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b) || named) {",
     replace: "if !is_temporary(a) && (captured.contains(&b) || named) {",
     tests: [
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-turn-let-branches-unseen",
     breaks:
       "`let y;` of `let y = match x { 0 => continue, .. }` is declared before the loop, as an `if`'s branches each assigning it don't count",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                    || assigned_on(&stmts[at..], name, false, past))",
     replace: "                    || false)",
     tests: ["test/lowering-mir-lets.test.ts", "-t", "a let each turn assigns"],
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-turn-continue-goes-on",
     breaks:
       "a branch that `continue`s is taken to go on unassigned, and `let y;` stays before the loop",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "            StmtKind::Continue(_) | StmtKind::Return(_) | StmtKind::Throw(_) => return true,",
     replace:
       "            StmtKind::Return(_) | StmtKind::Throw(_) => return true,",
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-unread-call-kept",
     breaks: "MIR's call whose value nothing reads is `const n = items.pop()`",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "            && matches!(value.kind, ExprKind::Call(..))\n",
     replace: "            && false\n",
     tests: [
@@ -247,7 +247,7 @@ export const mutations: Mutation[] = [
     name: "arms-binding-one-name-apart",
     breaks:
       "`n` that two arms bind, `n` and `n$1` until named in their scopes, stays `const n = length;` in each",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "            let one_name = |other: &js::Name| other == b || other.given_apart_of(b) || b.given_apart_of(other);\n",
     replace: "            let one_name = |other: &js::Name| other == b;\n",
     tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
     name: "user-name-taken-for-temporary",
     breaks:
       "a local the program names `_5` is taken for a temporary, and named `value`",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: '        true => format!("{name}_"),\n',
     replace: "        true => name.to_string(),\n",
     tests: ["test/corpus.test.ts", "-t", "temporary_shaped_names"],
@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
     name: "alias-of-changing-set-between",
     breaks:
       "an alias of a variable set before it's read is the variable, `pair(n, { n += 1; n })` given the new `n` twice",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                    || last.is_some_and(|last| {\n",
     replace: "                    || false && last.is_some_and(|last| {\n",
     tests: ["test/corpus.test.ts", "-t", "^alias_reads.rs$"],
@@ -275,7 +275,7 @@ export const mutations: Mutation[] = [
   {
     name: "lets-kept",
     breaks: "`let list = []` that nothing sets again stays a `let`",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "    js::constants(body);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cell_deque_char_methods.rs$"],
@@ -285,7 +285,7 @@ export const mutations: Mutation[] = [
     name: "let-not-sunk-through-loop",
     breaks:
       "a `let` of an inner loop is declared before the outer one, `let score;`, assigned in the inner",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "            alone && !looped_reads(&stmts[at], name) && assigned_first(body, name, past)\n",
     replace: "            false\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_loop_jumps.rs$"],
@@ -295,7 +295,7 @@ export const mutations: Mutation[] = [
     name: "let-not-sunk-through-labeled-block",
     breaks:
       "a `let` first assigned in a labeled block is declared before the loop around it",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "        StmtKind::Labeled(_, body) => {\n            alone && assigned_first(body, name, past) || assigned_on(&stmts[at..], name, false, past)\n        }\n",
     replace: "",
     tests: [
@@ -309,7 +309,7 @@ export const mutations: Mutation[] = [
     name: "paired-temporaries-unpaired",
     breaks:
       "a temporary assigned then read once each time stays a `let` assigned and read, `tmp$7 = make(8); tmp$8 = [tmp$6, tmp$7]` (ADR 0564)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                        true => *pairs.entry(name.clone()).or_default() += 1,\n",
     replace: "                        true => {}\n",
     tests: [
@@ -322,7 +322,7 @@ export const mutations: Mutation[] = [
     name: "shadow-of-what-a-handle-sets",
     breaks:
       "a binding a `&mut`'s handle sets after the shadow is assigned, so the handle sets the new one",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "    captured.extend(handles_read(body));\n",
     replace: "",
     tests: ["test/lowering-shadows.test.ts", "-t", "something still sees"],
@@ -331,7 +331,7 @@ export const mutations: Mutation[] = [
     name: "unread-read-kept",
     breaks:
       "an old value a `replace` gave and nothing reads stays, `const old = task.callback;`",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                Some(StmtKind::Assign(target, _)) if target.kind == read.kind)\n",
     replace:
       "                Some(StmtKind::Assign(target, _)) if false && target.kind == read.kind)\n",
@@ -342,7 +342,7 @@ export const mutations: Mutation[] = [
     name: "sunk-let-block-unset",
     breaks:
       "a labeled block MIR made of an `if` chain, each way out of which sets a `let`, isn't known to set it, so the `let` is hoisted out of the loop",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "            alone && assigned_first(body, name, past) || assigned_on(&stmts[at..], name, false, past)\n",
     replace: "            alone && assigned_first(body, name, past)\n",
     tests: [
@@ -355,7 +355,7 @@ export const mutations: Mutation[] = [
     name: "sunk-let-if-falls-through-unset",
     breaks:
       "an `if` with no `else` that sets a `let`, what follows setting it where it doesn't, isn't known to set it",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                        && assigned_on(otherwise.as_deref().unwrap_or_default(), name, on, past)\n",
     replace:
       "                        && assigned_on(otherwise.as_deref().unwrap_or_default(), name, false, past)\n",
@@ -369,7 +369,7 @@ export const mutations: Mutation[] = [
     name: "sunk-let-loop-unset",
     breaks:
       "a `while (true)` each of whose `break`s goes on with a `let` set isn't known to set it, so the `let` is hoisted out of the loop around",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                StmtKind::While { cond, body, label } if matches!(cond.kind, ExprKind::Bool(true)) => {\n",
     replace:
       "                StmtKind::While { cond, body, label } if matches!(cond.kind, ExprKind::Bool(true)) && false => {\n",
@@ -380,7 +380,7 @@ export const mutations: Mutation[] = [
     name: "plain-read-of-a-getter",
     breaks:
       "a getter's read held by MIR is written where it's read, each time, `typeof child.type` then `const type = child.type`",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "(value.reads_same() && super::plain_field(value, plain))",
     replace: "(super::plain_field(value, plain))",
     tests: [
@@ -393,7 +393,7 @@ export const mutations: Mutation[] = [
     name: "filled-lazily-not-negated",
     breaks:
       "`if let Some(cache) = node.o.get() { cache } else { fill }` fills the cache where it's there, `if (cache)`, not `if (!cache)`",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                false => StmtKind::If(test.negated_test(), otherwise, None),\n",
     replace: "                false => StmtKind::If(test, otherwise, None),\n",
     tests: ["test/corpus.test.ts", "-t", "^filled_where_absent.rs$"],
@@ -402,7 +402,7 @@ export const mutations: Mutation[] = [
     name: "unread-spreads-apart",
     breaks:
       "an unread `[...a, ...b]`, a `chain` collected, is taken apart into `...a;` statements, which no JS writes: the compiler crashes (#256)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "            && !parts.iter().any(|part| matches!(part.kind, ExprKind::Spread(_)))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unread_collected_chain.rs$"],
@@ -411,7 +411,7 @@ export const mutations: Mutation[] = [
     name: "clone-alias-of-a-capture-kept",
     breaks:
       "a clone of what a `move` closure captured stays `const prev$1 = prev`, read by that name (ADR 0879)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "        .chain(kept)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^branches_as_written.rs$"],
@@ -421,7 +421,7 @@ export const mutations: Mutation[] = [
     name: "alias-kept-where-set-after",
     breaks:
       "`const _15 = newLast;` of a variable set past each of its reads stays, named `last`, `if (last == null)`, not `newLast` where it's read",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                        && (declares(reads, of) || !read_before_set(reads, alias, of, &mut false))\n",
     replace: "",
     tests: [
@@ -434,7 +434,7 @@ export const mutations: Mutation[] = [
     name: "alias-read-after-set",
     breaks:
       "a copy read after what it copies is set, `const old = current; current = next; sum += old.value`, reads the new value",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "            _ if reads(one) && (*set || sets(one)) => return false,\n",
     replace: "            _ if reads(one) && sets(one) => return false,\n",
     tests: ["test/corpus.test.ts", "-t", "^binding_read_before_set.rs$"],
@@ -443,7 +443,7 @@ export const mutations: Mutation[] = [
     name: "alias-read-in-a-branch-after-set",
     breaks:
       "an `if` whose branch reads a copy after its variable is set before the `if` reads the new value",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                if (*set && reads(&test)) || (reads(&test) && sets(&test)) {\n",
     replace: "                if reads(&test) && sets(&test) {\n",
     tests: ["test/corpus.test.ts", "-t", "^binding_read_before_set.rs$"],
@@ -452,7 +452,7 @@ export const mutations: Mutation[] = [
     name: "set-in-a-leaving-branch-carried",
     breaks:
       "a `while let`'s binding stays `const current = child;` where the branch that sets `child` leaves the turn, `child = current.sibling; continue;` (ADR 0434, amended)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                *set = (goes_on(then) && *set) || (goes_on(otherwise) && other);\n",
     replace: "                *set = *set || (goes_on(otherwise) && other);\n",
     tests: [
@@ -466,7 +466,7 @@ export const mutations: Mutation[] = [
     name: "set-in-a-going-on-then-lost",
     breaks:
       "a `then` that sets the variable and goes on sets it on no way: a read after it reads the new value",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                *set = (goes_on(then) && *set) || (goes_on(otherwise) && other);\n",
     replace: "                *set = goes_on(otherwise) && other;\n",
     tests: [
@@ -479,7 +479,7 @@ export const mutations: Mutation[] = [
     name: "set-in-a-going-on-else-lost",
     breaks:
       "an `else` that sets the variable and goes on sets it on no way: a read after it reads the new value",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                *set = (goes_on(then) && *set) || (goes_on(otherwise) && other);\n",
     replace: "                *set = goes_on(then) && *set;\n",
     tests: [
@@ -492,7 +492,7 @@ export const mutations: Mutation[] = [
     name: "alias-read-placeless",
     breaks:
       "a temporary's read written as its variable has no place where MIR gave it none, so the source map maps `bytes[i]`'s `i` to nothing, not to the Rust's `i]`, and a comment placed by it is lost",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                                *e = of.clone().or_at(e.span).or_at(at);\n",
     replace:
       "                                *e = of.clone().or_at(e.span);\n                                let _ = at;\n",
@@ -506,7 +506,7 @@ export const mutations: Mutation[] = [
     name: "alias-of-a-given-name-renamed",
     breaks:
       "a variable a `let`'s `#[rust_js::name]` names, moved into another, `let made = synthetic_event`, takes the other's name: `const made = createSyntheticEvent(..)`, the name the program gave gone",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                let named = given.contains(a) && !given.contains(&b);\n",
     replace: "                let named = given.contains(a) && false;\n",
     tests: [
@@ -519,7 +519,7 @@ export const mutations: Mutation[] = [
     name: "temporary-set-in-try-unnamed",
     breaks:
       "a temporary a drop guard's `try` sets, `let _8; try { _8 = descriptorOf(name); }`, isn't named for the pattern that binds it, `const descriptorOf = ..` (#444)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a) => a.clone(),\n",
     replace: "",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a field read of what JS made in a guard's scope"],
@@ -529,9 +529,9 @@ export const mutations: Mutation[] = [
   {
     name: "unread-iter-kept",
     breaks: "a `Drain` dropped where it's made, `v.drain(start..end);`, is `$iter($drain(v, start, end));`, an iterator nothing steps (rd341)",
-    file: "src/lower/mir/tidy/bindings.rs",
-    find: "            && let Some(items) = crate::lower::iterators::fresh_iter_source(value)\n",
-    replace: "            && let Some(items) = crate::lower::iterators::fresh_iter_source(value).filter(|_| false)\n",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
+    find: "            && let Some(items) = rust_js_lower::iterators::fresh_iter_source(value)\n",
+    replace: "            && let Some(items) = rust_js_lower::iterators::fresh_iter_source(value).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_pointers.rs$"],
     snapshots: true,
   },
@@ -540,7 +540,7 @@ export const mutations: Mutation[] = [
     name: "fixed-alias-kept",
     breaks:
       "a `&mut` field binding of a flattened state, `Pending { value } | Blocked { value }`, holds its chunk under a name of its own, `const value = chunk; value.value ??= [];`, where upstream reads `chunk.value` (rd482)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                && (is_temporary(alias) || fixed.contains(alias))\n",
     replace: "                && (is_temporary(alias) || fixed.is_empty() && fixed.contains(alias))\n",
     // or_pattern_one_place's chunk is read in place without it now; the
@@ -553,7 +553,7 @@ export const mutations: Mutation[] = [
     name: "unread-apart-kept",
     breaks:
       "`dest.clone_from(&source)` of a generic `T` keeps `$apart(dest.value);`, a copy of the old value nothing reads, where the write alone was (#527)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                ExprKind::Call(callee, args) if callee.helper_name() == Some(\"$apart\") && args.len() == 1 => &args[0],\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
@@ -562,7 +562,7 @@ export const mutations: Mutation[] = [
   {
     name: "alias-read-by-a-pair-dropped",
     breaks: "`const _10 = index` read by a pair's place, `lanes[_10]`, is `index` where it's read, so the pair made before `index++` reads the next item (#968)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                let deferred = set.contains(of) && handles_read(&stmts[i + 1..]).contains(alias);\n",
     replace: "                let deferred = false && set.contains(of);\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
@@ -571,7 +571,7 @@ export const mutations: Mutation[] = [
     name: "in-call-arrow-captures",
     breaks:
       "an arrow its call runs only while it runs is taken to capture what it reads past its statement: a `String` shadowed after `extend` by `$extendText`'s callback is renamed, `let s$1 = \"\"`, where its binding is reused, `s = \"\"` (#1168)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "        ExprKind::Arrow(..) if e.facts.has(js::Known::RunsInItsCall) => {}\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^extend_reserves_by_hint.rs$"],
@@ -580,7 +580,7 @@ export const mutations: Mutation[] = [
   {
     name: "unread-instance-value-kept",
     breaks: "a `const` nothing reads of an instance's value, `const twice = count4`, is kept, and so the value it reads (#974)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                        || matches!(value.kind, js::ExprKind::Var(_)) && value.facts.has(js::Known::Item)))\n",
     replace: "                        || false))\n",
     tests: ["test/corpus.test.ts", "-t", "^const_generics.rs$"],
@@ -589,7 +589,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-unused-let-kept",
     breaks: "a `let iter;` nothing assigns any more stays declared",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "        s.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.contains(name)));\n",
     replace: "        let _ = &unread;\n",
     tests: [
@@ -602,7 +602,7 @@ export const mutations: Mutation[] = [
     name: "redeclared-let-kept",
     breaks:
       "a `let x;` whose every read is in a block that declares `x` again, an index loop's item, `const x = v[i];`, stays before the loop, read by nothing (ADR 1042)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                        || declared.get(name).is_some_and(|&n| n > 1) && redeclared_only(s, name) =>\n",
     replace: "                    =>\n",
     tests: ["test/lowering-index-loops.test.ts", "-t", "a for loop of a mut binding"],
@@ -611,7 +611,7 @@ export const mutations: Mutation[] = [
     name: "unread-arrow-const-kept",
     breaks:
       "a binding's value MIR held in a variable nothing reads is kept, `export const NAMED = (() => { const value = (value) => String(value); return make(String); })();` (rd542)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "                if !mentions.contains_key(name) && (matches!(value.kind, js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..))\n",
     replace: "                if !mentions.contains_key(name) && (false\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "dyn Fn is what its call gave it"],
@@ -620,7 +620,7 @@ export const mutations: Mutation[] = [
     name: "alias-given-back-kept",
     breaks:
       "a variable given back the alias of itself, `r = &mut *r`, reads `r = r;` once the alias is inlined, a statement that does nothing (#2255)",
-    file: "src/lower/mir/tidy/bindings.rs",
+    file: "crates/rust-js-mir/src/tidy/bindings.rs",
     find: "StmtKind::Assign(target, value) if target.kind == of.kind && value.kind == of.kind => {\n",
     replace: "StmtKind::Assign(target, value) if false && target.kind == of.kind && value.kind == of.kind => {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_compare\\.rs$"],

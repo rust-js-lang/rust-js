@@ -1,11 +1,11 @@
-// Mutations of src/lower/plain.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/plain.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "zeroed-bool-zero",
     breaks: "a zeroed `bool` is `0`, not `false`",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "            None if ty.is_bool() => Expr::bool(false),\n",
     replace: "            None if ty.is_bool() => Expr::int(0),\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "zeroed-struct-allowed",
     breaks: "a zeroed struct of a `String` is `undefined`, a value no field is",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: '            return Err(self.unsupported(span, &format!("a zeroed `{ty}`, which may be no value of it")));\n',
     replace: "            return Ok(Expr::js_undefined());\n",
     tests: ["test/corpus.test.ts", "-t", "box_zeroed_struct"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "plain-std-struct",
     breaks:
       "a zeroed `Wrapping<u32>` is made as a struct of its field, where JS has its number",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "            ty::Adt(adt, args) if adt.is_struct() && self.krate.foreign.compiled_by_rust_js(adt.did()) => {\n",
     replace: "            ty::Adt(adt, args) if adt.is_struct() => {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a zeroed std wrapper"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
     name: "plain-std-number",
     breaks:
       "a `Duration`, which JS has as its nanoseconds, is read as its bytes, `0n` zeroed",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "        let number = matches!(ty.kind(), ty::Int(_) | ty::Uint(_) | ty::Float(_)) && Num::of(ty).is_some();\n",
     replace: "        let number = Num::of(ty).is_some();\n",
     tests: ["test/diagnostics.test.ts", "-t", "a zeroed std struct"],
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     name: "transmute-lifetime-refused",
     breaks:
       "a `transmute` of a `&'a str` as a `&'static str`, the same value, is refused",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "        if erased(from) == erased(to) {\n",
     replace: "        if erased(from) == erased(to) && false {\n",
     tests: [
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     name: "transmute-part-any-size",
     breaks:
       "a part at the same offset is retyped whatever its size: a `Halves`'s `low` is the `u32` it's read as",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "                    .find(|r| r.offset == offset && cx.scalar_bytes(r.ty) == bytes_of)\n",
     replace: "                    .find(|r| r.offset == offset)\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "transmute-parts-unshared",
     breaks: "no part is another's: a `u32` as an `i32` goes through its bytes",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "                    .find(|r| r.offset == offset && cx.scalar_bytes(r.ty) == bytes_of)\n",
     replace:
       "                    .find(|r| r.offset == offset && cx.scalar_bytes(r.ty) == bytes_of && false)\n",
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "transmute-bytes-big-endian",
     breaks: "a part's bytes are written big-endian, as wasm32's aren't",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "            vec![bits, Expr::int(i128::from(n)), Expr::bool(true)],\n",
     replace:
       "            vec![bits, Expr::int(i128::from(n)), Expr::bool(false)],\n",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
   {
     name: "read-bytes-big-endian",
     breaks: "a part is read from the bytes big-endian, as wasm32's aren't",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "            vec![mine, Expr::int(i128::from(n)), Expr::bool(true), Expr::bool(signed)],\n",
     replace:
       "            vec![mine, Expr::int(i128::from(n)), Expr::bool(false), Expr::bool(signed)],\n",
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
   {
     name: "read-bytes-unsigned",
     breaks: "an `i32` read from the bytes is unsigned, `4294967294` for `-2`",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "            vec![mine, Expr::int(i128::from(n)), Expr::bool(true), Expr::bool(signed)],\n",
     replace:
       "            vec![mine, Expr::int(i128::from(n)), Expr::bool(true), Expr::bool(false)],\n",
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
     name: "padding-dropped",
     breaks:
       "the padding between a value's parts has no bytes, so what's after it is read early",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "            items.extend((at..read.offset).map(|_| Expr::int(0)));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
@@ -108,7 +108,7 @@ export const mutations: Mutation[] = [
     name: "parts-at-their-own-offset",
     breaks:
       "a part's offset is in its parent, not the whole: a `Split`'s `halves.high` is at 2",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "            .map(|(at, part)| self.plain_made(part, offset + at, scalar, span))\n",
     replace:
       "            .map(|(at, part)| self.plain_made(part, *at, scalar, span))\n",
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "reads-at-their-own-offset",
     breaks: "a part read is at its offset in its parent, not the whole",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "            self.plain_reads(field, part, offset + at, reads);\n",
     replace: "            self.plain_reads(field, part, *at, reads);\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "bool-of-bits-inverted",
     breaks: "a `bool` of a byte is whether it's 0",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "            None if ty.is_bool() => Expr::bin(Op::Ne, bits, Expr::int(0)),\n",
     replace:
       "            None if ty.is_bool() => Expr::bin(Op::Eq, bits, Expr::int(0)),\n",
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
   {
     name: "char-of-bits-number",
     breaks: "a `char` of a `u32` is the number, not its character",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "            None => Expr::builtin(Expr::js_global(\"String\"), \"fromCodePoint\", vec![bits]),\n",
     replace: "            None => bits,\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   {
     name: "float-bits-as-number",
     breaks: "an `f32` as a `u32` is its value, `1`, not its bits",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: '            Some(num) if num.float() => Ok(Expr::call(\n                Expr::helper("$floatToBits"),\n',
     replace:
       '            Some(num) if num.float() && false => Ok(Expr::call(\n                Expr::helper("$floatToBits"),\n',
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
   {
     name: "byte-array-rebuilt",
     breaks: "a `[u8; 4]`'s bytes are an array of its items, not itself",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "        if self.is_bytes(from) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
@@ -161,7 +161,7 @@ export const mutations: Mutation[] = [
     name: "one-scalar-spread",
     breaks:
       "one `u32`'s bytes are `[...$toBytes(x, 4, true)]`, not its `$toBytes`",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "            && self.scalar_bytes(read.ty) == size\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
   {
     name: "whole-bytes-sliced",
     breaks: "a `u32` of all four bytes reads `bytes.slice(0, 4)`, not `bytes`",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "        let mine = match (offset, n) == (0, size) {\n",
     replace: "        let mine = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
     name: "bytes-target-rebuilt",
     breaks:
       "a `u32` as a `[u8; 4]` is an array of each of its bytes, not its bytes",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "        if self.is_bytes(to) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
     name: "zeroed-uninit-not-plain",
     breaks:
       "a `MaybeUninit<T>` isn't laid out as its `T`, so a zeroed array of them is refused",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "        if let Some(held) = self.recognition().uninit_of(ty) {\n",
     replace:
       "        if let Some(held) = self.recognition().uninit_of(ty).filter(|_| false) {\n",
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
     name: "zeroed-generic-length-refused",
     breaks:
       "a zeroed array of a length generic code is given, arrayvec's `[MaybeUninit<u8>; CAP]`, is refused",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "            && len.try_to_target_usize(self.tcx).is_none()\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^zeroed_uninit_arrays.rs$"],
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
   {
     name: "zeroed-slice-unfilled",
     breaks: "`new_zeroed_slice` leaves its slots `undefined`",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: '        return Expr::call(Expr::member(made, "fill"), vec![zero.clone()]);',
     replace: "        return made;",
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
     name: "transparent-transmute-refused",
     breaks:
       "a `transmute` between a `#[repr(transparent)]` struct and its field is refused, uuid's `from_bytes_ref`",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "        (held(from) == held(to)).then_some(value)\n",
     replace: "        None\n",
     tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
     name: "transparent-mut-transmute-refused",
     breaks:
       "a `transmute` of a `&mut` between a `#[repr(transparent)]` struct and its field is refused, though both are one value",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "            (ty::Ref(_, from, a), ty::Ref(_, to, b)) if a == b => (*from, *to),\n",
     replace:
       "            (ty::Ref(_, from, ty::Mutability::Not), ty::Ref(_, to, ty::Mutability::Not)) => (*from, *to),\n",
@@ -236,7 +236,7 @@ export const mutations: Mutation[] = [
     name: "reference-transmute-refused",
     breaks:
       "a reference to an object `transmute`d to `usize` is refused, where it's the object's address",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "            || matches!(ty.kind(), ty::Ref(_, pointee, _)",
     replace:
       "            || false && matches!(ty.kind(), ty::Ref(_, pointee, _)",
@@ -246,7 +246,7 @@ export const mutations: Mutation[] = [
     name: "text-transmute-refused",
     breaks:
       "`Box<[u8]>` as `Box<str>` is refused, where it's the bytes decoded",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: '            && text.is_str()\n        {\n            return Ok(Expr::call(Expr::helper("$utf8Decode"), vec![value]));',
     replace:
       '            && text.is_str()\n            && false\n        {\n            return Ok(Expr::call(Expr::helper("$utf8Decode"), vec![value]));',
@@ -256,7 +256,7 @@ export const mutations: Mutation[] = [
     name: "fills-ignores-padding",
     breaks:
       "a struct with padding counts as filling its size, so a union holding it in another's place loses the padding's bytes",
-    file: "src/lower/plain.rs",
+    file: "crates/rust-js-lower/src/plain.rs",
     find: "            && self.plain(ty).and_then(|plain| scalars(self, &plain)) == Some(size)\n",
     replace: "            && self.plain(ty).is_some()\n",
     tests: ["test/runtime-package.test.ts", "-t", "union"],
@@ -264,16 +264,16 @@ export const mutations: Mutation[] = [
   {
     name: "transmute-of-a-pattern-type-refused",
     breaks: "a `transmute` of `NonZero`'s pattern type `(u32) is 1..` to its number, which std's MIR makes where a struct of one is matched against a constant, is refused as addressable memory (#1420)",
-    file: "src/lower/plain.rs",
-    find: "            ty::Pat(base, _) => *base,\n            ty::Adt(adt, args) if crate::lower::recognition::is_non_zero",
-    replace: "            ty::Pat(..) => ty,\n            ty::Adt(adt, args) if crate::lower::recognition::is_non_zero",
+    file: "crates/rust-js-lower/src/plain.rs",
+    find: "            ty::Pat(base, _) => *base,\n            ty::Adt(adt, args) if crate::recognition::is_non_zero",
+    replace: "            ty::Pat(..) => ty,\n            ty::Adt(adt, args) if crate::recognition::is_non_zero",
     tests: ["test/corpus.test.ts", "-t", "^non_zero_constants_matched.rs$"],
   },
   {
     name: "transmute-of-a-non-zero-refused",
     breaks: "a `transmute` of a `NonZero<usize>` to its number, std's `NonZero::get` as its MIR writes it, is refused as addressable memory, and @rust-js/std doesn't build (#1420)",
-    file: "src/lower/plain.rs",
-    find: "            ty::Adt(adt, args) if crate::lower::recognition::is_non_zero(adt.did()) => args.type_at(0),\n",
+    file: "crates/rust-js-lower/src/plain.rs",
+    find: "            ty::Adt(adt, args) if crate::recognition::is_non_zero(adt.did()) => args.type_at(0),\n",
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std"],
   },

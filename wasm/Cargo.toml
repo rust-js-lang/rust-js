@@ -28,6 +28,10 @@ path = "../src/main.rs"
 # The compiler's crates with no rustc in them (ADR 1181), as ../Cargo.toml's.
 rust-js-program = { path = "../crates/rust-js-program" }
 rust-js-emit = { path = "../crates/rust-js-emit" }
+# The lowering's crates, rustc's as the binary is: their WASI builds'
+# manifests, which take rustc's crates from ./rustc (#2299).
+rust-js-lower = { path = "lower" }
+rust-js-mir = { path = "mir" }
 # The MIR intervals' persistent maps (#2310, ADR 1183), as ../Cargo.toml's.
 imbl = { version = "7.0.2", default-features = false }
 # The compiler's maps and sets, walked in the order their entries were put

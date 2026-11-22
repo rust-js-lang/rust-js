@@ -1,11 +1,11 @@
-// Mutations of src/lower/mir/tidy/branches.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/tidy/branches.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "branch-some-where-untested",
     breaks: "a `SomeWhere` under a branch of its own test isn't its value",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        if let Some((t, yes, _)) = e.some_where_parts()\n",
     replace: "        if let Some((t, yes, _)) = e.some_where_parts().filter(|(_, _, there)| !there)\n",
     tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-types.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-props-read.test.ts", "test/bindings.test.ts", "test/react.test.ts", "test/lowering-option-truth.test.ts", "test/snapshots.test.ts", "test/pilot.test.ts"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "or-pattern-arm-after-the-rest",
     breaks:
       'a later or-pattern arm, `"src" | "href" => {`, is the `else` of MIR\'s test of the arms after it, `} else {\\n // Santized URLs\\n if (name !== "src" && name !== "href") { .. } else { .. }`, not an `else if` as written (#608)',
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "            _ if !stmt.span.is_none() && patterns.iter().any(|p| p.lo <= stmt.span.lo && stmt.span.hi <= p.hi) => {\n",
     replace: "            _ if false => {\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "or-pattern arm keeps"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     name: "written-chain-test-at-a-later-arm",
     breaks:
       "a returned `match`'s first guard `if`, turned to its arm's order, keeps MIR's test placed at the next arm's pattern, so a comment above that arm is above the function's first `if` (#609)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        if let Some(arm) = written_arm(stmt.span, &otherwise, patterns).filter(|_| !switch) {\n",
     replace: "        if let Some(arm) = written_arm(stmt.span, &otherwise, patterns).filter(|_| false) {\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "returned match is above"],
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     name: "written-chain-switch-test-moved",
     breaks:
       "a `switch`'s arm's test `written_chains` turns is placed at the arm before it, which the `switch` then reads it as, React's `typeof` switch an `if` chain",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        if let Some(arm) = written_arm(stmt.span, &otherwise, patterns).filter(|_| !switch) {\n",
     replace: "        if let Some(arm) = written_arm(stmt.span, &otherwise, patterns).filter(|_| switch || !switch) {\n",
     tests: ["test/lowering-switches.test.ts", "-t", "a guarded arm of a typeof switch tested first is its case"],
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     name: "written-chain-test-at-the-last-arm",
     breaks:
       "a returned `match`'s first guard `if` is placed at the last arm's pattern, past its own code, so a comment above its own arm is above the next arm's `if` (#609)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        .filter(|p| at.lo <= p.lo && p.lo <= first)\n",
     replace: "        .filter(|p| at.lo <= p.lo && first > 0)\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "returned match is above"],
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
     name: "alike-branches-of-a-call-assigned",
     breaks:
       "an assigned `if` of alike values whose test calls is `level = mark(n) ? 5 : 5;`, not as written",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        && !(super::logicals::alike_branches(yes, no) && test.has_effects())\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^guards_that_call.rs$"],
@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
     name: "switch-arm-going-on-tail-shared",
     breaks:
       "React's unwindWork's arm that goes on to its `return null` shares it with `_`'s after the `switch`, no `default` (ADR 0956, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    || shared != rest.len()\n                    || super::switches::switched(test, stmts[i].span, switches)\n",
     replace: "                    || shared != rest.len()\n",
     tests: ["test/lowering-switches.test.ts", "-t", "goes on to its value"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
     name: "flag-given-first",
     breaks:
       "a `matches!` of a guard's flag is `let tmp = false; if (t) { tmp = true; }`, not `const value = t;` (ADR 0929)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "            && yes != no\n",
     replace: "            && yes == no\n",
     tests: ["test/corpus.test.ts", "-t", "^flag_of_a_guarded_match.rs$"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
     name: "known-boolean-unread",
     breaks:
       "what lowering knows is a `bool`, a `bool` constant's read, is coerced, `!!(LOGGED && !quiet) || TRACED` (ADR 0031, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        _ if e.facts.has(js::Known::Boolean) => true,\n",
     replace: "",
     tests: ["test/lowering-constants.test.ts", "-t", "bool constant"],
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     name: "same-test-strict-null-undefined",
     breaks:
       "`x === null` is taken for `x === undefined`, so a `match`'s `Kind::Null` arm after `Kind::Undefined`'s is dropped",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                        p.tests_set().is_some() || k.kind == l.kind\n",
     replace: "                        true\n",
     tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
     name: "typeof-implies-object-too",
     breaks:
       '`typeof x === "object"` is taken to imply `x != null`, which `null` isn\'t',
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: '            js::same_path(x, y) && matches!(&name.kind, ExprKind::Str(t) if t != "object" && t != "undefined")\n',
     replace:
       "            js::same_path(x, y) && matches!(&name.kind, ExprKind::Str(_))\n",
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     name: "coerced-branches-kept",
     breaks:
       "`let tmp; if (now) { tmp = () => 1; } else { .. } return tmp;`, where each branch returns",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "    if returned != result && !is_temporary(returned) {\n",
     replace: "    if returned != result {\n",
     tests: [
@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-empty-then-kept",
     breaks: "`if (c) {} else { s }` stays, not `if (!c) { s }`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        (true, Some(otherwise)) if !otherwise.is_empty() => Some(StmtKind::If(test.negated_test(), otherwise, None)),\n",
     replace:
       "        (true, Some(otherwise)) if !otherwise.is_empty() => Some(StmtKind::If(test, Vec::new(), Some(otherwise))),\n",
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-or-chain-kept",
     breaks:
       "`l: { if (!a) { if (!b) { s; break l; } } t }` stays, not `if (a || b) { t } else { s }`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {\n",
     replace:
       "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label).filter(|_| false) => {\n",
@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-temporary-ternary-kept",
     breaks:
       "an `if` the program wrote as a value, of an element, stays a `let` assigned in branches, not a conditional child",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        && ((small(yes) && small(no)) || is_temporary(x))\n",
     replace: "        && small(yes) && small(no)\n",
     tests: [
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-boolean-variable-unknown",
     breaks:
       "a variable of `booleans` isn't a `bool` to `conditional`, `!!expanded`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        ExprKind::Var(name) => booleans.contains(&js::Path::var(name)),\n",
     replace: "",
     tests: [
@@ -178,7 +178,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-implied-guard-kept",
     breaks:
       '`if (x != null) { if (x === "a") { s } }` keeps the guard its chain says',
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "            StmtKind::If(test, then, None) if !then.is_empty() && then.iter().all(|s| guarded_chain(s, test)) => {\n",
     replace:
       "            StmtKind::If(test, then, None) if false && !then.is_empty() && then.iter().all(|s| guarded_chain(s, test)) => {\n",
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-implied-by-or-unread",
     breaks:
       '`a || b` doesn\'t say what both its sides say, `x != null` of `x === "d" || x === "i"`',
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        (_, ExprKind::Binary(Op::Or, a, b)) => implies(a, test) && implies(b, test),\n",
     replace: "",
     tests: [
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-guarded-chain-else",
     breaks:
       "a chain with a last `else` drops its guard, its `else` then run where the guard fails",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                && (otherwise.as_deref()).is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard)))\n        }\n        _ => false,\n",
     replace:
       "                && (otherwise.as_deref()).is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard)))\n        }\n        _ => true,\n",
@@ -219,7 +219,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-filtered-guard-kept",
     breaks:
       "a let-else of what `filter` keeps tests `const h = x ? x : undefined` for `null`, not `!x`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "            false => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_of(then, h) == 0,\n",
     replace: "            false => false,\n",
     tests: ["test/lowering-matches.test.ts", "-t", "what .filter. keeps"],
@@ -228,7 +228,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-filtered-or-unkept",
     breaks:
       "a let-else of what `filter` by truth keeps, `const h = x || undefined`, tests `h == null`, not `!x`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        ExprKind::Binary(Op::Or, x, no) if matches!(no.kind, ExprKind::Undefined) => Some(x),\n",
     replace: "",
     tests: [
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-filtered-some-kept",
     breaks:
       "`if (h != null) { s }` of what `filter` keeps stays, `h` and its binding `const href = h`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                otherwise.as_deref().is_none_or(|o| js::mentions_of(o, h) == 0)\n                    && js::mentions_of(&stmts[i + 1..], h) == 0\n",
     replace: "                false\n",
     tests: [
@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-else-after-return-kept",
     breaks:
       "`if (c) { return a; } else { s }`, its `else` kept, the let-else not a guard",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        StmtKind::If(test, then, Some(otherwise)) if then.last().is_some_and(ends) => {\n",
     replace:
       "        StmtKind::If(test, then, Some(otherwise)) if false && then.last().is_some_and(ends) => {\n",
@@ -269,7 +269,7 @@ export const mutations: Mutation[] = [
     name: "table-reads-off",
     breaks:
       "a `match` reading a table is MIR's tests of each variant, not `MAP[kind]`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "    let within = |s: js::Span| table_of(s).is_some();",
     replace: "    let within = |s: js::Span| false && table_of(s).is_some();",
     tests: ["test/lowering.test.ts", "-t", "a match reading a table from MIR"],
@@ -278,7 +278,7 @@ export const mutations: Mutation[] = [
     name: "table-reads-returns-kept",
     breaks:
       "a `match` of returns, each its variant's own name, stays a return for each, not `return kind;`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                stmts.splice(i..=i + returned, [StmtKind::Return(Some(read)).at(span)]);\n",
     replace: "                let _ = (read, span);\n",
     tests: ["test/lowering.test.ts", "-t", "a match reading a table from MIR"],
@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
   {
     name: "table-read-own-names-off",
     breaks: "a `match` giving each variant's own name isn't what's matched",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        None if names == arms.len() => Some((**key).clone()),\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a match reading a table from MIR"],
@@ -295,7 +295,7 @@ export const mutations: Mutation[] = [
     name: "table-read-mixed-arms",
     breaks:
       "a `match` of a table's fields and a literal reads the table for the literal's variant too",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        Some(table) if fields.len() == arms.len() =>",
     replace: "        Some(table) =>",
     tests: ["test/lowering.test.ts", "-t", "a match reading a table from MIR"],
@@ -304,7 +304,7 @@ export const mutations: Mutation[] = [
     name: "block-returns-kept",
     breaks:
       "returns MIR jumps out of a block for stay `result = x; break l;` and one `return result;`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "    returned_from_block(stmts, result);\n",
     replace: "",
     tests: [
@@ -316,7 +316,7 @@ export const mutations: Mutation[] = [
   {
     name: "or-branches-reversed",
     breaks: "`if a || b { x } else { y }` from MIR is `!a && !b ? y : x`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    true => conditional(test.negated_test(), one.no, one.yes, booleans, written_if),\n",
     replace:
       "                    true => conditional(test, one.yes, one.no, booleans, written_if),\n",
@@ -330,7 +330,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-bool-field-unknown",
     breaks:
       "a `bool` field from MIR isn't known as one, `!!(element.editable || ..)`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        ExprKind::Member(..) => e.path().is_some_and(|path| booleans.contains(&path)),\n",
     replace: "",
     tests: [
@@ -343,7 +343,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-chain-first",
     breaks:
       'a match\'s arms as values from MIR chain with the rest first, `variant !== "foundation" ? .. : ["Foundation", ..]`',
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        (None, false, true) => false,\n",
     replace: "        (None, false, true) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^match_call_once.rs$"],
@@ -352,7 +352,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-or-pattern-blocks",
     breaks: "an or-pattern's matches! from MIR tests its first pattern alone",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                StmtKind::If(or_all(a, b), then, None)\n",
     replace: "                StmtKind::If(a, then, None)\n",
     tests: [
@@ -365,7 +365,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-bool-call-unknown",
     breaks:
       "a call giving a `bool` isn't one in a test, `!!isItem(item) && ..`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        ExprKind::Call(..) if e.called_path().is_some_and(|path| booleans.contains(&path)) => true,\n",
     replace: "",
     tests: [
@@ -378,7 +378,7 @@ export const mutations: Mutation[] = [
     name: "element-branch-not-small",
     breaks:
       "a small element chosen, `busy ? <span>\u2026</span> : <b>Save</b>`, stays `let label; if (busy) ..`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        ExprKind::Jsx(_) => levels(e) <= 2,\n",
     replace: "        ExprKind::Jsx(_) => false,\n",
     tests: [
@@ -395,7 +395,7 @@ export const mutations: Mutation[] = [
     name: "mir-chain-tail-folded",
     breaks:
       "a variable's value of three arms from MIR has its last two folded, `else { counted = w ? 0 : n; }`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    && let Some((y, folded)) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))\n",
     replace:
       "                    && let Some((y, folded)) = assigned_only(otherwise).filter(|_| false)\n",
@@ -409,7 +409,7 @@ export const mutations: Mutation[] = [
     name: "mir-temp-chain-half-folded",
     breaks:
       "a value MIR holds of three branches, its first doing more, is `else { tmp = b ? q : r; }`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: " || is_temporary(x) && then.len() > 1)",
     replace: ")",
     tests: [
@@ -422,7 +422,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-table-taken-apart-unread",
     breaks:
       "a `match` reading a table, taken apart, `let Look { name, classes } = match ..`, stays a conditional of every variant from MIR, not `LOOKS[kind]`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "            | StmtKind::Return(Some(e))\n            | StmtKind::Destructure { value: e, .. } => {\n",
     replace: "            | StmtKind::Return(Some(e)) => {\n",
     tests: ["test/lowering.test.ts", "-t", "a match reading a table from MIR"],
@@ -431,7 +431,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-updates-folded",
     breaks:
       "a formatter's arms each writing, `Some(w) => write!(f, \"{:>w$}\", s), None => f.write_str(&s)`, are `f = w != null ? f + $pad(..) : f + s`, not each its `return`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        && !(updates(x, yes) || updates(x, no))\n",
     replace: "        && !((updates(x, yes) || updates(x, no)) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_queries.rs$"],
@@ -441,7 +441,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-table-last-arm-unchecked",
     breaks:
       "MIR's last arm of a match on an enum's names is taken as its own name, whatever it gives",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "            None => Some(left.as_str()),\n",
     replace: "            None => None,\n",
     tests: [
@@ -454,7 +454,7 @@ export const mutations: Mutation[] = [
     name: "shared-tails-kept",
     breaks:
       "a tail both branches end with stays written twice, `result = undefined` in each (ADR 0564)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                let shared = shared_tail(then, otherwise);\n",
     replace: "                let shared = 0 * shared_tail(then, otherwise);\n",
     tests: [
@@ -468,7 +468,7 @@ export const mutations: Mutation[] = [
     name: "shared-tails-take-a-let-elses-exit",
     breaks:
       "a `let … else`'s `return` goes as a copy of the function's tail it's alike, and its guard is never first (ADR 0879, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    || guards(&then[kept.len()..])\n",
     replace: "",
     tests: [
@@ -481,7 +481,7 @@ export const mutations: Mutation[] = [
     name: "shared-leaving-tail-hoisted",
     breaks:
       "a `return` both branches end with is written once after them, and a guard clause is nested instead",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    || tail.last().is_some_and(ends)\n",
     replace: "",
     tests: [
@@ -495,7 +495,7 @@ export const mutations: Mutation[] = [
     name: "emptied-if-kept-as-test",
     breaks:
       "`if (c) {}` of a test that does nothing stays as the test, `c;`, not nothing",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        (true, _) if !test.has_effects() => None,\n",
     replace: "        (true, _) if false && !test.has_effects() => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
@@ -505,7 +505,7 @@ export const mutations: Mutation[] = [
     name: "undefined-branch-made-conditional",
     breaks:
       "a tail `if` whose branch gives nothing is `return c ? x : undefined`, not its guard",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "    (!undefined(yes) && !undefined(no)) || (undefined(yes) && null(no)) || (null(yes) && undefined(no))\n",
     replace: "    true\n",
     tests: [
@@ -518,7 +518,7 @@ export const mutations: Mutation[] = [
     name: "conditional-branch-unmapped",
     breaks:
       "a conditional's branch of no place of its own, `(fib(a) + fib(b)) >>> 0`, maps to its neighbor's Rust",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "    if first.span.is_none() {\n        first.span = placed;\n    }\n",
     replace: "",
     tests: [
@@ -531,7 +531,7 @@ export const mutations: Mutation[] = [
     name: "switch-arms-folded",
     breaks:
       "a `match` of constants' arms of a value are folded into a `?:`, `const label = len === 0 ? 10 : ..`, not a `switch`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        && !switched(test, span, switches);\n",
     replace: "        ;\n",
     tests: [
@@ -544,7 +544,7 @@ export const mutations: Mutation[] = [
     name: "function-not-small",
     breaks:
       "a function isn't a conditional's branch, so `const pick = c ? f : (n) => ..` is a `let` each branch sets",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        _ => !e.is_conditional(),\n",
     replace: "        _ => !e.is_conditional() && !matches!(e.kind, ExprKind::Arrow(..)),\n",
     tests: [
@@ -557,7 +557,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-same-test-truth",
     breaks:
       '`!!label` isn\'t the same test as `label`, so a prop under a child\'s truth test is `label ? "x" : undefined`, not `"x"`',
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "    let (a, b) = (truth(a), truth(b));\n",
     replace: "",
     tests: [
@@ -570,7 +570,7 @@ export const mutations: Mutation[] = [
     name: "labeled-chain-unplaced",
     breaks:
       "an `if let` chain MIR made a labeled block of is at the next statement's start, so the blank line before that is before the chain, ReactForwardRef's",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                span = made_where(span, &body);\n",
     replace: "",
     tests: [
@@ -583,7 +583,7 @@ export const mutations: Mutation[] = [
     name: "written-returns-made-a-conditional",
     breaks:
       "`if let Some(p) = parent { return f(&p); } return None;` is `return parent != null ? f(parent) : null;`, not the `if` of `return`s written (ADR 0657, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    && !(one.target == *result && written_returns((then, otherwise), returns, span))\n                    // Not an `if` the program wrote as a statement",
     replace:
       "                    && true\n                    // Not an `if` the program wrote as a statement",
@@ -597,7 +597,7 @@ export const mutations: Mutation[] = [
     name: "written-returns-of-a-returned-if",
     breaks:
       "`if __DEV__ { ..; return if c { a } else { None }; } None`, whose branches MIR assigns the function's value, stays `if (c) { return a; }` and the tail's `return null;`, not the conditional returned (ADR 0657, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "    let in_branch = |s: &Stmt| returns.iter().any(|r| within(r, s.span) && !within(r, span));\n",
     replace:
       "    let in_branch = |s: &Stmt| returns.iter().any(|r| within(r, s.span) && !within(r, js::Span::NONE));\n",
@@ -611,7 +611,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-filtered-read-kept",
     breaks:
       "a let-else of what `filter` by truth keeps of a read, `const contextTypes = type.contextTypes || undefined`, tests `== null`, not `!contextTypes`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "            ExprKind::Var(x) => Some(x.clone()),\n            _ => None,\n",
     replace:
       "            ExprKind::Var(x) => Some(x.clone()),\n            _ => continue,\n",
@@ -625,7 +625,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-filtered-exit-reads-kept",
     breaks:
       'a let-else\'s exit that reads the `Option` it kept, `None`, is given what was filtered, `""`, `Some("")` where Rust says `None`',
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "            false => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_of(then, h) == 0,\n",
     replace:
       "            false => otherwise.is_none() && then.last().is_some_and(ends),\n",
@@ -635,7 +635,7 @@ export const mutations: Mutation[] = [
     name: "branch-value-placed-nowhere",
     breaks:
       "an `if`'s branches made one conditional are placed nowhere, so the source map maps `return first ? a : b;` to nothing, not the Rust's `if` (ADR 0708, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                if value.span.is_none() {\n                    value.span = span;\n",
     replace:
       "                if false {\n                    value.span = span;\n",
@@ -645,7 +645,7 @@ export const mutations: Mutation[] = [
     name: "switch-arms-tail-shared",
     breaks:
       "React's commitAttachRef's Fragment and default arms share their tail after a smaller `switch`, an `if` chain before it (ADR 0956)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    || apart\n                    || super::switches::switched(test, stmts[i].span, switches)\n",
     replace:
       "                    || apart\n                    || false && super::switches::switched(test, stmts[i].span, switches)\n",
@@ -655,7 +655,7 @@ export const mutations: Mutation[] = [
     name: "chain-through-temporary-unseen",
     breaks:
       "a variable's value of four arms MIR gives through a temporary is its first arm a statement and the rest a conditional, `else { color = a ? .. : b ? .. : .. }`",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    && let Some((y, folded)) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))\n",
     replace:
       "                    && let Some((y, folded)) = assigned_only(otherwise)\n",
@@ -665,7 +665,7 @@ export const mutations: Mutation[] = [
     name: "plain-chain-written-order-ignored",
     breaks:
       "a value whose `then` is a chain of plain values, `if c { if d { a } else { b } } else { e }`, is `!c ? e : d ? a : b`, its test turned, not `c ? (d ? a : b) : e` as written (ADR 0969, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                        written_order(span, then, otherwise, elses),\n",
     replace: "                        None,\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_value_in_then.rs$"],
@@ -675,7 +675,7 @@ export const mutations: Mutation[] = [
     name: "one-assignment-written-order-ignored",
     breaks:
       "a temporary's value whose `then` is a conditional, a pair's part, is `!c ? e : ..`, its test turned, not `c ? (..) : e` as written (ADR 0969, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        written_order(span, then, otherwise, elses),\n        yes.is_conditional(),\n",
     replace: "        None::<bool>,\n        yes.is_conditional(),\n",
     tests: [
@@ -688,7 +688,7 @@ export const mutations: Mutation[] = [
     name: "one-assignment-through-temporary-unseen",
     breaks:
       'a value\'s chain of five plain arms, each after the first MIR\'s temporary given through the next, is `if (u > 5) { c = "o"; } else if (t < 1) { c = "x"; } else { c = t > 9 ? .. }`, half a chain, not one conditional (#436, ADR 0969, amended)',
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "    let (y, no) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))?;\n",
     replace: "    let (y, no) = assigned_only(otherwise)?;\n",
     tests: [
@@ -701,7 +701,7 @@ export const mutations: Mutation[] = [
     name: "plain-chain-statement-folded",
     breaks:
       "a late `let`'s `if` the program wrote as a statement, its `then` a value's conditional, is one conditional, `const level = c ? (m ? 3 : 2) : 1;`, not as written (rd187, ADR 0969, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    && !written_as_statement(test, span, program)\n                    && let Some(value) = plain_chain_of(\n",
     replace: "                    && let Some(value) = plain_chain_of(\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_value_in_then.rs$"],
@@ -711,7 +711,7 @@ export const mutations: Mutation[] = [
     name: "unlabeled-chain-not-a-value",
     breaks:
       "a labeled block of an `||` that becomes `if (a || b) { x = null; } else { x = v; }` stays that `if`, `let unknown; if ..`, inside a borrow's `try`, not the conditional (#413, ADR 0683, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "    if unlabeled {\n",
     replace: "    if false && unlabeled {\n",
     tests: ["test/corpus.test.ts", "-t", "^borrowed_loop_value_if.rs$"],
@@ -721,7 +721,7 @@ export const mutations: Mutation[] = [
     name: "plain-chain-kept",
     breaks:
       "a value's chain of four arms each a plain value stays `let color; if (..) { color = .. } else if ..`, not upstream's `const color = a ? .. : b ? .. : ..` (ADR 0969, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    && !written_as_statement(test, span, program)\n                    && let Some(value) = plain_chain_of(\n",
     replace:
       "                    && false\n                    && let Some(value) = plain_chain_of(\n",
@@ -731,7 +731,7 @@ export const mutations: Mutation[] = [
     name: "arrow-called-in-place-small",
     breaks:
       "a `with`'s closure that throws, an arrow called in place, is a branch's value, `return done ? 1 : ((exception) => { throw exception; })(exception);`, not `if (done) { return 1; } throw exception;` (ADR 0237, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "        ExprKind::Call(callee, _) if matches!(callee.kind, ExprKind::Arrow(..)) => false,\n",
     replace: "",
     tests: [
@@ -744,7 +744,7 @@ export const mutations: Mutation[] = [
     name: "written-tails-shared",
     breaks:
       "a tail the program wrote in each branch of an `if` it wrote with an `else` is written once after it, `if (..) { .. } else { .. } newLast = clone;`, and wl6's `panicOnRootError(..); return;` merges, keeping throwAndUnwindWorkLoop a `$catchUnwind` (the user's decision, wl6)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    || apart\n",
     replace: "",
     tests: [
@@ -758,7 +758,7 @@ export const mutations: Mutation[] = [
     name: "chained-checks-of-written-ifs",
     breaks:
       "React's markRef, a match's last arm of two `if`s written apart, the first a `panic!`, is `} else if (..) { throw .. } else if (..) {`, the check a link of the chain (ADR 0237, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "            || written(check)\n",
     replace: "",
     tests: [
@@ -771,7 +771,7 @@ export const mutations: Mutation[] = [
     name: "shared-tails-of-a-then-and-after",
     breaks:
       "ReactDOMUnknownPropertyHook's `if (prefix === 'data-' || ..) { return true; } ..; return true;` merges its two written `return true`s, the rest inside the negated test (rd48, ADR 0564, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    || then_and_after(stmts[i].span, (tail, other), thens);\n",
     replace: "                    ;\n",
     tests: ["test/corpus.test.ts", "-t", "^arm_returns_as_written.rs$"],
@@ -781,7 +781,7 @@ export const mutations: Mutation[] = [
     name: "or-tests-rest-not-again",
     breaks:
       'an or-pattern\'s arm made of what follows it keeps its own or-pattern as MIR tests it, `if (tag !== "tr") { if (tag !== "style") { .. } } return true;` (rd95)',
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "            or_tests(&mut rest);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^returned_chains_in_cases.rs$"],
@@ -791,7 +791,7 @@ export const mutations: Mutation[] = [
     name: "undefined-or-null-guarded",
     breaks:
       "a returned `if` of `None` and `js::null()` is a guard, `if (expected === undefined) { return; } return null;`, not upstream's `return expected === undefined ? undefined : null;` (rd69)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "    (!undefined(yes) && !undefined(no)) || (undefined(yes) && null(no)) || (null(yes) && undefined(no))\n",
     replace: "    !undefined(yes) && !undefined(no)\n",
     tests: [
@@ -805,7 +805,7 @@ export const mutations: Mutation[] = [
     name: "null-then-undefined-guarded",
     breaks:
       "a returned `if` of `js::null()` first and `None` after is a guard, `return expected !== undefined ? null : undefined;` not made (rd69)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: " || (null(yes) && undefined(no))\n",
     replace: "\n",
     tests: [
@@ -818,7 +818,7 @@ export const mutations: Mutation[] = [
     name: "statement-if-made-a-conditional",
     breaks:
       "a late `let` the program assigns in an `if` it wrote, `let n; if flag { n = 1 } else { n = 2 }`, is `const n = flag ? 1 : 2;`, not as it's written (rd187)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    && (is_temporary(&one.target) || !written_as_statement(&test, span, program)) =>",
     replace:
       "                    && (true || !written_as_statement(&test, span, program)) =>",
@@ -828,7 +828,7 @@ export const mutations: Mutation[] = [
     name: "statement-if-of-a-temporary-kept",
     breaks:
       "a temporary's `if` MIR makes inside a written `if`'s condition, a `matches!`'s, stays `let tmp; if (..) { tmp = true; } else { tmp = false; }`, not its test (rd187)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    && (is_temporary(&one.target) || !written_as_statement(&test, span, program)) =>",
     replace:
       "                    && (false || !written_as_statement(&test, span, program)) =>",
@@ -838,7 +838,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-filtered-first-alone",
     breaks:
       "a list's `filter`s by truth after its first stay `stack = stack || undefined; if (stack != null)`, not `if (stack)` (React DOM's clientRenderBoundary)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    ..Expr::var(&x)\n                };\n            }\n        });\n    }\n}",
     replace:
       "                    ..Expr::var(&x)\n                };\n            }\n        });\n        break;\n    }\n}",
@@ -852,7 +852,7 @@ export const mutations: Mutation[] = [
     name: "first-arm-doing-more-half-folded",
     breaks:
       "a variable's value of a chain whose first arm does more than give it, `const t = tests; entries = [t];`, is half a conditional, `else { entries = !test && main ? [9] : compute(3); }`, not the chain (#583, ADR 0969)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "(then.len() == 1 || x != result)",
     replace: "then.len() == 1",
     tests: ["test/corpus.test.ts", "-t", "^let_match_computed_default.rs$"],
@@ -862,7 +862,7 @@ export const mutations: Mutation[] = [
     name: "function-value-chained",
     breaks:
       "a function's value of an arm doing more and an `Option`'s `and_then`, `return scope.parent != null ? Env.get(..) : undefined;`, is an `else if` chain, no arm of the program's (#583)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "(then.len() == 1 || x != result)",
     replace: "(then.len() == 1 || true)",
     tests: ["test/corpus.test.ts", "-t", "^interpreter.rs$"],
@@ -871,7 +871,7 @@ export const mutations: Mutation[] = [
   {
     name: "panicking-arm-unordered",
     breaks: "a `match`'s arm that panics, written between its others, is the chain's last `else`, `else if (typeof slots !== \"number\") { .. } else { throw .. }`, not in the arms' order (#1972)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    .any(|e| !throw.span.is_none() && e.lo <= throw.span.lo && throw.span.hi <= e.hi) =>\n",
     replace: "                    .any(|e| !throw.span.is_none() && e.lo <= throw.span.lo && throw.span.hi <= e.hi)\n                && false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^match_arms_with_a_panic_written_in_order.rs$"],
@@ -880,7 +880,7 @@ export const mutations: Mutation[] = [
   {
     name: "let-else-guard-chained",
     breaks: "a `let … else`'s panic in a `match`'s arm is taken for an arm of the chain, `} else if (next == null) { throw .. } else { .. }`, not its guard first as written (#1972)",
-    file: "src/lower/mir/tidy/branches.rs",
+    file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                && !(let_elses.iter())\n",
     replace: "                && !(let_elses.iter().filter(|_| false))\n",
     tests: ["test/corpus.test.ts", "-t", "^match_arms_with_a_panic_written_in_order.rs$"],

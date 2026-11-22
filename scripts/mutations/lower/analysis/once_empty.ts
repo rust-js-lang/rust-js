@@ -1,8 +1,8 @@
-// Mutations of src/lower/analysis/once_empty.rs, which `OnceCell`s MIR shows
+// Mutations of crates/rust-js-lower/src/analysis/once_empty.rs, which `OnceCell`s MIR shows
 // still empty where they're set (ADR 0847, #1672 M3).
 import type { Mutation } from "../../../mutations";
 
-const file = "src/lower/analysis/once_empty.rs";
+const file = "crates/rust-js-lower/src/analysis/once_empty.rs";
 const tests = ["test/corpus.test.ts", "-t", "^once_cell_known_empty.rs$"];
 
 export const mutations: Mutation[] = [

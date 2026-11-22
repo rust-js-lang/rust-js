@@ -14,7 +14,7 @@ export const root = join(import.meta.dir, "..");
 
 /** rustc's flags that make a program the one rust-js compiles, at
  * `edition`: arithmetic that wraps, as rust-js takes Rust (the release
- * profile's, `src/lower.rs`). The one source of them for every program the
+ * profile's, `crates/rust-js-lower/src/lib.rs`). The one source of them for every program the
  * nets run natively, on wasm32 and under Miri, which judges a program at
  * them (#1970): with overflow checks on, a wrap panics there before the
  * undefined behaviour after it, and the program's taken as defined. */

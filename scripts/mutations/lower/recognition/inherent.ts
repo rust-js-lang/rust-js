@@ -1,11 +1,11 @@
-// Mutations of src/lower/recognition/inherent.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/recognition/inherent.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "ordering-less-includes-equal",
     breaks: "Ordering::is_lt includes Equal",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "        \"is_lt\" => Std::OrderingTest(BinOp::Lt),\n",
     replace: "        \"is_lt\" => Std::OrderingTest(BinOp::Le),\n",
     tests: ["test/corpus.test.ts","-t","^ordering_predicates.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "random-state-table-unseen",
     breaks: "a `HashMap` or `HashSet` of a `RandomState` isn't known to hold one, so its `with_hasher` and `hasher()` are refused",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "        let hasher_at = if self.is_std_type(owner, StdItem::HashMap) {\n            2\n        } else {\n            1\n        };\n",
     replace: "        let hasher_at = 3;\n",
     tests: ["test/corpus.test.ts", "-t", "^random_state_holds_nothing.rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "replacen-unrecognized",
     breaks:
       "`replacen(p, r, 1)` is a call rust-js doesn't support, where it's JS's `replace`",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "replacen" if owner.is_str() => Std::Method("replace"),\n',
     replace: "",
     tests: [
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
   {
     name: "array-map-unknown",
     breaks: "`[T; N]::map` is refused, where it's an array's own `map`",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "map" if owner.is_array() => Std::Method("map"),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "array_map"],
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-iter-unknown",
     breaks: "an `Option`'s `iter()` is refused",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "iter" if option => Std::OptionIter,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "iterator_sources"],
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-take-unknown",
     breaks: "`opt.take()` is refused",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "take" if option => Std::OptionTake,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "std_methods"],
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
   {
     name: "string-len-unknown",
     breaks: "a `String`'s own `len()`, not a `str`'s, is refused",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "len" if owner.is_str() || string => Std::Text(TextOp::ByteLen),',
     replace:
       '            "len" if owner.is_str() => Std::Text(TextOp::ByteLen),',
@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
   {
     name: "lock-unknown",
     breaks: "`m.lock()` of a `Mutex` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "lock" if adt(StdItem::Mutex) => Std::Borrow {\n                mutable: true,\n                lock: true,\n            },\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^locks"],
@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
   {
     name: "string-pop-unrecognized",
     breaks: "`s.pop()` of a `String` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "pop" if string => Std::StringEdit(StringEdit::Pop),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "string_editing"],
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
   {
     name: "trim-end-matches-start",
     breaks: "`trim_end_matches` trims the start",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "trim_end_matches" if owner.is_str() => Std::Text(TextOp::TrimMatches {\n                start: false,\n                end: true,',
     replace:
       '            "trim_end_matches" if owner.is_str() => Std::Text(TextOp::TrimMatches {\n                start: true,\n                end: false,',
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
     name: "deque-rotate-count-unnamed",
     breaks:
       "a `VecDeque`'s `rotate_right` past its end panics with a slice's assertion, of `k`",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '                Comb::Rotate { left, .. } if deque => Comb::Rotate { left, count: "n" },',
     replace:
       '                Comb::Rotate { left, .. } if false && deque => Comb::Rotate { left, count: "n" },',
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-get-range-unknown",
     breaks: "`v.get(1..3)` of a slice is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "get" if owner.is_slice() && args.types().nth(1).is_some_and(|r| self.range_kind(r).is_some()) => {',
     replace:
       '            "get" if owner.is_slice() && args.types().nth(1).is_some_and(|r| self.range_kind(r).is_some() && false) => {',
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     name: "option-as-deref-unknown",
     breaks:
       "`path.as_deref()` of an `Option<String>` is an error, where it's the option",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "as_deref" | "as_deref_mut"',
     replace: '            "as_deref_never"',
     tests: ["test/corpus.test.ts", "-t", "option_as_deref"],
@@ -121,7 +121,7 @@ export const mutations: Mutation[] = [
     name: "leak-unknown",
     breaks:
       "`Vec::leak(v)` and `Box::leak(b)` are refused, where they're the value itself",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "leak" if adt(StdItem::Vec) => Std::Same,\n            "leak" if string || owner.is_box() => Std::Leak,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^leak"],
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
     name: "string-leak-unknown",
     breaks:
       "a `String` kept for good, `.leak()`, is a call rust-js doesn't support",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "leak" if string || owner.is_box() => Std::Leak,',
     replace: '            "leak" if owner.is_box() => Std::Leak,',
     tests: ["test/lowering-strings.test.ts", "-t", "leaked String"],
@@ -139,7 +139,7 @@ export const mutations: Mutation[] = [
     name: "as-deref-of-vec-unknown",
     breaks:
       "`Option<Vec<T>>::as_deref` isn't the option itself, as a `String`'s is",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "            || self.is_std_type(t, StdItem::Vec)\n",
     replace: "",
     tests: [
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
   {
     name: "get-unchecked-unknown",
     breaks: "a slice's `get_unchecked(i)` is unsupported, not `xs[i]`",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "get_unchecked" | "get_unchecked_mut"\n                if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) =>\n',
     replace:
       '            "get_unchecked_mut"\n                if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) =>\n',
@@ -161,7 +161,7 @@ export const mutations: Mutation[] = [
     name: "linked-list-not-deque",
     breaks:
       "a `LinkedList`'s `push_front` and `pop_back` are refused, not a deque's",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "            adt(StdItem::VecDeque) || adt(StdItem::LinkedList),\n            adt(StdItem::BinaryHeap),\n",
     replace:
       "            adt(StdItem::VecDeque),\n            adt(StdItem::BinaryHeap),\n",
@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
   {
     name: "join-lists-as-text",
     breaks: "`join` of a slice of lists is JS's string `join`",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "self_ty.is_some_and(|item| self.is_string_like(item.peel_refs()))",
     replace: "true",
     tests: ["test/corpus.test.ts", "-t", "text_aliases"],
@@ -178,7 +178,7 @@ export const mutations: Mutation[] = [
   {
     name: "box-pin-unknown",
     breaks: "`Box::pin` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "pin" | "into_pin" if owner.is_box() => Std::Same,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-any-is-unknown",
     breaks: "`is::<T>()` of a `dyn Any` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "is" if self.downcasts(owner) => Std::Any(AnyOp::Is),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
@@ -194,7 +194,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-id-of-unknown",
     breaks: "`TypeId::of::<T>()` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "of" if self.is_type_id(owner) => Std::Any(AnyOp::TypeIdOf),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
@@ -202,7 +202,7 @@ export const mutations: Mutation[] = [
   {
     name: "box-write-unknown",
     breaks: "`Box::write(b, v)` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "write" if owner.is_box() => Std::Uninit(UninitOp::BoxWrite),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
@@ -210,7 +210,7 @@ export const mutations: Mutation[] = [
   {
     name: "as-mut-str-unknown",
     breaks: "`as_mut_str()` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '"as_str" | "as_mut_str" if string => Std::Same,',
     replace: '"as_str" if string => Std::Same,',
     tests: ["test/corpus.test.ts", "-t", "str_mut"],
@@ -218,7 +218,7 @@ export const mutations: Mutation[] = [
   {
     name: "leak-same",
     breaks: "a leaked `String`'s `&mut str` is the string, not a box of it",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "leak" if string || owner.is_box() => Std::Leak,\n',
     replace: '            "leak" if string || owner.is_box() => Std::Same,\n',
     tests: ["test/corpus.test.ts", "-t", "leaked_string_written"],
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
   {
     name: "str-make-ascii-unknown",
     breaks: "`s.make_ascii_uppercase()` of a `String` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '"make_ascii_uppercase" | "make_ascii_lowercase" if owner.is_char() || owner.is_str() => {',
     replace:
       '"make_ascii_uppercase" | "make_ascii_lowercase" if owner.is_char() => {',
@@ -235,7 +235,7 @@ export const mutations: Mutation[] = [
   {
     name: "strip-circumfix-any-pattern",
     breaks: "`strip_circumfix` of a closure as a pattern compiles",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '"strip_circumfix" if owner.is_str() && args.types().all(|p| self.is_string_like(p)) => Std::StripCircumfix,',
     replace: '"strip_circumfix" if owner.is_str() => Std::StripCircumfix,',
     tests: ["test/corpus.test.ts", "-t", "str_circumfix_closure"],
@@ -243,7 +243,7 @@ export const mutations: Mutation[] = [
   {
     name: "splitn-mut-unlimited",
     breaks: "`splitn_mut(n, p)` takes `n` for its predicate",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "                    limited: base.ends_with('n'),",
     replace: "                    limited: name.as_str().ends_with('n'),",
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
@@ -251,7 +251,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-at-unchecked-unknown",
     breaks: "`split_at_unchecked` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "split_at_unchecked" if owner.is_slice() => Std::Text(TextOp::SliceSplitAt { checked: false }),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
@@ -259,7 +259,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-strip-circumfix-unknown",
     breaks: "a slice's `strip_circumfix` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "strip_prefix" | "strip_suffix" | "strip_circumfix" if owner.is_slice() => Std::Slice(SliceOp::Strip {',
     replace:
       '            "strip_prefix" | "strip_suffix" if owner.is_slice() => Std::Slice(SliceOp::Strip {',
@@ -268,7 +268,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-split-off-unknown",
     breaks: "a slice's `split_off` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "split_off"\n            | "split_off_mut"\n',
     replace: '            "split_off_never"\n            | "split_off_mut"\n',
     tests: ["test/corpus.test.ts", "-t", "slice_split_off"],
@@ -276,7 +276,7 @@ export const mutations: Mutation[] = [
   {
     name: "disjoint-unknown",
     breaks: "`get_disjoint_mut` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "get_disjoint_mut" | "get_disjoint_unchecked_mut" if owner.is_slice() => {',
     replace: '            "get_disjoint_never" if owner.is_slice() => {',
     tests: ["test/corpus.test.ts", "-t", "slice_disjoint"],
@@ -284,7 +284,7 @@ export const mutations: Mutation[] = [
   {
     name: "assume-init-slice-unknown",
     breaks: "a slice's `assume_init_ref` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "assume_init_ref" | "assume_init_mut" if owner.is_slice() => Std::Same,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "slice_uninit"],
@@ -292,7 +292,7 @@ export const mutations: Mutation[] = [
   {
     name: "deque-insert-as-vec",
     breaks: "`VecDeque::insert` is `Vec`'s",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "insert" | "insert_mut" if adt(StdItem::VecDeque) => Some(Std::Slice(SliceOp::DequeInsert {',
     replace:
       '            "insert_mut" if adt(StdItem::VecDeque) => Some(Std::Slice(SliceOp::DequeInsert {',
@@ -301,7 +301,7 @@ export const mutations: Mutation[] = [
   {
     name: "push-front-mut-unknown",
     breaks: "`push_front_mut` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "push_front_mut" if deque => Some(Std::Slice(SliceOp::PushFrontMut)),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "deque_push_mut"],
@@ -309,7 +309,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-iter-mut-unknown",
     breaks: "`iter_mut()` of an `Option` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "iter_mut" if option => Std::OptionIterMut,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "option_result_mut"],
@@ -317,7 +317,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-extract-if-unknown",
     breaks: "a `Vec`'s `extract_if` is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "extract_if" if adt(StdItem::Vec) || adt(StdItem::LinkedList) => Some(',
     replace: '            "extract_if" if adt(StdItem::LinkedList) => Some(',
     tests: ["test/corpus.test.ts", "-t", "extract_if"],
@@ -325,7 +325,7 @@ export const mutations: Mutation[] = [
   {
     name: "as-slice-unknown",
     breaks: "`as_slice()` of a slice's iterator is refused",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "as_slice" if slice_iter => Some(Std::Step(StepOp::AsSlice)),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "iter_next_back"],
@@ -333,7 +333,7 @@ export const mutations: Mutation[] = [
   {
     name: "deque-range-mut-unknown",
     breaks: "a deque's `range_mut` is refused",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "range_mut" if deque => Std::Slice(SliceOp::DequeRangeMut),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "deque_range_mut"],
@@ -341,7 +341,7 @@ export const mutations: Mutation[] = [
   {
     name: "as-deref-unknown",
     breaks: "`as_deref()` of an `Rc` or a type's own `Deref` is refused",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "as_deref" if option || result => Std::Comb(Comb::AsDeref),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^as_deref"],
@@ -349,7 +349,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-lock-unknown",
     breaks: "`try_lock()` is refused",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "try_lock" if adt(StdItem::Mutex) => Std::TryBorrow {\n                mutable: true,\n                lock: true,\n            },\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "try_lock"],
@@ -357,7 +357,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-read-unknown",
     breaks: "`try_read()` and `try_write()` are refused",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "try_read" | "try_write" if adt(StdItem::RwLock) => Std::TryBorrow {\n                mutable: name.as_str() == "try_write",\n                lock: true,\n            },\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "try_lock"],
@@ -366,7 +366,7 @@ export const mutations: Mutation[] = [
     name: "index-map-unplaced",
     breaks:
       "indexmap's `get_index`, `swap_remove` and the rest aren't known, and are refused",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "            placed: matches!(owner.kind(), ty::Adt(adt, _) if is_index_map(tcx, adt.did())),\n",
     replace:
       "            placed: false && matches!(owner.kind(), ty::Adt(adt, _) if is_index_map(tcx, adt.did())),\n",
@@ -375,7 +375,7 @@ export const mutations: Mutation[] = [
   {
     name: "poison-into-inner-unknown",
     breaks: "a `PoisonError`'s `into_inner()`, uuid's, is refused",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "into_inner" | "get_ref" if is_poison_error(owner) => Std::PoisonData,\n',
     replace:
       '            "get_ref" if is_poison_error(owner) => Std::PoisonData,\n',
@@ -384,7 +384,7 @@ export const mutations: Mutation[] = [
   {
     name: "local-cell-take-unknown",
     breaks: "a thread-local `Cell`'s `take` is refused",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '            "take" if local_cell => Std::CellTake,\n',
     replace: "",
     tests: [
@@ -396,7 +396,7 @@ export const mutations: Mutation[] = [
   {
     name: "char-indices-offset-refused",
     breaks: "CharIndices::offset is recognised",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '"offset" if self.is_char_indices(owner) =>',
     replace: '"offset" if false =>',
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
@@ -404,7 +404,7 @@ export const mutations: Mutation[] = [
   {
     name: "char-encode-utf16-refused",
     breaks: "char::encode_utf16 is recognised",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: '"encode_utf16" if owner.is_char() =>',
     replace: '"encode_utf16" if owner.is_char() && false =>',
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
@@ -412,7 +412,7 @@ export const mutations: Mutation[] = [
   {
     name: "into-bytes-lent",
     breaks: "a `String`'s `into_bytes()` is its text's bytes lent, never written, where they're its own, so a write to them is an error",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "            \"into_bytes\" if string => Some(Std::Text(TextOp::IntoBytes)),\n",
     replace: "            \"into_bytes\" if string => Some(Std::Text(TextOp::Bytes)),\n",
     tests: ["test/corpus.test.ts", "-t", "^text_bytes_lent_and_owned.rs$"],
@@ -420,7 +420,7 @@ export const mutations: Mutation[] = [
   {
     name: "as-deref-of-mut-ref-is-itself",
     breaks: "`as_deref()` of an `Option<&mut i32>` is taken for the option itself, its handle, not what it points at (#1311)",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "            || t.is_ref() && mutable\n",
     replace: "            || t.is_ref()\n",
     tests: ["test/corpus.test.ts", "-t", "^option_of_a_mut_ref_read_by_value.rs$"],
@@ -428,7 +428,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-error-box-downcast-unknown",
     breaks: "`Box<dyn Error>`'s `downcast`, which std writes in an `impl dyn Error`, isn't known, and a program calling it is refused",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "                if self.is_dyn_error(owner)\n                    || (owner.is_box() || rc)",
     replace: "                if (owner.is_box() || rc)",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
@@ -436,7 +436,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-with-not-tried",
     breaks: "a thread-local's `try_with` gives its closure's value, not `Ok` of it, and its `unwrap()` reads a field of a number (#1285)",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "tried: name.as_str() == \"try_with\"",
     replace: "tried: false",
     tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],
@@ -444,7 +444,7 @@ export const mutations: Mutation[] = [
   {
     name: "channel-iter-unknown",
     breaks: "a channel's `iter()` is refused (#1176)",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "        (ChannelEnd::Receiver, \"iter\") => ChannelOp::Iter,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],
@@ -452,7 +452,7 @@ export const mutations: Mutation[] = [
   {
     name: "channel-try-iter-unknown",
     breaks: "a channel's `try_iter()` is refused (#1176)",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "        (ChannelEnd::Receiver, \"try_iter\") => ChannelOp::TryIter,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],
@@ -460,7 +460,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-copied-is-cloned",
     breaks: "an `Option`'s `copied()` of a `Copy` type with a hand-written `Clone` calls that `clone`, which std's never does",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "        self.tcx.item_name(def_id).as_str() == \"copied\"\n",
     replace: "        false\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
@@ -468,7 +468,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-cloned-is-copied",
     breaks: "an `Option`'s `cloned()` of a `Copy` type with a hand-written `Clone` copies its bits, never calling that `clone`, which std's does",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "        self.tcx.item_name(def_id).as_str() == \"copied\"\n",
     replace: "        true\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
@@ -476,7 +476,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-entry-not-an-entry",
     breaks: "a JSON `Map`'s `entry()` isn't an entry, so its `or_insert` is refused (#1624)",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: " || self.is_json_entry(owner),",
     replace: ",",
     tests: ["test/serde-values.test.ts", "-t", "take, as_null, pointers"],
@@ -484,7 +484,7 @@ export const mutations: Mutation[] = [
   {
     name: "deque-range-a-slices",
     breaks: "a deque's `range(4..)` of three items says \"range start index 4\", lowered as `&v[4..]` is, where std's `slice::range` says it starts at 4 but ends at 3 (#1937)",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "            \"range\" if deque => Std::Text(TextOp::DequeRange),\n",
     replace: "            \"range\" if deque => Std::Text(TextOp::Slice),\n",
     tests: ["test/corpus.test.ts", "-t", "^deque_range_checked_end_first.rs$"],
@@ -492,7 +492,7 @@ export const mutations: Mutation[] = [
   {
     name: "trim-fix-slice-unrecognized",
     breaks: "a slice's `trim_prefix(&[..])` is refused as an open call (#1656) where it's its strip, else itself",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "            _ if owner.is_slice() => TrimFixBy::Items,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^trim_prefix_and_suffix_strip_once_or_keep\\.rs$"],
@@ -500,7 +500,7 @@ export const mutations: Mutation[] = [
   {
     name: "trim-fix-predicate-unrecognized",
     breaks: "`trim_prefix` by a `char`'s predicate or a set of them is refused (#1656) where it's its strip, else itself",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "            _ if owner.is_str() && self.is_char_predicate(pattern) => TrimFixBy::Predicate,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^trim_prefix_and_suffix_strip_once_or_keep\\.rs$"],
@@ -508,7 +508,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-from-fn-unrecognized",
     breaks: "`Vec::from_fn(n, f)`, Rust 1.100's, is refused as an open call (#1656) where it's `array::from_fn`'s lowering with its length given",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "            \"from_fn\" if self.is_std_type(owner, StdItem::Vec) => {\n",
     replace: "            \"from_fn\" if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^from_fn_drops_what_it_made_where_its_closure_panics\\.rs$"],
@@ -516,7 +516,7 @@ export const mutations: Mutation[] = [
   {
     name: "box-take-unrecognized",
     breaks: "`Box::take(b)`, Rust 1.100's, is refused as an open call (#1656) where it's what the box holds and the box left unwritten",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "            \"take\" if owner.is_box() => return Some(Std::Uninit(UninitOp::BoxTake)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^box_take_moves_out_and_leaves_the_box_unwritten\\.rs$"],
@@ -524,7 +524,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-map-unrecognized",
     breaks: "`Rc::map(this, f)`, Rust 1.100's, is refused as an open call (#1656)",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "            \"map\" if rc_pointee(self.tcx, owner).is_some() => return Some(Std::Rc(RcOp::Map)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_map_gives_a_new_rc_and_drops_the_old\\.rs$"],
@@ -532,7 +532,7 @@ export const mutations: Mutation[] = [
   {
     name: "box-map-unrecognized",
     breaks: "`Box::map(b, f)`, Rust 1.100's, is refused as an open call (#1656)",
-    file: "src/lower/recognition/inherent.rs",
+    file: "crates/rust-js-lower/src/recognition/inherent.rs",
     find: "            \"map\" if owner.is_box() => return Some(Std::BoxMap),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^box_map_gives_its_value_to_f_and_drops_none\\.rs$"],

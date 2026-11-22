@@ -1,4 +1,4 @@
-// Mutations of src/lower/std_types/pin.rs (ADR 0329).
+// Mutations of crates/rust-js-lower/src/std_types/pin.rs (ADR 0329).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "pin-mut-of-handle-unread",
     breaks:
       "`as_mut()` of a pinned `Box` of an object is the box of it, not the object",
-    file: "src/lower/std_types/pin.rs",
+    file: "crates/rust-js-lower/src/std_types/pin.rs",
     find: "            PinOp::Mut if handle && !self.mut_ref_form(target).is_cell() => Expr::held(arg()),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "pin-ref-of-box-unread",
     breaks: "`*pin` of a pinned `&mut` to a number is its box",
-    file: "src/lower/std_types/pin.rs",
+    file: "crates/rust-js-lower/src/std_types/pin.rs",
     find: "            PinOp::Ref => match self.boxed_target(pointer) {",
     replace: "            PinOp::Ref => match false {",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "pin-set-assigns",
     breaks: "`set` of a pinned number replaces it as an object would be",
-    file: "src/lower/std_types/pin.rs",
+    file: "crates/rust-js-lower/src/std_types/pin.rs",
     find: "                match handle || self.mut_ref_form(target).is_cell() {",
     replace: "                match false {",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "pin-map-unapplied",
     breaks: "`map_unchecked` gives its pointer, not what `f` makes of it",
-    file: "src/lower/std_types/pin.rs",
+    file: "crates/rust-js-lower/src/std_types/pin.rs",
     find: "                apply(f, vec![pin])",
     replace: "                pin",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "pin-set-generic-assigned",
     breaks: "`Pin::set` of a `Pin<&mut T>` in generic code is `$assign` of its box, as of an object's: JS throws (#1007)",
-    file: "src/lower/std_types/pin.rs",
+    file: "crates/rust-js-lower/src/std_types/pin.rs",
     find: "                match handle || self.mut_ref_form(target).is_cell() {\n",
     replace: "                match handle || self.mut_ref_form(target).is_cell() && !self.is_unknown(target) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "pin-of-another-refused",
     breaks: "a read through a `Pin` of the crate's own pointer or an `Rc` is refused (#1448)",
-    file: "src/lower/std_types/pin.rs",
+    file: "crates/rust-js-lower/src/std_types/pin.rs",
     find: "            _ => return self.pin_of_another_call(op, pin, values, span, out).map(Some),\n",
     replace: "            _ => return Err(self.unsupported(span, \"a `Pin` of this pointer\")),\n",
     tests: ["test/corpus.test.ts", "-t", "^pins_read_through_their_pointer.rs$"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "pin-read-not-dereffed",
     breaks: "a read through a `Pin` of the crate's own pointer is the pointer, not its `deref()` (#1448)",
-    file: "src/lower/std_types/pin.rs",
+    file: "crates/rust-js-lower/src/std_types/pin.rs",
     find: "            (PinOp::Ref, _) => self.pin_read(arg(), pin, span, out)?,\n",
     replace: "            (PinOp::Ref, _) => arg(),\n",
     tests: ["test/corpus.test.ts", "-t", "^pins_read_through_their_pointer.rs$"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "pin-mut-not-deref-mut",
     breaks: "`as_mut()` of a `Pin` of the crate's own pointer is the pointer, not its `deref_mut()` (#1448)",
-    file: "src/lower/std_types/pin.rs",
+    file: "crates/rust-js-lower/src/std_types/pin.rs",
     find: "            (PinOp::Mut, Some(PinTarget::Deref(pointer, _))) => self.own_deref_mut(arg(), pointer, span, out)?,\n",
     replace: "            (PinOp::Mut, Some(PinTarget::Deref(_, _))) => arg(),\n",
     tests: ["test/corpus.test.ts", "-t", "^pins_read_through_their_pointer.rs$"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "pin-read-counted-rc-whole",
     breaks: "a read through a `Pin` of a counted `Rc` is its `{ value, strong }`, not its value (#1448)",
-    file: "src/lower/std_types/pin.rs",
+    file: "crates/rust-js-lower/src/std_types/pin.rs",
     find: "            Some(pointee) => self.counted_pointee(read, pointee),\n",
     replace: "            Some(_) => read,\n",
     tests: ["test/corpus.test.ts", "-t", "^pins_read_through_their_pointer.rs$"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "pinned-manually-drop-refused",
     breaks: "`as_mut()` and `set()` of a pinned `ManuallyDrop` are refused, where it's what it holds as a `Box` is (#1454)",
-    file: "src/lower/std_types/pin.rs",
+    file: "crates/rust-js-lower/src/std_types/pin.rs",
     find: "            ty::Adt(..) if let Some(held) = self.recognition().std_wrapped(pointer) => held,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^pins_read_through_their_pointer.rs$"],

@@ -30,7 +30,7 @@ a library's). Each analysis that narrows what a function is given asks it
 (#2015).
 
 **An item**, whether JS reaches it, in two honest answers
-(`src/lower/declarations.rs`, #2024):
+(`crates/rust-js-lower/src/declarations.rs`, #2024):
 
 - `js_names(id)`: JS can name it, as its module's JS exports it, private
   module or not: a `pub` type, a `pub` field of a type it names, a `pub`

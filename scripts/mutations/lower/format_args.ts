@@ -1,4 +1,4 @@
-// Mutations of src/lower/format_args.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/format_args.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 const concat = [
@@ -11,7 +11,7 @@ export const mutations: Mutation[] = [
   {
     name: "stdout-flush-writes-nothing",
     breaks: "`io::stdout().flush()` leaves what stdout holds of a line held, so stderr written after it comes first (#2319)",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "            StreamOp::Flush { error: false } => Expr::call(Expr::helper(\"$flushStdout\"), Vec::new()),\n",
     replace: "",
     tests: ["test/stream-order.test.ts", "-t", "stdout_held_past_stderr"],
@@ -20,7 +20,7 @@ export const mutations: Mutation[] = [
     name: "format-lines-flattened",
     breaks:
       "a format string written across lines is a template of `\\n`s on one line",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "    let lines = breaks && written.first().is_some_and(|piece| piece.lines);",
     replace: "    let lines = false;",
     tests: [
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     name: "format-concat-one-template",
     breaks:
       "a format string of a `concat!` is one template, not its pieces joined by `+`",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "    if written.len() > 1\n",
     replace: "    if written.len() > usize::MAX - 1\n",
     tests: concat,
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     name: "format-concat-escape-unread",
     breaks:
       "a `{{` or `}}` in a piece of a `concat!` format string makes it one template",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "            '{' | '}' if chars.next_if(|&(_, next)| next == c).is_some() => literal.push(c),\n",
     replace: "",
     tests: concat,
@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
     name: "format-concat-placeholder-unended",
     breaks:
       "a placeholder's text is taken as what follows the `{`, to the piece's end",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "                while chars.next_if(|&(i, _)| i <= end).is_some() {}\n",
     replace:
       "                while chars.next_if(|&(i, _)| i < end).is_some() {}\n",
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
     name: "format-concat-text-unsplit",
     breaks:
       "a template's text written across `concat!`'s pieces makes it one template",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "                            let after = head.strip_prefix(text)?;",
     replace:
       "                            let after = head.strip_prefix(text).filter(|_| false)?;",
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     name: "format-concat-placeholder-unchecked",
     breaks:
       "a placeholder in the source where rustc wrote a literal's value in the template takes the template's next part",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "                    Some(argument @ Piece::Argument(..)) => pieces.push(argument),\n                    _ => return None,",
     replace:
       "                    Some(argument) => pieces.push(argument),\n                    _ => return None,",
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     name: "format-concat-println-newline",
     breaks:
       "a `println!` of a `concat!` format string is one template, as its template ends with a line break its pieces don't",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: '        Some(Piece::Text(text)) if text == "\\n" && rest.is_empty() => split.last_mut()?.push(Piece::Text(text)),\n',
     replace: "",
     tests: concat,
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     name: "format-concat-rest-unchecked",
     breaks:
       "a template longer than its `concat!`'s pieces loses what's after them",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "        Some(_) => return None,\n    }\n    Some(split)",
     replace: "        Some(_) => {}\n    }\n    Some(split)",
     tests: concat,
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
     name: "println-newline-kept",
     breaks:
       "a `println!`'s line is logged with the line break `console.log` ends it with",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "            last.pop();\n",
     replace: "",
     tests: concat,
@@ -108,7 +108,7 @@ export const mutations: Mutation[] = [
     name: "println-written-newline-kept",
     breaks:
       "a `println!` of a `concat!` of literals alone writes its pieces and a line break with `$print`, not `console.log`",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: '        js::ExprKind::Written(pieces) => &mut pieces.last_mut().expect("a written string\'s pieces").text,\n',
     replace: "",
     tests: concat,
@@ -116,7 +116,7 @@ export const mutations: Mutation[] = [
   {
     name: "begin-panic-payload",
     breaks: "`panic!(5)` before edition 2021 throws a message Rust never shows",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "                if !text {",
     replace: "                if false && !text {",
     tests: ["test/corpus.test.ts", "-t", "begin_panic_value"],
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
   {
     name: "stream-write-count-bare",
     breaks: "a stream's `write(bytes)` is the count, not `Ok` of it",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "                    StreamOp::Written { .. } => rust_js_program::js::result::ok(written),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
     name: "unreachable-display-unprefixed",
     breaks:
       "an edition 2018 `unreachable!(x)` panics with what `x` shows alone, not after std's words",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: '                    true => join(vec![Expr::str("internal error: entered unreachable code: "), shown]),\n',
     replace: "                    true => shown,\n",
     tests: ["test/corpus.test.ts", "-t", "^unreachable_display.rs$"],
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
     name: "named-argument-unplaced",
     breaks:
       "a placeholder of a named argument, `{kind}` of `kind = if .. { .. }`, is taken for one the call captures, so its value written across lines is on the template's line however long (ADR 0641, amended)",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "            Err(_) => arguments.iter().position(|(name, _)| name.as_deref() == Some(argument)),\n",
     replace: "            Err(_) => None,\n",
     tests: [
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
     name: "placeholders-counted-past-template",
     breaks:
       'placeholders are matched to the template\'s though rustc wrote a literal argument in it, so `{} {}` of `"lit", x` places `x` where `"lit"` is written',
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "    (placed.len() == placeholders).then_some(placed)\n",
     replace: "    Some(placed)\n",
     tests: [
@@ -169,7 +169,7 @@ export const mutations: Mutation[] = [
     name: "print-may-throw",
     breaks:
       "a `println!` while a value with a destructor is live may throw, so its drop is a `try`/`finally` round a print whose stream never fails",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "                vec![line],\n            )\n            .never_throws(),\n",
     replace: "                vec![line],\n            ),\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_params.rs$"],
@@ -178,7 +178,7 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-to-string-display-message",
     breaks: "`to_string()` of an `Arguments` whose writer fails panics with `ToString`'s message, where std's `fmt::format` gives its own (#1565)",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "            Std::ToString if !arguments => \"a Display implementation returned an error unexpectedly: Error\",\n",
     replace: "            Std::ToString => \"a Display implementation returned an error unexpectedly: Error\",\n",
     tests: ["test/corpus.test.ts", "-t", "^format_args_given_on_formatted_where_written\\.rs$"],
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
   {
     name: "whole-line-logged-past-a-held-part",
     breaks: "a whole line printed where a print may leave the stream's line unended is `console.log`'s, which a browser's console logs before the part held, `b` then `a` of `print!(\"a\"); println!(\"b\")` (#1599)",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "        if self.krate.prints.leaves_unended(error) {\n",
     replace: "        if false && self.krate.prints.leaves_unended(error) {\n",
     tests: [
@@ -199,7 +199,7 @@ export const mutations: Mutation[] = [
     name: "console-unread-past",
     breaks:
       "`console.log` isn't read past a call, and a value it prints `{:?}` of stays a function called in place",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "                        facts: js::Facts::of(js::Known::Lasting),\n",
     replace: "                        facts: js::Facts::NONE,\n",
     tests: [
@@ -211,7 +211,7 @@ export const mutations: Mutation[] = [
   {
     name: "panic-display-a-str",
     breaks: "`panic_display`'s payload, a `String`, downcasts as a `&str`",
-    file: "src/lower/format_args.rs",
+    file: "crates/rust-js-lower/src/format_args.rs",
     find: "out.push(StmtKind::Throw(Expr::panic(shown, js::Payload::String)).at(js_span));",
     replace: "out.push(StmtKind::Throw(Expr::panic(shown, js::Payload::Str)).at(js_span));",
     tests: ["test/corpus.test.ts", "-t", "^panic_payload_kinds\\.rs$"],

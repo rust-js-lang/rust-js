@@ -1,11 +1,11 @@
-// Mutations of src/lower/mir/tidy/logicals.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/tidy/logicals.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "bit-test-some-where-unread",
     breaks: "a `SomeWhere`'s test of a bit set isn't written as JS does",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        if let ExprKind::Cond(test, ..) | ExprKind::SomeWhere(test, _) = &mut e.kind {\n            bit_test(test, &integer, &matched, span);\n",
     replace: "        if let ExprKind::Cond(test, ..) = &mut e.kind {\n            bit_test(test, &integer, &matched, span);\n",
     tests: ["test/corpus.test.ts", "-t", "^returns_in_held_branches.rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "switch-arm-test-joined-to-its-if",
     breaks:
       "a `match` of strings in an `if`, whose first arm does nothing, has that arm's test joined to the `if`'s, `&& key !== \"checked\"`, the rest an `if` chain, not its `switch` (rd133, updateProperties)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        if !one || (switched(second, inner.span, switches) && !switched(test, span, switches)) {\n",
     replace: "        if !one {\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_of_empty_first_arms_in_an_if.rs$"],
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     name: "switch-arm-test-in-its-own-switch-kept-apart",
     breaks:
       "an `Option`'s presence test and its `switch`'s arm, both the `match`'s, are kept apart, a label of MIR's block left, `bb11:` (lowering-switch-symbols)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: " && !switched(test, span, switches)) {\n",
     replace: ") {\n",
     tests: ["test/lowering-switch-symbols.test.ts"],
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "alike-branches-conditional",
     breaks:
       'branches that give one value, of a test that does nothing, are a conditional of it twice, `n > 3 ? 1.5 : 1.5`, `r.TAG === "Ok" ? r._0 : r._0`',
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    if alike_branches(&yes, &no) && !test.has_effects() {\n        return yes;\n    }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^alike_branches.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
     name: "alike-branches-signed-zero",
     breaks:
       "`0` and `-0` are taken for one value, `n > 3 ? 0 : -0` is `0`, so `1 / signed(1)` is `inf`",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        (ExprKind::Num(a), ExprKind::Num(b)) => a.to_bits() == b.to_bits(),\n",
     replace: "        (ExprKind::Num(a), ExprKind::Num(b)) => a == b,\n",
     tests: ["test/corpus.test.ts", "-t", "^alike_branches.rs$"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     name: "written-ors-kept-apart",
     breaks:
       "an `if` whose condition the program wrote `a || b`, each side a value `if`'s comparison, is an `if (..) { continue; }` of each side, not `if (a !== (..) || b !== (..)) { continue; }` (rd225, ADR 0683, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            && one(a.span, b.span)\n",
     replace: "            && false\n",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "written with"],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     name: "written-ors-of-any-ifs",
     breaks:
       "two `if`s the program wrote apart, each of a `continue`, are one `if (a || b)` (rd225)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            && one(a.span, b.span)\n",
     replace: "            && true\n",
     tests: ["test/corpus.test.ts", "-t", "^borrowed_loop_value_if.rs$"],
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     name: "written-tests-unsaid",
     breaks:
       "an `if`'s test the program wrote doesn't say so (`Known::Written`), so a comment above an `if r.is_err()` a `try` folds is lost (#489)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            stmt.facts = stmt.facts.with(js::Known::Written);\n",
     replace: "",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
     name: "unwritten-negation-kept",
     breaks:
       '`!matches!(status, Some("fulfilled" | "rejected"))` is `!(status === "fulfilled" || status === "rejected")`, not each alternative\'s negated test (ADR 0879, amended)',
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        if !exact(chain) || written_negation(&parts, op == Op::And, negations, logicals) {\n",
     replace: "        if true {\n",
     tests: [
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     name: "written-negation-de-morganed-in-a-value",
     breaks:
       "a value the program wrote `!(a == 1 || b == 0)` is `a !== 1 && b !== 0`, not as written (ADR 0879, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        if !exact(chain) || written_negation(&parts, op == Op::And, negations, logicals) {\n",
     replace: "        if !exact(chain) {\n",
     tests: [
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
     name: "unwritten-negation-of-inexact-tests",
     breaks:
       "`!(a < b || c)` of a float or a truthy value is De Morgan'd, `a >= b`, wrong of `NaN`",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            | ExprKind::Unary(UnaryOp::Not, _) => true,\n            _ => false,\n        }\n    }\n",
     replace:
       "            | ExprKind::Unary(UnaryOp::Not, _) => true,\n            _ => true,\n        }\n    }\n",
@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
     name: "written-negation-de-morganed",
     breaks:
       "`if (.. && !(DISABLE && root.tag === 0))` is MIR's `(!DISABLE || root.tag !== 0)` (ADR 0879, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    if negations.is_empty() {\n        return;\n    }\n",
     replace: "    if true {\n        return;\n    }\n",
     tests: [
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     name: "written-negation-of-the-same-chain",
     breaks:
       "a written `!(a || b)` is taken for MIR's `a !== 1 && b !== 0` only where that's an `||` too, so it's never restored",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    let written = |parts: &[Expr]| written_negation(parts, op == Op::Or, negations, logicals);\n",
     replace:
       "    let written = |parts: &[Expr]| written_negation(parts, op == Op::And, negations, logicals);\n",
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
     name: "written-negation-of-a-whole-chain-only",
     breaks:
       "a written `!(disabled || tag == 7)` whose parts MIR joined into the chain around it stays `!disabled && tag !== 7`",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        let run = (at + 2..=parts.len()).rev().find(|&end| written(&parts[at..end]));\n",
     replace:
       "        let run = (parts.len()..=parts.len()).filter(|_| at == 0).find(|&end| written(&parts[at..end]));\n",
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
     name: "bit-test-compared",
     breaks:
       "`if lane & 8 != 0` is `if ((lane & 8) !== 0)`, not `if (lane & 8)` (ADR 0896)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            if b.as_int() == Some(0) && (bits(a) || (*op == Op::Ne && !matched(at) && integer_value(a, integer))) =>\n",
     replace:
       "            if b.as_int() == Some(0) && (bits(a) || (*op == Op::Ne && !matched(at) && integer_value(a, integer))) && false =>\n",
@@ -178,7 +178,7 @@ export const mutations: Mutation[] = [
     name: "bit-test-of-zero-kept-truthy",
     breaks:
       "`if lane & 4 == 0` is `if (lane & 4)`, its branch taken where it isn't (ADR 0896)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "                false => Expr::unary(UnaryOp::Not, bits),\n",
     replace: "                false => bits,\n",
     tests: [
@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
     name: "bit-test-of-a-value-too",
     breaks:
       "a statement's test of any `Cond`, the value `(a & b) !== 0` too, is `a & b`, a number where a `bool` is returned (ADR 0896)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        if let ExprKind::Cond(test, ..) | ExprKind::SomeWhere(test, _) = &mut e.kind {\n            bit_test(test, &integer, &matched, span);\n        }\n",
     replace: "        bit_test(e, &integer, &matched, span);\n",
     tests: [
@@ -204,7 +204,7 @@ export const mutations: Mutation[] = [
     name: "integer-test-compared",
     breaks:
       "an integer variable's `if n != 0` is `if (n !== 0)`, not `if (n)` (ADR 0896, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        ExprKind::Var(name) => integer(name),\n",
     replace: "        ExprKind::Var(_) => false,\n",
     tests: [
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
     name: "integer-test-of-a-pattern",
     breaks:
       "a `match`'s pattern's test of its constant `0`, `match n { 0 => .. }`'s `n === 0`, is `!n`, a truth where a value's compared (ADR 0896, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    let matched = |span: js::Span| {\n",
     replace:
       "    let matched = |_: js::Span| false;\n    let _unused = |span: js::Span| {\n",
@@ -231,7 +231,7 @@ export const mutations: Mutation[] = [
     name: "integer-test-of-zero-truthy",
     breaks:
       "an integer's `if n == 0` is `if (!n)`, where JS compares a count with `n === 0` (ADR 0896, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "(bits(a) || (*op == Op::Ne && !matched(at) && integer_value(a, integer)))",
     replace: "(bits(a) || (!matched(at) && integer_value(a, integer)))",
     tests: [
@@ -244,7 +244,7 @@ export const mutations: Mutation[] = [
     name: "integer-test-of-a-remainder",
     breaks:
       "a remainder's wrap, `($rem(n, m) | 0) !== 0`, is taken for an integer's, `$rem(n, m) | 0`, where JS writes a remainder's test against 0 (ADR 0896, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            ExprKind::Binary(Op::Add | Op::Sub | Op::Mul, ..) | ExprKind::Unary(UnaryOp::Neg, _)\n",
     replace: "            _\n",
     tests: ["test/corpus.test.ts", "-t", "^integer_truth.rs$"],
@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
     name: "integer-test-of-a-float",
     breaks:
       "a float's `if x != 0.0` is `if (x)`, which `NaN` fails where Rust's test passes (ADR 0896, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        ExprKind::Var(name) => integer(name),\n",
     replace: "        ExprKind::Var(_) => true,\n",
     tests: [
@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
     name: "implied-part-kept",
     breaks:
       '`x != null && typeof x === "number"` keeps the test the later one implies',
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        *test = unimplied(Expr::bin(Op::And, first, second));\n",
     replace: "        *test = Expr::bin(Op::And, first, second);\n",
     tests: [
@@ -279,7 +279,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-and-tests-any-condition",
     breaks: "`if`s the program nests are merged into one `&&`",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        let one = (conditions.iter()).any(|(first, then)| within(first, span) && within(then, inner.span));\n",
     replace: "        let one = true;\n",
     tests: [
@@ -292,7 +292,7 @@ export const mutations: Mutation[] = [
     name: "and-test-bound-kept",
     breaks:
       "a test merged into `a && b` leaves its bound read, `const captured = child.type`, read again and unread",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            && js::mentions_of(&stmts[at + 1..], name) == 0\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^(signed_index|signed_counter).rs$"],
@@ -302,7 +302,7 @@ export const mutations: Mutation[] = [
     name: "logical-block-kept",
     breaks:
       "`(x == y && (x != 0.0 || ..)) || ..` is a labelled block of its tests",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    let Some(made) = value(body, after, (label, after), returns, booleans) else {\n",
     replace: "    let Some(made) = None::<Expr> else {\n",
     tests: ["test/lowering-branches.test.ts", "-t", "a value of && and"],
@@ -310,7 +310,7 @@ export const mutations: Mutation[] = [
   {
     name: "logical-block-unfactored",
     breaks: "`c ? (p || d) : d` isn't `(c && p) || d`, so the block stays",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    if let Some(p) = without(&yes, &no) {\n",
     replace: "    if let Some(p) = without(&yes, &no).filter(|_| false) {\n",
     tests: ["test/lowering-branches.test.ts", "-t", "a value of && and"],
@@ -319,7 +319,7 @@ export const mutations: Mutation[] = [
     name: "logical-returns-kept",
     breaks:
       'a value written with `&&`, `s != "en" && (if t {..} else {..})`, stays MIR\'s `return` of each branch',
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        && within(last_if.span)\n",
     replace: "        && false\n",
     tests: [
@@ -333,7 +333,7 @@ export const mutations: Mutation[] = [
     name: "bound-rust-data-a-getter",
     breaks:
       "Rust's data a chain binds and tests, a field, `const c = node.count`, or a tuple's item, `value[0]`, isn't read in the test, `node.count != null && node.count > 1`, as if a getter could read it",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    e.facts.has(js::Known::Getter)\n",
     replace: "    true\n",
     tests: [
@@ -347,7 +347,7 @@ export const mutations: Mutation[] = [
     name: "read-once-not-first",
     breaks:
       "a chain whose property is read once, its failures alike, reaches its `else` by a label, `bb27: { .. break bb27; }`, not `const inner = isValidElement(children) ? children.props.children : undefined;`",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            first_reads.extend(read_once_first(stmt).map(|read| (i, read)));\n",
     replace:
       "            first_reads.extend(read_once_first(stmt).map(|read| (i, read)).filter(|_| false));\n",
@@ -362,7 +362,7 @@ export const mutations: Mutation[] = [
     name: "read-once-first-of-any-chain",
     breaks:
       "a chain whose property is read once and that returns, with no label to reach, reads it first anyway, `const url = request != null && .. ? request.url : undefined`",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    if !reads_a_getter(value) || others || !breaks {\n",
     replace: "    if !reads_a_getter(value) || others {\n",
     tests: ["test/lowering-switches.test.ts", "-t", "React's getIODescription"],
@@ -372,7 +372,7 @@ export const mutations: Mutation[] = [
     name: "read-once-first-of-a-call",
     breaks:
       "a call a chain binds, `const q = counted(h)`, is made first as a conditional, `const q = h != null ? .. counted(h) : undefined`, though nothing reads it twice",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    if !reads_a_getter(value) || others || !breaks {\n",
     replace: "    if others || !breaks {\n",
     tests: ["test/snapshots.test.ts", "-t", "options"],
@@ -382,7 +382,7 @@ export const mutations: Mutation[] = [
     name: "chain-place-read-twice",
     breaks:
       "a let chain after a test of its own reads its place twice, `if (debug && info.value != null) { const value = info.value; .. }` (ADR 0842)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        if read_twice_apart(test, bound, second, &again) || read_past_code(bound, second, &again) {\n",
     replace: "        if read_past_code(bound, second, &again) {\n",
     tests: [
@@ -395,7 +395,7 @@ export const mutations: Mutation[] = [
     name: "chain-taken-apart-nested",
     breaks:
       "a chain that takes apart what its first test tested is nested, `if (value) { const a = value[0]; .. if (a < 10)`, not `if (value && value[0] < 10)` (ADR 0842)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        value.visit_names(&mut |v| apart &= !tested.contains(v));\n",
     replace: "        value.visit_names(&mut |_| {});\n",
     tests: ["test/snapshots.test.ts", "-t", "options"],
@@ -405,7 +405,7 @@ export const mutations: Mutation[] = [
     name: "chain-tests-read-place-twice",
     breaks:
       "a chain whose tests read its binding twice joins them, `if (debug && counts.count != null && counts.count > 3)`, the place read twice (ADR 0842)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        apart && tested > 0 && tested + again(at, name) > 1\n",
     replace: "        apart && tested > 0 && again(at, name) > 0\n",
     tests: [
@@ -418,7 +418,7 @@ export const mutations: Mutation[] = [
     name: "chain-values-nested",
     breaks:
       "a let chain's value, `if a && let Some(x) = e { t } else { f }`, stays its two `if`s and the `let` they assign, a thread-local's `(() => { let tmp; if (a) { .. tmp = t; return tmp; } .. })()` (ADR 0870)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    let (first, test) = read_first(&test, read, inner)?;\n    Some((first.kind.at(chain.span), test.at(inner.span)))\n",
     replace: "    let _ = read_first(&test, read, inner)?;\n    None\n",
     tests: [
@@ -433,7 +433,7 @@ export const mutations: Mutation[] = [
     name: "chain-read-first-of-any-test",
     breaks:
       'a chain whose test `undefined` can\'t be asked, `parse.TAG === "Ok"`, reads its binding first, `const parse = on ? .. : undefined`, and throws where `on` fails (ADR 0870)',
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    if second.has_effects() || !tests.iter().any(|t| implies(t, &defined)) || test.mentions_name(name) {\n",
     replace: "    if second.has_effects() || test.mentions_name(name) {\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_values.rs$"],
@@ -443,7 +443,7 @@ export const mutations: Mutation[] = [
     name: "chain-values-of-branches",
     breaks:
       "a let chain's value whose branch is a value of branches, `if k > 3 { 1 } else { 2 }`, reads its binding first though no conditional is made of it (ADR 0870)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        (Valued::Assigned(x, yes), Valued::Assigned(y, no)) => x == y && small(yes) && small(no),\n",
     replace:
       "        (Valued::Assigned(x, yes), Valued::Assigned(y, no)) => x == y,\n",
@@ -454,7 +454,7 @@ export const mutations: Mutation[] = [
     name: "chain-values-of-none",
     breaks:
       "a let chain returned of `Some(..)` or `None`, a guard of its `Some`, reads its binding first though no conditional is made of it (ADR 0870)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        (Valued::Returned(yes), Valued::Returned(no)) => small(yes) && small(no) && folds_into_return(yes, no),\n",
     replace:
       "        (Valued::Returned(yes), Valued::Returned(no)) => small(yes) && small(no),\n",
@@ -465,7 +465,7 @@ export const mutations: Mutation[] = [
     name: "chain-values-of-written-return",
     breaks:
       "a let chain the program wrote a `return` in, `if on && let Some(k) = .. { return k; }`, reads its binding first as if it were a value (ADR 0870)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        ] if label.is_none() && !written(returns, *span) => Some(Valued::Returned(value)),\n",
     replace: "        ] if label.is_none() => Some(Valued::Returned(value)),\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_values.rs$"],
@@ -475,7 +475,7 @@ export const mutations: Mutation[] = [
     name: "chain-binding-read-past-code",
     breaks:
       "a let chain's binding read before a later test that runs code, `let Some(task) = f.task.get() && probe(f)`, is read after it in the body, where `probe` may have changed the field (ADR 0842, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        if read_twice_apart(test, bound, second, &again) || read_past_code(bound, second, &again) {\n",
     replace: "        if read_twice_apart(test, bound, second, &again) {\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_binding_past_a_call.rs$"],
@@ -484,7 +484,7 @@ export const mutations: Mutation[] = [
     name: "chain-binding-not-read-again",
     breaks:
       "a let chain's binding of a field the test read stays a `const`, `const debugTask = fiber._debugTask; return debugTask.run(..)`, where upstream reads `fiber._debugTask.run(..)` (ADR 0866, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            read_again(then, at);\n",
     replace: "            let _ = (&then, at);\n",
     tests: [
@@ -497,7 +497,7 @@ export const mutations: Mutation[] = [
     name: "chain-binding-of-another-name-read-again",
     breaks:
       "a let chain's binding the program named otherwise than the field it reads, `prev_state` of `current.memoized_state`, is read again in its place, `current.memoizedState.hydrationErrors = ..`, where upstream keeps `const prevState` (rd226, rd706)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name) || own_field.contains(name)) {\n",
     replace: "            if matches!(&then[at].kind, StmtKind::Const(..)) {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "binding named otherwise than its field keeps its const"],
@@ -506,7 +506,7 @@ export const mutations: Mutation[] = [
     name: "chain-temporary-kept",
     breaks:
       "a let chain's temporary the compiler made, of what a struct pattern takes apart, is held in a `const _5` where the body reads it once, not the field read again (rd706)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name) || own_field.cont",
     replace: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if own_field.cont",
     tests: ["test/lowering-moves.test.ts", "-t", "binding named otherwise than its field keeps its const"],
@@ -517,7 +517,7 @@ export const mutations: Mutation[] = [
     name: "returned-logicals-unchained",
     breaks:
       "`return a && b && c;` in an `if` is `if (a) { if (b) { return c; } }`, its failing tests going on to the `return false` after (ADR 0947)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            [inner] => chain(inner, tests),\n",
     replace: "            [_inner] => None,\n",
     tests: [
@@ -530,7 +530,7 @@ export const mutations: Mutation[] = [
     name: "returned-logicals-of-written-returns-refused",
     breaks:
       "`return a || !b;` is `if (a) { return true; } return !b;`, its two `return`s taken for two the program wrote (ADR 0947)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    (returns.iter()).filter(|r| around(r, at)).all(|r| around(r, test))\n",
     replace: "    (returns.iter()).filter(|r| around(r, at)).all(|_| false)\n",
     tests: [
@@ -543,7 +543,7 @@ export const mutations: Mutation[] = [
     name: "set-binding-read-optionally",
     breaks:
       "a binding its test held set, `options?.debugChannel?.readable != null`, is read in the body with its `?.`, `const readable = options?.debugChannel?.readable;`, where upstream reads `options.debugChannel.readable` (rd614 b)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            StmtKind::Const(_, value) if rereadable(value) => unchain(value, &set),\n",
     replace: "            StmtKind::Const(_, value) if rereadable(value) => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_of_an_optional_read.rs$"],
@@ -553,7 +553,7 @@ export const mutations: Mutation[] = [
     name: "chain-parts-read-optionally",
     breaks:
       "a test's parts after one holding a path set read it with its `?.`, `options?.debugChannel.readable > 2` after `options?.debugChannel != null`, not with a `.` (rd614 b)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        unchain(test, set);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_of_an_optional_read.rs$"],
@@ -563,7 +563,7 @@ export const mutations: Mutation[] = [
     name: "set-path-objects-unseen",
     breaks:
       "only the path a test holds set is, not each object it reads, so `const readable = options?.debugChannel?.readable;` keeps its `?.` (rd614 b)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "                ExprKind::Member(object, _) => path = *object,\n",
     replace: "                ExprKind::Member(..) => break,\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_of_an_optional_read.rs$"],
@@ -573,7 +573,7 @@ export const mutations: Mutation[] = [
     name: "unset-object-unchained",
     breaks:
       "a `?.` of an object no test held set is a `.` once any is, `b.debugChannel.readable != null` after `a?.debugChannel?.readable != null`, which throws where `b` is `undefined` (rd614 b)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            && set.iter().any(|s| js::same_path(s, &unchained(object)))\n",
     replace: "            && !set.is_empty()\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_of_an_optional_read.rs$"],
@@ -582,7 +582,7 @@ export const mutations: Mutation[] = [
     name: "joined-chain-read-optionally",
     breaks:
       "a binding `and tests` keeps in the body of the chain it joins, `const y = b?.debugChannel?.readable;`, keeps its `?.` past the test that holds it set (rd614 b)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        unchained_past(test, then);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_of_an_optional_read.rs$"],
@@ -592,7 +592,7 @@ export const mutations: Mutation[] = [
     name: "optional-path-not-a-read",
     breaks:
       "a let chain's binding read through `Option`s, `const readable = options?.debugChannel?.readable;`, isn't sunk into its body, and the tail after its `else` is copied into an early `return` (rd614 b)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => read_of_a_path(object),\n",
     replace: "        ExprKind::Member(object, _) => read_of_a_path(object),\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_of_an_optional_read.rs$"],
@@ -602,7 +602,7 @@ export const mutations: Mutation[] = [
     name: "getter-read-a-path",
     breaks:
       "a let chain's binding of a getter's value, `matches!(input.kind(), 2 | 1)` between its tests, is written into each test, `input.kind !== 2 && input.kind !== 1`, the getter read once for each where Rust reads it once (#485, rd636)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    read_of_a_path(e) && e.reads_same()\n",
     replace: "    read_of_a_path(e)\n",
     tests: ["test/lowering-or-patterns.test.ts", "-t", "inside a chain reads it once"],
@@ -610,7 +610,7 @@ export const mutations: Mutation[] = [
   {
     name: "getter-read-a-path-oracle",
     breaks: "a let chain's binding of a getter's value is written into each test of it, read once for each, which the getter-read oracle's counting proxy logs where the least JS reads it once (#485, ADR 1087)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    read_of_a_path(e) && e.reads_same()\n",
     replace: "    read_of_a_path(e)\n",
     tests: ["test/getter-reads.test.ts", "-t", "getter_tests"],
@@ -619,7 +619,7 @@ export const mutations: Mutation[] = [
     name: "negated-and-untruthed",
     breaks:
       "a value's test negated is the value, not its truth: `!o ? false : f()` is `o && f()`, `undefined` where `o` is, not `false`, and `!o ? false : true` is `o`, the object, not `true`",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        truth(match test.kind {\n            ExprKind::Binary(Op::And | Op::Or, ..) => negated_bools(test, booleans),\n            _ => test.negated_test(),\n        })\n",
     replace:
       "        (match test.kind {\n            ExprKind::Binary(Op::And | Op::Or, ..) => negated_bools(test, booleans),\n            _ => test.negated_test(),\n        })\n",
@@ -633,7 +633,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-or-chain-negated",
     breaks:
       "an `||` chain from MIR is `!(!a && b !== c) || d`, its test negated whole",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        ExprKind::Binary(Op::And | Op::Or, ..) => negated_bools(test, booleans),\n",
     replace: "",
     tests: [
@@ -646,7 +646,7 @@ export const mutations: Mutation[] = [
     name: "written-bool-ternary-kept",
     breaks:
       "an `if` the program wrote of `bool`s, `if dev { n > 2 } else { false }`, is `dev ? n > 2 : false`, not the user's `dev && n > 2` (ADR 0879, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        (_, ExprKind::Bool(false)) if bool_of(&yes) => Expr::bin(Op::And, test, yes),\n",
     replace: "",
     tests: ["test/lowering-bool-ternaries.test.ts"],
@@ -655,7 +655,7 @@ export const mutations: Mutation[] = [
     name: "written-bool-or-ternary-kept",
     breaks:
       "an `if` the program wrote of `bool`s, `if dev { true } else { n > 2 }`, is `dev ? true : n > 2`, not the user's `dev || n > 2` (ADR 0879, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        (ExprKind::Bool(true), _) if bool_of(&no) => Expr::bin(Op::Or, test, no),\n",
     replace: "",
     tests: ["test/lowering-bool-ternaries.test.ts"],
@@ -664,7 +664,7 @@ export const mutations: Mutation[] = [
     name: "written-bool-ternary-of-any-branch",
     breaks:
       "an `Option<bool>`'s `if dev { n } else { Some(false) }` is `dev && n`, a ternary of what isn't a `bool` folded (ADR 0879, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "written_if && is_boolean(&test, booleans) && is_boolean(branch, booleans);\n",
     replace:
       "written_if && is_boolean(&test, booleans) && !branch.is_constant();\n",
@@ -674,7 +674,7 @@ export const mutations: Mutation[] = [
     name: "written-bool-ternary-of-any-test",
     breaks:
       "a value's truth, `if js::truthy(v) { n > 2 } else { false }`, is `v && n > 2`, `0` of `v` = 0, not `false` (ADR 0879, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "written_if && is_boolean(&test, booleans) && is_boolean(branch, booleans);\n",
     replace: "written_if && is_boolean(branch, booleans);\n",
     tests: ["test/lowering-bool-ternaries.test.ts"],
@@ -682,7 +682,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-cond-false-kept",
     breaks: "`test ? b : false` of a boolean test stays, not `test && b`",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        (_, ExprKind::Bool(false)) => Expr::bin(Op::And, truth(test), yes),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^guard_statements.rs$"],
@@ -692,7 +692,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-truth-uncoerced",
     breaks:
       "`o ? true : r` of an object `o` is `o || r`, an object where a `bool` belongs",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, test)),\n",
     replace: "        false => test,\n",
     tests: [
@@ -705,7 +705,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-value-or-fallback-conditional",
     breaks:
       "`if s.is_empty() { d } else { &s }` is `!s ? d : s`, not `s || d` (ADR 0744)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            return Expr::bin(Op::Or, no, yes);\n",
     replace: "            return Expr::cond(test.clone(), yes, no);\n",
     tests: [
@@ -718,7 +718,7 @@ export const mutations: Mutation[] = [
     name: "present-value-coalesce-kept",
     breaks:
       "an `Option`'s value or a default, `match o { Some(s) => s, None => d }`, is `s != null ? s : d`, not `s ?? d`",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        _ if coalesced(true, &yes) => return Expr::bin(Op::Coalesce, yes, no),\n",
     replace: "",
     tests: [
@@ -731,7 +731,7 @@ export const mutations: Mutation[] = [
     name: "written-if-value-folded",
     breaks:
       "an `Option<bool>`'s written `if dev { n } else { Some(false) }` is `dev && n`, and `if js::truthy(v) { .. } else { false }` `!!v && ..`, not the conditional written (ADR 0879, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        _ if written_if => Expr::cond(test, yes, no),\n",
     replace: "",
     tests: ["test/lowering-bool-ternaries.test.ts"],
@@ -740,7 +740,7 @@ export const mutations: Mutation[] = [
     name: "logical-returns-nested-tests-apart",
     breaks:
       "a returned `(a && b) || c` in an arm keeps MIR's `if (a) { if (b) { return true; } } return c;` (rd95)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            && within(inner.span)\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^returned_chains_in_cases.rs$"],
@@ -750,7 +750,7 @@ export const mutations: Mutation[] = [
     name: "logical-returns-nested-test-dropped",
     breaks:
       "a returned `(a && b) || c` of MIR's nested `if`s loses the inner test, `return a || c` (rd95)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "            test = Expr::bin(Op::And, test, t.clone());\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^returned_chains_in_cases.rs$"],
@@ -759,7 +759,7 @@ export const mutations: Mutation[] = [
     name: "written-negation-of-an-if-unseen",
     breaks:
       "a written `!` of an `if let .. { a && b } else { false }` finds no `&&` written around all its tests, the pattern's outside the `then`'s, so it's De Morgan's (rd240)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        && (logicals.iter().chain(negations.iter().map(|(operand, _)| operand)))\n",
     replace: "        && (logicals.iter())\n",
     tests: [
@@ -772,7 +772,7 @@ export const mutations: Mutation[] = [
     name: "guard-before-others-unjoined",
     breaks:
       "a guarded arm's tests before the arms after it, `if (tag === 30) { if (ENABLE) { .. } } else if (tag === 40) { .. }`, stay apart, so the chain's MIR `return;`s stay (rd600)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    guards_before_others(stmts, conditions);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^guarded_match_ends_function.rs$"],
@@ -782,7 +782,7 @@ export const mutations: Mutation[] = [
     name: "guarded-test-span-kept",
     breaks:
       "a comment above a guarded arm that does nothing, `1 if skip => {}`, whose test the next arm's is, is lost (#574)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "        if (guards.iter()).any(|g| g.span == inner_span && g.tested.first() == Some(&span)) {\n",
     replace: "        if false && (guards.iter()).any(|g| g.span == inner_span && g.tested.first() == Some(&span)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^match_arm_comments_kept.rs$"],
@@ -792,7 +792,7 @@ export const mutations: Mutation[] = [
     name: "text-empty-conditional-unfolded",
     breaks:
       "text's value or a default by its emptiness, `if t.is_empty() { \"none\" } else { t }`, is `type === \"\" ? \"none\" : type`, not JS's `type || \"none\"` (rd732)",
-    file: "src/lower/mir/tidy/logicals.rs",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    if let Some(or) = Expr::text_or(&test, &yes, &no) {\n",
     replace: "    if let Some(or) = None::<Expr> {\n",
     tests: ["test/corpus.test.ts", "-t", "^let_read_in_its_fallback.rs$"],

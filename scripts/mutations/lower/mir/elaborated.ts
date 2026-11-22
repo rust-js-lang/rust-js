@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/elaborated.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/elaborated.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 const refused = ["test/drops-shadow.test.ts", "-t", "a normal path's drop that disagrees with rustc's elaboration is refused"];
@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-ladder-variants-unseen",
     breaks: "a `Drop` of rustc's ladder reached through a test of a discriminant is read as dropping every variant, so `flatten`'s moved `Text` bytes read as dropped by rustc where rust-js drops them never (#2112's change D)",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "        holds(&self.place, key)\n            && !(self.except.iter()).any(|(at, variant)| {\n",
     replace: "        holds(&self.place, key)\n            && !(self.except.iter()).any(|(at, variant)| false && {\n",
     tests: flatten,
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-flags-unread",
     breaks: "a `Drop` of rustc's behind a test of a drop flag is read as always run, so `flatten`'s rest of a moved enum, flagged on each side, reads as unalike (#2112's change D)",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "                flagged = true;\n",
     replace: "                flagged = false;\n",
     tests: flatten,
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-rest-at-the-top-only",
     breaks: "the rest of a value is compared at the value alone, not at each part with parts of its own, so `flatten`'s `(_15.0)`, which rustc drops as its own flag says, reads as unalike (#2112's change D)",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "        for &node in &inner {\n",
     replace: "        for &node in inner.iter().filter(|&&node| node == path) {\n",
     tests: flatten,
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-empty-variant-compared",
     breaks: "a variant none of whose fields JS drops, `Text(Vec<u8>)`, is compared, so `flatten`'s reads as rust-js asking a flag of what rustc's ladder never drops (#2112's change D)",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "            if self.variant_drops_nothing(body, move_data.move_paths[leaf].place) {\n",
     replace: "            if false && self.variant_drops_nothing(body, move_data.move_paths[leaf].place) {\n",
     tests: flatten,
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-derefer-copies-unread",
     breaks: "rustc's drop behind a pointer, `drop((*_t))` of `Derefer`'s `_t = deref_copy (_1.0)`, isn't read as the place it copies, so `*it = other`'s drop is found nowhere and unmatched (#2112's change D (b))",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "        if count == 1\n",
     replace: "        if count == 0\n",
     tests: ["test/drops-shadow.test.ts", "-t", "a drop behind a pointer is compared whole"],
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-behind-a-pointer-never",
     breaks: "a drop behind a pointer the writer drops is read as never dropped, so it disagrees with rustc's, where the writer and rustc agree (#2112's change D (b))",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "            LookupResult::Parent(_) => Some(if elaboration.drops(block, place) {\n",
     replace: "            LookupResult::Parent(_) => Some(if false && elaboration.drops(block, place) {\n",
     tests: ["test/drops-shadow.test.ts", "-t", "a drop behind a pointer is compared whole"],
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-alike-multiset-unread",
     breaks: "two drops written alike at one place, `?`'s, aren't compared as a multiset, so they stay unmatched (#2112's change D (b))",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "                Ok(_) if alike.len() > 1 && multiset() == Some(true) => (\n",
     replace: "                Ok(_) if alike.len() > 1 && false => (\n",
     tests: ["test/drops-shadow.test.ts", "-t", "two drops written alike are compared as a multiset"],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-multiset-keeps-dead-drops",
     breaks: "a drop of what's not there is kept in rust-js's multiset, where rustc's elaboration leaves a dead drop out, so `?`'s two drops never match (#2112's change D (b))",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "                    if when != When::Never {\n",
     replace: "                    if true {\n",
     tests: ["test/drops-shadow.test.ts", "-t", "two drops written alike are compared as a multiset"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-disagreement-unrefused",
     breaks: "a drop the normal path's elaboration drops otherwise than rustc's compiles, so a moved part rust-js drops again, which rustc never drops, runs in the JS (#2112's change D (c))",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "            if *verdict == Verdict::Disagree && !cleanup {\n",
     replace: "            if false && *verdict == Verdict::Disagree && !cleanup {\n",
     tests: refused,
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-refuses-cleanups",
     breaks: "a cleanup's disagreement is refused, where rust-js's body has no unwinding of what can't throw (ADR 0301): a `dyn Fn`'s drop past a panic refuses the crate (#2112's change D (c))",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "            if *verdict == Verdict::Disagree && !cleanup {\n",
     replace: "            if *verdict == Verdict::Disagree {\n",
     tests: ["test/drops-shadow.test.ts", "-t", "a cleanup's drop that disagrees with rustc's elaboration compiles"],
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-compared-only-where-recorded",
     breaks: "the comparison runs only where `--drops-shadow` records it, so a compile without it never refuses a disagreement (#2112's change D (c))",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "        if recording.is_none() && (mir.elaborated.is_none() || elaboration.is_none()) {\n",
     replace: "        if recording.is_none() {\n",
     tests: refused,
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-array-rest-whole",
     breaks: "the rest of an array whose elements moved isn't taken apart element by element, so `array_partial_moves.rs`' rest stays unmatched where it's compared, and an array of arrays bound by or-patterns is left uncompared (#2177)",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "            rustc_middle::ty::Array(_, len) if let Some(len) = len.try_to_target_usize(tcx) => (0..len).any(|offset| {\n",
     replace: "            rustc_middle::ty::Array(_, len) if false && let Some(len) = len.try_to_target_usize(tcx) => (0..len).any(|offset| {\n",
     tests: ["test/drops-shadow.test.ts", "-t", "each normal-path verdict of the partial moves, behind a pointer and alike, is pinned"],
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-rest-difference-refused",
     breaks: "a difference only of the rest of a value, a box's contents rustc frees by a call, is a disagreement, so a field moved out of a boxed pair is refused, where its JS runs as Rust does (#2177; rustc's or-pattern-drop-order.rs was so refused)",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "                        _ if only_the_rest => (\n",
     replace: "                        _ if false && only_the_rest => (\n",
     tests: ["test/corpus.test.ts", "-t", "boxed_field_moved_out_drops_the_rest"],
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-flag-only-refused",
     breaks: "a difference only of rust-js asking a flag where rustc knows is a disagreement, which only running it says, so `drop_partial.rs`' and `or_pattern_part_moves.rs`' flagged drops are refused (#2112's change D (c))",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "                        (true, false) => (Verdict::FlagOurs, block, said(&differ)),\n",
     replace: "                        (true, false) => (Verdict::Disagree, block, said(&differ)),\n",
     tests: ["test/drops-shadow.test.ts", "-t", "each normal-path verdict of the partial moves, behind a pointer and alike, is pinned"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-box-deref-unresolved",
     breaks: "a box's deref as `ElaborateBoxDerefs` writes it, `_p = copy (_b.0) as *const T`, isn't read as the box's, so `retain_map_drops_held.rs`' `**x = ..` finds no rustc drop where it's written (#2177)",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "                if let Rvalue::Cast(mir::CastKind::BoxDerefTransmute, Operand::Copy(of), _) = &assign.1\n",
     replace: "                if let Rvalue::Cast(mir::CastKind::PtrToPtr, Operand::Copy(of), _) = &assign.1\n",
     tests: ["test/drops-shadow.test.ts", "-t", "a drop through a box's deref is the box's, as rustc's box derefs read it"],
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-alike-parts-uncompared",
     breaks: "drops of one place written alike, of a place with parts, aren't compared part by part, so `struct_update_drops.rs`' early return and end stay unmatched (#2177)",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "                        Some(Ok(parts)) => (\n                            Verdict::Agree,\n",
     replace: "                        Some(Ok(parts)) => (\n                            Verdict::Unmatched,\n",
     tests: ["test/drops-shadow.test.ts", "-t", "drops of one place written alike are compared part by part"],
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-alike-variant-compared",
     breaks: "a variant's part counted as a multiset, rustc's ladder's drop under a test of its discriminant against rust-js's knowing another variant is on, so `or_pattern_part_moves.rs`' `middle` disagrees and is refused (#2177)",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "            if part.variant {\n                return None;\n",
     replace: "            if part.variant && false {\n                return None;\n",
     tests: ["test/drops-shadow.test.ts", "-t", "drops of one place written alike are compared part by part"],
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-alike-flag-disagrees",
     breaks: "alike drops that differ only by a flag rust-js asks where rustc knows are a disagreement, so `array_parts_moved_in_a_copied_default.rs`' cleanup drops disagree (#2177)",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "            (true, false) => Verdict::FlagOurs,\n",
     replace: "            (true, false) => Verdict::Disagree,\n",
     tests: ["test/drops-shadow.test.ts", "-t", "drops of one place written alike are compared part by part"],
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
   {
     name: "drops-shadow-path-printed-always",
     breaks: "each body's drops compared with rustc's elaboration print the function's path though nothing is said, which walks every crate's modules (#2314)",
-    file: "src/lower/mir/elaborated.rs",
+    file: "crates/rust-js-mir/src/elaborated.rs",
     find: "        let function = || path.get_or_init(|| self.tcx.def_path_str(function)).as_str();\n",
     replace: "        let function = || path.get_or_init(|| self.tcx.def_path_str(function)).as_str();\n        function();\n",
     tests: ["test/phase-times.test.ts", "-t", "a lowering forces no walk"],

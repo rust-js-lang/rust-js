@@ -1,11 +1,11 @@
-// Mutations of src/lower/untagged.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/untagged.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "constructs-payload-of-any-enum",
     breaks: "a variant constructor of any enum is taken to make its payload, so `opt.map(Shape::Circle)` of a tagged enum is the option itself, its tag never made (#1933 step 4 (E))",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "        sig.inputs().len() == 1 && self.untagged(sig.output()).is_some()\n",
     replace: "        sig.inputs().len() == 1\n",
     tests: ["test/lowering-nullable-combinators.test.ts", "-t", "untagged enum's variant"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "union-member-test-unmade",
     breaks: "a member that holds another untagged enum has no test of its kinds, and the compiler panics, `a typeof kind` (#1832)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                .reduce(|either, test| Expr::bin(Op::Or, either, test))\n                .expect(\"a kind or more\"),\n",
     replace: "                .next()\n                .expect(\"a kind or more\"),\n",
     tests: ["test/untagged-members.test.ts", "-t", "holding another untagged"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "union-member-class-instanceof",
     breaks: "a member that holds another untagged enum of an object and a class tests the class by `instanceof` too, which another realm's fails (#1832, ADR 1062)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                    !parts.contains(&Kind::Object)\n",
     replace: "                    true\n",
     tests: ["test/untagged-members.test.ts", "-t", "holding another untagged"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "otherwise-overlap-untested",
     breaks: "a `match` of an untagged enum whose `otherwise` variant's payload is of another's kind tests it as what the others aren't, so the other's test takes it (#1083)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "        let kind_of = |v: &VariantDef| recognition.untagged_variant_kind(v, args);\n",
     replace: "        let kind_of = |v: &VariantDef| {\n            (!bindings::is_otherwise(self.tcx, v.def_id))\n                .then(|| recognition.untagged_variant_kind(v, args))\n                .flatten()\n        };\n",
     tests: ["test/untagged-members.test.ts", "-t", "an otherwise variant of another variant's kind is refused"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     name: "lone-class-tested",
     breaks:
       "a form entry's `File | string` tests its class first, `entry instanceof File`, which throws a ReferenceError where the host has no `File` global (rd506's audit)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                Kind::Class(..) if class.is_none() => class = Some(index),\n",
     replace: "                Kind::Class(..) => return None,\n",
     tests: ["test/webapi-objects.test.ts", "-t", "one class"],
@@ -47,17 +47,17 @@ export const mutations: Mutation[] = [
     name: "untagged-class-a-tuple",
     breaks:
       "an untagged enum's `js::Class` variant is tested `Array.isArray(value)`, as a tuple struct, so a class given is no `Class` (#303)",
-    file: "src/lower/untagged.rs",
-    find: "            && crate::lower::recognition::is_js_class(self.tcx, adt.did())\n",
+    file: "crates/rust-js-lower/src/untagged.rs",
+    find: "            && crate::recognition::is_js_class(self.tcx, adt.did())\n",
     replace:
-      "            && false && crate::lower::recognition::is_js_class(self.tcx, adt.did())\n",
+      "            && false && crate::recognition::is_js_class(self.tcx, adt.did())\n",
     tests: ["test/untagged-enums.test.ts", "-t", "js::Class is a function"],
   },
   {
     name: "untagged-ref-cell-refused",
     breaks:
       "an untagged enum's variant of a `RefCell<Vec<f64>>`, the array, is refused, React's `ThenableState` (ADR 0214, amended)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            && super::drops::holds_itself(self.tcx, args.type_at(0))\n        {\n            return self.untagged_payload(args.type_at(0));\n",
     replace:
       "            && false\n        {\n            return self.untagged_payload(args.type_at(0));\n",
@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
     name: "untagged-rc-refused",
     breaks:
       "an untagged enum's variant of an `Rc<RefCell<Vec<f64>>>`, the array it points at, is refused (ADR 0214, amended)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "        if let Some(pointee) = super::recognition::rc_pointee(self.tcx, ty) {\n            return self.untagged_payload(pointee);\n",
     replace:
       "        if let Some(pointee) = super::recognition::rc_pointee(self.tcx, ty).filter(|_| false) {\n            return self.untagged_payload(pointee);\n",
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
     name: "numbered-payload-untold",
     breaks:
       "an untagged enum's numbered payload has no kind JS tells, so its enum is refused",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            ty::Adt(adt, _) if bindings::numbered(self.tcx, *adt) => Some(Kind::Number),\n",
     replace: "",
     tests: [
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     name: "binding-class-any-name",
     breaks:
       "a JS object type that declares no `#[rust_js::types]` is the global class of its name, so an untagged enum's variant of an undeclared `Tag` is `instanceof Tag`, a `ReferenceError`, and `js::class::<Tag>()` is `Tag`, not an object of no class (ADR 0911, #391)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                None => Some(Kind::Object),\n",
     replace: "                None => class(bindings::class_name(self.tcx, adt.did())),\n",
     tests: [
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
     name: "untagged-literal-any",
     breaks:
       "a variant without fields is matched by any value, `matches!(false, Blocking)`",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            Kind::Literal(name) => Expr::bin(Op::Eq, value.clone(), Expr::str(name)),",
     replace: "            Kind::Literal(_) => Expr::bool(true),",
     tests: [
@@ -116,7 +116,7 @@ export const mutations: Mutation[] = [
     name: "untagged-literal-beside-string",
     breaks:
       "a literal beside a variant of any string isn't refused, though JS can't tell them apart",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            (Kind::Literal(_), Kind::String) | (Kind::String, Kind::Literal(_)) => true,",
     replace:
       "            (Kind::Literal(_), Kind::String) | (Kind::String, Kind::Literal(_)) => false,",
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
     name: "untagged-null-loose",
     breaks:
       "`Kind::Null`'s test is `value == null`, which `undefined` passes too",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            Kind::Null => Expr::bin(Op::Eq, value.clone(), Expr::null()),",
     replace:
       "            Kind::Null => Expr::bin(Op::LooseEq, value.clone(), Expr::null()),",
@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
     name: "untagged-undefined-typeof",
     breaks:
       '`Kind::Undefined`\'s test is `typeof value === "undefined"`, not `value === undefined`',
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            Kind::Undefined => Expr::bin(Op::Eq, value.clone(), Expr::js_undefined()),\n",
     replace: "",
     tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     name: "untagged-object-takes-null",
     breaks:
       "`Kind::Object` of an `Option<&Unknown>` takes `null`, which `typeof` says is an object",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                (Kind::Object, Kind::Null) => !present,\n",
     replace: "",
     tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     name: "untagged-present-leaves-out-null",
     breaks:
       "`classify(Some(value))`'s object test leaves out `null`, which it never is",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                (Kind::Object, Kind::Null) => !present,\n",
     replace: "                (Kind::Object, Kind::Null) => true,\n",
     tests: [
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
     name: "untagged-null-last",
     breaks:
       "an object's test leaves out `null` after an array, `!Array.isArray(value) && value !== null`",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "        narrower.sort_by_key(|kind| *kind != Kind::Null);\n",
     replace: "",
     tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
   {
     name: "untagged-null-unmarked",
     breaks: "a `#[rust_js::null]` variant is its name's string",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "        Some(bindings::Nullish::Null) => Kind::Null,\n",
     replace:
       "        Some(bindings::Nullish::Null) => Kind::Literal(bindings::variant_name(tcx, variant)),\n",
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
     name: "untagged-nullish-unboxed",
     breaks:
       "an `Option` of an enum of `undefined` is the value itself, so `Some(Missing)` is `None`",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "        && (adt.variants().iter()).any(|v| matches!(unit_kind(tcx, v), Some(Kind::Null | Kind::Undefined)))",
     replace: "        && false",
     tests: ["test/corpus.test.ts", "-t", "untagged_null_undefined"],
@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
     name: "untagged-null-case-before",
     breaks:
       "`null`'s arm is an `if` before the `switch`, not in the case of the arm that takes the objects",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: '                    (Kind::Null, _) => Some(TypeofCase::Inside(\n                        Kind::Object.type_of().expect("an object\'s `typeof`"),\n                        self.kind_test(&own, value, &no_class),\n                    )),',
     replace:
       "                    (Kind::Null, _) => Some(TypeofCase::Tested(self.kind_test(&own, value, &no_class))),",
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
     name: "untagged-bigint-number",
     breaks:
       "an untagged enum's `i64` is told as a number, where JS's is a BigInt",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            return Some(if num.big() { Kind::BigInt } else { Kind::Number });\n",
     replace: "            return Some(Kind::Number);\n",
     tests: [
@@ -223,7 +223,7 @@ export const mutations: Mutation[] = [
     name: "untagged-object-takes-arrays",
     breaks:
       "an untagged enum's struct variant takes an array, or a class's instance, as `typeof` says object of each",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                    Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Member(..) | Kind::Key(_),\n",
     replace: "                    Kind::Member(..) | Kind::Key(_),\n",
     tests: [
@@ -238,7 +238,7 @@ export const mutations: Mutation[] = [
     name: "otherwise-tested-as-its-kind",
     breaks:
       "the `#[rust_js::otherwise]` variant is tested as its own value's kind, an object, so an array or a number is neither variant",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "        if let Some(i) = (variants.iter()).position(|v| otherwise(v) && self.otherwise_kind(adt, args).is_none()) {\n",
     replace:
       "        if let Some(i) = (variants.iter()).position(|v| false && otherwise(v) && self.otherwise_kind(adt, args).is_none()) {\n",
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
     name: "otherwise-kind-unseen",
     breaks:
       '`js::Kind::Object`, what\'s left once a symbol is a `Kind::Symbol`, is none of seven tests, not `typeof value === "object" && !Array.isArray(value)`, and no `case "object"`',
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            Ok([only]) => Some(only),\n",
     replace: "            Ok([_]) => None,\n",
     tests: [
@@ -261,7 +261,7 @@ export const mutations: Mutation[] = [
     name: "otherwise-kind-of-several",
     breaks:
       "an `otherwise` that's more kinds than one, `Json`'s `Object`, is tested as the first of them, `typeof value === \"bigint\"`",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            Err(_) => None,\n",
     replace: "            Err(left) => left.into_iter().next(),\n",
     tests: ["test/untagged-enums.test.ts", "-t", "untagged enum is its payload"],
@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
     name: "otherwise-kind-past-a-literal",
     breaks:
       'a literal, `"auto"`, counts as every string, so an `otherwise` beside it and five other kinds is an object, and `"xyz"` none of the variants',
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            .filter(|kind| !matches!(kind, Kind::Literal(_)))\n",
     replace: "",
     tests: [
@@ -283,7 +283,7 @@ export const mutations: Mutation[] = [
     name: "untagged-symbol-a-class",
     breaks:
       'a `js::Symbol` payload is `instanceof Symbol`, which no symbol is, not `typeof value === "symbol"`',
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            && let Some(kind) = written_types(self.tcx, adt.did())\n                .as_ref()\n                .and_then(Written::keyword)\n                .and_then(Kind::of_types)\n",
     replace: "            && let Some(kind) = None::<Kind>\n",
     tests: [
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
     name: "typeof-array-no-case",
     breaks:
       "an arm of `Kind::Array` is no case of a `switch (typeof value)`, so its `match` stays an `if` chain",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            (Kind::Array, _) => Some(TypeofCase::Tested(self.kind_test(&own, value, &no_class))),\n",
     replace: "            (Kind::Array, _) => None,\n",
     tests: [
@@ -309,7 +309,7 @@ export const mutations: Mutation[] = [
     name: "tested-variant-always",
     breaks:
       "an element of an untagged enum is whatever its test's turn comes to, a list of children cloned as an element",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            Kind::Test(test) => Expr::call(class(test), vec![value.clone()]),\n",
     replace: "            Kind::Test(_) => Expr::bool(true),\n",
     tests: ["test/jsx-types.test.ts", "-t", "look inside their children"],
@@ -318,7 +318,7 @@ export const mutations: Mutation[] = [
     name: "tested-type-a-class",
     breaks:
       "`ReactElement`, told by `isValidElement`, is told by `instanceof ReactElement`, a class there's none of",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            && let Some(test) = bindings::test_of(self.tcx, adt.did())\n",
     replace: "            && let Some(test) = None::<String>\n",
     tests: ["test/jsx-types.test.ts", "-t", "look inside their children"],
@@ -327,7 +327,7 @@ export const mutations: Mutation[] = [
     name: "cloned-untagged-alike-allowed",
     breaks:
       "an untagged enum whose `Clone` tells two variants of one kind apart is allowed, and clones one as the other",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "    implemented || ty.needs_drop(tcx, recognition.typing_env)\n",
     replace: "    false\n",
     tests: ["test/diagnostics.test.ts", "-t", "one kind, cloned"],
@@ -336,7 +336,7 @@ export const mutations: Mutation[] = [
     name: "untagged-text-kindless",
     breaks:
       "an untagged enum's text payload, `ReactNodeKind::Text(&str)`, has no kind JS tells, and is refused",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "        if self.is_string_like(ty) || ty.is_char() {",
     replace: "        if ty.is_char() {",
     tests: [
@@ -349,7 +349,7 @@ export const mutations: Mutation[] = [
     name: "untagged-slice-kindless",
     breaks:
       "an untagged enum's slice payload, `ReactNodeKind::List(&[..])`, isn't an array JS tells, and is refused",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "        if ty.is_array() || ty.is_slice() || self.is_vec_like(ty) {\n",
     replace: "        if ty.is_array() || self.is_vec_like(ty) {\n",
     tests: [
@@ -362,7 +362,7 @@ export const mutations: Mutation[] = [
     name: "untagged-fieldless-unknown",
     breaks:
       "an untagged enum's `One(Weight)`, of a fieldless enum, is refused, though its value is a string",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                if is_string_enum(self.tcx, *adt) && !adt.variants().is_empty() && !self.is_std(adt.did()) =>",
     replace:
       "                if false && is_string_enum(self.tcx, *adt) && !adt.variants().is_empty() && !self.is_std(adt.did()) =>",
@@ -376,7 +376,7 @@ export const mutations: Mutation[] = [
     name: "untagged-dict-a-class",
     breaks:
       "an untagged enum's `Dict` is tested `instanceof Dict`, a class JS hasn't",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                Some(Written::Object(_) | Written::Reference { from: Some(_), .. }) => Some(Kind::Object),\n",
     replace:
       "                Some(Written::Object(_)) => class(bindings::class_name(self.tcx, adt.did())),\n                Some(Written::Reference { from: Some(_), .. }) => Some(Kind::Object),\n",
@@ -390,7 +390,7 @@ export const mutations: Mutation[] = [
     name: "union-keeps-whole-exclusions",
     breaks:
       '`Kind::Object(_) | Kind::Array(_)` tests an object that\'s no array or an array, `Array.isArray(v) || (typeof v === "object" && !Array.isArray(v))`, not `typeof v === "object"`',
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                    narrower.into_iter().filter(|kind| !whole.contains(kind)).collect(),\n",
     replace:
       "                    narrower.into_iter().filter(|kind| !whole.contains(kind) || true).collect(),\n",
@@ -404,7 +404,7 @@ export const mutations: Mutation[] = [
     name: "union-keeps-arrays",
     breaks:
       '`Kind::Object(_) | Kind::Array(_)` tests an array too, `Array.isArray(v) || typeof v === "object"`, which an object is anyway',
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            Kind::Array => objects(own),\n",
     replace: "            Kind::Array => false,\n",
     tests: [
@@ -417,7 +417,7 @@ export const mutations: Mutation[] = [
     name: "union-keeps-nulls",
     breaks:
       '`Kind::Null | Kind::Object(_) | Kind::Array(_)` tests `null` too, `typeof value === "object" || value === null`, which an object\'s `typeof` is anyway',
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            Kind::Null => objects(own),\n",
     replace: "            Kind::Null => false,\n",
     tests: [
@@ -430,7 +430,7 @@ export const mutations: Mutation[] = [
     name: "alternative-unplaced",
     breaks:
       "an untagged enum's or-pattern's alternative isn't where it's written, so a comment before it, React's cache's `// $FlowFixMe`, is before the `if` (ADR 0444, amended)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            Some(&span) if test.span.is_none() => Expr { span, ..test },\n",
     replace: "            Some(_) if false => test,\n",
     tests: [
@@ -443,7 +443,7 @@ export const mutations: Mutation[] = [
     name: "untagged-symbol-for-an-array",
     breaks:
       "an untagged enum's `js::SymbolFor` payload is told by `Array.isArray`, as a tuple struct, so a symbol is read as another variant",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "        if self.is_symbol_for(ty) {\n            return Some(Kind::Symbol);\n",
     replace: "        if false {\n            return Some(Kind::Symbol);\n",
     tests: [
@@ -456,7 +456,7 @@ export const mutations: Mutation[] = [
     name: "untagged-function-type-a-class",
     breaks:
       "`js::Function`, written `Function`, is a class `instanceof Function` tests, so `Kind::Function` of one is refused, a frame's function being no `Function` of this realm (ADR 1082)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                Some(written @ Written::Reference { .. }) if written.is_function() => Some(Kind::Function),\n",
     replace: "",
     tests: ["test/js-functions.test.ts", "-t", "is a js::Function"],
@@ -465,7 +465,7 @@ export const mutations: Mutation[] = [
     name: "untagged-class-by-rust-name",
     breaks:
       'an untagged enum\'s JS object variant declared `#[rust_js::types = "URL"]` is tested `instanceof Url`, its Rust name, which JS has no class of (#391)',
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                Some(Written::Reference { from: None, name, .. }) => class(name),\n",
     replace:
       "                Some(Written::Reference { from: None, .. }) => class(bindings::class_name(self.tcx, adt.did())),\n",
@@ -479,7 +479,7 @@ export const mutations: Mutation[] = [
     name: "untagged-module-class-unimported",
     breaks:
       "an untagged enum's variant of a module's type, `./shapes.js#Chart`, is tested `instanceof Chart` of a `Chart` its module never imports (#391)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                Some(Written::Object(_) | Written::Reference { from: Some(_), .. }) => Some(Kind::Object),\n",
     replace:
       "                Some(Written::Object(_)) => Some(Kind::Object),\n                Some(Written::Reference { from: Some(_), name, .. }) => class(name),\n",
@@ -493,7 +493,7 @@ export const mutations: Mutation[] = [
     name: "intersected-array-unknown",
     breaks:
       "an untagged variant of a `RegExpMatch`, `string[] & { .. }`, is refused as JS can't tell it, not an array, `Array.isArray` (#303)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                Some(Written::Intersection(types)) if types.iter().any(|ty| matches!(ty, Written::Array { .. })) => {\n",
     replace:
       "                Some(Written::Intersection(types)) if false && types.iter().any(|ty| matches!(ty, Written::Array { .. })) => {\n",
@@ -507,7 +507,7 @@ export const mutations: Mutation[] = [
     name: "untagged-member-unread",
     breaks:
       "a struct told apart by a member it declares is a plain object, so `Instance | TextInstance` can't be told apart (rd291)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: ".find(|f| bindings::is_test_field(self.tcx, f.did))",
     replace: ".find(|_| false)",
     tests: ["test/corpus.test.ts", "-t", "^untagged_told_by_members.rs$"],
@@ -516,7 +516,7 @@ export const mutations: Mutation[] = [
     name: "untagged-member-tested-whole",
     breaks:
       "a member's test is of the value, `Array.isArray(child)`, not of its member, `Array.isArray(child.children)` (rd291)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            Kind::Member(key, kind) => self.kind_test(kind, &Expr::member(value.clone(), key.clone()), class),\n",
     replace:
       "            Kind::Member(_, kind) => self.kind_test(kind, value, class),\n",
@@ -526,7 +526,7 @@ export const mutations: Mutation[] = [
     name: "untagged-objects-typeof-kept",
     breaks:
       'of an enum each variant of which is an object, a plain one\'s test keeps `typeof child === "object"`, which holds of each (rd291)',
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                    Some((first, rest)) if objects && *own == Kind::Object => rest\n",
     replace:
       "                    Some((first, rest)) if false && objects && *own == Kind::Object => rest\n",
@@ -536,7 +536,7 @@ export const mutations: Mutation[] = [
     name: "untagged-shared-member-telling",
     breaks:
       "a member another variant has too tells its variant apart, so a `Container`, which has `children` too, is taken for an `Instance` (rd291)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                Kind::Object\n            }\n            _ => kind,\n",
     replace: "                kind\n            }\n            _ => kind,\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_told_by_members.rs$"],
@@ -545,7 +545,7 @@ export const mutations: Mutation[] = [
     name: "untagged-member-left-in",
     breaks:
       "a plain object's test leaves in what a member tells, so a text instance's test holds of an instance too (rd291)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                    Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Member(..) | Kind::Key(_),\n",
     replace: "                    Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Key(_),\n",
     tests: ["test/untagged-members.test.ts"],
@@ -554,7 +554,7 @@ export const mutations: Mutation[] = [
     name: "untagged-in-untagged-refused",
     breaks:
       "another untagged enum a variant holds is refused, JS can't tell it, where its variants together tell it (rd305)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                Some(Kind::Union(parts))\n",
     replace: "                None\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_in_untagged.rs$"],
@@ -564,7 +564,7 @@ export const mutations: Mutation[] = [
     name: "untagged-in-untagged-overlaps-none",
     breaks:
       "another untagged enum's kinds overlap no other variant's, so a number beside a number or a word isn't refused (rd305)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            (Kind::Union(parts), other) | (other, Kind::Union(parts)) => parts.iter().any(|part| part.overlaps(other)),\n",
     replace: "            (Kind::Union(_), _) | (_, Kind::Union(_)) => false,\n",
     tests: ["test/untagged-members.test.ts", "-t", "an untagged enum in another is refused"],
@@ -573,7 +573,7 @@ export const mutations: Mutation[] = [
     name: "untagged-in-untagged-member-kept",
     breaks:
       "another untagged enum's struct told by a member another variant's struct has too is told by it all the same, so a container whose `children` is an array is taken for an item (rd305)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                for part in parts.into_iter().map(told) {\n",
     replace: "                for part in parts.into_iter() {\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_in_untagged.rs$"],
@@ -583,7 +583,7 @@ export const mutations: Mutation[] = [
     name: "untagged-member-in-an-enum-unseen",
     breaks:
       "a member another variant's untagged enum's struct has too tells a struct apart all the same, so a root and a node are told by `children` (rd305)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            ty::Adt(e, args) if e.is_enum() && bindings::is_untagged(self.tcx, e.did()) => {\n",
     replace: "            ty::Adt(e, args) if false && e.is_enum() && bindings::is_untagged(self.tcx, e.did()) => {\n",
     tests: ["test/untagged-members.test.ts", "-t", "an untagged enum in another is refused"],
@@ -592,7 +592,7 @@ export const mutations: Mutation[] = [
     name: "untagged-in-untagged-in-untagged",
     breaks:
       "an untagged enum that holds another in turn, itself in a box, is told by what it holds, which never ends (rd305)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                            .is_some_and(|f| self.untagged_enum(f.ty(self.tcx, args).skip_normalization()))\n",
     replace: "                            .is_some_and(|_| false)\n",
     tests: ["test/untagged-members.test.ts", "-t", "an untagged enum in another is refused"],
@@ -601,7 +601,7 @@ export const mutations: Mutation[] = [
     name: "untagged-in-untagged-member-tested",
     breaks:
       "another untagged enum's object told by a member is tested beside its plain object, `Array.isArray(child.children) || (typeof child === \"object\" ..)`, which is that object already (rd305)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            Kind::Member(..) | Kind::Key(_) | Kind::Class(..) | Kind::Test(_) => objects(own) && variants.len() == 1,\n",
     replace: "            Kind::Member(..) | Kind::Key(_) | Kind::Class(..) | Kind::Test(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_in_untagged.rs$"],
@@ -611,7 +611,7 @@ export const mutations: Mutation[] = [
     name: "untagged-in-untagged-test-unimported",
     breaks:
       "another untagged enum's variant's test function, `isValidElement`, isn't imported where only the outer's pattern tests it (rd305)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "        && let Some((inner, inner_args)) = untagged_adt(tcx, ty)\n",
     replace: "        && let Some((inner, inner_args)) = untagged_adt(tcx, ty).filter(|_| false)\n",
     tests: ["test/jsx-types.test.ts", "-t", "an untagged enum in an untagged enum"],
@@ -620,7 +620,7 @@ export const mutations: Mutation[] = [
     name: "untagged-one-name-enum-any-string",
     breaks:
       "a member of a one-name enum, `tag: 'INSTANCE'`, is any string, so `Instance | TextInstance` told by their `tag`s is refused (rd315)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                    [only] => Kind::Literal(bindings::variant_name(self.tcx, only)),\n",
     replace: "                    [_] => Kind::String,\n",
     tests: ["test/untagged-members.test.ts", "-t", "a member of one literal"],
@@ -629,7 +629,7 @@ export const mutations: Mutation[] = [
     name: "untagged-member-literals-alike",
     breaks:
       "two structs whose `tag`s are different literals are taken as told by nothing, as a member both declare is, and refused (rd315)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                bindings::field_key(self.tcx, f).name() == Some(key) && !apart(f.ty(self.tcx, args).skip_normalization())\n",
     replace: "                bindings::field_key(self.tcx, f).name() == Some(key)\n",
     tests: ["test/untagged-members.test.ts", "-t", "a member of one literal"],
@@ -638,7 +638,7 @@ export const mutations: Mutation[] = [
     name: "untagged-tuple-any-array",
     breaks:
       "an untagged enum's tuple is an array of any length, so `Point((f64, f64))` beside `Box((f64, f64, f64, f64))` is refused, two arrays (rd490)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            return Some(Kind::Tuple(items.len()));\n",
     replace: "            return Some(Kind::Array);\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
@@ -647,7 +647,7 @@ export const mutations: Mutation[] = [
     name: "untagged-tuple-struct-any-array",
     breaks:
       "an untagged enum's tuple struct is an array of any length, so a replay node of four beside a boundary's of six is refused, two arrays (rd490)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                        Some(Kind::Tuple(adt.non_enum_variant().fields.len()))\n",
     replace: "                        Some(Kind::Array)\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
@@ -656,7 +656,7 @@ export const mutations: Mutation[] = [
     name: "untagged-length-unread",
     breaks:
       "two arrays of an untagged enum are each told by `Array.isArray` alone, so a box of four is taken for a point of two (rd490)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            Lengths::Told => Expr::bin(Op::And, array(), length_test(len, value)),\n",
     replace: "            Lengths::Told => array(),\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
@@ -665,7 +665,7 @@ export const mutations: Mutation[] = [
     name: "untagged-lengths-always-tested",
     breaks:
       "the enum's one array is tested by its length too, `Array.isArray(entry) && entry.length === 2`, where `Array.isArray` tells it (rd490)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            0 | 1 => Lengths::Untold,\n",
     replace: "            0 | 1 => Lengths::Told,\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
@@ -675,7 +675,7 @@ export const mutations: Mutation[] = [
     name: "untagged-lengths-never-alone",
     breaks:
       "an enum each of whose values is an array tests `Array.isArray(node) && node.length === 4`, where upstream's `node.length === 4` tells it (rd490)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            _ if kinds.iter().all(|kind| matches!(kind, Some(Kind::Tuple(_)))) => Lengths::Alone,\n",
     replace: "            _ if false => Lengths::Alone,\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
@@ -685,7 +685,7 @@ export const mutations: Mutation[] = [
     name: "untagged-transparent-an-array",
     breaks:
       "a `#[repr(transparent)]` struct of a number is taken for an array of one, `Array.isArray(key)`, which a number isn't (rd490)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                if let Some(at) = super::recognition::transparent_field(self.tcx, *adt)\n                    && !self.is_std(adt.did()) =>\n",
     replace: "                if let Some(at) = super::recognition::transparent_field(self.tcx, *adt)\n                    && false =>\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
@@ -694,7 +694,7 @@ export const mutations: Mutation[] = [
     name: "never-undefined-of-undefined",
     breaks:
       "an untagged enum one of whose variants is `undefined` is said never to be, so a map's `Some(Missing)` is `fields.get(at)`'s `undefined`, read as `None` (rd547, ADR 1017 amended)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                .is_some_and(|kind| kind.parts().iter().all(|part| *part != Kind::Undefined))\n",
     replace: "                .is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
@@ -703,7 +703,7 @@ export const mutations: Mutation[] = [
     name: "undefined-never-null-of-null",
     breaks:
       "an untagged enum of `undefined` and `null` is held as its value in a nullable field, its `null` variant `None` (rd645)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "kinds.contains(&Kind::Undefined) && !kinds.contains(&Kind::Null)",
     replace: "kinds.contains(&Kind::Undefined)",
     tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
@@ -711,7 +711,7 @@ export const mutations: Mutation[] = [
   {
     name: "node-type-of-one-value",
     breaks: "a `Text` is told by `nodeType === 3` alone, so a `CDATASection`, 4, is taken for another variant (#555)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                .reduce(|either, test| Expr::bin(Op::Or, either, test))\n                .expect(\"a member of a number or more\"),\n",
     replace: "                .next()\n                .expect(\"a member of a number or more\"),\n",
     tests: ["test/webapi-objects.test.ts", "-t", "told by their nodeType"],
@@ -720,7 +720,7 @@ export const mutations: Mutation[] = [
     name: "node-types-shared-apart",
     breaks:
       "an `HTMLElement` and an `SVGElement`, each `nodeType` 1, are taken as told apart, each `nodeType === 1` true of the other's (#555)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            (Kind::Constants(a), Kind::Constants(b)) => a.iter().any(|value| b.contains(value)),\n",
     replace: "            (Kind::Constants(a), Kind::Constants(b)) => a == b && false,\n",
     tests: ["test/webapi-objects.test.ts", "-t", "told by their nodeType"],
@@ -729,7 +729,7 @@ export const mutations: Mutation[] = [
     name: "lone-class-tested-in-impls",
     breaks:
       "a derived `==` of a `File | Vec<u32>` tests `a instanceof File`, `false` of another realm's file and a ReferenceError where the host has no `File` (#555)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "        if let Some(lone) = self.lone_class_variant(adt, args).map(|lone| adt.variant(lone))\n",
     replace: "        if let Some(lone) = self.lone_class_variant(adt, args).filter(|_| false).map(|lone| adt.variant(lone))\n",
     tests: ["test/webapi-objects.test.ts", "-t", "derived =="],
@@ -737,7 +737,7 @@ export const mutations: Mutation[] = [
   {
     name: "key-test-of-a-field-unseen",
     breaks: "a field's `#[rust_js::test(key)]` says nothing, its struct an object no member tells, so `Move`'s `Bound` is told by nothing (ADR 1162, #1846)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "                        .find(|f| bindings::is_key_test_field(self.tcx, f.did)) =>\n",
     replace: "                        .find(|f| false && bindings::is_key_test_field(self.tcx, f.did)) =>\n",
     tests: ["test/untagged-keys.test.ts", "-t", "told by its key is JS"],
@@ -745,7 +745,7 @@ export const mutations: Mutation[] = [
   {
     name: "key-test-reads-the-value",
     breaks: "a variant told by its key reads its value, `move.bound != null`, a Proxy's `get` and a getter run, where `in` reads none (ADR 1162, #1846)",
-    file: "src/lower/untagged.rs",
+    file: "crates/rust-js-lower/src/untagged.rs",
     find: "            Kind::Key(key) => Expr::bin(Op::In, Expr::str(key), value.clone()),\n",
     replace: "            Kind::Key(key) => Expr::bin(Op::LooseNe, Expr::member(value.clone(), key.clone()), Expr::null()),\n",
     tests: ["test/untagged-keys.test.ts", "-t", "told by its key is JS"],

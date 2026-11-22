@@ -5,7 +5,7 @@
 //
 //   bun run file-sizes             the compiler: its crates' sources and build.rs
 //   bun run file-sizes 'test/*.ts' the tests' own code
-//   bun run file-sizes src/lower   any files or folders instead
+//   bun run file-sizes crates/rust-js-lower/src   any files or folders instead
 //
 // And each of them over 1,350 lines that has grown since where the change
 // left main, which is to be split by concept first (#1334).
@@ -27,7 +27,7 @@ export const NEAR = 1350;
 // What the cap is held over, the compiler, each of its crates
 // (scripts/compiler-crates.ts), and the tests' own code: what's written by
 // hand to read and change, not a snapshot the compiler wrote.
-export const COMPILER = [...compilerSourceDirs(), "build.rs"];
+export const COMPILER = [...compilerSourceDirs(), "build.rs", "rustc-rpath.rs"];
 export const TESTS = ["test/*.ts"];
 
 // The lines in a file, as `wc -l` counts them plus an unterminated last one.
@@ -57,15 +57,31 @@ export const mergeBase = (at = root): string | undefined => {
 // `base`, a commit, or that it hadn't: the file, its lines then and now.
 // Each is to be split by concept, in a commit of its own, before it grows
 // (#1334). One already over that doesn't grow is left as it is: whoever
-// next adds to it splits it first.
-export const grownNearCap = (paths: string[], base: string, at = root): [string, number, number][] =>
-  fileSizes(paths, at)
+// next adds to it splits it first. A file moved since `base` is measured
+// from where it was, as git's rename detection says (#2299's cut).
+export const grownNearCap = (paths: string[], base: string, at = root): [string, number, number][] => {
+  let moved: Map<string, string> | undefined;
+  const movedFrom = (file: string) => {
+    moved ??= new Map(
+      Bun.spawnSync(["git", "diff", "-M", "--name-status", base], { cwd: at }).stdout.toString().split("\n")
+        .map((line) => line.split("\t"))
+        .filter(([status]) => status?.startsWith("R"))
+        .map(([, from, to]) => [to!, from!]),
+    );
+    return moved.get(file);
+  };
+  const linesAt = (file: string) => {
+    const then = Bun.spawnSync(["git", "show", `${base}:${file}`], { cwd: at });
+    return then.exitCode === 0 ? lineCount(then.stdout.toString()) : undefined;
+  };
+  return fileSizes(paths, at)
     .filter(([, lines]) => lines > NEAR)
     .map(([file, lines]): [string, number, number] => {
-      const then = Bun.spawnSync(["git", "show", `${base}:${file}`], { cwd: at });
-      return [file, then.exitCode === 0 ? lineCount(then.stdout.toString()) : 0, lines];
+      const from = movedFrom(file);
+      return [file, linesAt(file) ?? (from === undefined ? undefined : linesAt(from)) ?? 0, lines];
     })
     .filter(([, then, now]) => now > then);
+};
 
 // What the author of a grown file is told: split it by concept first.
 export const splitFirst = ([file, then, now]: [string, number, number]) =>

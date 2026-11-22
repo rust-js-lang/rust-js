@@ -1,0 +1,544 @@
+//! Which of the crate's functions' own `#[rust_js::nullable(..)]`
+//! parameters are `null` or a value at every call, never `undefined`
+//! (ADR 0861, amended, rd613, the user's decision): tested `!== null`, as
+//! upstream tests them. Each is `T | null` as declared, which a JS caller
+//! keeps; a call of the crate's gives what it's given as it is (ADR 0861),
+//! which may be `undefined`, so one is only where each call of it the crate
+//! makes gives it `null` or a value (`stored_given`'s `Nulled`), as its
+//! lowering says (`NulledCalls`), and nothing uses the function but to call
+//! it. Its body takes it as `null` or a value only then (`is_nulled`):
+//! tested `!== null`, and stored and given on as it is (#601). Another
+//! crate's call of one gives `?? null` where what it gives may be
+//! `undefined`, as its contract says (`Calling::nulled_params`); its use as
+//! a value is refused.
+//! A `function::bind` of one with each of its parameters bound is a call of
+//! it, given what's bound (rd632).
+//! A namespace's method that's the function it passes its parameters on to
+//! (`reached::forwarded`, #566) is that function: its body's call of it is
+//! no call, and a call of it is one of the function, given each parameter
+//! past its `self`; its contract says the function's (#601).
+//! And which of the crate's functions return `null` or a value at each of
+//! their returns, never `undefined` (`returns_nulled`, rd632): React DOM's
+//! `getEventTarget`, `target.parentNode` or `target`, which a call gives
+//! such a parameter as it is. Lowering finds it, and a body lowered
+//! before it was found that asked is lowered again (`again`).
+//! And which of the crate's `#[rust_js::nullable]` thread-locals nothing
+//! reads apart, `null` from `undefined` (`reads_alike`, #665), which a
+//! write stores as it's given: `?? null` only where a read can tell.
+
+mod js_nones;
+mod present_items;
+mod read_alike;
+
+pub use js_nones::{AnyValue, JsNones, any_value, one_none, returns_one_none};
+
+use crate::Body;
+use crate::recognition::Recognition;
+use crate::refusal::{Refused, refuse};
+use rust_js_program::collections::{IndexMap, IndexSet};
+use rustc_hir::def::DefKind;
+use rustc_middle::mir::{self, BasicBlock, visit::Visitor};
+use rustc_middle::ty::{self, TyCtxt};
+use rustc_span::def_id::DefId;
+
+/// The crate's functions whose own nullable parameters may be such, and
+/// where the crate's MIR calls them or uses them otherwise.
+pub struct NulledParams {
+    /// Each function's nullable parameters, by index, its `self` first.
+    candidates: IndexMap<DefId, Vec<usize>>,
+    /// Each call of one: the function calling and its block, and what it
+    /// calls.
+    calls: IndexMap<(DefId, BasicBlock), DefId>,
+    /// Each used but as a call's function, given or kept as a value.
+    as_values: IndexSet<DefId>,
+    /// Each namespace's method that's the function it passes its parameters
+    /// on to, and that function (`reached::forwarded`).
+    forwarded: IndexMap<DefId, DefId>,
+    /// The crate's nullable thread-locals nothing reads apart, `null` from
+    /// `undefined` (`reads_alike`, #665).
+    alike: IndexSet<DefId>,
+    /// The places that may hold a `None` JS gave, `null` (#1840).
+    js_nones: JsNones,
+    /// The closures a `with` gives a thread-local `Some` wherever they run
+    /// (`present_items`, #1933 step 4 (G)).
+    given_present: IndexSet<DefId>,
+}
+
+/// What the bodies lowered so far found of them, `Settled`'s, which the
+/// pipeline settles each body's `NulledSeen` into, never a body itself
+/// (#1671 change 4, M2; ADR 1148).
+#[derive(Default)]
+pub struct NulledFound {
+    /// What lowering saw of their calls (`NulledParams::record`).
+    seen: NulledCalls,
+    /// The parameters found so, once every body's calls are seen (`again`).
+    nulled: IndexSet<(DefId, usize)>,
+    /// The functions found to return `null` or a value (`returns_nulled`).
+    returns: Returns,
+}
+
+/// What a body's lowering saw of them, given back, which the pipeline
+/// settles (`NulledFound::settle`): its calls of them, each function it
+/// found returns `null` or a value, and each it asked of that wasn't yet.
+#[derive(Default)]
+pub struct NulledSeen {
+    calls: NulledCalls,
+    returns: Returns,
+    /// Of each closure lowered where it's made, the captures its maker gives
+    /// `null` or a value, by index: what its body reads of each is so
+    /// (`stored_in`, #1933 step 4 (F)).
+    captured: IndexMap<DefId, IndexSet<usize>>,
+    /// Of each closure lowered where it's made, the one `None` each capture
+    /// its maker gives can be, by index, MIR's (`place_none`, #2112 C S5).
+    captured_nones: IndexMap<DefId, Vec<Option<rust_js_program::js::OnlyNone>>>,
+    /// Each closure a `#[rust_js::nullable]` thread-local's `with` lends
+    /// what it holds, `null` or a value, its parameter so (`stored_in`).
+    lent: IndexSet<DefId>,
+}
+
+/// What lowering saw of the calls of the crate's functions with nullable
+/// parameters, each by the item whose lowering saw it, which a lowering
+/// again sees anew: each call lowered, by the function calling and its
+/// block, and each parameter one gave what may be `undefined`.
+#[derive(Default)]
+pub(crate) struct NulledCalls {
+    seen: IndexSet<(DefId, (DefId, BasicBlock))>,
+    unnulled: IndexSet<(DefId, (DefId, usize))>,
+    /// Each parameter a call gave the caller's own nullable parameter, by
+    /// index, which is `null` or a value only where that one is (rd624).
+    given_on: IndexSet<(DefId, (Param, Param))>,
+}
+
+/// A function's parameter, by index, its `self` first.
+type Param = (DefId, usize);
+
+/// The crate's functions lowering found return `null` or a value, and, of
+/// each it hasn't, the items whose lowering asked.
+#[derive(Default)]
+struct Returns {
+    found: IndexSet<DefId>,
+    asked: IndexMap<DefId, IndexSet<DefId>>,
+}
+
+impl NulledParams {
+    /// The candidates of `bodies`, the crate's and its closures', and where
+    /// each is called or used; each use as a value of another crate's
+    /// function that has such a parameter, refused, as its calls are
+    /// `null` or a value only where each gives it so (`foreign`'s). Each
+    /// method of `forwarded` is its function, whose candidate it is not:
+    /// its body, that function's JS, calls nothing, and a call or use of it
+    /// is the function's (#601).
+    /// And of `everywhere`, `bodies` and the initializers, the nullable
+    /// thread-locals nothing reads apart (`read_alike::found`, #665), and
+    /// the places that may hold a `None` JS gave (`js_nones::found`, #1840),
+    /// of what `cell_borrows`' fn pointers say JS may make.
+    pub fn scan<'tcx>(
+        recognition: &Recognition<'_, 'tcx>,
+        (bodies, everywhere, forwarded): (&[&Body<'tcx>], &[&Body<'tcx>], &IndexMap<DefId, DefId>),
+        (values, cell_borrows): (
+            &IndexMap<DefId, Vec<rustc_span::Span>>,
+            &crate::analysis::CellBorrows<'tcx>,
+        ),
+    ) -> NulledParams {
+        let tcx = recognition.tcx;
+        let mut candidates = IndexMap::default();
+        for body in bodies {
+            let id = body.def_id;
+            if let Some(params) = candidate(tcx, id).filter(|_| !forwarded.contains_key(&id)) {
+                candidates.insert(id, params);
+            }
+        }
+        let mut found = Found {
+            tcx,
+            candidates: &candidates,
+            forwarded,
+            caller: None,
+            calls: IndexMap::default(),
+        };
+        for body in bodies {
+            let Some(mir) = &body.mir else { continue };
+            if forwarded.contains_key(&body.def_id) {
+                continue;
+            }
+            found.caller = Some(body.def_id);
+            found.visit_body(&mir.body);
+            for promoted in &mir.promoted {
+                found.visit_body(promoted);
+            }
+        }
+        let calls = found.calls;
+        // Each used but as a call's function, the crate's names' one catalog
+        // (`only_called::named_as_values`, #1675): a method that's its
+        // function, the function.
+        let as_values: IndexSet<DefId> = (values.keys())
+            .map(|id| forwarded.get(id).copied().unwrap_or(*id))
+            .filter(|id| candidates.contains_key(id))
+            .collect();
+        let refused = (values.iter())
+            .filter(|&(&id, _)| !id.is_local() && recognition.foreign.has_nulled_params(id))
+            .flat_map(|(_, spans)| spans.iter().copied());
+        for span in refused {
+            _ = refuse(
+                tcx,
+                span,
+                Refused::Because(
+                    "a function of another crate's whose nullable parameter is `null` at each of its calls, given as a value",
+                    "a call of it through the value may give that parameter `undefined`, which its body doesn't test for: call it where it's used, `|loading, chunks| prepare(loading, chunks)` (ADR 0861, amended)",
+                ),
+            );
+        }
+        NulledParams {
+            candidates,
+            calls,
+            as_values,
+            forwarded: forwarded.clone(),
+            alike: read_alike::found(recognition, everywhere),
+            js_nones: js_nones::found(recognition, everywhere, cell_borrows.pointers()),
+            given_present: present_items::found(recognition, everywhere),
+        }
+    }
+
+    /// Whether `key`, a `#[rust_js::nullable]` thread-local's, is one
+    /// nothing reads apart, `null` from `undefined` (`read_alike`, #665): a
+    /// write of it stores what it's given as it is, its `None` `null`.
+    pub fn reads_alike(&self, key: DefId) -> bool {
+        self.alike.contains(&key)
+    }
+
+    /// Whether `closure` is given, as its one parameter, by a `with` of a
+    /// thread-local that never changes, one a test proved `Some` where the
+    /// closure is made (`present_items`, #1933 step 4 (G)): what it reads
+    /// of it is `Some` wherever it runs.
+    pub fn given_present(&self, closure: DefId) -> bool {
+        self.given_present.contains(&closure)
+    }
+
+    /// The places that may hold a `None` JS gave, `null` (`js_nones`,
+    /// #1840), which `mir::nulled`'s `none_trusted` asks.
+    pub fn js_nones(&self) -> &JsNones {
+        &self.js_nones
+    }
+
+    /// Of `callee`, the function a call of it is, and how many of the
+    /// call's arguments come before that function's: of a namespace's
+    /// method that's its function, the function, its `self` past (#601).
+    fn called(&self, callee: DefId) -> (DefId, usize) {
+        match self.forwarded.get(&callee) {
+            Some(&function) => (function, 1),
+            None => (callee, 0),
+        }
+    }
+
+    /// The call of `callee`, one that `may_have` such a parameter, in
+    /// `caller`'s block `at`, which lowering `item` saw, giving each
+    /// parameter what's `null` or a value where `nulled` says so.
+    /// A parameter given the caller's own nullable one, `given_on`'s index,
+    /// is so only where that one is, which `nulled` tells once every call
+    /// is seen (rd624); of a caller that may have none, a closure's, as
+    /// declared.
+    /// A call of a namespace's method that's its function is the
+    /// function's, given each argument past its `self` (#601).
+    pub fn record(
+        &self,
+        seen: &mut NulledSeen,
+        (item, (caller, at)): (DefId, (DefId, BasicBlock)),
+        callee: DefId,
+        nulled: &[bool],
+        given_on: &[Option<usize>],
+    ) {
+        let (callee, past) = self.called(callee);
+        let (nulled, given_on) = (
+            nulled.get(past..).unwrap_or_default(),
+            given_on.get(past..).unwrap_or_default(),
+        );
+        let seen = &mut seen.calls;
+        seen.seen.insert((item, (caller, at)));
+        for (i, &nulled) in nulled.iter().enumerate() {
+            if !nulled {
+                seen.unnulled.insert((item, (callee, i)));
+            } else if let Some(&Some(param)) = given_on.get(i)
+                && self.candidates.contains_key(&caller)
+            {
+                seen.given_on.insert((item, ((callee, i), (caller, param))));
+            }
+        }
+    }
+
+    /// Once every body's calls are seen, each item of `work`, by its
+    /// function, `id`'s, of one newly found to have such a parameter,
+    /// queued again, to be lowered again, its tests of it `!== null`;
+    /// whether any is, none once each is. What each call gives doesn't
+    /// change with it: a nullable parameter given on is said of the one it's
+    /// given (`record`'s `given_on`), whichever it is.
+    /// First, each item that asked whether a function returns `null` or a
+    /// value before it was found to, queued again, what it saw of calls
+    /// forgotten to be seen anew; the parameters are found only once none
+    /// is (rd632).
+    pub fn again<W: Clone>(&self, settled: &mut NulledFound, work: &mut Vec<W>, id: impl Fn(&W) -> DefId) -> bool {
+        let askers: IndexSet<DefId> = {
+            let Returns { found, asked } = &mut settled.returns;
+            let newly: Vec<DefId> = asked.keys().filter(|callee| found.contains(*callee)).copied().collect();
+            newly
+                .iter()
+                .flat_map(|callee| asked.swap_remove(callee).unwrap_or_default())
+                .collect()
+        };
+        if !askers.is_empty() {
+            let seen = &mut settled.seen;
+            seen.seen.retain(|(item, _)| !askers.contains(item));
+            seen.unnulled.retain(|(item, _)| !askers.contains(item));
+            seen.given_on.retain(|(item, _)| !askers.contains(item));
+            let asked: Vec<W> = work
+                .iter()
+                .filter(|&item| askers.contains(&id(item)))
+                .cloned()
+                .collect();
+            // Of each asker lowered here: not a namespace's method that's
+            // the function it passes on to, which has no JS of its own (#596).
+            if !asked.is_empty() {
+                work.extend(asked);
+                return true;
+            }
+        }
+        let found = self.nulled(&settled.seen);
+        let nulled = &mut settled.nulled;
+        let again: IndexSet<DefId> = (found.iter().map(|&(id, _)| id))
+            .filter(|&id| !nulled.iter().any(|&(of, _)| of == id))
+            .collect();
+        nulled.extend(found);
+        let queued: Vec<W> = work.iter().filter(|&item| again.contains(&id(item))).cloned().collect();
+        let lowered_again = !queued.is_empty();
+        work.extend(queued);
+        lowered_again
+    }
+
+    /// The parameters found so, by function and index, which a library's
+    /// contract says: of a namespace's method that's its function, the
+    /// function's, each past its `self` (#601).
+    pub fn found(&self, settled: &NulledFound) -> IndexSet<(DefId, usize)> {
+        let nulled = &settled.nulled;
+        let methods = (self.forwarded.iter()).flat_map(|(&method, &function)| {
+            (nulled.iter())
+                .filter(move |&&(of, _)| of == function)
+                .map(move |&(_, i)| (method, i + 1))
+        });
+        nulled.iter().copied().chain(methods).collect()
+    }
+
+    /// Whether `id`, the crate's, may have such a parameter, whose calls
+    /// lowering then tells (`NulledCalls::record`): a candidate, or a
+    /// namespace's method that's one (#601).
+    pub fn may_have(&self, id: DefId) -> bool {
+        self.candidates.contains_key(&self.called(id).0)
+    }
+
+    /// The parameters, by function and index, `null` or a value at every
+    /// call: each call of the function lowered, as `calls` says, each
+    /// giving it so, and the function never used but to be called.
+    fn nulled(&self, calls: &NulledCalls) -> IndexSet<(DefId, usize)> {
+        let seen: IndexSet<(DefId, BasicBlock)> = calls.seen.iter().map(|&(_, site)| site).collect();
+        let unnulled: IndexSet<(DefId, usize)> = calls.unnulled.iter().map(|&(_, key)| key).collect();
+        let all_seen = |id: DefId| {
+            (self.calls.iter())
+                .filter(|&(_, &callee)| callee == id)
+                .all(|(site, _)| seen.contains(site))
+        };
+        let mut nulled: IndexSet<(DefId, usize)> = (self.candidates.iter())
+            .filter(|&(&id, _)| !self.as_values.contains(&id) && all_seen(id))
+            .flat_map(|(&id, params)| params.iter().map(move |&i| (id, i)))
+            .filter(|key| !unnulled.contains(key))
+            .collect();
+        // What's given another's own parameter on is so only where that one
+        // is, each passing on followed to its end: the parameters left once
+        // none given one that isn't so remains (rd624).
+        loop {
+            let loose: Vec<(DefId, usize)> = (calls.given_on.iter())
+                .filter(|(_, (given, of))| nulled.contains(given) && !nulled.contains(of))
+                .map(|&(_, (given, _))| given)
+                .collect();
+            if loose.is_empty() {
+                break nulled;
+            }
+            for key in loose {
+                nulled.swap_remove(&key);
+            }
+        }
+    }
+}
+
+impl NulledFound {
+    /// What a body saw, `seen`, settled: its calls, each function it found
+    /// returns `null` or a value, and each it asked of before.
+    pub fn settle(&mut self, seen: NulledSeen) {
+        // What a closure's maker gave its captures, and what a `with`
+        // lends it, is of that lowering alone, which made the closure where
+        // its body was lowered.
+        let NulledSeen {
+            calls,
+            returns,
+            captured: _,
+            captured_nones: _,
+            lent: _,
+        } = seen;
+        self.seen.seen.extend(calls.seen);
+        self.seen.unnulled.extend(calls.unnulled);
+        self.seen.given_on.extend(calls.given_on);
+        self.returns.found.extend(returns.found);
+        for (callee, items) in returns.asked {
+            self.returns.asked.entry(callee).or_default().extend(items);
+        }
+    }
+
+    /// Whether `id`'s parameter `index` is found so: its body tests it
+    /// `!== null`.
+    pub fn is_nulled(&self, id: DefId, index: usize) -> bool {
+        self.nulled.contains(&(id, index))
+    }
+
+    /// Whether `callee`'s every return is found `null` or a value, never
+    /// `undefined`, as its lowering found (`NulledSeen::returned_nulled`),
+    /// before or in the body `seen` is of; as lowering `item` asks, which is
+    /// lowered again once it's found, where it wasn't yet.
+    pub(crate) fn returns_nulled(&self, seen: &mut NulledSeen, item: DefId, callee: DefId) -> bool {
+        if self.returns.found.contains(&callee) || seen.returns.found.contains(&callee) {
+            return true;
+        }
+        seen.returns.asked.entry(callee).or_default().insert(item);
+        false
+    }
+}
+
+impl NulledSeen {
+    /// That `id`'s every return is `null` or a value, as its own lowering
+    /// found: what's assigned its result each a `Some(..)`, a nullable
+    /// field's read, a call of what gives `null` for `None` (`stored_given`).
+    /// What its lowering again finds is found once, as what it's found of
+    /// only grows.
+    pub fn returned_nulled(&mut self, id: DefId) {
+        self.returns.found.insert(id);
+    }
+
+    /// That the closure `closure`'s maker gives each capture of `nulled`,
+    /// by index, `null` or a value, as it's made where its body is lowered.
+    pub fn captures_nulled(&mut self, closure: DefId, nulled: IndexSet<usize>) {
+        self.captured.insert(closure, nulled);
+    }
+
+    /// Whether the closure `closure`'s capture `i` is `null` or a value, as
+    /// its maker gave it (`captures_nulled`).
+    pub fn captured_nulled(&self, closure: DefId, i: usize) -> bool {
+        self.captured.get(&closure).is_some_and(|nulled| nulled.contains(&i))
+    }
+
+    /// That a `#[rust_js::nullable]` thread-local's `with` lends the
+    /// closure `closure` what it holds, `null` or a value.
+    pub fn lends_nulled(&mut self, closure: DefId) {
+        self.lent.insert(closure);
+    }
+
+    /// Whether the closure `closure` is lent `null` or a value
+    /// (`lends_nulled`): its parameter, `ON_UPDATE_IN_DEV.with(|dispatcher|
+    /// ..)`'s `dispatcher`.
+    pub fn lent_nulled(&self, closure: DefId) -> bool {
+        self.lent.contains(&closure)
+    }
+
+    /// That the closure `closure`'s maker gives each capture, by index, the
+    /// one `None` of `nones` it can be, as it's made where its body is
+    /// lowered.
+    pub fn captures_nones(&mut self, closure: DefId, nones: Vec<Option<rust_js_program::js::OnlyNone>>) {
+        self.captured_nones.insert(closure, nones);
+    }
+
+    /// The one `None` the closure `closure`'s capture `i` can be, as its
+    /// maker gave it (`captures_nones`).
+    pub fn captured_none(&self, closure: DefId, i: usize) -> Option<rust_js_program::js::OnlyNone> {
+        self.captured_nones
+            .get(&closure)
+            .and_then(|nones| nones.get(i).copied().flatten())
+    }
+}
+
+/// The nullable parameters of `id`, by index, if it's a function of the
+/// crate's that only the crate's calls and JS call by name: not a binding,
+/// nor a trait's method or one of an impl of a trait, which a dictionary
+/// calls (ADR 0049).
+fn candidate(tcx: TyCtxt<'_>, id: DefId) -> Option<Vec<usize>> {
+    match tcx.def_kind(id) {
+        DefKind::Fn => {}
+        DefKind::AssocFn if tcx.trait_of_assoc(id).is_none() && tcx.trait_impl_of_assoc(id).is_none() => {}
+        _ => return None,
+    }
+    if crate::bindings::is_binding(tcx, id) {
+        return None;
+    }
+    let params = crate::representation::null_params(tcx, id);
+    (!params.is_empty()).then_some(params)
+}
+
+/// Whether `id` is a function of the crate's whose returns lowering may
+/// find each `null` or a value (`NulledParams::returns_nulled`): one only
+/// its crate's calls and JS call by name, as `candidate`'s, whose result
+/// is an `Option` not `#[rust_js::nullable]`, which says so already; or a
+/// closure of the crate's whose result is an `Option`, which only a call
+/// of the crate's asks of, `catch_unwind(|| ..)`'s `Ok` (rd16). What JS
+/// gets back of a call of it isn't asked: its returns are its body's.
+pub fn may_return_nulled(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    let option = |output: ty::Ty<'_>| {
+        matches!(output.kind(),
+            ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option))
+    };
+    if tcx.def_kind(id) == DefKind::Closure {
+        return id.is_local()
+            && tcx.coroutine_kind(id).is_none()
+            && matches!(tcx.type_of(id).instantiate_identity().skip_normalization().kind(),
+                ty::Closure(_, args) if option(args.as_closure().sig().output().skip_binder()));
+    }
+    let callable = match tcx.def_kind(id) {
+        DefKind::Fn => true,
+        DefKind::AssocFn => tcx.trait_of_assoc(id).is_none() && tcx.trait_impl_of_assoc(id).is_none(),
+        _ => false,
+    };
+    callable
+        && id.is_local()
+        && !crate::bindings::is_binding(tcx, id)
+        && !crate::representation::none_form(tcx, crate::representation::NonePlace::FnResult(id)).stores_null()
+        && option(tcx.fn_sig(id).skip_binder().skip_binder().output())
+}
+
+/// What `scan` finds walking MIR, its calls.
+struct Found<'f, 'tcx> {
+    tcx: TyCtxt<'tcx>,
+    candidates: &'f IndexMap<DefId, Vec<usize>>,
+    /// Each namespace's method that's its function, and that function, a
+    /// call or use of the method being one of the function (#601).
+    forwarded: &'f IndexMap<DefId, DefId>,
+    caller: Option<DefId>,
+    calls: IndexMap<(DefId, BasicBlock), DefId>,
+}
+
+impl<'tcx> Visitor<'tcx> for Found<'_, 'tcx> {
+    fn visit_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: mir::Location) {
+        // A `function::bind` of one with each of its parameters bound, its
+        // tuple's items, is a call of it, given those (rd632): what calls
+        // the function it makes gives it nothing else. And a call's
+        // function, called. What either's given, as a value, `Names`'.
+        if let mir::TerminatorKind::Call { func, .. } = &terminator.kind
+            && let Some((callee, generic_args)) = func.const_fn_def()
+            && let Some(caller) = self.caller
+        {
+            let id = self.function(crate::call_graph::bound_all(self.tcx, callee, generic_args).unwrap_or(callee));
+            if self.candidates.contains_key(&id) {
+                self.calls.insert((caller, location.block), id);
+            }
+        }
+    }
+}
+
+impl Found<'_, '_> {
+    /// The function a call or use of `id` is: of a namespace's method
+    /// that's its function, that function (#601).
+    fn function(&self, id: DefId) -> DefId {
+        self.forwarded.get(&id).copied().unwrap_or(id)
+    }
+}

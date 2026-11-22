@@ -1,4 +1,4 @@
-// Mutations of src/lower/recognition/iterators.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/recognition/iterators.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "filter-drops-no-items",
     breaks:
       "a `filter()` or a `take_while()` is taken to drop no items as it's stepped, so where its closure can't panic, the panic of the drop of the item it rejects leaves what's left undropped (#701)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: '            "Skip" | "StepBy" | "SkipWhile" | "Take" | "Filter" | "TakeWhile" => {\n',
     replace: '            "Skip" | "StepBy" | "SkipWhile" | "Take" => {\n',
     tests: ["test/corpus.test.ts", "-t", "^closure_stages_that_never_unwind_past_adapters.rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "fuse-drops-nothing",
     breaks:
       "a `fuse()` is taken to drop nothing as it's stepped, so where its stages can't panic, the panic of the drop of the iterator it has exhausted leaves what it collected undropped (#701)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: '            "Fuse" => first.map(DropsExhausted).into_iter().collect(),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^closure_stages_that_never_unwind_past_adapters.rs$"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-drops-no-items",
     breaks: "a `zip()` is taken to drop no items as it's stepped, so the panic of the drop of the one it took as its other side ended, or of one it trims from the longer side's back, leaves what it collected and what's left undropped (#707, #711)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: '            "Zip" => [first, types.next()].into_iter().flatten().map(DropsItemsOf).collect(),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-drops-first-side-alone",
     breaks: "a `zip()` is taken to drop items of its first side alone, so the panic of the drop of one it trims from the back of its longer second side leaves what's left undropped (#711)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: '            "Zip" => [first, types.next()].into_iter().flatten().map(DropsItemsOf).collect(),\n',
     replace: '            "Zip" => first.map(DropsItemsOf).into_iter().collect(),\n',
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-drops-no-side",
     breaks: "a `chain()` is taken to drop no side of its as it's stepped, so the panic of the drop of its first side, exhausted, leaves its second undropped (#709)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: '            "Chain" => [first, types.next()]\n',
     replace: '            "Chain" => [None, None]\n',
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "flatten-drops-no-inner",
     breaks: "a `flatten()` is taken to drop no inner iterator it has exhausted, so the panic of its drop leaves the rest undropped (#709)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "                first.map(DropsExhausted).into_iter().chain(inner).collect()\n",
     replace: "                first.map(DropsExhausted).into_iter().chain(inner.filter(|_| false)).collect()\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-drops-no-inner",
     breaks: "a `flat_map()` is taken to drop no inner iterator it has exhausted, so the panic of its drop leaves what it collected undropped (#709)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "                    .map(DropsExhausted)\n                    .chain(inner)\n",
     replace: "                    .map(DropsExhausted)\n                    .chain(inner.filter(|_| false))\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     name: "flat-map-function-unheld",
     breaks:
       "a `flat_map()`'s function with a destructor isn't seen to be held by it, and is never dropped (ADR 0991)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::IterFlatMap) => return Some((args.type_at(2), HeldFolded::Alone)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_functions_dropped.rs$"],
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
     name: "linked-list-into-iter-not-owning",
     breaks:
       "a `LinkedList`'s `into_iter()` isn't the array's items it owns: its drop reads std's field, `value.list`, of JS's iterator, `TypeError` (#377, ADR 0970)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "                    // A list's, which is an array as a deque is (ADR 0316).\n                    | StdPath::LinkedListIntoIter\n",
     replace: "                    // A list's, which is an array as a deque is (ADR 0316).\n",
     tests: ["test/corpus.test.ts", "-t", "^linked_list_into_iter.rs$"],
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     name: "boxed-array-into-iter-unknown",
     breaks:
       "a `Box<[T; N]>`'s `into_iter()`, 1.99's `BoxedArrayIntoIter`, isn't its array's items: with std's structs alone a `rev()` of one is refused, and `Array.from(names).map(f)` copies what `names.map(f)` reads (ADR 0941)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "                    // 0941).\n                    | StdPath::BoxedArrayIntoIter\n",
     replace: "                    // 0941).\n",
     snapshots: true,
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-into-iter-unknown",
     breaks: "a clone of a `Vec`'s `into_iter()` is refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "                StdPath::VecIntoIter\n                    | StdPath::VecDrain\n",
     replace: "                StdPath::AllocLayout\n                    | StdPath::VecDrain\n",
     tests: ["test/corpus.test.ts", "-t", "iterator_clones"],
@@ -100,7 +100,7 @@ export const mutations: Mutation[] = [
     name: "reverse-by-name",
     breaks:
       "a crate's own `struct Reverse` is taken for std's `cmp::Reverse` by its name, and compares backwards",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: '        matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)\n            && self.tcx.item_name(adt.did()).as_str() == "Reverse")',
     replace:
       '        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.item_name(adt.did()).as_str() == "Reverse")',
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
     name: "iterator-method-of-any-trait",
     breaks:
       "a method of another trait named as std's iterator method is, `Ord::max`, is taken for `Iterator`'s",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            _ if !is_std_def(self.tcx, trait_id, StdItem::Iterator) => return None,\n",
     replace: "",
     tests: [
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     name: "mir-bytes-len-refused",
     breaks:
       "`s.bytes()` isn't known as the array it is: its `len()` and its clone are refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "        if self.is_str_bytes(ty) {\n            return Some(true);\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^str_bytes.rs$"],
@@ -137,7 +137,7 @@ export const mutations: Mutation[] = [
     name: "skip-of-repeat-unclosed",
     breaks:
       "`skip(n)` of a `repeat` isn't closed to drop its value, and is refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::IterTake\n            | StdPath::IterSkip\n",
     replace: "            Some(StdPath::IterTake\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_rev_nths_its_own_back.rs$"],
@@ -145,7 +145,7 @@ export const mutations: Mutation[] = [
   {
     name: "empty-iter-not-an-array",
     breaks: "a constant of `iter::Empty` is an error, as its clone isn't known",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "owning || self.is_iter_empty(ty))",
     replace: "owning || false && self.is_iter_empty(ty))",
     tests: ["test/corpus.test.ts", "-t", "^std_struct_const.rs$"],
@@ -153,7 +153,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-double-ended-not-an-iterator",
     breaks: "a `dyn DoubleEndedIterator` isn't a JS iterator, and is refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "        .filter(|&id| tcx.is_diagnostic_item(sym::Iterator, id) || is_double_ended(tcx, id))\n",
     replace:
       "        .filter(|&id| tcx.is_diagnostic_item(sym::Iterator, id))\n",
@@ -163,7 +163,7 @@ export const mutations: Mutation[] = [
     name: "drain-not-owning",
     breaks:
       "a vector's `drain` isn't an iterator that owns what it took out, so one of values with destructors is refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "                StdPath::VecIntoIter\n                    | StdPath::VecDrain\n",
     replace: "                StdPath::VecIntoIter\n",
     tests: ["test/corpus.test.ts", "-t", "^drain_destructors.rs$"],
@@ -172,7 +172,7 @@ export const mutations: Mutation[] = [
     name: "take-of-owned-unclosed",
     breaks:
       "a `take` of an iterator that owns items with a destructor isn't closed when it's dropped, but each item left in its source dropped by hand, `for (const item of iter.iter)`, where closing it, `iter.return()`, drops the same: since the one `Take` keeps its source as `iter` (#830), only how it reads",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "        if let Some(held) = self.owned_items(source).or_else(|| self.closed_on_drop(source)) {\n",
     replace:
       "        if let Some(held) = self.owned_items(source).filter(|_| false).or_else(|| self.closed_on_drop(source)) {\n",
@@ -183,7 +183,7 @@ export const mutations: Mutation[] = [
     name: "heap-into-iter-passed-as-slice",
     breaks:
       "a `BinaryHeap`'s `into_iter()` is taken to drop what it passes as one slice and take its `last` by its back, as a `Vec`'s does, where std's defaults drop each it passes from the back and fold it (#648)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::VecIntoIter | StdPath::ArrayIntoIter | StdPath::VecDequeIntoIter)\n",
     replace: "            Some(StdPath::VecIntoIter | StdPath::ArrayIntoIter | StdPath::VecDequeIntoIter | StdPath::BinaryHeapIntoIter)\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_last_takes_its_back.rs$"],
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     name: "heap-drain-not-owning",
     breaks:
       "a heap's `drain()` isn't an iterator that owns what it took out, so one of values with destructors is refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "                    | StdPath::VecDequeDrain\n                    | StdPath::BinaryHeapDrain\n",
     replace: "                    | StdPath::VecDequeDrain\n",
     tests: ["test/corpus.test.ts", "-t", "^heap_destructors.rs$"],
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
   {
     name: "rposition-unknown",
     breaks: "`rposition` is refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: '            "rposition" => IterMethod::RPosition,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "rposition"],
@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
     name: "from-iter-of-values-item",
     breaks:
       "a fallible `collect` into the crate's own collection asks its `FromIterator` of the wrong item, and finds none",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            self.tcx.mk_args(&[collection.into(), item.into(), given.into()]),\n",
     replace: "            self.tcx.mk_args(&[collection.into(), given.into(), given.into()]),\n",
     tests: ["test/corpus.test.ts", "-t", "collect_fallible_into"],
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
   {
     name: "string-extend-unrecognized",
     breaks: "`s.extend(chars)` of a `String` is refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "        if self.is_lang_adt(ty, LangItem::String)\n            || matches!(",
     replace: "        if false\n            || matches!(",
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
   {
     name: "rfold-unknown",
     breaks: "`rfold` of a double-ended iterator is refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: '            "rfold" if self.double_ended_iterator() == Some(trait_id) => IterMethod::RFold,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     name: "into-iter-by-dictionary-of-params",
     breaks:
       "an `I: IntoIterator` on a type parameter itself is taken as given a dictionary",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "        && matches!(self_ty.kind(), ty::Ref(_, inner, _) if known_by_bounds(*inner))\n",
     replace: "        && known_by_bounds(self_ty.peel_refs())\n",
     tests: [
@@ -246,7 +246,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-fold-unrecognized",
     breaks: "`try_fold` isn't known, and is refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: '            "try_fold" => IterMethod::TryFold,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
@@ -255,7 +255,7 @@ export const mutations: Mutation[] = [
     name: "map-not-closed",
     breaks:
       "a `map` of an iterator of items with a destructor is refused, not closed to drop them",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            | StdPath::IterSkip\n            | StdPath::IterMap\n",
     replace: "            | StdPath::IterSkip\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
@@ -264,7 +264,7 @@ export const mutations: Mutation[] = [
     name: "generic-source-unclosed",
     breaks:
       "an adapter of a generic iterator, generic code's `zip`, is refused, not closed by its caller's drop",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "        if generic\n            || boxed_dyn\n",
     replace: "        if false\n            || boxed_dyn\n",
     tests: [
@@ -276,7 +276,7 @@ export const mutations: Mutation[] = [
   {
     name: "array-iterator-debug-misnamed",
     breaks: "a `Vec`'s `IntoIter` shows as a slice's `Iter`",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::VecIntoIter) => of(\"IntoIter\", ShownLeft::Slice),\n",
     replace: "            Some(StdPath::VecIntoIter) => of(\"Iter\", ShownLeft::Slice),\n",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
@@ -285,7 +285,7 @@ export const mutations: Mutation[] = [
     name: "product-as-sum",
     breaks:
       "std's `Product` is taken for `Sum`, its dictionary's `product` named `sum`",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: '        "Product" => Some("product"),\n',
     replace: '        "Product" => Some("sum"),\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_accumulations.rs$"],
@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
     name: "cycle-not-closed",
     breaks:
       "a `Cycle` isn't closed as it's dropped, so what it holds isn't dropped",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::IterCycle) => sources.next().filter(|&source| self.array_source(source).is_none()),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
@@ -304,7 +304,7 @@ export const mutations: Mutation[] = [
     name: "flat-map-type-unclosed",
     breaks:
       "a `FlatMap` held is a std type refused, not closed to drop what it holds",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::IterFlatMap) => {\n                let (source, inner) = (sources.next()?, sources.next()?);\n",
     replace: "            Some(StdPath::AllocLayout) => {\n                let (source, inner) = (sources.next()?, sources.next()?);\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_drops.rs$"],
@@ -313,7 +313,7 @@ export const mutations: Mutation[] = [
     name: "crate-extension-not-iterator",
     breaks:
       "a type parameter bound by the crate's trait that extends `Iterator` is a JS iterator, which its trait's dictionary steps as the impl's own type",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "    id != iterator && rustc_middle::ty::elaborate::supertrait_def_ids(tcx, id).any(|s| s == iterator)\n",
     replace: "    is_iterator_extension(tcx, id)\n",
     tests: ["test/corpus.test.ts", "-t", "^extension_trait_params.rs$"],
@@ -322,7 +322,7 @@ export const mutations: Mutation[] = [
     name: "rev-type-unclosed",
     breaks:
       "a `Rev` of an array's items with a destructor held is a std type refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::IterRev) => {\n                let source = sources.next()?;\n",
     replace: "            Some(StdPath::IterRev) if false => {\n                let source = sources.next()?;\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
@@ -331,7 +331,7 @@ export const mutations: Mutation[] = [
     name: "held-filter-map-refused",
     breaks:
       "a `filter_map` or `map_while` held of items with a destructor is a std type refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            | StdPath::IterFilterMap\n            | StdPath::IterMapWhile) => self.closing_source(sources.next()?)?,\n",
     replace: "            ) => self.closing_source(sources.next()?)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^held_filter_map_drops.rs$"],
@@ -339,7 +339,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-rfold-not-from-back",
     breaks: "`try_rfold` isn't seen to step from the back, and is refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "                | IterMethod::RFind\n                | IterMethod::TryRFold\n",
     replace: "                | IterMethod::RFind\n",
     tests: ["test/corpus.test.ts", "-t", "^try_rfold.rs$"],
@@ -348,7 +348,7 @@ export const mutations: Mutation[] = [
     name: "index-bound-not-index-mut",
     breaks:
       "a bound of `IndexMut<J>` alone on an array is given no `SliceIndex` dictionary, and refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "    if !(tcx.is_lang_item(tr.def_id, LangItem::Index) || tcx.is_lang_item(tr.def_id, LangItem::IndexMut)) {",
     replace: "    if !tcx.is_lang_item(tr.def_id, LangItem::Index) {",
     tests: ["test/corpus.test.ts", "-t", "^index_bound_generic.rs$"],
@@ -357,7 +357,7 @@ export const mutations: Mutation[] = [
     name: "index-bound-not-of-arrays",
     breaks:
       "a bound of `IndexMut<J>` on an array is given no `SliceIndex` dictionary",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "        ty::Slice(item) | ty::Array(item, _) => item,\n        ty::Adt(adt, args) if tcx.is_diagnostic_item(sym::Vec, adt.did()) => args.type_at(0),",
     replace:
       "        ty::Slice(item) => item,\n        ty::Adt(adt, args) if tcx.is_diagnostic_item(sym::Vec, adt.did()) => args.type_at(0),",
@@ -367,7 +367,7 @@ export const mutations: Mutation[] = [
     name: "index-bound-not-of-vecs",
     breaks:
       "a bound of `Index<J>` on a `Vec<T>` is given no `SliceIndex` dictionary",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "        ty::Adt(adt, args) if tcx.is_diagnostic_item(sym::Vec, adt.did()) => args.type_at(0),\n        _ => return None,",
     replace: "        _ => return None,",
     tests: ["test/corpus.test.ts", "-t", "^index_bound_generic.rs$"],
@@ -375,7 +375,7 @@ export const mutations: Mutation[] = [
   {
     name: "index-bound-of-a-known-index",
     breaks: "a bound of `Index<usize>` is given a dictionary nothing reads",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "    if !index.has_param() {\n        return None;\n    }\n    let item = match *tr.self_ty().kind() {",
     replace: "    let item = match *tr.self_ty().kind() {",
     tests: ["test/corpus.test.ts", "-t", "^index_bound_generic.rs$"],
@@ -384,7 +384,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-for-each-unknown",
     breaks: "`try_for_each` is refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: '            "try_for_each" => IterMethod::TryForEach,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^try_for_each.rs$"],
@@ -393,7 +393,7 @@ export const mutations: Mutation[] = [
     name: "copied-not-closed",
     breaks:
       "a `copied()` or `cloned()` of an iterator with a destructor isn't closed to drop it, and is refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            // A copy or a clone of each it steps (ADR 0547).\n            | StdPath::IterCopied\n            | StdPath::IterCloned\n",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^last_takes_its_source with"],
@@ -402,7 +402,7 @@ export const mutations: Mutation[] = [
     name: "copied-holds-no-source",
     breaks:
       "a `copied()` of an iterator with a destructor doesn't hold it closed",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "                | IterMethod::Copied\n                | IterMethod::Cloned\n        )",
     replace: "        )",
     tests: ["test/corpus.test.ts", "-t", "^consumed_adapter_drops.rs$"],
@@ -411,7 +411,7 @@ export const mutations: Mutation[] = [
     name: "into-iter-itself-unknown",
     breaks:
       "an iterator's own `IntoIterator`, std's of every iterator, is refused",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Ok(ImplSource::UserDefined(imp)) if self.is_std(imp.impl_def_id)\n                && matches!(self.tcx.type_of(imp.impl_def_id)",
     replace:
       "            Ok(ImplSource::UserDefined(imp)) if false && self.is_std(imp.impl_def_id)\n                && matches!(self.tcx.type_of(imp.impl_def_id)",
@@ -421,7 +421,7 @@ export const mutations: Mutation[] = [
     name: "compiled-iterator-a-user-iterator",
     breaks:
       "a compiled std iterator, a `Peekable`, is taken for an iterator stepped by its impl's `next`, and wrapped in a `$iterator` where it's stepped, the JS iterator it is already",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: " && !is_compiled_std_iterator(self.tcx, ty)\n",
     replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "^std_peekable.rs$"],
@@ -431,7 +431,7 @@ export const mutations: Mutation[] = [
     name: "successors-not-closed-on-drop",
     breaks:
       "a `Successors` holding a value with a destructor is refused, as a std type that holds one",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::IterRepeat | StdPath::IterRepeatN | StdPath::IterSuccessors) => sources.next(),\n",
     replace: "            Some(StdPath::IterRepeat | StdPath::IterRepeatN) => sources.next(),\n",
     tests: ["test/corpus.test.ts", "-t", "^successors_drops.rs$"],
@@ -440,7 +440,7 @@ export const mutations: Mutation[] = [
     name: "map-into-iter-not-owning",
     breaks:
       "a map's or a set's `into_iter()` of values with a destructor is refused, as a std type holding one",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "                    | StdPath::BtreeMapIntoIter\n                    | StdPath::HashSetIntoIter\n                    | StdPath::BtreeSetIntoIter\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_into_iter_drops.rs$"],
@@ -449,7 +449,7 @@ export const mutations: Mutation[] = [
     name: "rev-of-closing-unclosed",
     breaks:
       "a `rev()` of a chain over items with a destructor isn't closed as it's dropped, so what it never gave isn't dropped",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "                    None => self.closing_source(source)?,\n",
     replace: "                    None => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_lazy_drops.rs$"],
@@ -457,7 +457,7 @@ export const mutations: Mutation[] = [
   {
     name: "folds-what-it-consumes-not-sum",
     breaks: "`sum()` of an iterator whose own fold drops it drops it again",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: '                "sum"\n                    | "product"',
     replace: '                "product"',
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
@@ -466,7 +466,7 @@ export const mutations: Mutation[] = [
     name: "deque-into-iter-unowned",
     breaks:
       "a `VecDeque`'s `into_iter()` doesn't own its items: behind `fuse()` its drop reads std's `inner`, which throws, and what `take_while` leaves is never dropped (#203)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "                    | StdPath::VecDequeIntoIter\n                    | StdPath::BinaryHeapIntoIter\n",
     replace: "                    | StdPath::BinaryHeapIntoIter\n",
     tests: ["test/corpus.test.ts", "-t", "^deque_into_iter_drops.rs$"],
@@ -475,7 +475,7 @@ export const mutations: Mutation[] = [
     name: "inspect-holds-no-function",
     breaks:
       "an `Inspect` whose closure took what has a destructor is refused, not dropped after its source as a `Map`'s is",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::IterFilter | StdPath::IterFilterMap | StdPath::IterInspect) => HeldFolded::Before,\n",
     replace: "            Some(StdPath::IterFilter | StdPath::IterFilterMap) => HeldFolded::Before,\n",
     tests: [
@@ -488,7 +488,7 @@ export const mutations: Mutation[] = [
     name: "closing-source-holding-nothing-unclosed",
     breaks:
       "a zip of a slice's `iter_mut()` or a `chars()` and a `Vec` of items with a destructor is dropped by its fields, `for (const item of iter.b)`, which a `$lazyZip` hasn't: a TypeError (#406)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "        (self.array_source(source) == Some(false) || self.range_kind(source).is_some() || holds_nothing).then_some(None)\n",
     replace:
       "        (self.array_source(source) == Some(false) || self.range_kind(source).is_some()).then_some(None)\n",
@@ -498,7 +498,7 @@ export const mutations: Mutation[] = [
     name: "into-values-unowned",
     breaks:
       "a map's `into_keys()` and `into_values()` own nothing, so `into_values().take(n)` is `Array.from(m.values()).slice(0, n)`, which never drops what it leaves (#432)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "                    | StdPath::HashMapIntoKeys\n                    | StdPath::HashMapIntoValues\n                    | StdPath::BtreeMapIntoKeys\n                    | StdPath::BtreeMapIntoValues\n",
     replace: "",
     tests: [
@@ -510,7 +510,7 @@ export const mutations: Mutation[] = [
   {
     name: "owned-vec-items-unsaid",
     breaks: "a `for` over a `Vec` it owns, `for s in v`, is a `for…of`, where one over its slice counts (ADR 1042)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            ) && is_std_path(self.tcx, adt.did(), StdPath::VecIntoIter))\n",
     replace: "            ) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
@@ -519,7 +519,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-folded-before",
     breaks: "a `map`'s function, folded inside another's, drops before what drops with the fold's `f` (#710)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::IterMap) => HeldFolded::After,\n",
     replace: "            Some(StdPath::IterMap) => HeldFolded::Before,\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
@@ -527,7 +527,7 @@ export const mutations: Mutation[] = [
   {
     name: "filter-folded-after",
     breaks: "a `filter`'s function, folded, drops after the function of the `map` over it (#710)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::IterFilter | StdPath::IterFilterMap | StdPath::IterInspect) => HeldFolded::Before,\n",
     replace: "            Some(StdPath::IterFilter | StdPath::IterFilterMap | StdPath::IterInspect) => HeldFolded::After,\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
@@ -535,7 +535,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-folded-after",
     breaks: "a `flat_map`'s function is folded as a `map`'s, with what drops with its `f`, after its source (#710)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::IterFlatMap) => return Some((args.type_at(2), HeldFolded::Alone)),\n",
     replace: "            Some(StdPath::IterFlatMap) => return Some((args.type_at(2), HeldFolded::After)),\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
@@ -543,7 +543,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-while-folded",
     breaks: "a `take_while`'s predicate is moved by its fold, so it drops before what's left, where std's `try_fold` keeps it (#710)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::IterTakeWhile | StdPath::IterSkipWhile | StdPath::IterMapWhile) => HeldFolded::Kept,\n",
     replace: "            Some(StdPath::IterTakeWhile | StdPath::IterSkipWhile | StdPath::IterMapWhile) => HeldFolded::After,\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
@@ -552,7 +552,7 @@ export const mutations: Mutation[] = [
   {
     name: "scan-not-closed-on-drop",
     breaks: "a `scan()` isn't closed to drop what it holds, so a compiled one a consumer's fold took is dropped again by its fields, its source twice (#741, #748)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::IterScan) => {\n",
     replace: "            Some(StdPath::IterScan) if false => {\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^scan_dropped_once.rs$|^scan_dropped_once with"],
@@ -560,7 +560,7 @@ export const mutations: Mutation[] = [
   {
     name: "scan-state-not-closed",
     breaks: "closing a `scan()` drops what its source holds and its function, not its state, so a compiled one of a state with a destructor over a range drops it twice (#741)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "                self.closing_both(source, self.dropping_parts(&[function, state]))\n",
     replace: "                self.closing_both(source, self.dropping_parts(&[function]))\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^a scan's state and function drop once"],
@@ -568,7 +568,7 @@ export const mutations: Mutation[] = [
   {
     name: "max-by-not-from-mir",
     breaks: "`max_by` of the crate's iterator with a destructor isn't lowered from MIR, and is refused (#734)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            \"max_by\" => IterMethod::MaxBy(true),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^max_by_drops_its_function_first.rs$"],
@@ -576,7 +576,7 @@ export const mutations: Mutation[] = [
   {
     name: "btree-extract-if-not-closed-on-drop",
     breaks: "a B-tree's `extract_if` of owned bounds with a destructor isn't closed where a variable that holds it is dropped, so its bounds are never dropped (#945)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::BtreeMapExtractIf) => {\n",
     replace: "            Some(StdPath::BtreeMapExtractIf) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^extract_if_drops_what_it_holds.rs$"],
@@ -584,7 +584,7 @@ export const mutations: Mutation[] = [
   {
     name: "hash-extract-if-not-closed-on-drop",
     breaks: "a hashed map's `extract_if` whose test holds what has a destructor isn't closed where it's dropped, so its test is never dropped (#945)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::HashMapExtractIf) => self.dropping_parts(&[sources.nth(2)?]),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^extract_if_drops_what_it_holds.rs$"],
@@ -592,7 +592,7 @@ export const mutations: Mutation[] = [
   {
     name: "from-iter-iterator-its-items",
     breaks: "`Vec::from_iter(iter)` of a type parameter's iterator asks its caller nothing, so it's refused, `the buffer std collects an iterator in place in` (#737)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "        .then(|| args.types().nth(2))\n",
     replace: "        .then(|| args.types().nth(1))\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_from_iter_in_place.rs$"],
@@ -600,7 +600,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-option-owns-nothing",
     breaks: "a `flatten()` of `Option`s given to generic code with its drop is given std's `Flatten` struct's glue, `flatten.inner.iter.return()`, of a JS filter that has no `inner`: `Cannot read properties of undefined (reading 'iter')` (#1240)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "        match self.owned_into_items(inner).or_else(|| self.option_of(inner)) {",
     replace: "        match self.owned_into_items(inner) {",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_given_to_generic_code\\.rs$"],
@@ -608,7 +608,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-options-unmapped",
     breaks: "a `flat_map` to `Option`s isn't said to make them by its function, so it's made `src.filter(present)`, its function never called (#1326)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(returned) => Some((source, self.option_of(returned)?, true)),\n",
     replace: "            Some(returned) => Some((source, self.option_of(returned)?, false)),\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_from_its_back.rs$"],
@@ -617,7 +617,7 @@ export const mutations: Mutation[] = [
     name: "flatten-of-option-refs-flat",
     breaks:
       '`parts.iter().flatten()` of `&[Option<&str>]` is `parts.flat()`, which keeps the `None`s: `"a  b "`; and one from its back JS\'s own `flatMap` of each, which isn\'t iterable (#1326)',
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            None => Some((source, self.option_of(self.iterator_item(source)?.peel_refs())?, false)),\n",
     replace: "            None => Some((source, self.option_of(self.iterator_item(source)?)?, false)),\n",
     tests: ["test/corpus.test.ts", "-t", "iter_flatten|^flatten_of_options_from_its_back.rs$"],
@@ -625,7 +625,7 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-dyn-iterator-source-unclosed",
     breaks: "a `filter_map` of a `Box<dyn Iterator>` that carries a drop, quickcheck's `char` shrinker, is no source it can close, and boxing it is refused (#1420)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            || boxed_dyn\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_summed_drops_its_rest_after_the_total.rs$"],
@@ -635,7 +635,7 @@ export const mutations: Mutation[] = [
     name: "sized-box-source-unclosed",
     breaks:
       "an adapter over a sized `Box` of the crate's iterator with a `Drop` isn't closed to drop it but dropped field by field after std's compiled `count` took it, so it drops twice, and a part-way one made in place drops `undefined` (#2219)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "        // A sized `Box<I>`, closed as `I` is (#2219).\n        let source = held_unboxed(source);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^boxed_source_closed_once.rs$"],
@@ -643,7 +643,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-search-runs-no-code",
     breaks: "a slice's search by a predicate that runs code is taken to run none, so it's the array of its pieces, the predicate asked of every item first (#1501)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            return args\n                .types()\n                .nth(1)\n                .is_some_and(|pattern| self.pattern_runs_code(pattern));\n",
     replace: "            return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_searches_ask_a_predicate_as_they_step.rs$"],
@@ -651,7 +651,7 @@ export const mutations: Mutation[] = [
   {
     name: "box-passes-on-every-own-step",
     breaks: "a `Box` of the crate's iterator reaches its own `fold` and `count`, which std's `Box<I>` never calls (#1601)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "        if !self.is_user_iterator(ty) || (behind_a_box(ty) && Wrapper::BoxSized.passes(name) != Passed::Own) {\n",
     replace: "        if !self.is_user_iterator(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(boxed_iterator_steps_as_std_box_does|dyn_wrapper_hides_the_crates_own_steps).rs$"],
@@ -660,7 +660,7 @@ export const mutations: Mutation[] = [
   {
     name: "infallible-an-enum",
     breaks: "`Infallible`, `!` since 1.100, is taken for the enum it was: rustc panics asking its ADT (ADR 0109, amended)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "        let infallible = tcx.types.never;\n",
     replace: "        let infallible = Ty::new_adt(tcx, tcx.adt_def(super::registry::by_path(tcx, StdCrate::Core, &[\"convert\", \"Infallible\"])?), ty::List::empty());\n",
     tests: ["test/corpus.test.ts", "-t", "^calculator.rs$"],
@@ -668,7 +668,7 @@ export const mutations: Mutation[] = [
   {
     name: "str-search-matches-unlisted",
     breaks: "a `str`'s `matches` isn't one of its searches, so its `{:?}` is refused naming neither why nor its issue (ADR 0060, #2004), and a `matches` by a pattern that runs code is taken for the array of what it finds (#1501)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "                | \"Matches\"\n                | \"RMatches\"\n",
     replace: "                | \"RMatches\"\n",
     tests: ["test/diagnostics.test.ts", "-t", "a str matches' Debug"],
@@ -676,7 +676,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-buf-extend-unrecognized",
     breaks: "a `PathBuf`'s `extend` isn't std's, so it's refused, `calling std::iter::Extend::extend`, where std pushes each part (#1640)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            || matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::PathBuf))\n",
     replace: "            || false\n",
     tests: ["test/corpus.test.ts", "-t", "^path_buf_extended_by_each_part.rs$"],
@@ -685,7 +685,7 @@ export const mutations: Mutation[] = [
     name: "mut-source-closed-as-held",
     breaks:
       "an adapter of generic code's `&mut I` is dropped as a struct, field by field, where it's a JS form made in place, so a flatten's or a chain's drop throws or drops nothing (#2219)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "        let holds_nothing = source.is_ref()\n            || ",
     replace: "        let holds_nothing = ",
     tests: ["test/corpus.test.ts", "-t", "^generic_box_of_an_iterator_is_what_it_holds.rs$"],
@@ -693,7 +693,7 @@ export const mutations: Mutation[] = [
   {
     name: "chunks-debug-unshown",
     breaks: "`{:?}` of a slice's `Chunks` is refused, std's `Chunks { v: [..], chunk_size: 2 }` (#2252)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::SliceChunks) => of(\"Chunks\", ShownLeft::Sized(\"chunk_size\")),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^debug_of_chunks_and_windows.rs$"],
@@ -701,7 +701,7 @@ export const mutations: Mutation[] = [
   {
     name: "windows-debug-a-tuple",
     breaks: "`{:?}` of a slice's `Windows` is a tuple of what's left, `Windows([..])`, without std's `size` (#2252)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::SliceWindows) => of(\"Windows\", ShownLeft::Sized(\"size\")),\n",
     replace: "            Some(StdPath::SliceWindows) => of(\"Windows\", ShownLeft::Slice),\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_of_chunks_and_windows.rs$"],
@@ -709,7 +709,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-into-iter-debug-unshown",
     breaks: "`{:?}` of an `Option`'s `into_iter()` is refused, std's `IntoIter { inner: Item { opt: Some(5) } }` (#2252)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::OptionIntoIter) => of(\"IntoIter\", ShownLeft::Item(None)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^debug_of_once_and_successors.rs$"],
@@ -717,7 +717,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-iter-debug-unshown",
     breaks: "`{:?}` of an `Option`'s `iter()` is refused, std's `Iter { inner: Item { opt: Some(\"x\") } }` (#2252)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::OptionIter) => of(\"Iter\", ShownLeft::Item(None)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^debug_of_once_and_successors.rs$"],
@@ -725,7 +725,7 @@ export const mutations: Mutation[] = [
   {
     name: "once-debug-without-its-name",
     breaks: "`{:?}` of `once(x)` is its inner `IntoIter { .. }`, without std's `Once { inner: .. }` around it (#2252)",
-    file: "src/lower/recognition/iterators.rs",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
     find: "            Some(StdPath::IterOnce) => of(\"IntoIter\", ShownLeft::Item(Some(\"Once\"))),\n",
     replace: "            Some(StdPath::IterOnce) => of(\"IntoIter\", ShownLeft::Item(None)),\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_of_once_and_successors.rs$"],

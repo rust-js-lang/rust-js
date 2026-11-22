@@ -1,4 +1,4 @@
-// Mutations of src/lower/analysis/fn_pointers.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/analysis/fn_pointers.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "fn-pointer-made-of-nothing",
     breaks:
       "no coercion makes a fn pointer, so `report`'s `f`, which may be `touch`, borrows nothing, its borrow isn't counted, and `touch`'s doesn't panic",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "            Some(key) if !args.has_param() => self.made.entry(key).or_default().push((f, args)),\n",
     replace: "            Some(_) if !args.has_param() => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_pointer_borrows_held.rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "fn-pointer-closures-made-of-nothing",
     breaks:
       "a closure made a fn pointer isn't one it may be, so `record`'s `f`, `counted`, borrows nothing, and its borrow doesn't panic",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                    ty::Closure(closure, args) => self.found.made(tcx, adjustment.target, closure, args),\n",
     replace: "                    ty::Closure(..) => {}\n",
     tests: [
@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
     name: "fn-pointer-never-from-outside",
     breaks:
       "no value comes from outside the crate's code, so what JS gives `apply` borrows nothing, and its borrow isn't counted",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "        let held = held(recognition, ty);\n        self.all_open |= held.any;\n        self.open.extend(held.keys.iter().copied());\n        self.library_rust.extend(held.rust);\n",
     replace: "        let held = held(recognition, ty);\n",
     tests: [
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     name: "fn-pointer-of-a-dyn-opens-all",
     breaks:
       "a fn pointer type of a `dyn`, `function::bind`'s result, isn't keyed and makes every fn pointer type anything, so `clz32` under a borrow is counted again (ADRs 0907, 1007, amended)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                    if let Some(key) = key(tcx, part) {\n",
     replace:
       "                    held.any |= part.walk().any(|p| p.as_type().is_some_and(|t| t.is_trait()));\n                    if let Some(key) = key(tcx, part) {\n",
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     name: "binding-pointer-undefined-left-out",
     breaks:
       "a fn pointer that may be a binding's, `Math.max`, is called without its trailing `undefined`, `max(1)`, which is 1 where Rust's call gives `NaN` (ADR 0330, amended)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "            && (self.made.get(&key).into_iter().flatten()).all(|&(f, _)| f.is_local() && !is_binding(tcx, f))\n",
     replace:
       "            && (self.made.get(&key).into_iter().flatten()).all(|&(f, _)| f.is_local() || is_binding(tcx, f))\n",
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
     name: "pointer-given-from-outside-left-out",
     breaks:
       "a fn pointer a JS caller may give, of a signature that holds a `dyn Fn`, is called without its trailing `undefined`, which a JS function counts (ADR 0330, amended)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "            && !self.open.contains(&key)\n            && (self.made",
     replace: "            && (self.made",
     tests: [
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     name: "pointer-of-a-dyn-signature-unkeyed",
     breaks:
       "a fn pointer whose signature holds a `dyn Fn`, React's `Children.forEach`, may be anything, so a call of the crate's own is given a trailing `undefined` (ADR 0330, amended, rd56)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "    Some(ptr.fold_with(&mut Lifetimeless(tcx)))\n",
     replace:
       "    (!ptr.walk().any(|part| part.as_type().is_some_and(|ty| matches!(ty.kind(), ty::Dynamic(..))))).then(|| ptr.fold_with(&mut Lifetimeless(tcx)))\n",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     name: "library-rust-fields-unwritten",
     breaks:
       "a library's contract says none of its fields holds only its own Rust functions, so a consumer's `Children.forEach(children, fn, undefined)` keeps its `undefined` (ADR 0330, amended, rd56)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "        (self.rust_fields.iter()).map(|&field| (field, rust_js_program::library::FieldFact::RustFunctions))\n",
     replace:
       "        (self.rust_fields.iter()).filter(|_| false).map(|&field| (field, rust_js_program::library::FieldFact::RustFunctions))\n",
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     name: "library-rust-field-read-as-open",
     breaks:
       "a consumer reads a library's field of its own Rust functions as any function's, so its call keeps a trailing `undefined` (ADR 0330, amended, rd56)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                            .field_has(field.did, rust_js_program::library::FieldFact::RustFunctions)\n",
     replace:
       "                            .field_has(field.did, rust_js_program::library::FieldFact::RustFunctions)\n                            && false\n",
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
     name: "library-rust-pointer-runs-nothing",
     breaks:
       "a consumer takes a library's fn pointer of its own Rust functions to run none of its code, so a thread-local whose initializer calls one is made as its module loads, and what it's given prints before `main` (ADR 0330, amended, rd56)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "        if self.all_open || self.open.contains(&key) || self.library_rust.contains(&key) {\n",
     replace: "        if self.all_open || self.open.contains(&key) {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: fn_pointer_of_a_library"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
     name: "with-this-unrecorded",
     breaks:
       "a with_this function a field holds, `(s.f)()`, is called `s.f()`, as the with_this function the crate makes wasn't recorded (#402)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                            false => _ = self.found.with_this.insert((erased(called), erased(gives))),\n",
     replace: "                            false => {}\n",
     tests: [
@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
     name: "with-this-generic-unrecorded",
     breaks:
       "a with_this function generic code makes, of any signature, is called through a field `s.f()` (#402)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                            true => self.found.with_this_generic = true,\n",
     replace: "                            true => {}\n",
     tests: [
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
     name: "with-this-any-signature",
     breaks:
       "a field of a signature no with_this function the crate makes has, `Box<dyn Fn(u32) -> u32>`, is held first, `const g = o.g; g(1)`, not called through its object as JS calls it (#404)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "            || self.with_this.contains(&(\n",
     replace:
       "            || !self.with_this.is_empty() || self.with_this.contains(&(\n",
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
     name: "own-field-held",
     breaks:
       "a field the crate fills with its own closures alone, `tracker.stop()`, is held first, `const stop = t.stop; stop()`, as any with_this function of its signature may be it (#405)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "        if let Holder::Field(field) = holder\n",
     replace: "        if let Holder::Field(field) = holder\n            && matches!(called, Called::Pointer(_))\n",
     tests: [
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
     name: "own-field-of-any-value",
     breaks:
       "a field filled with a variable that holds a with_this function is taken for one of the crate's closures alone, `h.f()`, which gives it `h` as its `this` (#405)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "        let own = value.is_some_and(|value| self.own_function(value, field));\n",
     replace: "        let own = value.is_some();\n",
     tests: [
@@ -199,7 +199,7 @@ export const mutations: Mutation[] = [
     name: "own-field-lent-unwritten",
     breaks:
       "a field lent mutably, `set(&mut l.g)`, which writes a with_this function through it, is taken for one of the crate's closures alone, `l.g()`, giving it `l` as its `this` (#405)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "Mutability::Mut, place) if let Some(def) = self.field_of(place) => {\n                self.field_written(def, None);\n",
     replace:
       "Mutability::Mut, place) if let Some(def) = self.field_of(place) => {\n",
@@ -213,10 +213,10 @@ export const mutations: Mutation[] = [
     name: "js-made-results-unmarked",
     breaks:
       "a binding's result, `js::cast`'s struct, is taken for one the program built, so a `let` of its field is read again where it's used, `styleProp.margin` twice, a getter run twice (rd204)",
-    file: "src/lower/analysis/fn_pointers.rs",
-    find: "        if !crate::lower::bindings::gives_back(tcx, f) && !crate::lower::bindings::gives_plain_data(tcx, f) {\n            self.found.made_outside(result);\n",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
+    find: "        if !crate::bindings::gives_back(tcx, f) && !crate::bindings::gives_plain_data(tcx, f) {\n            self.found.made_outside(result);\n",
     replace:
-      "        if !crate::lower::bindings::gives_back(tcx, f) && !crate::lower::bindings::gives_plain_data(tcx, f) {\n",
+      "        if !crate::bindings::gives_back(tcx, f) && !crate::bindings::gives_plain_data(tcx, f) {\n",
     tests: [
       "test/lowering-moves.test.ts",
       "-t",
@@ -227,7 +227,7 @@ export const mutations: Mutation[] = [
     name: "js-made-through-references-lost",
     breaks:
       "a struct JS made behind a reference or an `Option`, `Option<&StyleProp>`, isn't seen, its field read twice (rd204)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "            ty::Ref(_, inner, _) | ty::Slice(inner) | ty::Array(inner, _) => self.walk(recognition, own, inner, seen),\n",
     replace:
       "            ty::Ref(_, inner, _) | ty::Slice(inner) | ty::Array(inner, _) => _ = inner,\n",
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
     name: "js-made-everything",
     breaks:
       "every struct is taken for one JS made, so the program's own struct's field isn't read in place (rd204)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "        self.js_made.structs.contains(&adt) || (self.js_made.any && !self.built.contains(&adt))\n",
     replace: "        let _ = adt;\n        true\n",
     tests: [
@@ -254,10 +254,10 @@ export const mutations: Mutation[] = [
     name: "js-made-given-back",
     breaks:
       "what a binding gives back, `#[rust_js::gives_back]`'s, React's state, is taken for a JS object of its own, its fields held in a `const` (rd204's follow-up, the user's decision)",
-    file: "src/lower/analysis/fn_pointers.rs",
-    find: "        if !crate::lower::bindings::gives_back(tcx, f) && !crate::lower::bindings::gives_plain_data(tcx, f) {\n",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
+    find: "        if !crate::bindings::gives_back(tcx, f) && !crate::bindings::gives_plain_data(tcx, f) {\n",
     replace:
-      "        if true && !crate::lower::bindings::gives_plain_data(tcx, f) {\n",
+      "        if true && !crate::bindings::gives_plain_data(tcx, f) {\n",
     tests: [
       "test/lowering-moves.test.ts",
       "-t",
@@ -268,16 +268,16 @@ export const mutations: Mutation[] = [
     name: "plain-data-taken-for-js-made",
     breaks:
       "what a binding gives fresh of data properties, `#[rust_js::gives_plain_data]`'s, `JSON.parse`'s and `Object.getOwnPropertyDescriptor`'s, is taken for a JS object of getters, its fields held in a `const`, trackValueOnNode's ifs nested (#411)",
-    file: "src/lower/analysis/fn_pointers.rs",
-    find: "        if !crate::lower::bindings::gives_back(tcx, f) && !crate::lower::bindings::gives_plain_data(tcx, f) {\n",
-    replace: "        if !crate::lower::bindings::gives_back(tcx, f) {\n",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
+    find: "        if !crate::bindings::gives_back(tcx, f) && !crate::bindings::gives_plain_data(tcx, f) {\n",
+    replace: "        if !crate::bindings::gives_back(tcx, f) {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "fresh plain data"],
   },
   {
     name: "built-struct-unrecorded",
     breaks:
       "a struct the program makes values of, React's fiber, is taken for JS's where a cast of an owner of any shape gives one, so its fields are held, `const old = fiber.return;` before each write (rd221)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                    && adt.is_struct() =>\n            {\n                self.found.built.insert(adt.did());\n",
     replace: "                    && adt.is_struct() =>\n            {\n",
     tests: [
@@ -290,7 +290,7 @@ export const mutations: Mutation[] = [
     name: "built-struct-holds-js-made",
     breaks:
       "what a struct the program builds holds, a fiber's view of its updates, is taken for JS's, its fields held (rd221)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                    if own(adt.did()) {\n                        return;\n                    }\n",
     replace: "",
     tests: [
@@ -303,7 +303,7 @@ export const mutations: Mutation[] = [
     name: "recast-taken-for-js",
     breaks:
       "a view of a value the program has, `js::cast(Some(js::unknown_of(Rc::clone(queue))))`, is taken for a JS object, its fields held (rd221)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "        if !this(f) {\n            return None;\n        }\n",
     replace:
       "        if !this(f) || this(f) {\n            return None;\n        }\n",
@@ -317,7 +317,7 @@ export const mutations: Mutation[] = [
     name: "recast-of-js-made-plain",
     breaks:
       "a view of a struct JS made, a style prop's, is taken for the program's own data, its field read twice, a getter run twice (rd221)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                of_it.any || of_it.structs.iter().any(|adt| made.structs.contains(adt))\n",
     replace: "                let _ = &of_it;\n                false\n",
     tests: [
@@ -330,7 +330,7 @@ export const mutations: Mutation[] = [
     name: "std-structs-js-made",
     breaks:
       "std's structs, an `Rc`, are taken for JS objects a value JS made holds, so a view of the program's `Rc` is JS's (rd221)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                if adt.is_struct() && !std {\n",
     replace: "                if adt.is_struct() {\n",
     tests: [
@@ -343,7 +343,7 @@ export const mutations: Mutation[] = [
     name: "host-fn-field-called-through",
     breaks:
       "a field's fn that may be a host function, `CONFIG.schedule`, is called through its object, which a browser's `queueMicrotask` refuses, Illegal invocation (#427)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: ".is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f)))\n",
     replace:
       ".is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f) && false))\n",
@@ -357,7 +357,7 @@ export const mutations: Mutation[] = [
     name: "own-fn-pointer-field-unseen",
     breaks:
       "a `Cell<fn()>` field the crate sets of its own closures alone is held first, `const flush = hooks.flush; flush();`, where React calls `ReactStrictModeWarnings.discardPendingWarnings()` (#427)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "        if let Holder::Field(field) = holder\n",
     replace: "        if let Holder::Field(field) = holder\n            && matches!(called, Called::Function(..))\n",
     tests: [
@@ -370,7 +370,7 @@ export const mutations: Mutation[] = [
     name: "cell-set-unwritten",
     breaks:
       "a `Cell<fn()>` field set of a host function, `hooks.schedule.set(queue_microtask)`, is taken for the crate's own, called through it, Illegal invocation (#427)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                            (CellMethod::Writes, [value]) => self.field_written(def, Some(value)),\n",
     replace: "                            (CellMethod::Writes, [_]) => {}\n",
     tests: [
@@ -383,7 +383,7 @@ export const mutations: Mutation[] = [
     name: "cell-other-method-unwritten",
     breaks:
       "a `Cell<fn()>` field another method writes, `swap`'s, is taken for the crate's own, called through it (#427)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                            _ => self.field_written(def, None),\n",
     replace: "                            _ => {}\n",
     tests: [
@@ -396,7 +396,7 @@ export const mutations: Mutation[] = [
     name: "cell-field-lent-unwritten",
     breaks:
       "a `Cell<fn()>` field lent, `lend(&hooks.ended)`, which sets it of a host function, is taken for the crate's own (#427)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                self.field_written(def, None);\n            }\n            // An operator",
     replace: "            }\n            // An operator",
     tests: [
@@ -409,7 +409,7 @@ export const mutations: Mutation[] = [
     name: "cell-new-not-own",
     breaks:
       "a `Cell::new(|| {})` field isn't taken for one of the crate's own, so the field's call is held first (#427)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                || cell_own_method(tcx, id) == Some(CellMethod::New)\n",
     replace: "",
     tests: [
@@ -422,7 +422,7 @@ export const mutations: Mutation[] = [
     name: "binding-fn-def-own",
     breaks:
       "a binding's function set in a field, `hooks.schedule.set(queue_microtask)`, is taken for one of the crate's own, called through it, Illegal invocation (#427)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "            ty::FnDef(f, _) => return !is_binding(tcx, f),\n",
     replace: "            ty::FnDef(..) => return true,\n",
     tests: [
@@ -435,7 +435,7 @@ export const mutations: Mutation[] = [
     name: "binding-body-builds",
     breaks:
       "a struct a binding's native body builds, JSON.parse's stand-in, is taken for the program's own, read in place (#430)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "            if is_binding(tcx, tcx.typeck_root_def_id(owner.to_def_id())) {\n                continue;\n            }\n",
     replace: "",
     tests: [
@@ -449,7 +449,7 @@ export const mutations: Mutation[] = [
     name: "js-object-holder-unbound",
     breaks:
       "a JS function of an object JS made, a field the program never writes, is called with no `this`, `(0, o.g)(1)`, where JS calls it through its object, `o.g(1)` (#404, rd579)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "            Holder::Field(field) => !self.own_fields.contains_key(&field),\n",
     replace: "            Holder::Field(_) => false,\n",
     tests: [
@@ -462,7 +462,7 @@ export const mutations: Mutation[] = [
     name: "own-data-holder-bound",
     breaks:
       "a JS function the program's own struct holds, React's `request.environmentName`, is called through it, `request.environmentName()`, its `this` the request, where Rust gives none (rd579)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                    || !js_object && self.may_be_js(tcx, callee, args, output)\n",
     replace: "",
     tests: [
@@ -475,7 +475,7 @@ export const mutations: Mutation[] = [
     name: "own-data-pointer-bound",
     breaks:
       "a fn pointer JS gave, held in the program's own struct, is called through it, `hooks.schedule(3)`, its `this` the struct (rd579)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                    || !js_object && self.pointer_may_be_js(tcx, ptr)\n",
     replace: "",
     tests: [
@@ -488,7 +488,7 @@ export const mutations: Mutation[] = [
     name: "js-dyns-unrecorded",
     breaks:
       "a `dyn Fn` of a signature JS gives the program is taken for Rust's own closures alone, `request.environmentName()` (rd579)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "            self.js_dyns.extend(held.dyns);\n",
     replace: "",
     tests: [
@@ -501,7 +501,7 @@ export const mutations: Mutation[] = [
     name: "binding-dyn-unrecorded",
     breaks:
       "a `dyn Fn` the crate makes of a binding's function, `&probe`, is taken for Rust's own, `p.check()`, its `this` the struct (rd579)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "            // A binding's function.\n            _ => _ = self.js_dyns.insert(signature),\n",
     replace: "            _ => {}\n",
     tests: [
@@ -514,7 +514,7 @@ export const mutations: Mutation[] = [
     name: "own-field-of-itself-any",
     breaks:
       "a field written what it held, React DOM's dispatcher's `r: previous.r`, is taken for one written a JS function, so its call is `(0, dispatcher.r)(1)`, where upstream calls it through its object (rd579)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "            hir::ExprKind::Field(..) if self.field_of(value) == Some(field) => return true,\n",
     replace: "",
     tests: [
@@ -527,9 +527,9 @@ export const mutations: Mutation[] = [
     name: "own-field-variable-unfollowed",
     breaks:
       "a field written a variable bound once to the crate's own closure, React's Flight reply's `FlightStreamController { .., error }`, is taken for one that may hold a JS function, so its call is `(0, controller.error)()`, where upstream calls it through its object (rd655)",
-    file: "src/lower/analysis/fn_pointers.rs",
-    find: "                    && let Some(init) = crate::lower::passed_on::let_value(tcx, var)\n",
-    replace: "                    && let Some(init) = crate::lower::passed_on::let_value(tcx, var).filter(|_| false)\n",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
+    find: "                    && let Some(init) = crate::passed_on::let_value(tcx, var)\n",
+    replace: "                    && let Some(init) = crate::passed_on::let_value(tcx, var).filter(|_| false)\n",
     tests: [
       "test/js-functions.test.ts",
       "-t",
@@ -540,7 +540,7 @@ export const mutations: Mutation[] = [
     name: "own-field-variable-cell-unset",
     breaks:
       "a field written a variable of a `Cell` the crate set anew, `check.set(given)`, of what may be a JS function, is taken for one of the crate's own functions, `hooks.check()`, which gives it `hooks` as its `this` (rd655)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                        .any(|part| is_cell(tcx, part))\n",
     replace: "                        .any(|_| false)\n",
     tests: [
@@ -553,7 +553,7 @@ export const mutations: Mutation[] = [
     name: "js-given-unasked",
     breaks:
       "a nullable field of a struct the crate builds that JS gives too is tested `=== null`, `hasNonce({})`'s `undefined` a `Some` (#519)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: " && !self.js_given.contains(&adt)\n",
     replace: "\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
@@ -562,7 +562,7 @@ export const mutations: Mutation[] = [
     name: "js-given-exported-unseen",
     breaks:
       "what an exported function is called with isn't given by JS, so its nullable field is tested `=== null` (#519)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                    objects_held(tcx, ty, &mut found.js_given);\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
@@ -571,7 +571,7 @@ export const mutations: Mutation[] = [
     name: "js-given-callback-unseen",
     breaks:
       "what a binding calls a function it's given with isn't given by JS, so its nullable field is tested `=== null` (#519)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                objects_held(tcx, called_with, &mut self.found.js_given);\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
@@ -580,7 +580,7 @@ export const mutations: Mutation[] = [
     name: "js-given-dyn-inputs-unread",
     breaks:
       "a `dyn Fn(&Reply)` given to a binding isn't read for what it's called with (#519)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                    found.extend(principal.skip_binder().args.types());\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
@@ -589,7 +589,7 @@ export const mutations: Mutation[] = [
     name: "js-given-fields-unwalked",
     breaks:
       "a struct an exported function is given holds no struct of its own, so its field's struct is tested `=== null` (#519)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                objects_held(tcx, field.ty(tcx, args).skip_normalization(), found);\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
@@ -597,7 +597,7 @@ export const mutations: Mutation[] = [
   {
     name: "reads-no-this-of-own-fields-unseen",
     breaks: "a field the crate fills with its own functions alone is taken to read its `this`, alien-signals' `function link(..) { system.link(..); }` kept beside its system (#533)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "        match matches!(holder, Holder::Field(field) if self.own_fields.get(&field) == Some(&true)) {\n",
     replace: "        match matches!(holder, Holder::Field(field) if self.own_fields.get(&field) == Some(&false)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_field_forwarders.rs$"],
@@ -607,8 +607,8 @@ export const mutations: Mutation[] = [
     name: "js-made-all-ignored",
     breaks:
       "`--js-made-all` takes a library's struct for its data still, so the object model's net reads it in place and can't see a pass that reads a getter's field twice (ADR 1105)",
-    file: "src/lower/analysis/fn_pointers.rs",
-    find: "        let libraries = !crate::lower::session::caches(tcx).every_outside_struct.get();\n",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
+    find: "        let libraries = !crate::session::caches(tcx).every_outside_struct.get();\n",
     replace: "        let libraries = true;\n",
     tests: ["test/object-model.test.ts", "-t", "js-made-all"],
   },
@@ -616,7 +616,7 @@ export const mutations: Mutation[] = [
     name: "component-props-read-anew",
     breaks:
       "a component's own props, which React builds, count as what a getter may answer: `p.title.map(..)` in JSX goes in a `const t` and the attributes before it are hoisted, `const width = ..` (#1908; ADR 0262, the user's decision)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                        (true, ty::Adt(adt, args)) if adt.is_struct() => {\n",
     replace: "                        (true, ty::Adt(adt, args)) if false && adt.is_struct() => {\n",
     tests: ["test/jsx-props-read.test.ts", "-t", "own props are plain data"],
@@ -624,7 +624,7 @@ export const mutations: Mutation[] = [
   {
     name: "crate-constructed-read-anew",
     breaks: "a struct only the crate constructs, which exported functions take, is read anew as one JS may give, so `node.sibling` read again after its test is `$unwrap(node.sibling)` (Tu's decision, 2026-11-15, ADR 0262's difference 60)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "        found.read_anew.retain(|adt| !plain.contains(adt));\n",
     replace: "",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "a RefCell field tested and read again"],
@@ -632,15 +632,15 @@ export const mutations: Mutation[] = [
   {
     name: "dictionary-constructed-by-the-crate",
     breaks: "a WebIDL dictionary the crate builds, which JS builds too, is taken as only the crate's, no getter answering its fields",
-    file: "src/lower/analysis/fn_pointers.rs",
-    find: " && !crate::lower::bindings::is_dictionary(tcx, adt))\n",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
+    find: " && !crate::bindings::is_dictionary(tcx, adt))\n",
     replace: ")\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "a RefCell field tested and read again"],
   },
   {
     name: "constructor-not-building",
     breaks: "a tuple struct's constructor isn't taken to build it, so a field read of one the crate builds as `Chunk(reason)` is counted as JS's may be (#2115)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "                self.found.built.insert(tcx.parent(ctor));\n",
     replace: "                let _ = ctor;\n",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "tuple struct its constructor"],
@@ -648,7 +648,7 @@ export const mutations: Mutation[] = [
   {
     name: "js-given-enums-unheld",
     breaks: "an enum JS gives an exported function isn't one whose reads a getter may answer, only a struct is, so its tag is read anew for each arm (#2208)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "            && (adt.is_struct() || enum_held(tcx, adt))\n",
     replace: "            && adt.is_struct()\n",
     tests: ["test/getter-reads.test.ts", "-t", "getter_enum_tag"],
@@ -656,7 +656,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-built-as-held",
     breaks: "an `Option` a library makes, `None` or `Some(x)`, is recorded in its manifest's `built` as an enum JS holds as an object, which an `Option` never is (#2208)",
-    file: "src/lower/analysis/fn_pointers.rs",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "        && !tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option)\n",
     replace: "",
     tests: ["test/cross-crate-items.test.ts", "-t", "a struct a library builds is the program's own data"],
@@ -664,8 +664,8 @@ export const mutations: Mutation[] = [
   {
     name: "fn-pointer-holder-held-by-rustc-reach",
     breaks: "whether JS may hold a value of a type is rustc's crate-API reach again, which leaves out a type a `pub fn` of a private module hands out, its module's JS export: a JS function given in its field is called with the field's holder as its `this` (#2024, #2025)",
-    file: "src/lower/analysis/fn_pointers.rs",
-    find: "                        ty::Adt(adt, _) if adt.did().is_local() && !crate::lower::declarations::js_holds(tcx, adt.did()))",
+    file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
+    find: "                        ty::Adt(adt, _) if adt.did().is_local() && !crate::declarations::js_holds(tcx, adt.did()))",
     replace: "                        ty::Adt(adt, _) if adt.did().as_local().is_some_and(|adt| !tcx.effective_visibilities(()).is_reachable(adt)))",
     tests: ["test/corpus.test.ts", "-t", "^owner_handle_cloned_request.rs$"],
     snapshots: true,

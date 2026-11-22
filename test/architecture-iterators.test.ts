@@ -73,9 +73,9 @@ test("an iterator's lifecycle is written by closing.js's transitions alone", () 
 // predicate per step, each with its own list of adapters, treated a type
 // parameter and a `&mut` each its own way (#496, #505, #521).
 test("which own step an adapter reaches is the OwnStep catalog's alone", () => {
-  const lowering = ["src/lower.rs", ...files("src/lower")].map(read).join("\n");
+  const lowering = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].map(read).join("\n");
   expect(lowering).not.toMatch(/fn (counts|lasts|folds|nths|rfolds|try_rfolds|nth_backs|may_fold)_its_own\b/);
-  expect(read("src/lower/recognition/own_steps.rs")).toContain("fn asked_of(self, adapter: &str)");
+  expect(read("crates/rust-js-lower/src/recognition/own_steps.rs")).toContain("fn asked_of(self, adapter: &str)");
 });
 
 // Whether an iterator is written in Rust, the crate's or a library's, whose
@@ -88,11 +88,11 @@ test("whether an iterator is written in Rust is is_user_iterator's alone", () =>
   const own = (lines: string[]) => lines.flatMap((line, i) =>
     /is_local\(\)/.test(line) && asks.test(lines.slice(Math.max(0, i - 3), i + 4).join("\n")) ? [line.trim()] : []);
   expect(own(["matches!(part.kind(), ty::Adt(adt, _) if adt.did().is_local()) && recognition.implements_trait(part, iterator)"])).toHaveLength(1);
-  const deciding = ["src/lower.rs", ...files("src/lower")]
-    .filter((file) => file.endsWith(".rs") && file !== "src/lower/recognition/iterators.rs")
+  const deciding = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")]
+    .filter((file) => file.endsWith(".rs") && file !== "crates/rust-js-lower/src/recognition/iterators.rs")
     .flatMap((file) => own(read(file).split("\n").map((line) => line.replace(/\/\/.*$/, ""))).map((line) => `${file}: ${line}`));
   expect(deciding).toEqual([]);
-  expect(read("src/lower/iterators/transparent.rs")).toContain("recognition.is_user_iterator(part)");
+  expect(read("crates/rust-js-lower/src/iterators/transparent.rs")).toContain("recognition.is_user_iterator(part)");
 });
 
 // What an adapter's fold or `nth`, from either end, asks of what it holds is
@@ -112,15 +112,15 @@ test("which source an adapter's fold or nth asks is the OwnStep catalog's alone"
   const names = "Map|Filter|FilterMap|Take|Skip|Fuse|Peekable|Enumerate|StepBy|Chain|Rev|Inspect|Copied|Cloned|Flatten|FlatMap|SkipWhile|TakeWhile|Scan|MapWhile|Zip";
   const adapter = new RegExp(`"(?:std::iter::)?(${names})"|StdPath::Iter(${names})\\b`);
   const listed: string[] = [];
-  for (const file of ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"))) {
-    if (file === "src/lower/recognition/own_steps.rs") continue;
+  for (const file of [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"))) {
+    if (file === "crates/rust-js-lower/src/recognition/own_steps.rs") continue;
     for (const item of read(file).split(/\n(?=\s*(?:pub(?:\([^)]*\))? )?fn \w+)/)) {
       const name = item.match(/fn (\w+)/)?.[1];
       if (name !== undefined && /fold|nth|_a_slice/.test(name) && adapter.test(item)) listed.push(`${file}: fn ${name}`);
     }
   }
   expect(listed).toEqual([]);
-  const slices = read("src/lower/recognition/slice_steps.rs");
+  const slices = read("crates/rust-js-lower/src/recognition/slice_steps.rs");
   expect(slices).toContain("self.asked_sources(ty, step)");
   expect(slices).toContain("self.asked_by_next(ty)");
 });
@@ -132,13 +132,13 @@ test("which source an adapter's fold or nth asks is the OwnStep catalog's alone"
 // with the type where a compiled `fuse()` closed nothing of a `Vec`'s rest
 // (#653). Neither gate is given the JS it gates.
 test("whether an iterator's steps may panic is steps_may_panic's alone", () => {
-  const ends = ["collect.rs", "consumers.rs"].map((file) => read(`src/lower/iterators/mir_steps/${file}`)).join("\n");
+  const ends = ["collect.rs", "consumers.rs"].map((file) => read(`crates/rust-js-lower/src/iterators/mir_steps/${file}`)).join("\n");
   for (const gate of ["unwinding_collect", "stranded_drop"]) {
     expect(ends, gate).toContain(`fn ${gate}(`);
     const signature = ends.slice(ends.indexOf(`fn ${gate}(`), ends.indexOf(") ->", ends.indexOf(`fn ${gate}(`)));
     expect(signature, gate).not.toContain("Expr");
   }
-  const lowering = ["src/lower.rs", ...files("src/lower")].map(read).join("\n");
+  const lowering = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].map(read).join("\n");
   expect(lowering).not.toMatch(/fn (chain_may_throw|closes_a_source|callbacks_in)\b/);
 });
 
@@ -149,10 +149,10 @@ test("whether an iterator's steps may panic is steps_may_panic's alone", () => {
 // wherever a fold by value moved it. No lowering writes that arrow, and no
 // JS the tests pin nor the guide holds it.
 test("an adapter that holds a function is $holding alone", () => {
-  const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
+  const lowering = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"));
   const making = lowering.filter((file) => read(file).includes('"$holding"'));
-  expect(making).toEqual(["src/lower/iterators.rs", "src/lower/mir/iter.rs"]);
-  expect(read("src/lower/mir/iter.rs")).toContain('let holding = Expr::call_helper("$holding", args);');
+  expect(making).toEqual(["crates/rust-js-lower/src/iterators.rs", "crates/rust-js-mir/src/iter.rs"]);
+  expect(read("crates/rust-js-mir/src/iter.rs")).toContain('let holding = Expr::call_helper("$holding", args);');
   expect(lowering.filter((file) => read(file).includes('Expr::arrow(vec!["it".into()]'))).toEqual([]);
   const old = /\(it\) => \{\s*it\.return\(\);/;
   expect(old.test("$closing(take.map(f), (it) => {\n    it.return();\n    drop(g);\n  })")).toBe(true);
@@ -202,12 +202,12 @@ test("every runtime tryFold takes what drops with its f", () => {
 // No other lowering writes `$consume`, so a consumer that dropped its
 // closure after the call, around what the call closed, can't come back.
 test("a consumer's closure folded by value is dropped by $consume alone", () => {
-  const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
+  const lowering = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"));
   const writing = lowering.filter((file) => read(file).includes('"$consume"'));
   for (const file of writing) expect(read(file), file).toContain("consumed_ends(");
-  expect(writing.sort()).toEqual(["src/lower/iterators/mir_steps/backs.rs", "src/lower/iterators/mir_steps/consumers.rs"]);
+  expect(writing.sort()).toEqual(["crates/rust-js-lower/src/iterators/mir_steps/backs.rs", "crates/rust-js-lower/src/iterators/mir_steps/consumers.rs"]);
   const asking = lowering.filter((file) => read(file).includes("consumed_function("));
-  expect(asking.sort()).toEqual(["src/lower/iterators/mir_steps/consumers.rs", "src/lower/mir/dispatch.rs"]);
+  expect(asking.sort()).toEqual(["crates/rust-js-lower/src/iterators/mir_steps/consumers.rs", "crates/rust-js-mir/src/dispatch.rs"]);
   expect(read("crates/rust-js-program/src/runtime/fold_of.js")).toContain("function $consume(it, step, init, f, unwind, ends)");
 });
 
@@ -223,11 +223,11 @@ test("the iterator matrix's slice runs of each module that owns a rule of iterat
     .flatMap((line) => [...(line.split("|")[2] ?? "").matchAll(/`([\w/]+(?:\.rs|\.js|\/))`/g)].map((m) => m[1]))
     .map((module) => ownerPath(module!, files))
     .map((module) => (module.endsWith("/") ? `${module}x.rs` : module));
-  expect(owners).toContain("src/lower/recognition/own_steps.rs");
+  expect(owners).toContain("crates/rust-js-lower/src/recognition/own_steps.rs");
   expect(owners.filter((module) => !touchesIterators([module]))).toEqual([]);
   const tracked = Bun.spawnSync(["git", "ls-files", "--cached", "--others", "--exclude-standard"], { cwd: root }).stdout.toString().split("\n");
   expect(iteratorPaths.filter((path) => !tracked.some((file) => new Bun.Glob(path).match(file)))).toEqual([]);
-  expect(touchesIterators(["src/lower/jsx.rs", "docs/guide/README.md"])).toBe(false);
+  expect(touchesIterators(["crates/rust-js-lower/src/jsx.rs", "docs/guide/README.md"])).toBe(false);
 });
 
 // An expression rebuilt of its own kind keeps what its maker marked it,
@@ -238,7 +238,7 @@ test("the iterator matrix's slice runs of each module that owns a rule of iterat
 // `(a..b).rev()` stopped counting down (#730).
 test("an expression rebuilt of its own kind keeps its value's marks", () => {
   const rebuilt = /Expr \{\s*facts:\s*(?:js::)?Facts::NONE,\s*kind,/;
-  const dropping = ["src/lower.rs", ...files("src/lower")]
+  const dropping = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")]
     .filter((file) => file.endsWith(".rs") && rebuilt.test(read(file)));
   expect(dropping).toEqual([]);
 });
@@ -254,7 +254,7 @@ test("std's Chain is $lazyChain alone", () => {
     .filter((file) => file.endsWith(".js"))
     .flatMap((file) => [...read(file).matchAll(chains)].map((m) => m[1]));
   expect(declared).toEqual(["$lazyChain"]);
-  const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
+  const lowering = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"));
   expect(lowering.filter((file) => /"\$\w*[Cc]hain\w*"/.test(read(file).replaceAll('"$lazyChain"', "")))).toEqual([]);
 });
 
@@ -338,7 +338,7 @@ test("a runtime helper drops what it holds as a panic unwinds by $unwinds alone"
   expect(stale).toEqual([]);
   // And the lowering of iterators writes none into the JS: a `skip_while`'s
   // test is the runtime's `$kept` (#817).
-  const lowering = [...files("src/lower/iterators"), ...files("src/lower/iterators/mir_steps")]
+  const lowering = [...files("crates/rust-js-lower/src/iterators"), ...files("crates/rust-js-lower/src/iterators/mir_steps")]
     .filter((file) => file.endsWith(".rs"))
     .filter((file) => /StmtKind::Try(Catch)?\(/.test(read(file)));
   expect(lowering).toEqual([]);
@@ -352,9 +352,9 @@ test("a runtime helper drops what it holds as a panic unwinds by $unwinds alone"
 // holds only what can't throw (`finally_holds`). Tidy's contract "what
 // unwinds is guarded" checks every body it leaves.
 test("what the lowering runs as a panic unwinds is guarded by drops/parts.rs alone", () => {
-  const guard = "src/lower/drops/parts.rs";
+  const guard = "crates/rust-js-lower/src/drops/parts.rs";
   const writes = (pattern: RegExp, allowed: string[]) =>
-    ["src/lower.rs", ...files("src/lower"), ...files("crates/rust-js-program/src/prepare")]
+    [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline"), ...files("crates/rust-js-program/src/prepare")]
       .filter((file) => file.endsWith(".rs") && !allowed.includes(file))
       .flatMap((file) =>
         // A unit test's JS, `#[cfg(test)]`'s, writes nothing the lowering runs.
@@ -365,9 +365,9 @@ test("what the lowering runs as a panic unwinds is guarded by drops/parts.rs alo
           .map((line) => `${file}: ${line.trim()}`),
       );
   expect(writes(/"\$cleanup"/, [guard])).toEqual([]);
-  expect(writes(/StmtKind::Try\([^)]*\)\.at\(/, [guard, "src/lower/mir/tidy/unwinds.rs"])).toEqual([]);
+  expect(writes(/StmtKind::Try\([^)]*\)\.at\(/, [guard, "crates/rust-js-mir/src/tidy/unwinds.rs"])).toEqual([]);
   // Each of tidy's merges into a `finally` asks `finally_holds` first.
-  const tidy = read("src/lower/mir/tidy/unwinds.rs");
+  const tidy = read("crates/rust-js-mir/src/tidy/unwinds.rs");
   expect(tidy.match(/StmtKind::Try\([^)]*\)\.at\(/g)?.length).toBe(2);
   expect(tidy.match(/finally_holds\)?/g)?.length).toBeGreaterThanOrEqual(3);
   // And the runtime's one cleanup is `$cleanup`'s too.
@@ -382,10 +382,10 @@ test("what the lowering runs as a panic unwinds is guarded by drops/parts.rs alo
 // by another call's span (#716, #726), a length off an assumed shape (#745).
 // A new fact goes to value.rs: `emit()` marks it, and value.rs gives the
 // reader its accessor.
-const valueOwner = "src/lower/iterators/value.rs";
+const valueOwner = "crates/rust-js-lower/src/iterators/value.rs";
 const owned = (what: string) =>
   `${what} outside value.rs: ${valueOwner} owns an iterator value's form; add a fact \`emit()\` marks, and an accessor there`;
-const loweringSources = () => ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
+const loweringSources = () => [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"));
 const linesOf = (file: string) => read(file).split("\n").filter((line) => !line.trimStart().startsWith("//"));
 const outsideValue = (pattern: RegExp) =>
   loweringSources()
@@ -451,13 +451,13 @@ test("no iterator helper is read by its name outside value.rs", () => {
 // reason. A new one fails, and so does a gone one until its row goes too.
 test("what's stepped from its back is asked where a value is made, or as a type's question", () => {
   const allowed: Record<string, [number, string]> = {
-    "src/lower/mir/iter.rs": [1, "`cloned_apart_call`, the maker of a map or a filter cloned apart"],
-    "src/lower/mir/std_calls/iterators.rs": [1, "`mir_iter_std_call`, the maker of a std adapter made in place"],
-    "src/lower/iterators/mir_steps/backs.rs": [
+    "crates/rust-js-mir/src/iter.rs": [1, "`cloned_apart_call`, the maker of a map or a filter cloned apart"],
+    "crates/rust-js-mir/src/std_calls/iterators.rs": [1, "`mir_iter_std_call`, the maker of a std adapter made in place"],
+    "crates/rust-js-lower/src/iterators/mir_steps/backs.rs": [
       2,
       "`back_kept`, the maker of an enumeration it steps from its back, and `rev_called`, a `rev()`'s, of what `rev_items` makes; a type parameter given as it is is made knowing its back whatever's asked of it (#2139)",
     ],
-    "src/lower/iterators/knowing.rs": [
+    "crates/rust-js-lower/src/iterators/knowing.rs": [
       10,
       "`reversed_made_knowing` and `reversed_knowing`, a `rev()`'s maker; `knows_its_back` and `knows_its_length`, a type's questions, `knows_its_back`'s of a `str`'s search by a pattern that runs code too (#1501); `hint_known_made_dyn`, a type's question at the coercion that makes a `dyn Iterator` of it (#1476)",
     ],
@@ -484,9 +484,9 @@ test("what's stepped from its back is asked where a value is made, or as a type'
 // enumeration stepped from its back is made of, is a value's too, by the
 // MIR local that holds it (#1354).
 test("what's stepped from its back is its value's, no type's set", () => {
-  const owner = read("src/lower/analysis/back_stepped.rs");
-  const struct = owner.slice(owner.indexOf("pub(in crate::lower) struct BackStepped<'tcx> {"));
-  const fields = [...struct.slice(0, struct.indexOf("\n}\n")).matchAll(/^    pub\(in crate::lower\) (\w+):/gm)].map((m) => m[1]);
+  const owner = read("crates/rust-js-lower/src/analysis/back_stepped.rs");
+  const struct = owner.slice(owner.search(/pub(?:\([^)]*\))? struct BackStepped<'tcx> \{/));
+  const fields = [...struct.slice(0, struct.indexOf("\n}\n")).matchAll(/^    pub(?:\(crate\))? (\w+):/gm)].map((m) => m[1]);
   const signature = owner.slice(owner.indexOf("pub(super) fn back_stepped<'tcx>("));
   const returns = signature.match(/\n\) -> ([^\n]+) \{\n/)?.[1];
   const crossChecks = loweringSources().filter((file) => read(file).includes("BACK_STEPPED_CROSS_CHECK"));
@@ -508,14 +508,14 @@ test("what's stepped from its back is its value's, no type's set", () => {
 // lowering file but back_stepped.rs scans MIR's calls for what steps from
 // its back through a `&mut`.
 test("a counted adapter is stepped from its back by back_stepped's stepped_locals alone", () => {
-  const owner = read("src/lower/analysis/back_stepped.rs");
+  const owner = read("crates/rust-js-lower/src/analysis/back_stepped.rs");
   const types = owner.slice(0, owner.indexOf("pub(super) fn stepped_locals"));
-  const locals = read("src/lower/mir/temporaries.rs");
+  const locals = read("crates/rust-js-mir/src/temporaries.rs");
   const struct = locals.slice(locals.indexOf("pub(super) struct IterLocals {"));
   const fields = [...struct.slice(0, struct.indexOf("\n}\n")).matchAll(/^    (?:pub\(super\) )?(\w+):/gm)].map((m) => m[1]);
   const scans = loweringSources().filter(
     (file) =>
-      file !== "src/lower/analysis/back_stepped.rs" &&
+      file !== "crates/rust-js-lower/src/analysis/back_stepped.rs" &&
       read(file).includes("TerminatorKind::Call") &&
       read(file).includes("BorrowKind::Mut") &&
       /steps_from_its_back\(\)|IterMethod::(NextBack|NthBack|RFind)\b/.test(read(file)),
@@ -536,13 +536,13 @@ test("a counted adapter is stepped from its back by back_stepped's stepped_local
 // of its own runs, so it asked nothing and the lowering's collect was
 // refused (#737).
 test("whether a collect's items drop is asked of the lowering's drops", () => {
-  expect(read("src/lower/analysis/type_facts.rs")).not.toMatch(/drop_runs|runs_where/);
-  const analysis = read("src/lower/analysis.rs");
+  expect(read("crates/rust-js-lower/src/analysis/type_facts.rs")).not.toMatch(/drop_runs|runs_where/);
+  const analysis = read("crates/rust-js-lower/src/analysis.rs");
   const made = analysis.slice(analysis.indexOf("let item_drops = type_facts::ItemDrops"));
   expect(made.slice(0, made.indexOf("};"))).toContain("drops: &items_drop");
   expect(analysis).toContain("super::drops::drops_given(");
   // It asks the walk `FnCx::drops` asks, of the drops its function is given.
-  const drops = read("src/lower/drops.rs");
+  const drops = read("crates/rust-js-lower/src/drops.rs");
   const given = drops.slice(drops.indexOf("pub(super) fn drops_given"));
   expect(given.slice(0, given.indexOf("\n}\n"))).toMatch(/state\.give\([\s\S]*\.drops\(ty\) != Drops::Nothing/);
 });
@@ -557,12 +557,12 @@ test("whether a collect's items drop is asked of the lowering's drops", () => {
 // alone; a second reading of `from_iter`, or of what consumes and drops,
 // fails here (ADR 0160, amended).
 test("an iterator std's code consumes is dropped by mir_iter_call's consumed_call alone", () => {
-  const lowering = files("src/lower").filter((file) => file.endsWith(".rs") && !file.startsWith("src/lower/recognition"));
+  const lowering = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs") && !file.startsWith("crates/rust-js-lower/src/recognition"));
   const reading = (pattern: RegExp) => lowering.filter((file) => pattern.test(read(file)));
-  expect(reading(/IterMethod::FromIter\b/)).toEqual(["src/lower/mir/iter.rs"]);
-  expect(read("src/lower/mir/iter.rs").match(/IterMethod::FromIter\b/g)).toHaveLength(1);
-  expect(reading(/\.consumed_call\(/)).toEqual(["src/lower/mir/iter.rs"]);
-  const iter = read("src/lower/mir/iter.rs");
+  expect(reading(/IterMethod::FromIter\b/)).toEqual(["crates/rust-js-mir/src/iter.rs"]);
+  expect(read("crates/rust-js-mir/src/iter.rs").match(/IterMethod::FromIter\b/g)).toHaveLength(1);
+  expect(reading(/\.consumed_call\(/)).toEqual(["crates/rust-js-mir/src/iter.rs"]);
+  const iter = read("crates/rust-js-mir/src/iter.rs");
   const body = (name: string) => {
     const from = iter.slice(iter.indexOf(`fn ${name}(`));
     return from.slice(0, from.indexOf("\n    }\n"));
@@ -573,7 +573,7 @@ test("an iterator std's code consumes is dropped by mir_iter_call's consumed_cal
   // And what a std combinator consumes, `extend`'s, `unzip`'s or
   // `partition`'s, before it's lowered (#1120).
   expect(body("consumed_by_std")).toContain("self.consumed_call(");
-  const known = read("src/lower/mir/dispatch/known_calls.rs");
+  const known = read("crates/rust-js-mir/src/dispatch/known_calls.rs");
   const value = known.slice(known.indexOf("fn mir_std_value("));
   expect(value.slice(0, value.indexOf("\n    }\n"))).toContain("self.consumed_by_std(");
 });
@@ -620,7 +620,7 @@ test("the runtime steps what may be a Rust iterator by its stepping helpers alon
 // knowing its back, the one form; `$zipBack`, its second, is gone (ADR 0493,
 // #740, the user's decision). A new one fails here.
 test("a reversed zip has one form, never `$zipBack`", () => {
-  const sources = ["src/lower.rs", ...files("src/lower"), ...files("crates/rust-js-program/src/runtime")];
+  const sources = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline"), ...files("crates/rust-js-program/src/runtime")];
   const found = sources.filter((path) => read(path).includes("$zipBack"));
   expect([found, "a reversed zip is `$rev($zipEnds(a, b))` (ADR 0493)"]).toEqual([[], "a reversed zip is `$rev($zipEnds(a, b))` (ADR 0493)"]);
 });
@@ -638,14 +638,14 @@ test("a reversed zip has one form, never `$zipBack`", () => {
 // is no collect, through lengths.rs's `filter_count_asks_own_hint` (#2210),
 // alone.
 test("when a collect asks its hint is hint_asks's alone", () => {
-  const owner = "src/lower/iterators/hint_asks.rs";
-  const lowering = files("src/lower").filter((file) => file.endsWith(".rs") && file !== owner);
+  const owner = "crates/rust-js-lower/src/iterators/hint_asks.rs";
+  const lowering = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs") && file !== owner);
   const code = (file: string) => read(file).split("\n").filter((line) => !/^\s*\/\//.test(line));
   const making = lowering.flatMap((file) =>
     code(file).filter((line) => /"\$(?:roomForHint|reserveHint|grownBy)"/.test(line)).map((line) => `${file}: ${line.trim()}`));
   expect(making).toEqual([]);
   const asking = lowering
-    .filter((file) => !["src/lower/recognition/lengths.rs", "src/lower/shortcuts.rs"].includes(file))
+    .filter((file) => !["crates/rust-js-lower/src/recognition/lengths.rs", "crates/rust-js-lower/src/shortcuts.rs"].includes(file))
     .filter((file) => code(file).some((line) => /(?<!fn )\bhint_reaches_own\(/.test(line)));
   expect(asking).toEqual([]);
 });
@@ -653,15 +653,15 @@ test("when a collect asks its hint is hint_asks's alone", () => {
 
 // What a body's `impl Trait` hides is read once, where its MIR is taken
 // (`mir::revealed`, #1142): each rule of the body's lowering asks the type
-// its value is, so none of `src/lower/mir/`, `iterators/` or
+// its value is, so none of `crates/rust-js-mir/src/`, `iterators/` or
 // `combinators/` reveals a type itself, and nothing else expands an opaque
 // type. A guard that forgot to reveal answered of the opaque type, and its
 // value was stepped and dropped as another's.
 test("a body's impl Trait is revealed where its MIR is taken, alone", () => {
-  expect(read("src/lower/analysis/prepared.rs")).toContain("(body, promoted) = revealed::revealed(tcx, (body, promoted));");
+  expect(read("crates/rust-js-lower/src/analysis/prepared.rs")).toContain("(body, promoted) = revealed::revealed(tcx, (body, promoted));");
   const expanding = compilerRustFiles().filter((file) => file.endsWith(".rs") && read(file).includes("try_expand_impl_trait_type"));
-  expect(expanding).toEqual(["src/lower/analysis/revealed.rs"]);
-  const revealing = ["src/lower/mir", "src/lower/iterators", "src/lower/combinators"]
+  expect(expanding).toEqual(["crates/rust-js-lower/src/analysis/revealed.rs"]);
+  const revealing = ["crates/rust-js-mir/src", "crates/rust-js-lower/src/iterators", "crates/rust-js-lower/src/combinators"]
     .flatMap(files)
     .filter((file) => file.endsWith(".rs") && /\b(self|this|cx)\.reveal\(/.test(read(file)));
   expect(revealing).toEqual([]);
@@ -674,7 +674,7 @@ test("a body's impl Trait is revealed where its MIR is taken, alone", () => {
 // `Cloned` facts, twice (#1119, #1243).
 test("whether an adapter is cloned apart is one function", () => {
   const defining = compilerRustFiles().filter((file) => file.endsWith(".rs") && /\bfn cloned_apart\b/.test(read(file)));
-  expect(defining).toEqual(["src/lower/iterators/stepping.rs"]);
+  expect(defining).toEqual(["crates/rust-js-lower/src/iterators/stepping.rs"]);
 });
 
 // Whether one of std's iterator methods keeps each item it's given, so
@@ -682,11 +682,11 @@ test("whether an adapter is cloned apart is one function", () => {
 // `recognition::keeps_each` (#1167): the combinators' and MIR's consumers'
 // two lists answered it apart, and #1150 had to extend one of them.
 test("whether a consumer keeps each item is one catalog", () => {
-  const lowering = files("src/lower").filter((file) => file.endsWith(".rs"));
+  const lowering = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"));
   const defining = (name: string) => lowering.filter((file) => new RegExp(`fn ${name}\\b`).test(read(file)));
-  expect(defining("keeps_each")).toEqual(["src/lower/recognition/methods.rs"]);
+  expect(defining("keeps_each")).toEqual(["crates/rust-js-lower/src/recognition/methods.rs"]);
   expect(defining("leaves_none")).toEqual([]);
-  expect(read("src/lower/iterators/mir_steps/closing.rs")).toContain("crate::lower::recognition::keeps_each(name)");
+  expect(read("crates/rust-js-lower/src/iterators/mir_steps/closing.rs")).toContain("crate::recognition::keeps_each(name)");
 });
 
 // Which adapters a body makes in place is decided once, by its owner,
@@ -713,8 +713,8 @@ test("whether a consumer keeps each item is one catalog", () => {
 // `rev()`, a JS iterator, blocks that `rev()`'s flip. Both hold: the ground's
 // read alone, the order (above), and the check in `held_links`.
 test("back_stepped reads the ground's rev()s, and the flip is given nothing the ground made", () => {
-  expect(read("src/lower/analysis/back_stepped.rs")).toMatch(/callee == rev\n\s+&& !body\.facts\.in_place_adapters\.ground_made_at\(&body\.thir, \*fn_span\)/);
-  const source = read("src/lower/body_queries/in_place.rs");
+  expect(read("crates/rust-js-lower/src/analysis/back_stepped.rs")).toMatch(/callee == rev\n\s+&& !body\.facts\.in_place_adapters\.ground_made_at\(&body\.thir, \*fn_span\)/);
+  const source = read("crates/rust-js-lower/src/body_queries/in_place.rs");
   const held = source.slice(source.indexOf("fn held_links"), source.indexOf("fn let_made"));
   expect(held).toContain("let ground = body.facts.in_place_adapters.ground();");
   expect(held).toContain("ExprKind::Call { ref args, .. } => args.iter().any(|&arg| in_place(arg, &held)),");
@@ -726,17 +726,17 @@ test("back_stepped reads the ground's rev()s, and the flip is given nothing the 
 // flipped, never one past a link made in place, `src.chain(v).map(f)`'s
 // `map`, which stepped a `$lazyChain` as std's `Chain` struct (#1780).
 test("the held flip flips from the source outward, while each link is flipped", () => {
-  const source = read("src/lower/body_queries/in_place.rs");
+  const source = read("crates/rust-js-lower/src/body_queries/in_place.rs");
   const held = source.slice(source.indexOf("fn held_links"), source.indexOf("pub(super) fn in_place_adapters"));
   expect(held).toContain("for link in chain.links.into_iter().rev() {");
   expect(held).toMatch(/Some\(link\) if !given && !callers => _ = held\.insert\(link\),\n\s+_ => break,/);
   expect(held.match(/flipped_link/g)?.length).toBe(2);
-  expect(read("src/lower/iterators/transparent.rs")).toMatch(/each link's call, its outermost first/);
+  expect(read("crates/rust-js-lower/src/iterators/transparent.rs")).toMatch(/each link's call, its outermost first/);
 });
 
 test("in-place adapters are decided in two stages, then read", () => {
-  const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
-  const outside = lowering.filter((file) => !file.startsWith("src/lower/body_queries"));
+  const lowering = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"));
+  const outside = lowering.filter((file) => !file.startsWith("crates/rust-js-lower/src/body_queries"));
   const writes = outside.filter((file) => /in_place_adapters\s*=[^=]|InPlace::decided|in_place_adapters\.decide_held\(/.test(read(file)));
   expect(writes).toEqual([]);
   const reads = outside.flatMap((file) =>
@@ -745,10 +745,10 @@ test("in-place adapters are decided in two stages, then read", () => {
   // And how a value of a held-compiled type is cloned, `makes_in_place`,
   // whether the body made one of that type in place (#1973): one answer
   // for how a link is made and how it's cloned.
-  const ofOwner = new Set(["src/lower/analysis/back_stepped.rs: ground_made_at", "src/lower/std_impls/clones.rs: makes_in_place"]);
+  const ofOwner = new Set(["crates/rust-js-lower/src/analysis/back_stepped.rs: ground_made_at", "crates/rust-js-lower/src/std_impls/clones.rs: makes_in_place"]);
   expect(reads.filter((read) => !read.endsWith(": made_at") && !ofOwner.has(read))).toEqual([]);
-  expect(reads.filter((read) => read.endsWith(": ground_made_at"))).toEqual(["src/lower/analysis/back_stepped.rs: ground_made_at"]);
-  const source = read("src/lower/body_queries.rs");
+  expect(reads.filter((read) => read.endsWith(": ground_made_at"))).toEqual(["crates/rust-js-lower/src/analysis/back_stepped.rs: ground_made_at"]);
+  const source = read("crates/rust-js-lower/src/body_queries.rs");
   expect(source).toMatch(/pub struct InPlace \{\n    ground: Option<IndexSet<ExprId>>,\n    held: std::cell::OnceCell<IndexSet<ExprId>>,\n\}/);
   expect(source).toMatch(/\n    fn decided\(set: IndexSet<ExprId>\) -> Self \{/);
   // Its one join, each THIR call at MIR's span, and no reader of a node alone.
@@ -757,13 +757,13 @@ test("in-place adapters are decided in two stages, then read", () => {
   expect([...in_place.matchAll(/pub(?:\([^)]*\))? fn (\w+)/g)].map((m) => m[1])).toEqual(["made_at", "ground_made_at", "makes_in_place"]);
   expect(in_place.match(/each_call_at\(thir, span, /g)?.length).toBe(2);
   const deciding = lowering.filter((file) => /decide_in_place\(/.test(read(file)));
-  expect(deciding).toEqual(["src/lower/pipeline.rs"]);
+  expect(deciding).toEqual(["src/pipeline.rs"]);
   // The second stage, decided once in the analysis: after `back_stepped`,
   // its one reader before it, and before `type_fact_params`, the first
   // reader of both stages.
   const held = lowering.filter((file) => /body_queries::decide_held\(/.test(read(file)));
-  expect(held).toEqual(["src/lower/analysis.rs"]);
-  const analysis = read("src/lower/analysis.rs");
+  expect(held).toEqual(["crates/rust-js-lower/src/analysis.rs"]);
+  const analysis = read("crates/rust-js-lower/src/analysis.rs");
   const at = (text: string) => analysis.indexOf(text);
   expect([at("back_stepped::of_crate(") < at("body_queries::decide_held("), at("body_queries::decide_held(") < at("type_fact_params(")]).toEqual([true, true]);
 });
@@ -775,12 +775,12 @@ test("in-place adapters are decided in two stages, then read", () => {
 // compiled where another of the same adapter isn't. A query by definition
 // alone, `is_held_compiled_def`, was the name's answer for every value.
 test("the compiled std catalogue is asked of a type, not a definition", () => {
-  const source = read("src/lower/recognition/compiled_std.rs");
+  const source = read("crates/rust-js-lower/src/recognition/compiled_std.rs");
   const signature = (name: string) => source.match(new RegExp(`pub(?:\\([^)]*\\))? fn ${name}\\b[^{]*`))?.[0];
   for (const name of ["makes_held_compiled", "sized_in_place", "is_compiled_std_type", "is_held_compiled", "compiled_instance"]) {
     expect([name, /\bTy<|GenericArgsRef/.test(signature(name) ?? "")]).toEqual([name, true]);
   }
-  const byDefinition = files("src/lower").filter((file) => file.endsWith(".rs"))
+  const byDefinition = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"))
     .filter((file) => /\bfn (is_held_compiled_def|makes_held_compiled_def|compiled_for_build_def)\b|\bis_held_compiled_def\(/.test(read(file)));
   expect(byDefinition).toEqual([]);
 });
@@ -790,11 +790,11 @@ test("the compiled std catalogue is asked of a type, not a definition", () => {
 // is by `std_path_item`, never the text of its path, `std::iter::Map`
 // stripped or compared (#1681 change 2, the DefId step).
 test("the compiled std catalogue names its types by StdPath, never a path's text", () => {
-  for (const file of ["src/lower/recognition/compiled_std.rs", "src/lower/recognition/compiled_std/rows.rs"]) {
+  for (const file of ["crates/rust-js-lower/src/recognition/compiled_std.rs", "crates/rust-js-lower/src/recognition/compiled_std/rows.rs"]) {
     const text = read(file);
     expect([file, /\bstd_path\(|"std::|"core::/.test(text)]).toEqual([file, false]);
   }
-  const catalog = read("src/lower/recognition/compiled_std.rs");
+  const catalog = read("crates/rust-js-lower/src/recognition/compiled_std.rs");
   for (const name of ["COMPILED_STD", "COMPILED_STD_IO", "COMPILED_STD_NET", "HELD_COMPILED", "MEANING_ONLY"]) {
     expect([name, new RegExp(`const ${name}: &\\[\\(?StdPath[,\\]]`).test(catalog)]).toEqual([name, true]);
   }
@@ -805,8 +805,8 @@ test("the compiled std catalogue names its types by StdPath, never a path's text
 // other lowering file matches them by name, but the range's own module,
 // which makes `$lazyRange` and reads it back as it rewrites its own form.
 test("JS's own iterator forms are known by own_form alone", () => {
-  const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
-  const owners = ["src/lower/iterators.rs", "src/lower/std_types/range.rs"];
+  const lowering = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"));
+  const owners = ["crates/rust-js-lower/src/iterators.rs", "crates/rust-js-lower/src/std_types/range.rs"];
   const reads = lowering
     .filter((file) => !owners.includes(file))
     .flatMap((file) => {
@@ -817,7 +817,7 @@ test("JS's own iterator forms are known by own_form alone", () => {
       ];
     });
   expect(reads).toEqual([]);
-  expect(read("src/lower/iterators.rs")).toContain("pub(in crate::lower) fn own_form(e: &Expr) -> Option<OwnForm>");
+  expect(read("crates/rust-js-lower/src/iterators.rs")).toContain("pub(crate) fn own_form(e: &Expr) -> Option<OwnForm>");
 });
 
 // What a crate's function returns of its parameters, a reborrow or an
@@ -828,12 +828,12 @@ test("JS's own iterator forms are known by own_form alone", () => {
 test("a function's return provenance is returned.rs's, and the in-place adapters specialization.rs's", () => {
   const rust = compilerRustFiles();
   const defining = (pattern: RegExp) => rust.filter((file) => pattern.test(read(file)));
-  expect(defining(/\bfn (returned_from|returned_iterator|returns_its_parameter)\b/)).toEqual(["src/lower/pointers/returned.rs"]);
-  expect(defining(/\bfn (adapts_in_place|impl_asks_of|in_place_traits)\b/)).toEqual(["src/lower/recognition/specialization.rs"]);
+  expect(defining(/\bfn (returned_from|returned_iterator|returns_its_parameter)\b/)).toEqual(["crates/rust-js-lower/src/pointers/returned.rs"]);
+  expect(defining(/\bfn (adapts_in_place|impl_asks_of|in_place_traits)\b/)).toEqual(["crates/rust-js-lower/src/recognition/specialization.rs"]);
   // A walk of a function's result asks which adapters keep their source,
   // never names them.
-  expect(read("src/lower/pointers/returned.rs")).toContain("adapts_in_place(");
-  expect(read("src/lower/pointers/returned.rs")).not.toMatch(/"(map|filter|enumerate|zip|skip|take)"/);
+  expect(read("crates/rust-js-lower/src/pointers/returned.rs")).toContain("adapts_in_place(");
+  expect(read("crates/rust-js-lower/src/pointers/returned.rs")).not.toMatch(/"(map|filter|enumerate|zip|skip|take)"/);
 });
 
 
@@ -843,7 +843,7 @@ test("a function's return provenance is returned.rs's, and the in-place adapters
 // std's, of an ADR and its proof, a test file or the copy matrix's rows,
 // each of which exists.
 test("each MEANING_ONLY entry is on its way, of an issue, or kept, of an ADR and the rows that prove it", async () => {
-  const source = read("src/lower/recognition/compiled_std.rs");
+  const source = read("crates/rust-js-lower/src/recognition/compiled_std.rs");
   const list = source.match(/^const MEANING_ONLY: &\[StdPath\] = &\[\n([\s\S]*?)^\];/m);
   expect(list).not.toBeNull();
   const problems: string[] = [];
@@ -897,20 +897,20 @@ test("each MEANING_ONLY entry is on its way, of an issue, or kept, of an ADR and
 // reader fails, and so does a gone one until its row goes too.
 test("whether a copy is its source is asked of is_its_source alone", () => {
   const allowed: Record<string, [number, string]> = {
-    "src/lower/iterators/mir_steps/copies.rs": [5, "the owner: `is_its_source`, `copied_given` and the copy's maker"],
-    "src/lower/iterators/knowing.rs": [2, "made knowing its back or its length: of its source where `is_its_source`, else `copy_made_knowing`"],
-    "src/lower/iterators/hint_knowing.rs": [1, "made knowing its hint alone: of its source where `is_its_source`"],
-    "src/lower/iterators/hint_asks.rs": [2, "its hint's parts, of its source where `is_its_source`; whether its hint is its parts', which a map's is too"],
-    "src/lower/iterators/mir_steps/sources.rs": [2, "`counted_in_place`, a copy's count its source's, as std's `Copied::count` asks it; `steps_an_array`, where `is_its_source`"],
-    "src/lower/std_impls/clones.rs": [1, "its clone, `copied_clone`, which asks `is_its_source`"],
-    "src/lower/analysis/back_stepped.rs": [3, "what steps it from its back, a copy as a map"],
-    "src/lower/analysis/hint_asked.rs": [1, "whether its hint is asked, as a map's"],
-    "src/lower/iterators/in_place_forms.rs": [1, "the std type, `Copied`, whose form made knowing its hint alone is `$copied`, a question of its type"],
-    "src/lower/recognition/lengths.rs": [2, "its hint's lower bound, its source's, as a map's"],
-    "src/lower/iterators/back_facts.rs": [1, "made knowing its back by its maker, as a map is"],
+    "crates/rust-js-lower/src/iterators/mir_steps/copies.rs": [5, "the owner: `is_its_source`, `copied_given` and the copy's maker"],
+    "crates/rust-js-lower/src/iterators/knowing.rs": [2, "made knowing its back or its length: of its source where `is_its_source`, else `copy_made_knowing`"],
+    "crates/rust-js-lower/src/iterators/hint_knowing.rs": [1, "made knowing its hint alone: of its source where `is_its_source`"],
+    "crates/rust-js-lower/src/iterators/hint_asks.rs": [2, "its hint's parts, of its source where `is_its_source`; whether its hint is its parts', which a map's is too"],
+    "crates/rust-js-lower/src/iterators/mir_steps/sources.rs": [2, "`counted_in_place`, a copy's count its source's, as std's `Copied::count` asks it; `steps_an_array`, where `is_its_source`"],
+    "crates/rust-js-lower/src/std_impls/clones.rs": [1, "its clone, `copied_clone`, which asks `is_its_source`"],
+    "crates/rust-js-lower/src/analysis/back_stepped.rs": [3, "what steps it from its back, a copy as a map"],
+    "crates/rust-js-lower/src/analysis/hint_asked.rs": [1, "whether its hint is asked, as a map's"],
+    "crates/rust-js-lower/src/iterators/in_place_forms.rs": [1, "the std type, `Copied`, whose form made knowing its hint alone is `$copied`, a question of its type"],
+    "crates/rust-js-lower/src/recognition/lengths.rs": [2, "its hint's lower bound, its source's, as a map's"],
+    "crates/rust-js-lower/src/iterators/back_facts.rs": [1, "made knowing its back by its maker, as a map is"],
   };
   const found: Record<string, [number, string]> = {};
-  for (const file of files("src/lower").filter((file) => file.endsWith(".rs"))) {
+  for (const file of [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"))) {
     const count = (read(file).match(/copied_source\((self\.)?tcx/g) ?? []).length;
     if (count > 0) found[file] = [count, allowed[file]?.[1] ?? "unlisted"];
   }
@@ -928,13 +928,13 @@ test("whether a copy is its source is asked of is_its_source alone", () => {
 // `Box<I>` passes on of a compiled struct, which lends it "boxed" (#1995).
 test("what a sized box of an iterator is, is held_unboxed's alone", () => {
   const owners = [
-    "src/lower/recognition/held.rs",
-    "src/lower/recognition/iterators.rs",
-    "src/lower/recognition/lengths.rs",
-    "src/lower/iterators/mir_steps/closing.rs",
-    "src/lower/iterators/mir_steps/backs.rs",
-    "src/lower/iterators/stepping.rs",
-    "src/lower/iterators/knowing.rs",
+    "crates/rust-js-lower/src/recognition/held.rs",
+    "crates/rust-js-lower/src/recognition/iterators.rs",
+    "crates/rust-js-lower/src/recognition/lengths.rs",
+    "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
+    "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
+    "crates/rust-js-lower/src/iterators/stepping.rs",
+    "crates/rust-js-lower/src/iterators/knowing.rs",
   ];
   const peels = owners.flatMap((file) =>
     read(file)
@@ -945,24 +945,24 @@ test("what a sized box of an iterator is, is held_unboxed's alone", () => {
   );
   expect(peels).toEqual([
     // `iterator_held`: which impl a type's steps reach, through any box.
-    "src/lower/recognition/held.rs: while let Some(inner) = ty.boxed_ty() {",
+    "crates/rust-js-lower/src/recognition/held.rs: while let Some(inner) = ty.boxed_ty() {",
     // `held_unboxed` itself.
-    "src/lower/recognition/held.rs: .boxed_ty()",
+    "crates/rust-js-lower/src/recognition/held.rs: .boxed_ty()",
     // `behind_a_box`: what std's `Box<I>` passes on (`Wrapper::passes`).
-    "src/lower/recognition/held.rs: ty.peel_refs().boxed_ty().is_some()",
+    "crates/rust-js-lower/src/recognition/held.rs: ty.peel_refs().boxed_ty().is_some()",
     // A `Box<dyn Iterator>`, closed by the drop it carries (ADR 0521).
-    "src/lower/recognition/iterators.rs: let boxed_dyn = source.boxed_ty().is_some_and(|inner| self.is_dyn_iter(inner));",
+    "crates/rust-js-lower/src/recognition/iterators.rs: let boxed_dyn = source.boxed_ty().is_some_and(|inner| self.is_dyn_iter(inner));",
     // `dyn_iter_trait`: a `dyn`'s, boxed or not.
-    "src/lower/recognition/iterators.rs: let ty = ty.boxed_ty().unwrap_or(ty);",
+    "crates/rust-js-lower/src/recognition/iterators.rs: let ty = ty.boxed_ty().unwrap_or(ty);",
     // The one box `held_unboxed` keeps, a `Box<dyn Iterator>`'s hint.
-    "src/lower/recognition/lengths.rs: let held = ty.boxed_ty().unwrap_or(ty);",
+    "crates/rust-js-lower/src/recognition/lengths.rs: let held = ty.boxed_ty().unwrap_or(ty);",
     // A boxed slice, a sequence, not an iterator.
-    "src/lower/iterators/stepping.rs: && (self.is_vec_like(collection) || collection.boxed_ty().is_some_and(|t| t.is_slice()))",
-    "src/lower/iterators/stepping.rs: let ty = ty.boxed_ty().unwrap_or(ty);",
+    "crates/rust-js-lower/src/iterators/stepping.rs: && (self.is_vec_like(collection) || collection.boxed_ty().is_some_and(|t| t.is_slice()))",
+    "crates/rust-js-lower/src/iterators/stepping.rs: let ty = ty.boxed_ty().unwrap_or(ty);",
     // Which parameter a callee takes an `IntoIterator`'s `IntoIter` by.
-    "src/lower/iterators/stepping.rs: _ => declared.boxed_ty().unwrap_or(*declared) == input,",
+    "crates/rust-js-lower/src/iterators/stepping.rs: _ => declared.boxed_ty().unwrap_or(*declared) == input,",
     // A box of std's compiled struct, lent "boxed" (#1995).
-    "src/lower/iterators/knowing.rs: if let Some(inner) = ty.boxed_ty()",
+    "crates/rust-js-lower/src/iterators/knowing.rs: if let Some(inner) = ty.boxed_ty()",
   ]);
-  expect(read("src/lower/recognition/held.rs")).toContain("pub(in crate::lower) fn held_unboxed");
+  expect(read("crates/rust-js-lower/src/recognition/held.rs")).toContain("pub(crate) fn held_unboxed");
 });

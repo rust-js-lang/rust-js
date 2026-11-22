@@ -14,8 +14,8 @@ on:
     paths:
       - 'crates/rust-js-program/src/prepare.rs'
       - 'crates/rust-js-program/src/prepare/**'
-      - 'src/lower/mir/tidy.rs'
-      - 'src/lower/mir/tidy/**'
+      - 'crates/rust-js-mir/src/tidy.rs'
+      - 'crates/rust-js-mir/src/tidy/**'
       - 'test/tidy-stages.test.ts'
       - 'test/getter-reads.test.ts'
       - 'test/getter-reads-run.ts'

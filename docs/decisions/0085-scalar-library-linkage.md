@@ -28,7 +28,7 @@ Relative imports are relocated by output planning, as other relative JS imports
 already are. Cargo aliases do not change the canonical crate identity.
 
 The owned contract and filesystem validation live in `crates/rust-js-program/src/library.rs`; rustc
-identity/signature translation lives in `src/lower/library.rs`. Downstream linking
+identity/signature translation lives in `crates/rust-js-lower/src/library.rs`. Downstream linking
 and printing remain independent of rustc. Dependency manifests, artifacts and
 sources become consumer input dependencies, never consumer-owned outputs.
 

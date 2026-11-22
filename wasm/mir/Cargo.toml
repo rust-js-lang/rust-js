@@ -1,0 +1,42 @@
+# rust-js-mir, MIR's lowering (#2299), built for WASI as ../Cargo.toml builds the
+# binary: its sources ../../crates/rust-js-mir/src/, and rustc's crates from ../rustc,
+# which WASI's sysroot hasn't (`rustc_private` reads the host's alone).
+[package]
+name = "rust-js-mir"
+version = "0.0.4"
+edition = "2024"
+publish = false
+
+[lib]
+path = "../../crates/rust-js-mir/src/lib.rs"
+
+[dependencies]
+rust-js-lower = { path = "../lower" }
+rust-js-program = { path = "../../crates/rust-js-program" }
+imbl = { version = "7.0.2", default-features = false }
+indexmap = "2"
+rustc-hash = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rustc_abi = { path = "../rustc/compiler/rustc_abi" }
+rustc_arena = { path = "../rustc/compiler/rustc_arena" }
+rustc_ast = { path = "../rustc/compiler/rustc_ast" }
+rustc_const_eval = { path = "../rustc/compiler/rustc_const_eval" }
+rustc_data_structures = { path = "../rustc/compiler/rustc_data_structures" }
+rustc_errors = { path = "../rustc/compiler/rustc_errors" }
+rustc_expand = { path = "../rustc/compiler/rustc_expand" }
+rustc_feature = { path = "../rustc/compiler/rustc_feature" }
+rustc_hir = { path = "../rustc/compiler/rustc_hir" }
+rustc_hir_analysis = { path = "../rustc/compiler/rustc_hir_analysis" }
+rustc_index = { path = "../rustc/compiler/rustc_index" }
+rustc_lexer = { path = "../rustc/compiler/rustc_lexer" }
+rustc_lint_defs = { path = "../rustc/compiler/rustc_lint_defs" }
+rustc_middle = { path = "../rustc/compiler/rustc_middle" }
+rustc_mir_dataflow = { path = "../rustc/compiler/rustc_mir_dataflow" }
+rustc_mir_transform = { path = "../rustc/compiler/rustc_mir_transform" }
+rustc_parse = { path = "../rustc/compiler/rustc_parse" }
+rustc_session = { path = "../rustc/compiler/rustc_session" }
+rustc_span = { path = "../rustc/compiler/rustc_span" }
+rustc_structures = { path = "../rustc/compiler/rustc_structures" }
+rustc_target = { path = "../rustc/compiler/rustc_target" }
+rustc_trait_selection = { path = "../rustc/compiler/rustc_trait_selection" }

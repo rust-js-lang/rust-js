@@ -20,7 +20,7 @@ const sources = compilerRustFiles();
 // renaming, hints and lowering ask it.
 test("a temporary's name is suggested and picked in temporary_names.rs alone", () => {
   const rule = /const USELESS_(?:METHODS|NAMES)\b|\bfn (?:call_name|call_suggestion|held_type_name)\b|Role::Value => "value"/;
-  expect(sources.filter(file => rule.test(read(file)))).toEqual(["src/lower/temporary_names.rs"]);
+  expect(sources.filter(file => rule.test(read(file)))).toEqual(["crates/rust-js-lower/src/temporary_names.rs"]);
 });
 
 // A name lowering picks is made of a `Base` (#890 step 2): a `Role`, whose
@@ -31,7 +31,7 @@ test("a temporary's name is suggested and picked in temporary_names.rs alone", (
 test("spill and fresh take a Base, never a word", () => {
   const word = /\.(?:spill|spill_subject|fresh|held_in_place)\(\s*(?:&\s*)?(?:"|format!\("[a-z])/;
   expect(sources.filter(file => word.test(read(file)))).toEqual([]);
-  expect(read("src/lower/temporary_names.rs")).not.toMatch(/impl\b[^{]*From<&[^>]*str>\s+for\s+Base\b/);
+  expect(read("crates/rust-js-lower/src/temporary_names.rs")).not.toMatch(/impl\b[^{]*From<&[^>]*str>\s+for\s+Base\b/);
 });
 
 // Whether a label is MIR's, `bb12`, or one the program wrote, `'desc`, is
@@ -40,7 +40,7 @@ test("spill and fresh take a Base, never a word", () => {
 // place, the label census (`block_of_label`, `mir::queries`' until #2299).
 test("whether a label is MIR's is asked of is_block_label", () => {
   const tests = /strip_prefix\("bb"\)/;
-  expect(sources.filter(file => tests.test(read(file)))).toEqual(["src/lower/session/label_census.rs"]);
+  expect(sources.filter(file => tests.test(read(file)))).toEqual(["crates/rust-js-lower/src/session/label_census.rs"]);
 });
 
 // A `snake_case` name is made camelCase in one place, `camel_case`, and
@@ -50,7 +50,7 @@ test("whether a label is MIR's is asked of is_block_label", () => {
 // program sees in its JSON, and is its own.
 test("a snake_case name is made camelCase by camel_case alone", () => {
   const splits = /\.split\('_'\)|\bch == '_'/;
-  const others = compilerRustFiles().filter((file) => file.endsWith(".rs") && file !== "crates/rust-js-program/src/casing.rs" && file !== "src/lower/serde.rs");
+  const others = compilerRustFiles().filter((file) => file.endsWith(".rs") && file !== "crates/rust-js-program/src/casing.rs" && file !== "crates/rust-js-lower/src/serde.rs");
   expect(others.filter((file) => splits.test(read(file)))).toEqual([]);
   expect(read("crates/rust-js-program/src/casing.rs")).toMatch(/fn camel_case\(name: &str\) -> String \{[^]*?\.split\('_'\)/);
 });
@@ -64,7 +64,7 @@ test("a JS key the compiler or the runtime writes is camelCase", () => {
   const snake = '"[a-z][a-z0-9]*_[a-z0-9_]*"';
   const keyed = new RegExp(`(?:Prop::Field\\(|Expr::member\\([^;]*?,\\s*)${snake}`);
   const code = (text: string) => text.split("\n").filter((line) => !/^\s*\/\//.test(line));
-  const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
+  const lowering = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"));
   expect(lowering.flatMap((file) => code(read(file)).filter((line) => keyed.test(line)).map((line) => `${file}: ${line.trim()}`))).toEqual([]);
   // A helper's object key or method, `writeU32(n)`, `{ writeStr: .. }`.
   const runtime = files("crates/rust-js-program/src/runtime").filter((file) => file.endsWith(".js"));
@@ -91,9 +91,9 @@ test("a block label is matched at a word's start", () => {
 test("a temporary's name a value carries is set and read in one place each", () => {
   const files = compilerRustFiles().filter((file) => file !== "crates/rust-js-program/src/js.rs");
   const with_ = (pattern: RegExp) => files.filter((file) => pattern.test(read(file))).sort();
-  expect(with_(/HeldAs\(Some/)).toEqual(["src/lower/mir/temporaries.rs"]);
-  expect(with_(/\.held_as\.0/)).toEqual(["src/lower/held.rs"]);
-  expect(read("src/lower/held.rs").match(/\.held_as\.0/g)?.length).toBe(1);
+  expect(with_(/HeldAs\(Some/)).toEqual(["crates/rust-js-mir/src/temporaries.rs"]);
+  expect(with_(/\.held_as\.0/)).toEqual(["crates/rust-js-lower/src/held.rs"]);
+  expect(read("crates/rust-js-lower/src/held.rs").match(/\.held_as\.0/g)?.length).toBe(1);
 });
 
 // A name lowering makes that isn't spelled yet, `value#1`, is one form
@@ -108,10 +108,10 @@ test("a temporary's name a value carries is set and read in one place each", () 
 // `FnCx::unspelled_as`), of its source by its id. Nothing else makes or
 // reads the form.
 test("an unspelled name is made, spelled and refused in one place each", () => {
-  const outsideTests = (file: string) => read(file).split("#[cfg(test)]")[0];
+  const outsideTests = (file: string) => read(file).split(/#\[cfg\(test\)\]\s*mod\b/)[0];
   const with_ = (pattern: RegExp) => sources.filter((file) => pattern.test(outsideTests(file)));
   expect(with_(/names::made\(/)).toEqual(["crates/rust-js-program/src/js/name.rs"]);
-  expect(with_(/Name::made\(/)).toEqual(["src/lower.rs"]);
+  expect(with_(/Name::made\(/)).toEqual(["crates/rust-js-lower/src/lib.rs"]);
   expect(with_(/names::made_base\(/)).toEqual(["crates/rust-js-program/src/js/name.rs", "crates/rust-js-program/src/js/validate.rs"]);
   // Preparation's speller, a loop's counter's its `counters` (#2032).
   // And its imports' spelling, which gives way to the program's names not
@@ -127,7 +127,7 @@ test("an unspelled name is made, spelled and refused in one place each", () => {
 // tidy's shadows' kin, which keeps names as words till S6 gives them names.
 // A `catch`'s declarations ask `given_apart_of` (#1681 change 3).
 test("a name given apart is read by its name's API alone", () => {
-  const outsideTests = (file: string) => read(file).split("#[cfg(test)]")[0];
+  const outsideTests = (file: string) => read(file).split(/#\[cfg\(test\)\]\s*mod\b/)[0];
   const reading = sources.filter((file) => file !== "crates/rust-js-program/src/names.rs" && /names::apart\(/.test(outsideTests(file)));
   expect(reading.sort()).toEqual(["crates/rust-js-program/src/js/name.rs", "crates/rust-js-program/src/prepare/reclaim.rs"]);
 });
@@ -139,7 +139,7 @@ test("a name given apart is read by its name's API alone", () => {
 // "element.editable", `call_path`'s "isItem()" and plain's "...items" were:
 // two variables of one word would be one key.
 test("a place is keyed by js::Path, never a name formatted with its fields", () => {
-  const scope = sources.filter(file => file.startsWith("src/lower/") || file.startsWith("crates/rust-js-program/src/js/") || file === "crates/rust-js-program/src/js.rs");
+  const scope = sources.filter(file => file.startsWith("crates/rust-js-lower/src/") || file.startsWith("crates/rust-js-program/src/js/") || file === "crates/rust-js-program/src/js.rs");
   const shapes = [
     /fn \w+\((?:e|expr|value): &(?:js::)?Expr\) -> Option<String>/,
     /format!\("\.\.\.\{/,

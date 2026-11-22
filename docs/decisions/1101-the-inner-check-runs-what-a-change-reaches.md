@@ -349,7 +349,7 @@ them (2026-11-16):
 
 | Change | Before, `check:fast --all` | After, the selection |
 |---|---|---|
-| A line in a function of `src/lower/std_types/slice.rs` | 353 s | 214 s: 94 of 356 files, 71 of 2,649 cases; the nets its paths run are most of it (the twin net 101 s, the crate corpus 69 s) |
+| A line in a function of `crates/rust-js-lower/src/std_types/slice.rs` | 353 s | 214 s: 94 of 356 files, 71 of 2,649 cases; the nets its paths run are most of it (the twin net 101 s, the crate corpus 69 s) |
 | A script, `scripts/push.ts` | the same | 5 files, 21 s of their own; 152 s with the iterator nets, which the branch's change to `scripts/iteratorSlice.ts` ran |
 | A doc nothing reads | the same | none: `bun run push` goes straight to the push |
 

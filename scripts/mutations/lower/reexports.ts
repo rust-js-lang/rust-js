@@ -1,4 +1,4 @@
-// Mutations of src/lower/reexports.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/reexports.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "reexport-alias-unread",
     breaks:
       "`pub use inner::other as renamed;` re-exports `other`, not `renamed`",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "            let named = (ident.name, named_of(path));\n",
     replace: "            let named = (tcx.item_name(named_of(path)), named_of(path));\n",
     tests: ["test/modules.test.ts", "-t", "re-exported from it"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "default-of-another-unexported",
     breaks:
       "another module's function named the default isn't re-exported as it",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "        found.push((\n            (span, NO_LEAF),\n",
     replace: "        drop((\n            (span, NO_LEAF),\n",
     tests: ["test/modules.test.ts", "-t", "default of another module"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "binding-reexport-unwritten",
     breaks:
       "a `pub use` of a JS module's binding writes no `export { .. } from` it",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "            if super::bindings::is_binding(tcx, def_id) {\n",
     replace:
       "            if false && super::bindings::is_binding(tcx, def_id) {\n",
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "reexported-default-by-name",
     breaks:
       "a `pub use` of another module's default re-exports it by its name, which that module doesn't export",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                        super::default_exports::exported_as(tcx, def_id, info.exported()),\n                        alias(info.exported()),\n",
     replace:
       "                        info.name.clone(),\n                        alias(info.exported()),\n",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     name: "library-reexport-refused",
     breaks:
       "a `pub use` of a library's constant, function or default is refused, where it's `export { .. } from` the library's file (ADR 0240, amended)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "            if let Some(imported) = foreign.item(def_id)\n",
     replace:
       "            if let Some(imported) = foreign.item(def_id).filter(|_| false)\n",
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "library-held-binding-reexport-dropped",
     breaks:
       "a `pub use` of a binding a library's module holds re-exports nothing, `shared::assign::assign` (ADR 0240, amended)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "            super::bindings::Holder::Library(from) => js::ImportFrom::Specifier(from.clone()),\n",
     replace: "            super::bindings::Holder::Library(_) => continue,\n",
     tests: [
@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
     name: "class-reexport-refused",
     breaks:
       "a `pub use` of a class is refused, where it's its constructor's `export { Circle } from` (ADR 0240, amended)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                let Some((from, export)) = crate_class().or_else(library_class) else {\n",
     replace:
       "                let Some((from, export)) = crate_class().or_else(library_class).filter(|_| false) else {\n",
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
     name: "module-reexport-named",
     breaks:
       "a `pub use` of a module is `export { * as ns } from`, which isn't JS, not `export * as ns from` (ADR 0240, amended)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: '                    found.push((written, from, ("*".to_string(), alias)));\n',
     replace: '                    found.push((written, from, ("default".to_string(), alias)));\n',
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     name: "reexport-from-where-declared",
     breaks:
       "a `pub use` of what another module re-exports names the module that declares it, `./cache_impl.js`, not the one its path names, `./cache_server.js` (ADR 0240, amended)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                    .filter(|&through| through != info.module)\n",
     replace: "                    .filter(|_| false)\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
     name: "reexport-through-renamed",
     breaks:
       "a `pub use` that keeps the name a module re-exports it by renames it camelCase, `unstable_cache as unstableCache` (ADR 0240, amended)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "        let through_alias = |export: &str| match Some(ident.name) == last_name(path) {\n",
     replace: "        let through_alias = |export: &str| match false && Some(ident.name) == last_name(path) {\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     name: "reexport-grouped-by-module",
     breaks:
       "a module's `pub use`s from one module are one statement wherever they're written, their comments and order lost (ADR 0240, amended)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "            was.lo() == at.lo() && reexport.from == from && named.0 != \"*\" && !namespace(reexport)\n",
     replace: "            reexport.from == from && named.0 != \"*\" && !namespace(reexport)\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
@@ -121,7 +121,7 @@ export const mutations: Mutation[] = [
     name: "reexport-merged-across-comments",
     breaks:
       "two `pub use`s of one module with a comment between are one statement, the comment lost (ADR 0240, amended)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                    .is_some_and(|between| only_attributes(between, false)) =>\n",
     replace: "                    .is_some() =>\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
     name: "reexport-run-unmerged",
     breaks:
       "a run of `pub use`s of one module is a statement each, `export { helper } from` and `export { other as renamed } from` (ADR 0240, amended)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                    .is_some_and(|between| only_attributes(between, false)) =>\n",
     replace: "                    .is_some_and(|_| false) =>\n",
     tests: ["test/modules.test.ts", "-t", "re-exported from it"],
@@ -139,7 +139,7 @@ export const mutations: Mutation[] = [
     name: "reexport-attributes-part-runs",
     breaks:
       "a `pub use`'s `#[rust_js::name]` parts it from the run before it, a statement each (ADR 0240, amended)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: '        let Some(attribute) = trimmed.strip_prefix("#[") else {\n',
     replace:
       '        let Some(attribute) = trimmed.strip_prefix("#[").filter(|_| false) else {\n',
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     name: "reexport-tree-leaves-apart",
     breaks:
       "a `pub use m::{a, b};` is a statement for each name, and its comments are lost (ADR 0240, amended)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "        false => leaf.item.vis_span.to(leaf.span),\n",
     replace: "        false => leaf.span,\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     name: "unexpressed-reexport-unrefused",
     breaks:
       "a `pub use` of a function of a crate of no JS re-exports nothing, silently, where no JS module of rust-js's has it (ADR 0240, amended; #1344)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "            refuse(\n                statement,\n                &what,\n",
     replace:
       "            let _ = (\n                statement,\n                &what,\n",
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
     name: "reexports-alone-of-anything",
     breaks:
       "a crate's root with an item of its own is taken as re-exporting alone, so it writes no JS where its package's entry re-exports its `pub use`s, its item lost (ADR 1008, amended)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                .all(|leaf| !tcx.visibility(leaf.def_id).is_public() || super::analysis::is_reexport(tcx, leaf)),\n            _ => false,\n",
     replace: "                .all(|leaf| !tcx.visibility(leaf.def_id).is_public() || super::analysis::is_reexport(tcx, leaf)),\n            _ => true,\n",
     tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
@@ -177,7 +177,7 @@ export const mutations: Mutation[] = [
     name: "export-named-apart-reexported-apart",
     breaks:
       "`pub use crate::delete;` re-exports it as `export { delete as delete$ }`, not by its own name (#338)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                        alias(info.exported()),\n",
     replace: "                        alias(&info.name),\n",
     tests: [
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
     name: "glob-names-any-glob",
     breaks:
       "a module's `pub use m::*;` re-exports what another glob of it gives too, each name twice, a duplicate export (rd153)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "        if !matches!(child.reexport_chain.first(), Some(Via::Glob(used)) if *used == glob) {\n",
     replace:
       "        if !matches!(child.reexport_chain.first(), Some(Via::Glob(_))) {\n",
@@ -204,7 +204,7 @@ export const mutations: Mutation[] = [
     name: "glob-names-unresolved",
     breaks:
       "a module's `pub use m::*;` re-exports each of the module's names, its own items too, not what the glob gives it, past what they shadow (rd153)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "        if !matches!(child.reexport_chain.first(), Some(Via::Glob(used)) if *used == glob) {\n",
     replace: "        if child.reexport_chain.is_empty() {\n",
     tests: [
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
     name: "glob-library-names-refused",
     breaks:
       "a `pub use m::*;` of a library's module refuses its functions and constants, which its file exports (rd153)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                    && let Some(imported) = foreign.item(id)\n                {\n",
     replace: "                    && let Some(imported) = foreign.item(id)\n                    && false\n                {\n",
     tests: [
@@ -230,7 +230,7 @@ export const mutations: Mutation[] = [
     name: "forwarded-methods-unexported",
     breaks:
       "a namespace's method that's the function it passes its parameters on to isn't re-exported, so its module has no `batchedUpdates` (rd292b)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "    forwarded_methods(tcx, module, (fns, foreign, forwarded), paths, &mut found);\n",
     replace: "",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
@@ -239,7 +239,7 @@ export const mutations: Mutation[] = [
     name: "forwarded-methods-each-a-statement",
     breaks:
       "a run of a namespace's methods each the function it passes its parameters on to, from one module, is a statement each, not one `export { .. } from` as a `pub use` of a list is (rd292b)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                (Some(from), Some(run)) if last == Some(from) => run.push((method, from)),\n",
     replace: "                (Some(from), Some(run)) if false && last == Some(from) => run.push((method, from)),\n",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
@@ -247,7 +247,7 @@ export const mutations: Mutation[] = [
   {
     name: "reexport-through-library-from-home",
     breaks: "a `pub use` of a library's item through a module that re-exports it is re-exported from the library's file under Rust's name, `FRAGMENT_TYPE as FRAGMENT`, where that module's is `Fragment` (rd338)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "through_reexport(tcx, path, def_id, || imported.name.clone())",
     replace: "through_reexport(tcx, path, def_id, || imported.name.clone()).filter(|_| false)",
     tests: ["test/reexports-through.test.ts"],
@@ -255,7 +255,7 @@ export const mutations: Mutation[] = [
   {
     name: "reexport-through-module-namespace",
     breaks: "a `pub use` of a module through a module that re-exports it is the module's own namespace, `export * as`, not what the module the path names exports (rd338)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "through_reexport(tcx, path, named, own)",
     replace: "through_reexport(tcx, path, named, own).filter(|_| false)",
     tests: ["test/reexports-through.test.ts"],
@@ -263,7 +263,7 @@ export const mutations: Mutation[] = [
   {
     name: "reexport-through-class-home",
     breaks: "a `pub use` of a class through a module that re-exports it is re-exported from the class's own module, not the one the path names (rd338)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "through_reexport(tcx, path, class, || export.clone())",
     replace: "through_reexport(tcx, path, class, || export.clone()).filter(|_| false)",
     tests: ["test/reexports-through.test.ts"],
@@ -271,7 +271,7 @@ export const mutations: Mutation[] = [
   {
     name: "reexporting-use-value-only",
     breaks: "a module's `pub use` of a class or module isn't found as re-exporting it, so a path through that module re-exports from the item's home (rd338)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "        let names_it = names(path.res.value_ns) || names(path.res.type_ns);\n",
     replace: "        let names_it = names(path.res.value_ns);\n",
     tests: ["test/reexports-through.test.ts"],
@@ -279,7 +279,7 @@ export const mutations: Mutation[] = [
   {
     name: "through-alias-given-ignored",
     breaks: "a `pub use` through a module that keeps the path's name ignores its own `#[rust_js::name]`, `Frag` (rd338)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "            true => super::bindings::given_name(tcx, leaf.def_id.to_def_id()).unwrap_or_else(|| export.to_string()),\n",
     replace: "            true => export.to_string(),\n",
     tests: ["test/reexports-through.test.ts"],
@@ -287,7 +287,7 @@ export const mutations: Mutation[] = [
   {
     name: "through-reexport-name-unread",
     breaks: "what a module re-exports an item as through its `pub use` is the item's own name, `FRAGMENT_TYPE`, not the `use`'s `#[rust_js::name]`, `Fragment` (rd338)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "    Some((through, super::bindings::use_name(tcx, used, (name, item), own)))\n",
     replace: "    Some((through, own()))\n",
     tests: ["test/reexports-through.test.ts"],
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
     name: "forwarded-functions-each-a-statement",
     breaks:
       "adjacent functions re-exported from one module are a statement each, `export { decode as decodeAction } from ..; export { decode as decodeFormState } from ..;` (rd575)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: ".is_some_and(|between| only_attributes(between, true))",
     replace: ".is_some_and(|between| only_attributes(between, false))",
     tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
@@ -305,7 +305,7 @@ export const mutations: Mutation[] = [
     name: "forwarded-reexport-at-its-function",
     breaks:
       "a namespace's forwarding method's re-export is where the method is, after every import, not at its module's `use crate::portal;` (rd620)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "        if !named.is_none() && named.lo < reexport.at.lo {\n",
     replace: "        if false {\n",
     tests: ["test/cargo-link.test.ts", "-t", "forwarding method's re-export"],
@@ -314,7 +314,7 @@ export const mutations: Mutation[] = [
     name: "written-reexport-moved",
     breaks:
       "a `pub use` is placed at an earlier `pub use` of its module, `export { half }` before `export { cache }` where it's written after (rd620)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "        if span.is_none() || statements.iter().any(|at| at.lo < span.hi && span.lo < at.hi) {\n",
     replace: "        if span.is_none() {\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
@@ -323,7 +323,7 @@ export const mutations: Mutation[] = [
     name: "imports-through-none",
     breaks:
       "no item a `use` names through a module that re-exports it is imported from there, react-markup's `createResumableState` from ReactFizzConfigDOM (rd650)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "            let (module, export) = through?;\n",
     replace: "            let (module, export) = through.filter(|_| false)?;\n",
     tests: ["test/reexports-through.test.ts", "-t", "a use through a module"],
@@ -331,7 +331,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-reexports-left-out",
     breaks: "a `pub use` of a type re-exports nothing in the declarations, so a consumer can't name react-client's `TemporaryReferenceSet` through the Flight client (rd642)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "        found.push((\n            statement_of(&leaf),\n            from,\n            (export, local),\n            leaf.item.owner_id.to_def_id(),\n        ));\n",
     replace: "        let _ = (from, export, local);\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
@@ -339,7 +339,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-reexport-by-its-own-name",
     breaks: "a `pub use .. as` of a type re-exports it by its own name, `Size`, not the name the `use` gives it, `Measure` (rd642)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "            true => own,\n            false => ident.to_string(),\n",
     replace: "            true => own,\n            false => export.clone(),\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
@@ -347,7 +347,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-type-reexported-from-itself",
     breaks: "a `pub use self::Count as Total;` of the module's own type re-exports it from the module's own file (rd642)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                    Some(_) if declared && home == module =>",
     replace: "                    Some(_) if false =>",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
@@ -356,7 +356,7 @@ export const mutations: Mutation[] = [
     name: "forwarded-method-beside-its-pub-use-refused",
     breaks:
       "a namespace's forwarding method beside a `pub use` of the same function is refused as a clash, ReactFiberReconciler's `default_on_caught_error` (rd424)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                    Some((_, was, already)) if *was == from && *already == named => continue,\n",
     replace: "                    Some((_, was, already)) if false && *was == from && *already == named => continue,\n",
     tests: ["test/namespaces.test.ts", "-t", "beside a pub use of its function"],
@@ -365,7 +365,7 @@ export const mutations: Mutation[] = [
     name: "forwarded-method-name-clash-unrefused",
     breaks:
       "a `pub use` of another item by a forwarding method's name isn't refused, so the module exports two values by one name, `Duplicated export 'flush'` (rd424)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                        tcx.dcx()\n                            .struct_span_err(span(method), message)\n                            .with_span_note(*written, \"the `pub use`\")\n                            .emit();\n",
     replace: "                        let _ = (message, written);\n",
     tests: ["test/namespaces.test.ts", "-t", "beside a pub use of its function"],
@@ -373,7 +373,7 @@ export const mutations: Mutation[] = [
   {
     name: "reexport-leaf-unwritten",
     breaks: "a `pub use` list's names have no place of their own, so `act, // DEV-only` prints `export { act, captureOwnerStack, useId } from` without its comments (rd338)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "        let written = (statement, Leaf::Written(name, ident.span));\n",
     replace: "        let written = (statement, NO_LEAF);\n        let _ = name;\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "a pub use list.s comments are its names."],
@@ -382,7 +382,7 @@ export const mutations: Mutation[] = [
     name: "own-module-reexported",
     breaks:
       "a namespace's method that's its own module's function is re-exported from its own module, `export { close } from \"./client.js\"` beside `export function close`, a duplicate export (#566)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                .filter(|&from| from != module && exported(method));\n",
     replace: "                .filter(|_| exported(method));\n",
     tests: ["test/method-forwarding.test.ts", "-t", "a namespace's method that only passes its parameters on to its module's function"],
@@ -391,7 +391,7 @@ export const mutations: Mutation[] = [
     name: "glob-names-its-definer",
     breaks:
       "a glob's name is re-exported from where its item is declared, by that item's name, `export { createEventHandle } from`, so a JS importer of `unstable_createEventHandle` reads `undefined` (#592)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                    && let Some((source, export)) = glob_export(tcx, (fns, foreign), glob, (child.ident.name, id))\n",
     replace: "                    && let Some((source, export)) = glob_export(tcx, (fns, foreign), glob, (child.ident.name, id)).filter(|_| false)\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob re-exports each name as the module it names exports it"],
@@ -400,7 +400,7 @@ export const mutations: Mutation[] = [
     name: "glob-export-kept-name-unfollowed",
     breaks:
       "a `pub use` that keeps the name its path gives is taken for its own name, `unstableCreateEventHandle`, not what the module the path names exports it as (#592)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "            let through = written_module(path).filter(|_| Some(ident.name) == last_name(path));\n",
     replace: "            let through = written_module(path).filter(|_| false);\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob re-exports each name as the module it names exports it"],
@@ -409,7 +409,7 @@ export const mutations: Mutation[] = [
     name: "glob-export-glob-unfollowed",
     breaks:
       "a glob of a module that has its names by a glob of its own is refused (#592)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "            Some(Via::Glob(glob)) => module = glob_source(tcx, *glob)?,\n",
     replace: "            Some(Via::Glob(_)) => return None,\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob re-exports each name as the module it names exports it"],
@@ -418,7 +418,7 @@ export const mutations: Mutation[] = [
     name: "glob-library-renamed-unrefused",
     breaks:
       "a glob of a library's module re-exports an item it renames by its definer's name, which the module doesn't export (#592)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                    && child.ident.name == tcx.item_name(id)\n",
     replace: "",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of a library's module that renames an item is refused"],
@@ -426,7 +426,7 @@ export const mutations: Mutation[] = [
   {
     name: "glob-leaf-unmarked",
     breaks: "a glob's re-export isn't marked one, so a glob of every name its module's file exports is never `export * from` (#593)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "    let written = (statement, Leaf::Glob);\n",
     replace: "    let written = (statement, Leaf::Unwritten);\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
@@ -434,7 +434,7 @@ export const mutations: Mutation[] = [
   {
     name: "glob-within-the-crate-refused",
     breaks: "a glob that gives a crate of no JS's names only within the crate, rustc's import-glob-crate's `pub use *;` of a root's `use nojs::*;`, is refused, \"of `helper`\", as std's was before #592 (#1344)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "        let unsaid = !child.vis.is_public() && !id.is_local() && foreign.item(id).is_none();\n",
     replace: "        let unsaid = false && !id.is_local() && foreign.item(id).is_none();\n",
     tests: ["test/glob-reexports.test.ts", "-t", "an item of a crate of no JS"],
@@ -442,7 +442,7 @@ export const mutations: Mutation[] = [
   {
     name: "public-glob-of-no-js-unsaid",
     breaks: "a public glob of a crate of no JS, `pub use nojs::*;`, says nothing of its function, where a JS importer finds none, not refused (#1344)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "        let unsaid = !child.vis.is_public() && !id.is_local() && foreign.item(id).is_none();\n",
     replace: "        let unsaid = !id.is_local() && foreign.item(id).is_none();\n",
     tests: ["test/glob-reexports.test.ts", "-t", "an item of a crate of no JS"],
@@ -450,7 +450,7 @@ export const mutations: Mutation[] = [
   {
     name: "namespace-merged-into-a-list",
     breaks: "a `pub use` of a module beside a glob of it, one run, prints `export { * as ns, a, b } from`, which JS can't read (#602)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                    && !namespace(last)\n                    && !namespace(&reexport)\n",
     replace: "",
     tests: ["test/cargo-in-source.test.ts", "-t", "export \\* of a module placed outside"],
@@ -458,7 +458,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-glob-file-unasked",
     breaks: "a glob of a library's module carries nothing of what its file exports, so one of every name lists them, not `export * from` (#629)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                    (js::ImportFrom::Specifier(from), true) => foreign.file_exports(from).cloned(),\n",
     replace: "                    (js::ImportFrom::Specifier(_), true) => None,\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of a library's module of every name its file exports is export \\* from"],
@@ -466,7 +466,7 @@ export const mutations: Mutation[] = [
   {
     name: "then-reexport-allowed",
     breaks: "a `pub use` of another module's function as `then` compiles, and its module is a thenable (#1068, ADR 1106)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: '        super::bindings::then_export_refused(tcx, *at, &format!("a `pub use` of `{export}`"), alias);\n',
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "another module's function by a pub use as then"],
@@ -475,7 +475,7 @@ export const mutations: Mutation[] = [
     name: "glob-module-left-out",
     breaks:
       "a glob's module, libm's `support` of `pub use self::math::*;`, isn't re-exported, so a JS importer of `support` gets `undefined`, where a `pub use` of it by its name gives its namespace (#1102)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "            DefKind::Mod => {\n",
     replace: "            DefKind::Mod if false => {\n",
     tests: ["test/glob-reexports.test.ts", "-t", "glob's module is its namespace"],
@@ -484,7 +484,7 @@ export const mutations: Mutation[] = [
     name: "library-module-namespace-left-out",
     breaks:
       "a `pub use` of a library's module, rand_chacha's `pub use rand_core;`, re-exports nothing, so a JS importer of `randCore` gets `undefined`, where the crate's own module is its namespace (#1420)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "        None => Some(js::ImportFrom::Specifier(foreign.module_file(module)?.clone())),\n",
     replace: "        None => None,\n",
     tests: ["test/glob-reexports.test.ts", "-t", "library's module is its namespace"],
@@ -492,7 +492,7 @@ export const mutations: Mutation[] = [
   {
     name: "glob-class-left-out",
     breaks: "a `pub use m::*;` of a module holding a class leaves the class out, where it's refused, as it can't be re-exported yet (rd153)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "            DefKind::Struct if super::classes::is_class(tcx, id) => {\n",
     replace: "            DefKind::Struct if false && super::classes::is_class(tcx, id) => {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a pub use of every name of a module, of a class"],
@@ -501,7 +501,7 @@ export const mutations: Mutation[] = [
     name: "std-reexport-without-js-refused",
     breaks:
       "a public re-export of std's items in no JS module, by name or by a glob, `pub use core::mem::*;`, is refused, \"it's in no JS module of rust-js's to be re-exported from\", where it should export nothing (difference 50, #1315)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "    !id.is_local() && super::recognition::is_std_crate(tcx, id) && foreign.item(id).is_none()\n",
     replace: "    !id.is_local() && super::recognition::is_std_crate(tcx, id) && foreign.item(id).is_none() && false\n",
     tests: ["test/corpus.test.ts", "-t", "^std_module_reexported_by_a_glob\\.rs$"],
@@ -510,7 +510,7 @@ export const mutations: Mutation[] = [
     name: "std-glob-reexport-refused",
     breaks:
       "a glob `pub use core::mem::*;` of std's items in no JS module is refused, \"a `pub use` of every name of a module, of `forget`\", though a named one exports nothing (difference 50, #1315)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "        let unsaid = unsaid || std_without_js(tcx, foreign, id);\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: std_items_reexported_by_a_library"],
@@ -519,7 +519,7 @@ export const mutations: Mutation[] = [
     name: "reexported-type-by-its-rust-name",
     breaks:
       "a `pub use` of a type a `#[rust_js::name]` names re-exports it by its Rust name, `export type { IsoDate }`, which its module doesn't export, so the root's `import type { ISODate }` is TS2724 (#1829)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                let name = super::declarations::type_name(tcx, named);\n",
     replace: "                let name = tcx.item_name(named).to_string();\n",
     tests: ["test/declarations-named.test.ts", "-t", "re-exported by it"],
@@ -527,7 +527,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-reexport-value-of-a-constructor",
     breaks: "a `pub use` of a tuple or a unit struct, whose constructor is no JS it re-exports, is taken for a value's, so its doc comment is the next function's JSDoc (#1869)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "    let value = !matches!(leaf.path.res.value_ns, None | Some(Res::Def(DefKind::Ctor(..), _)));\n",
     replace: "    let value = !matches!(leaf.path.res.value_ns, None);\n",
     tests: ["test/reexport-docs.test.ts", "-t", "structs with constructors"],
@@ -535,7 +535,7 @@ export const mutations: Mutation[] = [
   {
     name: "private-forwarded-method-reexported",
     breaks: "a crate-private namespace's method that's another module's function is re-exported by its name, handing JS the throwing form of a function only the crate's calls reach, where the method gives a `Result` (#2280)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "    let exported = |method: DefId| super::analysis::js_facing(tcx, foreign, method);\n",
     replace: "    let exported = |_: DefId| true;\n",
     tests: ["test/throwing-calls.test.ts", "-t", "crate-private namespace's method"],
@@ -543,7 +543,7 @@ export const mutations: Mutation[] = [
   {
     name: "use-written-at-whole-span",
     breaks: "the `use` item a tree's value re-export is written by is found by its statement's whole span, where each leaf's statement ends at its own leaf, so `pub use parts::{Size as Measure, width};`'s `width` declaration loses its doc comment (#1880)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "        .find(|&(_, (at, _))| at.lo() == statement.lo())\n",
     replace: "        .find(|&(_, (at, _))| at == statement)\n",
     tests: ["test/reexport-docs.test.ts", "-t", "a type and a value"],
@@ -551,7 +551,7 @@ export const mutations: Mutation[] = [
   {
     name: "trait-reexport-untyped",
     breaks: "a `pub use` of a trait re-exports none of the types its declarations declare, a type map's aliases or its dictionaries' interface, so the root's .d.ts lacks `Vocabulary`, `Key` and `ValueOf` (#2095)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "    let Some(Res::Def(DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias | DefKind::Trait, named)) =\n",
     replace: "    let Some(Res::Def(DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias, named)) =\n",
     tests: ["test/declarations-type-maps.test.ts", "-t", "re-exports its map, keys and lookup"],
@@ -559,7 +559,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-map-aliases-renamed",
     breaks: "a `pub use .. as Sort` of a type map's trait re-exports each of its aliases by the trait's new name, `Vocabulary as Sort`, where `as` renames the trait alone (#2095)",
-    file: "src/lower/reexports.rs",
+    file: "crates/rust-js-lower/src/reexports.rs",
     find: "                .chain(aliases.into_iter().map(|alias| (alias.clone(), alias)));\n",
     replace: "                .chain(aliases.into_iter().map(|alias| (alias.clone(), local(&alias))));\n",
     tests: ["test/declarations-type-maps.test.ts", "-t", "re-exports its map, keys and lookup"],

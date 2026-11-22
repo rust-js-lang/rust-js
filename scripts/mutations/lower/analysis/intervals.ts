@@ -1,4 +1,4 @@
-// Mutations of src/lower/analysis/intervals.rs, the MIR intervals run in shadow (ADR 1137, #1672).
+// Mutations of crates/rust-js-lower/src/analysis/intervals.rs, the MIR intervals run in shadow (ADR 1137, #1672).
 import type { Mutation } from "../../../mutations";
 
 const tests = ["test/intervals-shadow.test.ts"];
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-copies-unfollowed",
     breaks: "a comparison of a copy, `_7 = copy _3; Lt(move _7, 4)`, narrows the copy alone, so the loop's counter isn't known below its bound",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "            state.copies.insert(local, of);\n",
     replace: "            let _ = of;\n",
     tests,
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-relation-unrecorded",
     breaks: "a comparison's `x < y` isn't kept, so `s[i]` under `i < s.len()` isn't known in bounds (ADR 1137, M2b)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "            state.related(x, y, strict);\n",
     replace: "            let _ = (x, y, strict);\n",
     tests,
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-empty-unknown",
     breaks: "a slice's `!is_empty()` says nothing of its length, so `s[0]` under it isn't known in bounds",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                        *least = (*least).max(1);\n",
     replace: "",
     tests,
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-imaginary-edges",
     breaks: "a match candidate's imaginary edge is followed, so an arm of `match list.len() { 1 => list[0] }` is joined with the `0` arm's state",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                vec![(*real_target, state.clone())]\n",
     replace: "                terminator.successors().map(|t| (t, state.clone())).collect()\n",
     tests,
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-given-unused",
     breaks: "what a function only calls reach is given at them isn't its parameters' interval, so `n + 100` of `plus(5)` isn't known in range (M2b-2)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                intervals.set(param, interval);\n",
     replace: "                let _ = interval;\n",
     tests,
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-lengths-unbounded",
     breaks: "a slice's length may be `usize::MAX`, so two lengths summed may wrap, `a.len() + b.len()`",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                hi: most_bytes / size,\n",
     replace: "                hi: range.hi,\n",
     tests,
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-unequal-unnarrowed",
     breaks: "`steps != 0` doesn't narrow `steps` past its least, so `steps - 1` may wrap",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                    true if x.lo == y.lo => Interval { lo: x.lo + 1, hi: x.hi },\n",
     replace: "                    true if x.lo == y.lo => x,\n",
     tests,
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-range-written-kept",
     breaks: "a range written a field at a time, `r.end = 3`, keeps the end it was made with, so its loop's `v[i]` past the slice isn't checked",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "        state.ranges.extend(\n            ranged\n                .filter(|r| r.held != Held::Range || self.stepped.contains(&local))\n",
     replace: "        state.ranges.extend(\n            ranged\n                .filter(|r| r.held != Held::Range || true)\n",
     tests: ["test/intervals-shadow.test.ts"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-relations-bound-nothing",
     breaks: "what a value is below doesn't bound its interval, so `v[i >> 1]`, below what `i` is below, keeps its check",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                            Some(most) if known.lo <= most => Interval {\n",
     replace: "                            Some(most) if false && known.lo <= most => Interval {\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "MIR decides a bounds check"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-sums-unshared",
     breaks: "`i + 1` computed again isn't the sum known before, so `items[i + 1]` under `i + 1 < len` keeps its check",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "        if let Some(of) = copy_of.or(again).filter(|&of| of != local) {\n",
     replace: "        if let Some(of) = copy_of.filter(|&of| of != local) {\n",
     tests: ["test/lowering-string-lengths.test.ts","-t","a counter below a JS string's length doesn't wrap"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-casts-uncopied",
     breaks: "a cast that keeps its value isn't a copy, so `sample[s as usize]` of `1 <= s < len` keeps its check",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                if kept.is_some()\n",
     replace: "                if kept.is_some() && false\n",
     tests: ["test/lowering-integer-ranges.test.ts","-t","a signed index tested not negative"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-unequal-unrelated",
     breaks: "`s != len` of `s <= len` isn't `s < len`, so a signed counter's index past the test keeps its check",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "        if op == BinOp::Ne\n",
     replace: "        if op == BinOp::Ne && false\n",
     tests: ["test/lowering-integer-ranges.test.ts","-t","a signed index tested not negative"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-narrowed-length-least-unraised",
     breaks: "`length == 1` of a held length doesn't raise its slice's least, so `keys[0]` keeps its check",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                    *least = (*least).max(narrowed.lo);\n",
     replace: "                    let _ = narrowed;\n",
     tests: ["test/corpus.test.ts", "-t", "^byte_constants_large.rs$"],
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-raw-reborrow-unknown",
     breaks: "`&raw const (fake) (*v)` of a bounds check isn't the slice `v`, so a `&mut [T]`'s `v[i]` under `i < v.len()` keeps its check",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "            Rvalue::Ref(_, _, of) | Rvalue::RawPtr(_, of)\n",
     replace: "            Rvalue::Ref(_, _, of)\n",
     tests: ["test/intervals-shadow.test.ts"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-slice-reborrow-lends",
     breaks: "a `&mut [T]` reborrowed, `v.swap(0, i)`'s, is taken to be lent, so its length is never known",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "        .filter(|place| !(matches!(place.projection.first(), Some(mir::PlaceElem::Deref)) && fixed_length(place.local)))\n",
     replace: "        .filter(|place| !(matches!(place.projection.first(), Some(mir::PlaceElem::Deref)) && false && fixed_length(place.local)))\n",
     tests: ["test/intervals-shadow.test.ts"],
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-unnarrowed",
     breaks: "no narrowing pass follows the widened fixed point, so `i <= 5` of `while i < 5 { i += 1 }` is lost at its head and `a[i]` past it keeps its check",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "const NARROWING_PASSES: u32 = 2;\n",
     replace: "const NARROWING_PASSES: u32 = 0;\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "an index below a generic constant"],
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-sum-again-unknown",
     breaks: "a sum computed again, `i += 1` past `i + 1 < n`, takes its own interval, not the one the test narrowed, so a `u8` counter's `+= 1` keeps its wrap",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "        let interval = again.and_then(|t| state.intervals[t]).or(interval);\n",
     replace: "        let interval = interval;\n",
     tests: ["test/lowering-string-lengths.test.ts","-t","a counter below a JS string's length doesn't wrap"],
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-below-sum-of-one-unknown",
     breaks: "a range's value below `line + 1` isn't taken to be at most `line`, so `line - k + 1` of `for k in 1..line + 1` keeps its wrap",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                        below_as.push((Term::Int(of), false));\n",
     replace: "                        let _ = of;\n",
     tests: ["test/lowering-integer-ranges.test.ts","-t","an integer below another's value doesn't wrap"],
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-lent-unforgotten",
     breaks: "an integer local lent `&mut`, out of the body-wide lent, isn't forgotten where it's lent, so `k - 2` after `f(&mut k)` is proved in range though `f` may have made `k` anything",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "            && !self.called_on.values().flatten().any(|&lent| lent == of)\n        {\n            state.forget(of);\n",
     replace: "            && !self.called_on.values().flatten().any(|&lent| lent == of)\n        {\n            let _ = of;\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "MIR decides"],
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-lent-in-the-whole-body",
     breaks: "an integer local lent `&mut` anywhere is unknown in the whole body, so `k - 2` before a later `f(&mut k)` keeps its wrap",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "    place.projection.is_empty() && body.local_decls[place.local].ty.is_integral() && !pointed\n",
     replace: "    place.projection.is_empty() && body.local_decls[place.local].ty.is_integral() && !pointed && false\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "MIR decides"],
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-compared-unrelated",
     breaks: "two locals compared don't record the relation their intervals show, so a loop's invariant `n < limit` its first turn would seed is never kept, and `n * 10` keeps its wrap",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                if let Some(strict) = state.below_by_intervals(x, Term::Int(y)) {\n",
     replace: "                if let Some(strict) = state.below_by_intervals(x, Term::Int(y)).filter(|_| false) {\n",
     tests: ["test/intervals-shadow.test.ts","-t","MIR decides"],
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-widen-past-thresholds",
     breaks: "a widened bound goes to its type's, past the constants the body compares it with, so a counter a `continue` brings back to its loop's head as it was, `count > 10`'s, keeps its wrap",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                now.hi = (thresholds.iter().copied())\n                    .find(|&t| now.hi <= t && t <= range.hi)\n                    .unwrap_or(range.hi);\n",
     replace: "                now.hi = range.hi;\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "a counter a loop breaks out of at a bound"],
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-widen-past-lengths",
     breaks: "a widened index goes to its type's, past the most its collections' lengths are, so an outer loop's `r` of `rows.get(r)` across an inner loop keeps its wrap, left to the bridge (#1742)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                .flat_map(|most| [most.hi - 1, most.hi]),\n",
     replace: "                .flat_map(|_: Interval| Vec::<i128>::new()),\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "an outer loop's index stays below"],
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-generic-constant-unknown",
     breaks: "a generic constant, `N` of `while i < N`, is no value a comparison narrows by, so `i += 1` below it keeps its wrap, left to the bridge (#1742)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                None => self.range(c.ty()).map(|range| Value::Range(range.lo, range.hi)),\n",
     replace: "                None => None,\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "an index below a generic constant"],
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-generic-constant-its-least",
     breaks: "a generic constant is taken as its type's least, so past `i < N`, `i - 1` of `i >= N` is JS's own and gives `-1` where `i` is 0",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "            Value::Range(lo, hi) => Some(Interval { lo, hi }),\n",
     replace: "            Value::Range(_, hi) => Some(Interval { lo: hi, hi }),\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "an index below a generic constant"],
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-capture-unread",
     breaks: "a closure's read of a capture is its type's range, so `move || at * 2` of `at = 10` keeps its wrap",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                intervals.set(local, self.from_callers.captures.get(field).copied().flatten());\n",
     replace: "                let _ = (field, local);\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "what it was made with"],
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
   {
     name: "guard-drop-keeps-guard",
     breaks: "a held guard's drop leaves its cell guarded, so a call past it, which may clear the cell through another `Rc`, forgets nothing, and `queue.borrow()[i]` is taken in bounds, a proved-call-bounds line (#1815)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                after.guarded.shift_remove(&place.local);\n",
     replace: "",
     tests: ["test/intervals-shadow.test.ts", "-t", "guard keeps"],
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
   {
     name: "guarded-cells-forgotten-at-calls",
     breaks: "a call forgets the length of a cell a held guard guards, so `items.remove(i)` past `f(items[i])` keeps its check, a call-bounds line (#1815)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                if !self.cells.is_empty() && self.may_write_cells(func) && !self.guard_call(func, args, destination) {\n                    (self.cells.iter())\n                        .filter(|&&cell| !state.is_guarded(cell))\n",
     replace: "                if !self.cells.is_empty() && self.may_write_cells(func) && !self.guard_call(func, args, destination) {\n                    (self.cells.iter())\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "guard keeps"],
@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
   {
     name: "guard-calls-write-cells",
     breaks: "a held guard's `borrow_mut()` and `deref_mut` forget each cell's length, so `queue.borrow_mut()[i]` under `i < queue.borrow().len()` keeps its check, a call-bounds line (#1815)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                if !self.cells.is_empty() && self.may_write_cells(func) && !self.guard_call(func, args, destination) {\n",
     replace: "                if !self.cells.is_empty() && self.may_write_cells(func) {\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "guard keeps"],
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
   {
     name: "kept-row-lends-lent",
     breaks: "a row's `&mut` of a table whose rows nothing resizes is lent for the whole body, so the written `board[r][c] = ..` keeps its check, a call-bounds line",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "        .filter(|place| !matches!(*body.local_decls[place.local].ty.kind(), ty::Ref(_, row, ty::Mutability::Mut) if kept_rows.contains(&row)))\n",
     replace: "",
     tests: ["test/intervals-shadow.test.ts", "-t", "a table is as long"],
@@ -249,7 +249,7 @@ export const mutations: Mutation[] = [
   {
     name: "bool-cast-unbounded-low",
     breaks: "`apple as usize` is taken as 0 only, so `one[apple as usize]` of an array of one is unchecked and reads `undefined` where Rust panics (#1863)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                Some(Interval { lo: 0, hi: 1 }).filter(fits)\n",
     replace: "                Some(Interval { lo: 0, hi: 0 }).filter(fits)\n",
     tests: ["test/corpus.test.ts", "-t", "^bool_indexed_arrays\\.rs$"],
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-write-through-a-reference-unseen",
     breaks: "a write through a `&mut`, `*v = vec![9]`, forgets nothing of the length it reaches, so `(v.len() - 2) as u32` under `v.len() > 1` is JS's own subtraction and gives -1 where Rust wraps (#1877)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "        if let Some(deref) = place.projection.iter().position(|elem| elem == mir::PlaceElem::Deref)\n",
     replace: "        if let Some(deref) = place.projection.iter().position(|elem| elem == mir::PlaceElem::Deref && false)\n",
     tests: ["test/bounds-matrix.test.ts", "-t", "vec_mut, tested wrap"],
@@ -265,7 +265,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-whole-write-taken-for-an-item",
     breaks: "a write of the whole through a reference, `*v = vec![9]`, is taken as an item's and an item's as the whole, keeping the length, so `(v.len() - 2) as u32` under `v.len() > 1` gives -1 where Rust wraps (#1877)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "            && !place.projection[deref..].iter().any(|elem| {\n",
     replace: "            && place.projection[deref..].iter().any(|elem| {\n",
     tests: ["test/bounds-matrix.test.ts", "-t", "vec_mut, tested wrap"],
@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     name: "position-index-not-below",
     breaks:
       "`if let Some(i) = v.iter().position(..) { v.remove(i) }` guards its remove with `$removeOutOfBounds`, where `position`'s index is below the length (#1945)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "            state.below.insert((local, Term::Len(slice), true));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^position_index_removed_unchecked.rs$"],
@@ -284,7 +284,7 @@ export const mutations: Mutation[] = [
     name: "slice-iterator-not-lent",
     breaks:
       "a slice iterator lent `&mut` to its `position()` is no slice's, so the remove of its index is guarded (#1945)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "            state.iterates.insert(local, slice);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^position_index_removed_unchecked.rs$"],
@@ -293,7 +293,7 @@ export const mutations: Mutation[] = [
   {
     name: "escaped-kept-past-a-call",
     breaks: "an escaped `Vec`'s length is kept past a call that may write it through a raw pointer kept of it, so `v[k]` under `k < v.len()` past `shorten_kept()` reads `undefined` where Rust panics (#1966)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                if self.may_write_escaped(func, args) {\n                    after.forget_escaped();\n                }\n",
     replace: "",
     tests: ["test/bounds-matrix.test.ts", "-t", "vec_kept"],
@@ -301,7 +301,7 @@ export const mutations: Mutation[] = [
   {
     name: "mut-through-a-raw-pointer-writes-none",
     breaks: "a `&mut` made through a raw pointer, `(*STASH).truncate(0)`'s `&mut (*p)`, is taken to write no escaped `Vec`, though std's `truncate` writes through it, so `(t.len() - 3) as u32` prints -3 where Rust wraps (#1966)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "            && let Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) | Rvalue::RawPtr(_, of) = &assign.1\n            && self.written_through_a_pointer(of)\n",
     replace: "            && let Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) | Rvalue::RawPtr(_, of) = &assign.1\n            && false && self.written_through_a_pointer(of)\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_lent_to_code_that_keeps_a_pointer.rs$"],
@@ -309,7 +309,7 @@ export const mutations: Mutation[] = [
   {
     name: "equal-length-unrelated",
     breaks: "a held length tested equal to a length again isn't known at most it, so `properties[prev_length - 1]` keeps its check (ADR 1168, #1948)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "        if op == BinOp::Eq\n            && let (Value::Local(a), Value::Local(b)) = (c.a, c.b)\n",
     replace: "        if op == BinOp::Eq\n            && false\n            && let (Value::Local(a), Value::Local(b)) = (c.a, c.b)\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "a length held in a variable"],
@@ -317,7 +317,7 @@ export const mutations: Mutation[] = [
   {
     name: "equal-length-below",
     breaks: "a local tested equal to a length is taken below it, so `v[n]` under `n == v.len()` reads past the end, `undefined` where Rust panics (ADR 1168, #1948)",
-    file: "src/lower/analysis/intervals.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals.rs",
     find: "                if let Some(y) = term(Value::Local(y), state) {\n                    state.related(x, y, false);\n",
     replace: "                if let Some(y) = term(Value::Local(y), state) {\n                    state.related(x, y, true);\n",
     tests: ["test/corpus.test.ts", "-t", "^length_shifted_past_a_push.rs$"],

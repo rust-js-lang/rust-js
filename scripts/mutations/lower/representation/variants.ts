@@ -1,11 +1,11 @@
-// Mutations of src/lower/representation/variants.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/representation/variants.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "held-tag-never",
     breaks: "an enum JS gives is tested by its tag read anew for each arm, so a getter answering it anew picks another arm than Rust's one read of its discriminant (#2208)",
-    file: "src/lower/representation/variants.rs",
+    file: "crates/rust-js-lower/src/representation/variants.rs",
     find: "        told_by_tag && self.fields_read_once(ty)\n",
     replace: "        false && told_by_tag && self.fields_read_once(ty)\n",
     tests: ["test/getter-reads.test.ts", "-t", "getter_enum_tag"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "numbered-variant-tested-as-number",
     breaks:
       "a test of a numbered enum's variant is of its number, `status === 0`, and a `switch`'s `case 0:`, where it's its `const`, `Pending`",
-    file: "src/lower/representation/variants.rs",
+    file: "crates/rust-js-lower/src/representation/variants.rs",
     find: "            true => Expr::bin(Op::Eq, subject, self.unit_variant(adt.did(), def)),\n",
     replace:
       "            true => Expr::bin(Op::Eq, subject, bindings::variant_tag(self.tcx, def)),\n",
@@ -27,7 +27,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-untagged-variant-tagged",
     breaks: "an untagged enum's variant is tested by a tag it has none of",
-    file: "src/lower/representation/variants.rs",
+    file: "crates/rust-js-lower/src/representation/variants.rs",
     find: "        if bindings::is_untagged(self.tcx, adt.did()) {\n            return self.untagged_variant_test(ty, &[def], &[], &subject, present);\n",
     replace:
       "        if false && bindings::is_untagged(self.tcx, adt.did()) {\n            return self.untagged_variant_test(ty, &[def], &[], &subject, present);\n",
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
     name: "mir-otherwise-tag-of-its-own",
     breaks:
       "a discriminated union's `otherwise` is tested by a tag of its own, which no object has",
-    file: "src/lower/representation/variants.rs",
+    file: "crates/rust-js-lower/src/representation/variants.rs",
     find: "            let key = bindings::tag_key(self.tcx, adt.did());\n            let tests = (adt.variants().iter())\n                .filter(|other| other.def_id != def.def_id)\n",
     replace:
       "            let key = bindings::tag_key(self.tcx, adt.did());\n            let tests = (adt.variants().iter())\n                .filter(|other| other.def_id == def.def_id)\n",
@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
     name: "write-result-variant-by-tag",
     breaks:
       "a `match` of an `io::Result<()>` reads its `TAG`, which `undefined` hasn't",
-    file: "src/lower/representation/variants.rs",
+    file: "crates/rust-js-lower/src/representation/variants.rs",
     find: "        if self.is_write_result(ty) {\n            let op = if variant.as_u32() == 0 { Op::Eq } else { Op::Ne };\n",
     replace:
       "        if false {\n            let op = if variant.as_u32() == 0 { Op::Eq } else { Op::Ne };\n",
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
     name: "unit-literal-tag-tested",
     breaks:
       'a unit variant written in place is tested for a tag, `"RootDir".TAG === "Normal"`',
-    file: "src/lower/representation/variants.rs",
+    file: "crates/rust-js-lower/src/representation/variants.rs",
     find: "            false if matches!(subject.kind, js::ExprKind::Str(_)) => Expr::bool(false),\n",
     replace: "",
     snapshots: true,
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     name: "variant-alternative-unplaced",
     breaks:
       "an enum's or-pattern's alternative isn't where it's written, so a comment before it is before the `if` (ADR 0444, amended)",
-    file: "src/lower/representation/variants.rs",
+    file: "crates/rust-js-lower/src/representation/variants.rs",
     find: "                    Some(&span) if test.span.is_none() => Expr { span, ..test },\n",
     replace: "                    Some(_) if false => test,\n",
     tests: [
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-otherwise-of-all",
     breaks: "a test of a keyed enum's variants, one without fields among them, leaves out the others' keys and its own alike: `matches!(k, Effect | Scope)` holds of neither (#504)",
-    file: "src/lower/representation/variants.rs",
+    file: "crates/rust-js-lower/src/representation/variants.rs",
     find: "                .filter(|v| !variants.contains(v))\n",
     replace: "                .filter(|_| true)\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_enum.rs$"],
@@ -92,7 +92,7 @@ export const mutations: Mutation[] = [
     name: "tagged-eq-tag",
     breaks:
       "`==` of a discriminated union's fields reads `TAG`, which it hasn't",
-    file: "src/lower/representation/variants.rs",
+    file: "crates/rust-js-lower/src/representation/variants.rs",
     find: "                tag_of(subject, &bindings::tag_key(self.tcx, adt.did())),\n",
     replace: '                tag_of(subject, "TAG"),\n',
     tests: ["test/lowering-structs-enums.test.ts", "-t", "discriminated union"],

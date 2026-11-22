@@ -1,8 +1,8 @@
-// Mutations of src/lower/analysis/accessors.rs, what reads a `js::Accessor`
+// Mutations of crates/rust-js-lower/src/analysis/accessors.rs, what reads a `js::Accessor`
 // (ADR 1164).
 import type { Mutation } from "../../../mutations";
 
-const file = "src/lower/analysis/accessors.rs";
+const file = "crates/rust-js-lower/src/analysis/accessors.rs";
 const tests = ["test/js-accessor.test.ts", "-t", "an accessor read but by its get"];
 
 export const mutations: Mutation[] = [

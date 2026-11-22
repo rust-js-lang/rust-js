@@ -89,8 +89,8 @@ export function compilerRustFiles(at = checkout): string[] {
   return compilerCrates(at).flatMap((crate) => (existsSync(join(at, crate.src)) ? walk(crate.src) : []));
 }
 
-/** `file`'s module path in its crate, `src/lower/drops/types.rs`'s
- * `["lower", "drops", "types"]`; a crate's root's `[]`. */
+/** `file`'s module path in its crate, `crates/rust-js-lower/src/drops/types.rs`'s
+ * `["drops", "types"]`; a crate's root's `[]`. */
 export function modulePath(file: string, at = checkout): string[] {
   const crate = crateOf(file, at);
   if (!crate) throw new Error(`${file} isn't the compiler's source`);

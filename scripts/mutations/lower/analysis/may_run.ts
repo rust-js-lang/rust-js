@@ -1,4 +1,4 @@
-// Mutations of src/lower/analysis/may_run.rs (ADR 0093): what a body may run.
+// Mutations of crates/rust-js-lower/src/analysis/may_run.rs (ADR 0093): what a body may run.
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "at-load-own-const-reached",
     breaks:
       "a `const` an initializer reads itself, which it reads as its value, makes it run another module of a cycle, so `load_cycle_values`' `pub` `COUNT` of `Cell::new(LIMIT)` is refused",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "            if id == start\n                && !made_of.contains_key(&read)\n",
     replace:
       "            if false\n                && !made_of.contains_key(&read)\n",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "at-load-key-read-as-const",
     breaks:
       "a thread-local's key an initializer reads, a `const` of std's macro, is taken for a `const` read as its value, so what that thread-local's initializer runs isn't followed: `pub N` of `M.with(..)`, whose `M` reads `N`, isn't refused",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "                && !made_of.contains_key(&read)\n",
     replace: "\n",
     tests: [
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
     name: "at-load-binding-runs-nothing-followed",
     breaks:
       "a binding that runs nothing, React's `memo`, is taken to run what it's given, a `dyn Fn` rust-js can't follow, so `memo(Badge, Some(..))` is made where it's first used, which JSX can't name",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "            if runs_nothing(callee, callee_args) {\n                return true;\n            }\n",
     replace:
       "            if false {\n                return true;\n            }\n",
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     name: "exported-local-reads-unfollowed",
     breaks:
       "what a thread-local a `pub` one reads runs as it's made there isn't asked, so one reading itself through it compiles, and throws reading itself before it's made (ADR 0037, amended)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "            if let Some(&made) = made_of.get(&read) {\n",
     replace:
       "            if let Some(&made) = made_of.get(&read).filter(|_| false) {\n",
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     name: "exported-local-callee-unfollowed",
     breaks:
       "what a `pub` thread-local's initializer calls of the crate's isn't asked, so one that runs a module in an import cycle with its own compiles, and reads what isn't made yet (ADR 0037, amended)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "                                        called.push((f, instance.args, gives));\n",
     replace: "                                        drop::<Given<'tcx>>(gives);\n",
     tests: [
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "exported-local-std-given-unfollowed",
     breaks:
       "a closure a `pub` thread-local's initializer gives std isn't asked, so one that runs a module in an import cycle with its own compiles (ADR 0037, amended)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "                            .map(|(f, f_args)| (f, f_args.unwrap_or_else(|| identity(f)))),\n",
     replace:
       "                            .map(|(f, f_args)| (f, f_args.unwrap_or_else(|| identity(f))))\n                            .filter(|_| false),\n",
@@ -84,7 +84,7 @@ export const mutations: Mutation[] = [
     name: "exported-local-dyn-fn-followed",
     breaks:
       "a `dyn Fn`'s call in a `pub` thread-local's initializer is taken to run none of the crate's code, which may be a module's not loaded yet (ADR 0037, amended)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "            if tcx.fn_trait_kind_from_def_id(trait_id).is_some() {\n                return false;\n            }\n            for &imp in impls.of_trait",
     replace:
       "            if tcx.fn_trait_kind_from_def_id(trait_id).is_some() {\n                return true;\n            }\n            for &imp in impls.of_trait",
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     name: "type-argument-dyn-followed",
     breaks:
       "a `dyn Fn` a binding's call names only as a type argument, `js::class::<WeakMap<dyn Fn() -> .., String>>()`, is taken for one it may call, so React's componentFrameCache is `$local(() => ..)` and each read a call (rd281)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "                .filter(|part| matches!(part.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))\n",
     replace: "",
     tests: [
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     name: "fn-item-arguments-walked",
     breaks:
       "a function item's type arguments, `js::weak_map::new::<dyn Fn() -> .., String>` given to `call_static`, are taken for values it holds, so a `dyn Fn` among them makes the thread-local `$local` (rd281)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "                walker.skip_current_subtree();\n",
     replace: "",
     tests: [
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
     name: "dyn-given-followed-to-nothing",
     breaks:
       "a `dyn Fn` parameter is taken to run nothing its call gave it, so a `pub` thread-local whose `call(&|| N.with(..))` reads itself isn't refused (rd542)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "                [] => given.get(local.as_usize() - 1).cloned().flatten(),\n",
     replace: "                [] => Some(Vec::new()),\n",
     tests: ["test/diagnostics.test.ts", "-t", "whose dyn Fn reads it"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
     name: "dyn-given-unfollowed",
     breaks:
       "a `dyn Fn`'s call is what rust-js can't follow, whatever its call gave it, so React's noop renderer's `pub` `REACT_NOOP = create_react_noop(&react_fiber_reconciler, true)` is refused (rd542)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "                [] => given.get(local.as_usize() - 1).cloned().flatten(),\n",
     replace: "                [] => None,\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "dyn Fn is what its call gave it"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     name: "dyn-given-lent-mutably-followed",
     breaks:
       "a `dyn Fn` variable lent mutably, which a callee may set to anything, is followed to what it was first given (rd542)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "                && !lent.projection.iter().any(|step| matches!(step, PlaceElem::Deref))\n            {\n                return None;\n",
     replace: "                && !lent.projection.iter().any(|step| matches!(step, PlaceElem::Deref))\n            {\n",
     tests: ["test/diagnostics.test.ts", "-t", "dyn Fn"],
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
     name: "closure-clone-runs-it",
     breaks:
       "a clone of a closure is taken to run it, so React's noop renderer's `export const { .. } = createReactNoop(..)`, whose createReactNoop clones a closure that calls what rust-js can't follow, is refused (rd542)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "                                        cloned(tcx, of, impls, &mut work);\n                                        true\n",
     replace: "                                        given(&[of], &mut work)\n",
     tests: ["test/lowering-constants.test.ts", "-t", "clones a closure"],
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     name: "closure-clone-runs-nothing",
     breaks:
       "a clone of a closure is taken to run nothing, though the clone of a captured value of the crate's runs its `Clone`, which may read the thread-local before it's made (rd542)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "            if trait_id == clone {\n",
     replace: "            if trait_id == clone && false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "closure's clone reads it"],
@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
     name: "may-run-field-destructor",
     breaks:
       "a destructor of a field of the crate's struct a drop drops isn't followed, so a request that drops what holds a closer calling a `dyn Fn` is quiet (rd621)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "                        if adt.did().is_local() {\n                            parts.extend(",
     replace: "                        if false {\n                            parts.extend(",
     tests: ["test/corpus.test.ts", "-t", "^owner_handle_quiet.rs$"],
@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
   {
     name: "may-run-instanced-library-destructor",
     breaks: "a library's destructor the program compiles itself (ADR 0914) isn't followed, so a library's writer whose items print as they're dropped prints before the line formatted so far (#1608)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "destructor.filter(|d| d.is_local() || bodies.contains_key(d))",
     replace: "destructor.filter(|d| d.is_local())",
     tests: ["test/crates.test.ts", "-t", "library_writer_prints_in_a_programs_line"],
@@ -187,15 +187,15 @@ export const mutations: Mutation[] = [
   {
     name: "may-run-const-param-call-resolved",
     breaks: "a trait's method's call whose arguments still hold a const parameter, `Guard<'_, T, CAP>`'s `deref_mut`, is resolved in a monomorphized env, where rustc crashes, `cannot find CAP in param-env`, which a library asks of each of its writers (#1608)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "                                true => Ok(None),\n",
-    replace: "                                true => crate::lower::items::resolve_instance_in(tcx, typing_env, callee, callee_args),\n",
+    replace: "                                true => crate::items::resolve_instance_in(tcx, typing_env, callee, callee_args),\n",
     tests: ["test/crates.test.ts", "-t", "library_writer_reaching_a_const_generic_deref"],
   },
   {
     name: "may-run-const-param-inherent-call-unresolved",
     breaks: "an inherent method's call whose arguments still hold a const parameter, `Ring::capacity(ring, CAP)`, which resolves without selecting an impl, isn't followed, so a writer that calls it is taken to run what can't be followed and a `println!` of it is written through stdout's line for nothing (#1608)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "                            let unselectable = tcx.trait_of_assoc(callee).is_some()\n",
     replace: "                            let unselectable = true\n",
     tests: ["test/corpus.test.ts", "-t", "^const_generics.rs$"],
@@ -204,8 +204,8 @@ export const mutations: Mutation[] = [
   {
     name: "may-run-drop-asked-in-foreign-terms",
     breaks: "what dropping a type in a caller's terms runs, `<Buf<SIZE> as Measured>::Metadata`'s, is asked in the walked body's env, which hasn't `SIZE`, where rustc crashes in a program that may catch a panic (#1608, #1618)",
-    file: "src/lower/analysis/may_run.rs",
-    find: "                && crate::lower::generic_facts::params_owned_by(tcx, id, ty)\n",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
+    find: "                && crate::generic_facts::params_owned_by(tcx, id, ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^const_generic_impl_reached_by_a_trait_default_where_caught.rs$"],
   },
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
     name: "std-call-drops-every-argument",
     breaks:
       "a std call is taken to drop a value of each of its type arguments, `ptr::hash`'s `H` of a `state: &mut H` it can't drop, so every guard held while a `HashSet` of the crate's `Hash` is asked is counted, React's 6 port files (#1661)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "    (owned.into_iter().chain(lent))\n        .filter_map(|index| args.get(index as usize).and_then(|arg| arg.as_type()))\n        .collect()\n",
     replace: "    _ = (owned, lent);\n    args.types().collect()\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_identity_set.rs$"],
@@ -223,7 +223,7 @@ export const mutations: Mutation[] = [
     name: "std-call-drops-nothing-owned",
     breaks:
       "a std call is taken to drop nothing it holds through a `&mut` or takes by value, so `g.borrow_mut().clear()` of a `Vec<Guard>` whose destructor borrows the cell drops nothing and its checks are removed (#1661)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "                owned.insert(index);\n",
     replace: "                _ = index;\n",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_by_a_clear_through_a_reference.rs$"],
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
     name: "std-call-drops-nothing-made-by-bounds",
     breaks:
       "what a std call makes of what it holds by their bounds is taken as never dropped, `DebugSet::entries`' `D` of its `I: IntoIterator<Item = D>`, so an item that prints as it drops is printed outside its line (#1661)",
-    file: "src/lower/analysis/may_run.rs",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "                owned.extend(made.into_iter().flat_map(param_indices));\n",
     replace: "                _ = made;\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_builder_written_step_by_step.rs$"],
@@ -240,9 +240,9 @@ export const mutations: Mutation[] = [
   {
     name: "calls-back-unread",
     breaks: "a binding that says its JS may call the crate back is taken to run only what it's given, so a thread-local whose initializer calls it is made as its module loads, where its JS calls an export that isn't there yet (#2119)",
-    file: "src/lower/analysis/may_run.rs",
-    find: "            if crate::lower::bindings::calls_back(tcx, callee) {\n",
-    replace: "            if false && crate::lower::bindings::calls_back(tcx, callee) {\n",
+    file: "crates/rust-js-lower/src/analysis/may_run.rs",
+    find: "            if crate::bindings::calls_back(tcx, callee) {\n",
+    replace: "            if false && crate::bindings::calls_back(tcx, callee) {\n",
     tests: ["test/bindings-calls-back.test.ts", "-t", "made at its first use"],
   },
 ];

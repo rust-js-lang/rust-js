@@ -1,11 +1,11 @@
-// Mutations of src/lower/analysis/read_bounds.rs, which bounds of a
+// Mutations of crates/rust-js-lower/src/analysis/read_bounds.rs, which bounds of a
 // generic function a body reads the dictionary of, so one nothing reads is
 // given none (#1915, ADR 1165). A read missed is a dictionary not given
 // where the body reads it, so the case's JS throws; one read where nothing
 // does is a dictionary given that isn't, the case's snapshot.
 import type { Mutation } from "../../../mutations";
 
-const file = "src/lower/analysis/read_bounds.rs";
+const file = "crates/rust-js-lower/src/analysis/read_bounds.rs";
 const tests = ["test/corpus.test.ts", "-t", "^bounds_given_a_dictionary_where_read.rs$"];
 const crate = ["test/crates.test.ts", "-t", "a library's unread bound is given no dictionary by its consumer"];
 
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "read-bound-operator-reads",
     breaks: "a comparison by JS's own operator counts as a read of its bound, which is given a dictionary nothing reads (#1874)",
-    file: "src/lower/analysis/read_bounds.rs",
+    file: "crates/rust-js-lower/src/analysis/read_bounds.rs",
     find: "        if self.compares_by_operator(callee, args) {\n            return;\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^compared_by_operator.rs$"],

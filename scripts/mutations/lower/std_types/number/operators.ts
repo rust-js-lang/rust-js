@@ -1,4 +1,4 @@
-// Mutations of src/lower/std_types/number/operators.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/std_types/number/operators.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "u32-mask-with-bit-31-unwrapped",
     breaks:
       "a `u32`'s `n & 0x8000_0000` is JS's signed `&`, `-2147483648` of `u32::MAX`",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "                .any(|e| e.as_int().is_some_and(|k| (0..1 << 31).contains(&k)));\n",
     replace:
       "                .any(|e| e.as_int().is_some_and(|k| (0..=1 << 31).contains(&k)));\n",
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
   {
     name: "u32-mask-wrapped",
     breaks: "a `u32`'s `n & 1` is `(n & 1) >>> 0`, not `n & 1`",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "        let masked = op == Op::BitAnd\n",
     replace: "        let masked = false && op == Op::BitAnd\n",
     tests: ["test/corpus.test.ts", "-t", "^u32_masks.rs$"],
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     name: "f32-arithmetic-unrounded",
     breaks:
       "an `f32`'s `+` is a double's, which may be no `f32` at all: ten tenths are 1.0000000149011612",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "            return Ok(if num == Num::F32 && op != BinOp::Rem {\n                num.wrap(e)\n",
     replace: "            return Ok(if false {\n                num.wrap(e)\n",
     tests: ["test/corpus.test.ts", "-t", "f32\\.rs"],
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "big-to-f32-through-f64",
     breaks:
       "`n as f32` of a `u64` is rounded to an `f64` first, and then can't be told from a tie",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: 'Expr::call(Expr::helper("$bigToF32"), vec![v]',
     replace: 'target.wrap(Expr::call(Expr::global("Number"), vec![v])',
     tests: ["test/corpus.test.ts", "-t", "f32\\.rs"],
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     name: "signed-remainder-negative-zero",
     breaks:
       "`-2 % 2` of an `i32` is JS's `-0`, which an `f64` of it shows as `-0.0`",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "                if op == BinOp::Rem && safe && num.signed() {",
     replace:
       "                if op == BinOp::Rem && safe && num.signed() && false {",
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     name: "compared-remainder-zero-sign",
     breaks:
       "a signed remainder compared keeps its `| 0`, `((x % 2) | 0) === 0`, where `x % 2 === 0` is the same",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "            let mut compared = Expr::bin(js_op, without_zero_sign(l), without_zero_sign(r));",
     replace: "            let mut compared = Expr::bin(js_op, l, r);",
     tests: ["test/compiler.test.ts", "-t", "iterators are array methods"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
     name: "integer-comparison-unknown",
     breaks:
       "a comparison of integers isn't known never to be of a NaN, so a `loop` ending `if n > limit { break; }` is `do { .. } while (!(n > limit))`, not `while (n <= limit)` (ADR 0978, amended)",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "            if ty.is_integral() || ty.is_char() || ty.is_bool() {\n                compared.facts",
     replace: "            if false {\n                compared.facts",
     tests: ["test/corpus.test.ts", "-t", "^do_while_tested_last.rs$"],
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
     name: "big-shift-masked-to-63",
     breaks:
       "a 128-bit shift's amount is masked to 63, `1u128 << 100` being `1 << 36`",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "    let mask = i128::from(num.bits()) - 1;",
     replace: "    let mask = 63;",
     tests: ["test/corpus.test.ts", "-t", "integers_128"],
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
   {
     name: "char-operator-by-units",
     breaks: "`c > '！'` of a `char` past U+FFFF is false, by UTF-16 units",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "            && ty.is_char()\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "code_point_order"],
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     name: "big-div-unknown-unchecked",
     breaks:
       "an `i64` division by what may be zero is `7n / zero`, which throws JS's `RangeError`, not Rust's panic",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "                    .or_else(|| r.as_bigint())\n                    .is_some_and(|d| d != 0 && !(num.signed() && d == -1));",
     replace:
       "                    .or_else(|| r.as_bigint())\n                    .is_none_or(|d| d != 0 && !(num.signed() && d == -1));",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     name: "number-from-bool-as-cast",
     breaks:
       "`f64::from(flag)` goes the way of `as`, which has no `bool` as a float",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "        if from.is_bool() {\n            let num = self.num(to, span)?;",
     replace:
       "        if false && from.is_bool() {\n            let num = self.num(to, span)?;",
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
   {
     name: "non-zero-new-keeps-zero",
     breaks: "`NonZero::new(n)` of `0` is `Some(0)`",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "        Ok(Expr::cond(zero, Expr::js_undefined(), n))\n",
     replace: "        Ok(Expr::cond(zero, n.clone(), n))\n",
     tests: ["test/corpus.test.ts", "-t", "nonzero"],
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     name: "exact-wrapped",
     breaks:
       "an operator the body's ranges show in range keeps its wrap, `(index + 1) * 2 - 1` as `(Math.imul((index + 1) >>> 0, 2) - 1) >>> 0`",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "        let exact = arithmetic && proved;\n",
     replace: "        let exact = arithmetic && false;\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
   {
     name: "mul-by-constant-imul",
     breaks: "`n * 2` of an `i32` is `Math.imul(n, 2)`, not JS's own `*`",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "                if small(known.or_else(|| r.as_int())) || small(l.as_int()) {\n",
     replace: "                if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^multiply_by_a_constant.rs$"],
@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
     name: "mul-exact-factor-too-large",
     breaks:
       "a 32-bit multiply by a constant past 2^21 is JS's own `*`, whose product past 2^53 is rounded",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "const EXACT_FACTOR: u128 = 1 << 21;\n",
     replace: "const EXACT_FACTOR: u128 = 1 << 23;\n",
     tests: ["test/corpus.test.ts", "-t", "^multiply_by_a_constant.rs$"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     name: "mul-constant-on-the-left-unseen",
     breaks:
       "`-7 * n` of an `i32` is `Math.imul`, as only a constant on the right is seen",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "                if small(known.or_else(|| r.as_int())) || small(l.as_int()) {\n",
     replace: "                if small(known.or_else(|| r.as_int())) {\n",
     tests: ["test/corpus.test.ts", "-t", "^multiply_by_a_constant.rs$"],
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
     name: "range-bound-tested",
     breaks:
       "a range pattern's bound its type has anyway is tested, `n >= -2147483648` of `i32::MIN..=-1`",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "        if comparison.is_some() && bounds(ty).is_some_and(|(min, max)| at_bound(op, &l, &r, min, max)) {\n",
     replace:
       "        if false && comparison.is_some() && bounds(ty).is_some_and(|(min, max)| at_bound(op, &l, &r, min, max)) {\n",
@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
     name: "range-bound-drops-effects",
     breaks:
       "a comparison with its type's bound is true even where its other side calls a function, which isn't called",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "    bound && !other.has_effects()\n",
     replace: "    bound\n",
     tests: [
@@ -187,7 +187,7 @@ export const mutations: Mutation[] = [
     name: "char-bound-tested",
     breaks:
       "a `char` range's bound every `char` passes is tested, `c >= \"\\0\"` of `'\\0'..='/'`",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "    if ty.is_char() {\n        return Some((0, char::MAX as i128));\n    }\n",
     replace: "",
     tests: [
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
     name: "i32-shift-left-unwrapped-for-u32-too",
     breaks:
       "a `u32`'s `n << 1` is JS's int32, `0x40000000 << 1` negative (ADR 0895)",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "            BinOp::Shl if num == Num::I32 => ",
     replace: "            BinOp::Shl if num.bits() == 32 => ",
     tests: [
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
     name: "bitwise-operand-of-any-or-unwrapped",
     breaks:
       "an operand `a | 1` of a bitwise operator is taken for a wrap, `a & b` (ADR 0895)",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "        js::ExprKind::Binary(Op::BitOr | Op::UShr, x, zero) if zero.as_int() == Some(0) => *x,\n",
     replace:
       "        js::ExprKind::Binary(Op::BitOr | Op::UShr, x, zero) if zero.as_int().is_some() => *x,\n",
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
   {
     name: "negation-unwrapped",
     breaks: "`-lanes` of `i32::MIN` is 2^31, no `i32` (ADR 0895)",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "                Ok(num.wrap(Expr::unary(UnaryOp::Neg, a)))\n",
     replace: "                Ok(Expr::unary(UnaryOp::Neg, a))\n",
     tests: [
@@ -239,7 +239,7 @@ export const mutations: Mutation[] = [
     name: "remainder-operand-wrapped",
     breaks:
       "a signed remainder given to `+`, `-` or `*` keeps its `| 0`, `(length - ((length % 5) | 0)) | 0`, where the operator's wrap makes its `-0` `0` (ADR 0895, amended)",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "            BinOp::Add | BinOp::Sub | BinOp::Mul => (without_zero_sign(l), without_zero_sign(r)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^remainder_operands.rs$"],
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
   {
     name: "never-nan-chars-unmarked",
     breaks: "a `===` of `char`s or `bool`s isn't known never to compare a NaN, so `any` of one compared stays `some`, not `includes` (rd353, ADR 0966, amended)",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "            if ty.is_integral() || ty.is_char() || ty.is_bool() {\n",
     replace: "            if ty.is_integral() {\n",
     tests: ["test/corpus.test.ts", "-t", "^any_of_one_value_is_includes.rs$"],
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
   {
     name: "never-nan-floats-ordered",
     breaks: "a comparison of floats is taken never to be of a NaN, so `any` of a float compared is `includes`, which finds a NaN `==` doesn't (rd353, ADR 0966, amended)",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "            if ty.is_integral() || ty.is_char() || ty.is_bool() {\n",
     replace: "            if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^any_of_one_value_is_includes.rs$"],
@@ -265,7 +265,7 @@ export const mutations: Mutation[] = [
   {
     name: "wide-constant-cast-through-a-number",
     breaks: "a wide integer constant cast to a narrower type is folded through a JS number, which past 2^53 isn't it: `18446744073709551615_u64 as u32` is `18446744073709552000 >>> 0`, 0, where Rust's is 4294967295 (a wrong answer, #1380)",
-    file: "src/lower/std_types/number/operators.rs",
+    file: "crates/rust-js-lower/src/std_types/number/operators.rs",
     find: "                    (true, false) if v.as_bigint().is_some() => target.wrap(v),\n",
     replace: "                    (true, false) if let Some(n) = v.as_bigint() => target.wrap(Expr::int(n)),\n",
     tests: ["test/corpus.test.ts", "-t", "^wide_literals_cast_narrower.rs$"],

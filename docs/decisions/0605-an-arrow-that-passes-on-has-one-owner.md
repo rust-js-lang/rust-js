@@ -73,7 +73,7 @@ third position rule beside them, and a wrong answer they hid: `xs.map(|x|
 many(&[x]))` of a function of rest arguments was `xs.map(many)`, which
 counts the index and the array.
 
-**`src/lower/passed_on.rs` owns it: `passed_on(f, taker, forwarding)`**,
+**`crates/rust-js-lower/src/passed_on.rs` owns it: `passed_on(f, taker, forwarding)`**,
 each position a `Taker`, its rule there:
 
 | Taker | Where | It may be the function of |

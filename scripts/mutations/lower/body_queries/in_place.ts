@@ -1,4 +1,4 @@
-// Mutations of src/lower/body_queries/in_place.rs (ADR 0093): which of
+// Mutations of crates/rust-js-lower/src/body_queries/in_place.rs (ADR 0093): which of
 // `HELD_COMPILED`'s adapters a body makes in place (ADR 0871).
 import type { Mutation } from "../../../mutations";
 
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
   {
     "name": "rev-never-in-place",
     "breaks": "every `rev()` is std's compiled `Rev`, a chain stepped where it's made no longer `v.toReversed()`",
-    "file": "src/lower/body_queries/in_place.rs",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
     "find": "            if steps_as_js(callee, index, &found, at, (made, maker, made_ty)) {\n",
     "replace": "            if false && steps_as_js(callee, index, &found, at, (made, maker, made_ty)) {\n",
     "snapshots": true,
@@ -19,7 +19,7 @@ export const mutations: Mutation[] = [
   {
     "name": "rev-borrowed-held",
     "breaks": "a `rev()` borrowed for what steps it, `rev().nth(n)`, is taken as held",
-    "file": "src/lower/body_queries/in_place.rs",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
     "find": "                ExprKind::Borrow { arg, .. } => strip(thir, arg),\n                _ => strip(thir, arg),\n            };\n            let ExprKind::Call { fun, .. } = thir[arg].kind else {",
     "replace": "                _ => strip(thir, arg),\n            };\n            let ExprKind::Call { fun, .. } = thir[arg].kind else {",
     "snapshots": true,
@@ -32,9 +32,9 @@ export const mutations: Mutation[] = [
   {
     "name": "rev-own-impl-in-place",
     "breaks": "`rev().next_back()`, `Rev`'s own compiled impl's, is given what the recognizers make of it",
-    "file": "src/lower/body_queries/in_place.rs",
-    "find": "        crate::lower::iterators::bound_as_iterator(tcx, callee, param)\n            && (std ||",
-    "replace": "        (std || crate::lower::iterators::bound_as_iterator(tcx, callee, param))\n            && (std ||",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
+    "find": "        crate::iterators::bound_as_iterator(tcx, callee, param)\n            && (std ||",
+    "replace": "        (std || crate::iterators::bound_as_iterator(tcx, callee, param))\n            && (std ||",
     "tests": [
       "test/corpus.test.ts",
       "-t",
@@ -44,9 +44,9 @@ export const mutations: Mutation[] = [
   {
     "name": "holder-param-steps-js",
     "breaks": "a `map()` given to the crate's `T` bound by nothing, `set_get(&mut it, (5..8).map(f))`'s, is made a JS iterator, which the caller's std struct then reads as its own (#537)",
-    "file": "src/lower/body_queries/in_place.rs",
-    "find": "        crate::lower::iterators::bound_as_iterator(tcx, callee, param)\n            && (std ||",
-    "replace": "        (callee.is_local() || crate::lower::iterators::bound_as_iterator(tcx, callee, param))\n            && (std ||",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
+    "find": "        crate::iterators::bound_as_iterator(tcx, callee, param)\n            && (std ||",
+    "replace": "        (callee.is_local() || crate::iterators::bound_as_iterator(tcx, callee, param))\n            && (std ||",
     "tests": [
       "test/corpus.test.ts",
       "-t",
@@ -56,9 +56,9 @@ export const mutations: Mutation[] = [
   {
     "name": "rev-given-js-held",
     "breaks": "a `rev()` given to the crate's generic function as a JS iterator is std's struct",
-    "file": "src/lower/body_queries/in_place.rs",
-    "find": "            && (std || callee.is_local() && !crate::lower::iterators::given_as_it_is(tcx, callee, param))\n",
-    "replace": "            && (std || false && callee.is_local() && !crate::lower::iterators::given_as_it_is(tcx, callee, param))\n",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
+    "find": "            && (std || callee.is_local() && !crate::iterators::given_as_it_is(tcx, callee, param))\n",
+    "replace": "            && (std || false && callee.is_local() && !crate::iterators::given_as_it_is(tcx, callee, param))\n",
     "snapshots": true,
     "tests": [
       "test/corpus.test.ts",
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     "name": "local-adapter-held",
     "breaks": "an `enumerate()` a variable holds that only `next()` steps is std's struct, not `entries()`",
-    "file": "src/lower/body_queries/in_place.rs",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
     "find": "            if !found.contains(&at)\n                && !hint_seen.contains(&var)\n",
     "replace": "            if false\n                && !hint_seen.contains(&var)\n",
     "snapshots": true,
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
   {
     "name": "local-adapter-lent-held",
     "breaks": "a variable's `enumerate()` lent by `by_ref()` to what steps it from its back, `next_back()`, is taken to be stepped as a JS iterator",
-    "file": "src/lower/body_queries/in_place.rs",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
     "find": "                _ if by_ref => lent.push((e, arg)),\n",
     "replace": "",
     "snapshots": true,
@@ -95,8 +95,8 @@ export const mutations: Mutation[] = [
   {
     "name": "local-adapter-dropped-held",
     "breaks": "a variable's `enumerate()` that's dropped is std's struct",
-    "file": "src/lower/body_queries/in_place.rs",
-    "find": "                _ if by_iterator || crate::lower::recognition::is_mem_drop(tcx, callee) => js_steps.push((arg, e)),\n",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
+    "find": "                _ if by_iterator || crate::recognition::is_mem_drop(tcx, callee) => js_steps.push((arg, e)),\n",
     "replace": "                _ if by_iterator => js_steps.push((arg, e)),\n",
     "snapshots": true,
     "tests": [
@@ -108,7 +108,7 @@ export const mutations: Mutation[] = [
   {
     "name": "adapter-chain-held",
     "breaks": "an adapter given to another made in place, `rev().rev()`'s first, is std's struct, which the other steps from a back it hasn't",
-    "file": "src/lower/body_queries/in_place.rs",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
     "find": "            return joined(in_place, at);\n",
     "replace": "            return false;\n",
     "snapshots": true,
@@ -121,8 +121,8 @@ export const mutations: Mutation[] = [
   {
     "name": "local-adapter-made-of-held",
     "breaks": "a variable's `enumerate()` read only by a `map()` made in place of it is std's struct, not `entries()`",
-    "file": "src/lower/body_queries/in_place.rs",
-    "find": "                _ if crate::lower::recognition::makes_held_compiled(tcx, callee, thir[e].ty) => makers.push((arg, e)),\n",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
+    "find": "                _ if crate::recognition::makes_held_compiled(tcx, callee, thir[e].ty) => makers.push((arg, e)),\n",
     "replace": "",
     "snapshots": true,
     "tests": [
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
   {
     "name": "local-adapter-made-of-held-maker",
     "breaks": "a variable read by a `rev()` that's held is taken to be in place, a JS iterator the held `rev()`'s struct steps",
-    "file": "src/lower/body_queries/in_place.rs",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
     "find": "                && of.iter().all(|&maker| joined(&found, maker))\n",
     "replace": "",
     "snapshots": true,
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
   {
     "name": "flat-map-result-held",
     "breaks": "a `map()` a closure gives `flat_map` is std's struct, `iterator_map(..)`, not `g.map(f)`",
-    "file": "src/lower/body_queries/in_place.rs",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
     "find": "        given.insert(closure.closure_id.to_def_id());\n",
     "replace": "        given.insert(rustc_span::def_id::CRATE_DEF_ID.to_def_id());\n",
     "tests": [
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
   {
     "name": "size-hint-in-place",
     "breaks": "a variable's adapter that `size_hint()` asks of, a `map`'s, a `zip`'s, is the recognizers' JS iterator, sized `(0, None)` (a flatten's is held by `hint_seen` too, #1528)",
-    "file": "src/lower/body_queries/in_place.rs",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
     "find": "            && callee != size_hint;\n",
     "replace": ";\n",
     "tests": [
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
   {
     "name": "cycle-source-in-place",
     "breaks": "a `rev()` a `cycle()` holds is made in place, a JS iterator, which `cycle()` clones as std's struct, so `(1..4u8).rev().cycle()` throws (#308, ADR 0915)",
-    "file": "src/lower/body_queries/in_place.rs",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
     "find": "            let held_to_clone = (callee == cycle || cloned_apart(thir[e].ty)) && !cloned_apart(thir[arg].ty);\n",
     "replace": "            let held_to_clone = (false || cloned_apart(thir[e].ty)) && !cloned_apart(thir[arg].ty);\n",
     "tests": [
@@ -183,7 +183,7 @@ export const mutations: Mutation[] = [
   {
     "name": "cloned-apart-part-in-place",
     "breaks": "a `rev()` a chain cloned apart holds is made in place, a JS iterator, which the chain's clone clones as std's struct, so a cycled zigzag throws (#308, ADR 0915)",
-    "file": "src/lower/body_queries/in_place.rs",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
     "find": "            let held_to_clone = (callee == cycle || cloned_apart(thir[e].ty)) && !cloned_apart(thir[arg].ty);\n",
     "replace": "            let held_to_clone = (callee == cycle || false) && !cloned_apart(thir[arg].ty);\n",
     "tests": [
@@ -195,7 +195,7 @@ export const mutations: Mutation[] = [
   {
     "name": "cloned-apart-part-held",
     "breaks": "a `map()` itself cloned apart, part of a `filter()` cloned apart, is held as std's struct, which the filter's maker clones as cloned apart, `$clone`, and throws (ADR 0915)",
-    "file": "src/lower/body_queries/in_place.rs",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
     "find": "            let held_to_clone = (callee == cycle || cloned_apart(thir[e].ty)) && !cloned_apart(thir[arg].ty);\n",
     "replace": "            let held_to_clone = (callee == cycle || cloned_apart(thir[e].ty));\n",
     "tests": [
@@ -207,7 +207,7 @@ export const mutations: Mutation[] = [
   {
     "name": "held-flat-map-results-in-place",
     "breaks": "what the closure of a `flat_map()` held in a variable gives is made in place, a JS `.map()` chain, which std's compiled `FlatMap` steps from its back as its struct and throws (#726)",
-    "file": "src/lower/body_queries/in_place.rs",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
     "find": "                && super::each_call_at(&body.thir, fn_span, |at| set.contains(&at))\n",
     "replace": "",
     "tests": [
@@ -219,9 +219,9 @@ export const mutations: Mutation[] = [
   {
     "name": "zip-folding-apart-held-from-its-back",
     "breaks": "a zip std folds otherwise than it steps, of a `Vec`'s items with a destructor, given to `rev()` is std's compiled `Zip` with its dictionaries, not `$rev($zipEnds(..))` (#812)",
-    "file": "src/lower/body_queries/in_place.rs",
-    "find": "                && (!crate::lower::recognition::folds_apart(tcx, thir[arg].ty) || from_its_back(callee))\n",
-    "replace": "                && !crate::lower::recognition::folds_apart(tcx, thir[arg].ty)\n",
+    "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
+    "find": "                && (!crate::recognition::folds_apart(tcx, thir[arg].ty) || from_its_back(callee))\n",
+    "replace": "                && !crate::recognition::folds_apart(tcx, thir[arg].ty)\n",
     "tests": [
       "test/corpus.test.ts",
       "-t",
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
   {
     name: "flatten-wanted-made-in-place",
     breaks: "a flatten given where its hint is asked is made in place, JS's own `flatMap`, which knows no items' constant size: `(0, None)` (#1323)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "        if flattens(maker) && wanted.contains(&made) {\n",
     replace: "        if flattens(maker) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
   {
     name: "hint-wanted-not-through-adapters",
     breaks: "a flatten under another adapter given where its hint is asked, `flat_map(f).filter(g)`, is made in place, its hint `(0, None)` (#1323)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "                    _ if adapts && held_iterator => wanted.contains(&e),\n",
     replace: "                    _ if adapts && held_iterator => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
   {
     name: "hint-of-a-library-unasked",
     breaks: "a flatten under a `filter` given to a library's function, whose body the crate can't see, is made in place, though the library may ask its hint: `(0, None)` (#1323)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "                    Some(_) => callee == size_hint || hint_asked.contains(&callee) || library(callee),\n",
     replace: "                    Some(_) => callee == size_hint || hint_asked.contains(&callee),\n",
     tests: ["test/crates.test.ts", "-t", "flatten given to a library's function knows its hint"],
@@ -256,7 +256,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-hint-seen-made-in-place",
     breaks: "a flatten collected where the program sees the hint std's collect asks is made in place, JS's own `flatMap`, which knows no items' constant size: its source's printing `size_hint` asked three times where std asks once (#1327)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "                    _ if observed((callee, generic_args, index), thir[arg].ty) => true,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^binary_heap_keeps_its_vecs_capacity.rs$"],
@@ -266,7 +266,7 @@ export const mutations: Mutation[] = [
     name: "std-iterators-ignored",
     breaks:
       "`--std-iterators` builds as a plain build does, adapters made in place, so the differential job checks the recognizers' forms, not std's structs",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    if std_iterators {\n",
     replace: "    if false && std_iterators {\n",
     tests: ["test/iterator-forms.test.ts"],
@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
   {
     name: "chars-map-under-a-cycle-in-place",
     breaks: "a `map` of a string's `chars()` a `cycle()` holds is JS's own `map`, which knows no hint, so the cycle hints `(0, None)` and the collect steps it forever where std panics `capacity overflow` (#1367)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "        if callee == cycle && hint_lost(made_ty) {\n",
     replace: "        if false && hint_lost(made_ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_of_a_chars_map_reserves_by_its_hint.rs$"],
@@ -283,7 +283,7 @@ export const mutations: Mutation[] = [
     name: "into-iter-given-on-in-place",
     breaks:
       "`IntoIterator::into_iter` of a `map()` given on to generic code that clones it, as `iproduct!` gives what it's given to `cartesian_product`, is taken to step it there, so it's made the recognizers' JS iterator while its `Clone` is std's struct's: \"Cannot read properties of undefined\" (#1409)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "        if callee == into_iter && !for_loop {\n",
     replace: "        if callee == into_iter && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^(into_iter_of_a_map_given_on|adapter_shown_and_cloned_generically).rs$"],
@@ -292,7 +292,7 @@ export const mutations: Mutation[] = [
     name: "capacity-growth-hint-unseen",
     breaks:
       "a `flat_map` a `Vec` grows by in a crate that reads capacities is made in place, JS's own `flatMap`, which has no hint, so the `Vec`'s capacity is 64 where native Rust's is 46 (#1528)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "                || keeps_capacity && recognition.grows_vec_by((callee, args, index), made_in.1)\n",
     replace: "                || false && recognition.grows_vec_by((callee, args, index), made_in.1)\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_collected_where_capacity_is_read.rs$"],
@@ -301,7 +301,7 @@ export const mutations: Mutation[] = [
     name: "held-flatten-hint-unseen",
     breaks:
       "a `flat_map` a `let` holds, stepped, then collected into a `Vec` in a crate that reads capacities, is made in place, JS's own `flatMap`, which has no hint, so the `Vec`'s capacity is 64 where native Rust's is 46 (#1528)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "                && !hint_seen.contains(&var)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_collected_where_capacity_is_read.rs$"],
@@ -310,7 +310,7 @@ export const mutations: Mutation[] = [
     name: "held-flatten-by-its-own-type-alone",
     breaks:
       "a `rev()` of a `flat_map` a `let` holds, stepped, then collected into a `Vec` in a crate that reads capacities, is made in place, `$rev` of JS's own `flatMap`, which has no hint: a capacity of 64 where native Rust's is 46 (#1528)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "        (held.peel_refs().walk().filter_map(|part| part.as_type()))\n",
     replace: "        [held.peel_refs()].into_iter()\n",
     tests: ["test/corpus.test.ts", "-t", "^held_adapters_of_a_flatten_collected_where_capacity_is_read.rs$"],
@@ -319,7 +319,7 @@ export const mutations: Mutation[] = [
     name: "hint-wanted-of-receivers-alone",
     breaks:
       "a `flat_map` given as a `chain`'s or a `zip`'s second part, collected into a `Vec` in a crate that reads capacities, is made in place, JS's own `flatMap`, whose hint the chain sums with no lower bound: a capacity of 64 where native Rust's is 48 (#1528)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "                let held_iterator = index == 0\n                    || param_at(callee, index)\n",
     replace: "                let held_iterator = index == 0\n                    || false && param_at(callee, index)\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_collected_where_capacity_is_read.rs$"],
@@ -327,7 +327,7 @@ export const mutations: Mutation[] = [
   {
     name: "held-flip-takes-none-out",
     breaks: "a chain that starts on a variable holding std's struct apart keeps its `enumerate()` and `map()` made in place, the hand-written forms, where std's compiled body is the meaning (#1681's step iii)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "            (false, Some(mir)) => held_links(",
     replace: "            (false, Some(mir)) if false => held_links(",
     snapshots: true,
@@ -336,7 +336,7 @@ export const mutations: Mutation[] = [
   {
     name: "held-flip-of-a-source-made-knowing-its-back",
     breaks: "the held flip takes out the adapters of a chain whose source is made knowing its back, `$mapEnds`, a JS iterator, not std's struct, giving std's compiled structs a hand-made source (#1681's step iii)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "            && !back_stepped.keeps_hand_written(*recognition, (body.def_id, mir), thir[source].ty, hinted)",
     replace: "            && !false",
     snapshots: true,
@@ -345,7 +345,7 @@ export const mutations: Mutation[] = [
   {
     name: "held-flip-past-a-link-not-flipped",
     breaks: "the held flip takes out each `map()` of a chain on a variable, past a link that isn't flipped: `src.chain(v).map(f)`'s compiled `Map` is given a `$lazyChain` made in place and steps it as std's `Chain` struct, folding nothing (#1780)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "                    _ => break,\n",
     replace: "                    _ => continue,\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_functions_dropped.rs$"],
@@ -355,7 +355,7 @@ export const mutations: Mutation[] = [
     name: "in-place-given-to-a-node-of-a-shared-span",
     breaks:
       "an adapter given to another of them is made in place where that THIR call is, not as the lowering makes it of each at its span: `a.iter().rev()` a macro gives its `enumerate()` is `a.toReversed()` where both `enumerate()`s are std's struct, which steps it as one and throws (#1791)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "            return joined(in_place, at);\n",
     replace: "            return in_place.contains(&at);\n",
     snapshots: true,
@@ -365,7 +365,7 @@ export const mutations: Mutation[] = [
     name: "in-place-made-of-a-node-of-a-shared-span",
     breaks:
       "a variable a `rev()` is made of is made in place where that THIR call is, not as the lowering makes it of each at its span: `ma` is `$mapEnds(..)` where both `rev()`s a macro writes are std's `Rev`, which steps it as std's `Map` and throws (#1791)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "                && of.iter().all(|&maker| joined(&found, maker))\n",
     replace: "                && of.iter().all(|maker| found.contains(maker))\n",
     snapshots: true,
@@ -374,7 +374,7 @@ export const mutations: Mutation[] = [
   {
     name: "widened-flip-of-a-chain-made-knowing",
     breaks: "the flip of a chain kept out for another reason than `held` takes out the `map` of one whose value is made knowing its back where a variable holds it, `let shifted = (1..6).map(f); shifted.enumerate().rfold(..)`, std's struct then given that knowing by each of std's back dictionaries, three times its JS (#1681's change 2)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "            _ => !chain.source.is_some_and(hand_written) && !hand_written(chain.links[0]),\n",
     replace: "            _ => !chain.source.is_some_and(hand_written),\n",
     snapshots: true,
@@ -384,7 +384,7 @@ export const mutations: Mutation[] = [
     name: "chain-not-flipped",
     breaks:
       "a `chain()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written `$lazyChain` again, where std's compiled `Chain` is the meaning (#1681's change 2, the chain family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"chain\",\n",
     replace: "    \"enumerate\",\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_side_panics_drops_the_other.rs$"],
@@ -394,7 +394,7 @@ export const mutations: Mutation[] = [
     name: "map_while-not-flipped",
     breaks:
       "a `map_while()` of a chain the transparent-chain predicate doesn't admit is the runtime's hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the map_while family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"map_while\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^(map_while|adapters_own_nth_fold).rs$"],
@@ -404,7 +404,7 @@ export const mutations: Mutation[] = [
     name: "scan-not-flipped",
     breaks:
       "a `scan()` of a chain the transparent-chain predicate doesn't admit is the runtime's hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the scan family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"scan\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^(scan_object_state|scan_dropped_once).rs$"],
@@ -414,7 +414,7 @@ export const mutations: Mutation[] = [
     name: "skip_while-not-flipped",
     breaks:
       "a `skip_while()` of a chain the transparent-chain predicate doesn't admit is the runtime's hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the skip_while family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"skip_while\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^(consumer_closure_dropped_first|iterator_sources).rs$"],
@@ -424,7 +424,7 @@ export const mutations: Mutation[] = [
     name: "take_while-not-flipped",
     breaks:
       "a `take_while()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the take_while family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"take_while\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^(shunt_steps_by_try_fold|flatten_drops_its_source_at_its_end).rs$"],
@@ -434,7 +434,7 @@ export const mutations: Mutation[] = [
     name: "zip-not-flipped",
     breaks:
       "a `zip()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written `$trustedZip` or `$lazyZip` again, where std's compiled `Zip` is the meaning (#1681's change 2, the zip family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"zip\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^held_adapters_stepped_to_their_end.rs$"],
@@ -444,7 +444,7 @@ export const mutations: Mutation[] = [
     name: "flipped-given-a-let-made-in-place",
     breaks:
       "a held chain's `zip()` is flipped, std's compiled `Zip`, though the variable it's given, `let a = v.iter().map(f)`, holds a JS iterator the ground made in place, which the compiled `Zip` reads by index: the fold sums 0",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "            ExprKind::VarRef { id } => made.get(&id).is_some_and(|init| ground.contains(init)),\n",
     replace: "            ExprKind::VarRef { id } => made.get(&id).is_some_and(|init| ground.contains(init) && false),\n",
     tests: [
@@ -458,7 +458,7 @@ export const mutations: Mutation[] = [
     name: "flipped-given-a-call-made-in-place",
     breaks:
       "a held chain's `zip()` is flipped, std's compiled `Zip`, though it's given a `map()` the ground made in place where it's given, a JS iterator, not std's struct (ADR 0871)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "            ExprKind::Call { .. } => ground.contains(&given) && !flipped.contains(&given),\n",
     replace: "            ExprKind::Call { .. } => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^let_held_maps_given_a_compiled_chain_and_zip.rs$"],
@@ -467,7 +467,7 @@ export const mutations: Mutation[] = [
     name: "zip-of-callers-sides-flipped",
     breaks:
       "a zip of a type parameter's sides is std's compiled `Zip`, which asks whether each is `TrustedRandomAccess` of callers a trait's default over `Self` has none of: refused, where the recognizers' lazy zip asks nothing (ADR 1136, amended)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "                    Some(link) if !given && !callers => _ = held.insert(link),\n",
     replace: "                    Some(link) if !given && (!callers || callers) => _ = held.insert(link),\n",
     tests: ["test/corpus.test.ts", "-t", "^fuse_holds_its_source_in_generic_code.rs$"],
@@ -477,7 +477,7 @@ export const mutations: Mutation[] = [
     name: "flatten-not-flipped",
     breaks:
       "a `flatten()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written `flatMap` again, where std's compiled `Flatten` is the meaning (#1681's change 2, the flatten family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"flatten\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_drops_its_source_at_its_end.rs$"],
@@ -487,7 +487,7 @@ export const mutations: Mutation[] = [
     name: "peekable-not-flipped",
     breaks:
       "a `peekable()` of a chain the transparent-chain predicate doesn't admit isn't flipped, so what's past it, an `enumerate()`, is the recognizers' `$enumerate` of std's compiled `Peekable` again (#1681's change 2, the peekable family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"peekable\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_count_is_its_sources.rs$"],
@@ -497,7 +497,7 @@ export const mutations: Mutation[] = [
     name: "rev-not-flipped",
     breaks:
       "a `rev()` of a chain the transparent-chain predicate doesn't admit is the recognizers' `$rev` again, of a source made knowing its back, `$knowing`, where std's compiled `Rev` is the meaning (#1681's change 2, the rev family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"rev\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
@@ -507,7 +507,7 @@ export const mutations: Mutation[] = [
     name: "flipped-given-anything-in-place",
     breaks:
       "the held flip takes out a link given what the ground made in place, a `let` of a `rev()` read once, `back_stepped`'s JS iterator: std's compiled `Zip`, `Map` and `Chain` given a JS iterator, so the flip changes what decided it (ADR 1136, amended)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "                    ExprKind::Call { ref args, .. } => args.iter().any(|&arg| in_place(arg, &held)),\n",
     replace: "                    ExprKind::Call { ref args, .. } => args.iter().any(|&arg| in_place(arg, &held)) && false,\n",
     tests: ["test/corpus.test.ts", "-t", "^let_of_an_in_place_rev_given_to_held_chains.rs$"],
@@ -517,7 +517,7 @@ export const mutations: Mutation[] = [
     name: "flat_map-not-flipped",
     breaks:
       "a `flat_map()` of a chain the transparent-chain predicate doesn't admit is the recognizers' `$flatMap` again, where std's compiled `FlatMap` is the meaning (#1681's change 2, the flat_map family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"flat_map\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_inner_iterables.rs$"],
@@ -527,7 +527,7 @@ export const mutations: Mutation[] = [
     name: "inspect-not-flipped",
     breaks:
       "a `inspect()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the inspect family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"inspect\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^inspect_from_back.rs$"],
@@ -537,7 +537,7 @@ export const mutations: Mutation[] = [
     name: "filter-not-flipped",
     breaks:
       "a `filter()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the filter family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"filter\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_folds_by_its_sources_fold.rs$"],
@@ -547,7 +547,7 @@ export const mutations: Mutation[] = [
     name: "filter_map-not-flipped",
     breaks:
       "a `filter_map()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the filter_map family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"filter_map\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^(restarting_iterators|skip_try_fold).rs$"],
@@ -557,7 +557,7 @@ export const mutations: Mutation[] = [
     name: "skip-not-flipped",
     breaks:
       "a `skip()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the skip family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"skip\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
@@ -567,7 +567,7 @@ export const mutations: Mutation[] = [
     name: "take-not-flipped",
     breaks:
       "a `take()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the take family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"take\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_order_through_take_adapters.rs$"],
@@ -577,7 +577,7 @@ export const mutations: Mutation[] = [
     name: "step_by-not-flipped",
     breaks:
       "a `step_by()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the step_by family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"step_by\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^held_step_by_of_a_reversed_range_grows_as_std.rs$"],
@@ -587,7 +587,7 @@ export const mutations: Mutation[] = [
     name: "cycle-not-flipped",
     breaks:
       "a `cycle()` of a chain the transparent-chain predicate doesn't admit is the runtime's hand-written `$cycleOf` again, where std's compiled struct is the meaning (#1681's change 2, the cycle family)",
-    file: "src/lower/body_queries/in_place.rs",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
     find: "    \"cycle\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],

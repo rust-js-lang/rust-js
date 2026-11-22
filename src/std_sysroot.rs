@@ -8,7 +8,7 @@
 //! nothing more. Nothing is linked. It's built once for a toolchain and
 //! a target, into the compiler's own directory, and given to the session as
 //! its `--sysroot`. Std's items are keyed by their paths, which these crates
-//! share with the ones a program's session reads (`lower::library::key`).
+//! share with the ones a program's session reads (`rust_js_lower::library::key`).
 
 use rustc_driver::Callbacks;
 use std::path::{Path, PathBuf};

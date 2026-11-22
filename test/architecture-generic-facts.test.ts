@@ -28,15 +28,15 @@ test("a type parameter's facts are asked of their owner", () => {
     text.split("\n").filter((line) => !line.trim().startsWith("//"))
       .reduce((n, line) => n + (line.match(/ty::Param\(|has_param\(\)|is_unknown\(/g) ?? []).length, 0);
   // The catalogue's own file asks them for its owners.
-  const grown = files("src/lower").filter((file) => file.endsWith(".rs") && file !== "src/lower/generic_facts.rs")
+  const grown = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs") && file !== "crates/rust-js-lower/src/generic_facts.rs")
     .map((file) => [file, counted(read(file)), typeParameterReads[file] ?? 0] as const)
     .filter(([, now, was]) => now > was)
-    .map(([file, now, was]) => `${file}: ${now} reads of a type parameter, the audit's ${was}: ask the owner src/lower/generic_facts.rs names`);
+    .map(([file, now, was]) => `${file}: ${now} reads of a type parameter, the audit's ${was}: ask the owner crates/rust-js-lower/src/generic_facts.rs names`);
   expect(grown).toEqual([]);
 });
 
 test("each fact in the generic facts' catalogue names an owner that's there", () => {
-  const rows = read("src/lower/generic_facts.rs").split("\n")
+  const rows = read("crates/rust-js-lower/src/generic_facts.rs").split("\n")
     .map((line) => line.match(/^\/\/! \|.*\| (Given|Form|Instances) \| `(\S+) (\w+)` \|$/))
     .filter((match) => match !== null);
   expect(rows.length).toBeGreaterThan(10);
@@ -59,15 +59,15 @@ test("a Room size is undefined only of #934's case, by room_value", () => {
     return at < 0 ? "" : text.slice(at, text.indexOf("\n    }\n", at));
   };
   const code = (file: string) => read(file).split("\n").filter((line) => !line.trim().startsWith("//"));
-  const rust = files("src/lower").filter((file) => file.endsWith(".rs"));
-  const room = body(read("src/lower/iterators/hint_asks.rs"), "room_value");
-  expect(room).toContain("(crate::lower::recognition::is_associated_type(item) && self.in_impl_method()).then(Expr::js_undefined)");
+  const rust = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"));
+  const room = body(read("crates/rust-js-lower/src/iterators/hint_asks.rs"), "room_value");
+  expect(room).toContain("(crate::recognition::is_associated_type(item) && self.in_impl_method()).then(Expr::js_undefined)");
   expect(room.match(/undefined/g)?.length).toBe(1);
   const gated = rust.flatMap((file) => code(file).filter((line) => line.includes("is_associated_type(") && !line.includes("fn is_associated_type(")).map(() => file));
-  expect(gated).toEqual(["src/lower/iterators/hint_asks.rs"]);
+  expect(gated).toEqual(["crates/rust-js-lower/src/iterators/hint_asks.rs"]);
   const elsewhere = rust.filter((file) => code(file).some((line) => /TypeFact::Room/.test(line) && /undefined/.test(line)));
   expect(elsewhere).toEqual([]);
-  expect(read("src/lower/analysis/type_facts.rs")).toMatch(/fact == TypeFact::Room\s*&& tcx\.trait_impl_of_assoc\(id\)\.is_some\(\)\s*&& index >= tcx\.generics_of\(id\)\.count\(\) as u32/);
+  expect(read("crates/rust-js-lower/src/analysis/type_facts.rs")).toMatch(/fact == TypeFact::Room\s*&& tcx\.trait_impl_of_assoc\(id\)\.is_some\(\)\s*&& index >= tcx\.generics_of\(id\)\.count\(\) as u32/);
 });
 
 // A generic function takes only the size facts it reads: a collect's
@@ -105,7 +105,7 @@ test("a generic function takes no size fact it doesn't read", () => {
 // removes its name here and its old code in the same commit; a new name
 // fails, as a second owner would answer beside the analysis.
 test("a bound's dictionary is given by one analysis, but the old owners still to migrate", () => {
-  const source = read("src/lower/analysis/read_bounds.rs");
+  const source = read("crates/rust-js-lower/src/analysis/read_bounds.rs");
   const body = source.slice(source.indexOf("fn answered_elsewhere("), source.indexOf("/// Whether this analysis answers for"));
   const named = [...body.matchAll(/(?:LangItem|StdItem)::(\w+)|\b(is_iterator_extension)\(/g)].map((m) => m[1] ?? m[2]).sort();
   expect(named).toEqual(["Clone", "Copy", "Eq", "Index", "IntoIterator", "Iterator", "is_iterator_extension"].sort());
@@ -117,18 +117,18 @@ test("a bound's dictionary is given by one analysis, but the old owners still to
 // the crate's iterator bare where its generic `From` stepped a JS iterator
 // (#2264).
 test("each route into generic code adapts what it gives by `crossing_into` alone", () => {
-  const callers = files("src/lower")
-    .filter((file) => file.endsWith(".rs") && file !== "src/lower/generic_facts.rs" && file !== "src/lower/iterators/stepping.rs")
+  const callers = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")]
+    .filter((file) => file.endsWith(".rs") && file !== "crates/rust-js-lower/src/generic_facts.rs" && file !== "crates/rust-js-lower/src/iterators/stepping.rs")
     .filter((file) => /\bgiven_iterators\(/.test(read(file)));
   expect(callers).toEqual([]);
   const routes: [string, string][] = [
-    ["src/lower/mir/calls.rs", "fn mir_crate_call"],
-    ["src/lower/traits/calls.rs", "fn through_dictionary"],
-    ["src/lower/traits/calls.rs", "fn own_into_iter_of"],
-    ["src/lower/traits/dictionaries/conversions.rs", "fn compiled_conversion"],
-    ["src/lower/traits/impls.rs", "fn impl_call"],
-    ["src/lower/iterators/mir_steps/collect.rs", "fn made_by_own_from_iter"],
-    ["src/lower/display.rs", "fn writer_given"],
+    ["crates/rust-js-mir/src/calls.rs", "fn mir_crate_call"],
+    ["crates/rust-js-lower/src/traits/calls.rs", "fn through_dictionary"],
+    ["crates/rust-js-lower/src/traits/calls.rs", "fn own_into_iter_of"],
+    ["crates/rust-js-lower/src/traits/dictionaries/conversions.rs", "fn compiled_conversion"],
+    ["crates/rust-js-lower/src/traits/impls.rs", "fn impl_call"],
+    ["crates/rust-js-lower/src/iterators/mir_steps/collect.rs", "fn made_by_own_from_iter"],
+    ["crates/rust-js-lower/src/display.rs", "fn writer_given"],
   ];
   const body = (file: string, fn: string) => {
     const text = read(file);
@@ -138,5 +138,5 @@ test("each route into generic code adapts what it gives by `crossing_into` alone
   expect(routes.filter(([file, fn]) => !body(file, fn).includes("crossing_into(")).map(([file, fn]) => `${file} ${fn}`)).toEqual([]);
   // And the trait method's routes through its impl's instance and a std
   // body compiled into `@rust-js/std`, two in one function.
-  expect(read("src/lower/traits/calls.rs").match(/crossing_into\(/g)?.length).toBe(4);
+  expect(read("crates/rust-js-lower/src/traits/calls.rs").match(/crossing_into\(/g)?.length).toBe(4);
 });

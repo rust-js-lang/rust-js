@@ -25,14 +25,14 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 // runs no drop. So a new one is placed here, its reason with it.
 test("a catch that runs a drop guards it where it's made, or is a body's that tidy guards (#938)", () => {
   const made: Record<string, string> = {
-    "src/lower/drops/parts.rs": "drop glue's, its cleanup `cleanup`'s where it's made; a body's `dropped_after`, which tidy guards",
-    "src/lower/mir/drops.rs": "the MIR's cleanups, a function body's, which tidy's last pass guards",
-    "src/lower/mir/writer.rs": "a writer's `Err` and what it wrote, no drop",
-    "src/lower/mir/std_calls.rs": "what a write wrote before it failed, no drop",
-    "src/lower/format_args.rs": "a formatting failure caught, no drop",
-    "src/lower/display/printing.rs": "a formatting failure caught as a line is printed through stdout's, no drop (#1490)",
-    "src/lower/mir/given_arguments.rs": "what an `Arguments` given on made before its writer failed, no drop (#1565)",
-    "src/lower/mir.rs": "a panic out of a function whose ABI can't unwind, `extern \"C\"`'s, aborted, no drop (#1582)",
+    "crates/rust-js-lower/src/drops/parts.rs": "drop glue's, its cleanup `cleanup`'s where it's made; a body's `dropped_after`, which tidy guards",
+    "crates/rust-js-mir/src/drops.rs": "the MIR's cleanups, a function body's, which tidy's last pass guards",
+    "crates/rust-js-mir/src/writer.rs": "a writer's `Err` and what it wrote, no drop",
+    "crates/rust-js-mir/src/std_calls.rs": "what a write wrote before it failed, no drop",
+    "crates/rust-js-lower/src/format_args.rs": "a formatting failure caught, no drop",
+    "crates/rust-js-lower/src/display/printing.rs": "a formatting failure caught as a line is printed through stdout's, no drop (#1490)",
+    "crates/rust-js-mir/src/given_arguments.rs": "what an `Arguments` given on made before its writer failed, no drop (#1565)",
+    "crates/rust-js-mir/src/lib.rs": "a panic out of a function whose ABI can't unwind, `extern \"C\"`'s, aborted, no drop (#1582)",
   };
   // `StmtKind::TryCatch(..)` made, `.at(..)` after its arguments: not a
   // pattern, which never is.
@@ -46,8 +46,8 @@ test("a catch that runs a drop guards it where it's made, or is a body's that ti
     }
     return count;
   };
-  const found = ["src/lower.rs", ...files("src/lower")]
-    .filter((file) => file.endsWith(".rs") && !file.startsWith("src/lower/mir/tidy"))
+  const found = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")]
+    .filter((file) => file.endsWith(".rs") && !file.startsWith("crates/rust-js-mir/src/tidy"))
     .filter((file) => constructions(read(file)) > 0);
   expect([...found].sort()).toEqual(Object.keys(made).sort());
   expect(constructions("let s = StmtKind::TryCatch(body, Some(e), h).at(span);")).toBe(1);
@@ -84,5 +84,5 @@ test("no unwinding judge asks std_call_never_unwinds", () => {
   const callers = compilerRustFiles()
     .filter((file) => file.endsWith(".rs"))
     .filter((file) => /(?<!fn )\bstd_call_never_unwinds\s*\(/.test(uncommented(file)));
-  expect(callers).toEqual(["src/lower/analysis/prepared.rs"]);
+  expect(callers).toEqual(["crates/rust-js-lower/src/analysis/prepared.rs"]);
 });

@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/tidy/values.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/tidy/values.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-plain-cell-escapes",
     breaks:
       "a cell given whole, `bump(c)`, is a variable too, and what it's given reads `undefined`",
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "    let plain: IndexSet<&js::Name> = cells.iter().filter(|c| reads.get(*c) == kept.get(*c)).collect();\n",
     replace: "    let plain: IndexSet<&js::Name> = cells.iter().collect();\n",
     tests: [
@@ -20,7 +20,7 @@ export const mutations: Mutation[] = [
     name: "array-spread-of-array-kept",
     breaks:
       "`[...first, ...[a, b]]` keeps its spread of an array, not `[...first, a, b]`",
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "    if let ExprKind::Array(items, ..) = &mut e.kind {",
     replace: "    if let ExprKind::Array(items, ..) = &mut e.kind && false {",
     tests: [
@@ -33,8 +33,8 @@ export const mutations: Mutation[] = [
     name: "array-values-kept-stepped",
     breaks:
       "an array's `$iter` an adapter alone steps stays `$iter(xs).filter(..)`, not `xs.values().filter(..)`",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "        && crate::lower::iterators::is_stepped_items(it)\n        && let ExprKind::Call(_, args) = &mut it.kind\n",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
+    find: "        && rust_js_lower::iterators::is_stepped_items(it)\n        && let ExprKind::Call(_, args) = &mut it.kind\n",
     replace:
       "        && false\n        && let ExprKind::Call(_, args) = &mut it.kind\n",
     tests: [
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
     name: "mir-enumerate-mapped",
     breaks:
       "`iter().enumerate()` of a slice from MIR is `xs.values().map((x, i) => [i, x])`, not `xs.entries()`",
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "        && pairs_index(pair)\n",
     replace: "        && false\n",
     tests: [
@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
     name: "mir-rest-str-of-fresh",
     breaks:
       '`w.chars().as_str()` from MIR is `$restStr($iter(Array.from(w)))`, not `Array.from(w).join("")`',
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: '        && callee.helper_name() == Some("$restStr")\n',
     replace: "        && false\n",
     tests: [
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
     name: "mir-capital-chars-joined",
     breaks:
       '`c.to_uppercase().collect::<String>()` from MIR is `Array.from(c.toUpperCase()).join("")`',
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "        && chars.facts.has(rust_js_program::js::Known::Chars)\n",
     replace: "        && false\n",
     tests: [
@@ -86,15 +86,15 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-plain-cell-shadowed",
     breaks:
       "a cell a callback's parameter shadows is made plain, `(item) => item.value` read as `item`",
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "    cells.retain(|c| bound.get(c).copied().unwrap_or(0) <= 1);\n",
     replace: "",
-    unitTests: "lower::mir::tidy::values::tests::a_cell_a_callback_shadows_stays_a_cell",
+    unitTests: "tidy::values::tests::a_cell_a_callback_shadows_stays_a_cell",
   },
   {
     name: "lazy-flatmap-stepped",
     breaks: "a lazy flatten of arrays keeps `$iter(item)`",
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "        *each = Expr::var(param);\n",
     replace: "",
     tests: [
@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
     name: "applied-assignment-unseen",
     breaks:
       "`out += `${((r) => ..)(f())}``, an assignment's value, keeps its function called in place",
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "            StmtKind::Assign(target, e) | StmtKind::Compound(_, target, e) => {\n",
     replace:
       "            StmtKind::Assign(target, e) | StmtKind::Compound(_, target, e) if false => {\n",
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     name: "applied-arrow-kept",
     breaks:
       "a closure read in place is called where it's made, `((e) => e.data)(r._0)`, not its value",
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "            *e = Expr {\n                span: e.span,\n                ..applied\n            };\n",
     replace: "            let _ = applied;\n",
     tests: [
@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
     name: "rest-str-case-mapping-unjoined",
     breaks:
       '`{}` of `c.to_uppercase()` is `Array.from(c.toUpperCase()).join("")`, not `c.toUpperCase()`',
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "            ..Expr::builtin(items.clone(), \"join\", vec![Expr::str(\"\")])\n        };\n    }\n",
     replace: "            ..Expr::builtin(items.clone(), \"join\", vec![Expr::str(\"\")])\n        };\n        return;\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     name: "holed-lists-of-other-reads",
     breaks:
       "a list with holes read whole, or by another index, is its one item all the same",
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "        if js::mentions_of(&rest, &name) != usize::from(assigned)\n            || js::mentions_of(body, &name) == usize::from(assigned)\n        {\n",
     replace: "        if js::mentions_of(body, &name) == usize::from(assigned) {\n",
     tests: [
@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
     name: "checked-set-failure-dropped",
     breaks:
       "a check and a set merged, `xs[$at(xs, i)] = v`, lose the `VecDeque`'s message the check had",
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "            let at = [vec![items.clone(), index.clone()], failure.to_vec()].concat();",
     replace: "            let at = vec![items.clone(), index.clone()];",
     tests: ["test/corpus.test.ts", "-t", "^deque_write_out_of_bounds.rs$"],
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
     name: "unread-resets-off",
     breaks:
       "a take of a cell, returned, that no closure reads after it, writes its reset, `const old = result; result = \"\"; return old;`, where upstream's is `return result;` (rd598)",
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "    if lets.is_empty() {\n        return;\n    }\n",
     replace: "    if true {\n        return;\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^taken_and_returned.rs$"],
@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
     name: "unread-resets-past-closure-reads",
     breaks:
       "a take's reset is dropped where a closure kept past the take reads the cell, which then sees what was taken, not what the take left (rd598)",
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "            !writes.handles(name) && !finally_read.contains(name) && !read_by_closures(body, name, *appended)\n",
     replace: "            !writes.handles(name) && !finally_read.contains(name)\n",
     tests: ["test/corpus.test.ts", "-t", "^taken_and_returned.rs$"],
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
   {
     name: "closures-left-in-tries",
     breaks: "a closure made between calls one `try` covers stays a `let` set in it, `map = (d) => ..`, not a function where its `let` is (#769)",
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "            stmts[i] = StmtKind::Function(Box::new(function)).at(span);\n            i += 1;\n",
     replace: "            i += 1;\n            let _ = function;\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_fold_closure_panics.rs$"],
@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
   {
     name: "unread-map-assignment-kept",
     breaks: "MIR's `let` and assignment of a map nothing reads, a call's `try`'s, is kept, left declared after its `try` is gone (#805)",
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "    let gone: IndexSet<js::Name> = (assigned.into_iter())\n        .filter(|name| js::mentions_of(body, name) == 1)\n        .collect();\n",
     replace: "    let gone: IndexSet<js::Name> = IndexSet::default();\n",
     snapshots: true,
@@ -200,33 +200,33 @@ export const mutations: Mutation[] = [
   {
     name: "chars-collected-kept",
     breaks: "a string's `chars()` made the runtime's and collected reads `Array.from($rev($chars(s)))`, not `Array.from(s).toReversed()`",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "        if let Some(s) = crate::lower::iterators::chars_made_of(rev.unwrap_or(it)) {\n",
-    replace: "        if let Some(s) = crate::lower::iterators::chars_made_of(rev.unwrap_or(it)).filter(|_| false) {\n",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
+    find: "        if let Some(s) = rust_js_lower::iterators::chars_made_of(rev.unwrap_or(it)) {\n",
+    replace: "        if let Some(s) = rust_js_lower::iterators::chars_made_of(rev.unwrap_or(it)).filter(|_| false) {\n",
     tests: ["test/compiler.test.ts", "-t", "iterators are array methods"],
   },
   {
     name: "lent-string-iterator-kept",
     breaks: "a lent string iterator made where it's read is `$lent(s[Symbol.iterator]())`, not itself",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "    if let Some(it) = crate::lower::iterators::lent_string_iterator(e) {\n",
-    replace: "    if let Some(it) = crate::lower::iterators::lent_string_iterator(e).filter(|_| false) {\n",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
+    find: "    if let Some(it) = rust_js_lower::iterators::lent_string_iterator(e) {\n",
+    replace: "    if let Some(it) = rust_js_lower::iterators::lent_string_iterator(e).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^string_iterator_lent_by_a_macro_where_it_is_made.rs$"],
     snapshots: true,
   },
   {
     name: "lent-held-string-kept",
     breaks: "a string's iterator held in a variable read once, where it's lent, stays `$lent(cs)`, not itself (#1955)",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "            if crate::lower::iterators::lent_variable(e) == Some(&name) {\n",
-    replace: "            if crate::lower::iterators::lent_variable(e) == Some(&name) && false {\n",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
+    find: "            if rust_js_lower::iterators::lent_variable(e) == Some(&name) {\n",
+    replace: "            if rust_js_lower::iterators::lent_variable(e) == Some(&name) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^string_iterator_lent_once_from_its_variable.rs$"],
     snapshots: true,
   },
   {
     name: "lent-held-string-read-again",
     breaks: "a string's iterator lent from its variable and read again after, `cs.by_ref().take(2)` then `cs.collect()`, is taken as read once: `cs.take(2)`, which JS's `take` closes, though a string's iterator has no `return()`, so it reads the same; the snapshot holds the lending as Rust wrote it (#1955)",
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "        if js::mentions_of(body, &name) != 1 {\n",
     replace: "        if js::mentions_of(body, &name) == 0 {\n",
     tests: ["test/corpus.test.ts", "-t", "^string_iterator_lent_once_from_its_variable.rs$"],
@@ -235,8 +235,8 @@ export const mutations: Mutation[] = [
   {
     name: "lent-held-of-any-iterator",
     breaks: "an iterator not a string's, held in a variable read once where it's lent, is stepped as itself, its lending dropped though it may have a `return()` a `take` that stops early calls, which closes what its lender holds (#1955)",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "                && crate::lower::iterators::made_string_iterator(e)\n",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
+    find: "                && rust_js_lower::iterators::made_string_iterator(e)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^take_of_own_nth_where_known_back.rs$"],
     snapshots: true,
@@ -244,7 +244,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-arrows-ask-nothing-changes",
     breaks: "tidy puts a closure in place into its callbacks of a variable the body sets after, as if nothing changed it, so a callback that runs later reads what it's set to, 101 where Rust gives 6 (G6)",
-    file: "src/lower/mir/tidy/values.rs",
+    file: "crates/rust-js-mir/src/tidy/values.rs",
     find: "&|v| !changing.contains(v));\n",
     replace: "&|_| true);\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_applied_into_its_callbacks\\.rs$"],

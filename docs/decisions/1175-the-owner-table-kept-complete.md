@@ -36,8 +36,8 @@ there is; each name in backticks of its API cell is defined in the
 sources (a Rust `fn`, `struct`, `enum`, `trait`, `type`, `const` or
 `static`, or a runtime JS `function`, by its last `::` segment), or is a
 module there is. An owner is a path from `src/` where it starts so; else
-`src/lower/<owner>` where that is a file or folder there, `x.rs` covering
-`src/lower/x.rs` and every file under `src/lower/x/`, `x/` every file
+`crates/rust-js-lower/src/<owner>` where that is a file or folder there, `x.rs` covering
+`crates/rust-js-lower/src/x.rs` and every file under `crates/rust-js-lower/src/x/`, `x/` every file
 under it; else `src/<owner>`, by the same rule (`names.rs`, `runtime.rs`,
 `runtime/steps.js`).
 
@@ -47,11 +47,11 @@ comments, string literals (`".."`, `b".."`, `r#".."#`) and char literals
 `#[cfg(test)]` before a `mod` cut. A runtime JS source's code is its text
 with comments and `'..'`, `".."` and `` `..` `` literals blanked.
 
-**Completeness.** A candidate is a function of `src/lower.rs` or a file
-under `src/lower/` whose line begins `pub fn`, `pub(crate) fn` or
+**Completeness.** A candidate is a function of `crates/rust-js-lower/src/lib.rs` or a file
+under `crates/rust-js-lower/src/` whose line begins `pub fn`, `pub(crate) fn` or
 `pub(in crate::…) fn` (with `const`, `unsafe` or `async` between) in its
-code, or `pub(super) fn` where the file is `src/lower.rs` or a file right
-under `src/lower/` (`src/lower/<x>.rs`), whose parent module is the whole
+code, or `pub(super) fn` where the file is `crates/rust-js-lower/src/lib.rs` or a file right
+under `crates/rust-js-lower/src/` (`crates/rust-js-lower/src/<x>.rs`), whose parent module is the whole
 front end, so `pub(super)` reaches as far as `pub(in crate::lower)`; not a
 nested module's `pub(super)`, which only its parent's modules see, nor a
 private one; whose return type is one of:

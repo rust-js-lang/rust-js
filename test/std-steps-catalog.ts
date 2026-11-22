@@ -1,4 +1,4 @@
-// std's steps catalog, src/lower/recognition/std_steps.txt (#2112), as the
+// std's steps catalog, crates/rust-js-lower/src/recognition/std_steps.txt (#2112), as the
 // tests read it: which steps each std adapter and wrapper writes itself,
 // and what each step asked of what it holds in each native run. The one
 // reader of it in the tests: test/iterator-steps.test.ts holds the
@@ -8,7 +8,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const text = readFileSync(join(import.meta.dir, "../src/lower/recognition/std_steps.txt"), "utf8");
+const text = readFileSync(join(import.meta.dir, "../crates/rust-js-lower/src/recognition/std_steps.txt"), "utf8");
 
 /** Of each adapter or wrapper, by std's name, `Map` or `&mut I`, the steps
  * it writes, its `<name> writes:` line's, in their order. */

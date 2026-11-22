@@ -1,4 +1,4 @@
-// Mutations of src/lower/declarations.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/declarations.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 const tests = ["test/declarations.test.ts"];
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
   {
     name: "const-param-unread",
     breaks: "a `#[rust_js::const_param]` type parameter isn't TypeScript's `const` one, so a caller's `{ reason: \"escape-key\" }` is kept as a `string`, where upstream's `const Given` keeps the literal (ADR 1164)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                if is_const_param(self.tcx, param.def_id) {\n",
     replace: "                if false && is_const_param(self.tcx, param.def_id) {\n",
     tests: ["test/declarations-type-maps.test.ts", "-t", "a const type parameter"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
   {
     name: "defaults-to-unread",
     breaks: "a function's `js::DefaultsTo<js::True>` bound isn't its default, so `Cancelable extends boolean` has no `= true` (ADR 1164)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                } else if let Some(default) = defaults_to(self.tcx, def_id, param.index) {\n",
     replace: "                } else if false && let Some(default) = defaults_to(self.tcx, def_id, param.index) {\n",
     tests: ["test/declarations-type-maps.test.ts", "-t", "a const type parameter"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "js-literal-boolean-any",
     breaks: "the js crate's `js::True` is `any` to TypeScript, where its value is `true` (ADR 1164)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                if super::recognition::is_js_literal_type(tcx, did)\n",
     replace: "                if false && super::recognition::is_js_literal_type(tcx, did)\n",
     tests: ["test/declarations-type-maps.test.ts", "-t", "a const type parameter"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "struct-type-default-undeclared",
     breaks: "a struct's type parameter's default isn't declared, so a TypeScript caller must give `CommitDetails` its reason, where Rust's `CommitDetails` is `CommitDetails<&'static str>` (ADR 1164)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                if let ty::GenericParamDefKind::Type { has_default: true, .. } = param.kind {\n",
     replace: "                if false && let ty::GenericParamDefKind::Type { has_default: true, .. } = param.kind {\n",
     tests: ["test/declarations-type-maps.test.ts", "-t", "its keys and its lookup"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-map-projection-any",
     breaks: "a type map's associated type of a reason, `R::Event`, is `any`, where it's the lookup's `EventOf<R>` (ADR 1164)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            ) if type_maps::of_a_type_map(tcx, *def_id) => self.type_map_projection(*def_id, alias.args),\n",
     replace: "            ) if false && type_maps::of_a_type_map(tcx, *def_id) => self.type_map_projection(*def_id, alias.args),\n",
     tests: ["test/declarations-type-maps.test.ts", "-t", "its keys and its lookup"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "trait-type-map-undeclared",
     breaks: "a `#[rust_js::type_map]` trait declares nothing, so `ReasonVocabulary`, `ChangeReason` and `EventOf` are no types (ADR 1164)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            items.extend(out.type_map(def_id));\n",
     replace: "",
     tests: ["test/declarations-type-maps.test.ts", "-t", "its keys and its lookup"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "named-unit-type-its-value",
     breaks: "a unit struct named as a string is named by that string as a type, `export type trigger-press = ..`, which no TypeScript reads (ADR 1164)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        Some(_) => tcx.item_name(did).to_string(),\n",
     replace: "        Some(_) => super::bindings::given_name(tcx, did).unwrap_or_default(),\n",
     tests: ["test/declarations-type-maps.test.ts", "-t", "its keys and its lookup"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "named-unit-not-declared",
     breaks: "a unit struct named as a string isn't declared, so a function giving one returns `any`, where its value is the string",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                || named_unit(tcx, did).is_some()\n",
     replace: "",
     tests: ["test/declarations-type-maps.test.ts", "-t", "its keys and its lookup"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
   {
     name: "item-erased-asked-of-the-module",
     breaks: "a library's `front`, whose `impl FnMut(&mut U)` asks a `&mut`'s form, is declared in the crate root's context, a rustc ICE, `generics_of: unexpected node kind` (#1029)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        self.owner = def_id;\n        self.erased = self.erased(def_id);\n",
     replace: "        self.erased = self.erased(def_id);\n        self.owner = def_id;\n",
     tests: ["test/crates.test.ts", "-t", "library_signatures_asked_of_their_items"],
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     name: "kept-word-parameter-declared",
     breaks:
       "a function type's parameter named after a type whose last word JS keeps is `function`, a `.d.ts` TypeScript can't parse (rd673)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            if rust_js_program::names::kept_word(&word) {\n",
     replace: "            if false && rust_js_program::names::kept_word(&word) {\n",
     tests: ["test/declarations-function-types.test.ts", "-t", "apart from a word JS keeps"],
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     name: "default-class-declared-const",
     breaks:
       "a default class is declared `declare const Complex: Complex;`, not a class",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                DefKind::Struct => out.class(def_id),\n",
     replace: "",
     tests: [
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
     name: "library-type-declared-any",
     breaks:
       "a library's type its declarations export is `any` in a consumer's, React's `CacheContext` a `ReactContext<Cache>` (ADR 0210, amended)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                if let Some((from, name, default)) = self.foreign.declared_type(did) {\n",
     replace:
       "                if let Some((from, name, default)) = None::<&(String, String, bool)> {\n",
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
     name: "declaration-erased-of-the-last-item",
     breaks:
       "an `impl Fn(A) -> T` parameter is declared of what the item before erased by `T`'s index, `(a: A) => () => T`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        let outer = std::mem::take(&mut self.erased);\n",
     replace: "        let outer = self.erased.clone();\n",
     tests: ["test/declarations-impl-fn.test.ts"],
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     name: "map-declared-any",
     breaks:
       "a `HashMap<String, u32>` is declared `any`, not the `Map<string, number>` its JS is (ADR 0876)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                    .any(|&map| is_std_def(tcx, did, map))\n",
     replace: "                    .any(|_| false)\n",
     tests: ["test/declarations-collections.test.ts"],
@@ -131,7 +131,7 @@ export const mutations: Mutation[] = [
     name: "set-declared-any",
     breaks:
       "a `HashSet<u32>` is declared `any`, not the `Set<number>` its JS is (ADR 0876)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                    .any(|&set| is_std_def(tcx, did, set))\n",
     replace: "                    .any(|_| false)\n",
     tests: ["test/declarations-collections.test.ts"],
@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
     name: "uncounted-rc-declared-any",
     breaks:
       "an uncounted `Rc` is declared `any`, React's `createContext` returning one (ADR 0845)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                    && (!self.counted.counts(tcx, pointee) || super::std_types::rc::counted_as_instance(tcx, pointee))\n",
     replace: "                    && (false || super::std_types::rc::counted_as_instance(tcx, pointee))\n",
     tests: ["test/declarations.test.ts", "-t", "an Rc is declared"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     name: "weak-declared-never-null",
     breaks:
       "an uncounted `Weak` is declared what it points at, though `Weak::new()` is `null` (ADR 0845)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: '                    return json!({ "kind": "union", "types": [self.ts(pointee), keyword("null")] });\n',
     replace: "                    return self.ts(pointee);\n",
     tests: ["test/declarations.test.ts", "-t", "an Rc is declared"],
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     name: "numbered-variant-consts-undeclared",
     breaks:
       "a numbered enum's `.d.ts` has no `export const Empty: 0;`, so TypeScript finds no `Empty` its JS exports",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            items.extend(out.variant_constants(def_id));\n",
     replace: "",
     tests: [
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
     name: "alias-undeclared",
     breaks:
       "a `.d.ts` has no `export { currentTime as unstable_now };`, so TypeScript finds no `unstable_now`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "    if !names.is_empty() {\n",
     replace: "    if false && !names.is_empty() {\n",
     tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
     name: "foreign-untagged-any",
     breaks:
       "another crate's untagged enum, `js::Json`, is `any`, not the union of its payloads",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "if !did.is_local() && adt.is_enum() && is_untagged(tcx, did) {",
     replace:
       "if false && !did.is_local() && adt.is_enum() && is_untagged(tcx, did) {",
@@ -194,7 +194,7 @@ export const mutations: Mutation[] = [
     name: "written-param-unsubstituted",
     breaks:
       "a name in a `types` that's the Rust type's parameter isn't what it's given: `Dict<f64>`, `{ [key: string]: T }`, isn't `{ [key: string]: number }`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            Some(param) if (param.index as usize) < args.len() => {\n",
     replace: "            Some(param) if false => {\n",
     tests: [
@@ -207,7 +207,7 @@ export const mutations: Mutation[] = [
     name: "written-method-parameter-substituted",
     breaks:
       "a method's own type parameter written in a `types`, `map<T>(f: (value: T) => T)`, is taken for the Rust type's `T`, `(value: string) => string`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                if from.is_none() && args.is_none() && !bound.contains(name) {",
     replace: "                if from.is_none() && args.is_none() {",
     tests: ["test/declarations.test.ts", "-t", "a binding's object type"],
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     name: "written-object-members-dropped",
     breaks:
       "an object type written in a `types`, `ConsoleTask`'s `{ run<T>(f: () => T): T }`, is declared `{}`, and its `run` is TypeScript's error",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: '                json!({ "kind": "object", "members": values })',
     replace:
       '                json!({ "kind": "object", "members": values.drain(..0).collect::<Vec<_>>() })',
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
     name: "types-args-appended",
     breaks:
       "a `types` written with its arguments, `react#ReactNode<>`, takes the Rust type's too: `ReactNode<any>`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        if let Written::Reference { from, name, args: None } = declared\n",
     replace:
       "        if let Written::Reference { from, name, args: _ } = declared\n",
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
     name: "declared-binding-type-any",
     breaks:
       "a binding's type, react's `Memo<P>`, is `any` to TypeScript, which checks none of a `memo`'s props",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                if let Some(declared) = written_types(tcx, did) {\n",
     replace:
       "                if false\n                    && let Some(declared) = written_types(tcx, did)\n                {\n",
@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
     name: "generic-type-imported-whole",
     breaks:
       "a namespace's member is imported by its whole name, `JSX.Element`, not as its namespace, `JSX`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        let first = imported(name);\n",
     replace: "        let first = name.to_string();\n",
     tests: tests,
@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
   {
     name: "module-type-not-imported",
     breaks: "another module's type is named, `RouteItem[]`, but not imported",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                    self.imported(self.files[&home].clone(), did, type_name(tcx, did));\n",
     replace: "",
     tests,
@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
     name: "type-alias-undeclared",
     breaks:
       "a `pub type` isn't declared, so TypeScript importing it, react.dev's Toc its `Toc`, finds no such export",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            DefKind::TyAlias => Some(out.alias(def_id)),\n",
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "type alias"],
@@ -276,7 +276,7 @@ export const mutations: Mutation[] = [
     name: "private-default-undeclared",
     breaks:
       "a component only `js::export_default! { .. }` exports isn't declared, so its `.d.ts` exports no default, which TypeScript importing it refuses",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        let held = held_default == Some(def_id);\n",
     replace: "        let held = false;\n",
     tests: ["test/declarations.test.ts", "-t", "private default"],
@@ -285,7 +285,7 @@ export const mutations: Mutation[] = [
     name: "private-default-exported",
     breaks:
       "a component only `js::export_default! { .. }` exports is declared `export function Callout`, which its JS doesn't export by that name",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: '                if function {\n                    declared["default"] = json!(true);\n',
     replace:
       '                if false {\n                    declared["default"] = json!(true);\n',
@@ -295,7 +295,7 @@ export const mutations: Mutation[] = [
     name: "pub-default-exported-by-name",
     breaks:
       "a `pub fn` `js::export_default! { .. }` holds is declared `export function noop`, where its JS is `export default function noop`, so TypeScript imports a name the JS doesn't export",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            if held {\n",
     replace: "            if held && !tcx.visibility(def_id).is_public() {\n",
     tests: [
@@ -308,7 +308,7 @@ export const mutations: Mutation[] = [
     name: "named-default-undeclared",
     breaks:
       "a thread-local `js::export_default!(Memoized)` names isn't declared, so its `.d.ts` says `export default Memoized;` of no `Memoized`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        if named_default == Some(def_id) {\n",
     replace: "        if false {\n",
     tests: ["test/declarations.test.ts", "-t", "thread-local default export"],
@@ -317,7 +317,7 @@ export const mutations: Mutation[] = [
     name: "pub-named-default-declared-by-name",
     breaks:
       "a `pub fn` `js::export_default!(page)` names is declared `export function page`, where its JS exports it as the default alone, so TypeScript imports a name the JS doesn't export",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: " || is_mark(tcx, def_id) || named_default == Some(def_id) {\n",
     replace: " || is_mark(tcx, def_id) {\n",
     tests: [
@@ -330,7 +330,7 @@ export const mutations: Mutation[] = [
     name: "node-param-kept",
     breaks:
       "a type parameter bound by react's `Node` stays a parameter, `children: C`, where a person writes `children: ReactNode`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            ty::Param(param) => match self.erased.get(&param.index) {\n",
     replace: "            ty::Param(param) => match None::<&Value> {\n",
     tests: ["test/declarations.test.ts", "-t", "typed as React types them"],
@@ -339,7 +339,7 @@ export const mutations: Mutation[] = [
     name: "erased-param-declared",
     breaks:
       "a type parameter that's `ReactNode` is still declared, `ButtonLinkProps<C>`, of a `C` nothing uses",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            .filter(|param| !erased.iter().any(|(index, _)| *index == param.index))\n",
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "typed as React types them"],
@@ -348,7 +348,7 @@ export const mutations: Mutation[] = [
     name: "erased-arg-given",
     breaks:
       "a reference gives an argument for a type parameter its declaration doesn't have, `ButtonLinkProps<ReactNode>` of `ButtonLinkProps`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            .filter(|(index, _)| !erased.iter().any(|(e, _)| *e as usize == *index))\n",
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "typed as React types them"],
@@ -357,7 +357,7 @@ export const mutations: Mutation[] = [
     name: "dyn-fn-untyped",
     breaks:
       "a `Box<dyn Fn(&event::Mouse)>` prop is declared `(...args: any[]) => any`, so a TypeScript caller's handler is checked against nothing",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                    .is_some_and(|t| tcx.fn_trait_kind_from_def_id(t).is_some()) =>\n",
     replace: "                    .is_some_and(|_| false) =>\n",
     tests: ["test/declarations.test.ts", "-t", "by what it takes"],
@@ -365,7 +365,7 @@ export const mutations: Mutation[] = [
   {
     name: "fn-pointer-untyped",
     breaks: "a `fn(u32, u32) -> String` is declared `any`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            ty::FnPtr(..) => {\n",
     replace: "            ty::Never => {\n",
     tests: ["test/declarations.test.ts", "-t", "by what it takes"],
@@ -374,7 +374,7 @@ export const mutations: Mutation[] = [
     name: "impl-trait-param-named",
     breaks:
       "an `impl Trait` parameter is declared by rustc's name for it, `impl js::Defined + 'a`, which isn't TypeScript",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: '                None if param.name.as_str().starts_with("impl ") => keyword("unknown"),\n',
     replace: "",
     tests: [
@@ -387,7 +387,7 @@ export const mutations: Mutation[] = [
     name: "namespace-member-imported-whole",
     breaks:
       '`JSX.Element` is imported as `import type { JSX.Element } from "react"`, which isn\'t TypeScript',
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "name.split('.').next().unwrap_or(name).to_string()",
     replace: "name.to_string()",
     tests: [
@@ -400,7 +400,7 @@ export const mutations: Mutation[] = [
     name: "dyn-node-a-function",
     breaks:
       "`Box<dyn ReactNode>` is declared a function, `(...args: any[]) => any`, not a `ReactNode`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                    && let Some(declared) = written_types(tcx, t) =>",
     replace:
       "                    && let Some(declared) = written_types(tcx, t).filter(|_| false) =>",
@@ -410,7 +410,7 @@ export const mutations: Mutation[] = [
     name: "default-export-const-as-function",
     breaks:
       "a private `thread_local!` default export is declared a function, not `declare const Memoized: ..`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                _ => out.constant(def_id),\n",
     replace: "                _ => out.function(def_id),\n",
     tests: ["test/declarations.test.ts", "-t", "thread-local default"],
@@ -419,7 +419,7 @@ export const mutations: Mutation[] = [
     name: "impl-fn-unknown",
     breaks:
       "an `impl Fn(&Item, usize) -> R` parameter is declared `unknown`, not its function",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                slot.insert(self.function_type(callable.inputs, callable.output, &[], true));\n",
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "impl Fn parameter"],
@@ -427,7 +427,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-cell-declared-any",
     breaks: "a `&Cell` parameter is declared `any`, where it's `{ value }`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                if is_std_def(tcx, did, StdItem::Cell) || is_std_def(tcx, did, StdItem::RefCell) {\n",
     replace:
       "                if false && is_std_def(tcx, did, StdItem::Cell) || is_std_def(tcx, did, StdItem::RefCell) {\n",
@@ -441,7 +441,7 @@ export const mutations: Mutation[] = [
     name: "boxed-refcell-declared-any",
     breaks:
       "a `&RefCell<u32>` parameter, and a variant's boxed `RefCell` field, are declared `any`, where each is `{ value }` (#503)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                if is_std_def(tcx, did, StdItem::Cell) || is_std_def(tcx, did, StdItem::RefCell) {\n",
     replace:
       "                if is_std_def(tcx, did, StdItem::Cell) {\n",
@@ -455,7 +455,7 @@ export const mutations: Mutation[] = [
     name: "declarations-private-type-any",
     breaks:
       "a module's private props struct, which its exported component names, is `any`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                // exported (ADR 0385). Another module's isn't its to declare.\n                if !tcx.visibility(did).is_public() {",
     replace:
       "                // exported (ADR 0385). Another module's isn't its to declare.\n                if !tcx.visibility(did).is_public() {\n                    return keyword(\"any\");\n                }\n                if false {",
@@ -465,7 +465,7 @@ export const mutations: Mutation[] = [
     name: "declarations-private-type-exported",
     breaks:
       "a module's private struct is exported from its `.d.ts`, where its Rust doesn't export it",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: '                        };\n                        declared["exported"] = json!(false);\n',
     replace: "                        };\n",
     tests: ["test/declarations.test.ts", "-t", "private struct"],
@@ -474,7 +474,7 @@ export const mutations: Mutation[] = [
     name: "declarations-unexported-last",
     breaks:
       "a type declared but not exported comes after what names it, not before, as TypeScript has it",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "    items.splice(0..0, out.unexported.into_values().flatten());",
     replace: "    items.extend(out.unexported.into_values().flatten());",
     tests: ["test/declarations.test.ts", "-t", "private struct"],
@@ -483,7 +483,7 @@ export const mutations: Mutation[] = [
     name: "declarations-never-unknown",
     breaks:
       "a function that never returns is declared as returning something other than `never`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: '            ty::Never => keyword("never"),\n',
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "declarations type what"],
@@ -492,7 +492,7 @@ export const mutations: Mutation[] = [
     name: "union-declared-any",
     breaks:
       "an exported union is TypeScript's `any`, not the fields it may hold",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            DefKind::Union => Some(out.union_type(def_id)),\n",
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "union"],
@@ -501,7 +501,7 @@ export const mutations: Mutation[] = [
     name: "optional-union-nested",
     breaks:
       "an optional field of a union holds it whole, `(string | null) | undefined`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: '        Some("union") => ty["types"].as_array().cloned().unwrap_or_default(),\n',
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
@@ -510,7 +510,7 @@ export const mutations: Mutation[] = [
     name: "empty-union-unprinted",
     breaks:
       "an enum of no variants is declared `type Void = ;`, which isn't TypeScript, where it's `never`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: '    if types.is_empty() {\n        return keyword("never");\n    }\n',
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "no variants"],
@@ -519,7 +519,7 @@ export const mutations: Mutation[] = [
     name: "written-alias-expanded",
     breaks:
       "an alias the Rust writes is what it stands for, `TocItem[]`, where it's `Toc`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        if let Some((_, named)) = self.named.iter().rev().find(|(named, _)| *named == erased) {",
     replace:
       "        if let Some((_, named)) = self.named.iter().rev().find(|_| false) {",
@@ -533,7 +533,7 @@ export const mutations: Mutation[] = [
     name: "written-const-expanded",
     breaks:
       "a `const`'s type written with an alias, `Context<Toc>`, is what it stands for",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            _ => self.as_written(written, |out| out.ts(ty)),\n",
     replace: "            _ => self.ts(ty),\n",
     tests: [
@@ -546,7 +546,7 @@ export const mutations: Mutation[] = [
     name: "declaration-named-as-rust",
     breaks:
       "a function named as JS keeps a word apart is declared as `new`, not its JS's `new$`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        (self.fns.get(&def_id)).map_or_else(|| fn_name(self.tcx, def_id), |info| info.name.clone())\n",
     replace: "        fn_name(self.tcx, def_id)\n",
     tests: ["test/declarations.test.ts", "-t", "as its JS does"],
@@ -554,7 +554,7 @@ export const mutations: Mutation[] = [
   {
     name: "transparent-tuple-struct-any",
     breaks: "a `#[repr(transparent)]` tuple struct a function takes is `any`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                || super::recognition::transparent_field(tcx, adt).is_some()\n",
     replace: "",
     tests: [
@@ -567,7 +567,7 @@ export const mutations: Mutation[] = [
     name: "bound-global-undeclared",
     breaks:
       "a module's `const assign = Object.assign` isn't declared, so its `.d.ts`'s `export default assign` names nothing",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "    for held in (held.iter()).filter(|held| held.through.is_none() && (held.export || held.default)) {\n",
     replace:
       "    for held in (held.iter()).filter(|held| held.through.is_none() && (held.export || held.default)).take(0) {\n",
@@ -581,7 +581,7 @@ export const mutations: Mutation[] = [
     name: "held-static-typeof",
     breaks:
       "a binding's static a module holds is declared `typeof Symbol.iterator`, not its type",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            DefKind::Static { .. } => out.constant(held.binding),\n",
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "static a module holds"],
@@ -590,7 +590,7 @@ export const mutations: Mutation[] = [
     name: "default-constant-declared-as-default",
     breaks:
       "a default constant's `.d.ts` is `export default const`, which TypeScript can't read",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                let function = tcx.def_kind(def_id) == DefKind::Fn;\n",
     replace: "                let function = true;\n",
     tests: [
@@ -603,7 +603,7 @@ export const mutations: Mutation[] = [
     name: "opaque-fn-undeclared",
     breaks:
       "an `impl Fn` a function gives is declared `any`, not the function it says",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias) => {\n",
     replace:
       "            ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias).filter(|_| false) => {\n",
@@ -617,7 +617,7 @@ export const mutations: Mutation[] = [
     name: "own-alias-declared-exported",
     breaks:
       "a `.d.ts` exports `getCurrentTime` by its name too, where its JS exports it as `unstable_now` alone (ADR 0596, amended)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            if !held && let Some((_, (_, export))) = aliases.iter().find(|&&(item, _)| item == def_id) {\n",
     replace:
       "            if false && let Some((_, (_, export))) = aliases.iter().find(|&&(item, _)| item == def_id) {\n",
@@ -631,7 +631,7 @@ export const mutations: Mutation[] = [
     name: "value-cell-declared-any",
     breaks:
       "a `RefCell` of an array a function gives is declared `any`, not the array it is",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                if self.ref_cells.is_value_cell(tcx, ty) {\n",
     replace:
       "                if false && self.ref_cells.is_value_cell(tcx, ty) {\n",
@@ -641,7 +641,7 @@ export const mutations: Mutation[] = [
     name: "variable-declared-const",
     breaks:
       "an exported variable its module sets is declared `export const enabled: boolean;` (ADR 0270, amended)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: '            declared["mutable"] = json!(true);\n',
     replace: "",
     tests: [
@@ -654,7 +654,7 @@ export const mutations: Mutation[] = [
     name: "variable-declared-cell",
     breaks:
       "an exported variable is declared as its cell, `export let enabled: { value: boolean };` (ADR 0270, amended)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                ty::Adt(_, held) if variable.is_some() => held.type_at(0),\n",
     replace:
       "                ty::Adt(_, held) if variable.is_some() && held.is_empty() => held.type_at(0),\n",
@@ -668,7 +668,7 @@ export const mutations: Mutation[] = [
     name: "nullable-local-declared-undefined",
     breaks:
       "a nullable thread-local's variable is declared `Fiber | null | undefined`, where its `None` is `null` (ADR 0586, amended)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                if super::representation::none_form(self.tcx, super::representation::NonePlace::Local(def_id))\n",
     replace: "                if false && super::representation::none_form(self.tcx, super::representation::NonePlace::Local(def_id))\n",
     tests: [
@@ -681,7 +681,7 @@ export const mutations: Mutation[] = [
     name: "nullable-local-declared-unaliased",
     breaks:
       "a nullable thread-local of an `Option<CallDestroy>`, and a variable's `Cell<Option<ConsoleTask>>`, are declared by what the alias is, `((fiber: Fiber, value: number) => number) | null`, not `CallDestroy | null` (ADR 0586, amended)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        let written = self.written_type(def_id);\n        // Named as the functions it may be name them (#630).\n",
     replace: "        let written = None;\n        // Named as the functions it may be name them (#630).\n",
     tests: [
@@ -694,7 +694,7 @@ export const mutations: Mutation[] = [
     name: "nullable-option-local-declared-undefined",
     breaks:
       "a nullable thread-local of an `Option`, and a nullable `const`, is declared `T | undefined`, not `T | null` (ADR 0586, amended)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            None if super::representation::none_form(self.tcx, super::representation::NonePlace::Local(def_id))\n                .stores_null()\n                && let Some(inner) = self.option(ty) =>\n",
     replace: "            None if false\n                && let Some(inner) = self.option(ty) =>\n",
     tests: [
@@ -708,7 +708,7 @@ export const mutations: Mutation[] = [
     name: "class-of-another-modules-struct-undeclared",
     breaks:
       "a class whose struct is another module's is declared nowhere, though its references import it from where its constructor is",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            items.extend(exported_class(tcx, documented(out.class(class), tcx, class), class));\n",
     replace: "",
     tests: ["test/class-constructors.test.ts", "-t", "constructor's statements set this"],
@@ -717,7 +717,7 @@ export const mutations: Mutation[] = [
     name: "typed-class-declared-a-function",
     breaks:
       "a typed `js::Class` is declared as a function, `(value: string) => unknown`, which TypeScript calls, not `new`s",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: '                    constructor["construct"] = json!(true);\n',
     replace: "",
     tests: [
@@ -730,7 +730,7 @@ export const mutations: Mutation[] = [
     name: "export-named-apart-declared-apart",
     breaks:
       "the `.d.ts` of an export named apart of a global, `console`, is `declare function console$()` and its alias, not `export function console()` (#338)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: '                    true => declared["name"] = json!(export),\n',
     replace:
       '                    true if false => declared["name"] = json!(export),\n                    true => {\n                        declared["exported"] = json!(false);\n                        declared["declare"] = json!(true);\n                    }\n',
@@ -744,7 +744,7 @@ export const mutations: Mutation[] = [
     name: "kept-word-declared-by-its-name",
     breaks:
       "the `.d.ts` of `pub fn delete()` is `export function delete(): number;`, a declaration no `.d.ts` may name (#338)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: " == Some(export) && !rust_js_program::names::kept_word(export)\n",
     replace: " == Some(export)\n",
     tests: [
@@ -757,7 +757,7 @@ export const mutations: Mutation[] = [
     name: "intersection-declared-union",
     breaks:
       "a `RegExpMatch`'s `.d.ts` is `string[] | { .. }`, a union, not the intersection it's declared (#303)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: '                json!({ "kind": "intersection", "types": types })\n',
     replace: "                union(types)\n",
     tests: [
@@ -770,7 +770,7 @@ export const mutations: Mutation[] = [
     name: "nullable-value-declared-undefined",
     breaks:
       "a map of `Option` values is declared `Map<string, string | null | undefined>`, where it holds `None` as `null` alone, `Map<string, string | null>` (ADR 0884, amended)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                        if nullable.contains(&param.index) && out.tcx.is_lang_item(",
     replace: "                        if false && nullable.contains(&param.index) && out.tcx.is_lang_item(",
     tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
@@ -778,7 +778,7 @@ export const mutations: Mutation[] = [
   {
     name: "namespace-type-any",
     breaks: "a namespace's type is `any`, not `typeof Reconciler` (ADR 1037)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                    return self.namespace_type(did);\n",
     replace: '                    return keyword("any");\n',
     tests: [
@@ -791,7 +791,7 @@ export const mutations: Mutation[] = [
     name: "private-renamed-global-declared",
     breaks:
       "a private `use` that renames a global, `use js::array::SLICE as slice;`, is declared in the module's .d.ts, `declare const slice: ..`, which no export names (rd517)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "    for held in (held.iter()).filter(|held| held.through.is_none() && (held.export || held.default)) {\n",
     replace: "    for held in (held.iter()).filter(|held| held.through.is_none()) {\n",
     tests: ["test/lowering-binding-paths.test.ts", "-t", "private use renaming a global"],
@@ -799,7 +799,7 @@ export const mutations: Mutation[] = [
   {
     name: "namespace-value-undeclared",
     breaks: "a namespace thread-local's fields aren't declared in its `.d.ts`, so TypeScript finds none of its module's exports (rd293, ADR 1037, amended)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            items.extend(out.namespace_fields(def_id));\n",
     replace: "            items.extend(Vec::<Value>::new());\n",
     tests: ["test/namespace-values.test.ts", "-t", "fields are its module's exports"],
@@ -808,7 +808,7 @@ export const mutations: Mutation[] = [
     name: "written-alias-unexported-to-consumers",
     breaks:
       "a library's alias whose `#[rust_js::types]` writes a union isn't in its contract's declared types, so a consumer writes it out, its names unimported (rd538)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        DefKind::TyAlias => true,",
     replace: "        DefKind::TyAlias => false,",
     tests: ["test/declarations-libraries.test.ts", "-t", "declared as written"],
@@ -816,7 +816,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-plain-alias-undeclared",
     breaks: "a library's alias without `#[rust_js::types]` isn't among its contract's declared types, so a consumer writes it out and can't re-export it (rd642)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        DefKind::TyAlias => true,",
     replace: "        DefKind::TyAlias => aliases::declares_written_alias(tcx, did),",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
@@ -824,7 +824,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-constructor-optional",
     breaks: "a JS class's constructor's trailing `Option` is declared optional, though rust-js gives it `undefined` and the class is JS's (ADR 0330)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                    let mut constructor = self.function_type(sig.inputs(), sig.output(), &named, false);\n",
     replace: "                    let mut constructor = self.function_type(sig.inputs(), sig.output(), &named, true);\n",
     tests: ["test/declarations-function-types.test.ts"],
@@ -832,7 +832,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-constructor-names-unread",
     breaks: "a JS class's constructor's parameters, `Class<fn(name: &str, size: Option<f64>)>`, are named by their types",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                    let named = self.function_names(tcx.erase_and_anonymize_regions(signature));\n",
     replace: "                    let named = Vec::new();\n",
     tests: ["test/declarations-function-types.test.ts"],
@@ -840,7 +840,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-fn-names-unread",
     breaks: "a `dyn Fn` field's parameters are named by their types, though its literals name them (#543)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                let named = self.function_names(erased);\n                self.function_type(inputs, output, &named, true)\n",
     replace: "                let named = Vec::new();\n                self.function_type(inputs, output, &named, true)\n",
     tests: ["test/declarations-function-types.test.ts"],
@@ -848,7 +848,7 @@ export const mutations: Mutation[] = [
   {
     name: "fn-pointer-names-unread",
     breaks: "a fn pointer's parameters are named by their types, `(value, value2)`, though it writes `(count, _sum)`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                let named = self.function_names(erased);\n                self.function_type(sig.inputs(), sig.output(), &named, true)\n",
     replace: "                let named = Vec::new();\n                self.function_type(sig.inputs(), sig.output(), &named, true)\n",
     tests: ["test/declarations-function-types.test.ts"],
@@ -856,7 +856,7 @@ export const mutations: Mutation[] = [
   {
     name: "ungiven-function-declared",
     breaks: "a free function whose JS takes what a JS caller can't give is declared, not a note (#549)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            && out.leave_out(def_id, &out.js_name(def_id))\n",
     replace: "            && false\n",
     tests: ["test/declarations-ungiven.test.ts"],
@@ -864,7 +864,7 @@ export const mutations: Mutation[] = [
   {
     name: "ungiven-alias-exported",
     breaks: "a function left out, `named`, is still exported by its other name, `export { named as unstable_named }`, which TypeScript refuses of a name it doesn't declare (#549)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        .filter(|(item, (_, export))| !by_own_name(fns, *item, export) && !left_out.contains(item))\n",
     replace: "        .filter(|(item, (_, export))| !by_own_name(fns, *item, export))\n",
     tests: ["test/declarations-ungiven.test.ts"],
@@ -872,7 +872,7 @@ export const mutations: Mutation[] = [
   {
     name: "ungiven-notes-at-the-end",
     breaks: "a member's note is at the module's end, not after what it's of (#559)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        // The notes of what the item before left out, after it (#559).\n        items.append(&mut out.notes);\n",
     replace: "",
     tests: ["test/declarations-ungiven.test.ts"],
@@ -880,7 +880,7 @@ export const mutations: Mutation[] = [
   {
     name: "default-type-imported-by-name",
     breaks: "a type a module exports as its default, `ModuleDependency#default`, is imported as a name, `import type { default } from ..`, which TypeScript refuses (rd678)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        if first != \"default\" {\n",
     replace: "        if true {\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "its module's default is imported as its default"],
@@ -888,7 +888,7 @@ export const mutations: Mutation[] = [
   {
     name: "default-type-named-after-its-module",
     breaks: "a module's default a Rust type types is imported by its module's name, `Request`, not its own, `WebRequest`, as its JS imports it (rd678)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            Some(item) => self.tcx.item_name(item).to_string(),\n",
     replace: "            Some(_) => rust_js_program::casing::namespace_name(super::bindings::file_stem(from)),\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "its module's default is imported as its default"],
@@ -896,7 +896,7 @@ export const mutations: Mutation[] = [
   {
     name: "trait-self-a-type-argument",
     breaks: "a class that extends a binding's class whose trait names it alone, `webpack#ModuleDependency`, is declared `extends ModuleDependency<ClientReferenceDependency>`, the trait's `Self` a type argument of a class of none (rd680)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            let type_args = args.types().skip(usize::from(of_self)).map(|t| self.ts(t)).collect();\n",
     replace: "            let type_args = args.types().skip(usize::from(of_self && false)).map(|t| self.ts(t)).collect();\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "is its class's getter"],
@@ -904,7 +904,7 @@ export const mutations: Mutation[] = [
   {
     name: "impl-dictionary-undeclared",
     breaks: "an impl's dictionary its module exports, `circleShape`, isn't declared, so TypeScript can't import it to give it (#550)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        if let Some(dictionary) = out.impl_dictionary(def_id) {\n",
     replace: "        if let Some(dictionary) = out.impl_dictionary(def_id).filter(|_| false) {\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
@@ -912,7 +912,7 @@ export const mutations: Mutation[] = [
   {
     name: "trait-undeclared",
     breaks: "a trait isn't declared as the type of its dictionaries, so what names it, `Shape<S>`, names nothing (#550)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            DefKind::Trait => out.trait_interface(def_id),\n",
     replace: "",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
@@ -920,7 +920,7 @@ export const mutations: Mutation[] = [
   {
     name: "location-declared-any",
     breaks: "a `Location`, what a tracked function takes and `Location::caller()` gives, is declared `any`, where it's `{ file, line, column }` (#560)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                if tcx.is_lang_item(did, LangItem::PanicLocation) {\n",
     replace: "                if false && tcx.is_lang_item(did, LangItem::PanicLocation) {\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "location and a const"],
@@ -928,7 +928,7 @@ export const mutations: Mutation[] = [
   {
     name: "mut-box-declared-value",
     breaks: "a `&mut` its JS has as a box is declared as its value, `bump(n: number)`, so a TypeScript caller gives a number, whose `value` its JS can't write (#619)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                self.mut_ref_form(*inner).ts_type(value)\n",
     replace: "                value\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "box is declared"],
@@ -936,7 +936,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-declared-function",
     breaks: "a `dyn` of a trait that isn't a `Fn`'s is declared a function, `(...args: any[]) => any`, where its JS is a pair, `{ value, impl }` (#620)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            ty::Dynamic(..) => self.dyn_value(ty),\n",
     replace: "            ty::Dynamic(..) => json!({ \"kind\": \"function\", \"typeParameters\": [], \"params\": [], \"returns\": keyword(\"any\") }),\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "box is declared"],
@@ -944,7 +944,7 @@ export const mutations: Mutation[] = [
   {
     name: "value-names-unfilled",
     breaks: "a static's `dyn Fn` is named by its parameters' types, `(value: number, value2: string, ..)`, not as the function it is names them (#630)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        let outer = self.fill_value_names(def_id, ty);\n",
     replace: "        let outer = self.function_names.len();\n",
     tests: ["test/declarations-function-types.test.ts", "-t", "the functions its value may be"],
@@ -952,7 +952,7 @@ export const mutations: Mutation[] = [
   {
     name: "callable-type-parameter-declared",
     breaks: "a type parameter declared as the function it's bound by stays a type parameter too, `twice<F>(f: (value: number) => number)` (#661)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            .filter(|param| !callables.iter().any(|callable| callable.index == param.index))\n",
     replace: "            .filter(|param| callables.is_empty() || param.index != u32::MAX)\n",
     tests: ["test/declarations-impl-fn.test.ts", "-t", "bound by Fn"],
@@ -960,7 +960,7 @@ export const mutations: Mutation[] = [
   {
     name: "counted-class-rc-declared-opaque",
     breaks: "a counted `Rc` of a class, the instance itself, is declared as an opaque box, not the class, `shared(): Counter` (#1228)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                    && (!self.counted.counts(tcx, pointee) || super::std_types::rc::counted_as_instance(tcx, pointee))\n",
     replace: "                    && !self.counted.counts(tcx, pointee)\n",
     tests: ["test/class-constructors.test.ts", "-t", "a class's constructor that gives an Rc of it the crate counts gives the instance"],
@@ -968,7 +968,7 @@ export const mutations: Mutation[] = [
   {
     name: "cow-declared-any",
     breaks: "a `Cow` a function gives back is declared `any`, though its JS is the tagged union of what it borrowed or owns (#1748)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "super::recognition::is_cow_type(tcx, ty) || is_std_def(",
     replace: "false || is_std_def(",
     tests: ["test/declarations-collections.test.ts", "-t", "a Cow is declared the tagged union"],
@@ -976,7 +976,7 @@ export const mutations: Mutation[] = [
   {
     name: "cow-owned-unnormalized",
     breaks: "a `Cow`'s `Owned` is declared of `<B as ToOwned>::Owned` as written, a projection TypeScript has no type of, not the `String` it is (#1748)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                    return union(self.tagged_variants(did, args, true));\n",
     replace: "                    return union(self.tagged_variants(did, args, false));\n",
     tests: ["test/declarations-collections.test.ts", "-t", "a Cow is declared the tagged union"],
@@ -984,7 +984,7 @@ export const mutations: Mutation[] = [
   {
     name: "async-fn-declared-any",
     breaks: "an `async fn`'s result, an `impl Future`, is declared `any`, though its JS is the `Promise` of what it resolves to (#1769)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            ) if let Some(output) = opaque_future_output(tcx, *alias) => {\n",
     replace: "            ) if let Some(output) = opaque_future_output(tcx, *alias).filter(|_| false) => {\n",
     tests: ["test/declarations-async.test.ts"],
@@ -992,7 +992,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-opaque-undeclared",
     breaks: "a `LazyLock<Point>` a crate exports is declared `any`, where it's `@rust-js/std`'s opaque `LazyLock<Point>` (#1752)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                if let Some(opaque) = std_types::opaque(tcx, did) {\n",
     replace: "                if let Some(opaque) = std_types::opaque(tcx, did).filter(|_| false) {\n",
     tests: ["test/declarations-lazy.test.ts"],
@@ -1001,7 +1001,7 @@ export const mutations: Mutation[] = [
     name: "projection-declared-any",
     breaks:
       "a binding trait's associated type whose `#[rust_js::types]` says what it is is `any`, so the vercel UI kernel's `on` takes a listener of any value, `(value: any) => void`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            ) if written_types(tcx, *def_id).is_some() => self\n",
     replace: "            ) if false && written_types(tcx, *def_id).is_some() => self\n",
     tests: ["test/webapi-event-map.test.ts", "-t", "a binding trait's projection"],
@@ -1010,7 +1010,7 @@ export const mutations: Mutation[] = [
     name: "type-name-given-unread",
     breaks:
       "a type's `#[rust_js::name]` is left unread, so `#[rust_js::name = \"ISODate\"] pub type IsoDate = String;` is declared `type IsoDate`, which upstream's consumer, importing `ISODate`, can't name (#1829)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        None => super::bindings::given_name(tcx, did).unwrap_or_else(|| tcx.item_name(did).to_string()),\n",
     replace: "        None => tcx.item_name(did).to_string(),\n",
     tests: ["test/declarations-named.test.ts"],
@@ -1018,7 +1018,7 @@ export const mutations: Mutation[] = [
   {
     name: "result-declared-any",
     breaks: "an exported `Result` is declared `any`, so a consumer reading `_0` of `{ TAG: \"Ok\" }` is unchecked (#1835)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "is_cow_type(tcx, ty) || is_std_def(tcx, did, StdItem::Result) {",
     replace: "is_cow_type(tcx, ty) || false {",
     tests: ["test/declarations-results.test.ts"],
@@ -1026,7 +1026,7 @@ export const mutations: Mutation[] = [
   {
     name: "bound-constraint-never",
     breaks: "a bound whose parameter's identity shows prints no constraint, `selected<T>(value: T): T`, which accepts a string where Rust's `IsA<Element>` refuses it",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                indexed.entry(index).or_default().insert(0, constraint);\n",
     replace: "                let _ = (index, constraint);\n",
     tests: ["test/declarations-bounds.test.ts", "-t", "an IsA bound is TypeScript's constraint"],
@@ -1034,7 +1034,7 @@ export const mutations: Mutation[] = [
   {
     name: "bound-erased-of-no-arguments",
     breaks: "an erased bound's type is read of none of its arguments, so `IsA<Element>`'s `T` isn't `Element`",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                erased.insert(index, self.written(bound.def_id, &declared, bound.args));\n",
     replace: "                erased.insert(index, self.written(bound.def_id, &declared, ty::List::empty()));\n",
     tests: ["test/declarations-bounds.test.ts", "-t", "an IsA bound is TypeScript's constraint"],
@@ -1042,7 +1042,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-own-param-taken-for-a-type",
     breaks: "a trait's written type that names its own parameter, `IsA<T>`'s `T`, is a type of that name, `T<Element>`, not what it's given",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            && (from.is_some() || !own_param(name))\n",
     replace: "            && (from.is_some() || true)\n",
     tests: ["test/declarations-bounds.test.ts", "-t", "an IsA bound is TypeScript's constraint"],
@@ -1050,7 +1050,7 @@ export const mutations: Mutation[] = [
   {
     name: "boundary-param-undeclared",
     breaks: "a parameter bound by `Iterator` or its extensions isn't declared what a JS caller gives: `impl` ones print `unknown` (#1994)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "        for (index, boundary) in self.boundary_params(def_id) {\n",
     replace: "        for (index, boundary) in self.boundary_params(def_id).into_iter().filter(|_| false) {\n",
     tests: ["test/declarations-iterators.test.ts"],
@@ -1058,7 +1058,7 @@ export const mutations: Mutation[] = [
   {
     name: "boundary-param-still-generic",
     breaks: "a named `I: Iterator` parameter, declared what a JS caller gives, stays a type parameter too, `total<I>(items: Iterable<number>)` (#1994)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            .filter(|param| !boundary.iter().any(|(index, _)| *index == param.index))\n",
     replace: "",
     tests: ["test/declarations-iterators.test.ts"],
@@ -1066,7 +1066,7 @@ export const mutations: Mutation[] = [
   {
     name: "boundary-returned-undeclared",
     breaks: "an `impl Iterator` a function gives back is declared `any`, not the iterator it gives JS (#1999)",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "            ) if let Some(boundary) = super::iterators::boundary::of_opaque(tcx, *alias) => {\n",
     replace: "            ) if let Some(boundary) = super::iterators::boundary::of_opaque(tcx, *alias).filter(|_| false) => {\n",
     tests: ["test/declarations-iterators.test.ts"],
@@ -1074,7 +1074,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-type-default-resolved",
     breaks: "a written default type alias is expanded to its underlying Rust type",
-    file: "src/lower/declarations.rs",
+    file: "crates/rust-js-lower/src/declarations.rs",
     find: "                    declared[\"default\"] = self.as_written(written, |out| out.ts(default));",
     replace: "                    declared[\"default\"] = self.ts(default);",
     tests: ["test/declarations-type-maps.test.ts", "-t", "written event aliases"],

@@ -1,4 +1,4 @@
-// Mutations of src/lower/bindings/flattened.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/bindings/flattened.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "flattened-read-through-deref",
     breaks:
       "reading through a flattened reference, `report.item.line`, is refused as a read of it whole",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "                while let ExprKind::Deref { arg } = thir[lhs].kind {\n",
     replace:
       "                while let ExprKind::Deref { arg } = thir[lhs].kind && false {\n",
@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
   },  {
     name: "projected-read-whole-unseen",
     breaks: "a flattened struct lent whole or read by value isn't its fields alone where it's copied, compared or hashed, so its parent's keys are read too (#1820)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "                && let Some(adt) = plain_struct(tcx, expr.ty)\n            {\n                found.projected.insert(adt);\n",
     replace: "                && let Some(adt) = plain_struct(tcx, expr.ty)\n            {\n                drop(adt);\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_struct_lent_whole.rs$"],
@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
   {
     name: "projected-read-through-too",
     breaks: "a flattened struct only ever read through, `card.margin.top`, is taken as read whole, so its copies are its fields by name, not its spread (#1820)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "                && !through.contains(&e)\n                && let Some(adt) = plain_struct(tcx, expr.ty)\n",
     replace: "                && let Some(adt) = plain_struct(tcx, expr.ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_struct_lent_whole.rs$"],
@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
   {
     name: "projected-library-unreached",
     breaks: "a library's flattened struct a consumer may lend whole is compared, hashed and cloned by the library as the object it is, its parent's keys too (#1820)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "                && let Some(adt) = plain_struct(tcx, ty)\n            {\n                found.projected.insert(adt);\n",
     replace: "                && let Some(adt) = plain_struct(tcx, ty)\n            {\n                drop(adt);\n",
     tests: ["test/crates.test.ts", "-t", "flattened_struct_lent_by_a_consumer"],
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
   {
     name: "untagged-records-unfound",
     breaks: "an untagged enum of records a field flattens isn't its parent's keys, so a numeric keyboard's event is refused (#1818)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "                ty::Adt(adt, _) if untagged_records(tcx, *adt).is_some() => {\n",
     replace: "                ty::Adt(adt, _) if false && untagged_records(tcx, *adt).is_some() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_untagged_records.rs$"],
@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
   {
     name: "untagged-records-payload-uncopied",
     breaks: "an untagged enum's reference payload, spread into its parent, isn't asked whether its copy could be told from its referent, a `Cell` of its own or its address compared (#1818, #1819)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "        ty::Adt(adt, args) if untagged_records(tcx, *adt).is_some() => (adt.variants().iter())\n",
     replace: "        ty::Adt(adt, args) if false && untagged_records(tcx, *adt).is_some() => (adt.variants().iter())\n",
     tests: ["test/flattened-untagged.test.ts", "-t", "couldn't be its one object"],
@@ -60,23 +60,23 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-js-object-allowed",
     breaks: "a flattened JS object is copied into its parent, which misses a key `js::dict::set` sets later (#1822)",
-    file: "src/lower/bindings/flattened.rs",
-    find: "    if matches!(referent.kind(), ty::Adt(adt, args) if crate::lower::representation::marks_js_object(tcx, *adt, args)) {\n",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
+    find: "    if matches!(referent.kind(), ty::Adt(adt, args) if crate::representation::marks_js_object(tcx, *adt, args)) {\n",
     replace: "    if false {\n",
     tests: ["test/lowering.test.ts", "-t", "flattened JS object is refused"],
   },
   {
     name: "flattened-js-object-by-value-unasked",
     breaks: "a `Copy` handle on a JS object flattened by value is copied into its parent, whose copies share the object (#1822)",
-    file: "src/lower/bindings/flattened.rs",
-    find: "        ty::Adt(adt, args) if crate::lower::representation::marks_js_object(tcx, *adt, args) => vec![ty],\n",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
+    find: "        ty::Adt(adt, args) if crate::representation::marks_js_object(tcx, *adt, args) => vec![ty],\n",
     replace: "        ty::Adt(..) => Vec::new(),\n",
     tests: ["test/lowering.test.ts", "-t", "flattened JS object is refused"],
   },
   {
     name: "flattened-reference-uncopied",
     breaks: "a flattened reference is no copy of its referent, so a `&mut`'s writes through its parent, or a `Cell`'s through either, are lost to the other (#1819)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "        ty::Ref(..) => vec![ty],\n",
     replace: "        ty::Ref(..) => Vec::new(),\n",
     tests: ["test/lowering.test.ts", "-t", "flattened reference is refused"],
@@ -84,7 +84,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-reference-mut-allowed",
     breaks: "a flattened `&mut` is copied into its parent, whose writes through it its referent never sees (#1819)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "    if mutability.is_mut() {\n",
     replace: "    if false {\n",
     tests: ["test/lowering.test.ts", "-t", "flattened reference is refused"],
@@ -92,7 +92,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-reference-cell-allowed",
     breaks: "a flattened reference to a struct with a `Cell` is copied into its parent, so a write through either isn't seen through the other (#1819)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "    if !referent.is_freeze(tcx, typing_env) {\n",
     replace: "    if false {\n",
     tests: ["test/lowering.test.ts", "-t", "flattened reference is refused"],
@@ -100,15 +100,15 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-reference-changed-unasked",
     breaks: "a flattened reference to a struct whose address is compared is copied into its parent, which `ptr::eq` tells from its referent (#1819)",
-    file: "src/lower/bindings/flattened.rs",
-    find: "    (changed.iter()).any(|&changed| crate::lower::copies::instance_of(recognition, referent, changed))\n",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
+    find: "    (changed.iter()).any(|&changed| crate::copies::instance_of(recognition, referent, changed))\n",
     replace: "    (changed.iter()).any(|&changed| changed == referent && false)\n",
     tests: ["test/lowering.test.ts", "-t", "flattened reference is refused"],
   },
   {
     name: "keyed-units-many",
     breaks: "an enum of two variants without fields, which no key tells apart, is flattened as one told by its keys (#504)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "    if units > 1 || units == own.len() {\n",
     replace: "    if units == own.len() {\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "no key tells"],
@@ -116,7 +116,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-shared-key-tells",
     breaks: "a variant is told by a key another variant has too (#504)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "        let unique = |key: &String| (own.iter().enumerate()).all(|(j, other)| j == i || !other.contains(key));\n",
     replace: "        let unique = |_: &String| true;\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "no key tells"],
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-test-mark-unread",
     breaks: "a variant's `#[rust_js::test]` field doesn't tell it: `'value' in node` where it's `'getter' in node` (#504)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "            .filter(|(field, _)| is_test_field(tcx, field.did))\n",
     replace: "            .filter(|_| false)\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "intersection"],
@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-params-unseen",
     breaks: "a struct's flattened type parameter is no flattened field, so a generic graph's node of its caller's kind is refused (#504)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "                ty::Param(param) => found.params.entry(id.to_def_id()).or_default().push(param.index),\n",
     replace: "                ty::Param(_) => {}\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "intersection"],
@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-param-given-unread",
     breaks: "an enum a struct's flattened type parameter is given is not told by its keys, so it's refused there (#504)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "    found.keyed.extend(keyed);\n",
     replace: "    drop(keyed);\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_param.rs$"],
@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-test-by-value",
     breaks: "a keyed enum's variant is tested by its key's value, not its presence, which a `None` leaves `undefined` (#504)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "    rust_js_program::js::Expr::bin(\n        rust_js_program::js::Op::In,\n        rust_js_program::js::Expr::str(key),\n        subject,\n    )\n",
     replace: "    rust_js_program::js::Expr::bin(\n        rust_js_program::js::Op::LooseNe,\n        rust_js_program::js::Expr::member(subject, key),\n        rust_js_program::js::Expr::null(),\n    )\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_enum.rs$"],
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-contract-unread",
     breaks: "a consumer tags a library's keyed enum its contract lists, and tests its tag (ADR 1071)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "            if adt.is_enum() && foreign.keyed(adt.did()) {\n",
     replace: "            if false {\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "contract"],
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-foreign-params-unseen",
     breaks: "a library's struct's flattened type parameter flattens nothing a consumer gives it (ADR 1071)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "                found.params.insert(adt.did(), at);\n",
     replace: "                drop(at);\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "contract"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
     name: "library-flattened-state-unseen",
     breaks:
       "a library's class's flattened state is no state to its consumer, so `mem::replace(task.state.get_mut(), ..)` moves out the class's object itself, `const old = task`, which the write then changes (#1030)",
-    file: "src/lower/bindings/flattened.rs",
+    file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "                        found.states.insert(state.did());\n",
     replace: "                        let _ = state;\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_flattened_state"],

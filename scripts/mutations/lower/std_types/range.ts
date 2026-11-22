@@ -1,11 +1,11 @@
-// Mutations of src/lower/std_types/range.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/std_types/range.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "range-contains-own-type-refused",
     breaks: "`contains` of a range of a crate's own `PartialOrd` type, `(Day(1)..=Day(5)).contains(&d)`, is refused",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "                return self.contains_ordered(range, item, range_ty, (index, item_ty), span, out);",
     replace:
       "                return Err(self.unsupported(span, &format!(\"`contains` of a `{range_ty}`\")));",
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "range-contains-end-test-unguarded",
     breaks:
       "`contains`'s end test, whose bound is made by statements, runs them where the start's test fails too, or drops them",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "            (Some(below), Some(above)) if later.is_empty() => Expr::bin(Op::And, below, above),",
     replace: "            (Some(below), Some(above)) if true => Expr::bin(Op::And, below, above),",
     tests: ["test/corpus.test.ts", "-t", "^range_contains_of_own_type\\.rs$"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-contains-inclusive-end-excluded",
     breaks: "`(Day(1)..=Day(5)).contains(&Day(5))` is `false`, its end excluded",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "                let method = if matches!(kind, RangeKind::Inclusive | RangeKind::ToInclusive) {",
     replace: "                let method = if matches!(kind, RangeKind::ToInclusive) {",
     tests: ["test/corpus.test.ts", "-t", "^range_contains_of_own_type\\.rs$"],
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     name: "range-contains-stepped-unrefused",
     breaks:
       "`contains` of another type's item in a stepped `a..=b` of integers gives its `PartialOrd` the start JS's steps leave past its end",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "        if exhausted.is_some() {",
     replace: "        if exhausted.is_some() && false {",
     tests: ["test/corpus.test.ts", "-t", "^range_contains_stepped_of_another_type_refused\\.rs$"],
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     name: "range-count-unfolded",
     breaks:
       "a range's count of numbers known, `(1..4).len()`, is `Math.max(4 - 1, 0)`, not `3`",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "    if let (Some(start), Some(end)) = (start.as_int(), end.as_int()) {\n",
     replace:
       "    if let (Some(start), Some(end), false) = (start.as_int(), end.as_int(), true) {\n",
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "contains-inclusive-end-excluded",
     breaks: "`(1..=7).contains(&7)` is false",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "                    compare(Op::Le, item, end.clone()),\n                ],\n                (RangeKind::From, [start])",
     replace:
       "                    compare(Op::Lt, item, end.clone()),\n                ],\n                (RangeKind::From, [start])",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-debug-inclusive-dots",
     breaks: "`{:?}` of `1..=6` is `1..6`",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: '            RangeKind::Inclusive | RangeKind::ToInclusive => "..=",',
     replace: '            RangeKind::ToInclusive => "..=",',
     tests: ["test/corpus.test.ts", "-t", "range_values"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
   {
     name: "char-range-contains-by-units",
     breaks: "`('a'..='\\u{ffff}').contains(&'🦀')` is true, by UTF-16 units",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "                true => self.text_compare(op, a, b),",
     replace: "                true => Expr::bin(op, a, b),",
     tests: ["test/corpus.test.ts", "-t", "code_point_order"],
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     name: "range-literal-arithmetic-held",
     breaks:
       "a range literal's bound that does nothing but isn't a read, `i + 1`, is held in a `const range` read by its fields",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "                    Prop::Field(field, value) if field == name && (value.reads_same() || !value.has_effects()) => {\n",
     replace:
       "                    Prop::Field(field, value) if field == name && value.reads_same() => {\n",
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-range-items-eager",
     breaks:
       "`(0..n).find(f)` from MIR is `$range(0, n).find(f)`, an array of all n numbers made before the first is tried",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "    Some(Expr::call_helper(LAZY_RANGE, vec![range.start.clone(), end]))\n",
     replace:
       '    Some(Expr::call_helper("$iter", vec![Expr::call_helper("$range", vec![range.start.clone(), end])]))\n',
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-range-items-chars",
     breaks:
       'a range of `char`s made where it\'s stepped is `$lazyRange("a", "e")`, which counts text as numbers',
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "    if range.back || !matches!(range.start.kind, js::ExprKind::Num(_)) {\n",
     replace: "    if range.back {\n",
     tests: [
@@ -122,8 +122,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-range-items-lent",
     breaks:
       "a range made where it's stepped stays lent, `$lent($lazyRange(0, n)).find(f)`, though nothing else steps it",
-    file: "src/lower/std_types/range.rs",
-    find: "    if let Some(made) = lazy_range(crate::lower::iterators::unlent(e)) {\n",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
+    find: "    if let Some(made) = lazy_range(crate::iterators::unlent(e)) {\n",
     replace: "    if let Some(made) = lazy_range(e) {\n",
     tests: [
       "test/lowering-iterators.test.ts",
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-lazy-range-end-unfolded",
     breaks:
       "`(1..=5).filter(f)` from MIR is `$lazyRange(1, 5 + 1)`, not `$lazyRange(1, 6)`",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "            Some(n) => Expr::int(n + 1),\n            None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),\n",
     replace:
       "            Some(_) | None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),\n",
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     name: "range-steps-back-forward",
     breaks:
       "`(1..4).rev()` and `range.next_back()` step the range from its start",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: '            (RangeKind::Exclusive, true) => "$rangeNextBack",\n',
     replace: '            (RangeKind::Exclusive, true) => "$rangeNext",\n',
     tests: ["test/corpus.test.ts", "-t", "iterator_back_ends"],
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     name: "inclusive-range-back-refused",
     breaks:
       "`(250..=255u8).rev()` and an inclusive range's `next_back()` are refused",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: '            (RangeKind::Inclusive, true) => "$rangeInclusiveNextBack",\n',
     replace: "",
     tests: [
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
     name: "range-count-inclusive-short",
     breaks:
       "an inclusive range's `len()` and `size_hint()` count one fewer than it has",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "        RangeKind::Inclusive => Expr::bin(Op::Add, gap, Expr::int(1)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_size_hint.rs$"],
@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-count-negative",
     breaks: "a range stepped past its end counts below zero",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "    Expr::builtin(Expr::js_global(\"Math\"), \"max\", vec![gap, Expr::int(0)])\n",
     replace: "    gap\n",
     tests: ["test/corpus.test.ts", "-t", "^range_size_hint.rs$"],
@@ -187,7 +187,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-range-len-refused",
     breaks: "`r.len()` of a range of numbers from MIR is refused",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "        let (start, end) = range_bounds(it)?;\n",
     replace:
       "        let (start, end) = range_bounds(it).filter(|_| false)?;\n",
@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
     name: "range-bounds-spilled-twice",
     breaks:
       "a range's value that doesn't read the same is read once a bound, and made twice",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "        let range = match literal || range.reads_same() {\n",
     replace: "        let range = match true {\n",
     snapshots: true,
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
     name: "range-skip-stepped",
     breaks:
       "`skip(n)` of a range isn't its start moved up, `$lazyRange(0, b).drop(n)` (#231)",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: '        ("drop", [n]) if n.reads_same() => {\n',
     replace: '        ("drop", [n]) if false && n.reads_same() => {\n',
     tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
@@ -218,7 +218,7 @@ export const mutations: Mutation[] = [
     name: "range-own-nth-stepped",
     breaks:
       "a range's own `nth(n)` isn't `$rangeNth(r, n)`, but its iterator's, whose `nth` is the same arithmetic (#231)",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: '            (IterMethod::Nth, RangeKind::Exclusive, false) => "$rangeNth",\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
@@ -228,7 +228,7 @@ export const mutations: Mutation[] = [
     name: "range-own-step-chars",
     breaks:
       "a range of `char`s is stepped by `$rangeNth`'s arithmetic, `('a'..'z').nth(2)` giving `\"a2\"`",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "        let num = self.range_index(reversed.unwrap_or(range)).and_then(Num::of)?;\n",
     replace:
       "        let num = self.range_index(reversed.unwrap_or(range)).and_then(Num::of).unwrap_or(Num::U32);\n",
@@ -238,7 +238,7 @@ export const mutations: Mutation[] = [
     name: "range-nth-back-stepped",
     breaks:
       "a reversed range's `nth(n)` isn't `$rangeNthBack(r, n)`, but its iterator's, whose `nth` is the same arithmetic (#231)",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: '            (IterMethod::Nth, RangeKind::Exclusive, true) => "$rangeNthBack",\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
     name: "range-inclusive-nth-exclusive",
     breaks:
       "`(a..=b).nth(n)` is an exclusive range's, giving none at its end `b`",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: '            (IterMethod::Nth, RangeKind::Inclusive, false) => "$rangeInclusiveNth",\n',
     replace:
       '            (IterMethod::Nth, RangeKind::Inclusive, false) => "$rangeNth",\n',
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-inclusive-first-exclusive",
     breaks: "`(3..=3).rev().last()` is none, as an exclusive range's would be",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: '            (IterMethod::Last, RangeKind::Inclusive, true) => "$rangeInclusiveFirst",\n',
     replace:
       '            (IterMethod::Last, RangeKind::Inclusive, true) => "$rangeFirst",\n',
@@ -267,9 +267,9 @@ export const mutations: Mutation[] = [
     name: "reversed-range-of-kept",
     breaks:
       "a reversed range made in place is read through its `$iterator`'s `.of`, not its bounds",
-    file: "src/lower/std_types/range.rs",
-    find: "    if let Some(range) = crate::lower::iterators::bounds_read(e) {\n",
-    replace: "    if let Some(range) = crate::lower::iterators::bounds_read(e).filter(|_| false) {\n",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
+    find: "    if let Some(range) = crate::iterators::bounds_read(e) {\n",
+    replace: "    if let Some(range) = crate::iterators::bounds_read(e).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
     snapshots: true,
   },
@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
     name: "reversed-range-drop-stepped",
     breaks:
       "`skip(n)` of a reversed range isn't its end moved down, `.drop(n)` of it (#231)",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: '            if method != "drop" || !range.back || !n.reads_same() || range.end.as_int().is_none() {\n',
     replace:
       '            if true || method != "drop" || !range.back || !n.reads_same() || range.end.as_int().is_none() {\n',
@@ -289,9 +289,9 @@ export const mutations: Mutation[] = [
     name: "range-step-by-unfolded",
     breaks:
       "`$stepBy($lazyRange(a, b), n)` isn't folded into `$lazyRange(a, b, n)` (#231)",
-    file: "src/lower/std_types/range.rs",
-    find: "    if let Some([source, n]) = crate::lower::iterators::stepped_every_parts(e)\n",
-    replace: "    if let Some([source, n]) = crate::lower::iterators::stepped_every_parts(e).filter(|_| false)\n",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
+    find: "    if let Some([source, n]) = crate::iterators::stepped_every_parts(e)\n",
+    replace: "    if let Some([source, n]) = crate::iterators::stepped_every_parts(e).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
     snapshots: true,
   },
@@ -299,9 +299,9 @@ export const mutations: Mutation[] = [
     name: "range-back-step-by-unfolded",
     breaks:
       "a reversed range's `$stepBy` isn't folded into `$lazyRangeBack(a, b, n)` (#231)",
-    file: "src/lower/std_types/range.rs",
-    find: "        _ if let Some([made, n]) = crate::lower::iterators::stepped_every_parts(e)\n",
-    replace: "        _ if let Some([made, n]) = crate::lower::iterators::stepped_every_parts(e).filter(|_| false)\n",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
+    find: "        _ if let Some([made, n]) = crate::iterators::stepped_every_parts(e)\n",
+    replace: "        _ if let Some([made, n]) = crate::iterators::stepped_every_parts(e).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
     snapshots: true,
   },
@@ -309,16 +309,16 @@ export const mutations: Mutation[] = [
     name: "held-rev-range-bounds-of",
     breaks:
       "a held reversed range's bounds are read as one made in place's, `.of`",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: '                false => Expr::member(first.clone(), "iter"),',
-    replace: "                false => crate::lower::iterators::bounds_of(first.clone()),",
+    replace: "                false => crate::iterators::bounds_of(first.clone()),",
     tests: ["test/corpus.test.ts", "-t", "^std_rev.rs$"],
   },
   {
     name: "range-from-bounds-dropped",
     breaks:
       "an `a..` of integers is stepped without its type's bounds, `$rangeFromNext(bytes)`, and never wraps past its last (#414)",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "            (RangeKind::From, Some(num)) => {\n",
     replace: "            (RangeKind::From, Some(num)) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^range_from_wraps.rs$"],
@@ -327,7 +327,7 @@ export const mutations: Mutation[] = [
     name: "range-lent-count-kept",
     breaks:
       "a range lent to `count()` or `last()`, `r.by_ref().count()`, isn't used up, its next after a number where Rust's is `None` (#414)",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "        let lent = lent && reversed.is_none();\n",
     replace: "        let lent = false && reversed.is_none();\n",
     tests: ["test/corpus.test.ts", "-t", "^range_lent_used_up.rs$"],
@@ -336,7 +336,7 @@ export const mutations: Mutation[] = [
     name: "range-state-unwrapped",
     breaks:
       "an inclusive range stepped past its type's last reads its bounds unwrapped, `128..=127`, not std's exhausted `-128..=127 (exhausted)` (#414)",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "        (vec![num.wrap(start), num.wrap(end)], Some(exhausted))\n",
     replace: "        (vec![start, end], Some(exhausted))\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
@@ -345,7 +345,7 @@ export const mutations: Mutation[] = [
     name: "range-bounds-exhausted-included",
     breaks:
       "an exhausted inclusive range's `RangeBounds` end is its end, included, which a `BTreeMap::range` panics of, where std's excludes its start (#414)",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "            return Ok(Some([from, Expr::cond(exhausted, before, to)]));\n",
     replace:
       "            let _ = (exhausted, before);\n            return Ok(Some([from, to]));\n",
@@ -355,7 +355,7 @@ export const mutations: Mutation[] = [
     name: "range-eq-exhausted-ignored",
     breaks:
       "`==` of an exhausted inclusive range and a fresh one of the same bounds is true, where std's derive compares `exhausted` too (#414)",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "            (Some(x), None) | (None, Some(x)) => Some(Expr::unary(UnaryOp::Not, x)),\n",
     replace: "            (Some(_), None) | (None, Some(_)) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
@@ -364,7 +364,7 @@ export const mutations: Mutation[] = [
     name: "range-state-held-unread",
     breaks:
       "an inclusive range used up by a fold reads its own bounds, past each other, not Rust's in `exhausted` (#414)",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "        let own = Expr::bin(Op::Coalesce, held.clone(), range.clone());\n",
     replace: "        let own = range.clone();\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
@@ -373,7 +373,7 @@ export const mutations: Mutation[] = [
     name: "steps-lent-inclusive-never",
     breaks:
       "a `collect()` of a lent inclusive range, or a `map` of one, steps it by `next`, past its end, `4..=3`, where std's `fold` leaves it exhausted at its last (#414)",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "                    if self.range_kind(*inner) == Some(RangeKind::Inclusive))\n",
     replace:
       "                    if false && self.range_kind(*inner) == Some(RangeKind::Inclusive))\n",
@@ -383,7 +383,7 @@ export const mutations: Mutation[] = [
     name: "range-full-eq-bound-asked",
     breaks:
       "`==` of two `RangeFull`s asks the bound type they haven't, and rust-js panics, as `range-implement-clone.rs` found",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "        let index = self.range_index(ty);\n        let (a, a_exhausted) = self.range_state(a, ty, out);\n",
     replace:
       '        let index = Some(self.range_index(ty).expect("a bound\'s type"));\n        let (a, a_exhausted) = self.range_state(a, ty, out);\n',
@@ -393,7 +393,7 @@ export const mutations: Mutation[] = [
     name: "range-bound-spilled",
     breaks:
       "a range of one bound a call makes, `&items[start(log, 1)..]`, is a `range` object first, `const range = { start: start(log, 1) }; .. $slice(items, range.start)`, not its bound read where the slice is",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "            [Prop::Field(field, value)] if field == name => Some(value.clone()),\n",
     replace: "            [Prop::Field(field, value)] if field == name && !value.has_effects() => Some(value.clone()),\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_start_read_in_place.rs$"],
@@ -403,7 +403,7 @@ export const mutations: Mutation[] = [
     name: "range-is-empty-by-js-order",
     breaks:
       "a range's `is_empty()` is JS's `!(start < end)` of any bounds, which of two arrays compares their text, `!([10] < [9])` false where `Ticket(10)..Ticket(9)` is empty, of two objects is never true, and of strings by UTF-16 unit, `\"\\uffff\" >= \"\\u{10000}\"`",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "                let ordered = self.bounds_ordered(method, (start.clone(), index), (end.clone(), index), span, out)?;\n",
     replace:
       "                let _ = (method, index);\n                let op = if kind == RangeKind::Inclusive { Op::Le } else { Op::Lt };\n                let ordered = Expr::bin(op, start.clone(), end.clone());\n",
@@ -412,7 +412,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-is-empty-inclusive-by-lt",
     breaks: "an inclusive range's `is_empty()` asks its bounds' `lt`, so `Loud(2)..=Loud(2)` is empty, where std's asks `le`",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: '                let method = if kind == RangeKind::Inclusive { "le" } else { "lt" };\n',
     replace: '                let method = "lt";\n',
     tests: ["test/corpus.test.ts", "-t", "^range_is_empty_ordered.rs$"],
@@ -420,7 +420,7 @@ export const mutations: Mutation[] = [
   {
     name: "every-nth-of-droppers-unread",
     breaks: "`step_by(n)`'s filter of items with a destructor, which drops each it passes over, isn't read as one, so its back step is refused (#718)",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "        ] if matches!(passed.kind, js::ExprKind::Bool(false))\n",
     replace: "        ] if false && matches!(passed.kind, js::ExprKind::Bool(false))\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_stepped_from_its_back.rs$"],
@@ -428,7 +428,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-written-whole",
     breaks: "a range of a bound that stops is made whole, so a panic in its end loses `!Grid(1)..` and an `Err` the `String`'s `Failing(1)..` (#1530)",
-    file: "src/lower/std_types/range.rs",
+    file: "crates/rust-js-lower/src/std_types/range.rs",
     find: "                true => this.composed_written(pieces),\n",
     replace: "                true => join(pieces),\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],

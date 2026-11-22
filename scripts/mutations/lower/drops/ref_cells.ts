@@ -1,4 +1,4 @@
-// Mutations of src/lower/drops/ref_cells.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/drops/ref_cells.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "tuple-struct-field-holds-value",
     breaks:
       "a tuple struct's `RefCell<T>` field, an item of its array whose cell is by its type, is taken as a property that holds its value, so the generic `RefCell::new(value)` it's made of boxes no other `RefCell` of an object: `[{ value }]` read as the array, `c[0].push(3)` throws (#1082)",
-    file: "src/lower/drops/ref_cells.rs",
-    find: "                && !crate::lower::representation::numbered_struct(adt)\n",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
+    find: " && !crate::representation::numbered_struct(adt)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^refcell_tuple_struct_field_made.rs$"],
   },
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "key-borrow-counts-its-type",
     breaks:
       "a thread-local's borrow held while its hooks run counts every cell of its type, so a controller's listeners, which no hook can borrow while it's held, are checked (ADR 0960, amended)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                let own = (found.key).is_some_and(|key| self.krate.cell_borrows.reached_only_by_key(key));\n",
     replace: "                let own = false;\n",
     tests: [
@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
     name: "key-counted-unasked",
     breaks:
       "a thread-local's own cell, counted only by its key's borrow held while its hooks run, is quiet where its key writes it, so a hook's `HOOKS.set(..)` doesn't panic as Rust's does (ADR 0960, amended)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "            || (of_key && key_counted())\n",
     replace: "",
     tests: [
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     name: "untagged-boxed-ref-cell-unrefused",
     breaks:
       "an untagged enum's variant of a `RefCell<Vec<f64>>` the crate has as `{ value }` is tested `Array.isArray`, which it never is (ADR 0214, amended)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "            if self.is_std_type(held, StdItem::RefCell) && !found.is_value_cell(tcx, held) {\n",
     replace:
       "            if self.is_std_type(held, StdItem::RefCell) && !found.is_value_cell(tcx, held) && false {\n",
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     name: "plain-refcell-never",
     breaks:
       "a struct's `RefCell` field is `{ value }`, `root.times.value[..]` of the array JS made, where its declaration says it holds its value (ADR 0863, amended)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "            && object_field(tcx, field.did)\n            && !self.is_value_cell(tcx, ty)\n",
     replace:
       "            && object_field(tcx, field.did)\n            && false\n",
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     name: "plain-refcell-lent-kept",
     breaks:
       "a field lent whole, `&x.f`, whose borrows the callee counts, is taken for one never checked",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                    uses.entry(field).or_insert(expr.span);\n",
     replace: "                    let _ = uses;\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_field_lent_held.rs$"],
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     name: "plain-cells-asked-where-first",
     breaks:
       "which cells are plain is asked of each body where the first function that asks is: another's const parameter, `N`, isn't there, and rustc crashes",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                typing_env: ty::TypingEnv::post_analysis(tcx, owner),\n",
     replace: "                typing_env: self.typing_env,\n",
     tests: ["test/corpus.test.ts", "-t", "^const_param_drop_cells.rs$"],
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
     name: "take-held-while-default-runs",
     breaks:
       "a `take` of a `Default` of the crate's is counted, as if `Default` ran while it holds the cell, where std's makes it first: a flattened state's `take` is refused, and a field's plain `RefCell` taken is `$take($borrowMut(bag.items), ..)` (#699)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                Some(Std::CellReplaceWith) => receiver.is_some_and(refcell) && !facts.momentary.contains(&fun),\n",
     replace:
       "                Some(Std::CellReplaceWith) => receiver.is_some_and(refcell) && !facts.momentary.contains(&fun),\n                Some(Std::CellTake) => receiver.is_some_and(refcell),\n",
@@ -93,10 +93,10 @@ export const mutations: Mutation[] = [
     name: "library-plain-unread",
     breaks:
       "a library's field none of whose borrows it checks, `types`, is lent by its consumer unrefused (ADR 0863, amended)",
-    file: "src/lower/drops/ref_cells.rs",
-    find: "            None => (self.library_quiet).contains_key(&crate::lower::library::item_key(tcx, field)),\n",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
+    find: "            None => (self.library_quiet).contains_key(&crate::library::item_key(tcx, field)),\n",
     replace:
-      "            None => false && (self.library_quiet).contains_key(&crate::lower::library::item_key(tcx, field)),\n",
+      "            None => false && (self.library_quiet).contains_key(&crate::library::item_key(tcx, field)),\n",
     // Since #445 a consumer's own borrows of a library's cell are judged
     // by their flow, so the field's fact shows where the consumer reads the
     // library's quiet field of a context it makes: `context.currentValue`.
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     name: "value-cell-never",
     breaks:
       "a `RefCell` of an array is `{ value }`, `node.children.value`, where the guide says it's the array (ADR 0863)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "            && holds_itself(tcx, args.type_at(0))\n",
     replace: "            && false\n",
     tests: [
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     name: "boxed-ignores-generic",
     breaks:
       "generic code's `RefCell<T>` of any `T` is `{ value }` while the cells it's given are the objects they hold",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                    all |= !read && any_value(part);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^refcell_generic_mut_method.rs$"],
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
     name: "boxed-ignores-dyn",
     breaks:
       "an `Rc<RefCell<Circle>>` made an `Rc<RefCell<dyn Shape>>` is the object, its `dyn`'s pair `{ value, impl }` then another",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                    if shares {\n",
     replace: "                    if false && shares {\n",
     tests: [
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     name: "boxed-library-unread",
     breaks:
       "a cell a library boxes is read by its consumer as the object (ADR 0863)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "        self.boxes_itself(tcx, ty) || self.library_has(tcx, ty, |f| &f.boxed).is_some()\n",
     replace: "        self.boxes_itself(tcx, ty)\n",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
@@ -151,8 +151,8 @@ export const mutations: Mutation[] = [
     name: "quiet-ignores-counted",
     breaks:
       "a `RefCell` a borrow of which is held while code that borrows it runs is never checked, and a second borrow runs on where Rust panics",
-    file: "src/lower/drops/ref_cells.rs",
-    find: "        if (self.counted.iter()).any(|&counted| crate::lower::analysis::may_be_cell(tcx, counted, ty))\n",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
+    find: "        if (self.counted.iter()).any(|&counted| crate::analysis::may_be_cell(tcx, counted, ty))\n",
     replace:
       "        if (self.counted.iter()).any(|&counted| counted == ty && false)\n",
     tests: [
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
     name: "quiet-ignores-library-counted",
     breaks:
       "a cell a library counts is borrowed unchecked by its consumer (ADR 0863)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "            || self.library_has(tcx, ty, |f| &f.counted).is_some()\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
     name: "quiet-ignores-impls",
     breaks:
       "a `RefCell` whose own `clone` runs a `Clone` that borrows it mutably is never checked, and the clone runs on where Rust panics",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "        let asks = borrows.impls_ask(&recognition, ty, drops);\n",
     replace:
       "        let asks = false && borrows.impls_ask(&recognition, ty, drops);\n",
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     name: "unchecked-held-unrefused",
     breaks:
       "a consumer holds a borrow of a cell a library borrows unchecked while the library's code runs, which then can't find it borrowed (ADR 0863)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "        for &(ty, span) in unseen {\n",
     replace: "        for &(ty, span) in unseen.iter().filter(|_| false) {\n",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
@@ -193,7 +193,7 @@ export const mutations: Mutation[] = [
     name: "plain-lent-unrefused",
     breaks:
       "a consumer lends a library's field the library borrows unchecked, whose borrows then can't find the consumer's (ADR 0863, amended)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "            if !field.is_local()\n",
     replace: "            if false && !field.is_local()\n",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
@@ -202,7 +202,7 @@ export const mutations: Mutation[] = [
     name: "generic-box-unrefused",
     breaks:
       "a consumer boxes, of its generic code, a cell a library hands it as the object it holds (ADR 0863)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                && self.library_has(tcx, ty, |f| &f.boxed).is_none()\n",
     replace: "                && false\n",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
@@ -211,7 +211,7 @@ export const mutations: Mutation[] = [
     name: "nullable-cell-field-unrefused",
     breaks:
       "a `#[rust_js::nullable]` `RefCell` field of a transparent struct, which is the cell, is taken for one that holds its value (ADRs 0584, 0863)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                    .stores_null()\n                        && self.is_std_type(ty, StdItem::RefCell)\n",
     replace: "                    .stores_null()\n                        && false\n                        && self.is_std_type(ty, StdItem::RefCell)\n",
     tests: [
@@ -224,9 +224,9 @@ export const mutations: Mutation[] = [
     name: "transparent-refcell-field-plain",
     breaks:
       "a transparent struct's `RefCell` of an array, React's taint `RequestCleanupQueue`, is taken for a field that holds its value, where the struct is the cell (ADRs 0584, 0863)",
-    file: "src/lower/drops/ref_cells.rs",
-    find: "            crate::lower::recognition::transparent_field(tcx, adt).is_none()\n                && !crate::lower::representation::numbered_struct(adt)\n",
-    replace: "            !crate::lower::representation::numbered_struct(adt)\n",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
+    find: "            crate::recognition::transparent_field(tcx, adt).is_none() && !crate::representation::numbered_struct(adt)\n",
+    replace: "            !crate::representation::numbered_struct(adt)\n",
     tests: [
       "test/crates.test.ts",
       "-t",
@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
     name: "transparent-refcell-holds-nothing",
     breaks:
       "a `RefCell` of a transparent struct of an array, `RefCell<Lines>`, is `{ value }`, not the array (ADRs 0584, 0863)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "        return holds_itself(tcx, tcx.type_of(field.did).instantiate_identity().skip_normalization());\n",
     replace: "        return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_transparent.rs$"],
@@ -247,7 +247,7 @@ export const mutations: Mutation[] = [
     name: "transparent-refcell-of-a-number-object",
     breaks:
       "a `RefCell` of a transparent struct of a number, `RefCell<Meters>`, is taken for the object it holds, written in place (ADRs 0584, 0863)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "        return holds_itself(tcx, tcx.type_of(field.did).instantiate_identity().skip_normalization());\n",
     replace: "        return true;\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_transparent.rs$"],
@@ -256,7 +256,7 @@ export const mutations: Mutation[] = [
     name: "field-refcell-plain-by-use",
     breaks:
       "no struct's `RefCell` field is one no borrow of which can meet another, each borrow of a fiber's `return` counted on `$fieldCell(fiber, \"return\", true)`",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                        None => _ = found.quiet_fields.insert(field.did),\n",
     replace: "                        None => {}\n",
     tests: [
@@ -269,8 +269,8 @@ export const mutations: Mutation[] = [
     name: "nullable-items-cell-refused",
     breaks:
       "a nullable field's `RefCell<Vec<Option<T>>>`, the array, is refused as a nullable `RefCell` that isn't plain",
-    file: "src/lower/drops/ref_cells.rs",
-    find: "                        && crate::lower::bindings::nullable_option(tcx, ty).is_some()\n",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
+    find: "                        && crate::bindings::nullable_option(tcx, ty).is_some()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nullable_items.rs$"],
   },
@@ -278,7 +278,7 @@ export const mutations: Mutation[] = [
     name: "derived-read-quiet",
     breaks:
       "a derive's read of a field, which borrows it while what it holds runs its own impl, is taken as one that can't meet another, where that impl may borrow it",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "            if !quiet {\n                lent.entry(field).or_insert(span);\n            }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^refcell_field_derive_meets.rs$"],
@@ -287,7 +287,7 @@ export const mutations: Mutation[] = [
     name: "generic-field-reads-box-all",
     breaks:
       "a generic struct's `RefCell<T>` field read boxes every `RefCell` of an object, so a `Root`'s `times` beside a `Cursor<T>` is a handle, `root.times[..]`, not the array a `let` holds (ADR 0863, amended)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                    all |= !read && any_value(part);\n",
     replace: "                    all |= any_value(part);\n",
     tests: [
@@ -300,7 +300,7 @@ export const mutations: Mutation[] = [
     name: "generic-field-objects-unboxed",
     breaks:
       "a loud generic struct's `RefCell<T>` field made of an array is the array where its concrete code reads it, which counts its borrows apart from its generic code's `$fieldCell`, so a borrow held there meets none",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                            boxed.insert(tcx.erase_and_anonymize_regions(made));\n",
     replace: "                            let _ = made;\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_generic_field_held.rs$"],
@@ -309,7 +309,7 @@ export const mutations: Mutation[] = [
     name: "counted-field-quiet",
     breaks:
       "a field a borrow of which is held while code that may borrow it runs is taken as quiet, never checked",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                        counted_fields.entry(field).or_insert(found.span);\n",
     replace: "                        let _ = field;\n",
     tests: ["test/lowering-field-cells.test.ts", "-t", "lent is its one cell"],
@@ -318,7 +318,7 @@ export const mutations: Mutation[] = [
     name: "library-quiet-fields-unlisted",
     breaks:
       "a library's contract says none of its fields is quiet, `fields` empty, so a consumer lends one unrefused (ADRs 0863, amended, 0906)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "        (self.quiet_fields.iter()).map(|&field| (field, rust_js_program::library::FieldFact::Quiet))\n",
     replace:
       "        (self.quiet_fields.iter()).filter(|_| false).map(|&field| (field, rust_js_program::library::FieldFact::Quiet))\n",
@@ -328,7 +328,7 @@ export const mutations: Mutation[] = [
     name: "thread-local-storage-a-value",
     breaks:
       "a thread-local's storage, the closure its macro makes of its key, is taken for a value of its cell's type, so a crate whose generic code boxes every `RefCell` of an object is refused where a library shares that type as the object, React's `ReactFiberStack` (ADR 0863, amended)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "            if thread_local_key(tcx, tcx.typeck_root_def_id(body.def_id)) {\n",
     replace: "            if false {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: thread_local_cell"],
@@ -337,7 +337,7 @@ export const mutations: Mutation[] = [
     name: "quiet-library-key-counted",
     breaks:
       "a consumer's `with_borrow` of a library's thread-local `RefCell` none of whose borrows can meet another is counted, and refused as held while code rust-js can't see runs, where upstream reads `const child = current;` (ADR 0863, amended, gap rd76)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                            || self.krate.quiet_library_keys.contains(&key))",
     replace: "                            || false)",
     tests: [
@@ -350,7 +350,7 @@ export const mutations: Mutation[] = [
     name: "field-accessor-lends-its-field",
     breaks:
       "a trait of classes' method's own `&self.internal_root`, which every call reads in place, lends the field, so its borrows are counted, `$fieldCell(this, ..)` (rd304)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                    ExprKind::Field { .. } if !accessor && self.is_std_type(expr.ty, StdItem::RefCell) => {\n",
     replace: "                    ExprKind::Field { .. } if self.is_std_type(expr.ty, StdItem::RefCell) => {\n",
     tests: ["test/classes-traits.test.ts", "-t", "prototype's"],
@@ -359,7 +359,7 @@ export const mutations: Mutation[] = [
     name: "field-accessor-call-lends-nothing",
     breaks:
       "a call of a trait of classes' method that gives a field, held elsewhere, `fill(holder.slot(), ..)`, lends nothing, so the field's own borrow is never checked and doesn't panic as std's does (rd304)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                        fields_given(&recognition, thir, id)\n",
     replace: "                        Vec::new()\n",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_field_lent.rs$"],
@@ -368,7 +368,7 @@ export const mutations: Mutation[] = [
     name: "field-accessor-borrow-of-no-field",
     breaks:
       "a counted borrow through a trait of classes' method that gives a field, `self.slot().try_borrow_mut()`, counts no field, so the field's own borrows go unchecked and `try_borrow_mut` finds it free (rd304)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                        ExprKind::Call { .. } => fields_given(recognition, thir, lent),\n",
     replace: "                        ExprKind::Call { .. } => Vec::new(),\n",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_field_borrows.rs$"],
@@ -377,8 +377,8 @@ export const mutations: Mutation[] = [
     name: "untagged-arrays-boxed-in-a-cell",
     breaks:
       "a `RefCell` of an untagged enum of arrays is a `{ value }` box, `node.value.length === 4`, not the array upstream's replay node is (rd490)",
-    file: "src/lower/drops/ref_cells.rs",
-    find: "        return crate::lower::untagged::arrays_in_place(tcx, *adt, args);\n",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
+    find: "        return crate::untagged::arrays_in_place(tcx, *adt, args);\n",
     replace: "        return false;\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
     snapshots: true,
@@ -387,7 +387,7 @@ export const mutations: Mutation[] = [
     name: "class-own-uncounted",
     breaks:
       "a cell only the crate's code reaches is quiet whatever its class's borrows count, so one taken again through a map, a `Vec` and a closure while one is held runs on where Rust panics (ADR 0863, amended)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "            CellClass::Own(class) => self.counted_classes.contains(&class) || may_be(&self.counted_unknown),",
     replace: "            CellClass::Own(_) => may_be(&self.counted_unknown),",
     tests: ["test/corpus.test.ts", "-t", "^refcell_flow_through_std.rs$"],
@@ -396,7 +396,7 @@ export const mutations: Mutation[] = [
     name: "class-own-of-no-unknown",
     breaks:
       "a cell only the crate's code reaches is quiet beside a counted borrow whose class isn't known, a thread-local's `with_borrow_mut` held while what it lends is borrowed, which runs on where Rust panics (ADR 0863, amended)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "            CellClass::Own(class) => self.counted_classes.contains(&class) || may_be(&self.counted_unknown),",
     replace: "            CellClass::Own(class) => self.counted_classes.contains(&class),",
     tests: ["test/corpus.test.ts", "-t", "^refcell_flow_lent_key.rs$"],
@@ -405,7 +405,7 @@ export const mutations: Mutation[] = [
     name: "class-reached-uncounted",
     breaks:
       "a cell code rust-js can't see may reach is quiet beside a counted borrow of another such cell of its type, so a borrow of a binding's batch while JS's batch is held runs on where Rust panics (ADR 0863, amended)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                library_counts || may_be(&self.counted_reached) || may_be(&self.counted_unknown)",
     replace: "                library_counts || may_be(&self.counted_unknown)",
     tests: ["test/lowering-cell-flow.test.ts", "-t", "a cell JS gives may be any cell of its type JS reaches"],
@@ -414,7 +414,7 @@ export const mutations: Mutation[] = [
     name: "class-flow-unread",
     breaks:
       "a borrow is quiet only by its type, so Fizz's batch, of the type of a tag cache held across a getter, is checked where no borrow of it can meet another (#445)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "        ref_cells.classed.contains(&(body, span, callee))\n",
     replace: "        false\n",
     tests: ["test/lowering-cell-flow.test.ts", "-t", "a held borrow counts the cells that can be its own"],
@@ -423,7 +423,7 @@ export const mutations: Mutation[] = [
     name: "class-reached-ignores-library-counted",
     breaks:
       "a cell a library may reach is quiet in its consumer though the library counts its type, so a borrow of one the library holds runs on where Rust panics (ADR 0863, amended)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                library_counts || may_be(&self.counted_reached)",
     replace: "                may_be(&self.counted_reached)",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
@@ -432,7 +432,7 @@ export const mutations: Mutation[] = [
     name: "class-reached-precise-in-a-library",
     breaks:
       "a library's cell its consumer may share is quiet by its flow, so its contract lists a type it borrows unchecked that a consumer's held borrow may be, and the consumer is refused (ADR 0863, amended)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "            CellClass::Anything { shared: true } if self.library => {\n                return self.quiet(recognition, borrows, (ty, false), drops);\n            }\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "a library checks a cell its consumer may share"],
@@ -441,7 +441,7 @@ export const mutations: Mutation[] = [
     name: "class-unshared-by-type-in-a-library",
     breaks:
       "a library's cell only its own code and constants reach is checked by its type, as one its consumer may hold a borrow of, so its JS isn't its program's: `$borrowMut(items).push(3)` (#456)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "            CellClass::Anything { shared: true } if self.library => {",
     replace: "            CellClass::Anything { .. } if self.library => {",
     tests: ["test/crates.test.ts", "-t", "constants reach"],
@@ -450,7 +450,7 @@ export const mutations: Mutation[] = [
     name: "library-borrowed-unshared",
     breaks:
       "a library's contract lists as borrowed unchecked the type of a cell only its own code and constants reach, so a consumer holding a borrow of its own cell of that type while the library's code runs is refused (#456)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "classes.contains(&CellClass::Anything { shared: true })",
     replace: "classes.iter().any(|class| matches!(class, CellClass::Anything { .. }))",
     tests: ["test/crates.test.ts", "-t", "constants reach"],
@@ -458,7 +458,7 @@ export const mutations: Mutation[] = [
   {
     name: "variant-refcell-boxed",
     breaks: "an enum variant's `RefCell` field is `{ value }`, alien-signals' effect's `cleanup: {}` and `e.cleanup.value`, where its declaration says it holds its value, as a struct's does (#503)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "        DefKind::Variant => true,\n",
     replace: "        DefKind::Variant => false,\n",
     tests: ["test/lowering-field-cells.test.ts", "-t", "an enum variant's RefCell field"],
@@ -466,7 +466,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-variant-objects-unboxed",
     breaks: "a loud generic enum's variant's `RefCell<T>` field made of an array is the array where its concrete code reads it, which counts its borrows apart from its generic code's `$fieldCell`, so a borrow held there meets none (#503)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                if adt.is_union() {\n                    continue;\n                }\n",
     replace: "                if !adt.is_struct() {\n                    continue;\n                }\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_generic_variant_held.rs$"],
@@ -474,7 +474,7 @@ export const mutations: Mutation[] = [
   {
     name: "variant-refcell-never-quiet",
     breaks: "an enum variant's `RefCell` field is never one no borrow of which can meet another, so every binding of it is `$fieldCell(kind, \"cleanup\")` (#503)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "            if matches!(tcx.def_kind(id), DefKind::Struct | DefKind::Enum) {\n",
     replace: "            if matches!(tcx.def_kind(id), DefKind::Struct) {\n",
     tests: ["test/lowering-field-cells.test.ts", "-t", "an enum variant's RefCell field"],
@@ -482,7 +482,7 @@ export const mutations: Mutation[] = [
   {
     name: "bound-place-given-on-unlent",
     breaks: "a binding that's a field's own place given on, `bump(cell, &task)`, lends nothing, so a borrow held of what it's given while the field is borrowed again through another binding meets none, where std's panics (#503)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                    && !receivers.contains(&id)\n",
     replace: "                    && false\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_variant_field_held.rs$"],
@@ -490,7 +490,7 @@ export const mutations: Mutation[] = [
   {
     name: "bound-place-borrow-uncounted",
     breaks: "a binding that's a field's own place, borrowed while another borrow of it is held, `let held = cleanup.borrow(); *cleanup.borrow_mut() = None;`, counts nothing of the field, which stays unchecked, where std's panics (#503)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                            .or_else(|| bound_place(thir, places, lent).map(|(_, field)| field))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^refcell_variant_field_twice.rs$"],
@@ -498,7 +498,7 @@ export const mutations: Mutation[] = [
   {
     name: "variant-derive-unasked",
     breaks: "a derived `Clone` of an enum, which borrows its variant's `RefCell` field while what it holds runs its own `clone`, is taken for no use of it, so that borrow is unchecked and the `clone` borrowing it mutably runs on, where std's panics (#503)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                && let ty::Adt(adt, _) = self_ty.kind()\n                && !adt.is_union()\n",
     replace: "                && let ty::Adt(adt, _) = self_ty.kind()\n                && adt.is_struct()\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_variant_derive_meets.rs$"],
@@ -507,7 +507,7 @@ export const mutations: Mutation[] = [
     name: "flattened-swap-counted",
     breaks:
       "a flattened state's `swap` is counted, as two cells that may be one, so its field is refused as one some borrow of which may meet another (#687)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                    receiver.is_some_and(refcell) && !args.iter().any(|&cell| flattened_state_lent(tcx, thir, cell))\n",
     replace: "                    receiver.is_some_and(refcell)\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell_swapped.rs$"],
@@ -516,7 +516,7 @@ export const mutations: Mutation[] = [
     name: "flattened-swap-lends-the-other",
     breaks:
       "the other cell a flattened state's `swap` is given, `&b.state`, is lent, so it's refused as a flattened state lent (#687)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                    borrowed_there.extend(args.iter().map(|&cell| through_borrows(thir, cell)));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell_swapped.rs$"],
@@ -525,7 +525,7 @@ export const mutations: Mutation[] = [
     name: "replace-with-always-counted",
     breaks:
       "a `RefCell`'s `replace_with` is counted whatever its function runs, so a flattened state's is refused as borrowed where another borrow may meet it (#687)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                Some(Std::CellReplaceWith) => receiver.is_some_and(refcell) && !facts.momentary.contains(&fun),\n",
     replace: "                Some(Std::CellReplaceWith) => receiver.is_some_and(refcell),\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_replaced_with.rs$"],
@@ -534,7 +534,7 @@ export const mutations: Mutation[] = [
     name: "try-borrow-always-counted",
     breaks:
       "a `try_borrow` is counted wherever its guard is held, so a flattened state's is refused as borrowed where another borrow may meet it (#687)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                Some(Std::Borrow { lock: false, .. } | Std::TryBorrow { lock: false, .. }) => {\n",
     replace: "                Some(Std::TryBorrow { lock: false, .. }) => receiver.is_some_and(refcell),\n                Some(Std::Borrow { lock: false, .. }) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_tried.rs$"],
@@ -543,8 +543,8 @@ export const mutations: Mutation[] = [
     name: "walked-params-drop-nothing",
     breaks:
       "a type parameter a function is given a drop for drops nothing where its cells' borrows are counted, so a guard held while `let _it = it;` drops a `T` whose destructor asks of the cell isn't counted, and its `try_borrow()` is `Ok` (a wrong answer, #1321)",
-    file: "src/lower/drops/ref_cells.rs",
-    find: "                state.give(crate::lower::traits::drop_slot(tcx, self.slots(), owner, index));\n",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
+    find: "                state.give(crate::traits::drop_slot(tcx, self.slots(), owner, index));\n",
     replace: "                _ = index;\n",
     tests: ["test/corpus.test.ts", "-t", "^guard_held_while_a_type_parameters_value_drops.rs$"],
   },
@@ -552,7 +552,7 @@ export const mutations: Mutation[] = [
     name: "instance-borrows-uncounted",
     breaks:
       "a library's generic function the consumer compiles itself, from MIR with no THIR, counts none of its borrows, so a guard held while a value the consumer gives it drops isn't, and the destructor's `try_borrow()` is `Ok` (a wrong answer, #1325)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                founds.extend(instances::mir_borrows(&recognition, &mir.body));\n",
     replace: "                _ = mir;\n",
     tests: ["test/crates.test.ts", "-t", "two crates: guard_held_while_a_library_type_parameters_value_drops"],
@@ -560,7 +560,7 @@ export const mutations: Mutation[] = [
   {
     name: "quiet-cell-write-of-a-checked-cell",
     breaks: "a `RefCell` a borrow of which is checked is taken to be written unchecked, so its guard's `set`, which finds it borrowed, drops in a `finally` (#1930)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "        if !self.is_std_type(cell, StdItem::RefCell) || !self.quiet_ref_cell(cell, of_key) {\n",
     replace: "        if !self.is_std_type(cell, StdItem::RefCell) {\n",
     snapshots: true,
@@ -569,7 +569,7 @@ export const mutations: Mutation[] = [
   {
     name: "quiet-cell-set-of-what-drops",
     breaks: "a quiet `RefCell`'s `set` of a value whose old one has a destructor, which may panic, is taken never to panic (#1930)",
-    file: "src/lower/drops/ref_cells.rs",
+    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                .is_some_and(|value| self.drops(value) == super::Drops::Nothing),\n",
     replace: "                .is_some(),\n",
     snapshots: true,

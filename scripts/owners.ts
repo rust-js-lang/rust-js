@@ -107,7 +107,7 @@ export function ownerTable(page: string): OwnerRow[] {
 
 /** The repository path `owner` names, as the table spells it: a path
  * of one of the compiler's crates' sources where it is one, `src/x.rs`;
- * else a module of the front end, `iterators.rs`, `src/lower/iterators.rs`,
+ * else a module of the front end, `iterators.rs`, `crates/rust-js-lower/src/iterators.rs`,
  * or a folder, `drops/`, where it or its submodules are files; else one
  * at the root of the crate that has its top-level module (ADR 1181),
  * `names.rs`, `crates/rust-js-program/src/names.rs`, or the runtime's,
@@ -115,14 +115,19 @@ export function ownerTable(page: string): OwnerRow[] {
  * asks too. */
 export function ownerPath(owner: string, files: readonly string[]): string {
   if (isCompilerSource(owner)) return owner;
-  const lowered = `src/lower/${owner}`;
+  // MIR's lowering, `mir.rs` and `mir/`, a crate of its own since #2299's
+  // cut, as the table names it from the lowering's root.
+  if (owner === "mir.rs") return "crates/rust-js-mir/src/lib.rs";
+  if (owner === "lower.rs") return "crates/rust-js-lower/src/lib.rs";
+  if (owner.startsWith("mir/")) return `crates/rust-js-mir/src/${owner.slice("mir/".length)}`;
+  const lowered = `crates/rust-js-lower/src/${owner}`;
   const exists = files.some((f) => f === lowered || f.startsWith(lowered.endsWith(".rs") ? `${lowered.slice(0, -3)}/` : lowered));
   if (exists) return lowered;
   return `${(crateOfModule(owner.replace(/[./].*$/, "")) ?? binaryCrate()).src}/${owner}`;
 }
 
 /** Whether `file`, a repository path, is of `owner` (`ownerPath`): that
- * module and its submodules, `src/lower/iterators/`, or what a folder
+ * module and its submodules, `crates/rust-js-lower/src/iterators/`, or what a folder
  * holds. */
 export function ofOwner(owner: string, file: string, files: readonly string[]): boolean {
   return ofOwnerPath(ownerPath(owner, files), file);
@@ -229,14 +234,15 @@ export function jsCode(text: string): string {
 }
 
 /** A function visible outside its module: `pub`, `pub(crate)` or
- * `pub(in crate::…)`; `pub(super)` too in `src/lower.rs` or a module right
- * under `src/lower/` (`TOP`), whose parent is the whole front end. Not a
+ * `pub(in crate::…)`; `pub(super)` too in `crates/rust-js-lower/src/lib.rs` or a module right
+ * under `crates/rust-js-lower/src/` (`TOP`), whose parent is the whole front end. Not a
  * nested module's `pub(super)`, whose answer only its parent's modules may
  * ask. */
 const VISIBLE = /^\s*pub(?:\((?:crate|in\s+crate(?:::\w+)*)\))?\s+(?:(?:const|unsafe|async)\s+)*fn\s+(\w+)/;
 const VISIBLE_TOP = /^\s*pub(?:\((?:crate|super|in\s+crate(?:::\w+)*)\))?\s+(?:(?:const|unsafe|async)\s+)*fn\s+(\w+)/;
 /** A file whose `pub(super)` reaches the whole front end. */
-export const TOP = (file: string) => file === "src/lower.rs" || /^src\/lower\/[^/]+\.rs$/.test(file);
+export const TOP = (file: string) =>
+  file === "crates/rust-js-lower/src/lib.rs" || file === "src/pipeline.rs" || /^crates\/rust-js-lower\/src\/[^/]+\.rs$/.test(file);
 /** A JS tree type: an `Option` of one is lowering's output, not an answer. */
 export const JS_TREE = /\b(?:Expr|ExprKind|Stmt|StmtKind|Pattern|Prop|Function|Value)\b|\bjs::/;
 
@@ -387,7 +393,9 @@ export function sources(root: string): string[] {
 }
 
 /** The front end's files, whose candidates completeness asks of. */
-export const ofFrontEnd = (file: string) => file === "src/lower.rs" || (file.startsWith("src/lower/") && file.endsWith(".rs"));
+export const ofFrontEnd = (file: string) =>
+  file.endsWith(".rs") &&
+  (file.startsWith("crates/rust-js-lower/src/") || file.startsWith("crates/rust-js-mir/src/") || file === "src/pipeline.rs" || file.startsWith("src/pipeline/"));
 
 /** Both checks over the repository at `root`. */
 export function ownersState(root: string) {

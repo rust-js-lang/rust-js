@@ -1,11 +1,11 @@
-// Mutations of src/lower/signatures.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/signatures.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "undefined-literal-default-identity-map-unseen",
     breaks: "a default through a `map` that's the option itself, `cancelable.map(js::boolean).unwrap_or(true)`, isn't the parameter's, createDetails' `cancelable ??= true` where upstream writes `cancelable = true` (#2081)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "                && self.maps_to_itself(f.node.ty(body, self.tcx), (from, to))\n",
     replace: "                && false\n",
     tests: ["test/create-details.test.ts", "-t", "createDetails' JS is upstream's body"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "undefined-literal-default-copy-unseen",
     breaks: "a parameter its `unwrap_or` reads through a temporary copy, as MIR writes `let width = width.unwrap_or(4.0);`, isn't given its default, `width ??= 4` (#2081)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "                        copies.insert(dest.local, of.local);\n",
     replace: "",
     tests: ["test/arguments.test.ts", "-t", "entry literal default"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "undefined-literal-default-unmarked",
     breaks: "a parameter whose \`None\` is \`null\` or \`undefined\` is given a JS default, as one marked \`none_undefined\` is (#2081)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "                        && marked.contains(&info.name) =>\n",
     replace: "                        =>\n",
     tests: ["test/arguments.test.ts", "-t", "entry literal default"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "undefined-literal-default-read-again",
     breaks: "a parameter read again past its \`unwrap_or\` is given a JS default, so its \`is_some()\` there is \`true\` of \`undefined\` (#2081)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "                || uses(body, param) != 1\n",
     replace: "",
     tests: ["test/arguments.test.ts", "-t", "entry literal default"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "undefined-literal-default-first-alone",
     breaks: "only the first of a function's leading literal defaults is its JS parameter's, \`pair(a = 3, b)\` (#2081)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "            block = *next;\n        }\n",
     replace: "            return found;\n        }\n",
     tests: ["test/arguments.test.ts", "-t", "entry literal default"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "undefined-literal-default-lets-stop",
     breaks: "a \`let\`'s marker between two leading defaults ends them, \`pair(a = 3, b)\` (#2081)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "                    | mir::StatementKind::FakeRead(_)\n",
     replace: "",
     tests: ["test/arguments.test.ts", "-t", "entry literal default"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "receiver-declared-self",
     breaks: "a method's receiver is declared `self`, not its JS name, `counter` (#507)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "    let name = receiver.unwrap_or_else(|| ident.name.to_string());\n",
     replace: "    let name = ident.name.to_string();\n",
     tests: ["test/impl-constants.test.ts"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "parameter-declared-underscored",
     breaks:
       "a parameter's declaration keeps the `_` its JS name drops, `ref` declared `_ref`",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "    let named = super::parameter_name(tcx, function, &name);\n",
     replace: "    let named = rust_js_program::casing::camel_case(&name);\n",
     tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     name: "declared-param-rust-name",
     breaks:
       "a parameter named `new` is declared `new`, which TypeScript doesn't read, where the JS names it `new$`",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "    rust_js_program::names::js_ident(&named)\n}\n",
     replace: "    named\n}\n",
     tests: ["test/declarations.test.ts", "-t", "as its JS does"],
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     name: "trailing-option-param-required",
     breaks:
       "a Rust function's trailing `Option` parameter is declared required, `shown(name: string | null | undefined)`, so a TypeScript caller must give it",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "                let optional = i >= optional_from;\n",
     replace: "                let optional = false;\n",
     tests: [
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
     name: "nullable-result-declared-undefined",
     breaks:
       "a nullable function's result is declared `string | null | undefined`, though its `None` is `null`, never `undefined`",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "            (false, true) if is_option(tcx, output) => match output.kind() {\n",
     replace: "            (false, true) if false => match output.kind() {\n",
     tests: [
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     name: "nullable-param-declared-optional",
     breaks:
       "a `#[rust_js::nullable(..)]` parameter is declared `fiber?: Fiber | null | undefined`, though it's taken as `Fiber | null` (ADR 0861, amended)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "                let form = match (rest == Some(i), nullable(i)) {\n",
     replace: "                let form = match (rest == Some(i), false) {\n",
     tests: [
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-from-of-trailing-all",
     breaks: "a parameter `Option` before one that isn't is declared optional, `(value?: number | null, value2: number)`, which TypeScript refuses",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "            .take_while(|&(i, &ty)| is_option(tcx, ty) && !nullable(i))\n",
     replace: "            .filter(|&(i, &ty)| is_option(tcx, ty) && !nullable(i))\n",
     tests: ["test/declarations-function-types.test.ts"],
@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
   {
     name: "ungiven-fact-declared",
     breaks: "a function whose JS takes a fact of its type parameter, `size(TSize)`, is declared `size<T>(): number`, which gives a JS caller `undefined` (#549)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "        if let Some((index, fact)) = fact {\n",
     replace: "        if let Some((index, fact)) = fact.filter(|_| false) {\n",
     tests: ["test/declarations-ungiven.test.ts"],
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
   {
     name: "ungiven-dictionary-declared",
     breaks: "a function whose JS takes a bound's dictionary of a trait that isn't declared, `shown(value, TDisplay)`, is declared, which throws for a JS caller that gives none (#549)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "            Form::Dictionary(bound) if !declared(bound.def_id) => {\n",
     replace: "            Form::Dictionary(bound) if false && !declared(bound.def_id) => {\n",
     tests: ["test/declarations-ungiven.test.ts"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-before-dictionary",
     breaks: "a trailing `Option` before a dictionary is declared optional, `prefix?: string | null`, so a TypeScript caller that leaves it out gives its dictionary as `prefix` (#550)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "            true => inputs.len(),\n",
     replace: "            true => optional_from(tcx, inputs, rest, nullable),\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
   {
     name: "trait-method-declared-its-dictionary",
     breaks: "a declared trait's method is declared taking its own trait's dictionary after its arguments, `area(self: Self, SelfShape: Shape<Self>)`, which its dictionary's entry doesn't (#550)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "        let slots = match own && !super::bindings::is_binding(tcx, function) {\n",
     replace: "        let slots = match !super::bindings::is_binding(tcx, function) {\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
   {
     name: "caller-location-undeclared",
     breaks: "a `#[track_caller]` function's caller's location, which its JS takes after its arguments, isn't declared, so a TypeScript caller gives none and `checked(0)` throws a `TypeError` where Rust panics naming its caller (#560)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "        for slot in slots {\n",
     replace: "        for slot in slots.into_iter().filter(|slot| !matches!(slot, Slot::Location)) {\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "location and a const"],
@@ -166,7 +166,7 @@ export const mutations: Mutation[] = [
   {
     name: "const-value-undeclared",
     breaks: "a const parameter's value, `zeros(N)`'s, isn't declared, so a TypeScript caller gives none and `zeros()` is `[0]` where `zeros::<3>()` is `[0, 0, 0]` (#560)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "        for slot in slots {\n",
     replace: "        for slot in slots.into_iter().filter(|slot| !matches!(slot, Slot::Const(_))) {\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "location and a const"],
@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
     name: "this-receiver-declared",
     breaks:
       "a class's method is declared of its `self`, `setState(component: Component, partialState?: unknown)`, which its JS takes as `this` (ADR 0761, 1091)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "        let skipped = usize::from(super::classes::receiver(tcx, function) != Receiver::First && !inputs.is_empty());\n",
     replace: "        let skipped = usize::from(false && !inputs.is_empty());\n",
     tests: ["test/classes.test.ts"],
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     name: "fn-bound-not-callable",
     breaks:
       "a type parameter bound by `Fn`, `twice<F: Fn(u32) -> u32>(f: F)`, is declared a plain `F`, which any value meets, where its JS calls it (#661)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "                || !self.is_callable(bound.self_ty())\n",
     replace: "                || !self.is_callable(bound.self_ty())\n                || !bound.self_ty().to_string().starts_with(\"impl \")\n",
     tests: ["test/declarations-impl-fn.test.ts", "-t", "bound by Fn"],
@@ -193,7 +193,7 @@ export const mutations: Mutation[] = [
     name: "declared-arity-with-receiver",
     breaks:
       "`declared_arity` counts a class method's `self`, which its body takes as `this`, so it says one more than the writer declares, a dictionary's entry could be the method where a caller's argument lands in a parameter it didn't pass; the writer's debug assertion stops the compile (#801)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "        Some(inputs.len() - usize::from(receiver) - usize::from(formatter) + usize::from(options) + evidence)\n",
     replace: "        Some(inputs.len() - usize::from(formatter) + usize::from(options) + evidence + usize::from(receiver) * 0)\n",
     tests: ["test/corpus.test.ts", "-t", "^class_bool_methods.rs$"],
@@ -201,15 +201,15 @@ export const mutations: Mutation[] = [
   {
     name: "vec-collect-fact-unknowable",
     breaks: "a function whose JS takes `IVecCollect` is left out of its crate's declarations, as one a JS caller can't give, where a JS caller leaves it out, its iterable collected by `next` (#1239)",
-    file: "src/lower/signatures.rs",
-    find: "                Slot::Fact(_, crate::lower::recognition::TypeFact::VecCollect) => (String::new(), Form::LeftOut),\n",
+    file: "crates/rust-js-lower/src/signatures.rs",
+    find: "                Slot::Fact(_, crate::recognition::TypeFact::VecCollect) => (String::new(), Form::LeftOut),\n",
     replace: "",
     tests: ["test/declarations-ungiven.test.ts", "-t", "is a note, not declared"],
   },
   {
     name: "present-param-optional",
     breaks: "a `#[rust_js::present(value)]` parameter is declared optional, `value?: string`, where a caller gives it, `value: string | null | undefined` (ADR 1161)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "        let required = |i: usize| (null_params.contains(&i) || present_at(i)) && is_option(tcx, inputs[i]);\n",
     replace: "        let required = |i: usize| null_params.contains(&i) && is_option(tcx, inputs[i]) && !present_at(i);\n",
     tests: ["test/present-slots.test.ts", "-t", "a present field"],
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
   {
     name: "undefinable-param-plain",
     breaks: "a `#[rust_js::none_undefined(cancelable)]` parameter is a plain `Option`'s, `cancelable?: boolean | null | undefined`, so upstream's createDetails isn't assignable to it (#1910)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "                    (false, false) if undefinable(i) => match ty.kind() {\n",
     replace: "                    (false, false) if false && undefinable(i) => match ty.kind() {\n",
     tests: ["test/present-slots.test.ts", "-t", "a none_undefined parameter is declared"],
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-fn-value-takes-its-formatter",
     breaks: "a generic writer function's instance as a value takes its `Formatter`, which its JS doesn't (`taken_parameter_names`), so a call through the pointer gives its dictionary `undefined` (#1710)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "        .filter(|&(i, _)| Some(i) != formatter)\n",
     replace: "        .filter(|_| true)\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_fn_pointer_at_an_instance.rs$"],
@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-parameter-names-none",
     breaks: "an arrow of a function names its parameters `arg0`, `arg1`, not as the function's own JS does, `(x) => total(...x)` of `total(xs)` (#1328)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "            Some(js_parameter_name(tcx, function, ident, Some(ty)))\n",
     replace: "            Some(js_parameter_name(tcx, function, ident, Some(ty))).filter(|_| false)\n",
     tests: ["test/rest-parameters.test.ts", "-t", "a function's rest slice"],
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
   {
     name: "receiver-named-beside-its-name",
     breaks: "a `self` named after its type beside a parameter of that name, `String::push_str`'s, is `(string, string$1)` (#1328)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "((std && name == \"self\") || taken(name))",
     replace: "((std && name == \"self\") || (taken(name) && false))",
     tests: ["test/corpus.test.ts", "-t", "^string_edits_given_as_functions.rs$"],
@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-bare-self-named-self",
     breaks: "std's `self` its type names none of, `u8::is_ascii_lowercase`'s, is `(self) => ..`, not the caller's `(n) => ..` (#1328)",
-    file: "src/lower/signatures.rs",
+    file: "crates/rust-js-lower/src/signatures.rs",
     find: "((std && name == \"self\") || taken(name))",
     replace: "((std && name == \"self\" && false) || taken(name))",
     tests: ["test/corpus.test.ts", "-t", "^byte_ascii.rs$"],

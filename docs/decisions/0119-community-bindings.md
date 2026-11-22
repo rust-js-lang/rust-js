@@ -172,7 +172,7 @@ binding names what the library must have, and the library is on npm to
 load. It's deferred: bindings are kept, and fixed, by hand first, and it
 comes when their number, or their mistakes, call for it. Designed:
 
-- **rust-js lists the claims**, from what `src/lower/bindings.rs` reads of
+- **rust-js lists the claims**, from what `crates/rust-js-lower/src/bindings.rs` reads of
   each `#[link_name]`: a function, a `new`, a method or a getter, its
   arguments and what it returns, as JS has them, and its Rust line.
 - **① What it names is there**: the library loaded, with its install

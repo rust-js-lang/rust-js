@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/assign.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/assign.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 const given1840 = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
   {
     name: "store-answer-unsaid",
     breaks: "an assignment through a place whose storage is learned later is told nothing of what MIR said of its value, so a handle stores `?? null` (#2112 S4b)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            Rvalue::Use(operand, _) => js::Undefined::never_if(self.stored_given(state, operand) == Given::Nulled),\n",
     replace: "            Rvalue::Use(_, _) => js::Undefined::ByForm,\n",
     tests: ["test/lowering-nullable.test.ts", "test/lowering-nullable-reads.test.ts", "test/lowering-nullable-borrows.test.ts", "test/lowering-module-variables.test.ts", "test/lowering-nullable-tests.test.ts"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
   {
     name: "store-answer-dropped",
     breaks: "an assignment's MIR answer is left off the statement written, so a handle stores `?? null` (#2112 S4b)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            js_span,\n            given,\n        ));\n",
     replace: "            js_span,\n            { let _ = given; js::Undefined::ByForm },\n        ));\n",
     tests: ["test/lowering-nullable.test.ts", "test/lowering-nullable-reads.test.ts", "test/lowering-nullable-borrows.test.ts", "test/lowering-module-variables.test.ts", "test/lowering-nullable-tests.test.ts"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "borrow-of-nulled-returned-coalesced",
     breaks: "a shared borrow of a nullable parameter returned, `&param`, isn't known `null` or a value, so it's returned `param ?? null`",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                let nulled = self.nulled(state, &Operand::Copy(*of));\n",
     replace: "                let nulled = false && self.nulled(state, &Operand::Copy(*of));\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "library const's Some"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "projected-binding-refused",
     breaks: "a flattened struct read whole by value into a binding, `let sized = b.sized`, is refused as props taken apart (#1820)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && !self\n                .krate\n                .flattened\n                .is_projected(read.ty(&state.body.local_decls, self.tcx).ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flattened_struct_lent_whole.rs$"],
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     name: "lent-reference-made-as-a-reference",
     breaks:
       "a reference given to a call that's given its place's pointer is made as a reference, a box of a copy",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                if place.projection.is_empty() && state.facts.pointed().lent_as_pointers.contains(&place.local) =>",
     replace: "                if false && state.facts.pointed().lent_as_pointers.contains(&place.local) =>",
     tests: ["test/corpus.test.ts", "-t", "^reference_given_as_its_pointer\\.rs$"],
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   {
     name: "nested-field-set-boxed",
     breaks: "a nested field set, `changed.sdp_mid = Some(None)`, holds the box (#470)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                    let boxed = self.value_expr(boxed, span)?;\n                    self.held_of_boxed(boxed, (ty, some), out)\n",
     replace: "                    let _ = some;\n                    self.value_expr(boxed, span)?\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_nullable_field.rs$"],
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
   {
     name: "nested-field-read-into-held-boxed",
     breaks: "a local that holds a nested field's copy as it's held is given the box (#470)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            // Not a parameter's part its pattern binds, bound there already.\n",
     replace: "            && false\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     name: "made-array-unplaced",
     breaks:
       "an array a statement makes is where its Rust is, `&[key], // path` of a call's arguments, whose line's JS the comment is after (ADR 0444, amended)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            Value::List(items, at) if at.is_none() => Value::List(items, self.js_span(span)),\n",
     replace: "",
     tests: ["test/lowering-comments-items.test.ts", "-t", "array argument made of a variable"],
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     name: "valued-arrow-unmarked",
     breaks:
       "a `let` of an `Rc` or a `Box` of a closure is a function declared, `function commitHook(n) { .. }`, not a `const` of its arrow (ADR 0882, amended)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                expr.facts = expr.facts.with(js::Known::Valued);\n",
     replace: "",
     tests: ["test/lowering-arrows.test.ts", "-t", "a let of an Rc or a Box"],
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
     name: "place-ref-written-in-place",
     breaks:
       "`*r = p` of a `&mut` that's `v[i]`'s place is `$assign(v[i], p)`, the old object made `p`",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && !names_place(base)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_item_written_whole.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
     name: "held-reference-written-as-its-place",
     breaks:
       "`*map.get_mut(k).ok_or_else(..)? = v` is `result._0 = v`, the `Result`'s payload replaced and the map's entry left as it was (#466)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            base.projection.is_empty()\n                && state.facts.place_reference(base.local)\n",
     replace: "            base.projection.is_empty()\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_held_written_whole.rs$"],
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     name: "place-reference-written-as-a-variable",
     breaks:
       "a `&mut` MIR has as a place whose JS is a variable, `if let Some(r) = slot.current`'s `r`, is written `r = v`, which writes nothing it refers to (#466)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                && matches!(target.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))\n        };\n",
     replace: "        };\n",
     tests: ["test/corpus.test.ts", "-t", "^(mut_ref_held_written_whole|vec_item_written_whole).rs$"],
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-value-always-spilled",
     breaks: "`more.has = work();` is `const value = work(); more.has = value;`",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        let target = if !place.projection.is_empty() && value.has_effects() && !fixed {\n",
     replace:
       "        let target = if !place.projection.is_empty() && value.has_effects() {\n",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     name: "mir-object-replace-rebinds",
     breaks:
       "`*self = v` through a `&mut` to an object rebinds `self`, not the object",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && self.mut_ref_form(place.ty(decls, self.tcx).ty).written_in_place()\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
     name: "mir-param-part-moved-again",
     breaks:
       "a part a parameter's pattern binds is moved out of the parameter again, which the pattern took apart",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        if let Some(&arg) = state.parts.get(&place.local)\n",
     replace:
       "        if let Some(&arg) = state.parts.get(&place.local).filter(|_| false)\n",
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
     name: "mir-flattened-struct-nested",
     breaks:
       "a struct with flattened fields made outside JSX holds them as fields, `{ template, files }`",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            if bindings::has_flatten(self.tcx, ty) {\n",
     replace: "            if false && bindings::has_flatten(self.tcx, ty) {\n",
     tests: [
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     name: "mir-jsx-props-flattened",
     breaks:
       "a component's props with a flattened field are flattened before JSX takes them apart",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && !state.facts.jsx_props().contains(&place.local)\n",
     replace: "",
     tests: [
@@ -177,7 +177,7 @@ export const mutations: Mutation[] = [
     name: "mir-payload-as-const",
     breaks:
       "`Some(title)`'s `title`, of a place that reads the same, is a `const title = …`, not the place",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && (!state.locals.user[local] || (state.facts.payloads().contains(&local) && !of_temporary))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
     replace:
       "            && !state.locals.user[local]\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
@@ -195,7 +195,7 @@ export const mutations: Mutation[] = [
     name: "mir-shared-ref-as-const",
     breaks:
       "a temporary's `&node.title` read twice is a `const _18 = node.title;`, not the place where it's read",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        let one = place.projection.is_empty()\n",
     replace: "        let one = false && place.projection.is_empty()\n",
     tests: [
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
     name: "mir-payload-of-temporary-in-place",
     breaks:
       "`Some(current)` of a temporary is read as the temporary, `_5`, losing its name",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && (!state.locals.user[local] || (state.facts.payloads().contains(&local) && !of_temporary))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
     replace:
       "            && (!state.locals.user[local] || state.facts.payloads().contains(&local))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
@@ -222,7 +222,7 @@ export const mutations: Mutation[] = [
     name: "mir-payload-place-of-temporary",
     breaks:
       "what a pattern binds of a temporary is read as the temporary, losing its name, match_call_once's `n` of `note(1, id(x))` its `value`, binding_read_before_set's `held` its `current`",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && (!state.locals.user[local] || (state.facts.payloads().contains(&local) && !of_temporary))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local];\n",
     replace:
       "            && (!state.locals.user[local] || state.facts.payloads().contains(&local))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local];\n",
@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
     name: "mir-null-none-undefined",
     breaks:
       "a `None` only a nullable field reads is `undefined`, and the field `(c ? v : undefined) ?? null`",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && variant.as_u32() == 0\n",
     replace: "            && variant.as_u32() == 9\n",
     tests: [
@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
     name: "mir-stored-paths-unknown",
     breaks:
       "a `bool` a call of a `dyn Fn` gives, stored in a local, isn't known as one, `!!keep(item) && ..` (a binding's getter's is, by its function item, ADR 0953, amended)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            let bool = state.body.local_decls[local].ty.is_bool();\n            *self.locals.mir.paths.entry(path).or_insert(bool) &= bool;\n        }\n        // Of a binding",
     replace: "        }\n        // Of a binding",
     tests: [
@@ -263,7 +263,7 @@ export const mutations: Mutation[] = [
     name: "mir-call-paths-unrecorded",
     breaks:
       "what a call of a `dyn Fn` or a fn pointer gives isn't recorded a `bool`, `!!keep(item) && ..` (a function item's is, ADR 0953, amended)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: ".or_else(|| e.called_path())",
     replace: "",
     tests: [
@@ -276,7 +276,7 @@ export const mutations: Mutation[] = [
     name: "mir-match-flattened-kept",
     breaks:
       "a `match`'s binding of flattened props is the props whole, their other fields among them",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        if state.binding_var\n            && let Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _) = rvalue\n",
     replace:
       "        if false\n            && let Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _) = rvalue\n",
@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
     name: "mir-tried-named-value",
     breaks:
       "`let f = xs.find(..)?;` from MIR holds the value as `value`, not `f`",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                && let Some((bound, from)) = continued_binding(state, local)\n",
     replace:
       "                && let Some((bound, from)) = continued_binding(state, local).filter(|_| false)\n",
@@ -305,7 +305,7 @@ export const mutations: Mutation[] = [
     name: "mir-kept-ref-unfixed",
     breaks:
       "MIR's `let first = &mut h.list[0]` reads `h.list` where it's used, after it's assigned again",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                Value::Ref(self.fixed_kept(state, target, out)?)\n",
     replace: "                Value::Ref(target)\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
@@ -314,7 +314,7 @@ export const mutations: Mutation[] = [
     name: "mir-ref-of-ref-unaliased",
     breaks:
       "MIR's `*outer = &mut ys`, `outer` a `&mut` to `list`, assigns `outer`",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                state.refs.insert(place.local, list);\n                return Ok(());\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_method_of_a_mut_to_a_held_mut.rs$"],
@@ -324,7 +324,7 @@ export const mutations: Mutation[] = [
     name: "mir-kept-ref-var-unheld",
     breaks:
       "MIR's `let first = &mut list[0]`, `list` a `&mut` given another later, reads `list` where it's used",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                .is_none_or(|(l, _)| state.locals.writes[l] <= 1 || !state.body.local_decls[l].ty.is_ref()),\n",
     replace: "                .is_none_or(|_| true),\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
@@ -332,7 +332,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-borrowed-const",
     breaks: "MIR's `w` a `ref mut n` of its payload writes is a `const`",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                match state.locals.borrowed[local] {\n",
     replace: "                match false {\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
@@ -341,7 +341,7 @@ export const mutations: Mutation[] = [
     name: "mir-variable-type-unchecked",
     breaks:
       "MIR's variable of a struct of `Vec<*const str>`, pointers to text JS has no address of, compiles",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        self.check_held_drops(ty, span)?;\n        self.check_value_ty(ty, span)\n",
     replace: "        self.check_held_drops(ty, span)\n",
     tests: [
@@ -354,7 +354,7 @@ export const mutations: Mutation[] = [
     name: "mir-variable-drops-unchecked",
     breaks:
       "a variable of a `LazyCell` of a value with a destructor is lowered, and never drops it",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        self.check_held_drops(ty, span)?;\n        self.check_value_ty(ty, span)\n",
     replace: "        self.check_value_ty(ty, span)\n",
     tests: [
@@ -367,7 +367,7 @@ export const mutations: Mutation[] = [
     name: "mir-mut-temp-place-held",
     breaks:
       "MIR's `&mut` temporary of a guard's `value` is a `const` of it, not the place",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            state.in_place.insert(local, target.clone());\n            return Ok(());\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^locks.rs$"],
@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
     name: "mir-mut-temp-expr-spilled",
     breaks:
       "MIR's `&mut` temporary of a place it's given as a value, `&mut copy.pages`, is a `const` of it, not the place",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && let Value::Place(target) | Value::Expr(target) = &value\n",
     replace: "            && let Value::Place(target) = &value\n",
     tests: ["test/corpus.test.ts", "-t", "^locks.rs$"],
@@ -387,7 +387,7 @@ export const mutations: Mutation[] = [
     name: "mir-map-unrecorded",
     breaks:
       "MIR's map temporary isn't recorded, so `next_back` of it is refused",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            state.iter_locals.maps.insert(local, expr.clone());\n",
     replace: "",
     tests: ["test/lowering-iterators.test.ts", "-t", "next_back of a map"],
@@ -396,7 +396,7 @@ export const mutations: Mutation[] = [
     name: "mir-whole-assign-through-mut",
     breaks:
       "MIR's `*f = g` of a closure through a `&mut` only gives the parameter another",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && matches!(target.kind, js::ExprKind::Var(ref name) if *name == state.locals.names[base.local])\n",
     replace: "            && false\n",
     tests: [
@@ -408,7 +408,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-store-span-lost",
     breaks: "MIR's values map to no Rust in the source map",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                e.span = self.js_span(span);\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "methods across modules"],
@@ -417,7 +417,7 @@ export const mutations: Mutation[] = [
     name: "mir-constant-written-shared",
     breaks:
       "MIR's named constant a local copies is the constant itself though the local is written, changing it",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && only_read(state.body, place.local)\n",
     replace: "            && true\n",
     tests: ["test/corpus.test.ts", "-t", "bitwise_operators"],
@@ -425,7 +425,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-returned-local-copied",
     breaks: "MIR's variable a function gives is copied, `return { ...p }`",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                if *place == Place::from(mir::RETURN_PLACE)\n",
     replace: "                if false\n",
     tests: [
@@ -437,7 +437,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-writer-error-ignored",
     breaks: "MIR's writer's `Err(fmt::Error)` is nothing, the writer going on",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: 'let thrown = Expr::call(Expr::helper("$fmtError"), Vec::new());',
     replace: "let thrown = Expr::js_undefined();",
     tests: ["test/corpus.test.ts", "-t", "fmt_error"],
@@ -446,7 +446,7 @@ export const mutations: Mutation[] = [
     name: "mir-constant-returned-shared",
     breaks:
       "MIR's named constant a function gives is the constant itself, which its caller changes",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && place.local != mir::RETURN_PLACE\n            && let Rvalue::Use(Operand::Constant(c), _) = rvalue\n",
     replace:
       "            && let Rvalue::Use(Operand::Constant(c), _) = rvalue\n",
@@ -456,7 +456,7 @@ export const mutations: Mutation[] = [
     name: "mir-ref-mut-payload-refused",
     breaks:
       "MIR refuses \`ref mut x\` of an \`Option<&mut T>\`'s payload, a \`&mut &mut T\`",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            if steady_place(&part) {\n",
     replace: "            if false && steady_place(&part) {\n",
     tests: ["test/corpus.test.ts", "-t", "ref_mut_of_mut_payload"],
@@ -465,7 +465,7 @@ export const mutations: Mutation[] = [
     name: "mir-unread-ref-handled",
     breaks:
       'MIR\'s \`&mut\` nothing reads, \`let _ = &mut p.y\` through \`deref_mut\`, is a handle made on its place, \`\$handleOn(derefMut(p).value, "y");\`, where what makes the place, \`derefMut(p);\`, is all that runs',
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                Value::Ref(mut place) => {\n                    while let js::ExprKind::Member(object, _) = place.kind {\n",
     replace:
       "                Value::Ref(mut place) if false => {\n                    while let js::ExprKind::Member(object, _) = place.kind {\n",
@@ -476,7 +476,7 @@ export const mutations: Mutation[] = [
     name: "union-written-as-member",
     breaks:
       "a union's field written is its object's member, the field it held kept",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        if let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection()\n            && self.is_union(base.ty(state.body, self.tcx).ty)\n        {\n            let union_ty",
     replace:
       "        if let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection()\n            && false\n        {\n            let union_ty",
@@ -486,7 +486,7 @@ export const mutations: Mutation[] = [
     name: "pointed-local-no-cell",
     breaks:
       "a local a pointer's taken to is its value, which no handle can be on",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            if state.facts.pointed().locals.contains(&local) {\n                let cell",
     replace: "            if false {\n                let cell",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
@@ -495,7 +495,7 @@ export const mutations: Mutation[] = [
     name: "unread-pointer-made",
     breaks:
       "a pointer nothing reads, of what has no place, is refused, where making it does nothing",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && state.locals.reads[place.local] == 0\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
@@ -505,7 +505,7 @@ export const mutations: Mutation[] = [
     name: "reborrow-of-reassigned-unheld",
     breaks:
       "a reborrow, `&mut *x`, of a reference reassigned before it's used is of what `x` refers to when it's used, not then",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            self.hold_refs_through(state, local, out)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_reborrow_reassigned.rs$"],
@@ -514,7 +514,7 @@ export const mutations: Mutation[] = [
     name: "unread-ref-held-at-write",
     breaks:
       "a `&mut found` read in one branch and not past the `else`'s write of `found` is held there, `const f = found; f.push(v)`, where it's `found.push(v)`",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            .filter(|&l| read_past(state.body, at, l))\n",
     replace: "",
     snapshots: true,
@@ -524,7 +524,7 @@ export const mutations: Mutation[] = [
     name: "writer-last-call-unchecked",
     breaks:
       "a writer's last call that fails, `check(n)` of its `fmt::Result`, is ignored: `Ok(())`",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            self.fmt_check(value.clone(), at, out);\n            if state.writer.is_some() {\n",
     replace: "            out.push(StmtKind::Expr(value.clone()).at(at));\n            if state.writer.is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
@@ -533,7 +533,7 @@ export const mutations: Mutation[] = [
     name: "writer-last-call-always-checked",
     breaks:
       "a writer's last call, whose own `fmt::Result` throws, is checked again, `$writeCheck(to_writer(..))`",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: '            && matches!(callee.helper_name(), Some("$writeTry" | "$writeOf"))\n',
     replace: '            && callee.helper_name() != Some("$never")\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_writers.rs$"],
@@ -543,7 +543,7 @@ export const mutations: Mutation[] = [
     name: "some-value-write-unfolded",
     breaks:
       "`*o.insert(None) = Some(4)` of an `Option<Option<T>>` assigns to `$someValue(o)`, a crash",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: '            && callee.helper_name() == Some("$someValue")\n            && let [option] = args.as_slice()\n',
     replace:
       "            && false\n            && let [option] = args.as_slice()\n",
@@ -553,7 +553,7 @@ export const mutations: Mutation[] = [
     name: "held-shared-ref-handle",
     breaks:
       "a shared borrow of a kept `&mut` is a handle in a variable, not its place",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                Some(Expr::handle(target.clone()))\n",
     replace: "                None\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
@@ -562,7 +562,7 @@ export const mutations: Mutation[] = [
   {
     name: "held-mut-ref-handle",
     breaks: "a `&mut` given on twice is a new handle each time, not the cell",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                if matches!(ty.kind(), ty::Ref(_, _, ty::Mutability::Not))\n                    && same_place(state, target)\n",
     replace: "                if same_place(state, target)\n",
     tests: ["test/corpus.test.ts", "-t", "function_given_for_a_mut_param"],
@@ -572,9 +572,9 @@ export const mutations: Mutation[] = [
     name: "nullable-result-undefined",
     breaks:
       "a `#[rust_js::nullable]` function's `None` it didn't make is `undefined`, which a JS caller's `!== null` takes for a value",
-    file: "src/lower/mir/assign.rs",
-    find: "                crate::lower::representation::NonePlace::Result(state.body.source.def_id()),\n",
-    replace: "                crate::lower::representation::NonePlace::Result(rustc_span::def_id::CRATE_DEF_ID.to_def_id()),\n",
+    file: "crates/rust-js-mir/src/assign.rs",
+    find: "                rust_js_lower::representation::NonePlace::Result(state.body.source.def_id()),\n",
+    replace: "                rust_js_lower::representation::NonePlace::Result(rustc_span::def_id::CRATE_DEF_ID.to_def_id()),\n",
     tests: [
       "test/bindings.test.ts",
       "-t",
@@ -585,7 +585,7 @@ export const mutations: Mutation[] = [
     name: "nullable-result-at-return",
     breaks:
       "a nullable result is a variable each branch sets, so `pop` returns `result ?? null` and its `return`s aren't where they're written",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                let nulled = self.nulled(state, operand);\n                let value = self.nullable_written(state, *place, value?, nulled, span)?;\n",
     replace: "                let nulled = self.nulled(state, operand);\n                let _ = nulled;\n                let value = value?;\n",
     tests: [
@@ -598,7 +598,7 @@ export const mutations: Mutation[] = [
     name: "held-cell-boxed-again",
     breaks:
       "`(**self).inc()` of an impl for `&mut T` gives a box of a copy of the number, so what it writes is lost",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        self.held_cell(place)\n    }\n",
     replace: "        None\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^forwarding_mut_impl.rs$"],
@@ -607,7 +607,7 @@ export const mutations: Mutation[] = [
     name: "guard-only-binding-written",
     breaks:
       "a binding only a guarded arm's guard reads is written in the arm, `const first = value[0];`, which nothing reads",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        let user = state.locals.user[local] && !locals::bound_for_a_guarded_arm(state.body, local);\n",
     replace: "        let user = state.locals.user[local];\n",
     tests: ["test/lowering-guards.test.ts"],
@@ -616,7 +616,7 @@ export const mutations: Mutation[] = [
     name: "comments-only-block-dropped",
     breaks:
       "a branch of only comments is nothing, `if (indent < 3) { .. }`, its comments gone",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            out.push(StmtKind::Comments.at(end));\n",
     replace: "            let _ = end;\n",
     tests: [
@@ -629,7 +629,7 @@ export const mutations: Mutation[] = [
     name: "nullable-assigned-some-coalesced",
     breaks:
       "a nullable field assigned `Some(label)`, through MIR's temporary, is `label ?? null`, where a `Some` is never `undefined` (ADR 0810)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                        Given::Nulled => true,\n                        Given::Optional => optional,\n",
     replace: "                        Given::Optional => optional,\n",
     tests: [
@@ -642,7 +642,7 @@ export const mutations: Mutation[] = [
     name: "optional-assigned-coalesced",
     breaks:
       "an optional nullable field assigned another's value is `deletion.name = abort.name ?? null`, `null` where upstream's is `undefined` (ADR 0810, amended)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                        Given::Optional => optional,\n",
     replace: "                        Given::Optional => false,\n",
     tests: [
@@ -655,7 +655,7 @@ export const mutations: Mutation[] = [
     name: "call-option-written-as-given",
     breaks:
       "a call's `Option` only nullable fields read is written as it's given, `undefined` for `None`, which they take as it is",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        let read_nullable = place.projection.is_empty()\n",
     replace:
       "        let read_nullable = false && place.projection.is_empty()\n",
@@ -669,8 +669,8 @@ export const mutations: Mutation[] = [
     name: "own-nullable-param-any-argument",
     breaks:
       "a function's parameter its function doesn't name nullable, or another argument, set to `None` is `null` (ADR 0861)",
-    file: "src/lower/mir/assign.rs",
-    find: "            true => crate::lower::representation::none_form(\n                self.tcx,\n                crate::lower::representation::NonePlace::Param(def_id, arg - 1),\n            ),\n",
+    file: "crates/rust-js-mir/src/assign.rs",
+    find: "            true => rust_js_lower::representation::none_form(\n                self.tcx,\n                rust_js_lower::representation::NonePlace::Param(def_id, arg - 1),\n            ),\n",
     replace: "            true => NoneForm::Null,\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
   },
@@ -678,10 +678,10 @@ export const mutations: Mutation[] = [
     name: "tail-none-comments-dropped",
     breaks:
       "a comment before the `None` a function gives at its end, `// Don't return anything`, is gone with its `return;` (ADR 0862)",
-    file: "src/lower/mir/assign.rs",
-    find: "            && let Some(at) = crate::lower::sources::commented(self.krate.sources, span)\n",
+    file: "crates/rust-js-mir/src/assign.rs",
+    find: "            && let Some(at) = rust_js_lower::sources::commented(self.krate.sources, span)\n",
     replace:
-      "            && let Some(at) = crate::lower::sources::commented(self.krate.sources, span).filter(|_| false)\n",
+      "            && let Some(at) = rust_js_lower::sources::commented(self.krate.sources, span).filter(|_| false)\n",
     tests: [
       "test/lowering-comments.test.ts",
       "-t",
@@ -692,7 +692,7 @@ export const mutations: Mutation[] = [
     name: "dropping-assignment-at-place",
     breaks:
       "an assignment over a value it drops is where MIR writes it, its place, so a comment in its value, React's startTransition's, is in no statement and lost (ADR 0444, amended)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            true => span.to(made),\n",
     replace: "            true => span,\n",
     tests: [
@@ -705,7 +705,7 @@ export const mutations: Mutation[] = [
     name: "variable-target-value-spilled",
     breaks:
       "`result = callback();` of a closure's capture is `const value = callback(); result = value;` (ADR 0879)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            if !reached.is_empty() || !(matches!(target.kind, js::ExprKind::Var(_)) || settled_place(state, &target)) {\n",
     replace: "            if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^branches_as_written.rs$"],
@@ -715,7 +715,7 @@ export const mutations: Mutation[] = [
     name: "in-place-not-held",
     breaks:
       "a temporary's place read in place, `s.v`, through a reference reassigned while it's borrowed, `s = o`, is the new one's",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            .chain(state.in_place.iter())\n            .filter(|(_, target)| root_var(target) == Some(&name))\n",
     replace:
       "            .filter(|(_, target)| root_var(target) == Some(&name))\n",
@@ -729,7 +729,7 @@ export const mutations: Mutation[] = [
     name: "settled-target-value-spilled",
     breaks:
       "`lanes[index] = ..` of a place of variables each given one value is `const value = ..; lanes[index] = value;`",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            if !reached.is_empty() || !(matches!(target.kind, js::ExprKind::Var(_)) || settled_place(state, &target)) {\n",
     replace:
       "            if !reached.is_empty() || !matches!(target.kind, js::ExprKind::Var(_)) {\n",
@@ -740,7 +740,7 @@ export const mutations: Mutation[] = [
     name: "whole-cell-written-as-cell",
     breaks:
       "a whole cell written to a field that's the property it holds, `wrap.n = RefCell::new(9)`, assigns the handle, which the printer can't write",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        let (target, value) = match self.whole_property_cell(state, place) {\n",
     replace: "        let (target, value) = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_field_places.rs$"],
@@ -749,7 +749,7 @@ export const mutations: Mutation[] = [
     name: "nullable-return-of-nulled-coalesced",
     breaks:
       "a nullable function's `return suspenseState.dehydrated;` of a nullable field is `?? null` again (ADR 0949)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                let nulled = self.nulled(state, operand);\n",
     replace: "                let nulled = false;\n",
     tests: ["test/lowering-nullable-reads.test.ts"],
@@ -758,7 +758,7 @@ export const mutations: Mutation[] = [
     name: "closure-nullable-binding-coalesced",
     breaks:
       "React's SyntheticBaseEvent stores `this._reactName = reactName ?? null;` of a `with_this` closure's binding its `#[rust_js::nullable(react_name)]` names, where upstream stores it as given (ADR 0861, amended)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        !bindings.is_empty()\n",
     replace: "        false && !bindings.is_empty()\n",
     tests: ["test/js-constructors.test.ts", "-t", "nullable"],
@@ -767,7 +767,7 @@ export const mutations: Mutation[] = [
     name: "closure-nullable-binding-any-name",
     breaks:
       "a `with_this` closure's binding its `#[rust_js::nullable(..)]` doesn't name is stored as given, `this._reactName = reactName;`, though a Rust caller may give `undefined` (ADR 0861, amended)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                        .any(|&(name, span)| name == info.name && span == info.source_info.span)\n",
     replace: "                        .any(|_| true)\n",
     tests: ["test/js-constructors.test.ts", "-t", "nullable"],
@@ -776,7 +776,7 @@ export const mutations: Mutation[] = [
     name: "closure-nullable-tuple-item-coalesced",
     breaks:
       "React DOM's SyntheticBaseEvent is `function Made(_3, _3$2) { const _3$1 = [_3, _3$2]; const name = _3$1[0] ?? null; ..`, a binding its `#[rust_js::nullable(..)]` names made of the tuple's item as if the body set it (ADR 0861, amended, rd91)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            return bindings::nullable_tuple_item(self.tcx, owner, place.local.as_usize() - 2, item.as_usize());\n",
     replace: "            return false;\n",
     tests: [
@@ -789,7 +789,7 @@ export const mutations: Mutation[] = [
     name: "valued-of-a-bindings-box",
     breaks:
       "a `let` of the `Box` a binding gives, an event's `spawn`'s, is a `const` of its arrow, `const handleCopy = async () => ..`, where react.dev writes `async function handleCopy()` (ADR 0882, amended)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                && state.facts.made_pointer(local)\n",
     replace: "",
     tests: ["test/jsx-events.test.ts", "-t", "async event handler"],
@@ -798,7 +798,7 @@ export const mutations: Mutation[] = [
     name: "settled-until-read-never",
     breaks:
       "a binding of a `mut` parameter assigned after its `match` is a `const n = shape._0;` in each arm, not read in place (#121)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                || self.settled_until_read(state, &expr, local))\n",
     replace: "                || false)\n",
     tests: ["test/corpus.test.ts", "-t", "^settled_until_written.rs$"],
@@ -808,7 +808,7 @@ export const mutations: Mutation[] = [
     name: "continued-declared-again",
     breaks:
       "`let d = it.next()?;` of a variable declared first, a drop flag's, declares it again, `const d`, which tidy refuses (#425)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                    StmtKind::Const(_, made) if state.locals.declared[bound] => {\n                        StmtKind::Assign(Expr::var(&name), made)\n                    }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^panic_in_own_next_drops.rs$"],
@@ -817,7 +817,7 @@ export const mutations: Mutation[] = [
     name: "kept-items-length-never-written",
     breaks:
       "a write that keeps some of an array's items never writes its `length`, so a boundary shrunk to a plain node keeps six items (rd490)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        if !(last_written && self.most_items(ty).is_some_and(|most| most <= len)) {\n",
     replace: "        if false {\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "grown and shrunk in place"],
@@ -826,7 +826,7 @@ export const mutations: Mutation[] = [
     name: "kept-items-length-always-written",
     breaks:
       "a write that keeps some of an array's items writes its `length` where nothing has more, `node.length = 6;` before upstream's grow (rd490)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        if !(last_written && self.most_items(ty).is_some_and(|most| most <= len)) {\n",
     replace: "        if true {\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "grown and shrunk in place"],
@@ -836,7 +836,7 @@ export const mutations: Mutation[] = [
     name: "kept-items-unheld",
     breaks:
       "a write that keeps some of an array's items reads an item it loses after its `length` cuts it, `node[3] = node[4]` (rd490)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            let item = match item.reads_only_vars() || item.is_constant() {\n",
     replace: "            let item = match true {\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "grown and shrunk in place"],
@@ -845,7 +845,7 @@ export const mutations: Mutation[] = [
     name: "kept-items-unwritten",
     breaks:
       "a write that keeps some of an array's items is `$assign(node, [node[0], node[1], [], undefined])`, not upstream's writes of the others (rd490)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        if !items.iter().enumerate().any(|(i, item)| kept(i, item)) {\n",
     replace: "        if true {\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "grown and shrunk in place"],
@@ -855,7 +855,7 @@ export const mutations: Mutation[] = [
     name: "kept-object-named",
     breaks:
       "the object a kept `&mut` is fixed in is a name of the program's, never read as the variable it holds, so a flattened state's field binding is `const value = chunk; value.value`, where upstream reads `chunk.value` (rd482)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                let held = self.held_in_place(name, object, out);\n",
     replace: "                let held = self.spill(name, object, out);\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell.rs$"],
@@ -865,7 +865,7 @@ export const mutations: Mutation[] = [
     name: "held-reference-place-rewritten",
     breaks:
       "a reference read out of a field, `inner.s` of a `&str`, is read where it's used, after the field's written, `inner.s = \"new\"; both(inner.s, 1)`, where Rust gives the old one",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                if !rewritten\n",
     replace: "                if true\n",
     tests: ["test/corpus.test.ts", "-t", "^references_read_before_their_field_is_written.rs$"],
@@ -874,7 +874,7 @@ export const mutations: Mutation[] = [
     name: "commented-arm-unplaced",
     breaks:
       "a comment above a match's last arm that does nothing, `// Fine.\\n Ok(()) => {}`, is lost: MIR has no statement of the arm (#508)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                (state.commented.arms.iter()).find_map(|&(block, end)| (block == at).then_some(end))\n",
     replace: "                (state.commented.arms.iter()).find_map(|&(block, end)| (block == at && false).then_some(end))\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment above an arm that does nothing is the arm.s"],
@@ -882,7 +882,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-write-unseen",
     breaks: "a flattened keyed enum written whole assigns its parent's variable, not its keys (#504)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        if let Some(written) = self.keyed_write(state, place, rvalue, span, out) {\n",
     replace: "        if let Some(written) = None::<R<()>> {\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_enum.rs$"],
@@ -890,7 +890,7 @@ export const mutations: Mutation[] = [
   {
     name: "view-unplaced",
     breaks: "a view given as an argument, `&mut v[1..], // the tail`, isn't where its Rust is, so the comment after it isn't after its line's JS (ADR 1073)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            Value::View(list, at) if at.is_none() => Value::View(list, self.js_span(span)),\n",
     replace: "",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a comment after a view argument"],
@@ -898,7 +898,7 @@ export const mutations: Mutation[] = [
   {
     name: "variant-field-reference-held",
     breaks: "a pattern's binding of a variant's field whose cell is the property it holds is a `const` of a handle on it, `const cleanup = { get value() { return kind.cleanup; }, .. }` (#503)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && refers_to_a_variant_field(state)\n",
     replace: "            && false\n",
     tests: ["test/lowering-field-cells.test.ts", "-t", "an enum variant's RefCell field"],
@@ -908,7 +908,7 @@ export const mutations: Mutation[] = [
     name: "cell-field-reference-held-in-place",
     breaks:
       "a `match` arm's binding of a variant's `Cell` field read twice is read twice where it's read, `kind.current + kind.current`, where ADR 0287 holds it once, `const current = kind.current;` (#532, #503)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && self.is_std_type(state.body.local_decls[local].ty.peel_refs(), StdItem::RefCell)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cell_binding_read_once.rs$"],
@@ -918,7 +918,7 @@ export const mutations: Mutation[] = [
     name: "assigned-local-unmarked",
     breaks:
       "a local declared before it's assigned, one dropped as its body unwinds, keeps nothing its value's maker marked it, so a `rev()` made knowing its back held so is refused where it's stepped from its back (#730)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "        if place.projection.is_empty() {\n            super::temporaries::note_marks(state, local, &value);\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(rev_made_knowing_its_back|own_iterator_flattened_from_its_back).rs$"],
@@ -926,7 +926,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-of-held-items-unrecorded",
     breaks: "a map of a variable that holds a `Vec`'s `IntoIter`, made where a `move` closure copies a field of a value with a destructor, isn't made again where it's stepped from its back, and its `rfind` is refused (#780)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                || of_held_items()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^move_closure_adapter_from_its_back.rs$"],
@@ -934,7 +934,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-deref-write-names-another",
     breaks: "`*(&raw mut v) = vec![2, 3]` gives the name `v` another value, a `const`'s, which throws, where a pointer kept to `v` reads the write in Rust (#1352)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            self.written_through(target, value, written, span)?,\n",
     replace: "            StmtKind::Assign(target, value),\n",
     tests: ["test/corpus.test.ts", "-t", "^whole_values_moved_through_pointers.rs$"],
@@ -942,7 +942,7 @@ export const mutations: Mutation[] = [
   {
     name: "write-through-a-boxed-iterator-lost",
     breaks: "`**b = v` of a `&mut Box<I>` of an iterator gives the parameter another value, `b = v`, the caller's iterator left as it was (#1314)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            ) || through_box(base))\n",
     replace: "            ))\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_boxed_iterator_is_the_iterators.rs$"],
@@ -950,7 +950,7 @@ export const mutations: Mutation[] = [
   {
     name: "custom-mir-result-handed-over",
     breaks: "a variable custom MIR gives as the function's result, then writes, is handed over uncopied, so the write changes the result (#1396)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                    && state.body.injection_phase.is_none()\n",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "custom MIR's copy of a Copy enum it changes after is apart"],
@@ -958,23 +958,23 @@ export const mutations: Mutation[] = [
   {
     name: "writer-held-result-unchecked",
     breaks: "a `Display` whose `fmt` gives back what it holds, `let r = Err(fmt::Error); r` or `FAILED`, gives `Ok`, its error never thrown (#1411)",
-    file: "src/lower/mir/assign.rs",
-    find: "                        if crate::lower::display::may_be_write_error(&value) && self.krate.failing.any {\n",
+    file: "crates/rust-js-mir/src/assign.rs",
+    find: "                        if rust_js_lower::display::may_be_write_error(&value) && self.krate.failing.any {\n",
     replace: "                        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_constant.rs$"],
   },
   {
     name: "as-is-map-temporary-unrecorded",
     breaks: "a map giving each item as it is, `v.into_iter().map(|x| x)`, that MIR holds in a temporary isn't kept for its `next_back`, which reads only its name and is refused (#1406)",
-    file: "src/lower/mir/assign.rs",
-    find: "                || crate::lower::iterators::source_mapped_as_it_is(&expr).is_some())\n",
+    file: "crates/rust-js-mir/src/assign.rs",
+    find: "                || rust_js_lower::iterators::source_mapped_as_it_is(&expr).is_some())\n",
     replace: ")\n",
     tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_stepped_from_its_back.rs$"],
   },
   {
     name: "boxed-field-written-whole-as-object",
     breaks: "a struct's field held as generic code's box, written whole, `slot.at = &mut b`, holds the object, which its generic methods read as a box (#1405)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            Some(crossing) => self.form_given(Form::Box, crossing, value, span)?,\n",
     replace: "            Some(_) => value,\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
@@ -982,7 +982,7 @@ export const mutations: Mutation[] = [
   {
     name: "part-alias-takes-a-pending-call",
     breaks: "a `&mut` to part of a call's `&mut` result, `&mut *f(headers)`, is tried as an alias of a steady place by reading the call's pending value, which is thrown away when it isn't one: the call and its effects are lost and its MIR local read undeclared (#1580)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && let ty::Ref(_, _, ty::Mutability::Mut) = *target.ty(state.body, self.tcx).ty.kind()\n            && !pending_of(state, target.local)\n",
     replace: "            && let ty::Ref(_, _, ty::Mutability::Mut) = *target.ty(state.body, self.tcx).ty.kind()\n",
     tests: ["test/corpus.test.ts", "-t", "^reborrow_of_a_calls_mut_result.rs$"],
@@ -990,7 +990,7 @@ export const mutations: Mutation[] = [
   {
     name: "returned-write-thrown-past-drops",
     breaks: "a `write!` given back is thrown where it's written, before a drop that may panic, which its `Err` then leaves out (#1636)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "            && (state.writer.is_some() || self.write_thrown_here(state))\n",
     replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_err_given_back_past_drops.rs$"],
@@ -998,7 +998,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-writes-as-they-are",
     breaks: "a `pub` struct's plain `Option` field set to JS's `null` holds it (#1840)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                Rvalue::Use(operand, _) => self.one_none_stored(state, *place, operand, value, span)?,\n",
     replace: "                Rvalue::Use(..) => value,\n",
     tests: given1840,
@@ -1006,7 +1006,7 @@ export const mutations: Mutation[] = [
   {
     name: "returned-uses-as-they-are",
     breaks: "what a function JS calls returns, its parameter JS gave `null`, is `null` (#1840)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                self.one_none_returned(state, *place, (Some(operand), None), value, span)?\n",
     replace: "                value\n",
     tests: given1840,
@@ -1014,7 +1014,7 @@ export const mutations: Mutation[] = [
   {
     name: "some-of-a-caught-null-returned-as-is",
     breaks: "a `Some(e)` of a caught `null` returned is given as it is, `return e`, a `null` where Rust's `None` is `undefined` (#1939)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                        (self.krate.nulled_params.js_nones()).payload_may_be_null(self.tcx, state.body, of)\n                    }) =>\n",
     replace: "                        false && (self.krate.nulled_params.js_nones()).payload_may_be_null(self.tcx, state.body, of)\n                    }) =>\n",
     tests: ["test/js-errors.test.ts", "-t", "leaves for JS as undefined, each way"],
@@ -1023,7 +1023,7 @@ export const mutations: Mutation[] = [
     name: "kept-cell-name-not-a-cell",
     breaks:
       "a `&mut` a variable keeps of a field held in a place of its own, `let lent = &mut pair.a`, names the place, but isn't kept as the cell it is, so its steps copy into a new place and back in a `try`, not step it (#2255)",
-    file: "src/lower/mir/assign.rs",
+    file: "crates/rust-js-mir/src/assign.rs",
     find: "                if of_a_cell {\n",
     replace: "                if of_a_cell && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],

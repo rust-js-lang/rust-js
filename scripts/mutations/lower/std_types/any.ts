@@ -1,4 +1,4 @@
-// Mutations of src/lower/std_types/any.rs (ADRs 0331, 0692, 0710).
+// Mutations of crates/rust-js-lower/src/std_types/any.rs (ADRs 0331, 0692, 0710).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "any-pair-of-a-conditional-kept",
     breaks:
       "a `map` of an `Option` to a `&dyn Any` given to a binding is the pair it made, `o != null ? { value: o, impl } : null`, so JS gets `{value, impl}` (rd170)",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                    Some(Expr::cond((**test).clone(), then, otherwise))\n",
     replace: "                    None\n",
     tests: ["test/corpus.test.ts", "-t", "^(any_given_to_a_nullable_parameter|any_mapped_to_a_nullable_parameter).rs$"],
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "js-error-downcast-of-panic-unseen",
     breaks:
       "a downcast to `&JsError` of a `dyn Any` an unwind's payload was widened to finds none",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "        if thrown && op != AnyOp::DowncastMut {\n",
     replace: "        if false && thrown && op != AnyOp::DowncastMut {\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     name: "js-error-is-of-panic-unseen",
     breaks:
       "`is::<&JsError>()` of a `dyn Any` an unwind's payload was widened to is `false`, where its downcast finds it",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                AnyOp::Is => Expr::bin(Op::Or, is, panicked),\n",
     replace: "                AnyOp::Is => is,\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "js-error-box-downcast-of-panic-unseen",
     breaks:
       "`Box::downcast::<&JsError>()` of a `dyn Any` an unwind's payload was widened to is its `Err`, where its `downcast_ref` finds it",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                    Expr::cond(panicked, result::ok(error), result::err(pair)),\n",
     replace: "                    result::err(pair),\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     name: "downcast-ref-unboxed",
     breaks:
       "`downcast_ref::<Option<u16>>()` of a `None`-looking value isn't boxed",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                let some = if self.boxed_payload(of) {",
     replace: "                let some = if false {",
     tests: ["test/corpus.test.ts", "-t", "dyn_any_generic"],
@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
   {
     name: "downcast-mut-copy",
     breaks: "`downcast_mut::<u8>()` gives the number, so `*n += 1` is lost",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                let found = if self.mut_ref_form(of).is_cell() { pair } else { inside };\n",
     replace: "                let found = if false { pair } else { inside };\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
@@ -59,7 +59,7 @@ export const mutations: Mutation[] = [
   {
     name: "downcast-err-value",
     breaks: "a failed `downcast` gives the value, not the `Box<dyn Any>`",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                Expr::cond(is, result::ok(found), result::err(pair))\n",
     replace:
       "                Expr::cond(is, result::ok(found), result::err(Expr::held(pair)))\n",
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
   {
     name: "binding-given-pair",
     breaks: "a binding taking a `&dyn Any`, any JS value, is given the pair",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "        marker || self.recognition().is_dyn_any(ty)\n",
     replace: "        marker\n",
     tests: ["test/snapshots.test.ts", "-t", "async: the generated"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-id-of-supertrait-dyn",
     breaks: "`type_id()` of a `dyn` of a trait under `Any` is an error",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "            id if id.is_some() && id == any_id => dictionary,",
     replace: "            id if id.is_some() => dictionary,",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
     name: "higher-ranked-by-name",
     breaks:
       "`dyn for<'a> T<'a, 'a>` and `.. T<'a, 'static>` share a `TypeId`, their name",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                ty::FnPtr(..) | ty::Dynamic(..) => true,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "dyn_any_generic"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "any-vec-pair",
     breaks: "a binding is given a `Vec` of `dyn Any` pairs, not their values",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "            ty::Adt(_, args) if self.is_vec_like(pointee) => args.types().next(),\n",
     replace: "",
     tests: ["test/lowering-bindings.test.ts", "-t", "dyn Any"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
     name: "marker-dyn-given-as-pair",
     breaks:
       "a union's `&dyn IntoX` given to JS is its pair, `{ value: q, impl }`, not its value",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "        marker || self.recognition().is_dyn_any(ty)\n",
     replace: "        self.recognition().is_dyn_any(ty)\n",
     tests: ["test/bindings.test.ts", "-t", "trailing None is no argument"],
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     name: "optional-marker-dyn-given-as-pair",
     breaks:
       "an `Option<&dyn IntoX>` passed on to JS is its pair, not its value",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                    false => Expr::optional_member(value, js::HELD),\n",
     replace: "                    false => value,\n",
     tests: ["test/bindings.test.ts", "-t", "trailing None is no argument"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
   {
     name: "counted-rc-downcast-value",
     breaks: "a counted `Rc`'s downcast is what it points at, not the `Rc`",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                    Some(_) => pair.clone(),\n",
     replace: "                    Some(_) => inside,\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any_counted_rc.rs$"],
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
     name: "thrown-of-any-send-unseen",
     breaks:
       "a downcast of an unwind's payload to `&JsError` tests its type, so its `catch` isn't of what was thrown",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "        if op != AnyOp::DowncastMut && self.finds_thrown(self.pointee_of(any), of) {\n",
     replace:
       "        if false && op != AnyOp::DowncastMut && self.finds_thrown(self.pointee_of(any), of) {\n",
@@ -139,7 +139,7 @@ export const mutations: Mutation[] = [
     name: "thrown-is-false",
     breaks:
       "`is::<&JsError>()` of an unwind's payload is `false`, where its downcast finds what was thrown",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                AnyOp::Is => Expr::bool(true),\n",
     replace: "                AnyOp::Is => Expr::bool(false),\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
   {
     name: "thrown-box-downcast-err",
     breaks: "`Box::downcast::<&JsError>()` of an unwind's payload is its `Err`",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                _ => result::ok(error),\n",
     replace: "                _ => result::err(error),\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
     name: "thrown-of-any-dyn",
     breaks:
       "a `dyn Any`'s `&JsError` is what was thrown, so one of the program's own isn't found",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "            && self.recognition().is_dyn_any_send(any)\n",
     replace: "            && self.recognition().is_dyn_any(any)\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -164,15 +164,15 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-error-downcast-to-generic-allowed",
     breaks: "a downcast of a `dyn Error` to a type of a generic `Error` impl, whose dictionary has no `typeId`, compiles and finds `None` where Rust finds it",
-    file: "src/lower/std_types/any.rs",
-    find: "            && !crate::lower::generic_facts::error_impl_has_type_id(self.tcx, imp.impl_def_id)\n",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
+    find: "            && !crate::generic_facts::error_impl_has_type_id(self.tcx, imp.impl_def_id)\n",
     replace: "            && false\n",
     tests: ["test/diagnostics.test.ts", "-t", "downcast to a generic impl"],
   },
   {
     name: "dyn-error-type-id-called",
     breaks: "a `dyn Error`'s `typeId` is called, not asked optionally, so a downcast of a generic impl's value throws, where Rust finds `None`",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "            return Ok(Expr::optional_call(Expr::member(dictionary, type_id), Vec::new()));\n",
     replace: "            return Ok(Expr::call(Expr::member(dictionary, type_id), Vec::new()));\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
   {
     name: "any-none-null-unasked",
     breaks: "an `Option<&dyn Any>` given to a nullable parameter is unwrapped by `?.value`, which makes its `None` `undefined` where the parameter takes `null` (#1581)",
-    file: "src/lower/std_types/any.rs",
+    file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                _ => made(&value).unwrap_or_else(|| match none_null {\n",
     replace: "                _ => made(&value).unwrap_or_else(|| match false {\n",
     tests: [

@@ -1,4 +1,4 @@
-// Mutations of src/lower/analysis/scopes.rs (ADR 1043).
+// Mutations of crates/rust-js-lower/src/analysis/scopes.rs (ADR 1043).
 import type { Mutation } from "../../../mutations";
 
 const scopes = ["test/corpus.test.ts", "-t", "scope_struct"];
@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
   {
     name: "scope-of-a-pub-struct",
     breaks: "a `pub` struct's methods are functions declared in the function that makes it, not its type's object",
-    file: "src/lower/analysis/scopes.rs",
-    find: "    if crate::lower::declarations::js_names(tcx, adt) || generics.own_counts().consts > 0",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
+    find: "    if crate::declarations::js_names(tcx, adt) || generics.own_counts().consts > 0",
     replace: "    if generics.own_counts().consts > 0",
     tests: scopes,
     snapshots: true,
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-of-an-implemented-struct",
     breaks: "a struct a trait is implemented for is a function's scope",
-    file: "src/lower/analysis/scopes.rs",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
     find: "tcx.def_kind(id) == DefKind::Struct && !implemented.contains(&id.to_def_id())",
     replace: "tcx.def_kind(id) == DefKind::Struct",
     tests: scopes,
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-of-a-generic-function-refused",
     breaks: "a generic function's scope struct, of `impl Fn` callbacks, is its type's object, not functions declared in it (rd536)",
-    file: "src/lower/analysis/scopes.rs",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
     find: "        || methods.contains(&function)",
     replace: "        || methods.contains(&function)\n        || tcx.generics_of(function).requires_monomorphization(tcx)",
     tests: scopes,
@@ -34,16 +34,16 @@ export const mutations: Mutation[] = [
   {
     name: "scope-of-type-parameters-refused",
     breaks: "a struct of type parameters, alien-signals' `System<K>`, is its type's object, not functions declared in its function (#500)",
-    file: "src/lower/analysis/scopes.rs",
-    find: "    if crate::lower::declarations::js_names(tcx, adt) || generics.own_counts().consts > 0",
-    replace: "    if crate::lower::declarations::js_names(tcx, adt) || generics.own_counts().types > 0 || generics.own_counts().consts > 0",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
+    find: "    if crate::declarations::js_names(tcx, adt) || generics.own_counts().consts > 0",
+    replace: "    if crate::declarations::js_names(tcx, adt) || generics.own_counts().types > 0 || generics.own_counts().consts > 0",
     tests: scopes,
     snapshots: true,
   },
   {
     name: "scope-impl-of-other-args",
     breaks: "a struct of an impl of other arguments than its own, `impl Tally<u8>`, is a scope, its methods called given the literal's arguments as theirs (#500)",
-    file: "src/lower/analysis/scopes.rs",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
     find: "        if *args != ty::GenericArgs::identity_for_item(tcx, imp) {",
     replace: "        if false {",
     tests: scopes,
@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-of-two-literals",
     breaks: "a struct the crate writes two literals of is the first one's function's scope, the second's methods given the first",
-    file: "src/lower/analysis/scopes.rs",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
     find: "    let [(function, false, made, args)] = literals[..] else {",
     replace: "    let [(function, false, made, args), ..] = literals[..] else {",
     tests: scopes,
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-let-in-any-block",
     breaks: "a struct an inner block's `let` holds is its function's scope, its methods declared at the function's end",
-    file: "src/lower/analysis/scopes.rs",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
     find: "    let written = let_of(tcx, function, body, local)?;",
     replace: "    let written = let_of(tcx, function, body, local).unwrap_or(body.span);",
     tests: scopes,
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-methods-named-as-values",
     breaks: "a method named as a value, `let get = Named::get`, of a scope, no function's",
-    file: "src/lower/analysis/scopes.rs",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
     find: "        if !methods_only_called(tcx, &mir.body, &methods) || (holds",
     replace: "        if (holds",
     tests: scopes,
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-given-back",
     breaks: "a struct its function gives back is its scope, its methods called where it's given",
-    file: "src/lower/analysis/scopes.rs",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
     find: "    if holds(body.local_decls[mir::RETURN_PLACE].ty) {",
     replace: "    if false {",
     tests: scopes,
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-given-to-a-call",
     breaks: "a struct given to another function is its maker's scope, its methods called where it's given",
-    file: "src/lower/analysis/scopes.rs",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
     find: "                        !holds(func.ty(&body.local_decls, tcx))\n                            && !args.iter().any(|arg| operand_holds(&arg.node))\n                            && !place_holds(destination)\n",
     replace: "                        true\n",
     tests: scopes,
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-captured-by-no-closure",
     breaks: "a struct a closure its methods make captures is no scope",
-    file: "src/lower/analysis/scopes.rs",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
     find: "                            AggregateKind::Closure(..) => true,\n",
     replace: "",
     tests: scopes,
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-held-by-no-alias",
     breaks: "a struct a reference or an `Rc` of it holds is no scope",
-    file: "src/lower/analysis/scopes.rs",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
     find: "                            if place_holds(from) =>\n                        {\n                            true\n",
     replace: "                            if place_holds(from) =>\n                        {\n                            false\n",
     tests: scopes,
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-of-no-rc",
     breaks: "a struct an `Rc` holds, `self: &Rc<Self>`, is no scope",
-    file: "src/lower/analysis/scopes.rs",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
     find: "                        ) && (generic_args.types()).any(&holds) =>\n                    {\n                        true\n",
     replace: "                        ) && (generic_args.types()).any(&holds) =>\n                    {\n                        false\n",
     tests: scopes,
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-methods-never-called",
     breaks: "a struct whose methods are called is no scope",
-    file: "src/lower/analysis/scopes.rs",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
     find: "                    Some((id, _)) if methods.contains(&id) => true,\n",
     replace: "",
     tests: scopes,
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-of-a-unit-struct",
     breaks: "a unit struct, `undefined`, is a function's scope, its `&mut self` a box its calls are refused for, no variable (rustc's borrow-in-match-with-format-string)",
-    file: "src/lower/analysis/scopes.rs",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
     find: "    if def.all_fields().next().is_none()\n        || (def.all_fields())",
     replace: "    if (def.all_fields())",
     tests: scopes,
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-function-names-unreserved",
     breaks: "a scope struct's method's function is named as its method, not spelled by preparation apart from what its scope reads: its JS keyword unescaped, `function eval(..)`, which JS can't bind (#2048), and a variable of its function, `resolve`, could hide it",
-    file: "src/lower/analysis/scopes.rs",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
     find: "                (method, rust_js_program::js::Name::program(word, 0).spelled_apart())\n",
     replace: "                (method, rust_js_program::js::Name::program(word, 0))\n",
     tests: ["test/corpus.test.ts", "-t", "^(scope_struct.*|interpreter)\\.rs$"],
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-function-words-untaken",
     breaks: "a scope struct's functions' words aren't in lowering's table, so a local named after a call takes one, `const named$1 = named(\"a\")`, `function resolve$1` beside `const resolve`, the program's pushed apart (#2048)",
-    file: "src/lower/analysis/scopes.rs",
+    file: "crates/rust-js-lower/src/analysis/scopes.rs",
     find: "                taken.insert(rust_js_program::names::js_ident(&word)); // word: a naming table's, lowering's, its scope's functions'\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(mut_ref_held_written_whole|scope_struct_functions)\\.rs$"],

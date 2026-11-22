@@ -1957,6 +1957,75 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust-js-lower"
+version = "0.0.4"
+dependencies = [
+ "imbl",
+ "indexmap",
+ "rust-js-program",
+ "rustc-hash 2.1.1",
+ "rustc_abi",
+ "rustc_arena",
+ "rustc_ast",
+ "rustc_const_eval",
+ "rustc_data_structures",
+ "rustc_errors",
+ "rustc_expand",
+ "rustc_feature",
+ "rustc_hir",
+ "rustc_hir_analysis",
+ "rustc_index",
+ "rustc_lexer",
+ "rustc_lint_defs",
+ "rustc_middle",
+ "rustc_mir_dataflow",
+ "rustc_mir_transform",
+ "rustc_parse",
+ "rustc_session",
+ "rustc_span",
+ "rustc_structures",
+ "rustc_target",
+ "rustc_trait_selection",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rust-js-mir"
+version = "0.0.4"
+dependencies = [
+ "imbl",
+ "indexmap",
+ "rust-js-lower",
+ "rust-js-program",
+ "rustc-hash 2.1.1",
+ "rustc_abi",
+ "rustc_arena",
+ "rustc_ast",
+ "rustc_const_eval",
+ "rustc_data_structures",
+ "rustc_errors",
+ "rustc_expand",
+ "rustc_feature",
+ "rustc_hir",
+ "rustc_hir_analysis",
+ "rustc_index",
+ "rustc_lexer",
+ "rustc_lint_defs",
+ "rustc_middle",
+ "rustc_mir_dataflow",
+ "rustc_mir_transform",
+ "rustc_parse",
+ "rustc_session",
+ "rustc_span",
+ "rustc_structures",
+ "rustc_target",
+ "rustc_trait_selection",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "rust-js-program"
 version = "0.0.4"
 dependencies = [
@@ -1975,6 +2044,8 @@ dependencies = [
  "imbl",
  "indexmap",
  "rust-js-emit",
+ "rust-js-lower",
+ "rust-js-mir",
  "rust-js-program",
  "rustc-hash 2.1.1",
  "rustc_abi",

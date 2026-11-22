@@ -1,4 +1,4 @@
-// Mutations of src/lower/std_types/clone_from.rs (#919, #922, #927, #928).
+// Mutations of crates/rust-js-lower/src/std_types/clone_from.rs (#919, #922, #927, #928).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "clone-from-slice-own-unused",
     breaks:
       "`clone_from_slice` and `fill` of items with their own `clone_from` are refused",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "        if self.recognition().own_clone_from(item) {\n",
     replace: "        if false {\n",
     tests: [
@@ -19,7 +19,7 @@ export const mutations: Mutation[] = [
     name: "clone-from-slice-unboxed",
     breaks:
       "`clone_from_slice`'s own `clone_from` of a fieldless enum writes a copy",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "            let target = match self.handles_mut(item) {\n                true => Expr::handle(place),",
     replace:
       "            let target = match self.handles_mut(item) {\n                true => place,",
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
     name: "clone-from-slice-nested-allowed",
     breaks:
       "`clone_from_slice` of `Vec`s of a type with its own `clone_from` clones each",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "        if self.recognition().reaches_clone_from(item) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_slice_reverse_refused.rs$"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     name: "clone-from-slice-generic-refused",
     breaks:
       "`clone_from_slice` of a type parameter's items, arrayvec's `clone_from`, is refused, where each is its dictionary's `clone_from` or a clone",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "        if self.is_unknown(item) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_slice_generic.rs$"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-items-cloned-over",
     breaks: "`fill` and `clone_from_slice` of `Vec`s write each over by a clone, not std's `Vec::clone_from`, and refuse items with a `clone_from` of their own (#919)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "        if let Some(into) = self.clone_into(item, span)? {\n",
     replace: "        if let Some(into) = self.clone_into(item, span)?.filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(vec_clone_from_in_place|clone_from_slice_nested).rs$"],
@@ -54,39 +54,39 @@ export const mutations: Mutation[] = [
   {
     name: "vec-clone-into-unseen",
     breaks: "a `Vec`'s `clone_from` of items with a destructor is `*w = v.clone()`, every clone before any drop (#919)",
-    file: "src/lower/std_types/clone_from.rs",
-    find: "        if clone_from.is_none()\n            && self.drops(item) == crate::lower::drops::Drops::Nothing\n            && !self.clone_may_panic(item)\n        {\n",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
+    find: "        if clone_from.is_none() && self.drops(item) == crate::drops::Drops::Nothing && !self.clone_may_panic(item) {\n",
     replace: "        if clone_from.is_none() {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_clone_from_in_place.rs$"],
   },
   {
     name: "vec-clone-into-always",
     breaks: "a `Vec`'s `clone_from` of `String`s, whose order nothing sees, takes `$cloneIntoVec` for nothing (#919)",
-    file: "src/lower/std_types/clone_from.rs",
-    find: "        if clone_from.is_none()\n            && self.drops(item) == crate::lower::drops::Drops::Nothing\n            && !self.clone_may_panic(item)\n        {\n",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
+    find: "        if clone_from.is_none() && self.drops(item) == crate::drops::Drops::Nothing && !self.clone_may_panic(item) {\n",
     replace: "        if false {\n",
     tests: ["test/lowering-std-unwinds.test.ts", "-t", "clone_from"],
   },
   {
     name: "vec-clone-into-panic-unseen",
     breaks: "a `Vec`'s `clone_from` of items of no destructor whose clone panics is `*w = v.clone()`, so `w` is left whole where std's has written some (#922)",
-    file: "src/lower/std_types/clone_from.rs",
-    find: "            && !self.clone_may_panic(item)\n        {\n",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
+    find: " && !self.clone_may_panic(item) {\n",
     replace: "        {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
   },
   {
     name: "clone-into-panic-unseen",
     breaks: "a `VecDeque`'s, an array's or a hashed map's `clone_from` of items of no destructor whose clone panics is `*w = v.clone()`, so `w` is left whole where std's has written some (#922)",
-    file: "src/lower/std_types/clone_from.rs",
-    find: "cx.drops(t) != crate::lower::drops::Drops::Nothing || cx.clone_may_panic(t);",
-    replace: "cx.drops(t) != crate::lower::drops::Drops::Nothing;",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
+    find: "cx.drops(t) != crate::drops::Drops::Nothing || cx.clone_may_panic(t);",
+    replace: "cx.drops(t) != crate::drops::Drops::Nothing;",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
   },
   {
     name: "clone-into-array-replaced",
     breaks: "an array's `clone_from` is `*w = v.clone()`, every clone before any drop, not each item written over (#922)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "            return Ok(Some(CloneInto {\n                helper: \"$cloneFromSlice\",\n                args,\n            }));\n",
     replace: "            return Ok(None);\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-into-box-replaced",
     breaks: "a `Box<Vec<D>>`'s `clone_from` isn't its value's (#922)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "        if ty.is_box() {\n            return self.clone_into(args.type_at(0), span);\n",
     replace: "        if false {\n            return self.clone_into(args.type_at(0), span);\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-into-deque-replaced",
     breaks: "a `VecDeque`'s `clone_from` is `*w = v.clone()`, every clone before any drop, where std's clears it first (#922)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "                true => (\"$cloneIntoDeque\", vec![clone, drop]),\n",
     replace: "                true => return Ok(None),\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-into-list-replaced",
     breaks: "a `LinkedList`'s `clone_from` is `*w = v.clone()`, every clone before any drop (#922)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "                false => (\"$cloneIntoList\", vec![clone, clone_from, drop]),\n",
     replace: "                false => return Ok(None),\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-into-map-replaced",
     breaks: "a hashed map's `clone_from` is `*w = v.clone()`, every clone before any drop, where hashbrown's drops its entries first (#922)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "        if self.is_map(ty) && !self.is_sorted(ty) {\n",
     replace: "        if false && self.is_map(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-items-cloned-over",
     breaks: "an array's `clone_from` of `Option<Vec<D>>`s writes each over by a clone, not its `Vec`'s in place where both are `Some` (#922)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "        if let Some(over) = self.option_clone_over(item, (slot(), pointer), Expr::var(&from), span)? {\n",
     replace: "        if let Some(over) = self.option_clone_over(item, (slot(), pointer), Expr::var(&from), span)?.filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-clone-from-never-given",
     breaks: "a generic `clone_from` of a `T`, an `Option<T>` or a `Box<T>` is `*dest = source.clone()` though the caller's `T` is a `Vec<D>` or has its own `clone_from`, never its dictionary's (#928)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "        self.is_unknown(ty) && (self.evidence_for(ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]))).is_some()\n",
     replace: "        false && self.is_unknown(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_(generic_std_own|of_a_result_through_a_mut_ref).rs$"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-clone-from-asked-of-any-caller",
     breaks: "a generic `clone_from` asks a dictionary made here, of no caller's, for its `cloneFrom`, which it never has, where the `T` is JS's own",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "        self.is_unknown(ty) && (self.evidence_for(ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]))).is_some()\n",
     replace: "        self.is_unknown(ty)\n",
     tests: ["test/lowering-std-unwinds.test.ts", "-t", "generic clone_from"],
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-option-clone-from-unasked",
     breaks: "a generic `Option<T>`'s `clone_from` of two `Some`s calls its dictionary's `cloneFrom` where the caller's `T` has none, `Option<i32>`'s (#928)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "        if let Some(asked) = asked {\n            both = Expr::bin(Op::And, both, asked);\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_generic_std_own.rs$"],
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
   {
     name: "dictionary-clone-from-forwarded-unrefused",
     breaks: "a `Clone` dictionary of an `Option<Counted>` given to generic code has no `cloneFrom`, so a generic `clone_from` of it never calls `Counted`'s own (#928, #927)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "                None if self.forwards_clone_from(ty, span)? => {\n",
     replace: "                None if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_generic_reverse_of_a_result_refused.rs$"],
@@ -166,7 +166,7 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-option-payload-unwritten",
     breaks: "a `Clone` dictionary of an `Option<A>` of a type parameter's, whose `Some` may be boxed, `clone_from`s through the option's own box, so an `Option<Option<Counted>>`'s inner `clone_from` reads the `$some` box as its value (#927)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "        let boxed = self.boxed_payload(inner);\n",
     replace: "        let boxed = false && self.boxed_payload(inner);\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_of_an_option_given_to_generic_code.rs$"],
@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-clone-from-unwritten-over",
     breaks: "an `Option` of a type whose `clone_from` is the crate's own isn't written over by it, and its `clone_from` is refused (#927)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "        if self.recognition().own_clone_from(held) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_option_own.rs$"],
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
   {
     name: "result-clone-from-unforwarded",
     breaks: "a `Clone` dictionary of a `Result<A, B>` given to generic code is refused, its `clone_from` its value's (#927)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "                None if let Some(over) = self.result_clone_over(ty, place, from, span)? => over,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_of_a_result_given_to_generic_code.rs$"],
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
   {
     name: "result-clone-from-old-shared",
     breaks: "a `Result` written over through an in-place cell drops what's now there, not what it held (#927)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "        let held = self.moved_out(to.clone(), ty);\n        replaced.push(StmtKind::Const(old.clone(), held).at(js::Span::NONE));\n        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));\n        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;\n        Ok(Some(Self::sides_or(sides, replaced)))",
     replace: "        replaced.push(StmtKind::Const(old.clone(), to.clone()).at(js::Span::NONE));\n        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));\n        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;\n        Ok(Some(Self::sides_or(sides, replaced)))",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_of_a_result_given_to_generic_code.rs$"],
@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
   {
     name: "result-side-setter-rebinds",
     breaks: "a `Result`'s side, its value's `clone_from` writing the value whole, `*self = ..` of a fieldless enum's, rebinds the name it's written through, `dest = { TAG: \"Ok\", _0: v }`, not the `Result` a `&mut` is: the caller's stays as it was (#2028)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "                let assigned = self.in_place(InPlaceWriter::Assign, ty, vec![to.clone(), replaced], span)?;\n                let setter = Expr::arrow(vec![v.into()], vec![StmtKind::Expr(assigned).at(js::Span::NONE)]);\n",
     replace: "                let setter = Expr::arrow(vec![v.into()], vec![StmtKind::Assign(to.clone(), replaced).at(js::Span::NONE)]);\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_of_a_result_through_a_mut_ref.rs$"],
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
   {
     name: "box-clone-from-not-its-values",
     breaks: "a `Box`'s `clone_from` isn't its value's, std's `(**self).clone_from(&**source)`, so `Box<C>` whose `C` has its own `clone_from` is refused (#927)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "        while held.is_box() {\n",
     replace: "        while false && held.is_box() {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_forwarded_to_its_value.rs$"],
@@ -214,7 +214,7 @@ export const mutations: Mutation[] = [
   {
     name: "reverse-clone-from-not-its-values",
     breaks: "a `Reverse`'s `clone_from` isn't its value's, `self.0.clone_from(&source.0)`, so `Reverse<C>` whose `C` has its own `clone_from` is refused (#927)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "        if self.recognition().is_reverse(held)\n",
     replace: "        if false && self.recognition().is_reverse(held)\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_forwarded_to_its_value.rs$"],
@@ -222,7 +222,7 @@ export const mutations: Mutation[] = [
   {
     name: "nested-option-clone-from-unforwarded",
     breaks: "an `Option` of an `Option` whose value's `clone_from` is the crate's own isn't forwarded through both, so it's refused (#927)",
-    file: "src/lower/std_types/clone_from.rs",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
     find: "                match self.option_clone_over(inner, (payload.clone(), payload_pointer), from_payload.clone(), span)? {\n",
     replace: "                match None::<Vec<Stmt>> {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_forwarded_to_its_value.rs$"],

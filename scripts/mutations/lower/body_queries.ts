@@ -1,4 +1,4 @@
-// Mutations of src/lower/body_queries.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/body_queries.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "cell-made-null-undeclared",
     breaks:
       "a cell field made `Cell::new(js::null())` is declared `made?: number | undefined`, never `null`, which it holds (rd415)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "                        .filter(|f| made_null(f.expr))\n",
     replace: "                        .filter(|f| is_null(f.expr))\n",
     tests: ["test/declarations-cells.test.ts"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "cell-set-null-undeclared",
     breaks:
       "a cell field `set` or `replace`d to `js::null()` is declared `set?: number | undefined`, never `null`, which it holds (rd415)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "                    .filter(|&&a| lent_mutably(a) || is_cell(a))\n",
     replace: "                    .filter(|&&a| lent_mutably(a))\n",
     tests: ["test/declarations-cells.test.ts"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "cell-borrowed-null-undeclared",
     breaks:
       "a `RefCell` field whose `borrow_mut()` is assigned `js::null()` is declared `queue?: number | undefined`, never `null`, which it holds (rd415)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "                e = lent\n",
     replace: "                return None\n",
     tests: ["test/declarations-cells.test.ts"],
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     name: "classify-some-not-present",
     breaks:
       "`classify(Some(value))` may be `null`, so its object's test leaves `null` out, `value !== null`",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "    (identity && untagged && matches!(&args[..], [arg] if some(*arg))).then_some(e)",
     replace: "    (identity && untagged && matches!(&args[..], [arg] if some(*arg) && false)).then_some(e)",
     tests: [
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "classify-any-present",
     breaks:
       "`classify(value)` of an `Option` is taken as there, so its object's test takes `null`",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "    (identity && untagged && matches!(&args[..], [arg] if some(*arg))).then_some(e)",
     replace: "    (identity && untagged).then_some(e)",
     tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     name: "other-module-static-unread",
     breaks:
       "a static made of another module's components is refused, as if JS hadn't imported them first",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            .is_some_and(|local| tcx.parent_module_from_def_id(local) == module)\n",
     replace: "            .is_some_and(|_| true)\n",
     tests: ["test/jsx-types.test.ts", "-t", "ElementType, rendered as a tag"],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     name: "own-thread-local-unread",
     breaks:
       "a static made of its own module's `thread_local!` component is written before it, which JS hasn't made yet",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "        ExprKind::NamedConst { def_id, .. } => {\n            own(def_id)\n",
     replace:
       "        ExprKind::NamedConst { def_id, .. } => {\n            false && own(def_id)\n",
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     name: "steady-ignores-mut-borrows",
     breaks:
       "a variable lent as `&mut` isn't changed, so an `f64` a call halves is taken as the whole number it was, and `x as u8` is `1.5`",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            ExprKind::Borrow {\n                borrow_kind: BorrowKind::Mut { .. },\n                arg,\n            }\n            | ExprKind::RawBorrow {",
     replace: "            ExprKind::RawBorrow {",
     tests: [
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
     name: "registered-read-none-untold",
     breaks:
       "a value read as the registry's symbol whose `None` an arm tells is the value itself, so a string is its `Some`, not `None`",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "        PatKind::Wild => true,\n        PatKind::Or { pats } => pats.iter().all(|p| tests_registered(tcx, p)),\n",
     replace:
       "        PatKind::Wild | PatKind::Variant { .. } => true,\n        PatKind::Or { pats } => pats.iter().all(|p| tests_registered(tcx, p)),\n",
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
     name: "registered-read-binding-untold",
     breaks:
       "a value read as the registry's symbol whose `Some(_)` an arm takes is the value itself, so a string is its `Some`",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "                PatKind::Constant { .. } => p.ty.is_str(),\n                _ => false,\n",
     replace:
       "                PatKind::Constant { .. } => p.ty.is_str(),\n                _ => true,\n",
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     name: "held-guard-of-undefined",
     breaks:
       "a guard `if let Some(_) = value` of an arm of `Kind::Undefined` is taken to hold, so `undefined` takes the arm (ADR 0790)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "} => *adt_def == adt && !super::untagged::is_nullish(tcx, adt.variant(*variant_index)),",
     replace: "} => *adt_def == adt,",
     tests: [
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     name: "registered-equality-unread",
     breaks:
       "`from_value(x) == Some(C)` reads `$symbolFor(x)`, where `matches!(from_value(x), Some(C))` is `x === C`: two outputs for one comparison",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            _ => registered_equality(tcx, thir, e).map(|(read, _)| read),\n",
     replace: "            _ => None,\n",
     tests: [
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
     name: "body-registered-reads-uncollected",
     breaks:
       "a body's registered symbol reads aren't collected, so each is checked, `$symbolFor(type)`",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            registered_reads: registered_reads(tcx, thir),\n",
     replace: "            registered_reads: IndexSet::default(),\n",
     tests: [
@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
     name: "body-registered-equalities-uncollected",
     breaks:
       "a body's `==` of a registered symbol read and a `Some` isn't collected, so it's compared loosely",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            registered_equalities: registered_equalities(tcx, thir),\n",
     replace: "            registered_equalities: IndexSet::default(),\n",
     tests: [
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
     name: "forwards-args-unchecked",
     breaks:
       "an `eq` that compares the addresses of other values than its own is taken as equal only to itself (ADR 0864)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "    (given == params).then(|| super::fn_def(thir[fun].ty)).flatten()\n",
     replace: "    Some(()).and(super::fn_def(thir[fun].ty))\n",
     tests: [
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
     name: "const-calling-crate-code-as-code",
     breaks:
       "a const calling the crate's const fn, `doubled(SIZE)`, is that call where its module loads, not rustc's value of it",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "        ExprKind::Call { fun, .. } => super::fn_def(thir[fun].ty).is_none_or(|(def_id, _)| by_name(def_id)),\n",
     replace: "",
     tests: [
@@ -195,7 +195,7 @@ export const mutations: Mutation[] = [
     name: "repeat-count-of-empty-text",
     breaks:
       'a signed count of empty text\'s `repeat` is given as it is, `"".repeat(-1)`, which JS throws of where Rust gives `""`',
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            if !super::recognition::is_str_repeat(tcx, def_id) || text_of(text)?.as_str().is_empty() {\n",
     replace:
       "            if !super::recognition::is_str_repeat(tcx, def_id) || text_of(text).is_none() {\n",
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
     name: "repeat-count-cast",
     breaks:
       "a signed count of text's `repeat` is cast, `\"  \".repeat(indent >>> 0)`, where upstream's is `'  '.repeat(indent)`",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            (signed && thir[count].ty.is_usize()).then_some(count)\n",
     replace:
       "            (signed && thir[count].ty.is_usize() && false).then_some(count)\n",
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     name: "repeat-count-of-wide",
     breaks:
       "an `i64` count of text's `repeat` is given as it is, a `BigInt`, which JS's `repeat` throws of where Rust wraps it to a `usize`",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            let signed = matches!(*thir[source].ty.kind(), ty::Int(i) if i.bit_width().unwrap_or(pointer_bits) <= 32);\n",
     replace:
       "            let signed = matches!(*thir[source].ty.kind(), ty::Int(_)) || pointer_bits == 0;\n",
@@ -230,7 +230,7 @@ export const mutations: Mutation[] = [
     name: "js-null-made-undeclared",
     breaks:
       "a plain `Option` field a struct literal makes `js::null()` is declared `?: T | undefined`, where it holds `null` (ADR 0935, amended)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "                        .filter(|f| made_null(f.expr))\n",
     replace: "                        .filter(|f| made_null(f.expr) && false)\n",
     tests: ["test/lowering-nullable-constants.test.ts", "-t", "is declared"],
@@ -239,7 +239,7 @@ export const mutations: Mutation[] = [
     name: "js-null-assigned-undeclared",
     breaks:
       "a plain `Option` field assigned `js::null()`, `fiber.index = js::null()`, is declared `?: T | undefined` (ADR 0935, amended)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            ExprKind::Assign { lhs, rhs } if is_null(rhs) => written.extend(field_of(lhs)),\n",
     replace: "",
     tests: ["test/lowering-nullable-constants.test.ts", "-t", "is declared"],
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
     name: "js-null-lent-undeclared",
     breaks:
       "a plain `Option` field lent to `mem::replace` with a `js::null()` is declared `?: T | undefined` (ADR 0935, amended)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            ExprKind::Call { ref args, .. } if args.iter().any(|&a| is_null(a)) => written.extend(\n",
     replace:
       "            ExprKind::Call { ref args, .. } if false && args.iter().any(|&a| is_null(a)) => written.extend(\n",
@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
     name: "js-null-through-a-variable-undeclared",
     breaks:
       "a plain `Option` field written `js::null()` through a variable lent it, `let slot = &mut fiber.ref_; *slot = js::null()`, is declared `?: T | undefined` (ADR 0935, amended)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            ExprKind::VarRef { id } if thir[e].ty.is_ref() => e = *made.get(&id)?,\n",
     replace: "",
     tests: ["test/lowering-nullable-constants.test.ts", "-t", "is declared"],
@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
     name: "utf16-order-of-either-parameter",
     breaks:
       "`sort_by(|a, b| b.encode_utf16().cmp(a.encode_utf16()))`, descending, is JS's `sort()`, ascending (ADR 0945)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "        && units_of(first) == Some(params[0])\n        && units_of(second) == Some(params[1])\n",
     replace:
       "        && units_of(first).is_some()\n        && units_of(second).is_some()\n",
@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
     name: "utf16-order-of-any-cmp",
     breaks:
       "a comparator calling what isn't `Iterator::cmp` of two strings' UTF-16 units is JS's `sort()` (ADR 0945)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "    super::fn_def(thir[fun].ty).is_some_and(|(cmp, _)| compares_utf16_units(tcx, cmp, thir[strip(thir, first)].ty))\n",
     replace: "    super::fn_def(thir[fun].ty).is_some()\n",
     tests: ["test/lowering-strings.test.ts", "-t", "only a sort by the first"],
@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
     name: "registered-let-compared-checked",
     breaks:
       "a `let` of a `from_value` read that's only compared to a `Some` is checked, `const tag = $symbolFor(x)`, where React's mountLazyComponent reads `$$typeof` as it is (ADR 0771, amended)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "        .chain(registered_lets(tcx, thir).into_iter().map(|(read, _)| read))\n",
     replace: "",
     tests: [
@@ -299,7 +299,7 @@ export const mutations: Mutation[] = [
     name: "registered-let-of-any-read",
     breaks:
       "a `let` of a `from_value` read that's also returned is the value, so a string or a symbol not the registry's is its `Some` (ADR 0771, amended)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            (reads > 0 && reads == equalities.len()).then_some((read, equalities))\n",
     replace:
       "            (reads > 0 && !equalities.is_empty()).then_some((read, equalities))\n",
@@ -313,7 +313,7 @@ export const mutations: Mutation[] = [
     name: "as-given-lent-unseen",
     breaks:
       "a payload a `downcast_mut` or a function given `&mut` changed is resumed as what was thrown, its old message (rd550)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "    match lends_dyn_any(tcx, thir) {\n        true => IndexSet::default(),\n",
     replace: "    match lends_dyn_any(tcx, thir) {\n        true => resumes(tcx, thir, false),\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_payload_where_read.rs$"],
@@ -322,7 +322,7 @@ export const mutations: Mutation[] = [
     name: "as-given-of-a-shared-borrow",
     breaks:
       "a payload only read, `message_of(&*e)`, is taken as lent to be changed, so it's resumed as `$unwinding(e)`, a call where the stack may be spent (rd550)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            .any(|part| matches!(*part.kind(), ty::Ref(_, to, Mutability::Mut) if holds_dyn_any(tcx, to)))\n",
     replace: "            .any(|part| matches!(*part.kind(), ty::Ref(_, to, _) if holds_dyn_any(tcx, to)))\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a catch makes its payload where it's first read"],
@@ -331,7 +331,7 @@ export const mutations: Mutation[] = [
     name: "as-given-of-a-captured-variable",
     breaks:
       "a closure's `resume_unwind` of a payload it took, which its maker changed first, is resumed as what was thrown (rd550)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "        if !lending.contains(&tcx.typeck_root_def_id(body.def_id)) {\n",
     replace: "        if lending.len() < usize::MAX {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_payload_where_read.rs$"],
@@ -340,7 +340,7 @@ export const mutations: Mutation[] = [
     name: "as-given-captured-unseen",
     breaks:
       "a closure's `resume_unwind` of a payload it took as it was caught, React's `setTimeout(() => { throw e; })`, is `$unwinding(e)` (rd550)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            body.facts.resumed_as_given.extend(captured);\n",
     replace: "            drop(captured);\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_payload_where_read.rs$"],
@@ -350,7 +350,7 @@ export const mutations: Mutation[] = [
     name: "as-given-coerced-unseen",
     breaks:
       "`resume_unwind(e)` of a payload only read, its `Box` coerced to `dyn Any + Send`'s, is `$unwinding(e)`, not what was thrown (rd550)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            } => source,\n",
     replace: "            } => return false,\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a catch makes its payload where it's first read"],
@@ -358,7 +358,7 @@ export const mutations: Mutation[] = [
   {
     name: "changes-not-through-a-box",
     breaks: "a variable set again through its box, `*into = Rc::clone(types)`, isn't changed, so a borrow guarded by `!into.borrow().contains(t)` goes unchecked and Rust's `RefCell already borrowed` panic is lost (#1000)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "            ExprKind::Field { lhs, .. } | ExprKind::Index { lhs, .. } | ExprKind::Deref { arg: lhs } => e = lhs,\n",
     replace: "            ExprKind::Field { lhs, .. } | ExprKind::Index { lhs, .. } => e = lhs,\n            ExprKind::Deref { arg: lhs } if !thir[lhs].ty.is_box() => e = lhs,\n",
     tests: ["test/corpus.test.ts", "-t", "^contains_guarded_set_through_a_box.rs$"],
@@ -366,7 +366,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf16-comparator-with-effects-sorted-plain",
     breaks: "a UTF-16 comparator that does more than compare, `calls += 1;`, is JS's `sort()`, which loses its effects, `0` calls where Rust's are `5` (#1645)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "    let Some(e) = tail_alone(thir, root) else {\n",
     replace: "    let Some(e) = Some(tail(thir, root)) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^utf16_comparator_with_effects.rs$"],
@@ -375,7 +375,7 @@ export const mutations: Mutation[] = [
     name: "in-place-by-a-shared-span",
     breaks:
       "MIR's call of an adapter is taken as made in place where any THIR call at its span is, of two a macro's repetition writes there, so one held as std's struct is given the other's in-place form: `held_numbered`'s `Enumerate` steps `$enumerate(..)` from its back, `7` where Rust's is `3007`, and a `Rev`'s or a `Map`'s throws (#1791)",
-    file: "src/lower/body_queries.rs",
+    file: "crates/rust-js-lower/src/body_queries.rs",
     find: "        each_call_at(thir, span, |at| self.ground().contains(&at) && !held.contains(&at))\n",
     replace:
       "        thir.exprs.iter_enumerated().any(|(at, e)| matches!(e.kind, ExprKind::Call { fn_span, .. } if fn_span == span) && self.ground().contains(&at) && !held.contains(&at))\n",

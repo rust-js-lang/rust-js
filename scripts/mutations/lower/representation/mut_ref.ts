@@ -1,4 +1,4 @@
-// Mutations of src/lower/representation/mut_ref.rs (ADR 0093): what a
+// Mutations of crates/rust-js-lower/src/representation/mut_ref.rs (ADR 0093): what a
 // `&mut` to a type is, `MutRefForm` (ADR 1086).
 import type { Mutation } from "../../../mutations";
 
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
   {
     name: "same-through-a-mut-the-cell",
     breaks: "`s.as_ref()` of an `s: &mut String`, std's `AsRef<str> for &mut T`, gives the `&mut`'s cell where its `&str` is the text in it: a length of 0, `[object Object]` shown (#1486)",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            true => self.through_refs(value, given).0,\n",
     replace: "            true => value,\n",
     tests: ["test/corpus.test.ts", "-t", "^as_ref_and_borrow_through_a_mut.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "same-of-a-ref-to-a-mut-read-through",
     breaks: "`identity(&r)` of an `r: &mut i32` gives the number in `r`'s cell where its `&&mut i32` is the cell: `**same` read of a number, `undefined` (#1486)",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "        match shared && self.has_cell_layer(given) && !self.has_cell_layer(output) {\n",
     replace: "        match shared && self.has_cell_layer(given) {\n",
     tests: ["test/corpus.test.ts", "-t", "^as_ref_and_borrow_through_a_mut.rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "same-into-what-owns-a-mut-read-through",
     breaks: "`Box::new(&mut *r)` of an `r: &mut i32` holds the number in `r`'s cell where it holds the `&mut`: `**boxed += 1` writes no place (#1486)",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "        match shared && self.has_cell_layer(given) && !self.has_cell_layer(output) {\n",
     replace: "        match self.has_cell_layer(given) && !self.has_cell_layer(output) {\n",
     tests: ["test/corpus.test.ts", "-t", "^as_ref_and_borrow_through_a_mut.rs$"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "mut-ref-to-a-shared-ref-the-object",
     breaks: "`*m.as_mut().unwrap() = &other` of an `Option<&HashMap<..>>` is `$assign(map, other)`, copying `other` into the map the reference was to (#1021)",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "        if let ty::Ref(_, inner, Mutability::Not) = *ty.kind()\n            && self.is_object(inner)\n",
     replace: "        if let ty::Ref(_, inner, Mutability::Not) = *ty.kind()\n            && false && self.is_object(inner)\n",
     tests: ["test/corpus.test.ts", "-t", "^written_through_a_guard_or_a_reference_to_an_object.rs$"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     name: "std-mut-ref-of-a-callers-iterator-made-one",
     breaks:
       "a guard's `&mut I` of an `I: Iterator` is made `Iterator.from(held.value)`, which `*held.borrow_mut() = other` can't write, a crash (#1016)",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            if !self.mut_ref_form(inner).is_the_value() || self.is_unknown(inner))\n",
     replace: "            if !self.mut_ref_form(inner).is_the_value())\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_in_a_ref_cell_given_generic_code.rs$"],
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     name: "generic-mut-object-unboxed",
     breaks:
       "`twice(&mut c)` of a generic `&mut T` gives the object `c`, where `twice` reads a box",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "        self.param_form(fn_id, i).is_some_and(MutRefForm::is_cell)\n",
     replace: "        matches!(self.param_form(fn_id, i), Some(MutRefForm::Box))\n",
     tests: ["test/corpus.test.ts", "-t", "generic_mut_ref"],
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     name: "generic-mut-closure-boxed",
     breaks:
       "`f: &mut F` of an `F: FnMut()` is boxed, `f.value()`, where the closure itself is the `&mut` to it, `f()`: right, as a box is, but not the JS a person writes",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "                self.tcx.fn_trait_kind_from_def_id(id).is_some()\n                    || is_std_def(self.tcx, id, StdItem::Iterator)",
     replace:
       "                false\n                    || is_std_def(self.tcx, id, StdItem::Iterator)",
@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-fn-mut-boxed",
     breaks: "`f: &mut dyn FnMut()` is a box, and `f()` calls `f.value()`",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            && !self.is_callable(ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "closure_mut_ref"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
     name: "generic-mut-not-cell",
     breaks:
       "a generic `&mut T` kept, `result.push(&mut list.value)`, is refused as a value of type `&mut T`",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            MutRefForm::Box | MutRefForm::GenericBox => true,\n            MutRefForm::Object | MutRefForm::Guard | MutRefForm::GivenAsItIs | MutRefForm::Itself => false,\n",
     replace: "            MutRefForm::Box => true,\n            MutRefForm::GenericBox | MutRefForm::Object | MutRefForm::Guard | MutRefForm::GivenAsItIs | MutRefForm::Itself => false,\n",
     tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "ref-not-boxable",
     breaks: "a `&mut` to a shared reference isn't a cell, and is refused",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "        !self.recognition().is_unknown_in(ty, typing_env)\n",
     replace: "        !ty.is_ref() && !self.recognition().is_unknown_in(ty, typing_env)\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_to_ref"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     name: "generic-boxed-in-callers-env",
     breaks:
       "a callee's projection is normalized in its caller's environment, whose parameters are numbered otherwise: rustc crashes",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "                    .try_normalize_erasing_regions(there, ty::Unnormalized::new_wip(ty))\n",
     replace: "                    .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))\n",
     tests: ["test/corpus.test.ts", "-t", "^deref_projection_generic.rs$"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     name: "mut-ref-to-mut-ref-refused",
     breaks:
       "a `&mut &mut u32`, arrayvec's `ScopeExitGuard`'s, is refused, where it's a cell of the cell",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            return self.mut_ref_form_in(inner, param_env).is_cell() || plain_object;\n",
     replace: "            return plain_object;\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_to_mut_ref.rs$"],
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
     name: "pinned-ref-boxable",
     breaks:
       "a `&mut` to a `Pin<&mut i32>` is a cell of the pin, so `pin.as_mut()` writes the pin, not the number",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            return !self.mut_is_the_pin(ty) && self.is_boxable(pointer, param_env);\n",
     replace: "            return self.is_boxable(pointer, param_env);\n",
     tests: ["test/corpus.test.ts", "-t", "^pin_box.rs$"],
@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
     name: "mut-ref-to-object-uncelled",
     breaks:
       "a `&mut` to a `&mut Money`, an impl for `&mut Money`'s `&mut self`, is refused",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            return self.mut_ref_form_in(inner, param_env).is_cell() || plain_object;\n",
     replace: "            return self.mut_ref_form_in(inner, param_env).is_cell();\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_to_object_impl.rs$"],
@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
     name: "mut-ref-to-iterator-celled",
     breaks:
       "a `&mut` to a `&mut` iterator is a cell, where it's the JS iterator, and `it.next` isn't one",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "                && !self.implements_iterator(inner)\n",
     replace: "",
     tests: [
@@ -145,7 +145,7 @@ export const mutations: Mutation[] = [
     name: "rc-mut-ref-is-object",
     breaks:
       "a `&mut` to a counted `Rc` is the `Rc` its owners share, so writing one through it is refused",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            && (!self.is_object(ty) || shared)\n",
     replace: "            && !self.is_object(ty)\n",
     tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
     name: "given-iterator-written-refused",
     breaks:
       "an iterator given as it is isn't written in place, so `*b = b_orig.clone()` of a `&mut` to one, and `mem::replace` of one a closure captured, are refused",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "        } else if param_env == self.typing_env.param_env && self.iterator_given_as_it_is(ty) {\n",
     replace: "        } else if false {\n",
     tests: [
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
     name: "type-parameter-mut-not-handle",
     breaks:
       "a `&mut` of a type parameter's item std gives a closure, generic `retain_mut`'s, is the item, where the closure made at the call writes its handle's `value`",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "        self.mut_ref_form(ty).is_cell() || self.is_unknown(ty)\n",
     replace: "        matches!(self.mut_ref_form(ty), MutRefForm::Box)\n",
     tests: [
@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
     name: "guard-written-in-place",
     breaks:
       "`mem::swap` of two `RefCell` guards through `&mut`s swaps what the cells hold, where Rust swaps the guards",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "        } else if self.is_guard(ty) {\n",
     replace: "        } else if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^guard_swap_refused.rs$"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
     name: "flattened-state-mut-the-object",
     breaks:
       "a `&mut` to a class's flattened state is the class's object, so what it's lent to writing it whole `$assign`s the chunk, deleting its `name` and `reads` (#478)",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "|| self.counted_weak(ty).is_some() || self.is_flattened_state(ty);\n",
     replace: "|| self.counted_weak(ty).is_some();\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_lent_mut.rs$"],
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
   {
     name: "mut-ref-ts-type-its-pointee",
     breaks: "a `&mut` its JS has as a box is declared as its pointee, `bump(n: number, by: number)`, so a TypeScript caller that follows it gives a number, whose `value` its JS writes (#619): the conformance test's caller throws",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            true => held_ts(pointee),\n",
     replace: "            true => pointee,\n",
     tests: ["test/declarations-conformance.test.ts"],
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
     name: "moved-out-shared",
     breaks:
       "`Cell::from_mut(&mut v).replace(vec![3])` gives `[3]`: what's moved out of an in-place cell is the object its write changes after, not a copy apart (#527)",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            true => Expr::call_helper(\"$apart\", vec![old]),\n            false => old,\n",
     replace: "            _ => old,\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_cell_(replaced|moved_out).rs$"],
@@ -215,7 +215,7 @@ export const mutations: Mutation[] = [
     name: "moved-out-of-object-shared",
     breaks:
       "`Cell::from_mut(v).replace(..)` of a known `Vec` or struct gives the new value: only a type parameter's moved out apart (#527)",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "        match self.is_unknown(item) || self.mut_ref_form(item).written_in_place() {\n",
     replace: "        match self.is_unknown(item) {\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_cell_replaced.rs$"],
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     name: "flattened-moved-out-the-object",
     breaks:
       "what's moved out of a flattened state whole, `mem::replace(state, ..)` of one lent `{ value: task }`, is its class's object, `const old = state.value;`, which the copy back then writes over, so `old` reads the new variant (#658)",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            return self.state_copied(old, item, *adt);\n",
     replace: "            return old;\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_moved_out.rs$"],
@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
     name: "flattened-copy-of-every-key",
     breaks:
       "a flattened state's copy has every variant's keys, so it carries a key an earlier variant left on the object, `{ status: \"rejected\", reason, value }`, which a value made in JS hasn't (the user's decision, ADR 1044)",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            let keys: Vec<String> = (variant.fields.iter())\n",
     replace: "            let keys: Vec<String> = (variant.fields.iter().chain(adt.all_fields()))\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "a copy of its variant's keys"],
@@ -242,7 +242,7 @@ export const mutations: Mutation[] = [
     name: "flattened-copy-untested",
     breaks:
       "a flattened state's copy is its first variant's keys whatever its tag, so a `Done` moved out reads `Done { value: undefined }` (#659)",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            Expr::cond(test, copy(keys), otherwise)\n",
     replace: "            Expr::cond(test, copy(keys), copy(keys))\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_moved_out.rs$"],
@@ -251,7 +251,7 @@ export const mutations: Mutation[] = [
     name: "generic-box-never",
     breaks:
       "no `&mut` is generic code's box to the question each site asks of one, so a `&mut` to an object given as a type parameter's value is the object, which the generic function reads as a box: JS throws (#821)",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            MutRefForm::GenericBox => true,\n            MutRefForm::Box | MutRefForm::Object",
     replace: "            MutRefForm::GenericBox | MutRefForm::Box | MutRefForm::Object",
     tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
@@ -259,7 +259,7 @@ export const mutations: Mutation[] = [
   {
     name: "mut-ref-cell-read-is-itself",
     breaks: "a cell's read, `*r` of a `&mut i32`, is taken for the handle itself: `copied()` of an `Option<&mut i32>` gives the handle, `[object Object]` (#1311)",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            MutRefForm::Box | MutRefForm::GenericBox => false,\n        }\n    }\n\n    /// Generic code's box",
     replace: "            MutRefForm::Box | MutRefForm::GenericBox => true,\n        }\n    }\n\n    /// Generic code's box",
     tests: ["test/corpus.test.ts", "-t", "^option_of_a_mut_ref_read_by_value.rs$"],
@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
   {
     name: "mut-ref-of-a-boxed-iterator-a-cell",
     breaks: "a `&mut Box<I>` of an iterator is a cell, `{ value }`, as #1222 had it, so `by_ref()` of a boxed iterator lends the cell to what steps it, which throws (#1314)",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            ) == Some(true)\n        {\n            return self.mut_ref_form_in(inner, param_env);\n",
     replace: "            ) == Some(false)\n        {\n            return self.mut_ref_form_in(inner, param_env);\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_boxed_iterator_is_the_iterators.rs$"],
@@ -275,7 +275,7 @@ export const mutations: Mutation[] = [
   {
     name: "mut-ref-of-a-slice-not-a-cell",
     breaks: "a `&mut` of a `&mut [T]` isn't a cell of its view, so `&mut &mut [u8]` is refused, std's cursor over a buffer and httparse's `&mut &mut [Header]` (#1282)",
-    file: "src/lower/representation/mut_ref.rs",
+    file: "crates/rust-js-lower/src/representation/mut_ref.rs",
     find: "            let plain_object = self.is_object(inner)\n                && !self.is_callable(inner)\n",
     replace: "            let plain_object = self.is_object(inner)\n                && !inner.is_slice()\n                && !self.is_callable(inner)\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_mut_slice.rs$"],

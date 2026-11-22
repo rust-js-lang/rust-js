@@ -740,7 +740,7 @@ to a closure's other captures as it does to a struct's fields. In
 which holds the consumer's closure and the map's: the map's function was
 leaked when the consumer's closure's drop panicked. **A closure's captures
 are dropped by `each_dropped`**, as a struct's fields are (`drop_taken`,
-src/lower/drops.rs). `closures_made_and_folded.js` changed: its carried
+crates/rust-js-lower/src/drops.rs). `closures_made_and_folded.js` changed: its carried
 drop of two closures is one `try`/`finally`. Held by
 `closure_captures_dropped_past_a_panic.rs` in both builds, against native
 Rust, and the mutation `closure-captures-dropped-in-a-row`. Found by the

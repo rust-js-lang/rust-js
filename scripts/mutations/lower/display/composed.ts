@@ -1,4 +1,4 @@
-// Mutations of src/lower/display/composed.rs (ADR 0093): a std value's
+// Mutations of crates/rust-js-lower/src/display/composed.rs (ADR 0093): a std value's
 // `Debug` of a part that may stop part-way, through std's builders (#1561).
 import type { Mutation } from "../../../mutations";
 
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
   {
     name: "composed-may-stop-never",
     breaks: "a std value's `Debug` of a part that may give `Err` is made whole, so the `String` it's written into loses `Some(` and `[None, ` before the part (#1561)",
-    file: "src/lower/display/composed.rs",
+    file: "crates/rust-js-lower/src/display/composed.rs",
     find: "        !local && (self.krate.prints.stops_composed(ty).is_some() || self.fmt_may_fail(self.debug_trait(), ty))\n",
     replace: "        !local && self.krate.prints.stops_composed(ty).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^failing_std_value_debug_keeps_what_was_written.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "composed-map-keys-as-values",
     breaks: "a map's `Debug` through std's builders shows each entry's value as its key",
-    file: "src/lower/display/composed.rs",
+    file: "crates/rust-js-lower/src/display/composed.rs",
     find: "                _ => Expr::index(Expr::var(entry.clone()), Expr::int(i as i128)),\n",
     replace: "                _ => Expr::index(Expr::var(entry.clone()), Expr::int(0)),\n",
     tests: ["test/corpus.test.ts", "-t", "^(failing_std_value_debug_keeps_what_was_written|printing_std_value_stopped_part_way).rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "composed-cells-refused",
     breaks: "`{:?}` of a `RefCell` of a part that prints and panics where it's caught is refused, naming #1530, where std's `debug_struct` writes it (#1530)",
-    file: "src/lower/display/composed.rs",
+    file: "crates/rust-js-lower/src/display/composed.rs",
     find: "            ty::Adt(_, args) if std(StdItem::RefCell) || std(StdItem::Cell) => {\n",
     replace: "            ty::Adt(_, args) if false && (std(StdItem::RefCell) || std(StdItem::Cell)) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_cells_stopped_part_way.rs$"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "composed-locks-refused",
     breaks: "`{:?}` of a `Mutex` of a part that prints and panics where it's caught is refused, naming #1530, where std's `debug_struct` writes it (#1530)",
-    file: "src/lower/display/composed.rs",
+    file: "crates/rust-js-lower/src/display/composed.rs",
     find: "            ty::Adt(_, args) if std(StdItem::Mutex) || std(StdItem::RwLock) => {\n",
     replace: "            ty::Adt(_, args) if false && (std(StdItem::Mutex) || std(StdItem::RwLock)) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_cells_stopped_part_way.rs$"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "composed-reverse-refused",
     breaks: "`{:?}` of a `Reverse` of a part that prints and panics where it's caught is refused, where std's `debug_tuple` writes it (#1530)",
-    file: "src/lower/display/composed.rs",
+    file: "crates/rust-js-lower/src/display/composed.rs",
     find: "            ty::Adt(_, args) if self.is_reverse(ty) => {\n",
     replace: "            ty::Adt(_, args) if false && self.is_reverse(ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "composed-once-cells-refused",
     breaks: "`{:?}` of a `OnceCell` or a `LazyCell` of a part that may stop part-way is refused, where std's `debug_tuple` writes it (#1530)",
-    file: "src/lower/display/composed.rs",
+    file: "crates/rust-js-lower/src/display/composed.rs",
     find: "            ty::Adt(adt, args) if std(StdItem::OnceCell) || std(StdItem::LazyCell) => {\n",
     replace: "            ty::Adt(adt, args) if false && (std(StdItem::OnceCell) || std(StdItem::LazyCell)) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "composed-lazy-uninit-inverted",
     breaks: "a `LazyCell` made shows `<uninit>`, and one not made yet runs its part's `Debug` (#1530)",
-    file: "src/lower/display/composed.rs",
+    file: "crates/rust-js-lower/src/display/composed.rs",
     find: "                        Expr::cond(made, shown, Expr::str(\"<uninit>\"))\n",
     replace: "                        Expr::cond(made, Expr::str(\"<uninit>\"), shown)\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "composed-std-enums-whole",
     breaks: "`Included(..)` and `Ready(..)` of a part that stops are made whole, so a panic loses `Included(` (#1530)",
-    file: "src/lower/display/composed.rs",
+    file: "crates/rust-js-lower/src/display/composed.rs",
     find: "                self.tuple_variants_debug(adt, args, value.clone(), span, pretty, true)?\n",
     replace: "                self.tuple_variants_debug(adt, args, value.clone(), span, pretty, false)?\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "composed-slice-iterators-refused",
     breaks: "`{:?}` of a slice's `Iter` or a `Vec`'s `IntoIter` of a part that may stop part-way is refused, where std's `debug_tuple` writes it (#1530)",
-    file: "src/lower/display/composed.rs",
+    file: "crates/rust-js-lower/src/display/composed.rs",
     find: "            ty::Adt(..) if let Some(slice) = self.recognition().shows_its_slice(ty) => {\n",
     replace: "            ty::Adt(..) if false && let Some(slice) = self.recognition().shows_its_slice(ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "composed-ranges-refused",
     breaks: "`{:?}` of a range of a bound that may stop part-way is refused, where std writes its pieces straight to the formatter (#1530)",
-    file: "src/lower/display/composed.rs",
+    file: "crates/rust-js-lower/src/display/composed.rs",
     find: "            _ if self.range_kind(ty).is_some() => self.range_debug(value.clone(), ty, span, pretty, true)?,\n",
     replace: "            _ if false && self.range_kind(ty).is_some() => self.range_debug(value.clone(), ty, span, pretty, true)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "composed-parts-size-left-out",
     breaks: "a slice's chunks whose items' `Debug` may stop part-way show no `chunk_size`, `Chunks { v: [..] }` (#2252)",
-    file: "src/lower/display/composed.rs",
+    file: "crates/rust-js-lower/src/display/composed.rs",
     find: "                    (\"field\", vec![Expr::str(field), made_when_taken(size)]),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "composed-item-left-around-dropped",
     breaks: "`once(x)` whose item's `Debug` may stop part-way shows its inner `IntoIter { .. }` alone (#2252)",
-    file: "src/lower/display/composed.rs",
+    file: "crates/rust-js-lower/src/display/composed.rs",
     find: "                            made = struct_of(self, around, \"inner\", made);\n",
     replace: "                            let _ = around;\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],

@@ -1,4 +1,4 @@
-// Mutations of src/lower.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/lib.rs (ADR 0093).
 import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "held-arg-spilled-as-a-word",
     breaks:
       "an argument MIR's lowering holds, spilled, is a name of its word, `_arg`, not a held argument's, so tidy never names it `arg`",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            Base::Derived(_) | Base::HeldArg | Base::Suffixed(..) => self.fresh(base),\n",
     replace: "            Base::Derived(_) | Base::Suffixed(..) => self.fresh(base),\n",
     tests: ["test/corpus.test.ts", "-t", "^(option_combinator_drops|combinators_owned_drops|iter_next_back)\\.rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
   {
     name: "binding-a-second-name",
     breaks: "a binding THIR names is a second `Name` of its variable, apart from the local MIR binds it to: two variables where Rust has one (ADR 1150); the debug build's invariant says so",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "                place: Expr::var(&name),\n",
     replace: "                place: Expr::var(name.rebound()),\n",
     tests: ["test/corpus.test.ts", "-t", "^(adapter_drops|btree_nodes_seen|back_stepped_adapter_sources|adapters_own_work_that_panics).rs$"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "given-apart-of-nothing",
     breaks:
       "a name lowering gives apart from its base, `result$2` of `result`, records nothing it's of, so tidy never takes it for kin of the first, `x = y` of two of one base left apart",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            Some(first) => name.given_apart_from(first),\n",
     replace: "            Some(_) => name,\n",
     tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "instance-value-made-at-each-use",
     breaks:
       "a generic function's instance taken as a value is a new arrow at each use, so `f == table[0]` of `double::<i32>` taken twice is false (#974)",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            let whole = !args.has_non_region_param() && !args.has_aliases() && !self.in_copied_default();\n",
     replace: "            let whole = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_fn_value_is_one_function.rs$"],
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-directory-ignored",
     breaks: "a module in a `#[path]` directory has its JS where its module path says",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        at = tcx.parent_module_from_def_id(at.to_local_def_id());\n",
     replace: "        return false;\n",
     tests: ["test/modules.test.ts", "-t", "path"],
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-inline-located",
     breaks: "an inline module in a `#[path]` directory is placed as if it had a file",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "    if Arc::ptr_eq(&module_file(tcx, module), &module_file(tcx, parent)) {\n        return false;\n    }\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "path"],
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
   {
     name: "bool-const-unknown",
     breaks: "a `bool` constant read by its name isn't known a boolean, `!!ENABLED && count > 0` (ADR 0031, amended)",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            if ty.is_bool() {\n                place.facts = place.facts.with(js::Known::Boolean);\n",
     replace: "            if false {\n                place.facts = place.facts.with(js::Known::Boolean);\n",
     tests: ["test/lowering-constants.test.ts", "-t", "bool constant"],
@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-trait-method-value-unlisted",
     breaks: "a library trait's method given as a value, `all(Zero::is_zero)`, is refused as one its manifest doesn't list, not taken for its impl's",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        if self.tcx.trait_of_assoc(def_id).is_none()\n            && let Some(why) = self.krate.foreign.unlisted(def_id)\n",
     replace: "        if let Some(why) = self.krate.foreign.unlisted(def_id)\n",
     tests: ["test/crates.test.ts", "-t", "trait_method_as_value"],
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
   {
     name: "load-reads-const-by-name",
     breaks: "a thread-local's value reads another module's `const` by name, `{ value: LIMIT }`, which an import cycle may load first: `Cannot access 'LIMIT' before initialization` (ADR 0722)",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        if let Some(value) = self.is_rust_fn(def_id).then(by_value).flatten() {\n",
     replace: "        if let Some(value) = (false && self.is_rust_fn(def_id)).then(by_value).flatten() {\n",
     tests: ["test/corpus.test.ts", "-t", "load_cycle_values"],
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
   {
     name: "required-imported",
     breaks: "a `#[rust_js::require]` binding is read as an import that was never made",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        Some((export, rest)) if required.contains(&export) => ",
     replace: "        Some((export, rest)) if false && required.contains(&export) => ",
     tests: ["test/bindings-require.test.ts", "-t", "a required binding"],
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
   {
     name: "tagged-variant-made-with-tag",
     breaks: "a discriminated union's variant is made `{ TAG: \"fulfilled\", value }`",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            let tag = tag.map(|(key, name)| Prop::Field(key, name));",
     replace: "            let tag = tag.map(|(_, name)| Prop::Field(\"TAG\".into(), name));",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "discriminated union"],
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
   {
     name: "walks-unkeyed",
     breaks: "what walks of types found is kept for every typing environment, so a copied default's clone shares what its sibling's bounds make a `Vec`",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        Rc::clone(self.walks.borrow_mut().entry(self.typing_env).or_default())",
     replace: "        Rc::clone(self.walks.borrow_mut().entry(ty::TypingEnv::fully_monomorphized()).or_default())",
     tests: ["test/corpus.test.ts", "-t", "default_method_clones"],
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
   {
     name: "crash-after-rejection",
     breaks: "rust-js panics after it says what it doesn't support",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: '        refusal::refuse(self.tcx, span, refusal::Refused::Feature(what))\n    }',
     replace: '        refusal::refuse(self.tcx, span, refusal::Refused::Feature(what));\n        panic!("a crash after the rejection")\n    }',
     tests: ["test/corpus.test.ts", "-t", "box_zeroed_struct\\.rs"],
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
   {
     name: "array-repeat-shared",
     breaks: "`[x; N]` of what's changed is one object, `N` times",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        } else if self.is_copy(item_ty) {\n            self.contains_mutated(item_ty)",
     replace: "        } else if self.is_copy(item_ty) {\n            false",
     tests: ["test/corpus.test.ts", "-t", "array_repeat"],
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
   {
     name: "trait-const-generic-unread",
     breaks: "`S::SIDES` in generic code isn't read from `S`'s dictionary, so it's refused",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            Some(trait_id) if args.has_non_region_param() => {\n",
     replace: "            Some(trait_id) if false => {\n",
     tests: ["test/corpus.test.ts","-t","associated_consts"],
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-generic-length",
     breaks: "`[x; N]` of a caller's `N` is refused",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            None => self.const_arg(count, span)?,\n",
     replace: "            None => return Err(self.unsupported(span, \"`[x; N]` of a generic length\")),\n",
     tests: ["test/corpus.test.ts","-t","const_generics"],
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
   {
     name: "constructor-value-unknown",
     breaks: "`NonZeroI32::new(n).map(Year)`, a constructor taken as a value, names what it wraps after the caller's `n`, `n$1`, not `value`",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        if matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {",
     replace: "        if false && matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {",
     tests: ["test/corpus.test.ts", "-t", "nonzero"],
@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
     name: "trait-fn-value-unknown",
     snapshots: true,
     breaks: "`.map(Area::area)`, a trait's function as a value, is an arrow calling it, `(x) => shapeArea_area(x)`, where it's the function itself",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        if self.krate.fns.contains_key(&def_id) || self.is_rust_trait_fn(def_id, args) || located {\n",
     replace: "        if self.krate.fns.contains_key(&def_id) || located {\n",
     tests: ["test/corpus.test.ts","-t","^std_function_values.rs$"],
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
   {
     name: "trait-fn-value-arrow-kept",
     breaks: "`.map(Area::area)` is `.map((arg0) => shapeArea_area(arg0))`: right, but not the JS a person writes",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "                return Ok(Some(passed_on::passed_on(&arrow, taker, &[]).unwrap_or(arrow)));\n",
     replace: "                return Ok(Some(arrow));\n",
     tests: ["test/corpus.test.ts","-t","expression_values"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-trait-fn-value-refused",
     breaks: "`ToString::to_string` and `i32::max` as values are errors, std's trait functions the crate's dictionaries don't have",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "                    return Ok(None);\n                };\n                let mut patterns: Vec<js::Pattern>",
     replace: "                    return Err(self.unsupported(span, \"this trait function value\"));\n                };\n                let mut patterns: Vec<js::Pattern>",
     tests: ["test/corpus.test.ts", "-t", "std_function_values"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "block-modules-one-file",
     breaks: "two modules of one name in blocks of a module, bitflags' macro's, are one file",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        Some(at) if at > 0 => path.push(rust_js_program::names::given_apart(&name.to_string(), at)),",
     replace: "        Some(at) if false && at > 0 => path.push(rust_js_program::names::given_apart(&name.to_string(), at)),",
     tests: ["test/corpus.test.ts","-t","block_modules"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
   {
     name: "block-module-before-declared",
     breaks: "a module its parent declares is numbered after a block's of its name written before it",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "    namesakes.sort_by_key(|&m| (in_block(m), m.to_local_def_id().local_def_index));",
     replace: "    namesakes.sort_by_key(|&m| (false && in_block(m), m.to_local_def_id().local_def_index));",
     tests: ["test/corpus.test.ts","-t","block_modules"],
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
   {
     name: "component-evidence-unnamed",
     breaks: "a component that would use a dictionary is rust-js's \"implementation evidence\" error, not that React gives a component none",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        if bindings::is_component(self.tcx, self.item) {\n            let what",
     replace: "        if false {\n            let what",
     tests: ["test/jsx-props.test.ts", "-t", "and the component no dictionary"],
@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
   {
     name: "const-use-shared",
     breaks: "each use of a `const` of a struct something changes is the one object, so `p.x += dx` on `let mut p = ORIGIN` changes `ORIGIN` for its next use",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            return match copied {\n                true if stored => Ok(self.copy_stored(place, ty)),\n                true => self.const_copy(place, ty, span),\n                false => Ok(place),\n            };",
     replace: "            let _ = copied;\n            return Ok(place);",
     tests: ["test/compiler.test.ts", "-t", "constants are the values rustc computed, by name"],
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
   {
     name: "const-use-unrecorded",
     breaks: "another module's `const`, `util::SIZE`, is read by its name, but its module isn't imported for it",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            let place = self.item_read(def_id, span);",
     replace: "            let place = Expr::module(&self.krate.fns[&def_id].name);",
     tests: ["test/modules.test.ts", "-t", "imports follow what's used: functions, consts and thread-locals"],
@@ -214,7 +214,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-const-not-copy",
     breaks: "`[const { .. }; N]` of a value that isn't `Copy` is refused",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        let copied = if constant {\n            self.const_use_copied(item_ty)\n",
     replace: "        let copied = if false {\n            self.const_use_copied(item_ty)\n",
     tests: ["test/corpus.test.ts","-t","slice_uninit"],
@@ -222,7 +222,7 @@ export const mutations: Mutation[] = [
   {
     name: "spill-hyphenated-name",
     breaks: "an attribute read first is a variable of its hyphenated name, `const data-step`",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            _ => self.fresh(Base::Named(&unhyphenated(&base.text()))),\n",
     replace: "            _ => self.fresh(base),\n",
     tests: ["test/jsx-evaluation-order.test.ts", "-t", "a hyphenated attribute read first"],
@@ -230,7 +230,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-one-refused",
     breaks: "`[x; 1]` of a value that isn't `Copy` is refused, not the one there is",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        } else if n == Some(1) {\n",
     replace: "        } else if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^const_block_vec.rs$"],
@@ -238,15 +238,15 @@ export const mutations: Mutation[] = [
   {
     name: "trait-const-unresolved",
     breaks: "`<() as Trait>::ASSOC`, a function, is refused, not its impl's",
-    file: "src/lower.rs",
-    find: "            Some(_) => match crate::lower::traits::resolve(self.tcx, self.typing_env, def_id, args) {\n",
+    file: "crates/rust-js-lower/src/lib.rs",
+    find: "            Some(_) => match crate::traits::resolve(self.tcx, self.typing_env, def_id, args) {\n",
     replace: "            Some(_) if false => match ty::Instance::try_resolve(self.tcx, self.typing_env, def_id, args) {\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
   },
   {
     name: "generic-const-refused",
     breaks: "a constant of the crate's rustc can't say as a value, arrayvec's `[const { MaybeUninit::uninit() }; CAP]`, is refused, where its MIR is code",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            _ if def_id.is_local() => self.mir_hooks().crate_const_as_code(self, def_id, args),\n",
     replace: "            _ if false => self.mir_hooks().crate_const_as_code(self, def_id, args),\n",
     tests: ["test/corpus.test.ts", "-t", "^array_vec_raw.rs$"],
@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninit-repeat-copied",
     breaks: "`[uninit; N]` is an arrow made for each slot, not so many slots",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        if matches!(item.kind, js::ExprKind::Undefined) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
@@ -263,7 +263,7 @@ export const mutations: Mutation[] = [
   {
     name: "primitive-const-use-copied",
     breaks: "a use of a named constant whose value is `undefined`, which nothing changes, is copied, a clone, refused",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "                && !self.const_value_of(def_id, args, span).is_some_and(",
     replace: "                && !self.const_value_of(def_id, args, span).filter(|_| false).is_some_and(",
     tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
@@ -271,7 +271,7 @@ export const mutations: Mutation[] = [
   {
     name: "tracked-value-called-where-used",
     breaks: "a tracked function as a value is called where it's used, not where it's defined, as rustc's shim calls it",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            let location = self.location_at(self.tcx.def_span(def_id));\n",
     replace: "            let location = self.location_at(span);\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller.rs$"],
@@ -279,7 +279,7 @@ export const mutations: Mutation[] = [
   {
     name: "mut-method-value-unboxed",
     breaks: "a trait's `&mut self` method as a value is given what it's called with, not a box of it",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "                    return Ok(None);\n                }\n                let params: Vec<js::Name> = (0..inputs.len())",
     replace: "                    let _ = ();\n                }\n                let params: Vec<js::Name> = (0..inputs.len())",
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer.rs$"],
@@ -287,7 +287,7 @@ export const mutations: Mutation[] = [
   {
     name: "cell-method-value-reboxed",
     breaks: "a trait's method of a `&mut` to a number, a cell already, as a value is the arrow of its call, not the method itself",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "                    |t| matches!(*t.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if !self.mut_ref_form(inner).is_cell()),\n",
     replace: "                    |t| matches!(*t.kind(), ty::Ref(_, _, ty::Mutability::Mut)),\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer.rs$"],
@@ -298,7 +298,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-shim-given-location",
     breaks: "a tracked function as a value taken inside another that tracks its caller is given that one's location, not its own definition's",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            let location = self.location_at(self.tcx.def_span(def_id));\n            // Generic code's own forms",
     replace: "            let location = self.caller_location(self.tcx.def_span(def_id));\n            // Generic code's own forms",
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
@@ -306,7 +306,7 @@ export const mutations: Mutation[] = [
   {
     name: "local-const-not-from-mir",
     breaks: "a function's own constant rustc can't say as a value, semver's `HEAD`, is refused, not made from its MIR",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            _ if def_id.is_local() => self.mir_hooks().crate_const_as_code(self, def_id, args),\n",
     replace: "            _ if def_id.is_local() && self.tcx.generics_of(def_id).count() > 0 => self.mir_hooks().crate_const_as_code(self, def_id, args),\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_constants.rs$"],
@@ -314,7 +314,7 @@ export const mutations: Mutation[] = [
   {
     name: "rest-value-unspread",
     breaks: "a function whose last parameter is `#[rust_js::rest]`, as a value, is itself, which a call through it gives the slice whole",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            if self.takes_rest(def_id) || self.value_is_its_call(def_id, args, span)? {\n",
     replace: "            if self.value_is_its_call(def_id, args, span)? {\n",
     tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
@@ -323,7 +323,7 @@ export const mutations: Mutation[] = [
     name: "rest-value-itself-anywhere",
     breaks:
       "a function of rest arguments is itself wherever it's a value, as JS alone reads it where `js::function` does (#540): a `fn` pointer's, a box's, a field's, `map(total)`'s call give the slice whole, `total([1, 2, 3])`",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            if self.takes_rest(def_id) || self.value_is_its_call(def_id, args, span)? {\n",
     replace: "            if (false && self.takes_rest(def_id)) || self.value_is_its_call(def_id, args, span)? {\n",
     tests: ["test/corpus.test.ts", "-t", "^rest_function_values.rs$"],
@@ -331,7 +331,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-const-inlined",
     breaks: "a library's `const` is its value, written in place, where its own crate reads it by its name",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        if self.is_rust_fn(def_id) && ty.is_freeze(self.tcx, self.typing_env) {\n",
     replace: "        if self.krate.fns.contains_key(&def_id) && ty.is_freeze(self.tcx, self.typing_env) {\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "library's const is imported"],
@@ -339,7 +339,7 @@ export const mutations: Mutation[] = [
   {
     name: "math-constant-literal",
     breaks: "`std::f64::consts::PI` is its number, `3.141592653589793`, not `Math.PI`",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        if let Some(constant) = std_types::number::math::constant(self.tcx, def_id) {\n",
     replace: "        if let Some(constant) = std_types::number::math::constant(self.tcx, def_id).filter(|_| false) {\n",
     tests: ["test/lowering-math.test.ts", "-t", "a std function that isn't Math's for every value is the arrow of its call"],
@@ -347,7 +347,7 @@ export const mutations: Mutation[] = [
   {
     name: "named-const-unplaced",
     breaks: "a `const` read by its name is placed nowhere, so a comment before it as an operand, `/*    */ SnapshotStatic | MaySuspendCommit`, is lost",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            let mut place = place.or_at(self.js_span(span));\n",
     replace: "            let mut place = place;\n",
     tests: ["test/lowering-switch-symbols.test.ts", "-t", "a value some arms of a match of symbols give is given where they give it"],
@@ -355,7 +355,7 @@ export const mutations: Mutation[] = [
   {
     name: "js-given-value-unrouted",
     breaks: "a function given as a value is its own JS whatever the lowering takes, so `countSome`'s JS maps `wrapped`, which boxes",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            let copy = self.called_copy((def_id, args), span)?;",
     replace: "            let copy = self.called_copy((def_id, args), span).map(|_| None)?;",
     tests: ["test/corpus.test.ts", "-t", "js_given_copies"],
@@ -364,7 +364,7 @@ export const mutations: Mutation[] = [
   {
     name: "namespace-named-by-rust-name",
     breaks: "a #[path] module's namespace is named by its Rust name, `DomPluginEventSystem` of `dom_plugin_event_system`, not as its JS file, upstream's, is, `DOMPluginEventSystem` (rd114c, ADR 1018)",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "    if !located(tcx, module) {\n        return name();\n",
     replace: "    if true {\n        return name();\n",
     tests: ["test/modules.test.ts", "-t", "a function called through its module is read through its namespace"],
@@ -372,7 +372,7 @@ export const mutations: Mutation[] = [
   {
     name: "unbound-path-read-as-a-name",
     breaks: "a binding's path read unbound, `(0, eval)`, is read as a name, not `(0, eval)`",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "    if let Some(inner) = bindings::unbound(name) {\n",
     replace: "    if let Some(inner) = bindings::unbound(name).filter(|_| false) {\n",
     tests: ["test/js-any-values.test.ts", "-t", "eval is the global eval, called indirectly"],
@@ -380,7 +380,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-symbol-literal-by-name",
     breaks: "a struct's literal keys a field a symbol names by the symbol item's name, `{ RESPONSE_SYMBOL: response }`",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "                        Some((item, span)) => Prop::Keyed(self.field_symbol(item, span), v),",
     replace: "                        Some((item, _)) => Prop::Field(self.tcx.item_name(item).to_string(), v),",
     tests: [
@@ -393,7 +393,7 @@ export const mutations: Mutation[] = [
     name: "const-link-name-unread",
     breaks:
       "a constant JS names, `#[rust_js::link_name = \"Event.AT_TARGET\"]`, webapi's `node::ELEMENT_NODE`, is its value written in place, `2`, its name lost (rd618)",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        if let Some(name) = bindings::const_link_name(self.tcx, def_id) {\n",
     replace: "        if let Some(name) = None::<rustc_span::Symbol> {\n",
     tests: ["test/webapi-objects.test.ts", "-t", "webapi constant is read by its JS name"],
@@ -401,16 +401,16 @@ export const mutations: Mutation[] = [
   {
     name: "library-constructor-value-unlisted",
     breaks: "a library's constructor given as a function, `.map(dep::Wrap)` or its compiled `.map(Self)` of smallvec's private `ConstNonNull`, is asked of its manifest, which lists no constructor, and refused (#476)",
-    file: "src/lower.rs",
-    find: "        if matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {\n            return self.constructor_value(def_id, args, span).map(Some);\n        }\n        // A library's function its manifest doesn't list; not a trait's\n        // method, `Zero::is_zero`, which is its impl's, as a call of it is.\n        if self.tcx.trait_of_assoc(def_id).is_none()\n            && let Some(why) = self.krate.foreign.unlisted(def_id)\n        {\n            return Err(crate::lower::refusal::error(self.tcx, span, why));\n        }\n",
-    replace: "        if self.tcx.trait_of_assoc(def_id).is_none()\n            && let Some(why) = self.krate.foreign.unlisted(def_id)\n        {\n            return Err(crate::lower::refusal::error(self.tcx, span, why));\n        }\n        if matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {\n            return self.constructor_value(def_id, args, span).map(Some);\n        }\n",
+    file: "crates/rust-js-lower/src/lib.rs",
+    find: "        if matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {\n            return self.constructor_value(def_id, args, span).map(Some);\n        }\n        // A library's function its manifest doesn't list; not a trait's\n        // method, `Zero::is_zero`, which is its impl's, as a call of it is.\n        if self.tcx.trait_of_assoc(def_id).is_none()\n            && let Some(why) = self.krate.foreign.unlisted(def_id)\n        {\n            return Err(crate::refusal::error(self.tcx, span, why));\n        }\n",
+    replace: "        if self.tcx.trait_of_assoc(def_id).is_none()\n            && let Some(why) = self.krate.foreign.unlisted(def_id)\n        {\n            return Err(crate::refusal::error(self.tcx, span, why));\n        }\n        if matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {\n            return self.constructor_value(def_id, args, span).map(Some);\n        }\n",
     tests: ["test/crates.test.ts", "-t", "library_constructor_value"],
   },
   {
     name: "library-located-fn-value-a-call-arrow",
     breaks:
       "a library's `#[track_caller]` function as a `fn` pointer is the arrow of its call, given where it's made a value, not where it's defined, as rustc's shim gives it (#1032)",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        let located = self.krate.foreign.item(def_id).is_some() && self.takes_caller_location(def_id);\n",
     replace: "        let located = false && self.krate.foreign.item(def_id).is_some() && self.takes_caller_location(def_id);\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
@@ -418,7 +418,7 @@ export const mutations: Mutation[] = [
   {
     name: "discr-unsigned-wrapped",
     breaks: "a `u128` discriminant past `i128::MAX` wraps negative, so `Last = u128::MAX` orders before `First = 1` and casts to `-1` (#1131)",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            false => Discr::Unsigned(d.val),\n",
     replace: "            false => Discr::Signed(d.val as i128),\n",
     tests: ["test/corpus.test.ts", "-t", "^discriminants_past_32_bits.rs$"],
@@ -427,7 +427,7 @@ export const mutations: Mutation[] = [
     name: "spill-named-at-once",
     breaks:
       "a value lowering spills for a role is named at once and never again, `const result$2 = Parser.expr(parser)`, not by its call, `expr` (#890)",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            Base::Role(role) if role.says_nothing() => name.suggested(held::held_names(&value), role.text()),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(boxed_option_unwraps|option_iterator_of_generic_items|blanket_iterator_trait|interpreter).rs$"],
@@ -436,7 +436,7 @@ export const mutations: Mutation[] = [
   {
     name: "import-read-made-global",
     breaks: "a binding's read of what its module imports, React's `useState`, is made a global's, though its import declares the name: refused, a global's read where a declaration of its name is in scope (#1681)",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        Some((export, rest)) => rooted(&format!(\"{}{rest}\", import(&export)), Expr::module),\n",
     replace: "        Some((export, rest)) => rooted(&format!(\"{}{rest}\", import(&export)), Expr::global),\n",
     tests: ["test/react-kept.test.ts", "-t", "what React keeps and gives again is copied where it's changed"],
@@ -444,7 +444,7 @@ export const mutations: Mutation[] = [
   {
     name: "global-binding-read-unmarked",
     breaks: "a binding's read of a global, `performance`, isn't made a global's: refused, a read nothing declares (#1681)",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "        None => rooted(path, Expr::global),\n",
     replace: "        None => rooted(path, |word| Expr::var(js::Name::declared(word.to_string()))),\n",
     tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments is a function of the parameters left"],
@@ -452,7 +452,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-instance-pointer-options-dropped",
     breaks: "a generic writer function's instance as a `fn` pointer takes no options, so its dictionaries land a place early (#1758)",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "            let options = formatter.is_some() && self.takes_options(def_id);\n",
     replace: "            let options = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_fn_pointer_of_an_instance_given_options)\\.rs$"],
@@ -460,7 +460,7 @@ export const mutations: Mutation[] = [
   {
     name: "static-es-class-in-impl-module",
     breaks: "a fieldless ES class is emitted beside its impl, while its declaration and re-export point to the struct's module",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "classes::class_of(tcx, def_id).and_then(|class| classes::implicit_constructor_home(tcx, class))",
     replace: "classes::class_of(tcx, def_id).and_then(|_| None)",
     tests: ["test/es-classes.test.ts", "-t", "implicit constructor lives with its struct"],
@@ -468,7 +468,7 @@ export const mutations: Mutation[] = [
   {
     name: "fn-value-params-unnamed",
     breaks: "a generic function's instance as a value names its parameters `arg0`, not as the function does, `(w) => stamped(w, ..)` (#1328)",
-    file: "src/lower.rs",
+    file: "crates/rust-js-lower/src/lib.rs",
     find: "                .map(|(i, name)| name.unwrap_or_else(|| format!(\"arg{i}\")))\n",
     replace: "                .map(|(i, name)| name.filter(|_| false).unwrap_or_else(|| format!(\"arg{i}\")))\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_fn_pointer_at_an_instance.rs$"],

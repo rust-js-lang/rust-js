@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/nulled/one_none.rs (ADR 0093): Rust's one
+// Mutations of crates/rust-js-mir/src/nulled/one_none.rs (ADR 0093): Rust's one
 // `None` where it leaves for JS (#1840, #1843), split from nulled.ts with
 // its source, by concept.
 import type { Mutation } from "../../../../mutations";
@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
   {
     name: "js-nones-outer-result-unread",
     breaks: "optional contents of an object normalize a separately written outer null",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: " || self.local_has_stated_option(state, read, 0)",
     replace: "",
     tests: ["test/none-given.test.ts", "-t", "undefined-only object lookup"],
@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
   {
     name: "none-trusted-of-any-write",
     breaks: "a variable a call writes is taken to hold Rust's `None` as one only `Some(..)` or `None` writes does, so what the crate's function returns of JS's `null` is given on as it is (#1840)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "                self.made_some_or_none(state, *read, (depth + 1, some))\n            }\n            // Not a nullable",
     replace: "                true\n            }\n            // Not a nullable",
     tests: given1840,
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
   {
     name: "none-given-to-a-binding-as-it-is",
     breaks: "a binding's optional argument is given JS's `null` as it is, `(1.25).toPrecision(null)` a RangeError (#1840)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "                || none_form(self.tcx, NonePlace::BindingArg(binding, i, Some(payload))) != NoneForm::Undefined\n",
     replace: "                || true\n",
     tests: given1840,
@@ -33,15 +33,15 @@ export const mutations: Mutation[] = [
   {
     name: "none-given-to-any-binding-parameter",
     breaks: "a binding's parameter of a type parameter, `js::set`'s `T`, which JS takes as it's given, is given `?? undefined` (#1840)",
-    file: "src/lower/mir/nulled/one_none.rs",
-    find: "                || !crate::lower::bindings::is_optional_param(self.tcx, binding, i)\n                || self.none_trusted(state, operand)\n",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
+    find: "                || !rust_js_lower::bindings::is_optional_param(self.tcx, binding, i)\n                || self.none_trusted(state, operand)\n",
     replace: "                || self.none_trusted(state, operand)\n",
     tests: given1840,
   },
   {
     name: "none-returned-as-it-is",
     breaks: "what a function JS calls returns, its parameter JS gave `null`, is `null` where its declaration and a typed caller take `undefined` (#1840)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "        if place != Place::from(mir::RETURN_PLACE)\n",
     replace: "        if true || place != Place::from(mir::RETURN_PLACE)\n",
     tests: given1840,
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
   {
     name: "none-stored-as-it-is",
     breaks: "a `pub` struct's plain `Option` field is written JS's `null` as it is, which JS reads of the object (#1840)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "        match (self.krate.nulled_params.js_nones()).field_takes_one_none(self.tcx, field, ty)\n",
     replace: "        match false\n",
     tests: given1840,
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
   {
     name: "none-given-to-a-callback-of-rust",
     breaks: "a closure only Rust calls through a `dyn Fn` is taken for one JS may have made, given `?? undefined` and called of each count, `value != null ? shown(value) : shown()`, though it holds what it's given as it may be (#1840, #1876)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "            .is_none_or(|called| (self.krate.nulled_params.js_nones()).may_hold_null(self.tcx, state.body, called))\n    }\n",
     replace: "            .is_none_or(|_| true)\n    }\n",
     tests: given1840,
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
   {
     name: "none-given-to-a-trait-object-of-rust",
     breaks: "a trait object the crate made of its own impl is given `?? undefined` as if JS made its pair (#1840)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "            || !js_made\n",
     replace: "",
     tests: given1840,
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
   {
     name: "none-bound-as-it-is",
     breaks: "what `function::bind` binds of a binding is given as it is, JS's `null` to its optional argument (#1840)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "            return self.ones_bound(state, (binding, operands), values, span);\n",
     replace: "            return Ok(());\n",
     tests: given1840,
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
   {
     name: "js-null-given-undefined",
     breaks: "`js::null()`, JS's `null` on purpose (ADR 0935), given a callback JS gave, is `?? undefined`, so `callback(js::null())` calls it with no argument (#1840, #2167)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "        K::Null\n            | K::Num(_)\n",
     replace: "        K::Num(_)\n",
     tests: ["test/none-given.test.ts", "-t", "an explicit null fallback stays a supplied callback argument"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
   {
     name: "shown-field-given-again",
     breaks: "an untagged enum's variant made again in place of its own fields, JS's already, gives each `?? undefined`, `node[0] = node[0] ?? undefined` where it kept them (#1840)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "            && !self.read_of_a_shown_field(state, operand, 0)\n",
     replace: "",
     tests: ["test/docs.test.ts"],
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-of-bindings-taking-null-normalized",
     breaks: "a pointer the crate makes only of a binding that takes its argument nullable is given `?? undefined` first, so a function that only passes it on is no re-export (#1840)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "            let taken = candidates.is_none_or(|made| {\n",
     replace: "            let taken = candidates.is_none_or(|made| true || {\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a binding taken as a fn is its JS function"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-pair-given-undefined",
     breaks: "a pair's `Option` given to a binding, `q?.value` already `undefined` of either `None`, is given `(q ?? undefined)?.value` (#1840)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "            if pair\n                || none_form",
     replace: "            if false\n                || none_form",
     tests: ["test/bindings.test.ts", "-t", "a union's dyn is its value"],
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
   {
     name: "made-of-a-nullable-field",
     breaks: "a nullable field of a struct made of `None`, which holds it as `null`, is taken for Rust's `None`, so `String(slot.value)` is \"null\" (#1843)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "        none_form(self.tcx, NonePlace::Field(field, None)) == NoneForm::Undefined\n    }\n",
     replace: "        none_form(self.tcx, NonePlace::Field(field, None)) != NoneForm::Nested\n    }\n",
     tests: ["test/none-given.test.ts", "-t", "each source of JS's null"],
@@ -121,7 +121,7 @@ export const mutations: Mutation[] = [
   {
     name: "made-of-a-parameter",
     breaks: "a parameter the body sets `Some(..)` is taken for one only that write made, so what JS gave it, `null`, is returned as it is (#1840)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "        if depth > 8 || param || !place",
     replace: "        if depth > 8 || !place",
     tests: ["test/webapi-bindings.test.ts", "-t", "an and_then of a nullable binding is an optional chain"],
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
   {
     name: "made-some-of-a-none",
     breaks: "an `Option` a `None` writes too is taken for a `Some` where it's given, so a trailing `None` of it is given `undefined`, `setFullYear(2026, undefined)`, NaN (#1842)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "                        && (!some || variant.as_u32() == 1))\n",
     replace: "                        && (!some || variant.as_u32() <= 1))\n",
     tests: ["test/none-given.test.ts", "-t", "a binding's trailing None is no argument"],
@@ -137,7 +137,7 @@ export const mutations: Mutation[] = [
   {
     name: "some-of-a-caught-null-trusted",
     breaks: "a `Some(e)` of a caught `null` is taken for Rust's own `Some`, so a field written with it holds `null`, not `undefined` (#1939)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "                        .all(|of| !(self.krate.nulled_params.js_nones()).payload_may_be_null(self.tcx, state.body, of))\n",
     replace: "                        .all(|_| true)\n",
     tests: ["test/js-errors.test.ts", "-t", "leaves for JS as undefined, each way"],
@@ -145,15 +145,15 @@ export const mutations: Mutation[] = [
   {
     name: "returned-js-null-coalesced",
     breaks: "`js::null()` returned from a function that gives `None` as `undefined` is coalesced, `undefined`, where it's JS's `null` on purpose (#2112, ADR 0935)",
-    file: "src/lower/mir/nulled/one_none.rs",
-    find: "                crate::lower::bindings::is_js_null(self.tcx, called)\n                    || ",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
+    find: "                rust_js_lower::bindings::is_js_null(self.tcx, called)\n                    || ",
     replace: "                false\n                    || ",
     tests: ["test/one-none-exits.test.ts", "-t", "returned beside a binding.s null is JS"],
   },
   {
     name: "returned-residual-coalesced",
     breaks: "`?`'s `None` returned is coalesced, `undefined ?? undefined`, where it's Rust's own (#2112)",
-    file: "src/lower/mir/nulled/one_none.rs",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
     find: "                    || self.tcx.is_lang_item(called, LangItem::TryTraitFromResidual)\n",
     replace: "",
     tests: ["test/snapshots.test.ts", "-t", "throws"],

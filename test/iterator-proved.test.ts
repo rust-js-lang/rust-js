@@ -10,7 +10,7 @@ import { adapters, consumers, stepAdapters, stepConsumers } from "./iterator-mat
 import { root } from "./support";
 
 const proved = (): string[] => {
-  const text = readFileSync(join(root, "src/lower/recognition/compiled_std.rs"), "utf8");
+  const text = readFileSync(join(root, "crates/rust-js-lower/src/recognition/compiled_std.rs"), "utf8");
   const list = text.match(/const PROVED_LINKS: &\[\(&str, &str\)\] = &\[([\s\S]*?)\n\];/)?.[1] ?? "";
   return [...list.matchAll(/\("\w+", "(\w+)"\)/g)].map((m) => m[1]);
 };

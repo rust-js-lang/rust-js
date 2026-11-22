@@ -1,11 +1,11 @@
-// Mutations of src/lower/items.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/items.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "ordering-function-value-wrong-zero",
     breaks: "Ordering predicates used as function values ignore their actual comparison",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            Std::OrderingTest(op) => self.ordering_test(op, x, input, span)?,\n",
     replace: "            Std::OrderingTest(_) => Expr::bool(false),\n",
     tests: ["test/corpus.test.ts","-t","^ordering_predicates.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "binding-pointer-arrow",
     breaks:
       "a binding taken as a `fn` or lent as a `&dyn Fn` is its arrow, which reads the global at each call, a new function each time (ADR 0602)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        if super::bindings::is_binding(self.tcx, def_id) {\n            return self.binding_fn_pointer(def_id, args, (named, false), span).map(Some);\n",
     replace: "        if false {\n            return self.binding_fn_pointer(def_id, args, (named, false), span).map(Some);\n",
     tests: [
@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
     name: "math-pointer-arrow",
     breaks:
       "a std function that's `Math`'s taken as a `fn` or lent as a `&dyn Fn` is the arrow of its call, `(n) => Math.log(n)`, not `Math.log`, which a polyfill or a scale captures where it's taken (ADR 0887, #1812)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        Ok(self.math_function(def_id, args))\n",
     replace: "        Ok(None)\n",
     tests: ["test/lowering-math.test.ts", "-t", "is its function"],
@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-constant-read-by-name",
     breaks: "an exported impl constant's use reads its object, `ReactiveFlags.MUTABLE`, where TypeScript's `const enum` and every other impl constant is its value (#498)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        if super::analysis::exported_value_const(self.tcx, def_id) {\n",
     replace: "        if false && super::analysis::exported_value_const(self.tcx, def_id) {\n",
     tests: ["test/impl-constants.test.ts"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
     name: "any-derived-impl-not-compiled",
     breaks:
       "a library's derived `Debug` a consumer asks, which its JS doesn't export, is taken for a codec and imported, not compiled by the consumer",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            super::serde::serde_trait(self.tcx, self.tcx.impl_trait_id(imp)).is_some()\n",
     replace: "            true\n",
     tests: ["test/crates.test.ts", "-t", "an app using two crates"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "derived-codec-compiled-by-consumer",
     breaks:
       "a library's derived serde codec a consumer's copying asks is compiled by the consumer, whose visitor isn't its own: the pilot doesn't build (#341)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            && !derived_codec\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "an app using two crates"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
     name: "into-a-from-unbound",
     breaks:
       "`x.into()` of a type parameter's target is its `From`'s where the function is bound `T: Into<U>`, whose `From` it has no dictionary of (#321)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "                self.evidence_for(ty::TraitRef::new_from_args(self.tcx, from, args))\n                    .is_some()\n",
     replace: "                from == from\n",
     tests: ["test/corpus.test.ts", "-t", "^into_a_bound_target.rs$"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     name: "into-of-a-bound-not-redirected",
     breaks:
       "`x.into()` whose `From` is a bound's, `U: From<T>`, isn't lowered as that bound's `from`, and is refused (#321)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        (self.is_rust_fn(implementation) || bound).then_some((method, args))\n",
     replace:
       "        self.is_rust_fn(implementation).then_some((method, args))\n",
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     name: "load-reads-by-name",
     breaks:
       "a thread-local's value reads another module's `const` and variant by name, `{ value: Pending }`, which an import cycle may load first: `Cannot access 'Pending' before initialization` (ADR 0722)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        module.is_none_or(|module| module == self.module) || !self.settled.loads_in_cycles.contains(&self.item)\n",
     replace: "        true\n",
     tests: ["test/corpus.test.ts", "-t", "load_cycle_values"],
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
     name: "load-reads-own-module-by-value",
     breaks:
       "what a module's load makes reads its own module's variant as its number, `let state = 3`, where its `const`, made before it, is `Pending`",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        module.is_none_or(|module| module == self.module) || !self.settled.loads_in_cycles.contains(&self.item)\n",
     replace:
       "        module.is_none() || (module != Some(self.module) && !self.settled.loads_in_cycles.contains(&self.item))\n",
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     name: "class-const-not-the-prototypes",
     breaks:
       "a class's constant read is `Counter.limit`, the constructor's, where it's the prototype's, `Counter.prototype.limit` (ADR 0761)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: '            Expr::member(Expr::member(reference, "prototype"), target.name.clone())\n',
     replace: "            Expr::member(reference, target.name.clone())\n",
     tests: ["test/corpus.test.ts", "-t", "class_methods"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     name: "binding-value-args-raw",
     breaks:
       "a nullable binding as a value is given `undefined`, `(to) => rustJsReset(to)`, where its call gives `null`",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "                self.binding_arg(def_id, (i, false), given, ty)\n",
     replace: "                given\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a binding taken as a fn"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     name: "binding-fn-pointer-arrow",
     breaks:
       "`const localHook = (n) => rustJsHook(n);` reads the global at each call, so a polyfill set later is called",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        Ok(passed_on(&arrow, Taker::Made, &[]).unwrap_or(arrow))\n",
     replace: "        Ok(arrow)\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a binding taken as a fn"],
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
     name: "binding-value-bare",
     breaks:
       "a binding as a value is the JS function itself, which `.map` gives each index too: `parseInt(text, i)`",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        // One that's a statement, a setter's, is no value.\n",
     replace:
       "        if let ExprKind::Call(callee, _) = &body.kind {\n            return Ok((**callee).clone());\n        }\n",
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
     name: "callee-unresolved",
     breaks:
       "`checked.push(1)` through the crate's `DerefMut` pushes onto its handle, and `k.slot()` is taken for a std call's items",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        self.impl_method(def_id, args)\n            .ok()\n            .flatten()\n            .or_else(|| self.resolve_into(def_id, args))\n",
     replace: "        None.or_else(|| self.resolve_into(def_id, args))\n",
     tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     name: "f32-fn-value-unrounded",
     breaks:
       "`.map(f32::sqrt)` is a double's square root, no `f32`, where its call is rounded to one",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "                    Some(num) if math::function(op, num).is_none() => num.wrap(value),",
     replace:
       "                    Some(num) if false && math::function(op, num).is_none() => num.wrap(value),",
@@ -162,7 +162,7 @@ export const mutations: Mutation[] = [
     name: "size-of-value-unknown",
     breaks:
       "`size_of::<u16>` as a value, and `size_of::<T>` of a type parameter, is refused, where it's a call's arrow",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        match known {\n            Std::Drop | Std::Forget => {",
     replace:
       '        match known {\n            Std::Layout { .. } => return Err(self.unsupported(span, "`size_of` as a value")),\n            Std::Drop | Std::Forget => {',
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
   {
     name: "drop-value-skips-destructor",
     breaks: "`drop` as a value runs no destructor",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "                if known == Std::Drop {\n                    self.drop_value(",
     replace:
       "                if false && known == Std::Drop {\n                    self.drop_value(",
@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
   {
     name: "is-some-value-negated",
     breaks: "`Option::is_some` as a value is `is_none`",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            Std::IsSome => Expr::bin(Op::LooseNe, x, Expr::null()),",
     replace:
       "            Std::IsSome => Expr::bin(Op::LooseEq, x, Expr::null()),",
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
     name: "copied-default-import-unused",
     breaks:
       "a trait's default that calls a JS import, copied into an impl in another module, calls it there unimported, and throws a `ReferenceError`",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        super::path_read(path, self.krate.required, |export| {\n            self.dependencies\n                .borrow_mut()\n                .package_uses\n                .insert((self.module, export.clone()));\n",
     replace: "        super::path_read(path, self.krate.required, |export| {\n",
     tests: [
@@ -203,7 +203,7 @@ export const mutations: Mutation[] = [
     name: "named-expression-module-function",
     breaks:
       "a function a block makes and gives is the module's, `memo(Label)` beside `function Label`, and the static is renamed",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        if self.krate.named_expressions.contains(&def_id) {",
     replace: "        if false {",
     tests: [
@@ -215,7 +215,7 @@ export const mutations: Mutation[] = [
   {
     name: "leak-fn-unboxed",
     breaks: "`map(String::leak)` gives the strings, not boxes of them",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            Std::Leak => self.leaked(x, sig.output()),\n",
     replace: "            Std::Leak => x,\n",
     tests: ["test/corpus.test.ts", "-t", "leaked_string_written"],
@@ -223,7 +223,7 @@ export const mutations: Mutation[] = [
   {
     name: "number-from-function-unconverted",
     breaks: "`.map(i8::from)` of bools gives the bools",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            Std::Cast { .. } => self.number_from(x, input, sig.output(), span)?,",
     replace: "            Std::Cast { .. } => x,",
     tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
     name: "guard-deref-value-unknown",
     breaks:
       "std's `Deref` of a `Ref<T>` in a dictionary, stable_deref_trait's, is refused",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            Std::GuardValue { mutable } => self.guard_value(x, input, mutable),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^guard_deref_dictionary.rs$"],
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
     name: "fused-specialization-not-crates",
     breaks:
       "a std-private trait's call whose impl the caller's type picks doesn't resolve to the crate's impls, and is refused",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            return Ok(spec.methods().all(|method| self.is_rust_fn(method)));\n",
     replace:
       "            return Ok(false && spec.methods().all(|method| self.is_rust_fn(method)));\n",
@@ -251,7 +251,7 @@ export const mutations: Mutation[] = [
     name: "rest-value-arrow-unspread",
     breaks:
       "a variadic binding's arrow takes rest arguments as one, `(data) => console.log(...data)`, so `prevLog = console.log` is that arrow",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "                true => Pattern::Rest(name),\n",
     replace: "                true => Pattern::Name(name),\n",
     tests: ["test/js-object.test.ts", "-t", "console is a value"],
@@ -260,7 +260,7 @@ export const mutations: Mutation[] = [
     name: "lazy-local-read-bare",
     breaks:
       "a thread-local made where it's first used is read as its holder, not its call, `x.value` of `x()`",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "                ..Expr::call(place, Vec::new())\n",
     replace: "                ..place\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_made_where_used.rs$"],
@@ -269,7 +269,7 @@ export const mutations: Mutation[] = [
     name: "own-item-reference-unknown",
     breaks:
       "one of the crate's functions, `noop`, isn't known as one, so a guard's scope returns it inside its `try`, not after the `finally`",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        } else {\n            reference.item()\n",
     replace: "        } else {\n            reference\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_guard_returned.rs$"],
@@ -279,7 +279,7 @@ export const mutations: Mutation[] = [
     name: "library-item-reference-unknown",
     breaks:
       "a library's function, `noop`, isn't known as one, so a guard's scope returns it inside its `try`, not after the `finally`",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "                None => reference.item(),\n",
     replace: "                None => reference,\n",
     tests: [
@@ -292,7 +292,7 @@ export const mutations: Mutation[] = [
     name: "lazy-read-unmarked",
     breaks:
       "a lazy thread-local's read is a call like any, made before what its call is given, and `set` runs its initializer",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            true => Expr {\n                facts: js::Facts::of(js::Known::LocalRead),\n",
     replace:
       "            true => Expr {\n                facts: js::Facts::NONE,\n",
@@ -302,7 +302,7 @@ export const mutations: Mutation[] = [
     name: "never-unwinding-unmarked",
     breaks:
       "a call of the crate's function that never unwinds is taken for one that may, so a drop after it is a `try`/`finally` again",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            true => reference.never_throws(),\n",
     replace: "            true => reference,\n",
     tests: ["test/corpus.test.ts", "-t", "^never_unwinding_calls.rs$"],
@@ -312,7 +312,7 @@ export const mutations: Mutation[] = [
     name: "load-reads-values",
     breaks:
       "another module's constant is read as its value, `createCursor(0)`, though its module loads first",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        module.is_none_or(|module| module == self.module) || !self.settled.loads_in_cycles.contains(&self.item)\n",
     replace: "        module.is_none_or(|module| module == self.module)\n",
     tests: [
@@ -325,7 +325,7 @@ export const mutations: Mutation[] = [
     name: "unexported-library-item-imported",
     breaks:
       "a library's item its JS doesn't export, an impl's dictionary, isn't asked for, and its reference panics (ADR 0914, amended)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            && (foreign.compiles(def_id) || (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id)))\n",
     replace:
       "            && (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id))\n",
@@ -335,7 +335,7 @@ export const mutations: Mutation[] = [
     name: "exported-copying-impl-imported",
     breaks:
       "an exported dictionary whose method copies a `Spot` its consumer changes in place is imported, so changing what `first()` gives changes the `Vec`'s (ADR 0914, amended)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            && (foreign.compiles(def_id) || (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id)))\n",
     replace: "            && foreign.compiles(def_id)\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
@@ -344,7 +344,7 @@ export const mutations: Mutation[] = [
     name: "namespace-read-of-a-default",
     breaks:
       "a module's default called through its path, `about::about()`, is read as its namespace's `About.default()`, where it's the module's default import (rd114, ADR 1018)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: '        let namespaced = through && target.module != self.module && exported != "default";\n',
     replace:
       "        let namespaced = through && target.module != self.module;\n",
@@ -354,7 +354,7 @@ export const mutations: Mutation[] = [
     name: "namespace-read-of-a-library-dropped",
     breaks:
       "a library's function called through its module, `dep::events::extract_events(2)`, is its named import, not its module's namespace's (rd114, ADR 1018)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        if through\n            && copy.is_none()\n",
     replace: "        if false\n            && copy.is_none()\n",
     tests: [
@@ -367,7 +367,7 @@ export const mutations: Mutation[] = [
     name: "item-read-by-name-through-its-module",
     breaks:
       "a thread-local or a `const` read through its module's path, `plugin::CALLS.get()`, is its named import, `import { calls }`, beside the module's namespace (rd114a, ADR 1018)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        let place = self.named_fn_ref(def_id, None, named);\n",
     replace:
       "        let place = {\n            let _ = named;\n            self.fn_ref(def_id)\n        };\n",
@@ -378,7 +378,7 @@ export const mutations: Mutation[] = [
     name: "export-named-apart-read-apart",
     breaks:
       "another module reads an export named apart through its module's namespace by the name its module gives it, `Keys.delete$()`, which isn't exported (#338)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            false => super::default_exports::exported_as(self.tcx, def_id, target.exported()),\n",
     replace:
       "            false => super::default_exports::exported_as(self.tcx, def_id, &name),\n",
@@ -392,7 +392,7 @@ export const mutations: Mutation[] = [
     name: "reexported-path-own-name",
     breaks:
       "a function a module re-exports by another name, `pub use crate::shared::doubled as twice;`, read through that module's namespace is read by its own name, `Plugins.doubled`, not the name it's re-exported as, `Plugins.twice` (rd137)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "super::reexports::exported_in(self.tcx, self.krate.fns, module, path.name, def_id)",
     replace:
       "super::reexports::exported_in(self.tcx, self.krate.fns, module, self.tcx.item_name(def_id), def_id)",
@@ -405,7 +405,7 @@ export const mutations: Mutation[] = [
   {
     name: "called-constructs-an-arrow",
     breaks: "`function::bind(js::error::new, ..)` binds an arrow that constructs, `((message, options) => new Error(..)).bind(..)`, whose frame each error's stack records, where upstream binds `Error` (rd404)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        if super::bindings::called_constructs(self.tcx, def_id)\n",
     replace: "        if false\n",
     tests: ["test/js-globals.test.ts", "-t", "bound as a value"],
@@ -413,7 +413,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameters-read-unmarked-value",
     breaks: "a binding that says it reads only its parameters is its arrow as a value, `items.map((item) => measure(item))`, not its function (rd648)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        if super::bindings::reads_only_its_parameters(self.tcx, def_id) {\n",
     replace: "        if false {\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "reads only its parameters is its function"],
@@ -421,7 +421,7 @@ export const mutations: Mutation[] = [
   {
     name: "required-use-imported",
     breaks: "a library's function a module's `use` reads through `require` is imported there as the module loads, `createElement(tag())` (rd684)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            if self.krate.required_uses.contains(&(self.module, def_id)) {\n",
     replace: "            if false {\n",
     tests: ["test/require.test.ts"],
@@ -429,7 +429,7 @@ export const mutations: Mutation[] = [
   {
     name: "required-use-namespace-path",
     breaks: "a library's function a module's `use` reads through `require`, named there through its module, `element::create_element(..)`, is read through the module's namespace import, two ways in one module (rd684)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            && !self.krate.required_uses.contains(&(self.module, def_id))\n",
     replace: "",
     tests: ["test/require.test.ts"],
@@ -437,8 +437,8 @@ export const mutations: Mutation[] = [
   {
     name: "required-use-specifier-raw",
     breaks: "a library's function a `use` marked `#[rust_js::require]` reads is required by its specifier from the crate root's file, `require(\"../dep/element.js\")` in `outer/inner.js`, a file that isn't there (#618, P0)",
-    file: "src/lower/items.rs",
-    find: "                return crate::lower::bindings::required(&export);",
+    file: "crates/rust-js-lower/src/items.rs",
+    find: "                return crate::bindings::required(&export);",
     replace: "                return Expr::member(Expr::call(Expr::global(\"require\"), vec![Expr::str(&export.0)]), export.1);",
     tests: ["test/require.test.ts", "-t", "below the root"],
   },
@@ -446,7 +446,7 @@ export const mutations: Mutation[] = [
     name: "changing-static-import-plain",
     breaks:
       "a library's static whose value changes in place, an atomic, is read through an import tidy takes for plain, so `HITS.load()` is read after the `fetch_add` that follows it (#1028)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "                .insert(local.to_string());\n",
     replace: "                .shift_remove(local);\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
@@ -454,7 +454,7 @@ export const mutations: Mutation[] = [
   {
     name: "changing-static-by-name-unmarked",
     breaks: "a library's changing static read by its import's name is taken for plain, its read moved past a write (#1028)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            self.read_import_of(def_id, local);\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
@@ -463,7 +463,7 @@ export const mutations: Mutation[] = [
     name: "changing-static-through-namespace-unmarked",
     breaks:
       "a library's changing static read through its module's namespace, `Counters.HITS.value`, is taken for plain, its read moved past a write (#1028)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "                self.read_import_of(def_id, &local);\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
@@ -471,7 +471,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-class-const-static",
     breaks: "a library's class's constant is read as its class's own property, `Counter.limit`, where its library puts it on the prototype, undefined (#1032)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "                Some(constant) if super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Const) => {\n",
     replace: "                Some(constant) if false && super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Const) => {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
@@ -479,7 +479,7 @@ export const mutations: Mutation[] = [
   {
     name: "to-vec-value-unanswered",
     breaks: "an `Into<Vec<u8>>` bound given a slice is refused, its `Vec` of the slice no function (#1284)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            Std::ToVec => self.vec_of_items(x, given, span)?,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
@@ -487,15 +487,15 @@ export const mutations: Mutation[] = [
   {
     name: "into-bytes-value-unanswered",
     breaks: "an `Into<Vec<u8>>` bound given text is refused, its bytes no function (#1284)",
-    file: "src/lower/items.rs",
-    find: "            Std::Text(TextOp::IntoBytes) => crate::lower::std_types::text::utf8_bytes(x),\n",
+    file: "crates/rust-js-lower/src/items.rs",
+    find: "            Std::Text(TextOp::IntoBytes) => crate::std_types::text::utf8_bytes(x),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
   },
   {
     name: "copy-call-unused",
     breaks: "a call of a copy of a function uses nothing, so a library's generic function a middle library's generic code alone calls, compiled there, is never written: `ReferenceError: given is not defined` (#1596)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "        if copy.is_some() {\n            self.dependencies.borrow_mut().uses.push((self.item, def_id));\n        }\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "library_generic_called_only_from_a_middle_generic"],
@@ -503,7 +503,7 @@ export const mutations: Mutation[] = [
   {
     name: "binding-values-given-as-they-are",
     breaks: "a binding's function std's code calls, `values.map(text)`, is given a nullable place's `null` as it is (#1843)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "                let given = match normalized\n",
     replace: "                let given = match false\n",
     tests: ["test/none-given.test.ts", "-t", "a WebIDL operation's trailing None"],
@@ -512,7 +512,7 @@ export const mutations: Mutation[] = [
     name: "library-impl-method-unresolved",
     breaks:
       "a call of a library's impl of its trait for a tuple, whose JS function holds each part in a place, gives and takes it in the trait's terms, so `(Light::Red, Sevens).step()` gives the library's `step` the bare string (#2255)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "(self.is_rust_fn(instance.def_id()) || self.krate.foreign.in_library(instance.def_id()))",
     replace: "self.is_rust_fn(instance.def_id())",
     tests: ["test/crates.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code"],
@@ -520,7 +520,7 @@ export const mutations: Mutation[] = [
   {
     name: "called-copy-in-impls-terms",
     breaks: "a copied default's call of a function JS calls too reads its own parameters' unboxing at the default's numbering where its arguments are the impl's, and finds no copy (#2273)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "                    super::traits::Declared::Own(owner, own) => self.krate.given.unboxed.contains(&(owner, own)),\n",
     replace: "                    super::traits::Declared::Own(owner, _) => self.krate.given.unboxed.contains(&(owner, index)),\n",
     tests: ["test/corpus.test.ts", "-t", "^default_copied_reads_its_own_params.rs$"],
@@ -529,7 +529,7 @@ export const mutations: Mutation[] = [
     name: "compiled-std-maker-callee-unseen",
     breaks:
       "a function given to std's compiled `scan`, of a state that's an object here, isn't given generic code's box of it, so `*pair = (..)` writes the box's `value`, `Cannot convert NaN to a BigInt` (ADR 0933)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "            Some(_) if compiled_std(def_id) => Some((def_id, generic_args)),\n",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^scan_object_state with"],
@@ -538,8 +538,8 @@ export const mutations: Mutation[] = [
     name: "hash-dictionary-hasher-unboxed",
     breaks:
       "a hasher given through a `T: Hash`'s dictionary isn't boxed, where its `Hasher`'s reads a box's `value`",
-    file: "src/lower/items.rs",
-    find: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash)\n                    || crate::lower::recognition::is_extend(self.tcx, trait_id))\n",
+    file: "crates/rust-js-lower/src/items.rs",
+    find: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash)\n                    || crate::recognition::is_extend(self.tcx, trait_id))\n",
     replace: "                    || false)\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
@@ -547,15 +547,15 @@ export const mutations: Mutation[] = [
     name: "extend-of-unknown-unboxed",
     breaks:
       "`a.extend(b)` of an `I::Item` that's an `IntoIterator` gives its dictionary `a`, where it reads a box",
-    file: "src/lower/items.rs",
-    find: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash)\n                    || crate::lower::recognition::is_extend(self.tcx, trait_id))\n                    && !matches!(",
+    file: "crates/rust-js-lower/src/items.rs",
+    find: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash)\n                    || crate::recognition::is_extend(self.tcx, trait_id))\n                    && !matches!(",
     replace: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash))\n                    && !matches!(",
     tests: ["test/corpus.test.ts", "-t", "^nested_item_drops.rs$"],
   },
   {
     name: "compiled-impl-method-not-the-callee",
     breaks: "a known `Chain`'s `read_until`, which std's compiled impl writes itself, is given the provided method's box of a `Self`, `$cellOf(c)`, where its body takes the object, and throws (#1156)",
-    file: "src/lower/items.rs",
+    file: "crates/rust-js-lower/src/items.rs",
     find: "                    && instance.def_id() != def_id\n                    && compiled_std(instance.def_id())\n",
     replace: "                    && instance.def_id() != def_id\n                    && false\n",
     tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],

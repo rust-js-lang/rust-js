@@ -1,4 +1,4 @@
-// Mutations of src/lower/call_graph.rs, the crate's one call graph from MIR and each body's names (ADR 1137, #1671 change 4 M3).
+// Mutations of crates/rust-js-lower/src/call_graph.rs, the crate's one call graph from MIR and each body's names (ADR 1137, #1671 change 4 M3).
 import type { Mutation } from "../../mutations";
 
 const tests = ["test/intervals-shadow.test.ts"];
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-constants-call-nothing",
     breaks: "a constant's MIR isn't one of its `const fn`s' callers, so `add`, only `const SUM` calls, is given nothing and `a + b` keeps its wrap, left to the bridge (#1742)",
-    file: "src/lower/call_graph.rs",
+    file: "crates/rust-js-lower/src/call_graph.rs",
     find: "            callers.insert(owner, tcx.mir_for_ctfe(owner));\n",
     replace: "            let _ = owner;\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "a const fn constants and patterns call"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
   {
     name: "call-graph-calls-unresolved",
     breaks: "no call is resolved to what it calls, so no function only calls reach is seen called and its parameters are given nothing",
-    file: "src/lower/call_graph.rs",
+    file: "crates/rust-js-lower/src/call_graph.rs",
     find: "                        Callee::Resolved(instance.def_id())\n",
     replace: "                        Callee::Unknown\n",
     tests,
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "closure-constant-functions-uncalled",
     breaks: "a function a closure constant holds, std's `Iterator::last`'s `some` in `FlattenCompat`'s inlined `last` of `Option`s, is given no drop of its type parameter, so `flatten().last()` of `Some`s never drops the one it passes (#645)",
-    file: "src/lower/call_graph.rs",
+    file: "crates/rust-js-lower/src/call_graph.rs",
     find: "            } else if constant.ty().is_closure() {\n",
     replace: "            } else if false {\n",
     tests: ["test/std-package.test.ts"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "named-value-taken-as-called",
     breaks: "a function a body's THIR names as a value is taken as called (`Naming`), so an `fmt::Arguments` given it through the value isn't refused (#1793)",
-    file: "src/lower/call_graph.rs",
+    file: "crates/rust-js-lower/src/call_graph.rs",
     find: "                    let naming = match (callees.contains(&at), bound.contains(&at)) {\n",
     replace: "                    let naming = match (callees.contains(&at) || true, bound.contains(&at)) {\n",
     tests: ["test/limitations.test.ts", "-t", "of a function named as a value"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "bind-a-value-use",
     breaks: "a `function::bind` of a function with a nullable parameter is named as a value (`Naming::Bound`), so it's never found `null` or a value at each call (rd632)",
-    file: "src/lower/call_graph.rs",
+    file: "crates/rust-js-lower/src/call_graph.rs",
     find: "                        (false, true) => Naming::Bound,\n",
     replace: "                        (false, true) => Naming::Value,\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a bind of each parameter"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "bind-of-some-parameters-a-call",
     breaks: "a `function::bind` of some of a function's parameters is taken as a call of it, so `later(2)(undefined)` tests the rest `!== null` (rd632)",
-    file: "src/lower/call_graph.rs",
+    file: "crates/rust-js-lower/src/call_graph.rs",
     find: "    (items.len() == tcx.fn_sig(id).skip_binder().skip_binder().inputs().len()).then_some(id)\n",
     replace: "    Some(id).filter(|_| !items.is_empty())\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a bind of each parameter"],

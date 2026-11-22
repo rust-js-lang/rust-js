@@ -1,4 +1,4 @@
-// Mutations of src/lower/serde/de.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/serde/de.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "numbered-read-as-name",
     breaks:
       'a numbered enum read from JSON is its name, `"Entries"`, so `==` of it to `Kind::Entries`, `3`, is false',
-    file: "src/lower/serde/de.rs",
+    file: "crates/rust-js-lower/src/serde/de.rs",
     find: "                return self.unit_variant(adt.did(), variant);\n",
     replace: "                return Expr::str(name);\n",
     tests: ["test/serde-values.test.ts", "-t", "a repr enum serializes"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "json-value-set",
     breaks:
       "a `HashSet<Point>` read from JSON is a plain `Set`, which keeps equal points twice",
-    file: "src/lower/serde/de.rs",
+    file: "crates/rust-js-lower/src/serde/de.rs",
     find: "                if !matches!(&class.kind, js::ExprKind::Var(name) if name.is(\"Set\")) {",
     replace: "                if false {",
     tests: ["test/serde.test.ts", "-t", "set of structs"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "generic-codec-readers-unpassed",
     breaks:
       "a generic type's derived `deserialize` is given no readers of its type arguments, so it reads its items with `undefined` and throws",
-    file: "src/lower/serde/de.rs",
+    file: "crates/rust-js-lower/src/serde/de.rs",
     find: "                if readers.is_empty() {\n                    return Ok(callee);\n                }",
     replace:
       "                if !readers.is_empty() {\n                    return Ok(callee);\n                }",
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "serde-field-read-as-its-type",
     breaks: "a field with its own reader is read as its type is",
-    file: "src/lower/serde/de.rs",
+    file: "crates/rust-js-lower/src/serde/de.rs",
     find: "        match self.field_codec(field, attrs, false, span)? {\n",
     replace: "        match None::<Expr> {\n",
     tests: ["test/serde-attributes.test.ts", "-t", "its own functions"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "tuple-struct-default-as-property",
     breaks: "a tuple struct with the container's `#[serde(default)]`, read from a shorter array, gives `defaults._1` of the array its default is, `undefined`, for each missing element (#1537)",
-    file: "src/lower/serde/de.rs",
+    file: "crates/rust-js-lower/src/serde/de.rs",
     find: "            Shape::Array(_) => self.project(defaults, ty, i),\n",
     replace: "            Shape::Array(_) => Expr::member(defaults, key.to_owned()),\n",
     tests: [
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
   {
     name: "newtype-struct-reader-unasked",
     breaks: "a newtype struct's field that names its own reader is read as its type is, `\"3\"` refused (#1536)",
-    file: "src/lower/serde/de.rs",
+    file: "crates/rust-js-lower/src/serde/de.rs",
     find: "                let read = self.field_reader(field.did, &attrs, self.field_ty(field, args), span)?;\n",
     replace: "                let read = self.json_reader(self.field_ty(field, args), span)?;\n",
     tests: [
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "flatten-reader-unasked",
     breaks: "a flattened field's own reader is dropped, its type's entries read (#1536)",
-    file: "src/lower/serde/de.rs",
+    file: "crates/rust-js-lower/src/serde/de.rs",
     find: "                flattened.push(self.field_reader(field.did, &attrs, field_ty, span)?);\n",
     replace: "                flattened.push(self.json_reader(field_ty, span)?);\n",
     tests: [
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
   {
     name: "newtype-variant-reader-unasked",
     breaks: "a newtype variant's own reader, or its field's, is dropped: `{\"A\":\"7\"}` refused (#1536)",
-    file: "src/lower/serde/de.rs",
+    file: "crates/rust-js-lower/src/serde/de.rs",
     find: "                    let read = match codec {\n                        Some(codec) => codec,\n",
     replace: "                    let read = match codec {\n                        Some(_) => self.json_reader(field_ty, span)?,\n",
     tests: [
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "dropping-read-unrefused",
     breaks: "a read of what runs code when it's dropped is let through, and one that fails part-way drops nothing of what it had read, where serde_json's `?` drops each (#1552)",
-    file: "src/lower/serde/de.rs",
+    file: "crates/rust-js-lower/src/serde/de.rs",
     find: "        match self.drop_seen(ty, 0) {\n",
     replace: "        match false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "runs code when it's dropped"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "quiet-drop-taken-as-seen",
     breaks: "a read of a type whose `Drop` does nothing is refused as one whose drop can be seen (#1552)",
-    file: "src/lower/serde/de.rs",
+    file: "crates/rust-js-lower/src/serde/de.rs",
     find: "                        .is_some_and(|d| !self.krate.quiet_fns.contains(&d.did))\n",
     replace: "                        .is_some()\n",
     tests: ["test/serde.test.ts", "-t", "a value with a destructor"],
@@ -109,15 +109,15 @@ export const mutations: Mutation[] = [
   {
     name: "std-container-drop-taken-as-seen",
     breaks: "a read of a std container of what drops quietly, a `Vec<Item>` whose `Drop` does nothing, is refused as one whose drop can be seen (#1552)",
-    file: "src/lower/serde/de.rs",
-    find: "if crate::lower::recognition::is_std_crate(tcx, adt.did()) => args.types().any(seen),",
-    replace: "if crate::lower::recognition::is_std_crate(tcx, adt.did()) => true,",
+    file: "crates/rust-js-lower/src/serde/de.rs",
+    find: "if crate::recognition::is_std_crate(tcx, adt.did()) => args.types().any(seen),",
+    replace: "if crate::recognition::is_std_crate(tcx, adt.did()) => true,",
     tests: ["test/serde.test.ts", "-t", "a value with a destructor"],
   },
   {
     name: "non-zero-reader-unmade",
     breaks: "a `NonZero<u32>` has no reader of its own, so reading one is refused, where serde reads its number and refuses zero (#1538)",
-    file: "src/lower/serde/de.rs",
+    file: "crates/rust-js-lower/src/serde/de.rs",
     find: "            return Ok(Expr::call(reader(\"nonZero\"), vec![read]));\n",
     replace: "            let _ = read;\n",
     tests: ["test/serde-values.test.ts", "-t", "a NonZero is read as serde reads it"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "derived-read-cell-field-unheld",
     breaks: "a derived reader makes a struct's `Cell` field the cell, where the field holds what the cell holds, so `get()` reads `[object Object]` (#1623, ADR 0288)",
-    file: "src/lower/serde/de.rs",
+    file: "crates/rust-js-lower/src/serde/de.rs",
     find: "            self.holding(value, self.struct_field_def(ty, i), field_ty)\n",
     replace: "            { let _ = (i, field_ty); value }\n",
     tests: ["test/serde-std.test.ts", "-t", "a Cell, a RefCell, a Mutex and an RwLock"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-str-read-as-str",
     breaks: "a `Box<str>` is read as a `str`, which serde can't, refused where serde reads its `String` (#1623)",
-    file: "src/lower/serde/de.rs",
+    file: "crates/rust-js-lower/src/serde/de.rs",
     find: '            ty::Adt(_, args) if ty.is_box() && args.type_at(0).is_str() => Ok(reader("string")),\n',
     replace: "",
     tests: ["test/serde-std.test.ts", "-t", "a path, a Cow and a boxed str or slice"],

@@ -1,10 +1,10 @@
-// Mutations of src/lower/analysis/self_handles/owners.rs (ADR 0317,
+// Mutations of crates/rust-js-lower/src/analysis/self_handles/owners.rs (ADR 0317,
 // amended): callbacks' handle on the request that owns them found where
 // the request may be gone when they run, or their cell read otherwise.
 import type { Mutation } from "../../../../mutations";
 
 const corpus = (name: string) => ["test/corpus.test.ts", "-t", `^${name}.rs$`];
-const file = "src/lower/analysis/self_handles/owners.rs";
+const file = "crates/rust-js-lower/src/analysis/self_handles/owners.rs";
 
 export const mutations: Mutation[] = [
   {

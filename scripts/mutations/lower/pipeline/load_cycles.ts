@@ -1,4 +1,4 @@
-// Mutations of src/lower/pipeline/load_cycles.rs (ADR 0093).
+// Mutations of src/pipeline/load_cycles.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "reexport-not-an-import",
     breaks:
       "a module that re-exports another's function, `pub use super::z::one`, has no import of it in the load-order graph, so `z`'s load reads `a`'s `K` by its name before it's made: `ReferenceError` (#295)",
-    file: "src/lower/pipeline/load_cycles.rs",
+    file: "src/pipeline/load_cycles.rs",
     find: "        js::ImportFrom::Module(path) => Some((*from, module_of(path)?)),\n",
     replace:
       "        js::ImportFrom::Module(path) => module_of(path).filter(|_| false).map(|to| (*from, to)),\n",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "reexported-binding-not-an-import",
     breaks:
       "a module that re-exports a binding has no import of its JS module in the load-order graph, so a cycle through that file isn't seen and `z` reads `K` by its name (#295)",
-    file: "src/lower/pipeline/load_cycles.rs",
+    file: "src/pipeline/load_cycles.rs",
     find: "        js::ImportFrom::Specifier(specifier) => Some((*from, specifier.as_str())),\n",
     replace:
       "        js::ImportFrom::Specifier(specifier) => Some((*from, specifier.as_str())).filter(|_| false),\n",
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "dictionary-load-cycle-allowed",
     breaks:
       "a dictionary in an import cycle with a module whose load runs code compiles, and that code may read it before it's made",
-    file: "src/lower/pipeline/load_cycles.rs",
+    file: "src/pipeline/load_cycles.rs",
     find: "reaches(module, other) && reaches(other, module)",
     replace: "false && reaches(module, other) && reaches(other, module)",
     tests: [
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     name: "load-time-calls-unseen",
     breaks:
       "a module whose load calls a function isn't one that runs code, so a dictionary it may reach through a cycle compiles",
-    file: "src/lower/pipeline/load_cycles.rs",
+    file: "src/pipeline/load_cycles.rs",
     find: "!pass.dictionary_names.contains(&c.name) && runs(&c.value))",
     replace:
       "!pass.dictionary_names.contains(&c.name) && runs(&c.value) && false)",
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     name: "dictionary-cache-runs-code",
     breaks:
       "a generic dictionary's cache, `new WeakMap()`, is code its module's load runs, so a cycle of dictionaries alone, either's, is refused",
-    file: "src/lower/pipeline/load_cycles.rs",
+    file: "src/pipeline/load_cycles.rs",
     find: "(consts.iter()).any(|c| !pass.dictionary_names.contains(&c.name) && runs(&c.value))",
     replace: "(consts.iter()).any(|c| runs(&c.value))",
     tests: [
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "load-cycle-unseen",
     breaks:
       "a module's load reads another's constant by its name though they import each other, which may load it first, before it's made",
-    file: "src/lower/pipeline/load_cycles.rs",
+    file: "src/pipeline/load_cycles.rs",
     find: "                .any(|&(from, read)| from == own && made_where_loaded(read) && imports.reaches(fns[&read].module, own))\n",
     replace:
       "                .any(|&(from, read)| from == own && made_where_loaded(read) && false)\n",
@@ -84,7 +84,7 @@ export const mutations: Mutation[] = [
     name: "effects-import-nothing",
     breaks:
       "a module's `js::import!(\"./setup.js\")` imports none of the crate's modules that file does, so a cycle through it is unseen and the module loaded first reads a constant before it's made",
-    file: "src/lower/pipeline/load_cycles.rs",
+    file: "src/pipeline/load_cycles.rs",
     find: "    let bound = used.chain(users).chain(effects).chain(reexported_files);\n",
     replace:
       "    let bound = used.chain(users).chain(effects.take(0)).chain(reexported_files);\n",
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     name: "exported-local-cycle-unrefused",
     breaks:
       "a `pub` thread-local made as its module loads that runs a module in an import cycle with its own compiles, and reads what that module hasn't made yet (ADR 0037, amended)",
-    file: "src/lower/pipeline/load_cycles.rs",
+    file: "src/pipeline/load_cycles.rs",
     find: "        .find(|&module| module != own && imports.reaches(module, own))\n",
     replace:
       "        .find(|&module| module != own && imports.reaches(module, own) && false)\n",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     name: "exported-local-self-read-unrefused",
     breaks:
       "a `pub` thread-local made as its module loads whose initializer reads itself compiles, and throws reading itself before it's made (ADR 0037, amended)",
-    file: "src/lower/pipeline/load_cycles.rs",
+    file: "src/pipeline/load_cycles.rs",
     find: "    if reached.contains(&key.to_def_id()) {\n",
     replace: "    if false && reached.contains(&key.to_def_id()) {\n",
     tests: [
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
     name: "out-of-order-private-refused",
     breaks:
       "a private thread-local its module's load can't make first, of an import cycle, is refused as a `pub` one is, where it compiles and is made where it's first used (ADR 1006, amended)",
-    file: "src/lower/pipeline/load_cycles.rs",
+    file: "src/pipeline/load_cycles.rs",
     find: ".partition(|&key| tcx.visibility(key).is_public());\n",
     replace: ".partition(|&key| true || tcx.visibility(key).is_public());\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_made_where_used.rs$"],
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
     name: "out-of-order-private-at-load",
     breaks:
       "a private thread-local whose initializer runs a module in an import cycle with its own is made as its module loads, before that module may have loaded (ADR 1006, amended)",
-    file: "src/lower/pipeline/load_cycles.rs",
+    file: "src/pipeline/load_cycles.rs",
     find: "private.into_iter().filter(|&key| out_of_order(key).is_some())",
     replace:
       "private.into_iter().filter(|&key| false && out_of_order(key).is_some())",
@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
     name: "out-of-order-pub-lazy",
     breaks:
       "a `pub` thread-local its module's load can't make first is made where it's first used, so a JS module importing it reads the function that makes it, not its value (ADR 1006)",
-    file: "src/lower/pipeline/load_cycles.rs",
+    file: "src/pipeline/load_cycles.rs",
     find: ".partition(|&key| tcx.visibility(key).is_public());\n",
     replace: ".partition(|&key| false && tcx.visibility(key).is_public());\n",
     tests: ["test/diagnostics.test.ts", "-t", "a pub thread-local"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
     name: "reexporter-not-an-import",
     breaks:
       "a module that reads a function through a module that re-exports it, `A.f()`, has no import of that module in the load-order graph, so a cycle through it is unseen and a thread-local of it is made as its module loads (rd137)",
-    file: "src/lower/pipeline/load_cycles.rs",
+    file: "src/pipeline/load_cycles.rs",
     find: "        referenced.chain(held).chain(reexporters).chain(reexported),\n",
     replace:
       "        referenced.chain(held).chain(reexporters.take(0)).chain(reexported),\n",
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
     name: "load-of-numbers-runs-code",
     breaks:
       "a constant JS's own operators and globals make where its module loads, chrono's `TimeDelta::MIN` of `Number(BigInt.asIntN(..))`, counts as code that may reach a dictionary in an import cycle with it, so chrono is refused (#467)",
-    file: "src/lower/pipeline/load_cycles.rs",
+    file: "src/pipeline/load_cycles.rs",
     find: "        value.has_effects() && (value.runs_program_code() || getter)\n",
     replace: "        value.has_effects() || getter\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing is its module's const"],
@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
     name: "load-of-a-getter-runs-nothing",
     breaks:
       "a thread-local made where its module loads of a global's read, which its getter may answer, which may run anything, counts as no code a dictionary in an import cycle with it could be reached by (#467)",
-    file: "src/lower/pipeline/load_cycles.rs",
+    file: "src/pipeline/load_cycles.rs",
     find: "        value.has_effects() && (value.runs_program_code() || getter)\n",
     replace: "        value.has_effects() && (value.runs_program_code() || (getter && false))\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing is its module's const"],

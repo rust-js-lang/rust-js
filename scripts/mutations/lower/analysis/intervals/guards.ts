@@ -1,9 +1,9 @@
-// Mutations of src/lower/analysis/intervals/guards.rs, a `RefCell`'s
+// Mutations of crates/rust-js-lower/src/analysis/intervals/guards.rs, a `RefCell`'s
 // `borrow_mut()` guard held while nothing else reaches the cell (ADR 1137,
 // #1815).
 import type { Mutation } from "../../../../mutations";
 
-const file = "src/lower/analysis/intervals/guards.rs";
+const file = "crates/rust-js-lower/src/analysis/intervals/guards.rs";
 const tests = ["test/intervals-shadow.test.ts", "-t", "guard keeps"];
 
 export const mutations: Mutation[] = [

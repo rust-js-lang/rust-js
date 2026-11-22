@@ -33,7 +33,7 @@ import { miriCommand } from "./miri";
 test("a compiler CI keeps is keyed by build.rs's inputs, and the suite's shards run the one kept", () => {
   const script = readFileSync(join(root, "build.rs"), "utf8");
   const inputs = [...script.slice(script.indexOf("let inputs = ["), script.indexOf("];", script.indexOf("let inputs = ["))).matchAll(/join\("([^"]+)"\)/g)].map((m) => (statSync(join(root, m[1]!)).isDirectory() ? `${m[1]}/**` : m[1]!));
-  expect(inputs).toEqual(["src/**", "crates/**", "std/manifest.json", "std/compiled-std.json", "rust-toolchain.toml", "build.rs", "Cargo.toml", "Cargo.lock"]);
+  expect(inputs).toEqual(["src/**", "crates/**", "std/manifest.json", "std/compiled-std.json", "rust-toolchain.toml", "build.rs", "rustc-rpath.rs", "Cargo.toml", "Cargo.lock"]);
   const action = readFileSync(join(root, ".github/actions/build-rust-js/action.yml"), "utf8");
   expect(action).toContain(`key: rust-js-\${{ inputs.profile }}-\${{ runner.os }}-\${{ hashFiles(${inputs.map((input) => `'${input}'`).join(", ")}) }}`);
   const check = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { steps: { uses?: string; with?: Record<string, string>; id?: string; env?: Record<string, string> }[] }> };
@@ -76,7 +76,7 @@ test("each push's lint job checks std/ is what its sources make, after the compi
 // alone, went red on `main` unseen (801d40c55, 336984bff).
 // Of a change to the iterators' code, the formatting code, the numbers' and the pointers', whose
 // jobs check.yml runs where its change is one (scripts/iteratorSlice.ts).
-const checkJobs = jobs({ all: true, changed: [], branch: ["crates/rust-js-program/src/runtime/steps.js", "crates/rust-js-program/src/runtime/pad.js", "crates/rust-js-program/src/runtime/div.js", "crates/rust-js-emit/src/typescript.rs", "src/lower/analysis/awaits.rs", "src/lower/unions.rs", "src/lower/analysis/intervals/state.rs", "test/corpus/array_map.rs"], added: [], extra: [], cores: 4 });
+const checkJobs = jobs({ all: true, changed: [], branch: ["crates/rust-js-program/src/runtime/steps.js", "crates/rust-js-program/src/runtime/pad.js", "crates/rust-js-program/src/runtime/div.js", "crates/rust-js-emit/src/typescript.rs", "crates/rust-js-lower/src/analysis/awaits.rs", "crates/rust-js-lower/src/unions.rs", "crates/rust-js-lower/src/analysis/intervals/state.rs", "test/corpus/array_map.rs"], added: [], extra: [], cores: 4 });
 const ranHere = checkJobs.jobs;
 
 // The readability passes' oracles run of a change to tidy, preparation or
@@ -84,14 +84,14 @@ const ranHere = checkJobs.jobs;
 // readability-passes.yml's paths, the one list (the user, #998).
 test("the readability passes run where readability-passes.yml's paths say, of --all too", () => {
   const paths = readabilityPaths();
-  expect(paths).toEqual(expect.arrayContaining(["crates/rust-js-program/src/prepare/**", "src/lower/mir/tidy/**", "test/getter-reads/**", ".github/workflows/readability-passes.yml"]));
+  expect(paths).toEqual(expect.arrayContaining(["crates/rust-js-program/src/prepare/**", "crates/rust-js-mir/src/tidy/**", "test/getter-reads/**", ".github/workflows/readability-passes.yml"]));
   const named = (scope: { all: boolean; changed: string[]; branch: string[] }) =>
     jobs({ ...scope, added: [], extra: [], cores: 12 }).jobs.some((job) => job.name === "readability passes");
-  expect(named({ all: true, changed: ["src/lower/copies.rs"], branch: [] })).toBe(false);
-  expect(named({ all: true, changed: [], branch: ["src/lower/mir/tidy/exits.rs"] })).toBe(true);
+  expect(named({ all: true, changed: ["crates/rust-js-lower/src/copies.rs"], branch: [] })).toBe(false);
+  expect(named({ all: true, changed: [], branch: ["crates/rust-js-mir/src/tidy/exits.rs"] })).toBe(true);
   expect(named({ all: false, changed: ["crates/rust-js-program/src/prepare.rs"], branch: [] })).toBe(true);
   expect(named({ all: false, changed: ["test/getter-reads/counts.rs"], branch: [] })).toBe(true);
-  expect(touchesReadability(["src/lower/mir/tidying.rs", "docs/guide/README.md"])).toBe(false);
+  expect(touchesReadability(["crates/rust-js-mir/src/tidying.rs", "docs/guide/README.md"])).toBe(false);
   expect(() => readabilityPaths("on:\n  push:\n")).toThrow("no `on.push.paths`");
 });
 
@@ -100,14 +100,14 @@ test("the readability passes run where readability-passes.yml's paths say, of --
 // writes past them, never of tidy's, nor tidy's of theirs (#2112 B).
 test("the intervals' variant runs where intervalsPaths say, and the readability passes don't", () => {
   const named = (changed: string[]) => jobs({ all: true, changed, branch: [], added: [], extra: [], cores: 12 }).jobs.map((job) => job.name);
-  const intervals = named(["src/lower/analysis/intervals/state.rs"]);
+  const intervals = named(["crates/rust-js-lower/src/analysis/intervals/state.rs"]);
   expect(intervals).toContain("the intervals' variant");
   expect(intervals).not.toContain("readability passes");
-  expect(named(["src/lower/pointers/keeps.rs"])).toContain("the intervals' variant");
-  const tidy = named(["src/lower/mir/tidy/exits.rs"]);
+  expect(named(["crates/rust-js-lower/src/pointers/keeps.rs"])).toContain("the intervals' variant");
+  const tidy = named(["crates/rust-js-mir/src/tidy/exits.rs"]);
   expect(tidy).toContain("readability passes");
   expect(tidy).not.toContain("the intervals' variant");
-  expect(variantFamilies.intervals(["src/lower/copies.rs"])).toBe(false);
+  expect(variantFamilies.intervals(["crates/rust-js-lower/src/copies.rs"])).toBe(false);
 });
 
 // `--all` runs the metamorphic net's push sample in parts, as the corpus's,
@@ -131,7 +131,7 @@ test("the crate corpus runs where its paths say, of plain check:fast too", () =>
   const none = { files: new Set<string>(), cases: [], caseList: "/c.txt", forms: [], formsList: "/f.txt" };
   const named = (scope: { all: boolean; changed: string[]; branch: string[] }) =>
     jobs({ ...scope, added: [], extra: [], cores: 12, picked: none }).jobs.some((job) => job.name === "the crate corpus");
-  expect(named({ all: false, changed: ["src/lower/iterators/mir_steps/closing.rs"], branch: [] })).toBe(true);
+  expect(named({ all: false, changed: ["crates/rust-js-lower/src/iterators/mir_steps/closing.rs"], branch: [] })).toBe(true);
   expect(named({ all: false, changed: [], branch: ["crates/rust-js-program/src/runtime/byte_len.js"] })).toBe(true);
   expect(named({ all: false, changed: ["scripts/crate-corpus/itertools.rs"], branch: [] })).toBe(true);
   expect(named({ all: false, changed: ["docs/guide/README.md", "test/ci.test.ts"], branch: [] })).toBe(false);
@@ -141,7 +141,7 @@ test("the crate corpus runs where its paths say, of plain check:fast too", () =>
   expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("needs.plan.outputs.crates == 'true'");
   // And React's port, of a change to what compiles it (#1188).
   expect(touchesPort(["tooling/build.js"])).toBe(true);
-  expect(touchesPort(["src/lower/copies.rs"])).toBe(true);
+  expect(touchesPort(["crates/rust-js-lower/src/copies.rs"])).toBe(true);
   expect(touchesPort(["docs/guide/README.md", "test/corpus/a.rs"])).toBe(false);
   expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("needs.plan.outputs.port == 'true'");
 });
@@ -500,7 +500,7 @@ test("the crate corpus's labels MIR made are listed, each listed one still there
 // (check.yml's `nets` job's `metamorphic` step): #1115's case ran as Rust does, but not
 // moved into a library, which nothing ran till the nightly (#1164, #1165).
 test("a change adding or editing a corpus case runs each of its rewrites", () => {
-  expect(changedCases(["test/corpus/new_case.rs", "src/lower/mir.rs", "test/corpus/new_case.js", "test/corpus/edited.rs", "test/corpus/new_case.rs"])).toEqual([
+  expect(changedCases(["test/corpus/new_case.rs", "crates/rust-js-mir/src/lib.rs", "test/corpus/new_case.js", "test/corpus/edited.rs", "test/corpus/new_case.rs"])).toEqual([
     "edited.rs",
     "new_case.rs",
   ]);
@@ -510,7 +510,7 @@ test("a change adding or editing a corpus case runs each of its rewrites", () =>
     const [rewrites] = ofCases({ all, changed: ["test/corpus/new_case.rs"], branch: [] });
     expect(rewrites.cmd).toEqual(["bun", "scripts/iteratorSlice.ts", "run", "metamorphic", "1"]);
     expect(ofCases({ all, changed: [], branch: ["test/corpus/a.rs", "test/corpus/b.rs"] })[0].cmd.at(-1)).toBe("2");
-    expect(ofCases({ all, changed: ["src/lower/mir.rs", "test/corpus/new_case.js"], branch: [] })).toEqual([]);
+    expect(ofCases({ all, changed: ["crates/rust-js-mir/src/lib.rs", "test/corpus/new_case.js"], branch: [] })).toEqual([]);
   }
   expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("bun scripts/iteratorSlice.ts run metamorphic 4 ${{ needs.plan.outputs.since }}");
 });
@@ -529,17 +529,17 @@ test("a job whose work the change sizes says its size", () => {
         .map((job) => [job.name, job.size]),
     );
   const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs")).length;
-  expect(sized({ branch: ["src/lower/iterators/clones.rs", "test/corpus/a.rs", "test/corpus/b.rs"], added: ["m", "m", "n"], rows: 9175 })).toEqual({
+  expect(sized({ branch: ["crates/rust-js-lower/src/iterators/clones.rs", "test/corpus/a.rs", "test/corpus/b.rs"], added: ["m", "m", "n"], rows: 9175 })).toEqual({
     "the rows the change names": 9175,
     [runs.forms[0].name]: cases,
     [runs.metamorphic[0].name]: 2,
     "mutations the change adds": 2,
   });
-  expect(sized({ branch: ["src/lower/iterators/clones.rs"], rows: 0, forms: { forms: ["a.rs", "b.rs", "c.rs"], formsList: "forms.txt" } })).toEqual({
+  expect(sized({ branch: ["crates/rust-js-lower/src/iterators/clones.rs"], rows: 0, forms: { forms: ["a.rs", "b.rs", "c.rs"], formsList: "forms.txt" } })).toEqual({
     "the rows the change names": 0,
     [runs.forms[0].name]: 3,
   });
-  expect(sized({ branch: ["src/lower/mir.rs"] })).toEqual({});
+  expect(sized({ branch: ["crates/rust-js-mir/src/lib.rs"] })).toEqual({});
 });
 
 // A push's check asks every row but the top crates by downloads', and of
@@ -772,10 +772,10 @@ test("the WASM build, rustc's tests and the mutations run where what they run ch
   expect(check).toContain("if: ${{ inputs.part != 'mutations' && (inputs.nightly || needs.plan.outputs.rustc == 'true') }}");
   expect(check).toContain("if: ${{ inputs.part != 'suite' && (inputs.nightly || needs.plan.outputs.mutations == 'true') }}");
   expect(wasmInputs("INPUTS=(src Cargo.toml wasm/patches)\n")).toEqual(["src/**", "Cargo.toml", "wasm/patches/**"]);
-  for (const file of ["src/lower/copies.rs", "wasm/patches/a.patch", "rust-toolchain.toml", "std/lib.rs", "test/snapshots/x.js", "examples/fib.rs"]) {
+  for (const file of ["crates/rust-js-lower/src/copies.rs", "wasm/patches/a.patch", "rust-toolchain.toml", "std/lib.rs", "test/snapshots/x.js", "examples/fib.rs"]) {
     expect([file, touchesWasm([file])]).toEqual([file, true]);
   }
-  for (const file of ["src/lower/copies.rs", "std/lib.rs", "test/rustc-known-failures.txt", "scripts/rustc-suite.ts", ".github/workflows/rustc-tests.yml"]) {
+  for (const file of ["crates/rust-js-lower/src/copies.rs", "std/lib.rs", "test/rustc-known-failures.txt", "scripts/rustc-suite.ts", ".github/workflows/rustc-tests.yml"]) {
     expect([file, touchesRustc([file])]).toEqual([file, true]);
   }
   for (const file of ["docs/guide/README.md", "test/corpus/a.rs", "test/ci.test.ts", "TESTS.md"]) {
@@ -1011,9 +1011,9 @@ test("each job that runs a slice uploads its JUnit reports, and attribution read
 
 test("a push's React gate runs again past a rebase only where the commits it brought touch what compiles the port", () => {
   // Its own change touches the compiler; a round before passed.
-  expect(reactGate(["src/lower.rs"], undefined)).toBe("run");
-  expect(reactGate(["src/lower.rs"], ["docs/guide/README.md", "test/corpus/x.rs"])).toBe("reused");
-  expect(reactGate(["src/lower.rs"], ["crates/rust-js-program/src/js.rs"])).toBe("run");
+  expect(reactGate(["crates/rust-js-lower/src/lib.rs"], undefined)).toBe("run");
+  expect(reactGate(["crates/rust-js-lower/src/lib.rs"], ["docs/guide/README.md", "test/corpus/x.rs"])).toBe("reused");
+  expect(reactGate(["crates/rust-js-lower/src/lib.rs"], ["crates/rust-js-program/src/js.rs"])).toBe("run");
   // A change that doesn't touch the port runs none.
   expect(reactGate(["docs/guide/README.md"], ["crates/rust-js-program/src/js.rs"])).toBe("none");
 });

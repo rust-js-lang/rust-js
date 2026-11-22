@@ -1,4 +1,4 @@
-// Mutations of src/lower/iterators/eager.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/iterators/eager.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "enumerate-fold-paired",
     breaks:
       "`enumerate().fold(..)` reads `.map((x, i) => [i, x]).reduce((acc, [i, x]) => ..)`, not `reduce((acc, x, i) => ..)`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: '        "reduce" => 1,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_fold.rs$"],
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "enumerate-item-left-out-paired",
     breaks:
       "`enumerate().map(|(i, _)| ..)` reads `.map((x, i) => [i, x]).map(([i]) => ..)`, not `map((_, i) => ..)` (ADR 0217)",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "        [index] => (index, &None),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_fold.rs$"],
@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     name: "enumerate-unread-item-named-as-accumulator",
     breaks:
       "`fold(0, |_, (i, _)| i)` is `reduce((_, _, i) => i, 0)`, a SyntaxError: `_` bound twice",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "        let preferred = (1..7).map(|k| \"_\".repeat(k)).collect();\n        js::Name::declared(\"_\".to_string()).suggested(preferred, \"_\")\n",
     replace: "        js::Name::declared(\"_\".to_string())\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_fold.rs$"],
@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
     name: "map-for-each-nothing-kept",
     breaks:
       "a `map(g)` collected into `()` reads `.map(g).forEach(() => {})`, not `.forEach(g)`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: '                    && map == "map"\n',
     replace: '                    && map == "none"\n',
     tests: ["test/corpus.test.ts", "-t", "^collect_into_unit.rs$"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "set-for-each-listed",
     breaks:
       "a `HashSet`'s `iter().for_each(..)` is `Array.from(set).forEach(..)`, not the set's own `set.forEach(..)` (ADR 0877)",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "        ([set], js::ExprKind::Arrow(params, _)) if items.facts.has(js::Known::SetItems) && params.len() <= 1 => {\n",
     replace:
       "        ([set], js::ExprKind::Arrow(params, _)) if false && params.len() <= 1 => {\n",
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     name: "set-for-each-of-any-items",
     breaks:
       "a map's `values().for_each(..)` is `map.values().forEach(..)`, an iterator's, as if its values were a set's (ADR 0877)",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "        ([set], js::ExprKind::Arrow(params, _)) if items.facts.has(js::Known::SetItems) && params.len() <= 1 => {\n",
     replace:
       "        ([set], js::ExprKind::Arrow(params, _)) if params.len() <= 1 => {\n",
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     name: "collected-literal-copied",
     breaks:
       "`std::iter::empty().collect()` is `[].slice()`, a copy of a new array",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "    match &items.kind {\n        js::ExprKind::Array(..) => true,\n",
     replace: "    match &items.kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^(result_given_as_items|mut_kept_by_what_a_call_gives_back|generic_mut_lent_by_std).rs$"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
     name: "iter-eager-two-doing",
     breaks:
       "a chain two of whose closures do something runs as arrays, each stage over every item before the next",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "        true => doing + usize::from(taker.is_some_and(does)) <= 1,\n",
     replace: "        true => true,\n",
     tests: [
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
     name: "iter-eager-stopping-doing",
     breaks:
       "a chain that stops early runs a stage that does something over every item",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "        false => doing == 0,\n",
     replace: "        false => true,\n",
     tests: [
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     name: "iter-eager-collect-uncopied",
     breaks:
       "`Array.from($iter(xs))` is `xs`, which changes with it, not a copy",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "                    Some((items, 0)) if !fresh(&items) => Some(super::owned_items(items)),\n",
     replace:
       "                    Some((items, 0)) if !fresh(&items) => Some(items),\n",
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "iter-eager-fresh-copied",
     breaks: "collecting a `split` just made copies it, `.slice()`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "                Some((items, 0)) if !fresh(&items) =>",
     replace: "                Some((items, 0)) if true =>",
     tests: ["test/corpus.test.ts", "-t", "^(written_breaks_beside_an_else|back_steps_beside_a_live_drop|cloned_items_from_both_ends).rs$"],
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
     name: "iter-eager-take-after-doing",
     breaks:
       "a stage that does something before `take` runs over every item, as arrays",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "        && stages[last + 1..].iter().any(|(name, f)| !counted(name) && does(f))\n",
     replace: "        && false\n",
     tests: ["test/corpus.test.ts", "-t", "^(lazy_chains).rs$"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   {
     name: "iter-eager-take-kept",
     breaks: "`take(2)` of an array stays a JS iterator's, not `slice(0, 2)`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "        \"take\" => Expr::builtin(items, \"slice\", vec![Expr::int(0), f.clone()]),\n",
     replace: "        \"take\" => Expr::call(Expr::member(items, \"take\"), vec![f.clone()]),\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "string's parts from MIR"],
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     name: "iter-eager-nth-kept",
     breaks:
       "`nth(1)` of a string's parts stays `Array.from(..drop(1).take(1))[0]`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "            && zero.as_int() == Some(0)\n",
     replace: "            && zero.as_int() == Some(0)\n            && false\n",
     tests: [
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
     name: "iter-chain-collected-lazily",
     breaks:
       "a chain MIR collects stays `Array.from(Iterator.from($lazyChain(a, b)))`, not `[...a, ...b]`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "            let eager = match chained(chain) {\n",
     replace:
       "            let eager = match chained(chain).filter(|_| false) {\n",
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
     name: "position-of-lent-array-iterator",
     breaks:
       "`$position($lent($iter(ids)), ..)` of an iterator made for it, not `$position(ids, ..)`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: '        if callee.helper_name() == Some("$position")\n',
     replace: '        if false && callee.helper_name() == Some("$position")\n',
     tests: [
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     name: "spread-chain-lazy",
     breaks:
       "a chain MIR makes for one spread stays `$iter(more).filter(..)`, not an array",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "            *value = items;\n",
     replace: "",
     tests: [
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
     name: "some-of-literal-not-includes",
     breaks:
       '`any(|t| t == "hidden")` from MIR is `some((t) => t === "hidden")`, not `includes("hidden")`',
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "                    matches!(&v.kind, js::ExprKind::Str(_) | js::ExprKind::Bool(_))\n                        || v.as_int().is_some()\n",
     replace: "                    false\n                        || false\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "whether any item equals a value"],
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
     name: "count-reduced",
     breaks:
       "`count()` of an array's items from MIR is `reduce((n) => n + 1, 0)`, not `length`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "init.as_int() == Some(0) && counts(f) =>",
     replace: "init.as_int() == Some(0) && false =>",
     tests: [
@@ -219,7 +219,7 @@ export const mutations: Mutation[] = [
     name: "mir-next-stepped",
     breaks:
       "`next()` of an array's fresh iterator from MIR is `$next($iter(keys))`, not `keys[0]`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: '        if callee.helper_name() == Some("$next")\n',
     replace: '        if false && callee.helper_name() == Some("$next")\n',
     tests: [
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
     name: "extreme-of-copy",
     breaks:
       "`max()` of a copied slice from MIR is `$max(xs.slice())`, a copy for a read",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "            && steps_all(name)\n            && let Some(chain) = args.first()\n",
     replace:
       "            && steps_all(name)\n            && false\n            && let Some(chain) = args.first()\n",
@@ -246,7 +246,7 @@ export const mutations: Mutation[] = [
     name: "eager-flat-map-lazy",
     breaks:
       "`flat_map` collected from MIR stays `Array.from(xs.values().flatMap(\u2026))`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: '"map" | "filter" | "take" | "drop" | "flatMap")\n        && let [f] = &args[..]',
     replace:
       '"map" | "filter" | "take" | "drop")\n        && let [f] = &args[..]',
@@ -260,7 +260,7 @@ export const mutations: Mutation[] = [
     name: "eager-count-of-count-lazy",
     breaks:
       "`skip(2).take(3)` collected from MIR stays lazy, `drop`'s count read as a closure that does something",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "iter().any(|(name, f)| !counted(name) && does(f))",
     replace: "iter().any(|(_, f)| does(f))",
     tests: [
@@ -273,7 +273,7 @@ export const mutations: Mutation[] = [
     name: "eager-zip-lazy",
     breaks:
       "two arrays zipped and collected from MIR stay `Array.from(Iterator.from($lazyZip($iter(a), $iter(b)))\u2026)`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: 'zip.helper_name() == Some("$lazyZip")',
     replace: "false",
     tests: [
@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
     name: "fresh-set-algebra-copied",
     breaks:
       "a set's algebra collected is `$setAlgebra(a, b, op).slice()`, a copy of a new array",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: '                "$setAlgebra",\n',
     replace: "",
     tests: [
@@ -299,7 +299,7 @@ export const mutations: Mutation[] = [
     name: "chunks-exact-not-fresh",
     breaks:
       "`$chunksExact(v, n)`'s array isn't one MIR knows is made there: `Iterator.from(..)`, whose `remainder` is gone",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: '                "$chunksExact",\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_methods.rs$"],
@@ -309,7 +309,7 @@ export const mutations: Mutation[] = [
     name: "collected-runtime-arrayed",
     breaks:
       "a runtime helper's iterator collected, `$decodeUtf16(..)`'s, is listed first, `Array.from($decodeUtf16(..)).map(f)`, as a `$closing(..)`'s would be, stepped to its end and never closed (ADR 0510)",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "{\n                    return None;\n                }\n                let items = Expr::builtin(Expr::js_global(\"Array\"), \"from\", vec![list]);",
     replace: "{}\n                let items = Expr::builtin(Expr::js_global(\"Array\"), \"from\", vec![list]);",
     tests: ["test/corpus.test.ts", "-t", "^(cell_deque_char_methods|collected_helper_iterator_stays_lazy).rs$"],
@@ -319,7 +319,7 @@ export const mutations: Mutation[] = [
     name: "flat-of-arrays-flatmap",
     breaks:
       "arrays of arrays flattened eagerly are `flatMap((item) => item)`, not `flat()`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: '            f if f.is_identity() => Expr::call(Expr::member(items, "flat"), Vec::new()),\n',
     replace: "",
     tests: [
@@ -332,7 +332,7 @@ export const mutations: Mutation[] = [
     name: "args-copied",
     breaks:
       "`env::args().collect()` copies the array `$args()` has just made, `$args().slice()`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: '                "$args",\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^env_args.rs$"],
@@ -341,7 +341,7 @@ export const mutations: Mutation[] = [
   {
     name: "vars-copied",
     breaks: "`env::vars().collect()` copies the array `$vars()` has just made",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: '                "$vars",\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
@@ -351,7 +351,7 @@ export const mutations: Mutation[] = [
     name: "path-ancestors-not-fresh",
     breaks:
       "a path's `ancestors()` collected are copied, `.slice()`, though the array is made for them",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: '                "$pathAncestors",\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
@@ -361,7 +361,7 @@ export const mutations: Mutation[] = [
     name: "reduce-start-after-stages",
     breaks:
       "`fold` of a chain whose stage does something, given a start that does too, runs the stage first, an array's",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "                true => eager_items(chain, false, None),\n                false => eager_items(chain, true, Some(f)),\n",
     replace:
       "                true => eager_items(chain, true, Some(f)),\n                false => eager_items(chain, true, Some(f)),\n",
@@ -371,7 +371,7 @@ export const mutations: Mutation[] = [
     name: "splice-not-fresh",
     breaks:
       "what a heap's `drain()` takes out, collected, is copied, `heap.splice(0).slice()`, where it's a new array already",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "                // What it takes out, a heap's `drain()`'s.\n                \"splice\",\n",
     replace: "",
     snapshots: true,
@@ -381,7 +381,7 @@ export const mutations: Mutation[] = [
     name: "eager-closing-kept",
     breaks:
       "a whole chain of `map`s and `filter`s of an owning source keeps its `$closing`, never closed: a `BTreeMap`'s `into_iter().count()` is `$closing($iter(..)).reduce(..)`, not its sorted entries' own `reduce`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "        Some(closed)\n            if whole\n",
     replace: "        Some(closed)\n            if false\n",
     tests: ["test/corpus.test.ts", "-t", "^(map_into_iter_drops|drop_guard_name_shared).rs$"],
@@ -391,7 +391,7 @@ export const mutations: Mutation[] = [
     name: "chain-spread-lost",
     breaks:
       "a chain collected, `$lazyChain(a, b)`, isn't spread, `[...a, ...b]`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: '    (callee.helper_name() == Some("$lazyChain")).then(|| part(e))\n',
     replace:
       '    (callee.helper_name() == Some("$lazyChained")).then(|| part(e))\n',
@@ -401,7 +401,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-of-arrays-unfused",
     breaks: "`$lazyZip` of two arrays' items, collected, isn't `$zip(a, b)`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: '            if zip.helper_name() == Some("$lazyZip")\n',
     replace: '            if zip.helper_name() == Some("$lazyZipped")\n',
     tests: [
@@ -427,7 +427,7 @@ export const mutations: Mutation[] = [
     name: "generic-into-iter-js",
     breaks:
       "a generic `into_iter()` of a `Vec` is JS's iterator of it, whose `len()` and clone concrete code can't read",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: '        false => Expr::call_helper("$intoIter", vec![items]),\n',
     replace:
       '        false => Expr::call(Expr::member(Expr::global("Iterator"), "from"), vec![items]),\n',
@@ -437,7 +437,7 @@ export const mutations: Mutation[] = [
     name: "option-items-not-fresh",
     breaks:
       "an `Option`'s items, an array made here, are copied again, `Array.from(o == null ? [] : [o])`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "        js::ExprKind::Cond(_, then, otherwise) => fresh(then) && fresh(otherwise),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_unwraps.rs$"],
@@ -447,7 +447,7 @@ export const mutations: Mutation[] = [
     name: "rchunks-not-fresh",
     breaks:
       "`rchunks_exact(n)` is a JS iterator of its chunks, not their array, so its `remainder()` reads a property nothing has",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: '                "$rchunks",\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rchunks_remainder.rs$"],
@@ -457,7 +457,7 @@ export const mutations: Mutation[] = [
     name: "helper-keeps-hint",
     breaks:
       "an iterator of the crate's a helper steps till it ends, `$maxByKey`'s, keeps a `size_hint` nothing asks",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "            && let Some(first) = args.first_mut()\n        {\n            stepped_through(first, false, fuse);\n",
     replace:
       "            && let Some(first) = args.first_mut()\n        {\n            let _ = (first, fuse);\n",
@@ -468,7 +468,7 @@ export const mutations: Mutation[] = [
     name: "hint-kept-under-adapters-stripped",
     breaks:
       "the crate's iterator under a `take` asked its hint, `$sizeHint($iterator(..).take(3))`, keeps its `size_hint`: stripped wherever an adapter is, it gave `(0, None)` (#733)",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "            && CONSUMED_TILL_DONE.contains(&method.as_str())\n",
     replace: "            && (CONSUMED_TILL_DONE.contains(&method.as_str()) || ADAPTED_TILL_DONE.contains(&method.as_str()))\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
@@ -476,7 +476,7 @@ export const mutations: Mutation[] = [
   {
     name: "stepped-through-adapters-not",
     breaks: "a chain a consumer steps, `X.filter(f).reduce(..)`, strips its `$iterator`'s `size_hint` through each adapter",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "    stepped_through(object, false, fuse);\n}",
     replace: "    let _ = (object, fuse);\n}",
     snapshots: true,
@@ -485,7 +485,7 @@ export const mutations: Mutation[] = [
   {
     name: "stepped-through-last-not",
     breaks: "a `skip`'s `last()` of the crate's iterator, `$last($iterator(..).drop(1))`, strips its `size_hint`",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "steps_all(name) || LAST_HELPERS.contains(&name)",
     replace: "steps_all(name)",
     snapshots: true,
@@ -495,7 +495,7 @@ export const mutations: Mutation[] = [
     name: "collected-helper-iterator-from-kept",
     breaks:
       "a runtime helper's items collected stay `Array.from(Iterator.from($rsplit(s, \"=\")))`, an `Iterator.from` that makes nothing `Array.from` doesn't (bw8)",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "                && helper.helper_name().is_some()\n",
     replace: "                && helper.helper_name().is_some_and(|_| false)\n",
     tests: ["test/lowering-collected.test.ts"],
@@ -504,7 +504,7 @@ export const mutations: Mutation[] = [
     name: "collected-stepped-as-made",
     breaks:
       "an iterator `Array.from` collects isn't known stepped till its first `done`, so `$intoIter(xs)` stays one, not JS's iterator of `xs` (bw8)",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "        {\n            stepped_through(it, false, fuse);\n        } else if",
     replace: "        {\n        } else if",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterator.rs$"],
@@ -514,8 +514,8 @@ export const mutations: Mutation[] = [
     name: "eager-taker-throw-unseen",
     breaks:
       "an owning source's `$closing` is dropped for an eager `forEach` whose function may panic, so what's left is never dropped (#422)",
-    file: "src/lower/iterators/eager.rs",
-    find: "                && taker.is_none_or(|f| !crate::lower::iterators::in_place::may_throw(f)) =>\n",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
+    find: "                && taker.is_none_or(|f| !crate::iterators::in_place::may_throw(f)) =>\n",
     replace: " =>\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
   },
@@ -523,7 +523,7 @@ export const mutations: Mutation[] = [
     name: "closed-by-its-drop-unread",
     breaks:
       "an owning `$iter` closed by the drop its consumer is given, `$maxByKey($closing($iter(xs), $dropEach(drop)), ..)`, isn't read as the array the helper closes itself, `$maxByKey(xs, ..)` (#423)",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "    by_drop.then(|| fresh_iter_source(closed.it)).flatten()\n",
     replace: "    by_drop.then(|| fresh_iter_source(closed.it)).flatten().filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -533,7 +533,7 @@ export const mutations: Mutation[] = [
     name: "borrowed-made-owned",
     breaks:
       "a `$iter` of a borrowed `Vec`, `cloned()`'s, given to a consumer with its items' drop, is made the array, which the helper takes as its own and drops what's left of as a panic stops it (#423)",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "        _ if owns => return None,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -541,7 +541,7 @@ export const mutations: Mutation[] = [
   {
     name: "never-nan-any-unread",
     breaks: "`any` of one value compared, of what's never a NaN, text say, stays `some((t) => t === type)`, not the array's `includes(type)` (rd353, ADR 0966, amended)",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "                        || compares_never_nan(f)\n",
     replace: "                        || false && compares_never_nan(f)\n",
     tests: ["test/corpus.test.ts", "-t", "^any_of_one_value_is_includes.rs$"],
@@ -551,7 +551,7 @@ export const mutations: Mutation[] = [
     name: "option-count-of-its-array",
     breaks:
       "an `Option`'s `iter().count()` is the length of an array made of it, `(option == null ? [] : [option]).length`, the `Option` held in a `const` and a tuple's elements before it too (#588)",
-    file: "src/lower/iterators/eager.rs",
+    file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "                        Expr::cond((**test).clone(), Expr::int(0), Expr::int(1))\n",
     replace: "                        Expr::member(items.clone(), \"length\")\n",
     tests: ["test/corpus.test.ts", "-t", "^option_iter_count_in_a_tuple.rs$"],

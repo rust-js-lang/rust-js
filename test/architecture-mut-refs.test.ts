@@ -12,8 +12,8 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 const files = (directory: string): string[] => readdirSync(join(root, directory), { withFileTypes: true })
   .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
   .flatMap(entry => entry.isDirectory() ? files(`${directory}/${entry.name}`) : [`${directory}/${entry.name}`]);
-const owner = "src/lower/representation/mut_ref.rs";
-const lowering = files("src/lower").filter((file) => file.endsWith(".rs") && file !== owner);
+const owner = "crates/rust-js-lower/src/representation/mut_ref.rs";
+const lowering = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs") && file !== owner);
 /** `file`'s lines of code, its comments left out. */
 const code = (file: string) => read(file).split("\n").map((line) => line.replace(/\/\/.*$/, "")).filter((line) => line.trim() !== "");
 
@@ -43,13 +43,13 @@ test("a `&mut`'s form is asked by MutRefForm's methods alone, each matching ever
   const made = [
     // What a trait's method's dictionary entry adapts: generic code's box,
     // whatever its impl's form, as the trait's generic code has it (ADR 0454).
-    "src/lower/traits.rs: let form = |_: Ty<'tcx>| super::MutRefForm::GenericBox;",
+    "crates/rust-js-lower/src/traits.rs: let form = |_: Ty<'tcx>| super::MutRefForm::GenericBox;",
   ];
   const naming = lowering.flatMap((file) =>
     code(file).filter((line) => /\bMutRefForm::/.test(line)).map((line) => `${file}: ${line.trim()}`));
   expect(naming).toEqual(made);
   const source = read(owner);
-  expect(source).not.toMatch(/derive\([^)]*\bPartialEq\b[^)]*\)\]\s*pub\(in crate::lower\) enum MutRefForm\b/);
+  expect(source).not.toMatch(/derive\([^)]*\bPartialEq\b[^)]*\)\]\s*pub\(crate\) enum MutRefForm\b/);
   // Its own methods match each form by name: no `_` arm, no `matches!`
   // or `==` that leaves the others to a default.
   const methods = source.slice(source.indexOf("impl MutRefForm {"), source.indexOf("\n}\n", source.indexOf("impl MutRefForm {")));
@@ -66,8 +66,8 @@ test("a `&mut`'s form is asked by MutRefForm's methods alone, each matching ever
 // the hidden box's key is rc.js's alone.
 test("what a counted Rc is in JS is rc.rs's alone", () => {
   const fields = /"(strong|weak)"|\$counted[A-Z]/;
-  const readers = files("src/lower").filter((file) => file.endsWith(".rs") && code(file).some((line) => fields.test(line)));
-  expect(readers).toEqual(["src/lower/std_types/rc.rs"]);
+  const readers = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs") && code(file).some((line) => fields.test(line)));
+  expect(readers).toEqual(["crates/rust-js-lower/src/std_types/rc.rs"]);
   const key = files("crates/rust-js-program/src/runtime").filter((file) => /\$countedKey\b/.test(read(file)));
   expect(key).toEqual(["crates/rust-js-program/src/runtime/rc.js"]);
 });
@@ -78,9 +78,9 @@ test("what a counted Rc is in JS is rc.rs's alone", () => {
 // that skipped it would change every name sharing a `Copy` value (#1665,
 // #1672). Its recognizers, `helper_name() == Some("$take")`, may name one.
 test("a write in place is made by `in_place` alone", () => {
-  const writer = "src/lower/copies/in_place.rs";
+  const writer = "crates/rust-js-lower/src/copies/in_place.rs";
   const made = /(?:Expr::helper|call_helper)\(\s*"\$(?:assign|take|exchange|cellOf)"|Storage::Assigned/;
-  for (const file of files("src/lower").filter((file) => file.endsWith(".rs") && file !== writer)) {
+  for (const file of [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs") && file !== writer)) {
     expect(code(file).filter((line) => made.test(line)), file).toEqual([]);
   }
   expect(read(writer)).toContain("fn in_place(");
@@ -91,9 +91,9 @@ test("a write in place is made by `in_place` alone", () => {
 // joined to it by `span_join`'s one node there or none, as two nodes of a
 // macro's expansion may share a span (#1671, #1672).
 test("a fact that leaves out a check is of a node, joined by `span_join`", () => {
-  const facts = read("src/lower/body_queries.rs");
+  const facts = read("crates/rust-js-lower/src/body_queries.rs");
   for (const fact of ["kept_casts", "set_then_unwrapped", "getter_unwraps", "present_calls", "held_guards", "registered_reads", "registered_equalities"]) {
     expect(facts, fact).toMatch(new RegExp(`pub(?:\\(super\\))? ${fact}: IndexSet<ExprId>,`));
   }
-  expect(code("src/lower/mir/bounds.rs").filter((line) => /\.any\(/.test(line) && /\.span ==/.test(line))).toEqual([]);
+  expect(code("crates/rust-js-mir/src/bounds.rs").filter((line) => /\.any\(/.test(line) && /\.span ==/.test(line))).toEqual([]);
 });

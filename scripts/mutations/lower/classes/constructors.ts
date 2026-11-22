@@ -1,11 +1,11 @@
-// Mutations of src/lower/classes/constructors.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/classes/constructors.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "class-constructor-of-an-rc-refused",
     breaks: "a class's constructor that gives an `Rc` of it, React's Flight server's `RequestInstance`, `fn new(..) -> Rc<Self>`, is refused, as a constructor that gives anything but `Self` was (rd554)",
-    file: "src/lower/classes/constructors.rs",
+    file: "crates/rust-js-lower/src/classes/constructors.rs",
     find: "    output == own || rc_pointee(tcx, output) == Some(own)\n",
     replace: "    output == own\n",
     tests: ["test/class-constructors.test.ts", "-t", "a class's constructor that gives an Rc of it makes this"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-constructor-of-any-pointer-allowed",
     breaks: "a class's constructor that gives a `Box` of it, no `new`'s, compiles to a constructor function a Rust caller's `Box` reads as the instance (rd554)",
-    file: "src/lower/classes/constructors.rs",
+    file: "crates/rust-js-lower/src/classes/constructors.rs",
     find: "    output == own || rc_pointee(tcx, output) == Some(own)\n",
     replace: "    output == own || output.walk().any(|part| part.as_type() == Some(own))\n",
     tests: ["test/classes.test.ts", "-t", "what a class is refused says what to write"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-first-of-one-constructor",
     breaks: "a field one of a struct's two constructors sets first, and the other never, is present, `prepare(twice.one)` given `undefined` (rd628)",
-    file: "src/lower/classes/constructors.rs",
+    file: "crates/rust-js-lower/src/classes/constructors.rs",
     find: "                .and_modify(|fields| fields.retain(|field| first.contains(field)))\n",
     replace: "                .and_modify(|fields| fields.extend(first.iter().copied()))\n",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-first-past-this-given",
     breaks: "a field set after its constructor gives `this`, `keep(this)`, which may read it absent, is present (rd628)",
-    file: "src/lower/classes/constructors.rs",
+    file: "crates/rust-js-lower/src/classes/constructors.rs",
     find: "            ExprKind::VarRef { id } if id == self.this || Some(id) == self.cast => self.escaped = true,\n",
     replace: "            ExprKind::VarRef { id } if Some(id) == self.cast => self.escaped = true,\n",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-first-past-cast-given",
     breaks: "a field set after its constructor gives its cast `this`, `register(response)`, is present (rd628)",
-    file: "src/lower/classes/constructors.rs",
+    file: "crates/rust-js-lower/src/classes/constructors.rs",
     find: "            ExprKind::VarRef { id } if id == self.this || Some(id) == self.cast => self.escaped = true,\n",
     replace: "            ExprKind::VarRef { id } if id == self.this => self.escaped = true,\n",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-first-past-return",
     breaks: "a field set after a `return` of another object, which `new` gives instead, is present: `prepare(early.value)` given `undefined` (rd628)",
-    file: "src/lower/classes/constructors.rs",
+    file: "crates/rust-js-lower/src/classes/constructors.rs",
     find: "            ExprKind::Return { .. } | ExprKind::Become { .. } | ExprKind::Yield { .. } => self.escaped = true,\n",
     replace: "",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-first-captures-unread",
     breaks: "a closure made before a field's set that captures `this` and may read it absent goes unseen, and the field is present (rd628)",
-    file: "src/lower/classes/constructors.rs",
+    file: "crates/rust-js-lower/src/classes/constructors.rs",
     find: "                for &upvar in closure.upvars.iter() {\n                    self.visit_expr(&self.thir[upvar]);\n                }\n",
     replace: "",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-first-read-before",
     breaks: "a field read before its constructor sets it, `copy.set(read_first.get())`, absent there, is present (rd628)",
-    file: "src/lower/classes/constructors.rs",
+    file: "crates/rust-js-lower/src/classes/constructors.rs",
     find: "                if reads.fields.insert(field) {\n",
     replace: "                if { reads.fields.insert(field); true } {\n",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
@@ -69,8 +69,8 @@ export const mutations: Mutation[] = [
   {
     name: "set-first-unnullable",
     breaks: "a field not `#[rust_js::nullable]`, whose `None` is `undefined`, that its constructor sets first is taken for `null` or a value, so `prepare(response.plain)` gives a nullable parameter `undefined` (rd628)",
-    file: "src/lower/classes/constructors.rs",
-    find: "            field_def(tcx, field).is_some_and(|def| {\n                crate::lower::representation::none_form(tcx, crate::lower::representation::NonePlace::Field(def, None))\n                    .stores_null()\n            })\n",
+    file: "crates/rust-js-lower/src/classes/constructors.rs",
+    find: "            field_def(tcx, field).is_some_and(|def| {\n                crate::representation::none_form(tcx, crate::representation::NonePlace::Field(def, None)).stores_null()\n            })\n",
     replace: "            field_def(tcx, field).is_some()\n",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
   },

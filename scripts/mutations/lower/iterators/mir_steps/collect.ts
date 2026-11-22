@@ -1,11 +1,11 @@
-// Mutations of src/lower/iterators/mir_steps/collect.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/iterators/mir_steps/collect.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "quiet-call-may-unwind",
     breaks: "a closure of the crate's that never unwinds is taken to, so `inspect` of one guards its value for no reason (#903)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                !self.krate.never_unwinding.contains(&def_id)\n                    && !matches!(self.tcx.def_kind(def_id), rustc_hir::def::DefKind::Ctor(..))\n",
     replace: "                !matches!(self.tcx.def_kind(def_id), rustc_hir::def::DefKind::Ctor(..))\n",
     tests: ["test/corpus.test.ts", "-t", "^inspect_unwinds_its_value.rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "counted-collect-made-after-room",
     breaks:
       "`repeat(made()).take(usize::MAX).collect()` asks room before `made()` runs, so it never prints, where Rust makes the iterator first (#246)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: '                    true => self.spill(Role::It, it, made),\n',
     replace: "                    true => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "counted-collect-room-unasked",
     breaks:
       "`repeat_n(1u8, usize::MAX).collect::<Vec<_>>()` asks no room, so it steps until memory runs out, where std panics `capacity overflow` at once (#246)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        let counted = item.is_some()\n",
     replace: "        let counted = false && item.is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     name: "counted-collect-of-a-called-count-unasked",
     breaks:
       "`repeat_n(1u8, *n.as_ref().unwrap()).collect::<Vec<_>>()` of `usize::MAX` asks no room, as its count is read through a call, so JS throws its own `RangeError` where std panics `capacity overflow` (#1044)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            Some(Err(Uncounted::RunsCode | Uncounted::Unknown)) => true,\n",
     replace: "            Some(Err(Uncounted::RunsCode)) => false,\n            Some(Err(Uncounted::Unknown)) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     name: "counted-collect-asked-by-hint-unmarked",
     breaks:
       "`repeat(1u8).take(*n.as_ref().unwrap()).collect()` asked its room by its hint loses its marks, so it's taken for std's struct, asked again and collected by `$foldToArray` (#1044)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                        asked.facts = marks;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
     name: "counted-collect-of-what-drops-asked-in-place",
     breaks:
       "`repeat_n(Dropped(1), usize::MAX).collect()` asks `$roomFor(n, size)` in place, whose panic doesn't close the iterator, so its value is never dropped where Rust drops it as the collect unwinds (#1044)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            Some((len, size)) if held.is_empty() && !drops => {\n",
     replace: "            Some((len, size)) if held.is_empty() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
@@ -61,8 +61,8 @@ export const mutations: Mutation[] = [
     name: "counted-collect-asked-by-hint-twice",
     breaks:
       "`repeat(1).chain(own).take(counted(n)).collect()`, whose hint runs the crate's own `size_hint`, is asked its room by its hint as it's counted and again as a `Vec` grows it (#1044)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
-    find: "                && item.is_some()\n                && (self.grown_ask(\n                    output,\n                    item,\n                    (\n                        iter_ty,\n                        crate::lower::iterators::binding_made(&it),\n                        crate::lower::iterators::form_knows_no_hint(&it),\n                    ),\n                    self.compiled_struct(iter_ty, &it),\n                    span,\n                )?)\n                .is_none() =>\n",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
+    find: "                && item.is_some()\n                && (self.grown_ask(\n                    output,\n                    item,\n                    (\n                        iter_ty,\n                        crate::iterators::binding_made(&it),\n                        crate::iterators::form_knows_no_hint(&it),\n                    ),\n                    self.compiled_struct(iter_ty, &it),\n                    span,\n                )?)\n                .is_none() =>\n",
     replace: "                && item.is_some() =>\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
     snapshots: true,
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     name: "counted-collect-held-unasked",
     breaks:
       "`let it = repeat_n(1u8, n); it.collect::<Vec<_>>()` of `usize::MAX`, held in a variable, asks no room, as its count isn't read where it's made, so JS throws its own `RangeError` where std panics `capacity overflow` (#1046)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            Some(Err(Uncounted::RunsCode | Uncounted::Unknown)) => true,\n",
     replace: "            Some(Err(Uncounted::RunsCode)) => true,\n            Some(Err(Uncounted::Unknown)) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^counted_iterators_held_ask_room.rs$"],
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     name: "trusted-collect-by-next",
     breaks:
       "`collect()` of std's struct that's `TrustedLen`, a zip's, steps it by `next()`, not its `fold` as std's `extend_trusted` does: its closure runs once more (#380)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: '            None if folded && self.collected_items(&it).is_none() => {\n                let args = self.folded_unwinding(it, output, item, iter_ty, span)?;\n                Expr::call_helper("$foldToArray", args)\n            }\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_fold_steps_the_shorter.rs$"],
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-into-unit-refused",
     breaks: "`collect()` into `()` is refused where it steps each item (#322)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        } else if output.is_unit() {\n",
     replace: "        } else if output.is_unit() && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_unit.rs$"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-collect-map-refused",
     breaks: "`collect` into a map or a set is refused",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        } else if self.is_map(output) {\n",
     replace: "        } else if false && self.is_map(output) {\n",
     tests: ["test/corpus.test.ts", "-t", "value_keys|user_hash|range_into_set"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     name: "mir-mapped-range-lazy",
     breaks:
       "a range mapped and collected stays `Array.from($iterator({ start, end }, $rangeNext).map(f))`, not `$range(a, b).map(f)`",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            true => self.mapped_range(&it, iter_ty, item),\n",
     replace: "            true => None,\n",
     tests: [
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     name: "mir-collect-heap-unheaped",
     breaks:
       "`collect()` into a `BinaryHeap` from MIR is its items as they came, not in heap order",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                true => self.heap_values(HeapOp::From, vec![items], (output, false), span)?,\n",
     replace: "                true => items,\n",
     tests: ["test/corpus.test.ts", "-t", "heap_peek_mut"],
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
     name: "mir-iterable-collected-lazy",
     breaks:
       "a binding's list collected stays `Array.from(Iterator.from(nodes).map(f))`, not `Array.from(nodes).map(f)`",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "None => match self.collected_items(&it) {",
     replace: "None => match None::<Expr> {",
     tests: [
@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
     name: "own-from-iter-unused",
     breaks:
       "`collect()` into a `Result` of a collection of the crate's own is refused, though its `from_iter` is the crate's",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        } else if let Some(made) = self.made_by_own_from_iter(it.clone(), (output, item), iter_ty, span)? {\n",
     replace: "        } else if let Some(made) = None::<Expr> {\n",
     tests: ["test/corpus.test.ts", "-t", "collect_fallible_into"],
@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-into-param-refused",
     breaks: "`collect` into a type parameter, a `B: FromIterator`, is refused",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        self.collected_evidence(output, item)\n    }\n",
     replace: "        None::<Expr>\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect.rs$"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
     name: "from-iter-array-stepped",
     breaks:
       "`String::from_iter` of an array steps it as an iterator, which an array isn't, and JS throws",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            return Ok(Some(self.collected_into((items, None), output, item, None, span)?));\n",
     replace: "            return Ok(Some(self.collected_into((items, None), output, item, Some(iter_ty), span)?));\n",
     snapshots: true,
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
     name: "collect-into-held-param-unbound",
     breaks:
       "`collect()` into a `Result<U, E>` a bound says it's collected into is refused",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        if !output.has_param() {\n            return None;\n        }\n",
     replace: "        if !output.has_param() || true {\n            return None;\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_accumulations.rs$"],
@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-slice-collect-refused",
     breaks: "`collect` into a `Box<[T]>` is refused",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        } else if self.is_vec_like(output) || output.boxed_ty().is_some_and(|inner| inner.is_slice()) {\n",
     replace: "        } else if self.is_vec_like(output) {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_slice_values.rs$"],
@@ -188,7 +188,7 @@ export const mutations: Mutation[] = [
     name: "collect-fallible-source-unclosed",
     breaks:
       "a `collect` into a `Result` that stops at an `Err` leaves what's left of its source undropped",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                Some(iter_ty) if !self.is_user_iterator(iter_ty) => self.closing(it, iter_ty, span)?,\n",
     replace: "                Some(iter_ty) if false => self.closing(it, iter_ty, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^drops_of_consumed_iterators.rs$"],
@@ -196,7 +196,7 @@ export const mutations: Mutation[] = [
   {
     name: "from-iter-of-a-map-refused",
     breaks: "`Vec::from_iter(set)`, of a map's or a set's items, is refused",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        if self.is_map(iter_ty)\n            && let ty::Adt(_, args) = iter_ty.kind()\n",
     replace:
       "        if false\n            && let ty::Adt(_, args) = iter_ty.kind()\n",
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
     name: "collects-by-fold-not-strings",
     breaks:
       "`collect` into a `String` of the crate's iterator steps it by `next`, not by its own `fold`",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        self.is_lang_adt(output, LangItem::String)\n            ||",
     replace: "        false\n            ||",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
@@ -215,7 +215,7 @@ export const mutations: Mutation[] = [
     name: "collects-by-fold-vecs",
     breaks:
       "`collect` into a `Vec` of the crate's iterator folds it, where std's steps it by `next`",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            || output.is_unit()\n",
     replace:
       "            || output.is_unit()\n            || self.is_vec_like(output)\n",
@@ -225,8 +225,8 @@ export const mutations: Mutation[] = [
     name: "counted-range-into-a-heap",
     breaks:
       "`(0..5).map(f).collect()` into a `BinaryHeap` is the array of them, `Array.from(..)`, not the heap made of it (#361)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
-    find: "        if self.is_std_type(output, crate::lower::recognition::StdItem::Vec)\n",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
+    find: "        if self.is_std_type(output, crate::recognition::StdItem::Vec)\n",
     replace: "        if self.is_vec_like(output)\n",
     tests: ["test/corpus.test.ts", "-t", "^range_map_collected.rs$"],
   },
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     name: "counted-range-never",
     breaks:
       "`(0..n).map(f).collect()` is `$range(0, n, size).map(f)`, an array of its indices made to be mapped away (#361)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            && let Some(items) = self.counted_range(&it, iter_ty, item, span, made)\n",
     replace: "            && let Some(items) = None::<Expr>\n",
     tests: ["test/corpus.test.ts", "-t", "^range_map_collected.rs$"],
@@ -244,7 +244,7 @@ export const mutations: Mutation[] = [
     name: "collected-lent-range-peeled",
     breaks:
       "a `collect()` of a lent inclusive range, `r.by_ref().collect()`, is taken as the range it lends, stepped by `next` past its end (#414)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            true => receiver,\n            false => iter_ty,\n",
     replace: "            true => iter_ty,\n            false => iter_ty,\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [
     name: "collect-unwinding-unseen",
     breaks:
       "a `collect` into a `Vec` a closure's panic may stop is `Array.from`, which drops neither what it collected nor what's left (#422)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        if !iter_ty.is_some_and(|ty| self.steps_may_panic(ty)) {\n            return Ok(None);\n        }\n",
     replace: "        return Ok(None);\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
@@ -262,7 +262,7 @@ export const mutations: Mutation[] = [
     name: "rest-first-never",
     breaks:
       "a collect std does otherwise than in place, `chain`'s, a panic stopping it, drops what it collected before what's left (#423)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            (Some(_), Some(item)) => self.rest_dropped_first(output, iter_ty, item, span)?,",
     replace: "            (Some(_), Some(_)) => None,",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -271,7 +271,7 @@ export const mutations: Mutation[] = [
     name: "map-collect-unwinding-unseen",
     breaks:
       "a `collect` into a hash map or set a panic may stop is `$extendMap`'s, which drops neither what's left nor what it held (#423)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                unwinding => (it, unwinding.is_some()),",
     replace: "                _ => (it, false),",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -280,7 +280,7 @@ export const mutations: Mutation[] = [
     name: "sorted-collect-unwinding-unseen",
     breaks:
       "a `collect` into a B-tree isn't the `Vec`'s it's made of, so a panic that may stop it drops nothing it took (#423, #797)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                Some(iter_ty) => {\n                    self.collected_as_vec((it, &given, walk.as_ref()), grown, item, iter_ty, !heap, span)?\n                }\n",
     replace: "                Some(_) if !heap => it,\n                Some(iter_ty) => {\n                    self.collected_as_vec((it, &given, walk.as_ref()), grown, item, iter_ty, !heap, span)?\n                }\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -289,7 +289,7 @@ export const mutations: Mutation[] = [
     name: "string-collect-unwinding-unseen",
     breaks:
       "a `collect` into a `String` a panic may stop leaves what's left of its owning source undropped (#423)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            };\n            let items = match self.unwinding_collect(output, item, iter_ty, span)? {",
     replace: "            };\n            let items = match None::<UnwindingCollect> {",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -298,7 +298,7 @@ export const mutations: Mutation[] = [
     name: "heap-collect-unwinding-unseen",
     breaks:
       "a `collect` into a `BinaryHeap` isn't the `Vec`'s it's made of, so a panic that may stop it drops nothing it took (#423, #797)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                Some(iter_ty) => {\n                    self.collected_as_vec((it, &given, walk.as_ref()), grown, item, iter_ty, !heap, span)?\n                }\n",
     replace: "                Some(_) if heap => Expr::collected(it),\n                Some(iter_ty) => {\n                    self.collected_as_vec((it, &given, walk.as_ref()), grown, item, iter_ty, !heap, span)?\n                }\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -307,17 +307,17 @@ export const mutations: Mutation[] = [
     name: "folded-collect-given-no-drop",
     breaks:
       "a compiled std struct's collect of items with a destructor, a `zip`'s, a panic stopping it, leaves what it collected undropped (#423)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
-    find: "            Some(item) if self.steps_may_panic(iter_ty) && self.drops(item) != crate::lower::drops::Drops::Nothing => {",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
+    find: "            Some(item) if self.steps_may_panic(iter_ty) && self.drops(item) != crate::drops::Drops::Nothing => {",
     replace:
-      "            Some(item) if false && self.drops(item) != crate::lower::drops::Drops::Nothing => {",
+      "            Some(item) if false && self.drops(item) != crate::drops::Drops::Nothing => {",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
     name: "fold-stage-by-type-unseen",
     breaks:
       "a `fold` whose stages its JS still holds as a variable is judged one no stage of may panic (#423)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        self.panicking_steps(iter_ty) > 0 || self.unseen_steps_may_panic(iter_ty)",
     replace: "        self.unseen_steps_may_panic(iter_ty)",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -326,7 +326,7 @@ export const mutations: Mutation[] = [
     name: "fold-of-a-param-unwinding-unseen",
     breaks:
       "a fold of a type parameter's iterator, std's `Fuse::fold`'s of what it fuses, is given no drop of its accumulator (#424)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            ty::Dynamic(..) | ty::Param(_) => true,\n",
     replace: "            ty::Dynamic(..) => true,\n",
     tests: [
@@ -339,7 +339,7 @@ export const mutations: Mutation[] = [
     name: "folded-collect-after-unwinding",
     breaks:
       "a compiled std struct's collect a panic may stop, a `zip`'s, steps it by `next`, not its `SpecFold`, as std's `extend_trusted` does (#380, #423)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            None if folded && self.collected_items(&it).is_none() => {\n",
     replace:
       "            None if false && folded && self.collected_items(&it).is_none() => {\n",
@@ -349,7 +349,7 @@ export const mutations: Mutation[] = [
   {
     name: "collected-cows-as-objects",
     breaks: "`collect::<String>()` of `Cow<str>`s joins the `Cow`s themselves, `[object Object]` (#495)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                Some(item) => self.cow_texts(items, item),\n",
     replace: "                Some(_) => items,\n",
     tests: ["test/corpus.test.ts", "-t", "^cow_texts_joined.rs$"],
@@ -357,7 +357,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-iterator-steps-unseen",
     breaks: "what may panic as an iterator is stepped doesn't see the crate's own iterator behind std's adapters, so `own.fuse().fold(Vec::new(), push)` is `.reduce(..)`, which never drops the accumulator its panicking `next` strands (rd763, rd768)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            ty::Adt(..) => recognition.is_user_iterator(part) && may_unwind(part),\n",
     replace: "            ty::Adt(..) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
@@ -365,7 +365,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-iterator-never-unwinding-ignored",
     breaks: "each of the crate's iterators behind std's adapters is taken to panic, its methods that never unwind too, so a fold of one that can't, `Calm`'s, is `$foldDropping`, not `reduce` (rd763)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                && !self.krate.never_unwinding.contains(&method)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_steps_behind_adapters_unwind.rs$"],
@@ -374,7 +374,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-iterator-steps-unseen",
     breaks: "a `dyn` iterator behind std's adapters is taken to step without panicking, so `boxed.fuse().fold(..)` never drops the accumulator its panicking `next` strands (rd768)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            ty::Dynamic(..) | ty::Param(_) => true,\n",
     replace: "            ty::Param(_) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_steps_behind_adapters_unwind.rs$"],
@@ -382,7 +382,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-own-steps-unseen",
     breaks: "a collect of std's adapter over the crate's iterator whose `next` panics is `Array.from(..)`, which drops neither what it collected nor what's left (rd765)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: " || self.unseen_steps_may_panic(iter_ty) ||",
     replace: " ||",
     tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
@@ -390,15 +390,15 @@ export const mutations: Mutation[] = [
   {
     name: "collect-holding-unclosed",
     breaks: "a collect of std's compiled `fuse()` of a `Vec`'s items, mapped by a closure that panics, is `Array.from(..)`, which never closes what the source has left (#653)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
-    find: "        let holds = iter_ty\n            .is_some_and(|ty| self.drops(ty) != crate::lower::drops::Drops::Nothing || self.holds_callers_iterator(ty));\n",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
+    find: "        let holds =\n            iter_ty.is_some_and(|ty| self.drops(ty) != crate::drops::Drops::Nothing || self.holds_callers_iterator(ty));\n",
     replace: "        let holds = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^compiled_adapters_closed_as_a_collect_unwinds.rs$"],
   },
   {
     name: "passed-drops-panic-unseen",
     breaks: "a `skip()` and a `step_by()` of a `Vec`'s items whose drop panics, collected, are `Array.from(..)`: the panic of a drop they pass over leaves what's left undropped",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: " || self.std_work_may_panic(iter_ty)\n",
     replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "^compiled_adapters_closed_as_a_collect_unwinds.rs$"],
@@ -406,16 +406,16 @@ export const mutations: Mutation[] = [
   {
     name: "folded-unwinding-by-closures",
     breaks: "a collect of std's compiled `zip()` by its fold is given its items' drop only where its type holds a closure, so the panic of the item the zip drops as its other side ends leaves what it collected undropped (#707)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
-    find: "            Some(item) if self.steps_may_panic(iter_ty) && self.drops(item) != crate::lower::drops::Drops::Nothing => {",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
+    find: "            Some(item) if self.steps_may_panic(iter_ty) && self.drops(item) != crate::drops::Drops::Nothing => {",
     replace:
-      "            Some(item) if iter_ty.walk().any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn())) && self.drops(item) != crate::lower::drops::Drops::Nothing => {",
+      "            Some(item) if iter_ty.walk().any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn())) && self.drops(item) != crate::drops::Drops::Nothing => {",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
   },
   {
     name: "exhausted-drop-panic-unseen",
     breaks: "a `chain()` or a `flatten()` of the crate's iterators whose drop panics is taken to step without a panic, so the drop of a part it has exhausted leaves what's left undropped (#709)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                SteppingWork::DropsExhausted(part) => self.drop_may_panic(part),\n",
     replace: "                SteppingWork::DropsExhausted(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
@@ -423,7 +423,7 @@ export const mutations: Mutation[] = [
   {
     name: "string-collected-by-next",
     breaks: "a collect into a `String` a panic may stop steps its chain by `next`, not its fold as `String::extend` does, so a nested flatten's source is dropped before the inner iterator it's in (#644); the matrix's `vec | flatten.flatten | string | consumer` shows it, which `--std-iterators` gets wrong still (#644's std cases), so the corpus holds its JS",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                // before its source (#644).\n                Some(unwinding) => unwinding.folded(it),\n",
     replace: "                // before its source (#644).\n                Some(unwinding) => unwinding.collected(it, None),\n",
     snapshots: true,
@@ -432,7 +432,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-place-collect-by-next",
     breaks: "a collect std makes in place, of a `filter` whose discarded item's drop panics, steps it by `next`, so it drops what it collected, which std leaks (#681)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            InPlace::Yes => in_place(args),\n",
     replace: "            InPlace::Yes => Expr::call_helper(\"$collectDropping\", args),\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_leaks_what_a_discard_strands.rs$"],
@@ -440,7 +440,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-vec-collect-by-next",
     breaks: "a generic `collect()` into a `Vec` of a `take(n).rev()` of a `Vec`'s steps by `next` though the caller's iterator is `TrustedLen`, where std's `extend_trusted` folds it, dropping 3, 4, 5 for 4, 5, 3 (#670)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            return Ok(Expr::cond(trusted, by_fold, by_next));\n",
     replace: "            return Ok(Expr::cond(Expr::bool(false), by_fold, by_next));\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
@@ -449,7 +449,7 @@ export const mutations: Mutation[] = [
     name: "in-place-of-a-parameter-unasked",
     breaks:
       "generic code reads no `IInPlace` of its caller, `undefined`, so its `src.map(f).collect()` of a `Vec`'s `IntoIter`, which std collects in place, a panic stopping it, drops what's left before what it collected (#672)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                self.type_fact_value(iter_ty, TypeFact::InPlace, span)?\n",
     replace: "                Expr::js_undefined()\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
@@ -458,7 +458,7 @@ export const mutations: Mutation[] = [
     name: "never-in-place-not-first",
     breaks:
       "generic code's `src.map(f).fuse().collect()`, which std never collects in place, a panic stopping it, drops what it collected before what's left (#672)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            Some(false) => return Ok(first),\n",
     replace: "            Some(false) => return Ok(None),\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
@@ -467,7 +467,7 @@ export const mutations: Mutation[] = [
     name: "in-place-by-caller-by-next",
     breaks:
       "generic code's `src.filter(p).collect()` of a `Vec`'s `IntoIter`, which std collects in place by its fold, whose discarded item's drop panics, steps it by `next`, so it drops what it collected, which std leaks (#672, #681)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                    None => InPlace::IfCaller(self.caller_in_place(iter_ty, item, span)?),\n",
     replace: "                    None => InPlace::No,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
@@ -476,7 +476,7 @@ export const mutations: Mutation[] = [
     name: "in-place-by-caller-fold-unasked",
     breaks:
       "generic code's collect of a `Vec`'s `IntoIter` that std collects in place, its caller says, steps it by `next`, so a discarded item's drop that panics drops what it collected, which std leaks (#672, #681)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                let by_fold = in_place(args.clone());\n",
     replace: "                let by_fold = Expr::call_helper(\"$collectDropping\", args.clone());\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
@@ -484,7 +484,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-trusted-by-next",
     breaks: "a `TrustedLen` collect into a `Vec` of one that folds a held function steps it by `next`, so the function drops after what it left (#710)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            || self.folds_held_function(iter_ty) && self.collects_in_place(Some(iter_ty), item) == Some(false))\n",
     replace: "            || false)\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
@@ -492,7 +492,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-place-of-numbers-unsaid",
     breaks: "a collect in place of items with nothing to drop isn't said to be, so its fold moves a `map`'s function, which drops before what's left (#710)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                args.extend([Expr::js_undefined(), Expr::bool(false), Expr::bool(true)]);\n",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^fold_drops_moved_function_first with std"],
@@ -500,7 +500,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-dropping-closing-unsaid",
     breaks: "a `$collectDropping` collect, which closes what it steps, doesn't say so, so its consumer closes it again after in a `finally`, `try { result = $collectDropping(iter); } finally { iter.return(); }`, which does nothing (#660)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                Expr::call_helper(\"$collectDropping\", args).closes_what_it_steps()\n",
     replace: "                Expr::call_helper(\"$collectDropping\", args)\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_of_a_value_given_as_it_is.rs$"],
@@ -510,7 +510,7 @@ export const mutations: Mutation[] = [
     name: "in-place-collect-asks-room",
     breaks:
       "std's compiled collect in place of a `filter()` is given `$roomForHint`, which std's in-place collect never asks, so where a dropped item's drop panics it drops what it gathered, which rustc leaks (#770)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                args[0] = unroomed;\n",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_collect_drops_rest_first with"],
@@ -518,15 +518,15 @@ export const mutations: Mutation[] = [
   {
     name: "string-collect-asks-no-hint",
     breaks: "a collect into a `String` of `char`s asks no hint before it steps, as std's `Extend<char>` does (#733)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
-    find: "                true => self.reserved_by_hint(it, iter_ty, crate::lower::iterators::Room::Bytes, None),\n",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
+    find: "                true => self.reserved_by_hint(it, iter_ty, crate::iterators::Room::Bytes, None),\n",
     replace: "                true => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
   },
   {
     name: "table-collect-asks-no-hint",
     breaks: "a collect into a `HashSet` asks no hint before it steps, as hashbrown's `extend` does (#733)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                false => self.reserved_by_hint(\n                    it,\n                    iter_ty,\n",
     replace: "                false => self.reserved_by_hint(\n                    it,\n                    None,\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
@@ -535,7 +535,7 @@ export const mutations: Mutation[] = [
     name: "dictionary-collect-without-own-evidence",
     breaks:
       "a generic collect into its caller's `T: FromIterator<D>` calls the dictionary's `from_iter` with the items alone, so a `Vec`'s iterator's in-place buffer and its drops aren't given (#794)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                args.extend(self.own_evidence(method, generic_args, None, closed, span)?);\n",
     replace: "                let _ = (method, generic_args, closed);\n",
     tests: ["test/corpus.test.ts", "-t", "^from_iter_impl_of_dropping.rs$"],
@@ -545,7 +545,7 @@ export const mutations: Mutation[] = [
     name: "mapped-range-unwinding-unasked",
     breaks:
       "a range's `map` collected into a `Vec` is an array's `map` whatever its items, so where a panic stops it, `(1..=3).map(made).collect()`, what it made isn't dropped: Rust prints `drop 1`, `drop 2`, the JS nothing, a wrong answer (#800)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        Ok(!throws || self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none())\n",
     replace: "        Ok(true)\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_panic_drops_collected.rs$"],
@@ -554,7 +554,7 @@ export const mutations: Mutation[] = [
     name: "heap-and-btree-not-grown-as-vec",
     breaks:
       "a collect into a `BinaryHeap`, a `BTreeSet` or a `BTreeMap` isn't the `Vec` std's `from_iter` collects first, so the crate's iterator is never asked its `size_hint`, where native asks at 1, 5 and 9 (#797)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        let made_of_vec = (heap || self.is_sorted(output)) && self.recognition().grows_as_vec(output);\n",
     replace: "        let made_of_vec = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_as_vec_asks_hint.rs$"],
@@ -563,7 +563,7 @@ export const mutations: Mutation[] = [
     name: "heap-grown-as-itself",
     breaks:
       "the `Vec` a heap or a B-tree is made of is collected as the heap or the B-tree, so std's in-place collect of it isn't seen: a panic stopping it drops what's left and what it collected in another order than native's (#797)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            let grown = item.map_or(output, |item| self.vec_grown_for(output, item));\n",
     replace: "            let grown = output;\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -573,7 +573,7 @@ export const mutations: Mutation[] = [
     name: "btree-collected-as-array",
     breaks:
       "a B-tree, which takes any iterable, is made of `Array.from(it)` where nothing else is asked of what it collects, an array no one needs (#797)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                None if iterable => it,\n",
     replace: "                None if iterable && false => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_as_vec_asks_hint.rs$"],
@@ -582,7 +582,7 @@ export const mutations: Mutation[] = [
   {
     name: "step-by-of-items-asks-room",
     breaks: "a collect of a `step_by(n)` of an array's items asks room of its count, `$roomFor(Math.ceil(items.length / n), ..)`, which no array's length overflows, and its eager filter is made lazy for it (#811)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                || r::stepped_by_source(self.tcx, ty).is_some_and(|source| !of_items(source))\n",
     replace: "                || r::stepped_by_source(self.tcx, ty).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^(step_by_zero|sales_report|returned_slice_iters).rs$"],
@@ -592,7 +592,7 @@ export const mutations: Mutation[] = [
     name: "take-rev-collect-stepped-not-folded",
     breaks:
       "a `take(n).rev()` of droppers made in place, collected into a `Vec`, is stepped by `next`, whose `nth_back` drops what it passes front to back, where std's `extend_trusted` folds it and `Take::rfold` drops it from the back (#826)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            || folds_by_dropping_nth_back\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^take_from_its_back_drops_as_std.rs$"],
@@ -601,7 +601,7 @@ export const mutations: Mutation[] = [
     name: "generic-take-rev-collect-trust-unasked",
     breaks:
       "generic code's `take(n).rev()` of droppers made in place, collected into a `Vec`, never asks its caller's `ITrustedLen`, so it's stepped by `next` where std folds it (#826)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            && (self.compiled_struct(iter_ty, given) || folds_by_dropping_nth_back))\n",
     replace: "            && self.compiled_struct(iter_ty, given))\n",
     tests: ["test/corpus.test.ts", "-t", "^take_from_its_back_drops_as_std.rs$"],
@@ -609,7 +609,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-place-collect-capacity-known",
     breaks: "a collect std may make in place, in a crate that reads a capacity, gives its length as its capacity, where std's is its source's (#1180)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        Ok(Expr::call_helper(\"$untracked\", vec![collected]))\n",
     replace: "        Ok(collected)\n",
     tests: ["test/vec-capacity.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
@@ -617,23 +617,23 @@ export const mutations: Mutation[] = [
   {
     name: "from-iter-given-closed-drops-as-its-type",
     breaks: "generic code's `collect()` into a `B: FromIterator` gives `from_iter` the `$closing` it made of the crate's own iterator, and the iterator's own drop for it, which reads fields the closing hasn't: `Cannot read properties of undefined (reading '_loud')` (#1286)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
-    find: "                let closed = crate::lower::iterators::closed_parts(&args[0]).map(|_| iter_ty);\n",
-    replace: "                let closed = crate::lower::iterators::closed_parts(&args[0]).and(None);\n",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
+    find: "                let closed = crate::iterators::closed_parts(&args[0]).map(|_| iter_ty);\n",
+    replace: "                let closed = crate::iterators::closed_parts(&args[0]).and(None);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_collected_by_generic_code_into_own_from_iterator.rs$"],
   },
   {
     name: "vec-collect-drops-nothing",
     breaks: "`$collectVec` of items that drop is given no drop, so a panic leaves what it collected undropped (#1239)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
-    find: "            let mut args = vec![it, size, how];\n            if self.drops(item) != crate::lower::drops::Drops::Nothing {\n",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
+    find: "            let mut args = vec![it, size, how];\n            if self.drops(item) != crate::drops::Drops::Nothing {\n",
     replace: "            let mut args = vec![it, size, how];\n            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
   },
   {
     name: "collect-vec-untracked-by-caller",
     breaks: "generic code's `$collectVec` is `$untracked` wherever its caller may collect it in place, so `capacity()` of one its caller gives by fold or by `next` throws #1180's refusal, where std's is known (#1263)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            return Ok(Expr::call_helper(\"$collectVec\", args));\n",
     replace: "            return self.untracked_where_in_place((Expr::call_helper(\"$collectVec\", args), None), (output, iter_ty, Some(item)), span);\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_generic_collects.rs$"],
@@ -641,7 +641,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-place-opaque-chain-unwalked",
     breaks: "a `collect()` std makes in place of a chain an `impl Iterator` function gives, of std's structs, isn't walked to its source `Vec`, so in the std build its capacity isn't known and `capacity()` refuses it (#1428)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        self.collected_into((it, walk), output, item, Some(collected), span)\n",
     replace: "        self.collected_into((it, walk.filter(|_| false)), output, item, Some(collected), span)\n",
     tests: ["test/vec-capacity.test.ts", "-t", "walks to it in the std build"],
@@ -649,7 +649,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-collected-as-text-joined",
     breaks: "a `PathBuf` collected of its parts joins them by `/`, so a root's `/` is doubled, `//usr/lib` (#1420)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            method(\"reduce\", items, vec![Expr::helper(\"$pathJoin\"), Expr::str(\"\")])\n",
     replace: "            method(\"join\", items, vec![Expr::str(\"/\")])\n",
     tests: ["test/corpus.test.ts", "-t", "^path_collected_of_its_parts.rs$"],
@@ -657,7 +657,7 @@ export const mutations: Mutation[] = [
   {
     name: "os-string-collected-as-a-path",
     breaks: "an `OsString` collected of others is pushed in turn as a `PathBuf`, `a/b`, where std joins them, `ab` (#1420; found by the consumer net)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        } else if self.recognition().is_path(output)\n",
     replace: "        } else if self.recognition().is_path_like(output)\n",
     tests: ["test/diagnostics.test.ts", "-t", "OsStrings into an OsString"],
@@ -665,7 +665,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-room-left-to-any-mapped-range",
     breaks: "a generic collect of a map of a range `counted_range` doesn't take, `(1..n).map(f)`, is left to it, so it checks no room (#1436)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                && self.counted_range_parts(&it, iter_ty, item).is_some());\n",
     replace: "                && self.mapped_range(&it, iter_ty, item).is_some());\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_room_of_generic_items.rs$"],
@@ -673,7 +673,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-counted-by-program-uncounted",
     breaks: "a collect of items of a type known here counted by the program, a zip's, a chain's, a held map's, checks no room and runs on where std panics `capacity overflow` (#1441)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        let program_counted = self.recognition().counted_by_program(iter_ty)\n",
     replace: "        let program_counted = false && self.recognition().counted_by_program(iter_ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_room_counted_by_the_program.rs$"],
@@ -681,7 +681,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-room-checked-where-it-surely-fits",
     breaks: "a collect whose count surely fits, of literal bounds, checks its room anyway, `(0..2).chain(5..7)` no longer `[...a, ...b]` (#1441)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            _ if surely_fits => None,\n",
     replace: "",
     tests: ["test/vec-capacity.test.ts", "-t", "a collect whose count surely fits"],
@@ -689,7 +689,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-array-made-of-droppers-that-may-panic",
     breaks: "a range's `map(..).collect()` of items with a destructor whose closure may panic is made `Array.from({ length: n }, f)`, which drops none of what it made as it throws (#1498)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            && self.range_array_collected(&it, iter_ty, (output, item), span)?\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_map_collected_drops_on_a_panic.rs$"],
@@ -697,15 +697,15 @@ export const mutations: Mutation[] = [
   {
     name: "range-array-closure-throws-unasked",
     breaks: "whether a range's map function may throw isn't asked, so one of items with a destructor that panics is made as its array, dropping nothing (#1498)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
-    find: "            throws |= crate::lower::iterators::may_throw(f);\n",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
+    find: "            throws |= crate::iterators::may_throw(f);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_map_collected_drops_on_a_panic.rs$"],
   },
   {
     name: "range-array-of-droppers-never",
     breaks: "a range's map of items with a destructor whose functions can't throw isn't made as its array, `$collectDropping($lazyRange(..).map(f), ..)` where `$range(0, 4).map(f)` does the same (#1498)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        Ok(!throws || self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none())\n",
     replace: "        Ok(self.unwinding_collect(output, item, Some(iter_ty), span)?.is_none())\n",
     tests: ["test/corpus.test.ts", "-t", "^map_collect_drops.rs$"],
@@ -714,7 +714,7 @@ export const mutations: Mutation[] = [
   {
     name: "extend-by-fold-of-a-b-tree-unasked",
     breaks: "a B-tree's `extend`, `iter.into_iter().for_each(..)`, is taken to step by `next` as its `collect` does, so the crate's iterator its own `fold` drops is dropped again after (#1509)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        self.collects_by_fold(collection) || self.is_map(collection)\n",
     replace: "        self.collects_by_fold(collection)\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_by_fold_drops_once.rs$"],
@@ -722,7 +722,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-processed-never",
     breaks: "a fallible `collect()` into the crate's own `FromIterator` collects every value first and calls its `from_iter` only where none is a `None` or an `Err`, losing its effects and its value's drop (#1588)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            .then_some((collection, value, shunt)))\n",
     replace: "            .then_some((collection, value, shunt)).filter(|_| false))\n",
     tests: ["test/corpus.test.ts", "-t", "^fallible_collect_into_own_from_iter.rs$"],
@@ -730,7 +730,7 @@ export const mutations: Mutation[] = [
   {
     name: "built-collect-callers-trusted-unread",
     breaks: "generic code's collect into a `Vec` of an iterator built of its type parameters grows it as one that isn't `TrustedLen`, whatever its callers say: capacity 4 of a `FlatMap` of one array of three (#1614)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            None => self.callers_say_trusted(iter_ty, trusted, span)?,\n",
     replace: "            None => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^trait_default_flat_map_of_arrays_collects_trusted.rs$"],
@@ -738,7 +738,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallible-collect-closes-own-iterator-twice",
     breaks: "the crate's iterator with a `Drop`, of items that drop nothing, collected into an `Option` of a `Vec`, is closed by the collect and dropped again after it, `drop Source` twice (#1647)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                Some(iter_ty) if !self.is_user_iterator(iter_ty) => self.closing(it, iter_ty, span)?,\n",
     replace: "                Some(iter_ty) => self.closing(it, iter_ty, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^fallible_collect_drops_its_iterator_once.rs$"],
@@ -746,7 +746,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-slice-collect-uncounted",
     breaks: "an `Rc<[T]>` collected whose counts are read isn't made counted, so `Rc::strong_count` reads nothing (#1678)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            match self.krate.counted.counts(self.tcx, pointee) {\n                true => self.new_counted_rc(items, pointee, span)?,\n",
     replace: "            match self.krate.counted.counts(self.tcx, pointee) {\n                true => items,\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice.rs$"],
@@ -754,7 +754,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-slice-collect-refused",
     breaks: "a `collect()` into an `Rc<[T]>` is refused (#1678)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            && pointee.is_slice()\n",
     replace: "            && pointee.is_slice()\n            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice.rs$"],
@@ -762,15 +762,15 @@ export const mutations: Mutation[] = [
   {
     name: "rc-slice-trusted-rest-last",
     breaks: "a `collect()` into an `Rc<[T]>` of a `TrustedLen` that panics as it steps drops what it wrote before what's left, a `Vec`'s order, where std's `from_iter_exact` drops what's left first (#1678)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
-    find: "            && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)\n        {\n            return Ok(first);\n        }\n",
-    replace: "            && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)\n        {\n            return Ok(None);\n        }\n",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
+    find: "            && crate::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)\n        {\n            return Ok(first);\n        }\n",
+    replace: "            && crate::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)\n        {\n            return Ok(None);\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_unwinding.rs$"],
   },
   {
     name: "rc-slice-trusted-as-a-vec",
     breaks: "a `collect()` into an `Rc<[T]>` of a `TrustedLen` is a `Vec`'s, so its panic drops what it wrote first and its room is a `Vec`'s, `capacity overflow` (#1678, #1694)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            let items = match exact {\n",
     replace: "            let items = match exact && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_(unwinding|room).rs$"],
@@ -778,7 +778,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-slice-room-unasked",
     breaks: "a `collect()` into an `Rc<[T]>` of a range past what a `Layout` can be asks no room, and steps on till memory runs out, where std panics (#1694)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "                        Some(item) => self.counted_slice_room(it, (boxed, item), iter_ty, span)?,\n",
     replace: "                        Some(_) => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_room.rs$"],
@@ -786,7 +786,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-slice-generic-as-a-vec",
     breaks: "a `collect()` into an `Rc<[T]>` by generic code, of a `TrustedLen` its caller says, is a `Vec`'s, its panic dropping what it wrote first and its room `capacity overflow` (#1678, #1694)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "            if let Some((item, how)) = given_counted {\n",
     replace: "            if let Some((item, how)) = given_counted.filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_(unwinding|room).rs$"],
@@ -794,16 +794,16 @@ export const mutations: Mutation[] = [
   {
     name: "callers-iterator-not-closed-on-a-panic",
     breaks: "a collect in generic code of the caller's iterator whose step panics leaves it unclosed, so the caller's drop of what it holds, given in its closing, never runs (#1753)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
-    find: "self.drops(ty) != crate::lower::drops::Drops::Nothing || self.holds_callers_iterator(ty)",
-    replace: "self.drops(ty) != crate::lower::drops::Drops::Nothing",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
+    find: "self.drops(ty) != crate::drops::Drops::Nothing || self.holds_callers_iterator(ty)",
+    replace: "self.drops(ty) != crate::drops::Drops::Nothing",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_of_a_panicking_chain_drops_its_source.rs$"],
   },
   {
     name: "capacity-read-of-a-hidden-source-unrefused",
     breaks:
       "a body's `capacity()` of an in-place collect whose source a call hides, `opaque(kept.into_iter()).map(f).collect()`, compiles and throws as it runs, where it's refused where it's compiled (#1926)",
-    file: "src/lower/iterators/mir_steps/collect.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
     find: "        if self.frame.facts.capacity_read_collects.contains(&span) {\n",
     replace: "        if false && self.frame.facts.capacity_read_collects.contains(&span) {\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_capacity_through_a_call_refused.rs$"],

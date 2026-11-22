@@ -1,11 +1,11 @@
-// Mutations of src/lower/mir/tidy/options.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/tidy/options.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "tested-option-some-where-unread",
     breaks: "a `SomeWhere` tested is written `const o = t ? v : undefined; if (o != null)`, not `if (t)` reading `v`",
-    file: "src/lower/mir/tidy/options.rs",
+    file: "crates/rust-js-mir/src/tidy/options.rs",
     find: "    let present = there ||",
     replace: "    let present = false && there ||",
     tests: ["test/corpus.test.ts", "-t", "^tested_options.rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "tested-option-undefined-value",
     breaks:
       "`const x = t ? v : undefined; if (x)` is `if (t)` of a `v` that may be `None` itself, so `maybe(None, true)` reads `undefined.name` (ADR 0910)",
-    file: "src/lower/mir/tidy/options.rs",
+    file: "crates/rust-js-mir/src/tidy/options.rs",
     find: "    let present = there || tests_present_first(test, v);\n",
     replace: "    let _ = there;\n    let present = true;\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "tested-option-changed-value",
     breaks:
       "an `Option` of a variable that changes where it's read is read as the variable, so `changed(true)` says `after then after` (ADR 0910)",
-    file: "src/lower/mir/tidy/options.rs",
+    file: "crates/rust-js-mir/src/tidy/options.rs",
     find: "    if !present || changing.contains(v) {\n",
     replace: "    if !present {\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     name: "tested-option-read-elsewhere",
     breaks:
       "an `Option` read past its test is folded away, so what reads it after reads a variable no longer declared (ADR 0910)",
-    file: "src/lower/mir/tidy/options.rs",
+    file: "crates/rust-js-mir/src/tidy/options.rs",
     find: "    if read_elsewhere || js::declares(reads, x) {\n",
     replace: "    if js::declares(reads, x) {\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     name: "tested-option-before-a-declaration",
     breaks:
       '`const x = t ? v : undefined; let r; if (x) { r = x.p; } else { r = undefined; }` keeps the `Option`, as a `let` is between, so `if let Some(v) = js::classify(v).object() { js::get(v, "$$typeof") } else { None }` reads `v = t ? v : undefined; const r = v?.$$typeof;`',
-    file: "src/lower/mir/tidy/options.rs",
+    file: "crates/rust-js-mir/src/tidy/options.rs",
     find: "        let at = i + 1 + stmts[i + 1..].iter().take_while(|s| declared(s)).count();\n",
     replace:
       "        let at = i + 1 + 0 * stmts[i + 1..].iter().take_while(|s| declared(s)).count();\n",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     name: "tested-option-null-unread",
     breaks:
       "`const x = t ? v : undefined; if (x != null) { ..x.. }` keeps its const, where it's `if (t) { ..v.. }` (ADR 0298, amended)",
-    file: "src/lower/mir/tidy/options.rs",
+    file: "crates/rust-js-mir/src/tidy/options.rs",
     find: "        (Some(option), _) if of_x(option) => true,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
     name: "taken-binding-read-after",
     breaks:
       "a take tested whose binding is read past the test is taken in its branch, so `return cancel` reads what the branch declared (ADR 0996)",
-    file: "src/lower/mir/tidy/options.rs",
+    file: "crates/rust-js-mir/src/tidy/options.rs",
     find: "    if js::mentions_of(none_branch, c) > 0 || js::mentions_of(rest, c) > 0 {\n",
     replace: "    if js::mentions_of(none_branch, c) > 0 {\n",
     tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
     name: "overwritten-any-write",
     breaks:
       "a write the program makes twice, `slot.count = 1; slot.count = 2;`, loses its first, which no take wrote (rd524)",
-    file: "src/lower/mir/tidy/options.rs",
+    file: "crates/rust-js-mir/src/tidy/options.rs",
     find: "    if !none.facts.has(js::Known::Taken) || !js::taken_place(target) {\n",
     replace: "    if !js::taken_place(target) {\n",
     tests: ["test/corpus.test.ts", "-t", "^taken_then_overwritten.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
     name: "overwritten-past-a-call",
     breaks:
       "a take's `None` is dropped past a call given its object, which shows the old value where Rust's shows `None` (rd524)",
-    file: "src/lower/mir/tidy/options.rs",
+    file: "crates/rust-js-mir/src/tidy/options.rs",
     find: "        _ => false,\n    };\n    if !after.iter().all(between) {\n",
     replace: "        _ => true,\n    };\n    if !after.iter().all(between) {\n",
     tests: ["test/corpus.test.ts", "-t", "^taken_then_overwritten.rs$"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     name: "overwritten-past-its-read",
     breaks:
       "a take's `None` is dropped past a write of another field of what's read of it, `slot.seen = format!(\"{:?}\", slot.value)`, which reads the old value (rd524)",
-    file: "src/lower/mir/tidy/options.rs",
+    file: "crates/rust-js-mir/src/tidy/options.rs",
     find: "    let quiet = |value: &Expr| value.is_constant() || matches!(&value.kind, ExprKind::Var(name) if name != root);\n",
     replace: "    let quiet = |_: &Expr| true;\n",
     tests: ["test/corpus.test.ts", "-t", "^taken_then_overwritten.rs$"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
     name: "overwritten-same-field-between",
     breaks:
       "a take's `None` written over is kept where the write over it counts as a write between (rd524)",
-    file: "src/lower/mir/tidy/options.rs",
+    file: "crates/rust-js-mir/src/tidy/options.rs",
     find: "                other != key && matches!(&of.kind, ExprKind::Var(name) if name == root) && js::taken_place(written)\n",
     replace: "                matches!(&of.kind, ExprKind::Var(name) if name == root) && js::taken_place(written)\n",
     tests: ["test/corpus.test.ts", "-t", "^taken_then_overwritten.rs$"],
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
     name: "overwritten-branch-tail-unchecked",
     breaks:
       "a take's `None` in an `if`'s branch is dropped past a read of it in the branch (rd524)",
-    file: "src/lower/mir/tidy/options.rs",
+    file: "crates/rust-js-mir/src/tidy/options.rs",
     find: "    if !after.iter().all(between) {\n        return false;\n    }\n",
     replace: "    if false {\n        return false;\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^taken_then_overwritten.rs$"],
@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
     name: "overwritten-takes-off",
     breaks:
       "a take's `None` written over by a flattened state's whole write is written, `chunk.value = null;`, where upstream's isn't (rd524)",
-    file: "src/lower/mir/tidy/options.rs",
+    file: "crates/rust-js-mir/src/tidy/options.rs",
     find: "    while i < stmts.len() {\n        let rest = &stmts[i + 1..];\n",
     replace: "    while false && i < stmts.len() {\n        let rest = &stmts[i + 1..];\n",
     tests: ["test/corpus.test.ts", "-t", "^taken_then_overwritten.rs$"],
@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
   {
     name: "filtered-option-left-apart",
     breaks: "a `filter`'s `Option` of what may be `None`, tested first, stays a `const` apart from its test, `const chunk = option != null && .. ? option : undefined; if (chunk == null)` (#1619)",
-    file: "src/lower/mir/tidy/options.rs",
+    file: "crates/rust-js-mir/src/tidy/options.rs",
     find: "    !std::ptr::eq(first, test)\n",
     replace: "    false && !std::ptr::eq(first, test)\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_then_let_else_tests_one_value.rs$"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "filtered-temporary-unnamed",
     breaks: "a `filter`'s temporary keeps its own name where it's tested where it's made, `const option = chunks.get(id); if (option == null || ..)`, not the program's binding's, `chunk`, as upstream writes it (#1619)",
-    file: "src/lower/mir/tidy/options.rs",
+    file: "crates/rust-js-mir/src/tidy/options.rs",
     find: "                js::replaced(&mut stmts[i - 1..], &v, &x);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^filter_then_let_else_tests_one_value.rs$"],

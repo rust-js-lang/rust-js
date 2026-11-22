@@ -1,11 +1,11 @@
-// Mutations of src/lower/mir/tidy/jumps/continuations.rs: a block MIR made
+// Mutations of crates/rust-js-mir/src/tidy/jumps/continuations.rs: a block MIR made
 // whose `break`s jump on to what follows it, each other way given what it
 // went on to, each `break` last on its way then and gone (#2215).
 import type { Mutation } from "../../../../../mutations";
 
-const leads = "lower::mir::tidy::jumps::continuations::tests::breaks_lead_on_to_the_continuation";
-const keeps = "lower::mir::tidy::jumps::continuations::tests::breaks_keep_their_jump_where_a_move_would_differ";
-const file = "src/lower/mir/tidy/jumps/continuations.rs";
+const leads = "tidy::jumps::continuations::tests::breaks_lead_on_to_the_continuation";
+const keeps = "tidy::jumps::continuations::tests::breaks_keep_their_jump_where_a_move_would_differ";
+const file = "crates/rust-js-mir/src/tidy/jumps/continuations.rs";
 
 export const mutations: Mutation[] = [
   {
@@ -70,6 +70,6 @@ export const mutations: Mutation[] = [
     file,
     find: "    if leaves(other) && !js::names_jump(then, label) {\n",
     replace: "    if false {\n",
-    unitTests: "lower::mir::tidy::jumps::continuations::tests::an_else_that_breaks_leads_on_too",
+    unitTests: "tidy::jumps::continuations::tests::an_else_that_breaks_leads_on_too",
   },
 ];

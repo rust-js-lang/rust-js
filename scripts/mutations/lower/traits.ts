@@ -1,4 +1,4 @@
-// Mutations of src/lower/traits.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/traits.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "item-iterator-bound-entryless",
     breaks:
       "an impl's dictionary has no entry of its associated type's `Iterator` bound, which generic code giving the type as it is reads: `CContainer.IterIterator is not a function` (#972)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        || std_item(tcx, StdItem::Iterator) == bound\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_given_as_it_is.rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "declared-nested-mut-left-out",
     breaks:
       "a trait whose method takes a `&mut Self` within an `Option`, which each entry adapts, isn't declared, nor the functions given its dictionaries (#686)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "                    (super::mut_refs::within_shape(tcx, (part, part), (&adapted, &form), &|_| true))\n",
     replace: "                    (super::mut_refs::within_shape(tcx, (part, part), (&|_: Ty<'tcx>| false, &form), &|_| true))\n",
     tests: ["test/declarations-conformance.test.ts"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "projection-extension-ungiven",
     breaks:
       "an extension's bound on an associated type, `U::IntoIter: DoubleEndedIterator` of std's `FlatMap`'s back, is given no dictionary, so its evidence is the `IntoIterator`'s `IntoIterIterator()`, an `Iterator`'s: `it.back is not a function` (ADR 0936)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        && matches!(alias.self_ty().kind(), ty::Param(_))\n",
     replace:
       "        && matches!(alias.self_ty().kind(), ty::Param(_))\n        && false\n",
@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
     name: "supertrait-key-instantiated",
     breaks:
       "`Pair<u32, String>: Label<A> + Label<B>`'s impl writes its supertraits as `LabelU32` and `LabelString`, and generic code reads `LabelA` and `LabelB`",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "                (true, false) => trait_word(tcx, declared),\n",
     replace:
       "                (true, false) => trait_word(tcx, instantiated),\n",
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
     name: "supertrait-key-trait-only",
     breaks:
       "`trait Both: Label<u32> + Label<String>` has two supertraits keyed `Label`, which collide",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "                (true, false) => trait_word(tcx, declared),\n",
     replace:
       "                (true, false) => tcx.item_name(declared.def_id).to_string(),\n",
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     name: "supertrait-bound-regions",
     breaks:
       "a `for<'a> Greet<&'a str>` supertrait keeps its bound lifetime, and rustc's trait selection panics on it",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "            let ty::ClauseKind::Trait(instantiated) = tcx.instantiate_bound_regions_with_erased(instantiated.kind())\n            else {\n                return None;\n            };\n            Some((declared.trait_ref, instantiated.trait_ref, span))\n",
     replace:
       "            let ty::ClauseKind::Trait(instantiated) = instantiated.kind().skip_binder()\n            else {\n                return None;\n            };\n            Some((declared.trait_ref, instantiated.trait_ref, span))\n",
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     name: "item-bounds-of-gats",
     breaks:
       "a generic associated type's bounds are instantiated with the trait's arguments alone, and rustc panics",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        let item_args = ty::GenericArgs::for_item(tcx, item.def_id, |param, _| match args.get(param.index as usize) {\n            Some(&arg) => arg,\n            None => tcx.lifetimes.re_erased.into(),\n        });",
     replace: "        let item_args = args;",
     tests: ["test/corpus.test.ts", "-t", "generic_associated_types"],
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     name: "gat-bounds-left-out",
     breaks:
       "a generic associated type's bound, `type Item<'a>: Debug`, isn't in its trait's dictionary",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        if own\n            .iter()\n            .any(|param| !matches!(param.kind, ty::GenericParamDefKind::Lifetime))",
     replace: "        if !own.is_empty()",
     tests: ["test/corpus.test.ts", "-t", "generic_associated_types"],
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
     name: "gat-bound-sized-counted",
     breaks:
       "a generic associated type of a const parameter, whose only bound is `Sized`, is taken to have one",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "                ty::ClauseKind::Trait(bound) => tcx.is_lang_item(bound.def_id(), LangItem::Sized),",
     replace: "                ty::ClauseKind::Trait(_) => false,",
     tests: ["test/corpus.test.ts", "-t", "generic_associated_types"],
@@ -92,7 +92,7 @@ export const mutations: Mutation[] = [
     name: "supertraits-by-reference-alike",
     breaks:
       "`Add<Base> + for<'r> Add<&'r Base>` as supertraits share one name, `AddBase`, which is an error",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "                (true, true) => trait_word_with_refs(tcx, declared, true),",
     replace: "                (true, true) => trait_word(tcx, declared),",
     tests: ["test/corpus.test.ts", "-t", "supertraits_by_reference"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
     name: "component-takes-dictionary",
     breaks:
       "a component bound by `Default` takes a dictionary, `Card(props, CDefault)`, which React never gives",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "    if bindings::is_component(tcx, id) {\n        return result;\n    }",
     replace: "",
     tests: ["test/jsx-props.test.ts", "-t", "and the component no dictionary"],
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     name: "marker-bound-takes-dictionary",
     breaks:
       "a bound of a trait with nothing in it takes a dictionary, `named(value, TMarker)`, which its `.d.ts` doesn't say",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "    (has_dictionary_of(tcx, foreign, tr.def_id, tr.self_ty()) && !is_marker(tcx, foreign, tr.def_id)).then_some(tr)",
     replace:
       "    has_dictionary_of(tcx, foreign, tr.def_id, tr.self_ty()).then_some(tr)",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     name: "marker-copy-supertrait",
     breaks:
       "a trait of no items whose supertrait is `Copy` passes no dictionary, and generic code has no `Copy` to copy by",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "            .all(|(_, tr, _)| !operational(tcx, foreign, tr.def_id) || is_marker(tcx, foreign, tr.def_id))",
     replace: "            .all(|(_, _, _)| true)",
     tests: ["test/traits.test.ts", "-t", "nothing in it passes no dictionary"],
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
     name: "copy-bound-always-dropped",
     breaks:
       "a `Copy` bound never takes a copy function, so `kept(p)` shares `p`'s object",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        && !given.copied.contains(&(tcx.typeck_root_def_id(id), param.index))\n",
     replace: "",
     tests: [
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     name: "copy-bound-always-kept",
     breaks:
       "every `Copy` bound takes a copy function, so `twice(name)` is given `{ copy: (value) => value }`",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "    if tcx.is_lang_item(tr.def_id, LangItem::Copy)\n        && super::instances::seen_whole(tcx, id, super::instances::Fact::CopiedApart(foreign))",
     replace:
       "    if false\n        && super::instances::seen_whole(tcx, id, super::instances::Fact::CopiedApart(foreign))",
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
     name: "binding-trait-dictionary",
     breaks:
       "a bound of a trait of bindings takes a dictionary, `isReactRuleError(e, lintErrorRuleIdentified())`",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        && (tcx.associated_items(id).in_definition_order()).all(|item| bindings::is_binding(tcx, item.def_id))\n",
     replace:
       "        && tcx.associated_items(id).in_definition_order().next().is_none()\n",
@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
     name: "iterator-bound-not-evidence",
     breaks:
       "an adapter's `I: Iterator` takes no dictionary, so its `next` has none to step `I` by",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "given.stepped.contains(&(id, param.index, tr.def_id))",
     replace: "false",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
     name: "into-iter-ref-bound-undictionaried",
     breaks:
       "a `for<'a> &'a mut C: IntoIterator` bound is given no dictionary, and `for x in c` of it is refused",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        && (!is_std_def(tcx, trait_id, StdItem::IntoIterator) || into_iter_by_dictionary(tcx, trait_id, self_ty))\n",
     replace: "        && !is_std_def(tcx, trait_id, StdItem::IntoIterator)\n",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
@@ -188,7 +188,7 @@ export const mutations: Mutation[] = [
     name: "into-iter-param-bound-dictionaried",
     breaks:
       "an `I: IntoIterator` bound is given a dictionary none passes, where it's given the JS iterator, and its `IntoIter`'s drop is lost",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        && (!is_std_def(tcx, trait_id, StdItem::IntoIterator) || into_iter_by_dictionary(tcx, trait_id, self_ty))\n",
     replace:
       "        && (true || into_iter_by_dictionary(tcx, trait_id, self_ty))\n",
@@ -202,7 +202,7 @@ export const mutations: Mutation[] = [
     name: "extension-bound-undictionaried",
     breaks:
       "an `I` given as it is is given no `DoubleEndedIterator` or `ExactSizeIterator` dictionary, and its `len()` is refused",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "    if (is_std_def(tcx, tr.def_id, StdItem::Iterator) || super::recognition::is_iterator_extension(tcx, tr.def_id))\n",
     replace: "    if is_std_def(tcx, tr.def_id, StdItem::Iterator)\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
@@ -211,7 +211,7 @@ export const mutations: Mutation[] = [
     name: "extension-implies-no-iterator",
     breaks:
       "an `I: DoubleEndedIterator` given as it is is given no `Iterator` dictionary, and its `next()` is refused",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        if !super::recognition::implies_iterator(tcx, tr.def_id) {\n            return None;\n        }\n        let iterator",
     replace:
       "        if true {\n            return None;\n        }\n        let iterator",
@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
     name: "extension-iterator-ungiven",
     breaks:
       "a type parameter given as it is bound by the crate's trait that extends `Iterator` is given no `Iterator` dictionary, and stepping it asks its trait's",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        if !super::recognition::implies_iterator(tcx, tr.def_id) {\n            return None;\n        }\n        let iterator = ty::TraitRef",
     replace:
       "        if !super::recognition::is_iterator_extension(tcx, tr.def_id) {\n            return None;\n        }\n        let iterator = ty::TraitRef",
@@ -231,7 +231,7 @@ export const mutations: Mutation[] = [
     name: "index-bound-as-itself",
     breaks:
       "a bound of `Index<J>` on a `Vec<T>` isn't its `J: SliceIndex<[T]>`, whose dictionary indexes",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "    if let Some(slice_index) = super::recognition::index_by_slice_index(tcx, tr) {",
     replace:
       "    if let Some(slice_index) = super::recognition::index_by_slice_index(tcx, tr).filter(|_| false) {",
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
     name: "library-steps-unread",
     breaks:
       "a library's manifest isn't asked which type parameters it steps, and its consumer gives no dictionary",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "|| foreign.steps(id, param.index, tr.def_id);\n",
     replace: ";\n",
     tests: ["test/crates.test.ts", "-t", "two crates: extension_default"],
@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
     name: "into-iter-held-no-dictionary",
     breaks:
       "an `IntoIterator` whose `IntoIter` is held as it is is given no dictionary",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        && super::iterators::into_iter_held_as_it_is(tcx, id, tr.self_ty())\n    {\n        return Some(tr);",
     replace: "        && false\n    {\n        return Some(tr);",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_held_as_it_is.rs$"],
@@ -259,7 +259,7 @@ export const mutations: Mutation[] = [
     name: "library-copy-bound-recomputed",
     breaks:
       "a consumer gives a library's export a `TCopy` its contract says it takes none of, `pair(1, [2], undefined, wrapDisplay)`, which puts `undefined` where its `UDisplay` is (ADR 0914, amended)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        && let Some(item) = foreign.item(id)\n        && !(item.calling.param(param.index))",
     replace:
       "        && let Some(item) = foreign.item(id).filter(|_| false)\n        && !(item.calling.param(param.index))",
@@ -269,7 +269,7 @@ export const mutations: Mutation[] = [
     name: "clone-bound-always-given",
     breaks:
       "a `T: Clone` only the crate's callers give, none what isn't its own clone, still takes its dictionary, `readContext(context, TClone)` (ADR 0914, amended)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "            true => super::analysis::clones_by_itself(tcx, foreign, given.clones, (id, param.index)),\n",
     replace: "            true => false,\n",
     tests: [
@@ -282,7 +282,7 @@ export const mutations: Mutation[] = [
     name: "library-clone-bound-recomputed",
     breaks:
       "a consumer gives a library's export a `TClone` its contract says it takes none of, `pairClone(1, [3], undefined, wrapDisplay)`, which puts `undefined` where its `UDisplay` is (ADR 0914, amended)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "                !(item.calling.param(param.index))\n                    .is_some_and(|param| param.has(rust_js_program::library::ParamFact::Clone))\n",
     replace: "                false\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "contract says it takes"],
@@ -290,7 +290,7 @@ export const mutations: Mutation[] = [
   {
     name: "supertrait-dictionary-declared",
     breaks: "a trait whose dictionary holds its supertrait's, `Labeled: Display`'s `Display`, is declared without it, so a TypeScript caller's dictionary of it has none and its default throws (#550)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        || !held_supertraits(tcx, foreign, trait_id, identity).is_empty()\n",
     replace: "        || held_supertraits(tcx, foreign, trait_id, identity).is_empty() && false\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
@@ -298,7 +298,7 @@ export const mutations: Mutation[] = [
   {
     name: "constant-dictionary-declared",
     breaks: "a trait's constant, which only one generic code reads is in its dictionaries (ADR 0100), is left out of what it's declared to hold, so a TypeScript caller's dictionary has none and `sides` reads `undefined` (#550)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        if tcx.def_kind(method) != DefKind::AssocFn\n",
     replace: "        if matches!(tcx.def_kind(method), DefKind::AssocConst) { continue; }\n        if tcx.def_kind(method) != DefKind::AssocFn\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
@@ -306,7 +306,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-method-dictionary-declared",
     breaks: "a trait's method of a type parameter of its own, `show<T: Display>` or `named<T: ?Sized>`, whose entry takes its dictionary or what it asks of it after its arguments, `TDisplay` or `TName`, is declared as if it took none (#550)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "                .all(|(clause, _)| outlives(clause))\n",
     replace: "                .all(|_| true)\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
@@ -314,7 +314,7 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-receiver-dictionary-declared",
     breaks: "a trait's `&mut self` method, whose entry takes a box, `bump: (arg0) => tallyCounter_bump(arg0.value)`, is declared as taking the value, which a TypeScript caller gives (#550)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        if changed || tracked {\n",
     replace: "        if tracked {\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
@@ -322,7 +322,7 @@ export const mutations: Mutation[] = [
   {
     name: "tracked-dictionary-declared",
     breaks: "a trait's `#[track_caller]` method, whose entry takes its caller's location after its arguments (ADR 0427), is declared as if it took none (#550)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        if changed || tracked {\n",
     replace: "        if changed {\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "type of its dictionaries"],
@@ -330,7 +330,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-trait-dictionary-declared",
     breaks: "a trait of classes, whose methods are its classes' prototypes' and which has no dictionary (rd283), is declared as one's type, and so is a dictionary of it, `widgetSided`, which the JS doesn't export (#550)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        || super::classes::is_class_trait(tcx, trait_id)\n",
     replace: "",
     tests: ["test/declarations-ungiven.test.ts", "-t", "a namespace's, an object's and a class's member"],
@@ -338,7 +338,7 @@ export const mutations: Mutation[] = [
   {
     name: "mut-self-trait-undeclared",
     breaks: "a trait of a `&mut self` method isn't declared, `Counter`'s dictionaries and a `dyn Counter` `any`, though its entry takes the box `MutRefForm` says, `{ value: Self }` (#662)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "                None => given.extend(ty.builtin_deref(true)),\n",
     replace: "                None => given.push(ty),\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "a trait of `&mut self` methods"],
@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [
   {
     name: "mut-self-besides-receiver-refused",
     breaks: "a trait whose method takes a `&mut Self` besides its receiver, `swap_with(&mut self, other: &mut Self)`, isn't declared, though its entry takes the box `MutRefForm` says, `{ value: Self }`, as it takes its receiver (#679)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        let changed = unadapted(sig.output()) || sig.inputs().iter().any(|&input| unadapted(input));\n",
     replace:
       "        let changed = unadapted(sig.output()) || sig.inputs().iter().enumerate().any(|(i, &input)| unadapted(input) || (i > 0 && matches!(*input.kind(), ty::Ref(_, p, Mutability::Mut) if of_self(p))));\n",
@@ -355,7 +355,7 @@ export const mutations: Mutation[] = [
   {
     name: "mut-giver-trait-refused",
     breaks: "a trait whose method gives a `&mut`, `slot(&mut self) -> &mut u32`, isn't declared, though each entry gives the box or handle `MutRefForm` says, `{ value: number }` (#679)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        let changed = unadapted(sig.output()) || sig.inputs().iter().any(|&input| unadapted(input));\n",
     replace:
       "        let changed = unadapted(sig.output()) || sig.output().ref_mutability() == Some(Mutability::Mut) || sig.inputs().iter().any(|&input| unadapted(input));\n",
@@ -364,7 +364,7 @@ export const mutations: Mutation[] = [
   {
     name: "nested-mut-self-trait-declared",
     breaks: "a trait whose method takes a `&mut Self` within what it takes that no entry adapts, `gather(&mut self, others: Vec<&mut Self>)`, is declared, though its entries take what each impl does, generic code's box or the object (#682)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "            (given.iter().flat_map(|ty| ty.walk()).filter_map(|arg| arg.as_type())).any(to_self)\n",
     replace: "            (given.iter().flat_map(|ty| ty.walk()).filter_map(|arg| arg.as_type())).any(|_| false)\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "a trait of `&mut self` methods"],
@@ -372,7 +372,7 @@ export const mutations: Mutation[] = [
   {
     name: "selection-of-a-bound-region",
     breaks: "trait selection is asked of a part of a type inside a binder as it is, `<(&u32,) as Iterator>` of a `Box<dyn FnMut(&u32) -> bool>` given `filter` in generic code, and rustc panics: escaping bound vars (#1224)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "    let tr = match tr.has_escaping_bound_vars() {\n",
     replace: "    let tr = match false && tr.has_escaping_bound_vars() {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_reference_given_to_adapters_in_generic_code\\.rs$"],
@@ -380,7 +380,7 @@ export const mutations: Mutation[] = [
   {
     name: "nested-bound-named-as-its-type",
     breaks: "a bound of what an associated type projects, `IntoIter: DoubleEndedIterator`, is named as one of the type's own, `PairsDoubleEndedIterator`, which a bound of it would share (#1355)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "                path.insert_str(0, &words::item_word(tcx, def_id));\n",
     replace: "                let _ = def_id;\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_into_iterator_flattened_from_its_back.rs$"],
@@ -389,7 +389,7 @@ export const mutations: Mutation[] = [
   {
     name: "rpitit-bounds-entryless",
     breaks: "a trait method's `impl IntoIterator` alone has no entry of its bound, so generic code's `flat_map` of what it gives is refused for want of its `IntoIterator` (#1345)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "        if tcx.def_kind(item.def_id) != DefKind::AssocTy {\n            continue;\n        }\n",
     replace: "        if tcx.def_kind(item.def_id) != DefKind::AssocTy || item.is_impl_trait_in_trait() {\n            continue;\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_into_iterator_of_a_trait_method_flattened.rs$"],
@@ -398,7 +398,7 @@ export const mutations: Mutation[] = [
     name: "lowered-impls-declared-only",
     breaks:
       "a library's blanket impl the crate compiles itself (ADR 0914) is no impl whose dictionary the crate makes, so what its kept defaults step of `T` and ask of `T::Item` reach none: `collect_array`'s `self.next()` refused, \"stepping `T`\" (#1409)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "    declared_impls(tcx).chain(instances).collect()\n",
     replace: "    declared_impls(tcx).chain(instances.filter(|_| false)).collect()\n",
     tests: ["test/crates.test.ts", "-t", "^two crates: library_(blanket_default_compiled_by_its_consumer|instance_impl_asks_its_defaults_facts)$"],
@@ -407,7 +407,7 @@ export const mutations: Mutation[] = [
     name: "lowered-impl-local-only",
     breaks:
       "a library's impl the crate compiles itself is taken for its library's, whose manifest says nothing of it, so what a caller's type parameter given it asks reaches no caller (#1409)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "    imp.is_local() || foreign.is_instance(imp)\n",
     replace: "    imp.is_local() || (foreign.is_instance(imp) && false)\n",
     tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
@@ -416,7 +416,7 @@ export const mutations: Mutation[] = [
     name: "index-bound-of-a-known-type-given",
     breaks:
       "a bound `Vec<T>: Index<usize, Output = T>`, whose `items[1]` is std's in place, takes a dictionary nothing reads, `second(items, VecIndexUsize)`, its callers making one (#1420)",
-    file: "src/lower/traits.rs",
+    file: "crates/rust-js-lower/src/traits.rs",
     find: "    if tcx.is_lang_item(tr.def_id, LangItem::Index) && !super::recognition::indexes_by_dictionary(tcx, tr) {\n",
     replace: "    if false && tcx.is_lang_item(tr.def_id, LangItem::Index) && !super::recognition::indexes_by_dictionary(tcx, tr) {\n",
     tests: ["test/corpus.test.ts", "-t", "^index_bound_generic.rs$"],

@@ -1,11 +1,11 @@
-// Mutations of src/lower/mir/tidy/decisions/guarded.rs (#523, ADR 0364).
+// Mutations of crates/rust-js-mir/src/tidy/decisions/guarded.rs (#523, ADR 0364).
 import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "bindings-set-in-guards-never",
     breaks: "a guarded `|`'s binding its arm reads isn't set in the guard, `odd((x = b))`, so the alternatives are two arms and `either_read` stays MIR's labeled block (#523, C1)",
-    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/guarded.rs",
     find: "    if many.is_empty() {\n        return None;\n    }\n    let mut tree = tree.to_vec();",
     replace: "    if true {\n        return None;\n    }\n    let mut tree = tree.to_vec();",
     tests: ["test/corpus.test.ts", "-t", "^(guards_that_call).rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "guard-of-no-call-unbound",
     breaks: "a guard's binding a pure guard reads, `r$1 = o._0; if (!(r$1 > 1))`, isn't read as its value, so `Some(Circle(r) | Sphere(r)) if r > 1.0` keeps MIR's labeled blocks (#523)",
-    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/guarded.rs",
     find: "        && (!pure(test) || guard())\n",
     replace: "        && !pure(test)\n",
     tests: ["test/corpus.test.ts", "-t", "^(or_bindings).rs$"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-pure-test-bound",
     breaks: "a `const` a test the program wrote reads, one that calls nothing, `const _31 = heap[i]; if (_31 < heap[j])`, is read as its value, so the program's `if`s are a match's tree and their chain, `_19 < heap[index] && (rightIndex >= length || ..)` (#523; back with #1948, whose heap reads are pure again)",
-    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/guarded.rs",
     find: "        && (!pure(test) || guard())\n",
     replace: "",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "binding-set-first-always",
     breaks: "a binding the guard reads once, first, is set before it, `((x = b), odd(x))`, not where it's read, `odd((x = b))` (A1, #523)",
-    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/guarded.rs",
     find: "            if reads == 1 && super::super::moves::leads(&self.guard, name, None, &|_| true) == Some(true) {\n",
     replace: "            if false && reads == 1 && super::super::moves::leads(&self.guard, name, None, &|_| true) == Some(true) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(guards_that_call).rs$"],
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     name: "decisions-guard-call-a-leaf",
     breaks:
       "a guard that calls, `[n, ..] if below(*n)`, is no test of the tree, so `guarded_rows` keeps MIR's `bb25:` block each arm breaks out of (#221)",
-    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/guarded.rs",
     find: "                pure(part) || !span.is_none() && (self.told.guards.iter()).any(|g| within(*span, g.span))\n",
     replace: "                pure(part)\n",
     tests: ["test/corpus.test.ts", "-t", "^(default_value_exits|guards_that_call|guarded_arm_chains).rs$"],
@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
     name: "decisions-guard-binding-not-given",
     breaks:
       "a guard's `const n = row[0];` is what an arm does, not given in the guard's place, `below(row[0])`, so `guarded_rows` keeps its block (#221)",
-    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/guarded.rs",
     find: "            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => Some((name, value, true)),\n",
     replace: "            StmtKind::Const(..) | StmtKind::Let(..) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^(default_value_exits|guards_that_call|guarded_arm_chains).rs$"],
@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-before-of-a-tested-const",
     breaks: "a `const x = v[i];` before a block that its tree only tests is read as its value, `v[i] === 0`, so `switch_tail_continues`'s `switch` of `0 => continue` is another tree, its `case 0: break;` a `continue;` (#771)",
-    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/guarded.rs",
     find: "        if js::Writes::sets(body, name)\n            && tested_reads(",
     replace: "        if tested_reads(",
     tests: ["test/corpus.test.ts", "-t", "^(switch_tail_continues).rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "nested-tests-unread",
     breaks: "a guard's binding read in the `if`s MIR nests of its `&&` is read where the arm is, `x = l; if (x % 2 === 0) { if (g(c, x, 0))`, so it's no binding of the guard and `read_twice` keeps its labeled block (#771)",
-    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/guarded.rs",
     find: "    tested_reads(stmts, name).is_some()\n",
     replace: "    js::mentions_of(stmts, name) == 0\n",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "binding-runs-of-one",
     breaks: "only one binding before a guard's test is read as its value, so `&[x, y, ..] | &[x, y, ..] if g(c, x + y, 0)`'s two, `let [x, y] = s;`, stay and `given_again` keeps its labeled block (#771)",
-    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/guarded.rs",
     find: "                _ => run.push(binding(next)?),\n",
     replace: "                _ => return None,\n",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "unread-binding-runs-refused",
     breaks: "a binding no test and no arm reads, `(x, 1..=2) | (x, 1) if g(c, x + 3, 0)`'s `x` once `x + 3` is `a + 3`, isn't the guard's, so `kept_read` keeps its labeled block (#771)",
-    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/guarded.rs",
     find: " || run.iter().all(dead);",
     replace: ";",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
   {
     name: "let-bindings-uncounted",
     breaks: "a guard's binding MIR declares, `let x = s[0];`, given again for the other alternative, `x = s[s.length - 1];`, isn't counted as the guard's, so `either_end` keeps its labeled block (#771)",
-    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/guarded.rs",
     find: "                StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name, value, 0),\n",
     replace: "                StmtKind::Const(name, value) => (name, value, 0),\n",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-before-stopped-by-declarations",
     breaks: "a guard's binding's `let` before a block MIR made, past the arm's own `let x;`, isn't what the tree tests, so `(x, _) | (x, 1) if seen(c, x).is_some()` keeps its labeled block (#1620)",
-    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/guarded.rs",
     find: "    let declared = (before.iter().rev())\n",
     replace: "    let declared = 0 * (before.iter().rev())\n",
     tests: ["test/corpus.test.ts", "-t", "^(guarded_alternatives_chained_without_labels|match_trees_chained).rs$"],
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
   {
     name: "bound-stopped-by-declarations",
     breaks: "a guard's binding's `let` past the arm's own `let x;` is no binding the tree's tests alone read, so its alternatives' guard keeps its labeled block (#1620)",
-    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/guarded.rs",
     find: "            let block_at = (i + 1..list.len()).find(|&j| !matches!(list[j].kind, StmtKind::Let(_, None)));\n",
     replace: "            let block_at = Some(i + 1);\n",
     tests: ["test/corpus.test.ts", "-t", "^(guarded_alternatives_chained_without_labels|match_trees_chained).rs$"],
@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-left-unread",
     breaks: "a guard's binding's `let` the chain reads in its place stays, `let x$1 = a;` read by nothing (#1620)",
-    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/guarded.rs",
     find: "            stmts.remove(at);\n",
     replace: "            let _ = at;\n",
     tests: ["test/corpus.test.ts", "-t", "^(guarded_alternatives_chained_without_labels|match_trees_chained).rs$"],

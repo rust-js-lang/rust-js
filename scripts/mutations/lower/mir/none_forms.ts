@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/none_forms.rs (ADR 0093): how each of a
+// Mutations of crates/rust-js-mir/src/none_forms.rs (ADR 0093): how each of a
 // body's `Option` locals holds its `None`, decided once (#2112).
 import type { Mutation } from "../../../mutations";
 
@@ -6,31 +6,31 @@ export const mutations: Mutation[] = [
   {
     name: "same-nones-stored-unasked",
     breaks: "an `==` of two `Option`s each `null` or a value, crate-made fibers' fields, isn't known to have `null` alone for `None`, so it's `==` or `(a ?? null) === (b ?? null)`, not `===`",
-    file: "src/lower/mir/none_forms.rs",
-    find: "                (self.stored_given(state, &Operand::Copy(of)) == crate::lower::aggregates::Given::Nulled)\n",
+    file: "crates/rust-js-mir/src/none_forms.rs",
+    find: "                (self.stored_given(state, &Operand::Copy(of)) == rust_js_lower::aggregates::Given::Nulled)\n",
     replace: "                (false)\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "an untagged enum's symbol is told by typeof"],
   },
   {
     name: "made-null-read-as-undefined",
     breaks: "a local the body makes `null` keeps `mir_nones`' `NoneUndefined`, the two analyses disagreeing again, its read's test `x !== undefined` true of its stored `null` (#2112)",
-    file: "src/lower/mir/none_forms.rs",
+    file: "crates/rust-js-mir/src/none_forms.rs",
     find: "        reads.retain(|local, none| !made_null.contains(local) || matches!(none, js::OnlyNone::Null));\n",
     replace: "",
-    unitTests: "lower::mir::none_forms::tests::a_local_made_null_is_never_read_as_undefined_alone",
+    unitTests: "none_forms::tests::a_local_made_null_is_never_read_as_undefined_alone",
   },
   {
     name: "made-null-unread",
     breaks: "no local is made `null`, so a nullable place's `Option` the body makes is coalesced where it's stored, `?? null`, or its `None` `undefined` (#2112)",
-    file: "src/lower/mir/none_forms.rs",
+    file: "crates/rust-js-mir/src/none_forms.rs",
     find: "        self.made_null.contains(&local)\n",
     replace: "        let _ = local;\n        false\n",
-    unitTests: "lower::mir::none_forms::tests::a_local_made_null_is_never_read_as_undefined_alone",
+    unitTests: "none_forms::tests::a_local_made_null_is_never_read_as_undefined_alone",
   },
   {
     name: "no-null-proved-unread",
     breaks: "a local proved `Some` where it's written to an exit, of a payload never JS's `null`, is coalesced, `?? undefined` (#2112)",
-    file: "src/lower/mir/none_forms.rs",
+    file: "crates/rust-js-mir/src/none_forms.rs",
     find: "            || self.proved_present(state, place.local)\n",
     replace: "",
     tests: ["test/one-none-exits.test.ts", "-t", "tested Some given to a binding"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "no-null-written-null-unread",
     breaks: "a place whose every `null` is a written `js::null()` is taken for one that may hold a `null` JS gave, so a binding's optional arguments of `js::null()` are left out, `undefined` where the program gave JS's `null` on purpose (#2112, ADR 0935)",
-    file: "src/lower/mir/none_forms.rs",
+    file: "crates/rust-js-mir/src/none_forms.rs",
     find: "        js_nones.holds_written_null(tcx, body, place)\n            || ",
     replace: "        false\n            || ",
     tests: ["test/one-none-exits.test.ts", "-t", "optional arguments is JS's null"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "omitted-prop-unread",
     breaks: "what `jsx!` gives a prop it isn't given, Rust's `None`, is taken for one that may hold a `null` JS gave, so it's coalesced, `undefined ?? undefined`, and a component's flattened props that share its name are refused (#2112)",
-    file: "src/lower/mir/none_forms.rs",
+    file: "crates/rust-js-mir/src/none_forms.rs",
     find: "            || self.omitted_prop(state, place.local)\n",
     replace: "",
     tests: ["test/jsx-props-resolved.test.ts", "-t", "the module's own props are predicted"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "presence-copy-unfollowed",
     breaks: "a temporary MIR copies a proved `Option` into before it's read isn't followed, so a closure's `value.unwrap_or(fallback)` under `value.is_some()` is `value ?? fallback` (#2112 C S4)",
-    file: "src/lower/mir/none_forms.rs",
+    file: "crates/rust-js-mir/src/none_forms.rs",
     find: "        let Some((from, at)) = self.copied_from(state, (place.local, block)) else {\n",
     replace: "        let Some((from, at)) = None::<(Place<'tcx>, BasicBlock)> else {\n",
     tests: ["test/corpus.test.ts", "-t", "^option_proved_again_where_nothing_changes_it.rs$"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "call-presence-unasked",
     breaks: "a nullable function's `return js::cast(found.map(js::unknown))` under `js::truthy(found)` isn't what's proved of `found`, so it's returned `?? null` (#2112 C S4)",
-    file: "src/lower/mir/none_forms.rs",
+    file: "crates/rust-js-mir/src/none_forms.rs",
     find: "            Some(from) => self.presence_of(state, (&Operand::Copy(from), state.at), 0),\n",
     replace: "            Some(_) => Presence::Unknown,\n",
     tests: ["test/lowering-nullable-truthy.test.ts"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "proved-present-unread",
     breaks: "an Option a truthy test proved there is read as one that may be `undefined`, `return found ?? null` inside `if (found)` (#1902)",
-    file: "src/lower/mir/none_forms.rs",
+    file: "crates/rust-js-mir/src/none_forms.rs",
     find: "        if (whole && self.proved_present(state, place.local))\n",
     replace: "        if (whole && self.proved_present(state, place.local) && false)\n",
     tests: ["test/lowering-nullable-truthy.test.ts"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-read-never-proved",
     breaks: "a `RefCell` field read where a test of it proved it is `$unwrap(node.sibling)`, where `node.sibling` (#1933)",
-    file: "src/lower/mir/none_forms.rs",
+    file: "crates/rust-js-mir/src/none_forms.rs",
     find: "            || (whole && self.field_read_proved(state, place.local))\n",
     replace: "",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "a RefCell field tested and read again"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "proved-defined-read-unmarked",
     breaks: "a read a test proved defined there isn't said so, so `return entry ?? null` where `!matches!(js::classify(entry), Kind::Undefined)` holds, left for tidy to guess (#1933 step 4 (D))",
-    file: "src/lower/mir/none_forms.rs",
+    file: "crates/rust-js-mir/src/none_forms.rs",
     find: "        if whole && self.proved_defined(state, place.local) {\n",
     replace: "        if whole && self.proved_defined(state, place.local) && false {\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "proved defined"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "made-some-unseen",
     breaks: "a binding's trailing argument made `Some(..)` where it's given is tested, `byteOffset != null ? new Uint8Array(buffer, byteOffset) : ..`, as one that may be `None` is (#1842)",
-    file: "src/lower/mir/none_forms.rs",
+    file: "crates/rust-js-mir/src/none_forms.rs",
     find: "            || self.made_some(state, operand)\n",
     replace: "",
     tests: ["test/js-builtins.test.ts", "-t", "an ArrayBufferView is any typed array"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "deref-field-trust-unasked",
     breaks: "what a reference to a field refers to isn't the field's trust, so `match &holder.label` of a nullable field a closure reads through a capture is tested `!= null`, not `!== null` (#2112 C S5)",
-    file: "src/lower/mir/none_forms.rs",
+    file: "crates/rust-js-mir/src/none_forms.rs",
     find: "                .or_else(|| self.read_none_trust(state.body, place, 0)),\n",
     replace: ",\n",
     tests: ["test/corpus.test.ts", "-t", "^option_none_forms_through_captures.rs$"],
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
   {
     name: "same-nones-unasked",
     breaks: "two `Option`s whose `None` MIR says is the same one alone, a getter's `T | null` each, are compared `==`, not `===` (rd117, #2112 C S5)",
-    file: "src/lower/mir/none_forms.rs",
+    file: "crates/rust-js-mir/src/none_forms.rs",
     find: "        args.len() == 2 && none(0).is_some() && none(0) == none(1)\n",
     replace: "        args.len() == 2 && none(0).is_some() && none(0) == none(1) && false\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-eq-one-side-none",
     breaks: "a getter's `T | null` compared with the crate's `Option`, maybe `undefined`, by `===`, so `a.parentNode === b` is false of `null` and `None` (rd117)",
-    file: "src/lower/mir/none_forms.rs",
+    file: "crates/rust-js-mir/src/none_forms.rs",
     find: "        args.len() == 2 && none(0).is_some() && none(0) == none(1)\n",
     replace: "        args.len() == 2 && none(0).is_some()\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],

@@ -1,10 +1,10 @@
-// Mutations of src/lower/analysis/owned_by_return.rs (ADR 0317, amended):
+// Mutations of crates/rust-js-lower/src/analysis/owned_by_return.rs (ADR 0317, amended):
 // what a function's return alone owns of what it's given, found where
 // something else may keep it.
 import type { Mutation } from "../../../mutations";
 
 const corpus = (name: string) => ["test/corpus.test.ts", "-t", `^${name}.rs$`];
-const file = "src/lower/analysis/owned_by_return.rs";
+const file = "crates/rust-js-lower/src/analysis/owned_by_return.rs";
 
 export const mutations: Mutation[] = [
   {
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a public field, which another crate may clone, is taken to keep its callback alone: the library's contract says its return owns it",
     file,
-    find: "        && !crate::lower::declarations::js_names(tcx, field.did)\n",
+    find: "        && !crate::declarations::js_names(tcx, field.did)\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "owns its callbacks alone"],
   },

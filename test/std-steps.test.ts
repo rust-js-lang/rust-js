@@ -1,5 +1,5 @@
 // std's steps, the compiler's one catalog of them (#2112):
-// src/lower/recognition/std_steps.txt, which `recognition::std_steps`
+// crates/rust-js-lower/src/recognition/std_steps.txt, which `recognition::std_steps`
 // reads, and test/iterator-steps.test.ts holds the runtime's adapters to.
 // Made here from std alone, two ways: which of `Iterator`'s,
 // `DoubleEndedIterator`'s and `ExactSizeIterator`'s methods each adapter
@@ -19,7 +19,7 @@ import { join } from "node:path";
 import { underLoad } from "../scripts/timing";
 import { contentDirectory, nativeBinary, root } from "./support";
 
-const catalogFile = join(root, "src/lower/recognition/std_steps.txt");
+const catalogFile = join(root, "crates/rust-js-lower/src/recognition/std_steps.txt");
 const probeFile = join(root, "test/std-steps.rs");
 
 const sysroot = Bun.spawnSync(["rustc", "--print", "sysroot"], { cwd: root }).stdout.toString().trim();

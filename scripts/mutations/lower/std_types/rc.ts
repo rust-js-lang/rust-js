@@ -1,4 +1,4 @@
-// Mutations of src/lower/std_types/rc.rs (ADR 0320).
+// Mutations of crates/rust-js-lower/src/std_types/rc.rs (ADR 0320).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "counted-rc-of-boxed-dyn-nested",
     breaks:
       "`Rc::from(b)` of a `Box<dyn T>`, counted, holds the box whole, `{ value: b, strong: 1 }`, so a call reads `r.impl` of nothing: `TypeError` (#399)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "            true if self.rc_form(pointee) == RcForm::Pair => Self::new_counted_pair(value),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^counted_rc_of_boxed_dyn.rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "weak-every-counted",
     breaks:
       "a `Weak` nothing upgrades is lowered counted, `$downgrade`, while its `Rc` is the object itself (ADR 0843)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "        weak_pointee(self.tcx, ty).filter(|&pointee| self.krate.counted.counts(self.tcx, pointee))\n",
     replace: "        weak_pointee(self.tcx, ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^weak_cycle_set_after.rs$"],
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     name: "downgrade-uncounted-unknown",
     breaks:
       "`Rc::downgrade` of an uncounted `Rc` isn't the `Rc` itself, and fails to compile (ADR 0843)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: '            RcOp::Downgrade if self.uncounted_weak(output).is_some() => values.next().expect("an `Rc`"),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^weak_cycle_set_after.rs$"],
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "weak-new-uncounted-fresh",
     breaks:
       "an uncounted `Weak::new()` is a new object, so two aren't `Weak::ptr_eq` (ADR 0843)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "            None => Expr::null(),\n",
     replace: "            None => Expr::object(Vec::new()),\n",
     tests: ["test/corpus.test.ts", "-t", "^weak_cycle_set_after.rs$"],
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     name: "weak-new-counted-fresh",
     breaks:
       "a counted `Weak::new()` is a new `{ strong: 0, weak: 0 }`, so two aren't `Weak::ptr_eq`, as std's are (ADR 0843)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: '            Some(_) => Expr::helper("$weakNone"),\n',
     replace:
       '            Some(_) => Expr::object(vec![Prop::Field("strong".into(), Expr::int(0)), Prop::Field("weak".into(), Expr::int(0))]),\n',
@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-get-mut-shared",
     breaks: "`get_mut` gives a `&mut` while others point at it",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "                        Expr::cond(only, given, Expr::js_undefined())\n",
     replace:
       "                        Expr::cond(Expr::bool(true), given, Expr::js_undefined())\n",
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-make-mut-unassigned",
     breaks: "`make_mut`'s new `Rc` isn't its place's",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "        out.push(StmtKind::Assign(place.clone(), made).at(self.js_span(span)));\n",
     replace: "        out.push(StmtKind::Expr(made).at(self.js_span(span)));\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-new-uncounted",
     breaks: "`Rc::new` of a counted one is its value",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "            RcForm::Pair | RcForm::Box => Ok(Self::new_rc(value)),\n",
     replace: "            RcForm::Pair | RcForm::Box => Ok(value),\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "pin-shown-as-pointer-box",
     breaks: "`{}` of a pinned `&mut` to a number shows its box",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "            if let Some(pointer) = self.recognition().pinned(ty) {",
     replace:
       "            if let Some(pointer) = self.recognition().pinned(ty).filter(|_| false) {",
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
     name: "make-mut-drop-unknown",
     breaks:
       "`make_mut` that drops the last `Rc` leaves what it points at undropped",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "        let mut given = vec![place.clone(), self.clone_arg(item, span)?];\n        given.extend(self.drop_function(item, span)?);\n",
     replace:
       "        let given = vec![place.clone(), self.clone_arg(item, span)?];\n",
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
     name: "unwrap-or-clone-drop-unknown",
     breaks:
       "`unwrap_or_clone` that drops the last `Rc` leaves what it points at undropped",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "                        let mut given = vec![rc, self.clone_arg(item, span)?];\n                        given.extend(self.drop_function(item, span)?);\n",
     replace:
       "                        let given = vec![rc, self.clone_arg(item, span)?];\n",
@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
     name: "counted-dyn-pointee-held",
     breaks:
       "what a counted `Rc<dyn T>` points at is read as its `value`, not its pair",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "            RcForm::Pair | RcForm::Instance => rc,\n",
     replace: "            RcForm::Instance => rc,\n            RcForm::Pair => Expr::held(rc),\n",
     tests: [
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-op-of-mut-box",
     breaks: "an `Rc`'s op given a `&mut` to one reads its box, not the `Rc`",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "                    Some(ty::Ref(_, _, ty::Mutability::Mut)) => Expr::held(rc),\n",
     replace:
       "                    Some(ty::Ref(_, _, ty::Mutability::Mut)) => rc,\n",
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
     name: "format-without-cells",
     breaks:
       '`println!("{y}")` of a `&mut` to a number prints its cell, `[object Object]`, not what it points at',
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "        let (value, ty) = self.through_refs_until(value, ty, &own);\n        self.through_boxes_until(value, ty, &own)\n",
     replace:
       "        let ty = ty.peel_refs();\n        self.through_boxes_until(value, ty, &own)\n",
@@ -139,7 +139,7 @@ export const mutations: Mutation[] = [
     name: "box-of-mut-ref-shown-as-handle",
     breaks:
       "`{}` of a `Box<&mut u32>` or an `Rc<&mut u32>` is its handle, `[object Object]`, not what it borrows (#197)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "                    None if self.shows_inside(ty) => {\n",
     replace:
       "                    None if false && self.shows_inside(ty) => {\n",
@@ -149,8 +149,8 @@ export const mutations: Mutation[] = [
     name: "counted-rc-given-to-js",
     breaks:
       "a counted `Rc` a `WeakMap` holds is compiled: what its `get` gives back is dropped uncounted, its destructor run while the map holds it",
-    file: "src/lower/std_types/rc.rs",
-    find: "        if !crate::lower::bindings::is_binding(self.tcx, def_id) {\n            return Ok(());\n        }\n        let refused",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
+    find: "        if !crate::bindings::is_binding(self.tcx, def_id) {\n            return Ok(());\n        }\n        let refused",
     replace:
       "        if true {\n            return Ok(());\n        }\n        let refused",
     tests: ["test/js-builtins.test.ts", "-t", "uncounted Rc a WeakMap holds"],
@@ -159,17 +159,17 @@ export const mutations: Mutation[] = [
     name: "uncounted-rc-given-to-js-refused",
     breaks:
       "an uncounted `Rc`, the value itself, a `WeakMap` holds is refused, React's cache nodes",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "            .find(|&part| self.counted_rc(part).is_some() || self.counted_weak(part).is_some());\n",
     replace:
-      "            .find(|&part| crate::lower::recognition::rc_pointee(self.tcx, part).is_some() || self.counted_weak(part).is_some());\n",
+      "            .find(|&part| crate::recognition::rc_pointee(self.tcx, part).is_some() || self.counted_weak(part).is_some());\n",
     tests: ["test/js-builtins.test.ts", "-t", "uncounted Rc a WeakMap holds"],
   },
   {
     name: "value-cell-guard-shown-value",
     breaks:
       "`{:?}` of a guard of a `RefCell` of an object shows its `value`, `undefined`",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "                true if self.guards_value_cell(ty) => value,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cell_deque_char_methods.rs$"],
@@ -178,7 +178,7 @@ export const mutations: Mutation[] = [
     name: "boxed-refcell-given-to-js",
     breaks:
       "a `RefCell<u32>`, its `{ value }` box, is given to JS as `js::unknown_of`'s value, which JS reads as the box, not the number (ADR 0962)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "                        ) && !self.is_value_cell(part) =>\n",
     replace: "                        ) && false =>\n",
     tests: [
@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
     name: "value-refcell-given-to-js-refused",
     breaks:
       "a `RefCell` of an array, the array itself, is refused where it's given to JS, so React's view transitions can't store the array they fill (ADR 0962)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "                        ) && !self.is_value_cell(part) =>\n",
     replace: "                        ) && true =>\n",
     tests: [
@@ -204,7 +204,7 @@ export const mutations: Mutation[] = [
     name: "refcell-a-closure-captures-given-to-js",
     breaks:
       "a `RefCell<u32>` a closure given to JS captures is taken to be given itself, so a listener counting its calls is refused (ADR 0962)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "                    ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..) | ty::Dynamic(..) | ty::Coroutine(..) => {\n",
     replace:
       "                    ty::FnDef(..) | ty::FnPtr(..) | ty::Dynamic(..) | ty::Coroutine(..) => {\n",
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-eq-primitive-unrefused",
     breaks: "`==` of two `Rc`s of a fieldless enum with its own `eq` asks `===` of their strings first, which two allocations share, so its `eq` is skipped (#910), and a generic caller gives it `TEq` (#931)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "            && !self.is_object(pointee)\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_eq(_generic)?_of_a_fieldless_enum_refused.rs$"],
@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-eq-generic-never-first",
     breaks: "`==` of two `Rc`s in generic code of a `T: PartialEq` calls `eq` for one allocation where the caller's `T` is `Eq`, never std's `RcEqIdent` (#931)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "            Some(false) => Ok(None),\n            None => Ok(Some(Some(self.type_fact_value(\n",
     replace: "            Some(false) | None => Ok(None),\n            #[allow(unreachable_patterns)]\n            _ => Ok(Some(Some(self.type_fact_value(\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_eq_generic_by_address_first.rs$"],
@@ -229,7 +229,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-get-mut-generic-unboxed",
     breaks: "`Rc::get_mut` in generic code gives the value, not the `Rc`'s box, which generic code writes as a box: JS throws (#1007)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "            RcForm::Box if self.mut_ref_form(item).is_cell() => rc,\n",
     replace: "            RcForm::Box if self.mut_ref_form(item).is_cell() && !self.is_unknown(item) => rc,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-form-class-a-box",
     breaks: "a counted `Rc` of a `#[rust_js::class]` is held as a box, `{ value, strong, weak }`, while its constructor makes the instance, `this`, so JS's `new` and Rust's reads disagree (#1228)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "                true => RcForm::Instance,\n",
     replace: "                true => RcForm::Box,\n",
     tests: ["test/corpus.test.ts", "-t", "^class_rc_counted_(is_the_instance|given_back).rs$"],
@@ -245,7 +245,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-form-generic-class-a-box",
     breaks: "generic code given a counted `Rc` of a class, `Rc<T>`, reads it as a box, `rc.strong` and `rc.value`, of what's the instance itself, `undefined` (#1228)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "            true => RcForm::Either,\n",
     replace: "            true => RcForm::Box,\n",
     tests: ["test/corpus.test.ts", "-t", "^class_rc_counted_(is_the_instance|given_back).rs$"],
@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-new-of-instance-a-box",
     breaks: "`Rc::new(instance)` of a counted class's makes a box, which its readers take for the instance: `again.n is not a function` (#1228)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "            RcForm::Instance => Ok(Expr::call_helper(\"$countedInstance\", vec![value])),\n",
     replace: "            RcForm::Instance => Ok(Self::new_rc(value)),\n",
     tests: ["test/corpus.test.ts", "-t", "^class_rc_counted_is_the_instance.rs$"],
@@ -261,7 +261,7 @@ export const mutations: Mutation[] = [
   {
     name: "new-cyclic-of-instance-a-box",
     breaks: "`Rc::new_cyclic` of a counted class gives its box, which its readers take for the instance it made (#1228)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "                    RcForm::Instance => helper(\"$newCyclic\", vec![f, Expr::bool(true)]),\n",
     replace: "                    RcForm::Instance => helper(\"$newCyclic\", vec![f]),\n",
     tests: ["test/corpus.test.ts", "-t", "^class_rc_counted_given_back.rs$"],
@@ -269,7 +269,7 @@ export const mutations: Mutation[] = [
   {
     name: "borrowed-past-its-target",
     breaks: "generic code's `T: AsRef<Rc<str>>` of a `Box<Rc<str>>` reads through the counted `Rc` it's asked as to its text, so `Rc::strong_count(t.as_ref())` is undefined (#1518)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "        self.through_boxes_until(value, ty, &|ty| erased(ty) == to).0\n",
     replace: "        self.through_boxes_until(value, ty, &|_| false).0\n",
     tests: [
@@ -281,7 +281,7 @@ export const mutations: Mutation[] = [
   {
     name: "shown-through-past-own-impl",
     breaks: "a value is shown through a reference or a `Box` with a formatting impl of its own, as std's would show it, so `{}` of a `&ByRef` is refused (#1798)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "        let own = |ty: Ty<'tcx>| self.formats_itself(kind, ty);\n",
     replace: "        let own = |_: Ty<'tcx>| false;\n",
     tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
@@ -289,7 +289,7 @@ export const mutations: Mutation[] = [
   {
     name: "counted-rc-pointee-not-through-refs",
     breaks: "`{}` of a counted `Rc` of a `&mut u32` is refused, its pointee a `&mut` cell left unread, where an uncounted one's is shown through it (#1577)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "            (value, ty) = self.through_refs_until(value, inside, stop);\n        }\n",
     replace: "            ty = inside;\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^counted_rc_of_a_mut_ref_shown.rs$"],
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-map-not-dropped-unwinding",
     breaks: "`Rc::map`'s `this` isn't dropped as `f` panics, where std's drops it, so its value's `Drop` doesn't run (#1656)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "                            vec![dropped.clone()],\n",
     replace: "                            Vec::new(),\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_map_gives_a_new_rc_and_drops_the_old\\.rs$"],
@@ -305,7 +305,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-map-not-dropped",
     breaks: "`Rc::map`'s `this` isn't dropped after `f`, so the last owner's value's `Drop` never runs (#1656)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "                        out.push(dropped);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_map_gives_a_new_rc_and_drops_the_old\\.rs$"],
@@ -313,7 +313,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-map-given-the-box",
     breaks: "`Rc::map`'s `f` is given a counted `Rc`'s box, `{ value, strong, weak }`, where it's given what it points at (#1656)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "                    Some(_) => self.counted_pointee(rc.clone(), item),\n",
     replace: "                    Some(_) => rc.clone(),\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_map_gives_a_new_rc_and_drops_the_old\\.rs$"],
@@ -321,7 +321,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-map-result-uncounted",
     breaks: "`Rc::map`'s result, a counted `Rc`, is what `f` gives alone, with no box to count it (#1656)",
-    file: "src/lower/std_types/rc.rs",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
     find: "                    Some(made) => self.new_counted_rc(mapped, made, span)?,\n",
     replace: "                    Some(_) => mapped,\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_map_gives_a_new_rc_and_drops_the_old\\.rs$"],

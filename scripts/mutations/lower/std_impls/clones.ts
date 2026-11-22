@@ -1,11 +1,11 @@
-// Mutations of src/lower/std_impls/clones.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/std_impls/clones.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "clone-drops-none",
     breaks: "a clone of an `Option` is taken to make its `None` anew, so a `cloned()` of what's `null` or a value isn't, and a nullable parameter each call gives one, React's completeRoot's, is tested `!= null`, not `!== null`",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "        self.is_lang_adt(ty, LangItem::Option)\n    }\n",
     replace: "        let _ = ty;\n        false\n    }\n",
     tests: ["test/lowering-nullable-borrows.test.ts", "-t", "cloned\\(\\) of what"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-clone-nested",
     breaks: "a clone of a struct with a flattened field, changed in place, reads and makes a key of the field's name, which the object hasn't (#1847)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "        let own = variant.is_none().then(|| self.own_object_fields(ty)).flatten();\n",
     replace: "        let own = None::<Vec<(String, Ty<'tcx>, &ty::FieldDef)>>;\n",
     tests: ["test/lowering.test.ts", "-t", "reads its own keys alone"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "projected-clone-shared",
     breaks: "a flattened struct's derived clone, of what may be its parent's object, is that object, the parent's keys too (#1820)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "        if self.krate.flattened.is_projected(ty) && !self.has_user_impl(self.clone_trait(), ty) {\n",
     replace: "        if false && self.krate.flattened.is_projected(ty) {\n",
     tests: ["test/lowering.test.ts", "-t", "copied out of what's lent"],
@@ -29,8 +29,8 @@ export const mutations: Mutation[] = [
   {
     name: "random-state-clone-refused",
     breaks: "a `RandomState`'s `clone()`, of generic code too, is refused, though it holds nothing JS sees",
-    file: "src/lower/std_impls/clones.rs",
-    find: "            ty::Adt(..) if self.is_std_type(ty, crate::lower::recognition::StdItem::RandomState) => Ok(place),\n",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "            ty::Adt(..) if self.is_std_type(ty, crate::recognition::StdItem::RandomState) => Ok(place),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^random_state_holds_nothing.rs$"],
   },
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     name: "map-keys-cloned-by-value-alone",
     breaks:
       "a clone of a B-tree of keys found by their own `cmp`, or a caller's class, shares its keys and never calls their `Clone`, as it did before #924",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "        let key = Some(key_ty).filter(|&k| self.needs_clone(k));\n",
     replace: "        let key = Some(key_ty).filter(|_| false);\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_clone_own_keys.rs$"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
     name: "map-keys-each-cloned",
     breaks:
       "a clone of a map clones each key, a primitive's or one whose clone nothing tells from it too, `[{ ...key }, value]`, where the key itself was its clone (#924)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "        let key = Some(key_ty).filter(|&k| self.needs_clone(k));\n",
     replace: "        let key = Some(key_ty).filter(|&k| !k.is_primitive() || self.needs_clone(k));\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     name: "btree-clone-searched",
     breaks:
       "a clone of a B-tree of keys found by their own `cmp`, a sorted map's of a quiet order, is made by searching for each, asking `cmp`, where std's `clone_subtree` asks none (#924)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                let in_order = sorted && self.found_by_cmp(key_ty) || nodes;\n",
     replace: "                let in_order = false && self.found_by_cmp(key_ty) || nodes;\n",
     tests: ["test/corpus.test.ts", "-t", "^(btree_clone_own_keys|btree_own_ord).rs$"],
@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
     name: "uncounted-weak-cloned",
     breaks:
       "a clone of an uncounted `Weak` copies what it points at, or is refused, where it's the same object (ADR 0843)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "        if self.uncounted_weak(ty).is_some() {\n            return false;\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^weak_uncounted_uses.rs$"],
@@ -76,7 +76,7 @@ export const mutations: Mutation[] = [
     name: "value-key-clone-shares-keys",
     breaks:
       "a map's clone shares its keys, which a consumed original's owner then changes",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "        let key = Some(key_ty).filter(|&k| self.needs_clone(k));\n",
     replace: "        let key = Some(key_ty).filter(|&k| false && self.needs_clone(k));\n",
     tests: ["test/corpus.test.ts", "-t", "value_keys"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
     name: "sender-clone-uncounted",
     breaks:
       "a sender's clone is the same sender, not one more, so dropping both drops one too many",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: '            return Ok(Expr::call(Expr::helper("$cloneSender"), vec![place]));',
     replace: "            return Ok(place);",
     tests: ["test/corpus.test.ts", "-t", "channels"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     name: "untagged-clone-shared",
     breaks:
       "a clone of an untagged enum's `Vec` is the same array, which a push to the first changes",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "            ty::Adt(adt, args) if self.untagged(ty).is_some() => {\n                let itself = self.untagged_changed_itself(ty);\n",
     replace:
       "            ty::Adt(adt, args) if false => {\n                let itself = self.untagged_changed_itself(ty);\n",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     name: "derived-clone-shares-changed-vec",
     breaks:
       "a derived `clone` is `{ ...s }`, sharing the `Vec` the copy is pushed to, so the push shows in the original too",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                    .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n            })\n",
     replace: "                    .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n                    && false\n            })\n",
     tests: [
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
     name: "map-clone-shares-values",
     breaks:
       "a clone of a `HashMap` of `Vec`s is `new Map(m)`, sharing each `Vec`, so a push to the clone's shows in the original's",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "        let value = value_ty.filter(|&v| self.needs_clone(v));",
     replace: "        let value = value_ty.filter(|&v| false && self.needs_clone(v));",
     tests: [
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
     name: "clone-cell-field-respread",
     breaks:
       "a derived clone of a `Cell` or a `OnceCell` field copies it again, `{ ...c, count: c.count }`, which the spread did",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                self.property_cell(def(self, i), t)\n                    .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n",
     replace: "                self.needs_clone(t)\n",
     tests: [
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   {
     name: "enum-clone-whole-shared",
     breaks: "a clone of an enum changed in place is the same object",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                    return self.clone_fields(place, (ty, None), fields[0].clone(), span, out);\n",
     replace: "                    return Ok(place);\n",
     tests: ["test/corpus.test.ts", "-t", "or_bindings"],
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
     name: "refcell-clone-unheld",
     breaks:
       "a `RefCell`'s clone of what may ask runs with it free to borrow mutably",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "            ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {\n                // Its parameter named apart",
     replace:
       "            ty::Adt(_, args) if false => {\n                // Its parameter named apart",
@@ -161,7 +161,7 @@ export const mutations: Mutation[] = [
   {
     name: "refcell-clone-unchecked",
     breaks: "a `RefCell`'s clone while it's mutably borrowed runs on",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "l = match std(StdItem::RefCell)",
     replace: "l = match false",
     tests: ["test/corpus.test.ts", "-t", "refcell_clone_number_while_mut"],
@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
     name: "mir-array-iterator-clone-shared",
     breaks:
       "a clone of std's iterator over an array from MIR is the same `$iter`, stepped by both",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "            ty::Adt(..) if self.steps_an_array(ty) => {\n",
     replace:
       "            ty::Adt(..) if false && self.steps_an_array(ty) => {\n",
@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-hasher-clone-shared",
     breaks: "a cloned std hasher is the same one",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: '                Ok(Expr::call(Expr::member(place, "clone"), Vec::new()))\n',
     replace: "                Ok(place)\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
@@ -187,7 +187,7 @@ export const mutations: Mutation[] = [
   {
     name: "cloned-apart-is-itself",
     breaks: "a clone of a closure cloned apart is the closure itself",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: '                Some(false) => return Ok(Expr::call_helper("$clone", vec![place])),\n',
     replace: "                Some(false) => return Ok(place),\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone.rs$"],
@@ -195,7 +195,7 @@ export const mutations: Mutation[] = [
   {
     name: "cloned-apart-field-shared",
     breaks: "a struct's clone shares a field's closure cloned apart",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "            ty::Closure(id, _) => self.krate.closure_facts.clones_apart(*id),\n",
     replace:
       "            ty::Closure(id, _) => false && self.krate.closure_facts.clones_apart(*id),\n",
@@ -204,7 +204,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-clone-is-itself",
     breaks: "a clone of a `map` cloned apart is the `map` itself",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: '        if (self.iterator_cloned_apart(ty) && !held_compiled) || self.recognition().is_memchr_iter(ty) {\n            return Ok(Expr::call_helper("$clone", vec![place]));\n',
     replace:
       "        if (self.iterator_cloned_apart(ty) && !held_compiled) || self.recognition().is_memchr_iter(ty) {\n            return Ok(place);\n",
@@ -214,7 +214,7 @@ export const mutations: Mutation[] = [
     name: "copied-clone-refused",
     breaks:
       "a clone of a `copied()` is refused, though it's the iterator it copies",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "            && !held_compiled\n        {\n            return self.copied_clone(place, (ty, source), span, out);\n",
     replace:
       "            && false\n        {\n            return self.copied_clone(place, (ty, source), span, out);\n",
@@ -228,7 +228,7 @@ export const mutations: Mutation[] = [
     name: "memchr-iter-clone-refused",
     breaks:
       "a clone of memchr's iterator is refused, though it carries its clone",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "        if (self.iterator_cloned_apart(ty) && !held_compiled) || self.recognition().is_memchr_iter(ty) {\n",
     replace: "        if self.iterator_cloned_apart(ty) && !held_compiled {\n",
     tests: ["test/shipped-crates.test.ts", "-t", "memchr's searches run"],
@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
     name: "iter-clone-items-shared",
     breaks:
       "a clone of a `Vec`'s `into_iter()` shares its items, which change in place",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                let owns = self.array_source(ty).unwrap_or(false) || self.recognition().iterates_items(ty);\n",
     replace: "                let owns = self.recognition().iterates_items(ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
@@ -245,7 +245,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-clone-refused",
     breaks: "a clone of a `Box<[T]>`'s slice is refused",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "            ty::Array(item, _) | ty::Slice(item) => return self.clone_items(place, *item, span),\n",
     replace:
       "            ty::Array(item, _) => return self.clone_items(place, *item, span),\n",
@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-needs-no-clone",
     breaks: "a clone of a `Box<[T]>` shares its array",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "            ty::Slice(item) => self.items_changed(*item) || self.needs_clone_in(*item, seen),\n",
     replace: "            ty::Slice(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_slice_values.rs$"],
@@ -262,7 +262,7 @@ export const mutations: Mutation[] = [
   {
     name: "manually-drop-clone-refused",
     breaks: "a `ManuallyDrop`'s clone is refused, where it's its value's",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "            ty::Adt(..) if let Some(held) = self.recognition().std_wrapped(ty) => {\n                return self.clone_value(place, held, span, out);\n",
     replace:
       '            ty::Adt(..) if false => {\n                return Err(self.unsupported(span, ""));\n',
@@ -271,7 +271,7 @@ export const mutations: Mutation[] = [
   {
     name: "parse-error-clone-refused",
     breaks: "a ParseIntError's clone is cloned as itself",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                    || self.is_parse_error(ty) =>",
     replace: "                    =>",
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
@@ -280,7 +280,7 @@ export const mutations: Mutation[] = [
     name: "value-cell-cloned-boxed",
     breaks:
       "a `RefCell` of an object's clone is a `{ value }` of the clone, read as the object it isn't",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                    return Ok(Expr::call(\n                        Expr::helper(\"$withBorrow\"),\n                        vec![place, Expr::arrow(vec![param.clone().into()], body), Expr::bool(true)],\n                    ));\n",
     replace:
       "                    return Ok(Expr::object(vec![Prop::Field(js::HELD.into(), Expr::call(\n                        Expr::helper(\"$withBorrow\"),\n                        vec![place, Expr::arrow(vec![param.clone().into()], body), Expr::bool(true)],\n                    ))]));\n",
@@ -290,7 +290,7 @@ export const mutations: Mutation[] = [
     name: "transparent-of-no-object-cloned",
     breaks:
       'a derived `Clone` of a transparent struct of a function, written over where it\'s kept, is refused, "cloning `Task`" (ADR 0584, amended)',
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "            && !self.may_be_object(held)\n            && !self.has_user_impl(self.clone_trait(), ty)\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_clone_through_rc.rs$"],
@@ -299,7 +299,7 @@ export const mutations: Mutation[] = [
     name: "held-map-cloned-apart",
     breaks:
       "a held `Map`, std's struct, is cloned as an adapter cloned apart, `$clone`, which it isn't",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "        if (self.iterator_cloned_apart(ty) && !held_compiled) || self.recognition().is_memchr_iter(ty) {\n",
     replace:
       "        if self.iterator_cloned_apart(ty) || self.recognition().is_memchr_iter(ty) {\n",
@@ -309,7 +309,7 @@ export const mutations: Mutation[] = [
     name: "range-inclusive-clone-unexhausted",
     breaks:
       "a clone of an exhausted inclusive range copies its bounds alone, not exhausted, `3..=3` where std's clone is `3..=3 (exhausted)` (#414)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                Ok(Expr::object(vec![Prop::Spread(place)]))\n",
     replace:
       '                Ok(Expr::object(vec![Prop::Field("start".into(), Expr::member(place.clone(), "start")), Prop::Field("end".into(), Expr::member(place, "end"))]))\n',
@@ -319,7 +319,7 @@ export const mutations: Mutation[] = [
     name: "untagged-arrays-clone-shared",
     breaks:
       "a clone of an untagged enum of arrays changed in place is the array itself, where its payload needs no clone of its own, which `*place = ..` then changes too (rd490)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                let itself = self.untagged_changed_itself(ty);\n",
     replace: "                let itself = false;\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
@@ -327,7 +327,7 @@ export const mutations: Mutation[] = [
   {
     name: "variant-clone-boxes-cells",
     breaks: "a derived `Clone` of an enum reads its variant's `RefCell` field that holds its value as `{ value }`, `{ ...a, runs: { value: $borrow(a.runs).value } }` (#503)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "            (None, Some(variant)) => variant.fields.get(rustc_abi::FieldIdx::from_usize(i)),\n",
     replace: "            (None, Some(_)) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_variant_derives.rs$"],
@@ -335,7 +335,7 @@ export const mutations: Mutation[] = [
   {
     name: "variant-clone-of-cells-shared",
     breaks: "a derived `Clone` of an enum whose variant holds a cell that's the property it holds is the value it clones, `const b = a`, so a write to one's cell is the other's (#503)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                    (variant.fields.iter().zip(fields)).any(|(def, &(_, t))| cx.property_cell(Some(def), t).is_some())\n",
     replace: "                    (variant.fields.iter().zip(fields)).any(|(def, &(_, t))| cx.property_cell(Some(def), t).is_some() && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_variant_derives.rs$"],
@@ -344,7 +344,7 @@ export const mutations: Mutation[] = [
     name: "cloned-option-held-first",
     breaks:
       "an `Option<&T>`'s `cloned()` of a type parameter's, whose clone is itself, is held in a `const` first, `const value = items.at(-1); return value;` (#587)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                        held.release_in(&mut self.names.borrow_mut());\n                        out.pop();\n                        return Ok(written);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cloned_option_of_a_type_parameter.rs$"],
@@ -353,7 +353,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-of-nodes-unshaped",
     breaks: "a clone of a tree that may be std's nodes isn't given its source, so it's made in another shape (#926)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                let shape = nodes.then(|| place.clone());\n",
     replace: "                let shape = None::<Expr>;\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_clone_nodes_unwinds.rs$|^btree_nodes_seen.rs$"],
@@ -361,7 +361,7 @@ export const mutations: Mutation[] = [
   {
     name: "chars-clone-refused",
     breaks: "a clone of a `chars()` or `char_indices()`, `$chars`' own `clone()`, is refused",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                    || self.recognition().is_str_chars(ty)\n                    || self.recognition().is_char_indices(ty) =>\n",
     replace: "                    || false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
@@ -370,7 +370,7 @@ export const mutations: Mutation[] = [
     name: "closure-clone-itself-reasked",
     breaks:
       "a clone of a closure the crate decided is itself is asked again of what the crate can see of it, so a library's `map(|s| s.len())`, which rustc infers `FnMut`, is refused (#1202)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                Some(true) => return Ok(place),\n",
     replace: "                Some(true) => {}\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
@@ -378,7 +378,7 @@ export const mutations: Mutation[] = [
   {
     name: "closure-clone-apart-unmade",
     breaks: "a clone of a closure cloned apart is asked again, so a library's `counter()`, which writes what it took, is refused, or is the closure itself (ADR 0522)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                Some(false) => return Ok(Expr::call_helper(\"$clone\", vec![place])),\n",
     replace: "                Some(false) => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone.rs$"],
@@ -386,7 +386,7 @@ export const mutations: Mutation[] = [
   {
     name: "iter-clone-loses-lowerless",
     breaks: "a clone of a B-tree's `range(..)` is `$iter` of what's left with no mark, whose hint counts it, so a crate that reads a capacity grows a collect of it otherwise (#1215)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                Ok(self.stepped_items_of(left, ty))\n",
     replace: "                Ok(self.stepped_items(left))\n",
     tests: ["test/iterator-forms.test.ts", "-t", "capacity_of_what_std_hints_less"],
@@ -395,7 +395,7 @@ export const mutations: Mutation[] = [
     name: "clone-fn-parameter-free-to-its-body",
     breaks:
       "a `Clone` dictionary's `clone(value)` of an `Option<Option<T>>` binds what its `Some` holds as `const value`, its parameter's word, so the parameter is spelled `value$1` (#1246, #1681)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "        let taken = self.names.borrow_mut().insert(base.to_string());\n",
     replace: "        let taken = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_dictionary_of_a_nested_option.rs$"],
@@ -404,27 +404,27 @@ export const mutations: Mutation[] = [
   {
     name: "map-entries-unguarded",
     breaks: "a clone of a map whose value's clone panics leaves the entries it made undropped (#897)",
-    file: "src/lower/std_impls/clones.rs",
-    find: "                let made = match may_panic && self.drops(entry) != crate::lower::drops::Drops::Nothing {\n",
-    replace: "                let made = match false && self.drops(entry) != crate::lower::drops::Drops::Nothing {\n",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "                let made = match may_panic && self.drops(entry) != crate::drops::Drops::Nothing {\n",
+    replace: "                let made = match false && self.drops(entry) != crate::drops::Drops::Nothing {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_unwinds_what_it_made.rs$"],
   },
   {
     name: "compiled-copied-cloned-as-source",
     breaks:
       "a `copied()` std compiles held, `--std-iterators`', is cloned as the crate's iterator it copies, `held.it.with(..)`: `TypeError: held.it.with is not a function` (ADR 0999)",
-    file: "src/lower/std_impls/clones.rs",
-    find: "        if let Some(source) = crate::lower::recognition::copied_source(self.tcx, ty)\n            && !held_compiled\n",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "        if let Some(source) = crate::recognition::copied_source(self.tcx, ty)\n            && !held_compiled\n",
     replace:
-      "        if let Some(source) = crate::lower::recognition::copied_source(self.tcx, ty)\n",
+      "        if let Some(source) = crate::recognition::copied_source(self.tcx, ty)\n",
     tests: ["test/iterator-forms.test.ts", "-t", "copied_clone_of_its_own"],
   },
   {
     name: "va-list-clone-unknown",
     breaks:
       "a clone of a `VaList` is an error, where it's a copy of what's left",
-    file: "src/lower/std_impls/clones.rs",
-    find: "            ty::Adt(..) if crate::lower::recognition::is_va_list(self.tcx, ty) => {\n",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "            ty::Adt(..) if crate::recognition::is_va_list(self.tcx, ty) => {\n",
     replace: "            ty::Adt(..) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
   },
@@ -432,17 +432,17 @@ export const mutations: Mutation[] = [
     name: "copies-of-shared",
     breaks:
       "what std copies of `Copy` structs, `extend` of references, `concat`, `partition`, is the same objects, so changing a copy changes the original",
-    file: "src/lower/std_impls/clones.rs",
-    find: "    pub(in crate::lower) fn copies_of(&mut self, items: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {\n        if !self.needs_clone(ty) {",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "    pub(crate) fn copies_of(&mut self, items: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {\n        if !self.needs_clone(ty) {",
     replace:
-      "    pub(in crate::lower) fn copies_of(&mut self, items: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {\n        if true || !self.needs_clone(ty) {",
+      "    pub(crate) fn copies_of(&mut self, items: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {\n        if true || !self.needs_clone(ty) {",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
   {
     name: "boxed-slice-items-changed-unasked",
     breaks:
       "a boxed slice's clone, a `CString`'s too, is the same array where what `into_vec()` or `into_bytes_with_nul()` makes of it is changed in place (#1290)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "            ty::Slice(item) => self.items_changed(*item) || self.needs_clone_in(*item, seen),\n",
     replace: "            ty::Slice(item) => self.needs_clone_in(*item, seen),\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_changed_as_a_vec_or_a_boxed_slice.rs$"],
@@ -451,7 +451,7 @@ export const mutations: Mutation[] = [
     name: "vec-items-changed-unasked",
     breaks:
       "a `Vec`'s clone is the same array where the boxed slice its `into_boxed_slice()` makes is changed in place (#1290)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                    || (std(StdItem::Vec) && self.items_changed(args.type_at(0)))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^clone_changed_as_a_vec_or_a_boxed_slice.rs$"],
@@ -460,7 +460,7 @@ export const mutations: Mutation[] = [
     name: "known-std-not-cloned-by-shape",
     breaks:
       "a clone of a C string's error that's a struct, `NulError`, is refused, std's types never cloned by their shape (#1157)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "        !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did()) && !self.is_known_std(ty))\n",
     replace: "        !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did()))\n",
     tests: ["test/corpus.test.ts", "-t", "^c_strings_hashed_and_their_errors_cloned.rs$"],
@@ -468,7 +468,7 @@ export const mutations: Mutation[] = [
   {
     name: "items-iterator-clone-uncloned",
     breaks: "a clone of an `Option`'s `into_iter()` or of `once(x)` copies its array, never cloning its item, so a `cycle()` of it gives `L(7)` again where Rust's clones give `L(207)` (a wrong answer, #1375)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                let owns = self.array_source(ty).unwrap_or(false) || self.recognition().iterates_items(ty);\n",
     replace: "                let owns = self.array_source(ty).unwrap_or(false);\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_of_an_items_iterator_clones_its_item.rs$"],
@@ -476,15 +476,15 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-clone-refused",
     breaks: "a `repeat`'s `clone()` is refused, where std's derived `Clone` clones its value (#1139)",
-    file: "src/lower/std_impls/clones.rs",
-    find: "                if crate::lower::recognition::is_repeat(self.tcx, ty)\n",
-    replace: "                if false && crate::lower::recognition::is_repeat(self.tcx, ty)\n",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "                if crate::recognition::is_repeat(self.tcx, ty)",
+    replace: "                if false && crate::recognition::is_repeat(self.tcx, ty)",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
   },
   {
     name: "std-enum-derived-clone-refused",
     breaks: "a clone of std's `Bound<String>`, its derived `Clone`, is refused (#1420)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                        || self.std_enum_derives_clone(ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^os_string_into_string_and_bound_clone.rs$"],
@@ -492,15 +492,15 @@ export const mutations: Mutation[] = [
   {
     name: "build-hasher-default-clone-refused",
     breaks: "a clone of a `BuildHasherDefault`, a `HashMap<K, V, S>`'s `S: Clone`, is refused (#1420)",
-    file: "src/lower/std_impls/clones.rs",
-    find: "            ty::Adt(..) if self.is_std_type(ty, crate::lower::recognition::StdItem::BuildHasherDefault) => Ok(place),\n",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "            ty::Adt(..) if self.is_std_type(ty, crate::recognition::StdItem::BuildHasherDefault) => Ok(place),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^impl_asks_the_layout_of_a_type_of_its_parameters.rs$"],
   },
   {
     name: "copy-clone-runs-no-code",
     breaks: "a clone of a `Copy` tuple, array or `Option` of a type with a hand-written `Clone` is its bits, where std's calls that `clone` for each part",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "        if self.is_copy(ty) && !self.copy_clone_runs_code(ty) {\n",
     replace: "        if self.is_copy(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
@@ -508,7 +508,7 @@ export const mutations: Mutation[] = [
   {
     name: "copy-clone-derive-not-bits",
     breaks: "a clone of a `#[derive(Clone, Copy)]` type of no type parameters calls its fields' hand-written `clone`, where std's derive copies its bits",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "        if trivially_cloned(self.tcx, self.recognition().typing_env, ty) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
@@ -516,7 +516,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-through-copy-bound-copies",
     breaks: "generic code bounded by `T: Copy` alone copies where std's clones, never calling a hand-written `Clone` its caller's type has (#1451)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "            return Ok(self.cloned_by_copy_bound(place, ty));\n",
     replace: "            return Ok(self.copy(place, ty));\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
@@ -524,15 +524,15 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-n-clone-refused",
     breaks: "`clone()` of a `repeat_n(x, n)` is refused in the plain build, whose `$repeatingN` clones it as std's derived `Clone` does (#1579)",
-    file: "src/lower/std_impls/clones.rs",
-    find: "                    || crate::lower::recognition::is_repeat_n(self.tcx, ty) =>\n",
-    replace: "                    || false =>\n",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: " || crate::recognition::is_repeat_n(self.tcx, ty) =>\n",
+    replace: " || false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_cloned.rs$"],
   },
   {
     name: "clone-shows-hand-written-unseen",
     breaks: "a hand-written `clone` that changes nothing in place doesn't show, so `cycle()` of an array's items of one clones each as it's given, `[Shown(17), Shown(17)]` where std gives `[Shown(7), Shown(17)]` (#1630)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                if self.has_user_impl(self.clone_trait(), ty) && !self.is_derived_impl(self.clone_trait(), ty) =>\n",
     replace: "                if false && self.has_user_impl(self.clone_trait(), ty) && !self.is_derived_impl(self.clone_trait(), ty) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_of_owned_items_as_std_cycles.rs$"],
@@ -540,7 +540,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-shows-everything",
     breaks: "every clone shows, so `cycle()` of a `Vec`'s `Vec`s, whose clone can't be told made sooner, is `$cycleOf`'s, not `$cycle`'s (#1630)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "    fn clone_shows_in(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {\n",
     replace: "    fn clone_shows_in(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {\n        if !seen.is_empty() || seen.is_empty() {\n            return true;\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
@@ -549,7 +549,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-dictionary-of-the-type",
     breaks: "a source a body made in place, a `map` under a `copied()` over a slice, is cloned as std's compiled `Map` its type names, so the clone of the compiled adapter over it reads `items` of `undefined` and throws where Rust prints (#1973)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "            && !(self.frame.facts.in_place_adapters).makes_in_place(self.tcx, self.frame.thir, ty);\n",
     replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_of_a_compiled_adapter_over_a_copied_map.rs$"],
@@ -558,7 +558,7 @@ export const mutations: Mutation[] = [
     name: "placed-part-clone-shared",
     breaks:
       "a clone of a tuple struct whose field is held in a place of its own shares the place: stepping `duo` steps `twin` (#2255)",
-    file: "src/lower/std_impls/clones.rs",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                        Ok(cx.holding_part(part, ty, i, tys[i]))\n",
     replace: "                        Ok(part)\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],

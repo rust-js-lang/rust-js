@@ -1,11 +1,11 @@
-// Mutations of src/lower/mir/operands.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/operands.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "std-zero-sized-not-held",
     breaks: "an `iter::Empty` constant a consumer compiles of a library's body is `[]`, not held as `iter::empty()`'s value is, `$iter([])`, and stepping it behind a `Box<dyn Iterator>` throws (#1420)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            return Ok(Some(match self.std_value_as(Value::Expr(std.value()), ty, &[]) {\n",
     replace: "            return Ok(Some(match Value::Expr(std.value()) {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: empty_of_a_librarys_default_compiled_by_its_consumer"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "projected-read-shared",
     breaks: "a flattened struct read by value, `r.range`, or copied out of a reference, `*range`, is its parent's object, which JS given it sees with the parent's keys (#1820)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            && self.krate.flattened.is_projected(ty)\n            && (matches!",
     replace: "            && false\n            && (matches!",
     tests: ["test/lowering.test.ts", "-t", "copied out of what's lent"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "projected-deref-shared",
     breaks: "a flattened struct copied out of a reference, `*range`, which may be lent from its parent, is the parent's object (#1820)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            )) || (matches!(operand, Operand::Copy(_)) && place.is_indirect()))\n",
     replace: "            )))\n",
     tests: ["test/lowering.test.ts", "-t", "copied out of what's lent"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "nested-field-read-unboxed",
     breaks: "a nested field read whole is given as it's held to code that boxes, `format!(\"{:?}\", init.sdp_mid)` of `null` `None` (#470)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            && self.nested_field(state.body, place.as_ref())\n        {\n            let ty = operand.ty(&state.body.local_decls, self.tcx);\n",
     replace: "            && self.nested_field(state.body, place.as_ref())\n            && false\n        {\n            let ty = operand.ty(&state.body.local_decls, self.tcx);\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_nullable_field.rs$"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     name: "held-static-in-place",
     breaks:
       "a binding's static named through the module that holds it is read in place, `react.__CLIENT_INTERNALS..`",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "        let read = self.binding_ref(&bindings::js_name(self.tcx, def_id), named);\n",
     replace:
       "        let read = self.js_ref(&bindings::js_name(self.tcx, def_id));\n",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     name: "mir-const-param-unread",
     breaks:
       "a const generic parameter is a constant MIR can't name, not its caller's value",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "                ty::ConstKind::Param(_) => return self.const_arg(ct, c.span),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "const_generic_values"],
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     name: "mir-static-mut-not-a-place",
     breaks:
       "a pointer to a `static mut` is a handle on another place than its `{ value }`'s, so writes to it are lost",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "                            self.named_fn_ref(def_id, None, c.span),\n                            Expr::str(js::HELD),\n",
     replace:
       '                            self.named_fn_ref(def_id, None, c.span),\n                            Expr::str("held"),\n',
@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-fn-value-undefined",
     breaks: "a function as a value from MIR is `undefined`, not the function",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            Some(f) => Ok(f),\n",
     replace: "            Some(_) => Ok(Expr::js_undefined()),\n",
     tests: ["test/corpus.test.ts", "-t", "fn_items_as_values"],
@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
     name: "mir-copy-shared",
     breaks:
       "a `Copy` struct read from a variable is the same JS object, so a change to the copy changes it",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            Value::Expr(e) if copied => {\n",
     replace: "            Value::Expr(e) if false && copied => {\n",
     tests: ["test/corpus.test.ts", "-t", "array_map"],
@@ -84,7 +84,7 @@ export const mutations: Mutation[] = [
     name: "mir-copied-closure-shared",
     breaks:
       "a closure that changes what it captured, copied, shares its captures, as a JS function does",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            && state.locals.reads[place.local] > 1\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "copied_closure"],
@@ -92,7 +92,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-static-copy-shared",
     breaks: "`let mut p = ORIGIN;` of a `Copy` static changes the static",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "if (place.is_indirect() || !state.pending",
     replace: "if (!state.pending",
     tests: ["test/corpus.test.ts", "-t", "statics"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
     name: "mir-take-field-reordered",
     breaks:
       "a tuple's call taken before its later calls lets a flush run them first; as the corpus stands only how its JS reads changes, which its snapshot holds (#1453)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            && (movable(state, &items[field]) || items[field + 1..].iter().all(|item| movable(state, item)));\n",
     replace: "            && true;\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_field_captured.rs$"],
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-out-of-order-fields-undeclared",
     breaks: "a tuple read out of order is read by a name nothing declares",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "                let rest = state.pending.split_off(at + 1);\n                self.flush(state, out)?;\n                state.pending = rest;\n",
     replace: "                let _ = at;\n",
     tests: ["test/corpus.test.ts", "-t", "range_inclusive_next_back"],
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
     name: "mir-foreign-static-by-pointer",
     breaks:
       "a JS global a foreign static names, which MIR reads through a raw pointer, isn't its global",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            || pointer.is_some_and(|(_, mutability)| mutability.is_not()))\n",
     replace: "            || false)\n",
     tests: [
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     name: "mir-fn-item-referenced-undefined",
     breaks:
       "a function given by reference, `&hello`, a promoted constant, is `undefined`",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "                    && fn_def(referred.ty()).is_some() =>\n",
     replace:
       "                    && fn_def(referred.ty()).is_some() && false =>\n",
@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
     name: "mir-format-args-array",
     breaks:
       "a `format!`'s arguments read out of order are an array, `${_26[1]}:${_26[0]}`",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "        if !in_order && !acting.is_empty() && !state.taken.contains(&place.local) {\n",
     replace:
       "        if false && !in_order && !acting.is_empty() && !state.taken.contains(&place.local) {\n",
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     name: "mir-promoted-functions-refused",
     breaks:
       'MIR refuses a promoted value of functions, `&[("double", double)]`',
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            None if let Const::Unevaluated(uv, _) = c.const_\n",
     replace:
       "            None if false && let Const::Unevaluated(uv, _) = c.const_\n",
@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
     name: "static-pointer-unhandled",
     breaks:
       "a pointer to an immutable static is the static, which `*p` reads `value` of: `Some(&console)`'s `console` given to `function::bind` as `{ value }`, where it's the console (#1862 left `console` and `globalThis` the statics)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "                    Some((pointee, _)) if self.is_handle_pointer(ty) => {\n",
     replace:
       "                    Some((pointee, _)) if false && self.is_handle_pointer(ty) => {\n",
@@ -180,8 +180,8 @@ export const mutations: Mutation[] = [
     name: "mir-literal-unwritten",
     breaks:
       "a string MIR's constant has is one literal, though its source writes it across lines or as `concat!`'s pieces",
-    file: "src/lower/mir/operands.rs",
-    find: "            js::ExprKind::Str(text) => {\n                crate::lower::literals::string_literal(tcx, text, c.span, &|span| self.js_span(span)).or_at(value.span)\n            }\n",
+    file: "crates/rust-js-mir/src/operands.rs",
+    find: "            js::ExprKind::Str(text) => {\n                rust_js_lower::literals::string_literal(tcx, text, c.span, &|span| self.js_span(span)).or_at(value.span)\n            }\n",
     replace: "",
     tests: [
       "test/lowering-strings.test.ts",
@@ -194,7 +194,7 @@ export const mutations: Mutation[] = [
     name: "constant-number-unplaced",
     breaks:
       "a number operand isn't where its literal is, so `n & 0xff` is `n & 255`",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            js::ExprKind::Num(_) => value.or_at(self.js_span(c.span)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_bitwise_operators.rs$"],
@@ -204,7 +204,7 @@ export const mutations: Mutation[] = [
     name: "promoted-some-unnamed",
     breaks:
       'a promoted `&Some(C)` of a named `const` is its value, `Symbol.for("react.memo")`, where `C` is read by its name everywhere else',
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            && matches!(tcx.def_kind(named.def), DefKind::Const)\n            && self.is_rust_fn(named.def)\n        {\n",
     replace:
       "            && matches!(tcx.def_kind(named.def), DefKind::Const)\n            && false\n        {\n",
@@ -218,7 +218,7 @@ export const mutations: Mutation[] = [
     name: "whole-cell-moved-as-handle",
     breaks:
       "a whole cell moved out of a field that's the property it holds is a handle on the field, which the field written again changes",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            Operand::Copy(place) | Operand::Move(place) if self.whole_property_cell(state, *place) => {\n",
     replace:
       "            Operand::Copy(place) | Operand::Move(place) if false && self.whole_property_cell(state, *place) => {\n",
@@ -228,7 +228,7 @@ export const mutations: Mutation[] = [
     name: "library-static-mut-unread",
     breaks:
       "a consumer's read of a library's `static mut`, `dep::LINES`, its `export let`, is refused as a constant it can't make (ADR 0096, amended)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "                    && self.is_rust_fn(def_id) =>\n",
     replace: "                    && self.krate.fns.contains_key(&def_id) =>\n",
     tests: [
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
     name: "captured-place-copied-as-box",
     breaks:
       "a `&mut` of a number a closure captured as its place, copied into a local by optimized MIR, is read as a box, `take.n.value`, in std's `Take::try_fold` (ADR 0913)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "        is_place.then_some(capture)\n",
     replace: "        (is_place && false).then_some(capture)\n",
     tests: [
@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
     name: "bool-binding-static-not-boolean",
     breaks:
       "a `bool` binding's static in `&&` is `!!supportsSingletons && ..` (ADR 0953)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            .is_bool()\n",
     replace: "            .is_bool()\n            && false\n",
     tests: [
@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
     name: "static-read-by-name-through-its-module",
     breaks:
       "a `static` read through its module's path, `plugin::LIMIT`, is its named import, `import { LIMIT }`, beside the module's namespace (rd114a, ADR 1018)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "                false => (self.is_rust_fn(def_id)).then(|| self.named_fn_ref(def_id, None, c.span)),\n",
     replace:
       "                false => (self.is_rust_fn(def_id)).then(|| self.fn_ref(def_id)),\n",
@@ -278,7 +278,7 @@ export const mutations: Mutation[] = [
     name: "nested-constant-any-some",
     breaks:
       "a constant `Some(Some(2))` is read as `Some(None)`, `last === null`, a wrong answer",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "        matches!(variant(inner)?, (0, None)).then_some(())\n",
     replace: "        variant(inner).map(|_| ())\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_tests.rs$"],
@@ -287,7 +287,7 @@ export const mutations: Mutation[] = [
     name: "owned-item-copied",
     breaks:
       "an item an owning iterator gives, nothing else holding it, is copied, `const p = [value[0], value[1]];` in a `while` over `$next(iter)`, not `for (const p of ..)` (#141)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "                && !self.owned_item(state, place)\n",
     replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "^owned_items_uncopied.rs$"],
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
     name: "owned-item-through-a-reference",
     breaks:
       "what a reference an owning iterator gives points at, `for &(mut p) in refs`, is taken uncopied, so changing `p` changes what it's of (#141)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "        if !parts.iter().all(|part| matches!(part, PlaceElem::Field(..))) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^owned_items_uncopied.rs$"],
@@ -306,7 +306,7 @@ export const mutations: Mutation[] = [
     name: "constant-unplaced",
     breaks:
       "a constant has no place in the map, so a line comment after a call's last argument, `true, // why`, is lost (rd220)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "                if made.span.is_none() {\n                    made.span = self.written_span(c.span);\n",
     replace: "                if false {\n                    made.span = self.written_span(c.span);\n",
     tests: [
@@ -319,7 +319,7 @@ export const mutations: Mutation[] = [
     name: "static-argument-unplaced",
     breaks:
       "a static read through a pointer to it has no place in the map, so a comment above it in a call is above the call, ReactART's `// Change to 'art/modes/dom' ..` (rd421)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "                if referred.span.is_none() {\n",
     replace: "                if false {\n",
     tests: [
@@ -332,7 +332,7 @@ export const mutations: Mutation[] = [
     name: "mir-const-unit-struct-refused",
     breaks:
       "a struct of no fields a library's optimized MIR names as a constant, `const RangeFull` of base64's `&mut buf[..]`, is refused, \"this constant, from its MIR\" (#474)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "        if matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.all_fields().next().is_none()) {\n",
     replace: "        if false {\n",
     tests: ["test/crates.test.ts", "-t", "unit_struct_of_instance"],
@@ -341,15 +341,15 @@ export const mutations: Mutation[] = [
     name: "js-alone-value-its-call",
     breaks:
       "a function of rest arguments JS alone reads is lowered as its call's arrow, whose call of `signal_oper::<()>` needs a copy the analysis didn't make: refused (#565)",
-    file: "src/lower/mir/operands.rs",
-    find: "            None if crate::lower::instances::read_by_js_alone(self.tcx, None, Some(state.body))\n",
-    replace: "            None if false && crate::lower::instances::read_by_js_alone(self.tcx, None, Some(state.body))\n",
+    file: "crates/rust-js-mir/src/operands.rs",
+    find: "            None if rust_js_lower::instances::read_by_js_alone(self.tcx, None, Some(state.body))\n",
+    replace: "            None if false && rust_js_lower::instances::read_by_js_alone(self.tcx, None, Some(state.body))\n",
     tests: ["test/rest-parameters.test.ts", "-t", "a generic function of rest arguments JS alone reads is its own JS"],
   },
   {
     name: "closure-constant-captures-none",
     breaks: "a closure optimized MIR names as a constant captures nothing, so a function item it holds, std's inlined `filter_map_fold`'s `into_item`, is refused as a closure's field read outside it, and `Flatten::last` isn't compiled (#645)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "                    captured.push(self.mir_operand_read(state, &Operand::Constant(Box::new(constant)), out)?);\n",
     replace: "                    let _ = constant;\n",
     tests: ["test/std-package.test.ts"],
@@ -358,7 +358,7 @@ export const mutations: Mutation[] = [
     name: "flattened-cell-moved-out-the-object",
     breaks:
       "a flattened state's cell moved out of its field whole, `into_inner`'s, holds its class's object, which carries an earlier variant's keys and the class's own, not a copy of its variant's (#687)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "                        self.moved_out_of_cell(object, item)\n",
     replace: "                        object\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "a copy of its variant's keys"],
@@ -366,8 +366,8 @@ export const mutations: Mutation[] = [
   {
     name: "large-bytes-in-place-as-literal",
     breaks: "a large byte constant a body writes in place, `include_bytes!`'s or a `const { .. }` block's, is a literal of each byte, where it's base64 text: windows-bindgen's 32 MB took 7 GB (#1096)",
-    file: "src/lower/mir/operands.rs",
-    find: "        if crate::lower::representation::is_byte_ref(tcx, ty)\n",
+    file: "crates/rust-js-mir/src/operands.rs",
+    find: "        if rust_js_lower::representation::is_byte_ref(tcx, ty)\n",
     replace: "        if false\n",
     tests: ["test/corpus.test.ts", "-t", "^byte_constants_large.rs$"],
     snapshots: true,
@@ -375,7 +375,7 @@ export const mutations: Mutation[] = [
   {
     name: "reified-instance-as-its-value",
     breaks: "a generic function's instance whose forms differ, as a value, is its JS function, given its callers' forms where it takes generic code's: `Some(&mut v).map(view)` reads `r.value` of the vector, a `fn` pointer of it too (#1187, #1324)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "                let value = match self.reified_takes_generic_forms(def_id, args) {",
     replace: "                let value = match false && self.reified_takes_generic_forms(def_id, args) {",
     tests: ["test/corpus.test.ts", "-t", "^generic_fn_(value_takes_its_callers|pointer_takes_its_types)_forms\\.rs$"],
@@ -383,7 +383,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-fn-value-in-generic-forms",
     breaks: "a library's generic function as a value takes generic code's forms where its callers give theirs: `Some(&mut v).map(dep::view)` gives `view($cellOf(v.value))` (#1324)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "                let arrow = self.mir_called_value(state, (def_id, args), span, Forms::Callers)?;",
     replace: "                let arrow = self.mir_called_value(state, (def_id, args), span, Forms::Generic)?;",
     tests: ["test/crates.test.ts", "-t", "library_fn_values_take_their_callers_forms"],
@@ -391,7 +391,7 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-field-read-whole-as-box",
     breaks: "a struct's field held as generic code's box, moved out whole, `let Slot { at } = slot`, is the box, not the object (#1405)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "                    Some(crossing) => self.form_back(Form::Box, crossing, read),\n",
     replace: "                    Some(_) => read,\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
@@ -399,7 +399,7 @@ export const mutations: Mutation[] = [
   {
     name: "zero-sized-struct-of-fields-as-fieldless",
     breaks: "a zero-sized constant of a struct with fields, std's `Args` in a library's drop, is made as a struct of none, given no field values, and rust-js crashes, each field once (#1707)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "adt.is_struct() && adt.all_fields().next().is_none()",
     replace: "adt.is_struct()",
     tests: ["test/crates.test.ts", "-t", "never crashes its consumer"],
@@ -407,7 +407,7 @@ export const mutations: Mutation[] = [
   {
     name: "kept-move-copy-unasked",
     breaks: "a move out of what React kept is never copied, as it was (#1723)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            && self.kept_copies(state.body).at_moves.contains(&place.local)\n",
     replace: "            && false\n",
     tests: ["test/react-kept.test.ts", "-t", "copied where it's changed"],
@@ -415,7 +415,7 @@ export const mutations: Mutation[] = [
   {
     name: "moved-unsettled",
     breaks: "what's kept to be read later of a variable isn't read before the variable is moved, so `println!(\"{:?} {}\", c.clone(), c.sum::<i32>())` formats the clone of the range `sum` stepped, `3..=2` (#2201)",
-    file: "src/lower/mir/operands.rs",
+    file: "crates/rust-js-mir/src/operands.rs",
     find: "            self.settle_moved(state, place.local, out)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^format_argument_read_before_its_variable_moves.rs$"],

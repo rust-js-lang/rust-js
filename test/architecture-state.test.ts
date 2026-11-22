@@ -31,80 +31,80 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 // read by, unseen (the third architecture audit).
 const owners: Record<string, string[]> = {
   "self.drop_state": [
-    "src/lower/drops.rs",
-    "src/lower/drops/functions.rs",
-    "src/lower/drops/glue.rs",
-    "src/lower/drops/parts.rs",
-    "src/lower/drops/scopes.rs",
-    "src/lower/drops/uses.rs",
+    "crates/rust-js-lower/src/drops.rs",
+    "crates/rust-js-lower/src/drops/functions.rs",
+    "crates/rust-js-lower/src/drops/glue.rs",
+    "crates/rust-js-lower/src/drops/parts.rs",
+    "crates/rust-js-lower/src/drops/scopes.rs",
+    "crates/rust-js-lower/src/drops/uses.rs",
   ],
   // What lowering from MIR found of a body's variables, nine sets once
   // fields of `Locals` that mir.rs wrote and jsx.rs and binding_calls.rs
   // read (the third architecture audit).
   "self.locals.mir": [
-    "src/lower/mir.rs",
-    "src/lower/mir/assign.rs",
-    "src/lower/mir/bounds.rs",
-    "src/lower/mir/closures.rs",
-    "src/lower/mir/local_facts.rs",
-    "src/lower/held.rs",
-    "src/lower/noted.rs",
-    "src/lower/mir/places.rs",
-    "src/lower/mir/rvalues.rs",
-    "src/lower/mir/structure.rs",
-    "src/lower/mir/switch_tests.rs",
-    "src/lower/mir/temporaries.rs",
+    "crates/rust-js-mir/src/lib.rs",
+    "crates/rust-js-mir/src/assign.rs",
+    "crates/rust-js-mir/src/bounds.rs",
+    "crates/rust-js-mir/src/closures.rs",
+    "crates/rust-js-mir/src/local_facts.rs",
+    "crates/rust-js-lower/src/held.rs",
+    "crates/rust-js-lower/src/noted.rs",
+    "crates/rust-js-mir/src/places.rs",
+    "crates/rust-js-mir/src/rvalues.rs",
+    "crates/rust-js-mir/src/structure.rs",
+    "crates/rust-js-mir/src/switch_tests.rs",
+    "crates/rust-js-mir/src/temporaries.rs",
   ],
   // What lowering a function found of drops, which the pipeline gathers
   // and resolves: the drops module's to write, where `CrateFacts` held it
   // in cells every function wrote (the fourth review).
-  "self.drops_observed": ["src/lower/drops.rs", "src/lower/drops/uses.rs"],
+  "self.drops_observed": ["crates/rust-js-lower/src/drops.rs", "crates/rust-js-lower/src/drops/uses.rs"],
   // What of its libraries lowering a function found the crate compiles
   // itself, which the pipeline gathers, as `drops_observed` (ADR 1148):
   // asked where an item is named, and of a library's impl or default.
   // The module's functions a body made and called, which the pipeline
   // settles after it, recursive_fns.rs's to write (ADR 1148).
-  "self.module_fns_made": ["src/lower/recursive_fns.rs"],
+  "self.module_fns_made": ["crates/rust-js-lower/src/recursive_fns.rs"],
   // What a body saw of the calls and returns of the crate's functions with
   // own nullable parameters, mir/nulled.rs's to write (ADR 1148).
-  "self.nulled_seen": ["src/lower/mir/nulled.rs", "src/lower/combinators/callbacks.rs"],
-  "self.asked_of_libraries": ["src/lower/items.rs", "src/lower/traits/impls.rs", "src/lower/traits/impls/defaults.rs"],
-  "self.writing": ["src/lower/display.rs", "src/lower/display/debug.rs", "src/lower/display/written.rs"],
-  "self.recursive": ["src/lower/recursive_fns.rs"],
-  "self.given": ["src/lower/traits/given.rs", "src/lower/traits/calls.rs", "src/lower/traits/impls.rs", "src/lower/traits/impls/defaults.rs", "src/lower/traits/routes.rs"],
-  "self.walks.representable": ["src/lower/support.rs"],
-  "self.walks.assumed": ["src/lower/support.rs"],
-  "self.walks.mutated": ["src/lower/copies.rs"],
-  "self.walks.clones": ["src/lower/std_impls/clones.rs"],
-  "self.walks.clone_assumed": ["src/lower/std_impls/clones.rs"],
-  "self.codecs": ["src/lower/serde/codecs.rs"],
+  "self.nulled_seen": ["crates/rust-js-mir/src/nulled.rs", "crates/rust-js-lower/src/combinators/callbacks.rs"],
+  "self.asked_of_libraries": ["crates/rust-js-lower/src/items.rs", "crates/rust-js-lower/src/traits/impls.rs", "crates/rust-js-lower/src/traits/impls/defaults.rs"],
+  "self.writing": ["crates/rust-js-lower/src/display.rs", "crates/rust-js-lower/src/display/debug.rs", "crates/rust-js-lower/src/display/written.rs"],
+  "self.recursive": ["crates/rust-js-lower/src/recursive_fns.rs"],
+  "self.given": ["crates/rust-js-lower/src/traits/given.rs", "crates/rust-js-lower/src/traits/calls.rs", "crates/rust-js-lower/src/traits/impls.rs", "crates/rust-js-lower/src/traits/impls/defaults.rs", "crates/rust-js-lower/src/traits/routes.rs"],
+  "self.walks.representable": ["crates/rust-js-lower/src/support.rs"],
+  "self.walks.assumed": ["crates/rust-js-lower/src/support.rs"],
+  "self.walks.mutated": ["crates/rust-js-lower/src/copies.rs"],
+  "self.walks.clones": ["crates/rust-js-lower/src/std_impls/clones.rs"],
+  "self.walks.clone_assumed": ["crates/rust-js-lower/src/std_impls/clones.rs"],
+  "self.codecs": ["crates/rust-js-lower/src/serde/codecs.rs"],
   // A function's scope struct's methods, functions declared in it (ADR
   // 1043): their names, which calls of them call, and while one is
   // lowered, the variable it closes over, its `self`'s.
-  "self.scope_functions": ["src/lower/mir/calls.rs", "src/lower/mir/scopes.rs"],
-  "self.scope_self": ["src/lower/mir/locals.rs", "src/lower/mir/scopes.rs"],
+  "self.scope_functions": ["crates/rust-js-mir/src/calls.rs", "crates/rust-js-mir/src/scopes.rs"],
+  "self.scope_self": ["crates/rust-js-mir/src/locals.rs", "crates/rust-js-mir/src/scopes.rs"],
   // And the lowering of each its function's lowering declares, which a
   // call of one calls and its body takes its type parameters as (#500).
-  "self.scope_copies": ["src/lower/mir/calls.rs", "src/lower/mir/scopes.rs", "src/lower/representation/options.rs"],
+  "self.scope_copies": ["crates/rust-js-mir/src/calls.rs", "crates/rust-js-mir/src/scopes.rs", "crates/rust-js-lower/src/representation/options.rs"],
   // And each scope's value's variable, whose fields its function's body,
   // once lowered, makes its variables (ADR 1043, amended).
-  "self.scope_values": ["src/lower/mir.rs", "src/lower/mir/scopes.rs"],
+  "self.scope_values": ["crates/rust-js-mir/src/lib.rs", "crates/rust-js-mir/src/scopes.rs"],
   // While a `match`'s tests of its arms are made, which it refuses itself
   // once it knows its arms differ, where a class is told by `instanceof`
   // (#555): set by its switch, read where a test is.
-  "self.telling_arms": ["src/lower/mir/structure.rs", "src/lower/untagged/classes.rs"],
+  "self.telling_arms": ["crates/rust-js-mir/src/structure.rs", "crates/rust-js-lower/src/untagged/classes.rs"],
   // While a call is lowered, the local it makes its value into, its maker's
   // MIR identity, which what's stepped from its back asks (#814).
-  "self.made_into": ["src/lower/iterators/back_facts.rs"],
-  "self.made_from": ["src/lower/iterators/back_facts.rs"],
+  "self.made_into": ["crates/rust-js-lower/src/iterators/back_facts.rs"],
+  "self.made_from": ["crates/rust-js-lower/src/iterators/back_facts.rs"],
   // The first name of each base `fresh` gives out in the item, what one
   // given apart from it is of, by its id (ADR 1150): `fresh`'s alone.
-  "self.first_of": ["src/lower.rs"],
-  "self.asking_made": ["src/lower/iterators/back_facts.rs", "src/lower/iterators/mir_steps/backs.rs"],
+  "self.first_of": ["crates/rust-js-lower/src/lib.rs"],
+  "self.asking_made": ["crates/rust-js-lower/src/iterators/back_facts.rs", "crates/rust-js-lower/src/iterators/mir_steps/backs.rs"],
   // While the crate's iterator is made the JS iterator behind a `dyn`
   // wrapper, that wrapper, which `own_methods` filters by (#2217): set
   // and read by stepping.rs alone, `seen_through`'s.
-  "self.seen_through": ["src/lower/iterators/stepping.rs"],
+  "self.seen_through": ["crates/rust-js-lower/src/iterators/stepping.rs"],
 };
 // The rest of a function's context, which each module may read, and why:
 // what it lowers and where (set entering a body, `bodies.rs`), the names it
@@ -128,7 +128,7 @@ const shared: Record<string, string> = {
 // Each field of `FnCx` is an owner's, or the shared context above: a field
 // added with neither is one nothing says who may change (the second review).
 test("each field of a function's context has an owner, or is its shared context", () => {
-  const lower = read("src/lower.rs");
+  const lower = read("crates/rust-js-lower/src/lib.rs");
   const struct = lower.slice(lower.indexOf("struct FnCx<"), lower.indexOf("\n}\n", lower.indexOf("struct FnCx<")));
   const fields = [...struct.matchAll(/^    (?:pub\([a-z]+\) )?([a-z_]+):/gm)].map(m => m[1]);
   const owned = new Set(Object.keys(owners).map(path => path.split(".")[1]));
@@ -140,7 +140,7 @@ const statePattern = (state: string) =>
   new RegExp(`${state.split(".").join("\\s*(?:\\(\\s*\\))?\\s*\\.\\s*")}${state.endsWith(".") ? "" : "\\b"}`);
 test("each group of a function's state is read and written by its owner", () => {
   const strays: string[] = [];
-  for (const file of ["src/lower.rs", ...files("src/lower")]) {
+  for (const file of [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")]) {
     const text = read(file);
     for (const [state, allowed] of Object.entries(owners)) {
       if (!allowed.includes(file) && statePattern(state).test(text)) strays.push(`${state} in ${file}`);
@@ -165,65 +165,65 @@ test("each owner's rule of a function's state finds what its owner has", () => {
 // naming its locals settles, `local_facts.rs`'s, whose fields are private
 // there: any module reads them, none changes them (the review's P3).
 const mirState: Record<string, string[]> = {
-  "src/lower/mir/bounds.rs": ["at", "body"],
-  "src/lower/mir/assign.rs": ["binding_var", "body", "branches", "builders", "commented", "cuts", "in_place", "iter_locals", "locals", "named", "parts", "pending", "places", "refs", "writer"],
-  "src/lower/mir/assign/boxed_args.rs": ["copy_backs"],
-  "src/lower/mir/assign/let_rest.rs": ["body", "locals"],
-  "src/lower/mir/assign/rewritten.rs": ["body"],
-  "src/lower/mir/given_arguments.rs": ["at", "body"],
-  "src/lower/mir/calls.rs": ["at", "body", "flattened"],
-  "src/lower/mir/closures.rs": ["at", "body", "in_place", "locals"],
-  "src/lower/mir/dispatch.rs": ["at", "body", "called_into", "defaults", "flattened", "iter_locals", "locals"],
-  "src/lower/mir/drops.rs": ["body", "branches", "locals", "parts", "pending"],
-  "src/lower/mir/entries.rs": ["body", "locals", "thrown_writes"],
-  "src/lower/mir/dispatch/known_calls.rs": ["at", "body"],
-  "src/lower/mir/hints/clones.rs": ["locals"],
-  "src/lower/mir/hints/names.rs": ["locals"],
-  "src/lower/mir/jsx_props.rs": ["body"],
-  "src/lower/mir/keyed_writes.rs": ["body"],
-  "src/lower/mir/locals.rs": ["body", "locals"],
-  "src/lower/mir/calls/defined.rs": ["body"],
-  "src/lower/mir/calls/method_paths.rs": ["body"],
-  "src/lower/mir/nested_options.rs": ["body"],
-  "src/lower/mir/nulled.rs": ["at", "body", "locals", "writer"],
-  "src/lower/mir/nulled/field_reads.rs": ["at", "body", "locals"],
-  "src/lower/mir/nulled/captured.rs": ["at", "body"],
-  "src/lower/mir/nulled/defined.rs": ["at", "body"],
-  "src/lower/mir/nulled/items.rs": ["body", "locals"],
-  "src/lower/mir/nulled/lends.rs": ["body", "locals"],
-  "src/lower/mir/nulled/one_none.rs": ["at", "body", "locals", "writer"],
-  "src/lower/mir/nulled/presence_paths.rs": ["body", "locals"],
-  "src/lower/mir/none_forms.rs": ["at", "body"],
-  "src/lower/mir/nulled/proofs.rs": ["at", "body", "locals"],
-  "src/lower/mir/operands.rs": ["at", "body", "locals", "pending", "statement", "taken"],
-  "src/lower/mir/patterns.rs": ["in_place", "locals"],
-  "src/lower/mir/patterns/let_names.rs": ["locals"],
-  "src/lower/mir/places.rs": ["binding_var", "body", "branches", "cuts", "defaults", "deferred", "in_place", "locals", "named", "refs"],
-  "src/lower/mir/queries.rs": ["body", "locals", "own_names"],
-  "src/lower/mir/queries/reads.rs": ["body", "locals"],
-  "src/lower/mir/rvalues.rs": ["at", "body", "branches", "cuts", "locals", "pending", "statement"],
-  "src/lower/mir/rvalues/fields.rs": ["body"],
-  "src/lower/mir/rvalues/aggregate.rs": ["body", "locals"],
-  "src/lower/mir/scopes.rs": ["body", "locals"],
-  "src/lower/mir/std_calls.rs": ["at", "body", "locals"],
-  "src/lower/mir/std_calls/iterators.rs": ["at"],
-  "src/lower/mir/std_calls/written_into.rs": ["at", "body", "called_into", "writer"],
-  "src/lower/mir/stored.rs": ["at", "body", "pending"],
-  "src/lower/mir/structure.rs": ["at", "body", "called_into", "commented", "copy_backs", "deferred", "in_place", "left", "locals", "pending", "split", "statement", "unwind", "writer", "writes_captured"],
-  "src/lower/mir/temporaries.rs": ["body", "copy_backs", "in_place", "iter_locals", "locals", "named", "own_names", "pending", "places", "refs", "settled", "unwind"],
-  "src/lower/mir/writer.rs": ["body", "builders", "built", "thrown_writes", "writer", "writes_captured"],
+  "crates/rust-js-mir/src/bounds.rs": ["at", "body"],
+  "crates/rust-js-mir/src/assign.rs": ["binding_var", "body", "branches", "builders", "commented", "cuts", "in_place", "iter_locals", "locals", "named", "parts", "pending", "places", "refs", "writer"],
+  "crates/rust-js-mir/src/assign/boxed_args.rs": ["copy_backs"],
+  "crates/rust-js-mir/src/assign/let_rest.rs": ["body", "locals"],
+  "crates/rust-js-mir/src/assign/rewritten.rs": ["body"],
+  "crates/rust-js-mir/src/given_arguments.rs": ["at", "body"],
+  "crates/rust-js-mir/src/calls.rs": ["at", "body", "flattened"],
+  "crates/rust-js-mir/src/closures.rs": ["at", "body", "in_place", "locals"],
+  "crates/rust-js-mir/src/dispatch.rs": ["at", "body", "called_into", "defaults", "flattened", "iter_locals", "locals"],
+  "crates/rust-js-mir/src/drops.rs": ["body", "branches", "locals", "parts", "pending"],
+  "crates/rust-js-mir/src/entries.rs": ["body", "locals", "thrown_writes"],
+  "crates/rust-js-mir/src/dispatch/known_calls.rs": ["at", "body"],
+  "crates/rust-js-mir/src/hints/clones.rs": ["locals"],
+  "crates/rust-js-mir/src/hints/names.rs": ["locals"],
+  "crates/rust-js-mir/src/jsx_props.rs": ["body"],
+  "crates/rust-js-mir/src/keyed_writes.rs": ["body"],
+  "crates/rust-js-mir/src/locals.rs": ["body", "locals"],
+  "crates/rust-js-mir/src/calls/defined.rs": ["body"],
+  "crates/rust-js-mir/src/calls/method_paths.rs": ["body"],
+  "crates/rust-js-mir/src/nested_options.rs": ["body"],
+  "crates/rust-js-mir/src/nulled.rs": ["at", "body", "locals", "writer"],
+  "crates/rust-js-mir/src/nulled/field_reads.rs": ["at", "body", "locals"],
+  "crates/rust-js-mir/src/nulled/captured.rs": ["at", "body"],
+  "crates/rust-js-mir/src/nulled/defined.rs": ["at", "body"],
+  "crates/rust-js-mir/src/nulled/items.rs": ["body", "locals"],
+  "crates/rust-js-mir/src/nulled/lends.rs": ["body", "locals"],
+  "crates/rust-js-mir/src/nulled/one_none.rs": ["at", "body", "locals", "writer"],
+  "crates/rust-js-mir/src/nulled/presence_paths.rs": ["body", "locals"],
+  "crates/rust-js-mir/src/none_forms.rs": ["at", "body"],
+  "crates/rust-js-mir/src/nulled/proofs.rs": ["at", "body", "locals"],
+  "crates/rust-js-mir/src/operands.rs": ["at", "body", "locals", "pending", "statement", "taken"],
+  "crates/rust-js-mir/src/patterns.rs": ["in_place", "locals"],
+  "crates/rust-js-mir/src/patterns/let_names.rs": ["locals"],
+  "crates/rust-js-mir/src/places.rs": ["binding_var", "body", "branches", "cuts", "defaults", "deferred", "in_place", "locals", "named", "refs"],
+  "crates/rust-js-mir/src/queries.rs": ["body", "locals", "own_names"],
+  "crates/rust-js-mir/src/queries/reads.rs": ["body", "locals"],
+  "crates/rust-js-mir/src/rvalues.rs": ["at", "body", "branches", "cuts", "locals", "pending", "statement"],
+  "crates/rust-js-mir/src/rvalues/fields.rs": ["body"],
+  "crates/rust-js-mir/src/rvalues/aggregate.rs": ["body", "locals"],
+  "crates/rust-js-mir/src/scopes.rs": ["body", "locals"],
+  "crates/rust-js-mir/src/std_calls.rs": ["at", "body", "locals"],
+  "crates/rust-js-mir/src/std_calls/iterators.rs": ["at"],
+  "crates/rust-js-mir/src/std_calls/written_into.rs": ["at", "body", "called_into", "writer"],
+  "crates/rust-js-mir/src/stored.rs": ["at", "body", "pending"],
+  "crates/rust-js-mir/src/structure.rs": ["at", "body", "called_into", "commented", "copy_backs", "deferred", "in_place", "left", "locals", "pending", "split", "statement", "unwind", "writer", "writes_captured"],
+  "crates/rust-js-mir/src/temporaries.rs": ["body", "copy_backs", "in_place", "iter_locals", "locals", "named", "own_names", "pending", "places", "refs", "settled", "unwind"],
+  "crates/rust-js-mir/src/writer.rs": ["body", "builders", "built", "thrown_writes", "writer", "writes_captured"],
 };
 test("each module of mir/ reads only the fields of mir.rs's state it's listed for", () => {
-  const mir = read("src/lower/mir.rs");
+  const mir = read("crates/rust-js-mir/src/lib.rs");
   const struct = mir.slice(mir.indexOf("struct State<"), mir.indexOf("\n}\n", mir.indexOf("struct State<")));
   const fields = [...struct.matchAll(/^    ([a-z_]+):/gm)].map((m) => m[1]).filter((field) => field !== "facts" && field !== "naming");
   expect(struct).toContain("    facts: local_facts::LocalFacts<'m, 'tcx>,");
   expect(struct).toContain("    naming: local_facts::NamingFacts,");
   // What naming settles is made once, where naming's done, never changed.
-  const named = ["src/lower/mir.rs", ...files("src/lower/mir")].flatMap((file) => [...read(file).matchAll(/\bstate\s*\.\s*naming\s*=[^=]/g)].map(() => file));
-  expect(named).toEqual(["src/lower/mir.rs"]);
+  const named = files("crates/rust-js-mir/src").flatMap((file) => [...read(file).matchAll(/\bstate\s*\.\s*naming\s*=[^=]/g)].map(() => file));
+  expect(named).toEqual(["crates/rust-js-mir/src/lib.rs"]);
   const found: Record<string, string[]> = {};
-  for (const file of files("src/lower/mir")) {
+  for (const file of files("crates/rust-js-mir/src").filter((file) => file !== "crates/rust-js-mir/src/lib.rs")) {
     const used = fields.filter((field) => new RegExp(`\\bstate\\s*\\.\\s*${field}\\b`).test(read(file)));
     if (used.length > 0) found[file] = used;
   }

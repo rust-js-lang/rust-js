@@ -20,8 +20,8 @@ rustc_private = true
 # edition 2024's): the binary's tests' `rust-js-program/testing` never
 # reaches the compiler a user runs.
 resolver = "3"
-members = ["crates/rust-js-program", "crates/rust-js-emit"]
-default-members = [".", "crates/rust-js-program", "crates/rust-js-emit"]
+members = ["crates/rust-js-program", "crates/rust-js-emit", "crates/rust-js-lower", "crates/rust-js-mir"]
+default-members = [".", "crates/rust-js-program", "crates/rust-js-emit", "crates/rust-js-lower", "crates/rust-js-mir"]
 exclude = ["builtins", "examples", "next", "node", "react", "react-native", "scripts", "test", "target", "tooling", "vendor", "wasm", "webapi"]
 
 # What more than one of the crates depends on, at one version.
@@ -55,6 +55,9 @@ oxc_syntax = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.
 # The compiler's owned output and its printing (ADR 1181).
 rust-js-program = { path = "crates/rust-js-program" }
 rust-js-emit = { path = "crates/rust-js-emit" }
+# The lowering, its base and MIR's (#2299).
+rust-js-lower = { path = "crates/rust-js-lower" }
+rust-js-mir = { path = "crates/rust-js-mir" }
 indexmap.workspace = true
 rustc-hash.workspace = true
 serde.workspace = true

@@ -1,4 +1,4 @@
-// Mutations of src/lower/iterators/hint_asks.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/iterators/hint_asks.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "endless-collect-unchecked",
     breaks:
       "`(0..).map(f).collect::<Vec<_>>()`, a `TrustedLen` with no upper bound, maps without end where Rust panics `capacity overflow` before any item's made (ADR 0940)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        let endless = trusted && self.recognition().endless_by_type(iter_ty);\n",
     replace: "        let endless = trusted && self.recognition().endless_by_type(iter_ty) && false;\n",
     tests: ["test/corpus.test.ts", "-t", "^(asked_length_overflow|collect_of_what_has_no_end_by_its_hint).rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "endless-once-collect-unchecked",
     breaks:
       "`collect()` into a `Vec` of a `cycle()` of an array's items, not `TrustedLen`, maps without end where Rust steps it once and panics `capacity overflow` (#433, ADR 0940)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        let endless_once = match !trusted && asks_room && item.is_some_and(sized) {\n",
     replace: "        let endless_once = match false && !trusted && asks_room && item.is_some_and(sized) {\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_endless_once_stepped.rs$"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "endless-once-of-items-of-no-size",
     breaks:
       "`collect()` of a `cycle()` into a `Vec<()>` panics `capacity overflow`, where Rust has room for any number of items of no size and goes on (#433, ADR 0940)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        let endless_once = match !trusted && asks_room && item.is_some_and(sized) {\n",
     replace: "        let endless_once = match !trusted && asks_room && item.is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_endless_once_stepped.rs$"],
@@ -33,16 +33,16 @@ export const mutations: Mutation[] = [
     name: "endless-once-item-drop-ungiven",
     breaks:
       "the item a `collect()` of what has no end once stepped makes, `(0..).skip(1).map(|_| Noisy(..))`'s, isn't dropped as it panics `capacity overflow` (#433, ADR 0940)",
-    file: "src/lower/iterators/hint_asks.rs",
-    find: "        let drop = match !trusted && self.drops(item) != crate::lower::drops::Drops::Nothing {\n",
-    replace: "        let drop = match false && self.drops(item) != crate::lower::drops::Drops::Nothing {\n",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
+    find: "        let drop = match !trusted && self.drops(item) != crate::drops::Drops::Nothing {\n",
+    replace: "        let drop = match false && self.drops(item) != crate::drops::Drops::Nothing {\n",
     tests: ["test/corpus.test.ts", "-t", "^(collect_endless_once_stepped|collect_closes_what_its_hint_panics).rs$"],
   },
   {
     name: "collect-hint-room-unasked",
     breaks:
       "`collect()` into a `Vec` of std's struct asks no room of its hint first, so `(0..usize::MAX).map(f).collect()` maps without end where Rust's `SpecFromIter` panics `capacity overflow` (ADR 0940)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "                        || std_struct && !self.recognition().bounded_by_items(iter_ty)\n",
     replace: "                        || false && std_struct && !self.recognition().bounded_by_items(iter_ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^std_rev.rs$"],
@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-collect-asks-no-own-hint",
     breaks: "a collect into a `Vec` of a chain made in place over the crate's iterator asks no hint, which std's `from_iter` asks after its first item and as it grows (#733)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "                        || std_struct && !self.recognition().bounded_by_items(iter_ty)\n                        || reaches_own\n                        || kept)\n",
     replace: "                        || std_struct && !self.recognition().bounded_by_items(iter_ty)\n                        || kept)\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_of_a_method_with_its_own_generics.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
     name: "linked-list-asks-room",
     breaks:
       "a collect into a `LinkedList`, whose `from_iter` extends a new one asking no room, asks the crate's iterator its `size_hint` as a `Vec` would (#797)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        let asks_room = self.recognition().grows_as_vec(output);\n",
     replace: "        let asks_room = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_as_vec_asks_hint.rs$"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "grown-size-of-a-caller-zero",
     breaks:
       "generic code's collect into a `Vec` of a type parameter's items grows by a size of 0, never full, so it asks the crate's hint its caller gives once, not again as it grows (#796)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "(false, self.krate.keeps_capacity)) {\n            true => self.type_fact_value(item, TypeFact::Size, span),\n",
     replace: "(false, self.krate.keeps_capacity)) {\n            true => Ok(Expr::int(0)),\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size.rs$"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
     name: "grown-size-asked-of-a-known-hint",
     breaks:
       "generic code's collect into a `Vec<T>` of std's own iterator asks `TSize`, which no caller gives where the hint is std's, so it's refused, \"`size_of` of a type parameter\" (#796)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        self.grows_as_vec(output) && item.has_param() && (reaches_own || keeps_capacity && !trusted)\n",
     replace: "        self.grows_as_vec(output) && item.has_param()\n",
     tests: ["test/corpus.test.ts", "-t", "^(generic_drops_nothing|closure_stages_that_never_unwind|boxed_option_unwraps|generic_collect_grows_by_its_items_size).rs$"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     name: "grown-size-asked-of-any-hint",
     breaks:
       "generic code's collect into a `Vec` of a `T` asks its caller's `TSize` where its iterator's hint is std's own, which it never reads (#796)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        self.grows_as_vec(output) && item.has_param() && (reaches_own || keeps_capacity && !trusted)\n",
     replace: "        self.grows_as_vec(output) && item.has_param() && (reaches_own || true)\n",
     tests: ["test/corpus.test.ts", "-t", "^heap_pop_of_a_param.rs$"],
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
   {
     name: "string-or-table-hint-unreserved",
     breaks: "a `String`'s or a hash table's collect of what may run the crate's own `size_hint` doesn't ask it before it's stepped, as std's `extend` reserves by it (a wrong answer, #733)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        if !iter_ty.is_some_and(seen) {\n",
     replace: "        if true || !iter_ty.is_some_and(seen) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(collect_asks_hint_as_it_grows|map_ends_size_hint|size_hint_of_adapters).rs$"],
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
   {
     name: "shunted-hint-unasked",
     breaks: "a collect into a `Result` or an `Option` of a collection never asks its source's hint, which std's `GenericShunt` passes on, so the crate's own `size_hint` doesn't run (a wrong answer, #848)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        if !self.hint_reaches_own(iter_ty) && !(keeps && grows) {\n            return Ok(Shunted::Never);\n",
     replace: "        if true || !self.hint_reaches_own(iter_ty) && !(keeps && grows) {\n            return Ok(Shunted::Never);\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_results_asks_hint.rs$"],
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
   {
     name: "shunted-callers-size-zero",
     breaks: "a generic collect into a `Result` of a `Vec` of a caller's values grows it by none, as if each were of no size, so its hint isn't asked again as it fills (a wrong answer, #848)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "                    true => self.type_fact_value(value, TypeFact::Size, span)?,\n",
     replace: "                    true => Expr::int(0),\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_results_asks_hint.rs$"],
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
   {
     name: "shunted-reserve-unasked",
     breaks: "a collect into a `Result` of a `String` of `char`s or a hash table doesn't ask its source's hint first, as their `extend` reserves by the shunt's (a wrong answer, #848)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "                true => Shunted::Reserved,\n",
     replace: "                true => Shunted::Never,\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_results_asks_hint.rs$"],
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
   {
     name: "table-extend-hint-unasked",
     breaks: "a hash table's `extend` doesn't ask its iterator's hint first, as hashbrown's reserves by it, so the crate's own `size_hint` doesn't run (a wrong answer, #849)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "            _ if self.is_map(into) && !self.is_sorted(into) => Some(Room::Entries(item)),\n",
     replace: "            _ if false && self.is_map(into) => Some(Room::Entries(item)),\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_reserves_by_hint.rs$"],
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
   {
     name: "kept-capacity-extend-ungrown",
     breaks: "in a crate that keeps capacities, an `extend` of a `Vec` by the crate's own hint isn't grown as std's, so the hint isn't asked as it fills (#849, #1180)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        if !self.krate.keeps_capacity {\n            return Ok((collection, items));\n",
     replace: "        if true {\n            return Ok((collection, items));\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_asks_hint_capacity_grown.rs$"],
@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
   {
     name: "dictionary-extend-unreserved",
     breaks: "generic code's `extend` of a hash set or a `String` by `char`s, through its dictionary, doesn't ask its iterator's hint first, which may be the crate's own (a wrong answer, #849)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        let Some(room) = self.recognition().room_of(into, item) else {\n",
     replace: "        let Some(room) = self.recognition().room_of(into, item).filter(|_| false) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_extend_of_own_hints.rs$"],
@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-vec-extend-unrefused",
     breaks: "a caller that gives generic code's `extend` a `Vec` and an iterator whose hint is the crate's own isn't refused, so the dictionary asks no hint where std asks it as the `Vec` fills (a wrong answer, #849)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "                    if recognition.hint_reaches_own(iter_ty) && refused.insert(span) {\n",
     replace: "                    if false && refused.insert(span) {\n",
     tests: ["test/diagnostics.test.ts", "-t", "generic code's extend of a Vec its caller gives"],
@@ -162,7 +162,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-extend-unrelayed",
     breaks: "what generic code extends of a caller's type parameters isn't relayed, so the caller that knows them isn't refused (a wrong answer, #849)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "                    changed |= held.insert((collection, iterable));\n",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "generic code's extend relayed"],
@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
   {
     name: "closure-extend-unmerged",
     breaks: "a closure's `extend` isn't the function's it's written in, so a caller of that function isn't refused (a wrong answer, #849)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "                    changed |= theirs.insert(each);\n",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "generic code's extend in a closure"],
@@ -178,7 +178,7 @@ export const mutations: Mutation[] = [
   {
     name: "kept-generic-extend-refused",
     breaks: "in a crate that keeps capacities, generic code's `extend` by an iterator its caller gives is refused at its caller, where it grows as std's does (#1180)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "    if keeps_capacity {\n        return;\n    }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^extend_asks_hint_capacity_grown.rs$"],
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
   {
     name: "dictionary-extend-unrelayed",
     breaks: "generic code's `extend` of a collection its caller gives, in a crate that keeps no capacities, isn't relayed, so the caller that gives a `Vec` and the crate's own hint isn't refused (a wrong answer, #849)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "            let given = extend && recognition.is_unknown(collection);\n",
     replace: "            let given = false && extend && recognition.is_unknown(collection);\n",
     tests: ["test/diagnostics.test.ts", "-t", "generic code's extend"],
@@ -194,7 +194,7 @@ export const mutations: Mutation[] = [
   {
     name: "extend-of-what-isnt-trusted-ungrown",
     breaks: "in a crate that keeps capacities, an `extend` of what isn't `TrustedLen` grows by as many as it adds, not item by item by its hint as std's does (#1180)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "                || self.krate.keeps_capacity && !is_trusted_len(self.tcx, self.typing_env, iter_ty))\n",
     replace: "                || false)\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
@@ -202,7 +202,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-of-what-isnt-trusted-ungrown",
     breaks: "in a crate that keeps capacities, a `collect()` of what isn't `TrustedLen` keeps its length as its capacity, where std's grows by its hint (#1180)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "                        || reaches_own\n                        || kept)\n",
     replace: "                        || reaches_own)\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
@@ -210,7 +210,7 @@ export const mutations: Mutation[] = [
   {
     name: "unkept-lower-bound-unrefused",
     breaks: "a `Vec` grown by what JS's hint hasn't std's lower bound of, `chars()`'s, in a crate that reads a capacity, compiles, its capacity another (#1180)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        if self.hint_reaches_own(iter_ty)\n            || self.recognition().lower_bound_is_stds_where(iter_ty, chars_kept)\n",
     replace: "        if true\n            || self.recognition().lower_bound_is_stds_where(iter_ty, chars_kept)\n",
     tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of chars"],
@@ -218,7 +218,7 @@ export const mutations: Mutation[] = [
   {
     name: "dictionary-extend-ungrown",
     breaks: "in a crate that keeps capacities, generic code's `extend` through its dictionary grows a `Vec` by as many as it adds, not as std's does (#1180)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        if !self.krate.keeps_capacity || !self.recognition().grows_as_it_extends(into) {\n            return Ok(items);\n",
     replace: "        if true {\n            return Ok(items);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
   {
     name: "dictionary-callers-items-unrefused",
     breaks: "a bound's `extend` of a `Vec<T>` of a type parameter's items, in a crate that reads a capacity, grows by no size, where its dictionary isn't given it (#1180)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        if item.has_param() {\n            return Err(self.unsupported(\n",
     replace: "        if false {\n            return Err(self.unsupported(\n",
     tests: ["test/diagnostics.test.ts", "-t", "a bound's extend of a Vec of a type parameter's items"],
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
   {
     name: "capacity-item-size-of-none",
     breaks: "in a crate that keeps capacities, a `Vec<T>` of a type parameter's items grows by a size of none, its length its capacity (#1180)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "            ty::Param(param) => self.given_type_fact(param.index, fact),\n",
     replace: "            ty::Param(_) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
@@ -242,7 +242,7 @@ export const mutations: Mutation[] = [
   {
     name: "shunted-collect-ungrown",
     breaks: "in a crate that keeps capacities, a `collect()` into a `Result` of a `Vec` keeps its length as its capacity, where std's grows by the shunt's hint (#1180)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        if !self.hint_reaches_own(iter_ty) && !(keeps && grows) {\n",
     replace: "        if !self.hint_reaches_own(iter_ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
   {
     name: "shunted-trusted-size-unasked",
     breaks: "generic code's `collect()` into an `Option` of a `Vec<T>` of a `TrustedLen` source asks no `TSize`, as if the shunt were `TrustedLen` too, so it's refused (#1180)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        let trusted = !shunted && is_trusted_len(self.tcx, self.typing_env, iter_ty);\n",
     replace: "        let trusted = is_trusted_len(self.tcx, self.typing_env, iter_ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
   {
     name: "exact-size-collect-unknowing",
     breaks: "in a crate that reads a capacity, a `Vec` collected of an `ExactSizeIterator` that isn't `TrustedLen`, `b.iter().skip(1)`, is grown by JS's own `drop(n)`'s hint, none, its capacity 64 where std's is 39 (#1200)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        let exact = kept && self.recognition().grows_by_exact_len(iter_ty) && !hint_known;\n",
     replace: "        let exact = false && kept && self.recognition().grows_by_exact_len(iter_ty) && !hint_known;\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_exact_size_adapters.rs$"],
@@ -266,7 +266,7 @@ export const mutations: Mutation[] = [
   {
     name: "exact-size-collect-of-a-compiled-struct-remade",
     breaks: "a collect of std's compiled struct, `b.iter().skip(1).fuse()`, whose own hint is std's, is remade knowing its length too, `$knowing(..)` of its dictionaries, where it needs nothing (#1200)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        let it = match exact && !self.compiled_struct(iter_ty, &it) {\n",
     replace: "        let it = match exact {\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_exact_size_adapters.rs$"],
@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
     name: "generic-growth-lost-unread",
     breaks:
       "generic code's `extend` of a `Vec` the analysis found lost keeps its capacity: of `chars().skip(5)` given it, 64 where std's is 60, silently (#1180's (3))",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "self.krate.iterators.hinted.lost.contains(&site)",
     replace: "false",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
     name: "generic-growth-own-hint-lost",
     breaks:
       "generic code's `extend` of a `Vec` by a `map` of the crate's own exact-sized iterator, whose hint runs as it is, is lost: its `capacity()` throws where std's is 5 (#1180's (3))",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        self.given_hint_is_stds(instance) || self.hint_reaches_own(instance)\n",
     replace: "        self.given_hint_is_stds(instance)\n",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
@@ -295,7 +295,7 @@ export const mutations: Mutation[] = [
     name: "generic-growth-by-value-unread",
     breaks:
       "generic code's `extend` the analysis asks by value isn't: of `chars().skip(5)` given a library's `pub` function, a capacity of 64 where std's is 44, silently (#1251)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "self.krate.iterators.hinted.by_value.contains(&site)",
     replace: "false",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
@@ -303,7 +303,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-hint-seen-of-none",
     breaks: "a collect's hint is never taken for seen: a flatten of the crate's iterator, whose `size_hint` prints, collected is made in place, its hint asked three times where std asks once (#1327)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        let seen = self.hint_reaches_own(given);\n",
     replace: "        let seen = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_into_iterator_flattened_from_its_back.rs$"],
@@ -312,7 +312,7 @@ export const mutations: Mutation[] = [
   {
     name: "extend-of-a-dyn-keeps-no-capacity",
     breaks: "a crate that extends a `Vec` by a Rust-made `dyn Iterator` keeps no capacities, so its `extend` never asks the hint std asks whenever it's full, the crate's own `size_hint` behind it never runs and an endless one never overflows (#1377)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "                    self.hint_reaches_own_where(iter_ty, !binding)\n",
     replace: "                    self.hint_reaches_own(iter_ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_by_a_dyn_iterator_asks_its_hint.rs$"],
@@ -320,15 +320,15 @@ export const mutations: Mutation[] = [
   {
     name: "binding-made-in-mir-never",
     breaks: "a crate that extends by a binding's iterator, JS's own, is taken for one extended by a `dyn` Rust made, so it keeps capacities and each push reads `$grew` where it read `push` (#1377)",
-    file: "src/lower/iterators/hint_asks.rs",
-    find: "                    if crate::lower::bindings::is_binding(self.tcx, callee) {\n                        return true;\n",
-    replace: "                    if crate::lower::bindings::is_binding(self.tcx, callee) {\n                        return false;\n",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
+    find: "                    if crate::bindings::is_binding(self.tcx, callee) {\n                        return true;\n",
+    replace: "                    if crate::bindings::is_binding(self.tcx, callee) {\n                        return false;\n",
     tests: ["test/js-collections.test.ts", "-t", "forEach and iterators"],
   },
   {
     name: "grown-by-a-hint-size-hint-knows-refused",
     breaks: "a `Vec` grown by an iterator whose JS hint `size_hint()` finds std's, a `take(n)` of `successors`, a `rev()` of a `flat_map`, is refused in a crate that reads capacities, \"whose lower bound JS's doesn't have\" (#1316)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "            || self.adapted_hint_known(iter_ty)\n        {\n            return Ok(());\n",
     replace: "        {\n            return Ok(());\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_grown_by_iterators_whose_hint_is_stds.rs$"],
@@ -336,7 +336,7 @@ export const mutations: Mutation[] = [
   {
     name: "capacity-item-size-of-an-associated-type-unknown",
     breaks: "a `Vec` of an associated type's items, `I::Item`, or of a type built of type parameters, `(T, u8)`, grown by generic code has no size its caller gives read, so its growth isn't kept and `capacity()` refuses it (#1260)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "            _ => self.known_fact_of(item, fact),\n",
     replace: "            _ => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_an_associated_types_items.rs$"],
@@ -344,7 +344,7 @@ export const mutations: Mutation[] = [
   {
     name: "capacity-item-size-of-a-laid-out-generic-unknown",
     breaks: "a `Vec` of items rustc lays out whatever its types, `&T`, grown by generic code isn't sized, so its growth isn't kept and `capacity()` refuses it (#1260)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        if let Ok(layout) = self.tcx.layout_of(self.typing_env.as_query_input(item)) {\n",
     replace: "        if let Ok(layout) = self.tcx.layout_of(self.typing_env.as_query_input(item)) && !item.has_param() {\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_an_associated_types_items.rs$"],
@@ -352,15 +352,15 @@ export const mutations: Mutation[] = [
   {
     name: "room-of-an-impls-associated-type-refused",
     breaks: "an impl's growth of an associated type's items, `I::Item`, whose size its dictionary can't give, isn't given `undefined` and is refused at compile time, the whole crate with it, itertools' `ChunkBy` (#1260)",
-    file: "src/lower/iterators/hint_asks.rs",
-    find: "            (crate::lower::recognition::is_associated_type(item) && self.in_impl_method()).then(Expr::js_undefined)\n",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
+    find: "            (crate::recognition::is_associated_type(item) && self.in_impl_method()).then(Expr::js_undefined)\n",
     replace: "            None\n",
     tests: ["test/vec-capacity.test.ts", "-t", "an impl's growth of an associated type's items"],
   },
   {
     name: "room-item-of-no-size",
     breaks: "each item's size is taken as none, `Vec::<u8>::with_capacity(n)` checked by its count alone",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "            return Some(Expr::int(i128::from(layout.size.bytes())));\n",
     replace: "            return Some(Expr::int(0));\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
@@ -368,7 +368,7 @@ export const mutations: Mutation[] = [
   {
     name: "table-room-of-capacity-unasked",
     breaks: "a generic hash table's `with_capacity` or `reserve` asks its caller no entry layout, so its room is checked by its count alone and no `Hash table capacity overflow` panics where hashbrown's does (#1437)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        if !matches!(tcx.item_name(callee).as_str(), \"with_capacity\" | \"reserve\") {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^table_room_of_generic_entries.rs$"],
@@ -376,7 +376,7 @@ export const mutations: Mutation[] = [
   {
     name: "table-entry-layout-of-a-param-unread",
     breaks: "a hash table's entry layout its caller gives isn't read, so its room is checked by its count alone (#1437)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "            (Some(size), Some(align)) if !matches!(size.kind, rust_js_program::js::ExprKind::Undefined) => {\n                (size, align)\n            }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^table_room_of_generic_entries.rs$"],
@@ -385,7 +385,7 @@ export const mutations: Mutation[] = [
     name: "grows-vec-by-collect-at-its-iterable",
     breaks:
       "a `collect()`'s receiver isn't taken for what it grows a `Vec` by, so a `flat_map` collected in a crate that reads capacities is JS's own `flatMap`, of no hint: a capacity of 64 where native Rust's is 46 (#1528)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "            true => 0,\n            false => 1,\n",
     replace: "            true => 1,\n            false => 1,\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_collected_where_capacity_is_read.rs$"],
@@ -393,7 +393,7 @@ export const mutations: Mutation[] = [
   {
     name: "exact-length-made-though-hint-known",
     breaks: "a `Vec` grown by what isn't `TrustedLen` whose hint is known std's as it's made, a held `step_by(n)` of a reversed range, `$lazyRangeBack`, is made knowing its length where it's collected, which the variable that holds it can't be, and refused (#1573)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        let exact = kept && self.recognition().grows_by_exact_len(iter_ty) && !hint_known;\n",
     replace: "        let exact = kept && self.recognition().grows_by_exact_len(iter_ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^counted_adapters_where_capacity_is_read.rs$"],
@@ -402,7 +402,7 @@ export const mutations: Mutation[] = [
   {
     name: "compiled-chain-hint-unknown",
     breaks: "in the build of std's structs, a `Vec` grown by std's compiled `Chain` of a compiled `Inspect` and an array's, whose hint is std's, is refused where its capacity is read (#1737)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        if self.compiled_struct(ty, &it) && self.compiled_hint_is_stds(ty) {\n",
     replace: "        if false && self.compiled_struct(ty, &it) && self.compiled_hint_is_stds(ty) {\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^vec_grown_by_a_chain_of_an_inspect"],
@@ -410,7 +410,7 @@ export const mutations: Mutation[] = [
   {
     name: "js-own-of-values-hint-known",
     breaks: "a `Vec` collected of a slice's `inspect()`, made in place as JS's own `values().map(..)`, which knows no hint, is taken for std's `Inspect`, whose hint is the slice's length, and grows from 4 to 8 where std's capacity is 5 (#1792)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        let hint_known = !form_hintless && self.adapted_hint_known(iter_ty);\n",
     replace: "        let hint_known = self.adapted_hint_known(iter_ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^inspect_of_a_slice_collected_where_capacity_is_read.rs$"],
@@ -418,8 +418,8 @@ export const mutations: Mutation[] = [
   {
     name: "extend-of-a-hintless-form-unknowing",
     breaks: "an empty `Vec` extended by a slice's `inspect()`, `$iter(v).map(..)`, JS's own, which knows no hint, where a capacity is read, grows from 4 to 8, where std's `Inspect` reserves the slice's length, 5 (#1804)",
-    file: "src/lower/iterators/hint_asks.rs",
-    find: "        let items = match crate::lower::iterators::form_knows_no_hint(&items)\n",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
+    find: "        let items = match crate::iterators::form_knows_no_hint(&items)",
     replace: "        let items = match false\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^extend_by_an_inspect_of_a_slice_where_capacity_is_read.rs$"],
@@ -428,7 +428,7 @@ export const mutations: Mutation[] = [
     name: "compiled-flat-map-hint-refused",
     breaks:
       "a `Vec` grown by std's compiled `FlatMap` of a map's iterators, in the build of std's structs and a crate that reads a capacity, is refused, where its hint is std's body's (#1892)",
-    file: "src/lower/iterators/hint_asks.rs",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
     find: "        if kept && !exact && !(std_struct && self.compiled_hint_is_stds(iter_ty)) {\n",
     replace: "        if kept && !exact {\n",
     tests: ["test/vec-capacity.test.ts", "-t", "compiled flat_map of a map's iterators"],
@@ -436,8 +436,8 @@ export const mutations: Mutation[] = [
   {
     name: "held-chain-parts-unread",
     breaks: "a held chain made knowing its parts' lengths is taken apart again where a `Vec` is grown by it, which a variable's form can't be, so it's refused (#1744)",
-    file: "src/lower/iterators/hint_asks.rs",
-    find: "        if crate::lower::iterators::was_made_knowing_its_length(&it) {\n            return Ok(it);\n",
+    file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
+    find: "        if crate::iterators::was_made_knowing_its_length(&it) {\n            return Ok(it);\n",
     replace: "        if false {\n            return Ok(it);\n",
     tests: ["test/corpus.test.ts", "-t", "^held_adapters_whose_length_a_capacity_asks.rs$"],
   },

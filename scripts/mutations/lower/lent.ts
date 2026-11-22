@@ -1,4 +1,4 @@
-// Mutations of src/lower/lent.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/lent.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "lent-lifetime-of-the-callers-types",
     breaks:
       "what a call lends from its receiver is read of its signature as the caller's types make it, every lifetime erased alike, so `it.by_ref().skip_while(|x| { calls += 1; .. })`, whose `Self` is a `&mut` and whose closure captures one, looks as if it lent `u32` from inside the iterator, refused in a crate that asks an address (#1199)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "        let sig = declared.skip_binder();\n",
     replace: "        let sig = tcx.fn_sig(def_id).instantiate(tcx, args).skip_normalization().skip_binder();\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_of_a_borrowed_iterator_where_addresses_are_asked.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-cell-unrecorded",
     breaks: "a `{ value }` cell std lends from isn't recorded where it's given, so what a `RefCell`, a `Mutex` or an `RwLock` lends is an allocation of its own, `4096` where wasm32 gives `4` (#1114)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "        if property_of_cell(&given[0]).is_none() {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_what_a_cell_lends.rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-at-the-cells-start",
     breaks: "what a `{ value }` cell lends is at its start, not past its borrow flag or its lock's state, `0` where wasm32 gives `4` (#1114)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "            let mut record = vec![given[0].clone(), Expr::int(i128::from(at))];\n",
     replace: "            let mut record = vec![given[0].clone(), Expr::int(i128::from(at - at))];\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_what_a_cell_lends.rs$"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "outer-pointer-the-objects",
     breaks: "a pointer to an `Option` of an object, or a `RefCell` of one, made of a reference to it, is the object's own, `$ptrTo`, at its payload, `0` where wasm32 gives `4` (#1114)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "            0 => Expr::call(Expr::helper(\"$ptrTo\"), vec![object]),\n",
     replace: "            _ if true => Expr::call(Expr::helper(\"$ptrTo\"), vec![object]),\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_option_payload.rs$"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-payload-at-its-tag",
     breaks: "an `Option`'s payload is at its start, where its tag is, not past it, so a pointer to what it lends is its own place's, `0` where wasm32 gives `4` (#1114)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "            return Within::At(some).and(|| self.object_within(payload));\n",
     replace: "            return Within::At(some - some).and(|| self.object_within(payload));\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_option_payload.rs$"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "value-cell-at-its-flag",
     breaks: "a `RefCell` of an object, which is the object (ADR 0863), holds it at its start, where its borrow flag is, so a pointer to the cell is the object's, `0` where wasm32 gives `4` (#1114)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "            return Within::At(at).and(|| self.object_within(held));\n",
     replace: "            return Within::At(at - at).and(|| self.object_within(held));\n",
     tests: ["test/corpus.test.ts", "-t", "^(address_of_what_a_cell_lends|address_of_an_option_payload).rs$"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "box-held-in-its-field",
     breaks: "what a `Box`, an `Rc` or a `Vec` holds, an allocation of its own natively, is recorded where the field is, so `&raw const s.b` and `&raw const *s.b` are one address, `true` where native Rust gives `false` (#1114)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "            return Within::Elsewhere;\n        }\n        if let Some(payload)",
     replace: "        }\n        if let Some(payload)",
     tests: ["test/corpus.test.ts", "-t", "^address_of_what_a_box_holds.rs$"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-within-unrefused",
     breaks: "generic code given an `Option` of an object and an object both, which one JS can't be, takes the first instance's offset and gives the other's pointer a wrong address, not a refusal (#1114)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "                Some((other, before)) if before != at => {\n",
     replace: "                Some((other, before)) if false && before != at => {\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_generic_option_refused.rs$"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "uncatalogued-lender-allowed",
     breaks: "std's function that lends from inside its receiver where rust-js doesn't know it, `OnceCell::get`, compiles, its address the value's own allocation, not a refusal (#1114)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "        if !is_std_crate(tcx, adt.did()) || self.lends_known(receiver) {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^address_lent_by_a_once_cell_refused.rs$"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "crate-lender-refused",
     breaks: "the crate's own type's `Deref`, which its borrows record, is refused as std's lending from inside its receiver (#1114)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "        if !is_std_crate(tcx, adt.did()) || self.lends_known(receiver) {\n",
     replace: "        if self.lends_known(receiver) {\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "variant-field-unlaid",
     breaks: "a variant's field's offset is its caller's to lay out, not its variant's, so its address is refused where it runs (#1114)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "            Some(variant) => self.variant_field_offset(ty.ty, variant, field),\n",
     replace: "            Some(_) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_variant_field.rs$"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "holder-lent-pointer-the-slots",
     breaks: "a pointer to what `get_or_insert` lends from a tuple's `Option` field, whose JS reads the field's place, is the field's handle, the `Option`'s address, `0` where wasm32 gives `4` (#1114, the net's `field` rewrite of `address_of_an_option_payload`)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "                        matches!(self.object_within(receiver), Within::At(1..))\n",
     replace: "                        false\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_option_payload.rs$"],
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-lent-pointer-the-slots",
     breaks: "a pointer to what an `Rc` a tuple struct holds lends, whose JS reads the field's place, is the field's handle, inside the struct, `false` where native Rust gives `true` (#1114, the net's `tuple-struct` rewrite of `address_of_what_a_box_holds`)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "                            || self.is_rc(receiver) && self.counted_rc(receiver).is_none()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^address_of_what_a_box_holds.rs$"],
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-inserted-item-strideless",
     breaks: "a payload `get_or_insert` writes to an array's `Option` is recorded with no item size, so its address is its own allocation, `4096` where wasm32 gives `16` (#1114, the net's `array` rewrite of `address_of_an_option_payload`)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "        let mut given = vec![handle, size.unwrap_or_else(Expr::js_undefined)];\n",
     replace: "        let mut given = vec![handle, Expr::js_undefined()];\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_option_payload.rs$"],
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-type-unnormalized",
     breaks: "a lend's type is left unnormalized, `<PathBuf as Deref>::Target`, an unknown type that may be any recorded one, so a `Path`'s deref in a crate that asks an address is refused (#1293)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "            tcx.try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))\n                .unwrap_or(ty)\n",
     replace: "            ty\n",
     tests: ["test/corpus.test.ts","-t","^std_lends_beside_an_address.rs$"],
@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
   {
     name: "by-ref-lends-inside",
     breaks: "`by_ref()`'s `&mut Self`, its receiver itself, is taken for what it lends from inside it, refused in a crate that asks an address (#1293)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "lent != receiver && addressable((lent, shared))",
     replace: "addressable((lent, shared))",
     tests: ["test/corpus.test.ts","-t","^std_lends_beside_an_address.rs$"],
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-lend-of-any-instance",
     breaks: "what generic code lends is taken to be of any type, refused in a crate that asks an address though none of its instances' addresses is asked (#1293)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "            true => stored\n",
     replace: "            true => true || stored\n",
     tests: ["test/corpus.test.ts","-t","^std_lends_beside_an_address.rs$"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   {
     name: "no-object-lend-refused",
     breaks: "a shared lend of a value that holds no JS object, a `OnceCell<Option<u8>>`'s, is refused in a crate that asks that type's address, though it's a copy no pointer is made of (#1293)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: " && !(shared && self.holds_no_object(lent))",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_lends_beside_an_address.rs$"],
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
   {
     name: "lend-refusal-names-one-issue",
     breaks: "generic code's lent object's refusal names #1478, the offsets of a `&mut` the lowering makes a handle on, where it's #1513's",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "        let issue = match !shared && self.mut_ref_form(lent).is_cell() {\n",
     replace: "        let issue = match true {\n",
     tests: ["test/corpus.test.ts", "-t", "^(address_lent_by_a_once_cell_refused|generic_lend_of_an_object_refused).rs$"],
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
   {
     name: "lend-never-placed",
     breaks: "a `&mut` std lends from its storage is never a handle on its place, so each is refused in a crate that asks an address (#1474)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "        if !self.mut_ref_form(lent).is_cell() {\n            return false;\n        }\n",
     replace: "        if true {\n            return false;\n        }\n",
     tests: ["test/corpus.test.ts","-t","^address_of_a_mut_std_lends_from_its_storage.rs$"],
@@ -166,7 +166,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-object-never-recorded",
     breaks: "an object std lends from inside its receiver is never recorded as stored there, so each is refused in a crate that asks an address (#1475)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "        !receiver.has_non_region_param()\n",
     replace: "        false\n",
     tests: ["test/corpus.test.ts","-t","^address_of_an_object_std_lends_from_its_storage.rs$"],
@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
   {
     name: "result-lent-object-at-ok",
     breaks: "a `Result`'s lent `Err` payload is recorded at its `Ok`'s offset (#1475)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "        let offset = by_slot(&|l| self.lent_offset(receiver, l).expect(\"lend_recorded's\"));\n",
     replace: "        let offset = by_slot(&|_| self.lent_offset(receiver, lents[0]).expect(\"lend_recorded's\"));\n",
     tests: ["test/corpus.test.ts","-t","^address_of_an_object_std_lends_from_its_storage.rs$"],
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-object-within-zero",
     breaks: "an object lent from inside its receiver is recorded at its slot's start, not past an `Option`'s tag where the payload's object is (#1475)",
-    file: "src/lower/lent.rs",
+    file: "crates/rust-js-lower/src/lent.rs",
     find: "        let within = by_slot(&|l| self.lent_within(receiver, l).expect(\"lend_recorded's\"));\n",
     replace: "        let within = by_slot(&|_| 0);\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_object_std_lends_from_its_storage.rs$"],
@@ -190,8 +190,8 @@ export const mutations: Mutation[] = [
   {
     name: "lend-offset-given-unread",
     breaks: "generic code's lend reads no offset its caller gives, so it's refused where its instances disagree (#1478)",
-    file: "src/lower/lent.rs",
-    find: "        self.known_fact_of(receiver, crate::lower::recognition::TypeFact::LentOffset(lent))\n",
+    file: "crates/rust-js-lower/src/lent.rs",
+    find: "        self.known_fact_of(receiver, crate::recognition::TypeFact::LentOffset(lent))\n",
     replace: "        None\n",
     tests: ["test/corpus.test.ts","-t","^generic_lend_offsets_given_by_callers.rs$"],
   },

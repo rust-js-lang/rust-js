@@ -1,4 +1,4 @@
-// Mutations of src/lower/recognition/lengths.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/recognition/lengths.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 const endlessOnce = [
@@ -12,7 +12,7 @@ export const mutations: Mutation[] = [
     name: "cycle-endless-unseen",
     breaks:
       "a `cycle()` of an array's items isn't taken to have no end once it gives an item, so `items.iter().cycle().map(f).collect::<Vec<_>>()` maps without end where Rust panics `capacity overflow` after the first (#433, ADR 0940)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "            Some(StdPath::IterCycle) => sources.next().map_or(Some(false), |of| self.lower_bound_kept(of)),\n",
     replace: "            Some(StdPath::IterCycle) => Some(false),\n",
     tests: endlessOnce,
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
     name: "skip-of-endless-unseen",
     breaks:
       "a `skip(n)` of what has no end isn't taken to have none once it gives an item, so `(0..).skip(2).map(f).collect::<Vec<_>>()` maps without end where Rust panics `capacity overflow` after the first (#433, ADR 0940)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "                StdPath::IterMap\n                | StdPath::IterSkip\n                | StdPath::IterEnumerate\n",
     replace: "                StdPath::IterMap\n                | StdPath::IterEnumerate\n",
     tests: endlessOnce,
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "chain-of-cycle-and-an-end-collected",
     breaks:
       "`collect()` of a `cycle()` chained with what has an end is compiled as one that has none, so a cycle with no items panics `capacity overflow` where Rust collects what follows (#433, ADR 0940)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "                (Some(a), Some(b)) if a == b => Some(a),\n                _ => None,\n            },\n            // An item of both, each stepped.\n",
     replace:
       "                (Some(a), Some(b)) => Some(a || b),\n                _ => None,\n            },\n            // An item of both, each stepped.\n",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     name: "zip-of-one-endless",
     breaks:
       "a zip of a `cycle()` and what has an end is taken to have none, so its `collect()` panics `capacity overflow` where its lower bound, the other side's, fits (#433, ADR 0940)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "            // An item of both, each stepped.\n            Some(StdPath::IterZip) => match (source(), source()) {\n                (Some(false), _) | (_, Some(false)) => Some(false),\n                (Some(true), Some(true)) => Some(true),\n",
     replace: "            // An item of both, each stepped.\n            Some(StdPath::IterZip) => match (source(), source()) {\n                (Some(true), _) | (_, Some(true)) => Some(true),\n                (Some(false), Some(false)) => Some(false),\n",
     tests: endlessOnce,
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
     name: "step-by-of-endless-collected",
     breaks:
       "`collect()` of a `step_by(n)` of what has no end is compiled as one with no end once stepped, its `capacity overflow` asked of `usize::MAX`, not of `usize::MAX / n` (#433, ADR 0940)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "                Some(true) => None,\n                other => other,\n",
     replace: "                other => other,\n",
     tests: [
@@ -62,17 +62,17 @@ export const mutations: Mutation[] = [
     name: "cycle-of-any-source-endless",
     breaks:
       "a `cycle()` of what's filtered, whose hint has a lower bound of 0, is taken to have no end once it gives an item, so its `collect()` panics `capacity overflow` where Rust asks a little room and goes on (#433, ADR 0940)",
-    file: "src/lower/recognition/lengths.rs",
-    find: "        if exact\n            || crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, ty)\n",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
+    find: "        if exact\n            || crate::recognition::is_trusted_len(self.tcx, self.typing_env, ty)\n",
     replace:
-      "        if true\n            || crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, ty)\n",
+      "        if true\n            || crate::recognition::is_trusted_len(self.tcx, self.typing_env, ty)\n",
     tests: endlessOnce,
   },
   {
     name: "cycle-of-partly-filtered-collected",
     breaks:
       "a `cycle()` of an array's items chained with what's filtered is taken to have a lower bound above 0 wherever it has items, so its `collect()` panics `capacity overflow` where only the filter gives any (#433, ADR 0940)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "                (Some(a), Some(b)) if a == b => Some(a),\n                _ => None,\n            },\n            Some(StdPath::IterZip)",
     replace: "                (Some(a), Some(b)) => Some(a || b),\n                _ => None,\n            },\n            Some(StdPath::IterZip)",
     tests: [
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
     name: "std-size-hint-taken-as-own",
     breaks:
       "an iterator of the crate's with std's `size_hint` is given it as its own, a call of the provided method",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "                instance.def_id() != size_hint\n                    && (instance.def_id().is_local() || self.foreign.compiled(instance.def_id()))\n",
     replace: "                true\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "hint-reaches-own-never",
     breaks: "a collect into a `String` of the crate's iterator's `char`s asks its hint not before it steps, as `Extend<char>` does (#733)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "            return self.writes_size_hint(ty);\n",
     replace: "            return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "hint-reaches-own-not-through-adapters",
     breaks: "a collect into a `HashSet` of a `filter()` of the crate's iterator asks its hint not first, as hashbrown's `extend` does (#733)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "            held.into_iter()\n                .any(|held| self.hint_reaches_own_where(held, unseen_own))\n",
     replace: "            held.into_iter().any(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "hint-unasked-of-a-caller",
     breaks: "generic code's collect into a `String` of a type parameter's iterator asks no hint, so the crate's own its caller gives never runs, where std's `Extend<char>` asks it (#733)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        if self.is_unknown(ty) {\n            return true;\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "eq-side-into-iter-built",
     breaks: "`<I as IntoIterator>::IntoIter` isn't the side a type parameter's caller gives, so itertools' `equal` is refused as a side made of type parameters (#1182)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "                Some(EqSide::Given(alias.self_ty()))\n",
     replace: "                Some(EqSide::Built)\n",
     tests: ["test/crates.test.ts", "-t", "length_first_eq"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "counted-where-given-none",
     breaks: "an array's iterator given to generic code's `eq` isn't counted, so a range given it is refused (#1182)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "Some(StdPath::SliceIter | StdPath::SliceIterMut | StdPath::VecIntoIter | StdPath::ArrayIntoIter | StdPath::OpsRange)))",
     replace: "Some(StdPath::SliceIterMut)))",
     tests: ["test/crates.test.ts", "-t", "length_first_eq"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "lower-bound-of-counted-arrays-stds",
     breaks: "a slice's `chunk_by(..)` of a function that runs no code, which JS counts, is taken to have std's lower bound, so a `Vec` collected of it in a crate that reads a capacity compiles, its capacity another (#1180)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        !self.is_array_iter(ty)\n            || self\n",
     replace: "        true || !self.is_array_iter(ty)\n            || self\n",
     tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a slice's chunk_by"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "lower-bound-of-lazy-chars-stds",
     breaks: "a lazy `chars()`, whose JS adapters keep no hint, is taken to have std's lower bound, so a `Vec` collected of its `skip(n)` in a crate that reads a capacity compiles, its capacity another (#1186, #1200)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        if self.is_str_chars(ty) || self.is_char_indices(ty) {\n            return false;\n",
     replace: "        if false {\n            return false;\n",
     tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of chars"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-of-an-exact-adapter-trusted",
     breaks: "in a crate that reads a capacity, a `Vec` collected of a chain whose part is an exact-sized adapter, `a.iter().skip(1).chain(rest)`, compiles, grown by JS's own `drop(n)`'s hint, none, its capacity another (#1200)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "            if self.grows_by_exact_len(ty) {\n                return false;\n            }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-hinted-as-counted",
     breaks: "a B-tree's `range(..)` collected in a crate that reads a capacity is grown by JS's count of what's in range, 38, where std's hint has no lower bound and its capacity is 64 (#1215)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "                        | StdPath::BtreeMapRange\n                        | StdPath::BtreeMapRangeMut\n                        | StdPath::BtreeSetRange\n",
     replace: "                        | StdPath::BtreeMapRangeMut\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "merged-lower-bound-refused",
     breaks: "a B-tree set's `difference` or `union`, or a hash set's `union`, collected in a crate that reads a capacity, made as std steps it, is refused though its hint is std's (#1219)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        if self.hints_merged_lower_bound(ty) {\n            return true;\n        }\n",
     replace: "        if self.hints_merged_lower_bound(ty) {\n            return false;\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^set_merges_collected_where_capacity_is_read.rs$"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "text-patterns-hinted-as-counted",
     breaks: "a string's `split(..)` given to generic code that collects it, in a crate that reads a capacity, is grown by JS's count of its parts, where std's hint has no lower bound (#1180's (3))",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        self.is_str_split(ty)\n            || matches!(\n",
     replace: "        false\n            || matches!(\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_text_patterns.rs$"],
@@ -182,8 +182,8 @@ export const mutations: Mutation[] = [
     name: "eq-side-of-an-opaque-type-unrevealed",
     breaks:
       "an `eq` side an `impl Iterator` hides is asked as the opaque type, made of type parameters, so generic code's `eq` of one its caller gives is refused, where std's specialization sees the type it hides (#1229)",
-    file: "src/lower/recognition/lengths.rs",
-    find: "            let ty = crate::lower::analysis::revealed(self.tcx, ty);\n",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
+    find: "            let ty = crate::analysis::revealed(self.tcx, ty);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^eq_of_opaque_iterators.rs$"],
   },
@@ -191,16 +191,16 @@ export const mutations: Mutation[] = [
     name: "given-chars-hint-unkept",
     breaks:
       "a string's `chars()` given generic code that extends a `Vec` by it is taken for JS's own string iterator, whose hint is none, so its `capacity()` throws where std's is 76 (#1180's (3))",
-    file: "src/lower/recognition/lengths.rs",
-    find: "        if self.is_str_chars(ty) || self.is_char_indices(ty) {\n            return true;\n        }\n        match crate::lower::recognition::reversed_source",
-    replace: "        match crate::lower::recognition::reversed_source",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
+    find: "        if self.is_str_chars(ty) || self.is_char_indices(ty) {\n            return true;\n        }\n        match crate::recognition::reversed_source",
+    replace: "        match crate::recognition::reversed_source",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_text_patterns.rs$"],
   },
   {
     name: "given-chars-rev-hint-unkept",
     breaks:
       "a `rev()` of a string's `chars()` given generic code that extends a `Vec` by it isn't seen to hint as its source does, so its `capacity()` throws where std's is 76 (#1180's (3))",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "            Some(source) => self.given_hint_is_stds(source),\n",
     replace: "            Some(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_text_patterns.rs$"],
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-of-exact-parts-refused",
     breaks: "a `Vec` grown by a chain of exact-sized adapters, `b.iter().skip(1).chain(..)`, in a crate that reads a capacity is refused, though its parts are made knowing their hints (#1216)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "                || self.grows_by_exact_len(part)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-hint-asked-of-own-alone",
     breaks: "a `String` collected or extended from an endless `repeat('x')`, or a hash table from one, steps it without asking its hint, where std reserves its lower bound first and panics `capacity overflow` before taking an item (#1358)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        self.hint_reaches_own(ty) || self.lower_bound_may_pass_room(ty)\n",
     replace: "        self.hint_reaches_own(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^text_and_tables_reserve_by_hint_first.rs$"],
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-room-never-passed",
     breaks: "a `String` collected from a `cycle()` of what has items, whose lower bound std makes `usize::MAX`, steps it without asking its hint, where std panics `capacity overflow` first (#1358)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "            Some(StdPath::IterCycle) => sources\n                .next()\n                .is_some_and(|source| self.lower_bound_kept(source) != Some(false)),\n",
     replace: "            Some(StdPath::IterCycle) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^text_and_tables_reserve_by_hint_first.rs$"],
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-hint-unasked",
     breaks: "a `collect()` into a `Vec` of a `dyn Iterator` asks no hint, so one holding what has no end steps it forever where std panics `capacity overflow` after one item, and the crate's own `size_hint` behind it never runs where std's asks it (#1359)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "            return unseen_own;\n",
     replace: "            return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_of_a_dyn_iterator_asks_its_hint.rs$"],
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
   {
     name: "chars-kept-hint-refused",
     breaks: "a `Vec` grown by a string's `chars()` the crate makes `$chars`, whose hint is std's, is refused in a crate that reads capacities (#1316)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        if chars_kept && (self.is_str_chars(ty) || self.is_char_indices(ty)) || super::source_hint_kept(self.tcx, ty) {\n",
     replace: "        if false && (self.is_str_chars(ty) || self.is_char_indices(ty)) || super::source_hint_kept(self.tcx, ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_grown_by_iterators_whose_hint_is_stds.rs$"],
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
   {
     name: "source-hint-kept-part-refused",
     breaks: "a zip of a string's `chars()` and a `repeat`, whose `$repeating` hints as std's, is refused where a `Vec` is grown by it in a crate that reads capacities (#1316)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        if chars_kept && (self.is_str_chars(ty) || self.is_char_indices(ty)) || super::source_hint_kept(self.tcx, ty) {\n",
     replace: "        if chars_kept && (self.is_str_chars(ty) || self.is_char_indices(ty)) || false {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_grown_by_iterators_whose_hint_is_stds.rs$"],
@@ -256,7 +256,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-part-chars-unkept",
     breaks: "a part of a zip that's a string's `chars()` made `$chars` isn't taken for one whose hint is std's, so a zip of it with the crate's own iterator is refused where a `Vec` is grown by it (#1316)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "            self.lower_bound_is_stds_where(part, chars_kept)\n",
     replace: "            self.lower_bound_is_stds(part)\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_grown_by_iterators_whose_hint_is_stds.rs$"],
@@ -264,7 +264,7 @@ export const mutations: Mutation[] = [
   {
     name: "counted-by-program-of-anything",
     breaks: "every `TrustedLen` collect, a collection's items' too, is taken as counted by the program, so a generic one of a slice's items takes a `TSize` it never reads (#1436)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        (zipped_sources(self.tcx, ty).or_else(|| chained_sources(self.tcx, ty)))\n            .is_some_and(|(a, b)| self.count_of_program(a) && self.count_of_program(b))\n",
     replace: "        true\n",
     tests: ["test/vec-capacity.test.ts", "-t", "only a collect counted by the program"],
@@ -272,7 +272,7 @@ export const mutations: Mutation[] = [
   {
     name: "counted-by-program-not-of-zip",
     breaks: "a zip of ranges isn't counted by the program, so a generic collect of one checks no room and runs on where std panics `capacity overflow` (#1436)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        (zipped_sources(self.tcx, ty).or_else(|| chained_sources(self.tcx, ty)))\n",
     replace: "        (chained_sources(self.tcx, ty))\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_room_of_generic_items.rs$"],
@@ -280,7 +280,7 @@ export const mutations: Mutation[] = [
   {
     name: "counted-by-program-not-of-a-finite-take",
     breaks: "a `take(n)` of a range isn't counted by the program, so a generic collect of one checks no room (#1441)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "            return self.endless_by_type(source) || self.count_of_program(source);\n",
     replace: "            return self.endless_by_type(source);\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_room_of_generic_items.rs$"],
@@ -288,7 +288,7 @@ export const mutations: Mutation[] = [
   {
     name: "hint-kept-not-through-rev",
     breaks: "a `rev()` of what keeps std's hint by its form isn't taken to keep it, so a `Vec` grown by `s.char_indices().map(f).rev()` beside a capacity read is refused (#1572)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "            .or_else(|| super::reversed_source(self.tcx, ty))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hint_kept_through_rev_take_and_cycle.rs$"],
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
   {
     name: "hint-kept-not-through-take",
     breaks: "a `take(n)` of what keeps std's hint by its form isn't taken to keep it, so a `Vec` grown by one is refused (#1572)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "                    .filter(|(_, skip)| !skip)\n",
     replace: "                    .filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^hint_kept_through_rev_take_and_cycle.rs$"],
@@ -304,7 +304,7 @@ export const mutations: Mutation[] = [
   {
     name: "hint-kept-by-form-unasked",
     breaks: "whether an iterator's runtime form keeps std's hint isn't asked, so what passes on `$chars`' hint, `s.char_indices().map(f).rev()`, is refused (#1572)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        self.hint_kept_by_form(made, chars_kept) || self.lower_bound_is_stds(ty)\n",
     replace: "        self.lower_bound_is_stds(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^hint_kept_through_rev_take_and_cycle.rs$"],
@@ -312,7 +312,7 @@ export const mutations: Mutation[] = [
   {
     name: "hint-kept-through-an-arrays-map",
     breaks: "an array's iterator, JS's own `values()`, or what's made of it, which knows no hint, is taken to keep std's, so a `Vec` grown by it where its capacity is read takes JS's hint for std's, not refused (#1572; its `cycle().take(n)` of a map is std's since #1998 makes such parts knowing their hint)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        if chars_kept && (self.is_str_chars(ty) || self.is_char_indices(ty)) || super::source_hint_kept(self.tcx, ty) {\n",
     replace: "        if chars_kept && (self.is_str_chars(ty) || self.is_char_indices(ty)) || super::source_hint_kept(self.tcx, ty) || self.is_array_iter(ty) || self.lower_bound_is_stds(ty) {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a slice's chunk_by where a capacity is read"],
@@ -320,7 +320,7 @@ export const mutations: Mutation[] = [
   {
     name: "enumerate-hint-not-passed-on",
     breaks: "an `enumerate()` of a string's `chars()` the crate makes `$chars` isn't known to pass its hint on, so a `Vec` grown by it in a crate that reads a capacity is refused (#1892)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "            .or_else(|| super::enumerated_source(self.tcx, ty))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_an_enumerated_chars_and_a_slice_split.rs$"],
@@ -328,7 +328,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-split-hint-unknown",
     breaks: "a slice's split, std's iterator as it's stepped where a crate reads a capacity, is taken for the array of its pieces, so a `Vec` grown by it is refused (#1892)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        if is_slice_split(self.tcx, ty) {\n",
     replace: "        if false && is_slice_split(self.tcx, ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_an_enumerated_chars_and_a_slice_split.rs$"],
@@ -337,7 +337,7 @@ export const mutations: Mutation[] = [
     name: "flatten-rev-hint-not-kept",
     breaks:
       "a `Vec` grown by a `rev()` of a `flatten()` of slices, in a crate that reads a capacity, is refused, where `$flattenEnds` hints as std's (#1892)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "            return !item.is_array() && self.lower_bound_is_stds_where(inner, chars_kept);\n",
     replace: "            return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_grows_a_vec_as_stds.rs$"],
@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [
     name: "flatten-inner-hint-unfollowed",
     breaks:
       "a flatten's inner iterators aren't taken to run the crate's `size_hint`, so `v.into_iter().flatten().filter(f).count()` of the crate's iterators with their own never asks theirs, where std's `Filter::count` asks it through `FlattenCompat::size_hint` (#2207)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        }) || inner()\n",
     replace: "        })\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_asks_its_inner_iterators_hint.rs$"],
@@ -355,7 +355,7 @@ export const mutations: Mutation[] = [
     name: "flatten-inner-dyn-unseen",
     breaks:
       "what a flatten's inner `Box<dyn Iterator>` holds is taken for none of the crate's, so a filter's `count` of a flatten of boxed iterators of the crate's never asks their hint (#2207)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        let inner = || (self.flattened_inner(ty)).is_some_and(|inner| self.hint_reaches_own_where(inner, true));\n",
     replace: "        let inner = || (self.flattened_inner(ty)).is_some_and(|inner| self.hint_reaches_own_where(inner, unseen_own));\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_asks_its_inner_iterators_hint.rs$"],
@@ -364,7 +364,7 @@ export const mutations: Mutation[] = [
     name: "filter-count-asks-no-own-hint",
     breaks:
       "std's `Filter::count` is taken to ask no hint of the crate's, so a filter's `count()` of the crate's iterator with its own `size_hint`, and generic code's of an identity `map` over one, never ask it (#733, #2210)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        filtered_source(self.tcx, self.reveal(ty)).is_some_and(|source| self.hint_reaches_own(source))\n",
     replace: "        filtered_source(self.tcx, self.reveal(ty)).is_some_and(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_a_filters_count.rs$"],
@@ -373,7 +373,7 @@ export const mutations: Mutation[] = [
     name: "lower-bound-of-std-sources-unkept",
     breaks:
       "`successors`, `once_with` and `repeat_n`, which JS steps as std does, are taken for arrays JS counts that std doesn't, so a `Vec` grown by one in a crate that reads a capacity is refused again (#2226)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        !self.is_array_iter(ty)\n            || self\n",
     replace:
       "        !(self.is_array_iter(ty) || matches!(ty.kind(), ty::Adt(adt, _) if std_path_under(self.tcx, adt.did(), StdPath::IterMod)))\n            || self\n",
@@ -383,7 +383,7 @@ export const mutations: Mutation[] = [
     name: "hint-reach-box-unpeeled",
     breaks:
       "generic code's `Box<I>` is taken to ask no hint of the crate's, so a collect into a `HashSet` of its `step_by` reserves nothing and never asks the crate's own `size_hint` (#2219)",
-    file: "src/lower/recognition/lengths.rs",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "        let ty = super::held::held_unboxed(self.reveal(ty.peel_refs()));\n",
     replace: "        let ty = self.reveal(ty.peel_refs());\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_box_of_an_iterator_is_what_it_holds.rs$"],

@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/tidy/jumps/continues.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/tidy/jumps/continues.rs (ADR 0093).
 import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "jumps-into-branches-past-a-written-jump",
     breaks:
       "the `break` the program wrote after an `if` with an `else` is moved into the branch that goes on, `if (n === 0) { ..; break; } else { ..; continue; }` (uz2)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            && !written_after(&stmts[i], &stmts[i + 1], elses)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^while_let_written_break.rs$"],
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "written-before-then-unbroken",
     breaks:
       "an `if` the program wrote of a `break` with an `else`, then a `break` it wrote after it, loses its `then`'s, `if (exitStatus === ROOT_IN_PROGRESS) { .. } else { .. } break;` (performWorkOnRoot)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            && !after\n            && !arm.last().is_some_and(ends)\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^written_breaks_beside_an_else.rs$"],
@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     name: "written-before-copy-kept",
     breaks:
       "MIR's copy of the `break` after an `if .. else` stays at its `else`'s end, `finishConcurrentRender(..); break; } break;` (performWorkOnRoot)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            if !wrote {\n                arm.pop();\n            }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^written_breaks_beside_an_else.rs$"],
@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
     name: "written-before-written-copy-dropped",
     breaks:
       "a `break` the program wrote in an `if` an `else`'s end holds, `if (exitStatus === ROOT_FATAL_ERRORED) { ..; break; }`, is taken for MIR's copy of the one after, its rest an `else` (performWorkOnRoot)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            uncopied(then, jump, jump_tested(jumps.0, span).is_some(), jumps);\n",
     replace: "            uncopied(then, jump, false, jumps);\n",
     tests: ["test/corpus.test.ts", "-t", "^written_breaks_beside_an_else.rs$"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "continued-blocks-of-block-ending-loops-only",
     breaks:
       "`continued` run again in `chains` only of a loop whose body ends in a block MIR made leaves a written `if !(a && (!b || c)) { continue; }` after another `continue` for the written jumps to turn, after the written negations, De Morgan's `if (a <= 0 || (b && !c))` (rd72c)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "        if let Some((looped, body)) = looped(stmt) {\n            continued_loop(looped, body, (guards, logicals), Some(elses));\n",
     replace:
       "        if let Some((looped, body)) = looped(stmt)\n            && matches!(body.last().map(|s| &s.kind), Some(StmtKind::Labeled(..)))\n        {\n            continued_loop(looped, body, (guards, logicals), Some(elses));\n",
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-continue-guard-kept",
     breaks:
       "a loop body ending `if (!c) { a; b }` stays, not `if (c) { continue; } a; b`",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                if !turned_continue(body, guards) {\n",
     replace: "                if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_exits.rs$"],
@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-continued-block-kept",
     breaks:
       "a loop body's last labeled block, its `break` the loop's `continue`, stays, a `bb` label left in `numbers`' while loop",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                if clashes || continues(&mut inner, &block, looped.as_ref(), false).is_none() {\n",
     replace: "                if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^continue_arms_of_else_if.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
     name: "ending-continue-as-else",
     breaks:
       "an `if` the program ended with `continue` stays MIR's `if (t) { a } else { .. }`",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: '                if tests_continue(guards, body.last().expect("matched").span)\n',
     replace: "                if false\n",
     tests: [
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-continue-written-negated-only",
     breaks:
       "a `continue` the program wrote is an `if (i % 2 !== 0) { \u2026 }` where MIR's test isn't a `!`",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            Some(StmtKind::If(_, _, None)) => {\n",
     replace:
       "            Some(StmtKind::If(test, _, None)) if matches!(test.kind, ExprKind::Unary(js::UnaryOp::Not, _)) => {\n",
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
     name: "block-jump-not-forwarded",
     breaks:
       "a labeled block's `break` to a `continue` of the loop after it stays, `bb3: { .. break bb3; } continue bb1;`",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            StmtKind::Break(Some(l)) if l == label => stmt.kind = jump.clone(),\n",
     replace: "",
     tests: [
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     name: "outer-continue-kept",
     breaks:
       "an inner loop's way out, which ends the outer loop's turn, is `continue bb4`, not its `break`",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            StmtKind::Continue(Some(l)) if l == looped => stmt.kind = StmtKind::Break(None),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nested_loop_jumps.rs$"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
     name: "loop-ending-block-kept",
     breaks:
       "a loop that ends a block MIR made keeps its `break bb97`, and the block its label",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                        *broken = None;\n",
     replace: "                        let _ = broken;\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_ends_branch.rs$"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
     name: "loop-ending-block-not-last",
     breaks:
       "a block's first statement taken for what it ends with, its loop's `break bb29` kept, loop_ends_branch's `bb29: { .. }`",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "        let Some(last) = stmts.last_mut() else {\n            return;\n        };\n",
     replace:
       "        let Some(last) = stmts.first_mut() else {\n            return;\n        };\n",
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
     name: "loop-ending-branch-breaks-unnested",
     breaks:
       "a loop that ends an `if`'s branch, an `else` after it, keeps its `break bb24` of an `if` in it, and prints a label (ADR 0859)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                StmtKind::If(_, a, b) => {\n                    own_breaks(a, label);\n                    if let Some(b) = b {\n                        own_breaks(b, label);\n                    }\n                }\n",
     replace: "                StmtKind::If(..) => {}\n",
     tests: ["test/corpus.test.ts", "-t", "loop_ends_branch"],
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     name: "loop-ending-branch-inner-loops-unlabeled",
     breaks:
       "a `break 'rows` in a `for` of the `loop` that ends a branch is the `for`'s `break`, which goes on in the `loop` (ADR 0859)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                StmtKind::Labeled(_, body) => own_breaks(body, label),\n",
     replace:
       "                StmtKind::Labeled(_, body) | StmtKind::ForOf { body, .. } => own_breaks(body, label),\n",
@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
     name: "block-jump-unnamed-not-forwarded",
     breaks:
       "a block MIR made followed by a `continue` of no label keeps its `break bb97`, the `continue` the program wrote in a chain's arm a `break` (ADR 0745)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            jump @ (StmtKind::Continue(_) | StmtKind::Break(_)) => jump.clone(),\n",
     replace:
       "            jump @ (StmtKind::Continue(Some(_)) | StmtKind::Break(Some(_))) => jump.clone(),\n",
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     name: "jumps-into-branches-off",
     breaks:
       "a jump after an `if` one branch of which leaves stays after it, `if (c) { a } else { b; break l; } continue;` (ADR 0745), and so a chain's at its block's end, `bb16: { if (a) { A } else if (b) { B } else { break bb16; } continue; }`, which `breaks as ends` gave each arm too (ADR 0745, amended)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            && into_arms(&stmts[i])\n",
     replace: "            && false\n",
     tests: [
@@ -199,7 +199,7 @@ export const mutations: Mutation[] = [
     name: "jumps-into-branches-wrong-branch",
     breaks:
       "the jump after an `if` goes into the branch that leaves, not the one that goes on (ADR 0745)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                if !arm.last().is_some_and(ends) {\n                    arm.push(jump.clone());\n",
     replace:
       "                if arm.last().is_some_and(ends) {\n                    arm.push(jump.clone());\n",
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
     name: "jumps-into-chain-arms-uncounted",
     breaks:
       "an `else if` chain whose last arm leaves keeps the jump MIR joined after it, `} else { break bb53; } continue;`, as its chained `else` is taken for one arm that goes on (ADR 0745, amended)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "        if linked(otherwise) {\n            arms(&otherwise[0], leaves);\n",
     replace:
       "        if false && linked(otherwise) {\n            arms(&otherwise[0], leaves);\n",
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     name: "jumps-past-blocks-returns-kept",
     breaks:
       "a block MIR made followed by `return;`, past a drop MIR shares, stays a block, `bb104: { .. break bb104; .. } return;`",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            jump @ StmtKind::Return(_) if returns_one_value(&stmts[i + 1]) => jump.clone(),\n",
     replace:
       "            jump @ StmtKind::Return(_) if false && returns_one_value(&stmts[i + 1]) => jump.clone(),\n",
@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
     name: "jumps-past-blocks-return-at-tails",
     breaks:
       "a block's `break` where it ends anyway, before the `return` after it, is that `return`, written again in the arm, `message = kind._0; return message;`",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            if matches!(jump, StmtKind::Return(_)) {\n                drop_tail(body, &StmtKind::Break(Some(label.clone())));\n            }\n",
     replace: "",
     tests: [
@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
     name: "jumps-past-blocks-return-into-loops",
     breaks:
       "a loop's `break` of a block followed by `return` is that `return`: ReactFiberLane's getEntangledLanes returns in the `if` its `while` ends, `while (rest > 0) { .. } return entangled; } return entangled;`, not once after the `if`",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "        StmtKind::Continue(None) | StmtKind::Break(None) | StmtKind::Return(_)\n",
     replace: "        StmtKind::Continue(None) | StmtKind::Break(None)\n",
     tests: [
@@ -263,7 +263,7 @@ export const mutations: Mutation[] = [
     name: "outer-continues-of-a-branch-unseen",
     breaks:
       "a loop that ends a branch of an `if` that ends another's body leaves by `continue bb7`, a label, not as the `while (child != null)` React's test selectors write (ADR 0961)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "        Some(StmtKind::If(_, a, b)) => {\n            ending(a, looped);\n",
     replace:
       "        Some(StmtKind::If(_, a, b)) if false => {\n            ending(a, looped);\n",
@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     name: "continues-written-left-breaks",
     breaks:
       "getHostSibling's `if (isScope(node)) { continue siblings; }` is a `break` past MIR's block to its one `continue`, the rest nested in negated tests",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            let mut found = Found::default();\n            replaced(body, &of, Tested::default(), &mut found);\n",
     replace: "            let found = Found::default();\n",
     tests: [
@@ -287,7 +287,7 @@ export const mutations: Mutation[] = [
     name: "continues-written-of-any-break",
     breaks:
       "a `break` past a block to a `continue` is that `continue` where the program wrote no `continue`, a `break` of its own labeled block's (ADR 0790)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                    if matches!(then.as_slice(), [only] if breaks(only)) && tests_continue(of.guards, span) =>\n",
     replace: "                    if matches!(then.as_slice(), [only] if breaks(only)) =>\n",
     tests: [
@@ -300,7 +300,7 @@ export const mutations: Mutation[] = [
     name: "blocks-breaking-loops-kept",
     breaks:
       "a block MIR made that a loop's turn ends with, then the loop's `break;`, stays, its arms' `break bb22;` of it: `bb22: { switch (codes[value]) { case 97: break bb22; .. } .. continue; } break;` (#389c)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "        body.splice(at..=at, broken);\n",
     replace: "        continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^match_breaks_its_loop.rs$"],
@@ -310,7 +310,7 @@ export const mutations: Mutation[] = [
     name: "blocks-breaking-loops-of-written-label",
     breaks:
       "a loop the program labeled, left through a block MIR made, has its arms' `break`s of no label, not its own, so its `match` is no `switch` of `break findParent;` cases (#389c)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "        if !js::names_break(&broken, &block) && named.is_some() {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^while_let_at_end.rs$"],
@@ -320,7 +320,7 @@ export const mutations: Mutation[] = [
     name: "blocks-breaking-loops-written-label-unnamed",
     breaks:
       "a `break 'rows` of an inner loop, which MIR makes a `break` of a block the outer turn ends, stays `bb22:` in a `while (true)`, not the outer loop's `break rows;` and its test (uz3)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            let named = js::Name::label(named);\n            super::tails::relabeled(&mut broken, &block, &named);\n            *looped = Some(named);\n",
     replace: "            continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^labeled_loop_left_from_inner.rs$"],
@@ -330,7 +330,7 @@ export const mutations: Mutation[] = [
     name: "blocks-breaking-loops-inner-loop",
     breaks:
       "a block whose `break` is in a loop of its own, an arm's inner `loop` MIR leaves by the outer's way out (`counted`), is spliced in, its `break bb19` left with no block, which tidy's \"each jump lands\" refuses; a `break;` there would leave only the inner loop",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "        if js::names_break(&broken, &block) {\n",
     replace: "        if false {\n",
     tests: [
@@ -345,7 +345,7 @@ export const mutations: Mutation[] = [
     name: "jumps-into-branches-of-falling-match",
     breaks:
       "a chain of a `match` whose guarded arms fall gets the jump after it pushed into its arms, which `switches` then can't read: `1 if on(n) => break` before `1 | 2 => { .. }` keeps `bb26: { bb12: { .. } } ` (#389c)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "        if switched(test, stmt.span, falling) {\n",
     replace: "        if false {\n",
     tests: [
@@ -359,7 +359,7 @@ export const mutations: Mutation[] = [
     name: "named-continues-unseen",
     breaks:
       "a `continue 'outer` in an inner loop after a test that skips the turn stays MIR's `break bb25` of a block, `bb25: { .. }`, the label and the turn's trailing `continue` kept (#442)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "        {\n            named_continues(body, looped);\n        }\n",
     replace: "        {}\n",
     tests: [
@@ -373,7 +373,7 @@ export const mutations: Mutation[] = [
     name: "named-continue-unnamed",
     breaks:
       "a block's `break` in an inner loop, which goes on with the outer loop, is `continue;`, which goes on with the inner one, a wrong total (#442)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                    rejump(body, label, &StmtKind::Continue(Some(looped.clone())))\n",
     replace:
       "                    rejump(body, label, &StmtKind::Continue(None))\n",
@@ -383,7 +383,7 @@ export const mutations: Mutation[] = [
     name: "continued-else-chain-unlinked",
     breaks:
       "an `else if` chain the program wrote whose first arm `continue`s, at a loop's end, loses its `else`s once its loop's test is read in place, `if (a) { ..; continue; } if (b) { .. } else if ..`, not as written (rd530)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                    && !kept.is_some_and(|elses| written_else(body.last().expect(\"matched\"), elses))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^while_test_continues_of_chain.rs$"],
@@ -393,7 +393,7 @@ export const mutations: Mutation[] = [
     name: "arm-continues-written-at-the-turns-end",
     breaks:
       "an arm's `continue` of a `match` that ends the loop's turn is kept, `case \"C\": continue;`, where the `switch` goes on there anyway (ADR 0629)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                        !matched.is_none() && past >= matched.hi && written != after[0].span\n",
     replace: "                        !matched.is_none() && written != after[0].span\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
@@ -403,7 +403,7 @@ export const mutations: Mutation[] = [
     name: "arm-continue-of-the-ifs-test-unseen",
     breaks:
       "an arm that does nothing but `continue`, `\"C\" => continue`, isn't known by the `if` of its pattern, so its `match` is an `if` chain, not a `switch` (#518)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                    replaced(then, of, Tested { at, own, within: None }, found);\n",
     replace: "                    replaced(then, of, Tested { at: None, own, within: None }, found);\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
@@ -413,7 +413,7 @@ export const mutations: Mutation[] = [
     name: "turn-rest-unread",
     breaks:
       "a guarded arm that continues before the `match`'s other arms, whose block MIR nests in the one the rest of the turn follows, keeps MIR's `bb9: { switch (..) { .. break bb9; } continue; }`, labels the program didn't write (#530)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            let past = latest(body).max(rests.get(&*block).copied().unwrap_or(0));\n",
     replace: "            let past = latest(body);\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_guarded_arm_continues_first.rs$"],
@@ -423,7 +423,7 @@ export const mutations: Mutation[] = [
     name: "arm-block-before-its-continue-continued",
     breaks:
       "a block MIR nests in an arm before the `continue` the arm wrote has its `break`s made that `continue`, so ReactFlightClient's `if (c) { a } else { b } continue;` prints guard-first, `if (c) { a; continue; } b; continue;`, an `else if` chain's tests inverted (rd703)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                        !matched.is_none() && past >= matched.hi && written != after[0].span\n",
     replace: "                        !matched.is_none() && past >= matched.hi\n",
     tests: ["test/corpus.test.ts", "-t", "^arm_if_else_continues.rs$"],
@@ -433,7 +433,7 @@ export const mutations: Mutation[] = [
     name: "arm-only-continue-unplaced",
     breaks:
       "a comment before the `continue` an arm is, `1 => { // Skipped. continue; }`, prints above the `switch`, as MIR's test of the arm goes to the loop's start with no place of its own (#574)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            if let Some(&(_, _, written)) = own {\n                jump.span = written;\n",
     replace: "            if let Some(&(_, _, written)) = own {\n                _ = written;\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_an_arms_only_continue.rs$"],
@@ -443,7 +443,7 @@ export const mutations: Mutation[] = [
     name: "arm-only-continue-of-any-if",
     breaks:
       "a `continue` of a loop inside an arm that ends with one, `if (x < 0) { continue; }`, is given the arm's `continue`'s place, and the comment before it moves (#574)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                !arm.is_none() && (test.span.lo == arm.lo || span.lo == arm.lo) && written.hi < arm.hi\n",
     replace: "                !arm.is_none() && written.hi < arm.hi\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_an_arms_only_continue.rs$"],
@@ -453,7 +453,7 @@ export const mutations: Mutation[] = [
     name: "arm-only-continue-of-a-bare-arm",
     breaks:
       "an arm that's a `continue` alone, `(2, 2) => continue`, is given its place too, and reads as a `continue` the program wrote: `} else if (..) { continue; } else {` is `} else { if (..) { continue; } .. }`, and a `catch_unwind`'s `Ok(()) => continue` is in the `try` (#574)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                !arm.is_none() && (test.span.lo == arm.lo || span.lo == arm.lo) && written.hi < arm.hi\n",
     replace: "                !arm.is_none() && (test.span.lo == arm.lo || span.lo == arm.lo) && written.hi <= arm.hi\n",
     tests: ["test/corpus.test.ts", "-t", "^(default_value_exits|tried_loop_jumps).rs$"],
@@ -463,7 +463,7 @@ export const mutations: Mutation[] = [
     name: "continue-at-the-match-unplaced",
     breaks:
       "an arm MIR tests where the `match` is, `Some(n) => *n, // c\\n None => continue,`, is the `if` of the rest, its comment above the `for` (#610)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                && single\n",
     replace: "                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
@@ -473,7 +473,7 @@ export const mutations: Mutation[] = [
     name: "continue-at-the-match-uncommented",
     breaks:
       "a bare `None => continue,` with no comment above it, MIR's test at the `match`, keeps its `continue`, `if (x == null) { continue; }`, where an uncommented arm is the `if` of the rest (#610, the user's decision)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "        arm.filter(|&&(_, arm, written)| written.hi < arm.hi || commented.contains(&written))\n",
     replace: "        arm.filter(|_| true)\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
@@ -483,7 +483,7 @@ export const mutations: Mutation[] = [
     name: "last-arm-continue-unplaced",
     breaks:
       "a commented last arm `_ => continue,`, the `else` of the `if` of the arm before, keeps no place, so its comment prints above the `for` (#610)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            && test.span.hi <= arm.lo\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
@@ -493,7 +493,7 @@ export const mutations: Mutation[] = [
     name: "shared-continue-arm-at-the-match",
     breaks:
       "of a `match` whose arms of `continue` MIR joins, `// One is skipped.\\n 1 => continue, .. // Three is skipped.\\n 3 => continue,`, each `break` to the `continue` is placed where the `if` is, the `match`, so both comments print above the `switch`, not each in its case (#610)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                    let at = match own.is_some_and(|written| of.commented.contains(&written)) {\n",
     replace: "                    let at = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
@@ -503,7 +503,7 @@ export const mutations: Mutation[] = [
     name: "joined-continue-arm-unplaced",
     breaks:
       "of a `match` whose arms of `continue` MIR joins, `Some(n) if *n > 5 => continue, Some(n) => *n, // c\\n None => continue,`, the commented arm's `break` MIR tests at the `match` stays MIR's, so tidy inverts its `if` and the comment prints above it, not before its `continue` (#680)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            if !given.is_empty() {\n",
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
@@ -513,7 +513,7 @@ export const mutations: Mutation[] = [
     name: "joined-continue-arm-of-no-comment",
     breaks:
       "an arm of `continue` MIR joins with no comment above it keeps its `continue`, `if (x == null) { continue; }`, not the `if` of the rest, `if (x != null) { .. }` (#680)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                        (Some(&(.., written)), None) if commented.contains(&written) => Some((matched, written)),\n",
     replace: "                        (Some(&(.., written)), None) => Some((matched, written)),\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
@@ -523,7 +523,7 @@ export const mutations: Mutation[] = [
     name: "joined-continue-tested-arm-untold",
     breaks:
       "an uncommented arm's `break`, `1 => continue`'s, which the `if` of its pattern tests, isn't known as its arm's, so a commented last `_ => continue` isn't the one left, and its comment prints above the `for` (#680)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                (None, Some(written)) => {\n                    found.arms.push(written);\n                    None\n                }\n",
     replace: "                (None, Some(_)) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
@@ -533,7 +533,7 @@ export const mutations: Mutation[] = [
     name: "joined-continue-placed-arm-untold",
     breaks:
       "an arm's `break` placed where the arm is, `Some(0) => { log.push(-1); continue; }`'s, isn't known as its arm's, so a commented `None => continue` beside it isn't the one left (#680)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                (Some(written), _) => {\n                    found.arms.push(written);\n",
     replace: "                (Some(written), _) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
@@ -543,7 +543,7 @@ export const mutations: Mutation[] = [
     name: "joined-continue-else-not-within",
     breaks:
       "the `else` of an `if` tested in a `match`, a last `_ => continue`'s `break`, is of no `match`, so its comment prints above the `for`, not before its `continue` in `default:` (#680)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                            within: tests,\n",
     replace: "                            within: None,\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
@@ -553,7 +553,7 @@ export const mutations: Mutation[] = [
     name: "joined-continue-of-the-outer-match",
     breaks:
       "a `break` tested at an inner `match`, `None => continue` of `Some(inner) => match inner { .. }`, is taken as the outer one's, which then has two, so the outer commented `None => continue`'s comment prints above the `for` (#680)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "                .min_by_key(|m| m.hi - m.lo)\n",
     replace: "                .max_by_key(|m| m.hi - m.lo)\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
@@ -562,7 +562,7 @@ export const mutations: Mutation[] = [
   {
     name: "match-continue-of-the-first-arm",
     breaks: "the `if` MIR makes where the `match` is is the first arm of `continue`'s, `Some(0)`'s, uncommented, so the commented `None => continue 'rows` prints above the `if` (#693)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "        let mut left = (arms.iter()).filter(|&&(m, arm, _)| m == matched && !own_ifs.contains(&arm.lo));\n",
     replace: "        let mut left = (arms.iter()).filter(|&&(m, _, _)| m == matched).take(1);\n",
     tests: ["test/corpus.test.ts", "-t", "^(comment_before_a_bare_continue_arm).rs$"],
@@ -571,7 +571,7 @@ export const mutations: Mutation[] = [
   {
     name: "match-continue-of-another-arms-if",
     breaks: "an `if` of an arm's own pattern, `Some(0)`'s `if (x === 0)`, takes the other arm's place, its comment's, so it's `if (x === 0) { continue; }` and not the `if` of the rest (#693)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
+    file: "crates/rust-js-mir/src/tidy/jumps/continues.rs",
     find: "            _ if own.is_some() => own,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(comment_before_a_bare_continue_arm).rs$"],

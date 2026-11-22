@@ -109,7 +109,7 @@ structs is gone; its test of the host's lists stays.
 And each fact of the crate's, a field of `CrateFacts`, says whether a
 library's consumer needs it, as #1772's fact had no one decide: each is
 `CrateOnly`, or carried `By` the contract's facts that take it across, a
-pattern naming every field (`carried!`, `src/lower/crate_facts.rs`).
+pattern naming every field (`carried!`, `crates/rust-js-lower/src/crate_facts.rs`).
 
 Case (ADR 0262): none. No program's JS changes, and no fact of the
 contract: `VERSION` is 38 as it was.

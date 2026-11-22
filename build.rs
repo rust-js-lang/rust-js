@@ -4,18 +4,14 @@
 //! made of, which its manifests and Cargo are told (ADR 1003).
 
 use std::path::{Path, PathBuf};
-use std::process::Command;
+
+// The rpath to rustc's libraries, the one rule of it, the lowering's
+// crates' build script too (#2299).
+#[path = "rustc-rpath.rs"]
+mod rustc_rpath;
 
 fn main() {
-    // The browser's compiler, `wasm/`'s, links rustc's crates it builds
-    // itself, nothing of the toolchain's.
-    let family = std::env::var("CARGO_CFG_TARGET_FAMILY").unwrap_or_default();
-    if !family.split(',').any(|family| family == "wasm") {
-        let rustc = std::env::var("RUSTC").unwrap_or_else(|_| "rustc".into());
-        let out = Command::new(rustc).arg("--print=sysroot").output().expect("run rustc");
-        let sysroot = String::from_utf8(out.stdout).expect("utf-8 sysroot");
-        println!("cargo:rustc-link-arg=-Wl,-rpath,{}/lib", sysroot.trim());
-    }
+    rustc_rpath::main();
     // What the compiler is made of: its sources and its crates' (ADR 1181),
     // which include its runtime helpers, the std manifest and the
     // toolchain's file it builds in, this script, and its package's
@@ -31,6 +27,7 @@ fn main() {
         root.join("std/compiled-std.json"),
         root.join("rust-toolchain.toml"),
         root.join("build.rs"),
+        root.join("rustc-rpath.rs"),
         package.join("Cargo.toml"),
         package.join("Cargo.lock"),
     ];

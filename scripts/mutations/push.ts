@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "push-remakes-any-conflict",
-    breaks: "a rebase's conflict in hand-written code, `src/lower/analysis.rs`'s re-exports say, is resolved as main's, and the change's own side is lost",
+    breaks: "a rebase's conflict in hand-written code, `crates/rust-js-lower/src/analysis.rs`'s re-exports say, is resolved as main's, and the change's own side is lost",
     file: "scripts/push.ts",
     find: "  return conflicts.every((file) => file in regenerated || stdGenerated(file) || ratchets.includes(file) || decision(file) || lineSet(file) || changesLog(file));\n",
     replace: "  return true;\n",

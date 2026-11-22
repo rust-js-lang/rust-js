@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/std_calls/written_into.rs (ADR 1135, #1652).
+// Mutations of crates/rust-js-mir/src/std_calls/written_into.rs (ADR 1135, #1652).
 import type { Mutation } from "../../../../mutations";
 
 const tests = ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"];
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-arguments-not-held",
     breaks: "an argument of a `write!` into a writer is evaluated as it's written, after what comes before it, where Rust evaluates each first",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "            if let Value::Fmt(_, _, value) = item\n                && value.has_effects()\n",
     replace: "            if let Value::Fmt(_, _, value) = item\n                && value.has_effects()\n                && false\n",
     tests,
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-own-write-char-passed-over",
     breaks: "a writer's own `write_char` is passed over for its `write_str`",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "        let write_char_entry = match own_char {\n",
     replace: "        let write_char_entry = match own_char && false {\n",
     tests,
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-never-fails",
     breaks: "a `write!` into a writer that may fail gives `Ok` where a write gave `Err`",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "        Ok(Value::Expr(match fails {\n",
     replace: "        Ok(Value::Expr(match fails && false {\n",
     tests,
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "framed-write-char-as-str",
     breaks: "a framed writer's `f.write_char(c)` is given to the writer's `write_str`, not its own `write_char`",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "                        _ if self.recognition().is_write_char(def_id) => vec![SinkWrite::Char(value)],\n",
     replace: "",
     tests,
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "framed-pad-without-options",
     breaks: "a framed writer's `f.pad(s)` pads by no options, so `{:>6}` of it isn't padded",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "                    WriteCall::Pad => {\n                        given.push(options);\n",
     replace: "                    WriteCall::Pad => {\n                        given.push(Expr::js_undefined());\n",
     tests,
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "framed-kept-result-thrown",
     breaks: "a framed writer's write whose `Result` it keeps throws the writer's `Err` out of it, so it doesn't carry on as Rust's does",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "        if result_use(&self.recognition(), state.body, destination) == ResultUse::Inspected {\n",
     replace: "        if result_use(&self.recognition(), state.body, destination) == ResultUse::Inspected && false {\n",
     tests,
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "framed-writer-function-refused",
     breaks: "a writer function a framed writer gives its `Formatter` is refused, not called with the sink armed (#1652)",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "                    Ok(Some(instance)) if self.writes_through_sink(instance.def_id()) => Some(instance),\n",
     replace: "                    Ok(Some(instance)) if false => Some(instance),\n",
     tests,
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "framed-own-failure-unseen",
     breaks: "a writer shown into a writer that returns its own `Err` throws past the `write!`, whose `Result` Rust gives as `Err`",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "            Value::Fmt(Std::FmtDisplay, ty, _) => self.fmt_may_fail(self.display_trait(), ty),\n",
     replace: "",
     tests,
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "framed-derived-struct-as-tuple",
     breaks: "a derived struct's `Debug` written into a writer is written as a tuple's, its field names shown as values (#1652)",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: '                let helper = if named { "$writeDebugStruct" } else { "$writeDebugTuple" };\n',
     replace: '                let helper = if named { "$writeDebugTuple" } else { "$writeDebugTuple" };\n',
     tests,
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "formatter-arguments-param-refused",
     breaks: "a `Formatter`'s `write_fmt` of an `Arguments` parameter, in a writer shown into a writer, is refused",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "                        (true, false) if self.arguments_given_as_sink(state) => {\n",
     replace: "                        (true, false) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_given_on.rs$"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-writer-char-as-str",
     breaks: "`fmt::write` into a `dyn fmt::Write` with its own `write_char` gives each `char` to its `write_str`",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "            _ if (generic_args.types().next())\n",
     replace: "            _ if false && (generic_args.types().next())\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_given_on.rs$"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-write-takes-own-write-fmt",
     breaks: "`fmt::write(self, args)` in a writer's own `write_fmt` calls that `write_fmt` again through its dictionary, without end (#1697)",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "            && (std_write_fmt || !self.recognition().writes_through_a_dictionary(def_id, generic_args))\n",
     replace: "            && !self.recognition().writes_through_a_dictionary(def_id, generic_args)\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_own_write_fmt.rs$"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "derived-debug-fields-refused",
     breaks: "a derived `Debug` of more than five fields, `debug_struct_fields_finish`, in a writer shown into a writer is refused",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "            WriteCall::Struct | WriteCall::Tuple | WriteCall::StructFields | WriteCall::TupleFields => {\n",
     replace: "            WriteCall::Struct | WriteCall::Tuple => {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "held-formatter-char-as-str",
     breaks: "a `write_char` through a `Formatter` a struct holds gives the writer's `write_str` the `char`, not its own `write_char`",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "                    _ if self.recognition().is_write_char(def_id) => vec![SinkWrite::Char(value)],\n                    _ if !self.recognition().formatter_write_fmt(def_id, generic_args) || literal => {\n",
     replace: "                    _ if self.recognition().is_write_char(def_id) => vec![SinkWrite::Str(value)],\n                    _ if !self.recognition().formatter_write_fmt(def_id, generic_args) || literal => {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
   {
     name: "formatter-other-fmt-refused",
     breaks: "a framed writer's `LowerHex::fmt(&self.0, f)` of a number is refused, where it's written by the `Formatter`'s options",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "            WriteCall::OtherFmt if !self.own_writer(def_id, generic_args) => {\n",
     replace: "            WriteCall::OtherFmt if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
   {
     name: "displayed-arguments-refused",
     breaks: "`Display::fmt(&args, f)` of an `Arguments` in a writer shown into a writer is refused",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "                            _ if arguments && self.arguments_given_as_sink_at(state, 0) => {\n",
     replace: "                            _ if arguments && false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-given-formatter-past-own-reference",
     breaks: "`Display::fmt(&self.0, f)` of a `&ByRef` with a `Display` of its own, in a framed writer, is asked of `ByRef`, which has none, so it's refused (#1798)",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "                        let ty = self.shown_ref_type(kind, generic_args.type_at(0));\n",
     replace: "                        let ty = generic_args.type_at(0).peel_refs();\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_of_a_reference_impl_given_a_formatter.rs$"],
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
   {
     name: "trait-default-armed-by-its-own-function",
     breaks: "a library's writer that calls its trait's default its impl doesn't write is armed with the default's own function, `$writingInto(f, measured_shown, buf, bufMeasured)`, which nothing writes where its impls copy it, so the library's JS is refused (#1889)",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "                    Some(instance) if self.tcx.trait_of_assoc(instance.def_id()).is_some() => {\n",
     replace: "                    Some(instance) if self.tcx.trait_of_assoc(instance.def_id()).is_some() && false => {\n",
     tests: ["test/crates.test.ts", "-t", "trait_default_written_by_a_librarys_display"],
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
   {
     name: "picked-writer-unarmed",
     breaks: "a writer's call of a method whose impl facts pick, `ZipFmt::fmt`, is refused: no branch is armed (#2252)",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: ".filter(|spec| spec.methods().all(|method| self.writes_through_sink(method)));",
     replace: ".filter(|_| false);",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
   {
     name: "picked-writer-options-of-trait",
     breaks: "the writers a fact picks are given options as the trait's method is, which `@rust-js/std` doesn't compile, so none, and their dictionaries shift (#2252)",
-    file: "src/lower/mir/std_calls/written_into.rs",
+    file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "given.extend(self.given_to_writer(Some(spec.selected.0)));",
     replace: "given.extend(self.given_to_writer(Some(def_id)));",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],

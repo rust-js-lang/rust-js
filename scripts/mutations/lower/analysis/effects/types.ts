@@ -1,7 +1,7 @@
-// Mutations of src/lower/analysis/effects/types.rs, what a type says of the pointers a value holds (#2112 B).
+// Mutations of crates/rust-js-lower/src/analysis/effects/types.rs, what a type says of the pointers a value holds (#2112 B).
 import type { Mutation } from "../../../../mutations";
 
-const file = "src/lower/analysis/effects/types.rs";
+const file = "crates/rust-js-lower/src/analysis/effects/types.rs";
 const tests = ["test/intervals-shadow.test.ts", "-t", "keeps nothing the forgetting rules forget"];
 
 export const mutations: Mutation[] = [

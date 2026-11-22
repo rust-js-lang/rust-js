@@ -1,4 +1,4 @@
-// Mutations of src/lower/analysis/prints.rs (ADR 1130).
+// Mutations of crates/rust-js-lower/src/analysis/prints.rs (ADR 1130).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "dyn-given-a-library-unshown",
     breaks:
       "a consumer's `Viewport`, a derived `Debug`, made a `&dyn Debug` and given a library that writes it a piece at a time, has `fmtInto` in its dictionary but no writer framed, so it's refused (#1774)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "    if recognition.foreign.writes_dyns_given() {\n",
     replace: "    if false {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: derived_debug_made_a_dyn_a_library_writes"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-that-prints-unseen",
     breaks: "a writer that prints as it formats is taken to print nothing, so `println!` builds its line whole and the print comes before it (#1490)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "                if stops || printing.contains(&writer) || run.iter().any(|id| printing.contains(id)) {\n",
     replace: "                if stops || false && (printing.contains(&writer) || run.iter().any(|id| printing.contains(id))) {\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_writer_shown_by_derived_debugs_and_builders.rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "what-runs-while-formatting-unseen",
     breaks: "a print a writer reaches through what it calls, a drop's, isn't written through stdout's line, so it lands before the line's text (#1490)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "                    found.while_formatting.extend(run);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^printed_while_a_line_is_formatted.rs$"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-showing-a-printing-type-unseen",
     breaks: "a writer that shows a value whose writer prints, through std's `&dyn Debug`, isn't taken to print, so a derived `Debug` of it builds its text whole and the field's print comes before the line (#1495)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "        if more.is_empty() {\n            break;\n",
     replace: "        if true || more.is_empty() {\n            break;\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_writer_shown_by_derived_debugs_and_builders.rs$"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "composed-stopping-writer-unrefused",
     breaks: "a std value's `Debug` of a part whose writer may print and panic, where a `catch_unwind` may catch it, is made whole, and the line loses what the parts before it wrote, `[!` where Rust keeps `[!L1, !` (#1521, #1561)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "    let own_stopping: Vec<DefId> = (stops.iter())\n",
     replace: "    let own_stopping: Vec<DefId> = (stops.iter().take(0))\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_value_stopped_part_way.rs$"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "composed-stopping-writer-refused-unasked",
     breaks: "every writer is taken to stop part-way in a crate that calls `catch_unwind`, so one that never does streams for nothing and a std value's `Debug` of it, a `Vec` of a derived `Debug`, is refused (#1521, #1496)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "                !never_unwinding.contains(&id) || failing.contains(&id) || shows_what_may_stop(body, &types)\n",
     replace: "                true || failing.contains(&id) || shows_what_may_stop(body, &types)\n",
     tests: ["test/corpus.test.ts", "-t", "^(printing_writer_stopped_part_way_where_caught|stopping_writers_where_a_panic_is_caught).rs$"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "stops-composed-of-the-crates-own",
     breaks: "`{:?}` of the crate's own writer that prints and may panic, which streams its text through the line itself, is refused as a std value's composed `Debug` is (#1521, #1530)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "            true => None,\n            false => self.stops_shown(ty),\n",
     replace: "            true => self.stops_shown(ty),\n            false => self.stops_shown(ty),\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_writer_stopped_part_way_where_caught.rs$"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "panicking-writer-unstreamed",
     breaks: "a writer that may panic, in a program that catches it, builds its text whole, so `println!(\"x {} y\", halfway)` caught loses `x half` where Rust's line buffer keeps it (#1496)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "        let stops = stops.contains(&writer);\n",
     replace: "        let stops = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_through_a_line_kept_where_caught.rs$"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "catch-unwind-unseen",
     breaks: "a program's `catch_unwind` isn't seen, so its writers that may panic build their text whole and a caught panic loses the line they began (#1496)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "    let catches = all_bodies.iter().any(|body| catches_unwinding(recognition, body));\n",
     replace: "    let catches = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_through_a_line_kept_where_caught.rs$"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "shown-stopping-type-unseen",
     breaks: "a derived `Debug` of a field whose writer may panic, which it reaches through a `&dyn Debug` what may run doesn't follow, is taken never to stop, so a `Vec` of it where a panic may be caught is made whole and loses the items before (#1530, #1561)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "            .any(|part| part.ty_adt_def().is_some_and(|adt| types.contains(&adt.did())))\n            || unknown_shown(expr)\n",
     replace: "            .any(|_| false)\n            || unknown_shown(expr)\n",
     tests: ["test/corpus.test.ts", "-t", "^std_value_of_quiet_stopping_parts_where_caught.rs$"],
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
   {
     name: "made-dyn-taken-as-unknown",
     breaks: "a derived `Debug`'s `&dyn Debug` of its field is taken for a `dyn` that may hold anything, so where a panic may be caught a derived `Debug` of numbers, and a `Vec` of it, are written piece by piece through sinks, where each is one expression (#1496)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: ".any(|part| unknown_part(part, read))",
     replace: ".any(|part| unknown_part(part, true))",
     tests: ["test/corpus.test.ts", "-t", "^stopping_writers_where_a_panic_is_caught.rs$"],
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
   {
     name: "what-a-writer-runs-unstopped",
     breaks: "a writer that calls a helper which shows a value that may panic is taken never to stop, so a `Vec` of it where a panic may be caught is made whole and loses the items before (#1530, #1561)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "                direct.contains(&body.def_id) || run.as_ref().is_none_or(|run| run.iter().any(|id| direct.contains(id)))\n",
     replace: "                direct.contains(&body.def_id)\n",
     tests: ["test/corpus.test.ts", "-t", "^std_value_of_quiet_stopping_parts_where_caught.rs$"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
   {
     name: "stopping-writers-outside-a-line-streamed",
     breaks: "a writer that may panic, shown only in a `format!`, where nothing it wrote is kept, is taken to write through stdout's line, its text written through a sink it needn't have (#1496, #1533)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "                stops.retain(|id| in_a_line.contains(id));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(debug_entries_drop_as_std|debug_entries_closed_where_nothing_prints).rs$"],
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
   {
     name: "printed-types-unseen",
     breaks: "what a print shows isn't seen, so no writer that may panic is taken to write into a line, and `println!(\"x {} y\", halfway)` caught loses `x half` (#1496)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "        types.extend(local_parts(*ty));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_through_a_line_kept_where_caught.rs$"],
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
   {
     name: "failing-builders-not-through-a-sink",
     breaks: "a writer whose builder's step or derived `Debug`'s field may give `Err` makes its text whole, so what it wrote before the `Err` is lost, `Holder { n: 1, bad: ` (#1557)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: ".filter(|body| failing.contains(&body.def_id) && recognition.formatter_param(body.def_id).is_some())",
     replace: ".filter(|body| false && failing.contains(&body.def_id) && recognition.formatter_param(body.def_id).is_some())",
     tests: ["test/corpus.test.ts", "-t", "^failing_debug_part_keeps_what_was_written\\.rs$"],
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-debug-whole-beside-stderr",
     breaks: "a std value's `Debug` of an item whose `Debug` prints is made whole where a write to stderr may run while a line is formatted, so the stdout bytes before it, `list [N`, aren't known when it's written, and come after it (#1490)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "    if stderr_while_formatting {\n",
     replace: "    if false && stderr_while_formatting {\n",
     tests: [
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   {
     name: "format-args-block-unread",
     breaks: "a `println!` whose `format_args!` is a block, of arguments, is taken to leave its line unended, so a program of `println!`s alone prints each line by `$print` (#1599)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "                ExprKind::Block { block } => match thir[block].expr {\n                    Some(value) => at = value,\n",
     replace: "                ExprKind::Block { block } => match thir[block].expr {\n                    Some(_) if true => break,\n                    Some(value) => at = value,\n",
     tests: [
@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
   {
     name: "stream-write-leaves-nothing-unended",
     breaks: "a write to `io::stdout()`, which may leave its line unended, isn't taken to, so a `println!` after it is `console.log`'s, past what the runtime holds in a browser (#1599)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "            None => recognition.writes_stream(id, generics.skip_binder(), error),\n",
     replace: "            None => false && recognition.writes_stream(id, generics.skip_binder(), error),\n",
     tests: [
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
   {
     name: "instance-writer-prints-unseen",
     breaks: "a print in a library's body the program compiles itself (ADR 0914), read from its MIR alone, isn't seen, so its `print!` lands before the line formatted so far (#1608)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "    (graph.names_of(body.def_id).iter()).any(|&(id, args, _, _)| recognition.writes_stream(id, args, error))\n",
     replace:
       "    (graph.names_of(body.def_id).iter()).any(|&(id, args, _, _)| body.root().is_some() && recognition.writes_stream(id, args, error))\n",
@@ -177,7 +177,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-stopping-where-caught-unsaid",
     breaks: "a library's contract says none of its writers may stop part-way where caught, so a consumer that catches a panic shows one in a line whole, `x [` where Rust's stdout keeps `x [!L1, !L2, !` (#1608)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "    if library {\n        let stopping = stopping(\n",
     replace: "    if false {\n        let stopping = stopping(\n",
     tests: ["test/crates-refused.test.ts", "-t", "may stop part-way, shown in a line"],
@@ -185,7 +185,7 @@ export const mutations: Mutation[] = [
   {
     name: "consumer-shown-stopping-unrefused",
     breaks: "a consumer that catches a panic shows a library's writer that may stop part-way in stdout's line, made whole, losing what Rust's stdout keeps of it (#1608, #1530)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "    if catches && !foreign_stopping.is_empty() {\n",
     replace: "    if false && catches && !foreign_stopping.is_empty() {\n",
     tests: ["test/crates-refused.test.ts", "-t", "may stop part-way, shown in a line"],
@@ -193,7 +193,7 @@ export const mutations: Mutation[] = [
   {
     name: "foreign-stopping-unasked",
     breaks: "a consumer doesn't ask a library's contract which of its writers may stop part-way where caught, so it shows one in a line whole where it catches a panic (#1608)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "                if foreign.stops_where_caught(adt) {\n",
     replace: "                if false && foreign.stops_where_caught(adt) {\n",
     tests: ["test/crates-refused.test.ts", "-t", "may stop part-way, shown in a line"],
@@ -201,7 +201,7 @@ export const mutations: Mutation[] = [
   {
     name: "unknown-shown-stopping-unrefused",
     breaks: "a line that shows a value only a caller knows the type of, which may be a library's writer that may stop part-way, isn't refused where a panic may be caught (#1608)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "                } else if (ty.walk().filter_map(|part| part.as_type())).any(|part| unknown_part(part, true)) {\n",
     replace: "                } else if false {\n",
     tests: ["test/crates-refused.test.ts", "-t", "may stop part-way, shown in a line"],
@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-in-a-line-shown-stopping-unrefused",
     breaks: "a writer of the program's in a line that shows a library's writer that may stop part-way isn't refused where a panic may be caught, `x w` where Rust's stdout keeps `x w!` (#1608)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "        if let Some((expr, part)) = (writer.thir.exprs.iter()).find_map(|expr| Some((expr, stopping_part(expr.ty)?))) {\n",
     replace: "        if let Some((expr, part)) = (writer.thir.exprs.iter().take(0)).find_map(|expr| Some((expr, stopping_part(expr.ty)?))) {\n",
     tests: ["test/crates-refused.test.ts", "-t", "may stop part-way, shown in a line"],
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
   {
     name: "dependency-stopping-writer-unseeded",
     breaks: "a library's writer that shows its dependency's writer that may stop isn't taken to stop, so its contract doesn't say so and a consumer that catches a panic shows it whole, `x ` where Rust's stdout keeps `x <!` (#1608)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "            &type_of,\n            &foreign_stopping,\n        );\n        found.stopping_where_caught",
     replace: "            &type_of,\n            &IndexSet::default(),\n        );\n        found.stopping_where_caught",
     tests: ["test/crates-refused.test.ts", "-t", "dependency's writer that may stop part-way"],
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-into-writers-unseen",
     breaks: "a writer of the crate's own shown into a writer by `write!` doesn't write through a sink, so its `write!` is refused where Rust writes each piece into the writer (#1652)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "    (found.framed, found.published) = written_into_writers(recognition, (all_bodies, graph), (library, arguments));\n",
     replace: "",
     tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-into-writers-shown-unseen",
     breaks: "a writer a framed writer shows, `Wrap`'s `Point`, doesn't write through a sink, so the framed writer's `write!` of it is refused (#1652)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "            if of_shown && found.insert(writer.def_id) {\n                shown.extend(shown_by(writer).into_iter().map(|ty| (ty, true)));\n",
     replace: "            if of_shown && found.insert(writer.def_id) {\n",
     tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-into-writers-called-unseen",
     breaks: "a writer function a framed writer gives its `Formatter`, `bracketed(f, n)`, doesn't write through a sink, so the call is refused (#1652)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "                if let Some(writer) = writers.iter().find(|writer| writer.def_id == callee) {\n",
     replace: "                if let Some(writer) = writers.iter().find(|writer| writer.def_id == callee && false) {\n",
     tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
@@ -249,7 +249,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-into-writers-dyn-made-unseen",
     breaks: "a type a framed writer's builder step makes a `&dyn Debug`, `Unit`, doesn't write through a sink, so the step is refused (#1652)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "            } => Some(body.thir[source].ty),\n",
     replace: "            } => None.or(Some(body.thir[source].ty)).filter(|_| false),\n",
     tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-into-writers-every-shown-of-the-body",
     breaks: "every type a body that writes into a writer formats is framed, a `println!`'s too, so a writer never shown into one is held to std's pieces and refused (#1652)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "        .flat_map(|(body, shown)| shown.unwrap_or_else(|| shown_by(body)))\n",
     replace: "        .flat_map(|(body, _)| shown_by(body))\n",
     tests: ["test/writer-sink.test.ts", "-t", "only prints doesn't write through a sink"],
@@ -265,7 +265,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-into-writers-library-params-unseen",
     breaks: "a consumer's type given only a library's generic writer that writes it into a writer isn't framed, so its dictionary's `fmtInto` is refused (#1652)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "            for index in recognition.foreign.written_marks(callee) {\n",
     replace: "            for index in recognition.foreign.written_marks(callee).into_iter().filter(|_| false) {\n",
     tests: ["test/writer-sink.test.ts", "-t", "a consumer's type given only"],
@@ -273,7 +273,7 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-given-on-shown-unframed",
     breaks: "a type shown by a `format_args!` given a function that writes it into a writer isn't framed, so its writer writes its text whole, one piece",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "            if !marks.writes(recognition, (id, generic_args), at) {\n",
     replace: "            if at != 1 || !recognition.writes_arguments_piecewise(id, generic_args) {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_own_write_fmt.rs$"],
@@ -281,7 +281,7 @@ export const mutations: Mutation[] = [
   {
     name: "closure-given-formatter-unframed",
     breaks: "a closure a framed writer calls with its `Formatter` isn't framed, so it makes its text and never claims the sink armed for it",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "                        if tcx\n                            .trait_of_assoc(callee)\n                            .is_some_and(|t| tcx.fn_trait_kind_from_def_id(t).is_some()) =>\n",
     replace: "                        if false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_own_write_fmt.rs$"],
@@ -289,7 +289,7 @@ export const mutations: Mutation[] = [
   {
     name: "held-callables-unframed",
     breaks: "a closure or a writer function a framed writer calls through a value, a `fn` pointer or a `dyn Fn`, isn't framed, so it never claims the sink armed for it",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "            if by_body.is_some_and(|by| calls_held(by)) {\n",
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_callables.rs$"],
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-types-unpublished",
     breaks: "a library frames none of its reachable types' writers, so a consumer's `write!` of one into its own writer is refused",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "    let published: IndexSet<DefId> = match library {\n",
     replace: "    let published: IndexSet<DefId> = match false {\n",
     tests: ["test/writer-sink.test.ts", "-t", "published type"],
@@ -305,7 +305,7 @@ export const mutations: Mutation[] = [
   {
     name: "writers-of-constants-asked",
     breaks: "a constant's body is asked whether it takes a `Formatter`, `fn_sig` of a constant, which crashes rustc",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "                && tcx.def_kind(body.def_id).is_fn_like()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_const_generic.rs$"],
@@ -313,7 +313,7 @@ export const mutations: Mutation[] = [
   {
     name: "listed-writers-compiled-here-unframed",
     breaks: "a consumer's own copy of a library's derived `Debug` its contract lists isn't framed, so its dictionary's `fmtInto` is refused",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "    found.framed.extend(listed_writers_compiled_here(recognition));\n",
     replace: "",
     tests: ["test/writer-sink.test.ts", "-t", "a library's published type is written into a consumer's writer a piece at a time"],
@@ -321,15 +321,15 @@ export const mutations: Mutation[] = [
   {
     name: "shown-impl-display-unrevealed",
     breaks: "an `impl Display` a writer gives its `Formatter`, anstyle's `render()`, isn't the type it hides, so its writer isn't framed and is refused",
-    file: "src/lower/analysis/prints.rs",
-    find: "        .map(|ty| crate::lower::analysis::revealed(tcx, ty))\n",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
+    find: "        .map(|ty| crate::analysis::revealed(tcx, ty))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_impl_display.rs$"],
   },
   {
     name: "held-writers-unframed-for-libraries",
     breaks: "a consumer's callable given the `Formatter`, called by a library's writer, isn't framed, \"didn't write through its sink\" (#1736)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "    if recognition.foreign.writes_piecewise() {\n",
     replace: "    if false {\n",
     tests: ["test/writer-sink.test.ts", "-t", "a consumer's closure and fn pointer a library's writer calls"],
@@ -337,7 +337,7 @@ export const mutations: Mutation[] = [
   {
     name: "hidden-types-unpublished",
     breaks: "a library's type it gives out as an `impl Display` isn't published, so a consumer writing it through generic code is refused (#1743)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "                    .is_some_and(|local| reachable(local) || hidden.contains(&adt))\n",
     replace: "                    .is_some_and(|local| reachable(local))\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's hidden types are written"],
@@ -345,7 +345,7 @@ export const mutations: Mutation[] = [
   {
     name: "hidden-types-not-revealed-through-another",
     breaks: "a library's type hidden by an `impl Display` a private function gives, given out by a public one's, isn't published (#1743)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "                let hides = super::revealed(tcx, tcx.type_of(opaque).instantiate_identity().skip_normalization());\n",
     replace: "                let hides = tcx.type_of(opaque).instantiate_identity().skip_normalization();\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's hidden types are written"],
@@ -353,7 +353,7 @@ export const mutations: Mutation[] = [
   {
     name: "hidden-types-of-trait-declarations",
     breaks: "a trait's declared method's `impl Trait`, which hides nothing, is asked what it hides, and rustc crashes (#1743)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "            .filter(|&opaque| tcx.trait_of_assoc(tcx.local_parent(opaque).to_def_id()).is_none())\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "drops a consumer's impl Trait by its dictionary"],
@@ -361,7 +361,7 @@ export const mutations: Mutation[] = [
   {
     name: "derived-writers-framed-by-publication",
     breaks: "a published type's derived writer, which its library has no JS of, is framed in the library too, a field of a std adapter's then refused there (#1712)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "        let framed = !derived(writer.def_id) || compiled_std(writer.def_id);\n",
     replace: "        let framed = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^(flattened_state_into_inner)\\.rs$"],
@@ -369,7 +369,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-derived-writers-unframed",
     breaks: "`@rust-js/std`'s compiled derived `Debug` of an adapter isn't framed, so a framed writer that arms it is \"didn't write through its sink\" (#1712)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "        let framed = !derived(writer.def_id) || compiled_std(writer.def_id);\n",
     replace: "        let framed = !derived(writer.def_id);\n",
     tests: ["test/std-package.test.ts"],
@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-shown-frames-every-writer",
     breaks: "a `dyn Display` shown frames the crate's `Debug` writers too, an itertools adapter's field of a std adapter then refused (#1712)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "                    Some(principal) => dyn_traits.extend(ty::elaborate::supertrait_def_ids(tcx, principal)),\n",
     replace: "                    Some(_) => any = true,\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_made_dyn.rs$"],
@@ -386,7 +386,7 @@ export const mutations: Mutation[] = [
   {
     name: "printing-types-without-fmt-into",
     breaks: "a type whose writer prints, written by a generic framed writer formatted plainly, is written as its text, its print inside `{:#?}`'s indent (#1712)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "        self.framed_generic\n            && !self.types.is_empty()\n",
     replace: "        false\n            && !self.types.is_empty()\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_printing_in_a_generic)\\.rs$"],
@@ -394,7 +394,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-writer-functions-unframed",
     breaks: "a library's writer function a consumer names a `fn` pointer isn't framed, and a framed writer calling it throws (#1760)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "    if library {\n        let functions = ",
     replace: "    if false {\n        let functions = ",
     tests: ["test/writer-sink.test.ts", "-t", "names a fn pointer"],
@@ -402,15 +402,15 @@ export const mutations: Mutation[] = [
   {
     name: "writer-type-not-through-references",
     breaks: "a writer of a formatting impl of a reference or a `Box` of the crate's type is of no type, so it isn't framed and generic code's write of it throws (#1798)",
-    file: "src/lower/analysis/prints.rs",
-    find: "    let type_of = |writer: DefId| crate::lower::recognition::formatted_adt(tcx, tcx.impl_of_assoc(writer)?);\n    // Each type shown",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
+    find: "    let type_of = |writer: DefId| crate::recognition::formatted_adt(tcx, tcx.impl_of_assoc(writer)?);\n    // Each type shown",
     replace: "    let type_of = |writer: DefId| {\n        Some(tcx.type_of(tcx.impl_of_assoc(writer)?).skip_binder().ty_adt_def()?.did())\n    };\n    // Each type shown",
     tests: ["test/corpus.test.ts", "-t", "^fmt_of_a_reference_impl_given_a_formatter.rs$"],
   },
   {
     name: "another-crates-writer-taken-to-stop",
     breaks: "a dependency's writer, compiled here, which rust-js can't tell never unwinds, is taken to stop part-way, so `{:?}` of its derived `Debug` in a `println!` of a crate that catches panics is refused (#1496)",
-    file: "src/lower/analysis/prints.rs",
+    file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "    let ran: Vec<(&Body<'tcx>, Option<Vec<DefId>>)> = (writers.iter().copied())\n        .filter(|writer| writer.def_id.is_local())\n",
     replace: "    let ran: Vec<(&Body<'tcx>, Option<Vec<DefId>>)> = (writers.iter().copied())\n",
     tests: ["test/crates.test.ts", "-t", "writers_of_a_dependency_where_a_panic_is_caught"],

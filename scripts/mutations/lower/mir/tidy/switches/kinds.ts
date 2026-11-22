@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/tidy/switches/kinds.rs (ADR 0668).
+// Mutations of crates/rust-js-mir/src/tidy/switches/kinds.rs (ADR 0668).
 import type { Mutation } from "../../../../../mutations";
 
 const typeofs = [
@@ -12,7 +12,7 @@ export const mutations: Mutation[] = [
     name: "typeof-undefined-untold",
     breaks:
       "`value === undefined` isn't `typeof value === \"undefined\"`'s case, so a `match` of `Kind::Undefined` is no `switch`",
-    file: "src/lower/mir/tidy/switches/kinds.rs",
+    file: "crates/rust-js-mir/src/tidy/switches/kinds.rs",
     find: '                (_, ExprKind::Undefined) => Some((a.clone(), "undefined".to_string())),\n',
     replace: "",
     tests: typeofs,

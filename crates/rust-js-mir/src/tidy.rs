@@ -1,0 +1,1238 @@
+//! A body lowered from its MIR, as a person writes it (ADR 0364): each
+//! rewrite changes nothing that runs. MIR's one return block is a `return`
+//! where each path ends, and what the structure needed to reach it, a
+//! labeled block or a `break`, goes. A closure's body is tidied as its own.
+
+use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp, breaks, ends, names_break};
+
+use rust_js_lower::iterators::{self, eager_chains, eager_spreads, iterated};
+
+mod again;
+mod bindings;
+mod branches;
+mod case_rests;
+mod comparisons;
+mod contracts;
+mod copied;
+mod decided;
+mod decisions;
+mod destructuring;
+mod flags;
+mod jumps;
+#[cfg(test)]
+mod literal_movement_tests;
+mod logicals;
+mod loop_labels;
+mod loops;
+mod moves;
+mod mut_items;
+mod options;
+mod shadows;
+mod stability;
+mod stages;
+mod strict_switches;
+mod switches;
+mod unwinds;
+mod value_chains;
+mod values;
+
+pub(super) use self::again::Again;
+pub(super) use self::bindings::{is_temporary, user_name};
+pub(super) use self::destructuring::{copied_params, destructured_params};
+pub(super) use self::stability::Plain;
+use self::stability::{plain_field, read_past_calls};
+pub(super) use self::values::writer_body;
+use self::{
+    bindings::*, branches::*, comparisons::*, copied::*, decided::*, destructuring::*, jumps::*, logicals::*, loops::*,
+    moves::*, options::*, switches::switched, value_chains::*, values::*,
+};
+use super::hints::{LabeledBlock, Switch};
+
+/// What a body's last passes ask of its locals, by name: those the program
+/// names, those a `let`'s `#[rust_js::name]` names, and its `String`s.
+pub(super) struct Named {
+    pub(super) user: IndexSet<js::Name>,
+    pub(super) given: IndexSet<js::Name>,
+    pub(super) text: IndexSet<js::Name>,
+}
+
+/// What a body's `let`s bind, each by its name.
+pub(super) struct LetNames {
+    /// What a struct or tuple pattern binds, `let Point { x, y } = p;`.
+    pub(super) patterns: IndexSet<js::Name>,
+    /// What a name alone binds, `let x = p.x;`.
+    pub(super) named: IndexSet<js::Name>,
+    /// Of those, `let mut`'s: what the program said it changes (rd226b).
+    pub(super) mutable: IndexSet<js::Name>,
+    /// Of those, one of a `RefCell` field's value cloned, named as the field, `let child =
+    /// current.child.borrow().clone();`: a `let` that ends a borrow, which
+    /// reads as its value written in the statement right after it where
+    /// only that reads it (ADR 0866, amended).
+    pub(super) ends_borrow: IndexSet<js::Name>,
+    /// Of those, one of a shared borrow, a `&T` or a `RefCell`'s `Ref<T>`,
+    /// of a `T` with no cell of its own (`Freeze`), `let chunks =
+    /// store.chunks.borrow();`: what it's to can't change while it's held,
+    /// so a handle on its place reads, where it's made, what each of its
+    /// uses would (rd658).
+    pub(super) frozen: IndexSet<js::Name>,
+    /// What an `if let`'s or a let chain's pattern binds of its scrutinee's
+    /// whole payload, named as the field the scrutinee reads, by their Rust
+    /// names: `debug_task` of `let Some(debug_task) =
+    /// fiber.debug_task.get()`, a name that says nothing the field doesn't,
+    /// so a chain's binding the test read is read again in its place
+    /// (`moves::read_again`); `prev_state` of `current.memoized_state` is
+    /// the program's name, which stays (ADR 0866, amended, rd706).
+    pub(super) own_field: IndexSet<js::Name>,
+    /// Where each `let` of a drop guard, a value of a type with a `Drop` of
+    /// its own, is written, and where the block whose end drops it ends:
+    /// the `try` its drop ends starts at the `let` (ADR 0865, amended).
+    pub(super) guards: Vec<(u32, u32)>,
+}
+
+/// What MIR's lowering, and THIR, say of a body for tidying it.
+pub(super) struct Hints<'h> {
+    /// The name of the function's return place.
+    pub(super) result: &'h js::Name,
+    /// The temporaries a function that skips what's falsy is given.
+    pub(super) falsy: &'h IndexSet<js::Name>,
+    /// And the temporaries such a `test && value` tests.
+    pub(super) tested: &'h IndexSet<js::Name>,
+    /// Where the program writes its `if`s, loops, `&&`s, tables and
+    /// comments (`hints::Written`).
+    pub(super) written: &'h super::hints::Written,
+    /// The closures a `let` names that a hook's function alone is (ADR 0297).
+    pub(super) callbacks: &'h IndexSet<js::Name>,
+    /// What the body's `let`s bind, by name.
+    pub(super) lets: &'h LetNames,
+    /// Whether the body is a closure's, tidied again in its function's.
+    pub(super) closure: bool,
+    pub(super) returns: &'h [js::Span],
+    /// The `const`s MIR's lowering made that are as its temporaries.
+    pub(super) made: &'h super::Made,
+    /// The variables a `clone()` made (`hints.rs::clone_names`).
+    pub(super) clones: &'h crate::hints::Clones,
+    /// Of a closure, the variables it captured by value, which its maker
+    /// never assigns again from where it makes it (ADR 0879).
+    pub(super) kept: &'h IndexSet<js::Name>,
+    /// The variables of Rust's `bool`: JS's `true` and `false` alone.
+    pub(super) booleans: &'h IndexSet<js::Path>,
+    /// The variables of Rust's integers: JS's numbers, which `++` steps.
+    pub(super) numbers: &'h IndexSet<js::Name>,
+    /// The variables of Rust's floats: JS's numbers, never an object whose
+    /// `valueOf` a comparison runs (ADR 0966).
+    pub(super) floats: &'h IndexSet<js::Name>,
+    /// The variables of plain values, which nothing changes, and `...items`
+    /// of arrays whose items nothing changes (`Locals::plain`).
+    pub(super) plain: &'h Plain<'h>,
+    /// Each closure of one call, where it's written and what it passes its
+    /// call on to (ADR 0605, amended).
+    pub(super) forwarding: &'h [rust_js_lower::passed_on::Forwarding],
+    /// Where each closure of one call whose JS gives `undefined` is written:
+    /// a component's handler of one, `() => f()` (ADR 0040).
+    pub(super) concise: &'h [(js::Span, rust_js_lower::jsx::OneCall)],
+    /// Each drop flag, `noisy$live`: whether a value is there to drop.
+    pub(super) flags: &'h IndexSet<js::Name>,
+    /// What `Iterator::fuse`'s compiled body is called here, `iterator_fuse`,
+    /// where the module imports it: a `Fuse` stepped till it ends is its
+    /// source (ADR 0561).
+    pub(super) fuse: Option<&'h str>,
+    /// The pass to stop after, `--tidy-until`'s, `stage/pass`.
+    pub(super) until: Option<&'h str>,
+    /// The function's parameters, which the `finish` stage takes apart.
+    pub(super) params: &'h std::cell::RefCell<Vec<js::Pattern>>,
+    /// The names MIR suggests of its temporaries, for `finish` to give.
+    pub(super) suggested: &'h IndexMap<rust_js_program::js::Name, Vec<String>>,
+    /// The locals the program names, and its `String`s, by name.
+    pub(super) named: &'h Named,
+    /// Its stages run again (`Again`).
+    pub(super) again: &'h Again,
+    /// What the body says of what does nothing (`sources::Commented`): each
+    /// `break` or `continue` the program wrote with comments before it that
+    /// a branch jumps by, where what the branch does last is and where the
+    /// jump is (rd109, `commented_jumps`); and each `continue` that's an
+    /// arm with comments above it, `// Skipped.\n 1 => continue,` (#610).
+    pub(super) commented: &'h rust_js_lower::sources::Commented,
+}
+
+/// `body`, tidied, by what `hints` say of it: each stage's passes in turn
+/// (`stages::STAGES`), up to `hints.until`'s where it names one, and in a
+/// debug build, what each stage leaves checked (ADR 0659).
+pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
+    // Stopped early, `--tidy-until`'s, what runs as a panic unwinds is
+    // guarded still, the list's own pass (#847).
+    let stopped = |body: &mut Vec<Stmt>| (stages::GUARDED_CLEANUPS.run)(body, hints);
+    for stage in stages::STAGES {
+        if run_stage(body, hints, stage, stage.name) {
+            return stopped(body);
+        }
+        // Its stages run again where its passes found they must, each
+        // through this runner, named `again/<stage>`.
+        if !stage.again.is_empty() && hints.again.take() {
+            for again in stages::STAGES.iter().filter(|s| stage.again.contains(&s.name)) {
+                if run_stage(body, hints, again, &again_name(again)) {
+                    return stopped(body);
+                }
+            }
+            hints.again.done();
+        }
+    }
+}
+
+/// `stage`'s passes in turn, named under `name`, then where trees are
+/// checked (`js::validate::stages_checked`), what it ensures, checked. Whether `hints.until` stopped it.
+fn run_stage(body: &mut Vec<Stmt>, hints: &Hints, stage: &stages::Stage, name: &str) -> bool {
+    for pass in stage.passes {
+        let was = rust_js_lower::session::tidy_fired::before(body);
+        (pass.run)(body, hints);
+        rust_js_lower::session::tidy_fired::after(was, body, || pass_name(name, pass));
+        if hints.until == Some(&*pass_name(name, pass)) {
+            return true;
+        }
+    }
+    if rust_js_program::js::validate::stages_checked() {
+        for contract in contracts::ALWAYS.iter().chain(stage.ensures) {
+            // Of every fact said, one `--without-known` forgets too: what's
+            // tried without it is the passes, not their check (ADR 1127).
+            if let Some(why) = rust_js_program::js::remembering(|| (contract.broken)(body)) {
+                panic!("tidy's `{name}` stage broke \"{}\": {why}", contract.name);
+            }
+        }
+    }
+    false
+}
+
+/// What a stage run again is named, `again/names`.
+fn again_name(stage: &stages::Stage) -> String {
+    format!("again/{}", stage.name)
+}
+
+/// What `--tidy-until` names a pass by: `stage/pass`.
+fn pass_name(stage: &str, pass: &stages::Pass) -> String {
+    format!("{stage}/{}", pass.name)
+}
+
+/// Each pass's name, in the order they run, a stage's run again after it
+/// where it is: what `--tidy-until` may name.
+/// `body`, a function's after tidy, with each `try` whose body can't throw,
+/// and whose `catch` only throws on, its body (`unwinds::unthrown_catches`,
+/// ADR 0873), and then its `let x; x = e;` a `const x = e;`
+/// (`declarations`): for what reads plainer only once its module is
+/// placed, a library's thread-local read as its `export let` (#408).
+pub(crate) fn settle_unthrown_catches(body: &mut Vec<Stmt>) {
+    let mut unthrown = false;
+    js::statement_lists(body, &mut |stmts| unthrown |= unwinds::unthrown_catches(stmts));
+    if unthrown {
+        bindings::declarations(body);
+    }
+}
+
+pub fn pass_names() -> Vec<String> {
+    let mut names = Vec::new();
+    for stage in stages::STAGES {
+        names.extend(stage.passes.iter().map(|pass| pass_name(stage.name, pass)));
+        for again in stages::STAGES.iter().filter(|s| stage.again.contains(&s.name)) {
+            names.extend(again.passes.iter().map(|pass| pass_name(&again_name(again), pass)));
+        }
+    }
+    names
+}
+
+/// The function's return place, `let` first, where nothing reads it now.
+fn unread_result(body: &mut Vec<Stmt>, result: &js::Name) {
+    if js::mentions_of(body, result) == 0 {
+        body.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if name == result));
+    }
+}
+
+/// What's given where `false` is skipped as `undefined` is, `test &&
+/// value`: one read there alone, which nothing else tells from
+/// `undefined`. A test of one read there alone is read for its truth:
+/// `!!a || b`'s, `a || b`.
+fn falsy_values(body: &mut Vec<Stmt>, falsy: &IndexSet<js::Name>, tested: &IndexSet<js::Name>) {
+    let falsy: IndexSet<&js::Name> = (falsy.iter()).filter(|n| js::mentions_of(body, n) == 1).collect();
+    let tested: IndexSet<&js::Name> = (tested.iter()).filter(|n| js::mentions_of(body, n) == 1).collect();
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::Const(name, value) = &mut stmt.kind
+                && falsy.contains(&*name)
+                && let Some((test, then, _)) = value.some_where_parts()
+            {
+                *value = Expr::bin(Op::And, test.tested(), then.clone());
+            }
+            if let StmtKind::Const(name, value) = &mut stmt.kind
+                && tested.contains(&*name)
+            {
+                *value = value.tested();
+            }
+        }
+    });
+}
+
+/// A child shown only where a test holds, `c ? <b /> : undefined`: `c &&
+/// <b />`, as JSX writes it (ADR 0235), of a boolean test, whose `false`
+/// renders nothing as `undefined` does; of another, its truth, `!!href &&
+/// <a />`, as `""` or `0` would render.
+fn shown_children(e: &mut Expr, booleans: &IndexSet<js::Path>) {
+    if let ExprKind::Jsx(jsx) = &mut e.kind {
+        for child in jsx.children.iter_mut() {
+            if let ExprKind::Cond(test, shown, none) = &child.kind
+                && matches!(none.kind, ExprKind::Undefined)
+            {
+                let test = match is_boolean(test, booleans) {
+                    true => (**test).clone(),
+                    false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, (**test).clone())),
+                };
+                *child = Expr {
+                    facts: js::Facts::NONE,
+                    span: child.span,
+                    kind: ExprKind::Binary(Op::And, Box::new(test), shown.clone()),
+                    held_as: Default::default(),
+                };
+            }
+        }
+    }
+}
+
+/// A closure of one call whose JS gives `undefined`, held then read in
+/// place: a handler a component's given, `() => { f(); }` too (ADR 0040),
+/// and any other the program wrote as its call's value, `|| f()`, as it
+/// wrote it (ADR 0883): `() => f()`.
+fn concise_arrows(e: &mut Expr, concise: &[(js::Span, rust_js_lower::jsx::OneCall)]) {
+    let of = |value: &Expr| {
+        concise
+            .iter()
+            .find(|(span, _)| *span == value.span)
+            .map(|&(_, written)| written)
+    };
+    if matches!(e.kind, ExprKind::Arrow(..)) && of(e) == Some(rust_js_lower::jsx::OneCall::Value) {
+        js::returning_its_call(e);
+    }
+    if let ExprKind::Jsx(jsx) = &mut e.kind {
+        for prop in &mut jsx.props {
+            if let js::Prop::Field(name, value) = prop
+                && js::is_handler_name(name)
+                && of(value).is_some()
+            {
+                js::returning_its_call(value);
+            }
+        }
+    }
+}
+
+/// `!` of what's read in place now, `!(t === "pre")` of `!_5`: as
+/// `Expr::unary` makes it, `t !== "pre"`.
+fn negations(e: &mut Expr) {
+    if let ExprKind::Unary(op, arg) = &e.kind {
+        let made = Expr::unary(*op, (**arg).clone());
+        // What its evaluation may do, `+m`'s of any value, kept (#462).
+        let facts = made.facts.and(e.facts.of_evaluation());
+        *e = Expr {
+            span: e.span,
+            facts,
+            ..made
+        };
+    }
+}
+
+/// A field of a `dyn` field's pair read in place now, `{ value: f.last,
+/// impl: f.impl }.impl`: as `Expr::member` makes it.
+fn pairs_fields(e: &mut Expr) {
+    if let ExprKind::Member(object, field) = &e.kind
+        && let ExprKind::Object(props, ..) = &object.kind
+        && js::is_read_pair(props)
+    {
+        *e = Expr {
+            span: e.span,
+            ..Expr::member((**object).clone(), field.clone())
+        };
+    }
+}
+
+/// For the source map: a `return` given the value it returns, at MIR's end
+/// of the body, which the map has nothing of, where that value was written;
+/// an `if`, where its test says, `if c` or its arm's pattern.
+fn source_spans(stmts: &mut Vec<Stmt>) {
+    for stmt in stmts.iter_mut() {
+        match &stmt.kind {
+            StmtKind::Return(Some(value)) if stmt.span.is_none() => stmt.span = value.span,
+            StmtKind::If(test, ..) if !test.span.is_none() => stmt.span = test.span,
+            _ => {}
+        }
+    }
+    // Where a tail `None`'s comments end (ADR 0862, amended), a statement printed
+    // there, a nullable function's `return null;`: the comments its, before
+    // it, not a block's of only comments after it (ADR 0753).
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        match (&stmts[i], &stmts[i + 1]) {
+            (comments, next)
+                if matches!(comments.kind, StmtKind::Comments)
+                    && !comments.span.is_none()
+                    && next.span.lo == comments.span.lo
+                    && !matches!(&next.kind, StmtKind::Return(None))
+                    && !matches!(&next.kind, StmtKind::Return(Some(v))
+                        if matches!(v.kind, ExprKind::Undefined | ExprKind::GivenUndefined)) =>
+            {
+                stmts.remove(i);
+            }
+            _ => i += 1,
+        }
+    }
+}
+
+/// Each list of statements in `stmts`, the nested ones first, not in its
+/// closures: for a pass that a list's statements, done, make apply.
+fn bottom_up(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
+    for stmt in stmts.iter_mut() {
+        match &mut stmt.kind {
+            StmtKind::If(_, a, b) => {
+                bottom_up(a, f);
+                if let Some(b) = b {
+                    bottom_up(b, f);
+                }
+            }
+            StmtKind::While { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::For { body, .. }
+            | StmtKind::Labeled(_, body) => bottom_up(body, f),
+            StmtKind::Switch { cases, default, .. } => {
+                js::case_lists_mut(cases, default).for_each(|body| bottom_up(body, f))
+            }
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                bottom_up(a, f);
+                bottom_up(b, f);
+            }
+            _ => {}
+        }
+    }
+    f(stmts);
+}
+
+/// `l: { if (t) { a; throw e; } b; }`, of an arm `b` MIR made the block's
+/// fall-through though it's written before `a`, which leaves the block,
+/// `if let Text(..) = k { b } else { a }`: `l: { if (!t) { b } else { a } }`,
+/// as written. `b` runs where `t` doesn't hold either way. Not of an arm of
+/// a `match` that's a `switch` (`switches`), whose cases are written as its
+/// arms are, whatever order MIR tests them in: its chain stays as MIR tests
+/// it, for the `switch` to read (ADR 0668).
+fn written_first(stmts: &mut [Stmt], switches: &[Switch]) {
+    for stmt in stmts {
+        let StmtKind::Labeled(label, body) = &mut stmt.kind else {
+            continue;
+        };
+        let [first, rest @ ..] = body.as_slice() else {
+            continue;
+        };
+        let StmtKind::If(test, then, None) = &first.kind else {
+            continue;
+        };
+        if switched(test, first.span, switches) {
+            continue;
+        }
+        let leaves = |s: &Stmt| match &s.kind {
+            StmtKind::Throw(_) | StmtKind::Return(_) => true,
+            StmtKind::Break(Some(l)) => l == label,
+            _ => false,
+        };
+        let earlier = matches!((first_written(rest), first_written(then)), (Some(b), Some(a)) if b < a);
+        if rest.is_empty() || !then.last().is_some_and(leaves) || !earlier {
+            continue;
+        }
+        let mut rest = std::mem::take(body);
+        let first = rest.remove(0);
+        let StmtKind::If(test, then, None) = first.kind else {
+            unreachable!("matched")
+        };
+        if rest
+            .last()
+            .is_some_and(|s| matches!(&s.kind, StmtKind::Break(Some(l)) if l == label))
+        {
+            rest.pop();
+        }
+        *body = vec![StmtKind::If(test.negated_test(), rest, Some(then)).at(first.span)];
+    }
+}
+
+/// The variables what's called may set: a closure's, and a getter's and
+/// setter's handle's, `{ get value() { return n; }, set value(v) { n = v; } }`.
+fn set_elsewhere(body: &[Stmt]) -> IndexSet<js::Name> {
+    let writes = js::Writes::of(body);
+    let mut set = writes.by_closures();
+    set.extend(writes.handled);
+    set
+}
+
+/// The variables something may change: each `let`'s, each assigned, and
+/// each a handle's made on.
+fn changing(body: &mut Vec<Stmt>) -> IndexSet<js::Name> {
+    let writes = js::Writes::of(body);
+    let mut changing = writes.replaced;
+    changing.extend(writes.handled);
+    js::each_block_mut(body, &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Let(name, _) = &stmt.kind {
+                changing.insert(name.clone());
+            }
+        }
+    });
+    changing
+}
+
+/// Of each `break` or `continue` the program wrote with comments before it,
+/// `i += 3; // Skip it.\n continue;` (`Hints::commented`'s `jumps`), the
+/// comments where it's written, after what's before it, `i += 3;`: there
+/// where tidy took the jump, the branch's end, as a block's that ends in
+/// comments (ADR 0753); before the jump where it's kept, which they're
+/// printed before anyway (rd109). Of an `if let`'s, `tail_if_comments`'
+/// `if` to its value's end, the `if` its test is in, which MIR tests
+/// where its pattern is, `Some(href)` (rd288).
+fn commented_jumps(body: &mut Vec<Stmt>, jumps: &[(js::Span, js::Span)]) {
+    for &(done, jump) in jumps {
+        let mut placed = false;
+        js::statement_lists(body, &mut |list| {
+            if let Some(at) = list.iter().position(|s| s.span == done) {
+                list.insert(at + 1, StmtKind::Comments.at(jump));
+                placed = true;
+            }
+        });
+        if placed {
+            continue;
+        }
+        let within = |s: &Stmt| {
+            matches!(s.kind, StmtKind::If(..)) && !s.span.is_none() && done.lo <= s.span.lo && s.span.hi <= done.hi
+        };
+        js::statement_lists(body, &mut |list| {
+            if !placed && let Some(at) = list.iter().rposition(within) {
+                list.insert(at + 1, StmtKind::Comments.at(jump));
+                placed = true;
+            }
+        });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rust_js_program::collections::IndexSet;
+
+    use super::{
+        MoveFacts, Plain, decided_tests, inlined, is_temporary, paired_temporaries, settle_jumps, shared_tails,
+        spread_spreads, turned, user_name,
+    };
+    use rust_js_lower::temporary_names::{spelled_as_temporary, temporary};
+    use rust_js_program::js::{self, Expr, ExprKind, Op, Prop, Stmt, StmtKind, UnaryOp};
+
+    fn call(f: &str) -> js::Stmt {
+        StmtKind::Expr(Expr::call(Expr::var(f), Vec::new())).at(js::Span::NONE)
+    }
+
+    /// A variable's name as lowering makes it, `_4` a temporary's: one
+    /// variable of each word, its declaration's and its reads', as a
+    /// body's are (ADR 1150).
+    fn lowered(word: &str) -> js::Name {
+        thread_local! {
+            static MADE: std::cell::RefCell<rust_js_program::collections::IndexMap<String, js::Name>> = Default::default();
+        }
+        MADE.with_borrow_mut(|made| {
+            (made.entry(word.to_string()))
+                .or_insert_with(|| rust_js_lower::temporary_names::Base::Named(word).name(word.to_string()))
+                .clone()
+        })
+    }
+
+    fn assign(x: &str, value: Expr) -> Stmt {
+        StmtKind::Assign(Expr::var(lowered(x)), value).at(js::Span::NONE)
+    }
+
+    /// A take of the body's `let`, returned, which nothing reads after the
+    /// `return`: the variable returned (rd598); not where a closure reads
+    /// it, a `finally` does, a handle is made on it, an append may be to an
+    /// object, or the variable isn't the body's own.
+    #[test]
+    fn unread_resets_returned() {
+        use super::values::unread_resets;
+        let s = |kind: StmtKind| kind.at(js::Span::NONE);
+        let take = |reset: Expr| {
+            vec![
+                s(StmtKind::Const(lowered("old"), Expr::var(lowered("result")))),
+                assign("result", reset),
+                s(StmtKind::Return(Some(Expr::var(lowered("old"))))),
+            ]
+        };
+        let declared = s(StmtKind::Let(lowered("result"), Some(Expr::str(""))));
+        let closure = |body: Vec<Stmt>| s(StmtKind::Const("push".into(), Expr::arrow(Vec::new(), body)));
+        let append = assign(
+            "result",
+            Expr::bin(Op::Add, Expr::var(lowered("result")), Expr::var("chunk")),
+        );
+        let returned = |mut body: Vec<Stmt>| {
+            unread_resets(&mut body);
+            matches!(body.last().map(|stmt| &stmt.kind),
+                Some(StmtKind::Return(Some(e))) if matches!(&e.kind, ExprKind::Var(v) if v.is("result")))
+        };
+        // Accepted: a closure that only appends, or only writes.
+        assert!(returned(
+            [
+                vec![declared.clone(), closure(vec![append.clone()])],
+                take(Expr::str(""))
+            ]
+            .concat()
+        ));
+        let written = assign("result", Expr::var("chunk"));
+        // A reset of `undefined`, JS's.
+        let reset = || take(Expr::js_undefined());
+        assert!(returned(
+            [vec![declared.clone(), closure(vec![written])], reset()].concat()
+        ));
+        // Refused: a closure that reads it.
+        let read = s(StmtKind::Return(Some(Expr::var(lowered("result")))));
+        assert!(!returned(
+            [vec![declared.clone(), closure(vec![read])], take(Expr::str(""))].concat()
+        ));
+        // Refused: an append to what a reset of `undefined` leaves, which
+        // may be an object, its `toString` called.
+        assert!(!returned(
+            [vec![declared.clone(), closure(vec![append])], reset()].concat()
+        ));
+        // Refused: a `finally` that reads it after the `return`.
+        let shown = s(StmtKind::Expr(Expr::call(
+            Expr::var("show"),
+            vec![Expr::var(lowered("result"))],
+        )));
+        let tried = s(StmtKind::Try(take(Expr::str("")), vec![shown]));
+        assert!(!matches!(
+            {
+                let mut body = vec![declared.clone(), tried];
+                unread_resets(&mut body);
+                body
+            }
+            .last()
+            .map(|stmt| &stmt.kind),
+            Some(StmtKind::Try(body, _)) if body.len() == 1
+        ));
+        // Refused: a handle made on it.
+        let handled = s(StmtKind::Expr(Expr::call(
+            Expr::var("keep"),
+            vec![Expr::handle(Expr::var(lowered("result")))],
+        )));
+        assert!(!returned(
+            [vec![declared.clone(), handled], take(Expr::str(""))].concat()
+        ));
+        // Refused: a variable the body doesn't declare, or declares again.
+        assert!(!returned(take(Expr::str(""))));
+        let again = s(StmtKind::Let(lowered("result"), None));
+        assert!(!returned(
+            [vec![declared, closure(vec![again])], take(Expr::str(""))].concat()
+        ));
+    }
+
+    /// A temporary a drop guard's `try` sets, read as a `const` after it
+    /// (#444): not where it's set again, nor read in the `try` first.
+    #[test]
+    fn set_once_in_a_try() {
+        use super::bindings::set_once_in_try;
+        let t8 = lowered("_8");
+        let tried = |body: Vec<Stmt>| {
+            let rethrow = StmtKind::Throw(Expr::var("error")).at(js::Span::NONE);
+            StmtKind::TryCatch(body, Some("error".into()), vec![rethrow]).at(js::Span::NONE)
+        };
+        let read = StmtKind::Expr(Expr::call(Expr::var("g"), vec![Expr::var(&t8)])).at(js::Span::NONE);
+        let set = tried(vec![assign("_8", Expr::call(Expr::var("f"), Vec::new()))]);
+        assert!(set_once_in_try(&[set.clone(), read.clone()], &t8));
+        assert!(!set_once_in_try(
+            &[set.clone(), assign("_8", Expr::num(1)), read.clone()],
+            &t8
+        ));
+        assert!(!set_once_in_try(
+            &[tried(vec![read.clone(), assign("_8", Expr::num(1))])],
+            &t8
+        ));
+        assert!(!set_once_in_try(&[read, set], &t8));
+    }
+
+    /// Two arms that assign one variable are one assignment of a
+    /// conditional; each reason they aren't, beside the case it refuses
+    /// (`branches::one_assignment`).
+    #[test]
+    fn one_assignment_of_two_arms() {
+        use super::branches::one_assignment;
+        let none = js::Span::NONE;
+        let one = |then: Vec<Stmt>, otherwise: Vec<Stmt>, test: &Expr| {
+            one_assignment(test, (&then, &otherwise), none, (&lowered("_0"), &[]), &[]).map(|one| one.target)
+        };
+        let c = Expr::var("c");
+        // Accepted: one variable, each arm a value.
+        assert_eq!(
+            one(vec![assign("x", Expr::num(1))], vec![assign("x", Expr::num(2))], &c),
+            Some(lowered("x"))
+        );
+        // A test that does something is evaluated once either way.
+        let called = Expr::call(Expr::var("ready"), Vec::new());
+        assert!(
+            one(
+                vec![assign("x", Expr::num(1))],
+                vec![assign("x", Expr::num(2))],
+                &called
+            )
+            .is_some()
+        );
+        // Refused: two variables.
+        assert_eq!(
+            one(vec![assign("x", Expr::num(1))], vec![assign("y", Expr::num(2))], &c),
+            None
+        );
+        // Refused: an arm that does more than assign.
+        assert_eq!(
+            one(
+                vec![call("f"), assign("x", Expr::num(1))],
+                vec![assign("x", Expr::num(2))],
+                &c
+            ),
+            None
+        );
+        // Refused: each adding to it, as written, `x = x + 1`.
+        let add = |n| Expr::bin(Op::Add, Expr::var(lowered("x")), Expr::num(n));
+        assert_eq!(one(vec![assign("x", add(1))], vec![assign("x", add(2))], &c), None);
+        // Refused: an arm that's a conditional, of more branches, but of a temporary.
+        let cond = Expr::cond(Expr::var("d"), Expr::num(1), Expr::num(2));
+        assert_eq!(
+            one(vec![assign("x", cond.clone())], vec![assign("x", Expr::num(3))], &c),
+            None
+        );
+        assert!(one(vec![assign("_4", cond)], vec![assign("_4", Expr::num(3))], &c).is_some());
+        // Refused: the function's result where an arm gives nothing.
+        assert_eq!(
+            one(
+                vec![assign("_0", Expr::num(1))],
+                vec![assign("_0", Expr::js_undefined())],
+                &c
+            ),
+            None
+        );
+        // Refused: a `switch`'s arms, where the test is one's pattern (ADR 0629).
+        let at = js::Span { lo: 10, hi: 20 };
+        let switches = [crate::hints::Switch {
+            span: js::Span { lo: 0, hi: 100 },
+            arms: vec![crate::hints::SwitchArm {
+                span: at,
+                pattern: at,
+                guard: None,
+                constants: Vec::new(),
+                falls: false,
+            }],
+            valued: false,
+            none: None,
+        }];
+        let then = [assign("x", Expr::num(1))];
+        let otherwise = [assign("x", Expr::num(2))];
+        assert!(one_assignment(&c, (&then, &otherwise), at, (&lowered("_0"), &switches), &[]).is_none());
+        assert!(one_assignment(&c, (&then, &otherwise), none, (&lowered("_0"), &switches), &[]).is_some());
+    }
+
+    /// A block MIR made of a value whose end gives a variable, `bb7: { if
+    /// (a) { n = 1; break bb7; } n = v; }`, gives it in each branch that
+    /// fails to it, the block gone (#567); not where a `break` of the block
+    /// doesn't end a branch the block ends with, `if (b) { n = 2; break
+    /// bb7; } s;` before the last `if`, which would leave a `break` of no
+    /// block.
+    #[test]
+    fn a_default_is_copied_only_where_each_break_ends_a_branch() {
+        use super::decisions::default_values;
+        let none = js::Span::NONE;
+        let set = |v: Expr| StmtKind::Assign(Expr::var("n"), v).at(none);
+        let leave = || StmtKind::Break(Some(rust_js_program::js::Name::block_label("bb7".to_string()))).at(none);
+        let branch =
+            |test: &str, v: f64| StmtKind::If(Expr::var(test), vec![set(Expr::num(v)), leave()], None).at(none);
+        let block = |mut body: Vec<Stmt>| {
+            body.push(set(Expr::var("v")));
+            vec![StmtKind::Labeled(rust_js_program::js::Name::block_label("bb7".to_string()), body).at(none)]
+        };
+        let mut copied = block(vec![branch("a", 1.0)]);
+        default_values(&mut copied);
+        assert!(
+            matches!(copied.as_slice(), [Stmt { kind: StmtKind::If(_, then, Some(otherwise)), .. }]
+                if then.len() == 1 && otherwise.len() == 1)
+        );
+        let mut kept = block(vec![branch("b", 2.0), call("s"), branch("a", 1.0)]);
+        default_values(&mut kept);
+        assert!(matches!(
+            kept.as_slice(),
+            [Stmt {
+                kind: StmtKind::Labeled(..),
+                ..
+            }]
+        ));
+    }
+
+    /// An `Option<bool>`'s `if (x != null) { switch (x) { case false: ..
+    /// case true: .. } } else { none }` is the `switch`, `none` its
+    /// `default`, of a `match` whose last arm takes `None` (#545); not
+    /// where `none` is a loop's `break;`, which would leave the `switch`,
+    /// nor of another `match`.
+    #[test]
+    fn a_none_is_a_default_but_of_a_break() {
+        use super::switches::nones_defaulted;
+        use crate::hints::Switch;
+        let at = js::Span { lo: 10, hi: 20 };
+        let case = |value, f| js::Case {
+            values: vec![Expr::bool(value)],
+            body: vec![call(f)],
+            falls: false,
+        };
+        let switch = StmtKind::Switch {
+            discriminant: Expr::var("x"),
+            cases: vec![case(false, "a"), case(true, "b")],
+            default: None,
+        }
+        .at(at);
+        let hint = |none| Switch {
+            span: at,
+            arms: Vec::new(),
+            valued: false,
+            none,
+        };
+        let defaulted = |none: Vec<Stmt>, hint: Switch| {
+            let test = Expr::bin(Op::LooseNe, Expr::var("x"), Expr::null());
+            let mut stmt = StmtKind::If(test, vec![switch.clone()], Some(none)).at(js::Span::NONE);
+            nones_defaulted(&mut stmt, &[hint]);
+            matches!(&stmt.kind, StmtKind::Switch { default: Some(d), .. } if d.len() == 1)
+        };
+        assert!(defaulted(vec![call("c")], hint(Some(at))));
+        assert!(!defaulted(
+            vec![StmtKind::Break(None).at(js::Span::NONE)],
+            hint(Some(at))
+        ));
+        assert!(!defaulted(vec![call("c")], hint(None)));
+    }
+
+    /// `if (!c) { return 1; } a(); return 2;` of `if c { a(); return 2; }
+    /// 1`, its rest written in the `then`, is the `if` written; not where
+    /// the rest goes on past the list, which `exit` would then run after,
+    /// nor where it isn't the `then`'s (`jumps::tails::written_thens`).
+    #[test]
+    fn written_thens_turn_only_a_rest_that_leaves() {
+        use super::jumps::written_thens;
+        let at = |lo, hi| js::Span { lo, hi };
+        let spanned = |mut s: Stmt, lo| {
+            s.span = at(lo, lo + 1);
+            s
+        };
+        let guard = || {
+            StmtKind::If(
+                Expr::unary(UnaryOp::Not, Expr::var("c")),
+                vec![StmtKind::Return(Some(Expr::num(1))).at(at(90, 91))],
+                None,
+            )
+            .at(at(1, 2))
+        };
+        let thens = [(at(0, 3), at(4, 50))];
+        let rest = |leaves: bool| {
+            let mut rest = vec![spanned(call("a"), 10)];
+            if leaves {
+                rest.push(StmtKind::Return(Some(Expr::num(2))).at(at(20, 21)));
+            }
+            rest
+        };
+        let turned = |stmts: &[Stmt]| matches!(&stmts[0].kind, StmtKind::If(test, then, None) if matches!(test.kind, ExprKind::Var(_)) && then.len() == 2);
+        let mut leaves = [vec![guard()], rest(true)].concat();
+        written_thens(&mut leaves, &thens);
+        assert!(turned(&leaves) && leaves.len() == 2);
+        let mut goes_on = [vec![guard()], rest(false)].concat();
+        written_thens(&mut goes_on, &thens);
+        assert!(matches!(&goes_on[0].kind, StmtKind::If(test, ..) if matches!(test.kind, ExprKind::Unary(..))));
+        let mut elsewhere = [vec![guard()], rest(true)].concat();
+        written_thens(&mut elsewhere, &[(at(0, 3), at(60, 80))]);
+        assert!(matches!(&elsewhere[0].kind, StmtKind::If(test, ..) if matches!(test.kind, ExprKind::Unary(..))));
+    }
+
+    /// A loop's drops at each way out are one `finally` before the stages
+    /// that read what's in it, `jumps`, `values` and `loops`: "drop scopes"
+    /// right after "flags" (rd200, ADR 0659, amended).
+    #[test]
+    fn drop_scopes_come_before_what_reads_them() {
+        let names: Vec<&str> = super::stages::STAGES.iter().map(|stage| stage.name).collect();
+        assert_eq!(names[..3], ["flags", "drop scopes", "jumps"]);
+        let at = |name: &str| names.iter().position(|n| *n == name).expect("a stage");
+        assert!(at("drop scopes") < at("values") && at("drop scopes") < at("loops"));
+    }
+
+    /// What finishes a body, after the stages that tidy it, in the order it
+    /// ran when it was a function of its own, `named`: the last passes
+    /// `--tidy-until` may stop after, and the contracts checked after them
+    /// (ADR 0659, amended).
+    #[test]
+    fn finish_is_the_last_stage_in_its_order() {
+        let names = super::pass_names();
+        let after: Vec<&str> = names
+            .iter()
+            .skip_while(|n| !n.starts_with("scopes/"))
+            .map(|n| &**n)
+            .collect();
+        let stages: Vec<&str> = after.iter().map(|n| &n[..n.rfind('/').expect("stage/pass")]).collect();
+        let mut stages_in_order = stages.clone();
+        stages_in_order.dedup();
+        // The body's scopes made, the stages that read temporaries in place
+        // again, then its names given.
+        assert_eq!(
+            stages_in_order,
+            ["scopes", "again/names", "again/in place", "again/chains", "finish"]
+        );
+        assert_eq!(
+            after
+                .iter()
+                .filter_map(|n| n.strip_prefix("finish/"))
+                .collect::<Vec<_>>(),
+            [
+                "closures out of tries",
+                "temporaries named",
+                "flags named",
+                "kept trees",
+                "condition lets",
+                "shadows",
+                "given last",
+                "filled lazily",
+                "appends",
+                "bound captures",
+                "written jumps",
+                "written ors",
+                "written tests",
+                "commented jumps",
+                "jumps made next",
+                "named texts",
+                "stepped slices",
+                "breaks take their tail",
+                "breaks lead on",
+                "unlabeled",
+                "written loop labels",
+                "borrow checks first",
+                "guarded cleanups"
+            ]
+        );
+        assert!(names.last().is_some_and(|n| n == "finish/guarded cleanups"));
+    }
+
+    fn present(x: &str) -> Expr {
+        Expr::bin(Op::LooseNe, Expr::var(x), Expr::null())
+    }
+
+    fn returns(x: &str) -> Stmt {
+        StmtKind::Return(Some(Expr::var(x))).at(js::Span::NONE)
+    }
+
+    // `if (option != null) { return option; } .. if (option != null) { s }`,
+    // a std body's drop of what its early return gave away: the second test
+    // fails where it's reached, so it goes. Within `if (p != null) { .. }`,
+    // `p != null` holds, so an `if` of it there is its `then`, and one of
+    // `p.item != null` within `if (p.item == null)` is gone.
+
+    /// Closures nested 64 deep, the innermost setting `x`: each closure's
+    /// body asked once, not once for each closure around it.
+    #[test]
+    fn rebinds_walks_nested_closures_once() {
+        let mut body = vec![StmtKind::Assign(Expr::var("x"), Expr::int(1)).at(js::Span::NONE)];
+        for _ in 0..64 {
+            body = vec![StmtKind::Expr(Expr::arrow(Vec::new(), body)).at(js::Span::NONE)];
+        }
+        assert!(super::bindings::rebinds(&body, &js::Name::from("x")));
+        assert!(!super::bindings::rebinds(&body, &js::Name::from("y")));
+    }
+    #[test]
+    fn a_test_an_earlier_one_decided_goes() {
+        let mut after = vec![
+            StmtKind::Const("option".into(), Expr::call(Expr::var("f"), Vec::new())).at(js::Span::NONE),
+            StmtKind::If(present("option"), vec![returns("option")], None).at(js::Span::NONE),
+            StmtKind::Const("x".into(), Expr::member(Expr::var("v"), "item")).at(js::Span::NONE),
+            StmtKind::If(present("option"), vec![call("drop")], None).at(js::Span::NONE),
+            returns("x"),
+        ];
+        decided_tests(&mut after, &IndexSet::default(), &[]);
+        assert!(matches!(
+            after.as_slice(),
+            [
+                Stmt {
+                    kind: StmtKind::Const(..),
+                    ..
+                },
+                Stmt {
+                    kind: StmtKind::If(..),
+                    ..
+                },
+                Stmt {
+                    kind: StmtKind::Const(..),
+                    ..
+                },
+                Stmt {
+                    kind: StmtKind::Return(_),
+                    ..
+                },
+            ]
+        ));
+        let some_value = |x: &str| Expr::member(Expr::var(x), "item");
+        let absent = |e: Expr| Expr::bin(Op::LooseEq, e, Expr::null());
+        let innermost = StmtKind::If(
+            present("p"),
+            vec![
+                StmtKind::If(
+                    Expr::bin(Op::LooseNe, some_value("p"), Expr::null()),
+                    vec![call("g")],
+                    None,
+                )
+                .at(js::Span::NONE),
+            ],
+            None,
+        );
+        let mut within = vec![
+            StmtKind::If(
+                present("p"),
+                vec![
+                    StmtKind::If(
+                        absent(some_value("p")),
+                        vec![
+                            StmtKind::Assign(Expr::var("r"), Expr::int(0)).at(js::Span::NONE),
+                            innermost.at(js::Span::NONE),
+                        ],
+                        None,
+                    )
+                    .at(js::Span::NONE),
+                ],
+                None,
+            )
+            .at(js::Span::NONE),
+        ];
+        let changing: IndexSet<js::Name> = IndexSet::from_iter(["r".into()]);
+        js::statement_lists(&mut within, &mut |stmts| decided_tests(stmts, &changing, &[]));
+        let [
+            Stmt {
+                kind: StmtKind::If(_, then, None),
+                ..
+            },
+        ] = within.as_slice()
+        else {
+            panic!("the outer if")
+        };
+        let [
+            Stmt {
+                kind: StmtKind::If(_, then, None),
+                ..
+            },
+        ] = then.as_slice()
+        else {
+            panic!("the inner if")
+        };
+        assert!(matches!(
+            then.as_slice(),
+            [Stmt {
+                kind: StmtKind::Assign(..),
+                ..
+            }]
+        ));
+    }
+
+    // `let _5; let _6; _5 = a != null; _6 = !_5; if (!_6) { f(); }`, twice,
+    // of a `bool` optimized MIR made and tested once each time: each is read
+    // where it's made, `if (!!(a != null)) { f(); }`, as a `const` read once is.
+    #[test]
+    fn a_temporary_assigned_then_read_once_each_time_is_read_where_its_made() {
+        let (t5, t6) = (lowered(&temporary(5)), lowered(&temporary(6)));
+        let pair = |x: &str, f: &str| {
+            vec![
+                StmtKind::Assign(Expr::var(&t5), present(x)).at(js::Span::NONE),
+                StmtKind::Assign(Expr::var(&t6), Expr::unary(UnaryOp::Not, Expr::var(&t5))).at(js::Span::NONE),
+                StmtKind::If(Expr::unary(UnaryOp::Not, Expr::var(&t6)), vec![call(f)], None).at(js::Span::NONE),
+            ]
+        };
+        let mut body = vec![
+            StmtKind::Let(t5.clone(), None).at(js::Span::NONE),
+            StmtKind::Let(t6.clone(), None).at(js::Span::NONE),
+        ];
+        body.extend(pair("a", "f"));
+        body.extend(pair("b", "g"));
+        let paired = paired_temporaries(&body);
+        assert_eq!(paired, IndexSet::from_iter([t5.clone(), t6.clone()]));
+        let changing: IndexSet<js::Name> = IndexSet::from_iter([t5.clone(), t6.clone()]);
+        let no_names: IndexSet<js::Name> = IndexSet::default();
+        let no_paths: IndexSet<js::Path> = IndexSet::default();
+        let no_paths = Plain::new(&no_paths, None, IndexSet::default());
+        let facts = MoveFacts {
+            changing: &changing,
+            set: &no_names,
+            plain: &no_paths,
+            captured: &no_names,
+            fixed: &no_names,
+            paired: &paired,
+        };
+        inlined(&mut body, &facts);
+        let [
+            _,
+            _,
+            Stmt {
+                kind: StmtKind::If(test, ..),
+                ..
+            },
+            Stmt {
+                kind: StmtKind::If(..), ..
+            },
+        ] = body.as_slice()
+        else {
+            panic!("two tests, {}", body.len())
+        };
+        assert!(matches!(&test.kind, ExprKind::Unary(UnaryOp::Not, inner)
+            if matches!(&inner.kind, ExprKind::Unary(UnaryOp::Not, e) if matches!(&e.kind, ExprKind::Binary(Op::LooseNe, ..)))));
+        assert_eq!(js::mentions_of(&body, &t5) + js::mentions_of(&body, &t6), 0);
+    }
+
+    // `if (c) { a(); x = v; } else { b(); x = v; }`, one assignment MIR
+    // wrote into both branches: `if (c) { a(); } else { b(); } x = v;`; one
+    // that leaves, `return v;`, stays in each, the branches' shape; and `if
+    // (c) { a(); return v; } return v;` is `if (c) { a(); } return v;`.
+    #[test]
+    fn a_tail_both_branches_end_with_is_written_once() {
+        let branches = |then: Vec<Stmt>, otherwise: Option<Vec<Stmt>>| {
+            StmtKind::If(Expr::var("c"), then, otherwise).at(js::Span::NONE)
+        };
+        let assigns = || StmtKind::Assign(Expr::var("x"), Expr::var("v")).at(js::Span::NONE);
+        let mut either = vec![branches(vec![call("a"), assigns()], Some(vec![call("b"), assigns()]))];
+        shared_tails(&mut either, &[], &[], &[], &[]);
+        let [
+            Stmt {
+                kind: StmtKind::If(_, then, Some(otherwise)),
+                ..
+            },
+            Stmt {
+                kind: StmtKind::Assign(..),
+                ..
+            },
+        ] = either.as_slice()
+        else {
+            panic!("the branches, then the assignment")
+        };
+        assert_eq!((then.len(), otherwise.len()), (1, 1));
+        let mut leaving = vec![branches(
+            vec![call("a"), returns("v")],
+            Some(vec![call("b"), returns("v")]),
+        )];
+        shared_tails(&mut leaving, &[], &[], &[], &[]);
+        assert!(
+            matches!(leaving.as_slice(), [Stmt { kind: StmtKind::If(_, then, Some(otherwise)), .. }]
+            if then.len() == 2 && otherwise.len() == 2)
+        );
+        let mut fallen = vec![branches(vec![call("a"), returns("v")], None), returns("v")];
+        shared_tails(&mut fallen, &[], &[], &[], &[]);
+        let [
+            Stmt {
+                kind: StmtKind::If(_, then, None),
+                ..
+            },
+            Stmt {
+                kind: StmtKind::Return(_),
+                ..
+            },
+        ] = fallen.as_slice()
+        else {
+            panic!("the branch, then the return")
+        };
+        assert_eq!(then.len(), 1);
+    }
+
+    // A labeled block MIR made, `l: { a(); break l; }`, its `break` going
+    // where the block goes on anyway: `a();`.
+    #[test]
+    fn settled_jumps_leave_no_block_to_break() {
+        let mut body = vec![
+            StmtKind::Labeled(
+                "l".into(),
+                vec![call("a"), StmtKind::Break(Some("l".into())).at(js::Span::NONE)],
+            )
+            .at(js::Span::NONE),
+        ];
+        settle_jumps(&mut body);
+        assert!(matches!(
+            body.as_slice(),
+            [js::Stmt {
+                kind: StmtKind::Expr(_),
+                ..
+            }]
+        ));
+    }
+
+    // `!(n < 5)` of an integer is `n >= 5`; of a float, which may be `NaN`,
+    // it stays.
+    #[test]
+    fn a_test_of_an_integer_is_turned_not_a_floats() {
+        let not_less = |x: &js::Name| Expr::unary(UnaryOp::Not, Expr::bin(Op::Lt, Expr::var(x), Expr::int(5)));
+        let (n, x) = (lowered("n"), lowered("x"));
+        let numbers: IndexSet<js::Name> = IndexSet::from_iter([n.clone()]);
+        let mut of_int = not_less(&n);
+        turned(&mut of_int, &numbers);
+        assert!(matches!(of_int.kind, ExprKind::Binary(Op::Ge, ..)));
+        let mut of_float = not_less(&x);
+        turned(&mut of_float, &numbers);
+        assert!(matches!(of_float.kind, ExprKind::Unary(UnaryOp::Not, _)));
+    }
+
+    // A temporary's name is one tidy knows by its form; a program's of
+    // that shape is spelled apart, so its JS reads as no temporary's (S4).
+    #[test]
+    fn a_temporary_is_known_by_its_name_and_a_users_never_is() {
+        assert!(is_temporary(&js::Name::temporary(temporary(5))));
+        assert!(is_temporary(&js::Name::temporary(rust_js_program::names::given_apart(
+            &temporary(5),
+            1
+        ))));
+        assert!(!is_temporary(&js::Name::from(user_name("_5"))));
+        assert!(!spelled_as_temporary(&user_name("_5")));
+        assert_eq!(user_name("total"), "total");
+    }
+
+    /// An element captured twice spills its props twice, `{...{ ...{ ...post } }}`,
+    /// as react.dev's home page gives each BlogCard a post: `{...post}`.
+    #[test]
+    fn a_copy_of_a_copy_spreads_what_it_copies() {
+        let copy = |of: Expr| Expr::object(vec![Prop::Spread(of)]);
+        let mut card = Expr::jsx(js::Jsx {
+            tag: js::JsxTag::Component(Expr::var("BlogCard")),
+            props: vec![Prop::Spread(copy(copy(Expr::var("post"))))],
+            children: Vec::new(),
+        });
+        spread_spreads(&mut card);
+        let ExprKind::Jsx(jsx) = &card.kind else {
+            unreachable!("an element")
+        };
+        assert!(matches!(jsx.props.as_slice(), [Prop::Spread(Expr { kind: ExprKind::Var(v), .. })] if v.is("post")));
+    }
+
+    /// What an `if` always runs is put in its place (`jumps::never_taken`):
+    /// of `if (false)`, its `else`; of an `if` of nothing either way, its
+    /// test where the test does anything, else nothing; and with inner
+    /// lists first, an `if` that what's taken inside it empties goes too.
+    #[test]
+    fn what_an_if_always_runs() {
+        use super::jumps::never_taken;
+        let none = js::Span::NONE;
+        let if_ = |test: Expr, then: Vec<Stmt>, other: Option<Vec<Stmt>>| StmtKind::If(test, then, other).at(none);
+        let mut body = vec![if_(Expr::bool(false), vec![call("a")], Some(vec![call("b")]))];
+        never_taken(&mut body);
+        assert!(body == vec![call("b")]);
+        let mut body = vec![if_(Expr::var("live"), vec![], None), call("c")];
+        never_taken(&mut body);
+        assert!(body == vec![call("c")]);
+        let ready = Expr::call(Expr::var("ready"), Vec::new());
+        let mut body = vec![if_(ready.clone(), vec![], Some(vec![]))];
+        never_taken(&mut body);
+        assert!(body == vec![StmtKind::Expr(ready).at(none)]);
+        let mut body = vec![if_(
+            Expr::bool(false),
+            vec![call("d")],
+            Some(vec![if_(Expr::var("live"), vec![], None)]),
+        )];
+        never_taken(&mut body);
+        assert!(body.is_empty());
+        let mut body = vec![if_(
+            Expr::var("live"),
+            vec![if_(Expr::bool(false), vec![call("d")], None)],
+            None,
+        )];
+        super::bottom_up(&mut body, &mut never_taken);
+        assert!(body.is_empty());
+    }
+}

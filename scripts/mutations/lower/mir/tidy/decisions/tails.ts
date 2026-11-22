@@ -1,11 +1,11 @@
-// Mutations of src/lower/mir/tidy/decisions/tails.rs (#523, ADR 0364).
+// Mutations of crates/rust-js-mir/src/tidy/decisions/tails.rs (#523, ADR 0364).
 import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "arm-trees-unchained",
     breaks: "an arm's own `match` whose arms give the outer's value, `value = ..; break bb195;`, isn't chained there, so the interpreter's `eval` keeps `bb195:` (#523, C1)",
-    file: "src/lower/mir/tidy/decisions/tails.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/tails.rs",
     find: "    tails_in(label, list, told, true)\n",
     replace: "    None\n",
     tests: ["test/corpus.test.ts", "-t", "^(interpreter).rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "arm-trees-unkept",
     breaks: "an arm's own `match` is chained only where it reads no more tests than its tree, so the interpreter's keeps `bb195:` (#523)",
-    file: "src/lower/mir/tidy/decisions/tails.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/tails.rs",
     find: "            && let Some((chain, _)) = chain((label, list[k].span), &list[k..], &[], told, (n == 0, &given))\n",
     replace: "            && let Some((chain, _)) = chain((label, list[k].span), &list[k..], &[], told, (false, &given))\n",
     tests: ["test/corpus.test.ts", "-t", "^(interpreter).rs$"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "arm-trees-from-the-first-leaving",
     breaks: "an arm's own `match` is chained only from the first statement that leaves the block, `if (e[0] === 0 && e[1] === 0) { tmp = 6; break bb39; }`, not past it where the inner tree is, so `inner_after_an_arm` keeps its labeled block (#771)",
-    file: "src/lower/mir/tidy/decisions/tails.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/tails.rs",
     find: "    for (n, k) in leaving.enumerate() {\n",
     replace: "    for (n, k) in leaving.enumerate().take(1) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
   {
     name: "arm-trees-past-the-first-read-again",
     breaks: "an arm's own tree past the first statement that leaves the block is chained though it reads its tests again, so std's `Skip::next_back` is `if (tmp === value && value > 0) { .. } if (tmp === value && value <= 0) { return; }`, `tmp === value` read three times, not the nesting the user decided, `if (tmp === value) { if (value > 0) { .. } return; }` (#771)",
-    file: "src/lower/mir/tidy/decisions/tails.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/tails.rs",
     find: "            && let Some((chain, _)) = chain((label, list[k].span), &list[k..], &[], told, (n == 0, &given))\n",
     replace: "            && let Some((chain, _)) = chain((label, list[k].span), &list[k..], &[], told, (true, &given))\n",
     tests: ["test/std-package.test.ts"],
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
   {
     name: "leaving-ifs-unnested",
     breaks: "a block no chain is made of keeps its label where each `break` of it ends an `if` in a list it ends with, so std's `Skip::next_back` keeps `bb6:`, not the nesting the user decided, `if (tmp === value) { if (value > 0) { .. } return; }` (#771)",
-    file: "src/lower/mir/tidy/decisions/tails.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/tails.rs",
     find: "    (!names_break(&list, label)).then_some(list)\n}\n",
     replace: "    (!names_break(&list, label)).then_some(list).filter(|_| false)\n}\n",
     tests: ["test/std-package.test.ts"],
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   {
     name: "leaving-ifs-of-a-branch-unnested",
     breaks: "only an `if` that only leaves the block nests what follows it, so `value_between_returns`' `(3, x) => x * 2 + 2` between arms that return keeps its labeled block, not `if (op === 3) { .. } else { .. }` (#771)",
-    file: "src/lower/mir/tidy/decisions/tails.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/tails.rs",
     find: "                (false, false) => StmtKind::If(test, then, Some(rest)),\n",
     replace: "                (false, false) => return,\n",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
   {
     name: "leaving-if-else-dropped",
     breaks: "the `else` of an `if` that leaves the block is dropped where what follows is nested, so `value_between_returns`' arms that return past `(3, x)`'s are gone, and it gives `Ok` where native gives `Err` (#771)",
-    file: "src/lower/mir/tidy/decisions/tails.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/tails.rs",
     find: "            let mut rest = [otherwise.unwrap_or_default(), rest].concat();\n",
     replace: "            let mut rest = rest;\n",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
   {
     name: "tails-given-never",
     breaks: "a guard's binding the `let` before an arm's own tree gives, `let x = a;`, isn't read as its value there, so `given_twice` reads `x > 3 || g(c, b, 1) || a > 3 || ..`, the binding by two names (#771)",
-    file: "src/lower/mir/tidy/decisions/tails.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/tails.rs",
     find: "        let given = given_before(&list[..k], &list[k..], &[]);\n",
     replace: "        let given = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
   {
     name: "tails-given-let-kept",
     breaks: "a `let` an arm's own chain read as its value stays though nothing reads it, `let x = a;` before `given_twice`'s `if (a > 3 || ..)` (#771)",
-    file: "src/lower/mir/tidy/decisions/tails.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/tails.rs",
     find: "                    if js::mentions_of(&others, name) == 0 {\n",
     replace: "                    if js::mentions_of(&others, name) == usize::MAX {\n",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],

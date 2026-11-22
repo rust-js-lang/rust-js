@@ -1,4 +1,4 @@
-// Mutations of src/lower/pipeline/copies.rs (ADR 0093).
+// Mutations of src/pipeline/copies.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "js-given-copy-kept",
     breaks:
       "a copy made alike its function is kept, so `echo` is two functions, `echoBoxed` beside it",
-    file: "src/lower/pipeline/copies.rs",
+    file: "src/pipeline/copies.rs",
     find: "            if let Some((to, _)) = found {",
     replace: "            if let Some((to, _)) = found.filter(|_| false) {",
     tests: ["test/corpus.test.ts", "-t", "js_given_copies"],
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "js-given-copy-self-call-apart",
     breaks:
       "a copy that calls itself is read as calling a copy, never alike its function, so `count` is two functions, `countUnboxed` beside it",
-    file: "src/lower/pipeline/copies.rs",
+    file: "src/pipeline/copies.rs",
     find: "                as_if.insert(named(*id, Some(*at)), (local.clone(), local));",
     replace: "                let _ = (to, local);",
     tests: ["test/corpus.test.ts", "-t", "js_given_copies"],
@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     name: "namespace-copy-unrenamed",
     breaks:
       "a copy of a function read through its module's namespace, `Helpers.wrappedUnboxed`, keeps the name of the copy it was alike, so it calls a copy the module doesn't export (rd114, ADR 1018)",
-    file: "src/lower/pipeline/copies.rs",
+    file: "src/pipeline/copies.rs",
     find: "                        let owner = (symbol.export != js::NAMESPACE).then(|| symbol.export.clone());\n",
     replace:
       "                        let owner = Some(symbol.export.clone());\n",
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
     name: "through-copy-unlike-allowed",
     breaks:
       "a namespace's method called through a value whose call needs a copy unlike the module's own JS calls that JS, which reads `Some(None)` as `None` (rd311)",
-    file: "src/lower/pipeline/copies.rs",
+    file: "src/pipeline/copies.rs",
     find: "        if !alike.contains(&(id, at)) {\n",
     replace: "        if false {\n",
     tests: ["test/namespaces.test.ts", "-t", "unlike its own JS"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "through-copy-alike-refused",
     breaks:
       "a namespace's method called through a value whose call needs a copy alike the module's own JS, `batchedUpdates`, is refused (rd311)",
-    file: "src/lower/pipeline/copies.rs",
+    file: "src/pipeline/copies.rs",
     find: "        if !alike.contains(&(id, at)) {\n",
     replace: "        if true {\n",
     tests: ["test/namespaces.test.ts", "-t", "unlike its own JS"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "merged-copy-read-by-local-name",
     breaks: "a copy alike its function's own JS, read through its module's namespace, is renamed to the function's name in its module, `Lazy.new$`, not what the module exports it as, `new`, so the call throws, \"Lazy.new$ is not a function\" (#1390)",
-    file: "src/lower/pipeline/copies.rs",
+    file: "src/pipeline/copies.rs",
     find: "                    None => through.clone(),\n",
     replace: "                    None => local.clone(),\n",
     tests: ["test/corpus.test.ts", "-t", "^reserved_named_function_called_across_modules.rs$"],

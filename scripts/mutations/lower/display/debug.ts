@@ -1,11 +1,11 @@
-// Mutations of src/lower/display/debug.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/display/debug.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "random-state-shown-otherwise",
     breaks: "`{:?}` of a `RandomState` shows `RandomState`, not std's `RandomState { .. }`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "            return Ok(Expr::str(\"RandomState { .. }\"));\n",
     replace: "            return Ok(Expr::str(\"RandomState\"));\n",
     tests: ["test/corpus.test.ts", "-t", "^random_state_holds_nothing.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "duration-options-dropped",
     breaks: "a `Duration`'s `{:?}` given options, `{:10?}` or a derived `Debug`'s given them as it runs, applies none",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                return Ok(Expr::call_helper(\"$debugDurationWith\", vec![value, pretty.options()]));",
     replace: "                return Ok(Expr::call(Expr::helper(\"$debugDuration\"), vec![value]));",
     tests: ["test/corpus.test.ts", "-t", "^duration_debug_options\\.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "system-time-error-options-dropped",
     breaks: "`{:>20?}` of a `SystemTimeError` gives its `Duration` none of the options",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                    \"$systemTimeErrorDebug\",\n                    vec![value, pretty.options()],",
     replace: "                    \"$systemTimeErrorDebug\",\n                    vec![value],",
     tests: ["test/corpus.test.ts", "-t", "^duration_debug_options\\.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "time-debug-as-its-error",
     breaks: "`{:?}` of a `SystemTime` or an `Instant` is shown as a `SystemTimeError`, `SystemTimeError(1700000000.123s)`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "            if let ClockType::System | ClockType::Instant = clock {",
     replace: "            if false {",
     tests: ["test/corpus.test.ts", "-t", "^time_debug_as_unix\\.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "time-debug-options-dropped",
     breaks: "`{:12?}` of a time gives its fields none of the placeholder's options, which are padded in std's",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                if !matches!(pretty, Pretty::Plain) {\n                    args.push(pretty.options());",
     replace: "                if pretty.known() != Some(false) {\n                    args.push(pretty.options());",
     tests: ["test/corpus.test.ts", "-t", "^time_debug_as_unix\\.rs$"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "numbered-debug-table",
     breaks:
       'a numbered enum\'s `{:?}` reads a table keyed by number, `{ 0: "Empty", .. }[kind]`, where they count from 0 and an array is the table',
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        if counting {\n",
     replace: "        if false && counting {\n",
     tests: [
@@ -59,7 +59,7 @@ export const mutations: Mutation[] = [
     name: "renamed-variant-debug-local",
     breaks:
       "the crate's fieldless enum's `{:?}` is a renamed variant's JS name, not its Rust one",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "            return Ok(self.variant_debug(*adt, value));",
     replace: "            return Ok(value);",
     tests: [
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     name: "renamed-variant-debug-foreign",
     breaks:
       "another crate's fieldless enum's `{:?}` is a renamed variant's JS name, not its Rust one",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                Ok(self.variant_debug(*adt, value))",
     replace: "                Ok(value)",
     tests: [
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
     name: "untagged-nullish-debug-by-name",
     breaks:
       "an untagged enum's `undefined` or `null` variant's `{:?}` is looked up by its value, which prints `undefined`, not its name (#510)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        if nullish.is_empty() {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_unit_debug.rs$"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     name: "untagged-nullish-debug-in-table",
     breaks:
       "an untagged enum's `undefined` or `null` variant, told by `===` first, is in the table of names too, `{ Default: \"Default\", .. }`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "            .filter(|(v, _)| named(v))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^untagged_unit_debug.rs$"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "renamed-variant-debug-tag-unread",
     breaks: "a tagged fieldless enum's `{:?}` looks its object up, not its tag",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "            Some(key) => Expr::member(value, key),",
     replace: "            Some(_) => value,",
     tests: [
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
   {
     name: "renamed-variant-debug-no-table",
     breaks: "a renamed variant's `{:?}` is its JS name, the table never made",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        if names.iter().all(|(js, rust)| js == rust) {",
     replace: "        if true {",
     tests: [
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
   {
     name: "phantom-debug-unnamed",
     breaks: "`{:?}` of a `PhantomData<u8>` leaves out its type's name",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: 'Expr::str("PhantomData<"), name, Expr::str(">")',
     replace: 'Expr::str("PhantomData<"), Expr::str(""), Expr::str(">")',
     tests: ["test/corpus.test.ts", "-t", "std_odds"],
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     name: "debug-leaf-ignores-options",
     breaks:
       "a part of a `{:?}` ignores the options it's given, so `{:5?}` of `Some(1)` pads nothing",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        if self.writing.options.is_some() && self.is_debug_leaf(ty) {",
     replace:
       "        if false && self.writing.options.is_some() && self.is_debug_leaf(ty) {",
@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
     name: "uninhabited-debug-refused",
     breaks:
       "`{:?}` of `Infallible`, which never runs, is an error, and `String`'s `FromStr` in generic code with it",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        if self.never_shown(ty) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "generic_from_str"],
@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
   {
     name: "fieldless-std-enum-debug-refused",
     breaks: "`{:?}` of std's `IntErrorKind`, a name, is an error",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                if representation::is_fieldless_enum(*adt)\n                    && !adt.did().is_local()\n",
     replace:
       "                if false && representation::is_fieldless_enum(*adt)\n                    && !adt.did().is_local()\n",
@@ -163,7 +163,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-debug-unquoted",
     breaks: "`{:?}` of a path shows its text bare, not quoted",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        // A path shows its text as a string does (ADR 0173).\n        if self.recognition().is_path_like(ty) {",
     replace:
       "        // A path shows its text as a string does (ADR 0173).\n        if self.recognition().is_path_like(ty) && false {",
@@ -172,7 +172,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-result-debug-ok",
     breaks: "`{:?}` of a `fmt::Result` that may be an `Err` is `Ok(())`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '                Expr::str("Err(Error)"),\n',
     replace: '                Expr::str("Ok(())"),\n',
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-from-slice-error-debug",
     breaks: "`{:?}` of a `TryFromSliceError` isn't std's",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '            return Ok(Expr::str("TryFromSliceError(())"));',
     replace: '            return Ok(Expr::str("TryFromSliceError"));',
     tests: ["test/corpus.test.ts", "-t", "slice_to_array"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
     name: "js-error-debug-unknown",
     breaks:
       "`{:?}` of a `js::JsError`, as an `unwrap`'s panic shows it, is refused",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        if self.recognition().is_js_error(ty) {\n",
     replace: "        if false && self.recognition().is_js_error(ty) {\n",
     tests: [
@@ -201,7 +201,7 @@ export const mutations: Mutation[] = [
   {
     name: "char-debug-double-quoted",
     breaks: "`{:?}` of a `char` is `\"b\"`, quoted as a string is, not `'b'`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '            return Ok(Expr::call(Expr::helper("$debugStr"), vec![value, Expr::str("\'")]));',
     replace:
       '            return Ok(Expr::call(Expr::helper("$debugStr"), vec![value]));',
@@ -214,7 +214,7 @@ export const mutations: Mutation[] = [
   {
     name: "once-debug-boxed",
     breaks: "a `OnceCell<Option<u8>>`'s `{:?}` shows `Some`'s box",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '                let inside = if self.boxed_payload(item) {\n                    self.some_value(Expr::var(&param))\n                } else {\n                    Expr::var(&param)\n                };\n                let shown = self.debug_string_with(inside, item, span, pretty)?;\n                let none = Expr::bin(Op::LooseEq, Expr::var(&param), Expr::null());\n                let shown = Expr::cond(none, Expr::str("<uninit>"), shown);\n',
     replace:
       '                let inside = Expr::var(&param);\n                let shown = self.debug_string_with(inside, item, span, pretty)?;\n                let none = Expr::bin(Op::LooseEq, Expr::var(&param), Expr::null());\n                let shown = Expr::cond(none, Expr::str("<uninit>"), shown);\n',
@@ -223,7 +223,7 @@ export const mutations: Mutation[] = [
   {
     name: "lazy-debug-unmade",
     breaks: "an unmade `LazyCell`'s `{:?}` reads the value it hasn't",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '                let shown = Expr::cond(made, shown, Expr::str("<uninit>"));\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
     name: "refcell-debug-unchecked",
     breaks:
       "`{:?}` of a mutably borrowed `RefCell` shows its value, where it's `<borrowed>`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                let shown = match std(StdItem::RefCell) {",
     replace: "                let shown = match false {",
     tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
     name: "type-id-debug-shown",
     breaks:
       "`{:?}` of a `TypeId` shows something, where Rust shows its hash, which rust-js doesn't keep",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        if self.recognition().is_type_id(ty) {\n            return Ok",
     replace: "        if false {\n            return Ok",
     tests: [
@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
     name: "uninit-debug-full-name",
     breaks:
       "`{:?}` of a `MaybeUninit` shows its path, where std shows from `MaybeUninit`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '            return Ok(Expr::str(&name[name.find("MaybeUninit").unwrap_or(0)..]));',
     replace: "            return Ok(Expr::str(&name));",
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
@@ -262,7 +262,7 @@ export const mutations: Mutation[] = [
   {
     name: "peek-mut-debug-heap",
     breaks: "`{:?}` of a `PeekMut` shows its heap",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '            return Ok(join(vec![Expr::str("PeekMut("), shown, Expr::str(")")]));',
     replace: "            return Ok(shown);",
     tests: ["test/corpus.test.ts", "-t", "heap_peek_mut"],
@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-lock-error-debug-unquoted",
     breaks: "a `TryLockError`'s `{:?}` isn't quoted",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '                Expr::str("\\"WouldBlock\\""),',
     replace: '                Expr::str("WouldBlock"),',
     tests: ["test/corpus.test.ts", "-t", "try_lock"],
@@ -279,7 +279,7 @@ export const mutations: Mutation[] = [
     name: "discriminant-debug-bare",
     breaks:
       "a `Discriminant`'s `{:?}` is its number alone, not `Discriminant(1)`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '            return Ok(join(vec![Expr::str("Discriminant("), value, Expr::str(")")]));\n',
     replace: "            return Ok(value);\n",
     tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
@@ -287,7 +287,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-debug-refused",
     breaks: "`{:?}` of a raw pointer is refused, even of a null one, `0x0`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        if self.shows_an_address(Std::FmtDebug, ty) {\n",
     replace: "        if matches!(ty.kind(), ty::FnPtr(..)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
@@ -295,7 +295,7 @@ export const mutations: Mutation[] = [
   {
     name: "layout-debug-never-pretty",
     breaks: "`{:#?}` of a `Layout` is one line, not nested as Rust's is, and its `size` ignores a width (#1721, #1728)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                _ => vec![value, pretty.options()],\n",
     replace: "                _ => vec![value],\n",
     tests: ["test/corpus.test.ts", "-t", "^layout_debug_pretty.rs$"],
@@ -303,7 +303,7 @@ export const mutations: Mutation[] = [
   {
     name: "layout-debug-refused",
     breaks: "`{:?}` of a `Layout` is refused",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        if let Some(layout) = self.recognition().layout(ty) {\n",
     replace:
       "        if let Some(layout) = self.recognition().layout(ty).filter(|_| false) {\n",
@@ -312,7 +312,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-tuple-enum-debug-refused",
     breaks: "`{:?}` of std's `Bound` and `ControlFlow` is refused",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "            && adt.variants().iter().all(|v| v.ctor_kind().is_some())\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^std_enum_debug.rs$"],
@@ -321,7 +321,7 @@ export const mutations: Mutation[] = [
     name: "std-tuple-enum-debug-tagless",
     breaks:
       "`{:?}` of `Bound::Included(3)` reads its variant as the value, a fieldless one's",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                    (Expr::bin(Op::Eq, tag.clone(), Expr::str(&js_name)), this)\n",
     replace:
       '                    (Expr::bin(Op::Eq, Expr::var(&param), Expr::str(&js_name)), this)\n',
@@ -330,7 +330,7 @@ export const mutations: Mutation[] = [
   {
     name: "lock-debug-refused",
     breaks: "`{:?}` of a `Mutex` or an `RwLock` is refused",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "            ty::Adt(_, args) if std(StdItem::Mutex) || std(StdItem::RwLock) => {\n",
     replace: "            ty::Adt(_, args) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_debug.rs$"],
@@ -339,7 +339,7 @@ export const mutations: Mutation[] = [
     name: "type-id-debug-refused",
     breaks:
       "`{:?}` of a `TypeId`, which only a failing `assert_eq!` shows, refuses the whole program",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '            return Ok(Expr::call(Expr::helper("$typeIdShown"), vec![value]));\n',
     replace:
       '            return Err(self.unsupported(span, "`{:?}` of a `TypeId`, its hash"));\n',
@@ -353,7 +353,7 @@ export const mutations: Mutation[] = [
     name: "system-time-error-debug",
     breaks:
       "a `SystemTimeError`'s `{:?}` is its `Duration`'s, without its name",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '            return Ok(join(vec![Expr::str("SystemTimeError("), duration, Expr::str(")")]));',
     replace: "            return Ok(duration);",
     tests: ["test/corpus.test.ts", "-t", "^clock.rs$"],
@@ -362,7 +362,7 @@ export const mutations: Mutation[] = [
     name: "phantom-debug-unwrapped",
     breaks:
       "`{:?}` of a `PhantomData<u8>` is its type's name alone, not `PhantomData<u8>`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '            return Ok(join(vec![Expr::str("PhantomData<"), name, Expr::str(">")]));\n',
     replace: "            return Ok(name);\n",
     tests: ["test/corpus.test.ts", "-t", "^phantom_debug.rs$"],
@@ -370,7 +370,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-iter-debug-unnamed",
     breaks: "`{:?}` of a slice's iterator is its items alone, not `Iter([..])`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '            let plain = join(vec![Expr::str("Iter("), shown.clone(), Expr::str(")")]);\n',
     replace: "            let plain = shown.clone();\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_iter_debug.rs$"],
@@ -378,7 +378,7 @@ export const mutations: Mutation[] = [
   {
     name: "debug-list-maps-itself",
     breaks: "`{:?}` of a list of unit enums maps each to itself before `join`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        let mapped = match each_its_own {\n",
     replace: "        let mapped = match false {\n",
     tests: [
@@ -391,7 +391,7 @@ export const mutations: Mutation[] = [
     name: "debug-numbers-mapped",
     breaks:
       "`{:?}` of a list of numbers maps each to `String(item)` before `join`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "is_var(&shown, &name) || matches!(&shown.kind, js::ExprKind::Stringed(value) if is_var(value, &name));\n",
     replace: "is_var(&shown, &name) || false && matches!(&shown.kind, js::ExprKind::Stringed(value) if is_var(value, &name));\n",
     tests: [
@@ -404,7 +404,7 @@ export const mutations: Mutation[] = [
     name: "given-debug-unread",
     breaks:
       "a type's `Debug` a bound gives, `Peekable<Fuse<I>>: Debug`, isn't its dictionary's",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        if self.is_unknown(ty) || given {\n",
     replace: "        if self.is_unknown(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^held_peekable.rs$"],
@@ -412,7 +412,7 @@ export const mutations: Mutation[] = [
   {
     name: "empty-debug-refused",
     breaks: "an `iter::Empty`'s `Debug` is refused",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '            ty::Adt(..) if self.recognition().is_iter_empty(ty) => Ok(Expr::str("Empty")),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
@@ -421,8 +421,8 @@ export const mutations: Mutation[] = [
     name: "slice-iter-debug-read-twice",
     breaks:
       "`{:?}` of a slice's iterator a call gives calls it twice, once for its items and once for where it is",
-    file: "src/lower/display/debug.rs",
-    find: "            let in_place = value.reads_same() || crate::lower::iterators::fresh_iter_source(&value).is_some();\n",
+    file: "crates/rust-js-lower/src/display/debug.rs",
+    find: "            let in_place = value.reads_same() || crate::iterators::fresh_iter_source(&value).is_some();\n",
     replace: "            let in_place = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_iter_debug.rs$"],
   },
@@ -430,7 +430,7 @@ export const mutations: Mutation[] = [
     name: "debug-without-cells",
     breaks:
       "`{:?}` of a `Vec<&mut i32>` shows each cell, not what it points at",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        let made_tuple = self.unspelled(\"tuple\");\n        let (value, ty) = self.shown_through(value, ty, Std::FmtDebug);",
     replace:
       "        let made_tuple = self.unspelled(\"tuple\");\n        let (value, ty) = (value, ty.peel_refs());",
@@ -439,7 +439,7 @@ export const mutations: Mutation[] = [
   {
     name: "parse-error-pretty-dropped",
     breaks: "`{:#?}` of a `ParseIntError` is its one line",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "            let mut list = vec![value, Expr::str(name.as_str())];\n            if pretty.known() != Some(false) {\n",
     replace:
       "            let mut list = vec![value, Expr::str(name.as_str())];\n            if false {\n",
@@ -449,7 +449,7 @@ export const mutations: Mutation[] = [
     name: "weak-debug-refused",
     breaks:
       "`{:?}` of a `Weak`, a struct's field's too, is refused, where std shows `(Weak)`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '            return Ok(Expr::str("(Weak)"));\n',
     replace: '            return Err(self.unsupported(span, ""));\n',
     tests: ["test/corpus.test.ts", "-t", "^weak_debug.rs$"],
@@ -457,7 +457,7 @@ export const mutations: Mutation[] = [
   {
     name: "chars-debug-unnamed",
     breaks: "Chars' Debug names it",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: 'Expr::str("Chars("), shown,',
     replace: 'Expr::str("("), shown,',
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
@@ -465,7 +465,7 @@ export const mutations: Mutation[] = [
   {
     name: "drain-debug-unnamed",
     breaks: "a string Drain's Debug names it",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: 'Expr::str("Drain("), left.clone(),',
     replace: 'Expr::str("("), left.clone(),',
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
@@ -474,15 +474,15 @@ export const mutations: Mutation[] = [
     name: "never-made-variant-shown",
     breaks:
       "`{:?}` of a `Component` asks `PrefixComponent`'s, which is refused",
-    file: "src/lower/display/debug.rs",
-    find: "            if crate::lower::recognition::never_made(self.tcx, variant) {\n                continue;\n            }\n",
+    file: "crates/rust-js-lower/src/display/debug.rs",
+    find: "            if crate::recognition::never_made(self.tcx, variant) {\n                continue;\n            }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
   },
   {
     name: "value-cell-shown-value",
     breaks: "`{:?}` of a `RefCell` of an object shows its `value`, `undefined`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                        if self.is_value_cell(ty) {\n",
     replace: "                        if false && self.is_value_cell(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
@@ -491,7 +491,7 @@ export const mutations: Mutation[] = [
     name: "quiet-field-shown-borrowed",
     breaks:
       "a derived `Debug` of a struct's quiet `RefCell` field borrows a handle on it, `$showBorrowed({ get value() .. })` (ADR 0863, amended)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                    true if matches!(value.kind, js::ExprKind::Handle(..)) => {\n",
     replace: "                    true if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_field_cells.rs$"],
@@ -500,7 +500,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-iter-pretty-plain",
     breaks: "`{:#?}` of a slice's iterator is shown plain, `Iter([2, 3])`, where std's `debug_tuple` puts its slice on lines of its own (#953)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '            let shown = self.pretty_or(pretty, plain, "Iter(", Expr::array(vec![shown]), ")");\n',
     replace: "            let shown = plain;\n",
     tests: ["test/corpus.test.ts", "-t", "^pretty_debug_of_std_iterators.rs$"],
@@ -508,7 +508,7 @@ export const mutations: Mutation[] = [
   {
     name: "string-drain-pretty-plain",
     breaks: "`{:#?}` of a string's `drain(range)` is shown plain, `Drain(\"bcd\")`, where std's `debug_tuple` puts it on a line of its own (#953)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: '            return Ok(self.pretty_or(pretty, plain, "Drain(", Expr::array(vec![left]), ")"));\n',
     replace: "            return Ok(plain);\n",
     tests: ["test/corpus.test.ts", "-t", "^pretty_debug_of_std_iterators.rs$"],
@@ -517,7 +517,7 @@ export const mutations: Mutation[] = [
     name: "debug-value-unevaluated",
     breaks:
       "a `{:?}` whose text doesn't read its value, `()`'s, a `Weak`'s, drops the call that made it, which never prints (#1063)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        let evaluated = value.has_effects().then(|| value.clone());\n        let shown = self.debug_shown(value, ty, span, pretty)?;\n",
     replace: "        let evaluated = None;\n        let shown = self.debug_shown(value, ty, span, pretty)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^text_of_a_value_made_by_a_call.rs$"],
@@ -525,7 +525,7 @@ export const mutations: Mutation[] = [
   {
     name: "debug-c-str-as-bytes",
     breaks: "`{:?}` of a C string isn't std's `\"hi\"`",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        if is_c_str(self.tcx, ty) || is_c_string(self.tcx, ty) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
@@ -533,15 +533,15 @@ export const mutations: Mutation[] = [
   {
     name: "buf-reader-debug-shown",
     breaks: "a `BufReader`'s `{:?}` isn't refused as its own, naming #1156",
-    file: "src/lower/display/debug.rs",
-    find: "            Some(crate::lower::recognition::ByteSource::BufReader(_))\n        ) {",
-    replace: "            Some(crate::lower::recognition::ByteSource::BufReader(_))\n        ) && false {",
+    file: "crates/rust-js-lower/src/display/debug.rs",
+    find: "            Some(crate::recognition::ByteSource::BufReader(_))\n        ) {",
+    replace: "            Some(crate::recognition::ByteSource::BufReader(_))\n        ) && false {",
     tests: ["test/diagnostics.test.ts", "-t", "a BufReader's Debug"],
   },
   {
     name: "dyn-debug-pair-shown-whole",
     breaks: "`{:?}` of a `dyn Debug`'s pair is the pair, not its `impl`'s `fmt` of its value (#1335)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "            let options = self.options_arg(pretty);\n            let debug = self.debug_trait();\n",
     replace: "            return Ok(value);\n            #[allow(unreachable_code)]\n            let options = self.options_arg(pretty);\n            let debug = self.debug_trait();\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_debug_shown_where_rust_calls_fmt\\.rs$"],
@@ -549,7 +549,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-debug-options-dropped",
     breaks: "`{:#?}` of a `dyn Debug` made elsewhere gives its `impl`'s `fmt` no options, so it's plain (#1335)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                .dyn_written(value, (dynamic, debug), options, span)?\n",
     replace: "                .dyn_written(value, (dynamic, debug), { let _ = options; None }, span)?\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_debug_shown_where_rust_calls_fmt\\.rs$"],
@@ -557,7 +557,7 @@ export const mutations: Mutation[] = [
   {
     name: "file-debug-refused",
     breaks: "`{:?}` of a `File` is refused, as it was, and `unwrap_err()` of one opened with it (#1397)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                \"File\" => Some(\"$fileDebug\"),\n",
     replace: "                \"File\" => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_file_shared.rs$"],
@@ -565,7 +565,7 @@ export const mutations: Mutation[] = [
   {
     name: "file-type-debug-refused",
     breaks: "`{:?}` of a `FileType` is refused (#1397)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                \"FileType\" => Some(\"$fileTypeDebug\"),\n",
     replace: "                \"FileType\" => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_dirs_and_metadata.rs$"],
@@ -573,7 +573,7 @@ export const mutations: Mutation[] = [
   {
     name: "unsafe-cell-debug-unshown",
     breaks: "`{:?}` of an `UnsafeCell` isn't std's `UnsafeCell { .. }` (#1420)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "            ty::Adt(..) if std(StdItem::UnsafeCell) => Ok(Expr::str(\"UnsafeCell { .. }\")),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unsafe_cell_values.rs$"],
@@ -581,15 +581,15 @@ export const mutations: Mutation[] = [
   {
     name: "poison-error-debug-refused",
     breaks: "`{:?}` of a `PoisonError` is refused, where std's shows `PoisonError { .. }` (#1438)",
-    file: "src/lower/display/debug.rs",
-    find: "        if crate::lower::recognition::is_poison_error(ty) {\n            return Ok(Expr::str(\"PoisonError { .. }\"));",
-    replace: "        if crate::lower::recognition::is_poison_error(ty) && false {\n            return Ok(Expr::str(\"PoisonError { .. }\"));",
+    file: "crates/rust-js-lower/src/display/debug.rs",
+    find: "        if crate::recognition::is_poison_error(ty) {\n            return Ok(Expr::str(\"PoisonError { .. }\"));",
+    replace: "        if crate::recognition::is_poison_error(ty) && false {\n            return Ok(Expr::str(\"PoisonError { .. }\"));",
     tests: ["test/corpus.test.ts","-t","^lock_poisoning.rs$"],
   },
   {
     name: "locked-shown-plain-when-pretty",
     breaks: "`{:#?}` of a `Mutex` or an `RwLock` prints its fields on one line (#1629)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                    args.push(pretty.alternate());\n                }\n                Ok(Expr::call(Expr::helper(\"$showLocked\"), args))\n",
     replace: "                }\n                Ok(Expr::call(Expr::helper(\"$showLocked\"), args))\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_cells_stopped_part_way.rs$"],
@@ -597,7 +597,7 @@ export const mutations: Mutation[] = [
   {
     name: "debug-forwards-refused",
     breaks: "`{:?}` of a `Wrapping` or a `Cow` of a part that may stop part-way is refused, where their `Debug` is their part's own (#1530)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "            && !self.recognition().debug_forwards(ty)\n",
     replace: "            && true\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
@@ -606,7 +606,7 @@ export const mutations: Mutation[] = [
     name: "own-debug-of-std-type-composed",
     breaks:
       "`{:?}` of std's `Pin<Box<Pinned>>` whose `Debug` is the crate's own, in a crate that catches a panic, is taken for std's value of a part that may stop and refused, where it's the crate's call (#1894)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "            && !self.recognition().own_debug(ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_debug_of_a_pinned_box_beside_a_caught_panic.rs$"],
@@ -614,15 +614,15 @@ export const mutations: Mutation[] = [
   {
     name: "access-error-shown-as-a-struct",
     breaks: "a thread-local's `AccessError` is shown as a struct of its fields, not as std shows it, `AccessError`",
-    file: "src/lower/display/debug.rs",
-    find: "                crate::lower::recognition::StdPath::ThreadAccessError,\n",
-    replace: "                crate::lower::recognition::StdPath::NumSaturating,\n",
+    file: "crates/rust-js-lower/src/display/debug.rs",
+    find: "adt.did(), crate::recognition::StdPath::ThreadAccessError)\n",
+    replace: "adt.did(), crate::recognition::StdPath::NumSaturating)\n",
     tests: ["test/corpus.test.ts","-t","^(local_with_scope_guards|one_thread_sync).rs$"],
   },
   {
     name: "str-search-debug-unnamed",
     breaks: "`{:?}` of a `str`'s search is refused naming neither why nor its issue, `{:?}` of a `Split` alone, where std shows its searcher's state (ADR 0060, #2004)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "            _ if self.recognition().is_str_search(ty) => Err(self.unsupported(\n",
     replace: "            _ if false && self.recognition().is_str_search(ty) => Err(self.unsupported(\n",
     tests: ["test/diagnostics.test.ts", "-t", "a str split's Debug"],
@@ -630,7 +630,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-pretty-unread",
     breaks: "a pointer shown in a `{:#?}` is given no options, so a struct's pointer field shows `0x8`, not std's `0x00000008` (#2282)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                Pretty::Always | Pretty::When(_) => Some((pretty.options(), true)),\n",
     replace: "                Pretty::Always | Pretty::When(_) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_shown_by_options\\.rs$"],
@@ -638,7 +638,7 @@ export const mutations: Mutation[] = [
   {
     name: "parts-left-as-stepped",
     breaks: "what's left of a slice's chunks is read as an array's iterator's, its chunks left, `v: [[3, 4], [5]]`, not the slice they cover (#2252)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        Ok((Expr::call_helper(\"$partsLeft\", vec![it]), element))\n",
     replace: "        Ok((self.stepped_left(it, ty, false, span)?, element))\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_of_chunks_and_windows.rs$"],
@@ -646,7 +646,7 @@ export const mutations: Mutation[] = [
   {
     name: "parts-size-shown-plainly",
     breaks: "the size `{:x?}` of a slice's chunks shows is plain, `chunk_size: 2` where std's options show it so too only by chance, never of `{:#?}`'s line (#2252)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                        let size = self.debug_string_with(size, self.tcx.types.usize, span, pretty)?;\n",
     replace: "                        let size = self.debug_string_with(size, self.tcx.types.usize, span, &Pretty::Plain)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_of_chunks_and_windows.rs$"],
@@ -654,15 +654,15 @@ export const mutations: Mutation[] = [
   {
     name: "chunks-mut-shown-without-address",
     breaks: "`{:?}` of a slice's `ChunksMut`, whose derived `Debug` std writes of its raw slice pointer, says only that it isn't supported, not what it waits on (ADR 0407, #2252)",
-    file: "src/lower/display/debug.rs",
-    find: "                    crate::lower::recognition::StdPath::SliceChunksMut,\n",
-    replace: "                    crate::lower::recognition::StdPath::SliceSplitMut,\n",
+    file: "crates/rust-js-lower/src/display/debug.rs",
+    find: "                    crate::recognition::StdPath::SliceChunksMut,\n",
+    replace: "                    crate::recognition::StdPath::SliceSplitMut,\n",
     tests: ["test/diagnostics.test.ts", "-t", "a ChunksMut's Debug"],
   },
   {
     name: "item-left-around-dropped",
     breaks: "`{:?}` of `once(x)` shows its inner `IntoIter { .. }` alone, inline (#2252)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                            Some(around) => self.struct_shown(pretty, around, vec![(\"inner\", shown)]),\n",
     replace: "                            Some(_) => shown,\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_of_once_and_successors.rs$"],
@@ -670,7 +670,7 @@ export const mutations: Mutation[] = [
   {
     name: "item-left-unboxed",
     breaks: "the item left of `once(())`, `undefined`, is read as no item, `opt: None` where std's has `Some(())` (ADR 0051, #2252)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "                let boxed = Expr::bool(self.boxed_payload(item));\n",
     replace: "                let boxed = Expr::bool(false);\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_of_once_and_successors.rs$"],
@@ -678,7 +678,7 @@ export const mutations: Mutation[] = [
   {
     name: "exit-code-debug-a-number",
     breaks: "`{:?}` of an `ExitCode` is its number, `3`, where each platform's std writes its own text, `ExitCode(unix_exit_status(3))` of a unix's (#2292)",
-    file: "src/lower/display/debug.rs",
+    file: "crates/rust-js-lower/src/display/debug.rs",
     find: "        if self.recognition().is_std_type(ty.peel_refs(), StdItem::ExitCode) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "exit_code_debug_refused"],

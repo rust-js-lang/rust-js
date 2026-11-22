@@ -1,19 +1,19 @@
-// Mutations of src/lower/pipeline/reached.rs (ADR 0093).
+// Mutations of src/pipeline/reached.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "type-map-exports-unread-dictionary",
     breaks: "a declaration-only type map exports its unused implementation dictionaries",
-    file: "src/lower/pipeline/reached.rs",
-    find: "                || super::super::declarations::is_type_map(tcx, trait_id)\n",
+    file: "src/pipeline/reached.rs",
+    find: "                || rust_js_lower::declarations::is_type_map(tcx, trait_id)\n",
     replace: "",
     tests: ["test/create-details.test.ts", "-t", "vocabulary adds no runtime exports"],
   },
   {
     name: "typed-subtrait-exports-unread-dictionary",
     breaks: "a typed marker subtrait and its inherited dictionary leak into the exports",
-    file: "src/lower/pipeline/reached.rs",
+    file: "src/pipeline/reached.rs",
     find: "                || type_only\n",
     replace: "",
     tests: ["test/create-details.test.ts", "-t", "vocabulary adds no runtime exports"],
@@ -22,9 +22,9 @@ export const mutations: Mutation[] = [
     name: "marker-dictionary-written",
     breaks:
       "an impl of a marker trait, or of bindings, writes its empty dictionary though nothing reads it",
-    file: "src/lower/pipeline/reached.rs",
-    find: "            super::super::recognition::known_derive(tcx, id)\n                || super::super::traits::is_marker(tcx, foreign, trait_id)\n",
-    replace: "            super::super::recognition::known_derive(tcx, id)\n",
+    file: "src/pipeline/reached.rs",
+    find: "            rust_js_lower::recognition::known_derive(tcx, id)\n                || rust_js_lower::traits::is_marker(tcx, foreign, trait_id)\n",
+    replace: "            rust_js_lower::recognition::known_derive(tcx, id)\n",
     tests: [
       "test/bindings.test.ts",
       "-t",
@@ -35,8 +35,8 @@ export const mutations: Mutation[] = [
     name: "generic-only-dictionary-kept-unread",
     breaks:
       "a crate's `Deref` or operator impl's dictionary is written where nothing reads it",
-    file: "src/lower/pipeline/reached.rs",
-    find: "super::super::traits::read_only_generically(tcx, trait_of(id))",
+    file: "src/pipeline/reached.rs",
+    find: "rust_js_lower::traits::read_only_generically(tcx, trait_of(id))",
     replace: "false",
     tests: [
       "test/corpus.test.ts",
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
     name: "generic-only-methods-written-unreached",
     breaks:
       "a `From` or `Deref` impl's method nothing calls is written as a function of its module, `eventPriorityFromI32_from`, which upstream's JS hasn't (ADR 0477, amended)",
-    file: "src/lower/pipeline/reached.rs",
+    file: "src/pipeline/reached.rs",
     find: "                .flat_map(|id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied())),\n",
     replace:
       "                .flat_map(|id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied().filter(|_| false))),\n",
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
     name: "identity-eq-written-unreached",
     breaks:
       "a type equal only to itself has its `PartialEq`'s dictionary written, `fiberPartialEq`, where nothing reads it (ADR 0864, amended)",
-    file: "src/lower/pipeline/reached.rs",
+    file: "src/pipeline/reached.rs",
     find: "                || identity_eq(id, trait_id, false)\n",
     replace: "",
     tests: [
@@ -76,7 +76,7 @@ export const mutations: Mutation[] = [
     name: "identity-eq-dictionary-always-written",
     breaks:
       "the dictionary of a `PartialEq` of `ptr::eq` without a `Hash` is written though nothing reads it",
-    file: "src/lower/pipeline/reached.rs",
+    file: "src/pipeline/reached.rs",
     find: "                || identity_eq(id, trait_id, false)\n",
     replace: "                || identity_eq(id, trait_id, true)\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "identity PartialEq"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
     name: "instance-impl-kept-unused",
     breaks:
       "what a consumer compiles of a library is written though nothing of the consumer's reaches it: an impl's dictionary though only its method is called, `labelDebug` (ADR 0914, amended), and a trait's generic default the call makes through the library's dictionary, `dogShout.shout(..)`, with the private `loud` it calls (#483)",
-    file: "src/lower/pipeline/reached.rs",
+    file: "src/pipeline/reached.rs",
     find: "            foreign.is_instance(id)\n                || id.is_local()\n",
     replace: "            id.is_local()\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency|a consumer compiles is written where"],
@@ -94,10 +94,10 @@ export const mutations: Mutation[] = [
     name: "own-name-fn-written",
     breaks:
       "a fieldless enum's `pub(crate) fn name(self)`, each call of which is the value itself, is still written, `export const HookType = { name(hookType) { return hookType; } }`, which nothing reads (ADR 0264, amended)",
-    file: "src/lower/pipeline/reached.rs",
-    find: "                    && super::super::patterns::gives_its_argument(tcx, function_bodies, id)\n",
+    file: "src/pipeline/reached.rs",
+    find: "                    && rust_js_lower::patterns::gives_its_argument(tcx, function_bodies, id)\n",
     replace:
-      "                    && super::super::patterns::gives_its_argument(tcx, function_bodies, id)\n                    && false\n",
+      "                    && rust_js_lower::patterns::gives_its_argument(tcx, function_bodies, id)\n                    && false\n",
     tests: [
       "test/lowering-structs-enums.test.ts",
       "-t",
@@ -108,9 +108,9 @@ export const mutations: Mutation[] = [
     name: "own-name-fn-of-a-library-unwritten",
     breaks:
       "a library's `pub fn as_str(self)` giving each variant its own name, which another crate's JS calls, is written nowhere (ADR 0264, amended)",
-    file: "src/lower/pipeline/reached.rs",
-    find: "                    && !super::super::library::reachable(tcx, id)\n                    && super::super::patterns::gives_its_argument",
-    replace: "                    && super::super::patterns::gives_its_argument",
+    file: "src/pipeline/reached.rs",
+    find: "                    && !rust_js_lower::library::reachable(tcx, id)\n                    && rust_js_lower::patterns::gives_its_argument",
+    replace: "                    && rust_js_lower::patterns::gives_its_argument",
     tests: [
       "test/lowering-structs-enums.test.ts",
       "-t",
@@ -121,8 +121,8 @@ export const mutations: Mutation[] = [
     name: "class-trait-field-method-printed",
     breaks:
       "a trait of classes' method that gives a field is printed as its prototype's method, a handle on the field, `Clicks.prototype.counter = function () { .. }`, though every call reads the field (rd304)",
-    file: "src/lower/pipeline/reached.rs",
-    find: "    if super::super::classes::field_accessor(tcx, id).is_some() || forwarded.contains_key(&id) {\n",
+    file: "src/pipeline/reached.rs",
+    find: "    if rust_js_lower::classes::field_accessor(tcx, id).is_some() || forwarded.contains_key(&id) {\n",
     replace: "    if forwarded.contains_key(&id) {\n",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_methods.rs$"],
     snapshots: true,
@@ -131,7 +131,7 @@ export const mutations: Mutation[] = [
     name: "library-defaults-unexported",
     breaks:
       "a library's trait's default its consumer's impl calls, compiled there, isn't lowered, and its dictionary calls a function that isn't there (ADRs 0185, 0914, amended)",
-    file: "src/lower/pipeline/reached.rs",
+    file: "src/pipeline/reached.rs",
     find: "    tcx.trait_of_assoc(id).is_none()\n        || foreign.is_instance(id)\n",
     replace: "    tcx.trait_of_assoc(id).is_none()\n",
     tests: ["test/crates.test.ts", "-t", "defaults are what"],
@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
     name: "forwarded-caller-location-unasked",
     breaks:
       "a namespace's method that passes its parameters on to a function that tracks its caller is that function, which its callers give no location (rd292b)",
-    file: "src/lower/pipeline/reached.rs",
+    file: "src/pipeline/reached.rs",
     find: "            let forwarded = caller_locations.contains(&method) == caller_locations.contains(&target)\n                && bounds(method) == theirs\n",
     replace: "            let forwarded = bounds(method) == theirs\n",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     name: "forwarded-bounds-unasked",
     breaks:
       "a namespace's method of a bound more than the function's is that function, given the method's dictionaries (rd292b)",
-    file: "src/lower/pipeline/reached.rs",
+    file: "src/pipeline/reached.rs",
     find: "                && bounds(method) == theirs\n",
     replace: "",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
@@ -158,16 +158,16 @@ export const mutations: Mutation[] = [
     name: "forwarded-method-lowered",
     breaks:
       "a namespace's method that's the function it passes its parameters on to is its module's function too, beside the re-export of that name (rd292b)",
-    file: "src/lower/pipeline/reached.rs",
-    find: "    if super::super::classes::field_accessor(tcx, id).is_some() || forwarded.contains_key(&id) {\n",
-    replace: "    if super::super::classes::field_accessor(tcx, id).is_some() {\n",
+    file: "src/pipeline/reached.rs",
+    find: "    if rust_js_lower::classes::field_accessor(tcx, id).is_some() || forwarded.contains_key(&id) {\n",
+    replace: "    if rust_js_lower::classes::field_accessor(tcx, id).is_some() {\n",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
   },
   {
     name: "forwarded-copies-unasked",
     breaks:
       "a namespace's method its callers need a copy of (ADR 0051) is the function it passes its parameters on to, and the copy they call isn't written (rd292b)",
-    file: "src/lower/pipeline/reached.rs",
+    file: "src/pipeline/reached.rs",
     find: "                && js_given.copies(method).next().is_none();\n",
     replace: ";\n",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
@@ -176,8 +176,8 @@ export const mutations: Mutation[] = [
     name: "field-read-written-anyway",
     breaks:
       "an untagged enum's method every call of which reads its field in place is written all the same, `const Parent = { children(parent) { .. } }`, an object no one uses (rd317)",
-    file: "src/lower/pipeline/reached.rs",
-    find: "                || id.is_local() && !super::super::library::reachable(tcx, id) && field_read(id)\n",
+    file: "src/pipeline/reached.rs",
+    find: "                || id.is_local() && !rust_js_lower::library::reachable(tcx, id) && field_read(id)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^untagged_field_of_each_variant.rs$"],
     snapshots: true,
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
     name: "forwarded-nullable-unasked",
     breaks:
       "a namespace's forwarding method that doesn't say its function's nullable parameters compiles, and a call through the value gives `undefined` where the function's `None` is `null` (#596)",
-    file: "src/lower/pipeline/reached.rs",
+    file: "src/pipeline/reached.rs",
     find: "                nullable_alike(tcx, method, target);\n",
     replace: "",
     tests: ["test/method-forwarding.test.ts", "-t", "a namespace's forwarding method says its function's nullable parameters"],
@@ -195,7 +195,7 @@ export const mutations: Mutation[] = [
     name: "displayed-impl-written-anyway",
     breaks:
       "an untagged enum's `Display` each use prints in place is written anyway, `export const moduleIdDisplay = {fmt: ..}`, which nothing calls and upstream hasn't (rd730)",
-    file: "src/lower/pipeline/reached.rs",
+    file: "src/pipeline/reached.rs",
     find: "            (displaying.iter())\n",
     replace: "            (displaying.iter().filter(|_| false))\n",
     tests: ["test/untagged-displayed.test.ts"],
@@ -203,7 +203,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-method-comments-untaken",
     breaks: "a namespace's method that's its module's function loses its comments, `// Passed on.` of its body (rd758)",
-    file: "src/lower/pipeline/reached.rs",
+    file: "src/pipeline/reached.rs",
     find: "                    rust_js_program::js::Item::Function(f) if f.name.is(&theirs.name) => Some(f.span),\n",
     replace: "                    rust_js_program::js::Item::Function(f) if f.name.is(&theirs.name) && false => Some(f.span),\n",
     tests: ["test/method-forwarding.test.ts", "-t", "keeps its comments before the function it is"],
@@ -211,7 +211,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-method-reexport-comments-untaken",
     breaks: "a namespace's method re-exported from another module loses the comments in its body, and the second's above it (rd758)",
-    file: "src/lower/pipeline/reached.rs",
+    file: "src/pipeline/reached.rs",
     find: "                    let holds =\n                        |r: &&rust_js_program::program::Reexport| r.span.lo <= written.lo && written.hi <= r.span.hi;\n",
     replace: "                    let holds = |_: &&rust_js_program::program::Reexport| false;\n",
     tests: ["test/method-forwarding.test.ts", "-t", "keeps its comments before the function it is"],

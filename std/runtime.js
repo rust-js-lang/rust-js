@@ -23234,7 +23234,7 @@ export function $formatFloat(value, options, show) {
 // specializations fold; of an unsized one, a `dyn`'s, `lentUnsized`,
 // neither, std's defaults over its `next` and `next_back`; and of a
 // `Box<I>`, `boxed` and `boxedUnsized` (#1601, #1995). The compiler's one
-// catalog's, std's steps (src/lower/recognition/std_steps.rs, #2000,
+// catalog's, std's steps (crates/rust-js-lower/src/recognition/std_steps.rs, #2000,
 // #2112), by `$forward`'s names: test/std-steps.test.ts makes the catalog
 // from std itself, and its unit tests hold each list here to it.
 export const $passedOn = {

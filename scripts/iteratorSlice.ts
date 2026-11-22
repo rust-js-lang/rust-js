@@ -61,59 +61,59 @@ const root = join(import.meta.dir, "..");
  * helpers and its package, std's compiled iterators, and the tests these
  * runs are of. */
 export const iteratorPaths = [
-  "src/lower/iterators.rs",
-  "src/lower/iterators/**",
-  "src/lower/combinators.rs",
-  "src/lower/combinators/**",
-  "src/lower/mir/iter.rs",
-  "src/lower/iterators/mir_steps/**",
-  "src/lower/mir/vec_growth.rs",
+  "crates/rust-js-lower/src/iterators.rs",
+  "crates/rust-js-lower/src/iterators/**",
+  "crates/rust-js-lower/src/combinators.rs",
+  "crates/rust-js-lower/src/combinators/**",
+  "crates/rust-js-mir/src/iter.rs",
+  "crates/rust-js-lower/src/iterators/mir_steps/**",
+  "crates/rust-js-mir/src/vec_growth.rs",
   // Where a std iterator method's MIR call is lowered (the owner table's row, #2162).
-  "src/lower/mir/std_calls/iterators.rs",
+  "crates/rust-js-mir/src/std_calls/iterators.rs",
   // Whether an iterator is dropped by closing it, `dropped_by_closing` (the owner table's row, #2162).
-  "src/lower/drops/parts.rs",
+  "crates/rust-js-lower/src/drops/parts.rs",
   // What a type parameter read as an iterator is given for a `&mut` to one (#992).
-  "src/lower/mut_refs/given.rs",
+  "crates/rust-js-lower/src/mut_refs/given.rs",
   // A `for` over the crate's own `IntoIterator`, `user_into_iter` (the owner table's row, #2162).
-  "src/lower/loops.rs",
+  "crates/rust-js-lower/src/loops.rs",
   // A boxed iterator's steps a caller gives generic code, `boxed_steps_given` (the owner table's row, #2162).
-  "src/lower/generic_facts.rs",
+  "crates/rust-js-lower/src/generic_facts.rs",
   // How the runtime steps a range, and an inclusive range an iterator's lent (the owner table's row, #2162).
-  "src/lower/std_types/range.rs",
+  "crates/rust-js-lower/src/std_types/range.rs",
   // A library's contract of what its functions step and the iterators it makes (the owner table's rows, #2162).
-  "src/lower/library.rs",
-  "src/lower/recognition/adapter_types.rs",
-  "src/lower/recognition/held.rs",
-  "src/lower/recognition/iterators.rs",
-  "src/lower/recognition/array_iters.rs",
-  "src/lower/recognition/lengths.rs",
-  "src/lower/recognition/own_steps.rs",
-  "src/lower/recognition/std_steps.rs",
-  "src/lower/recognition/slice_steps.rs",
-  "src/lower/recognition/owners.rs",
-  "src/lower/recognition/specialization.rs",
-  "src/lower/recognition/std_items.rs",
-  "src/lower/recognition/compiled_std.rs",
-  "src/lower/recognition/zip_folds.rs",
+  "crates/rust-js-lower/src/library.rs",
+  "crates/rust-js-lower/src/recognition/adapter_types.rs",
+  "crates/rust-js-lower/src/recognition/held.rs",
+  "crates/rust-js-lower/src/recognition/iterators.rs",
+  "crates/rust-js-lower/src/recognition/array_iters.rs",
+  "crates/rust-js-lower/src/recognition/lengths.rs",
+  "crates/rust-js-lower/src/recognition/own_steps.rs",
+  "crates/rust-js-lower/src/recognition/std_steps.rs",
+  "crates/rust-js-lower/src/recognition/slice_steps.rs",
+  "crates/rust-js-lower/src/recognition/owners.rs",
+  "crates/rust-js-lower/src/recognition/specialization.rs",
+  "crates/rust-js-lower/src/recognition/std_items.rs",
+  "crates/rust-js-lower/src/recognition/compiled_std.rs",
+  "crates/rust-js-lower/src/recognition/zip_folds.rs",
   // Owners of the owner table's rows of iterators (#2162): a type known by its
   // bounds as an iterator, a std iterator method that keeps each item, a
   // string's iterators, std's `Iterator` trait (#2174), a range no step
   // leaves exhausted.
-  "src/lower/recognition/traits.rs",
-  "src/lower/recognition/methods.rs",
-  "src/lower/recognition/chars.rs",
-  "src/lower/recognition/sorts.rs",
-  "src/lower/noted.rs",
-  "src/lower/analysis/iterator_steps.rs",
-  "src/lower/analysis/type_facts/knowing.rs",
-  "src/lower/analysis/back_stepped.rs",
-  "src/lower/analysis/hint_asked.rs",
-  "src/lower/body_queries.rs",
-  "src/lower/body_queries/in_place.rs",
+  "crates/rust-js-lower/src/recognition/traits.rs",
+  "crates/rust-js-lower/src/recognition/methods.rs",
+  "crates/rust-js-lower/src/recognition/chars.rs",
+  "crates/rust-js-lower/src/recognition/sorts.rs",
+  "crates/rust-js-lower/src/noted.rs",
+  "crates/rust-js-lower/src/analysis/iterator_steps.rs",
+  "crates/rust-js-lower/src/analysis/type_facts/knowing.rs",
+  "crates/rust-js-lower/src/analysis/back_stepped.rs",
+  "crates/rust-js-lower/src/analysis/hint_asked.rs",
+  "crates/rust-js-lower/src/body_queries.rs",
+  "crates/rust-js-lower/src/body_queries/in_place.rs",
   // What an iterator at the JS boundary is, its readers' (ADR 1169).
-  "src/lower/declarations.rs",
-  "src/lower/analysis/js_given.rs",
-  "src/lower/mir/structure.rs",
+  "crates/rust-js-lower/src/declarations.rs",
+  "crates/rust-js-lower/src/analysis/js_given.rs",
+  "crates/rust-js-mir/src/structure.rs",
   "crates/rust-js-program/src/runtime.rs",
   "crates/rust-js-program/src/runtime/**",
   "std/runtime.js",
@@ -136,13 +136,13 @@ const globs = iteratorPaths.map((path) => new Bun.Glob(path));
  * `Formatter` the crate's own are given, and the runtime's helpers that
  * write, pad and round what they show; and the grid that tests them. */
 export const formatPaths = [
-  "src/lower/format_spec.rs",
-  "src/lower/format_args.rs",
-  "src/lower/display.rs",
-  "src/lower/display/**",
-  "src/lower/recognition/fmt.rs",
-  "src/lower/analysis/debug.rs",
-  "src/lower/untagged/displayed.rs",
+  "crates/rust-js-lower/src/format_spec.rs",
+  "crates/rust-js-lower/src/format_args.rs",
+  "crates/rust-js-lower/src/display.rs",
+  "crates/rust-js-lower/src/display/**",
+  "crates/rust-js-lower/src/recognition/fmt.rs",
+  "crates/rust-js-lower/src/analysis/debug.rs",
+  "crates/rust-js-lower/src/untagged/displayed.rs",
   "crates/rust-js-program/src/runtime/debug*.js",
   "crates/rust-js-program/src/runtime/display*.js",
   "crates/rust-js-program/src/runtime/fmt_error.js",
@@ -167,9 +167,9 @@ export function touchesFormatting(files: string[]): boolean {
  * that compute, wrap, check, convert and parse them; and the grid that
  * tests them. */
 export const numberPaths = [
-  "src/lower/std_types/number.rs",
-  "src/lower/std_types/number/**",
-  "src/lower/recognition/methods.rs",
+  "crates/rust-js-lower/src/std_types/number.rs",
+  "crates/rust-js-lower/src/std_types/number/**",
+  "crates/rust-js-lower/src/recognition/methods.rs",
   "crates/rust-js-program/src/runtime/big_*.js",
   "crates/rust-js-program/src/runtime/{add,checked,checked_div,checked_pow,checked_rem,count_ones,div,div_ceil,div_euclid,float_euclid,float_from_bits,float_midpoint,float_to_bits,ilog,int_bits,isqrt}.js",
   "crates/rust-js-program/src/runtime/{mul_add,mul_add_f32,overflowing,pow,powf,powi,powi_f32,rem,rem_euclid,round,saturating_pow,signum,trailing_zeros,wrapping_div,wrapping_rem}.js",
@@ -189,9 +189,9 @@ const numberGlobs = numberPaths.map((path) => new Bun.Glob(path));
  * nightly saw. All of it runs, some 22 s, in its own job. */
 export const declarationPaths = [
   "crates/rust-js-emit/src/typescript.rs",
-  "src/lower/representation/nones.rs",
-  "src/lower/representation/options.rs",
-  "src/lower/bindings/nullable.rs",
+  "crates/rust-js-lower/src/representation/nones.rs",
+  "crates/rust-js-lower/src/representation/options.rs",
+  "crates/rust-js-lower/src/bindings/nullable.rs",
   "crates/rust-js-program/src/js/make.rs",
   "crates/rust-js-program/src/js/stmt_walk.rs",
   "test/declarations-conformance.test.ts",
@@ -212,12 +212,12 @@ export function touchesDeclarations(files: string[]): boolean {
  * read and write bytes and views; and the memory net that tests them
  * (#1172). */
 export const memoryPaths = [
-  "src/lower/pointers.rs",
-  "src/lower/pointers/**",
-  "src/lower/mut_refs.rs",
-  "src/lower/plain.rs",
-  "src/lower/unions.rs",
-  "src/lower/lent.rs",
+  "crates/rust-js-lower/src/pointers.rs",
+  "crates/rust-js-lower/src/pointers/**",
+  "crates/rust-js-lower/src/mut_refs.rs",
+  "crates/rust-js-lower/src/plain.rs",
+  "crates/rust-js-lower/src/unions.rs",
+  "crates/rust-js-lower/src/lent.rs",
   "crates/rust-js-program/src/runtime/{pointers,unions,bytes,from_bytes,to_bytes,slice_view}.js",
   "test/memory-net.ts",
   "test/memory-net.test.ts",
@@ -236,12 +236,12 @@ export function touchesMemory(files: string[]): boolean {
  * `&mut` is, whose change runs the intervals' variant of
  * test/tidy-stages.test.ts, each case without their proofs (#2112 B). */
 export const intervalsPaths = [
-  "src/lower/analysis/intervals.rs",
-  "src/lower/analysis/intervals/**",
-  "src/lower/pointers.rs",
-  "src/lower/pointers/**",
-  "src/lower/mut_refs.rs",
-  "src/lower/mut_refs/**",
+  "crates/rust-js-lower/src/analysis/intervals.rs",
+  "crates/rust-js-lower/src/analysis/intervals/**",
+  "crates/rust-js-lower/src/pointers.rs",
+  "crates/rust-js-lower/src/pointers/**",
+  "crates/rust-js-lower/src/mut_refs.rs",
+  "crates/rust-js-lower/src/mut_refs/**",
 ];
 
 const intervalsGlobs = intervalsPaths.map((path) => new Bun.Glob(path));
@@ -258,12 +258,12 @@ export type Family = (typeof families)[number];
 
 /** What drops, and what drops as a panic unwinds, as globs of the
  * repository's paths: the drops and their unwinding's owners. */
-const dropPaths = ["src/lower/drops/**", "src/lower/analysis/unwinding.rs"];
+const dropPaths = ["crates/rust-js-lower/src/drops/**", "crates/rust-js-lower/src/analysis/unwinding.rs"];
 
 /** How a future awaits and what an async body drops as it unwinds, as
  * globs of the repository's paths: `.await`'s lowering, the drops and
  * their unwinding's owners, and the table and its runner. */
-export const asyncPaths = ["src/lower/analysis/awaits.rs", ...dropPaths, "test/async-points.ts", "test/panic-points.ts"];
+export const asyncPaths = ["crates/rust-js-lower/src/analysis/awaits.rs", ...dropPaths, "test/async-points.ts", "test/panic-points.ts"];
 
 const asyncGlobs = asyncPaths.map((path) => new Bun.Glob(path));
 
@@ -283,13 +283,13 @@ const consumerGlobs = consumerPaths.map((path) => new Bun.Glob(path));
  * the repository's paths: their lowering, the runtime, the drops', and the
  * net that tests them, test/std-net.ts, and its coverage of std (#1171). */
 export const stdNetPaths = [
-  "src/lower/std_types/**",
-  "src/lower/std_impls.rs",
-  "src/lower/std_impls/**",
-  "src/lower/combinators.rs",
-  "src/lower/combinators/**",
-  "src/lower/mir/std_calls.rs",
-  "src/lower/mir/std_calls/**",
+  "crates/rust-js-lower/src/std_types/**",
+  "crates/rust-js-lower/src/std_impls.rs",
+  "crates/rust-js-lower/src/std_impls/**",
+  "crates/rust-js-lower/src/combinators.rs",
+  "crates/rust-js-lower/src/combinators/**",
+  "crates/rust-js-mir/src/std_calls.rs",
+  "crates/rust-js-mir/src/std_calls/**",
   "crates/rust-js-program/src/runtime.rs",
   "crates/rust-js-program/src/runtime/**",
   "std/runtime.js",
@@ -423,6 +423,7 @@ export const rustcPaths = [
   "builtins/**",
   "typescript/**",
   "build.rs",
+  "rustc-rpath.rs",
   "Cargo.toml",
   "Cargo.lock",
   "rust-toolchain.toml",

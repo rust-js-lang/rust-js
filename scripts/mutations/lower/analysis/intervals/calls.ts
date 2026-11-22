@@ -1,4 +1,4 @@
-// Mutations of src/lower/analysis/intervals/calls.rs, split from intervals.rs (ADR 1137, #1672).
+// Mutations of crates/rust-js-lower/src/analysis/intervals/calls.rs, split from intervals.rs (ADR 1137, #1672).
 import type { Mutation } from "../../../../mutations";
 
 const tests = ["test/intervals-shadow.test.ts"];
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-range-next-unknown",
     breaks: "a for loop's value isn't known below its range's end, so `path[i]` of `for i in 1..len` keeps its check",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "                (Some(RangeStep::Next), Held::Lent) if !matches!(given.end, End::Items(_)) => {\n",
     replace: "                (Some(RangeStep::Next), Held::Lent) if false => {\n",
     tests,
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-min-unrelated",
     breaks: "an integer's `min` isn't below what either operand is below, so `xs[i.min(xs.len() - 1)]` keeps its check",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "                false => ra.union(&rb).copied().collect(),\n",
     replace: "                false => Vec::new(),\n",
     tests: ["test/lowering-collections.test.ts","-t","a table as long as another is indexed as it is"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-rest-deref-unknown",
     breaks: "a rest value's `Deref` isn't the array it is, so `value[0]` under `value.is_empty()`'s test keeps its check",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "            after.copies.insert(local, state.root(of));\n",
     replace: "            let _ = of;\n",
     tests: ["test/rest-parameters.test.ts","-t","rest arguments as a value indexed in bounds"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-enumerate-uncounted",
     breaks: "`enumerate()` of a slice's iterator isn't counted, so `terraces[i]` of its index keeps its check",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "                (Some(RangeStep::Enumerate), Held::Range)\n",
     replace: "                (Some(RangeStep::Enumerate), Held::Lent)\n",
     tests: ["test/lowering-collections.test.ts","-t","an enumerate's index is below its slice's length"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-text-length-unbounded",
     breaks: "text's `len()` may be `usize::MAX`, so `a.len() + b.len()` of two `&str`s may wrap",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "            } else if text_length(self.tcx, callee) {\n",
     replace: "            } else if false && text_length(self.tcx, callee) {\n",
     tests: ["test/intervals-shadow.test.ts"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-slice-get-unknown",
     breaks: "a slice's `get(i)`'s `Some` doesn't put `i` below its length, so `i += 1` of `while let Some(&item) = items.get(i)` keeps its wrap",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "            after.gets.insert(local, (state.root(index), most.hi - 1));\n",
     replace: "            let _ = (index, most);\n",
     tests: ["test/lowering-integer-ranges.test.ts","-t","an index an item is there at counts on"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-option-copied-unknown",
     breaks: "an `Option`'s `cloned()` of a slice's `get(i)` isn't `Some` where that was, so `i += 1` of `while let Some(..) = items.get(i).cloned()` keeps its wrap",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "            after.gets.insert(local, got);\n",
     replace: "            let _ = got;\n",
     tests: ["test/intervals-shadow.test.ts","-t","MIR decides"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "intervals-js-length-no-length",
     breaks: "a JS string's `length` of text isn't a length of it, so `i` of `while i + 1 < js::string::length(format)` stepping by two isn't kept below it and `i + 1` keeps its wrap",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "                    after.lens.insert(local, of);\n                }\n            } else if text_length(self.tcx, callee) {\n",
     replace: "                    let _ = of;\n                }\n            } else if text_length(self.tcx, callee) {\n",
     tests: ["test/lowering-string-lengths.test.ts", "-t", "a counter below a JS string"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "pushed-push-unknown",
     breaks: "a `push` makes nothing known pushed, so `items[items.len() - 1]` past one keeps its wrap (#1700)",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "                        after.pushed.insert(root);\n",
     replace: "",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "a counter a loop breaks out of at a bound"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "pushed-held-length-unrelated",
     breaks: "a length held before a `push` isn't known below the length past it, so `v[n]` of `n = v.len()` and the heap's `sift_up` given it keep their checks (ADR 1168, #1948)",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "                            after.related(x, Term::Len(root), true);\n",
     replace: "",
     tests: ["test/lowering-functions.test.ts", "-t", "a function only calls reach"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "pushed-at-most-unread",
     breaks: "what's known at most a length before a `push`, `i <= v.len()`, isn't known below it past the push, so `v[i]` keeps its check (ADR 1168, #1948)",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "                            .filter(|&&(_, y, _)| y == Term::Len(root))\n",
     replace: "                            .filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^length_shifted_past_a_push.rs$"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
   {
     name: "pushed-held-length-unread",
     breaks: "a local holding a length before a `push`, `n = v.len()`, isn't known below the length past it, so `v[n]` keeps its check (ADR 1168, #1948)",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "                            .chain((state.lens.iter()).filter(|&(_, &of)| of == root).map(|(&n, _)| n))\n",
     replace: "",
     tests: ["test/lowering-functions.test.ts", "-t", "a function only calls reach"],
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
   {
     name: "pushed-below-of-any-length",
     breaks: "a `push` is taken to put what was below another slice's length below the pushed vector's, so `b[i]` under `i < a.len()` reads past `b`'s end, `undefined` where Rust panics (ADR 1168, #1948)",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "                            .filter(|&&(_, y, _)| y == Term::Len(root))\n",
     replace: "                            .filter(|&&(_, y, _)| matches!(y, Term::Len(_)))\n",
     tests: ["test/corpus.test.ts", "-t", "^length_shifted_past_a_push.rs$"],
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
   {
     name: "index-not-given-back",
     breaks: "an index `v[i]` gave its item at isn't known below the length after, so a drain to it, `drain(0..i)` past `queue.borrow_mut()[i] = 0`, keeps its check, a call-bounds line (#1815)",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "                        after.related(i, Term::Len(of), true);\n",
     replace: "",
     tests: ["test/intervals-shadow.test.ts", "-t", "guard keeps"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
   {
     name: "integer-from-bool-unbounded-low",
     breaks: "`usize::from(apple)` is taken as 0 only, so `one[usize::from(apple)]` of an array of one is unchecked and reads `undefined` where Rust panics (#1863)",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "            after.intervals.set(local, Some(Interval { lo: 0, hi: 1 }));\n",
     replace: "            after.intervals.set(local, Some(Interval { lo: 0, hi: 0 }));\n",
     tests: ["test/corpus.test.ts", "-t", "^bool_indexed_arrays\\.rs$"],
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
     name: "position-not-through-try",
     breaks:
       "`let i = v.iter().rposition(..)?; v.remove(i)` guards its remove, its `?`'s `Continue` no index of `rposition`'s (#1945)",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "            after.positions.insert(local, (slice, 0));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^position_index_removed_unchecked.rs$"],
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-collected-least-unknown",
     breaks: "a `split` collected into a `Vec` straight from its making isn't known not empty, so its `last().unwrap()` keeps `$unwrap` (#1860)",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: "            after.splits.insert(local);\n",
     replace: "",
     tests: ["test/lowering-collections.test.ts", "-t", "a split collected straight"],
@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-position-rposition-unknown",
     breaks: "an iterator's `rposition()` isn't taken for one, so its `Some` isn't known an index of the slice, and `v.remove(i)` of it keeps its check (#2313)",
-    file: "src/lower/analysis/intervals/calls.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/calls.rs",
     find: '        && matches!(tcx.item_name(callee).as_str(), "position" | "rposition")\n',
     replace: '        && matches!(tcx.item_name(callee).as_str(), "position")\n',
     tests: ["test/corpus.test.ts", "-t", "^position_index_removed_unchecked.rs$"],

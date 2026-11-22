@@ -1,4 +1,4 @@
-// Mutations of src/lower/drops/types.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/drops/types.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "thir-types-in-trait-terms",
     breaks:
       "a type a copied default's THIR names is asked what it drops in its trait's terms, `<Self as Iterator>::Item`, where its impl's drops are given: a trait's default's `Self`, which drops nothing there, held while a guard of a cell its impl's destructor asks of is, isn't counted, and the destructor's `try_borrow()` is `Ok` (a wrong answer, #828, #1321)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "        match self.thir_args {\n",
     replace: "        match None::<ty::GenericArgsRef<'tcx>> {\n",
     tests: ["test/corpus.test.ts", "-t", "^(copied_default_asks_its_drops_in_the_impls_terms|guard_held_while_a_type_parameters_value_drops)\\.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "no-type-here-of-the-top-alone",
     breaks: "a type built of a projection that can't be made here, `Held<<u8 as IntoIterator>::IntoIter>`, is asked its facts, refused, where only a projection itself is no type here (#1576)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "    ty.walk()\n        .filter_map(|arg| arg.as_type())\n        .any(|part| projection_not_here(tcx, typing_env, part))\n",
     replace: "    projection_not_here(tcx, typing_env, ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^default_where_clause_beside_a_hinted_extend.rs$"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     name: "uncounted-weak-drops",
     breaks:
       "an uncounted `Weak`'s drop is `$weakDrop` of the object itself, or of `null`, which throws (ADR 0843)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Adt(..) if weak_pointee(tcx, ty).is_some() => Drops::Nothing,\n",
     replace:
       "            ty::Adt(..) if weak_pointee(tcx, ty).is_some() => Drops::Runs,\n",
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "drops-walk-uncached",
     breaks:
       "what a type drops is found again for each path to it, which takes exponential time",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            self.state.cache.borrow_mut().insert(key, found);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "nested_generic_types"],
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     name: "drops-but-params-walk-uncached",
     breaks:
       "what a type argument of a `Drop::drop` call drops, but its type parameters, is found again for each path to each type it holds, and `nested_generic_types_dropped.rs` takes two minutes to compile (#1214)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "        self.visited.is_none().then_some(key)\n",
     replace: "        (self.visited.is_none() && !self.params_none && !self.guards_none).then_some(key)\n",
     tests: ["test/compile-bounds.test.ts"],
@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
     name: "drops-walks-share-answers",
     breaks:
       "a walk that takes type parameters or guards as dropping nothing is given another walk's answer of a type, and the other's its (#1214)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "        let key = (ty, self.params_none, self.guards_none);\n",
     replace: "        let key = (ty, false, false);\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "drops-itself-revisits",
     breaks:
       "whether a type is inside itself walks each path to what it holds, which takes exponential time",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "        if let Some(visited) = &mut walk.visited\n            && !visited.insert(ty)\n",
     replace:
       "        if let Some(visited) = &mut walk.visited\n            && !visited.insert(ty)\n            && false\n",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     name: "drops-itself-cached",
     breaks:
       "whether a type is inside itself is read from answers cached where another was outermost, which say nothing of what they reach",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            visited: Some(IndexSet::default()),\n",
     replace: "            visited: None,\n",
     tests: ["test/corpus.test.ts", "-t", "^trie_of_counted_rcs.rs$"],
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     name: "walk-reach-lost",
     breaks:
       "what a type's earlier parts reached is lost to a later part's walk, a set's, so a type around it is cached as dropping nothing and a destructor in it never runs (#304)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "        walk.reached = walk.reached.min(outer);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^set_field_drops_in_a_cycle.rs$"],
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     name: "dyn-drops-nothing",
     breaks:
       "a `dyn` of the crate's trait is taken to drop nothing, and what it holds is never dropped",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "                    true => self.implementors_drop(predicates, walk),\n",
     replace: "                    true => Drops::Nothing,\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_drops"],
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
     name: "library-drop-skipped",
     breaks:
       "a library's type's destructor isn't run by a crate that drops a value of it",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "        drop.is_local() || foreign.compiled(drop)\n",
     replace: "        drop.is_local() || (foreign.compiled(drop) && foreign.item(drop).is_none() && !foreign.compiles(drop))\n",
     tests: ["test/crates.test.ts", "-t", "two crates: drop"],
@@ -108,7 +108,7 @@ export const mutations: Mutation[] = [
     name: "closure-part-taken",
     breaks:
       "a closure that takes part of a value with a destructor, `move || held.0.id()`, given to generic code is taken for one that drops nothing, so its part is never dropped (#1012)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            Some(_) if matches!(ty.kind(), ty::Closure(..)) => true,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^closure_holding_part_of_a_value.rs$"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
     name: "channel-ends-drop-nothing",
     breaks:
       "a channel's ends have no destructor, so a sender dropped still counts",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Adt(_, args) if self.recognition.channel_end(ty).is_some() => {\n                match self.drops_in(args.type_at(0), walk) {\n                    Drops::Unsupported(t, what) => Drops::Unsupported(t, what),\n                    _ => Drops::Runs,\n",
     replace:
       "            ty::Adt(_, args) if self.recognition.channel_end(ty).is_some() => {\n                match self.drops_in(args.type_at(0), walk) {\n                    Drops::Unsupported(t, what) => Drops::Unsupported(t, what),\n                    _ => Drops::Nothing,\n",
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
     name: "params-drop-as-own",
     breaks:
       "what a generic iterator drops of its type parameters is taken as its own, so a generic iterator consumed, a `Peekable` of one, isn't dropped after by the drops it's given",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Param(_) if walk.params_none => Drops::Nothing,\n",
     replace: "",
     tests: [
@@ -139,7 +139,7 @@ export const mutations: Mutation[] = [
   {
     name: "weak-drops-nothing",
     breaks: "dropping a `Weak` doesn't count it gone",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "                Drops::Runs\n            }\n            ty::Adt(..) if weak_pointee(tcx, ty).is_some() => Drops::Nothing,\n",
     replace:
       "                Drops::Nothing\n            }\n            ty::Adt(..) if weak_pointee(tcx, ty).is_some() => Drops::Nothing,\n",
@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
   {
     name: "refcell-drops-refused",
     breaks: "a `RefCell` of a `Weak` is refused",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "                    _ if own.is_some() || std(StdItem::LazyCell) =>",
     replace: "                    _ if own.is_some() || std(StdItem::LazyCell) || std(StdItem::RefCell) =>",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-values-drop-nothing",
     breaks: "a map's values aren't dropped with it",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "                    self.drops_in(args.type_at(1), walk),\n                ) {\n",
     replace: "                    Drops::Nothing,\n                ) {\n",
     tests: ["test/corpus.test.ts", "-t", "map_drops"],
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-key-drops-allowed",
     breaks: "a map's keys with a destructor are never dropped",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "                    self.drops_in(args.type_at(0), walk),\n                    self.drops_in(args.type_at(1), walk),\n",
     replace:
       "                    Drops::Nothing,\n                    self.drops_in(args.type_at(1), walk),\n",
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "guard-drops-nothing",
     breaks: "a guard dropped leaves its cell borrowed",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Adt(..) if self.recognition.is_guard(ty) => Drops::Runs,",
     replace:
       "            ty::Adt(..) if self.recognition.is_guard(ty) => Drops::Nothing,",
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
   {
     name: "guards-counted-as-drops",
     breaks: "a guard beside another is taken as dropping something that asks",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Adt(..) if self.recognition.is_guard(ty) && (walk.guards_none || self.uncounted_guard(ty)) => {\n",
     replace:
       "            ty::Adt(..) if self.recognition.is_guard(ty) && self.uncounted_guard(ty) => {\n",
@@ -196,7 +196,7 @@ export const mutations: Mutation[] = [
   {
     name: "peek-mut-drops-nothing",
     breaks: "a `PeekMut` dropped never sifts its changed top down",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Adt(..) if self.recognition.peek_mut_of(ty).is_some() => Drops::Runs,",
     replace:
       "            ty::Adt(..) if self.recognition.peek_mut_of(ty).is_some() => Drops::Nothing,",
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
     name: "owned-iter-drops-unsupported",
     breaks:
       "a `vec::IntoIter` of what has a destructor is refused, as a std type holding one",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Adt(..) if let Some(item) = self.recognition.owned_items(ty) => self.drops_in(item, walk),\n",
     replace:
       "            ty::Adt(..) if let Some(item) = self.recognition.owned_items(ty).filter(|_| false) => self.drops_in(item, walk),\n",
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     name: "given-item-drop-unknown",
     breaks:
       "a std trait's associated type whose drop the function is given is refused",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Alias(..) if self.state.given.contains(&ty) => Drops::Runs,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
     name: "dyn-drop-kept-of-rust-traits-only",
     breaks:
       "a `dyn` keeps its value's drop only of a trait rust-js compiled, so a `Box<dyn Any>` or a `Box<dyn Send>` of a value with a destructor drops nothing",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Dynamic(predicates, ..) if self.recognition.is_pair_dyn(predicates) => {\n",
     replace:
       "            ty::Dynamic(predicates, ..)\n                if predicates.principal_def_id().is_some_and(|id| self.recognition.foreign.compiled_by_rust_js(id)) =>\n            {\n",
@@ -239,7 +239,7 @@ export const mutations: Mutation[] = [
     name: "dyn-reference-refused",
     breaks:
       "a `&dyn` of a value with a destructor in a trait's default method, which owns nothing to drop, is rejected",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "        !target.is_ref()\n            && match self.drops(from) {\n",
     replace: "        match self.drops(from) {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_lent_of_a_dropping_value\\.rs$"],
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
     name: "dyn-implementors-unread",
     breaks:
       "a `dyn` of the crate's trait drops something wherever a type may, though none of its implementors drops anything, so its `Rc`, and its owner's, are counted, `{ value, strong, weak }`",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "        !implementor.has_non_region_param() && !drops(implementor)\n",
     replace: "        false\n",
     tests: [
@@ -261,7 +261,7 @@ export const mutations: Mutation[] = [
     name: "item-slot-ungiven-hooked",
     breaks:
       "`counted(0..3)`, whose items no caller gives a drop, is given a hook for one, `IIterator.$dropItem?.(item)`",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Alias(_, alias) if self.is_slot(*alias) => Drops::Nothing,\n",
     replace: "",
     tests: [
@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     name: "operator-output-drop-unseen",
     breaks:
       "a generic `a + b`'s `Output` with a destructor isn't dropped by its dictionary's `$dropOutput`, and is refused",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "        carried.then(|| (alias.trait_ref(tcx), def_id))\n",
     replace: "        carried.then(|| (alias.trait_ref(tcx), def_id)).and(None)\n",
     tests: ["test/corpus.test.ts", "-t", "^operator_output_drops.rs$"],
@@ -283,7 +283,7 @@ export const mutations: Mutation[] = [
     name: "extract-if-drops-items",
     breaks:
       "an `extract_if()`'s iterator is taken to drop what it hasn't reached, refused",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Adt(..) if let Some(test) = self.recognition.extract_if_test(ty) => self.drops_in(test, walk),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^extract_if_drops.rs$"],
@@ -291,7 +291,7 @@ export const mutations: Mutation[] = [
   {
     name: "cell-drops-refused",
     breaks: "a `Cell` or a `OnceCell` of a value with a destructor is refused",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "                    _ if own.is_some() || std(StdItem::LazyCell) =>",
     replace:
       "                    _ if own.is_some() || std(StdItem::LazyCell) || std(StdItem::Cell) || std(StdItem::OnceCell) =>",
@@ -301,7 +301,7 @@ export const mutations: Mutation[] = [
     name: "fn-dyn-drops-nothing",
     breaks:
       "a `dyn Fn` drops nothing, though a function holding a value with a destructor is made one",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "                match self.closure_facts.fn_dyns_drop.drops(self.recognition.tcx, predicates) {\n                    true => Drops::Runs,\n",
     replace:
       "                match self.closure_facts.fn_dyns_drop.drops(self.recognition.tcx, predicates) {\n                    true => Drops::Nothing,\n",
@@ -311,8 +311,8 @@ export const mutations: Mutation[] = [
     name: "foreign-closure-drop-refused",
     breaks:
       "a closure another crate gives back, holding a value with a destructor, is refused where it's dropped",
-    file: "src/lower/drops/types.rs",
-    find: "                crate::lower::recognition::given_back(self.recognition.tcx, closure)\n                    || self.foreign_takes_whole(closure)\n",
+    file: "crates/rust-js-lower/src/drops/types.rs",
+    find: " crate::recognition::given_back(self.recognition.tcx, closure) || self.foreign_takes_whole(closure)",
     replace: "                false\n",
     tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
   },
@@ -320,7 +320,7 @@ export const mutations: Mutation[] = [
     name: "any-dyn-drops-by-the-crate",
     breaks:
       "every `dyn Any` of a crate with destructors drops, a caught panic's payload too, so `catch_unwind(..).unwrap_or_default()` is `$catchUnwind` and a `kept`",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            return match self.closure_facts.any_dyns_drop {\n",
     replace: "            return match true {\n",
     tests: [
@@ -333,8 +333,8 @@ export const mutations: Mutation[] = [
     name: "async-fn-future-holds-arguments",
     breaks:
       "an `async fn`'s future is taken to hold its arguments, which its body drops too",
-    file: "src/lower/drops/types.rs",
-    find: "                        || crate::lower::recognition::is_async_block(self.recognition.tcx, def_id)) =>\n",
+    file: "crates/rust-js-lower/src/drops/types.rs",
+    find: "                        || crate::recognition::is_async_block(self.recognition.tcx, def_id)) =>\n",
     replace: "                        || true) =>\n",
     tests: [
       "test/lowering-async.test.ts",
@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [
     name: "quiet-guard-dropped",
     breaks:
       "a guard of a `RefCell` no borrow of which can meet another is released where it's dropped, `$unborrow(types)`, though it was never counted (ADR 0863)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Adt(..) if self.recognition.is_guard(ty) && (walk.guards_none || self.uncounted_guard(ty)) => {\n",
     replace:
       "            ty::Adt(..) if self.recognition.is_guard(ty) && walk.guards_none => {\n",
@@ -362,7 +362,7 @@ export const mutations: Mutation[] = [
   {
     name: "projection-drop-unnormalized",
     breaks: "an associated type its bounds say is another is never read as that one, so `Iterator::count`'s closure inlined in std's `FlattenCompat::count` is refused its item's drop, and std's bodies don't compile (#736)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "                if let Some(normal) = self.normalized(ty)\n                    && normal != ty =>\n",
     replace: "                if let Some(normal) = self.normalized(ty)\n                    && normal != ty\n                    && false =>\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
@@ -371,7 +371,7 @@ export const mutations: Mutation[] = [
     name: "impossible-alias-unsupported",
     breaks:
       "an associated type of a type its trait isn't implemented for, an impl's slot of a default its arguments can't meet, is refused as an unknown one, so `(0..3u8).counted()` doesn't compile (#798)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "    if !ty.has_param() {\n        return tcx.instantiate_and_check_impossible_clauses((*def_id, alias.args));\n",
     replace: "    if !ty.has_param() {\n        return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^default_where_clause_item_drops.rs$"],
@@ -380,7 +380,7 @@ export const mutations: Mutation[] = [
     name: "unmet-generic-alias-unsupported",
     breaks:
       "generic code calling a blanket impl's default is asked the drop of an associated type another default's where clause names, which it can't meet there, `<<I::IntoIter as Iterator>::Item as IntoIterator>::Item`, and is refused, as itertools' `intersperse` was (#828)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "    tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n        .is_err()\n",
     replace: "    tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n        .is_err()\n        && false\n",
     tests: ["test/corpus.test.ts", "-t", "^blanket_default_beside_an_unmet_clause.rs$"],
@@ -388,7 +388,7 @@ export const mutations: Mutation[] = [
   {
     name: "glue-parts-drop-nothing",
     breaks: "a struct, an enum or a tuple drops nothing whatever its fields hold, its glue's parts never asked (#887)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            Some(parts) => all(self, &mut parts.into_iter(), walk),\n",
     replace: "            Some(_) => Drops::Nothing,\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_parts_past_a_panic.rs$"],
@@ -396,15 +396,15 @@ export const mutations: Mutation[] = [
   {
     name: "foreign-closure-captures-unread",
     breaks: "another crate's closure holding a value with a destructor, its maker's MIR making it of whole values, is refused as one that holds part of one (#840)",
-    file: "src/lower/drops/types.rs",
-    find: "                    || self.foreign_takes_whole(closure)\n",
-    replace: "                    || false && self.foreign_takes_whole(closure)\n",
+    file: "crates/rust-js-lower/src/drops/types.rs",
+    find: " || self.foreign_takes_whole(closure)",
+    replace: " || false && self.foreign_takes_whole(closure)",
     tests: ["test/crates.test.ts", "-t", "two crates: closure_of_another_crate"],
   },
   {
     name: "splice-drop-of-its-items",
     breaks: "a `Splice` drops something only where its items do, so one of items with no destructor, or an `impl Iterator`'s, is never dropped and its replacement never put in place (#1149)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Adt(_, args) if self.recognition.is_vec_splice(ty) => {\n",
     replace: "            ty::Adt(_, args) if false && self.recognition.is_vec_splice(ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^splice_drops_and_fills_as_std.rs$"],
@@ -412,7 +412,7 @@ export const mutations: Mutation[] = [
   {
     name: "splice-of-array-items-drops",
     breaks: "a `Vec`'s `Splice` of an array's items with no destructor is std's lazy one, `$splicing(..).return()` where nothing it does runs code (#1189)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "                    .is_some_and(|item| self.drops_in(item, walk) == Drops::Nothing) =>\n",
     replace: "                    .is_some_and(|item| self.drops_in(item, walk) == Drops::Nothing && false) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^splice_of_array_items.rs$"],
@@ -421,7 +421,7 @@ export const mutations: Mutation[] = [
   {
     name: "mapped-guard-type-uncounted",
     breaks: "a guard type a map gives is uncounted where no cell of what it guards is, so its drop releases nothing (#1275)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "        if ref_cells.maps_to(tcx, ty) {\n            return false;\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_guards_mapped.rs$"],
@@ -429,8 +429,8 @@ export const mutations: Mutation[] = [
   {
     name: "impl-trait-item-drop-unasked",
     breaks: "generic code holding what a trait method gives behind an `impl Trait` asks no dictionary for its drop, and is refused (#1296)",
-    file: "src/lower/drops/types.rs",
-    find: "        let carried = !tcx.is_impl_trait_in_trait(def_id) || crate::lower::traits::drop_carried_impl_trait(tcx, def_id);\n",
+    file: "crates/rust-js-lower/src/drops/types.rs",
+    find: "        let carried = !tcx.is_impl_trait_in_trait(def_id) || crate::traits::drop_carried_impl_trait(tcx, def_id);\n",
     replace: "        let carried = !tcx.is_impl_trait_in_trait(def_id);\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_trait_of_a_trait_method_dropped_by_its_dictionary.rs$"],
   },
@@ -438,7 +438,7 @@ export const mutations: Mutation[] = [
     name: "thir-ty-unnormalized",
     breaks:
       "a copied default's `Vec<Self::Item>` of a `Wrapper<I>` impl is asked what it drops as `<Wrapper<I> as Iterator>::Item`, which the slots take for one dropping nothing, so a closure holding it made in a tuple, where JS can't see what it took, compiles by luck where the blanket impl's and a generic function's are refused (#1337)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "                self.normalized(ty).unwrap_or(ty)\n",
     replace: "                ty\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_in_a_wrappers_copied_default_holding_its_items\\.rs$"],
@@ -446,7 +446,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-drops-nothing",
     breaks: "an `io::Error` is taken to drop nothing, so the error it holds is never dropped where Rust drops it",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "                if self.recognition.is_io_error(ty)\n                    && let Some(held)",
     replace: "                if false\n                    && let Some(held)",
     tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
@@ -454,7 +454,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-error-drops-as-its-struct",
     breaks: "serde_json's error, rust-js's own value, is dropped as its struct, whose `ErrorCode::Io` reads a field it hasn't, `err.code.TAG`, which throws where a crate's errors may drop",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Adt(..) if self.recognition.is_json_error(ty) => Drops::Nothing,\n",
     replace: "",
     tests: ["test/serde-values.test.ts", "-t", "a serde_json error dropped where the crate's dyn Errors drop"],
@@ -462,7 +462,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-dyn-drop-lost",
     breaks: "a `Box<dyn Iterator>` of a value with a destructor is refused, \"a `dyn` of a value with a destructor\", though it carries its drop (#1420)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "                        && !(target.is_box() && self.recognition.is_dyn_iter(to))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
@@ -470,7 +470,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-dyn-drops-nothing",
     breaks: "a `Box<dyn Iterator>` drops nothing where the crate boxes one of what drops, so a `Counter` holding a `D` never prints its drop (#1420)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Dynamic(..) if self.recognition.is_dyn_iter(ty) => match self.closure_facts.iterator_dyns_drop {\n",
     replace: "            ty::Dynamic(..) if self.recognition.is_dyn_iter(ty) => match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
@@ -478,7 +478,7 @@ export const mutations: Mutation[] = [
   {
     name: "serde-backend-type-may-drop",
     breaks: "a serde backend's associated type, `<D as Deserializer>::Error`, is held to have a destructor where the crate has one, so a guard in a hand-written `Deserialize`, or a generic `deserialize_with` helper in a library, is refused (#1554)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            ty::Alias(..) if self.recognition.of_serde_backend(ty) => Drops::Nothing,\n",
     replace: "            ty::Alias(..) if false => Drops::Nothing,\n",
     tests: [
@@ -490,7 +490,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-count-asks-a-cell",
     breaks: "a counted `Rc`'s own count is taken as code that may ask whether a cell is borrowed, so an undo stack's guard held while an `Rc<State>` entry is written over or truncated, `State` dropping nothing, is counted with a `try` and `$unborrow` (#1815)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "                    found if walk.guards_none => found,\n",
     replace: "",
     tests: ["test/borrow-forms.test.ts", "-t", "an undo stack's guards"],
@@ -498,7 +498,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninhabited-drops-asked",
     breaks: "an uninhabited enum's drop, which never runs, is walked as any type's, so its glue's `Unreachable` refuses it and what holds one, an empty `Vec` say, steps each item to drop nothing (#916)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "            && adt.variants().is_empty()\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_of_an_uninhabited_enum.rs$"],
@@ -506,7 +506,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninhabited-drops-by-rustc",
     breaks: "every type rustc calls uninhabited drops nothing, std's `PoisonError` too, which holds a `!` where std is built without unwinding, so a poisoned `try_lock`'s guard is never unlocked as it drops (#916)",
-    file: "src/lower/drops/types.rs",
+    file: "crates/rust-js-lower/src/drops/types.rs",
     find: "        if let ty::Adt(adt, _) = ty.kind()\n            && adt.is_enum()\n            && adt.variants().is_empty()\n        {\n",
     replace: "        if ty.is_privately_uninhabited(tcx, self.recognition.typing_env) {\n",
     tests: ["test/corpus.test.ts", "-t", "^try_lock.rs$"],

@@ -1,11 +1,11 @@
-// Mutations of src/lower/analysis/hint_asked.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/analysis/hint_asked.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "hint-asked-unmarked",
     breaks: "a `filter` a caller makes and gives generic code that asks its hint is JS's own `values().filter(p)`, whose hint is `(0, None)`, where std's is `(0, Some(4))` (#1236)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "                of_items |= mark_given(tcx, recognition, instance, keeps_capacity, &mut asked);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_adapter_given_to_generic_code_that_asks_its_hint\\.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "made-in-generic-code-unmarked",
     breaks: "a `map` or a `take` generic code makes of its own type parameter's iterator and gives code that asks its hint is JS's own, `(0, None)`, where std's is `(5, Some(5))` (#1240)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "                    mark_made_in(tcx, maker, made, &mut asked.hinted);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "generic-growth-lost-unseen",
     breaks:
       "a `pub` generic function's `extend` of a `Vec`, whose callers the crate can't see, is lost: its `capacity()` throws where std's is 32 (#1180's (3))",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "                None => _ = asked.hinted.by_value.insert((owner, iter_ty)),\n",
     replace: "                None => _ = asked.hinted.lost.insert((owner, iter_ty)),\n",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
     name: "generic-growth-instances-unasked",
     breaks:
       "generic code's `extend` of a `Vec` by what its callers give is never lost: of `chars().skip(5)` given it, its capacity 64 where std's is 60, silently (#1180's (3))",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "if (instances.into_iter()).any(|instance| !recognition.given_growth_kept(instance)) {",
     replace: "if false && (instances.into_iter()).any(|instance| !recognition.given_growth_kept(instance)) {",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     name: "generic-growth-unseen-not-by-value",
     breaks:
       "a `pub` generic function's `extend` of a `Vec`, whose callers the crate can't see, isn't asked of each value it's given: of `chars().skip(5)`, a capacity of 64 where std's is 44, silently (#1251)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "                None => _ = asked.hinted.by_value.insert((owner, iter_ty)),\n",
     replace: "                None => {}\n",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-parts-unmarked",
     breaks: "a chain's exact-sized parts a `Vec` grows by where a capacity is read aren't made knowing their hints where they're made, JS's own `drop(n)` (#1216)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "                mark_counted(tcx, tcx.typeck_root_def_id(body.def_id), iter_ty, &mut asked.hinted);\n",
     replace: "                _ = iter_ty;\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-part-sources-unmarked",
     breaks: "what a chain's counted part counts, an enumeration, isn't made knowing its hint, so the `skip(n)` of it knows none: a capacity of 8 where std's is 6 (#1216)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "                knowing.push(below);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
   {
     name: "hint-asked-of-no-param",
     breaks: "a function that asks `size_hint()` of what it's given, or collects it, isn't known to: a flatten given it is JS's own `flatMap`, `(0, None)` where std's counts its items' constant size (#1323)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "                asks_hint.of_params(callee, args).is_some()\n                    || asked.contains(&callee)\n",
     replace: "                false\n                    || asked.contains(&callee)\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
   {
     name: "hint-asked-not-relayed",
     breaks: "a function that gives what it's given on to one that asks its hint isn't known to ask it: `relayed(it)` of `hint(it)` (#1323)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "                asks_hint.of_params(callee, args).is_some()\n                    || asked.contains(&callee)\n",
     replace: "                asks_hint.of_params(callee, args).is_some()\n                    || false\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     name: "collect-asks-no-hint",
     breaks:
       "a flatten given to generic code that collects it is made in place, as no collect is said to ask its hint, so the `Vec` std's `SpecFromIter` grows asks it again (#1239, #1327)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "        ((callee == self.size_hint || callee == self.collect) && rustc_middle::ty::TypeVisitableExt::has_param(&of))\n",
     replace: "        (callee == self.size_hint && rustc_middle::ty::TypeVisitableExt::has_param(&of))\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_an_associated_types_items.rs$"],
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-hint-lost-unmarked",
     breaks: "what a caller gives generic code, or a library's, that collects it, whose hint JS's own iterator loses as it's given, a set's `iter().enumerate()`, `entries()`, is made as JS's own, so std's growth by its hint's lower bound isn't kept and its capacity is a doubling's (#1263)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "    if !keeps_capacity || !of_arrays || recognition.given_hint_is_stds(instance) {\n",
     replace: "    if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_generic_collects.rs$"],
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-chain-marked-whole",
     breaks: "a chain a caller gives generic code that collects it, whose parts' hints JS's own adapters lose, is made knowing its back, which a `take(n)` of a B-tree set's `iter()` can't be, so it's refused, where its counted parts made knowing their hints, `$taking`, give std's capacity (#1263)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "    match recognition.lower_bound_kept_by_parts(instance) {\n",
     replace: "    match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_generic_collects.rs$"],
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-hint-marked-of-any-source",
     breaks: "what a caller gives generic code that asks its hint is made knowing it where it steps no array JS counts, a map of the crate's own iterator, `$mapEnds` where its `$iterator`'s own `map` knows std's hint (#1263)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "    if !keeps_capacity || !of_arrays || recognition.given_hint_is_stds(instance) {\n",
     replace: "    if !keeps_capacity || recognition.given_hint_is_stds(instance) {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_of_own_size_hint.rs$"],
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-made-knowing-crate-wide",
     breaks: "a concrete `take` that generic code asks the hint of is `$taking` in every function that makes one, its value stepped where it's made too (#1333)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "            if makes && may_leave(tcx, body, ty) {\n",
     replace: "            if makes {\n",
     tests: ["test/corpus.test.ts", "-t", "^takes_made_knowing_where_they_leave.rs$"],
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-left-unmarked",
     breaks: "a concrete `take` given to the generic code that asks its hint where it's made is JS's own adapter, its hint not std's (#1333)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "            if makes && may_leave(tcx, body, ty) {\n",
     replace: "            if makes && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^takes_made_knowing_where_they_leave.rs$"],
@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-passed-unmarked",
     breaks: "a concrete `take` given to a function of the crate's isn't taken to leave its function (#1333)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "            !std && args.iter().any(|&arg| holds(thir[arg].ty))\n",
     replace: "            false && !std && args.iter().any(|&arg| holds(thir[arg].ty))\n",
     tests: ["test/corpus.test.ts", "-t", "^takes_made_knowing_where_they_leave.rs$"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     name: "dyn-size-hint-unasked",
     breaks:
       "a crate that asks a `dyn Iterator`'s `size_hint()` makes no value it boxes as one knowing its hint, so a boxed `filter` is JS's own and hints `(0, None)` where native Rust's is `(0, Some(5))` (#1476)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "                asked.hinted.dyn_asked = true;\n",
     replace: "",
     tests: ["test/diagnostics.test.ts","-t","a dyn Iterator of chars whose size_hint is asked"],
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
     name: "dyn-coercions-unmarked",
     breaks:
       "a value made a `dyn Iterator` in a crate that asks one's hint isn't made knowing it, so a boxed `filter` of a slice's items is refused (#1476)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "                    _ = mark_given(\n",
     replace: "                    _ = false && mark_given(\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_size_hints.rs$"],
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     name: "dyn-unseen-unnoticed",
     breaks:
       "a `dyn Iterator` a binding gives back isn't noticed, so its `size_hint()` is JS's own iterator's `(0, None)` where it may be another, not refused naming #1562",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "                asked.hinted.dyn_unseen = true;\n",
     replace: "",
     tests: ["test/js-collections.test.ts", "-t", "a binding's dyn Iterator's size_hint is refused"],
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-take-hint-unknown",
     breaks: "a `take(n)` of a binding's JS iterator, given where generic code asks its hint, is JS's own `take`, which hints (0, None) where std's `Take` hints (0, Some(n)) (#1691)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "            hinted.insert(held);\n            takes = true;\n",
     replace: "            takes = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^take_of_an_iterator_with_no_upper_bound_hints_its_count.rs$"],
@@ -177,7 +177,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-take-source-unseen",
     breaks: "a `take(n)` of a `dyn Iterator` isn't seen to be of one, so it's JS's own `take`, which hints (0, None) (#1691)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "                .any(|part| part.is_trait())\n",
     replace: "                .any(|part| part.is_trait() && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^take_of_an_iterator_with_no_upper_bound_hints_its_count.rs$"],
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
   {
     name: "held-hint-ask-unmarked",
     breaks: "a held iterator's own `size_hint()` marks nothing, so a `filter`'s `skip(1)` of a `Vec`'s items is refused, its hint JS's own `drop`'s (#1427)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "                mark_in_place(tcx, recognition, tcx.typeck_root_def_id(body.def_id), of, &mut asked);\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","^held_rev_of_an_in_place_skip_knows_its_hint.rs$"],
@@ -194,7 +194,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-place-of-any-source-marked",
     breaks: "an adapter in place over a range, a `$Steps` whose own adapters keep std's hint, is made knowing anyway, `$skipping` of `$lazyRange` (#1427)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "            || recognition.array_source(source).is_none()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(held_skip_take|size_hints_made_in_place|cycle_size_hint)\\.rs$"],
@@ -203,7 +203,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-place-map-unmarked",
     breaks: "a `cycle()`'s `map` of an array's items isn't made knowing, `$mapEnds`, so a `Vec` grown by a `take(n)` of it is refused (#1572)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "            asked.hinted.knowing_in.insert((maker, part));\n            asked.hinted.knowing_types.insert(part);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_grown_by_a_take_of_a_cycle_of_a_map.rs$"],
@@ -211,7 +211,7 @@ export const mutations: Mutation[] = [
   {
     name: "exact-growth-marked",
     breaks: "a `Vec` grown by an exact-sized iterator, which grows by its length, marks its adapters, `[..].values().map(f)` become `$mapEnds(..)` (#1572)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "                } else if !recognition.grows_by_exact_len(iter_ty) {\n",
     replace: "                } else if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^(vec_grown_by_iterators_whose_hint_is_stds|inspect_of_a_slice_collected_where_capacity_is_read|counted_adapters_where_capacity_is_read).rs$"],
@@ -220,16 +220,16 @@ export const mutations: Mutation[] = [
   {
     name: "copy-in-place-hint-unmarked",
     breaks: "a `cloned()` or `copied()` of an array's items, made in place as JS's own `values().map(clone)`, isn't made knowing its hint where a compiled adapter over it is asked its hint, so that `size_hint()` is refused (#1998)",
-    file: "src/lower/analysis/hint_asked.rs",
-    find: "            || !(crate::lower::recognition::is_held_compiled(tcx, part) || copy_in_place)\n",
-    replace: "            || !(crate::lower::recognition::is_held_compiled(tcx, part) || false && copy_in_place)\n",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "            || !(crate::recognition::is_held_compiled(tcx, part) || copy_in_place)\n",
+    replace: "            || !(crate::recognition::is_held_compiled(tcx, part) || false && copy_in_place)\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_a_lent_copy_of_items.rs$"],
   },
   {
     name: "hint-given-of-a-compiled-struct-unmarked",
     breaks:
       "a compiled std struct, a `Fuse` of a range, given where its hint is asked in a crate that keeps capacities, is made knowing its length again, `$knowing(..)` around it, though it answers std's `len` itself (#2226)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: " || is_compiled_std_iterator(tcx, held.peel_refs())",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
@@ -238,16 +238,16 @@ export const mutations: Mutation[] = [
   {
     name: "in-place-rev-unmarked",
     breaks: "a held `rev()` of a `skip(1)` made in place over an array's items whose hint is asked isn't made knowing it, so its hint is refused where std's `Skip` gives it (#1427)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "    let parts = || ty.walk().filter_map(|part| part.as_type());\n",
-    replace: "    let parts = || ty.walk().filter_map(|part| part.as_type());\n    if parts().any(|part| crate::lower::recognition::reversed_source(tcx, part.peel_refs()).is_some()) {\n        return;\n    }\n",
+    replace: "    let parts = || ty.walk().filter_map(|part| part.as_type());\n    if parts().any(|part| crate::recognition::reversed_source(tcx, part.peel_refs()).is_some()) {\n        return;\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^held_rev_of_an_in_place_skip_knows_its_hint\\.rs$"],
     snapshots: true,
   },
   {
     name: "in-place-hint-asked-of-known-types-alone",
     breaks: "a held iterator's hint asked in generic code, of a type of its type parameters, marks none of its adapters made in place over a type parameter's items, so `v.iter().skip(1).copied()` of a `&[T]` is JS's own `drop`, which keeps no hint, and its `size_hint()` is refused (#2265)",
-    file: "src/lower/analysis/hint_asked.rs",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "            if callee == size_hint\n                && let Some(of) = args.types().next()\n                && !recognition.is_dyn_iter(of)\n",
     replace: "            if callee == size_hint\n                && let Some(of) = args.types().next()\n                && !rustc_middle::ty::TypeVisitableExt::has_param(&of)\n                && !recognition.is_dyn_iter(of)\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters_made_in_place_over_a_type_parameters_items.rs$"],

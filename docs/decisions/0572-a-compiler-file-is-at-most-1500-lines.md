@@ -232,7 +232,7 @@ every test file at 1,500 lines.
 ## Amendment: a file near the cap doesn't grow (2026-11-11, #1334)
 
 The cap was met by squeezing. On 2026-11-11, 66 files were over 1,350
-lines and 23 sat at 1,480 to 1,500: `src/lower/mir.rs` at exactly 1,500
+lines and 23 sat at 1,480 to 1,500: `crates/rust-js-mir/src/lib.rs` at exactly 1,500
 after an import was moved into `mir/operands.rs` to fit, `analysis.rs` at
 1,494, `mir/queries.rs` at 1,499, `test/modules.test.ts` at 1,500. A
 file held at the cap by moving imports, joining lines or cutting comments

@@ -1,0 +1,1141 @@
+//! `continue`s: a loop's step continued where it's written, and the jumps
+//! past blocks to a loop's start.
+
+use super::*;
+
+/// A loop's body that ends in a block, `l: { … break l; … }`, its `break l`
+/// the loop's `continue`: the block's statements in its place. And one that
+/// ends `if (!c) { a; b }`, as MIR has a `continue` the program wrote,
+/// `if (c) { continue; } a; b`.
+pub(in crate::tidy) fn continued(stmts: &mut [Stmt], guards: &[(js::Span, js::Span)], logicals: &[js::Span]) {
+    for stmt in stmts.iter_mut() {
+        if let Some((looped, body)) = looped(stmt) {
+            continued_loop(looped, body, (guards, logicals), None);
+        }
+    }
+}
+
+/// `continued` again, once `chains` has read in place a loop's test MIR
+/// read into temporaries first, `const _19 = value.$$typeof; if (_19 ===
+/// LAZY)`, and `while tests` made it the loop's (rd530): of each loop,
+/// whose body may end in a block MIR made, `if (c) { ..; continue; } else
+/// { ..; l: { .. } }`'s too. The `if .. else` chains `written elses` has
+/// made as the program wrote them by now are kept so. (Of only a loop that
+/// ends in such a block once: a `continue` this turns of a written
+/// negation is as written since the written jumps write it so, rd72c.)
+pub(in crate::tidy) fn continued_blocks(
+    stmts: &mut [Stmt],
+    guards: &[(js::Span, js::Span)],
+    logicals: &[js::Span],
+    elses: &[(js::Span, js::Span, js::Span)],
+) {
+    for stmt in stmts.iter_mut() {
+        if let Some((looped, body)) = looped(stmt) {
+            continued_loop(looped, body, (guards, logicals), Some(elses));
+        }
+    }
+}
+
+/// The label and body of `stmt`, where it's a loop a `continue` goes on with.
+fn looped(stmt: &mut Stmt) -> Option<(Option<Name>, &mut Vec<Stmt>)> {
+    match &mut stmt.kind {
+        StmtKind::While { label, body, .. }
+        | StmtKind::ForOf { label, body, .. }
+        | StmtKind::For { label, body, .. } => Some((label.clone(), body)),
+        _ => None,
+    }
+}
+
+/// `continued` of one loop, `looped` its label and `body` its body, by the
+/// `if`s of the `continue`s the program wrote, `guards`, and its conditions
+/// of `&&`, `||` and `!` mixed, `logicals`; each `if` of `kept`, written
+/// with an `else`, kept as it is (`continued_blocks`).
+fn continued_loop(
+    looped: Option<Name>,
+    body: &mut Vec<Stmt>,
+    (guards, logicals): (&[(js::Span, js::Span)], &[js::Span]),
+    kept: Option<&[(js::Span, js::Span, js::Span)]>,
+) {
+    // What can't follow a jump, before the body's end is read.
+    unreachable_after(body);
+    loop {
+        match body.last().map(|s| &s.kind) {
+            Some(StmtKind::Labeled(..)) => {
+                // A condition the program wrote, of `&&`, `||` and
+                // `!` mixed, whose tests leave the block: its `if`, as
+                // written. One it wrote as a `continue` of its negation,
+                // `if !(a && (!b || c)) { continue; }`, the written jumps
+                // give back, its test as written (`kept_in_turn`, rd72c).
+                let last = body.last().expect("matched");
+                if let StmtKind::Labeled(label, _) = &last.kind
+                    && let Some(test) = logicals::skipped_test(label, last, false, logicals)
+                {
+                    body.pop();
+                    body.extend(test);
+                    break;
+                }
+                let Some(Stmt {
+                    kind: StmtKind::Labeled(block, mut inner),
+                    span,
+                    ..
+                }) = body.pop()
+                else {
+                    unreachable!("matched")
+                };
+                let clashes = declared(&inner).any(|name| declared(body).any(|n| n == name));
+                if clashes || continues(&mut inner, &block, looped.as_ref(), false).is_none() {
+                    body.push(StmtKind::Labeled(block, inner).at(span));
+                    break;
+                }
+                continues(&mut inner, &block, looped.as_ref(), true);
+                body.extend(inner);
+            }
+            // One the program ended with a `continue`, `if (t) { a;
+            // continue; }`, of what MIR has as its `else`.
+            Some(StmtKind::If(_, _, Some(otherwise)))
+                if tests_continue(guards, body.last().expect("matched").span)
+                    && !kept.is_some_and(|elses| written_else(body.last().expect("matched"), elses))
+                    && !declared(otherwise).any(|name| declared(&body[..body.len() - 1]).any(|n| n == name)) =>
+            {
+                let Some(Stmt {
+                    kind: StmtKind::If(test, mut then, Some(otherwise)),
+                    span,
+                    ..
+                }) = body.pop()
+                else {
+                    unreachable!("matched")
+                };
+                if !then.last().is_some_and(ends) {
+                    then.push(StmtKind::Continue(None).at(js::Span::NONE));
+                }
+                body.push(StmtKind::If(test, then, None).at(span));
+                body.extend(otherwise);
+            }
+            // Of one statement, where the program wrote the `continue`,
+            // whatever its test, `i % 2 !== 0` of `i % 2 == 0`.
+            Some(StmtKind::If(_, _, None)) => {
+                if !turned_continue(body, guards) {
+                    break;
+                }
+            }
+            _ => break,
+        }
+    }
+}
+
+/// Whether `span` is of the test of an `if` of a `continue` the program
+/// wrote, of `continues` (`Written::continues`).
+/// `l: { .. if (c) { break l; } .. } continue outer;`, a block MIR made of
+/// what each `continue` the program wrote there goes on to: each `if` of
+/// one (`Written::continues`) that leaves the block, the `continue` itself,
+/// `if (c) { continue outer; }`, where it wrote it, which then needs no
+/// block. React's getHostSibling's `if isScope(node) { continue 'siblings;
+/// }` (ADR 0702, amended). And the `break` MIR made of a `match`'s arm that
+/// ends with a `continue` (`Written::arm_continues`), which ends a list
+/// after what the arm does, or the `then` of the `if` of its pattern, `if
+/// (name === "SCRIPT") { break l; }`, where the block holds what's written
+/// past the `match`, which the arm skips: its `continue`, where it's
+/// written, as an arm's `return` is, which tidy keeps (`drop_tail`,
+/// `tail_continues`). Its `match` is a `switch` whose cases `continue`, as
+/// React DOM's clearContainerSparingly writes it, not one whose rest of the
+/// turn is an `else` (#518). One of a `match` that ends the turn, which
+/// skips nothing, is MIR's as before, `case 0: break;` (ADR 0629). What
+/// the block holds or the turn does past it (`turn_rests`): MIR may nest
+/// the `match`'s block in the one the rest of the turn follows, `bb9: {
+/// bb25: { .. } continue; } out.push(..)`, of a guarded arm before the
+/// others (#530). The `break` goes to the `continue` and nowhere else, so
+/// the two run the same; not into a loop inside the block, whose own
+/// `continue` an unlabeled one would be.
+pub(in crate::tidy) fn continues_written(
+    stmts: &mut [Stmt],
+    guards: &[(js::Span, js::Span)],
+    arms: &[(js::Span, js::Span, js::Span)],
+    (rests, commented): (&IndexMap<Name, u32>, &[js::Span]),
+) {
+    /// A block's `break`s, `block`, each of which goes on to `jump`, and
+    /// the arms of a `continue` whose `match` is before something it holds,
+    /// with their `match`'s place; and the `continue`s of arms with
+    /// comments above them (#610).
+    struct Of<'w> {
+        block: &'w Name,
+        jump: &'w Stmt,
+        guards: &'w [(js::Span, js::Span)],
+        arms: Vec<(js::Span, js::Span, js::Span)>,
+        commented: &'w [js::Span],
+    }
+    /// Of the block's `break`s: the arms' `continue`s each is of; of the
+    /// rest, where each is tested, or what's before it, the `match`
+    /// whose arm it's of by elimination; and, of a `match`, that arm's
+    /// `continue`, which its one is given (#680).
+    #[derive(Default)]
+    struct Found {
+        arms: Vec<js::Span>,
+        untold: Vec<js::Span>,
+        given: Vec<(js::Span, js::Span)>,
+    }
+    impl Of<'_> {
+        /// The `continue` of the arm `at` is in.
+        fn arm(&self, at: u32) -> Option<js::Span> {
+            (self.arms.iter())
+                .find(|(_, arm, _)| arm.lo <= at && at < arm.hi)
+                .map(|&(.., w)| w)
+        }
+        /// The innermost `match` `at` is in.
+        fn matched(&self, at: u32) -> Option<js::Span> {
+            (self.arms.iter())
+                .map(|&(matched, ..)| matched)
+                .filter(|m| m.lo <= at && at < m.hi)
+                .min_by_key(|m| m.hi - m.lo)
+        }
+    }
+    /// Where a list of the block is tested: the `then` of an `if` tested
+    /// `at`, whose test is in the arm whose `continue` is `own`; or the
+    /// `else` of one tested `within` a `match` (#680).
+    #[derive(Clone, Copy, Default)]
+    struct Tested {
+        at: Option<u32>,
+        own: Option<js::Span>,
+        within: Option<u32>,
+    }
+    // `stmts`' `break`s of the block, where `tested`.
+    fn replaced(stmts: &mut [Stmt], of: &Of, tested: Tested, found: &mut Found) {
+        let breaks = |s: &Stmt| matches!(&s.kind, StmtKind::Break(Some(l)) if l == of.block);
+        // What an arm of a `continue` does last, its `break`: where that
+        // arm is, of what's before it, or of the `if` of its pattern.
+        let n = stmts.len();
+        if stmts.last().is_some_and(breaks) {
+            let at = (n.checked_sub(2).and_then(|k| first_written(&stmts[k..k + 1]))).or(tested.at);
+            let placed = match (at.and_then(|at| of.arm(at)), tested.own) {
+                (Some(written), _) => {
+                    found.arms.push(written);
+                    Some(written)
+                }
+                (None, Some(written)) => {
+                    found.arms.push(written);
+                    None
+                }
+                (None, None) => {
+                    let matched = at.or(tested.within).and_then(|at| of.matched(at));
+                    found.untold.extend(matched);
+                    (found.given.iter())
+                        .find(|&&(m, _)| Some(m) == matched)
+                        .map(|&(_, w)| w)
+                }
+            };
+            if let Some(written) = placed {
+                stmts[n - 1] = Stmt {
+                    span: written,
+                    ..of.jump.clone()
+                };
+            }
+        }
+        for stmt in stmts.iter_mut() {
+            let span = stmt.span;
+            match &mut stmt.kind {
+                StmtKind::If(_, then, otherwise)
+                    if matches!(then.as_slice(), [only] if breaks(only)) && tests_continue(of.guards, span) =>
+                {
+                    then[0] = Stmt {
+                        span: then[0].span,
+                        ..of.jump.clone()
+                    };
+                    if let Some(otherwise) = otherwise {
+                        replaced(otherwise, of, Tested::default(), found);
+                    }
+                }
+                StmtKind::If(test, then, otherwise) => {
+                    // Where the `if` is; or, of an arm with comments above
+                    // it, a `continue` alone MIR tests where the `match` is,
+                    // where its test is, its pattern (#610). Its `else`, past
+                    // what it tests, is within the `match` it tests in, a
+                    // last `_ => continue`'s (#680).
+                    let tests = [test.span, span].into_iter().find(|s| !s.is_none()).map(|s| s.lo);
+                    let own = (!test.span.is_none()).then(|| of.arm(test.span.lo)).flatten();
+                    let at = match own.is_some_and(|written| of.commented.contains(&written)) {
+                        true => test.span,
+                        false => span,
+                    };
+                    let at = (!at.is_none()).then_some(at.lo);
+                    replaced(then, of, Tested { at, own, within: None }, found);
+                    if let Some(otherwise) = otherwise {
+                        let within = Tested {
+                            within: tests,
+                            ..Tested::default()
+                        };
+                        replaced(otherwise, of, within, found);
+                    }
+                }
+                StmtKind::Labeled(_, body) => replaced(body, of, Tested::default(), found),
+                _ => {}
+            }
+        }
+    }
+    for at in 1..stmts.len() {
+        let (before, after) = stmts.split_at_mut(at);
+        if let (StmtKind::Labeled(block, body), StmtKind::Continue(_)) = (&mut before[at - 1].kind, &after[0].kind) {
+            let past = latest(body).max(rests.get(&*block).copied().unwrap_or(0));
+            let of = Of {
+                block,
+                jump: &after[0],
+                guards,
+                arms: (arms.iter())
+                    .filter(|&&(matched, _, written)| {
+                        !matched.is_none() && past >= matched.hi && written != after[0].span
+                    })
+                    .copied()
+                    .collect(),
+                commented,
+            };
+            let mut found = Found::default();
+            replaced(body, &of, Tested::default(), &mut found);
+            // A `match` whose arms of `continue` MIR joins: its one `break`
+            // of no arm `replaced` tells, of an `if` it tests where the
+            // `match` is, `if (x == null) { break l; }`, or the last past
+            // the arms' tests, is of its one arm no other `break` is, its
+            // `continue` where it's written where comments are above it,
+            // `if (x == null) { // None is skipped.\n continue; }` (#680).
+            let given: Vec<(js::Span, js::Span)> = (found.untold.iter())
+                .filter(|&&matched| found.untold.iter().filter(|&&m| m == matched).count() == 1)
+                .filter_map(|&matched| {
+                    let mut left = (of.arms.iter()).filter(|&&(m, _, w)| m == matched && !found.arms.contains(&w));
+                    match (left.next(), left.next()) {
+                        (Some(&(.., written)), None) if commented.contains(&written) => Some((matched, written)),
+                        _ => None,
+                    }
+                })
+                .collect();
+            if !given.is_empty() {
+                let mut found = Found {
+                    given,
+                    ..Found::default()
+                };
+                replaced(body, &of, Tested::default(), &mut found);
+            }
+        }
+    }
+}
+
+/// An arm that's only a `continue`, `1 => { // Skipped. continue; }`,
+/// which MIR's test of its pattern goes to the loop's start from, with no
+/// block of its own placed where it's written: the `continue` the `if` of
+/// the pattern does, where it's written, which a comment before it is
+/// before (#574). Of that `if` alone, which starts where the arm does, not
+/// one in what the arm does; of an arm that's a block, as `1 => continue`
+/// has nothing in it to place, and a `continue` with a place reads as one
+/// the program wrote: `if (k === 3) { continue; }` stays so, not `if (k
+/// !== 3) { .. }`, as an `if` of one is (`continued`); and is an arm's
+/// code, which `decisions` places an `else if` at, as of any other arm.
+/// An arm that's a `continue` alone, `3 => continue,`, only where comments
+/// are above it, `commented`'s, which are before it there, `if (k === 3) {
+/// // c\n continue; }`, as of the arm's block (#610, the user's decision):
+/// one with none is the `if` of the rest, `if (k !== 3) { .. }`, as before.
+/// MIR tests such an arm where the `match` is, `if (k === 3) { continue; }`
+/// at `match k`, as it does `Some(n) => *n, // c\n None => continue,`'s `if
+/// (x == null) { continue; }`: where the `if` does nothing else, that
+/// arm's, `if (x == null) { // c\n continue; } log.push(x);`. A `match` of
+/// more arms that continue is MIR's block of a `continue` their `break`s go
+/// to, `continues_written`'s, so the `match`'s arm is its only one (no
+/// output of the corpus, nor of probes of two such arms, differs when it's
+/// asked, #666).
+pub(in crate::tidy) fn arm_continues_placed(
+    stmts: &mut [Stmt],
+    arms: &[(js::Span, js::Span, js::Span)],
+    commented: &[js::Span],
+) {
+    // The arms an `if` of their own pattern tests, `Some(0) => continue`'s
+    // `if (x === 0)`, whose `continue` is that `if`'s.
+    let mut own_ifs: Vec<u32> = Vec::new();
+    js::each_list(stmts, &mut |list| {
+        for stmt in list {
+            if let StmtKind::If(test, ..) = &stmt.kind
+                && !test.span.is_none()
+            {
+                own_ifs.push(test.span.lo);
+            }
+        }
+    });
+    // Of a `match` that continues by an arm, the others going on, that
+    // arm's `continue`: one the program placed, of a block, or with
+    // comments above it; of more arms that continue, the one no `if` of
+    // its own pattern tests, `None => continue 'rows` beside `Some(0) =>
+    // continue` (#693); of an `if` of an arm's own pattern, that arm's.
+    let alone = |matched: js::Span, tested: js::Span| {
+        let mut left = (arms.iter()).filter(|&&(m, arm, _)| m == matched && !own_ifs.contains(&arm.lo));
+        let own = (arms.iter()).find(|&&(m, arm, _)| m == matched && !tested.is_none() && arm.lo == tested.lo);
+        let arm = match (
+            arms.iter().filter(|&&(m, ..)| m == matched).count(),
+            left.next(),
+            left.next(),
+        ) {
+            _ if own.is_some() => own,
+            (1, ..) => arms.iter().find(|&&(m, ..)| m == matched),
+            (_, Some(arm), None) => Some(arm),
+            _ => None,
+        };
+        arm.filter(|&&(_, arm, written)| written.hi < arm.hi || commented.contains(&written))
+            .map(|&(.., written)| written)
+    };
+    for stmt in stmts.iter_mut() {
+        let span = stmt.span;
+        let StmtKind::If(test, then, otherwise) = &mut stmt.kind else {
+            continue;
+        };
+        // A last arm's, `_ => continue,`, the `else` of the `if` of one
+        // before it, `if (k === 3) { .. } else { continue; }`.
+        if let Some([jump]) = otherwise.as_deref_mut()
+            && matches!(jump.kind, StmtKind::Continue(_))
+            && jump.span.is_none()
+            && !span.is_none()
+            && !test.span.is_none()
+            && let Some(&(matched, arm, _)) =
+                (arms.iter()).find(|&&(matched, ..)| matched.lo <= span.lo && span.hi <= matched.hi)
+            && test.span.hi <= arm.lo
+            && let Some(written) = alone(matched, test.span)
+        {
+            jump.span = written;
+        }
+        let single = then.len() == 1;
+        if let Some(jump) = then.last_mut()
+            && matches!(jump.kind, StmtKind::Continue(_))
+            && jump.span.is_none()
+        {
+            let own = arms.iter().find(|&&(_, arm, written)| {
+                !arm.is_none() && (test.span.lo == arm.lo || span.lo == arm.lo) && written.hi < arm.hi
+            });
+            // Or where MIR tests it at the `match` itself, `Some(n) => *n,
+            // // c\n None => continue,`'s `if (x == null) { continue; }`.
+            let at_match = (arms.iter()).find(|&&(matched, ..)| !matched.is_none() && span.lo == matched.lo);
+            if let Some(&(_, _, written)) = own {
+                jump.span = written;
+            } else if let Some(&(matched, ..)) = at_match
+                && single
+                && let Some(written) = alone(matched, test.span)
+            {
+                jump.span = written;
+            }
+        }
+    }
+}
+
+/// Where the last statement of `stmts` starts, however deep, that has a
+/// place.
+pub(super) fn latest(stmts: &[Stmt]) -> u32 {
+    let mut past = 0;
+    js::each_list(stmts, &mut |list| {
+        past = (list.iter()).fold(
+            past,
+            |past, s| if s.span.is_none() { past } else { past.max(s.span.lo) },
+        );
+    });
+    past
+}
+
+/// Of each block `body` labels, where the last statement past it starts,
+/// in the lists it's in (`latest`): what a `break` of it that goes on to a
+/// `continue` skips (`continues_written`, #530).
+pub(in crate::tidy) fn turn_rests(body: &[Stmt]) -> IndexMap<Name, u32> {
+    fn walk(stmts: &[Stmt], later: u32, rests: &mut IndexMap<Name, u32>) {
+        for (i, stmt) in stmts.iter().enumerate() {
+            let after = later.max(latest(&stmts[i + 1..]));
+            match &stmt.kind {
+                StmtKind::Labeled(label, inner) => {
+                    rests.insert(label.clone(), after);
+                    walk(inner, after, rests);
+                }
+                StmtKind::If(_, then, otherwise) => {
+                    walk(then, after, rests);
+                    walk(otherwise.as_deref().unwrap_or_default(), after, rests);
+                }
+                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                    walk(a, after, rests);
+                    walk(b, after, rests);
+                }
+                StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+                    walk(body, after, rests)
+                }
+                _ => {}
+            }
+        }
+    }
+    let mut rests = IndexMap::default();
+    walk(body, 0, &mut rests);
+    rests
+}
+
+/// A labeled block MIR made followed by a jump, `l: { .. break l; .. }
+/// continue;`: each `break l` that jump, which goes on from there anyway;
+/// `unlabeled` then leaves the block, which nothing names. A jump of no
+/// label, `continue;` once `innermost jumps` has it so, only where it goes
+/// to the same loop: not in a loop inside the block, or a `switch` for a
+/// `break` (ADR 0745). Or a `return` of one value, `l: { .. break l; .. }
+/// return;`, the `return` past a drop MIR shares, as it's written (ADR
+/// 0755).
+pub(in crate::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
+    // A loop the program labeled: of a block in its turn, its `continue`
+    // after, each `break` of the block a loop inside it makes, `continue
+    // 'outer`'s, as written (#442).
+    for stmt in stmts.iter_mut() {
+        if let StmtKind::While {
+            label: Some(looped),
+            body,
+            ..
+        }
+        | StmtKind::ForOf {
+            label: Some(looped),
+            body,
+            ..
+        }
+        | StmtKind::For {
+            label: Some(looped),
+            body,
+            ..
+        } = &mut stmt.kind
+        {
+            named_continues(body, looped);
+        }
+    }
+    for i in 0..stmts.len().saturating_sub(1) {
+        let jump = match &stmts[i + 1].kind {
+            jump @ (StmtKind::Continue(_) | StmtKind::Break(_)) => jump.clone(),
+            // A `return` past a drop MIR shares, the block's end then its
+            // way out (ADR 0755): of one value, as each reads as written.
+            jump @ StmtKind::Return(_) if returns_one_value(&stmts[i + 1]) => jump.clone(),
+            _ => continue,
+        };
+        // Not one the program labeled, `'sum: { .. }`, written by its name
+        // (ADR 0742): where it's written is its span.
+        let written = !stmts[i].span.is_none();
+        if let StmtKind::Labeled(label, body) = &mut stmts[i].kind
+            && crate::is_block_label(label)
+            && !written
+        {
+            let label = label.clone();
+            // A `return` where the block ends anyway is written once, after
+            // it: the `break`s that end it, gone first.
+            if matches!(jump, StmtKind::Return(_)) {
+                drop_tail(body, &StmtKind::Break(Some(label.clone())));
+            }
+            rejump(body, &label, &jump);
+        }
+    }
+}
+
+/// Each `break label` of `stmts` the jump `jump`, `jumps_past_blocks`'.
+/// One of no label, or a `return`, not in a loop inside them, which it
+/// would leave, or whose `break` of the block the loop's own way out may be
+/// (`blocks loops end`).
+fn rejump(stmts: &mut [Stmt], label: &js::Name, jump: &StmtKind) {
+    let unnamed = matches!(
+        jump,
+        StmtKind::Continue(None) | StmtKind::Break(None) | StmtKind::Return(_)
+    );
+    for stmt in stmts {
+        match &mut stmt.kind {
+            StmtKind::Break(Some(l)) if l == label => stmt.kind = jump.clone(),
+            StmtKind::If(_, a, b) => {
+                rejump(a, label, jump);
+                if let Some(b) = b {
+                    rejump(b, label, jump);
+                }
+            }
+            StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } if !unnamed => {
+                rejump(body, label, jump)
+            }
+            StmtKind::Labeled(_, body) => rejump(body, label, jump),
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                rejump(a, label, jump);
+                rejump(b, label, jump);
+            }
+            _ => {}
+        }
+    }
+}
+
+/// In the turn of loop `looped`, not a loop's inside it: each block MIR
+/// made followed by a `continue` of `looped`, `l: { .. for (..) { ..
+/// break l; } .. } continue;`, its `break l`s in a loop inside it
+/// `continue looped`, which goes on from the same place, as the program
+/// wrote `continue 'outer`; those of its own turn, `jumps_past_blocks`'
+/// `continue;` (#442).
+fn named_continues(stmts: &mut [Stmt], looped: &Name) {
+    // Each loop in `stmts`, through what isn't one: its `break label`s,
+    // `continue looped`.
+    fn in_loops(stmts: &mut [Stmt], label: &js::Name, looped: &Name) {
+        for stmt in stmts {
+            match &mut stmt.kind {
+                StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+                    rejump(body, label, &StmtKind::Continue(Some(looped.clone())))
+                }
+                StmtKind::If(_, a, b) => {
+                    in_loops(a, label, looped);
+                    if let Some(b) = b {
+                        in_loops(b, label, looped);
+                    }
+                }
+                StmtKind::Labeled(_, body) => in_loops(body, label, looped),
+                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                    in_loops(a, label, looped);
+                    in_loops(b, label, looped);
+                }
+                _ => {}
+            }
+        }
+    }
+    for i in 0..stmts.len() {
+        let goes_on = matches!(
+            stmts.get(i + 1).map(|s| &s.kind),
+            Some(StmtKind::Continue(l)) if l.as_ref().is_none_or(|l| l == looped)
+        );
+        let written = !stmts[i].span.is_none();
+        match &mut stmts[i].kind {
+            StmtKind::Labeled(label, body) => {
+                if goes_on && !written && crate::is_block_label(label) {
+                    let label = label.clone();
+                    in_loops(body, &label, looped);
+                }
+                named_continues(body, looped);
+            }
+            StmtKind::If(_, a, b) => {
+                named_continues(a, looped);
+                if let Some(b) = b {
+                    named_continues(b, looped);
+                }
+            }
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                named_continues(a, looped);
+                named_continues(b, looped);
+            }
+            _ => {}
+        }
+    }
+}
+
+/// An `if` one branch of which never goes on, followed by a jump, `if (c)
+/// { a } else { b; break l; } continue;`, as `jumps past blocks` leaves a
+/// `continue` the program wrote in `a`: the jump where the other branch
+/// ends, `if (c) { a; continue; } else { b; break l; }`, where it goes on
+/// from (ADR 0745). Of an `else if` chain, each of its arms that goes on,
+/// where one leaves: `if (a) { x } else if (b) { y } else { break l; }
+/// continue;` is `if (a) { x; continue; } else if (b) { y; continue; } else
+/// { break l; }`, as React's commitBeforeMutationEffects_begin writes each
+/// arm's `continue` (ADR 0745, amended). Not a chain of a `match` whose
+/// guarded arms fall to the next, `1 if on(n) => break, 1 | 2 => { .. }`,
+/// whose arms `switches` reads by the blocks MIR leaves them by, then the
+/// `if` chain they are (#389c).
+pub(in crate::tidy) fn jumps_into_branches(
+    stmts: &mut Vec<Stmt>,
+    switches: &[super::Switch],
+    elses: &[(js::Span, js::Span, js::Span)],
+) {
+    // An `else` that is one `if` with an `else` of its own: the chain's
+    // next link.
+    fn linked(otherwise: &[Stmt]) -> bool {
+        matches!(
+            otherwise,
+            [Stmt {
+                kind: StmtKind::If(_, _, Some(_)),
+                ..
+            }]
+        )
+    }
+    // Whether each arm of the chain `stmt`, an `if` with an `else`, begins
+    // leaves, in order.
+    fn arms(stmt: &Stmt, leaves: &mut Vec<bool>) {
+        let StmtKind::If(_, then, Some(otherwise)) = &stmt.kind else {
+            unreachable!("an `if` with an `else`")
+        };
+        leaves.push(then.last().is_some_and(ends));
+        if linked(otherwise) {
+            arms(&otherwise[0], leaves);
+        } else {
+            leaves.push(otherwise.last().is_some_and(ends));
+        }
+    }
+    // An `if` one branch of which leaves, its `else` whole; or a chain
+    // only whose last `else` does, what MIR makes of its fall-through: not
+    // a chain of arms that leave each their own way, a `match`'s, which
+    // `switches` reads as they are.
+    let into_arms = |stmt: &Stmt| {
+        let StmtKind::If(test, then, Some(otherwise)) = &stmt.kind else {
+            return false;
+        };
+        let falling = switches.iter().filter(|s| s.arms.iter().any(|arm| arm.falls));
+        if switched(test, stmt.span, falling) {
+            return false;
+        }
+        if then.last().is_some_and(ends) != otherwise.last().is_some_and(ends) {
+            return true;
+        }
+        let mut leaves = Vec::new();
+        arms(stmt, &mut leaves);
+        matches!(&leaves[..], [going_on @ .., true] if going_on.iter().all(|leaves| !leaves))
+    };
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        if matches!(stmts[i + 1].kind, StmtKind::Continue(_) | StmtKind::Break(_))
+            && into_arms(&stmts[i])
+            && !written_after(&stmts[i], &stmts[i + 1], elses)
+        {
+            let jump = stmts.remove(i + 1);
+            let StmtKind::If(_, then, Some(otherwise)) = &mut stmts[i].kind else {
+                unreachable!("matched")
+            };
+            // An `else if` given it has it in each of its own arms that goes
+            // on as its list's turn comes, after this one's.
+            for arm in [then, otherwise] {
+                if !arm.last().is_some_and(ends) {
+                    arm.push(jump.clone());
+                }
+            }
+        }
+        i += 1;
+    }
+}
+
+/// Whether `jump` is one the program wrote after `stmt`, an `if` it wrote
+/// with an `else`, past all of it, `if n == 0 { .. } else { ..; continue;
+/// } break;`, which stays where it's written (uz2).
+fn written_after(stmt: &Stmt, jump: &Stmt, elses: &[(js::Span, js::Span, js::Span)]) -> bool {
+    if !written_else(stmt, elses) {
+        return false;
+    }
+    let mut end = 0;
+    js::each_list(std::slice::from_ref(stmt), &mut |list| {
+        end = list.iter().map(|s| s.span.hi).fold(end, u32::max)
+    });
+    !jump.span.is_none() && jump.span.lo >= end
+}
+
+/// Each `if .. else` the program wrote of `stmts` followed by a jump it
+/// wrote after it, which `jumps_into_branches` leaves there: its branches
+/// as written (`jumps_as_written_before`), once each list in them is
+/// done.
+pub(in crate::tidy) fn written_jumps_before(stmts: &mut [Stmt], written: &crate::hints::Written) {
+    for i in 1..stmts.len() {
+        let (before, after) = stmts.split_at_mut(i);
+        if matches!(after[0].kind, StmtKind::Continue(None) | StmtKind::Break(None))
+            && written_after(&before[i - 1], &after[0], &written.elses)
+        {
+            jumps_as_written_before(&mut before[i - 1], &after[0], written);
+        }
+    }
+}
+
+/// The branches of `stmt`, an `if .. else` the program wrote, that go on
+/// to `jump`, which it wrote after it, as it wrote them (rd109's written
+/// jumps): one it wrote ending in that jump, `if exitStatus ==
+/// ROOT_IN_PROGRESS { ..; break; } else { .. } break;` of React's
+/// performWorkOnRoot, given it back where it's written, which `tail
+/// jumps` took as the block's way out; and MIR's copy of the jump at
+/// another's end, which the `jump` after it does, gone. Each goes on to
+/// `jump` as it did.
+fn jumps_as_written_before(stmt: &mut Stmt, jump: &Stmt, written: &crate::hints::Written) {
+    let span = stmt.span;
+    let StmtKind::If(_, then, Some(otherwise)) = &mut stmt.kind else {
+        return;
+    };
+    let (thens, elses) = match jump.kind {
+        StmtKind::Break(None) => (&written.breaks, &written.else_breaks),
+        StmtKind::Continue(None) => (&written.continues, &written.else_continues),
+        _ => return,
+    };
+    for (arm, jumps) in [(then, thens), (otherwise, elses)] {
+        let at = jump_tested(jumps, span).map(|k| jumps[k].1);
+        uncopied(arm, jump, at.is_some(), (thens, elses));
+        let mut after = false;
+        if let Some(at) = at {
+            js::each_list(arm, &mut |list| {
+                after |= list.iter().any(|s| !s.span.is_none() && s.span.lo >= at.hi);
+            });
+        }
+        if let Some(at) = at
+            && !after
+            && !arm.last().is_some_and(ends)
+        {
+            arm.push(Stmt {
+                span: at,
+                ..jump.clone()
+            });
+        }
+    }
+}
+
+/// `arm`, a branch of no jump the program wrote at its end (`wrote`),
+/// without the copy of `jump` MIR made there, nor in the branches of an
+/// `if .. else` it ends with that the program wrote none in either, of
+/// `jumps`, the `then`s' and the `else`s': each goes on to `jump` as it
+/// is.
+fn uncopied(arm: &mut Vec<Stmt>, jump: &Stmt, wrote: bool, jumps: BranchJumps) {
+    let Some(last) = arm.last_mut() else {
+        return;
+    };
+    let span = last.span;
+    match &mut last.kind {
+        kind if *kind == jump.kind => {
+            if !wrote {
+                arm.pop();
+            }
+        }
+        StmtKind::If(_, then, Some(otherwise)) => {
+            uncopied(then, jump, jump_tested(jumps.0, span).is_some(), jumps);
+            uncopied(otherwise, jump, jump_tested(jumps.1, span).is_some(), jumps);
+        }
+        _ => {}
+    }
+}
+
+/// A loop's body that ends with a block MIR made, then the loop's
+/// `break;`, `l: { if (c === 97) { break l; } ..; continue; } break;`, a
+/// `match` whose arm leaves the loop, `b'a' => break`, MIR's way out
+/// through the block: each `break l` the loop's `break;`, which goes where
+/// the block's end does, the block's statements in its place, so the arms
+/// break the loop as written and `switches` reads them so (#389c). Not one
+/// a `break l` of which is in a loop or a `switch` of its own, where a
+/// `break;` would leave that, but of a loop the program labeled, whose
+/// such `break` is of its label, `break 'rows` in an inner `while let`'s
+/// `break rows;` (uz3); a `switch` it ends, `case_rests::loops_left_by_cases`
+/// reads once `switches` has made it. A name
+/// the block declares that the turn's before it does too is the names
+/// stage's to tell apart, later.
+pub(in crate::tidy) fn blocks_breaking_loops(stmts: &mut [Stmt], loops: &[(js::Span, bool, Option<String>)]) {
+    for stmt in stmts {
+        let named = written_loop(loops, stmt.span).and_then(|(.., label)| label.clone());
+        let (StmtKind::While {
+            body, label: looped, ..
+        }
+        | StmtKind::ForOf {
+            body, label: looped, ..
+        }
+        | StmtKind::For {
+            body, label: looped, ..
+        }) = &mut stmt.kind
+        else {
+            continue;
+        };
+        let [.., block, after] = body.as_slice() else {
+            continue;
+        };
+        let (StmtKind::Labeled(label, inner), StmtKind::Break(None)) = (&block.kind, &after.kind) else {
+            continue;
+        };
+        if !block.span.is_none() || !crate::is_block_label(label) {
+            continue;
+        }
+        let (block, mut broken) = (label.clone(), inner.clone());
+        loop_breaks(&mut broken, &block);
+        let at = body.len() - 2;
+        // One in a loop of its own, of a loop the program labeled, `break
+        // 'rows` in an inner `while let`: of its label, as written (uz3).
+        // Else a loop the program labeled is `loops_left_by_cases`', whose
+        // cases it ends with leave by its label once `switches` has made
+        // them.
+        if !js::names_break(&broken, &block) && named.is_some() {
+            continue;
+        }
+        if js::names_break(&broken, &block) {
+            let Some(named) = named
+                .as_ref()
+                .filter(|named| looped.as_ref().is_none_or(|l| l.is(named)))
+            else {
+                continue;
+            };
+            // The label the program wrote, made once.
+            let named = js::Name::label(named);
+            super::tails::relabeled(&mut broken, &block, &named);
+            *looped = Some(named);
+        }
+        body.splice(at..=at, broken);
+        if body[..body.len() - 1].last().is_some_and(ends) {
+            body.pop();
+        }
+    }
+}
+
+/// Each `break label` of `stmts`, not in a loop or a `switch` of their
+/// own, a `break;` of the loop they're in.
+fn loop_breaks(stmts: &mut [Stmt], label: &js::Name) {
+    for stmt in stmts {
+        match &mut stmt.kind {
+            StmtKind::Break(broken) if broken.as_ref() == Some(label) => *broken = None,
+            StmtKind::If(_, a, b) => {
+                loop_breaks(a, label);
+                if let Some(b) = b {
+                    loop_breaks(b, label);
+                }
+            }
+            StmtKind::Labeled(_, body) => loop_breaks(body, label),
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                loop_breaks(a, label);
+                loop_breaks(b, label);
+            }
+            _ => {}
+        }
+    }
+}
+
+/// A labeled block MIR made that a loop ends, `l: { .. if (t) { .. while
+/// (true) { ..; break l; } } }`, as the last of loops each in the one
+/// before's way out is once `exits after` puts each after it: the `break
+/// l` the loop's body ends with, the loop's `break`, which goes where the
+/// block ends too, and which `while_tests` reads the loop's test by;
+/// `unlabeled` then leaves the block, where nothing else names it.
+///
+/// With `every`, once what's after each loop is placed, each `break l` of
+/// the loop's own wherever it is in the body, not a loop's or a `switch`'s
+/// inside it, as a `loop` that ends an `if`'s branch, an `else` after it,
+/// leaves: `l: { if (t) { while (true) { if (d) { break l; } .. } } else {
+/// .. } }` is `if (t) { while (true) { if (d) { break; } .. } } else { ..
+/// }`, as the program wrote it, with no label (ADR 0859). And one of a loop
+/// or a `switch` inside it, `break 'rows` in a `for` of the `loop` it
+/// names, the loop's, by its label, which `named labels` then names as the
+/// program did.
+pub(in crate::tidy) fn blocks_loops_end(stmts: &mut [Stmt], every: bool) {
+    // Each `break label` of the loop whose body is `stmts`: where a `break`
+    // of no label leaves it.
+    fn own_breaks(stmts: &mut [Stmt], label: &js::Name) {
+        for stmt in stmts {
+            match &mut stmt.kind {
+                StmtKind::Break(broken) if broken.as_ref() == Some(label) => *broken = None,
+                StmtKind::If(_, a, b) => {
+                    own_breaks(a, label);
+                    if let Some(b) = b {
+                        own_breaks(b, label);
+                    }
+                }
+                StmtKind::Labeled(_, body) => own_breaks(body, label),
+                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                    own_breaks(a, label);
+                    own_breaks(b, label);
+                }
+                _ => {}
+            }
+        }
+    }
+    // Each loop `stmts` end with, through the `if`s and blocks they end
+    // with: where it ends, they do. One whose body still names `label`
+    // once its own `break`s are, by a label of its own: that label.
+    fn ending(stmts: &mut [Stmt], label: &js::Name, every: bool) {
+        let Some(last) = stmts.last_mut() else {
+            return;
+        };
+        match &mut last.kind {
+            StmtKind::While {
+                label: looped, body, ..
+            }
+            | StmtKind::ForOf {
+                label: looped, body, ..
+            }
+            | StmtKind::For {
+                label: looped, body, ..
+            } => {
+                if !every {
+                    if let Some(Stmt {
+                        kind: StmtKind::Break(broken),
+                        ..
+                    }) = body.last_mut()
+                        && broken.as_ref() == Some(label)
+                    {
+                        *broken = None;
+                    }
+                    return;
+                }
+                own_breaks(body, label);
+                if let Some(looped) = looped
+                    && js::names_break(body, label)
+                {
+                    super::tails::relabeled(body, label, looped);
+                }
+            }
+            StmtKind::If(_, a, b) => {
+                ending(a, label, every);
+                if let Some(b) = b {
+                    ending(b, label, every);
+                }
+            }
+            StmtKind::Labeled(_, body) => ending(body, label, every),
+            _ => {}
+        }
+    }
+    for stmt in stmts.iter_mut() {
+        if let StmtKind::Labeled(label, body) = &mut stmt.kind
+            && crate::is_block_label(label)
+        {
+            ending(body, label, every);
+        }
+    }
+}
+
+/// A loop that ends the body of loop `l` around it, one the program names
+/// no label, as `loops` say, not `'rows`, whose `continue 'rows` it wrote:
+/// each `continue l` of its own, not a loop's inside it, its `break`, which
+/// ends `l`'s turn as well, as Rust's `break` of a loop that ends
+/// another's does. So does one that ends a branch of an `if` that ends it,
+/// React's `if (..) { return true; } else { while (..) { .. } }` (ADR 0961).
+pub(in crate::tidy) fn outer_continues(stmts: &mut [Stmt], loops: &[(js::Span, bool, Option<String>)]) {
+    for stmt in stmts {
+        let named = matches!(written_loop(loops, stmt.span), Some((_, _, Some(_))));
+        if let StmtKind::While {
+            label: Some(label),
+            body,
+            ..
+        }
+        | StmtKind::ForOf {
+            label: Some(label),
+            body,
+            ..
+        }
+        | StmtKind::For {
+            label: Some(label),
+            body,
+            ..
+        } = &mut stmt.kind
+            && !named
+        {
+            ending(body, label);
+        }
+    }
+}
+
+/// Each loop that ends `stmts`, or a branch of an `if` that ends them: its
+/// own `continue looped`, its `break` (`outer_continues`).
+fn ending(stmts: &mut [Stmt], looped: &Name) {
+    match stmts.last_mut().map(|s| &mut s.kind) {
+        Some(
+            StmtKind::While { body: inner, .. }
+            | StmtKind::ForOf { body: inner, .. }
+            | StmtKind::For { body: inner, .. },
+        ) => outer_broken(inner, looped),
+        Some(StmtKind::If(_, a, b)) => {
+            ending(a, looped);
+            if let Some(b) = b {
+                ending(b, looped);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Each `continue looped` of `stmts`, not a loop's inside them, `break`.
+fn outer_broken(stmts: &mut [Stmt], looped: &Name) {
+    for stmt in stmts {
+        match &mut stmt.kind {
+            StmtKind::Continue(Some(l)) if l == looped => stmt.kind = StmtKind::Break(None),
+            StmtKind::If(_, a, b) => {
+                outer_broken(a, looped);
+                if let Some(b) = b {
+                    outer_broken(b, looped);
+                }
+            }
+            StmtKind::Labeled(_, body) => outer_broken(body, looped),
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                outer_broken(a, looped);
+                outer_broken(b, looped);
+            }
+            _ => {}
+        }
+    }
+}
+
+/// A `continue l` or a `break l` of loop `l` where it's the innermost
+/// loop: `continue` or `break`, as JS's unlabeled ones go there.
+pub(in crate::tidy) fn innermost_jumps(stmts: &mut [Stmt]) {
+    fn unlabel(stmts: &mut [Stmt], looped: &js::Name) {
+        for stmt in stmts {
+            match &mut stmt.kind {
+                StmtKind::Continue(label) | StmtKind::Break(label) if label.as_ref() == Some(looped) => *label = None,
+                StmtKind::If(_, a, b) => {
+                    unlabel(a, looped);
+                    if let Some(b) = b {
+                        unlabel(b, looped);
+                    }
+                }
+                StmtKind::Labeled(_, body) => unlabel(body, looped),
+                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                    unlabel(a, looped);
+                    unlabel(b, looped);
+                }
+                _ => {}
+            }
+        }
+    }
+    for stmt in stmts {
+        if let StmtKind::While {
+            label: Some(label),
+            body,
+            ..
+        }
+        | StmtKind::ForOf {
+            label: Some(label),
+            body,
+            ..
+        }
+        | StmtKind::For {
+            label: Some(label),
+            body,
+            ..
+        } = &mut stmt.kind
+        {
+            unlabel(body, label);
+        }
+    }
+}
+
+/// Each `break block` in `stmts` a `continue` of the loop around, labeled
+/// `looped`, written if `write`: `None` where one inside a loop of its own
+/// would need the loop's label, and it has none.
+fn continues(stmts: &mut [Stmt], block: &js::Name, looped: Option<&Name>, write: bool) -> Option<()> {
+    fn each(stmts: &mut [Stmt], block: &js::Name, looped: Option<&Name>, inner: bool, write: bool) -> Option<()> {
+        for stmt in stmts {
+            match &mut stmt.kind {
+                StmtKind::Break(Some(l)) if l == block => {
+                    let label = match inner {
+                        true => Some(looped?.clone()),
+                        false => None,
+                    };
+                    if write {
+                        stmt.kind = StmtKind::Continue(label);
+                    }
+                }
+                StmtKind::If(_, a, b) => {
+                    each(a, block, looped, inner, write)?;
+                    if let Some(b) = b {
+                        each(b, block, looped, inner, write)?;
+                    }
+                }
+                StmtKind::Labeled(_, body) => each(body, block, looped, inner, write)?,
+                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                    each(a, block, looped, inner, write)?;
+                    each(b, block, looped, inner, write)?;
+                }
+                StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+                    each(body, block, looped, true, write)?
+                }
+                _ => {}
+            }
+        }
+        Some(())
+    }
+    // Not `looped` itself, a label the block's statements can't name twice.
+    if looped == Some(block) {
+        return None;
+    }
+    each(stmts, block, looped, false, write)
+}
+
+/// Whether `test` says `item`, what `$next` gave, is none: `item == null`,
+/// or `!item` of an array's.
+pub(in crate::tidy) fn absent(test: &Expr, item: &js::Name) -> bool {
+    let is_item = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == item);
+    match &test.kind {
+        ExprKind::Unary(UnaryOp::Not, a) => is_item(a),
+        _ => js::null_test(test, false).is_some_and(is_item),
+    }
+}
+
+/// Whether `test` says `item` is there: `item != null`, or `item`.
+pub(in crate::tidy) fn present(test: &Expr, item: &js::Name) -> bool {
+    match &test.kind {
+        ExprKind::Var(v) => v == item,
+        _ => js::null_test(test, true).is_some_and(|e| matches!(&e.kind, ExprKind::Var(v) if v == item)),
+    }
+}

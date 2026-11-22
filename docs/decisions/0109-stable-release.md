@@ -147,7 +147,7 @@ only unstable const generics write, refused.
 **A `use` list is one item.** `use a::{b, c::*};` was an item for each
 name, its path whole, and a list's stem; it's one item now, its tree
 nesting the names, each with a `DefId` of its own and a path relative to
-its list's. `src/lower/uses.rs` is the one owner of reading them: each
+its list's. `crates/rust-js-lower/src/uses.rs` is the one owner of reading them: each
 leaf with its path whole, a list's `self` its list's path, as rustc names
 it. Naming, re-exports, held bindings, default exports and the paths a
 library's item is named through (`library_paths`) read leaves; a list's

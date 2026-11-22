@@ -1,11 +1,11 @@
-// Mutations of src/lower/analysis/closures.rs (ADRs 0521, 0522).
+// Mutations of crates/rust-js-lower/src/analysis/closures.rs (ADRs 0521, 0522).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "param-owned-through-a-fn-dyn",
     breaks: "a parameter a function's `Fn` trait object holds is taken for one it may own, so the `Rc` it's in is counted, `{ value, strong: 1, weak: 0 }` and a `$dropping` closure, where a plain object and closure do; the answer is the same, so the form holds it (#1109)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "        ty::Ref(..) | ty::FnPtr(..) | ty::FnDef(..) | ty::Dynamic(..) => false,\n",
     replace: "        ty::Ref(..) | ty::FnPtr(..) | ty::FnDef(..) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops_by_its_signature.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "param-owned-through-a-raw-pointer",
     breaks: "a parameter a raw pointer of the function's holds is taken for one it may own, so the `Rc` beside it is counted, `{ value, strong: 1, weak: 0 }` and a `$dropping` closure, where a plain object and closure do; the answer is the same, so the form holds it (#1109)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "    if !ty.has_non_region_param() || !seen.insert(ty) || raw_pointee(tcx, ty).is_some() {\n",
     replace: "    if !ty.has_non_region_param() || !seen.insert(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops_by_its_signature.rs$"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "param-unowned-through-phantom-data",
     breaks:
       "a generic closure holding a `Vec<K>` made a `dyn Fn` by generic code is taken to hold no `K`, so the `dyn Fn` drops nothing of one with a destructor",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "        ty::Adt(adt, args) if adt.is_box() || adt.is_phantom_data() => owns_a_param(tcx, args.type_at(0), given, seen),\n",
     replace: "        ty::Adt(adt, args) if adt.is_box() => owns_a_param(tcx, args.type_at(0), given, seen),\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_owned_drops.rs$"],
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     name: "fn-dyn-drops-unseen",
     breaks:
       "a function holding a value with a destructor made a `dyn Fn` leaves the `dyn Fn` dropping nothing",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "            if drops(function) {\n",
     replace: "            if false && drops(function) {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     name: "fn-dyn-generic-unseen",
     breaks:
       "a type parameter made a `dyn Fn`, given a closure holding a value with a destructor, leaves the `dyn Fn` dropping nothing",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "                        || params_may_drop\n                            && owns_a_param(tcx, function, &|index| given(owner, index), &mut IndexSet::default())\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$|^dyn_fn_of_a_params_function_drops.rs$"],
@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
     name: "fn-dyn-param-given-unasked",
     breaks:
       "a closure holding a type parameter's function made a `dyn Fn`, in a crate with a `Drop`, drops though no caller gives the parameter a destructor, so every `Rc` is counted and `js::any_of` of one refused (#580)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "        ty::Param(param) => given(param.index),\n",
     replace: "        ty::Param(_) => true,\n",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a dyn Fn of a closure holding a type parameter's function"],
@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
     name: "dropping-fn-dyn-holds-itself",
     breaks:
       "a refused `dyn Fn` of a closure names the closure's type as what it holds, not the capture that drops, and so not the owner handle's cell whose call's return doesn't own it (rd553, ADR 0626, amended)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "                    held: held.unwrap_or(function),\n",
     replace: "                    held: function,\n",
     tests: ["test/crates-refused.test.ts", "-t", "callback is a public field"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
     name: "any-dyn-drops-unseen",
     breaks:
       "a value with a destructor made a `dyn Any`, a payload `resume_unwind` throws, leaves the `dyn Any` dropping nothing",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "            .any(|from| drops(from) || params_may_drop && from.has_non_region_param())\n",
     replace:
       "            .any(|from| params_may_drop && from.has_non_region_param())\n",
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
     name: "any-dyn-generic-unseen",
     breaks:
       "a type parameter's value made a `dyn Any`, given one with a destructor, leaves the `dyn Any` dropping nothing",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "            .any(|from| drops(from) || params_may_drop && from.has_non_region_param())\n",
     replace: "            .any(|from| drops(from))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any_drops_by_need.rs$"],
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     name: "fn-dyn-closure-drops-unseen",
     breaks:
       "a closure holding a value with a destructor, given to a type parameter made a `dyn Fn`, isn't seen to drop",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "        ty::Param(param) => given(param.index),\n",
     replace: "        ty::Param(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$|^dyn_fn_of_a_params_function_drops.rs$"],
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
     name: "fn-dyn-closure-uncarried",
     breaks:
       "a closure made a `dyn Fn` doesn't carry its drop, and `Box::new` of it is refused",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "        self.made_fn_dyns.contains(&closure) || self.cloned_apart.contains(&closure) || given_back(tcx, closure)\n",
     replace:
       "        self.cloned_apart.contains(&closure) || given_back(tcx, closure)\n",
@@ -107,17 +107,17 @@ export const mutations: Mutation[] = [
     name: "clone-shares-dropping",
     breaks:
       "a clone of a closure holding a counted `Rc` is the closure itself, counting nothing",
-    file: "src/lower/analysis/closures.rs",
-    find: "            .all(|t| !crate::lower::recognition::owns_interior_mutability(tcx, typing_env, t) && !drops(t))\n",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
+    find: "            .all(|t| !crate::recognition::owns_interior_mutability(tcx, typing_env, t) && !drops(t))\n",
     replace:
-      "            .all(|t| !crate::lower::recognition::owns_interior_mutability(tcx, typing_env, t))\n",
+      "            .all(|t| !crate::recognition::owns_interior_mutability(tcx, typing_env, t))\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
   },
   {
     name: "clone-shares-cell",
     breaks: "a clone of a closure holding a `Cell` shares it",
-    file: "src/lower/analysis/closures.rs",
-    find: "            .all(|t| !crate::lower::recognition::owns_interior_mutability(tcx, typing_env, t) && !drops(t))\n",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
+    find: "            .all(|t| !crate::recognition::owns_interior_mutability(tcx, typing_env, t) && !drops(t))\n",
     replace: "            .all(|t| !drops(t))\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_cell.rs$"],
   },
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
     name: "cloned-apart-uncarried",
     breaks:
       "a closure cloned apart doesn't carry its drop, and each clone drops what its maker took",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "        self.made_fn_dyns.contains(&closure) || self.cloned_apart.contains(&closure) || given_back(tcx, closure)\n",
     replace:
       "        self.made_fn_dyns.contains(&closure) || given_back(tcx, closure)\n",
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
     name: "functions-clone-shared",
     breaks:
       "a type parameter's function is cloned as itself where a closure is cloned apart",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "        self.library || !self.cloned_apart.is_empty()\n",
     replace: "        self.library\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     name: "clone-shares-by-kind",
     breaks:
       "a closure that writes nothing it took, given to a `map` and so an `FnMut`, is made by a factory to be cloned",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "            ty::UpvarCapture::ByValue | ty::UpvarCapture::ByUse => captured.mutability == ty::Mutability::Mut,\n",
     replace:
       "            ty::UpvarCapture::ByValue | ty::UpvarCapture::ByUse => true,\n",
@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
     name: "fn-once-clone-shares",
     breaks:
       "a clone of a closure that moves what it took out is the closure itself, so both give, and change, the one value",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "    let writes = writes_what_it_took(tcx, id, args) || closure.kind() == ty::ClosureKind::FnOnce;\n",
     replace: "    let writes = writes_what_it_took(tcx, id, args);\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_once_cloned.rs$"],
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
     name: "handed-fn-dyn-still-drops",
     breaks:
       "a closure handed to JS still counts as a `dyn Fn` that drops, so a crate whose only such closures JS keeps disposes every `dyn Fn` it drops (ADR 0873)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "            if handed {\n                return None;\n            }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_only.rs$"],
@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
     name: "handed-to-what-gives-back",
     breaks:
       "a closure given to a binding that gives a function back, `widen`'s `this`, is taken as JS's, and dropped as nothing once it's Rust's again (ADR 0873)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "        if !bindings::is_binding(tcx, id) || gives_back_a_function(tcx, id) {\n",
     replace: "        if !bindings::is_binding(tcx, id) {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
@@ -183,7 +183,7 @@ export const mutations: Mutation[] = [
     name: "handed-before-what-unwinds",
     breaks:
       "a closure boxed for a binding before an argument that panics is taken as JS's, and not dropped as that unwinds (ADR 0873)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "                && args[i + 1..].iter().all(|&after| cannot_unwind(thir, after))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     name: "handed-to-js-unseen",
     breaks:
       "a closure handed to JS carries its drop, `$dropping(f, drop)`, which nothing runs (ADR 0873)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "        self.handed_fn_dyns.contains(&closure)\n",
     replace: "        false\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
@@ -202,7 +202,7 @@ export const mutations: Mutation[] = [
     name: "written-back-unseen",
     breaks:
       "a closure given to a binding that writes a function through a `&mut` it's given, `Reflect.set`'s slot, is taken as JS's, and dropped as nothing once it's Rust's again (ADR 0873)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "    holds(sig.output())\n        || (sig.inputs().iter()).any(|input| {\n",
     replace:
       "    holds(sig.output())\n        || false && (sig.inputs().iter()).any(|input| {\n",
@@ -212,7 +212,7 @@ export const mutations: Mutation[] = [
     name: "generic-closure-holds-a-param",
     breaks:
       "a closure a generic function boxes holding only its own `Rc`, chainThenableValue<T>'s, is taken to hold a type parameter's value, and every `dyn Fn` of the crate drops (ADR 0521, amended)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "        ty::Closure(_, args) => (args.as_closure().upvar_tys().iter()).any(|t| owns_a_param(tcx, t, given, seen)),\n",
     replace: "        ty::Closure(..) => true,\n",
     tests: [
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
     name: "called-once-closures-unseen",
     breaks:
       "a closure rustc infers `Fn`, given where it's made to a binding that calls it once, `js::set_timeout(move || { let m = &n; .. }, ms)`'s, isn't found, so it's refused, as one JS keeps and calls again would be (ADR 1020)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "                && Taker::parameter(tcx, id, i) == Some(Taker::OnceCallback)\n",
     replace:
       "                && Taker::parameter(tcx, id, i) == Some(Taker::Handler)\n",
@@ -239,7 +239,7 @@ export const mutations: Mutation[] = [
     name: "called-once-of-fn-once-closures",
     breaks:
       "a closure rustc infers `FnOnce`, which drops what it took in its own body, is taken for one called once that reads itself by reference, and refused (ADR 1020)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "                && closure_args.as_closure().kind() != ty::ClosureKind::FnOnce\n",
     replace: "",
     tests: [
@@ -251,7 +251,7 @@ export const mutations: Mutation[] = [
   {
     name: "fixed-borrow-of-mut-binding",
     breaks: "a `mut` binding a closure borrowed is fixed in it, so a clone of it made there reads the value the parameter is given after: `20 + 2` where Rust says `21` (rd515, ADR 0846, amended)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "        matches!(pat.kind, PatKind::Binding(BindingMode(ByRef::No, Mutability::Not), ..))\n",
     replace: "        matches!(pat.kind, PatKind::Binding(BindingMode(ByRef::No, _), ..))\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_of_a_borrowed_parameter.rs$"],
@@ -259,8 +259,8 @@ export const mutations: Mutation[] = [
   {
     name: "fn-dyn-drops-any",
     breaks: "one `dyn Fn` made of a function holding what drops makes every `dyn Fn` drop, so an `Rc` of a struct holding another of a signature none such is made is refused as a std type holding a value with a destructor (#954)",
-    file: "src/lower/analysis/closures.rs",
-    find: "        (self.made.iter()).any(|&made| crate::lower::analysis::rc_counts::may_be(tcx, made, args))\n",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
+    find: "        (self.made.iter()).any(|&made| crate::analysis::rc_counts::may_be(tcx, made, args))\n",
     replace: "        self.any()\n",
     tests: ["test/corpus.test.ts", "-t", "^(dyn_fn_drops_by_its_signature|dyn_fn_generic_closure_drops|dyn_fn_of_a_borrowed_function).rs$"],
     snapshots: true,
@@ -269,7 +269,7 @@ export const mutations: Mutation[] = [
     name: "instance-dyn-fns-unseen",
     breaks:
       "a `dyn Fn` a library's function the crate compiles itself makes of a closure it's given, which holds a value with a destructor, is unseen: the crate's `dyn Fn`s drop nothing, so a program's `node`, whose `dyn Fn`s drop nothing, isn't refused, and its `dyn Fn` never drops what it holds (#1051)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "        return mir_fn_dyn_sources(tcx, &mir.body);\n",
     replace: "        return Vec::new();\n",
     tests: ["test/rust-js-test-programs.test.ts", "-t", "boxes as one that drops nothing"],
@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
   {
     name: "closure-clone-decided-itself",
     breaks: "every closure the crate clones is taken to be its own clone, so a clone of a library's `running` iterator's closure shares the total it writes (#1202)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "        (self.cloned.contains(&closure)).then(|| !self.cloned_apart.contains(&closure))\n",
     replace: "        (self.cloned.contains(&closure)).then_some(true)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
@@ -285,7 +285,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-closures-said-shared",
     breaks: "a library's contract says each closure it clones, or gives to clone, is its own clone, so its consumer's clone of `counter()` shares its count (#1202)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "            .map(|&id| (id, self.cloned_apart.contains(&id)))\n",
     replace: "            .map(|&id| (id, false))\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
@@ -293,7 +293,7 @@ export const mutations: Mutation[] = [
   {
     name: "error-dyns-drop-always",
     breaks: "every `dyn Error`, and every `io::Error`, is taken to drop what it may hold in a crate that makes none of what drops, so `.ok()` of an `io::Result` drops its error, code no program needs",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "    foreign_drops || boxed.into_iter().any(dropping)\n",
     replace: "    let _ = boxed;\n    true || foreign_drops\n",
     tests: ["test/corpus.test.ts", "-t", "^io_write_impl.rs$"],
@@ -302,7 +302,7 @@ export const mutations: Mutation[] = [
   {
     name: "error-dyns-drop-never",
     breaks: "no `dyn Error` the crate makes is taken to drop, so an `io::Error` made of a value with a destructor never drops it",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "    foreign_drops || boxed.into_iter().any(dropping)\n",
     replace: "    let _ = (boxed, dropping);\n    foreign_drops\n",
     tests: ["test/corpus.test.ts", "-t", "^io_error_other_drops_what_it_holds.rs$"],
@@ -310,7 +310,7 @@ export const mutations: Mutation[] = [
   {
     name: "error-dyn-of-io-error-new-unseen",
     breaks: "`io::Error::other` of a value with a destructor isn't taken to make a `dyn Error` of it, so the `io::Error` never drops it",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "                (Some(Std::IoError(IoErrorOp::New | IoErrorOp::Other)), _) => types.last().copied(),\n",
     replace: "                (Some(Std::IoError(IoErrorOp::New | IoErrorOp::Other)), _) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^io_error_other_drops_what_it_holds.rs$"],
@@ -318,7 +318,7 @@ export const mutations: Mutation[] = [
   {
     name: "error-dyn-of-conversion-unseen",
     breaks: "std's `From<E> for Box<dyn Error>` called by its path, or `.into()` into a `Box<dyn Error>`, of a value with a destructor isn't taken to make a `dyn Error` of it, so the box never drops it",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "                (_, Some((to, from))) if types.len() == 2 && boxed_error(to) => Some(from),\n",
     replace: "                (_, Some((to, from))) if types.len() == 2 && boxed_error(to) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_made_by_(from|into)_drops.rs$"],
@@ -326,7 +326,7 @@ export const mutations: Mutation[] = [
   {
     name: "error-dyn-of-question-unseen",
     breaks: "`?` of a `Result` of a value with a destructor into a `Result<_, Box<dyn Error>>` isn't taken to make a `dyn Error` of it, so the box never drops it",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "                    error_of(types[1])\n",
     replace: "                    None\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_made_by_question_drops.rs$"],
@@ -334,7 +334,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-dyns-drop-unfound",
     breaks: "a crate that boxes a value with a destructor as a `dyn Iterator` is taken to box none, so no `Box<dyn Iterator>` drops what it owns (#1420)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "                .any(|(_, from)| drops(from) || params_may_drop && from.has_non_region_param())\n        })\n}\n",
     replace: "                .any(|(_, from)| false && (drops(from) || params_may_drop && from.has_non_region_param()))\n        })\n}\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
@@ -342,7 +342,7 @@ export const mutations: Mutation[] = [
   {
     name: "returned-fn-closure-not-call-once",
     breaks: "an effect's cleanup rustc infers `Fn`, which holds its guard whole, isn't its `call_once`'s, so what it took isn't dropped as React's call of it ends (#1881)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "        called_once.extend((returned_once.iter().copied()).filter(|&closure| !is_fn_once(tcx, closure)));\n",
     replace: "        let _ = &mut called_once;\n",
     tests: ["test/effect-cleanup-drops.test.ts", "-t", "drops what it holds as React calls it"],
@@ -350,15 +350,15 @@ export const mutations: Mutation[] = [
   {
     name: "any-binding-result-called-once",
     breaks: "what any binding's callback gives back is taken for what JS calls once, so a closure `use_memo` keeps, holding a guard, compiles where JS never drops what it took (#1881)",
-    file: "src/lower/analysis/closures.rs",
-    find: "                    crate::lower::recognition::function_kind(tcx, binding, output) == Some(ty::ClosureKind::FnOnce)\n",
-    replace: "                    true || crate::lower::recognition::function_kind(tcx, binding, output) == Some(ty::ClosureKind::FnOnce)\n",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
+    find: "                    crate::recognition::function_kind(tcx, binding, output) == Some(ty::ClosureKind::FnOnce)\n",
+    replace: "                    true || crate::recognition::function_kind(tcx, binding, output) == Some(ty::ClosureKind::FnOnce)\n",
     tests: ["test/effect-cleanup-drops.test.ts", "-t", "memo gives back"],
   },
   {
     name: "moved-once-closures-unread",
     breaks: "a closure called by `&`, bound by `let` and moved once into an `F: FnOnce`, isn't taken as called once, so it's refused where its body could drop what it took (#995)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "            .flat_map(|body| moved_once(&body.thir))\n",
     replace: "            .flat_map(|body| moved_once(&body.thir))\n            .filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_closure_moved_into_a_once_callee.rs$"],
@@ -366,7 +366,7 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-fn-held-unrefused",
     breaks: "a boxed `Fn` holding a value with a destructor, given to a function that holds it in what it takes, a `Vec<F>` or an `Option<F>` of an `F: FnOnce`, or gives it back, and called there by value, is given as it is, and never dropped (#2050)",
-    file: "src/lower/analysis/closures.rs",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "            .filter(|&&(named, index, _)| !facts.gives_its_own(tcx, named, index))\n",
     replace: "            .filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_fn_in_a_vec_called_once_refused.rs$"],

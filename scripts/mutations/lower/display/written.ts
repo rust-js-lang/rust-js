@@ -1,11 +1,11 @@
-// Mutations of src/lower/display/written.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/display/written.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "padded-message-unpadded",
     breaks: "`{:>35}` of a std error whose `Display` is `pad` of its message, a `TryFromSliceError`'s, shows it unpadded (#1689)",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "fn padded_message(message: Expr, pretty: &Pretty) -> Expr {\n    match pretty {",
     replace: "fn padded_message(message: Expr, pretty: &Pretty) -> Expr {\n    match &Pretty::Plain {",
     tests: ["test/corpus.test.ts", "-t", "^std_error_messages_padded.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-display-options-dropped",
     breaks: "`{:>8}` of an `io::Error` shown directly isn't given the placeholder's options, so its message is unpadded (#1689)",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "            if let Pretty::When(options) | Pretty::Given(options, _) = pretty {\n                args.push(options.clone());\n            }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_error_messages_padded.rs$"],
@@ -21,15 +21,15 @@ export const mutations: Mutation[] = [
   {
     name: "into-string-error-unpadded",
     breaks: "`{:>40}` of an `IntoStringError` shows its message unpadded, where std's `pad` pads it (#1689)",
-    file: "src/lower/display/written.rs",
-    find: "                crate::lower::recognition::CStrError::IntoString => padded_message(message, pretty),\n",
+    file: "crates/rust-js-lower/src/display/written.rs",
+    find: "                crate::recognition::CStrError::IntoString => padded_message(message, pretty),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_error_messages_padded.rs$"],
   },
   {
     name: "debug-non-exhaustive-closed",
     breaks: "`finish_non_exhaustive()` leaves out its `..`",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: '        let rest = non_exhaustive.then_some("..");',
     replace: "        let rest = None::<&str>;",
     tests: ["test/corpus.test.ts", "-t", "std_methods"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "debug-entries-empty-comma",
     breaks: "`entry(&0).entries(none)` writes a comma after the `0`",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "            if parts.iter().all(|p| matches!(p, Part::One(_))) {",
     replace: "            if true {",
     tests: ["test/corpus.test.ts", "-t", "std_methods"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "delegated-debug-plain",
     breaks: "`self.0.fmt(f)` in a pretty `fmt` shows its value plain",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "                self.debug_string_with(values.remove(0), ty, span, &pretty)?",
     replace:
       "                self.debug_string_with(values.remove(0), ty, span, &Pretty::Plain)?",
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "pretty-non-exhaustive-comma",
     breaks: "a pretty `finish_non_exhaustive()` leaves out its `..`",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "                if non_exhaustive {\n                    list.push(Expr::bool(true));\n                }",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-options-dropped",
     breaks: "a `dyn Display` given a width shows its value unpadded",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "        let options = self.options_arg(pretty);\n        if let Some(shown) = self.dyn_written(",
     replace:
       "        let options = None;\n        if let Some(shown) = self.dyn_written(",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     name: "pad-unpadded",
     breaks:
       "`f.pad(s)` writes `s` as it is, where a placeholder's width pads it",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "                self.formatted(text.clone(), (Std::FmtDisplay, str_ty), &pretty)\n                    .unwrap_or(text)",
     replace: "                text",
     tests: ["test/corpus.test.ts", "-t", "formatter_queries"],
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     name: "std-radix-call-refused",
     breaks:
       "`LowerHex::fmt(&self.0, f)` of a number, bitflags' macro's, is an error",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "                } else if let Some((num, radix)) = std_radix {",
     replace:
       "                } else if let Some((num, radix)) = std_radix.filter(|_| false) {",
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
     name: "format-arguments-display-refused",
     breaks:
       "`Display::fmt(&format_args!(..), f)`, strum's derive's, is an error",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "        if self.is_lang_adt(ty, LangItem::FormatArguments) {",
     replace:
       "        if false && self.is_lang_adt(ty, LangItem::FormatArguments) {",
@@ -100,7 +100,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-debug-box",
     breaks: "`{:?}` of a counted `Rc` shows its counts",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "        let (value, ty) = self.shown_through(value, ty, Std::FmtDisplay);\n        let ty = self.shown_type(ty, Std::FmtDisplay);\n",
     replace:
       "        let (value, ty) = self.through_refs(value, ty);\n        let ty = self.shown_type(ty, Std::FmtDisplay);\n",
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-lock-error-display",
     breaks: "a `TryLockError` shows as poisoned",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: '                Expr::str("try_lock failed because the operation would block"),',
     replace:
       '                Expr::str("poisoned lock: another task failed inside"),',
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
     name: "var-error-display-as-debug",
     breaks:
       'a `VarError`\'s `{}` is its `{:?}`, `NotPresent`, not "environment variable not found"',
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: '                "environment variable not found",\n',
     replace: '                "NotPresent",\n',
     tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     name: "strip-prefix-error-shown-as-debug",
     breaks:
       "`{}` of a `StripPrefixError` is its `{:?}`, where std shows `prefix not found`",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: '            return Ok(padded_message(Expr::str("prefix not found"), pretty));\n',
     replace: '            return Ok(padded_message(Expr::str("StripPrefixError(())"), pretty));\n',
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
@@ -137,7 +137,7 @@ export const mutations: Mutation[] = [
     name: "dyn-to-string-unshown",
     breaks:
       "`to_string()` of a `dyn ToString` is a `{}` of it, which it has none of",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "        if self.dynamic_trait(ty) == self.to_string_trait() && self.to_string_trait().is_some() {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_to_string.rs$"],
@@ -145,7 +145,7 @@ export const mutations: Mutation[] = [
   {
     name: "system-time-error-message",
     breaks: "a `SystemTimeError`'s `Display` isn't std's message",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: 'Ok(Expr::str("second time provided was later than self"))',
     replace: 'Ok(Expr::str("later"))',
     tests: ["test/corpus.test.ts", "-t", "^clock.rs$"],
@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
     name: "pad-integral-unsigned",
     breaks:
       "`f.pad_integral(false, ..)` of a negative number, without options, writes no `-`",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: '                        let sign = Expr::cond(non_negative, Expr::str(""), Expr::str("-"));\n',
     replace: '                        let sign = Expr::str("");\n',
     tests: ["test/corpus.test.ts", "-t", "^pad_integral_plain.rs$"],
@@ -163,7 +163,7 @@ export const mutations: Mutation[] = [
     name: "case-mapping-rest-joined",
     breaks:
       '`{}` of a case mapping stepped joins the iterator, `upper.join("")`, which has no `join`',
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: '                false => Expr::call(Expr::helper("$restStr"), vec![value]),\n',
     replace:
       '                false => Expr::call(Expr::member(value, "join"), vec![Expr::str("")]),\n',
@@ -172,7 +172,7 @@ export const mutations: Mutation[] = [
   {
     name: "number-exp-call-refused",
     breaks: "`LowerExp::fmt(&self.0, f)` of a number is refused",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "                let std_exp = (!self.has_user_impl(trait_id, ty))\n                    .then(|| Num::of(ty).zip(self.exp_trait(trait_id)))\n",
     replace:
       "                let std_exp = (!self.has_user_impl(trait_id, ty))\n                    .then(|| Num::of(ty).zip(self.exp_trait(trait_id).filter(|_| false)))\n",
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
     name: "number-exp-call-unpadded",
     breaks:
       "a number's `{:e}` given a width through its type's `LowerExp` isn't padded",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: '                            Expr::call(\n                                Expr::helper("$formatted"),\n                                vec![text, options.clone(), Expr::bool(true)],\n                            )\n',
     replace: "                            text\n",
     tests: ["test/corpus.test.ts", "-t", "^exp_forwarded.rs$"],
@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
     name: "number-exp-call-precision-dropped",
     breaks:
       "`{:.1e}` of a type whose `LowerExp` gives its number's prints every digit",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: '                            let precision = Expr::optional_member(options.clone(), "precision");\n',
     replace: "                            let precision = Expr::js_undefined();\n",
     tests: ["test/corpus.test.ts", "-t", "^exp_precision.rs$"],
@@ -199,7 +199,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-kind-display-refused",
     breaks: "`{}` of an `ErrorKind` is refused",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "        if self.recognition().is_io_error_kind(ty) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^io_error_values.rs$"],
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
     name: "debug-entries-raw",
     breaks:
       "a `Debug` builder's `entries` of an `Option` or a range shows nothing",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "        let items = self.iterable_items(items, iterable, span, out)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_arguments.rs$"],
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
     name: "dyn-to-string-of-read-pair-refused",
     breaks:
       "`to_string()` of a struct's `dyn ToString` last field is refused as made where it's shown",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "            if !value.parts_read_same() {\n",
     replace: "            if !value.reads_same() {\n",
     tests: ["test/corpus.test.ts", "-t", "manually_drop_unsized"],
@@ -225,23 +225,23 @@ export const mutations: Mutation[] = [
   {
     name: "case-mapping-not-shown",
     breaks: "`{}` of `c.to_uppercase()` is refused",
-    file: "src/lower/display/written.rs",
-    find: "        if crate::lower::recognition::is_case_mapping(self.tcx, ty)\n            || crate::lower::recognition::is_text_escape(self.tcx, ty)\n        {\n",
+    file: "crates/rust-js-lower/src/display/written.rs",
+    find: "        if crate::recognition::is_case_mapping(self.tcx, ty) || crate::recognition::is_text_escape(self.tcx, ty) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
   },
   {
     name: "byte-escape-shown-whole",
     breaks: "`{}` of a byte's escape is refused, as if it weren't shown",
-    file: "src/lower/display/written.rs",
-    find: "        if crate::lower::recognition::is_byte_escape(self.tcx, ty) {",
+    file: "crates/rust-js-lower/src/display/written.rs",
+    find: "        if crate::recognition::is_byte_escape(self.tcx, ty) {",
     replace: "        if false {",
     tests: ["test/corpus.test.ts", "-t", "^byte_escape.rs$"],
   },
   {
     name: "fmt-error-display-lost",
     breaks: "fmt::Error displays std's text",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: '                Expr::str("an error occurred when formatting an argument"),\n',
     replace: '                Expr::str("an error"),\n',
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
     name: "shown-displayed-as-itself",
     breaks:
       "`js::shown(n).to_string()`, and a `T: Display` given it, is `n`, a number, not its text, `${n}`",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "            return Ok(super::binding_text(value));\n",
     replace: "            return Ok(value);\n",
     tests: ["test/bindings-any-values.test.ts", "-t", "js::shown's text is text"],
@@ -259,7 +259,7 @@ export const mutations: Mutation[] = [
     name: "whole-display-unknown",
     breaks:
       "`{}` of a WebIDL integer is `$displayF64(response.status)`, not JS's text of it",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "        let whole = Num::of(ty) == Some(Num::F64) && value.facts.has(js::Known::Whole);\n",
     replace: "        let whole = false;\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
@@ -268,7 +268,7 @@ export const mutations: Mutation[] = [
     name: "whole-display-any-float",
     breaks:
       "`{}` of any `f64` is JS's text of it, `${response.status / 8}`, where Rust's is `50.5`... and `1e21`'s isn't",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "        let whole = Num::of(ty) == Some(Num::F64) && value.facts.has(js::Known::Whole);\n",
     replace: "        let whole = Num::of(ty) == Some(Num::F64);\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
     name: "displayed-value-given-pretty",
     breaks:
       "a `Formatter`'s options given on, `{:>6}`, shows the value in place, so `Key::Wide(7)` shows `7`, not padded (#557)",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "matches!(pretty, Pretty::Plain) && self.displays_its_value(ty)",
     replace: "self.displays_its_value(ty)",
     tests: ["test/corpus.test.ts", "-t", "^untagged_displayed_in_place.rs$"],
@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
     name: "display-value-unevaluated",
     breaks:
       "a `{}` whose text doesn't read its value, a `FromUtf16Error`'s message, drops the call that made it, and an `unwrap_err` of an `Ok` doesn't panic (#1063)",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "        let evaluated = value.has_effects().then(|| value.clone());\n        let shown = self.display_shown(value, ty, span, pretty)?;\n",
     replace: "        let evaluated = None;\n        let shown = self.display_shown(value, ty, span, pretty)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^text_of_a_value_made_by_a_call.rs$"],
@@ -295,7 +295,7 @@ export const mutations: Mutation[] = [
     name: "never-shown-displayed",
     breaks:
       "`Display` of an `Infallible`, which never runs, is refused, so rand_core's `TryRngCore` blanket impl, its `Error: Display` an `Infallible`, can't be compiled (#1100)",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "        // One of which no value exists, `Infallible` (`never_shown`).\n        if self.never_shown(ty) {\n",
     replace: "        // One of which no value exists, `Infallible` (`never_shown`).\n        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^infallible_shown_through_a_bound.rs$"],
@@ -303,7 +303,7 @@ export const mutations: Mutation[] = [
   {
     name: "debug-entries-unclosed",
     breaks: "a `Debug` builder's `entries(it)` lists `it` by `Array.from`, which closes nothing where its step panics (#1141)",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "        if !closed {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^(consumer_closes_what_it_steps_on_a_panic|debug_entries_closed_where_nothing_prints).rs$"],
@@ -312,7 +312,7 @@ export const mutations: Mutation[] = [
     name: "debug-entries-items-undropped",
     breaks:
       "a `Debug` builder's `entries` never drops the entries it shows, std's `for entry in entries` drops each after showing it (#1148)",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "        let drop = self.std_drop_function(item, span)?;\n",
     replace: "        let drop = None;\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_entries_drop_as_std.rs$"],
@@ -321,7 +321,7 @@ export const mutations: Mutation[] = [
     name: "debug-entries-iterator-undropped",
     breaks:
       "a `Debug` builder's `entries` of the crate's iterator with a `Drop`, or of a `Vec` whose show panics, never closes it, so it's never dropped, nor what's left of the `Vec` (#1147, #1148)",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "        let items = self.closing(it, iterable, span)?;\n",
     replace: "        let items = it;\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_entries_drop_as_std.rs$"],
@@ -330,7 +330,7 @@ export const mutations: Mutation[] = [
     name: "debug-entries-dropping-items-unasked",
     breaks:
       "a `Debug` builder's `entries` of an adapter that makes what drops, `iter().map(|&n| D(n))`, isn't asked of its items, so it's listed by `Array.from`, which drops none (#1148)",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "            drops(iterable) || drops(item) || (self.implements_iterator(iterable) && self.steps_may_panic(iterable));\n",
     replace: "            drops(iterable) || (self.implements_iterator(iterable) && self.steps_may_panic(iterable));\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_entries_drop_as_std.rs$"],
@@ -338,15 +338,15 @@ export const mutations: Mutation[] = [
   {
     name: "c-str-error-message-unknown",
     breaks: "`{}` of a C string's error is refused",
-    file: "src/lower/display/written.rs",
-    find: "        if let Some(error) = crate::lower::recognition::c_str_error(self.tcx, ty) {\n",
-    replace: "        if let (false, Some(error)) = (true, crate::lower::recognition::c_str_error(self.tcx, ty)) {\n",
+    file: "crates/rust-js-lower/src/display/written.rs",
+    find: "        if let Some(error) = crate::recognition::c_str_error(self.tcx, ty) {\n",
+    replace: "        if let (false, Some(error)) = (true, crate::recognition::c_str_error(self.tcx, ty)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
   },
   {
     name: "builder-step-shown-plain",
     breaks: "a builder's step is shown plain, not as pretty as its writer is, so `{:#?}` of a `debug_list()` of `&dyn Debug`s is flat (#1335)",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "            this.debug_string_with(value, ty, span, &pretty)\n",
     replace: "            this.debug_string(value, ty, span)\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_debug_shown_where_rust_calls_fmt\\.rs$"],
@@ -354,15 +354,15 @@ export const mutations: Mutation[] = [
   {
     name: "poison-error-display-refused",
     breaks: "`{}` of a `PoisonError` is refused, where std's shows that the lock is poisoned (#1438)",
-    file: "src/lower/display/written.rs",
-    find: "        if crate::lower::recognition::is_poison_error(ty) {\n",
-    replace: "        if crate::lower::recognition::is_poison_error(ty) && false {\n",
+    file: "crates/rust-js-lower/src/display/written.rs",
+    find: "        if crate::recognition::is_poison_error(ty) {\n",
+    replace: "        if crate::recognition::is_poison_error(ty) && false {\n",
     tests: ["test/corpus.test.ts","-t","^lock_poisoning.rs$"],
   },
   {
     name: "framed-writer-function-forms-unadapted",
     breaks: "a framed call of a generic writer function given a `&mut Point` gives the object, where generic code reads a box (#1759)",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "            if let Some(form) = self.form_of(given) {\n",
     replace: "            if let Some(form) = self.form_of(given).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(closure_gives_a_mut_to_a_generic_writer)\\.rs$"],
@@ -370,7 +370,7 @@ export const mutations: Mutation[] = [
   {
     name: "other-fmt-past-own-reference",
     breaks: "`LowerHex::fmt(&self.0, f)` of a `&ByRef` with a `LowerHex` of its own is asked of `ByRef`, which has none, so it's refused (#1798)",
-    file: "src/lower/display/written.rs",
+    file: "crates/rust-js-lower/src/display/written.rs",
     find: "                let ty = self.recognition().refs_shown_by(trait_id, generic_args.type_at(0));\n",
     replace: "                let ty = generic_args.type_at(0).peel_refs();\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_of_a_reference_impl_given_a_formatter.rs$"],

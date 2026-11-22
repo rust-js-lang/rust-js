@@ -1,4 +1,4 @@
-// Mutations of src/lower/std_types/slice.rs (ADR 0324).
+// Mutations of crates/rust-js-lower/src/std_types/slice.rs (ADR 0324).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "clone-from-slice-trivial-fact-ungiven",
     breaks:
       "a generic `clone_from_slice` gives `$cloneFromSlice` no `TTriviallyCloned`, so of integers it panics with its own assertion's message (#2318)",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                    Some(trivial) if self.recognition().trait_holds(item(), trivial).is_none() => {\n",
     replace: "                    Some(trivial) if false && self.recognition().trait_holds(item(), trivial).is_none() => {\n",
     tests: ["test/corpus.test.ts", "-t", "clone_from_slice_trivial_panic"],
@@ -15,16 +15,16 @@ export const mutations: Mutation[] = [
     name: "clone-from-slice-trivial-cloned",
     breaks:
       "`clone_from_slice` of integers of another length panics with its own assertion's message, not std's specialization's `copy_from_slice` one (#2318)",
-    file: "src/lower/std_types/slice.rs",
-    find: "            SliceOp::CloneFromSlice\n                if crate::lower::std_impls::trivially_cloned(",
-    replace: "            SliceOp::CloneFromSlice\n                if false && crate::lower::std_impls::trivially_cloned(",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
+    find: "            SliceOp::CloneFromSlice\n                if crate::std_impls::trivially_cloned(",
+    replace: "            SliceOp::CloneFromSlice\n                if false && crate::std_impls::trivially_cloned(",
     tests: ["test/corpus.test.ts", "-t", "clone_from_slice_trivial_panic"],
   },
   {
     name: "retain-mut-no-handles",
     breaks:
       "`retain_mut` of numbers gives each as a value, so what `f` writes is lost",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                let handles = self.handles_mut(item());\n                let mut given",
     replace:
       "                let handles = false;\n                let mut given",
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-at-mut-checked-dropped",
     breaks: "`split_at_mut_checked` panics where it's `None`",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: '                if checked {\n                    list.push(Expr::bool(true));\n                }\n                self.view_call("$splitAtMut", list)',
     replace: '                self.view_call("$splitAtMut", list)',
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-end-mut-object-handle",
     breaks: "`split_first_mut()`'s number isn't a handle",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                let mut list = vec![arg(), Expr::bool(last)];\n                if self.handles_mut(item()) {\n",
     replace:
       "                let mut list = vec![arg(), Expr::bool(last)];\n                if false {\n",
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
   {
     name: "first-chunk-mut-copy",
     breaks: "`first_chunk_mut::<N>()` is a copy, not a view",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: '(false, true) => self.view_call("$view", vec![items, Expr::int(0), Expr::int(n as i128)]),',
     replace:
       '(false, true) => Expr::call(Expr::member(items, "slice"), vec![Expr::int(0), Expr::int(n as i128)]),',
@@ -59,7 +59,7 @@ export const mutations: Mutation[] = [
   {
     name: "last-chunk-mut-from-start",
     breaks: "`last_chunk_mut::<N>()` is the first `N`",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                        let start = Expr::bin(Op::Sub, length.clone(), Expr::int(n as i128));\n",
     replace: "                        let start = Expr::int(0);\n",
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-by-mut-copies",
     breaks: "`split_mut(p)` gives copies, not views",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                    (true, true) => self.view_call(\"$lazySliceSplitByMut\", list),\n",
     replace: "                    (true, true) => helper(\"$lazySliceSplitBy\", list),\n",
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
   {
     name: "chunk-by-mut-copies",
     breaks: "`chunk_by_mut(p)` gives copies, not views",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                    (true, true) => self.view_call(\"$lazyChunkByMut\", list),\n",
     replace: "                    (true, true) => helper(\"$lazyChunkBy\", list),\n",
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-chunk-mut-copies",
     breaks: "`split_first_chunk_mut` gives copies, not views",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: '                    true => self.view_call("$splitChunkMut", list),',
     replace: '                    true => helper("$splitChunk", list),',
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
   {
     name: "chunks-exact-mut-copies",
     breaks: "`chunks_exact_mut` gives copies, not views",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: 'self.view_call("$chunksExactMut", vec![arg(), arg()])',
     replace: 'helper("$chunksExact", vec![arg(), arg()])',
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
   {
     name: "rchunks-mut-copies",
     breaks: "`rchunks_mut` gives copies, not views",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: '                self.view_call("$rchunksMut", vec![arg(), arg(), Expr::bool(exact)])',
     replace:
       '                helper("$rchunks", vec![arg(), arg(), Expr::bool(exact)])',
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
     name: "remainder-of-stepped",
     breaks:
       "a stepped `ChunksExactMut`'s `into_remainder()` is read off `$iter`'s wrapper",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "            SliceOp::Remainder if stepping => ",
     replace: "            SliceOp::Remainder if false => ",
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "item-eq-identity",
     breaks: "a slice's `starts_with` compares structs by identity",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "        if item == rhs\n            && (self.eq_is_identity(item) || (!self.has_cell_layer(item) && Num::of(item.peel_refs()).is_some()))\n        {\n            return Ok(None);",
     replace: "        if true {\n            return Ok(None);",
     tests: ["test/corpus.test.ts", "-t", "slice_prefix_eq"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "item-eq-arrow-kept",
     breaks: "`(a, b) => $eq(a, b)` isn't `$eq`",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "            && matches!(callee.kind, js::ExprKind::Var(_))\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "slice_prefix_eq"],
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
   {
     name: "strip-eq-dropped",
     breaks: "`strip_prefix` of structs compares them by identity",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                list.extend(self.item_eq((item(), item()), true, span)?);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "slice_prefix_eq"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   {
     name: "as-array-any-length",
     breaks: "`as_array::<N>()` is `Some` of a slice of any length",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                    Expr::bin(Op::Eq, length, Expr::int(n as i128)),",
     replace: "                    Expr::bool(true),",
     tests: ["test/corpus.test.ts", "-t", "slice_arrays"],
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
   {
     name: "array-windows-of-one",
     breaks: "`array_windows::<N>()` are of one",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: '                Expr::call(Expr::helper("$windows"), vec![arg(), Expr::int(n as i128)])',
     replace:
       '                Expr::call(Expr::helper("$windows"), vec![arg(), Expr::int(1)])',
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
   {
     name: "as-chunks-back-dropped",
     breaks: "`as_rchunks` is `as_chunks`",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                if back {\n                    list.push(Expr::bool(true));\n                }\n                let pair",
     replace: "                let pair",
     tests: ["test/corpus.test.ts", "-t", "slice_arrays"],
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
   {
     name: "as-chunks-mut-copies",
     breaks: "`as_chunks_mut` gives copies, not views",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: '                    true => self.view_call("$asChunksMut", list),',
     replace: '                    true => helper("$asChunks", list),',
     tests: ["test/corpus.test.ts", "-t", "slice_arrays"],
@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
   {
     name: "as-chunks-unchecked-pair",
     breaks: "`as_chunks_unchecked` gives the chunks and what's left",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                    true => Expr::index(pair, Expr::int(0)),",
     replace: "                    true => pair,",
     tests: ["test/corpus.test.ts", "-t", "slice_arrays"],
@@ -183,7 +183,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-mut-copy",
     breaks: "`as_flattened_mut` is a copy, not a view",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: '                self.view_call("$flatView", vec![arg(), Expr::int(n as i128)])',
     replace:
       '                Expr::call(Expr::member(arg(), "flat"), Vec::new())',
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-off-back-front",
     breaks: "`s.split_off(n..)` takes the first `n`",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "            (None, Some((n, None))) => list.extend([n, Expr::bool(true)]),",
     replace: "            (None, Some((n, None))) => list.push(n),",
     tests: ["test/corpus.test.ts", "-t", "slice_split_off"],
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-off-end-no-handle",
     breaks: "`split_off_first_mut()`'s number isn't a handle",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                list.push(Expr::bool(last));\n                if mutable && self.handles_mut(item) {",
     replace:
       "                list.push(Expr::bool(last));\n                if false {",
@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-off-mut-copies",
     breaks: "`split_off_mut` gives a copy, not a view",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: '            (None, true) => "$sliceSplitOffMut",',
     replace: '            (None, true) => "$sliceSplitOff",',
     tests: ["test/corpus.test.ts", "-t", "slice_split_off"],
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
   {
     name: "disjoint-handle-dropped",
     breaks: "`get_disjoint_mut` of numbers gives no handles",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                let handle = index.is_usize() && self.handles_mut(item());",
     replace: "                let handle = false;",
     tests: ["test/corpus.test.ts", "-t", "slice_disjoint"],
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
   {
     name: "disjoint-inclusive-dropped",
     breaks: "`get_disjoint_mut` of `a..=b` takes `a..b`",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                if inclusive {\n                    list.push(Expr::bool(true));\n                }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "slice_disjoint"],
@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
   {
     name: "disjoint-unchecked-result",
     breaks: "`get_disjoint_unchecked_mut` gives a `Result`",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                    true => rust_js_program::js::result::held(result),",
     replace: "                    true => result,",
     tests: ["test/corpus.test.ts", "-t", "slice_disjoint"],
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninit-write-copy-skipped",
     breaks: "`write_copy_of_slice` writes nothing",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "        out.push(StmtKind::Expr(copy).at(self.js_span(span)));\n        Ok(slots)\n",
     replace: "        Ok(slots)\n",
     tests: ["test/corpus.test.ts", "-t", "slice_uninit"],
@@ -249,7 +249,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninit-write-clone-copies",
     breaks: "`write_clone_of_slice` copies, not clones",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "        if clone {\n            let clone = self.clone_arg(",
     replace: "        if false {\n            let clone = self.clone_arg(",
     tests: ["test/corpus.test.ts", "-t", "slice_uninit"],
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
   {
     name: "deque-insert-mut-no-handle",
     breaks: "`insert_mut`'s number is the number, not a handle on it",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "mutable && self.handles_mut(item())",
     replace: "false",
     tests: ["test/corpus.test.ts", "-t", "deque_push_mut"],
@@ -266,7 +266,7 @@ export const mutations: Mutation[] = [
     name: "array-from-fn-index-first",
     breaks:
       "`array::from_fn`'s arrow is given each item, `undefined`, not its index",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                        params.insert(0, js::Name::unread(\"_\".to_string()).into());\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_from_fn.rs$"],
@@ -275,7 +275,7 @@ export const mutations: Mutation[] = [
     name: "retain-mut-undropped",
     breaks:
       "`retain_mut` of values with a destructor leaves those it removes undropped",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                given.extend(self.std_drop_function(item(), span)?);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^retain_mut_drops.rs$"],
@@ -284,7 +284,7 @@ export const mutations: Mutation[] = [
     name: "pop-front-if-no-handles",
     breaks:
       "`pop_front_if(f)` of numbers gives `f` the number, not a handle on it",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: '                helper("$popFrontIf", vec![arg(), arg(), Expr::bool(handles)])\n',
     replace:
       '                helper("$popFrontIf", vec![arg(), arg(), Expr::bool(false && handles)])\n',
@@ -293,7 +293,7 @@ export const mutations: Mutation[] = [
   {
     name: "fill-undropped",
     breaks: "`fill` drops none of the items it writes over",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: '                        let drop = self.std_drop_function(item(), span)?;\n                        helper(\n                            "$fill",',
     replace:
       '                        let drop = None;\n                        helper(\n                            "$fill",',
@@ -303,7 +303,7 @@ export const mutations: Mutation[] = [
     name: "generic-index-mut-known-boxed",
     breaks:
       "`index_mut` by a generic index whose output is known here, `[u32]`, is left in its box",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                    Some(output) if mutable && !self.mut_ref_form(output).is_cell() => Expr::held(indexed),",
     replace:
       "                    Some(output) if false && !self.mut_ref_form(output).is_cell() => Expr::held(indexed),",
@@ -313,7 +313,7 @@ export const mutations: Mutation[] = [
     name: "generic-index-mut-cell-unboxed",
     breaks:
       "`index_mut` by a generic index of a `String`, a cell, is taken out of its handle",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                    Some(output) if mutable && !self.mut_ref_form(output).is_cell() => Expr::held(indexed),",
     replace: "                    Some(_) if mutable => Expr::held(indexed),",
     tests: ["test/corpus.test.ts", "-t", "^index_bound_generic.rs$"],
@@ -322,7 +322,7 @@ export const mutations: Mutation[] = [
     name: "copy-from-slice-shared",
     breaks:
       "`copy_from_slice` of `Copy` structs puts the source's objects in place, so changing one changes the source",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: '                helper("$copyFromSlice", Expr::optional_args(vec![items, source], vec![copy]))',
     replace:
       '                helper("$copyFromSlice", Expr::optional_args(vec![items, source], vec![copy.filter(|_| false)]))',
@@ -332,7 +332,7 @@ export const mutations: Mutation[] = [
     name: "repeat-items-shared",
     breaks:
       "`repeat` of `Copy` structs holds the same objects each time, so changing one changes them all",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                let copy = self.bits_copy_fn(item());\n                // Room",
     replace: "                let copy = None::<Expr>;\n                // Room",
     tests: ["test/corpus.test.ts", "-t", "^(copied_structs_apart|copied_of_a_copy_with_its_own_clone).rs$"],
@@ -341,7 +341,7 @@ export const mutations: Mutation[] = [
     name: "deque-slices-swapped",
     breaks:
       "a `VecDeque`'s `as_slices()` gives none first, so `as_mut_slices()`'s first writes nowhere and a reader of the first sees nothing",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "            SliceOp::DequeSlices => Expr::array(vec![arg(), Expr::array(Vec::new())]),\n",
     replace:
       "            SliceOp::DequeSlices => Expr::array(vec![Expr::array(Vec::new()), arg()]),\n",
@@ -351,7 +351,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-from-ref-unwrapped",
     breaks: "`slice::from_ref(&x)` is `x`, not a slice of it",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "            SliceOp::FromRef => Expr::array(vec![arg()]),\n",
     replace: "            SliceOp::FromRef => arg(),\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_from_ref.rs$"],
@@ -359,7 +359,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-repeat-of-no-size",
     breaks: "a slice's `repeat(n)` checks room by its items' count alone",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                let size = self.room_item_size(item());\n",
     replace: "                let size = Expr::int(0);\n",
     tests: ["test/runtime-package.test.ts", "-t", "room past"],
@@ -367,7 +367,7 @@ export const mutations: Mutation[] = [
   {
     name: "ranged-reverse-unknown",
     breaks: "`v[a..b].reverse()` makes a view, a `Proxy`, to reverse, `$view(v, a, b).reverse()`, where it's `$reverseRange(v, a, b)` (ADR 1073)",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "        Std::Method(\"reverse\") => Some(\"$reverseRange\"),\n",
     replace: "        Std::Method(\"reverse\") => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_range_reverse.rs$"],
@@ -376,7 +376,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-is-sorted-by-key-drop-unpassed",
     breaks: "a slice's `is_sorted_by_key` isn't given its keys' drop: no key with a destructor is ever dropped (#783)",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                args.extend(self.std_drop_function(key_ty, span)?);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
@@ -384,7 +384,7 @@ export const mutations: Mutation[] = [
   {
     name: "deque-retain-mut-as-vec",
     breaks: "a `VecDeque`'s `retain_mut` drops each it doesn't keep as it goes, a `Vec`'s, where std's drops them after the last call (#909)",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "helper(if deque { \"$retainDeque\" } else { \"$retainMut\" }, given)",
     replace: "helper(\"$retainMut\", given)",
     tests: ["test/corpus.test.ts", "-t", "^vec_deque_retain_swaps.rs$"],
@@ -392,7 +392,7 @@ export const mutations: Mutation[] = [
   {
     name: "cached-key-order-unseen",
     breaks: "`sort_by_cached_key` of keys whose order counts sorts its pairs with JS's sort, not std's unstable sort (#925)",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                        helper(\"$sortByCachedKey\", vec![items, key, cmp, kind])",
     replace: "                        helper(\"$sortByCachedKey\", vec![items, key, cmp])",
     tests: ["test/corpus.test.ts", "-t", "^sort_stable_seen.rs$"],
@@ -400,7 +400,7 @@ export const mutations: Mutation[] = [
   {
     name: "starts-with-by-eq",
     breaks: "a slice's `starts_with` and `strip_prefix` ask each two `==`, where std's slice `==` asks `!=`, an impl's own `ne` (#962)",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "        let same = match by_ne && item.peel_refs() == rhs.peel_refs() && self.own_ne(item) {\n",
     replace: "        let same = match false && by_ne && item.peel_refs() == rhs.peel_refs() && self.own_ne(item) {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -409,7 +409,7 @@ export const mutations: Mutation[] = [
     name: "deque-insert-drop-unpassed",
     breaks:
       "a `VecDeque`'s `insert` isn't given its item's drop, so what it took past its end is never dropped as it panics (#1171)",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                given.extend(drop);\n                helper(\"$dequeInsert\", given)\n",
     replace: "                helper(\"$dequeInsert\", given)\n",
     tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
@@ -417,7 +417,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-views-of-drops-refused",
     breaks: "a deque's `as_mut_slices` and a slice's chunks and first or last `N` items, of items with a destructor, are refused, though each is a view (#1274)",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                // or last `N` items, each a view of what it holds (#1274).\n                | SliceOp::DequeSlices\n",
     replace: "                // or last `N` items, each a view of what it holds (#1274).\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_accessors_of_items_with_a_destructor.rs$"],
@@ -425,15 +425,15 @@ export const mutations: Mutation[] = [
   {
     name: "insert-mut-past-its-end-keeps-its-item",
     breaks: "`insert_mut` past the end panics without dropping the item it took, which native Rust drops (#1274)",
-    file: "src/lower/std_types/slice.rs",
-    find: "                let drop = match at && self.drops(item()) != crate::lower::drops::Drops::Nothing {\n",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
+    find: "                let drop = match at && self.drops(item()) != crate::drops::Drops::Nothing {\n",
     replace: "                let drop = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_accessors_of_items_with_a_destructor.rs$"],
   },
   {
     name: "from-mut-of-an-object-allowed",
     breaks: "`slice::from_mut(&mut v)` of an object is a view of its handle, which an object's `&mut` isn't: refused naming #1336 no more",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                if !self.handles_mut(item()) {",
     replace: "                if false && !self.handles_mut(item()) {",
     tests: ["test/diagnostics.test.ts", "-t", "slice::from_mut of an object"],
@@ -441,7 +441,7 @@ export const mutations: Mutation[] = [
   {
     name: "copy-from-slice-clones",
     breaks: "`copy_from_slice` of a `Copy` type with a hand-written `Clone` calls that `clone` for each item, which std's `memcpy` never does",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                let copy = self.bits_copy_fn(item());\n                helper(\"$copyFromSlice\"",
     replace: "                let copy = Some(self.clone_fn(\"item\", item(), span)?);\n                helper(\"$copyFromSlice\"",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
@@ -449,7 +449,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-clone-dropped",
     breaks: "`repeat` of a `Copy` type with a hand-written `Clone` never calls it, where std's first copy is each item's clone",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                let clone = clone.filter(|clone| !copy.as_ref().is_some_and(|copy| js::scopes::alpha_eq(copy, clone)));\n",
     replace: "                let clone = None::<Expr>;\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
@@ -457,7 +457,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-clone-compared-by-names",
     breaks: "`vec![p; n]` of a struct whose copy and clone are alike but for their parameters' names gives `$repeatItems` its clone too, `(item) => ({ ...item })` twice (#1681)",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                let clone = clone.filter(|clone| !copy.as_ref().is_some_and(|copy| js::scopes::alpha_eq(copy, clone)));\n",
     replace: "                let clone = clone.filter(|clone| copy.as_ref() != Some(clone));\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
@@ -466,7 +466,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-search-made-eager",
     breaks: "a slice's search by a predicate that runs code is made the array of its pieces, `$sliceSplitBy`, the predicate asked of every item first (#1501)",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "        (generic_args.types().last()).is_some_and(|predicate| self.recognition().pattern_runs_code(predicate))\n",
     replace: "        false\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_searches_ask_a_predicate_as_they_step.rs$"],
@@ -474,15 +474,15 @@ export const mutations: Mutation[] = [
   {
     name: "from-fn-made-undropped",
     breaks: "`array::from_fn` and `Vec::from_fn` of items with a destructor drop none of what they made where `f` panics part-way, `Array.from`'s, where std's guard drops it (#2278)",
-    file: "src/lower/std_types/slice.rs",
-    find: "                if self.drops(item()) != crate::lower::drops::Drops::Nothing {\n                    let drop = self.drop_function(item(), span)?;\n",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
+    find: "                if self.drops(item()) != crate::drops::Drops::Nothing {\n                    let drop = self.drop_function(item(), span)?;\n",
     replace: "                if false {\n                    let drop = self.drop_function(item(), span)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^from_fn_drops_what_it_made_where_its_closure_panics\\.rs$"],
   },
   {
     name: "vec-from-fn-room-unasked",
     breaks: "`Vec::from_fn(n, f)` asks no room for its `n` items, where std's collect panics `capacity overflow` past `isize::MAX` bytes before calling `f` (#1656)",
-    file: "src/lower/std_types/slice.rs",
+    file: "crates/rust-js-lower/src/std_types/slice.rs",
     find: "                            self.room_for((None, length.clone()), size, span, out);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^from_fn_drops_what_it_made_where_its_closure_panics\\.rs$"],

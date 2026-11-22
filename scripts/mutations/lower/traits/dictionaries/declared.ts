@@ -1,4 +1,4 @@
-// Mutations of src/lower/traits/dictionaries/declared.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/traits/dictionaries/declared.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "dictionary-declared-once-used",
     breaks:
       "a dictionary its body writes once is declared at its top too, where inline it reads as it's asked (ADR 0979)",
-    file: "src/lower/traits/dictionaries/declared.rs",
+    file: "crates/rust-js-lower/src/traits/dictionaries/declared.rs",
     find: "            if count < 2 {\n",
     replace: "            if count < 1 {\n",
     tests: [
@@ -19,7 +19,7 @@ export const mutations: Mutation[] = [
   {
     name: "dictionary-reading-a-global-unkept",
     breaks: "a dictionary whose entry reads a JS global, `Array.from`, made twice in a body, is written out twice, not declared once at its top as one that reads only helpers is (#1239)",
-    file: "src/lower/traits/dictionaries/declared.rs",
+    file: "crates/rust-js-lower/src/traits/dictionaries/declared.rs",
     find: "                || name.is_global()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dictionary_of_a_global_class_declared_once\\.rs$"],
@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
   {
     name: "helper-made-dictionary-unnamed",
     breaks: "a dictionary a runtime helper makes of an impl's, `$readerDefaults(chainRead(..))`, is written again at each use, not declared once (ADR 0979, #1156)",
-    file: "src/lower/traits/dictionaries/declared.rs",
+    file: "crates/rust-js-lower/src/traits/dictionaries/declared.rs",
     find: "        return is_impl_call(made);\n",
     replace: "        return false && is_impl_call(made);\n",
     tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-entries-undeclared",
     breaks: "an entry of a given dictionary, called twice in a body, `SSource.PairsIntoIterator()`, is made again at each, not declared once at its top (#1355)",
-    file: "src/lower/traits/dictionaries/declared.rs",
+    file: "crates/rust-js-lower/src/traits/dictionaries/declared.rs",
     find: "            found.push((entry.clone(), e.clone()));\n",
     replace: "            let _ = entry;\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_into_iterator_flattened_from_its_back.rs$"],
@@ -46,15 +46,15 @@ export const mutations: Mutation[] = [
   {
     name: "entry-of-a-maybe-undefined-dictionary-declared",
     breaks: "an entry of a dictionary that may be `undefined`, a `Copy`'s, called twice behind the test of it, is read at the body's top, ahead of that test, where it throws (#1355)",
-    file: "src/lower/traits/dictionaries/declared.rs",
+    file: "crates/rust-js-lower/src/traits/dictionaries/declared.rs",
     find: "            && root_name(e).is_some_and(|root| present.contains(root))\n",
     replace: "            && root_name(e).is_some()\n",
-    unitTests: "lower::traits::dictionaries::declared::tests::a_dictionary_that_may_be_undefined_keeps_its_entry_inline",
+    unitTests: "traits::dictionaries::declared::tests::a_dictionary_that_may_be_undefined_keeps_its_entry_inline",
   },
   {
     name: "buf-reader-dictionary-not-an-impl-call",
     breaks: "a `BufReader`'s dictionary a body writes twice is written each time, not declared once, as a `Chain`'s is (#1156)",
-    file: "src/lower/traits/dictionaries/declared.rs",
+    file: "crates/rust-js-lower/src/traits/dictionaries/declared.rs",
     find: "&& callee.helper_name() == Some(\"$bufReader\")",
     replace: "&& callee.helper_name() == Some(\"$bufReaders\")",
     tests: ["test/corpus.test.ts", "-t", "^io_buf_reader.rs$"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "mut-dictionary-named-as-the-value",
     breaks: "a `&mut`'s dictionary, which reads generic code's box, is named as its value's, `parserBorrowMut$1` beside `parserBorrowMut` (#1414)",
-    file: "src/lower/traits/dictionaries/declared.rs",
+    file: "crates/rust-js-lower/src/traits/dictionaries/declared.rs",
     find: "            true => \"mut\",\n",
     replace: "            true => \"\",\n",
     tests: ["test/lowering.test.ts", "-t", "a &mut.s dictionary is named apart from its value.s"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "top-binds-arrows-alone",
     breaks: "a made dictionary whose entry binds a name in a statement, a `Hash` of a slice's `for (const item of items)`, reads as one that reads what the top can't, and is written out at each use, where ADR 0979 declares it once (#1379)",
-    file: "src/lower/traits/dictionaries/declared.rs",
+    file: "crates/rust-js-lower/src/traits/dictionaries/declared.rs",
     find: "    let bound = js::bound_names(&[StmtKind::Expr(e.clone()).at(js::Span::NONE)]);\n",
     replace: "    let bound: Vec<js::Name> = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_maps\\.rs$"],

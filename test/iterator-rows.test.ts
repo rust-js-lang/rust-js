@@ -43,7 +43,7 @@ test("generic code's, what every adapter shares and what's taken away are said",
 // What the change says again in that file was moved; #823's removed rule
 // (766055774), whose `iterator_item` nothing put back, is still a removal.
 test("code a change says again in its file was moved, not removed: only what's put back nowhere runs each row", () => {
-  const file = "src/lower/combinators/adapters.rs";
+  const file = "crates/rust-js-lower/src/combinators/adapters.rs";
   const folded = [
     "            IterComb::FilterMap => unboxed(",
     '                method(method(items, "map", vec![next()]), "filter", vec![present()]),',
@@ -57,12 +57,12 @@ test("code a change says again in its file was moved, not removed: only what's p
   const why = (found: Hunk[]) => pickedOf(found, 8).flatMap((p) => p.why);
   expect(why([closure, arm]).some((line) => line.includes("removes"))).toBe(false);
   // Said again in another file is no help: removed from this one.
-  expect(why([{ ...closure, file: "src/lower/iterators.rs" }, arm]).some((line) => line.includes("removes"))).toBe(true);
+  expect(why([{ ...closure, file: "crates/rust-js-lower/src/iterators.rs" }, arm]).some((line) => line.includes("removes"))).toBe(true);
   const rule = hunk(
     ["        return (dropping_items(recognition, source.peel_refs(), &drops) || enumerates_a_compiled_struct(tcx, adapter))"],
     ["        let item = recognition.iterator_item(adapter);", "        return (item.is_some_and(&drops)", "            || dropping_items(recognition, source.peel_refs(), &drops)"],
     "fn back_stepped_adapter<'tcx>(",
-    "src/lower/analysis/back_stepped.rs",
+    "crates/rust-js-lower/src/analysis/back_stepped.rs",
   );
   expect(why([rule]).some((line) => line.includes("enumerate (removes: each row)"))).toBe(true);
 });
@@ -82,14 +82,14 @@ test("a name's rows are those whose chain has it, or whose consumer it begins", 
 // matrix's `generic own Every | chain.flatten | rfold` and `take.flatten`
 // rows hold.
 test("what decides each chain's form runs each row of what it names, and of each adapter that calls it", () => {
-  const decided = named(hunk(['pub(in crate::lower) const HELD_FLIPPED: [&str; 2] = ["enumerate", "map"];'], [], "", "src/lower/body_queries/in_place.rs"), adapters, consumers);
+  const decided = named(hunk(['pub(crate) const HELD_FLIPPED: [&str; 2] = ["enumerate", "map"];'], [], "", "crates/rust-js-lower/src/body_queries/in_place.rs"), adapters, consumers);
   expect(decided).toMatchObject({ adapters: ["enumerate", "map"], decides: true, removes: false });
   expect(named(hunk(["  const taking = $taking(iter, n, drop);"]), adapters, consumers).decides).toBe(false);
   // Its `HELD_FLIPPED`, outside any function, names what it says; a
   // comment there, or a `const` elsewhere, nothing.
   const outside = (added: string[], file: string): Hunk => ({ ...hunk(added, [], "fn decide_held() {", file), outside: true });
-  expect(naming(outside(['const HELD_FLIPPED: [&str; 2] = ["enumerate", "map"];'], "src/lower/body_queries/in_place.rs"), adapters, consumers)).toMatchObject({ head: "" });
-  expect(naming(outside(["// what a `map` decides"], "src/lower/body_queries/in_place.rs"), adapters, consumers)).toBeUndefined();
+  expect(naming(outside(['const HELD_FLIPPED: [&str; 2] = ["enumerate", "map"];'], "crates/rust-js-lower/src/body_queries/in_place.rs"), adapters, consumers)).toMatchObject({ head: "" });
+  expect(naming(outside(["// what a `map` decides"], "crates/rust-js-lower/src/body_queries/in_place.rs"), adapters, consumers)).toBeUndefined();
   expect(naming(outside(['const NAMES: [&str; 1] = ["map"];'], "crates/rust-js-program/src/runtime/back_steps.js"), adapters, consumers)).toBeUndefined();
   expect(adapterCalls().get("flatten")).toEqual(new Set(["map"]));
   const reach = reached(new Set(["map"]));
@@ -109,8 +109,8 @@ test("what decides each chain's form runs each row of what it names, and of each
 // alone change decides the rows of those its diff adds or removes, and of
 // what reaches them; a change to anything else of it, each it names.
 test("a list's entries alone decide the rows of those its diff changes, and what reaches them", () => {
-  const flipped = (line: string) => `pub(in crate::lower) const HELD_FLIPPED: ${line};`;
-  const file = "src/lower/body_queries/in_place.rs";
+  const flipped = (line: string) => `pub(crate) const HELD_FLIPPED: ${line};`;
+  const file = "crates/rust-js-lower/src/body_queries/in_place.rs";
   const entry = { ...hunk([flipped('[&str; 4] = ["chain", "enumerate", "map", "zip"]')], [flipped('[&str; 3] = ["chain", "enumerate", "map"]')], "", file), outside: true };
   expect(entriesOf(entry)).toMatchObject({ added: ['"zip"'], removed: [] });
   expect(named(entriesOf(entry)!, adapters, consumers)).toMatchObject({ adapters: ["zip"], decides: true });
@@ -127,12 +127,12 @@ test("a list's entries alone decide the rows of those its diff changes, and what
   expect(entriesOf(documented)).toMatchObject({ added: ['"zip"'], removed: [] });
   // Laid out again by rustfmt, one line to one an entry: its entries still,
   // as the flat_map flip's eighth was.
-  const laidOut = [`pub(in crate::lower) const HELD_FLIPPED: [&str; 5] = [`, ...["chain", "enumerate", "map", "rev", "zip"].map((name) => `    "${name}",`), "];"];
+  const laidOut = [`pub(crate) const HELD_FLIPPED: [&str; 5] = [`, ...["chain", "enumerate", "map", "rev", "zip"].map((name) => `    "${name}",`), "];"];
   const fifth = { ...entry, added: laidOut, removed: [flipped('[&str; 4] = ["chain", "enumerate", "map", "zip"]')] };
   expect(entriesOf(fifth)).toMatchObject({ added: ['"rev"'], removed: [] });
   // Its type, its name or its visibility changed, or code beside it: the
   // whole hunk's.
-  expect(entriesOf(hunk([flipped('[&str; 4] = ["chain", "enumerate", "map", "zip"]').replace("pub(in crate::lower) ", "")], entry.removed, "", file))).toBeUndefined();
+  expect(entriesOf(hunk([flipped('[&str; 4] = ["chain", "enumerate", "map", "zip"]').replace("pub(crate) ", "")], entry.removed, "", file))).toBeUndefined();
   expect(entriesOf(hunk(['        ExprKind::Call { .. } => ground.contains(&given),'], ['        ExprKind::Call { .. } => false,'], "", file))).toBeUndefined();
   // Of the tables: the entry's rows and what calls it, `flatten`'s of `map`,
   // and not another's on the line; the whole line's of a change to more.
@@ -141,7 +141,7 @@ test("a list's entries alone decide the rows of those its diff changes, and what
   const entries = setting(mapped);
   expect(["vec | map | fold | none", "vec | chain.flatten | rfold | none"].every((id) => entries.test(id))).toBe(true);
   expect(entries.test("vec | chain | fold | none")).toBe(false);
-  const whole = setting({ ...mapped, added: [mapped.added[0].replace("pub(in crate::lower) ", "")] });
+  const whole = setting({ ...mapped, added: [mapped.added[0].replace("pub(crate) ", "")] });
   expect(whole.test("vec | chain | fold | none")).toBe(true);
 });
 
@@ -160,7 +160,7 @@ test("a hunk names the adapters of the match arm it's in", () => {
   const arm = enclosingArm(lines, 4);
   expect(arm).toBe(lines[3]);
   const hunk: Hunk = {
-    file: "src/lower/mir/iter.rs",
+    file: "crates/rust-js-mir/src/iter.rs",
     at: 5,
     added: [lines[4]],
     removed: ["                Some(item) => self.copied_items(it, item, self.knows_its_length(output), span)?,"],
@@ -215,7 +215,7 @@ test("a hunk outside any function names no rows: a comment after the last one, o
 // `flatten`, ran 84,036 of the matrix's rows and 12,172 of the
 // conformance table's. A string entry names its adapter whole.
 test("a list's string entry names its adapter whole, never its words", () => {
-  const flip: Hunk = { file: "src/lower/body_queries/in_place.rs", at: 113, added: ['    "filter_map",'], removed: [], head: "", outside: true };
+  const flip: Hunk = { file: "crates/rust-js-lower/src/body_queries/in_place.rs", at: 113, added: ['    "filter_map",'], removed: [], head: "", outside: true };
   const entries = entriesOf(flip)!;
   expect(entries.added).toEqual(['"filter_map"']);
   const names = new Set([...adapters, "filter_map", "flatten", "flat_map"]);

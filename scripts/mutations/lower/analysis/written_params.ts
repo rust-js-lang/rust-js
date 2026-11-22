@@ -1,4 +1,4 @@
-// Mutations of src/lower/analysis/written_params.rs (ADR 0093): which
+// Mutations of crates/rust-js-lower/src/analysis/written_params.rs (ADR 0093): which
 // dictionaries carry `fmtInto` (#1652, step 5 of ADR 1135).
 import type { Mutation } from "../../../mutations";
 
@@ -10,7 +10,7 @@ export const mutations: Mutation[] = [
     name: "derived-debug-dyn-given-to-a-library",
     breaks:
       "a derived `Debug`'s `dyn` of its field, which only std's builder is given, is taken for one a library writing a `dyn` it's given may write, so `Nested { region }`'s `Region` is refused (#1778)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "    for body in all_bodies.iter().filter(|body| !of_a_derived_impl(tcx, body)) {\n",
     replace: "    for body in all_bodies.iter() {\n",
     tests: ["test/crates.test.ts", "-t", "no library is given a dyn of writes as it is"],
@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-params-calls-unfollowed",
     breaks: "a generic writer given on to another, `passed_on`'s `T` to `shown_once`, is given a dictionary with no `fmtInto`, which it calls",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "                true => found.of_fn(callee).collect(),\n",
     replace: "                true => Vec::new(),\n",
     tests: sink,
@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-params-dyn-made-unseen",
     breaks: "a value made a `Box<dyn Display>`, `7`, has a dictionary with no `fmtInto`, which a `write!` of the `dyn` into a writer calls",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "            found.give(tcx, owner, made_of);\n",
     replace: "",
     tests: sink,
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-params-dyn-written-own-impls-left",
     breaks: "an error of the crate's own made a `Box<dyn Error>` by `?`'s conversion, which no coercion shows, has a `Display` dictionary with no `fmtInto`",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "        self.of_dyn(tr) || self.adts.contains(&adt) || self.made_adts.contains(&adt)\n",
     replace: "        self.adts.contains(&adt) || self.made_adts.contains(&adt)\n",
     tests: sink,
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-params-library-marks-unread",
     breaks: "a consumer's type given a library's generic writer that writes it into a writer has a dictionary with no `fmtInto`",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "                false => foreign.written_marks(callee),\n",
     replace: "                false => Vec::new(),\n",
     tests: pairs,
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-params-library-type-unrefused",
     breaks: "a library's type its contract doesn't say carries `fmtInto`, written through generic code, compiles to a call of an entry it hasn't (#1688)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "    if let Some(lacked) = lacked {\n",
     replace: "    if let Some(lacked) = lacked.filter(|_| false) {\n",
     tests: ["test/writer-sink.test.ts", "-t", "one its contract doesn't list is a bug"],
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-arguments-copies-unfollowed",
     breaks: "an `Arguments` parameter copied before it's written into a writer isn't seen written, so its callers give the function that makes its text, and the write throws",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "                    holders.push(to);\n",
     replace: "                    let _ = to;\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_given_on.rs$"],
@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-arguments-trait-unmarked",
     breaks: "a trait's method an impl writes its `Arguments` into a writer by isn't marked, so a call through a `dyn` gives the function that makes its text, and the write throws",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "        if let Some(declared) = tcx.trait_item_of(owner)\n            && declared.is_local()\n",
     replace: "        if let Some(declared) = tcx.trait_item_of(owner)\n            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_given_on.rs$"],
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-arguments-contract-unread",
     breaks: "a library's function that writes an `Arguments` into a writer is given the function that makes its text, whatever its contract says, and its write throws",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "            marks.extend(recognition.foreign.written_arguments(id));\n",
     replace: "",
     tests: ["test/writer-sink.test.ts", "-t", "an Arguments, and a library"],
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-params-named-fns-unseen",
     breaks: "a generic writer named as a `fn` pointer at an instance isn't seen to write that instance's types, so their dictionaries carry no `fmtInto` (#1710)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "            calls.push((owner, named));\n",
     replace: "            let _ = named;\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_fn_pointer.rs$"],
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-asked-outside-the-body",
     breaks: "a body's calls are classified in the crate's empty typing environment, which crashes rustc on a writer generic over a constant, arrayvec's `ArrayString<CAP>`",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "        typing_env: ty::TypingEnv::non_body_analysis(tcx, tcx.typeck_root_def_id(body)),\n",
     replace: "        typing_env: recognition.typing_env,\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_const_generic.rs$"],
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
   {
     name: "published-dictionaries-without-fmt-into",
     breaks: "a library's published types' dictionaries carry no `fmtInto`, which a consumer's write of one calls",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "    found.adts.extend(prints.published.iter().copied());\n",
     replace: "",
     tests: ["test/writer-sink.test.ts", "-t", "published type"],
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
   {
     name: "reborrowed-arguments-unfollowed",
     breaks: "an `Arguments` lent again, `&*args`, as `Display::fmt(&args, f)` is given it, isn't followed to its write",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "                        || matches!(assign.1, Rvalue::Ref(..)) && from.projection[..] == [mir::ProjectionElem::Deref])\n",
     replace: "                        || false)\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
   {
     name: "kept-arguments-plain",
     breaks: "an `Arguments` kept in a field or a capture is made plain, so a write of it later throws that it didn't write through its sink",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "                if let StatementKind::Assign(assign) = &statement.kind\n                    && match &assign.1 {\n",
     replace: "                if false\n                    && let StatementKind::Assign(assign) = &statement.kind\n                    && match &assign.1 {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-kept-by-a-generic-plain",
     breaks: "an `Arguments` given to a generic function, `Some(args)` aside, `Box::new(args)`, is made plain though the function may keep it",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "                            || kept_by_a_generic(recognition, callee, i)\n",
     replace: "                            || false && kept_by_a_generic(recognition, callee, i)\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
   {
     name: "returned-arguments-plain",
     breaks: "an `Arguments` a constant or a function returns is made plain, so a write of it throws that it didn't write through its sink",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "    if local == mir::RETURN_PLACE {\n",
     replace: "    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-read-by-a-generic-kept",
     breaks: "an `Arguments` a generic function only reads, `args.to_string()`, is taken as kept, the function that writes into a sink, where its template reads plainly",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "    (sig.inputs().iter().enumerate()).any(|(at, &input)| at != index && holds_arguments(input))\n        || holds_arguments(sig.output())\n",
     replace: "    true\n",
     snapshots: true,
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
   {
     name: "formatter-writer-function-arms",
     breaks: "a writer function given its `Formatter` and an `Arguments`, of a writer not framed, is taken to arm a sink, so `Arguments` are the functions that write into one where their template reads plainly",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "                            && recognition.formatter_param(callee.0).is_none()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^formatter_write_fmt_of_held_arguments.rs$"],
@@ -155,15 +155,15 @@ export const mutations: Mutation[] = [
   {
     name: "refuse-lacked-opaque-unrevealed",
     breaks: "a library's type it gives out as an `impl Display`, which its contract doesn't list, written through a consumer's generic code, isn't refused, and throws `fmtInto is not a function` (#1743)",
-    file: "src/lower/analysis/written_params.rs",
-    find: "    let ty = crate::lower::analysis::revealed(tcx, ty);\n    let lacked",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
+    find: "    let ty = crate::analysis::revealed(tcx, ty);\n    let lacked",
     replace: "    let lacked",
     tests: ["test/writer-sink.test.ts", "-t", "a library's hidden types are written"],
   },
   {
     name: "makes-fmt-dyns-of-dyns-passed-on",
     breaks: "a library that only passes a `dyn` on, either's `inner.source()`, is taken to make one, and a consumer's `dyn` written beside it is refused (#1712)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "        } if is_dyn(expr.ty) && !is_dyn(body.thir[source].ty) => {\n",
     replace: "        } if is_dyn(expr.ty) => {\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library that passes a dyn on makes none"],
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
   {
     name: "makes-fmt-dyns-conversions-left",
     breaks: "a library's `?` that converts its error into a `Box<dyn Error>` isn't taken to make a `dyn`, which a consumer writing one may meet without `fmtInto` (#1712)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "            made.push((made_of, made_into));\n",
     replace: "",
     tests: ["test/writer-sink.test.ts", "-t", "a library that passes a dyn on makes none"],
@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-given-generic-unrefused",
     breaks: "an `fmt::Arguments` given to generic code that writes it, through a function named as a value, its template, compiles, and its write throws \"didn't write through its sink\" (#1793)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "    if holds_arguments(tcx, ty) {\n",
     replace: "    if false {\n",
     tests: ["test/limitations.test.ts", "-t", "of a function named as a value"],
@@ -187,15 +187,15 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-given-generic-by-a-value-followed",
     breaks: "a function named as a value, `let f = own::<Log, _>`, is taken as called where it's named, so an `fmt::Arguments` it's given isn't refused, its template, and its write throws (#1793)",
-    file: "src/lower/analysis/written_params.rs",
-    find: "                    let followed = naming == crate::lower::call_graph::Naming::Called\n",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
+    find: "                    let followed = naming == crate::call_graph::Naming::Called\n",
     replace: "                    let followed = naming == naming\n",
     tests: ["test/limitations.test.ts", "-t", "of a function named as a value"],
   },
   {
     name: "arguments-given-to-a-written-param-unfollowed",
     breaks: "an `fmt::Arguments` a body makes, given to a type parameter a call writes into a writer, `own(w, &format_args!(..))`'s `T`, isn't the function that writes into the sink it claims, so it's refused where it compiles (#1745)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "                            || written.is_some_and(|written| written.writes_at(recognition, callee.0, i)))\n",
     replace: "                            || written.is_some_and(|written| false && written.writes_at(recognition, callee.0, i)))\n",
     tests: ["test/corpus.test.ts", "-t", "^arguments_given_to_a_generic_writer.rs$"],
@@ -203,7 +203,7 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-given-to-a-written-param-unarmed",
     breaks: "a consumer whose one write of an `fmt::Arguments` a piece at a time is a library's generic writer's type parameter, `framed(w, &format_args!(..))`'s `T`, arms no sink, so it's its template and the writer is given its text whole (#1745)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "                                || written.writes_at(&recognition, callee.0, i))\n",
     replace: "                                || false)\n",
     tests: ["test/writer-sink.test.ts", "-t", "Arguments given to a library's generic writer"],
@@ -211,7 +211,7 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-made-dyn-unkept",
     breaks: "an `fmt::Arguments` made a `&dyn Display` stays its template, so a writer that writes the `dyn` throws (#1712)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "                        Rvalue::Cast(mir::CastKind::PointerCoercion(PointerCoercion::Unsize, _), operand, _) => {\n                            is_holder(operand, holder)\n",
     replace: "                        Rvalue::Cast(mir::CastKind::PointerCoercion(PointerCoercion::Unsize, _), operand, _) => {\n                            let _ = operand;\n                            false\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_arguments_made_dyn)\\.rs$"],
@@ -219,7 +219,7 @@ export const mutations: Mutation[] = [
   {
     name: "give-hidden-unrevealed",
     breaks: "a library's generic type hidden by an `impl Display`, written by a consumer, isn't revealed, so its parameter's dictionary has no `fmtInto` (#1743)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "        if revealed != ty {\n",
     replace: "        if false {\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's hidden types are written"],
@@ -227,7 +227,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-dyn-written-any-impl",
     breaks: "a library that writes a `dyn` it's given makes every formatting impl of the crate's one a `dyn` may be, so a derived `Debug` no `dyn` is made of, `Viewport`'s, is refused where generic code writes it (#1772)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "    found.dyn_written = !dyns_written.is_empty() || foreign.writes_dyns_given();\n",
     replace: "    found.dyn_written = !dyns_written.is_empty() || foreign.writes_dyns_given();\n    found.dyn_any |= foreign.writes_dyns_given();\n",
     tests: ["test/crates.test.ts", "-t", "derived_debug_beside_a_library_that_writes_a_dyn"],
@@ -235,7 +235,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-dyn-through-generic-code-unrefused",
     breaks: "a library's `dyn` that may carry no `fmtInto`, given to the consumer's generic code that writes it into a writer, isn't refused, and the write throws (#1802)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "            .or_else(|| (given.iter()).find(|&&(ty, ..)| is_dyn(ty)).map(|&(_, span, _)| span))\n",
     replace: "",
     tests: ["test/writer-sink.test.ts", "-t", "a library's dyn Debug written through generic code"],
@@ -243,7 +243,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-dyn-given-to-a-writing-library-unrefused",
     breaks: "a library's `dyn` that may carry no `fmtInto`, given to a sibling library that writes the `dyn`s it's given, isn't refused, and the write throws (#1802)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "            .or_else(|| dyn_given_to_a_writing_library(recognition, all_bodies));\n",
     replace: ";\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's dyn Debug written through generic code"],
@@ -251,7 +251,7 @@ export const mutations: Mutation[] = [
   {
     name: "made-dyns-not-given",
     breaks: "a value a library makes a `dyn` of isn't given best-effort, so its std dictionary carries no `fmtInto`, its contract says none is left without, and a consumer's write of it throws (#1797)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "                false => found.give_made(tcx, revealed),\n",
     replace: "                false => {}\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's dyn Debug of a std value written"],
@@ -259,7 +259,7 @@ export const mutations: Mutation[] = [
   {
     name: "made-dyn-of-a-param-unflagged",
     breaks: "a library's `dyn` of a type parameter's value is given best-effort as if its own, so its contract says none may carry no `fmtInto`, and a consumer's write of it isn't refused (#1797)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "            match rustc_middle::ty::TypeVisitableExt::has_param(&revealed) || lacked {\n",
     replace: "            match lacked {\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's dyn left without fmtInto"],
@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
   {
     name: "made-dyns-given-in-a-program",
     breaks: "a program's values made a `dyn` are given best-effort too, so their std dictionaries carry a `fmtInto` nothing calls (#1797)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "    if library && !found.dyn_written {\n",
     replace: "    if !found.dyn_written {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_dyn_debug.rs$"],
@@ -276,7 +276,7 @@ export const mutations: Mutation[] = [
   {
     name: "best-effort-adt-of-reached-types",
     breaks: "a library's published type whose derived `Debug` it makes a `dyn` of is taken as written, not best-effort, so the library is refused (#1797)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "        !self.of_dyn(tr) && !self.given_adts.contains(&adt) && self.made_adts.contains(&adt)\n",
     replace: "        !self.of_dyn(tr) && !self.adts.contains(&adt) && self.made_adts.contains(&adt)\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's dyn Debug written through generic code"],
@@ -284,7 +284,7 @@ export const mutations: Mutation[] = [
   {
     name: "makes-fmt-dyns-from-into-left",
     breaks: "a `From`/`Into` conversion of a value into a `Box<dyn Debug>` or `Box<dyn Display>` isn't taken to make a pair `dyn`, which a consumer writing one may meet without `fmtInto` (#1712, #2166)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "                made.push((from, to));\n",
     replace: "",
     tests: ["test/writer-sink.test.ts", "-t", "into\\(\\) converts into a dyn"],
@@ -293,7 +293,7 @@ export const mutations: Mutation[] = [
     name: "conversion-evidence-dyns-unmade",
     breaks:
       "a value given as `E: Into<Box<dyn Error>>` to a function whose body no contract describes, std's `io::Error::other(e)`, isn't taken to make a `dyn`, so where a library writes the `dyn`s it's given, its `Debug` dictionary carries no `fmtInto` and the write throws (#2250)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "    if let Some((callee, args)) = fn_def(expr.ty) {\n",
     replace: "    if let Some((callee, args)) = fn_def(expr.ty).filter(|&(callee, _)| tcx.trait_of_assoc(callee).is_some()) {\n",
     tests: ["test/crates.test.ts", "-t", "library_writes_a_dyn_errors_debug"],
@@ -301,7 +301,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-held-dyn-unwritten",
     breaks: "an `io::Error` written into a writer a piece at a time isn't counted as writing the `dyn Error` it holds, so a library's type a consumer makes one of has no `fmtInto`, and the write panics \"a bug of rust-js's\" where it's refused (#1420)",
-    file: "src/lower/analysis/written_params.rs",
+    file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "            if recognition.is_io_error(ty.peel_refs()) {\n",
     replace: "            if recognition.is_io_error(ty.peel_refs()) && false {\n",
     tests: ["test/metamorphic.test.ts", "-t", "^io_error_written_piecewise.rs, rewritten"],

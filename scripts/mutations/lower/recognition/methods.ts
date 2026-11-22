@@ -1,4 +1,4 @@
-// Mutations of src/lower/recognition/methods.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/recognition/methods.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "min-value-unknown",
     breaks:
       "an integer's `min_value()` and `max_value()` are refused where MIR keeps the call, and a crate that calls them, num-integer, is refused (#327)",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: '        "min_value" if !float => NumOp::Bound { max: false },\n',
     replace: "",
     tests: ["test/lowering-numbers.test.ts", "-t", "min_value"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "str-bytes-unrecognized",
     breaks: "`s.bytes()` is an error, not the string's UTF-8 bytes",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: '        "as_bytes" | "bytes" if str => TextOp::Bytes,\n',
     replace: '        "as_bytes" if str => TextOp::Bytes,\n',
     tests: ["test/corpus.test.ts", "-t", "str_bytes"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "is-normal-unknown",
     breaks: "`x.is_normal()` of a float is an error",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: '        "is_normal" if float => NumOp::IsNormal { subnormal: false },\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "float_normal"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "classify-unknown",
     breaks: "`x.classify()` of a float is an error",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: '        "classify" if float => NumOp::Classify,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "float_normal"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "to-be-unswapped",
     breaks: "`x.to_be()` is `x`, as if wasm32 were big-endian",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: '        "to_be" | "from_be" if !float => NumOp::Endian { swap: true },',
     replace:
       '        "to_be" | "from_be" if !float => NumOp::Endian { swap: false },',
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "float-bytes-order-dropped",
     breaks: "a float's `to_le_bytes()` is big-endian",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: '        "to_le_bytes" | "to_ne_bytes" if float => NumOp::FloatToBytes { little: true },',
     replace:
       '        "to_le_bytes" | "to_ne_bytes" if float => NumOp::FloatToBytes { little: false },',
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     name: "ascii-whitespace-vertical-tab",
     breaks:
       "a byte's `is_ascii_whitespace()` holds of a vertical tab, as Rust's doesn't",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: "(0x0c, b'\\r')",
     replace: "(0x0b, b'\\r')",
     tests: ["test/corpus.test.ts", "-t", "byte_ascii"],
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
   {
     name: "mul-add-unrecognized",
     breaks: "`a.mul_add(b, c)` is refused",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: '        "mul_add" if float => NumOp::MulAdd,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^mul_add.rs$"],
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
   {
     name: "unchecked-add-unknown",
     breaks: "`unchecked_add` isn't known, and is refused",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: '        "unchecked_add" if !float => NumOp::Wrapping(BinOp::Add),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unchecked_and_saturating_neg.rs$"],
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
   {
     name: "saturating-neg-unknown",
     breaks: "`saturating_neg` isn't known, and is refused",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: '        "saturating_neg" if signed => NumOp::SaturatingNeg { abs: false },\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unchecked_and_saturating_neg.rs$"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
   {
     name: "float-rem-euclid-as-int",
     breaks: "a float's `rem_euclid` is refused",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: '        "rem_euclid" if float => NumOp::FloatEuclid { rem: true },\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^float_methods_more.rs$"],
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-while-unrecognized",
     breaks: "`map_while` is refused",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: '        "map_while" => IterComb::MapWhile,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_while_drops.rs$"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
   {
     name: "splitn-by-unknown",
     breaks: "`splitn` of a set of `char`s or a closure is refused",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: '        "splitn" => TextOp::SplitNBy,\n',
     replace: '        "splitn" => TextOp::SplitN,\n',
     tests: ["test/corpus.test.ts", "-t", "^splitn_by.rs$"],
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
   {
     name: "overflowing-div-euclid-unrecognized",
     breaks: "`overflowing_div_euclid` is refused, where it's what `wrapping_div_euclid` gives and whether it wrapped (#940)",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: "        \"overflowing_div_euclid\" if !float => NumOp::OverflowingEuclid { div: true },\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^overflowing_euclid.rs$"],
@@ -121,7 +121,7 @@ export const mutations: Mutation[] = [
   {
     name: "into-boxed-bytes-lent",
     breaks: "a `Box<str>`'s `into_boxed_bytes()` is its text's bytes lent, never written, where they're its own, so a write to them is an error",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: "        \"into_boxed_bytes\" if str => TextOp::IntoBytes,\n",
     replace: "        \"into_boxed_bytes\" if str => TextOp::Bytes,\n",
     tests: ["test/corpus.test.ts", "-t", "^text_bytes_lent_and_owned.rs$"],
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
   {
     name: "unzip-leaves-some",
     breaks: "`unzip()` of items with a destructor is taken to leave some undropped, and refused, where it moves each into its half, of a combinator and of MIR's consumer alike (#1120, #1150, #1167)",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: "            | \"unzip\"\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(iterator_consumed_by_extend_unzip_partition_eq|consumers_keep_what_they_built_on_a_panic).rs$"],
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
     name: "find-map-leaves-drops",
     breaks:
       "`find_map` of items with a destructor is refused, though it gives each to its function",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: "            | \"find_map\"\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^back_steps_drop.rs$"],
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
     name: "nth-leaves-some",
     breaks:
       "`nth` of a generic iterator given one with a destructor is refused, as if it might leave it undropped",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: "            | \"nth\"\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(nth_through_generics|picked_items_drop).rs$"],
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
     name: "try-fold-leaves-items-refused",
     breaks:
       "`try_fold` of items with a destructor is refused, though it hands each to its closure and leaves the rest to the iterator",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: "            | \"try_fold\"\n            | \"try_for_each\"\n            | \"collect\"\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
     name: "max-min-leave-drops",
     breaks:
       "`max()` and `min()` of items with a destructor are refused, though they drop each they pass over",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: "            | \"max\"\n            | \"min\"\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
     name: "reduce-of-drops-refused",
     breaks:
       "`reduce` of items with a destructor is refused, though it moves each into its function",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: "            | \"reduce\"\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iterator_reduce.rs$"],
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
   {
     name: "is-sorted-by-key-leaves-none",
     breaks: "`is_sorted_by_key` of a `Vec`'s items with a destructor is refused, as if it left some undropped, where it moves each into its function (#776)",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: "            | \"is_sorted_by_key\"\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
   {
     name: "is-sorted-keeps-none",
     breaks: "`is_sorted` and `is_sorted_by` are taken for consumers that keep none of what they step, though each keeps `last` (#948)",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: "            | \"is_sorted\"\n            | \"is_sorted_by\"\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^is_sorted_of_items_with_a_destructor.rs$"],
@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
   {
     name: "bool-toggle-unrecognized",
     breaks: "`b.toggle()`, Rust 1.100's, is refused as an open call (#1656) where it's `b = !b`",
-    file: "src/lower/recognition/methods.rs",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
     find: "        \"toggle\" => Some(Std::Toggle),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^bool_toggle_writes_its_place\\.rs$"],

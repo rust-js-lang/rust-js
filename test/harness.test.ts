@@ -32,11 +32,11 @@ function tested(args: string[], env: Record<string, string>) {
 test("a compiler that crashes after the rejection a case expects fails it", () => {
   const crashing = fake(
     "crash",
-    `echo "error: rust-js does not support raw addresses of statics yet" >&2\necho "thread 'rustc' panicked at src/lower.rs:1:1:" >&2\nexit 101`,
+    `echo "error: rust-js does not support raw addresses of statics yet" >&2\necho "thread 'rustc' panicked at crates/rust-js-lower/src/lib.rs:1:1:" >&2\nexit 101`,
   );
   const run = tested(["test/corpus.test.ts", "-t", "static_raw_address"], { RUST_JS_COMPILER: crashing });
   expect(run.code).not.toBe(0);
-  expect(run.output).toContain("rust-js crashed: thread 'rustc' panicked at src/lower.rs:1:1:");
+  expect(run.output).toContain("rust-js crashed: thread 'rustc' panicked at crates/rust-js-lower/src/lib.rs:1:1:");
   expect(run.output).toContain("`compile-fail` expects a rejection");
 }, underLoad(120_000));
 

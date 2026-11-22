@@ -49,6 +49,9 @@ test("a file over 1,350 lines that grew since main is told to be split first", (
     expect(splitFirst(grown[0])).toBe(
       "src/near.rs grew from 1360 to 1361 lines, past 1350: split it by concept in its own commit first, never squeeze it (the user's rule, #1334)",
     );
+    // Moved, the same size, a file is no more grown than it was.
+    git("mv", "src/still.rs", "src/moved.rs");
+    expect(grownNearCap(["src"], base!, at).map(([file]) => file)).toEqual(["src/near.rs", "src/new.rs", "src/made.rs"]);
     // Split by concept, the file left under it is no longer grown.
     put("src/near.rs", NEAR - 100);
     expect(grownNearCap(["src"], base!, at).map(([file]) => file)).toEqual(["src/new.rs", "src/made.rs"]);

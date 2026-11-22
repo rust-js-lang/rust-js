@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/tidy/stages.rs (ADRs 0364, 0659): each a pass
+// Mutations of crates/rust-js-mir/src/tidy/stages.rs (ADRs 0364, 0659): each a pass
 // left out, or run on what it shouldn't be.
 import type { Mutation } from "../../../../mutations";
 
@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     name: "chains-continued-off",
     breaks:
       "a `while` whose test MIR reads into temporaries first, `while (at != null && nodes[at].status < 10)`, ends its body with a block MIR made, `bb39: { .. break bb39; }`, where the program wrote `continue;` (rd530)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                js::statement_lists(b, &mut |s| {\n                    continued_blocks(s, &h.written.continues, &h.written.logicals, &h.written.elses)\n                })\n",
     replace: "                let _ = (b, h);\n",
     tests: ["test/corpus.test.ts", "-t", "^while_test_continues_of_chain.rs$"],
@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     name: "in-place-logical-returns-off",
     breaks:
       "a `return a || (b && c)` of method reads MIR held in temporaries stays `if (a) { return true; } return b && c;`, not as written (rd179)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                js::statement_lists(b, &mut |s| logical_returns(s, logicals, returns, booleans))\n            }),\n            // A tuple's part held",
     replace:
       "                let _ = (b, logicals, returns, booleans);\n            }),\n            // A tuple's part held",
@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
     name: "exits-after-past-decisions",
     breaks:
       "an inner loop's tail that leaves the outer, `if (count > 10) { break; } continue bb1;`, stays in it once `decisions` makes its block's `break` the loop's, `bb1: while (..) { while (true) { .. continue bb1; } break; }` (rd141c)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "            pass(\"exits after\", |b, h| {\n                js::statement_lists(b, &mut |s| exits_after(s, &h.written.breaks))\n            }),\n            // A match's tree of tests, its arms reached through a block MIR\n            // made: the chain of its arms, now that the loops are made.\n            pass(\"decisions\", |b, h| decided_trees(b, h, false)),\n",
     replace:
       "            // A match's tree of tests, its arms reached through a block MIR\n            // made: the chain of its arms, now that the loops are made.\n            pass(\"decisions\", |b, h| decided_trees(b, h, false)),\n            pass(\"exits after\", |b, h| {\n                js::statement_lists(b, &mut |s| exits_after(s, &h.written.breaks))\n            }),\n",
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     name: "let-else-first-ended-returns-of-ended-only",
     breaks:
       "the `return;` MIR made at the end of a unit function's last `if`'s branch, of a function that goes on to its end, stays: workLoopConcurrent's `if (value != null) { ..; do { .. } while (..); return; }` (ADR 0879, amended, #437)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                js::statement_lists(b, &mut |s| let_else_first(s, &h.written.let_elses));\n                ended_returns(b, h.returns);\n",
     replace:
       "                let ended = b.last().is_some_and(ends);\n                js::statement_lists(b, &mut |s| let_else_first(s, &h.written.let_elses));\n                if ended {\n                    ended_returns(b, h.returns);\n                }\n",
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-branch-values-kept",
     breaks:
       "`if (c) { x = a; } else { x = b; }` stays two branches, not `x = c ? a : b`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '    pass("tail jumps", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),\n    pass("branch values", branch_values_of),\n',
     replace:
       '    pass("tail jumps", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),\n',
@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-and-tests-off",
     breaks:
       "`if (a) { if (b) { s } }` of one condition is one test only after `written elses`, so a let chain's written `else` in a loop is `if (a && b) { s; continue; } t`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("and tests", |b, h| {\n                bottom_up(b, &mut |s| {\n                    and_tests(\n                        s,\n                        &h.written.conditions,\n                        &h.written.switches,\n                        &h.lets.own_field,\n                        &h.written.guards,\n                    )\n                })\n            }),\n',
     replace: "",
     tests: [
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-innermost-jumps-labeled",
     breaks:
       "a `continue l` of the innermost loop keeps its label, and so the loop, a label nothing names once `continued` has run, which tidy's `each label named` refuses",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("tail jumps", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),\n            pass("innermost jumps", |b, _| {\n                js::statement_lists(b, &mut |s| innermost_jumps(s))\n            }),\n',
     replace:
       '            pass("tail jumps", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),\n',
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-named-temporaries-off",
     breaks:
       "`const _4 = e; if (_4 != null) { const found = _4; … }` stays, not `const found = e;`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("parts\' aliases", |b, h| alias_variables(b, &h.made.fixed)),\n            pass("named temporaries", |b, _| named_temporaries(b)),\n',
     replace:
       '            pass("parts\' aliases", |b, h| alias_variables(b, &h.made.fixed)),\n',
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-guarded-off",
     breaks:
       "the tests that leave a `match` to its panicking rest aren't one guard, `if (day < 1 || day > 5) { throw .. }`, but the range's arm tested and the panic last",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("guarded", |b, _| js::statement_lists(b, &mut guarded)),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^match_arms_then_a_panicking_rest.rs$"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-lets-first",
     breaks: "each `let` stays declared first, not where it's first named",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("sunk lets", |b, _| js::statement_lists(b, &mut sunk_lets)),\n',
     replace: "",
     tests: [
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-late-consts-kept",
     breaks:
       "a `const` declarations makes last stays, `const _27 = e; _24 = _27;`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("inlined", inlined_of),\n',
     replace: "",
     tests: [
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-plain-cells-boxed",
     breaks: "a cell only its function reads and sets stays `{ value }`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("plain cells", |b, _| plain_cells(b)),\n',
     replace: "",
     tests: [
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-callback-unnamed",
     breaks:
       "a hook's closure a `let` names stays `const tick = () => …; useEffect(tick, …)`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("named callbacks", |b, h| {\n                js::statement_lists(b, &mut |s| named_callbacks(s, h.callbacks))\n            }),\n',
     replace: "",
     tests: [
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-late-tail-returns",
     breaks: "a `return;` the late passes leave at a function's end stays",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("tail returns", |b, h| tail_returns(b, h.returns)),\n',
     replace: "",
     tests: [
@@ -178,7 +178,7 @@ export const mutations: Mutation[] = [
     name: "late-while-tests-off",
     breaks:
       "a `while` whose test MIR held first, `const _7 = m.length;`, stays `while (true)` and a `return`, a `while` in a guard's scope's among them",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("while tests", |b, h| {\n                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops))\n            }),\n',
     replace: "",
     tests: [
@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
     name: "read-handles-off",
     breaks:
       "a cell field a pattern binds, only read, is a handle, `{ get value() { .. } }`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "            pass(\"read handles\", |b, h| read_handles(b, false, h.lets, h.again.running())),\n",
     replace: "",
     tests: [
@@ -204,7 +204,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-spread-spreads-kept",
     breaks:
       "a copy MIR made of a dictionary spread stays `{ ...base, ...{ ...extra } }`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("spread spreads", |b, _| js::each_expr_mut(b, &mut spread_spreads)),\n',
     replace: "",
     tests: [
@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-checked-sets-kept",
     breaks:
       "an element's place MIR checks then sets stays two statements, `$index(args, 0); args[0] = v;`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("checked sets", |b, _| js::statement_lists(b, &mut checked_sets)),\n',
     replace: "",
     tests: [
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-written-first-unswapped",
     breaks:
       'an if-let chain from MIR keeps its first arm last, the panic\'s test first: `if (kind.TAG !== "Text") { .. throw } message = ..`',
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '    pass("written first", |b, h| {\n        js::statement_lists(b, &mut |s| written_first(s, &h.written.switches))\n    }),\n',
     replace: "",
     tests: [
@@ -249,7 +249,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-chained-checks-kept",
     breaks:
       'an else-if chain\'s arm before a panic from MIR is a check in its else, `if (t._0 !== "/") throw ..`',
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("chained checks", |b, h| {\n                js::statement_lists(b, &mut |s| chained_checks(s, &h.written.thens))\n            }),\n',
     replace: "",
     tests: ["test/snapshots.test.ts", "-t", "calc"],
@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-written-chains-kept",
     breaks:
       'a match\'s arms as statements from MIR keep their first arm last, `if (message.TAG !== "resize") { .. } else { .. }`',
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("written chains", |b, h| {\n                js::statement_lists(b, &mut |s| {\n                    written_chains(s, (&h.written.patterns, &h.written.switches, &h.written.let_elses))\n                })\n            }),\n',
     replace: "",
     tests: [
@@ -272,7 +272,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-guarded-lets-kept",
     breaks:
       "an element MIR makes only where a test holds stays `let className$2; if (error != null) { .. }`, the props before it held too",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("guarded lets", |b, h| {\n                js::statement_lists(b, &mut |s| guarded_lets(s, &h.made.captured))\n            }),\n',
     replace: "",
     tests: [
@@ -289,7 +289,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-implied-tests-kept",
     breaks:
       "a value read where its test holds keeps the test, `error != null && <div className={error != null ? cn(..) : undefined}>`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("implied tests", |b, _| {\n                let changing = changing(b);\n                js::each_expr_mut(b, &mut |e| implied_tests(e, &changing))\n            }),\n',
     replace: "",
     tests: [
@@ -306,7 +306,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-copied-bindings-kept",
     breaks:
       "an if-let's binding of a variable MIR copies stays `const error = raw;`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("copied bindings", |b, h| {\n                js::statement_lists(b, &mut |s| copied_bindings(s, &h.named.user))\n            }),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^non_null.rs$"],
@@ -316,7 +316,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-tuple-reads-kept",
     breaks:
       "children MIR holds as a tuple stay `const children = [..]`, read `children[0]`, and its `then` closure a `const value`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("tuple reads", |b, h| {\n                let changing = changing(b);\n                let set_elsewhere = set_elsewhere(b);\n                js::statement_lists(b, &mut |s| tuple_reads(s, &changing, &set_elsewhere, &h.made.captured))\n            }),\n',
     replace: "",
     tests: [
@@ -333,7 +333,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-dyn-pairs-kept",
     breaks:
       "dyn values MIR gives JS stay `{ value, impl }` pairs, unwrapped with `.map((item) => item.value)`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("unwrapped values", |b, _| {\n                js::statement_lists(b, &mut |s| unwrapped_values(s))\n            }),\n',
     replace: "",
     tests: [
@@ -350,7 +350,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-lets-block",
     breaks:
       "a `let` no closure sets, `target`, blocks a prop held after it, as any variable set again",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "    let set = js::Writes::of(body).by_closures();\n",
     replace: "    let set = changed.clone();\n",
     tests: [
@@ -367,7 +367,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-returned-consts-kept",
     breaks:
       "what a function gives from MIR stays `const result = e; return result;`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("returned consts", |b, h| {\n                js::statement_lists(b, &mut |s| returned_consts(s, h.result))\n            }),\n',
     replace: "",
     tests: [
@@ -380,7 +380,7 @@ export const mutations: Mutation[] = [
     name: "table-read-after-inlining",
     breaks:
       "a match's table read MIR has already read in place, a child's, stays its chain of tests, not `TITLES[kind]`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("table reads", |b, h| {\n                js::statement_lists(b, &mut |s| table_reads(s, &h.written.tables))\n            }),\n',
     replace: "",
     tests: [
@@ -397,7 +397,7 @@ export const mutations: Mutation[] = [
     name: "plain-reads-held",
     breaks:
       "a field of plain data MIR holds, `const t = q.title`, stays held, destructured, not read in place",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("plain reads", |b, h| {\n                js::statement_lists(b, &mut |s| plain_reads(s, h.plain, &h.made.captured))\n            }),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^let_else_read_truth.rs$"],
@@ -407,7 +407,7 @@ export const mutations: Mutation[] = [
     name: "rest-parts-apart",
     breaks:
       "a `let`'s pattern's rest and what it binds stay two patterns, `const { href: _href, ...rest } = p; const { href } = p;`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("rest parts", |b, _| js::statement_lists(b, &mut rest_parts)),\n',
     replace: "",
     tests: [
@@ -424,7 +424,7 @@ export const mutations: Mutation[] = [
     name: "mir-labels-by-block",
     breaks:
       "a loop the program labeled keeps the label MIR gives by its block, `bb2: for (…)`, where `rows` was written (#266)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '    pass("written labels", |b, h| {\n        js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops))\n    }),\n',
     replace: "",
     tests: [
@@ -437,7 +437,7 @@ export const mutations: Mutation[] = [
     name: "mir-closure-values-first",
     breaks:
       "a closure's `$iter(g)` from MIR is `g.values()` before its function sees `flatMap` take it",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                if !h.closure {\n",
     replace: "                if true {\n",
     tests: [
@@ -450,7 +450,7 @@ export const mutations: Mutation[] = [
     name: "mir-loop-exit-returned-inside",
     breaks:
       "a loop left by `break` before the function's value from MIR returns the value inside the loop",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("exits after", |b, h| {\n                js::statement_lists(b, &mut |s| exits_after(s, &h.written.breaks))\n            }),\n',
     replace: "",
     tests: [
@@ -463,7 +463,7 @@ export const mutations: Mutation[] = [
     name: "mir-or-tests-nested",
     breaks:
       '`"a" | "e" => \u2026` from MIR is a test failing for each, one inside another, the arm after them',
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("or tests", |b, _| bottom_up(b, &mut or_tests)),\n',
     replace: "",
     tests: [
@@ -476,7 +476,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-unread-map-kept",
     breaks:
       "a map `next_back` stepped the source of instead is a `const` nothing reads",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("unread maps", |b, _| unread_maps(b)),\n',
     replace: "",
     tests: ["test/lowering-iterators.test.ts", "-t", "next_back of a map"],
@@ -484,7 +484,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-nested-block-returns-kept",
     breaks: "MIR's returns in a loop go through one exit, a labeled block",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("returned in branches", |b, h| {\n                js::statement_lists(b, &mut |s| returned_in_branches(s, h.result))\n            }),\n',
     replace: "",
     tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
@@ -492,7 +492,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-while-heads-kept",
     breaks: "MIR's loop tested at its head stays `while (true)`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("while heads", |b, h| {\n                js::statement_lists(b, &mut |s| while_heads(s, &h.written.loops))\n            }),\n',
     replace: "",
     tests: [
@@ -504,7 +504,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-steps-out-of-order",
     breaks: "MIR's loop body tests what's written later first",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("written order steps", |b, h| {\n                js::statement_lists(b, &mut |s| written_order_steps(s, &h.written.let_elses))\n            }),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^loop_exit_moves.rs$"],
@@ -514,7 +514,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-tried-last",
     breaks:
       "MIR's `?` in a branch is `if (ok) { s } else { return r; }`, not a guard",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("tried first", |b, _| js::statement_lists(b, &mut tried_first)),\n',
     replace: "",
     tests: ["test/snapshots.test.ts"],
@@ -523,7 +523,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-unread-made-kept",
     breaks:
       "MIR's array made and never read is kept, `const value = [loud(1)]`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("unread made", |b, _| {\n                let mentions = mentioned(b);\n                js::statement_lists(b, &mut |s| unread_made(s, &mentions))\n            }),\n',
     replace: "",
     tests: [
@@ -536,7 +536,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-decisions-off",
     breaks:
       "a match MIR tests as a tree stays a labeled block each leaf breaks out of",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "            pass(\"decisions\", |b, h| decided_trees(b, h, false)),\n",
     replace: "",
     tests: [
@@ -549,7 +549,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-default-values-off",
     breaks:
       "`matches!(v, Some(x) if ..)`'s `false` stays the block's last statement, the block labeled",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("default values", |b, _| {\n                js::statement_lists(b, &mut |s| decisions::default_values(s))\n            }),\n',
     replace: "",
     tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
@@ -558,7 +558,7 @@ export const mutations: Mutation[] = [
     name: "loop-exits-taken-once",
     breaks:
       "a loop's end of the shape it takes later, `if (c) { a; continue; } return x;`, stays so, not `if (!c) { break; } a` and the `return` after it",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "            // A loop's early exits again, of what's taken its shape since.\n            pass(\"early returns\", |b, h| {\n                js::statement_lists(b, &mut |s| early_returns(s, &h.written.elses))\n            }),\n",
     replace:
       "            // A loop's early exits again, of what's taken its shape since.\n",
@@ -573,7 +573,7 @@ export const mutations: Mutation[] = [
     name: "tuple-part-binding-unnamed",
     breaks:
       "a tuple's part held, which an arm binds, `const x = value;`, keeps the temporary's name",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            // binding takes, by that name.\n            pass("named temporaries", |b, _| named_temporaries(b)),\n',
     replace: "            // binding takes, by that name.\n",
     tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
@@ -583,7 +583,7 @@ export const mutations: Mutation[] = [
     name: "turned-never",
     breaks:
       "`!(b >= 48) || !(b <= 57)` of a byte stays so, not `b < 48 || b > 57`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("turned", |b, h| js::each_expr_mut(b, &mut |e| turned(e, h.numbers))),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "byte_ascii|loop_exits"],
@@ -592,10 +592,10 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-eager-chains-off",
     breaks: "`Array.from($iter(xs).map(f))` stays, not `xs.map(f)`",
-    file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("named temporaries", |b, _| named_temporaries(b)),\n            // `for (const i of (s..).step_by(n))` of a body that breaks\n            // where `v.get(i)` is `None`: `for (let i = s; i < v.length; i\n            // += n)`, before `range steps` makes another iterator of it (rd260).\n            pass("counted to lengths", |b, h| {\n                js::statement_lists(b, &mut |s| counted_to_lengths(s, &h.written.present_breaks))\n            }),\n            pass("consumed into iterators", |b, h| {\n                iterators::consumed_into_iters(b, h.fuse)\n            }),\n            pass("range items", |b, _| {\n                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_items)\n            }),\n            pass("range steps", |b, _| {\n                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_steps)\n            }),\n            pass("eager chains", |b, _| eager_chains(b)),\n',
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
+    find: '            pass("named temporaries", |b, _| named_temporaries(b)),\n            // `for (const i of (s..).step_by(n))` of a body that breaks\n            // where `v.get(i)` is `None`: `for (let i = s; i < v.length; i\n            // += n)`, before `range steps` makes another iterator of it (rd260).\n            pass("counted to lengths", |b, h| {\n                js::statement_lists(b, &mut |s| counted_to_lengths(s, &h.written.present_breaks))\n            }),\n            pass("consumed into iterators", |b, h| {\n                iterators::consumed_into_iters(b, h.fuse)\n            }),\n            pass("range items", |b, _| {\n                js::each_expr_mut(b, &mut rust_js_lower::std_types::range::range_items)\n            }),\n            pass("range steps", |b, _| {\n                js::each_expr_mut(b, &mut rust_js_lower::std_types::range::range_steps)\n            }),\n            pass("eager chains", |b, _| eager_chains(b)),\n',
     replace:
-      '            pass("named temporaries", |b, _| named_temporaries(b)),\n            // `for (const i of (s..).step_by(n))` of a body that breaks\n            // where `v.get(i)` is `None`: `for (let i = s; i < v.length; i\n            // += n)`, before `range steps` makes another iterator of it (rd260).\n            pass("counted to lengths", |b, h| {\n                js::statement_lists(b, &mut |s| counted_to_lengths(s, &h.written.present_breaks))\n            }),\n            pass("consumed into iterators", |b, h| {\n                iterators::consumed_into_iters(b, h.fuse)\n            }),\n            pass("range items", |b, _| {\n                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_items)\n            }),\n            pass("range steps", |b, _| {\n                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_steps)\n            }),\n',
+      '            pass("named temporaries", |b, _| named_temporaries(b)),\n            // `for (const i of (s..).step_by(n))` of a body that breaks\n            // where `v.get(i)` is `None`: `for (let i = s; i < v.length; i\n            // += n)`, before `range steps` makes another iterator of it (rd260).\n            pass("counted to lengths", |b, h| {\n                js::statement_lists(b, &mut |s| counted_to_lengths(s, &h.written.present_breaks))\n            }),\n            pass("consumed into iterators", |b, h| {\n                iterators::consumed_into_iters(b, h.fuse)\n            }),\n            pass("range items", |b, _| {\n                js::each_expr_mut(b, &mut rust_js_lower::std_types::range::range_items)\n            }),\n            pass("range steps", |b, _| {\n                js::each_expr_mut(b, &mut rust_js_lower::std_types::range::range_steps)\n            }),\n',
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",
@@ -606,10 +606,10 @@ export const mutations: Mutation[] = [
     name: "late-eager-chains-off",
     breaks:
       "an array's iterator read in place late stays `$lent($iter(xs)).some(f)`",
-    file: "src/lower/mir/tidy/stages.rs",
-    find: '            // numbers made as they\'re stepped.\n            pass("consumed into iterators", |b, h| {\n                iterators::consumed_into_iters(b, h.fuse)\n            }),\n            pass("range items", |b, _| {\n                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_items)\n            }),\n            pass("range steps", |b, _| {\n                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_steps)\n            }),\n            pass("eager chains", |b, _| eager_chains(b)),\n',
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
+    find: '            // numbers made as they\'re stepped.\n            pass("consumed into iterators", |b, h| {\n                iterators::consumed_into_iters(b, h.fuse)\n            }),\n            pass("range items", |b, _| {\n                js::each_expr_mut(b, &mut rust_js_lower::std_types::range::range_items)\n            }),\n            pass("range steps", |b, _| {\n                js::each_expr_mut(b, &mut rust_js_lower::std_types::range::range_steps)\n            }),\n            pass("eager chains", |b, _| eager_chains(b)),\n',
     replace:
-      '            // numbers made as they\'re stepped.\n            pass("consumed into iterators", |b, h| {\n                iterators::consumed_into_iters(b, h.fuse)\n            }),\n            pass("range items", |b, _| {\n                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_items)\n            }),\n            pass("range steps", |b, _| {\n                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_steps)\n            }),\n',
+      '            // numbers made as they\'re stepped.\n            pass("consumed into iterators", |b, h| {\n                iterators::consumed_into_iters(b, h.fuse)\n            }),\n            pass("range items", |b, _| {\n                js::each_expr_mut(b, &mut rust_js_lower::std_types::range::range_items)\n            }),\n            pass("range steps", |b, _| {\n                js::each_expr_mut(b, &mut rust_js_lower::std_types::range::range_steps)\n            }),\n',
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",
@@ -620,8 +620,8 @@ export const mutations: Mutation[] = [
     name: "mir-map-count-handle",
     breaks:
       "`*m.entry(k).or_insert(0) += 1` from MIR is a handle on the key's value, `$mutGet(m, k).value = \u2026`",
-    file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("counted entries", |b, _| {\n                js::statement_lists(b, &mut crate::lower::std_types::map_entries::counted_entries)\n            }),\n',
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
+    find: '            pass("counted entries", |b, _| {\n                js::statement_lists(b, &mut rust_js_lower::std_types::map_entries::counted_entries)\n            }),\n',
     replace: "",
     tests: [
       "test/lowering-collections.test.ts",
@@ -633,7 +633,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-applied-values-kept",
     breaks:
       "a value `{:?}` reads twice, given as it's made, stays a function called in place, `((result) => ..)(f())`, not `const value = f();`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("applied values", |b, h| {\n                let set = js::Writes::of(b).by_closures();\n                js::statement_lists(b, &mut |s| applied_values(s, &set, h.plain))\n            }),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^option_result_methods.rs$"],
@@ -643,7 +643,7 @@ export const mutations: Mutation[] = [
     name: "cell-first-value-apart",
     breaks:
       "a cell a pointer's taken to is `const x = {}; x.value = 1;`, not `const x = { value: 1 };`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("first cell values", |b, _| {\n                js::statement_lists(b, &mut first_cell_values)\n            }),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
@@ -653,7 +653,7 @@ export const mutations: Mutation[] = [
     name: "outer-break-not-early",
     breaks:
       "an inner loop whose way out is its `break` now ends `if (value) { .. break; } break;`, not `if (!value) { break; }` first",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: 'outer_continues(s, &h.written.loops))\n            }),\n            pass("early breaks", |b, h| {\n                js::statement_lists(b, &mut |s| early_breaks(s, false, &h.written.breaks, &h.written.elses))\n            }),\n',
     replace: "outer_continues(s, &h.written.loops))\n            }),\n",
     tests: [
@@ -667,7 +667,7 @@ export const mutations: Mutation[] = [
     name: "holed-lists-kept",
     breaks:
       "a list MIR took its other items out of is kept, `[undefined, ids(v)]`, read as `tmp[1]`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("holed lists", |b, _| holed_lists(b)),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^debug_options.rs$"],
@@ -677,7 +677,7 @@ export const mutations: Mutation[] = [
     name: "unread-flag-kept-after-decided-tests",
     breaks:
       "a drop flag whose only test went with a decided drop stays, written and never read, `let bus$0$live = true`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            // goes with its writes.\n            pass("settled flags", |b, h| flags::settled_flags(b, h.flags)),\n',
     replace: "            // goes with its writes.\n",
     tests: ["test/corpus.test.ts", "-t", "^subscriptions.rs$"],
@@ -687,7 +687,7 @@ export const mutations: Mutation[] = [
     name: "inlined-in-values-off",
     breaks:
       "what `branch values` and `declarations` make a `const` of stays held, `const value = i != null ? i : 99; const pair = [value, 2];`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("inlined in values", inlined_of),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(expression_values|duration).rs$"],
@@ -697,7 +697,7 @@ export const mutations: Mutation[] = [
     name: "values-chain-branch-values-off",
     breaks:
       "an `if` each of whose branches writes a value `inlined` left stays `let value; if (c) { value = a; } else { value = b; }`, not `const value = c ? a : b`, which `inlined in values` reads in place",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("branch values", branch_values_of),\n            pass("declarations", |b, _| declarations(b)),\n            pass("inlined in values", inlined_of),\n',
     replace:
       '            pass("declarations", |b, _| declarations(b)),\n            pass("inlined in values", inlined_of),\n',
@@ -712,7 +712,7 @@ export const mutations: Mutation[] = [
     name: "values-chain-declarations-off",
     breaks:
       "a `let` `inlined` left written once stays a `let`, not the `const` `inlined in values` reads in place",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("branch values", branch_values_of),\n            pass("declarations", |b, _| declarations(b)),\n            pass("inlined in values", inlined_of),\n',
     replace:
       '            pass("branch values", branch_values_of),\n            pass("inlined in values", inlined_of),\n',
@@ -722,7 +722,7 @@ export const mutations: Mutation[] = [
   {
     name: "finish-drop-scopes-unmade",
     breaks: "each run of statements a value's drop ends isn't one try/finally",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                    scoped |= unwinds::scoped_drops(stmts, h.result, &h.lets.guards)\n",
     replace: "                    let _ = stmts;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
@@ -731,7 +731,7 @@ export const mutations: Mutation[] = [
   {
     name: "finish-returns-through-finally-kept",
     breaks: "a return out of a try/finally isn't written through it",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                js::statement_lists(b, &mut unwinds::returned_through_finally)\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
@@ -740,7 +740,7 @@ export const mutations: Mutation[] = [
     name: "mir-temporaries-unnamed",
     breaks:
       "a temporary MIR holds is named `_4`, not after the call that made it",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("temporaries named", |b, h| {\n                bindings::readable_temporaries(b, h.suggested)\n            }),\n',
     replace: "",
     tests: ["test/lowering-mir-lets.test.ts", "-t", "held temporary is named"],
@@ -749,7 +749,7 @@ export const mutations: Mutation[] = [
     name: "unwound-stages-none",
     breaks:
       "no stage runs again once a scope is one `finally`, `const result = frame; return result;` left",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: 'const UNWOUND: &[&str] = &["names", "in place", "chains"];\n',
     replace: 'const UNWOUND: &[&str] = &["names", "in place"];\n',
     tests: [
@@ -762,7 +762,7 @@ export const mutations: Mutation[] = [
     name: "destructured-declared-off",
     breaks:
       "a tuple `let` in a guard's `try` stays its tuple read `[0]`, `[1]`, not `const [a, b] = f();`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                js::statement_lists(b, &mut |s| {\n                    destructured(s, (&IndexSet::default(), &h.lets.named, &h.named.user), false)\n                })\n",
     replace: "                let _ = (b, h);\n",
     tests: ["test/lowering.test.ts", "-t", "a tuple let in a guard's try"],
@@ -771,7 +771,7 @@ export const mutations: Mutation[] = [
     name: "chains-branch-ends-off",
     breaks:
       "a block MIR made whose `break`s `jumps past blocks` leaves stays, `bb257: { if (c) { ..; break bb257; } .. }` (ADR 0745)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                js::statement_lists(b, &mut unreachable_after);\n                js::statement_lists(b, &mut |s| branch_ends(s))\n",
     replace: "                let _ = b;\n",
     tests: [
@@ -784,7 +784,7 @@ export const mutations: Mutation[] = [
     name: "given-last-unasked",
     breaks:
       "`node = match .. { None => { let node = make(); ..; node } .. }` is `const node$1 = make(); ..; node = node$1;`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("given last", |b, h| bindings::given_last(&h.params.borrow(), b)),\n',
     replace: '            pass("given last", |_, _| {}),\n',
     tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
@@ -794,7 +794,7 @@ export const mutations: Mutation[] = [
     name: "filled-lazily-unasked",
     breaks:
       "a cache filled the first time it's read is `const cache$1 = node.o; let cache; if (!cache$1) { .. } else { cache = cache$1; }`, two bindings",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                js::statement_lists(b, &mut bindings::filled_lazily)\n",
     replace: "                _ = b;\n",
     tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
@@ -804,7 +804,7 @@ export const mutations: Mutation[] = [
     name: "in-place-empty-if-kept",
     breaks:
       "an `if` that tidy's `in place` stage empties, `if (_x != null) {}` of an `if let` in a loop whose binding `named temporaries` reads in place, stays, and the stage's contract panics: the compiler crashes (generated program 2900000355)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            // (generated program 2900000355; #247).\n            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),\n',
     replace: "            // (generated program 2900000355; #247).\n",
     tests: ["test/corpus.test.ts", "-t", "^empty_if_let_in_a_loop.rs$"],
@@ -814,7 +814,7 @@ export const mutations: Mutation[] = [
     name: "names-empty-if-kept",
     breaks:
       "an `if let` whose binding is only read, emptied by tidy's `names` stage, stays, and the stage's contract panics: the compiler crashes (#247)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '                js::statement_lists(b, &mut |s| unwrapped_values(s))\n            }),\n            // What its passes emptied, an `if` of nothing, gone, its test kept\n            // where it does anything, as it ensures (#247).\n            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),\n',
     replace:
       "                js::statement_lists(b, &mut |s| unwrapped_values(s))\n            }),\n",
@@ -825,7 +825,7 @@ export const mutations: Mutation[] = [
     name: "written-empty-if-kept",
     breaks:
       "an `if let` whose body makes what nothing reads, emptied by tidy's `written` stage, stays, and the stage's contract panics: the compiler crashes (#247)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("tried first", |b, _| js::statement_lists(b, &mut tried_first)),\n            // What its passes emptied, an `if` of nothing, gone, its test kept\n            // where it does anything, as it ensures (#247).\n            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),\n',
     replace:
       '            pass("tried first", |b, _| js::statement_lists(b, &mut tried_first)),\n',
@@ -836,7 +836,7 @@ export const mutations: Mutation[] = [
     name: "unwrap-tested-not",
     breaks:
       "an `unwrap()` whose panic drops the task is `let tmp; try { tmp = $unwrap(enqueueTaskImpl); .. } catch ..`, not its test, `if (enqueueTaskImpl == null) { $dispose(task); throw .. }` (ADR 0873, amended)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                js::statement_lists(b, &mut |stmts| tested |= unwinds::tested_unwraps(stmts));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
@@ -846,7 +846,7 @@ export const mutations: Mutation[] = [
     name: "unwrap-tested-flags-unsettled",
     breaks:
       "the drop flags an `unwrap()`'s test leaves known stay, `let task$live = true; if (enqueueTaskImpl == null) { if (task$live) { .. } }`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                if tested {\n                    flags::settled_flags(b, h.flags);\n                }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
@@ -856,7 +856,7 @@ export const mutations: Mutation[] = [
     name: "declared-aliases-kept",
     breaks:
       "`const borrowMut = queue; borrowMut[$at(borrowMut, i)] = t;`, a temporary of a variable made a `const` late, kept (ADR 0883)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("declared aliases", |b, h| alias_variables(b, &h.made.fixed)),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_counts.rs$"],
@@ -866,7 +866,7 @@ export const mutations: Mutation[] = [
     name: "decided-tests-unreachable-kept",
     breaks:
       "an arm's guard an outer `if` decided leaves what follows its value, never reached, and the stage's contract panics: the compiler crashes (#270)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "    // never reached (#270).\n    js::statement_lists(body, &mut unreachable_after);\n",
     replace: "    // never reached (#270).\n",
     tests: ["test/corpus.test.ts", "-t", "^guard_decided_by_outer_if.rs$"],
@@ -875,7 +875,7 @@ export const mutations: Mutation[] = [
     name: "settled-while-tests-off",
     breaks:
       "a `while` that ends an `if`'s branch with code after the `if`, whose `break` left MIR's block, stays `while (true) { if (rest <= 0) { break; } .. }`",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("tests of loops ending blocks", |b, h| {\n                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops))\n            }),\n',
     replace: "",
     tests: [
@@ -888,7 +888,7 @@ export const mutations: Mutation[] = [
     name: "tested-options-after-branch-values",
     breaks:
       "an `Option` made where it's tested is read after its branches are one value, `o?.$$typeof`, which it's no test of, so `v = t ? v : undefined; const r = v?.$$typeof;` stays (ADR 0910, amended)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("tested options", |b, h| {\n                let changing = changing(b);\n                js::statement_lists(b, &mut |s| tested_options(s, &changing, &h.named.user))\n            }),\n            pass("branch values", branch_values_of),\n            pass("declarations", |b, _| declarations(b)),\n',
     replace:
       '            pass("branch values", branch_values_of),\n            pass("declarations", |b, _| declarations(b)),\n            pass("tested options", |b, h| {\n                let changing = changing(b);\n                js::statement_lists(b, &mut |s| tested_options(s, &changing, &h.named.user))\n            }),\n',
@@ -902,7 +902,7 @@ export const mutations: Mutation[] = [
     name: "skipped-tests-unrun",
     breaks:
       "an `if` of `&&`, `||` and `!` mixed is `if`s that leave a block MIR made, `bb42:`, React's popHydrationState (ADR 0946)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                js::statement_lists(b, &mut |s| logicals::skipped_tests(s, &h.written.logicals, false))\n",
     replace: "                js::statement_lists(b, &mut |_| {})\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "one test"],
@@ -911,7 +911,7 @@ export const mutations: Mutation[] = [
     name: "returned-logicals-unrun",
     breaks:
       "React's isLegacyActEnvironment's `return a && b && c;` in `if (__DEV__)` is nested `if`s (ADR 0947)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                returned_logicals(b, &h.written.logicals, h.returns, h.booleans)\n",
     replace: "                let _ = (b, h);\n",
     tests: [
@@ -924,7 +924,7 @@ export const mutations: Mutation[] = [
     name: "settled-tail-continues-kept",
     breaks:
       "a `continue` left where a `for`'s turn ends anyway, React's `if (i !== j) { ..; continue; }`, is kept (ADR 0961)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            // (ADR 0905, amended).\n            pass("tail continues", |b, h| {\n                js::statement_lists(b, &mut |s| tail_continues(s, h.written, &h.commented.continues))\n            }),\n',
     replace: "            // (ADR 0905, amended).\n",
     tests: [
@@ -938,7 +938,7 @@ export const mutations: Mutation[] = [
     name: "tail-continues-unwritten-kept",
     breaks:
       "a `continue` the program didn't write, left at a loop body's end by a block returned in place, stays",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("tail continues", |b, h| {\n                js::statement_lists(b, &mut |s| tail_continues(s, h.written, &h.commented.continues))\n            }),\n            pass("let else first"',
     replace: '            pass("let else first"',
     tests: [
@@ -952,7 +952,7 @@ export const mutations: Mutation[] = [
     name: "written-thens-not-after-while-heads",
     breaks:
       "getHostSibling's `if (node.flags & Placement) == 0 { return .. }`, after a loop `while heads` made, is `if (node.flags & PLACEMENT) { continue; } return ..`, a guard (ADR 0879, amended)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens))\n            }),\n            pass("written order steps"',
     replace:
       '                js::statement_lists(b, &mut |s| written_thens(s, &[]))\n            }),\n            pass("written order steps"',
@@ -966,7 +966,7 @@ export const mutations: Mutation[] = [
     name: "ordered-floats-unread",
     breaks:
       "a float's `partial_cmp(&b) != Some(Less)` stays `$partialCmp(a, b) !== -1`, not React's `!(a < b)` (ADR 0966)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                js::each_expr_mut(b, &mut |e| ordered_floats(e, h.floats))\n",
     replace: "                js::each_expr_mut(b, &mut |_| ())\n",
     tests: ["test/corpus.test.ts", "-t", "^float_partial_cmp_tests.rs$"],
@@ -976,7 +976,7 @@ export const mutations: Mutation[] = [
     name: "taken-options-off",
     breaks:
       "a take of a field then tested keeps its take first, `const cancel = root.cancel; root.cancel = undefined; if (cancel != null)`, not upstream's test of the place (ADR 0996)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("taken options", |b, _| js::statement_lists(b, &mut taken_options)),\n',
     replace: "",
     tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
@@ -985,7 +985,7 @@ export const mutations: Mutation[] = [
     name: "switch-match-returned-first",
     breaks:
       "a `match` of constants is a function's value before `switches` makes its `switch`, `return tag === HostHoistable || tag === HostComponent ? 2 : 3`, not `switch (tag) { case HostHoistable: .. }` (ADRs 0237, amended, 0629)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "        .filter(|(cond, ..)| !switch(cond))\n",
     replace: "        .filter(|(cond, ..)| !switch(cond) || true)\n",
     tests: [
@@ -998,7 +998,7 @@ export const mutations: Mutation[] = [
     name: "unswitched-values-off",
     breaks:
       'a function\'s `match` of an enum\'s constants `switches` leaves an `if` is a guard, `if (payload.status === "Resolved" || ..) { return "on"; } return "off";`, not its conditional (ADR 0237, amended)',
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                let (elses, returns, booleans) = (&h.written.elses, h.returns, h.booleans);\n                js::statement_lists(b, &mut |s| returned_values(s, elses, returns, booleans))\n            }),\n",
     replace: "                let _ = (b, h);\n            }),\n",
     tests: [
@@ -1011,7 +1011,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-handle-in-place-kept",
     breaks:
       "a handle MIR makes of a place and writes or reads once stays its getter and setter object, `{ get value() { .. }, set value(v) { .. } }.value = v`, not the place, `item.sibling = v` (#198)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("handles in place", |b, _| handles_in_place(b)),\n',
     replace: "",
     tests: [
@@ -1025,7 +1025,7 @@ export const mutations: Mutation[] = [
     name: "mut-items-loops-kept",
     breaks:
       "`for s in state.iter_mut()` stays `for (const s of $mutItems(state))` and `s.value = ..`, not `state[i] = ..` (#320)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "            pass(\"mut items\", |b, _| bottom_up(b, &mut mut_items::mut_item_loops)),\n",
     replace: "            pass(\"mut items\", |_, _| {}),\n",
     tests: ["test/corpus.test.ts", "-t", "^iter_mut_index_loops.rs$"],
@@ -1035,7 +1035,7 @@ export const mutations: Mutation[] = [
     name: "drop-scopes-stage-empty",
     breaks:
       "a loop that drops a value before each way out of it keeps a `catch` of the drop around each step until the late `scopes` stage, after `values` and `loops` have read it, so no range's `for` is made of it (rd200)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("looped drops", looped_drops_of),\n',
     replace: "",
     tests: [
@@ -1049,8 +1049,8 @@ export const mutations: Mutation[] = [
     name: "held-functions-kept",
     breaks:
       "a `let` of a closure that's the function it calls is a `const` of it, `const onSuccess = handleNavigateComplete;`, not the function read where it's read (rd284)",
-    file: "src/lower/mir/tidy/stages.rs",
-    find: "                crate::lower::passed_on::held_functions(b, h.forwarding)\n",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
+    find: "                rust_js_lower::passed_on::held_functions(b, h.forwarding)\n",
     replace: "                let _ = (b, h);\n",
     tests: ["test/webapi-events.test.ts", "-t", "reusable listeners"],
   },
@@ -1058,7 +1058,7 @@ export const mutations: Mutation[] = [
     name: "and-tests-settled-skipped",
     breaks:
       "a let chain's tests that `settle branches` made `if`s of, its guard `break`s, stay nested, `if (usable != null) { if (kindOf(usable) === \"object\") { .. } }`, not `&&` as written (Fizz's `use(usable)`)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "            pass(\"and tests settled\", |b, h| {\n                bottom_up(b, &mut |s| {\n                    and_tests(\n                        s,\n                        &h.written.conditions,\n                        &h.written.switches,\n                        &h.lets.own_field,\n                        &h.written.guards,\n                    )\n                })\n",
     replace: "            pass(\"and tests settled\", |b, h| {\n                let _ = (b, h);\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_settled_and.rs$"],
@@ -1068,7 +1068,7 @@ export const mutations: Mutation[] = [
     name: "declared-handles-kept",
     breaks:
       "a let chain's `borrow_mut()` of a flattened state, `const borrowMut = { get value() .., set value(value) .. }`, kept, one write through it aliased and the other not, where each is the chunk's key (rd533)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "            pass(\"declared handles\", |b, h| {\n                read_handles(b, true, h.lets, h.again.running())\n            }),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell.rs$"],
@@ -1078,7 +1078,7 @@ export const mutations: Mutation[] = [
     name: "returned-loops-off",
     breaks:
       "a `for` in an `if` whose branch returns after it, its body returning early too, stays MIR's loop, `while ((step = iter.next().value) != null)`, `$rangeNext(iter)` of a range, not upstream's `for (let i = 1; i < len; i++)` (rd602, rd603)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "            pass(\"returned loops\", for_loops),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^for_returning_in_an_if\\.rs$"],
@@ -1087,7 +1087,7 @@ export const mutations: Mutation[] = [
   {
     name: "condition-lets-early",
     breaks: "a condition's `let`s are made in tidy's first run of `skipped tests`, so a block a later pass makes another form of, a `while`'s test, is a `let` set in a sequence instead, `while (true) { let tmp; let x; if (..) { break; } .. }` (A1, #523)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "                js::statement_lists(b, &mut |s| logicals::skipped_tests(s, &h.written.logicals, false))\n",
     replace: "                js::statement_lists(b, &mut |s| logicals::skipped_tests(s, &h.written.logicals, true))\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_effects.rs$"],
@@ -1096,7 +1096,7 @@ export const mutations: Mutation[] = [
   {
     name: "kept-trees-unrun",
     breaks: "no pass chains a tree once every other pass is done, so the interpreter's `eval` and the lexer's keep MIR's labels (#523, C1)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "            pass(\"kept trees\", |b, h| decided_trees(b, h, true)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(interpreter).rs$"],
@@ -1106,7 +1106,7 @@ export const mutations: Mutation[] = [
     name: "fixed-params-in-the-first-pass",
     breaks:
       "a parameter is read after a call as unchanged in the first decisions pass too, whose chain then leaves the last pass a label it would take: seed 2's `m38` (#771)",
-    file: "src/lower/mir/tidy/stages.rs",
+    file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: "    let fixed = match kept {\n",
     replace: "    let fixed = match true {\n",
     tests: ["test/match-trees.test.ts", "-t", "seed 2$"],

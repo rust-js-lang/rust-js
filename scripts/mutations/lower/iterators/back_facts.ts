@@ -1,4 +1,4 @@
-// Mutations of src/lower/iterators/back_facts.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/iterators/back_facts.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "filter-stepped-by-its-type",
     breaks:
       "a filter's question of whether the crate steps it from its back is its type's in back_stepped's set, so one only folded forward of a type stepped from its back elsewhere is `$filterEnds` (#851)",
-    file: "src/lower/iterators/back_facts.rs",
+    file: "crates/rust-js-lower/src/iterators/back_facts.rs",
     find: "            || r::filtered_source(self.tcx, ty).is_some()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_map_folded_and_rfolded.rs$"],
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
   {
     name: "made-from-unread",
     breaks: "what a call is given isn't asked, only what it makes, so a map made in place where it's stepped, `count().map(f).rfold(..)`, built at its step, is never made knowing its back, and is refused (#851)",
-    file: "src/lower/iterators/back_facts.rs",
+    file: "crates/rust-js-lower/src/iterators/back_facts.rs",
     find: "            && (self.made_into.iter().chain(&self.made_from)).any(|&(local, made)| {\n",
     replace: "            && (self.made_into.iter()).any(|&(local, made)| {\n",
     tests: ["test/corpus.test.ts", "-t", "^backs_given_behind_impls.rs$"],
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
   {
     name: "bare-array-iterator-trusted",
     breaks: "a variable of an array's iterator's type alone is taken to have a back, though it may hold the array, so a chain of one `w` is `$lazyChain($iter(v), w)`, the array itself where a JS iterator is written, which once threw `it.back is not a function` and now steps only as the runtime tolerates an array there (#851, #1734)",
-    file: "src/lower/iterators/back_facts.rs",
+    file: "crates/rust-js-lower/src/iterators/back_facts.rs",
     find: "                    && (wrapped || !self.steps_an_array(ty))\n",
     replace: "                    && true\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_chain.rs$"],
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
   {
     name: "compiled-variable-trusted",
     breaks: "a variable holding std's compiled struct is taken to have a back by its type, though it has one only given it, so a `rev()` of what a function returns throws `it.back is not a function` (#856, #851)",
-    file: "src/lower/iterators/back_facts.rs",
+    file: "crates/rust-js-lower/src/iterators/back_facts.rs",
     find: "                    && !self.compiled_struct(ty, value)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(returned_impl_ends|chain_under_a_held_map_from_its_back).rs$"],
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-stepped-by-its-type",
     breaks: "a chain's question of whether the crate steps it from its back is its type's in back_stepped's set, so one only stepped forward, of a type stepped from its back elsewhere, is made knowing its back where JS's own form reads (#851)",
-    file: "src/lower/iterators/back_facts.rs",
+    file: "crates/rust-js-lower/src/iterators/back_facts.rs",
     find: "            || r::chained_sources(self.tcx, ty).is_some()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(held_beneath_adapters_from_its_back|cloned_of_a_chain_stepped_from_its_back|chain_stepped_from_its_back_elsewhere|chain_under_a_held_map_from_its_back|chain_of_adapters_stepped_from_its_back|chain_sides_own_steps|rev_chain|array_cloned_stepped_from_its_back|cloned_items_from_both_ends|copied_given_to_generic_backs|copied_skip_take_and_filter_stepped_from_back|adapters_given_to_generic_backs|map_ends_size_hint|back_folds_of_sources_made_knowing_their_back|consumer_drops_what_is_left|adapters_own_work_that_panics).rs$"],
@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
   {
     name: "char-indices-back-unknown",
     breaks: "a `char_indices()` isn't asked whether it knows its back as a `chars()` is, so generic code's `nth_back` of one is refused",
-    file: "src/lower/iterators/back_facts.rs",
+    file: "crates/rust-js-lower/src/iterators/back_facts.rs",
     find: "        (text.is_str_chars(ty) || text.is_char_indices(ty)).then(|| self.chars_asked_whole(ty))\n",
     replace: "        text.is_str_chars(ty).then(|| self.chars_asked_whole(ty))\n",
     tests: ["test/lowering-strings.test.ts", "-t", "each one thing more asked of a chars"],
@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
   {
     name: "chars-cloned-unseen",
     breaks: "a `chars()` the crate clones is JS's own string iterator, which has no `clone()`",
-    file: "src/lower/iterators/back_facts.rs",
+    file: "crates/rust-js-lower/src/iterators/back_facts.rs",
     find: "        self.krate.chars_whole\n            || self\n",
     replace: "        self.krate.chars_whole\n            || false && self\n",
     tests: ["test/lowering-strings.test.ts", "-t", "each one thing more asked of a chars"],
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
   {
     name: "knowing-in-its-maker-unread",
     breaks: "a `map` generic code makes of its own type parameter's iterator, where its hint is asked, is JS's own, `(0, None)` (#1240)",
-    file: "src/lower/iterators/back_facts.rs",
+    file: "crates/rust-js-lower/src/iterators/back_facts.rs",
     find: "        } else if hinted.knowing_in.contains(&(owner, ty)) {\n",
     replace: "        } else if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "counted-in-its-maker-unread",
     breaks: "a `take(2)` generic code makes of its own type parameter's iterator, where its hint is asked, is JS's own `.take(2)`, `(0, None)` (#1240)",
-    file: "src/lower/iterators/back_facts.rs",
+    file: "crates/rust-js-lower/src/iterators/back_facts.rs",
     find: "        let answer = if hinted.counted_in.contains(&(owner, ty)) {\n",
     replace: "        let answer = if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "hint-typed-unread",
     breaks: "what's made knowing its hint wherever it's made, an adapter given to generic code that asks its hint, isn't, so a filter of a `Vec`'s items is JS's own, whose hint is `(0, None)` (#1236, #2209)",
-    file: "src/lower/iterators/back_facts.rs",
+    file: "crates/rust-js-lower/src/iterators/back_facts.rs",
     find: "        } else if hinted.typed.contains(&ty) {\n",
     replace: "        } else if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^std_adapter_given_to_generic_code_that_asks_its_hint.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "hint-made-stepped-from-its-back",
     breaks: "what's made knowing its hint by the function that makes it is said to be stepped from its back, so a flatten of the crate's iterators, which have none, beside another of its type whose hint is asked, is `$flattenEnds`, which throws `an iterator stepped as an array's` (#2209)",
-    file: "src/lower/iterators/back_facts.rs",
+    file: "crates/rust-js-lower/src/iterators/back_facts.rs",
     find: "        let answer = if self.krate.iterators.back_stepped.typed.contains(&ty) {\n",
     replace: "        let answer = if self.krate.iterators.back_stepped.typed.contains(&ty) || self.krate.iterators.hinted.knowing_in.contains(&(self.tcx.typeck_root_def_id(self.frame.owner), ty)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_made_knowing_its_hint_asks_no_back.rs$"],

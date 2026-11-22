@@ -25,25 +25,25 @@ const count = (file: string, pattern: RegExp) => (read(file).match(pattern) ?? [
 // and `is_exported`, which disagree with `library::reachable` of a trait
 // impl's method: `library.rs` alone, which owns it, and those named.
 const rustcReach: Record<string, string> = {
-  "src/lower/library.rs": "the owner",
-  "src/lower/analysis/collected.rs": "#2024: an inherent impl's constant JS can name (`exported_value_const`)",
+  "crates/rust-js-lower/src/library.rs": "the owner",
+  "crates/rust-js-lower/src/analysis/collected.rs": "#2024: an inherent impl's constant JS can name (`exported_value_const`)",
 };
 
 // What an analysis asks of an item, a type, a field, a `static` or a key,
 // through `visibility(..).is_public()`: what JS can reach of it, which
 // `declarations::js_names` owns (#2024, ADR 1179), and so many each.
 const itemPublic: Record<string, [number, string]> = {
-  "src/lower/analysis/js_given.rs": [1, "js_facing's rule, `exported_function`, its owner"],
-  "src/lower/analysis/naming.rs": [1, "a `pub use`, the module's export, an export rule"],
+  "crates/rust-js-lower/src/analysis/js_given.rs": [1, "js_facing's rule, `exported_function`, its owner"],
+  "crates/rust-js-lower/src/analysis/naming.rs": [1, "a `pub use`, the module's export, an export rule"],
 };
 
 test("rustc's own answer of what another crate reaches is asked only where #2015 names", () => {
-  const asking = [...rust("src/lower"), "src/lower.rs"].filter((file) => /effective_visibilities\(|\.is_exported\(/.test(read(file)));
+  const asking = [...[...rust("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...rust("crates/rust-js-mir/src"), "src/pipeline.rs", ...rust("src/pipeline")], "crates/rust-js-lower/src/lib.rs"].filter((file) => /effective_visibilities\(|\.is_exported\(/.test(read(file)));
   expect(asking.filter((file) => !(file in rustcReach))).toEqual([]);
 });
 
 test("an analysis asks an item's `is_public()` only as #2015's ratchet allows", () => {
-  const counted = [...rust("src/lower/analysis"), "src/lower/instances.rs"]
+  const counted = [...rust("crates/rust-js-lower/src/analysis"), "crates/rust-js-lower/src/instances.rs"]
     .map((file) => [file, count(file, /visibility\([^)]*\)\.is_public\(\)/g)] as const)
     .filter(([, n]) => n > 0);
   expect(counted.filter(([file, n]) => n > (itemPublic[file]?.[0] ?? 0)).map(([file, n]) => `${file}: ${n}, at most ${itemPublic[file]?.[0] ?? 0}`)).toEqual([]);

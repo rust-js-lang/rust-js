@@ -1,4 +1,4 @@
-// Mutations of src/lower/display/sink_writes.rs (ADR 1135, #1652).
+// Mutations of crates/rust-js-lower/src/display/sink_writes.rs (ADR 1135, #1652).
 import type { Mutation } from "../../../mutations";
 
 const tests = ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"];
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-char-written-as-str",
     breaks: "a `char`'s `{}` into a writer is given to its `write_str`, not its `write_char`",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "                true => SinkWrite::Char(value),\n",
     replace: "                true => SinkWrite::Str(value),\n",
     tests,
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-signed-integer-whole",
     breaks: "a signed integer's `{}` into a writer is one `write_str`, its sign not apart",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "            Std::FmtDisplay | Std::FmtDebug if let Some(num) = int => match options || num.signed() {\n",
     replace: "            Std::FmtDisplay | Std::FmtDebug if let Some(num) = int => match options || (num.signed() && false) {\n",
     tests,
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-radix-prefix-dropped",
     breaks: "`{:#x}` into a writer writes no `0x`",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "                        vec![Expr::bool(true), Expr::str(radix.prefix()), digits, options_given()],\n",
     replace: "                        vec![Expr::bool(true), Expr::str(\"\"), digits, options_given()],\n",
     tests,
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-string-never-padded",
     breaks: "a string's `{:>6}` into a writer isn't padded",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "        let padded = |text: Expr| match width.is_none() && precision.is_none() {\n",
     replace: "        let padded = |text: Expr| match true {\n",
     tests,
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-given-integer-whole",
     breaks: "an integer's `Display` given a framed writer's `Formatter` is one `write_str`, its sign not apart",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: '            Std::FmtDisplay if int.is_some() => SinkWrite::Helper("$writeInteger", given(value)),\n',
     replace: '            Std::FmtDisplay if int.is_some() => SinkWrite::Helper("$writeIntegral", vec![Expr::bool(true), Expr::str(""), value, options]),\n',
     tests,
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-given-char-unpadded",
     breaks: "a `char`'s `Display` given a framed writer's `Formatter` is its `write_char`, whatever its width",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: '            Std::FmtDisplay if ty.is_char() => SinkWrite::Helper("$writeCharOf", given(value)),\n',
     replace: "            Std::FmtDisplay if ty.is_char() => SinkWrite::Char(value),\n",
     tests,
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-float-exp-case-swapped",
     breaks: "a float's `{:e}` into a writer is written by `UpperExp`, `1E2`",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: '        Std::FmtExp(true) => "E",\n',
     replace: '        Std::FmtExp(true) => "e",\n',
     tests,
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-float-as-f64",
     breaks: "an `f32` written into a writer is written by an `f64`'s digits, `0.10000000149011612`",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "                let mut args = vec![value, Expr::str(float_trait(kind)), Expr::bool(num == Num::F32)];\n",
     replace: "                let mut args = vec![value, Expr::str(float_trait(kind)), Expr::bool(num != num)];\n",
     tests,
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-given-float-refused",
     breaks: "a float's `fmt` given a framed writer's `Formatter` is refused (#1652)",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "                if let Some(num) = shown_num(ty).filter(|num| num.float()) =>\n",
     replace: "                if let Some(num) = shown_num(ty).filter(|num| num.float() && false) =>\n",
     tests,
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-given-radix-prefix-dropped",
     breaks: "`{:#06x}` of a `T` written by its dictionary's `fmtInto` writes no `0x` (#1652)",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "                    vec![Expr::bool(true), Expr::str(radix.prefix()), digits, options],\n",
     replace: "                    vec![Expr::bool(true), Expr::str(\"\"), digits, options],\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_and_dyn.rs$"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "framed-own-radix-refused",
     breaks: "`{:x}` of a type of the crate's own whose `LowerHex` writes through a sink is refused in a `write!` into a writer",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "        let Some(fmt_trait) = self.fmt_trait_of(kind) else {\n",
     replace: "        let Some(fmt_trait) = self.fmt_trait_of(kind).filter(|_| matches!(kind, Std::FmtDisplay | Std::FmtDebug)) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "parse-error-display-given-the-formatter-refused",
     breaks: "a parse error's `Display` given a framed writer's `Formatter`, thiserror's, is refused",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "            Std::FmtDisplay if recognition.is_parse_error(ty) => {\n",
     replace: "            Std::FmtDisplay if recognition.is_parse_error(ty) && false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-compiled-writer-unarmed",
     breaks: "a std adapter `@rust-js/std` compiles isn't armed in a framed writer, which refuses it (#1712)",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "        (instance.def_id().is_local() && self.writes_through_sink(instance.def_id())) || std_framed\n",
     replace: "        instance.def_id().is_local() && self.writes_through_sink(instance.def_id())\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_std_adapters)\\.rs$"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-dyn-display-unwritten",
     breaks: "an `fmt::Arguments` made a `dyn Display` written into a writer is refused (#1712)",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "            Std::FmtDisplay if self.is_lang_adt(ty.peel_refs(), LangItem::FormatArguments) => {\n",
     replace: "            Std::FmtDisplay if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_arguments_made_dyn)\\.rs$"],
@@ -119,15 +119,15 @@ export const mutations: Mutation[] = [
   {
     name: "written-into-a-writer-by-self-type",
     breaks: "whether a writer of the crate's own writes `&ByRef` through a sink is asked of the reference's type, which is no type's, so `write!(log, \"{}\", &r)` is refused (#1798)",
-    file: "src/lower/display/sink_writes.rs",
-    find: "        let Some(adt) = of_impl.and_then(|imp| crate::lower::recognition::formatted_adt(self.tcx, imp)) else {\n",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
+    find: "        let Some(adt) = of_impl.and_then(|imp| crate::recognition::formatted_adt(self.tcx, imp)) else {\n",
     replace: "        let Some(adt) = of_impl.and(ty.ty_adt_def().map(|adt| adt.did())) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
   },
   {
     name: "sink-writes-past-own-reference",
     breaks: "a placeholder's value is written through a reference with a `Display` of its own, as std's `&T` would, so `write!(log, \"{}\", &r)` is refused (#1798)",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "        let ty = self.shown_ref_type(kind, ty);\n        let int",
     replace: "        let ty = ty.peel_refs();\n        let int",
     tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-write-if-always",
     breaks: "a conditional write into a writer is made whether its test holds or not: a `RangeInclusive` not stepped through shows ` (exhausted)` (#1963)",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "                return StmtKind::If(test, written(writes), otherwise).at(js_span);\n",
     replace: "                return StmtKind::If(Expr::bool(true), written(writes), otherwise).at(js_span);\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_written_into_a_generic_writer.rs$"],
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-display-unfollowed",
     breaks: "an `io::Error`'s `Display` written into a writer of the crate's own is refused, `write!(f, \"ReadError: {}\", self.0)` of rand 0.7.3, and rand, quickcheck and itertools' quickcheck tests with it (#1420)",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "            Std::FmtDisplay if recognition.is_io_error(ty) => SinkWrite::Helper(\"$writeIoError\", vec![value, options]),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_error_written_piecewise.rs$"],
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-debug-unfollowed",
     breaks: "an `io::Error`'s `Debug`, a derived `Debug`'s field, written into a writer is refused, so a library that makes a `dyn Error` of a type holding one is refused (#1420)",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "            Std::FmtDebug if recognition.is_io_error(ty) => {\n",
     replace: "            Std::FmtDebug if recognition.is_io_error(ty) && false => {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_writes_an_io_error_piecewise"],
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
   {
     name: "error-kind-display-as-debug",
     breaks: "an `ErrorKind`'s `Display` written into a writer is its variant's name, `Other`, where std writes its words, `other error` (#1420)",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "                SinkWrite::Str(Expr::call_helper(\"$ioKindText\", vec![value]))\n",
     replace: "                SinkWrite::Str(value)\n",
     tests: ["test/corpus.test.ts", "-t", "^io_error_written_piecewise.rs$"],
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-value-writes-at-a-placeholder-unasked",
     breaks: "a placeholder's `{}` of an `io::Error` in a `write!` into a writer is refused, where a `Formatter` given on writes it (#1420)",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "        if let Some(write) = self.std_value_writes(value.clone(), (kind, ty), given) {\n",
     replace: "        if let Some(write) = None {\n",
     tests: ["test/corpus.test.ts", "-t", "^io_error_written_piecewise.rs$"],
@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-placeholder-written-whole",
     breaks: "a pointer a `write!` into a writer shows by its placeholder isn't written std's pieces, its `0x` and its digits, so a writer's calls are counted wrong, or it's refused (#2282)",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "            // `0x` and its digits two writes (#2282).\n            Std::FmtPointer | Std::FmtDebug if self.shows_an_address(kind, ty) => {\n",
     replace: "            // `0x` and its digits two writes (#2282).\n            Std::FmtPointer | Std::FmtDebug if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_shown_by_options\\.rs$"],
@@ -183,7 +183,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-given-written-whole",
     breaks: "a pointer a writer's `Formatter` shows, a derived `Debug`'s field, isn't written std's pieces, so rand's `ThreadRng` is refused where it's written into a writer (#1420, #2282)",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "            // A pointer's address, by the options as it runs (#2282).\n            Std::FmtPointer | Std::FmtDebug if self.shows_an_address(kind, ty) => {\n",
     replace: "            // A pointer's address, by the options as it runs (#2282).\n            Std::FmtPointer | Std::FmtDebug if false => {\n",
     tests: ["test/crates.test.ts", "-t", "library_derived_debug_of_a_pointer_field"],
@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-build-frames-by-old-contract",
     breaks: "`@rust-js/std`'s build asks only the contract its previous build wrote whether it frames a std type's writer, which never lists one newly compiled, `FlattenCompat`'s: its `Flatten`'s `Debug` is refused (#2252)",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "            && (self.krate.foreign.lists_fmt_into(adt) || self.krate.prints.published.contains(&adt));\n",
     replace: "            && self.krate.foreign.lists_fmt_into(adt);\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
@@ -199,7 +199,7 @@ export const mutations: Mutation[] = [
   {
     name: "conditional-write-else-dropped",
     breaks: "a conditional write's `else` is left out, so a `Zip` of sides that aren't random access writes nothing of its `Zip { a, b }` (#2252)",
-    file: "src/lower/display/sink_writes.rs",
+    file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "                let otherwise = (!otherwise.is_empty()).then(|| written(otherwise));\n",
     replace: "                let otherwise: Option<Vec<Stmt>> = { let _ = otherwise; None };\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],

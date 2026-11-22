@@ -1,11 +1,11 @@
-// Mutations of src/lower/display/sink_debug.rs (ADR 1135, #1652).
+// Mutations of crates/rust-js-lower/src/display/sink_debug.rs (ADR 1135, #1652).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "sink-debug-list-never-pretty",
     breaks: "a sequence's `{:#?}` written into a writer isn't pretty, `[1, 2]` (#1652)",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: '            return helper("$writeDebugList", vec![value, write, pretty.clone()]);\n',
     replace: '            return helper("$writeDebugList", vec![value, write, Expr::bool(false)]);\n',
     tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-map-set-debug-unfollowed",
     breaks: "a map's or a set's `Debug` written into a writer is refused, where std writes it by `debug_map` or `debug_set`",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: "            && (self.is_set(ty) || self.is_map(ty))\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
@@ -21,15 +21,15 @@ export const mutations: Mutation[] = [
   {
     name: "sink-cell-debug-refused",
     breaks: "a `Cell`'s or a `RefCell`'s `Debug` written into a writer is refused, where std writes it by `debug_struct`",
-    file: "src/lower/display/sink_debug.rs",
-    find: "            && (cell(crate::lower::recognition::StdItem::Cell) || cell(crate::lower::recognition::StdItem::RefCell))\n",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
+    find: "            && (cell(crate::recognition::StdItem::Cell) || cell(crate::recognition::StdItem::RefCell))\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
   {
     name: "sink-layout-debug-refused",
     breaks: "a `Layout`'s `Debug` in a framed writer, smallvec's derived `Debug` of a `&Layout`, is refused",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: "        if let Some(layout) = self.recognition().layout(ty) {\n",
     replace: "        if let Some(layout) = self.recognition().layout(ty).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-parse-error-debug-refused",
     breaks: "a parse error's `Debug` in a framed writer, thiserror's derived `Debug` of a `&ParseIntError`, is refused",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: "        if self.recognition().is_parse_error(ty)\n",
     replace: "        if self.recognition().is_parse_error(ty) && false\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "phantom-data-unwritten",
     breaks: "a `PhantomData`'s `Debug` in a writer is refused (#1712)",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: "            && self.is_lang_adt(ty, LangItem::PhantomData)\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_phantom_data)\\.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-iter-debug-unwritten",
     breaks: "an array's iterator's `Debug` in a framed writer, `IntoIter([1, 2])`, is refused (#1712)",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: "        if let Some(slice) = self.recognition().shows_its_slice(ty)\n            && (slice.left",
     replace: "        if let Some(slice) = self.recognition().shows_its_slice(ty).filter(|_| false)\n            && (slice.left",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_std_adapters)\\.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-debug-not-through-refs",
     breaks: "a derived `Debug`'s `&mut i32` field written into a writer writes its cell, `-[object Object]` (#1755)",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: "        let (value, ty) = self.shown_through(value, ty, Std::FmtDebug);\n",
     replace: "        let (value, ty) = (value, ty.peel_refs());\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_mut_ref_field)\\.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-debug-unread-value-dropped",
     breaks: "a `()` a call makes, written into a writer, drops the call, its print lost (#1756)",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: "        let unread = |text: Expr| evaluated_first(evaluated.clone(), text);\n",
     replace: "        let unread = |text: Expr| evaluated_first(None.or(evaluated.clone()).filter(|_| false), text);\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_unit_made_by_a_call)\\.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-range-debug-unfollowed",
     breaks: "a range shown into a writer through generic code is refused, where std writes its start, its dots and its end, each a call of the writer's (#1897)",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: "        if let Some(kind) = self.range_kind(ty) {\n            let mut out = Vec::new();\n",
     replace: "        if let Some(kind) = self.range_kind(ty).filter(|_| false) {\n            let mut out = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^range_written_into_a_generic_writer.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-range-debug-end-left-out",
     breaks: "a range's end isn't written into a writer, `1..` of `1..4` (#1897)",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: "            if kind.bounds().last() == Some(&\"end\") && !bound(self, parts.next(), &mut writes)? {\n",
     replace: "            if false && !bound(self, parts.next(), &mut writes)? {\n",
     tests: ["test/corpus.test.ts", "-t", "^range_written_into_a_generic_writer.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-range-debug-dots-of-any",
     breaks: "an inclusive range's dots written into a writer are `..`, `..7` of `..=7` (#1897)",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: "            writes.push(SinkWrite::Str(Expr::str(kind.dots())));\n",
     replace: "            writes.push(SinkWrite::Str(Expr::str(\"..\")));\n",
     tests: ["test/corpus.test.ts", "-t", "^range_written_into_a_generic_writer.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-exhausted-write-dropped",
     breaks: "a `RangeInclusive` stepped through, written into a writer, leaves out its ` (exhausted)` (#1963)",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: "            if let Some(exhausted) = exhausted {\n                writes.push(SinkWrite::If(\n",
     replace: "            if let Some(exhausted) = exhausted.filter(|_| false) {\n                writes.push(SinkWrite::If(\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_written_into_a_generic_writer.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-exhausted-written-first",
     breaks: "a `RangeInclusive`'s ` (exhausted)` is written before its bounds, where std tests it after its end (#1963)",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: "            if let Some(exhausted) = exhausted {\n                writes.push(SinkWrite::If(\n",
     replace: "            if let Some(exhausted) = exhausted {\n                writes.insert(0, SinkWrite::If(\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_written_into_a_generic_writer.rs$"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-inclusive-written-refused",
     breaks: "a `RangeInclusive` of numbers or `char`s written into a writer a piece at a time is refused again (#1963)",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: "            if !value.reads_same() || !out.is_empty() {\n                return Ok(None);\n            }\n            let mut writes = Vec::new();\n",
     replace: "            if !value.reads_same() || !out.is_empty() || exhausted.is_some() {\n                return Ok(None);\n            }\n            let mut writes = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_written_into_a_generic_writer.rs$"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-parts-size-left-out",
     breaks: "a slice's chunks written into a writer show no `chunk_size`, `Chunks { v: [..] }` (#2252)",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: "                Expr::array(vec![Expr::str(field), size, size_write]),\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","^writer_sink_std_adapters.rs$"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-item-left-around-dropped",
     breaks: "`once(x)` written into a writer shows its inner `IntoIter { .. }` alone (#2252)",
-    file: "src/lower/display/sink_debug.rs",
+    file: "crates/rust-js-lower/src/display/sink_debug.rs",
     find: "                    struct_of(around, \"inner\", value, write_inner)\n",
     replace: "                    { let _ = (around, write_inner); struct_of(slice.name, \"inner\", value, write_item) }\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_std_adapters.rs$"],

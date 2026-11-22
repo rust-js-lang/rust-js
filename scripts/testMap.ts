@@ -415,7 +415,7 @@ export function pathFunctions(): Map<string, string> {
 /** What `file`, a test's module, reads of the checkout as text, as far as
  * its source and the source of each module of the checkout's it imports
  * say (what it imports is its code, not text it reads): each path it names, `"scripts/crate-corpus.ts"`, `join(root, "src",
- * "runtime.rs")`, `${root}/std`, `"../src/lower.rs"`, each a file or a
+ * "runtime.rs")`, `${root}/std`, `"../crates/rust-js-lower/src/lib.rs"`, each a file or a
  * folder that's there, said from the checkout's root. A test of a file's
  * text, ci.test.ts's of `scripts/`, the architecture's of `src/`, fails
  * on a change it runs no code of: what it reads picks it. Bun binds a

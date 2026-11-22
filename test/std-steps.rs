@@ -10,7 +10,7 @@
 //! std's, not only what it asks (#2205). test/std-steps.test.ts runs it natively, unstable features on
 //! (`try_fold`, `advance_by` and `is_empty` are written here as std's own
 //! sources write them), and writes what it prints as the catalog,
-//! src/lower/recognition/std_steps.txt (#2112).
+//! crates/rust-js-lower/src/recognition/std_steps.txt (#2112).
 //!
 //! Nothing here is rust-js's: it's run natively alone, the oracle.
 

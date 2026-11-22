@@ -1,6 +1,6 @@
 // The std paths' rule of the architecture (#1681's change 2, the DefId
 // step): what a recognizer knows of std's items it asks of the `StdPath`
-// table, by `DefId`, `src/lower/recognition/std_paths.rs` (#1681), not of
+// table, by `DefId`, `crates/rust-js-lower/src/recognition/std_paths.rs` (#1681), not of
 // a path's text. Each file's asks of the text, `std_path(`, a `"std::`
 // literal, and `def_path_str(` tested against text, are at most
 // `test/std-path-text.txt`'s: a ratchet the passes onto the table lower, and
@@ -17,7 +17,7 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
   .flatMap(entry => entry.isDirectory() ? files(`${directory}/${entry.name}`) : [`${directory}/${entry.name}`]);
 
 // The table's own file, whose rows are std's paths' text.
-const owner = "src/lower/recognition/std_paths.rs";
+const owner = "crates/rust-js-lower/src/recognition/std_paths.rs";
 
 const allowed: Record<string, number> = Object.fromEntries(
   read("test/std-path-text.txt").split("\n").filter((line) => line && !line.startsWith("#"))
@@ -37,7 +37,7 @@ const asks = (text: string) =>
   }, 0);
 
 test("std's items are asked of the StdPath table, not a path's text", () => {
-  const grown = files("src/lower").filter((file) => file.endsWith(".rs") && file !== owner)
+  const grown = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs") && file !== owner)
     .map((file) => [file, asks(read(file)), allowed[file] ?? 0] as const)
     .filter(([, now, was]) => now > was)
     .map(([file, now, was]) => `${file}: ${now} asks of a path's text, the ratchet's ${was}: ask ${owner}'s table by DefId`);

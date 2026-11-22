@@ -1,4 +1,4 @@
-// Mutations of src/lower/jsx.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/jsx.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "base-prop-read-after-children",
     breaks:
       "a prop `{..base}` gives after children that change it, `n={base.n}` of `{bump(&mut base)}`, is read before them, as JSX's attributes are",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                    || children.has_effects() && !value.is_constant() && !self.reads_unchanging(value, out)\n",
     replace: "",
     tests: [
@@ -19,7 +19,7 @@ export const mutations: Mutation[] = [
     name: "jsx-flattened-attrs-by-place",
     breaks:
       "a flattened struct's attributes are found by their place in its object, which lists them as written, so a field written before the flattened one is spread",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "        for prop in props {\n            match prop {\n                Prop::Field(name, value) if let Some(i) = flattened(&name) => {\n",
     replace:
       "        for (i, prop) in props.into_iter().enumerate() {\n            match prop {\n                Prop::Field(_, value) if { let _ = &flattened; super::bindings::is_flatten_field(self.tcx, ty, i) } => {\n",
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     name: "undefined-children-written",
     breaks:
       "\`<Frame {..Default::default()} />\` is \`<Frame>{undefined}</Frame>\`",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: '                Prop::Field(name, value) if name == "children" && matches!(value.kind, js::ExprKind::Undefined) => {}',
     replace:
       '                Prop::Field(name, value) if name == "children" && false && matches!(value.kind, js::ExprKind::Undefined) => {}',
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "rest-field-not-spread",
     breaks: "a `Rest` a component passes on is a `rest` prop, not `{...rest}`",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                _ => vec![Prop::Spread(value)],",
     replace: '                _ => vec![Prop::Field("rest".into(), value)],',
     tests: ["test/jsx-props.test.ts", "-t", "doesn't name as ...rest"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     name: "component-props-unplaced",
     breaks:
       "a component's prop MIR's value says no place of is given none, so a `key` written after it goes before it",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                        value.span = self.js_span(self.frame.thir[f.expr].span);\n",
     replace: "",
     tests: [
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     name: "props-read-before-constant-base",
     breaks:
       "a component's props are read into `const`s before its children where only a base's constant comes after them",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                value.has_effects() && !self.reads_unchanging(children, out)\n",
     replace: "                true\n",
     tests: ["test/jsx-props.test.ts", "-t", "no dictionary"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
     name: "flattened-literal-spread",
     breaks:
       'a flattened struct made in JSX is spread, `{...{ href: "/learn" }}`, not its fields as attributes',
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "        let js::ExprKind::Object(props, ..) = value.kind else {\n",
     replace:
       "        if matches!(value.kind, js::ExprKind::Object(..)) {\n            return Ok(vec![Prop::Spread(value)]);\n        }\n        let js::ExprKind::Object(props, ..) = value.kind else {\n",
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
     name: "flattened-chain-not-inlined",
     breaks:
       "a flattened struct's own flattened field is a prop, `html={..}`, not its fields",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                    for attr in self.flattened_attrs(types[i].1, value, &shadowing, span)? {",
     replace:
       "                    attrs.push(Prop::Field(types[i].0.clone(), value));\n                    for attr in Vec::<Prop>::new() {",
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
     name: "shadowed-name-given-silently",
     breaks:
       "a Rust caller's `href` of flattened props the props have too is dropped, not refused",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                    if !matches!(value.kind, js::ExprKind::Undefined) {",
     replace: "                    if false {",
     tests: ["test/jsx-props.test.ts", "-t", "chain of flattened"],
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     name: "props-in-companion-order",
     breaks:
       "a component's props are in its struct's order, not as they're written",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "        let sorted = order(&attrs);",
     replace: "        let sorted: Vec<usize> = (0..attrs.len()).collect();",
     tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     name: "reordered-effects-not-read-first",
     breaks:
       "props that do something, reordered as written, are made in that order, not Rust's",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "            if attrs.iter().filter(|attr| effects(attr)).count() > 1 {",
     replace: "            if false {",
     tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
     name: "prop-written-in-macro",
     breaks:
       "a prop made by a macro, `vec![..]`, is placed by where that macro is defined",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                .or_insert(self.frame.thir[field.expr].span.source_callsite().lo());",
     replace:
       "                .or_insert(self.frame.thir[field.expr].span.lo());",
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
     name: "jsx-null-test-captured",
     breaks:
       "an element shown where a number's `Option` is there, `height != null && ..`, has its test in a `const condition` before the JSX",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "            js::ExprKind::Binary(..) if let Some(a) = js::null_test(value, true).or(js::null_test(value, false)) => {\n                self.reads_alike(a, out)\n            }\n",
     replace: "",
     tests: [
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
     name: "tag-as-children",
     breaks:
       "`react::tag(Comp)` is read as a DOM element taking `Comp` as children",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: '            ("$", 1) => match args.next().expect("one") {\n',
     replace: '            ("$$", 1) => match args.next().expect("one") {\n',
     tests: ["test/jsx-types.test.ts", "-t", "tag that.s a value"],
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
     name: "unchanging-children-read-first",
     breaks:
       "a component's children that read only a state's value, declared first, make every prop a `const` before the JSX, beside a computed `className`",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                value.has_effects() && !self.reads_unchanging(children, out)\n",
     replace: "                value.has_effects()\n",
     tests: [
@@ -169,7 +169,7 @@ export const mutations: Mutation[] = [
     name: "field-read-hoisted",
     breaks:
       'a field of a plain Rust value nothing writes again is read into a `const` before a later child\'s statement, `const width = p.size === "S" ? ..`, where it stays in place',
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "            js::ExprKind::Member(object, _) => {\n",
     replace: "            js::ExprKind::Member(object, _) if false => {\n",
     tests: [
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
     name: "rest-base-each-field",
     breaks:
       "an update of a props pattern's rest, `..props`, gives each of its fields, the props' own `href` among them, where it's `{...props}`",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                    rest = Some(*object);\n",
     replace:
       '                    attrs.push(Prop::Field(name, Expr::member(*object, "_")));\n',
@@ -196,7 +196,7 @@ export const mutations: Mutation[] = [
     name: "rest-spread-after-update",
     breaks:
       "a rest spread is after what the update gives, `className=\"link\" {...props}`, so the caller's `className` holds where the update's should",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                            Prop::Spread(_) => written.get(&name).copied().or(first),\n",
     replace:
       "                            Prop::Spread(_) => written.get(&name).copied(),\n",
@@ -210,7 +210,7 @@ export const mutations: Mutation[] = [
     name: "rest-spread-twice",
     breaks:
       "a rest a nested flattened struct's base gives too, `..props.html`, is spread again, `{...props} {...props}`",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                                rest = Some(value)\n",
     replace:
       "                                attrs.push(Prop::Spread(value))\n",
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     name: "children-and-unmade",
     breaks:
       "`(level == 1).then(|| jsx! { <b /> })` is `level === 1 ? <b /> : undefined`, not `level === 1 && <b />`",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "        let Some((test, shown, _)) = value.some_where_parts() else {\n",
     replace: "        let Some((test, shown, _)) = value.some_where_parts().filter(|_| false) else {\n",
     tests: [
@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
     name: "children-tuple-not-recursed",
     breaks:
       "only a first child, of the tuple of tuples `jsx!` makes, is `test && ..`: the next keep `? .. : undefined`",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: ".map(|(item, &field)| self.shown_if(field, item))",
     replace: ".map(|(item, _)| item)",
     tests: [
@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
     name: "base-spread-last",
     breaks:
       "a base's spread is after what it's updated with, `<Panel wide {...props} />`, which then wins",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                        Prop::Spread(_) => Some(BytePos(0)),",
     replace: "                        Prop::Spread(_) => None,",
     tests: [
@@ -263,7 +263,7 @@ export const mutations: Mutation[] = [
     name: "unknown-props-unspread",
     breaks:
       "props that are a JS value of any shape, `{...props}` of a `js::Unknown`, are refused",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "            && !js_object(spread)\n",
     replace: "",
     tests: ["test/jsx-types.test.ts", "-t", "JS values of any shape"],
@@ -272,7 +272,7 @@ export const mutations: Mutation[] = [
     name: "spread-of-none-refused",
     breaks:
       "JSX props spread of an \`Option\` of a JS value, \`undefined\` where it's none, is refused",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "            && !self.option_of(spread).is_some_and(js_object)\n",
     replace: "",
     tests: ["test/jsx-types.test.ts", "-t", "JS values of any shape"],
@@ -281,7 +281,7 @@ export const mutations: Mutation[] = [
     name: "captured-import-spilled",
     breaks:
       "an import jsx! captures for a key that might do something is spilled, `const match = Fragment`, where it reads the same in place",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                    || self.krate.imports[&self.module].values().any(|alias| name.is(alias))\n",
     replace: "",
     tests: [
@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
     name: "binding-callback-returned",
     breaks:
       "a component's callback of a binding that may give a value returns it, `onRecord={() => globalThis.record(5)}`",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "            _ if super::bindings::is_binding(self.tcx, def_id) => super::bindings::returns_undefined(self.tcx, def_id),\n",
     replace: "",
     tests: [
@@ -307,7 +307,7 @@ export const mutations: Mutation[] = [
     name: "rust-callback-kept",
     breaks:
       "a component's callback of a function of the crate's keeps its call a statement, `onSubmit={() => { submit(false); }}`",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "            _ => def_id.is_local(),\n",
     replace: "            _ => false,\n",
     tests: [
@@ -320,7 +320,7 @@ export const mutations: Mutation[] = [
     name: "closure-callback-kept",
     breaks:
       "a component's callback of a closure of the crate's keeps its call a statement, `onNext={() => { next(); }}`",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                matches!(thir[args[0]].ty.peel_refs().kind(), ty::Closure(..))\n",
     replace: "                false\n",
     tests: [
@@ -333,7 +333,7 @@ export const mutations: Mutation[] = [
     name: "jsx-shown-if-ternary",
     breaks:
       "a child shown only if a test holds, `Option::map` to an element, is `t != null ? <p /> : undefined`, not the `t != null && <p />` a person writes",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "        let Some((test, shown, _)) = value.some_where_parts() else {\n",
     replace: "        let Some((test, shown, _)) = value.some_where_parts().filter(|(_, _, there)| !there) else {\n",
     tests: [
@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [
     name: "component-child-shown-ternary",
     breaks:
       "a component's child shown only if a test holds is `test ? <el /> : undefined`, where an element's is `test && <el />`",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                            self.shown_if(child, value)\n",
     replace: "                            value\n",
     tests: [
@@ -359,7 +359,7 @@ export const mutations: Mutation[] = [
     name: "key-last",
     breaks:
       "a component's `key` is last, not where it was written, `<Item value={path} key={path} />`",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: '            "key" => {\n',
     replace: '            "key" if false => {\n',
     tests: ["test/jsx-children.test.ts", "-t", "a key is where it was written"],
@@ -368,7 +368,7 @@ export const mutations: Mutation[] = [
     name: "key-after-base",
     breaks:
       "a `key` written before `{..base}` follows its spread, `<Panel {...props} key={match} wide />`",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                    Prop::Spread(v) if v.span.is_none() => true,\n",
     replace:
       "                    Prop::Spread(v) if v.span.is_none() => false,\n",
@@ -382,7 +382,7 @@ export const mutations: Mutation[] = [
     name: "jsx-spread-reference-refused",
     breaks:
       "a struct spread through a reference, `{...&rest}`, is refused as a spread of a non-struct",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "        let spread = ty.peel_refs();",
     replace: "        let spread = ty;",
     tests: [
@@ -395,7 +395,7 @@ export const mutations: Mutation[] = [
     name: "jsx-key-alike-moves-children",
     breaks:
       "a component's key that reads the same anywhere puts its children in `const`s first",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "        if !simple {",
     replace: "        if true {",
     tests: ["test/jsx-children.test.ts", "-t", "a key that reads alike keeps"],
@@ -404,7 +404,7 @@ export const mutations: Mutation[] = [
     name: "referred-children-unspread",
     breaks:
       "children given by reference are one array child, `{[a, b]}`, not each a child",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                            let child = self.referred_children(child);",
     replace: "                            let child = self.strip(child);",
     tests: ["test/jsx-types.test.ts", "-t", "children declared any node"],
@@ -413,7 +413,7 @@ export const mutations: Mutation[] = [
     name: "mir-alike-unknown",
     breaks:
       "what MIR says reads alike doesn't, so JSX reads each attribute into a `const` first",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                self.alike_local(name)\n",
     replace: "                false\n",
     tests: [
@@ -430,7 +430,7 @@ export const mutations: Mutation[] = [
     name: "jsx-mir-field-unplaced",
     breaks:
       "a component's `key` from MIR goes last, `<Tag variant={tag} key={tag} />`, its fields' values placed nowhere",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                        value.span = self.js_span(self.frame.thir[f.expr].span);\n",
     replace: "",
     tests: [
@@ -447,7 +447,7 @@ export const mutations: Mutation[] = [
     name: "attribute-value-unmapped",
     breaks:
       "an attribute's value MIR gives no span, a `concat!`'s, maps to no Rust line, `alt=` the line of what's before it in the source map",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "let mut value = value.or_at(at);",
     replace: "let mut value = value;",
     tests: [
@@ -460,7 +460,7 @@ export const mutations: Mutation[] = [
     name: "props-read-in-jsx-order",
     breaks:
       "props written out of the struct's order are made in the JSX's, not Rust's: `t` logged before `h`",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "        if !value.is_constant() {\n            let old = std::mem::replace(value, Expr::taken());\n",
     replace:
       "        if false {\n            let old = std::mem::replace(value, Expr::taken());\n",
@@ -470,7 +470,7 @@ export const mutations: Mutation[] = [
     name: "one-call-statement-unsaid",
     breaks:
       "`|| { f(); }` is told as written `|| f()`, so a closure of a statement is `() => f()` (ADR 0883)",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "                        written = OneCall::Statement;\n",
     replace: "",
     tests: ["test/lowering-arrows.test.ts"],
@@ -479,7 +479,7 @@ export const mutations: Mutation[] = [
     name: "plain-field-of-a-field-unread",
     breaks:
       "`debug_channel.writable.map(callback_of)`, `options.debugChannel.writable`, a field of a field of plain Rust data, goes in a `const option` first, and the `if` that gives the value is no conditional, as upstream's createResponseFromOptions writes it (rd614)",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "        if objects.is_empty() || !self.plain_local(name) {\n",
     replace: "        if objects.len() != 1 || !self.plain_local(name) {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_of_a_field_of_a_field.rs$"],
@@ -489,7 +489,7 @@ export const mutations: Mutation[] = [
     name: "plain-field-of-what-js-gives",
     breaks:
       "a field of a struct an exported function is given counts as plain Rust data, `r.snap.map(..)` read twice, `r.snap != null ? r.snap.threshold : undefined` (#1908)",
-    file: "src/lower/jsx.rs",
+    file: "crates/rust-js-lower/src/jsx.rs",
     find: "            .any(|object| path_of(object).is_none_or(|path| given.contains(&path)))\n",
     replace: "            .any(|object| path_of(object).is_none())\n",
     tests: ["test/getter-reads.test.ts", "-t", "js_given_options"],

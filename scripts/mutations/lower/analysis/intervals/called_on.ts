@@ -1,8 +1,8 @@
-// Mutations of src/lower/analysis/intervals/called_on.rs, a `Vec` lent
+// Mutations of crates/rust-js-lower/src/analysis/intervals/called_on.rs, a `Vec` lent
 // `&mut` only to the calls it's given to (ADR 1137, #1672 M3, step 5).
 import type { Mutation } from "../../../../mutations";
 
-const file = "src/lower/analysis/intervals/called_on.rs";
+const file = "crates/rust-js-lower/src/analysis/intervals/called_on.rs";
 const tests = ["test/intervals-shadow.test.ts", "-t", "only to calls"];
 
 export const mutations: Mutation[] = [
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
   {
     name: "called-on-closures-lend-otherwise",
     breaks: "a closure that captures a `Vec`'s `&mut` lends it for the whole body, so `args[i]` under `for i in 0..args.len()` past `take()`'s last call is `$index(args, i)`: right, but not the JS a person writes (#1946)",
-    file: "src/lower/analysis/intervals/called_on.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/called_on.rs",
     find: "                            && let Some(of) = borrows.get(&held).cloned()\n",
     replace: "                            && let Some(of) = borrows.get(&held).cloned().filter(|_| false)\n",
     tests: ["test/lowering-loops.test.ts", "-t", "Console's loops, spreads and calls read as written"],
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
   {
     name: "called-on-fake-read-a-use",
     breaks: "borrowck's `FakeRead` of a `let` lends what it reads, so `let mut take = || args.pop_front();` lends `args` for the whole body and `args[i]` past it is `$index`: right, but not the JS a person writes (#1946)",
-    file: "src/lower/analysis/intervals/called_on.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/called_on.rs",
     find: "    if matches!(statement.kind, StatementKind::FakeRead(..)) {\n        return false;\n    }\n",
     replace: "",
     tests: ["test/lowering-loops.test.ts", "-t", "Console's loops, spreads and calls read as written"],
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
   {
     name: "called-on-closure-call-keeps-length",
     breaks: "a closure's `call_mut` is taken to keep the length of the `Vec` it borrows, so `args[i]` under `i < n` of `n = args.len()` read before `take()` pops reads `undefined` where Rust panics (#1946)",
-    file: "src/lower/analysis/intervals/called_on.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/called_on.rs",
     find: "            .is_some_and(|(callee, _)| keeps_vec_length(self.tcx, callee))\n",
     replace: "            .is_some_and(|(callee, _)| keeps_vec_length(self.tcx, callee) || self.tcx.def_path_str(callee).ends_with(\"call_mut\"))\n",
     tests: ["test/bounds-matrix.test.ts", "-t", "shape_unsound_directions"],
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
   {
     name: "called-on-kept-pointer-not-escaped",
     breaks: "a `Vec` given `&mut` to a function of the crate's, which may keep a raw pointer to it, is taken as unlent past it, so a test of its length holds past a call that truncates it through the pointer, and `v[k]` under `k < v.len()` reads `undefined` where Rust panics (#1966)",
-    file: "src/lower/analysis/intervals/called_on.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/called_on.rs",
     find: "                    after.escaped.insert(state.root(of));\n",
     replace: "",
     tests: ["test/bounds-matrix.test.ts", "-t", "vec_kept"],
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
   {
     name: "called-on-std-pointer-out-kept",
     breaks: "std's code that gives back a raw pointer to the `Vec` it's given `&mut`, `ptr::from_mut(&mut m)`, leaves it unescaped, so `(m.len() - 3) as u32` past `m.len() > 2` and a call that clears it through the pointer prints -3 where Rust wraps (#1966)",
-    file: "src/lower/analysis/intervals/called_on.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/called_on.rs",
     find: "                if unseen || lets_out() {\n",
     replace: "                if unseen {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_lent_to_code_that_keeps_a_pointer.rs$"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
   {
     name: "formats-no-code",
     breaks: "a body's formatting is taken to run no code, so `format!(\"{}\", Clears)`, whose `Display` clears an escaped `Vec` through a pointer kept of it, keeps its length, and `(e.len() - 3) as u32` past `e.len() > 2` prints -3 where Rust wraps (#1966)",
-    file: "src/lower/analysis/intervals/called_on.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/called_on.rs",
     find: "            if returns && code {\n",
     replace: "            if false && returns && code {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_lent_to_code_that_keeps_a_pointer.rs$"],
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-given-code-runs-none",
     breaks: "std's code given a closure, `Some(1).map(|x| { clear_it(); x })`, is taken to run none of the crate's, so an escaped `Vec`'s length is kept past it, and `(o.len() - 3) as u32` prints -3 where Rust wraps (#1966)",
-    file: "src/lower/analysis/intervals/called_on.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/called_on.rs",
     find: "            ty::Closure(..)\n            | ty::CoroutineClosure(..)\n            | ty::Coroutine(..)\n            | ty::Dynamic(..)\n            | ty::FnPtr(..)\n",
     replace: "            ty::CoroutineClosure(..)\n            | ty::Coroutine(..)\n            | ty::Dynamic(..)\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_lent_to_code_that_keeps_a_pointer.rs$"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-given-a-raw-pointer-writes-none",
     breaks: "std's code given a raw pointer, `ptr::replace(STASH, Vec::new())`, is taken to write no escaped `Vec`, so `(w2.len() - 3) as u32` past it prints -3 where Rust wraps (#1966)",
-    file: "src/lower/analysis/intervals/called_on.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/called_on.rs",
     find: "            || (args.iter()).any(|a| holds_a_raw_pointer(self.tcx, given(a), &mut Vec::new()))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_lent_to_code_that_keeps_a_pointer.rs$"],
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
   {
     name: "called-on-cast-holder-lends",
     breaks: "a closure holding a `Vec`'s `&mut`, cast to the `&mut dyn FnMut` a call is given, lends the `Vec` for the whole body, so `args[0]` under `!args.is_empty()` before the call is `$index(args, 0)` (#1947)",
-    file: "src/lower/analysis/intervals/called_on.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/called_on.rs",
     find: "                ) if of.projection.is_empty() && borrows.contains_key(&of.local) => match assign.0.as_local() {\n",
     replace: "                ) if false && of.projection.is_empty() && borrows.contains_key(&of.local) => match assign.0.as_local() {\n",
     tests: ["test/lowering-loops.test.ts", "-t", "Console's loops, spreads and calls read as written"],
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
   {
     name: "crate-callee-always-keeps",
     breaks: "a `Vec` given `&mut` to the crate's code that keeps no pointer to it, `fill(&mut args)`'s, is taken as escaped, so `args[0]` under `!args.is_empty()` past a call of the crate's is `$index(args, 0)` (#1947)",
-    file: "src/lower/analysis/intervals/called_on.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/called_on.rs",
     find: "            (Some(call), Some(libraries)) => pointer_may_keep(self.tcx, self.typing_env, &libraries, call, given),\n",
     replace: "            (Some(_), Some(_)) => true,\n",
     tests: ["test/lowering-loops.test.ts", "-t", "Console's loops, spreads and calls read as written"],
@@ -131,7 +131,7 @@ export const mutations: Mutation[] = [
   {
     name: "integer-captured-lent-away",
     breaks: "an integer a closure captures `&mut`, the closure given only to calls, is lent away for good, so a fresh test of it past the calls bounds no index: `seen[next]` checked again (#1947)",
-    file: "src/lower/analysis/intervals/called_on.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/called_on.rs",
     find: "                Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) if body.local_decls[of.local].ty.is_integral() => {\n",
     replace: "                Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) if false && body.local_decls[of.local].ty.is_integral() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^integer_captured_by_a_closure_given_to_calls.rs$"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
     name: "integer-given-kept-unlent",
     breaks:
       "an integer given `&mut` itself to the crate's call that may keep a pointer to it, `Keeper::keep`, isn't lent away past it: a test before a call that writes through that pointer is taken to bound it, and `v[i]` reads `undefined` where Rust panics (#1947)",
-    file: "src/lower/analysis/intervals/called_on.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/called_on.rs",
     find: "                        (None, Some(_), Some(_)) => kept(given),\n",
     replace: "                        (None, Some(_), Some(_)) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^integer_captured_by_a_closure_given_to_calls.rs$"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "closure-holds-its-last-capture",
     breaks: "a closure that captures two `Vec`s `&mut` holds only the last, so a call given it forgets only that one's length: `a[2]` past a call whose closure cleared `a` reads no check, `undefined` where Rust panics (#1977)",
-    file: "src/lower/analysis/intervals/called_on.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/called_on.rs",
     find: "                                    borrows.entry(closure).or_default().extend(of);\n",
     replace: "                                    let held = borrows.entry(closure).or_default();\n                                    held.clear();\n                                    held.extend(of);\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_holding_several_vecs_given_to_calls.rs$"],

@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/tidy/moves.rs (ADR 0093): a temporary's
+// Mutations of crates/rust-js-mir/src/tidy/moves.rs (ADR 0093): a temporary's
 // value moved where what the program does would change.
 import type { Mutation } from "../../../../mutations";
 
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     name: "tested-binding-never-read-again",
     breaks:
       "a plain `if let`'s binding of a field's own name, first in the `then` of an `if` that tested the field, keeps its `const`, `const props = info.props; add(props, ..)`, where it's the field read again, `add(info.props, ..)` (rd416)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "            read_again(then, 0);\n",
     replace: "            let _ = then;\n",
     tests: ["test/corpus.test.ts", "-t", "^if_let_field_read_again.rs$"],
@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     name: "fixed-place-holder-kept",
     breaks:
       "what holds a place MIR's lowering fixed stays `const item = $unwrap(resource.state); return (item.loading & 4) === 0;`, an `&&` split around it, not read where it's read once (rd202)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !is_temporary(name) && !element && !facts.fixed.contains(name) && !role_arrow {\n",
     replace: "    if !is_temporary(name) && !element && !role_arrow {\n",
     tests: ["test/corpus.test.ts", "-t", "^(cell_reached_through_a_call|unwrapped_cell_in_a_chain).rs$"],
@@ -27,7 +27,7 @@ export const mutations: Mutation[] = [
     name: "call-moved-past-a-getters-read",
     breaks:
       "a call's value is read past a `const` of a getter's read made after it, `const unknown = props.href == null ..; if (attr(\"href\") === unknown)`, so the getter runs first and the call sees what it did (rd178)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        .all(|s| matches!(&s.kind, StmtKind::Const(_, v) if passes(v) && !(acts && v.has_effects())))\n",
     replace: "        .all(|s| matches!(&s.kind, StmtKind::Const(_, v) if passes(v)))\n",
     tests: ["test/lowering-moves.test.ts", "-t", "a call isn't read past a getter's read"],
@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
     name: "try-not-entered",
     breaks:
       "a value that can't throw made before a guard's `try` stays held there, `const focus = element.focus; try { (focus || ..).call(..) }`, not read in the `try` where its call is (rd233)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "            if !value.may_throw() && js::mentions_of(after, name) == 0 && js::mentions_of(caught, name) == 0 =>\n",
     replace: "            if false =>\n",
     tests: [
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
     name: "try-entered-of-what-throws",
     breaks:
       "a value that may throw, made before a guard exists, is read in the guard's `try`, so its panic drops the guard it ran before (rd233)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "            if !value.may_throw() && js::mentions_of(after, name) == 0 && js::mentions_of(caught, name) == 0 =>\n",
     replace:
       "            if js::mentions_of(after, name) == 0 && js::mentions_of(caught, name) == 0 =>\n",
@@ -59,7 +59,7 @@ export const mutations: Mutation[] = [
     name: "try-entered-read-in-catch",
     breaks:
       "a value its `try`'s `catch` reads too is read only in the `try`, so the `catch` reads a variable nothing declares (rd233)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "            if !value.may_throw() && js::mentions_of(after, name) == 0 && js::mentions_of(caught, name) == 0 =>\n",
     replace: "            if !value.may_throw() && js::mentions_of(after, name) == 0 =>\n",
     tests: ["test/corpus.test.ts", "-t", "^value_read_in_a_guards_try.rs$"],
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     name: "stable-value-held-past-target",
     breaks:
       "a closure given to a setter under a drop guard stays a temporary, `function value() { .. } channel.port1.onmessage = value;`, as the setter's target reads a getter first (#393)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        StmtKind::Assign(target, _) if stable || !target.has_effects_before_assigned() => {\n",
     replace:
       "        StmtKind::Assign(target, _) if !target.has_effects_before_assigned() => {\n",
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
     name: "ended-borrow-by-js-names",
     breaks:
       "a `let` that ends a borrow is read in place only where its JS name is the property's, so `const return$ = node.return;` and `const debugHookTypes = current._debugHookTypes;` stay, though each is named as its field in Rust (ADR 0866, amended)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "            && matches!(&value.kind, ExprKind::Member(..))\n            && place_read(value, name)\n",
     replace:
       "            && matches!(&value.kind, ExprKind::Member(_, property) if name.is(property))\n            && place_read(value, name)\n",
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     name: "tested-field-held",
     breaks:
       "a field an or-pattern tests is held first, `const status = payload.status; status === 0 || status === -1`, not read in each test (ADR 0780)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !single && (assigned || !tested_in_place(value, expr, name, js::mentions_of(rest, name))) {\n",
     replace: "    if !single {\n",
     tests: [
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     name: "tested-getter-in-place",
     breaks:
       "a getter's value an or-pattern tests is read in each test, the getter called again for each (ADR 0780)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        if place.facts.has(js::Known::Getter) {\n",
     replace: "        if false {\n",
     tests: [
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-captured-kept",
     breaks:
       "what an element made before a branch reads stays a `const className = cn(…)`, not read where it's written",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !is_temporary(name) && !element && !facts.fixed.contains(name) && !role_arrow {\n",
     replace: "    if !is_temporary(name) && !facts.fixed.contains(name) && !role_arrow {\n",
     tests: [
@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-element-read-held",
     breaks:
       "what an element made ahead of a branch reads stays a `const` where elements before it come first, `className$1`",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        true if element => {\n",
     replace: "        true if false && element => {\n",
     tests: [
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-inlined-no-backtrack",
     breaks:
       "of temporaries one after another, only the last is read where it's read, `cn(_8, _14, x)`",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        // The one before it may now be read by the statement after it too.\n        i = i.saturating_sub(1);\n",
     replace: "",
     tests: [
@@ -166,7 +166,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-inlined-not-past",
     breaks:
       "a temporary is read in place only by the statement right after it, `const _34 = formatted; const args$1 = args;` kept",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !past {\n",
     replace: "    if !past || at > 0 {\n",
     tests: [
@@ -183,7 +183,7 @@ export const mutations: Mutation[] = [
     name: "target-root-not-inlined",
     breaks:
       "`const _25 = ref.current; _25[k] = v` stays, not `ref.current[k] = v` (and no `??=` of it)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "                (true, true) => Some(Read::Target),\n",
     replace: "                (true, true) => None,\n",
     tests: [
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-past-borrow-blocks",
     breaks:
       "a chain stays a `const _4` ahead of a callback's borrow, `const list$1 = list;`, not the array's own `forEach`",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !past {\n",
     replace: "    if !past || (acts && at > 0) {\n",
     tests: [
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-guarded-read-blocked",
     breaks:
       "a value made where its test holds isn't read where that test holds, `const className$2 = error != null ? cn(..) : undefined` kept",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "            if guard.is_some_and(|g| same_test(a, g))",
     replace: "            if false && guard.is_some_and(|g| same_test(a, g))",
     tests: [
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     name: "mir-pure-value-held-past-calls",
     breaks:
       "what does nothing, of a `let` no closure sets, `showToc && toc.length !== 0`, is held ahead of the calls before its read",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "unchanged_by_calls || !e.has_effects()",
     replace: "!e.has_effects()",
     tests: [
@@ -251,7 +251,7 @@ export const mutations: Mutation[] = [
     name: "inlined-pure-not-past-statements",
     breaks:
       'what does nothing, of variables no statement between assigns, `version === "Canary"`, stays held before a loop',
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "\n        || (unchanged_by_calls && reads.iter().all(|v| !js::Writes::sets(&rest[..at], v)));",
     replace: ";",
     tests: [
@@ -268,7 +268,7 @@ export const mutations: Mutation[] = [
     name: "jsx-key-read-in-written-order",
     breaks:
       "a `key` that does something is read in place, made after the children by JS's JSX runtime, `[1, 3, 2]`",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "                && let Some(found) = leads(key, name, guard, passes)\n",
     replace:
       "                && false\n                && let Some(found) = leads(key, name, guard, passes)\n",
@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
     name: "closure-of-statements-called-in-place",
     breaks:
       "a closure of statements is moved into its call, `x ? ((l) => { .. })(x) : undefined`, not called by its name",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "                left_called |= !in_place;\n",
     replace: "",
     tests: [
@@ -300,7 +300,7 @@ export const mutations: Mutation[] = [
     name: "inlined-not-past-a-method",
     breaks:
       "a call's value MIR holds before a branch stays a `const value$1 = ..`, not read in `out.push(..)`'s arguments past the method",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        ExprKind::Call(f, args) if let ExprKind::Member(receiver, _) = &f.kind => {\n",
     replace:
       "        ExprKind::Call(f, args) if false && let ExprKind::Member(receiver, _) = &f.kind => {\n",
@@ -310,7 +310,7 @@ export const mutations: Mutation[] = [
     name: "inlined-not-into-blocks",
     breaks:
       "a test MIR holds before the blocks its arms leave stays a `const value = ..`, not read where it's tested",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        StmtKind::Labeled(_, body) if js::mentions_of(after, name) == 0 => entered(stmt, body, facts),\n",
     replace:
       "        StmtKind::Labeled(_, body) if false && js::mentions_of(after, name) == 0 => entered(stmt, body, facts),\n",
@@ -320,7 +320,7 @@ export const mutations: Mutation[] = [
     name: "binding-method-lookup-passed",
     breaks:
       "a call's value is read past a binding's method of a JS value, which a getter may answer, looked up before it runs",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "                && f.facts.has(js::Known::Getter) =>\n",
     replace: "                && false =>\n",
     tests: [
@@ -333,7 +333,7 @@ export const mutations: Mutation[] = [
     name: "target-root-acting-held",
     breaks:
       "a temporary that does something, an assignment target's object, is held, `const document = window.document; document.title = t`",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "            let set_of = matches!(&root.kind, ExprKind::Var(v) if v == name);\n",
     replace:
       "            let set_of = matches!(&root.kind, ExprKind::Var(v) if v == name) && false;\n",
@@ -344,7 +344,7 @@ export const mutations: Mutation[] = [
     name: "made-cell-read-unfolded",
     breaks:
       "an optional field's cell made in its temporary's place is read `{}.value` where its struct is made, a key that's there",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if read != Read::Target {\n",
     replace: "    if false {\n",
     tests: [
@@ -358,7 +358,7 @@ export const mutations: Mutation[] = [
     name: "made-cell-target-folded",
     breaks:
       "an assignment to a cell made in its temporary's place, `{ value: x }.value = v`, is `x = v`",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if read != Read::Target {\n",
     replace: "    if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^temporary_borrows.rs$"],
@@ -367,7 +367,7 @@ export const mutations: Mutation[] = [
     name: "ended-borrow-kept",
     breaks:
       "a `let` that ends a borrow, read once by the store right after it, stays a `const`, `const child = current.child; workInProgress.child = child;`",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "            && ends_borrow.contains(name)\n",
     replace: "            && ends_borrow.contains(name) && false\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_let_read_in_place.rs$"],
@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
     name: "ended-borrow-passed",
     breaks:
       "a `let` that ends a borrow, read by the statement after it as an argument, `const sibling = node.sibling; log.push(.. nameOf(sibling))`, loses the program's name, where upstream's `handlerOnStack` keeps it",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    let StmtKind::Assign(_, value) = &stmt.kind else {\n        return false;\n    };\n",
     replace:
       "    let StmtKind::Assign(_, value) = &stmt.kind else {\n        return true;\n    };\n",
@@ -388,7 +388,7 @@ export const mutations: Mutation[] = [
     name: "tested-read-of-a-written-let",
     breaks:
       "a `let` the program wrote, `let types = t.types.borrow().clone(); if let Some(types) = types`, loses its name to its place's read, `if (t.types != null) { return t.types.length; }` (rd226, the user's decision)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !own_name || named.contains(name) {\n",
     replace: "    if !own_name {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_let_taken_apart.rs$"],
@@ -398,7 +398,7 @@ export const mutations: Mutation[] = [
     name: "tested-read-past-a-call",
     breaks:
       "a pattern's binding is read in place where the test runs code first, `checked(named.autoName)`, which may change what it reads",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !place || tested == 0 || test.has_effects() {\n",
     replace: "    if !place || tested == 0 {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_let_taken_apart.rs$"],
@@ -408,7 +408,7 @@ export const mutations: Mutation[] = [
     name: "read-again-twice",
     breaks:
       "a let chain's binding read twice in the body is the field read twice, the second after the first's call, which may change it (ADR 0866, amended)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if js::mentions_of(&stmts[at + 1..], name) != 1 {\n",
     replace: "    if js::mentions_of(&stmts[at + 1..], name) == 0 {\n",
     tests: [
@@ -421,7 +421,7 @@ export const mutations: Mutation[] = [
     name: "read-again-past-code",
     breaks:
       "a let chain's binding read after code its statement runs first, `probe(f) + task.run(..)`, is the field read there, after `probe` changed it (ADR 0866, amended)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if leads(read.of(next), name, None, &|e| !e.has_effects()) != Some(true) {\n",
     replace:
       "    if leads(read.of(next), name, None, &|_| true) != Some(true) {\n",
@@ -435,7 +435,7 @@ export const mutations: Mutation[] = [
     name: "read-again-of-a-later-statement",
     breaks:
       "a let chain's binding read in a later statement, past one that changes the field, is the field read there (ADR 0866, amended)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if leads(read.of(next), name, None, &|e| !e.has_effects()) != Some(true) {\n",
     replace:
       "    if leads(read.of(next), name, None, &|e| !e.has_effects()) == Some(false) {\n",
@@ -449,7 +449,7 @@ export const mutations: Mutation[] = [
     name: "own-name-read-never-in-place",
     breaks:
       "React's getViewTransitionName keeps `const autoName = instance.autoName;`, the field read where upstream reads it in place",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !own_name || named.contains(name) {\n",
     replace: "    if true || named.contains(name) {\n",
     tests: [
@@ -462,7 +462,7 @@ export const mutations: Mutation[] = [
     name: "object-spread-read-before-call",
     breaks:
       '`js::object::spread((base, dict::from_entries(vec![("c", counted(base))])))` reads `base` before `counted(base)` sets it, `{ ...base, ...Object.fromEntries([["c", counted(base)]]) }`, where Rust reads it after (ADR 0967, amended)',
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "                    js::Prop::Spread(v) => std::borrow::Cow::Owned(Expr::spread(v.clone())),\n",
     replace:
       "                    js::Prop::Spread(v) => std::borrow::Cow::Borrowed(v),\n",
@@ -476,7 +476,7 @@ export const mutations: Mutation[] = [
     name: "held-receivers-off",
     breaks:
       "a field's function called with what needs statements is called from a variable, `const L = internals.d.L; ..; L(href, s)`, with no `this` (rd285)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        if !is_temporary(name) || mentions == 0 {\n",
     replace: "        if true {\n",
     tests: ["test/lowering-held-receivers.test.ts"],
@@ -485,7 +485,7 @@ export const mutations: Mutation[] = [
     name: "held-receivers-of-any-field",
     breaks:
       "a field Rust changes between is read after what's given, so `(inner.f)({ inner.f = triple; n })` calls `triple` (rd285)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        if !value.facts.has(js::Known::Lasting) && !quiet_between {\n",
     replace: "        if false && !quiet_between {\n",
     tests: [
@@ -498,7 +498,7 @@ export const mutations: Mutation[] = [
     name: "loop-start-unread",
     breaks:
       "a temporary MIR made of a loop's range start stays a statement, `const value = replace ? 1 : 0; for (let i = value; ..)`, not read in the loop's start (rd376)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "            in_start.then_some(Read::Start)\n",
     replace: "            None\n",
     tests: ["test/corpus.test.ts", "-t", "^(loop_start_read_in_place|filtered_not_empty).rs$"],
@@ -508,7 +508,7 @@ export const mutations: Mutation[] = [
     name: "fallback-reads-unread",
     breaks:
       "a `let` the program wrote, named as the property it reads, read first by the next statement's `||`, stays, `const type = blob.type; const mimeType = type || ..`, not React's `blob.type || ..` (rd664)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        if !fallback_read(stmts, i, named) {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^let_read_in_its_fallback.rs$"],
@@ -517,7 +517,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallback-read-twice",
     breaks: "a `let` read by the next statement's `||` and again after is read in place there and its `const` dropped, what reads it after reading nothing (rd664)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !named.contains(name) || !own_name || js::mentions_of(&stmts[at + 1..], name) != 1 {\n",
     replace: "    if !named.contains(name) || !own_name || js::mentions_of(&stmts[at + 1..at + 2], name) == 0 {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "fallback"],
@@ -525,7 +525,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallback-read-of-another-name",
     breaks: "a `let` the program named otherwise than the property it reads, `const t = blob.type;`, is read in place, its name lost (rd664)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !named.contains(name) || !own_name || js::mentions_of(&stmts[at + 1..], name) != 1 {\n",
     replace: "    if !named.contains(name) || js::mentions_of(&stmts[at + 1..], name) != 1 {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "fallback"],
@@ -533,7 +533,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallback-read-after-a-call",
     breaks: "a `let` read by a `||` after a call is read in place, past the call, `note(..) + (blob.type || ..)`, its getter read after the call where Rust reads it before (rd664)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !fallback || leads(expr, name, None, &|_| false) != Some(true) {\n",
     replace: "    if !fallback || leads(expr, name, None, &|_| true) != Some(true) {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "fallback"],
@@ -541,7 +541,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallback-read-of-any-read",
     breaks: "a `let` the program wrote read first by what's no `||` nor `??`, `name != null`, is read in place, against rd226 (rd664)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !fallback || leads(expr, name, None, &|_| false) != Some(true) {\n",
     replace: "    if leads(expr, name, None, &|_| false) != Some(true) {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "fallback"],
@@ -550,7 +550,7 @@ export const mutations: Mutation[] = [
     name: "receiver-reads-unread",
     breaks:
       "a `let` the program wrote read only as the receiver and `this` of the next keyed method call stays, `const fill = props.fill; fill.applyFill(instance);`, not react-art's `props.fill.applyFill(instance)` (rd226b)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        if !receiver_read(stmts, i, lets) {\n",
     replace: "        if true {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
@@ -558,7 +558,7 @@ export const mutations: Mutation[] = [
   {
     name: "receiver-read-again",
     breaks: "a `let` read by the next keyed method call and again after it is read in place there, its `const` gone, what reads it after reading nothing (rd226b)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !lets.named.contains(name) || lets.mutable.contains(name) || js::mentions_of(rest, name) != 2 {\n",
     replace: "    if !lets.named.contains(name) || lets.mutable.contains(name) || js::mentions_of(&rest[..1], name) != 2 {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
@@ -566,7 +566,7 @@ export const mutations: Mutation[] = [
   {
     name: "receiver-read-by-an-argument",
     breaks: "a `let` the next keyed method call is also given, `fill.applyFill(fill)`, is read in place as its receiver, the argument reading nothing (rd226b)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !lets.named.contains(name) || lets.mutable.contains(name) || js::mentions_of(rest, name) != 2 {\n",
     replace: "    if !lets.named.contains(name) || lets.mutable.contains(name) || js::mentions_of(rest, name) < 2 {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
@@ -574,7 +574,7 @@ export const mutations: Mutation[] = [
   {
     name: "receiver-read-mutable",
     breaks: "a `let mut` read only by the next keyed method call is read in place, though the program said it changes it (rd226b)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !lets.named.contains(name) || lets.mutable.contains(name) || js::mentions_of(rest, name) !",
     replace: "    if !lets.named.contains(name) || js::mentions_of(rest, name) !",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
@@ -582,7 +582,7 @@ export const mutations: Mutation[] = [
   {
     name: "receiver-read-of-any-let",
     breaks: "a `match` arm's binding read only by its keyed method call is read in place too, beyond the decision's `let` the program wrote (rd226b)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !lets.named.contains(name) || lets.mutable.contains(name) || js::mentions_of(rest, name) !",
     replace: "    if lets.mutable.contains(name) || js::mentions_of(rest, name) !",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
@@ -590,7 +590,7 @@ export const mutations: Mutation[] = [
   {
     name: "receiver-read-past-a-statement",
     breaks: "a `let` read by a keyed method call past another statement is read there, `noted(\"between\"); props.fill.applyFill(instance)`, its getter run after the statement between where Rust runs it before (rd226b)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    let Some(StmtKind::Expr(call)) = rest.first_mut().map(|s| &mut s.kind) else {\n",
     replace: "    let Some(StmtKind::Expr(call)) = rest.iter_mut().find(|s| js::mentions_of(std::slice::from_ref(s), name) > 0).map(|s| &mut s.kind) else {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
@@ -598,7 +598,7 @@ export const mutations: Mutation[] = [
   {
     name: "receiver-read-of-any-statement",
     breaks: "a `let` read by a keyed method call that a `return` gives is read in place, beyond the decision's statement that is the call alone (rd226b)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    let Some(StmtKind::Expr(call)) = rest.first_mut().map(|s| &mut s.kind) else {\n",
     replace: "    let Some(StmtKind::Expr(call) | StmtKind::Return(Some(call))) = rest.first_mut().map(|s| &mut s.kind) else {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
@@ -606,7 +606,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-where-read-of-each-read",
     breaks: "a let chain's binding its test reads twice, `r != null && r.lanes > 3`, is set at each read, `(r = inProgressRoot) != null && (r = inProgressRoot).lanes > 3`, not once first (B1, #523)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    let in_place = (reads == 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
     replace: "    let in_place = (reads >= 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
@@ -615,7 +615,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-where-read-first",
     breaks: "a let chain's binding read once where its test is is set before the whole test, `((r = inProgressRoot), r != null && swapRoot())`, not where it's read, `(r = inProgressRoot) != null` (B1, the user's decision, #523)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    let in_place = (reads == 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
     replace: "    let in_place = (reads == 0 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
@@ -624,7 +624,7 @@ export const mutations: Mutation[] = [
   {
     name: "temporary-moved-into-a-pair",
     breaks: "a temporary a `dyn`'s pair's place reads, `const count = { n: 3 }`, is moved into it, so each read of the pair's `value` makes another (#985)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    if !matches!(value.kind, ExprKind::Var(_))\n        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name)\n",
     replace: "    if false && !matches!(value.kind, ExprKind::Var(_))\n        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name)\n",
     tests: ["test/corpus.test.ts", "-t", "^temporary_made_a_mut_dyn_stepped.rs$"],
@@ -632,7 +632,7 @@ export const mutations: Mutation[] = [
   {
     name: "held-receivers-of-each-count-unheld",
     breaks: "a field's function called in each branch of a call of each count is called from a variable, `preinit(href, arg)`, with no `this`, where its object's held, `d.preinit(href, arg)` (rd285, #1876)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        let quiet_between = mentions > 1\n",
     replace: "        let quiet_between = false && mentions > 1\n",
     tests: ["test/lowering-held-receivers.test.ts", "-t", "called of each count keeps its object"],
@@ -640,7 +640,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-index-not-led-by-its-object",
     breaks: "a temporary read as an optional index's object, `_3.exec(tag.toString())?.[1]`, is taken for one not read first, so it's held, `const regExp = /re/i; regExp.exec(..)?.[1]`, where the vercel-ui SDK writes `/re/i.exec(..)?.[1]` (G5)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        ExprKind::Binary(Op::And | Op::Or | Op::Coalesce, a, _)\n        | ExprKind::Cond(a, ..)\n",
     replace: "        ExprKind::OptionalIndex(..) => Some(false),\n        ExprKind::Binary(Op::And | Op::Or | Op::Coalesce, a, _)\n        | ExprKind::Cond(a, ..)\n",
     tests: ["test/corpus.test.ts", "-t", "^long_text_read_char_by_char\\.rs$"],
@@ -649,23 +649,23 @@ export const mutations: Mutation[] = [
   {
     name: "optional-call-not-led-by-its-callee",
     breaks: "a temporary called optionally, `_1?.(x)`, is taken for one not read first, so it's held where it could be read in place (G5)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        ExprKind::Binary(Op::And | Op::Or | Op::Coalesce, a, _)\n        | ExprKind::Cond(a, ..)\n",
     replace: "        ExprKind::OptionalCall(..) => Some(false),\n        ExprKind::Binary(Op::And | Op::Or | Op::Coalesce, a, _)\n        | ExprKind::Cond(a, ..)\n",
-    unitTests: "lower::mir::tidy::moves::tests::optional_chains_lead_by_their_object",
+    unitTests: "tidy::moves::tests::optional_chains_lead_by_their_object",
   },
   {
     name: "optional-chain-past-its-object-led",
     breaks: "what's read only where a test or an optional chain's object says, `f?.(_1)`, `g()?.[_1]`, `t && _1`, is taken for read first, so a temporary that does something would run only then (G5)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        | ExprKind::OptionalCall(a, _) => leads(a, name, guard, passes).or(Some(false)),\n",
     replace: "        | ExprKind::OptionalCall(a, _) => leads(a, name, guard, passes).or(Some(true)),\n",
-    unitTests: "lower::mir::tidy::moves::tests::optional_chains_lead_by_their_object",
+    unitTests: "tidy::moves::tests::optional_chains_lead_by_their_object",
   },
   {
     name: "role-arrows-held",
     breaks: "a closure lowering held for a role, `const then = (e) => ..;`, is never moved into the call that applies it in place, so it stays held where the vercel-ui SDK's port reads it in place (G6)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "    let role_arrow = matches!(value.kind, ExprKind::Arrow(..)) && !name.is_the_programs() && !value.mentions_name(name);\n",
     replace: "    let role_arrow = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_applied_into_its_callbacks\\.rs$"],
@@ -674,7 +674,7 @@ export const mutations: Mutation[] = [
   {
     name: "role-arrow-calling-itself-moved",
     breaks: "a role's closure that calls itself, `const make = (v) => $cloning(.., () => make(..))`, is moved into its one call outside, which leaves its own read of `make` declared nowhere (G6)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: " && !name.is_the_programs() && !value.mentions_name(name);\n",
     replace: " && !name.is_the_programs();\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_once_cloned\\.rs$"],
@@ -682,7 +682,7 @@ export const mutations: Mutation[] = [
   {
     name: "role-arrow-moved-unapplied",
     breaks: "a role's closure is moved where it isn't applied in place, read as a value, so its name goes where the closure is kept whole (G6)",
-    file: "src/lower/mir/tidy/moves.rs",
+    file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        if left_called || (role_arrow && !is_temporary(name) && !applied) {\n",
     replace: "        if left_called {\n",
     tests: ["test/corpus.test.ts", "-t", "^(chain_under_a_held_map_from_its_back|held_function_drops|adapter_functions_dropped).rs$"],

@@ -19,7 +19,7 @@ a const parameter's value (#560), each declaration path's own (#559); a
 `&mut` that's a box (#619); a `dyn` that's a pair (#620).
 
 The mechanism was one: lowering decides what a function's JS takes, and
-`src/lower/declarations/` decided it again from Rust's `FnSig`. Its
+`crates/rust-js-lower/src/declarations/` decided it again from Rust's `FnSig`. Its
 `evidence` re-read the owners `evidence_slots` reads (`takes_location`,
 `const_params`, `bounds`, the type facts), in an order it kept itself;
 and five declaration paths, a free function, a namespace's function, an
@@ -32,7 +32,7 @@ the rule changes, five places had to.
 ## Decision
 
 What a function's JS takes and gives, as a JS caller calls it, is one
-value lowering makes, `JsSignature` (`src/lower/signatures.rs`,
+value lowering makes, `JsSignature` (`crates/rust-js-lower/src/signatures.rs`,
 `FnCx::js_signature`):
 
 ```rust

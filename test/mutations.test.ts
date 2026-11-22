@@ -201,9 +201,9 @@ test("every mutation's corpus, diagnostics and limitations tests are there", () 
 // bug no test could see).
 const unmutated: Record<string, string> = {
   "crates/rust-js-program/src/program.rs": "the types the phases hand each other, with no behavior of their own",
-  "src/lower/shortcuts.rs": "one-line forwards to recognition, whose mutations hold the answers",
+  "crates/rust-js-lower/src/shortcuts.rs": "one-line forwards to recognition, whose mutations hold the answers",
   "src/jsx_syntax/literals.rs": "generated from @types/react; react-versions.test.ts holds it equal to its generator",
-  "src/lower/mir/tidy/contracts.rs": "a debug build's checks of what tidy leaves, which change no output; its unit tests, `cargo test`, break each",
+  "crates/rust-js-mir/src/tidy/contracts.rs": "a debug build's checks of what tidy leaves, which change no output; its unit tests, `cargo test`, break each",
 };
 
 test("every source file of more than 80 lines has mutations, or says why it needs none", () => {
@@ -338,7 +338,9 @@ test("a commit that removes a mutation of the crate carries its retirement's evi
       .map((name) => `${commit.slice(0, 9)} removes ${name}: \`bun scripts/mutations.ts --retire=${name}\` prints the trailer it carries, or the tests that make it a row`);
   });
   expect(unretired).toEqual([]);
-});
+  // Two `git show`s of each list a commit touches: a cut's, of every list
+  // its moved files have (#2299), takes seconds.
+}, underLoad(60_000));
 
 // The rule's parts: a mutation renamed or moved isn't removed, nor one
 // whose code went too, nor a script's; and the trailer is `--retire`'s,
@@ -686,21 +688,21 @@ test("a readability owner's mutation is judged by its cases' snapshots, of the a
     .split("\n")
     .filter((line) => /^\| (Readability and printing|Body readability passes) \|/.test(line))
     // The compiler's: the first table's of a crate's sources, the
-    // lowering's of `src/lower/`.
+    // lowering's of `crates/rust-js-lower/src/`.
     .flatMap((line) =>
       [...(line.split("|")[2] ?? "").replace(/\(.*?\)/g, "").matchAll(/`([\w/-]+(?:\.rs|\/))`/g)]
         .map((m) => m[1])
         .filter((module) => isCompilerSource(module) || module.startsWith("mir/")),
     )
-    .map((module) => (isCompilerSource(module) ? module : `src/lower/${module}`))
+    .map((module) => (isCompilerSource(module) ? module : module.startsWith("mir/") ? `crates/rust-js-mir/src/${module.slice("mir/".length)}` : `crates/rust-js-lower/src/${module}`))
     .map((module) => (module.endsWith("/") ? `${module}x.rs` : module));
-  expect(owners).toContain("src/lower/mir/tidy/jumps/x.rs");
+  expect(owners).toContain("crates/rust-js-mir/src/tidy/jumps/x.rs");
   expect(owners).toContain("crates/rust-js-program/src/prepare.rs");
   expect(owners.filter((module) => !ofReadabilityOwner(module))).toEqual([]);
   const tracked = Bun.spawnSync(["git", "ls-files"], { cwd: root }).stdout.toString().split("\n");
   expect(readabilityOwners.filter((glob) => !tracked.some((file) => new Bun.Glob(glob).match(file)))).toEqual([]);
   expect(readabilityOwners.filter((glob) => !owners.some((module) => new Bun.Glob(glob).match(module)))).toEqual([]);
-  expect(["src/lower/mir/drops.rs", "src/lower/mir/tidy.rs", "crates/rust-js-program/src/js/applied.rs"].map(ofReadabilityOwner)).toEqual([false, true, false]);
+  expect(["crates/rust-js-mir/src/drops.rs", "crates/rust-js-mir/src/tidy.rs", "crates/rust-js-program/src/js/applied.rs"].map(ofReadabilityOwner)).toEqual([false, true, false]);
   // Its cases are judged by their snapshots alone, run neither natively nor
   // as JS, and found by the lines its `find` is.
   expect(testsEnv("/bin/mutant", fixture("alone"), "alone").RUST_JS_SNAPSHOTS).toBe("only");

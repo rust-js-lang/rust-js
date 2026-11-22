@@ -52,7 +52,7 @@ compiled without each recogniser it used is refused, or runs as native
 Rust does.**
 
 - **One entry.** `classify` is `classified`, its body as it was, behind
-  `unrecognized::left` (`src/lower/recognition/unrecognized.rs`): the one
+  `unrecognized::left` (`crates/rust-js-lower/src/recognition/unrecognized.rs`): the one
   place a recogniser's answer can be withheld, so lowering and each
   analysis see the same.
 - **`--without-recognizer <std path>`**, any number, names the functions
@@ -146,7 +146,7 @@ others', of an impl rust-js didn't compile, is never routed through the
 trait call: its dictionary's entry takes the value and gives its text, with
 no `Formatter`, so without its recogniser `fmt_to_held_formatter.rs` wrote
 into the held formatter's place what it gave back. One condition beside
-#1487's (`is_fmt_method`, src/lower/recognition/fmt.rs) sends what no
+#1487's (`is_fmt_method`, crates/rust-js-lower/src/recognition/fmt.rs) sends what no
 recogniser takes to the refusal; a crate's own impl is its trait call as
 before. `std::fmt::Debug::fmt` leaves `unrecognizedDiffers`; a tidy-stages
 test holds the refusal, mutation fmt-through-the-trait-call. And

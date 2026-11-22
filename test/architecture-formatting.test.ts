@@ -24,14 +24,14 @@ const sources = compilerRustFiles();
 // time ask it, and none reads an impl's self type's ADT itself.
 test("the type a formatting impl is of is formatted_adt's alone", () => {
   const defines = /\bfn formatted_adt(_of)?\b/;
-  expect(sources.filter(file => defines.test(read(file)))).toEqual(["src/lower/recognition/fmt.rs"]);
+  expect(sources.filter(file => defines.test(read(file)))).toEqual(["crates/rust-js-lower/src/recognition/fmt.rs"]);
   const owners = [
-    "src/lower/analysis/prints.rs",
-    "src/lower/analysis/written_params.rs",
-    "src/lower/library/written_into.rs",
-    "src/lower/mir/std_calls/written_into.rs",
-    ...files("src/lower/display").filter(path => path.endsWith(".rs")),
-    "src/lower/display.rs",
+    "crates/rust-js-lower/src/analysis/prints.rs",
+    "crates/rust-js-lower/src/analysis/written_params.rs",
+    "crates/rust-js-lower/src/library/written_into.rs",
+    "crates/rust-js-mir/src/std_calls/written_into.rs",
+    ...files("crates/rust-js-lower/src/display").filter(path => path.endsWith(".rs")),
+    "crates/rust-js-lower/src/display.rs",
   ];
   const shapes = [
     // An impl's self type's ADT: `tcx.type_of(imp)..ty_adt_def()`.

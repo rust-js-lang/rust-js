@@ -1,4 +1,4 @@
-// Mutations of src/lower/recognition/type_facts.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/recognition/type_facts.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "class-key-unpeeled",
     breaks:
       "a map or a set keyed by a `&T` of a type parameter is refused, its class taken for the reference's, not `T`'s (#313)",
-    file: "src/lower/recognition/type_facts.rs",
+    file: "crates/rust-js-lower/src/recognition/type_facts.rs",
     find: "        ty::Ref(_, inner, rustc_ast::Mutability::Not) => class_key(inner),\n",
     replace: "        ty::Ref(_, _, rustc_ast::Mutability::Not) => key,\n",
     tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_a_params_ref.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "needs-drop-unknown",
     breaks: "`mem::needs_drop::<T>()` is refused, not rustc's answer",
-    file: "src/lower/recognition/type_facts.rs",
+    file: "crates/rust-js-lower/src/recognition/type_facts.rs",
     find: "        Some(StdPath::MemNeedsDropFn) => return &[TypeFact::NeedsDrop],\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^needs_drop.rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "align-of-val-unknown",
     breaks: "`align_of_val(&x)`, which has no diagnostic name, is refused",
-    file: "src/lower/recognition/type_facts.rs",
+    file: "crates/rust-js-lower/src/recognition/type_facts.rs",
     find: "        _ if is_std_path(tcx, def_id, StdPath::MemAlignOfValFn) => (TypeFact::Align, true),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^size_of.rs$"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "size-of-val-as-align",
     breaks: "`size_of_val(&x)` is its alignment",
-    file: "src/lower/recognition/type_facts.rs",
+    file: "crates/rust-js-lower/src/recognition/type_facts.rs",
     find: '        _ if diagnostic("mem_size_of_val") => (TypeFact::Size, true),\n',
     replace:
       '        _ if diagnostic("mem_size_of_val") => (TypeFact::Align, true),\n',
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     name: "layout-new-asks-nothing",
     breaks:
       "`Layout::new::<T>()` of a type parameter asks no size or alignment of its caller, and is refused",
-    file: "src/lower/recognition/type_facts.rs",
+    file: "crates/rust-js-lower/src/recognition/type_facts.rs",
     find: "        Some(StdPath::LayoutNew) => return &[TypeFact::Size, TypeFact::Align],\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^layout_new.rs$"],
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
     name: "btree-of-param-classless",
     breaks:
       "a `BTreeSet` of a type parameter's keys is refused, its class not asked of its caller",
-    file: "src/lower/recognition/type_facts.rs",
+    file: "crates/rust-js-lower/src/recognition/type_facts.rs",
     find: "        _ if is(StdItem::BTreeSet) => TypeFact::TreeSet,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_btree_keys.rs$"],
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     name: "tree-fact-hashed",
     breaks:
       "a generic `BTreeMap` is given its caller's `HashMap` class, a `Map` of keys whose `Ord` is the crate's own",
-    file: "src/lower/recognition/type_facts.rs",
+    file: "crates/rust-js-lower/src/recognition/type_facts.rs",
     find: "        [[TypeFact::Map, TypeFact::Set], [TypeFact::TreeMap, TypeFact::TreeSet]][usize::from(sorted)][usize::from(set)]\n",
     replace:
       "        [[TypeFact::Map, TypeFact::Set], [TypeFact::Map, TypeFact::Set]][usize::from(sorted)][usize::from(set)]\n",
@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-const-size-unknown",
     breaks: "a type its bounds make an `Iterator` is taken for one that may be an array, so its constant size is asked of callers that don't give it, and refused (#1341)",
-    file: "src/lower/recognition/type_facts.rs",
+    file: "crates/rust-js-lower/src/recognition/type_facts.rs",
     find: "    known_by_bounds(ty) && trait_holds_in(tcx, typing_env, ty, std_item(tcx, StdItem::Iterator)) != Some(true)\n",
     replace: "    known_by_bounds(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_passed_through_a_chain_of_impls.rs$"],
@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
   {
     name: "tuple-key-parts-unasked",
     breaks: "a map a std function makes keyed by a tuple of a type parameter asks no part's class of its caller, so its composition finds none given, and it's refused (#1346)",
-    file: "src/lower/recognition/type_facts.rs",
+    file: "crates/rust-js-lower/src/recognition/type_facts.rs",
     find: "            each.extend(parts.types().iter().rev().map(|&part| class_key(part)));\n",
     replace: "            let _ = parts;\n",
     tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_a_tuple_of_a_type_parameter.rs$"],
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
   {
     name: "array-key-item-unasked",
     breaks: "a map keyed by an array of a type parameter, `[T; N]`, asks no class of its caller, so its item's is given none, and it's refused, \"whose class isn't given\" (#1371)",
-    file: "src/lower/recognition/type_facts.rs",
+    file: "crates/rust-js-lower/src/recognition/type_facts.rs",
     find: "            KeyParts::Array(item) => std::slice::from_ref(item),\n",
     replace: "            KeyParts::Array(_) => &[],\n",
     tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_an_array_of_a_type_parameter.rs$"],
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
   {
     name: "array-key-an-item-a-part",
     breaks: "an array key of a type parameter, `[T; N]`, is its item's class once an item, so a generic function's `HashMap<[T; 536870907], ()>` takes the compiler's memory (#1371)",
-    file: "src/lower/recognition/type_facts.rs",
+    file: "crates/rust-js-lower/src/recognition/type_facts.rs",
     find: "        ty::Array(item, _) => Some(KeyParts::Array(*item)),\n",
     replace: "        ty::Array(item, _) => Some(KeyParts::Tuple(vec![*item; 536870907])),\n",
     tests: ["test/runtime-package.test.ts", "-t", "compiles within a gigabyte"],
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
   {
     name: "struct-key-derives-unread",
     breaks: "a struct key made of a type parameter is never taken to derive what finds it, so `HashSet<Key<T>>` is refused where its fields' classes compose it",
-    file: "src/lower/recognition/type_facts.rs",
+    file: "crates/rust-js-lower/src/recognition/type_facts.rs",
     find: "        ty::Adt(adt, args) if adt.is_struct() && derives_its_finding(tcx, adt.did(), sorted) => {",
     replace: "        ty::Adt(adt, args) if adt.is_struct() && false && derives_its_finding(tcx, adt.did(), sorted) => {",
     tests: ["test/corpus.test.ts", "-t", "^struct_keys_of_a_type_parameter.rs$"],
@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
   {
     name: "struct-key-derives-hash-alone",
     breaks: "a struct is taken to derive what finds it of a hashed map where it derives `Hash` alone, so `Mixed`'s own `Hash` isn't asked, its derived parts hashed instead",
-    file: "src/lower/recognition/type_facts.rs",
+    file: "crates/rust-js-lower/src/recognition/type_facts.rs",
     find: "        false => vec![Some(std_item(tcx, StdItem::Hash)), tcx.lang_items().eq_trait()],\n",
     replace: "        false => vec![tcx.lang_items().eq_trait()],\n",
     tests: ["test/corpus.test.ts", "-t", "^struct_keys_of_a_type_parameter.rs$"],
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
   {
     name: "struct-key-phantom-a-part",
     breaks: "a struct key's `PhantomData` field is one of its parts, whose class is found by its own `Hash`, where it hashes nothing and is always equal",
-    file: "src/lower/recognition/type_facts.rs",
+    file: "crates/rust-js-lower/src/recognition/type_facts.rs",
     find: "                .filter(|(_, ty)| !matches!(ty.kind(), ty::Adt(of, _) if Some(of.did()) == phantom))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^struct_keys_of_a_type_parameter.rs$"],

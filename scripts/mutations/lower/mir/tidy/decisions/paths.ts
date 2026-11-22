@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/tidy/decisions/paths.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/tidy/decisions/paths.rs (ADR 0093).
 import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "written-order-of-no-part",
     breaks:
       "a tuple's parts' tests are all of one part, so MIR's `b === 3 && a === 2` stays, not the order of the tuple's parts, `a === 2 && b === 3` (#632)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "            .map(|k| (parts[k].as_ref().map_or(0.0, |(_, n)| *n), path[k].clone()))\n",
     replace: "            .map(|k| (parts[k].as_ref().map_or(0.0, |(_, n)| *n * 0.0), path[k].clone()))\n",
     tests: ["test/lowering-match-paths.test.ts", "-t", "alternatives test a tuple's parts in the order written"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "written-order-within-a-part-reversed",
     breaks:
       "a part's tests are reordered too, `x[0] === 1` read before the `x != null` that guards it, which throws of a `None` (#674)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "        keyed.sort_by(|(a, _), (b, _)| a.total_cmp(b));\n",
     replace: "        keyed.reverse();\n        keyed.sort_by(|(a, _), (b, _)| a.total_cmp(b));\n",
     tests: ["test/corpus.test.ts", "-t", "^or_pattern_(three_values|option_order).rs$"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "part-of-a-holder-unread",
     breaks:
       "a test of what a part holds, `xs.length === 1` or `xs[0] === 0` of `_3[0]`'s, is of no part, so `([0], 0)` keeps MIR's `xs.length === 1 && n === 0 && xs[0] === 0` (#674)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "        let root = std::iter::once(place).chain(holders(place)).find(|p| match &p.kind {\n",
     replace: "        let root = std::iter::once(place).find(|p| match &p.kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^or_pattern_option_order.rs$"],
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "decisions-impossible-path-kept",
     breaks:
       'a path no value takes, `c < "0" && c >= "A"`, is one of an arm\'s tests',
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "        if now.is_empty() {\n            return None;\n        }\n",
     replace: "",
     tests: ["test/lowering-matches.test.ts", "-t", "arms of more than one pattern"],
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     name: "decisions-stronger-test-not-first",
     breaks:
       "a test of a value a later one says more of stays where it is, so `(1, _, _, _) | (_, 1, _, _) | ..`'s arm is `if (a === 1)` and then `if (b !== 1 && c !== 1 && d !== 1)`, not one `if (a === 1 || b === 1 || ..)`",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "            (Some(j), _) => out[i] = out.remove(j),\n",
     replace: "            (Some(_), _) => i += 1,\n",
     tests: ["test/corpus.test.ts", "-t", "^(or_pattern_three_values|or_pattern_paths_absorbed).rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     name: "paths-alike-but-for-two-values-one",
     breaks:
       "paths that differ in two tests, `a === 0 && b === 1` and `a === 1`, are one of the first's value's union, `(a === 0 || a === 1) && b === 1`, so `(1, 4)` takes the `_` arm, not native Rust's (#631)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "            if p.len() != q.len() || p.is_empty() {\n                return None;\n            }\n            let differ: Vec<usize> = (0..p.len()).filter(|&k| !p[k].written_alike(&q[k])).collect();\n            let [k] = differ.as_slice() else { return None };\n",
     replace: "            if p.len() < 2 || q.is_empty() {\n                return None;\n            }\n            let differ: Vec<usize> = (0..p.len().min(q.len())).filter(|&k| !p[k].written_alike(&q[k])).collect();\n            let [k, ..] = differ.as_slice() else { return None };\n",
     tests: ["test/corpus.test.ts", "-t", "^or_pattern_paths_absorbed.rs$"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "absorbed-failing-says-any-test",
     breaks:
       "a path's failing test is taken to say any test of another path that isn't a value's, `x == null`, so the test goes where the values it lets in take another arm, not native Rust's (#673)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "        None => holding.iter().any(|t| t.written_alike(test)),\n",
     replace: "        None => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^or_pattern_three_values.rs$"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     name: "absorbed-failing-meets",
     breaks:
       "a path's failing test is taken to say another path's test of a value where some value passes both, `a !== 2` beside `a === 3`'s, so the test goes and inputs it let in take the wrong arm (#673)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "            said.is_some_and(|said| said.within(&set))\n",
     replace: "            said.is_some_and(|said| !said.intersect(&set).is_empty())\n",
     tests: ["test/corpus.test.ts", "-t", "^or_pattern_three_values.rs$"],
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     name: "merged-of-either",
     breaks:
       "a path's two tests of one value are what either says, `c !== 0 || c !== 1`, not both, so inputs take an arm native Rust doesn't (#673)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "                    .then(|| (j, render(&subject, &set.intersect(&later))))\n",
     replace: "                    .then(|| (j, render(&subject, &set.union(&later))))\n",
     tests: ["test/corpus.test.ts", "-t", "^or_pattern_three_values.rs$"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     name: "run-said-of-any",
     breaks:
       "a path's later test of a value an earlier one tested is taken as said whatever it says, `c !== 1` after `c !== 0`, and goes, so inputs take the wrong arm (#673)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "        if patterns && at.is_some() && now == before {\n",
     replace: "        if patterns && at.is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^or_pattern_three_values.rs$"],
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     name: "union-of-any-value-alone-kept",
     breaks:
       "paths each a test of one value whose union holds of each value it can have, `a !== 2 || a === 2`, stay, more tests than the tree's, so `first_two` keeps MIR's order of arms (#673)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "            (p.len() > 1 || any_here(known, &s, &set)).then_some((j, *k, s, set))\n",
     replace: "            (p.len() > 1).then_some((j, *k, s, set))\n",
     tests: ["test/lowering-match-paths.test.ts", "-t", "three values' or-pattern"],
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
   {
     name: "narrowed-never",
     breaks: "a test of a value isn't narrowed to what the arms before don't say, `c !== 1 && c !== 2` stays after `c === 1`'s arm, and the `match` in the loop keeps its labeled block (#696)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "    (atoms(&fewer) < atoms(test)).then_some(Expr {\n",
     replace: "    (false && atoms(&fewer) < atoms(test)).then_some(Expr {\n",
     tests: ["test/corpus.test.ts", "-t", "^(match_in_loop_continue_break).rs$"],
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
   {
     name: "part-of-any-index-read",
     breaks: "any read `x[n]` of a variable is a tuple's part, a binding's `js::get(o, &3.0)` too, so its tests are sorted by index and `o[0]`'s getter runs before `o[3]`'s, throwing where Rust returns `false` (#756, P0)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "        if !root.facts.has(js::Known::Part) {\n",
     replace: "        if false && !root.facts.has(js::Known::Part) {\n",
     tests: ["test/lowering-match-paths.test.ts", "-t", "a binding's index reads are tested in the order they're written"],
@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
   {
     name: "stronger-test-past-a-call",
     breaks: "a later test of a value that says more, a guard's `x > 0` read after its call, takes the place of an earlier one before the call, `a > 0 && b === 0 && h(..)`, which fails where the tree makes the call, so `read_after_call`'s chain calls `h` once where the tree calls it twice and its block stays (#771)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "                .take_while(|&j| pure(&out[j - 1]) || j - 1 == i)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
   {
     name: "presence-past-its-negation-unsaid",
     breaks: "a presence test past the arm of its negation is read again, `if (e == null) { .. } else if (e != null && e[0] === 0 ..`, `inner_after_an_arm`'s (#791)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "            present.iter().any(|p| same_subject(p, subject))\n",
     replace: "            present.iter().any(|p| same_subject(p, subject)) && false\n",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "presence-said-of-any-subject",
     breaks: "any presence test past the arm of another's negation is dropped, `presence_of_another`'s `p != null` once `o == null` failed, which reads `p[0]` of a `None` (#791)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "            present.iter().any(|p| same_subject(p, subject))\n",
     replace: "            !present.is_empty()\n",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "guard-calling-before-no-value-dropped",
     breaks: "an arm no value reaches whose guard calls first, `(0, 0) if odd(c, a + b) && a > 2`, has no leaf, so the chain's `else` makes no call where the tree does, and the block keeps its label (#1620)",
-    file: "src/lower/mir/tidy/decisions/paths.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "            return called.then(|| tests.to_vec());\n",
     replace: "            return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^(guarded_alternatives_chained_without_labels|match_trees_chained).rs$"],

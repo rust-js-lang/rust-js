@@ -1,11 +1,11 @@
-// Mutations of src/lower/ordering.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/ordering.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "flattened-part-cmp-nested",
     breaks: "a derived order of a struct with a flattened field reads the field as nested, `a.grid.cols`, which throws (#1838)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                                true => (a.clone(), b.clone(), t),\n                                false => {\n                                    let def = self.struct_field_def(ty, i);\n                                    let x = self.held(Expr::member(a.clone(), name.clone()), def, t);\n",
     replace: "                                true | false => {\n                                    let def = self.struct_field_def(ty, i);\n                                    let x = self.held(Expr::member(a.clone(), name.clone()), def, t);\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_struct_lent_whole.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "less-value-le",
     breaks: "a number key's `is_less` is `<=`",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                false => Expr::bin(op, a, b),\n",
     replace: "                false => Expr::bin(if op == Op::Lt { Op::Le } else { op }, a, b),\n",
     tests: ["test/corpus.test.ts", "-t", "sort_unstable_ties"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-partial-cmp-by-cmp",
     breaks: "`a.partial_cmp(b)` and `a < b` of a `T: Ord` call its `cmp`, where Rust calls its `PartialOrd`'s, which prints (#944)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        if self.is_unknown(ty) {\n            if !partial {\n",
     replace: "        if self.is_unknown(ty) {\n            if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_compare_by_impls.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-operator-by-partial-cmp",
     breaks: "`a < b` of a type parameter is its `partial_cmp` against 0, where Rust calls its `lt`, an impl's own (#944)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        if self.is_unknown(inner) {\n",
     replace: "        if self.is_unknown(inner) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_compare_by_impls.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "partial-cmp-of-own-ord",
     breaks: "a derived `partial_cmp` beside a hand-written `cmp` calls that `cmp`, where rustc's derive compares the fields: `<` and a sort answer by the other order (#937)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        if !partial && self.has_user_impl(ord, ty) {\n",
     replace: "        if self.has_user_impl(ord, ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "cmp-of-own-partial-cmp",
     breaks: "a derived `cmp` beside a hand-written `partial_cmp` calls that `partial_cmp`, where rustc's derive compares the fields (#937)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        if partial {\n            match self.partial_runs(ty) {\n",
     replace: "        if partial || self.partial_runs(ty) == PartialRuns::Own {\n            match self.partial_runs(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "derived-partial-cmp-never-cmp",
     breaks: "a `partial_cmp` rustc's derive wrote as `Some(Ord::cmp(self, other))` compares the fields' `partial_cmp`s, which a field's that prints shows (#937)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "    is_some && cmp_of_self\n",
     replace: "    is_some && cmp_of_self && false\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "derived-partial-cmp-always-cmp",
     breaks: "a derived `partial_cmp` rustc wrote field by field, a derive apart from `Ord`'s, calls `cmp` (#937)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                Some(imp) if self.partial_cmp_runs_cmp(imp) => PartialRuns::Cmp,\n                _ => PartialRuns::Parts,\n",
     replace: "                Some(_) => PartialRuns::Cmp,\n                _ => PartialRuns::Parts,\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "operator-by-cmp",
     breaks: "`<`, a sort's `is_less` and `max`'s `other < self` ask `cmp`, where std asks `PartialOrd::lt`, its `partial_cmp`'s (#937)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        let order = self.cmp_value(a, b, ty, true, span, out)?;\n        Ok(Expr::bin(op, order, Expr::int(0)))\n",
     replace: "        let order = self.cmp_value(a, b, ty, false, span, out)?;\n        Ok(Expr::bin(op, order, Expr::int(0)))\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-lt-unasked",
     breaks: "a `PartialOrd` that writes its own `lt` isn't asked it by a sort or `max`, which call its `partial_cmp` (#937)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        if let Some(imp) = self.own_operators(inner) {\n",
     replace: "        if let Some(imp) = self.own_operators(inner).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "clamp-by-cmp",
     breaks: "`clamp` asks `cmp`, where std's asks `<=`, `<` and `>`, `partial_cmp`'s (#937)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            // `PartialOrd` dictionary's, an impl's own included (#937).\n            let compare = self.operators(ty, span)?;\n",
     replace: "            // `PartialOrd` dictionary's, an impl's own included (#937).\n            let compare = self.cmp_fn(ty, false, span)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "order-of-fields-unasked",
     breaks: "a derived order of the crate's struct is taken never to panic, though a field's does: a heap of them leaks the top `pop` took as a comparison panics (#901)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        ty::Adt(adt, args) if rust_adt(adt.did()) => {\n            (adt.all_fields()).any(|f| order_may_in(recognition, recognition.field_ty(f, args), (traits, may), seen))\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^heap_sift_unwinds.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "order-never-panics",
     breaks: "a hand-written order that may panic is taken never to, so what std drops as it unwinds leaks (#901)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        _ if !impls.is_empty() => impls.iter().any(|&imp| may(imp)),\n",
     replace: "        _ if !impls.is_empty() => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^heap_sift_unwinds.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "max-first-against-second",
     breaks: "`max(a, b)` of a type with its own `Ord` asks `a` against `b`, where std's asks `b < a`: a comparison that prints says `cmp 1 2`, not `cmp 2 1` (#912)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                let less = self.operator_value(Op::Lt, b.clone(), a.clone(), ty, span, out)?;\n                Expr::cond(less, a, b)\n",
     replace: "                let less = self.operator_value(Op::Lt, a.clone(), b.clone(), ty, span, out)?;\n                Expr::cond(less, a, b)\n",
     tests: ["test/corpus.test.ts", "-t", "^max_min_clamp_as_std_compares.rs$"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "max-of-droppable-inline",
     breaks: "`max` and `min` of a type with a destructor are the comparison's choice alone, the other leaked, and both as it panics (#912)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            && let Some(drop) = self.std_drop_function(ty, span)?\n",
     replace: "            && let Some(drop) = self.std_drop_function(ty, span)?.filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^max_min_clamp_as_std_compares.rs$"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "clamp-given-no-drop",
     breaks: "`clamp` of a type with a destructor leaks the two it doesn't give back (#912)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            args.extend(drop);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^max_min_clamp_as_std_compares.rs$"],
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
     name: "unknown-lt-by-partial-cmp",
     breaks:
       "`a < b` of two `js::Unknown`s is `$partialCmp(a, b) < 0`, not JS's `a < b`",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        let shape = matches!(op, Op::Lt | Op::Gt) && any_shape(self.tcx, field);\n",
     replace: "        let shape = matches!(op, Op::Lt | Op::Gt) && false && any_shape(self.tcx, field);\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "js::Unknown's < is JS's"],
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
     name: "unknown-le-as-js",
     breaks:
       '`a <= b` of two `js::Unknown`s is JS\'s `a <= b`, which coerces `"1" <= 1` true where `partial_cmp` finds none',
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        let shape = matches!(op, Op::Lt | Op::Gt) && any_shape(self.tcx, field);\n",
     replace: "        let shape = any_shape(self.tcx, field);\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "js::Unknown's < is JS's"],
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     name: "unknown-unordered",
     breaks:
       "`partial_cmp` of two `js::Unknown`s asks for a `PartialOrd` dictionary, and is refused",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        if partial && (Num::of(ty).is_some_and(Num::float) || any_shape(self.tcx, ty)) {\n",
     replace: "        if partial && (Num::of(ty).is_some_and(Num::float)) {\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "js::Unknown's < is JS's"],
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
   {
     name: "numbered-ordered-by-name",
     breaks: "an enum JS holds as its numbers is compared by a ladder of its variants' positions, `$cmp(Two === One ? 0 : Two === Two ? 1 : 2, ..) < 0`, where its numbers compare as they are, `Two < Max`; the answer is the same since it was form-only (#1109)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "LangItem::OrderingEnum) || numbered\n",
     replace: "LangItem::OrderingEnum)\n",
     tests: ["test/corpus.test.ts", "-t", "^(enum_order|repr_enum_numbers).rs$"],
@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
     name: "cmp-without-cells",
     breaks:
       "`refs.sort()` of a `Vec<&mut i32>` orders the cells, not what they point at",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        let (a, _) = self.through_refs(a, ty);\n        let (b, ty) = self.through_refs(b, ty);\n",
     replace: "        let ty = ty.peel_refs();\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
@@ -178,7 +178,7 @@ export const mutations: Mutation[] = [
   {
     name: "wrapping-ordered-reversed",
     breaks: "`Wrapping`s order the other way round, as `Reverse`'s",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                self.cmp_value(inside(a), inside(b), args.type_at(0), partial, span, out)",
     replace:
       "                self.cmp_value(inside(b), inside(a), args.type_at(0), partial, span, out)",
@@ -188,7 +188,7 @@ export const mutations: Mutation[] = [
     name: "text-literal-any-order",
     breaks:
       "a string compared with any literal is JS's `<`, which orders 🦀 before a full-width `！`",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "(c as u32) < 0xd800",
     replace: "(c as u32) < 0x110000",
     tests: ["test/corpus.test.ts", "-t", "code_point_order"],
@@ -196,7 +196,7 @@ export const mutations: Mutation[] = [
   {
     name: "text-operator-by-units",
     breaks: "`a < b` of two strings is JS's `<`, by UTF-16 units",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                true => self.text_compare(op, a, b),\n",
     replace: "                true => Expr::bin(op, a, b),\n",
     tests: ["test/corpus.test.ts", "-t", "code_point_order"],
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
     name: "partial-parts-joined-by-or",
     breaks:
       "a derived `partial_cmp` of `f64` parts joins them with `||`, so a `NaN` part, unordered, goes on to the next part, not `None`",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                let total = !partial || parts.iter().all(|&(_, _, t)| self.is_total(t));",
     replace:
       "                let total = true || !partial || parts.iter().all(|&(_, _, t)| self.is_total(t));",
@@ -218,7 +218,7 @@ export const mutations: Mutation[] = [
   {
     name: "pin-cmp-unknown",
     breaks: "`<` of pinned `Box`es is an error",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            // A `Pin`'s target (`pin_target`, #1446).\n            ty::Adt(..) if self.recognition().pinned(ty).is_some() => {\n                let (x, target) = self.pin_target(a, ty, span, out)?;\n                let (y, _) = self.pin_target(b, ty, span, out)?;\n                self.cmp_value(",
     replace: "            // A `Pin`'s target (`pin_target`, #1446).\n            ty::Adt(..) if false => {\n                let (x, target) = self.pin_target(a, ty, span, out)?;\n                let (y, _) = self.pin_target(b, ty, span, out)?;\n                self.cmp_value(",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
   {
     name: "enum-order-refused",
     breaks: "a derived order of an enum with fields is refused",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                    && (adt.did().is_local() && !bindings::is_untagged(self.tcx, adt.did())\n",
     replace: "                    && (false\n",
     tests: [
@@ -239,7 +239,7 @@ export const mutations: Mutation[] = [
     name: "enum-order-variants-only",
     breaks:
       "a derived order of an enum with fields compares its variants alone, `Rect(2, 3)` equal to `Rect(1, 9)`",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                Ok(Expr::bin(Op::Or, order, same))",
     replace: "                let _ = same;\n                Ok(order)",
     tests: [
@@ -251,7 +251,7 @@ export const mutations: Mutation[] = [
   {
     name: "cow-cmp-refused",
     breaks: "ordering `Cow`s is refused, where it's what they borrow",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty) => {\n                let y",
     replace:
       "            ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty).filter(|_| false) => {\n                let y",
@@ -260,7 +260,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-cmp-refused",
     breaks: "ordering paths is refused, where it's their components'",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: '        if self.recognition().compares_by_components(ty) {\n            return Ok(Expr::call(Expr::helper("$pathCmp"), vec![a, b]));\n',
     replace:
       '        if false {\n            return Ok(Expr::call(Expr::helper("$pathCmp"), vec![a, b]));\n',
@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
     name: "unit-struct-unordered",
     breaks:
       "a struct of no fields, `struct Zst;`, isn't compared, and a map keyed by one is an error",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            _ if self.one_value(ty) && !a.has_effects() && !b.has_effects() => Ok(Expr::int(0)),\n",
     replace:
       "            _ if false && self.one_value(ty) && !a.has_effects() && !b.has_effects() => Ok(Expr::int(0)),\n",
@@ -279,7 +279,7 @@ export const mutations: Mutation[] = [
   {
     name: "unit-unordered",
     breaks: "`()`s aren't compared, and a heap of them is an error",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        ty.is_unit()\n            || matches!",
     replace: "        false\n            || matches!",
     tests: ["test/corpus.test.ts", "-t", "^collection_capacity.rs$"],
@@ -288,7 +288,7 @@ export const mutations: Mutation[] = [
     name: "library-derive-refused",
     breaks:
       "a library's struct with a derived `Ord` is refused, compared as one whose impl may not be field by field",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: " && !self.recognition().derives(if partial { partial_ord } else { ord }, ty)",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "derived_order"],
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
     name: "library-partial-derive-as-ord",
     breaks:
       "a library's derived `PartialOrd` is asked as an `Ord`, which it hasn't, and refused",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "&& !self.recognition().derives(if partial { partial_ord } else { ord }, ty)",
     replace: "&& !self.recognition().derives(ord, ty)",
     tests: ["test/crates.test.ts", "-t", "derived_order"],
@@ -306,7 +306,7 @@ export const mutations: Mutation[] = [
     name: "ordering-of-other-type-as-self",
     breaks:
       "`<` of a type with another, its own `PartialOrd<u32>`, orders the type with itself, `$cmp(m[0], 4[0])`, so it's false",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        if other {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_other_type.rs$"],
@@ -315,7 +315,7 @@ export const mutations: Mutation[] = [
     name: "transparent-order-refused",
     breaks:
       "a derived order of a `#[repr(transparent)]` struct, uuid's `Uuid`, is refused, where it's its field's",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        if let Some(field) = self.transparent(ty) {\n            return self.cmp_value(a, b, field, partial, span, out);\n",
     replace:
       "        if let Some(field) = self.transparent(ty).filter(|_| false) {\n            return self.cmp_value(a, b, field, partial, span, out);\n",
@@ -325,7 +325,7 @@ export const mutations: Mutation[] = [
     name: "recursive-order-inlined",
     breaks:
       "a derived order of a type inside itself is inlined into its own fields' without end, and the compiler overflows its stack",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        if self.is_recursive(ty) || self.order_nests_variants(ty) {\n            let ty::Adt(adt, _) = ty.kind() else {\n",
     replace: "        if false && (self.is_recursive(ty) || self.order_nests_variants(ty)) {\n            let ty::Adt(adt, _) = ty.kind() else {\n",
     tests: ["test/corpus.test.ts", "-t", "^recursive_order.rs$"],
@@ -334,7 +334,7 @@ export const mutations: Mutation[] = [
     name: "binary-search-by-lt",
     breaks:
       "`binary_search` of a derived `Ord` enum compares by `<`, which orders objects as strings",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: '        if self.is_primitive_ord(item) {\n            return Ok(Expr::call_helper("$binarySearch", vec![items, x]));\n',
     replace:
       '        if true || self.is_primitive_ord(item) {\n            return Ok(Expr::call_helper("$binarySearch", vec![items, x]));\n',
@@ -344,7 +344,7 @@ export const mutations: Mutation[] = [
     name: "binary-search-own-order",
     breaks:
       "`binary_search` asks its own way what `<` orders, and searches a slice of `&i32`s and one of `Ordering`s by their `Ord`, not `<`",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: '        if self.is_primitive_ord(item) {\n            return Ok(Expr::call_helper("$binarySearch", vec![items, x]));\n',
     replace:
       '        if super::representation::Num::of(item).is_some_and(|n| !n.float()) || item.is_bool() {\n            return Ok(Expr::call_helper("$binarySearch", vec![items, x]));\n',
@@ -355,7 +355,7 @@ export const mutations: Mutation[] = [
     name: "is-sorted-by-lte",
     breaks:
       "`is_sorted()` of `char`s or of an enum compares by `<=`, which orders an astral `char` and an object wrongly",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        let le = match super::representation::Num::of(item) {\n            Some(_) => Expr::bin(Op::Le, a, b),\n",
     replace:
       "        let le = match Some(()) {\n            Some(_) => Expr::bin(Op::Le, a, b),\n",
@@ -364,7 +364,7 @@ export const mutations: Mutation[] = [
   {
     name: "is-sorted-nan",
     breaks: "`is_sorted` of a NaN says it's sorted",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            Some(_) => Expr::bin(Op::Le, a, b),\n",
     replace:
       "            Some(_) => Expr::unary(rust_js_program::js::UnaryOp::Not, Expr::bin(Op::Gt, a, b)),\n",
@@ -374,7 +374,7 @@ export const mutations: Mutation[] = [
     name: "char-clamp-unshown",
     breaks:
       "a `char`'s `clamp` of bounds the wrong way round panics as `Ord`'s default does, not showing them",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            let show = ty.peel_refs().is_char().then(|| {\n",
     replace: "            let show = (false && ty.peel_refs().is_char()).then(|| {\n",
     tests: [
@@ -386,7 +386,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-other-type-compare-refused",
     breaks: "`x <= 3u32` in code bounded by `T: PartialOrd<u32>` is refused",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            let Some(op) = operator.filter(|_| generic || self.is_user_impl(tr)) else {\n",
     replace:
       "            let Some(op) = operator.filter(|_| self.is_user_impl(tr)) else {\n",
@@ -395,7 +395,7 @@ export const mutations: Mutation[] = [
   {
     name: "btree-compare-refused",
     breaks: "comparing B-trees, `a < b` of two `BTreeSet`s, is refused",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            ty::Adt(_, args) if self.is_sorted(ty) => {\n",
     replace:
       "            ty::Adt(_, args) if false && self.is_sorted(ty) => {\n",
@@ -404,7 +404,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-enum-order-refused",
     breaks: "sorting std's `Component`s, whose order is derived, is refused",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                            && self.recognition().derives(if partial { partial_ord } else { ord }, ty)) =>",
     replace: "                            && false) =>",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
@@ -412,8 +412,8 @@ export const mutations: Mutation[] = [
   {
     name: "never-made-variant-ordered",
     breaks: "ordering a `Component` places `Prefix` too, which no value is",
-    file: "src/lower/ordering.rs",
-    find: "                    .filter(|&(v, _)| !crate::lower::recognition::never_made(self.tcx, adt.variant(v)))\n",
+    file: "crates/rust-js-lower/src/ordering.rs",
+    find: "                    .filter(|&(v, _)| !crate::recognition::never_made(self.tcx, adt.variant(v)))\n",
     replace: "",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
@@ -421,7 +421,7 @@ export const mutations: Mutation[] = [
   {
     name: "os-str-order-refused",
     breaks: "sorting `OsStr`s is refused",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "|| self.is_text_ord(ty) || self.recognition().is_os_text(ty) {",
     replace: "|| self.is_text_ord(ty) {",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
@@ -430,7 +430,7 @@ export const mutations: Mutation[] = [
     name: "transparent-order-by-cmp",
     breaks:
       "a transparent `EventPriority`'s derived `a < b` is `$cmp(a, b) < 0`, not its number's `<`",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        let field = self.ordered_as(inner);\n",
     replace: "        let field = inner;\n",
     tests: [
@@ -443,7 +443,7 @@ export const mutations: Mutation[] = [
     name: "transparent-order-of-its-own-impl-too",
     breaks:
       "a transparent struct's hand-written `Ord`, the other way round, is taken for its field's `<`",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            Some(field) if derived => self.ordered_as(field),\n",
     replace: "            Some(field) => self.ordered_as(field),\n",
     tests: [
@@ -456,7 +456,7 @@ export const mutations: Mutation[] = [
     name: "ordering-other-through-refs-unpeeled",
     breaks:
       "`&at >= &MIN` of a `&At<Z>` and a `&At<Utc>` asks for std's `impl PartialOrd<&B> for &A`, not the crate's, and is refused, as chrono's `map_local` was (#467)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                (ty::Ref(_, a, _), Some(ty::Ref(_, b, _))) => ty::TraitRef::new(self.tcx, tr.def_id, [*a, b]),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_other_through_refs.rs$"],
@@ -465,7 +465,7 @@ export const mutations: Mutation[] = [
     name: "phantom-data-order-refused",
     breaks:
       "`cmp` of a struct holding a `PhantomData`, litemap's `LiteMap`, is refused, the marker taken for another crate's struct whose `Ord` isn't derived (#514)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                    && !self.is_lang_adt(ty, LangItem::PhantomData) =>\n",
     replace: " =>\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
@@ -473,7 +473,7 @@ export const mutations: Mutation[] = [
   {
     name: "one-value-part-ordered",
     breaks: "a struct's `PhantomData` field is ordered too, `$cmpItems(..) || 0 || 0`, where it's always `Equal`",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                    if self.one_value(t) {\n                        continue;\n                    }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
@@ -482,7 +482,7 @@ export const mutations: Mutation[] = [
   {
     name: "order-seen-impls-unasked",
     breaks: "an `Ord` of the crate's that counts or prints is taken as unseen, so its sort is JS's and asks another sequence (#925)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        order_may(&self.recognition(), ty, &|imp| {\n            !impl_quiet(self.tcx, self.krate.quiet_fns, imp)\n        })",
     replace: "        order_may(&self.recognition(), ty, &|_| false)",
     tests: ["test/corpus.test.ts", "-t", "^sort_stable_seen.rs$"],
@@ -490,7 +490,7 @@ export const mutations: Mutation[] = [
   {
     name: "comparator-always-total",
     breaks: "every quiet comparator is taken as a total order, so a sort by `partial_cmp(..).unwrap_or(Equal)` of NaNs is JS's: another order, and no panic where std's panics (#936)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            ty::Closure(id, _) => self.body_orders_totally(id, seen),\n",
     replace: "            ty::Closure(..) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^sort_not_total.rs$"],
@@ -498,7 +498,7 @@ export const mutations: Mutation[] = [
   {
     name: "hand-written-order-always-total",
     breaks: "a hand-written `Ord` that isn't a total order is taken as one, so its `sort()` is JS's and leaves another order (#936)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: ".all(|&imp| self.tcx.is_automatically_derived(imp) || self.impl_orders_totally(imp, seen))",
     replace: ".all(|&imp| self.tcx.is_automatically_derived(imp) || true)",
     tests: ["test/corpus.test.ts", "-t", "^sort_not_total.rs$"],
@@ -506,7 +506,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-max-by-operators",
     breaks: "a type parameter's `max`, `min` and `clamp` are std's over its `PartialOrd`, where Rust calls its `Ord`'s, an impl's own (#962)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        if matches!(call, OrderingCall::Max | OrderingCall::Min | OrderingCall::Clamp) && self.is_unknown(ty) {\n",
     replace: "        if matches!(call, OrderingCall::Max | OrderingCall::Min | OrderingCall::Clamp) && self.is_unknown(ty) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -514,7 +514,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-max-given-no-drop",
     breaks: "a type parameter's `max` of a type with a destructor is given no drop, so std's never drops the one it doesn't give back (#962)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            args.extend(self.std_drop_function(ty, span)?);\n",
     replace: "            let _ = self.std_drop_function(ty, span)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -522,7 +522,7 @@ export const mutations: Mutation[] = [
   {
     name: "ints-ordered-as-text",
     breaks: "an integer's shared `Ord` is std's default, whose `clamp` panics without showing its bounds, as an integer's own does (#962)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            _ if Num::of(ty).is_some() => \"$intsOrdered\",\n",
     replace: "            _ if Num::of(ty).is_some() => \"$ordered\",\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -530,7 +530,7 @@ export const mutations: Mutation[] = [
   {
     name: "chars-ordered-as-text",
     breaks: "a `char`'s shared `Ord` is std's default, whose `clamp` panics without showing its bounds, as a `char`'s own does (#962)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            _ if ty.is_char() => \"$charsOrdered\",\n",
     replace: "            _ if ty.is_char() => \"$ordered\",\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "hold ne, max, min and clamp"],
@@ -538,7 +538,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-ne-not-in-dictionary",
     breaks: "an impl's own `ne` isn't in its dictionary, so generic `!=` runs std's `!eq` (#962)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        &[\"ne\"]\n",
     replace: "        &[]\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -546,7 +546,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-max-not-in-dictionary",
     breaks: "an impl's own `max` isn't in its dictionary, so generic `max` runs std's (#962)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        &[\"max\", \"min\", \"clamp\"]\n",
     replace: "        &[\"min\", \"clamp\"]\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -554,7 +554,7 @@ export const mutations: Mutation[] = [
   {
     name: "partial-eq-unmade",
     breaks: "a `PartialEq` dictionary isn't made by `$partialEq`, so it has no `ne` for generic `!=` to call (#962)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        Some(\"$partialEq\")\n",
     replace: "        None\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -562,7 +562,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-unmade",
     breaks: "an `Ord` dictionary isn't made by `$ord`, so it has no `max`, `min` or `clamp` for generic code to call (#962)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        Some(\"$ord\")\n",
     replace: "        None\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -570,7 +570,7 @@ export const mutations: Mutation[] = [
   {
     name: "quiet-order-of-own-eq",
     breaks: "a numbered enum whose `==` is its own and whose order is derived shares std's quiet dictionaries, whose `==` is `===` (#962)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        ((self.is_primitive_ord(ty) && !float) || self.is_text_ord(ty)) && !own_eq\n",
     replace: "        ((self.is_primitive_ord(ty) && !float) || self.is_text_ord(ty)) && (own_eq || !own_eq)\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -578,7 +578,7 @@ export const mutations: Mutation[] = [
   {
     name: "float-eq-not-shared",
     breaks: "a float's `PartialEq` dictionary is made where it's given, not std's shared `$strictlyEqual` (#962)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        self.quietly_ordered(ty) || float\n",
     replace: "        self.quietly_ordered(ty) || (float && false)\n",
     tests: ["test/snapshots.test.ts", "-t", "^versions"],
@@ -587,7 +587,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-partial-cmp-never-cmp",
     breaks: "a library's impl whose `partial_cmp` is `Some(self.cmp(other))` is taken as its parts', as its consumer has no HIR of it (#964)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            false => self.krate.foreign.partial_cmp_is_cmp(imp),\n",
     replace: "            false => false,\n",
     tests: ["test/crates.test.ts", "-t", "derived_partial_cmp_is_cmp"],
@@ -595,15 +595,15 @@ export const mutations: Mutation[] = [
   {
     name: "variants-ordered-by-bits",
     breaks: "an enum's variants are ordered by their discriminants' bits, a negative one's after the rest, `High(1) < Low` where `Low = -5` is first (#1131)",
-    file: "src/lower/ordering.rs",
-    find: "                    .map(|(v, d)| (v, crate::lower::Discr::of(self.tcx, d)))\n",
-    replace: "                    .map(|(v, d)| (v, crate::lower::Discr::Unsigned(d.val)))\n",
+    file: "crates/rust-js-lower/src/ordering.rs",
+    find: "                    .map(|(v, d)| (v, crate::Discr::of(self.tcx, d)))\n",
+    replace: "                    .map(|(v, d)| (v, crate::Discr::Unsigned(d.val)))\n",
     tests: ["test/corpus.test.ts", "-t", "^discriminants_past_32_bits.rs$"],
   },
   {
     name: "iterator-max-by-cmp",
     breaks: "`Iterator::max` of a type JS's `<` doesn't order compares by its `cmp`, as 1.99's `max_by(Ord::cmp)` did, where 1.100's reduces by its `Ord::max`, its own where it writes one (ADR 0109, amended)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            Some(imp) if self.tcx.impl_item_implementor_ids(imp).contains_key(&method) => {\n",
     replace: "            Some(imp) if false && self.tcx.impl_item_implementor_ids(imp).contains_key(&method) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -611,7 +611,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-max-by-cmp-of-hand-written-orders",
     breaks: "`Iterator::max` of items whose hand-written `<` isn't their `cmp`'s compares by `cmp`, where 1.100's `Ord::max` asks `<` (ADR 0109, amended)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        own || by_hand || self.order_seen(ty) || !self.order_total(ty)\n",
     replace: "        own || self.order_seen(ty) || !self.order_total(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
@@ -619,7 +619,7 @@ export const mutations: Mutation[] = [
   {
     name: "order-nesting-inlined",
     breaks: "an enum whose variants hold another enum's of variants orders inline, every level of it written where it's compared, so a 40-deep chain's `BTreeSet` writes its order a level a line, its paths longer each, quadratic, not `cmpC3` calling `cmpC2` (#1879)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        if self.is_recursive(ty) || self.order_nests_variants(ty) {\n",
     replace: "        if self.is_recursive(ty) {\n",
     tests: ["test/type-depth.test.ts", "-t", "plain$"],
@@ -627,7 +627,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-number-compared-by-dictionary",
     breaks: "generic code's `a < b` of a type parameter every caller gives a number asks its dictionary, which it isn't given (#1874)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "            if self.param_compares_by_operator(inner) {\n                return Ok(Expr::bin(op, a, b));\n            }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^compared_by_operator.rs$"],
@@ -635,7 +635,7 @@ export const mutations: Mutation[] = [
   {
     name: "chars-compared-by-operator",
     breaks: "generic code's `char`s compared by JS's `<`, which orders by UTF-16 units: `'\\u{ffff}' < '\\u{10000}'` false (#1874)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "    Num::of(ty).is_some_and(|num| !num.big())\n",
     replace: "    Num::of(ty).is_some_and(|num| !num.big()) || ty.is_char()\n",
     tests: ["test/corpus.test.ts", "-t", "^compared_keeps_its_dictionary.rs$"],
@@ -643,7 +643,7 @@ export const mutations: Mutation[] = [
   {
     name: "bigints-compared-by-operator",
     breaks: "generic code's 64-bit integers compared by JS's own operators, outside what #1874 decided",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "    Num::of(ty).is_some_and(|num| !num.big())\n",
     replace: "    Num::of(ty).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^compared_keeps_its_dictionary.rs$"],
@@ -653,7 +653,7 @@ export const mutations: Mutation[] = [
     name: "placed-field-compared-as-its-place",
     breaks:
       "a derived `Ord` of the crate's iterator whose field is held in a place of its own compares the places, `$cmpIn([..], p.a, r.a)`, not what's in them (#2255)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                                    let x = self.held(Expr::member(a.clone(), name.clone()), def, t);\n                                    (x, self.held(Expr::member(b.clone(), name), def, t), t)\n",
     replace: "                                    let _ = def;\n                                    (Expr::member(a.clone(), name.clone()), Expr::member(b.clone(), name), t)\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
@@ -662,7 +662,7 @@ export const mutations: Mutation[] = [
     name: "placed-variant-compared-as-its-place",
     breaks:
       "a derived `PartialOrd` of an enum whose variant's field is held in a place of its own compares the places, not what's in them: `on > kept` of `Step::On(Tri)` (#2255)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                            self.held(Expr::member(a.clone(), &name), Some(def), t),\n                            self.held(Expr::member(b.clone(), &name), Some(def), t),\n",
     replace: "                            Expr::member(a.clone(), &name),\n                            Expr::member(b.clone(), &name),\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
@@ -671,7 +671,7 @@ export const mutations: Mutation[] = [
     name: "placed-part-compared-as-its-place",
     breaks:
       "a derived `PartialOrd` of a tuple struct whose field is held in a place of its own compares the places: `w > v` (#2255)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "                            let at = |x: &Expr| self.held_part(Expr::index(x.clone(), Expr::int(i as i128)), ty, i, t);\n",
     replace: "                            let at = |x: &Expr| Expr::index(x.clone(), Expr::int(i as i128));\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
@@ -679,7 +679,7 @@ export const mutations: Mutation[] = [
   {
     name: "compared-in-impls-terms",
     breaks: "a copied default's `U` given tuples is compared by JS's `<` as its sibling `T`, given numbers, is, the impl's numbering, `[1, 9] < [1, 10]` read as text (#2273)",
-    file: "src/lower/ordering.rs",
+    file: "crates/rust-js-lower/src/ordering.rs",
     find: "        let super::traits::Declared::Own(owner, index) = self.declared_param(index) else {\n",
     replace: "        let super::traits::Declared::Own(owner, _) = self.declared_param(index) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^default_copied_reads_its_own_params.rs$"],

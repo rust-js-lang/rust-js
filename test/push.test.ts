@@ -27,8 +27,8 @@ test("a rebase's conflict in a blessed baseline alone is made again, any other s
   }
   expect(remakeable(["docs/readability.txt"])).toBe(true);
   expect(remakeable(["docs/readability.txt", "react/coverage.txt"])).toBe(true);
-  expect(remakeable(["docs/readability.txt", "src/lower/analysis.rs"])).toBe(false);
-  expect(remakeable(["src/lower/analysis.rs"])).toBe(false);
+  expect(remakeable(["docs/readability.txt", "crates/rust-js-lower/src/analysis.rs"])).toBe(false);
+  expect(remakeable(["crates/rust-js-lower/src/analysis.rs"])).toBe(false);
 });
 
 // A ratchet two changes lowered at once conflicts on rebase, and `bun run
@@ -44,7 +44,7 @@ test("a rebase's conflict in a ratchet is resolved by the lower count, anything 
   expect(lowerRatchets(conflict(["const KIN_PARSES = 10;"], ["const KIN_PARSES = 14;"]))).toBe(["# a ratchet", "const KIN_PARSES = 10;", "src/z.rs\t1", ""].join("\n"));
   expect(lowerRatchets(conflict(["const KIN_PARSES = 10;"], ["const KIN_PARSES = 14;", "test(\"x\", () => {});"]))).toBeUndefined();
   expect(remakeable(["test/sig-binders.txt", "docs/readability.txt"])).toBe(true);
-  expect(remakeable(["test/architecture-names.test.ts", "src/lower/analysis.rs"])).toBe(false);
+  expect(remakeable(["test/architecture-names.test.ts", "crates/rust-js-lower/src/analysis.rs"])).toBe(false);
   // WORD_WALKS lowered by two changes at once, d8eb74bd1's and another's:
   // the lower; anything else in the test's conflict, stopped.
   expect(remakeable(["test/architecture-names.test.ts", "test/sig-binders.txt"])).toBe(true);
@@ -251,7 +251,7 @@ test("a push's fast phase runs first, push-guard's rule and the catalog's quick 
 test("a round past a rebase type-checks the mutants and checks the interaction only where the incoming commits can change them", () => {
   expect(mutantsAgain(undefined)).toBe(true);
   expect(mutantsAgain(["docs/guide/README.md", "test/corpus/x.rs", "crates/rust-js-program/src/runtime/iter.js"])).toBe(false);
-  for (const file of ["src/lower/iterators.rs", "scripts/mutations/runtime/iter.ts", "Cargo.lock", "rust-toolchain.toml"]) expect([file, mutantsAgain(["docs/x.md", file])]).toEqual([file, true]);
+  for (const file of ["crates/rust-js-lower/src/iterators.rs", "scripts/mutations/runtime/iter.ts", "Cargo.lock", "rust-toolchain.toml"]) expect([file, mutantsAgain(["docs/x.md", file])]).toEqual([file, true]);
   expect(sanitySkipped("none")).toBe("incoming reach nothing this change reaches");
   expect(sanitySkipped("none, map 57283d2aa 3 behind")).toBe("incoming reach nothing this change reaches");
   expect(sanitySkipped("some (3 files, 2 cases), map 57283d2aa 3 behind")).toBeUndefined();
@@ -266,7 +266,7 @@ test("a round past a rebase runs the fast tests again only where the incoming co
   expect(fastAgain(undefined, named)).toBe(true);
   expect(fastAgain([], named)).toBe(false);
   expect(fastAgain(["docs/guide/README.md", "test/corpus/x.rs", "test/corpus/x.js", "TESTS.md"], named)).toBe(false);
-  for (const file of ["src/lower/iterators.rs", "crates/rust-js-program/src/runtime/iter.js", "tooling/cli.js", "scripts/mutations/runtime/iter.ts", "scripts/mutations.ts", "docs/architecture.md", "scripts/owners.ts", ...FAST_TESTS])
+  for (const file of ["crates/rust-js-lower/src/iterators.rs", "crates/rust-js-program/src/runtime/iter.js", "tooling/cli.js", "scripts/mutations/runtime/iter.ts", "scripts/mutations.ts", "docs/architecture.md", "scripts/owners.ts", ...FAST_TESTS])
     expect([file, fastAgain([file], named)]).toEqual([file, true]);
 });
 

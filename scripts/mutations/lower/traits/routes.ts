@@ -1,4 +1,4 @@
-// Mutations of src/lower/traits/routes.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/traits/routes.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "item-evidence-missing",
     breaks:
       "`tag` has no dictionary for `<L as Labeled>::Label: Display`, which the trait declares",
-    file: "src/lower/traits/routes.rs",
+    file: "crates/rust-js-lower/src/traits/routes.rs",
     find: "            .or_else(|| self.item_route(tr))\n",
     replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "associated_types"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "error-supertraits-unseen",
     breaks:
       "an `Error` dictionary's `Display` and `Debug` aren't looked for, so `{e}` of a `dyn Error` is refused",
-    file: "src/lower/traits/routes.rs",
+    file: "crates/rust-js-lower/src/traits/routes.rs",
     find: "        if !self.recognition.holds_supertraits(from.def_id) {",
     replace: "        if !self.recognition.foreign.compiled_by_rust_js(from.def_id) {",
     tests: ["test/corpus.test.ts", "-t", "dyn_display"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "evidence-compared-as-written",
     breaks:
       "`<I as Int>::T: NonZero` isn't found as the evidence for `J: NonZero` of an `I: Int<T = J>`",
-    file: "src/lower/traits/routes.rs",
+    file: "crates/rust-js-lower/src/traits/routes.rs",
     find: "        if normalized(from) == normalized(to) {",
     replace:
       "        if self.recognition.tcx.erase_and_anonymize_regions(from) == self.recognition.tcx.erase_and_anonymize_regions(to) {",
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "known-deref-through-dictionary",
     breaks:
       "a known std type's `deref()`, a `RefCell` guard's or a `Cow`'s, is a dictionary's call, not recognized in place",
-    file: "src/lower/traits/routes.rs",
+    file: "crates/rust-js-lower/src/traits/routes.rs",
     find: "    let holder = tcx.is_lang_item(trait_id, LangItem::Deref)\n        || ",
     replace: "    let holder = ",
     tests: ["test/corpus.test.ts", "-t", "^(refcell_borrows|cows).rs$"],
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     name: "as-mut-read-where-known",
     breaks:
       "an `AsMut` dictionary is written for each impl, where only generic code reads it",
-    file: "src/lower/traits/routes.rs",
+    file: "crates/rust-js-lower/src/traits/routes.rs",
     find: "        || is_std_def(tcx, trait_id, StdItem::AsMut)\n        || is_std_def(tcx, trait_id, StdItem::BorrowMut)\n",
     replace: "        || is_std_def(tcx, trait_id, StdItem::BorrowMut)\n",
     tests: ["test/corpus.test.ts", "-t", "^user_as_mut.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     name: "into-iter-written-in-place",
     breaks:
       "`into_iter` of a `&mut C` with a dictionary is written in place as std's, which doesn't know `C`",
-    file: "src/lower/traits/routes.rs",
+    file: "crates/rust-js-lower/src/traits/routes.rs",
     find: "        is_std_def(tcx, trait_id, StdItem::IntoIterator) && !into_iter_by_dictionary(tcx, trait_id, self_ty);\n",
     replace: "        is_std_def(tcx, trait_id, StdItem::IntoIterator);\n",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "from-dictionary-written-everywhere",
     breaks:
       "the crate's `From` impl's dictionary is written where nothing generic reads it",
-    file: "src/lower/traits/routes.rs",
+    file: "crates/rust-js-lower/src/traits/routes.rs",
     find: "        || is_std_def(tcx, trait_id, StdItem::From)\n        || is_std_def(tcx, trait_id, StdItem::TryFrom)\n",
     replace: "        || is_std_def(tcx, trait_id, StdItem::TryFrom)\n",
     tests: ["test/corpus.test.ts", "-t", "^app_errors.rs$"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     name: "borrow-mut-dictionary-written-everywhere",
     breaks:
       "the crate's `BorrowMut` impl's dictionary is written where nothing generic reads it",
-    file: "src/lower/traits/routes.rs",
+    file: "crates/rust-js-lower/src/traits/routes.rs",
     find: "        || is_std_def(tcx, trait_id, StdItem::BorrowMut)\n        || is_std_def(tcx, trait_id, StdItem::IntoIterator)\n",
     replace: "        || is_std_def(tcx, trait_id, StdItem::IntoIterator)\n",
     tests: ["test/corpus.test.ts", "-t", "^user_as_mut.rs$"],
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     name: "route-through-unheld-supertrait",
     breaks:
       "a route to a dictionary goes through a supertrait no dictionary has, `SelfExt.Iterator()`",
-    file: "src/lower/traits/routes.rs",
+    file: "crates/rust-js-lower/src/traits/routes.rs",
     find: "        held_supertraits(self.recognition.tcx, self.recognition.foreign, from.def_id, from.args)\n            .into_iter()\n            .find_map(|(name, tr)| {\n",
     replace:
       "        supertraits(self.recognition.tcx, from.def_id, from.args)\n            .into_iter()\n            .find_map(|(name, tr, _)| {\n",
@@ -92,8 +92,8 @@ export const mutations: Mutation[] = [
     name: "known-extend-by-dictionary",
     breaks:
       "a known collection's `extend` of generic items goes through a dictionary, given the collection where it takes its box",
-    file: "src/lower/traits/routes.rs",
-    find: "|| (holder && !crate::lower::recognition::known_by_bounds(self_ty.peel_refs()))",
+    file: "crates/rust-js-lower/src/traits/routes.rs",
+    find: "|| (holder && !crate::recognition::known_by_bounds(self_ty.peel_refs()))",
     replace: "|| (holder && known_here)",
     tests: [
       "test/corpus.test.ts",
@@ -105,10 +105,10 @@ export const mutations: Mutation[] = [
     name: "deref-mut-read-where-known",
     breaks:
       "a crate's `DerefMut` dictionary is written for each impl, where only generic code reads it",
-    file: "src/lower/traits/routes.rs",
-    find: "        || tcx.is_lang_item(trait_id, LangItem::DerefMut)\n        || crate::lower::recognition::is_extend(tcx, trait_id)\n        || is_std_def(tcx, trait_id, StdItem::FromIterator)\n        || is_std_def(tcx, trait_id, StdItem::AsMut)\n",
+    file: "crates/rust-js-lower/src/traits/routes.rs",
+    find: "        || tcx.is_lang_item(trait_id, LangItem::DerefMut)\n        || crate::recognition::is_extend(tcx, trait_id)\n        || is_std_def(tcx, trait_id, StdItem::FromIterator)\n        || is_std_def(tcx, trait_id, StdItem::AsMut)\n",
     replace:
-      "        || crate::lower::recognition::is_extend(tcx, trait_id)\n        || is_std_def(tcx, trait_id, StdItem::FromIterator)\n        || is_std_def(tcx, trait_id, StdItem::AsMut)\n",
+      "        || crate::recognition::is_extend(tcx, trait_id)\n        || is_std_def(tcx, trait_id, StdItem::FromIterator)\n        || is_std_def(tcx, trait_id, StdItem::AsMut)\n",
     tests: ["test/corpus.test.ts", "-t", "^user_deref.rs$"],
     snapshots: true,
   },
@@ -116,8 +116,8 @@ export const mutations: Mutation[] = [
     name: "sum-dictionary-written-everywhere",
     breaks:
       "the crate's `Sum` impl's dictionary is written where nothing generic reads it",
-    file: "src/lower/traits/routes.rs",
-    find: "        || crate::lower::recognition::is_sum_or_product(tcx, trait_id)\n        || is_std_def(tcx, trait_id, StdItem::From)\n",
+    file: "crates/rust-js-lower/src/traits/routes.rs",
+    find: "        || crate::recognition::is_sum_or_product(tcx, trait_id)\n        || is_std_def(tcx, trait_id, StdItem::From)\n",
     replace: "        || is_std_def(tcx, trait_id, StdItem::From)\n",
     tests: ["test/corpus.test.ts", "-t", "^user_collections.rs$"],
     snapshots: true,
@@ -126,17 +126,17 @@ export const mutations: Mutation[] = [
     name: "hash-impls-written-unreached",
     breaks:
       "a `Hash` impl nothing calls is written, a fiber's a set finds by its address (ADRs 0463, 0864)",
-    file: "src/lower/traits/routes.rs",
-    find: "        || crate::lower::recognition::is_hashing(tcx, trait_id)\n        || crate::lower::recognition::is_sum_or_product(tcx, trait_id)\n",
+    file: "crates/rust-js-lower/src/traits/routes.rs",
+    find: "        || crate::recognition::is_hashing(tcx, trait_id)\n        || crate::recognition::is_sum_or_product(tcx, trait_id)\n",
     replace:
-      "        || crate::lower::recognition::is_sum_or_product(tcx, trait_id)\n",
+      "        || crate::recognition::is_sum_or_product(tcx, trait_id)\n",
     tests: ["test/corpus.test.ts", "-t", "^owner_handle_quiet.rs$"],
     snapshots: true,
   },
   {
     name: "projected-bound-unrouted",
     breaks: "generic code finds no evidence of a bound a trait declares on what its associated type projects, `<<S as Source>::Pairs as IntoIterator>::IntoIter: DoubleEndedIterator`, so a flatten of its items from its back is refused (#1355)",
-    file: "src/lower/traits/routes.rs",
+    file: "crates/rust-js-lower/src/traits/routes.rs",
     find: "            of = alias.self_ty();\n",
     replace: "            return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_into_iterator_flattened_from_its_back.rs$"],
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-from-dictionary-exported",
     breaks: "a crate's `TryFrom` impl's dictionary is written and exported where no generic code reads it, `export const evenTryFromU32` (#1284)",
-    file: "src/lower/traits/routes.rs",
+    file: "crates/rust-js-lower/src/traits/routes.rs",
     find: "        || is_std_def(tcx, trait_id, StdItem::TryFrom)\n",
     replace: "",
     tests: ["test/snapshots.test.ts", "-t", "api"],

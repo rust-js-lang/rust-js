@@ -1,8 +1,8 @@
-// Mutations of src/lower/analysis/intervals/transfer.rs, the MIR intervals'
+// Mutations of crates/rust-js-lower/src/analysis/intervals/transfer.rs, the MIR intervals'
 // transfer that asks the effects query too (#2112 B step 3a).
 import type { Mutation } from "../../../../mutations";
 
-const file = "src/lower/analysis/intervals/transfer.rs";
+const file = "crates/rust-js-lower/src/analysis/intervals/transfer.rs";
 const proofs = ["test/intervals-shadow.test.ts", "-t", "keeps what the rules prove"];
 
 export const mutations: Mutation[] = [

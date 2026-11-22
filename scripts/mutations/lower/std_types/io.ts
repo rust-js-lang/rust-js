@@ -1,11 +1,11 @@
-// Mutations of src/lower/std_types/io.rs (#1156).
+// Mutations of crates/rust-js-lower/src/std_types/io.rs (#1156).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "deque-front-slice-read",
     breaks: "a `VecDeque<u8>`'s `read` and `fill_buf`, which read its front slice alone, a JS array has none of, are called of `$dequeReader`, which has neither, where they're refused (#1302)",
-    file: "src/lower/std_types/io.rs",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
     find: '                if deque && matches!(name.as_str(), "read" | "fill_buf") {',
     replace: "                if false {",
     tests: ["test/diagnostics.test.ts", "-t", "VecDeque's (read|fill_buf)"],
@@ -13,15 +13,15 @@ export const mutations: Mutation[] = [
   {
     name: "known-source-unboxed",
     breaks: "a `Cursor` whose type is known is given to its dictionary as the object, not in the box generic code gives it in",
-    file: "src/lower/std_types/io.rs",
-    find: "                    false => crate::lower::mut_refs::boxed(receiver),\n",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
+    find: "                    false => crate::mut_refs::boxed(receiver),\n",
     replace: "                    false => receiver,\n",
     tests: ["test/corpus.test.ts", "-t", "^io_cursor.rs$"],
   },
   {
     name: "known-read-exact-uncaught",
     breaks: "a known source's `read_exact` whose result is a value isn't caught, so its error is thrown past `unwrap_err()`",
-    file: "src/lower/std_types/io.rs",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
     find: "                self.fmt_result_value(call.def_id, call.generic_args, called)\n",
     replace: "                called\n",
     tests: ["test/corpus.test.ts", "-t", "^io_read_slice.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "cursor-starts-at-one",
     breaks: "`Cursor::new` starts at position 1",
-    file: "src/lower/std_types/io.rs",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
     find: "                Prop::Field(\"pos\".into(), Expr::bigint(0)),\n",
     replace: "                Prop::Field(\"pos\".into(), Expr::bigint(1)),\n",
     tests: ["test/corpus.test.ts", "-t", "^io_cursor.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "read-byte-of-the-source-read",
     breaks: "`Bytes::next`'s `$readByte` is given a slice's dictionary whatever it reads, so a chain's bytes are read as its first slice's (#1156)",
-    file: "src/lower/std_types/io.rs",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
     find: "                Expr::call_helper(\"$readByte\", vec![reader, dictionary])\n",
     replace: "                let _ = dictionary;\n                Expr::call_helper(\"$readByte\", vec![reader, Expr::helper(\"$sliceReader\")])\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "buf-reader-default-capacity",
     breaks: "`BufReader::new` makes a buffer of 4096, where std's is 8 KiB (#1156)",
-    file: "src/lower/std_types/io.rs",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
     find: "plain::filled(Expr::int(8192), Some(Expr::int(0)))",
     replace: "plain::filled(Expr::int(4096), Some(Expr::int(0)))",
     tests: ["test/corpus.test.ts", "-t", "^io_buf_reader.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "buf-reader-capacity-is-filled",
     breaks: "`r.capacity()` is how much of its buffer is filled, not its length (#1156)",
-    file: "src/lower/std_types/io.rs",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
     find: "IoOp::BufReaderCapacity => Expr::member(Expr::member(next(), \"buf\"), \"length\"),",
     replace: "IoOp::BufReaderCapacity => Expr::member(next(), \"filled\"),",
     tests: ["test/corpus.test.ts", "-t", "^io_buf_reader.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "buf-reader-buffer-from-start",
     breaks: "`r.buffer()` is its buffer up to where it's filled, not from where it's read (#1156)",
-    file: "src/lower/std_types/io.rs",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
     find: "                        Expr::member(reader.clone(), \"pos\"),\n",
     replace: "                        Expr::int(0),\n",
     tests: ["test/corpus.test.ts", "-t", "^io_buf_reader.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "buf-reader-inner-made-after-room",
     breaks: "`BufReader::with_capacity(n, make())` asks std's room for `n` before `make()` runs, so an inner made by a call isn't made where the room fails",
-    file: "src/lower/std_types/io.rs",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
     find: "                if !check.is_empty() && !inner.reads_same() {\n",
     replace: "                if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^io_buf_reader.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "buf-reader-inner-spilled-where-room-fits",
     breaks: "`BufReader::with_capacity(4, cursor(..))` spills its inner to a `const` though no room is asked, whose order nothing can see",
-    file: "src/lower/std_types/io.rs",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
     find: "                if !check.is_empty() && !inner.reads_same() {\n",
     replace: "                if !inner.reads_same() {\n",
     tests: ["test/corpus.test.ts", "-t", "^io_buf_reader.rs$"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "buf-reader-held-mut-unboxed",
     breaks: "a `BufReader` of a `&mut` to an object holds the object, where its dictionary, `$mutReader`'s, reads generic code's box of it: what it reads is `undefined` (#1374)",
-    file: "src/lower/std_types/io.rs",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
     find: "        self.form_given(Form::Box, (call.def_id, declared, held), inner, call.span)\n",
     replace: "        let _ = (declared, held);\n        Ok(inner)\n",
     tests: ["test/corpus.test.ts", "-t", "^buf_reader_of_a_borrowed_reader.rs$"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "buf-reader-mut-inner-boxed",
     breaks: "a `BufReader`'s `get_ref` and `into_inner` of a `&mut` to an object give generic code's box of it, whose `position()` is `undefined` (#1374)",
-    file: "src/lower/std_types/io.rs",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
     find: "        Ok(self.form_back(Form::Box, crossing, inner))\n",
     replace: "        let _ = crossing;\n        Ok(inner)\n",
     tests: ["test/corpus.test.ts", "-t", "^buf_reader_of_a_borrowed_reader.rs$"],
@@ -102,15 +102,15 @@ export const mutations: Mutation[] = [
   {
     name: "cursor-inner-unboxed-as-a-buf-reader",
     breaks: "a `Cursor`'s `get_ref` of a `&mut` to a `Vec` is taken out of a box it isn't in, as a `BufReader`'s is (#1374)",
-    file: "src/lower/std_types/io.rs",
-    find: "        if !crate::lower::recognition::is_buf_reader(self.tcx, adt.did()) {\n            return Ok(inner);\n        }\n",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
+    find: "        if !crate::recognition::is_buf_reader(self.tcx, adt.did()) {\n            return Ok(inner);\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^buf_reader_of_a_borrowed_reader.rs$"],
   },
   {
     name: "slice-writer-box-dropped",
     breaks: "a `&mut [u8]` writer's call is given a box made for it, so the caller's slice isn't re-pointed past what's written, the next write over it (#1282)",
-    file: "src/lower/std_types/io.rs",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
     find: "                        if slice_writer\n",
     replace: "                        if false\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_mut_slice.rs$"],
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   {
     name: "read-to-string-fresh-untold",
     breaks: "a `read_to_string` of a `String` proved fresh-empty isn't told so, and a crate's reader read into it is refused as it runs (#1297)",
-    file: "src/lower/std_types/io.rs",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
     find: "                        given.push(Expr::bool(true));\n",
     replace: "",
     tests: [
@@ -130,9 +130,9 @@ export const mutations: Mutation[] = [
   {
     name: "read-to-string-not-fresh-compiles",
     breaks: "a crate's reader's `read_to_string` into a `String` not fresh compiles, refused only as it runs (#1297)",
-    file: "src/lower/std_types/io.rs",
-    find: "                    } else if crate::lower::recognition::reads_through_own_reader(tcx, tr.self_ty()) {\n",
-    replace: "                    } else if false && crate::lower::recognition::reads_through_own_reader(tcx, tr.self_ty()) {\n",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
+    find: "                    } else if crate::recognition::reads_through_own_reader(tcx, tr.self_ty()) {\n",
+    replace: "                    } else if false && crate::recognition::reads_through_own_reader(tcx, tr.self_ty()) {\n",
     tests: [
       "test/diagnostics.test.ts",
       "-t",
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwritten-box-a-handle",
     breaks: "a known `io::empty()`'s place is given `$emptyReader` in a handle, `{ get value() { return e; }, set value(value) { e = value; } }`, where nothing writes it and `{ value: e }` reads the same (#1329)",
-    file: "src/lower/std_types/io.rs",
+    file: "crates/rust-js-lower/src/std_types/io.rs",
     find: "(rust_js_program::js::ExprKind::Handle(place, _), Some(source)) if !source.writes_its_box() => {",
     replace: "(rust_js_program::js::ExprKind::Handle(place, _), Some(source)) if false && !source.writes_its_box() => {",
     tests: ["test/io-readers.test.ts"],

@@ -1,0 +1,522 @@
+//! A closure made in a body: its arrow, of its own MIR, and what it
+//! captured.
+
+use super::*;
+use rust_js_lower::temporary_names::{Base, Role};
+
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
+    /// Of `local`, a closure that captures nothing held in a local optimized
+    /// MIR never writes, its value being of no size, `&_2` of `make(x)`:
+    /// the closure, made where it's first read, as its constant is, and kept
+    /// (`State::in_place`) for its later reads (#1032). `None` of another.
+    pub(super) fn unwritten_closure(&mut self, state: &mut State<'_, 'tcx>, local: Local) -> R<Option<Expr>> {
+        let ty = state.body.local_decls[local].ty;
+        if local.index() <= state.body.arg_count
+            || state.locals.writes[local] != 0
+            || state.in_place.contains_key(&local)
+            || !matches!(ty.kind(), ty::Closure(..))
+            || !rust_js_lower::recognition::held_types(ty).is_some_and(|(_, upvars)| upvars.is_empty())
+        {
+            return Ok(None);
+        }
+        let span = state.body.local_decls[local].source_info.span;
+        let mut made = Vec::new();
+        let closure = self.mir_closure(state, ty, Vec::new(), span, &mut made)?;
+        if !made.is_empty() {
+            return Ok(None);
+        }
+        state.in_place.insert(local, closure.clone());
+        Ok(Some(closure))
+    }
+
+    /// A closure made here, an arrow of its own MIR: what it captured, as
+    /// it's read where it's made, the places it borrows themselves, as JS's
+    /// closures read theirs, and a value it took a copy of where the
+    /// variable may change after. Of its type `ty` as this body makes it, in
+    /// this body's terms: one std's MIR inlines, `map_fold`'s in `Map`'s
+    /// `fold`, holds `F` and `G` of the `fold`, not of `map_fold`.
+    pub(super) fn mir_closure(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        ty: Ty<'tcx>,
+        captured: Vec<Value<'tcx>>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let Some((def_id, upvars)) = rust_js_lower::recognition::held_types(ty) else {
+            return Err(self.unsupported(span, "this closure, from its MIR"));
+        };
+        let closure = self.mir_closure_fn(state, ty, upvars, captured, span, out)?;
+        if !self.krate.closure_facts.clones_apart(def_id) {
+            return self.closure_carrying_drop(closure, ty, span);
+        }
+        // One cloned apart: made by a function of the variables it took,
+        // `make`, which its clone, `$cloning`'s, calls again with a clone of
+        // each (ADR 0522).
+        let taken: Vec<(js::Name, Ty<'tcx>)> = (self.closure_held(def_id).into_iter())
+            .filter_map(|(e, ty)| match e.kind {
+                js::ExprKind::Var(name) => Some((name, ty)),
+                _ => None,
+            })
+            .collect();
+        let make = self.fresh(Role::Make);
+        let mut cloned = Vec::new();
+        let mut clones = Vec::new();
+        for (name, ty) in &taken {
+            clones.push(self.clone_value(Expr::var(name), *ty, span, &mut cloned)?);
+        }
+        cloned.push(StmtKind::Return(Some(Expr::call(Expr::var(&make), clones))).at(js::Span::NONE));
+        let closure = Expr::call_helper("$cloning", vec![closure, Expr::arrow(Vec::new(), cloned)]);
+        let closure = self.closure_carrying_drop(closure, ty, span)?;
+        let params = taken.iter().map(|(name, _)| name.clone().into()).collect();
+        let maker = Expr::arrow(params, vec![StmtKind::Return(Some(closure)).at(js::Span::NONE)]);
+        out.push(StmtKind::Let(make.clone(), Some(maker)).at(self.js_span(span)));
+        Ok(Expr::call(
+            Expr::var(&make),
+            taken.iter().map(|(name, _)| Expr::var(name)).collect(),
+        ))
+    }
+
+    /// The closure `closure`, of type `ty`: one its maker gives back, makes
+    /// a `dyn Fn` or clones apart, holding a value with a destructor, carries
+    /// its drop, what it took dropped, where it's made (ADRs 0484, 0521,
+    /// 0522).
+    fn closure_carrying_drop(&mut self, closure: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let ty::Closure(def_id, _) = *ty.kind() else {
+            return Ok(closure);
+        };
+        if !self.krate.closure_facts.carries_its_drop(self.tcx, def_id)
+            || self.drops(ty) == rust_js_lower::drops::Drops::Nothing
+        {
+            return Ok(closure);
+        }
+        let dropped = self.carried_drop(def_id, span)?;
+        Ok(Expr::call_helper(
+            "$dropping",
+            vec![closure, Expr::arrow(Vec::new(), dropped)],
+        ))
+    }
+
+    /// The JS name of the variable a closure `def_id`'s capture `i` takes
+    /// whole, `originalMethod` of a `move` closure's `original_method`;
+    /// none of a part of one, `entry.value` (rd656).
+    fn whole_capture_name(&self, def_id: rustc_span::def_id::DefId, i: usize) -> Option<String> {
+        let captured = self.tcx.closure_captures(def_id.as_local()?).get(i)?;
+        let name = captured.var_ident.name;
+        (captured.place.projections.is_empty() && !name.as_str().is_empty())
+            .then(|| rust_js_program::casing::camel_case(name.as_str()))
+    }
+
+    /// `mir_closure`'s function, of what it took.
+    fn mir_closure_fn(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        ty: Ty<'tcx>,
+        upvars: &'tcx ty::List<Ty<'tcx>>,
+        captured: Vec<Value<'tcx>>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let Some((def_id, _)) = rust_js_lower::recognition::held_types(ty) else {
+            return Err(self.unsupported(span, "this closure, from its MIR"));
+        };
+        let Some(body) = self.krate.closures.get(&def_id).copied() else {
+            return Err(self.unsupported(span, "this closure, from its MIR"));
+        };
+        let Some(mir) = &body.mir else {
+            return Err(self.unsupported(span, "this closure, without its MIR"));
+        };
+        // One rustc's MIR inlined, made in another function than its own,
+        // std's `flatten::<U, Acc>`'s in `FlattenCompat::rfold`: its body
+        // read in its maker's terms, as its captures are (ADR 0899).
+        let inlined;
+        // Of a trait's default copied into an impl, in the impl's terms, as
+        // its body is (`traits::default_args`, #803).
+        let mir = match (self.inlined_closure_args(def_id, ty), self.copied_default_args()) {
+            (Some(args), _) => {
+                inlined = mir.instantiated(self.tcx, args);
+                &inlined
+            }
+            (None, Some(args)) => {
+                let args = rust_js_lower::traits::default_body_args(self.tcx, args, def_id);
+                inlined = rust_js_lower::traits::default_mir(self.tcx, mir, args, self.typing_env);
+                &inlined
+            }
+            (None, None) => mir,
+        };
+        // One rustc infers `Fn` or `FnMut` that a binding calls once, as its
+        // `call_once` runs it, dropping what it took (ADR 1020); or one moved
+        // once into an `F: FnOnce`, where it drops something (#995): one
+        // that drops nothing keeps its own body, its early `return`s.
+        let once;
+        let called_once = self.krate.closure_facts.called_once(def_id)
+            || (self.krate.closure_facts.moved_once(def_id) && self.drops(ty) != rust_js_lower::drops::Drops::Nothing);
+        let mir = match called_once {
+            true => {
+                once = (mir.called_once(self.tcx))
+                    .ok_or_else(|| self.unsupported(span, "a closure called once that reads itself whole"))?;
+                &once
+            }
+            false => mir,
+        };
+        // Its handle on itself, where it reads one: its `Rc`'s variable, its
+        // own name, and the cell it captured no JS (`analysis/self_handles.rs`,
+        // ADR 0843, amended); or on what owns it, its owner's `let` (ADR
+        // 0317, amended).
+        let mut captured = captured;
+        // A value cell's reader, made in the closure its maker gives the
+        // value's variable to, reads that (`self_handles/value_cells.rs`).
+        let own = match self.krate.self_handles.made_of(state.body.source.def_id(), def_id) {
+            Some((capture, handle)) => {
+                if let Some(cell) = captured.get_mut(capture) {
+                    *cell = Value::Expr(Expr::js_undefined());
+                }
+                Some(match handle {
+                    Some(handle) => Expr::var(&state.locals.names[handle]),
+                    None => (state.facts.owner_name().cloned())
+                        .ok_or_else(|| self.unsupported(span, "a value cell's reader its maker names nothing to"))?,
+                })
+            }
+            None => None,
+        };
+        let mut captures = Vec::new();
+        // What it took by value and never changes, by its name: what a
+        // `bind` of it may bind (`passed_on::binds`). What it borrows is
+        // its place, above; a `&mut`, its variable; what it changes, a `let`
+        // of its own.
+        let mut moved = Vec::new();
+        let by_value = rust_js_lower::analysis::taken_by_value(self.tcx, def_id);
+        for (i, value) in captured.into_iter().enumerate() {
+            captures.push(match value {
+                Value::Ref(place) | Value::Place(place) => (place, true),
+                // A `&mut` to a variable of the maker's own, an object: the
+                // variable, which the closure reads and assigns as JS's
+                // closures do theirs. And the sink a writer writes through,
+                // which it lends as it is (#1637).
+                Value::Expr(e)
+                    if matches!(
+                        upvars.get(i).map(|t| t.kind()),
+                        Some(ty::Ref(_, _, ty::Mutability::Mut))
+                    ) && matches!(&e.kind, js::ExprKind::Var(name) if (state.locals.names.iter_enumerated())
+                            .any(|(local, n)| name == n && !state.body.local_decls[local].ty.is_ref())
+                            || self.is_writers_sink(state, name)) =>
+                {
+                    (e, true)
+                }
+                // A shared borrow of a field a getter may answer, of a struct
+                // JS made (ADR 1022): read where the closure derefs it, as
+                // Rust reads it there, `stringify(entry.value)` (rd631, the
+                // user's decision). Not where it keeps or gives the
+                // reference, nor of an object read apart.
+                Value::Expr(e)
+                    if matches!(
+                        upvars.get(i).map(|t| t.kind()),
+                        Some(ty::Ref(_, _, ty::Mutability::Not))
+                    ) && e.facts.has(js::Known::Getter)
+                        && matches!(&e.kind, js::ExprKind::Member(object, _) if object.reads_same())
+                        && super::queries::derefs_capture_only(&mir.body, i) =>
+                {
+                    (e, true)
+                }
+                // One it took and changes is its own: a `let` of it, made here.
+                value if writes_capture(&mir.body, i) => {
+                    let e = self.value_expr(value, span)?;
+                    self.flush(state, out)?;
+                    // The program's variable, moved in, of one the program named.
+                    let name = self.fresh(match &e.kind {
+                        js::ExprKind::Var(name) if name.is_the_programs() => Base::Program(name),
+                        js::ExprKind::Var(name) => Base::Named(name.word()), // word: the variable moved in, its name again
+                        _ => Base::Role(Role::Captured),
+                    });
+                    out.push(StmtKind::Let(name.clone(), Some(e)).at(self.js_span(span)));
+                    (Expr::var(&name), false)
+                }
+                value => {
+                    let e = self.value_expr(value, span)?;
+                    // Written again where it's made, or after: a copy, as it was.
+                    let changes = matches!(&e.kind, js::ExprKind::Var(name)
+                        if state.locals.names.iter_enumerated().any(|(l, n)| name == n
+                            && super::queries::written_again(state, l)
+                            && written_from(state.body, state.at, l)));
+                    let e = if e.is_constant() || (matches!(e.kind, js::ExprKind::Var(_)) && !changes) {
+                        e
+                    } else {
+                        self.flush(state, out)?;
+                        // Named for the variable it takes whole, `const id =
+                        // action._0;`; `captured` of a part of one, and of a
+                        // copy of the variable as it is now, `const captured
+                        // = factor;`, which its name would only name apart
+                        // (rd656).
+                        // The variable's own JS may be named apart where it's
+                        // read, `n$1` of `let mut n = n;`, which its debug
+                        // info names `n`.
+                        let base = (self.whole_capture_name(def_id, i)).filter(|name| {
+                            !matches!(&e.kind, js::ExprKind::Var(v) if (state.body.var_debug_info.iter()).any(|info|
+                                matches!(info.value, mir::VarDebugInfoContents::Place(p)
+                                    if p.projection.is_empty() && *v == state.locals.names[p.local])
+                                    && rust_js_program::casing::camel_case(info.name.as_str()) == *name))
+                        });
+                        self.spill(base.as_deref().map_or(Base::Role(Role::Captured), Base::Named), e, out)
+                    };
+                    if let js::ExprKind::Var(name) = &e.kind
+                        && by_value.get(i).copied().unwrap_or(false)
+                    {
+                        moved.push(name.clone());
+                    }
+                    (e, false)
+                }
+            });
+        }
+        // What its drop drops, where it's made: what it holds, `closure_made`
+        // (ADR 0098); a reference it holds drops nothing.
+        let held: Vec<(Expr, Ty<'tcx>)> = (captures.iter().zip(upvars))
+            .map(|((e, _), ty)| (e.clone(), ty))
+            .collect();
+        self.closure_made(def_id, held);
+        // Its own THIR's shape hints, and what's known of it, where its body
+        // is written; and whose body it is, its own, as `enter_body` has it:
+        // `Location::caller()` in it is where it's written (ADR 0427).
+        let outer = std::mem::replace(&mut self.frame.thir, &body.thir);
+        let outer_facts = std::mem::replace(&mut self.frame.facts, &body.facts);
+        let outer_owner = std::mem::replace(&mut self.frame.owner, def_id);
+        // Given a place found, what it's told of it (ADR 0642).
+        let seed = state.facts.offsets().seed(def_id).cloned();
+        // Whether what it gives back is held as its payload where it's
+        // given back, a thread-local's `with_borrow`'s (ADR 1017, amended).
+        let result_held = state.facts.options().held_results.contains(&def_id);
+        let lowered = self.lowered_from_mir(mir, Some(captures), (seed, own, result_held));
+        self.frame.thir = outer;
+        self.frame.facts = outer_facts;
+        self.frame.owner = outer_owner;
+        let (mut params, mut stmts) = lowered?;
+        // The functions and `const`s written in it, in its body (ADRs
+        // 0308, 0031).
+        let written: Vec<rustc_span::def_id::DefId> = (self.krate.local_functions.keys())
+            .chain(self.krate.local_consts.keys())
+            .filter(|&&id| self.tcx.parent(id) == def_id)
+            .copied()
+            .collect();
+        // An `async` closure's `|_|`, which its MIR leaves unnamed, and its
+        // THIR binds as `__arg0`: read nowhere, none either.
+        while let Some(js::Pattern::Name(name)) = params.last()
+            && name.is_unread()
+            && js::mentions_of(&stmts, name) == 0
+        {
+            params.pop();
+        }
+        // Its directives, `"use server";`, its body's first statements
+        // (ADR 0349).
+        let directives = self.directives(def_id);
+        // An `async` body runs as soon as it's made: an async arrow, called
+        // at once (ADR 0029).
+        if self.tcx.coroutine_is_async(def_id) {
+            self.place_written(written, &mut stmts);
+            // What it gives, settled where a promise would adopt it (#172).
+            if let ty::Coroutine(_, args) = self.tcx.type_of(def_id).skip_binder().kind()
+                && self.may_be_thenable(args.as_coroutine().return_ty())
+            {
+                js::statement_lists(&mut stmts, &mut |list| {
+                    for stmt in list.iter_mut() {
+                        if let StmtKind::Return(Some(value)) = &mut stmt.kind {
+                            let given = std::mem::replace(value, Expr::taken());
+                            *value = Expr::call_helper("$settled", vec![given]);
+                        }
+                    }
+                });
+            }
+            return Ok(Expr::call(Expr::async_arrow(params, stmts), Vec::new()));
+        }
+        // An `async` closure's body is the one it makes: its async arrow's.
+        if matches!(self.tcx.type_of(def_id).skip_binder().kind(), ty::CoroutineClosure(..))
+            && let Some(mut body) = called_async_body(&mut stmts)
+        {
+            self.place_written(written, &mut body);
+            body.splice(0..0, directives);
+            return Ok(Expr::async_arrow(params, body));
+        }
+        self.place_written(written, &mut stmts);
+        stmts.splice(0..0, directives);
+        let made_at = span;
+        let span = self.js_span(span);
+        let forwarded = self.forwarded_to(body, (span, made_at));
+        let concise = self.closure_calls_for_nothing(body);
+        if forwarded.is_some() || concise.is_some() {
+            let arrow = Expr {
+                span,
+                ..Expr::arrow(params, stmts)
+            };
+            if let Some(mut fact) = forwarded {
+                // Whether it's what it passes on its call to, bound to what
+                // it captured (ADR 0605, amended).
+                // A thunk handed on as a callback, or one of parameters JS
+                // leaves out, stays its arrow (#502).
+                let thunk = matches!(&arrow.kind, js::ExprKind::Arrow(params, _) if params.is_empty());
+                let ignores = match self.tcx.type_of(def_id).skip_binder().kind() {
+                    ty::Closure(_, args) => !args.as_closure().sig().inputs().skip_binder()[0]
+                        .tuple_fields()
+                        .is_empty(),
+                    _ => true,
+                };
+                let kept = thunk && (ignores || self.handed_on(made_at));
+                fact.binds = rust_js_lower::passed_on::binds(&arrow, &fact, &moved, kept);
+                self.locals.mir.forwarding.push(fact);
+            }
+            if let Some(written) = concise {
+                self.locals.mir.concise.push((span, written));
+            }
+            return Ok(arrow);
+        }
+        Ok(Expr::arrow(params, stmts))
+    }
+
+    /// Of a closure of type `ty`, `def_id`'s, made where its own function
+    /// isn't, as rustc's MIR inlines that one into its caller: what its own
+    /// function's generics are where it's made, its type's parent args.
+    /// `None` of one made in its own function.
+    fn inlined_closure_args(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+        ty: Ty<'tcx>,
+    ) -> Option<ty::GenericArgsRef<'tcx>> {
+        let own = self.tcx.typeck_root_def_id(def_id);
+        if own == self.tcx.typeck_root_def_id(self.frame.owner) {
+            return None;
+        }
+        let parent = match *ty.kind() {
+            ty::Closure(_, args) => args.as_closure().parent_args(),
+            ty::Coroutine(_, args) => args.as_coroutine().parent_args(),
+            ty::CoroutineClosure(_, args) => args.as_coroutine_closure().parent_args(),
+            _ => return None,
+        };
+        (parent.len() == self.tcx.generics_of(own).count()).then(|| self.tcx.mk_args(parent))
+    }
+
+    /// The functions and `const`s written in `def_id`'s body, a function's
+    /// or a closure's, or in a closure of it (ADR 0308; ADR 0031, amended).
+    pub(super) fn items_written_in(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+    ) -> impl Iterator<Item = rustc_span::def_id::DefId> {
+        (self.krate.local_functions.keys())
+            .chain(self.krate.local_consts.keys())
+            .filter(move |&&id| {
+                let mut parent = self.tcx.parent(id);
+                while parent != def_id && self.tcx.is_closure_like(parent) {
+                    parent = self.tcx.parent(parent);
+                }
+                parent == def_id
+            })
+            .copied()
+    }
+
+    /// A hole for each function of `written`, before the first statement of
+    /// `out` written after it, or the `return` that ends it: a function
+    /// declaration's, which JS hoists (ADR 0308). Then one for each `const`
+    /// of it, once the functions that may read it are there: where it's
+    /// written too, or, where a statement before that reads it, before that
+    /// one, as JS's `const` is read only once it's made, which Rust's is
+    /// wherever its block is (ADR 0031, amended); one a function written
+    /// there reads first in its block, as what's before may call it.
+    pub(super) fn place_written(&self, written: Vec<rustc_span::def_id::DefId>, out: &mut Vec<Stmt>) {
+        let mut written: Vec<(u32, rustc_span::def_id::DefId)> = (written.into_iter())
+            .map(|id| (self.js_span(self.tcx.def_span(id)).lo, id))
+            .collect();
+        written.sort_by_key(|&(at, _)| at);
+        let (consts, functions): (Vec<_>, Vec<_>) = written
+            .into_iter()
+            .partition(|(_, id)| self.krate.local_consts.contains_key(id));
+        for (at, id) in functions.into_iter().chain(consts) {
+            self.place_item(id, at, out);
+        }
+    }
+
+    /// A hole for item `id`, written at `at`, in `out`, `place_written`'s.
+    fn place_item(&self, id: rustc_span::def_id::DefId, at: u32, out: &mut Vec<Stmt>) {
+        let hole = Expr {
+            facts: js::Facts::NONE,
+            kind: js::ExprKind::Hole(js::Hole::Item(id.index.as_u32())),
+            span: js::Span::NONE,
+            held_as: Default::default(),
+        };
+        let hole = StmtKind::Expr(hole).at(js::Span::NONE);
+        let name = self.krate.item_name(id, None, &self.krate.fns[&id].name);
+        let constant = self.krate.local_consts.get(&id);
+        // What reads it: its name, or, of a `const`, a hole of a function
+        // written here that reads it, filled later.
+        let readers: Vec<u32> = (constant.into_iter().flat_map(|(_, readers)| readers))
+            .map(|reader| reader.index.as_u32())
+            .collect();
+        let reads = |stmts: &[Stmt]| {
+            let mut found = js::mentions_of(stmts, &name);
+            js::each_expr(stmts, &mut |e| {
+                found += usize::from(
+                    matches!(e.kind, js::ExprKind::Hole(js::Hole::Item(index)) if readers.contains(&index)),
+                );
+            });
+            found
+        };
+        let uses = reads(out);
+        // Where in a list it goes: before what's written after it, or what
+        // reads a `const` first; first, of one a function written here
+        // reads, which what's before may call.
+        let called = (constant.into_iter().flat_map(|(_, readers)| readers))
+            .any(|reader| self.krate.local_functions.contains_key(reader));
+        let before = |list: &[Stmt]| {
+            let written = written_before(list, at);
+            match constant {
+                Some(_) if called => Some(0),
+                Some(_) => {
+                    let first = list.iter().position(|s| reads(std::slice::from_ref(s)) > 0);
+                    written.zip(first).map(|(w, f)| w.min(f)).or(written).or(first)
+                }
+                None => written,
+            }
+        };
+        // In the block it's written in, a JS function declaration
+        // being its block's alone (ADR 0696): `if (construct) {
+        // function Fake() {..} .. }`; one written at its body's top is
+        // there, not in the `if` that uses it.
+        let block = self.js_span(match constant {
+            Some((block, _)) => *block,
+            None => self.krate.local_functions[&id],
+        });
+        // The lists holding them all nest, each in the one before,
+        // walked outermost first: the first of them with a statement
+        // written after it in its block is the block's.
+        let (mut index, mut written_in) = (0, None);
+        js::statement_lists(out, &mut |list| {
+            if written_in.is_none()
+                && uses > 0
+                && reads(list) == uses
+                && list
+                    .iter()
+                    .any(|s| !s.span.is_none() && s.span.lo > at && s.span.lo < block.hi)
+            {
+                written_in = Some(index);
+            }
+            index += 1;
+        });
+        if let Some(written_in) = written_in {
+            let mut index = 0;
+            js::statement_lists(out, &mut |list| {
+                if index == written_in
+                    && let Some(i) = before(list)
+                {
+                    list.insert(i, hole.clone());
+                }
+                index += 1;
+            });
+            return;
+        }
+        let ends = matches!(out.last(), Some(s) if matches!(s.kind, StmtKind::Return(_)));
+        let last = out.len() - usize::from(ends);
+        let i = before(out).map_or(last, |i| i.min(last));
+        out.insert(i, hole);
+    }
+}
+
+/// Where in `list` a function written at `at` goes: before its first
+/// statement written after it.
+fn written_before(list: &[Stmt], at: u32) -> Option<usize> {
+    list.iter().position(|s| !s.span.is_none() && s.span.lo > at)
+}

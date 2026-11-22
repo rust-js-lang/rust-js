@@ -1,11 +1,11 @@
-// Mutations of src/lower/pointers/rewritten.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/pointers/rewritten.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "reassigned-pointed-made-again",
     breaks: "a place whose address is taken, assigned whole again, is made another object, at another address, its old pointer reading the old value (#1484)",
-    file: "src/lower/pointers/rewritten.rs",
+    file: "crates/rust-js-lower/src/pointers/rewritten.rs",
     find: "            (true, false) => Rewritten::InPlace,\n",
     replace: "            (true, false) => Rewritten::Made,\n",
     tests: ["test/corpus.test.ts","-t","^address_kept_when_assigned_again.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "dropped-taken-for-unmade",
     breaks: "a value with drop glue, which rustc drops before its place is assigned again, is tested as one that may be unmade, `if (m === undefined)` (#1500)",
-    file: "src/lower/pointers/rewritten.rs",
+    file: "crates/rust-js-lower/src/pointers/rewritten.rs",
     find: "            _ => Rewritten::InPlace,\n",
     replace: "            _ => Rewritten::Tested,\n",
     tests: ["test/corpus.test.ts","-t","^address_(kept_when_assigned_again|of_a_local_moved_out).rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "unmade-after-a-drop-written-over",
     breaks: "a place unmade on some way, whose value with drop glue rustc drops before the write, is written over where it's unmade, `$assign(undefined, v)` (#1500)",
-    file: "src/lower/pointers/rewritten.rs",
+    file: "crates/rust-js-lower/src/pointers/rewritten.rs",
     find: "            _ if unmade_on_some_way(body, written, at) => Rewritten::Tested,\n",
     replace: "            (true, true) if unmade_on_some_way(body, written, at) => Rewritten::Tested,\n",
     tests: ["test/corpus.test.ts","-t","^address_of_a_local_moved_out.rs$"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "unmade-written-over",
     breaks: "a place made on one way alone is written over where it's unmade, `$assign(undefined, v)` (#1500)",
-    file: "src/lower/pointers/rewritten.rs",
+    file: "crates/rust-js-lower/src/pointers/rewritten.rs",
     find: "            _ if unmade_on_some_way(body, written, at) => Rewritten::Tested,\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","^address_of_a_local_moved_out.rs$"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameter-made-again",
     breaks: "a parameter whose address is taken, assigned whole once, is made another object, at another address, as if its write were its first (#1500)",
-    file: "src/lower/pointers/rewritten.rs",
+    file: "crates/rust-js-lower/src/pointers/rewritten.rs",
     find: "    let mut seen: IndexSet<Local> = body.args_iter().collect();\n",
     replace: "    let mut seen: IndexSet<Local> = IndexSet::default();\n",
     tests: ["test/corpus.test.ts","-t","^address_of_a_local_moved_out.rs$"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameter-unmade-at-start",
     breaks: "a parameter is taken to be unmade at the function's start, so its write after a move on one way is tested, `if (n === undefined)` (#1500)",
-    file: "src/lower/pointers/rewritten.rs",
+    file: "crates/rust-js-lower/src/pointers/rewritten.rs",
     find: "    let parameter = place.local.as_usize() <= body.arg_count;\n",
     replace: "    let parameter = false;\n",
     tests: ["test/corpus.test.ts","-t","^address_of_a_local_moved_out.rs$"],
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
   {
     name: "moves-not-copied",
     breaks: "a move of a place whose address is taken shares its object, so the value moved has its address, and a write after the move changes it (#1535)",
-    file: "src/lower/pointers/rewritten.rs",
+    file: "crates/rust-js-lower/src/pointers/rewritten.rs",
     find: "            (pointed.iter()).any(|p| p.local == moved.local && reaches_into(p.projection, moved.projection))\n",
     replace: "            (pointed.iter()).any(|p| p.local == moved.local && reaches_into(p.projection, moved.projection)) && false\n",
     tests: ["test/corpus.test.ts","-t","^address_of_a_local_moved_out.rs$"],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-pointers-unseen",
     breaks: "a pointer to a field, `&raw const s.f`, doesn't make a write of it or of what holds it over what it holds (#1484)",
-    file: "src/lower/pointers/rewritten.rs",
+    file: "crates/rust-js-lower/src/pointers/rewritten.rs",
     find: "            pointed.push(*of);\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","^address_kept_when_assigned_again.rs$"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
   {
     name: "inner-objects-unkept",
     breaks: "an object inside a place written whole, a pointer into it, is replaced by the value's, its pointer reading the old (#1484)",
-    file: "src/lower/pointers/rewritten.rs",
+    file: "crates/rust-js-lower/src/pointers/rewritten.rs",
     find: "                if !kept.contains(&inner) {\n",
     replace: "                if false && !kept.contains(&inner) {\n",
     tests: ["test/corpus.test.ts","-t","^address_kept_when_assigned_again.rs$"],
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
   {
     name: "storage-live-crossed",
     breaks: "a pointer made in a loop's last time round is taken to reach the binding's write this time, so a `for` binding is written over a local that isn't there yet (#1484)",
-    file: "src/lower/pointers/rewritten.rs",
+    file: "crates/rust-js-lower/src/pointers/rewritten.rs",
     find: "                return (false, true);\n",
     replace: "                continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_object_std_lends_from_its_storage.rs$"],
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
   {
     name: "box-contents-not-own",
     breaks: "a `Box`'s contents a pointer is taken to are moved out as one object and written over as another, at other addresses (#1535, #1484)",
-    file: "src/lower/pointers/rewritten.rs",
+    file: "crates/rust-js-lower/src/pointers/rewritten.rs",
     find: "        PlaceElem::Deref => base.ty(body, tcx).ty.is_box(),\n",
     replace: "        PlaceElem::Deref => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_local_moved_out.rs$"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
   {
     name: "kept-item-at-its-pointers-index",
     breaks: "a write over an array a pointer is at an item of, reached by an index read where it was taken, keeps the item at that index's local, which the write never declares: `ReferenceError` (#1553)",
-    file: "src/lower/pointers/rewritten.rs",
+    file: "crates/rust-js-lower/src/pointers/rewritten.rs",
     find: "    let Some(len) = len.try_to_target_usize(tcx) else {\n",
     replace: "    let Some(len) = len.try_to_target_usize(tcx).filter(|_| false) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_array_item_kept_when_written_whole.rs$"],

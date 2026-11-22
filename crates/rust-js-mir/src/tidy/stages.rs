@@ -1,0 +1,1313 @@
+//! Tidy's passes, in the order they run, in stages, each with what it
+//! leaves a body with (ADR 0659): the one list of them, which `tidy` runs
+//! and `--tidy-until` stops in. A pass reads what it needs of the body as
+//! the body is when it runs, never a fact an earlier pass worked out.
+
+use super::contracts::{self, Contract};
+use super::*;
+use rust_js_program::collections::{IndexMap, IndexSet};
+
+/// One of tidy's rewrites: what it does to a body, by what `hints` say.
+pub(super) struct Pass {
+    pub(super) name: &'static str,
+    pub(super) run: fn(&mut Vec<Stmt>, &Hints),
+}
+
+/// A run of passes for one job, and what holds of a body once it's done,
+/// checked in a debug build, past what holds of every body
+/// (`contracts::ALWAYS`).
+pub(super) struct Stage {
+    pub(super) name: &'static str,
+    pub(super) passes: &'static [Pass],
+    pub(super) ensures: &'static [Contract],
+    /// The stages run again once it's done, where its passes find they
+    /// must (`Hints::again`), each by `tidy` as any stage is.
+    pub(super) again: &'static [&'static str],
+}
+
+const fn pass(name: &'static str, run: fn(&mut Vec<Stmt>, &Hints)) -> Pass {
+    Pass { name, run }
+}
+
+/// The stages run again once each run of statements a value's drop ends
+/// is one `try { .. } finally { .. }` (ADR 0705): what each statement's own
+/// `try` held apart, `let tmp; try { tmp = f(); } catch ..`, read in place.
+const UNWOUND: &[&str] = &["names", "in place", "chains"];
+
+/// Each stage, in order.
+/// Each cleanup that may throw guarded, where a throw aborts, as Rust's does
+/// where a drop panics as a panic unwinds (#847): the `settled` stage's last
+/// pass, which a body `--tidy-until` stops early runs too, as it's what the
+/// JS does, not how it reads.
+pub(super) const GUARDED_CLEANUPS: Pass = pass("guarded cleanups", |b, _| {
+    js::statement_lists(b, &mut |s| unwinds::guarded_cleanups(s))
+});
+
+pub(super) const STAGES: &[Stage] = &[
+    Stage {
+        name: "flags",
+        passes: &[
+            // Where a drop's flag is known, no test of it, nor a `try` for it.
+            pass("settled flags", |b, h| flags::settled_flags(b, h.flags)),
+        ],
+        ensures: &[contracts::NOTHING_AFTER_A_JUMP],
+        again: &[],
+    },
+    // A loop that drops a value before each way out of it, a `for` over a
+    // `RefCell`'s borrow: one `try` of it whose `finally` drops it, before
+    // `jumps`, `values` and `loops` read what's in it, a value's branches
+    // then a conditional, a range's loop a `for` (rd200, ADR 0659, amended).
+    Stage {
+        name: "drop scopes",
+        passes: &[
+            pass("looped drops", looped_drops_of),
+            // And a scope a loop's in, deeper than its own list, its steps'
+            // `try`s gone before `loops` reads them (rd711).
+            pass("scoped loops", |b, h| {
+                js::statement_lists(b, &mut |stmts| {
+                    unwinds::scoped_loops(stmts, h.result, &h.lets.guards);
+                })
+            }),
+            // A scope no `finally` holds, its early returns each its drop
+            // where it leaves, not a `break` to it (#861).
+            pass("dropped at breaks", |b, _| {
+                js::statement_lists(b, &mut |stmts| {
+                    unwinds::dropped_at_breaks(stmts);
+                })
+            }),
+        ],
+        ensures: &[contracts::NOTHING_AFTER_A_JUMP],
+        again: &[],
+    },
+    // Twice: what a block's statements, in its place, are followed by, and
+    // a loop's label nothing names then.
+    Stage {
+        name: "jumps",
+        passes: JUMPS,
+        ensures: &[contracts::LABELS_NAMED],
+        again: &[],
+    },
+    Stage {
+        name: "jumps again",
+        passes: JUMPS,
+        ensures: &[contracts::LABELS_NAMED],
+        again: &[],
+    },
+    Stage {
+        name: "values",
+        passes: &[
+            // What a label's block, gone, left past a jump.
+            pass("unreachable", |b, _| js::statement_lists(b, &mut unreachable_after)),
+            pass("or tests", |b, _| bottom_up(b, &mut or_tests)),
+            pass("branch values", branch_values_of),
+            pass("unread result", |b, h| unread_result(b, h.result)),
+            pass("guarded", |b, _| js::statement_lists(b, &mut guarded)),
+            pass("declarations", |b, _| declarations(b)),
+            pass("aliases", |b, h| {
+                aliases(
+                    b,
+                    &h.made.captured,
+                    (&h.params.borrow(), h.kept),
+                    (h.clones, &h.named.given),
+                )
+            }),
+            // A `let` of a closure that's the function it calls, the program's
+            // own, `const onSuccess = handleNavigateComplete;`: that function,
+            // read where the variable is, as upstream adds and removes it,
+            // `addEventListener("navigatesuccess", handleNavigateComplete)`
+            // (rd284, ADR 0605, amended).
+            pass("held functions", |b, h| {
+                rust_js_lower::passed_on::held_functions(b, h.forwarding)
+            }),
+            // A test an earlier one decided, `if (x != null) { return x; } ..
+            // if (x != null)`, where nothing between changes what it reads:
+            // its branch; and a tail MIR wrote into both branches, once,
+            // after them.
+            pass("decided tests", decided_tests_of),
+            // A flag whose only test was such a drop's, read nowhere now,
+            // goes with its writes.
+            pass("settled flags", |b, h| flags::settled_flags(b, h.flags)),
+            pass("shared tails", |b, h| {
+                js::statement_lists(b, &mut |s| {
+                    shared_tails(
+                        s,
+                        &h.written.let_elses,
+                        &h.written.switches,
+                        &h.written.elses,
+                        &h.written.thens,
+                    )
+                })
+            }),
+        ],
+        ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::NO_EMPTY_IF],
+        again: &[],
+    },
+    Stage {
+        name: "loops",
+        passes: &[
+            // The innermost first: what a loop ends with may be another,
+            // recovered. An iterator a loop inside another makes, a `let`
+            // assigned each time, read by nothing else.
+            pass("loops", for_loops),
+            // What the program wrote after a loop, MIR moved into its way out.
+            // Before `decisions`, which makes a `break` of a block the loop
+            // ends a `break` of the loop: an inner loop's tail that leaves
+            // the outer, `if (count > 10) { break bb18; } continue bb1;`, is
+            // no way out of its own then, and stays in it (rd141c).
+            pass("exits after", |b, h| {
+                js::statement_lists(b, &mut |s| exits_after(s, &h.written.breaks))
+            }),
+            // A match's tree of tests, its arms reached through a block MIR
+            // made: the chain of its arms, now that the loops are made.
+            pass("decisions", |b, h| decided_trees(b, h, false)),
+            pass("early returns", |b, h| {
+                js::statement_lists(b, &mut |s| early_returns(s, &h.written.elses))
+            }),
+            pass("early breaks", |b, h| {
+                js::statement_lists(b, &mut |s| early_breaks(s, false, &h.written.breaks, &h.written.elses))
+            }),
+            pass("settle jumps", |b, _| settle_jumps(b)),
+            // A `let` declared first, its one write now beside it, what a
+            // loop held: a `const` there.
+            pass("declarations", |b, _| declarations(b)),
+            pass("continued", |b, h| {
+                js::statement_lists(b, &mut |s| continued(s, &h.written.continues, &h.written.logicals))
+            }),
+            pass("tail jumps", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),
+            pass("innermost jumps", |b, _| {
+                js::statement_lists(b, &mut |s| innermost_jumps(s))
+            }),
+            // A chain of tests a loop ended, its body now ending where the
+            // chain's does.
+            pass("branch values", branch_values_of),
+            pass("unlabeled", |b, _| js::statement_lists(b, &mut unlabeled)),
+        ],
+        ensures: &[contracts::LABELS_NAMED, contracts::NO_EMPTY_IF],
+        again: &[],
+    },
+    Stage {
+        name: "logicals",
+        passes: &[
+            pass("logical blocks", |b, h| {
+                let (logicals, returns, booleans) = (&h.written.logicals, h.returns, h.booleans);
+                js::statement_lists(b, &mut |s| logical_blocks(s, logicals, returns, booleans))
+            }),
+            pass("logical returns", |b, h| {
+                let (logicals, returns, booleans) = (&h.written.logicals, h.returns, h.booleans);
+                js::statement_lists(b, &mut |s| logical_returns(s, logicals, returns, booleans))
+            }),
+            // A `return a && b && c;` the program wrote, whose tests' failing
+            // `return` is after the list (ADR 0947).
+            pass("returned logicals", |b, h| {
+                returned_logicals(b, &h.written.logicals, h.returns, h.booleans)
+            }),
+            pass("falsy values", |b, h| falsy_values(b, h.falsy, h.tested)),
+            pass("filtered guards", |b, _| {
+                let changing = changing(b);
+                js::statement_lists(b, &mut |s| filtered_guards(s, &changing))
+            }),
+        ],
+        ensures: &[contracts::LABELS_NAMED, contracts::NO_EMPTY_IF],
+        again: &[],
+    },
+    Stage {
+        name: "names",
+        passes: &[
+            pass("alias variables", |b, h| alias_variables(b, &h.made.fixed)),
+            pass("read handles", |b, h| read_handles(b, false, h.lets, h.again.running())),
+            pass("plain reads", |b, h| {
+                js::statement_lists(b, &mut |s| plain_reads(s, h.plain, &h.made.captured))
+            }),
+            pass("destructured", |b, h| {
+                js::statement_lists(b, &mut |s| {
+                    destructured(s, (&h.lets.patterns, &h.lets.named, &h.named.user), false)
+                })
+            }),
+            pass("rest parts", |b, _| js::statement_lists(b, &mut rest_parts)),
+            // What an array made for its parts left, `const _5 = 6;`, too.
+            pass("parts' aliases", |b, h| alias_variables(b, &h.made.fixed)),
+            pass("named temporaries", |b, _| named_temporaries(b)),
+            // `for (const i of (s..).step_by(n))` of a body that breaks
+            // where `v.get(i)` is `None`: `for (let i = s; i < v.length; i
+            // += n)`, before `range steps` makes another iterator of it (rd260).
+            pass("counted to lengths", |b, h| {
+                js::statement_lists(b, &mut |s| counted_to_lengths(s, &h.written.present_breaks))
+            }),
+            pass("consumed into iterators", |b, h| {
+                iterators::consumed_into_iters(b, h.fuse)
+            }),
+            pass("range items", |b, _| {
+                js::each_expr_mut(b, &mut rust_js_lower::std_types::range::range_items)
+            }),
+            pass("range steps", |b, _| {
+                js::each_expr_mut(b, &mut rust_js_lower::std_types::range::range_steps)
+            }),
+            pass("eager chains", |b, _| eager_chains(b)),
+            pass("eager spreads", |b, _| {
+                js::statement_lists(b, &mut |s| eager_spreads(s))
+            }),
+            // A block, or branches, a function's body or a loop's ends in,
+            // the function's value made in them, `?`'s.
+            pass("returned in branches", |b, h| {
+                js::statement_lists(b, &mut |s| returned_in_branches(s, h.result))
+            }),
+            // A loop whose way out returned only by a block's `break`, to a
+            // `return result;` past the branch it's in, `for` of what it
+            // steps now that it returns (rd603).
+            pass("returned loops", for_loops),
+            // An `if` the program wrote of an exit, which MIR turned as it
+            // shares the exit with what follows, as written (rd237).
+            pass("turned returns", |b, h| {
+                js::statement_lists(b, &mut |s| turned_returns(s, &h.written.thens))
+            }),
+            pass("shared tails", |b, h| {
+                js::statement_lists(b, &mut |s| {
+                    shared_tails(
+                        s,
+                        &h.written.let_elses,
+                        &h.written.switches,
+                        &h.written.elses,
+                        &h.written.thens,
+                    )
+                })
+            }),
+            // Each `let` where it's first named, a `const` where it's
+            // written once.
+            pass("sunk lets", |b, _| js::statement_lists(b, &mut sunk_lets)),
+            pass("declarations", |b, _| declarations(b)),
+            // A handle those made a `const`, a let chain's `borrow_mut()`
+            // of a flattened state, declared before its `if` and written in
+            // it: its place, where its `value` is read (rd533).
+            pass("declared handles", |b, h| {
+                read_handles(b, true, h.lets, h.again.running())
+            }),
+            // A temporary of a variable those made a `const`, `const _42 =
+            // queue;` of a `borrow_mut()` of an object's `RefCell`, which is
+            // the object: the variable, where it's read (ADR 0883).
+            pass("declared aliases", |b, h| alias_variables(b, &h.made.fixed)),
+            // What a `let` declared first holds now taken apart, a guard's
+            // `try` too: a temporary's parts, `const [a, b] = f();`. Not a
+            // pattern's one part of what the program names, `const front =
+            // d[0];`, which the first pass left as it is (ADR 0705).
+            pass("destructured declared", |b, h| {
+                js::statement_lists(b, &mut |s| {
+                    destructured(s, (&IndexSet::default(), &h.lets.named, &h.named.user), false)
+                })
+            }),
+            pass("assigned parts", |b, _| js::statement_lists(b, &mut assigned_parts)),
+            // A loop over an array's `&mut`s, over its indices (#320).
+            pass("mut items", |b, _| bottom_up(b, &mut mut_items::mut_item_loops)),
+            // A tuple of an `if`'s value taken apart: a `let` of each part,
+            // assigned in each branch (rd45).
+            pass("conditional tuples", |b, _| {
+                js::statement_lists(b, &mut conditional_tuples)
+            }),
+            // A pattern's copy of a variable, `const error = raw;`: the variable.
+            pass("copied bindings", |b, h| {
+                js::statement_lists(b, &mut |s| copied_bindings(s, &h.named.user))
+            }),
+            // A tuple read item by item, `children[0]`: its items.
+            pass("tuple reads", |b, h| {
+                let changing = changing(b);
+                let set_elsewhere = set_elsewhere(b);
+                js::statement_lists(b, &mut |s| tuple_reads(s, &changing, &set_elsewhere, &h.made.captured))
+            }),
+            // And the parts of a tuple's item those give, a tuple `match`'s
+            // `(true, Some((module, files)))`, `const module = tests[0];
+            // const files = tests[1];`: one pattern, `const [module, files]
+            // = tests;`, as `if let` reads it.
+            pass("destructured items", |b, h| {
+                js::statement_lists(b, &mut |s| {
+                    destructured(s, (&h.lets.patterns, &h.lets.named, &h.named.user), true)
+                })
+            }),
+            // A tuple of clones read part by part, `const chunk = this`:
+            // the value each is a clone of (rd515, ADR 0846, amended).
+            pass("tuple clones", |b, h| {
+                clone_aliases(b, (&h.params.borrow(), h.kept), h.clones)
+            }),
+            // A clone of an `Rc` of a variable bound once, `const closing =
+            // response;`: that variable (the user's decision, rd616).
+            pass("variable clones", |b, h| variable_clones(b, h.clones)),
+            // `dyn` values given to JS, `[{ value, impl }].map((item) =>
+            // item.value)`: the values.
+            pass("unwrapped values", |b, _| {
+                js::statement_lists(b, &mut |s| unwrapped_values(s))
+            }),
+            // What its passes emptied, an `if` of nothing, gone, its test kept
+            // where it does anything, as it ensures (#247).
+            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),
+        ],
+        ensures: &[contracts::LABELS_NAMED, contracts::NO_EMPTY_IF],
+        again: &[],
+    },
+    Stage {
+        name: "in place",
+        passes: &[
+            // A match's table read, `TITLES[kind]`, where it's written,
+            // before what it's given to reads it in place.
+            pass("table reads", |b, h| {
+                js::statement_lists(b, &mut |s| table_reads(s, &h.written.tables))
+            }),
+            // What an element MIR made only where a test holds reads, as one
+            // value, read in place below, where the test holds.
+            pass("guarded lets", |b, h| {
+                js::statement_lists(b, &mut |s| guarded_lets(s, &h.made.captured))
+            }),
+            // A chain, each step of which the next needs (ADR 0659): `inlined`
+            // reads MIR's temporaries in place, which leaves an `if` each of
+            // whose branches writes one variable, `let v; if (c) { v = i; }
+            // else { v = 99; }`, and a `let` written once; `branch values`
+            // makes a `const` of the one, `const v = c ? i : 99;`, and
+            // `declarations` of the other; `inlined in values` reads those
+            // in place, `const pair = [c ? i : 99, 2]`. Without any one of
+            // them, the corpus reads worse (`mir-tidy-late-consts-kept`,
+            // `values-chain-branch-values-off`, `values-chain-declarations-off`,
+            // `inlined-in-values-off`).
+            pass("inlined", inlined_of),
+            // A `take()` of a place rust-js made, then tested: the place
+            // tested, and taken where it's `Some` (ADR 0996).
+            pass("taken options", |b, _| js::statement_lists(b, &mut taken_options)),
+            // An `Option` made where it's tested, `if let Some(o) =
+            // kind.object()`: the test it's made by (ADR 0910); before its
+            // branches are one value, `o?.$$typeof` of `if (o) { t =
+            // o.$$typeof; } else { t = undefined; }`, which it's no test of.
+            pass("tested options", |b, h| {
+                let changing = changing(b);
+                js::statement_lists(b, &mut |s| tested_options(s, &changing, &h.named.user))
+            }),
+            pass("branch values", branch_values_of),
+            pass("declarations", |b, _| declarations(b)),
+            pass("inlined in values", inlined_of),
+            // A function a field holds, called after what it's given needs
+            // statements: its object held, the method call kept (rd285).
+            pass("held receivers", |b, _| {
+                js::statement_lists(b, &mut |s| moves::held_receivers(s))
+            }),
+            // A `return a || b` the program wrote of reads in place now, a
+            // getter's, `instance.data === "$!" || (..)`, which MIR's
+            // temporaries held apart from its `if (a) { return true; }`
+            // when `logical returns` ran (rd179).
+            pass("logical returns", |b, h| {
+                let (logicals, returns, booleans) = (&h.written.logicals, h.returns, h.booleans);
+                js::statement_lists(b, &mut |s| logical_returns(s, logicals, returns, booleans))
+            }),
+            // A tuple's part held, `const _3$0 = v.pop();`, which an arm's
+            // binding takes, by that name.
+            pass("named temporaries", |b, _| named_temporaries(b)),
+            pass("implied tests", |b, _| {
+                let changing = changing(b);
+                js::each_expr_mut(b, &mut |e| implied_tests(e, &changing))
+            }),
+            // A chain `rev()` was given in a temporary, read in place now,
+            // `$rev(c.filter(p))`: reversed inward, as `rev_items` makes one
+            // it sees, of its source stepped from its back (#205, #1855).
+            pass("reversed inward", |b, _| {
+                rust_js_lower::iterators::mir_steps::reversed_in_body(b)
+            }),
+            // A chain read in place now, `$lent($iter(xs)).some(f)` of `const
+            // _7 = $iter(xs);`: the array's; and a range made there, its
+            // numbers made as they're stepped.
+            pass("consumed into iterators", |b, h| {
+                iterators::consumed_into_iters(b, h.fuse)
+            }),
+            pass("range items", |b, _| {
+                js::each_expr_mut(b, &mut rust_js_lower::std_types::range::range_items)
+            }),
+            pass("range steps", |b, _| {
+                js::each_expr_mut(b, &mut rust_js_lower::std_types::range::range_steps)
+            }),
+            pass("eager chains", |b, _| eager_chains(b)),
+            // Of each, a callback that passes what it's given on to Rust's
+            // function, `(x, i) => f(x, i)`: `f` itself.
+            pass("passed on", |b, h| {
+                js::each_expr_mut(b, &mut |e| passed_on(e, h.forwarding))
+            }),
+            // A closure read in place, called where it's made, of what reads
+            // the same: its value of what it's given, `r._0.data`, as a call
+            // of one made in place is (ADR 0449).
+            pass("applied arrows", |b, _| applied_arrows(b)),
+            // An element's place checked, then set: the place the check gives.
+            pass("checked sets", |b, _| js::statement_lists(b, &mut checked_sets)),
+            // Two handles compared, each read in place now, of an item and an
+            // object: whether the object is the item, `items[i] === r`.
+            pass("same objects", |b, _| {
+                js::each_expr_mut(b, &mut rust_js_lower::pointers::same_object_in_place)
+            }),
+            // A copy made of what's spread, read in place, `{ ...a, ...{ ...b
+            // } }`: what it's a copy of.
+            pass("spread spreads", |b, _| js::each_expr_mut(b, &mut spread_spreads)),
+            // An array's iterator made one again where what held one was read
+            // in place, `$iter($iter([1, 2]))`: the one (#1152).
+            pass("stepped once", |b, _| {
+                js::each_expr_mut(b, &mut rust_js_lower::iterators::stepped_once)
+            }),
+            // What its passes emptied, an `if` of nothing, gone, its test kept
+            // where it does anything, as it ensures: `if let Some(_x) =
+            // Some(..) {}` in a loop, whose binding `named temporaries` reads
+            // in place of the temporary, leaving `if (_x != null) {}`
+            // (generated program 2900000355; #247).
+            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),
+        ],
+        ensures: &[contracts::LABELS_NAMED, contracts::NO_EMPTY_IF],
+        again: &[],
+    },
+    Stage {
+        name: "chains",
+        passes: &[
+            // Decided tests and shared tails again, of what's read in place now.
+            pass("decided tests", decided_tests_of),
+            pass("shared tails", |b, h| {
+                js::statement_lists(b, &mut |s| {
+                    shared_tails(
+                        s,
+                        &h.written.let_elses,
+                        &h.written.switches,
+                        &h.written.elses,
+                        &h.written.thens,
+                    )
+                })
+            }),
+            // A chain's tests, where each is read in place now: `if (a) { if
+            // (f(a)) { .. } }`, `if (a && f(a))`.
+            pass("and tests", |b, h| {
+                bottom_up(b, &mut |s| {
+                    and_tests(
+                        s,
+                        &h.written.conditions,
+                        &h.written.switches,
+                        &h.lets.own_field,
+                        &h.written.guards,
+                    )
+                })
+            }),
+            // A pattern's binding of a property by its name, read only by
+            // the test after it and its first statement: read there (ADR
+            // 0866, amended); a `let` the program wrote stays (rd226).
+            pass("tested reads", |b, h| {
+                js::statement_lists(b, &mut |s| tested_reads(s, &h.lets.named))
+            }),
+            // An `if` whose condition mixes `&&`, `||` and `!`, of `if`s that
+            // leave a block MIR made: its one test (ADR 0946).
+            pass("skipped tests", |b, h| {
+                js::statement_lists(b, &mut |s| logicals::skipped_tests(s, &h.written.logicals, false))
+            }),
+            // A let chain's `&&` with an `else`, in the `if`s a block MIR made
+            // is all of, its tests one now (ADR 0946, amended).
+            pass("chains in blocks", |b, _| {
+                js::statement_lists(b, &mut |s| chains_in_blocks(s, false))
+            }),
+            // An `if` the program wrote with an `else`, as it wrote it, its
+            // tests one now; and the `continue`s its branches end with, which
+            // it didn't write, gone where the loop's body ends anyway.
+            pass("written elses", |b, h| {
+                js::statement_lists(b, &mut |s| written_elses(s, h.written, h.returns))
+            }),
+            // An `if` whose branches are alike whole, the arms of a `match`
+            // of an untagged enum each calling its member's method: the
+            // branch alone (rd238).
+            pass("alike branches", |b, h| {
+                bottom_up(b, &mut |s| decisions::alike_whole(s, &h.written.ifs))
+            }),
+            // And one it wrote without an `else`, its body in it, of a body
+            // too that goes on to the function's end, the `return;` `returns
+            // past blocks` gave it (ADR 0879, amended).
+            pass("written thens", |b, h| {
+                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens))
+            }),
+            // A check MIR wrote first in a chain's last `else`: the chain's arm.
+            pass("chained checks", |b, h| {
+                js::statement_lists(b, &mut |s| chained_checks(s, &h.written.thens))
+            }),
+            pass("unlabeled", |b, _| js::statement_lists(b, &mut unlabeled)),
+            // A flag a block MIR made gives, of a test one now, `bb: { if (a
+            // && b) { x = true; break bb; } x = false; }`: `x = a && b`, not
+            // a default given first then set.
+            pass("flag values", |b, h| {
+                js::statement_lists(b, &mut |s| flag_values(s, h.booleans))
+            }),
+            // A value a block MIR made gives where nothing else does: given
+            // first, and the block's `break`s that go where it ends anyway,
+            // gone.
+            pass("default values", |b, _| {
+                js::statement_lists(b, &mut |s| decisions::default_values(s))
+            }),
+            // Once each block's `else` is made of its `break`s, a block's
+            // jumps to one after it, that one.
+            pass("jumps past blocks", |b, _| {
+                js::statement_lists(b, &mut |s| jumps_past_blocks(s))
+            }),
+            // A block's `break` a loop that ends it ends with, where `exits
+            // after` put the loop: the loop's own.
+            pass("blocks loops end", |b, _| {
+                js::statement_lists(b, &mut |s| blocks_loops_end(s, false))
+            }),
+            pass("settle jumps", |b, _| settle_jumps(b)),
+            // What those leave of each block MIR made: its `break`s
+            // `else`s, `if (c) { s; break l; } t`'s `if (c) { s } else { t
+            // }`; and a jump after an `if` one branch of which leaves, in the
+            // other (ADR 0745).
+            pass("branch ends", |b, _| {
+                js::statement_lists(b, &mut unreachable_after);
+                js::statement_lists(b, &mut |s| branch_ends(s))
+            }),
+            pass("jumps into branches", |b, h| {
+                js::statement_lists(b, &mut |s| {
+                    jumps_into_branches(s, &h.written.switches, &h.written.elses)
+                });
+                js::statement_lists(b, &mut |s| written_jumps_before(s, h.written))
+            }),
+            // A block's `return` of one value that some of the paths of the
+            // `if` before it go on to, and the rest leave past: in each that
+            // goes on, once the others' `break`s end them (ADR 0754).
+            pass("returns into branches", |b, _| {
+                js::statement_lists(b, &mut |s| returns_into_branches(s))
+            }),
+            pass("settle branches", |b, _| settle_jumps(b)),
+            // A chain's tests again, of the `if`s `settle branches` made of
+            // a let chain's guard `break`s, `if (usable != null) { if
+            // (typeof usable === "object") { .. } }`: `if (a && b)`, as
+            // written (Fizz's `use(usable)`).
+            pass("and tests settled", |b, h| {
+                bottom_up(b, &mut |s| {
+                    and_tests(
+                        s,
+                        &h.written.conditions,
+                        &h.written.switches,
+                        &h.lets.own_field,
+                        &h.written.guards,
+                    )
+                })
+            }),
+            pass("declarations", |b, _| declarations(b)),
+            // A loop's early `break`s, its tests read in place now, and its test.
+            pass("early breaks", |b, h| {
+                js::statement_lists(b, &mut |s| early_breaks(s, true, &h.written.breaks, &h.written.elses))
+            }),
+            // A loop's test those read in place now, `while (true) { if
+            // (!(m.length > n)) { .. } }`'s of `const _7 = m.length;`.
+            pass("while tests", |b, h| {
+                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops))
+            }),
+            // A block MIR made that the body of a loop of such a test ends
+            // with: its `break`s the loop's `continue`s, as `loops`' are,
+            // `while (typeof v === "object" && v.$$typeof === LAZY) { ..;
+            // continue; }` (rd530).
+            pass("continued", |b, h| {
+                js::statement_lists(b, &mut |s| {
+                    continued_blocks(s, &h.written.continues, &h.written.logicals, &h.written.elses)
+                })
+            }),
+            // A block MIR made that a loop's body ends with, then its
+            // `break;`: the block's `break`s the loop's, as an arm's `break`
+            // is written (#389c).
+            pass("blocks breaking loops", |b, h| {
+                js::statement_lists(b, &mut |s| blocks_breaking_loops(s, &h.written.loops))
+            }),
+            // What those leave at the end, a `return;` the program didn't write.
+            pass("tail returns", |b, h| tail_returns(b, h.returns)),
+            // A loop's early exits again, of what's taken its shape since.
+            pass("early returns", |b, h| {
+                js::statement_lists(b, &mut |s| early_returns(s, &h.written.elses))
+            }),
+            // A chain's arms, as statements, in the order written.
+            pass("written chains", |b, h| {
+                js::statement_lists(b, &mut |s| {
+                    written_chains(s, (&h.written.patterns, &h.written.switches, &h.written.let_elses))
+                })
+            }),
+            // A chain of `js::strict_equals` tests of one subject, before
+            // its last two ways are a returned `?:` (ADR 0958).
+            pass("strict switches", |b, h| {
+                strict_switches::strict_switches(b, &h.written.strict_tests, &h.written.elses)
+            }),
+            // `const result = e; return result;` of what the function gives:
+            // `return e;`.
+            pass("returned consts", |b, h| {
+                js::statement_lists(b, &mut |s| returned_consts(s, h.result))
+            }),
+            // An `if`'s value of two small ones, `return t ? a : b`, its
+            // temporaries declared where they're read by now.
+            pass("returned values", |b, h| {
+                let (elses, returns, booleans) = (unswitched(h), h.returns, h.booleans);
+                js::statement_lists(b, &mut |s| returned_values(s, &elses, returns, booleans))
+            }),
+            // A function's value of an `else if` chain, of what `strict
+            // switches` made no `switch` of: one nested conditional of plain
+            // values, `return a ? x : b ? y : z;`, or the whole chain, its
+            // last link's two arms as written (ADR 0969, amended).
+            pass("returned chains", |b, h| {
+                js::statement_lists(b, &mut |s| returned_else_ifs(s, &h.written.links, h.returns))
+            }),
+            // None of these empties an `if`: `names`' and `written`'s
+            // stages clear those of `if let`s whose bindings are only read
+            // (#247, #382), as `NO_EMPTY_IF` checks.
+        ],
+        ensures: &[
+            contracts::NOTHING_AFTER_A_JUMP,
+            contracts::LABELS_NAMED,
+            contracts::NO_EMPTY_IF,
+        ],
+        again: &[],
+    },
+    Stage {
+        name: "written",
+        passes: &[
+            // A cell a pointer's taken to, made where its value's first set.
+            pass("first cell values", |b, _| {
+                js::statement_lists(b, &mut first_cell_values)
+            }),
+            // A cell only its `value` is read and set of, by name: its variable.
+            pass("plain cells", |b, _| plain_cells(b)),
+            pass("named callbacks", |b, h| {
+                js::statement_lists(b, &mut |s| named_callbacks(s, h.callbacks))
+            }),
+            pass("shown children", |b, h| {
+                js::each_expr_mut(b, &mut |e| shown_children(e, h.booleans))
+            }),
+            pass("concise arrows", |b, h| {
+                js::each_expr_mut(b, &mut |e| concise_arrows(e, h.concise))
+            }),
+            pass("counted entries", |b, _| {
+                js::statement_lists(b, &mut rust_js_lower::std_types::map_entries::counted_entries)
+            }),
+            // An entry's value put in where it's missing, then used, `if
+            // (!m.has(k)) { m.set(k, []); } m.get(k).push(v);`.
+            pass("inserted entries", |b, _| {
+                js::statement_lists(b, &mut rust_js_lower::std_types::map_entries::inserted_entries)
+            }),
+            pass("negations", |b, _| js::each_expr_mut(b, &mut negations)),
+            pass("pairs' fields", |b, _| js::each_expr_mut(b, &mut pairs_fields)),
+            pass("forwarded values", |b, _| js::statement_lists(b, &mut forwarded_values)),
+            pass("unread maps", |b, _| unread_maps(b)),
+            // An array's `$iter` an adapter alone steps, left lazy, as what
+            // its closures do is in Rust's order: the array's own iterator.
+            // A closure's, by the function it's in, which sees what takes
+            // what it gives, `xs.flatMap((x) => $iter(x).map(f))`'s, first.
+            pass("array values", |b, h| {
+                if !h.closure {
+                    js::each_expr_mut(b, &mut array_values);
+                    lent_held_strings(b);
+                }
+            }),
+            pass("handles in place", |b, _| handles_in_place(b)),
+            // A take's `None` written over before anything sees it, a
+            // flattened state's whole write's too, in place now: gone (rd524).
+            pass("overwritten takes", |b, _| {
+                js::statement_lists(b, &mut overwritten_takes)
+            }),
+            // A take of a variable, returned, which no closure reads after
+            // it: the variable returned, its reset gone (rd598).
+            pass("unread resets", |b, _| unread_resets(b)),
+            // A value a function given it reads more than once, held where
+            // it's made: `const _$1 = f(); .. _$1.TAG ..`, not `((r) =>
+            // ..)(f())`.
+            pass("applied values", |b, h| {
+                let set = js::Writes::of(b).by_closures();
+                js::statement_lists(b, &mut |s| applied_values(s, &set, h.plain))
+            }),
+            // A `let` declared first, in the body or a block of it, that
+            // nothing's left to assign or read; or only a block that
+            // declares its name again, an index loop's item (ADR 1042).
+            pass("unused lets", |b, _| unused_lets(b, mentioned(b))),
+            // A `const` nothing reads, of a value made only to be dropped,
+            // `drop(vec![..])`'s: what making it does.
+            pass("unread made", |b, _| {
+                let mentions = mentioned(b);
+                js::statement_lists(b, &mut |s| unread_made(s, &mentions))
+            }),
+            // A `let` that ends a borrow, of a place's read only the
+            // statement after it reads, nothing run first: read there, once
+            // what `replace` gave, unread, is gone (ADR 0866, amended).
+            pass("ended borrows", |b, h| {
+                js::statement_lists(b, &mut |s| ended_borrows(s, &h.lets.ends_borrow))
+            }),
+            // A `let` the program wrote, named as the property it reads,
+            // read only first by a `||` or `??` in the statement after it:
+            // read there (rd664, the user's decision).
+            pass("fallback reads", |b, h| {
+                js::statement_lists(b, &mut |s| fallback_reads(s, &h.lets.named))
+            }),
+            // A `let` the program wrote whose only reads are the receiver
+            // and the `this` of the keyed method's call after it: read there
+            // (rd226b, the user's decision).
+            pass("receiver reads", |b, h| {
+                js::statement_lists(b, &mut |s| receiver_reads(s, h.lets))
+            }),
+            pass("while heads", |b, h| {
+                js::statement_lists(b, &mut |s| while_heads(s, &h.written.loops))
+            }),
+            // An `if` the program wrote without an `else` that a loop
+            // `while heads` made ends, its body in it (ADR 0879, amended).
+            pass("written thens", |b, h| {
+                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens))
+            }),
+            pass("written order steps", |b, h| {
+                js::statement_lists(b, &mut |s| written_order_steps(s, &h.written.let_elses))
+            }),
+            // A chain of `if`s written without an `else` whose jumps MIR joined
+            // after it: each its own (ADR 0879, amended).
+            pass("written jumps of ifs", |b, h| {
+                js::statement_lists(b, &mut |s| written_jumps_of_ifs(s, &h.written.thens))
+            }),
+            // The `continue`s a loop's body ends with anyway, which the
+            // program didn't write, once those have each loop's shape: of
+            // what was after a loop inside it, too, which `while heads` put
+            // after it, its label with it (ADR 0702, amended).
+            pass("tail continues", |b, h| {
+                js::statement_lists(b, &mut |s| tail_continues(s, h.written, &h.commented.continues))
+            }),
+            pass("let else first", |b, h| {
+                // A unit function's `let … else`s and `if`s that return
+                // before it goes on to its end are their guards already,
+                // `returns past blocks`' (ADR 0742, 0879, amended); the
+                // `return;`s MIR made where it ends, nothing.
+                js::statement_lists(b, &mut |s| let_else_first(s, &h.written.let_elses));
+                ended_returns(b, h.returns);
+            }),
+            pass("tried first", |b, _| js::statement_lists(b, &mut tried_first)),
+            // What its passes emptied, an `if` of nothing, gone, its test kept
+            // where it does anything, as it ensures (#247).
+            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),
+        ],
+        ensures: &[
+            contracts::NOTHING_AFTER_A_JUMP,
+            contracts::LABELS_NAMED,
+            contracts::NO_EMPTY_IF,
+        ],
+        again: &[],
+    },
+    Stage {
+        name: "settled",
+        passes: &[
+            // A loop's jumps to the end of the loop it ends, once what's after
+            // each loop is placed by them: its own, where the program names
+            // it no label; and the early exits those `break`s now make.
+            pass("outer continues", |b, h| {
+                js::statement_lists(b, &mut |s| outer_continues(s, &h.written.loops))
+            }),
+            pass("early breaks", |b, h| {
+                js::statement_lists(b, &mut |s| early_breaks(s, false, &h.written.breaks, &h.written.elses))
+            }),
+            // Each `break` a loop that ends a block MIR made leaves it by,
+            // once what's after each loop is placed: the loop's own, a
+            // `loop` that ends an `if`'s branch, its `else` after it, as
+            // written, with no label (ADR 0859); one a loop inside it
+            // leaves, its `break 'rows`, the loop's, by the name `written
+            // labels` gave it.
+            pass("loops ending blocks", |b, _| {
+                js::statement_lists(b, &mut |s| blocks_loops_end(s, true))
+            }),
+            // A `while` those leave its own `break`, `while (true) { if
+            // (!(t)) { break; } .. }` of one that ends an `if`'s branch with
+            // code after the `if`, whose `break` left the block: its test.
+            pass("tests of loops ending blocks", |b, h| {
+                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops))
+            }),
+            // A test the program wrote `!(a && b)`, MIR's `!a || !b`: as
+            // written (ADR 0879, amended).
+            pass("written negations", |b, h| {
+                logicals::written_negations(b, &h.written.negations, &h.written.logicals)
+            }),
+            // A `!` of a chain the program didn't write, `!matches!(s,
+            // Some("a" | "b"))`'s: `s !== "a" && s !== "b"` (ADR 0879, amended).
+            pass("unwritten negations", |b, h| {
+                logicals::unwritten_negations(b, &h.written.negations, &h.written.logicals)
+            }),
+            // An `if` of `false`, a check that can't fail once what it reads
+            // is in place: its `else`, if any; and an `if` of nothing either
+            // way: its test, where that does anything.
+            // Inner lists first, as an `if` is emptied by what's taken in it.
+            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),
+            pass("holed lists", |b, _| holed_lists(b)),
+            // A presence test around a chain each of whose tests says it:
+            // the chain alone, its `else` what follows the block (bb11).
+            pass("presence said", |b, h| {
+                js::statement_lists(b, &mut |s| decisions::presence_said(s, &h.written.switches))
+            }),
+            // A `match` of constants, its chain settled: a `switch` (ADR 0629).
+            pass("switches", |b, h| switches::switches(b, h.written)),
+            // A function's value of a `match` of constants `switches` left
+            // an `if`, two arms of an enum's four: `return t ? a : b`, as
+            // `returned values` gives each other `match`'s (ADR 0237,
+            // amended).
+            pass("unswitched values", |b, h| {
+                let (elses, returns, booleans) = (&h.written.elses, h.returns, h.booleans);
+                js::statement_lists(b, &mut |s| returned_values(s, elses, returns, booleans))
+            }),
+            // `!(b >= 48)` of what's never `NaN`: `b < 48`; a guard's too,
+            // that a case of a `switch` tests negated (ADR 0905).
+            pass("ordered floats", |b, h| {
+                js::each_expr_mut(b, &mut |e| ordered_floats(e, h.floats))
+            }),
+            pass("turned", |b, h| js::each_expr_mut(b, &mut |e| turned(e, h.numbers))),
+            // A block the program labeled that a `break` in a `switch` or
+            // a loop of a case leaves: the label of the `switch` it leaves
+            // (ADR 0944).
+            pass("labeled switches", |b, _| labeled_switches(b)),
+            // A block one case alone reaches, after its `switch`: that
+            // case's (ADR 0905).
+            pass("blocks one case reaches", |b, _| {
+                js::statement_lists(b, &mut |s| case_rests::blocks_one_case_reaches(s))
+            }),
+            // The rest a block a `switch` ends reaches from one case alone:
+            // that case's, at the body's end too (ADR 0905, amended).
+            pass("rest one case reaches", |b, _| {
+                case_rests::rest_one_case_reaches(b, true);
+                js::statement_lists(b, &mut |s| case_rests::rest_one_case_reaches(s, false))
+            }),
+            // A block's `break` in a `switch` it ends with: the case's own.
+            pass("breaks past switches", |b, h| {
+                js::statement_lists(b, &mut |s| switches::breaks_past_switches(s, &h.written.switches))
+            }),
+            // Each `continue` the stage left where its loop's turn ends
+            // anyway, a default's and React's `if (i !== j) { ..; continue;
+            // }` that ends a `for`'s body (ADR 0961). A case's `return` the
+            // program wrote is its own already, `returns past blocks`'
+            // (ADR 0905, amended).
+            pass("tail continues", |b, h| {
+                js::statement_lists(b, &mut |s| tail_continues(s, h.written, &h.commented.continues))
+            }),
+            // A `switch` that ends a function of no value: the `return;`s MIR
+            // made in its cases, its `break;`s (ADR 0905, amended).
+            pass("breaks of an ending switch", |b, h| {
+                case_rests::breaks_of_ending_switch(b, h.returns)
+            }),
+            // A block a case ends with: its `break`s the case's (ADR 0790).
+            pass("blocks ending cases", |b, h| {
+                js::statement_lists(b, &mut |s| switches::blocks_ending_cases(s, &h.written.elses))
+            }),
+            // A loop the program labeled, left by its `switch`'s cases: each
+            // case's `break` of its label, as written (ADR 0702, amended).
+            pass("loops left by cases", |b, h| {
+                js::statement_lists(b, &mut |s| case_rests::loops_left_by_cases(s, &h.written.loops))
+            }),
+            // A loop tidy labeled, `loop`, that a `switch` of guarded arms
+            // that fall through leaves: the `switch`, the `if` chain its
+            // arms are, and no label (#389b, the user's decision).
+            pass("guarded loops", |b, _| loop_labels::guarded_loops(b)),
+            // `(lanes & X) !== 0` of a test, and `lanes !== 0` of an integer's:
+            // `lanes & X`, `lanes` (ADR 0896, amended). After `switches`, whose
+            // cases are its chain's `day === 0`.
+            pass("bit tests", |b, h| {
+                logicals::bit_tests(b, h.numbers, &h.written.patterns)
+            }),
+            pass("source spans", |b, _| js::statement_lists(b, &mut |s| source_spans(s))),
+        ],
+        ensures: &[
+            contracts::NOTHING_AFTER_A_JUMP,
+            contracts::LABELS_NAMED,
+            contracts::NO_EMPTY_IF,
+            contracts::NO_CONSTANT_TEST,
+        ],
+        again: &[],
+    },
+    // The body as it's written, its parameters taken apart, and each run of
+    // statements a value's drop ends one `try { .. } finally { .. }` (ADR
+    // 0437), a `return` through its `finally`. Where it made any, what each
+    // statement's own `try` held apart, `let tmp; try { tmp = f(); } catch
+    // ..`, is read as tidy reads any body: its stages that read temporaries
+    // in place run again (`UNWOUND`, ADR 0705).
+    Stage {
+        name: "scopes",
+        passes: &[
+            pass("parameters", |b, h| destructured_params(&mut h.params.borrow_mut(), b)),
+            // A loop that drops a value before each way out of it, a `for`
+            // over a `RefCell`'s borrow: one `try` of it whose `finally`
+            // drops it (rd191).
+            pass("looped drops", |b, h| {
+                let looped = looped_drops_of_made(b, h, false);
+                h.again.found(looped);
+            }),
+            pass("drop scopes", |b, h| {
+                let mut scoped = false;
+                js::statement_lists(b, &mut |stmts| {
+                    scoped |= unwinds::scoped_drops(stmts, h.result, &h.lets.guards)
+                });
+                h.again.found(scoped);
+            }),
+            pass("returns through finally", |b, _| {
+                js::statement_lists(b, &mut unwinds::returned_through_finally)
+            }),
+            // A block MIR made of the program's early `return`s that ends
+            // the `try` that ends the function: its `break`s those
+            // `return;`s, run through the `finally` (rd502).
+            pass("returns past blocks in finally", |b, h| {
+                let starts = statement_starts(b);
+                returns_past_blocks_in_try(b, h.written, h.returns, &starts)
+            }),
+            // What's left of a call that can't throw, a `catch_unwind`'s,
+            // held apart for the drops a scope's `finally` didn't take: as it
+            // runs (ADR 0873).
+            pass("unthrown catches", |b, h| {
+                let mut unthrown = false;
+                js::statement_lists(b, &mut |stmts| unthrown |= unwinds::unthrown_catches(stmts));
+                h.again.found(unthrown);
+            }),
+            // And an `unwrap()`'s, its test and panic, as an `assert!`'s:
+            // where its drops' flags are known again (ADR 0873, amended).
+            pass("tested unwraps", |b, h| {
+                let mut tested = false;
+                js::statement_lists(b, &mut |stmts| tested |= unwinds::tested_unwraps(stmts));
+                if tested {
+                    flags::settled_flags(b, h.flags);
+                }
+                h.again.found(tested);
+            }),
+        ],
+        ensures: &[
+            contracts::NOTHING_AFTER_A_JUMP,
+            contracts::LABELS_NAMED,
+            contracts::NO_EMPTY_IF,
+            contracts::NO_CONSTANT_TEST,
+        ],
+        again: UNWOUND,
+    },
+    // Then its temporaries named, its drop flags too; a shadow of a binding
+    // the program names read no more, that binding (ADR 0650); and a
+    // `String` appended to twice, once (ADR 0652).
+    Stage {
+        name: "finish",
+        passes: &[
+            // A closure made between calls one `try` covers, set once there,
+            // where nothing before made it the `try`'s own: a function where
+            // its `let` is (#769).
+            pass("closures out of tries", |b, _| values::arrows_out_of_tries(b)),
+            pass("temporaries named", |b, h| {
+                bindings::readable_temporaries(b, h.suggested)
+            }),
+            pass("flags named", |b, h| flags::named_flags(b, h.flags)),
+            // A match's tree MIR's block still holds, every other pass done:
+            // the chain of its arms, its tests read again however often where
+            // they do nothing, and of an arm's own `match` whose arms leave
+            // the block, that one's there (C1, the user's decision, #523).
+            pass("kept trees", |b, h| decided_trees(b, h, true)),
+            // A block MIR made still there of a condition whose `const`
+            // can't be read in place, or a let chain's binding a later test
+            // that calls may change: a `let` declared before the `if`, set
+            // where the `const` was (A1, B1, the user's decisions), so no
+            // label is left; before `shadows`, which reads its sets.
+            pass("condition lets", |b, h| {
+                js::statement_lists(b, &mut |s| {
+                    logicals::skipped_tests(s, &h.written.logicals, true);
+                    chains_in_blocks(s, true);
+                })
+            }),
+            pass("shadows", |b, h| {
+                shadows::shadowed(&h.params.borrow(), b, &h.named.user)
+            }),
+            // A binding of a variable's name the variable's given last, the
+            // variable given it where it's made; then a variable given what's
+            // read before one way, given it first (ADR 0853).
+            pass("given last", |b, h| bindings::given_last(&h.params.borrow(), b)),
+            pass("filled lazily", |b, _| {
+                js::statement_lists(b, &mut bindings::filled_lazily)
+            }),
+            pass("appends", |b, h| {
+                rust_js_lower::std_types::text::appended(b, &h.named.text)
+            }),
+            // A closure that passes on what it captured, then what it's
+            // given, to a function of the crate's: that function bound,
+            // `g.bind(null, a)`, once nothing calls it in place (ADR 0605,
+            // amended).
+            pass("bound captures", |b, h| {
+                js::each_expr_mut(b, &mut |e| {
+                    if let Some(bound) = rust_js_lower::passed_on::bound(e, h.forwarding) {
+                        *e = bound;
+                    }
+                })
+            }),
+            // A `continue` or a loop's `break` the program wrote, kept where
+            // it wrote it, which its comment is before, once nothing moves
+            // them (ADR 0684, amended).
+            pass("written jumps", |b, h| {
+                kept_jumps(b, h.written, h.returns);
+                js::statement_lists(b, &mut |s| written_jumps(s, &h.written.continues, &h.written.breaks))
+            }),
+            // An `if` whose condition the program wrote with `||`, of `if`s
+            // each of the one jump, once the jumps are where they're
+            // written: its one test (rd225).
+            pass("written ors", |b, h| {
+                js::statement_lists(b, &mut |s| logicals::written_ors(s, &h.written.ifs))
+            }),
+            // Each `if`'s test the program wrote, once the `if`s are made
+            // (#489).
+            pass("written tests", |b, h| {
+                js::statement_lists(b, &mut |s| logicals::written_tests(s, &h.written.ifs))
+            }),
+            // The comments before a `break` or `continue` the program wrote,
+            // after what's before it, where the jumps are settled (rd109).
+            pass("commented jumps", |b, h| super::commented_jumps(b, &h.commented.jumps)),
+            // An `if`'s `then` that ends with the jump made after it, MIR's:
+            // going on to it, `if (x != null) { .. } break;`.
+            pass("jumps made next", |b, _| {
+                js::statement_lists(b, &mut |s| jumps_made_next(s))
+            }),
+            // A literal a pattern names by a `const`, each copy tidy made
+            // of it, that `const`, once tidy's read it as a literal (ADR
+            // 0590, amended).
+            pass("named texts", |b, h| {
+                rust_js_lower::named_constants::name_texts(b, &h.written.named_texts)
+            }),
+            // A slice's iterator only stepped, the array's own, once the
+            // loops that may take it for theirs are made (rd270).
+            pass("stepped slices", |b, _| rust_js_lower::iterators::stepped_slices(b)),
+            // A block MIR made that the passes before left, whose `break`s go on to a
+            // short tail that ends the list, drops that may throw and a `return`:
+            // each `break` that tail, an early return with its drops, as written,
+            // the block named by nothing then (#2215).
+            pass("breaks take their tail", |b, h| {
+                js::statement_lists(b, &mut |s| breaks_take_their_tail(s, h.written))
+            }),
+            // And one whose `break`s jump on to what follows it, past what its
+            // other ways go on to first, a `?`'s `Continue` in a `try_fold`:
+            // each other way given that, each `break` last on its way then
+            // and gone (#2215).
+            pass("breaks lead on", |b, h| {
+                js::statement_lists(b, &mut |s| breaks_lead_on(s, h.written))
+            }),
+            // Each block named by nothing then, and what followed one whose
+            // end never goes on, which only its `break`s went on to.
+            pass("unlabeled", |b, _| {
+                js::statement_lists(b, &mut unlabeled);
+                js::statement_lists(b, &mut unreachable_after);
+            }),
+            // A label MIR made still there whose jumps are each a `break`
+            // the program wrote of a loop it labeled: that label, `outer:`
+            // (D1, the user's decision).
+            pass("written loop labels", |b, h| written_loop_breaks(b, &h.written.loops)),
+            // A momentary borrow evaluated first in its statement: its check first (ADR 1141).
+            pass("borrow checks first", |b, _| {
+                js::statement_lists(b, &mut js::borrow_checks_first)
+            }),
+            // Last, once no pass reads them: each cleanup guarded.
+            GUARDED_CLEANUPS,
+        ],
+        // What `settled` ensured, kept: what's printed is checked as it is.
+        ensures: &[
+            contracts::UNWINDING_GUARDED,
+            contracts::NOTHING_AFTER_A_JUMP,
+            contracts::LABELS_NAMED,
+            contracts::NO_EMPTY_IF,
+            contracts::NO_CONSTANT_TEST,
+        ],
+        again: &[],
+    },
+];
+
+/// `jumps`, run twice.
+const JUMPS: &[Pass] = &[
+    // A loop the program labeled, `'outer: loop`, by its name from the
+    // first, which tidy keeps where nothing names it yet: preparation
+    // drops it where nothing does then (the user's decision, 2026-10-28,
+    // wl4).
+    pass("written labels", |b, h| {
+        js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops))
+    }),
+    // A loop that ends the function, whose way out MIR wrote as its
+    // `return;`: its `break`, as a loop followed by code is left.
+    pass("loop ends returned", |b, _| loop_ends_returned(b)),
+    // A block the program labeled, by its name, its `break`s where they're
+    // written (ADR 0790).
+    pass("written blocks", |b, h| written_blocks(b, &h.written.blocks)),
+    // `?` of an `Ok` made here: the branch it takes, before what's past a
+    // jump goes.
+    pass("made ok tried", |b, _| js::statement_lists(b, &mut made_ok_tried)),
+    pass("returned", |b, h| {
+        js::statement_lists(b, &mut |s| {
+            returned(s, h.result);
+            unreachable_after(s);
+        })
+    }),
+    // A block MIR made whose end is a `return;`, which a loop inside it
+    // leaves by: each such `break` that `return;`, an early return as
+    // written (ADR 0742, amended).
+    pass("returns past blocks", |b, h| {
+        let starts = statement_starts(b);
+        js::statement_lists(b, &mut |s| returns_past_blocks(s, h.written, h.returns, &starts))
+    }),
+    // A `return` of an `if` the program wrote, `return if c { a } else { b
+    // };`: its value, `return c ? a : b;`, before a shared tail takes its
+    // `else`'s out (ADR 0657, amended).
+    // Not yet of a `match` of constants, which `switches` makes a `switch`
+    // of first (ADR 0629); `unswitched values` folds one it doesn't.
+    pass("returned ifs", |b, h| {
+        let (elses, returns, booleans) = (unswitched(h), h.returns, h.booleans);
+        js::statement_lists(b, &mut |s| returned_values(s, &elses, returns, booleans))
+    }),
+    // An arm MIR made the block's fall-through, written first: first.
+    pass("written first", |b, h| {
+        js::statement_lists(b, &mut |s| written_first(s, &h.written.switches))
+    }),
+    // An arm that's only a `continue`: the `continue`, where it's
+    // written (#574).
+    pass("arm continues", |b, h| {
+        js::statement_lists(b, &mut |s| {
+            arm_continues_placed(s, &h.written.arm_continues, &h.commented.continues)
+        })
+    }),
+    // A `continue` of a loop around the program wrote, MIR's jump past a
+    // block to it: where it wrote it (ADR 0702, amended).
+    pass("continues written", |b, h| {
+        let rests = turn_rests(b);
+        js::statement_lists(b, &mut |s| {
+            continues_written(
+                s,
+                &h.written.continues,
+                &h.written.arm_continues,
+                (&rests, &h.commented.continues),
+            )
+        })
+    }),
+    pass("joined ands", |b, _| js::statement_lists(b, &mut |s| joined_ands(s))),
+    pass("branch ends", |b, _| js::statement_lists(b, &mut |s| branch_ends(s))),
+    pass("tail jumps", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),
+    pass("branch values", branch_values_of),
+    pass("unlabeled", |b, _| js::statement_lists(b, &mut unlabeled)),
+    // A let chain's value, each branch one: its binding read first, `const
+    // x = a ? e : undefined;`, as an `if let`'s, which the next run and
+    // `values` make one value of (ADR 0870).
+    pass("chain values", |b, h| {
+        js::statement_lists(b, &mut |s| chain_values(s, h.returns))
+    }),
+];
+
+/// What branches make a value of, the function's too; and the arms of a
+/// `match` of constants, a `switch` (ADR 0629), which make none of what the
+/// program names.
+fn branch_values_of(body: &mut Vec<Stmt>, hints: &Hints) {
+    let made = (hints.result, hints.written.switches.as_slice());
+    bottom_up(body, &mut |s| {
+        branch_values(s, hints.returns, hints.booleans, made, hints.written)
+    });
+}
+
+/// Each of `body`'s loops of an iterator's steps, a `for` of what it steps
+/// (`loops`), the innermost first.
+fn for_loops(body: &mut Vec<Stmt>, hints: &Hints) {
+    let counted = counted(body);
+    let captured = bindings::captured(body);
+    bottom_up(body, &mut |stmts| loops(stmts, &counted, hints.numbers, &captured));
+    loop_bound_lets(body);
+}
+
+/// `looped_drops` of each of `body`'s lists, each loop's run made as MIR's
+/// would be once its steps' `try`s are gone, a `for` of what it steps, as
+/// `loops` makes one; whether it made any.
+fn looped_drops_of_made(body: &mut Vec<Stmt>, hints: &Hints, for_made: bool) -> bool {
+    let mut looped = false;
+    let counted = counted(body);
+    let captured = bindings::captured(body);
+    let mut tidied = |run: &mut Vec<Stmt>| {
+        bindings::declarations(run);
+        bottom_up(run, &mut |stmts| loops(stmts, &counted, hints.numbers, &captured));
+    };
+    js::statement_lists(body, &mut |stmts| {
+        looped |= unwinds::looped_drops(stmts, for_made, &mut tidied)
+    });
+    looped
+}
+
+fn looped_drops_of(body: &mut Vec<Stmt>, hints: &Hints) {
+    looped_drops_of_made(body, hints, true);
+}
+
+fn decided_tests_of(body: &mut Vec<Stmt>, hints: &Hints) {
+    let changing = changing(body);
+    js::statement_lists(body, &mut |s| decided_tests(s, &changing, &hints.written.ifs));
+    bottom_up(body, &mut emptied_ifs);
+    // What a branch taken in place of its `if` leaves after its jump,
+    // never reached (#270).
+    js::statement_lists(body, &mut unreachable_after);
+}
+
+/// What's read once, in place, of what the body sets as it is now.
+fn inlined_of(body: &mut Vec<Stmt>, hints: &Hints) {
+    let changed = changing(body);
+    let set = js::Writes::of(body).by_closures();
+    let paired = paired_temporaries(body);
+    let facts = MoveFacts {
+        changing: &changed,
+        set: &set,
+        plain: hints.plain,
+        captured: &hints.made.captured,
+        fixed: &hints.made.fixed,
+        paired: &paired,
+    };
+    js::statement_lists(body, &mut |s| inlined(s, &facts));
+}
+
+/// How many times each variable is read, by its id.
+fn mentioned(body: &[Stmt]) -> IndexMap<js::Name, usize> {
+    let mut mentions: IndexMap<js::Name, usize> = IndexMap::default();
+    js::visit_stmt_names(body, &mut |name| *mentions.entry(name.clone()).or_default() += 1);
+    mentions
+}
+
+/// How many times each name is mentioned.
+/// How often `body` mentions each variable, by its id: what `loops` asks of
+/// an iterator, where `mentions`' words are what it picks a counter's from.
+fn counted(body: &[Stmt]) -> IndexMap<js::Name, usize> {
+    let mut counted: IndexMap<js::Name, usize> = IndexMap::default();
+    js::visit_stmt_names(body, &mut |name| *counted.entry(name.clone()).or_default() += 1);
+    counted
+}
+
+/// Each `if` the program wrote with an `else` but a `match` of constants,
+/// which `switches` makes a `switch` of where it can before any is a value
+/// (ADR 0629): a function's `match tag { A | B => 2, _ => 3 }` its `switch
+/// (tag)`, not `return tag === A || tag === B ? 2 : 3`.
+fn unswitched(h: &Hints) -> Vec<(js::Span, js::Span, js::Span)> {
+    let switch = |cond: &js::Span| h.written.switches.iter().any(|s| s.span.lo == cond.lo);
+    (h.written.elses.iter())
+        .filter(|(cond, ..)| !switch(cond))
+        .copied()
+        .collect()
+}
+
+/// Where each statement of `body` that has a place is written, however
+/// deep: what `returns_past_blocks` reads a block's end by.
+fn statement_starts(body: &[Stmt]) -> Vec<u32> {
+    let mut starts = Vec::new();
+    js::each_list(body, &mut |list| {
+        starts.extend((list.iter()).filter(|s| !s.span.is_none()).map(|s| s.span.lo));
+    });
+    starts
+}
+
+/// `decisions` of each list of `b`, inner first; `kept`, of the trees whose
+/// block keeps its label once every other pass is done (`Told::kept`).
+fn decided_trees(b: &mut Vec<Stmt>, h: &Hints, kept: bool) {
+    let bound = decisions::bound(b, &h.written.guards);
+    let loops = decisions::loop_labels(b);
+    let written: Vec<js::Span> = (h.written.ifs.iter()).chain(&h.written.logicals).copied().collect();
+    // In the last pass alone, every other form tried first: in the first,
+    // a chain it then makes can leave the last pass a label it would take.
+    let fixed = match kept {
+        true => decisions::fixed_params(&h.params.borrow(), b),
+        false => Vec::new(),
+    };
+    let told = decisions::Told {
+        written: &written,
+        guards: &h.written.guards,
+        switches: &h.written.switches,
+        bound: &bound,
+        loops: &loops,
+        kept,
+        fixed: &fixed,
+    };
+    bottom_up(b, &mut |s| decisions::decisions(s, &told))
+}
+
+#[cfg(test)]
+mod tests {
+    use rust_js_program::collections::IndexSet;
+
+    /// Each pass's name, `stage/pass`, is its own, as `--tidy-until` names it.
+    #[test]
+    fn each_pass_is_named_apart() {
+        let names = super::super::pass_names();
+        let unique: IndexSet<_> = names.iter().collect();
+        assert_eq!(unique.len(), names.len());
+    }
+}

@@ -1,8 +1,8 @@
-// Mutations of src/lower/analysis/intervals/tables.rs, a table's lengths
+// Mutations of crates/rust-js-lower/src/analysis/intervals/tables.rs, a table's lengths
 // and its rows' (ADR 1137, #1672 M3, step 5; ADR 0576).
 import type { Mutation } from "../../../../mutations";
 
-const file = "src/lower/analysis/intervals/tables.rs";
+const file = "crates/rust-js-lower/src/analysis/intervals/tables.rs";
 const tests = ["test/intervals-shadow.test.ts", "-t", "a table is as long"];
 
 export const mutations: Mutation[] = [

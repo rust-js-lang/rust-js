@@ -1,11 +1,11 @@
-// Mutations of src/lower/representation/consts.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/representation/consts.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "build-hasher-default-refused",
     breaks: "`BuildHasherDefault::<DefaultHasher>::default()`, which holds nothing, is refused, so uuid's `test_compare` is (#1155)",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "            _ if is_std_def(tcx, did, StdItem::BuildHasherDefault) => StdZeroSized::BuildHasherDefault,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^build_hasher_default.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-zero-sized-iter-empty-unknown",
     breaks: "an `iter::Empty` constant of a library's body a consumer compiles from its optimized MIR, quickcheck's `shrink`, is refused, \"this constant, from its MIR\", and `Default` of one is (#1420)",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "            _ if is_std_path(tcx, did, StdPath::IterEmpty) => StdZeroSized::IterEmpty,\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: empty_of_a_librarys_default_compiled_by_its_consumer"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-zero-sized-io-empty-unknown",
     breaks: "`Default` of an `io::Empty` is refused (#1420)",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "            _ if is_std_path(tcx, did, StdPath::IoEmpty) => StdZeroSized::IoEmpty,\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: empty_of_a_librarys_default_compiled_by_its_consumer"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "nullable-const-field-undefined",
     breaks:
       "a constant's `#[rust_js::nullable]` field's `None` is left out, `{ count: 0 }`, React's `CacheContext` without its `_currentValue: null` (ADR 0586, amended)",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "                                super::NoneForm::Null => form.storage().written(v, js::Undefined::ByForm),\n",
     replace: "                                super::NoneForm::Null => v,\n",
     tests: ["test/lowering-nullable-constants.test.ts"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     name: "optional-const-field-null",
     breaks:
       "a constant's `#[rust_js::optional]` nullable field's `None` is `null`, not left out until it's set (ADR 0810)",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "                                super::NoneForm::Null => form.storage().written(v, js::Undefined::ByForm),\n",
     replace: "                                super::NoneForm::Null | super::NoneForm::Optional => form.storage().written(v, js::Undefined::ByForm),\n",
     tests: ["test/lowering-nullable-constants.test.ts"],
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     name: "ref-cell-field-const-boxed",
     breaks:
       "a `const` of a struct whose `RefCell<Option<u8>>` field is the value it holds is `{ items: {} }`, the cell's box, which a read of the field takes for `Some` (ADR 0863, amended)",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did) || bindings::is_held(tcx, f))\n",
     replace: "                    .any(|f| bindings::named_by_symbol(tcx, f.did) || bindings::is_held(tcx, f))\n",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_field_const.rs$"],
@@ -57,8 +57,8 @@ export const mutations: Mutation[] = [
     name: "tagged-constant-tag",
     breaks:
       'a constant of a discriminated union\'s variant is `{ TAG: "Fulfilled", value }`, its Rust name under `TAG`',
-    file: "src/lower/representation/consts.rs",
-    find: "                    crate::lower::bindings::tag_key(tcx, adt.did()),",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
+    find: "                    crate::bindings::tag_key(tcx, adt.did()),",
     replace: '                    "TAG".to_string(),',
     tests: ["test/lowering-structs-enums.test.ts", "-t", "discriminated union"],
   },
@@ -66,8 +66,8 @@ export const mutations: Mutation[] = [
     name: "named-unit-const-undefined",
     breaks:
       "a constant of a unit struct named `#[rust_js::name]` is `undefined`, not its string",
-    file: "src/lower/representation/consts.rs",
-    find: "                        .map_or_else(Expr::js_undefined, crate::lower::bindings::UnitValue::expr),",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
+    find: "                        .map_or_else(Expr::js_undefined, crate::bindings::UnitValue::expr),",
     replace:
       "                        .map_or_else(Expr::js_undefined, |_| Expr::js_undefined()),",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "named unit struct"],
@@ -76,8 +76,8 @@ export const mutations: Mutation[] = [
     name: "constant-some-unboxed",
     breaks:
       "a constant `Some(None)` that rustc computed is `undefined`, and reads as `None`",
-    file: "src/lower/representation/consts.rs",
-    find: "                    Some(&inner) => const_js_by(tcx, inner, unit).map(crate::lower::std_types::option::some_literal),",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
+    find: "                    Some(&inner) => const_js_by(tcx, inner, unit).map(crate::std_types::option::some_literal),",
     replace:
       "                    Some(&inner) => const_js_by(tcx, inner, unit),",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "non-zero-const-one-level",
     breaks: "`NonZeroU8::MIN`, two levels of std's structs in, is an error",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "    while let ty::ValTreeKind::Branch(items) = &**value.valtree",
     replace: "    if let ty::ValTreeKind::Branch(items) = &**value.valtree",
     tests: ["test/corpus.test.ts", "-t", "nonzero"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "duration-const-seconds",
     breaks: "`Duration::MAX` has none of its nanoseconds",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "        return Some(num_literal(secs * 1_000_000_000 + nanos, Num::U128));",
     replace:
       "        return Some(num_literal(secs * 1_000_000_000 + 0 * nanos, Num::U128));",
@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
   {
     name: "untagged-const-tagged",
     breaks: "a `const` of an untagged enum is a tagged object",
-    file: "src/lower/representation/consts.rs",
-    find: "            if crate::lower::bindings::is_untagged(tcx, adt.did()) {\n",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
+    find: "            if crate::bindings::is_untagged(tcx, adt.did()) {\n",
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
   },
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     name: "const-cell-field-boxed",
     breaks:
       "a constant's `Cell` field is `{ hits: { value: 0 } }`, so setting `COUNTER.hits` adds to an object",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "                    ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Cell) => Expr::held(js),\n",
     replace:
       "                    ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Cell) => js,\n",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
   {
     name: "const-range-from-refused",
     breaks: "a constant `(5..)` is refused, not `{ start: 5 }`",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "        ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::RangeFrom) => {\n",
     replace:
       "        ty::Adt(adt, _) if false && tcx.is_lang_item(adt.did(), LangItem::RangeFrom) => {\n",
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
   {
     name: "const-range-to-refused",
     breaks: "a constant `(..8)` or `(..=7)` is refused, not `{ end: 8 }`",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "            if tcx.is_lang_item(adt.did(), LangItem::RangeTo)\n                || tcx.is_lang_item(adt.did(), LangItem::RangeToInclusive) =>\n",
     replace: "            if false =>\n",
     tests: ["test/corpus.test.ts", "-t", "range_values"],
@@ -137,8 +137,8 @@ export const mutations: Mutation[] = [
   {
     name: "discriminant-constant-refused",
     breaks: "a `Discriminant` constant is refused, not its number",
-    file: "src/lower/representation/consts.rs",
-    find: "    if crate::lower::recognition::is_discriminant_type(tcx, ty) {\n",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
+    find: "    if crate::recognition::is_discriminant_type(tcx, ty) {\n",
     replace: "    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
   },
@@ -146,17 +146,17 @@ export const mutations: Mutation[] = [
     name: "transparent-const-an-array",
     breaks:
       "a constant `#[repr(transparent)]` struct is `[field]`, `Uuid([9, 8, 7, 6])` unequal to the one made",
-    file: "src/lower/representation/consts.rs",
-    find: "        ty::Adt(adt, _) if let Some(at) = crate::lower::recognition::transparent_field(tcx, *adt) => {\n",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
+    find: "        ty::Adt(adt, _) if let Some(at) = crate::recognition::transparent_field(tcx, *adt) => {\n",
     replace:
-      "        ty::Adt(adt, _) if let Some(at) = crate::lower::recognition::transparent_field(tcx, *adt).filter(|_| false) => {\n",
+      "        ty::Adt(adt, _) if let Some(at) = crate::recognition::transparent_field(tcx, *adt).filter(|_| false) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
   },
   {
     name: "registered-symbol-const-its-struct",
     breaks:
       'a `const` of the registry\'s symbol is its key\'s array, `["react.fragment"]`, not `Symbol.for("react.fragment")`',
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "        return Some(symbol_for(const_js_by(tcx, key.try_to_value()?, unit)?));\n",
     replace:
       "        return Some(Expr::array(vec![const_js_by(tcx, key.try_to_value()?, unit)?]));\n",
@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
     name: "const-of-a-js-value-its-markers",
     breaks:
       "a `const` of a binding's JS value, `HostType::new(\"aside\")`, is rustc's value of its markers, `[undefined, undefined]`, not its initializer's `\"aside\"` (ADR 0220, amended)",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "        // `\"Text\"` (ADR 0220, amended).\n        ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => None,\n",
     replace: "",
     tests: ["test/class-components.test.ts", "-t", "a tag that's a string"],
@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
     name: "js-object-value-tree-said",
     breaks:
       "a static of react's `ElementType` is what rustc's memory says, `Icon: [undefined]`, not `Icon: IconBadge`",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "        // `\"Text\"` (ADR 0220, amended).\n        ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => None,\n",
     replace: "",
     tests: ["test/jsx-types.test.ts", "-t", "ElementType, rendered as a tag"],
@@ -187,7 +187,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-symbol-constant-folded",
     breaks: "a constant struct a symbol names a field of is folded at compile time, its key named by text, which it hasn't",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did) || bindings::is_held(tcx, f))",
     replace: "                    .any(|f| ref_cell(f) || bindings::is_held(tcx, f))",
     tests: [
@@ -199,7 +199,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-const-unit-a-name",
     breaks: "a keyed enum's constant without fields is its name, a string (#504)",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "    let unit = |adt, variant: &ty::VariantDef| match keyed.contains(&adt) {\n",
     replace: "    let unit = |adt, variant: &ty::VariantDef| match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_const.rs$"],
@@ -207,7 +207,7 @@ export const mutations: Mutation[] = [
   {
     name: "const-range-swapped",
     breaks: "a constant range's start is its end",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: '                Prop::Field("start".into(), start?),\n',
     replace: '                Prop::Field("start".into(), end.clone()?),\n',
     tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
@@ -216,15 +216,15 @@ export const mutations: Mutation[] = [
     name: "value-cell-const-boxed",
     breaks:
       "a thread-local's `const { RefCell::new(Pair { .. }) }` is `{ value: { a, b } }`, which its borrows read as the struct it isn't",
-    file: "src/lower/representation/consts.rs",
-    find: "            if is_std_def(tcx, adt.did(), StdItem::RefCell)\n                && crate::lower::drops::holds_itself(tcx, args.type_at(0)) =>\n",
-    replace: "            if false\n                && crate::lower::drops::holds_itself(tcx, args.type_at(0)) =>\n",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
+    find: "            if is_std_def(tcx, adt.did(), StdItem::RefCell) && crate::drops::holds_itself(tcx, args.type_at(0)) =>\n",
+    replace: "            if false\n                && crate::drops::holds_itself(tcx, args.type_at(0)) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_const_object.rs$"],
   },
   {
     name: "keyed-const-keys-dropped",
     breaks: "a keyed enum's constant's `None` field is no key, so its variant isn't told (#504)",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "                    layout.kept = (props.iter())\n",
     replace: "                    layout.kept = (Vec::<Prop>::new().iter())\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_const.rs$"],
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
   {
     name: "variant-refcell-const-boxed",
     breaks: "a constant of a variant with a `RefCell` field, a thread-local's `Kind::Pair(RefCell::new(5), 1)`, is `{ _0: { value: 5 } }`, where the field holds its value (#503)",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "            if variant.fields.iter().any(|f| {\n",
     replace: "            if false && variant.fields.iter().any(|f| {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_variant_derives.rs$"],
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
   {
     name: "held-field-constant-folded",
     breaks: "a struct made of constants with a nullable nested field is folded into a constant, its `Some(None)` the box `{ $someNone: 0 }`, which reads as `Some(Some(..))`, not the held form's `null` (a wrong answer, #832)",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did) || bindings::is_held(tcx, f))\n",
     replace: "                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did))\n",
     tests: ["test/corpus.test.ts", "-t", "^held_fields_of_a_constant.rs$"],
@@ -248,23 +248,23 @@ export const mutations: Mutation[] = [
   {
     name: "c-literal-unknown",
     breaks: "`c\"hi\"` is refused as a constant rust-js can't say",
-    file: "src/lower/representation/consts.rs",
-    find: "ty::Ref(_, inner, _) if crate::lower::recognition::is_c_str(tcx, *inner) => {",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
+    find: "ty::Ref(_, inner, _) if crate::recognition::is_c_str(tcx, *inner) => {",
     replace: "ty::Ref(_, inner, _) if false && inner.is_unit() => {",
     tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
   },
   {
     name: "constant-write-result-tagged",
     breaks: "a constant `Ok(())` of a `fmt::Result`, `const DONE` or a promoted `&Ok(())`, is `{ TAG: \"Ok\" }`, which a write's result's `is_ok()` reads as an `Err` (#1411)",
-    file: "src/lower/representation/consts.rs",
-    find: "            if crate::lower::recognition::is_write_result_type(tcx, ty) {\n",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
+    find: "            if crate::recognition::is_write_result_type(tcx, ty) {\n",
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_constant.rs$"],
   },
   {
     name: "constant-fmt-error-unmade",
     breaks: "a constant `Err(fmt::Error)` is left to a body, whose `$fmtError()` throws as the module loads (#1411)",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "                        .then(|| Expr::new_(Expr::helper(\"$FmtError\"), Vec::new())),\n",
     replace: "                        .then(|| None).flatten(),\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_constant.rs$"],
@@ -273,7 +273,7 @@ export const mutations: Mutation[] = [
     name: "placed-const-made-bare",
     breaks:
       "a constant whose field is held in a place of its own, `Pin(Odd::X)` promoted or `const START: Both<Tri, Tri>`, is rustc's value, the field bare, not a place, where its own steps throw and a comparison reads `undefined` (#2255)",
-    file: "src/lower/representation/consts.rs",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "            if may_hold_placed(tcx, variant, &children()?, unit) {\n",
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],

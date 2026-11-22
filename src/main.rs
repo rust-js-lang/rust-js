@@ -50,8 +50,8 @@ mod cargo;
 mod clippy;
 mod command;
 mod jsx_syntax;
-mod lower;
 mod phase_times;
+mod pipeline;
 #[cfg(not(target_os = "wasi"))]
 mod source_format;
 mod std_sysroot;
@@ -171,7 +171,7 @@ fn register_tool(config: &mut rustc_interface::interface::Config) {
             tools.insert(Ident::with_dummy_span(Symbol::intern("rust_js")));
             tools
         };
-        lower::liveness::provide(providers);
+        rust_js_lower::liveness::provide(providers);
     });
 }
 
@@ -206,9 +206,9 @@ impl Callbacks for Syntax {
     /// TypeScript types read (ADR 0811), and each `From` into an untagged
     /// enum of its the variant of its argument (ADR 0214, amended).
     fn after_analysis<'tcx>(&mut self, _compiler: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
-        match lower::given_names_differ(tcx)
-            & lower::validate_types(tcx)
-            & lower::binding_froms_give_their_variants(tcx)
+        match rust_js_lower::given_names_differ(tcx)
+            & rust_js_lower::validate_types(tcx)
+            & rust_js_lower::binding_froms_give_their_variants(tcx)
         {
             true => Compilation::Continue,
             false => Compilation::Stop,
@@ -325,19 +325,19 @@ impl Callbacks for RustJs {
         };
         // The lowering session, its caches its own, dropped as it ends (ADR
         // 1111).
-        let _session = lower::pipeline::start_session(tcx, self.session_flags());
+        let _session = pipeline::start_session(tcx, self.session_flags());
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
-        let mut bodies = lower::collect_bodies(tcx, self.library_filter());
+        let mut bodies = rust_js_lower::collect_bodies(tcx, self.library_filter());
         // `@rust-js/std`'s: std's own, from the MIR of a `core` built to
         // unwind (#424).
         if self.std_bodies {
-            bodies.extend(lower::collect_std_bodies(tcx));
+            bodies.extend(rust_js_lower::collect_std_bodies(tcx));
         }
-        let mut initializers = lower::collect_initializers(tcx);
+        let mut initializers = rust_js_lower::collect_initializers(tcx);
         // Then, read from their MIR, what runs (ADR 0364): the initializers
         // lowered as code too.
-        lower::collect_mir(tcx, &mut bodies);
-        lower::collect_mir(tcx, &mut initializers);
+        rust_js_lower::collect_mir(tcx, &mut bodies);
+        rust_js_lower::collect_mir(tcx, &mut initializers);
 
         // 2. Run rustc's full analysis: type check, borrow check, lints.
         tcx.ensure_ok().analysis(());
@@ -345,14 +345,14 @@ impl Callbacks for RustJs {
         if let Some(path) = &self.std_coverage
             && let Err(error) = rust_js_emit::publish::publish_file(
                 path,
-                lower::std_coverage::report(tcx, &self.dependencies).into_bytes(),
+                rust_js_lower::std_coverage::report(tcx, &self.dependencies).into_bytes(),
             )
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
         if let Some(path) = &self.std_catalogue
             && let Err(error) =
-                rust_js_emit::publish::publish_file(path, lower::compiled_std_catalogue(tcx).into_bytes())
+                rust_js_emit::publish::publish_file(path, rust_js_lower::compiled_std_catalogue(tcx).into_bytes())
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
@@ -363,17 +363,17 @@ impl Callbacks for RustJs {
 
 /// What every build of the crate reads of rustc's expanded crate before
 /// it's lowered, `#[serde(..)]`; `None` where the syntax pass stopped it.
-fn front(compiler: &Compiler, tcx: TyCtxt<'_>) -> Option<lower::SerdeAttributes> {
+fn front(compiler: &Compiler, tcx: TyCtxt<'_>) -> Option<rust_js_lower::SerdeAttributes> {
     // 0. `#[serde(..)]`, which only the expanded crate still has, read
     // before props' resolution asks for its HIR, which takes the
     // resolver's AST (ADR 0077).
-    let serde_attrs = lower::serde_attributes(tcx);
+    let serde_attrs = rust_js_lower::serde_attributes(tcx);
     (Syntax.after_expansion(compiler, tcx) != Compilation::Stop).then_some(serde_attrs)
 }
 
 impl RustJs {
     /// Whether the build leaves out what only an unlowered impl reaches, as
-    /// a library does (`lower::bodies_of_build`).
+    /// a library does (`rust_js_lower::bodies_of_build`).
     fn library_filter(&self) -> bool {
         self.export_library && !self.program
     }
@@ -382,8 +382,8 @@ impl RustJs {
     /// all of them, in std's own bodies' build and the differential one
     /// (ADR 0932); every struct the crate doesn't build, one JS may make, in
     /// the object model net's build (ADR 1105).
-    fn session_flags(&mut self) -> lower::session::Flags {
-        lower::session::Flags {
+    fn session_flags(&mut self) -> rust_js_lower::session::Flags {
+        rust_js_lower::session::Flags {
             meaning: self.std_bodies || self.std_iterators,
             every_outside_struct: self.js_made_all,
             without_recognizers: std::mem::take(&mut self.without_recognizers),
@@ -408,8 +408,8 @@ impl RustJs {
     fn lower_build<'tcx>(
         &mut self,
         tcx: TyCtxt<'tcx>,
-        (bodies, initializers): (&mut Vec<lower::Body<'tcx>>, &mut Vec<lower::Body<'tcx>>),
-        serde_attrs: &lower::SerdeAttributes,
+        (bodies, initializers): (&mut Vec<rust_js_lower::Body<'tcx>>, &mut Vec<rust_js_lower::Body<'tcx>>),
+        serde_attrs: &rust_js_lower::SerdeAttributes,
     ) {
         // rustc's walk of every crate's modules, which printing a type or a
         // path forces, a warning's too: none of the React port's lowerings
@@ -419,13 +419,13 @@ impl RustJs {
                 .is_some()
         };
         let walked_before = walked();
-        let mut instances = lower::Instances::default();
+        let mut instances = rust_js_lower::Instances::default();
         let mut made_where_used = IndexSet::default();
         let lowered = loop {
             if tcx.dcx().has_errors().is_some() {
                 break None;
             }
-            let built = lower::pipeline::Built {
+            let built = pipeline::Built {
                 library: self.export_library,
                 program: self.program,
                 std_bodies: self.std_bodies,
@@ -434,41 +434,42 @@ impl RustJs {
                 tidy_until: self.tidy_until.as_deref(),
                 js_modules: &self.local_js,
             };
-            match lower::pipeline::lower_crate(
+            match pipeline::lower_crate(
                 tcx,
                 (bodies, initializers),
                 serde_attrs,
                 (&self.dependencies, &instances, &made_where_used),
                 built,
             ) {
-                lower::pipeline::Lowered::Crate(unlinked) => break unlinked.map(|unlinked| *unlinked),
-                lower::pipeline::Lowered::Instances(more) => {
-                    let (more_bodies, made) = lower::instance_bodies(tcx, &more);
+                pipeline::Lowered::Crate(unlinked) => break unlinked.map(|unlinked| *unlinked),
+                pipeline::Lowered::Instances(more) => {
+                    let (more_bodies, made) = rust_js_lower::instance_bodies(tcx, &more);
                     bodies.extend(more_bodies);
                     instances.extend(more);
                     instances.extend(made);
                 }
-                lower::pipeline::Lowered::MadeWhereUsed(keys) => made_where_used.extend(keys),
+                pipeline::Lowered::MadeWhereUsed(keys) => made_where_used.extend(keys),
             }
         };
         // Which std functions a recogniser took, of the crate's analysis and
         // every body's lowering, where it's asked (ADR 1128).
         if let Some(path) = &self.recognizers_found
-            && let Err(error) = rust_js_emit::publish::publish_file(path, lower::session::recognized(tcx).into_bytes())
+            && let Err(error) =
+                rust_js_emit::publish::publish_file(path, rust_js_lower::session::recognized(tcx).into_bytes())
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
         // Each check THIR's ranges leave out that MIR doesn't prove (#1672).
         if let Some(path) = &self.intervals_shadow
             && let Err(error) =
-                rust_js_emit::publish::publish_file(path, lower::session::intervals_shadow(tcx).into_bytes())
+                rust_js_emit::publish::publish_file(path, rust_js_lower::session::intervals_shadow(tcx).into_bytes())
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
         // Each `Drop` compared with rustc's elaboration (#2112's change D).
         if let Some(path) = &self.drops_shadow
             && let Err(error) =
-                rust_js_emit::publish::publish_file(path, lower::session::drops_shadow(tcx).into_bytes())
+                rust_js_emit::publish::publish_file(path, rust_js_lower::session::drops_shadow(tcx).into_bytes())
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
@@ -605,7 +606,7 @@ fn run() -> ExitCode {
         #[cfg(not(target_os = "wasi"))]
         Ok(command::Command::Worker) => return worker::run(),
         Ok(command::Command::TidyPasses) => {
-            for pass in lower::pipeline::tidy_pass_names() {
+            for pass in pipeline::tidy_pass_names() {
                 println!("{pass}");
             }
             return ExitCode::SUCCESS;
@@ -647,7 +648,7 @@ fn run() -> ExitCode {
             return ExitCode::SUCCESS;
         }
         Ok(command::Command::StdDeclarations) => {
-            print!("{}", lower::std_declarations());
+            print!("{}", rust_js_lower::std_declarations());
             return ExitCode::SUCCESS;
         }
         Ok(command::Command::VersionJson) => {
@@ -844,16 +845,16 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
     // which of tidy's passes fire recorded from the first body (#1461).
     rust_js_program::js::forget_known(&without_known);
     if tidy_fired.is_some() {
-        lower::session::record_tidy_fired();
+        rust_js_lower::session::record_tidy_fired();
     }
     if label_census.is_some() {
-        lower::session::record_label_census();
+        rust_js_lower::session::record_label_census();
     }
     if no_thir_hints {
-        lower::session::forget_thir_hints();
+        rust_js_lower::session::forget_thir_hints();
     }
     if std_paths_first {
-        lower::session::ask_std_paths_first();
+        rust_js_lower::session::ask_std_paths_first();
     }
     let command::Staged { metadata, dep_info, .. } = staged;
     let recorded = cargo.then(|| (manifest.clone(), metadata.clone()));
@@ -1029,13 +1030,13 @@ fn finish_build(prepared: Prepared, exit: ExitCode) -> Result<ExitCode, String> 
         if let Some(path) = &tidy_fired {
             rust_js_emit::publish::publish_file(
                 path,
-                lower::session::tidy_fired(&lower::pipeline::tidy_pass_names()).into_bytes(),
+                rust_js_lower::session::tidy_fired(&pipeline::tidy_pass_names()).into_bytes(),
             )
             .map_err(|error| format!("can't write the tidy passes fired to {}: {error}", path.display()))?;
         }
         // Each compiler-made label kept, by its shape (#1461).
         if let Some(path) = &label_census {
-            rust_js_emit::publish::publish_file(path, lower::session::label_census().into_bytes())
+            rust_js_emit::publish::publish_file(path, rust_js_lower::session::label_census().into_bytes())
                 .map_err(|error| format!("can't write the label census to {}: {error}", path.display()))?;
         }
     }

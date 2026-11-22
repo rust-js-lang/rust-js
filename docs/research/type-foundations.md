@@ -286,7 +286,7 @@ functions with their parameters, an abstract type as a branded class
 checks the claim.
 
 **rust-js** writes a `.d.ts` per module (ADRs 0196, 0207, 0210;
-`src/lower/declarations.rs`). An enum with fields is `any` (274), though its
+`crates/rust-js-lower/src/declarations.rs`). An enum with fields is `any` (274), though its
 JS is the same `{TAG}` shape genType declares; a closure, a function pointer
 and a `dyn` value are `(...args: any[]) => any` (329-340), and a `dyn Trait`
 isn't callable in JS (ADR 0049); every non-local type without

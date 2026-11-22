@@ -1,11 +1,11 @@
-// Mutations of src/lower/recognition/calls.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/recognition/calls.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "random-state-not-a-build-hasher",
     breaks: "a `RandomState`'s `build_hasher()` and `hash_one(x)` are refused, as no std `BuildHasher` rust-js knows",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "                || is_std_def(tcx, adt.did(), StdItem::RandomState))\n",
     replace: "                || false)\n",
     tests: ["test/corpus.test.ts", "-t", "^random_state_holds_nothing.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "build-hasher-unrecognized",
     breaks: "`build_hasher()` of a `BuildHasherDefault` isn't std's, so a call of it is refused (#1155)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '                "build_hasher" => Some(HashOp::BuildHasher),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^build_hasher_default.rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "bool-operator-by-ref-unknown",
     breaks:
       "a `bool`'s `&`, `|` or `^` of `&bool`s, std's forwarding impl, is refused (#319)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if Num::of(ty.peel_refs()).is_some() || ty.peel_refs().is_bool() {\n            if let Some(Ok(op)) = value_operator(tcx, trait_) {\n",
     replace:
       "        if Num::of(ty.peel_refs()).is_some() {\n            if let Some(Ok(op)) = value_operator(tcx, trait_) {\n",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     name: "blanket-to-owned-shared",
     breaks:
       "`to_owned()` of a `T: Clone`, std's blanket impl, is the value it's given, not its `clone()`: a change to the copy changes the original (#316)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        _ => Std::ToOwnedClone,\n",
     replace: "        _ => Std::Same,\n",
     tests: ["test/corpus.test.ts", "-t", "^to_owned_is_clone.rs$"],
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     name: "ptr-eq-unrecognized",
     breaks:
       "`std::ptr::eq` of JS objects is rejected as a call rust-js doesn't support",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if diagnostic(\"ptr_eq\") || item == Some(StdPath::PtrFnAddrEqFn) {",
     replace: "        if item == Some(StdPath::PtrFnAddrEqFn) {",
     tests: [
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "fn-addr-eq-unrecognized",
     breaks:
       "`ptr::fn_addr_eq(f, g)`, what rustc's lint of `f == g` of two function pointers asks for, is refused as addressable memory (#987)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if diagnostic(\"ptr_eq\") || item == Some(StdPath::PtrFnAddrEqFn) {",
     replace: "        if diagnostic(\"ptr_eq\") {",
     tests: ["test/corpus.test.ts", "-t", "^fn_addr_eq_compares_functions.rs$"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "iter-source-unknown",
     breaks: "`std::iter::once(x)` and std's other iterator sources are refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if of_std_crate(tcx, def_id, StdCrate::Core) && tcx.def_kind(def_id) == DefKind::Fn {",
     replace:
       "        if false && of_std_crate(tcx, def_id, StdCrate::Core) && tcx.def_kind(def_id) == DefKind::Fn {",
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-inclusive-new-unknown",
     breaks: "`1..=6` as a value is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if tcx.is_lang_item(def_id, LangItem::RangeInclusiveNew) {",
     replace:
       "        if false && tcx.is_lang_item(def_id, LangItem::RangeInclusiveNew) {",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
   {
     name: "stream-write-unknown",
     breaks: "`writeln!(out, ..)` to standard output is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '                "write_fmt" => Some(Std::Stream(StreamOp::Write { error })),',
     replace: '                "write_fmt" => None,',
     tests: ["test/corpus.test.ts", "-t", "std_odds"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     name: "user-size-hint-unknown",
     breaks:
       "`size_hint()` of an iterator of the crate's that keeps std's is an error",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            return Some(Std::SizeHint(false));",
     replace: "            return None;",
     tests: ["test/corpus.test.ts", "-t", "size_hint"],
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
   {
     name: "char-from-code-unknown",
     breaks: "`char::from_u32_unchecked(n)` is an error",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '        if char_fn("from_u32_unchecked") {',
     replace: '        if char_fn("from_u32_unchecked") && false {',
     tests: ["test/corpus.test.ts", "-t", "char_from_code"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
   {
     name: "from-utf8-unknown",
     breaks: "`str::from_utf8(bytes)` is an error",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            Some(StdPath::StrFromUtf8Fn | StdPath::StrFromUtf8) => Some(TextOp::FromUtf8 { owned: false }),",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "utf8_decoding"],
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
   {
     name: "cow-str-deref-unknown",
     breaks: "a `Cow<str>`'s text, `text.len()`, is an error",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '            if diagnostic("deref_method") && self.is_cow(ty) {',
     replace:
       '            if diagnostic("deref_method") && self.is_cow(ty) && false {',
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-display-unknown",
     breaks: "`p.display()` of a path is an error",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "                StdPath::PathDisplayMethod\n                | StdPath::PathToStr\n",
     replace: "                StdPath::PathToStr\n",
     tests: ["test/corpus.test.ts", "-t", "path_text"],
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
   {
     name: "parse-error-kind-unknown",
     breaks: "`ParseIntError::kind()` is an error",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            Some(StdPath::ParseIntErrorKind) => Some(TextOp::ParseErrorKind),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "int_error_kind"],
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
   {
     name: "wrapping-operators-unknown",
     breaks: "`a * b` of `std::num::Wrapping`s is an error",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            if let Some(op) = value_operator(tcx, trait_) {\n                return Some(Std::IntNewtypeOp(op, false));",
     replace:
       "            if let Some(op) = value_operator(tcx, trait_).filter(|_| false) {\n                return Some(Std::IntNewtypeOp(op, false));",
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
   {
     name: "wrapping-assign-unknown",
     breaks: "`a += b` of `std::num::Wrapping`s is an error",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "                return Some(Std::IntNewtypeOp(Ok(op), true));",
     replace: "                return None;",
     tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
   {
     name: "panic-display-unknown",
     breaks: '`panic!("{}", x)`, std\'s `panic_display`, is an error',
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if tcx.is_lang_item(def_id, LangItem::PanicDisplay) {",
     replace:
       "        if false && tcx.is_lang_item(def_id, LangItem::PanicDisplay) {",
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-array-into-iter-refused",
     breaks: "`into_iter()` of 1.99's `Box<[T; N]>` is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            && self.is_boxed_items(ty.peel_refs())\n        {\n            return Some(Std::Pointee);\n",
     replace:
       "            && false\n        {\n            return Some(Std::Pointee);\n",
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "pin-deref-same",
     breaks: "`*pin` of a pinned `&mut` to a number is its box",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            if self.pinned(ty).is_some() {\n",
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-id-by-dictionary",
     breaks: "`5i64.type_id()` asks a dictionary made for it",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            return Some(Std::Any(AnyOp::TypeIdOfValue));",
     replace: "            return None;",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
   {
     name: "str-index-mut-unknown",
     breaks: "`&mut s[a..b]` is an error",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            return Some(Std::Text(TextOp::StrPart { bounds: false }));\n",
     replace: "            return None;\n",
     tests: ["test/corpus.test.ts", "-t", "str_mut"],
@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
   {
     name: "index-mut-range-unknown",
     breaks: "`&mut v[a..b]` is an error",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            return Some(Std::Slice(SliceOp::View { checked: false }));\n",
     replace: "            return None;\n",
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf8-chunk-valid-unknown",
     breaks: "a `Utf8Chunk`'s `valid()` is an error",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            Some(StdPath::Utf8ChunkValid) => Some(TextOp::Utf8Part(\"valid\")),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "slice_bytes_text"],
@@ -215,7 +215,7 @@ export const mutations: Mutation[] = [
     name: "yield-now-unknown",
     breaks:
       "`thread::yield_now()`, of the one thread there is, is refused, not nothing",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if item == Some(StdPath::ThreadYieldNowFn) || item == Some(StdPath::HintSpinLoopFn) {\n",
     replace: "        if item == Some(StdPath::HintSpinLoopFn) {\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_yield.rs$"],
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     name: "vec-write-text-refused",
     breaks:
       "`write!(v, ..)` of a known `Vec<u8>` is refused, not its bytes added",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '            "write_fmt" => Some(Std::WriteText),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
     name: "discriminant-unknown",
     breaks:
       "`mem::discriminant(&e)` is refused, not `e`'s variant's discriminant",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            Some(StdPath::MemDiscriminantFn | StdPath::IntrinsicsDiscriminantValueFn)\n",
     replace: "            Some(StdPath::IntrinsicsDiscriminantValueFn)\n",
     tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
   {
     name: "box-deref-not-same",
     breaks: "a `Box`'s `deref`, given to generic code, isn't the value it is",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "                || boxed;\n",
     replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_deref.rs$"],
@@ -249,7 +249,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-size-hint-unknown",
     breaks: "a range's `size_hint()` is refused, not its bounds'",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            Some(RangeKind::Exclusive | RangeKind::Inclusive) => Some(Std::Range(RangeOp::SizeHint)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_size_hint.rs$"],
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-parent-unknown",
     breaks: "a path's `parent()` is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            Some(StdPath::PathParent) => return Some(Some(Std::Path(PathOp::Parent))),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
@@ -265,7 +265,7 @@ export const mutations: Mutation[] = [
   {
     name: "manually-drop-new-unknown",
     breaks: "`ManuallyDrop::new(x)` is refused, where it's `x`",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            Some(StdPath::ManuallyDropNew | StdPath::ManuallyDropIntoInner) => {\n",
     replace: "            Some(StdPath::ManuallyDropIntoInner) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
@@ -273,7 +273,7 @@ export const mutations: Mutation[] = [
   {
     name: "manually-drop-deref-unknown",
     breaks: "`*md` of a `ManuallyDrop` is refused, where it's what it holds",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "                || self.is_lang_adt(ty, LangItem::ManuallyDrop)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
@@ -281,15 +281,15 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-std-unknown",
     breaks: "std's functions of a raw pointer are refused as memory",
-    file: "src/lower/recognition/calls.rs",
-    find: "        if let Some(op) = crate::lower::pointers::pointer_op(tcx, def_id) {\n",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
+    find: "        if let Some(op) = crate::pointers::pointer_op(tcx, def_id) {\n",
     replace: "        if let Some(op) = None::<PointerOp> {\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
     name: "transmute-unrecognised",
     breaks: "`mem::transmute` of plain data is refused as addressable memory",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            Some(StdPath::IntrinsicsTransmuteFn | StdPath::IntrinsicsTransmuteUncheckedFn) => {\n",
     replace: "            Some(StdPath::IntrinsicsTransmuteUncheckedFn) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
   {
     name: "mem-zeroed-unrecognised",
     breaks: "`mem::zeroed()` is refused as addressable memory",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            Some(StdPath::MemZeroedFn) => return Some(Some(Std::Uninit(UninitOp::Zeroed))),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
@@ -306,7 +306,7 @@ export const mutations: Mutation[] = [
     name: "user-io-write-unrecognized",
     breaks:
       "`write!` to a writer of bytes of the crate's, of known type, isn't its dictionary's, and is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            return Some(Std::UserIoWrite);\n",
     replace: "            return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^io_write_impl.rs$"],
@@ -315,7 +315,7 @@ export const mutations: Mutation[] = [
     name: "generic-index-unrecognized",
     breaks:
       "`v[i]` of an `I: SliceIndex<[T]>` isn't its dictionary's, and is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            && args.types().nth(1).is_some_and(|index| self.is_unknown(index))\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_index_generic.rs$"],
@@ -323,7 +323,7 @@ export const mutations: Mutation[] = [
   {
     name: "capacity-unrecognized",
     breaks: "`v.capacity()` isn't a `Vec`'s capacity, and is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '        "capacity" => CapacityOp::Of,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
@@ -331,7 +331,7 @@ export const mutations: Mutation[] = [
   {
     name: "truncate-keeps-no-capacity",
     breaks: "`truncate` shortens a `Vec` without keeping its capacity",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '        "clear" | "truncate" | "set_len" | "pop"',
     replace: '        "clear" | "set_len" | "pop"',
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
@@ -339,7 +339,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-len-loses-capacity",
     breaks: "`set_len` shortens a `Vec` without keeping its capacity",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '        "clear" | "truncate" | "set_len" | "pop"',
     replace: '        "clear" | "truncate" | "pop"',
     tests: ["test/corpus.test.ts", "-t", "^vec_set_len.rs$"],
@@ -347,7 +347,7 @@ export const mutations: Mutation[] = [
   {
     name: "array-from-fn-unrecognized",
     breaks: "`array::from_fn(f)` isn't known, and is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            Some(StdPath::ArrayFromFnFn) => return Some(Some(Std::Slice(SliceOp::FromFn { given_length: false }))),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_from_fn.rs$"],
@@ -355,7 +355,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-unknown",
     breaks: "`cycle()` of std's iterator over an array is an error",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '        "cycle" => Some(StepOp::Cycle),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
@@ -363,7 +363,7 @@ export const mutations: Mutation[] = [
   {
     name: "identity-unknown",
     breaks: "`convert::identity(x)` is an error, where it's `x`",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '        if diagnostic("box_new") || diagnostic("convert_identity") {\n',
     replace: '        if diagnostic("box_new") {\n',
     tests: ["test/corpus.test.ts", "-t", "^convert_identity.rs$"],
@@ -371,7 +371,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-capacity-unknown",
     breaks: "a `BinaryHeap`'s `capacity()` is an error, where it's its array's",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "StdPath::Vec | StdPath::CollectionsVecDeque | StdPath::CollectionsBinaryHeap",
     replace: "StdPath::Vec | StdPath::CollectionsVecDeque",
     tests: ["test/corpus.test.ts", "-t", "^collection_capacity.rs$"],
@@ -380,7 +380,7 @@ export const mutations: Mutation[] = [
     name: "heap-shortened-capacity-lost",
     breaks:
       "a `BinaryHeap` cleared or popped has the capacity of its length, not what it had",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '        "clear" | "truncate" | "set_len" | "pop" | "pop_if"',
     replace: '        "never" | "truncate" | "set_len" | "pop" | "pop_if"',
     tests: ["test/corpus.test.ts", "-t", "^(collection_capacity|capacity_kept_by_clear_alone).rs$"],
@@ -389,7 +389,7 @@ export const mutations: Mutation[] = [
     name: "next-arg-unknown",
     breaks:
       "`next_arg()` of a `VaList` is an error, where it's the first of what's left",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if item == Some(StdPath::VaListNextArg) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
@@ -397,7 +397,7 @@ export const mutations: Mutation[] = [
   {
     name: "cell-items-unknown",
     breaks: "`as_slice_of_cells()` and `as_array_of_cells()` are refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '        "as_slice_of_cells" | "as_array_of_cells" => Std::CellItems,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cell_from_mut.rs$"],
@@ -405,7 +405,7 @@ export const mutations: Mutation[] = [
   {
     name: "clock-checked-since-unchecked",
     breaks: "`checked_duration_since` saturates, `Some(0ns)` where it's `None`",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '(_, "checked_duration_since") => ClockOp::Since { checked: true },',
     replace:
       '(_, "checked_duration_since") => ClockOp::Since { checked: false },',
@@ -414,7 +414,7 @@ export const mutations: Mutation[] = [
   {
     name: "clock-instant-difference-unknown",
     breaks: "`a - b` of two `Instant`s is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            (false, Some(ClockType::Instant)) if instant && tcx.is_lang_item(trait_, LangItem::Sub) => {",
     replace: "            (false, Some(ClockType::Instant)) if false => {",
     tests: ["test/corpus.test.ts", "-t", "^clock.rs$"],
@@ -422,7 +422,7 @@ export const mutations: Mutation[] = [
   {
     name: "assert-unchecked-unknown",
     breaks: "`hint::assert_unchecked(c)` isn't known, and is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if item == Some(StdPath::HintAssertUncheckedFn) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^assert_unchecked.rs$"],
@@ -431,7 +431,7 @@ export const mutations: Mutation[] = [
     name: "unreachable-display-refused",
     breaks:
       "an edition 2018 `unreachable!(x)`, `unreachable_display(&x)`, is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if krate == Some(StdCrate::Core)\n            && name.as_str() == \"unreachable_display\"\n",
     replace: "        if false\n            && name.as_str() == \"unreachable_display\"\n",
     tests: ["test/corpus.test.ts", "-t", "^unreachable_display.rs$"],
@@ -440,7 +440,7 @@ export const mutations: Mutation[] = [
     name: "held-formatter-write-refused",
     breaks:
       "a write to a `Formatter` kept in a struct, `self.f.write_str(s)`, is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if self.formatter_write(def_id, args) {\n            return Some(Some(Std::PushStr));\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
@@ -448,7 +448,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-from-kind-refused",
     breaks: "`kind.into()` of an `ErrorKind` as an `io::Error` is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        (self.is_io_error(to) && self.is_io_error_kind(from)).then_some(IoErrorOp::FromKind)\n",
     replace: "        None\n",
     tests: ["test/corpus.test.ts", "-t", "^io_error_values.rs$"],
@@ -457,7 +457,7 @@ export const mutations: Mutation[] = [
     name: "left-to-std-of-own",
     breaks:
       "a crate's hasher's own `write_u64` is taken for std's, and std's provided ones for its own",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "                    if !tcx.impl_item_implementor_ids(imp.impl_def_id).contains_key(&def_id)\n",
     replace:
       "                    if tcx.impl_item_implementor_ids(imp.impl_def_id).contains_key(&def_id)\n",
@@ -466,7 +466,7 @@ export const mutations: Mutation[] = [
   {
     name: "select-nth-unrecognized",
     breaks: "a generic `select_nth_unstable` is given no `TSort`, and refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '        "sort_unstable" | "select_nth_unstable" => SortWith::Order,\n',
     replace: '        "sort_unstable" => SortWith::Order,\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
@@ -474,7 +474,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-to-array-refused",
     breaks: "a `Vec` into an array of its length is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        ((slice || owned) && array).then_some(owned)",
     replace: "        (slice && array).then_some(owned)",
     tests: ["test/corpus.test.ts", "-t", "^vec_into_array.rs$"],
@@ -482,7 +482,7 @@ export const mutations: Mutation[] = [
   {
     name: "byte-escape-free-fn-refused",
     breaks: "`ascii::escape_default(b)` is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            Some(StdPath::AsciiEscapeDefaultFn | StdPath::U8EscapeAscii) => Some(TextOp::EscapeByte),\n",
     replace: "            Some(StdPath::U8EscapeAscii) => Some(TextOp::EscapeByte),\n",
     tests: ["test/corpus.test.ts", "-t", "^byte_escape.rs$"],
@@ -490,7 +490,7 @@ export const mutations: Mutation[] = [
   {
     name: "byte-escape-method-refused",
     breaks: "a byte's `escape_ascii()` is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            Some(StdPath::AsciiEscapeDefaultFn | StdPath::U8EscapeAscii) => Some(TextOp::EscapeByte),\n",
     replace: "            Some(StdPath::AsciiEscapeDefaultFn) => Some(TextOp::EscapeByte),\n",
     tests: ["test/corpus.test.ts", "-t", "^byte_escape.rs$"],
@@ -499,7 +499,7 @@ export const mutations: Mutation[] = [
     name: "arguments-as-str-refused",
     breaks:
       "`fmt::Arguments::as_str()` is refused, where the body made the arguments and its maker says which it is (#1091)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '        ("as_str", true) => Std::FmtAsStr,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fmt_arguments_as_str.rs$"],
@@ -508,7 +508,7 @@ export const mutations: Mutation[] = [
     name: "fmt-to-held-formatter-refused",
     breaks:
       "`Display::fmt(&x, self.0)` on a `Formatter` held in a struct is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if let Some(operation) = self.formatter_fmt_to(def_id) {\n            return Some(Some(Std::FmtTo(operation)));\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fmt_to_held_formatter.rs$"],
@@ -516,7 +516,7 @@ export const mutations: Mutation[] = [
   {
     name: "pin-macro-refused",
     breaks: "`pin!`'s `Pin::new_unchecked` is a call rust-js refuses",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if is_pin_macro_fn(tcx, def_id) {\n",
     replace: "        if false {\n",
     tests: ["test/snapshots.test.ts", "-t", "async"],
@@ -525,7 +525,7 @@ export const mutations: Mutation[] = [
     name: "result-into-iter-unrecognized",
     breaks:
       "`Result::into_iter`, and `for x in &result`, are refused as a call of `IntoIterator::into_iter`",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if self.is_std_type(ty.peel_refs(), StdItem::Result) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^result_iter_and_order.rs$"],
@@ -534,7 +534,7 @@ export const mutations: Mutation[] = [
     name: "result-into-iter-mut-of-values",
     breaks:
       "`for x in &mut result` steps a copy of its number, so `*x += 1` changes nothing",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "if by_mut { Comb::ResultIterMut } else { Comb::ResultIter }",
     replace: "Comb::ResultIter",
     tests: ["test/corpus.test.ts", "-t", "^result_iter_and_order.rs$"],
@@ -542,7 +542,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-operator-unknown",
     breaks: "`&a - &b` of sets is refused as a call of `Sub::sub`",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            return set_operator(op).map(|name| Std::Map(MapOp::SetOperator(name)));\n",
     replace: "            return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^set_operators.rs$"],
@@ -550,7 +550,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-operator-swapped",
     breaks: "`&a | &b` of sets is their intersection",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: '        BinOp::BitOr => "union",\n',
     replace: '        BinOp::BitOr => "intersection",\n',
     tests: ["test/corpus.test.ts", "-t", "^set_operators.rs$"],
@@ -558,7 +558,7 @@ export const mutations: Mutation[] = [
   {
     name: "catch-unwind-resumes",
     breaks: "`catch_unwind(f)` is `resume_unwind(f)`",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        Some(StdPath::PanicCatchUnwindFn) => Some(UnwindOp::Catch),\n",
     replace: "        Some(StdPath::PanicCatchUnwindFn) => Some(UnwindOp::Resume),\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "getIODescription"],
@@ -567,7 +567,7 @@ export const mutations: Mutation[] = [
     name: "ptr-hash-unrecognized",
     breaks:
       "`ptr::hash` is refused as addressing memory, and with it a type whose `Hash` it is (ADR 0864)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if item == Some(StdPath::PtrHashFn) {\n",
     replace: "        if false && item == Some(StdPath::PtrHashFn) {\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_keys.rs$"],
@@ -575,7 +575,7 @@ export const mutations: Mutation[] = [
   {
     name: "push-untracked",
     breaks: "in a crate that keeps capacities, `push` keeps its length as its capacity, where std's doubles (#1180)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        \"push\" | \"push_back\" | \"push_front\" | \"insert\" | \"append\" | \"extend_from_slice\" | \"extend_from_within\"\n",
     replace: "        \"push_back\" | \"push_front\" | \"insert\" | \"append\" | \"extend_from_slice\" | \"extend_from_within\"\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
@@ -583,7 +583,7 @@ export const mutations: Mutation[] = [
   {
     name: "c-string-deref-unknown",
     breaks: "`s.to_str()` of a `CString`, through its `Deref`, is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "                || is_c_string(tcx, ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
@@ -591,7 +591,7 @@ export const mutations: Mutation[] = [
   {
     name: "once-with-unanswered",
     breaks: "`iter::once_with` is std's function, called, which rust-js refuses (#1373)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "                Some(StdPath::IterOnceWithFn) => Some(IterSource::OnceWith),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iter_once_with.rs$"],
@@ -599,7 +599,7 @@ export const mutations: Mutation[] = [
   {
     name: "bswap-intrinsic-unanswered",
     breaks: "`intrinsics::bswap(x)`, called as itself, is refused where it's `x.swap_bytes()` (#1384)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        \"bswap\" => \"swap_bytes\",\n",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "intrinsics called as themselves run as their methods"],
@@ -607,7 +607,7 @@ export const mutations: Mutation[] = [
   {
     name: "fma-intrinsic-unanswered",
     breaks: "`intrinsics::fmaf64(a, b, c)`, called as itself, is refused where it's `a.mul_add(b, c)` (#1384)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        \"fmaf64\" => return Some((\"mul_add\", Num::F64)),\n",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "intrinsics called as themselves run as their methods"],
@@ -615,7 +615,7 @@ export const mutations: Mutation[] = [
   {
     name: "bit-count-intrinsics-unanswered",
     breaks: "`intrinsics::ctpop`, `ctlz` and `cttz`, called as themselves, are refused (#1384)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        \"ctpop\" => \"count_ones\",\n",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "intrinsics called as themselves run as their methods"],
@@ -623,7 +623,7 @@ export const mutations: Mutation[] = [
   {
     name: "from-raw-os-error-unknown",
     breaks: "`io::Error::from_raw_os_error` isn't known, so a program calling it, getrandom 0.1's `From<Error> for io::Error`, is refused",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "                \"from_raw_os_error\" => Some(IoErrorOp::FromRawOsError),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_error_from_raw_os_error.rs$"],
@@ -631,7 +631,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-writer-unanswered",
     breaks: "`io::Write` of a `&mut [u8]`, `cursor.write_all(..)`, is refused, std's own writer of a buffer (#1282)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if super::fmt::is_byte_slice(ty.peel_refs()) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_mut_slice.rs$"],
@@ -639,7 +639,7 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-slice-to-array-unrecognized",
     breaks: "a `Box<[T]>` into a `Box<[T; N]>`, miniz_oxide's buffers, is refused (#1284)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        let boxed = from.boxed_ty().is_some_and(|slice| slice.is_slice());\n",
     replace: "        let boxed = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
@@ -647,7 +647,7 @@ export const mutations: Mutation[] = [
   {
     name: "unsafe-cell-get-is-a-cells",
     breaks: "an `UnsafeCell`'s `get()` is a `Cell`'s, a copy of what it holds, not the cell, a pointer's handle on it, so `*c.get() += 1` changes nothing the cell holds (#1420)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        \"get\" if unsafe_cell => Std::CellPointer,\n",
     replace: "        \"get\" if unsafe_cell => Std::CellGet,\n",
     tests: ["test/corpus.test.ts", "-t", "^unsafe_cell_values.rs$"],
@@ -655,7 +655,7 @@ export const mutations: Mutation[] = [
   {
     name: "spin-loop-unknown",
     breaks: "`hint::spin_loop()`, of the one thread there is, is refused, not nothing (#1285)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if item == Some(StdPath::ThreadYieldNowFn) || item == Some(StdPath::HintSpinLoopFn) {\n",
     replace: "        if item == Some(StdPath::ThreadYieldNowFn) {\n",
     tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],
@@ -663,7 +663,7 @@ export const mutations: Mutation[] = [
   {
     name: "panicking-unknown",
     breaks: "`thread::panicking()` is refused (#1285)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        if item == Some(StdPath::ThreadPanickingFn) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],
@@ -671,7 +671,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-of-first-not-of-capacity",
     breaks: "a generic `with_capacity` or `reserve` of a type parameter's items asks its caller no size, so its room is checked by its count alone and no `capacity overflow` panics where std's does (#1432)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        Some(CapacityOp::WithCapacity | CapacityOp::Reserve { .. })\n    ) || is_vec_from_elem(tcx, def_id)\n",
     replace: "        Some(CapacityOp::Of)\n    ) || is_vec_from_elem(tcx, def_id)\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow_of_generic_items.rs$"],
@@ -679,7 +679,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-of-first-not-of-from-elem",
     breaks: "a generic `vec![x; n]` of a type parameter's items asks its caller no size, so its room is checked by its count alone (#1432)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "    ) || is_vec_from_elem(tcx, def_id)\n",
     replace: "    ) || false\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow_of_generic_items.rs$"],
@@ -687,7 +687,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-of-first-not-of-resize",
     breaks: "a generic `resize` of a type parameter's items asks its caller no size, so its room is checked by its count alone (#1432)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            Some(\"resize\" | \"resize_with\")\n",
     replace: "            Some(\"resize_with\")\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow_of_generic_items.rs$"],
@@ -695,7 +695,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-of-first-not-of-repeat",
     breaks: "a generic slice's `repeat` of a type parameter's items asks its caller no size, so its room is checked by its count alone (#1432)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            && tcx.item_name(def_id).as_str() == \"repeat\"\n",
     replace: "            && tcx.item_name(def_id).as_str() == \"repeat_\"\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow_of_generic_items.rs$"],
@@ -703,7 +703,7 @@ export const mutations: Mutation[] = [
   {
     name: "classify-past-what-is-left-out",
     breaks: "`classify` answers of a std function whose recogniser the compile leaves out, so `--without-recognizer` changes nothing (ADR 1128)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "        unrecognized::left(self.tcx, def_id, self.classified(def_id, args))\n",
     replace: "        self.classified(def_id, args)\n",
     tests: ["test/tidy-stages.test.ts", "-t", "a std function's call without its recogniser is refused"],
@@ -711,7 +711,7 @@ export const mutations: Mutation[] = [
   {
     name: "serde-json-method-taken-for-its-function",
     breaks: "`serde_json::Deserializer::from_str` is taken for `serde_json::from_str` by its name, and the compiler panics on its arguments (#1541)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: " && tcx.def_kind(def_id) == rustc_hir::def::DefKind::Fn\n",
     replace: "\n",
     tests: ["test/diagnostics.test.ts", "-t", "Deserializer::from_str"],
@@ -719,7 +719,7 @@ export const mutations: Mutation[] = [
   {
     name: "integer-min-max-intrinsics-unread",
     breaks: "1.100's `Ord::min` and `max` of an integer, `intrinsics::integer_min` and `integer_max` in std's bodies, aren't read as `a.min(b)`: std's bodies are refused (ADR 0109, amended)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "                \"integer_max\" => Some(true),\n                \"integer_min\" => Some(false),\n",
     replace: "",
     tests: ["test/std-package.test.ts"],
@@ -728,7 +728,7 @@ export const mutations: Mutation[] = [
     name: "adapter-size-hint-unclassified",
     breaks:
       "`size_hint()` of std's adapters, which aren't arrays, isn't known as std's where the question is any std iterator's: `Peekable`'s, `Copied`'s and `Cloned`'s (#2226)",
-    file: "src/lower/recognition/calls.rs",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: "            None if self.is_std_iterator(ty.peel_refs()) => Some(Std::SizeHint(true)),\n",
     replace: "            None if self.is_array_iter(ty.peel_refs()) => Some(Std::SizeHint(true)),\n",
     tests: ["test/std-coverage.test.ts"],

@@ -1,0 +1,259 @@
+//! The copies of a function its callers need besides its own JS, once
+//! lowered (ADR 0051, amended): one its lowering made alike another, its
+//! own JS or an earlier copy, is that one, and what calls it calls that.
+
+use rust_js_program::collections::{IndexMap, IndexSet};
+use rustc_span::def_id::{DefId, LocalModId};
+
+use rust_js_lower::analysis::JsGiven;
+use rust_js_lower::{FnInfo, LoweredFn};
+use rust_js_program::js::{self, Expr, ExprKind, Name};
+
+/// A function by where it's named: its module, its type's object of
+/// methods if it's a method, and its name.
+type Named = (LocalModId, Option<String>, String);
+
+/// What a copy is renamed to, as what it's alike: its name in its module,
+/// and what a read through its module's namespace names, of one alike its
+/// function's own JS that function's export, `new` of `new$` (#1390), as
+/// `own_fn_ref_through` names it.
+type Renamed = (String, String);
+
+/// A call of a namespace's method through a value whose call needs a copy:
+/// the method, the copy's index, and where it's called (rd311).
+pub(super) type ThroughCopy = (DefId, usize, rustc_span::Span);
+
+/// Of `copies`, each lowered, those made alike another left out, and what
+/// calls them, in `items` and the rest, calling that one: the copies kept,
+/// each function's in the order they're numbered.
+pub(super) fn settle(
+    js_given: &JsGiven,
+    fns: &IndexMap<DefId, FnInfo>,
+    items: &mut [(DefId, LoweredFn)],
+    copies: Vec<((DefId, usize), LoweredFn)>,
+    (tcx, through): (rustc_middle::ty::TyCtxt<'_>, &[ThroughCopy]),
+) -> IndexMap<DefId, Vec<LoweredFn>> {
+    let named = |id: DefId, copy: Option<usize>| -> Named {
+        let info = &fns[&id];
+        let name = match copy {
+            Some(at) => js_given.name(id, at).to_owned(),
+            None => info.name.clone(),
+        };
+        (info.module, info.owner.clone(), name)
+    };
+    // What each copy made alike another is: that one, its own JS (`None`) or
+    // an earlier copy.
+    let mut same: IndexMap<(DefId, usize), Option<usize>> = IndexMap::default();
+    let settled = |same: &IndexMap<(DefId, usize), Option<usize>>, id: DefId, mut copy: Option<usize>| {
+        while let Some(at) = copy {
+            match same.get(&(id, at)) {
+                Some(&to) => copy = to,
+                None => break,
+            }
+        }
+        copy
+    };
+    let renames = |same: &IndexMap<(DefId, usize), Option<usize>>| -> IndexMap<Named, Renamed> {
+        (same.keys())
+            .map(|&(id, at)| {
+                let to = settled(same, id, Some(at));
+                let local = named(id, to).2;
+                let through = match to {
+                    Some(_) => local.clone(),
+                    None => rust_js_lower::default_exports::exported_as(tcx, id, fns[&id].exported()),
+                };
+                (named(id, Some(at)), (local, through))
+            })
+            .collect()
+    };
+    let main = |id: DefId| items.iter().find(|(of, _)| *of == id).map(|(_, item)| &item.function);
+    let mut changed = true;
+    while changed {
+        changed = false;
+        let renamed = renames(&same);
+        for ((id, at), copy) in &copies {
+            if same.contains_key(&(*id, *at)) {
+                continue;
+            }
+            let module = fns[id].module;
+            let earlier = (copies.iter())
+                .filter(|((of, other), _)| of == id && other < at && !same.contains_key(&(*of, *other)))
+                .map(|((_, other), copy)| (Some(*other), &copy.function));
+            // Each read as if it were the one it's asked to be alike, so a
+            // copy that calls itself, a walk of a tree, is alike one that
+            // calls itself.
+            let found = (main(*id).map(|function| (None, function)).into_iter().chain(earlier)).find(|(to, other)| {
+                let mut as_if = renamed.clone();
+                let local = named(*id, settled(&same, *id, *to)).2;
+                as_if.insert(named(*id, Some(*at)), (local.clone(), local));
+                js::scopes::alpha_eq_functions(&alike(other, module, &as_if), &alike(&copy.function, module, &as_if))
+            });
+            if let Some((to, _)) = found {
+                same.insert((*id, *at), to);
+                changed = true;
+            }
+        }
+    }
+    let renamed = renames(&same);
+    let mut kept: IndexMap<DefId, Vec<LoweredFn>> = IndexMap::default();
+    let mut made = Vec::new();
+    for ((id, at), copy) in copies {
+        if !same.contains_key(&(id, at)) {
+            made.push((id, copy));
+        }
+    }
+    let lowered = (items.iter_mut()).chain(made.iter_mut()).map(|(id, item)| (*id, item));
+    for (id, item) in lowered {
+        if !renamed.is_empty() {
+            rename(&mut item.function, fns[&id].module, &renamed);
+        }
+        // A call of one made alike another, a call of that one, imported by
+        // its name.
+        let references = std::mem::take(&mut item.dependencies.copy_references);
+        for (from, of, at) in references {
+            match settled(&same, of, Some(at)) {
+                Some(at) => _ = item.dependencies.copy_references.insert((from, of, at)),
+                None => _ = item.dependencies.references.insert((from, of)),
+            }
+        }
+    }
+    for (id, copy) in made {
+        kept.entry(id).or_default().push(copy);
+    }
+    let alike_own: IndexSet<(DefId, usize)> = (same.keys())
+        .filter(|&&(id, at)| settled(&same, id, Some(at)).is_none())
+        .copied()
+        .collect();
+    refuse_through_unlike(tcx, through, &alike_own);
+    kept
+}
+
+/// Each call of a namespace's method through a value whose call needs a
+/// copy of it (`through`), which calls the value's function, the module's
+/// own JS: refused where that copy isn't `alike` it, as the value has no
+/// other, and what the call gives that function, what may look like `None`,
+/// it would read as `None` (rd311, ADRs 0051, 1037).
+fn refuse_through_unlike(tcx: rustc_middle::ty::TyCtxt<'_>, through: &[ThroughCopy], alike: &IndexSet<(DefId, usize)>) {
+    for &(id, at, span) in through {
+        if !alike.contains(&(id, at)) {
+            rust_js_lower::classes::refuse_through(tcx, id, span, true);
+        }
+    }
+}
+
+/// `function` as it reads apart from its name and its export, of a module's
+/// `module`, each copy `renamed` named as what it's alike.
+fn alike(function: &js::Function, module: LocalModId, renamed: &IndexMap<Named, Renamed>) -> js::Function {
+    let mut function = function.clone();
+    rename(&mut function, module, renamed);
+    function.name = Name::default();
+    function.export = false;
+    function
+}
+
+/// A module's function as `renamed` has it, by its word.
+fn named(module: LocalModId, name: &js::Name) -> Named {
+    (module, None, name.word().to_string()) // word: a module's function, which its word names
+}
+
+/// Each call of a copy in `function`, of a module's `module`, named as the
+/// copy's `renamed` says.
+fn rename(function: &mut js::Function, module: LocalModId, renamed: &IndexMap<Named, Renamed>) {
+    let mut each = |e: &mut Expr| match &mut e.kind {
+        ExprKind::Var(name) => {
+            if let Some((to, _)) = renamed.get(&named(module, name)) {
+                name.respell(to.clone());
+            }
+        }
+        ExprKind::Symbol(symbol) => {
+            if let Some(to) = (renamed.iter())
+                .find(|((of, owner, name), _)| {
+                    owner.is_none() && of.to_def_id().index.as_u32() == symbol.module && *name == symbol.export
+                })
+                .map(|(_, (to, _))| to)
+            {
+                symbol.export = to.clone();
+            }
+        }
+        // A method's, of its type's object, by its own module's name or
+        // another's symbol; or a function's, through its module's
+        // namespace, `Plugin.extractEvents` (rd114, ADR 1018).
+        ExprKind::Member(object, name) => {
+            let owner = match &object.kind {
+                ExprKind::Var(owner) => Some((module, Some(owner.word().to_string()))), // word: a module's type, which its word names
+                ExprKind::Symbol(symbol) => (renamed.keys())
+                    .find(|(of, _, _)| of.to_def_id().index.as_u32() == symbol.module)
+                    .map(|(of, _, _)| {
+                        let owner = (symbol.export != js::NAMESPACE).then(|| symbol.export.clone());
+                        (*of, owner)
+                    }),
+                _ => None,
+            };
+            // Through a namespace, by what's read there, its export.
+            if let Some((of, owner)) = owner
+                && let Some((local, through)) = renamed.get(&(of, owner.clone(), name.clone()))
+            {
+                *name = match owner {
+                    None => through.clone(),
+                    Some(_) => local.clone(),
+                };
+            }
+        }
+        _ => {}
+    };
+    js::function_exprs_mut(function, &mut each);
+}
+
+/// Of each copy of a function another module calls, `references`'s, the
+/// function itself in `functions`, exported.
+pub(super) fn export(
+    js_given: &JsGiven,
+    fns: &IndexMap<DefId, FnInfo>,
+    references: &IndexSet<(LocalModId, DefId, usize)>,
+    functions: &mut IndexMap<LocalModId, Vec<js::Function>>,
+) {
+    for &(from, id, at) in references {
+        let info = &fns[&id];
+        let name = js_given.name(id, at).to_owned();
+        if info.module != from
+            && let Some(f) = (functions.get_mut(&info.module)).and_then(|fs| fs.iter_mut().find(|f| f.name.is(&name)))
+        {
+            f.export = true;
+        }
+    }
+}
+
+/// What each module imports of each copy of another's function it calls:
+/// from that module, by the copy's name.
+pub(super) fn imported(
+    js_given: &JsGiven,
+    fns: &IndexMap<DefId, FnInfo>,
+    references: &IndexSet<(LocalModId, DefId, usize)>,
+) -> Vec<(LocalModId, (LocalModId, String, String, String))> {
+    (references.iter())
+        .map(|&(from, id, at)| {
+            let name = js_given.name(id, at).to_owned();
+            (from, (fns[&id].module, name.clone(), name.clone(), name))
+        })
+        .collect()
+}
+
+/// What `lowered`, a function of `module`'s, and its `copies` use, into
+/// `pass`, and whether one writes JSX.
+pub(super) fn gather(
+    pass: &mut super::Pass,
+    (module, lowered): (LocalModId, &mut LoweredFn),
+    copies: &mut [LoweredFn],
+) {
+    let all = std::iter::once(&mut lowered.dependencies).chain(copies.iter_mut().map(|c| &mut c.dependencies));
+    for dependencies in all {
+        pass.references.extend(dependencies.references.drain(..));
+        pass.package_uses.extend(dependencies.package_uses.drain(..));
+        pass.held.extend(dependencies.held.drain(..));
+        pass.reexporters.extend(dependencies.reexporters.drain(..));
+        pass.copy_references.extend(dependencies.copy_references.drain(..));
+    }
+    if copies.iter().any(|copy| copy.jsx) {
+        pass.jsx.insert(module);
+    }
+}

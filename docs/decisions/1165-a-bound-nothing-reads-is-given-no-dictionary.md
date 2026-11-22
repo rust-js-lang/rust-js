@@ -30,7 +30,7 @@ dictionary is also a caller's work: each call builds one for nothing.
 
 **A bound `P: Tr` of a crate's function, free or an inherent impl's, is
 given its dictionary only where the function reads it**:
-`src/lower/analysis/read_bounds.rs`'s `unread_bounds`, a fixpoint over
+`crates/rust-js-lower/src/analysis/read_bounds.rs`'s `unread_bounds`, a fixpoint over
 the crate's bodies, says which are unread, and `traits.rs`'s `bound_of`
 gives those none (`given_none`), at the function and at each of its
 callers. A trait's method or a trait impl's keeps every bound its trait

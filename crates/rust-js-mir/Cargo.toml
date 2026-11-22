@@ -1,0 +1,22 @@
+# MIR's lowering (ADR 1181, #2299): a body's JS from its MIR, `MirCx`'s
+# methods over the base's `FnCx`, and tidy's passes. It builds on the
+# lowering's base, `rust-js-lower`, which asks it through `MirHooks`.
+[package]
+name = "rust-js-mir"
+version = "0.0.4"
+edition = "2024"
+publish = false
+# A unit test binary's rpath to rustc's libraries (the checkout's script).
+build = "../../rustc-rpath.rs"
+
+[dependencies]
+rust-js-lower = { path = "../rust-js-lower" }
+rust-js-program = { path = "../rust-js-program" }
+indexmap.workspace = true
+rustc-hash.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+# Owned output's test conveniences, a `Name` of a word alone (its `testing`).
+[dev-dependencies]
+rust-js-program = { path = "../rust-js-program", features = ["testing"] }

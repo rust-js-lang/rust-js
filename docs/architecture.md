@@ -72,7 +72,7 @@ crate's unit tests (`cargo test -p rust-js-program --lib`).
 | Compiler entry, command parsing, Cargo wrapper, panic reporting, the `core` and `alloc` std's bodies are lowered of, built to unwind | `src/main.rs`, `src/command.rs`, `src/cargo.rs`, `src/std_sysroot.rs` |
 | `rust-js clippy`'s lints, clippy's crates registered as rustc's (ADR 0888) | `src/clippy.rs` |
 | JSX syntax expansion and provenance; which components' props a glob or a prelude names are built by their companion, rustc's names verifying the syntax pass's prediction, and a replayed compile's held diagnostics (ADR 0213, amended) | `src/jsx_syntax.rs`, `src/jsx_syntax/`, `jsx_syntax/resolved.rs` |
-| Rust analysis and lowering | `src/lower.rs`, `src/lower/` (detailed below) |
+| Rust analysis and lowering | `crates/rust-js-lower/src/` (the base), `crates/rust-js-mir/src/` (MIR's lowering), `src/pipeline.rs`, `src/pipeline/` (detailed below) |
 | Owned JS tree, source arena and comments | `crates/rust-js-program/src/js.rs`, `crates/rust-js-program/src/js/`, `crates/rust-js-program/src/program.rs`, `crates/rust-js-program/src/comments.rs` |
 | Reachability, linking and names | `crates/rust-js-program/src/reachability.rs`, `crates/rust-js-program/src/link.rs`, `crates/rust-js-program/src/names.rs` |
 | The compiler's maps and sets, each walked in the order its entries were put in, never a hasher's (ADR 1098); a session's answers that never change, each kept as first found, `OnceMap` (ADR 1100) | `crates/rust-js-program/src/collections.rs` |
@@ -238,7 +238,7 @@ of `lower/` as one module, not as individually cycle-checked units.
 
 ## Inside the front end
 
-Paths in this section are relative to `src/lower/` unless stated otherwise.
+Paths in this section are relative to the lowering's root as it was before #2299's cut, `crates/rust-js-lower/src/`, unless stated otherwise: `mir.rs` and `mir/…` are MIR's lowering's crate, `crates/rust-js-mir/src/` (`lib.rs` and its modules), and `pipeline.rs` and `pipeline/…` the binary's `src/pipeline.rs` and `src/pipeline/` (`scripts/owners.ts`' `ownerPath`).
 
 State has three scopes: crate facts shared across functions; `FnCx` for a
 function's context; and `mir::State` for one body's temporaries, labels,
@@ -346,10 +346,12 @@ and complete for the front end:
 test/architecture-owners.test.ts ([ADR 1175](decisions/1175-the-owner-table-kept-complete.md), #2162) holds it
 to these rules, and `bun scripts/owners.ts` reports where it stands.
 
-- **Completeness.** Each function of `src/lower.rs` and `src/lower/`
+- **Completeness.** Each function of the lowering, `crates/rust-js-lower/src/`,
+  `crates/rust-js-mir/src/`, `src/pipeline.rs` and `src/pipeline/` (`ofFrontEnd`),
   visible outside its module (`pub`, `pub(crate)`, `pub(in crate::…)`, and
-  `pub(super)` in `src/lower.rs` or a module right under `src/lower/`,
-  whose parent is the whole front end; not a nested module's `pub(super)`)
+  `pub(super)` in `crates/rust-js-lower/src/lib.rs`, a module right under
+  `crates/rust-js-lower/src/`, or `src/pipeline.rs` (`TOP`), whose parent is
+  the whole front end; not a nested module's `pub(super)`)
   that answers a question, returning `bool`, an `Option` of
   what isn't a JS tree (`Expr`, `ExprKind`, `Stmt`, `StmtKind`, `Pattern`,
   `Prop`, `Function`, `Value`, `js::…`), a fieldless enum or an enum a
@@ -373,7 +375,7 @@ to these rules, and `bun scripts/owners.ts` reports where it stands.
   where not all are, and in time why its source is enough. Every row has
   one (#2200); `bun scripts/owners.ts` and check:fast say the count of each.
 - **Owners.** An owner is a path from `src/` where it starts so; else a
-  module of the front end, `iterators.rs`, which is `src/lower/iterators.rs`
+  module of the front end, `iterators.rs`, which is `crates/rust-js-lower/src/iterators.rs`
   and its submodules, or a folder, `drops/`; else one at `src/`'s root,
   `names.rs`, `runtime.rs`, or the runtime's, `runtime/steps.js`. Each
   API is defined in the sources. A `|` in a cell is written `\|`.
@@ -799,7 +801,7 @@ the architecture test holds dispatcher sizes.
 
 `crates/rust-js-program/src/js.rs` defines a compiler-owned AST independent of rustc and oxc.
 `crates/rust-js-program/src/program.rs` carries modules, symbolic imports, declarations and a source
-arena. `src/lower/sources.rs` converts source information to owned text and
+arena. `crates/rust-js-lower/src/sources.rs` converts source information to owned text and
 spans, retaining origins across files and copied bodies. JSX expansion and
 formatting preserve or remap those origins.
 
@@ -827,7 +829,7 @@ and where a function `prepare` made a declaration elsewhere was, whose
 comments are that declaration's (`js::Module::taken_into`, [ADR 0610](decisions/0610-a-forwarding-function-is-its-variable.md), amended);
 `crates/rust-js-emit/src/format.rs` lays it out with oxfmt and remaps changed text; its
 `oxc_formatter_core` is `vendor/`'s, with #1269's fix (ADR 1121). Declarations
-flow from `src/lower/declarations.rs` through `crates/rust-js-emit/src/typescript.rs` to `typescript/`.
+flow from `crates/rust-js-lower/src/declarations.rs` through `crates/rust-js-emit/src/typescript.rs` to `typescript/`.
 `crates/rust-js-emit/src/output.rs` coordinates crate transforms, optional application Prettier,
 map adjustment and final artifact assembly.
 
@@ -852,7 +854,7 @@ required dependencies. Cargo provides build configuration and caching;
 `src/cargo.rs` makes compiler identity visible to Cargo's fingerprints.
 
 `@rust-js/std` contains selected std bodies compiled from the pinned toolchain's
-MIR. The catalog in `src/lower/recognition/compiled_std.rs` owns which ones. `bun run std`
+MIR. The catalog in `crates/rust-js-lower/src/recognition/compiled_std.rs` owns which ones. `bun run std`
 regenerates the committed JS and manifest in `std/`; other compilations use
 that built-in manifest and import the package. Hand-modeled std operations
 remain in their domain modules until migrated.

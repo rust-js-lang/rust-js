@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/tidy/decisions/calls.rs (#221, ADR 0364).
+// Mutations of crates/rust-js-mir/src/tidy/decisions/calls.rs (#221, ADR 0364).
 import type { Mutation } from "../../../../../mutations";
 
 const CALLS = [
@@ -12,7 +12,7 @@ export const mutations: Mutation[] = [
     name: "calls-nothing-said",
     breaks:
       "a test what's tested before says, `!odd(b)` once `odd(b)` failed, stays, so the chain calls again and the tree stays",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/calls.rs",
     find: "                if self.says(steps, &paths[..j], &paths[j][..t], &paths[j][t]) {\n",
     replace: "                if false {\n",
     tests: CALLS,
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "calls-no-fewer",
     breaks:
       "an arm's tests keep what the tree tested on each way to it, `row.length === 2 && below(row[0]) || (row.length >= 1 && row.length < 2 || row.length > 2) && below(row[0])`",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/calls.rs",
     find: "            (paths, test) = (fewer, told);\n",
     replace: "            (paths, test) = (fewer, told);\n            break;\n",
     tests: CALLS,
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     name: "calls-alike-refused",
     breaks:
       "a guarded `|`'s guard that calls, MIR's copy in each alternative, is two calls of the model, which refuses the tree: `Some(1) | None if on(..)` is MIR's labeled block (rd136)",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/calls.rs",
     find: "        let mut times = vec![0; unique.len()];\n",
     replace: "        if unique.len() < calls.len() {\n            return None;\n        }\n        let mut times = vec![0; unique.len()];\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_guarded_or_pattern.rs$"],
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
   {
     name: "guard-read-after-its-call-refused",
     breaks: "a guard's read of what its own call changes, `mark(*n) && done.get()`, is refused as a read after a call, so the `match` stays MIR's labeled block, `bb30:` (C1, #523)",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/calls.rs",
     find: "                    && !(trace.iter()).all(|&(c, _)| self.made[c].is_some_and(|m| kept.contains(&m)) || in_its_guard(c))\n",
     replace: "                    && !(trace.iter()).all(|&(c, _)| self.made[c].is_some_and(|m| kept.contains(&m)) || in_its_guard(c) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^guards_that_call.rs$"],
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
   {
     name: "calls-made-again-once",
     breaks: "a guard a path makes again, `(1, _) | (_, 1) if odd(a + b)`'s, is one call of the model, which can't tell it, so `sums` stays MIR's labeled block (#523, C1)",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/calls.rs",
     find: "                    times[c] = times[c].max(made[c]);\n",
     replace: "                    times[c] = 1;\n",
     tests: ["test/corpus.test.ts", "-t", "^(guards_that_call).rs$"],
@@ -59,7 +59,7 @@ export const mutations: Mutation[] = [
   {
     name: "calls-known-made-again",
     breaks: "a call made before on the way, read as what's known of it, is a call made again, so `!odd(b)` after `odd(b)` failed stays, and `either_read`'s chain isn't made (#523)",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/calls.rs",
     find: "                        if again && time > 0 {\n",
     replace: "                        if false && again && time > 0 {\n",
     tests: ["test/corpus.test.ts", "-t", "^(guards_that_call).rs$"],
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
   {
     name: "calls-paths-one-order",
     breaks: "an arm's paths are tried only as the tree gives them, so `(1, _) | (_, 1) if odd(a + b)`'s `a === 1 && odd(..)` isn't first and `sums` stays a labeled block (#523)",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/calls.rs",
     find: "    if n > ORDERED {\n",
     replace: "    if n > 0 {\n",
     tests: ["test/corpus.test.ts", "-t", "^(guards_that_call).rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "calls-paths-factored-only",
     breaks: "a test of paths whose last call is made again isn't each path whole, `(a === 1 && odd(..)) || (b === 1 && odd(..))`, so `sums` stays a labeled block (#523)",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/calls.rs",
     find: "        self.tells(arm, steps, &whole).then_some(whole)\n",
     replace: "        None\n",
     tests: ["test/corpus.test.ts", "-t", "^(guards_that_call).rs$"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "calls-converse-another-call",
     breaks: "a call's test and its converse, `$nextIf(..) != null` and `== null`, are two calls of the model, which then refuses, and the lexer's `match` keeps `bb20:` (#523)",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/calls.rs",
     find: "    let ((a, _), (b, _)) = (opaque(a), opaque(b));\n",
     replace: "    let ((a, _), (b, _)) = ((a.clone(), false), (b.clone(), false));\n",
     tests: ["test/snapshots.test.ts", "-t", "lexer"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "calls-closure-call-unknown",
     breaks: "a call of a closure, `$nextIf(chars, (item) => item === \"/\")`, which `written_alike` can't compare, isn't one call of the model even as itself, so the lexer's `match` keeps `bb20:` (#523)",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/calls.rs",
     find: "    a.written_alike(&b) || a.kind == b.kind\n",
     replace: "    a.written_alike(&b)\n",
     tests: ["test/snapshots.test.ts", "-t", "lexer"],
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
   {
     name: "calls-tuple-order-unread",
     breaks: "a tree that calls tests a tuple's parts in MIR's order, `b === 2 && a === 2`, not `(2, 2)`'s `a === 2 && b === 2` (#523)",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/calls.rs",
     find: "        ordered.iter_mut().for_each(|path| written_order(path));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(guards_that_call).rs$"],
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
   {
     name: "calls-sequence-not-its-last",
     breaks: "a test that sets a guard's bindings first and its converse, `((x = b), odd(x))` and `((x = b), !odd(x))`, are two calls, so the model refuses and `both` stays a labeled block (#523)",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/calls.rs",
     find: "        ExprKind::Sequence(items) if let Some((last, done)) = items.split_last() => {\n",
     replace: "        ExprKind::Sequence(items) if let Some((last, done)) = items.split_last().filter(|_| false) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^(guards_set_bindings).rs$"],
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
   {
     name: "calls-kept-places-unread",
     breaks: "a test of what a `match` keeps, `a % 2 === 0`, read after another guard's call, is what that call may change, so the model refuses and `kept_read` keeps its labeled block (E0510, #771)",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/calls.rs",
     find: "            if let Some(Some(kept)) = kept {\n                model.opaque[j].1.extend(kept);\n            }",
     replace: "            drop(kept);",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
@@ -131,7 +131,7 @@ export const mutations: Mutation[] = [
   {
     name: "calls-fewer-ways",
     breaks: "the model tries 4,096 ways, as before #771, so `kept_read`'s, of two values of seven and six cells, a test and six calls' times, are too many and its block stays",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/calls.rs",
     find: "const WAYS: usize = 1 << 14;",
     replace: "const WAYS: usize = 1 << 12;",
     tests: ["test/corpus.test.ts", "-t", "^(match_trees_chained).rs$"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
     name: "constant-test-refused-after-calls",
     breaks:
       "a guard's test of constants alone, `3 % 2 === 0`, read after another guard's call is taken for one the call may change, so the tree keeps its label (#771)",
-    file: "src/lower/mir/tidy/decisions/calls.rs",
+    file: "crates/rust-js-mir/src/tidy/decisions/calls.rs",
     find: "                    Read::Opaque(j, _) => self.unchanged(&self.opaque[*j].0),\n",
     replace: "                    Read::Opaque(..) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^match_trees_chained.rs$"],

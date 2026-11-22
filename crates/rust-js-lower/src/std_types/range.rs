@@ -1,0 +1,899 @@
+//! Ranges (ADR 0129): `a..b` is `{ start: a, end: b }`, as any struct is,
+//! and so is `a..=b`; `a..` is `{ start: a }`. Iterated, a range is its
+//! items: an array, or for `a..`, which never ends, a JS iterator.
+
+use crate::display::{Pretty, join};
+use crate::recognition::{IterMethod, trait_method};
+use crate::representation::Num;
+use crate::temporary_names::Role;
+use crate::{FnCx, R};
+use rust_js_program::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
+use rustc_middle::ty::{self, Ty};
+use rustc_span::Span;
+
+/// A range made as stepped, lazily, its runtime's generator (ADR 0472).
+pub(crate) const LAZY_RANGE: &str = "$lazyRange";
+/// `start..end` made as stepped, `$lazyRange(start, end)`, of what's made of
+/// its numbers in turn, `from_fn`'s (#2278).
+pub(crate) fn lazy_range_of(start: Expr, end: Expr) -> Expr {
+    Expr::call_helper(LAZY_RANGE, vec![start, end])
+}
+
+/// A range's numbers from its end, `$lazyRangeBack(a, b, step)`.
+pub(crate) const LAZY_RANGE_BACK: &str = "$lazyRangeBack";
+
+/// Which of std's ranges a type is.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum RangeKind {
+    /// `a..b`
+    Exclusive,
+    /// `a..=b`
+    Inclusive,
+    /// `a..`
+    From,
+    /// `..b`
+    To,
+    /// `..=b`
+    ToInclusive,
+    /// `..`
+    Full,
+}
+
+impl RangeKind {
+    /// Its bounds, by the names of its fields.
+    pub(crate) fn bounds(self) -> &'static [&'static str] {
+        match self {
+            RangeKind::Exclusive | RangeKind::Inclusive => &["start", "end"],
+            RangeKind::From => &["start"],
+            RangeKind::To | RangeKind::ToInclusive => &["end"],
+            RangeKind::Full => &[],
+        }
+    }
+
+    /// The runtime's helper that steps a range of this kind from its
+    /// start, or, `back`, its end: `$rangeNext`, `$rangeInclusiveNextBack`.
+    /// `None` of one JS doesn't step, or a `RangeFrom` from its end, which
+    /// it hasn't. The one table, which `stepped_by` and `next()` ask, and
+    /// `stepped_range` reads back.
+    pub fn step(self, back: bool) -> Option<&'static str> {
+        Some(match (self, back) {
+            (RangeKind::Exclusive, false) => "$rangeNext",
+            (RangeKind::Exclusive, true) => "$rangeNextBack",
+            (RangeKind::Inclusive, false) => "$rangeInclusiveNext",
+            (RangeKind::Inclusive, true) => "$rangeInclusiveNextBack",
+            (RangeKind::From, false) => "$rangeFromNext",
+            _ => return None,
+        })
+    }
+
+    /// What `{:?}` shows between its bounds.
+    pub(crate) fn dots(self) -> &'static str {
+        match self {
+            RangeKind::Inclusive | RangeKind::ToInclusive => "..=",
+            _ => "..",
+        }
+    }
+}
+
+/// A range method rust-js knows.
+#[derive(Clone, Copy, PartialEq)]
+pub enum RangeOp {
+    /// `RangeInclusive::new(a, b)`, which `a..=b` is: `{ start: a, end: b }`.
+    New,
+    /// `r.contains(&x)`: `r.start <= x && x < r.end`.
+    Contains,
+    /// A `RangeInclusive`'s `start()` and `end()`: its field.
+    Bound(&'static str),
+    /// A `RangeInclusive`'s `into_inner()`: `[r.start, r.end]`.
+    IntoInner,
+    /// `is_empty()`: `!(r.start < r.end)`, by its bounds' `PartialOrd`.
+    IsEmpty,
+    /// `len()`: `Math.max(0, r.end - r.start)`.
+    Len,
+    /// `size_hint()`: how many are left, exactly, as both bounds, `[n, n]`.
+    SizeHint,
+    /// A `Range`'s `next()` and `next_back()`, and an `a..`'s `next()`,
+    /// which move its `start` or its `end`, as Rust's do.
+    Next,
+    NextBack,
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A range's own `nth(n)`, `last()` and `count()`, of `a..b` or
+    /// `a..=b`, or of one reversed, `(a..b).rev()`, `values` it and `n`: of
+    /// its bounds, without stepping each number, as std's are (#163),
+    /// `$rangeNth`, `$rangeInclusiveNthBack`, of a reversed one's
+    /// `$iterator`'s bounds, `.of`, or of a held one, std's `Rev`'s,
+    /// `.iter`, as the call's `span` says (ADR 0871). `None` of another
+    /// method, or of a range of `char`s, which steps by code point, or a
+    /// count of BigInts, which isn't a `usize`. Of one `lent`, `by_ref()`'s,
+    /// a `count()` and a `last()` use it up, its start moved to its end, as
+    /// std's `fold` of a `&mut` leaves it: `$rangeCountOut` (#414).
+    pub fn range_own_step(
+        &self,
+        method: Option<IterMethod>,
+        (range, lent): (Ty<'tcx>, bool),
+        values: &[Expr],
+    ) -> Option<Expr> {
+        let reversed = self.recognition().reversed(range);
+        let kind = self.range_kind(reversed.unwrap_or(range))?;
+        let num = self.range_index(reversed.unwrap_or(range)).and_then(Num::of)?;
+        let lent = lent && reversed.is_none();
+        let name = match (method?, kind, reversed.is_some()) {
+            (IterMethod::Last, RangeKind::Exclusive, false) if lent => "$rangeLastOut",
+            (IterMethod::Last, RangeKind::Inclusive, false) if lent => "$rangeInclusiveLastOut",
+            (IterMethod::Count, RangeKind::Exclusive, _) if lent && !num.big() => "$rangeCountOut",
+            (IterMethod::Count, RangeKind::Inclusive, _) if lent && !num.big() => "$rangeInclusiveCountOut",
+            (IterMethod::Nth, RangeKind::Exclusive, false) => "$rangeNth",
+            (IterMethod::Nth, RangeKind::Exclusive, true) => "$rangeNthBack",
+            (IterMethod::Nth, RangeKind::Inclusive, false) => "$rangeInclusiveNth",
+            (IterMethod::Nth, RangeKind::Inclusive, true) => "$rangeInclusiveNthBack",
+            (IterMethod::Last, RangeKind::Exclusive, false) => "$rangeLast",
+            (IterMethod::Last, RangeKind::Inclusive, false) => "$rangeInclusiveLast",
+            (IterMethod::Last, RangeKind::Exclusive, true) => "$rangeFirst",
+            (IterMethod::Last, RangeKind::Inclusive, true) => "$rangeInclusiveFirst",
+            (IterMethod::Count, RangeKind::Exclusive, _) if !num.big() => "$rangeLen",
+            (IterMethod::Count, RangeKind::Inclusive, _) if !num.big() => "$rangeInclusiveLen",
+            _ => return None,
+        };
+        let mut values = values.to_vec();
+        // A reversed one's bounds: of one made here, its `$iterator`'s, those
+        // it was made of, once `reversed_step` reads them; of one held,
+        // std's `Rev`, what it holds, `iter` (ADR 0871): as the value's mark
+        // says, its maker's (`made_in_place`).
+        if reversed.is_some() {
+            let first = values.first_mut()?;
+            *first = match crate::iterators::made_in_place(first) {
+                true => crate::iterators::bounds_of(first.clone()),
+                false => Expr::member(first.clone(), "iter"),
+            };
+        }
+        Some(Expr::call_helper(name, values))
+    }
+
+    /// A range's `len()`, `range_count` of its bounds, where it's a range
+    /// of numbers that aren't BigInts, `a..b` or `a..=b`, that `it` reads.
+    pub(crate) fn range_len(&self, it: &Expr, range: Ty<'tcx>, kind: RangeKind) -> Option<Expr> {
+        let numbers = self.range_index(range).and_then(Num::of).is_some_and(|num| !num.big());
+        let (start, end) = range_bounds(it)?;
+        (numbers && matches!(kind, RangeKind::Exclusive | RangeKind::Inclusive)).then(|| range_count(start, end, kind))
+    }
+
+    /// What a range's bounds are: the `u32` of a `Range<u32>`.
+    /// The bounds an `a..` of integers wraps its start by, its type's first
+    /// and last, as release Rust's `next()` does past its last (ADR 0011,
+    /// #414): `[0, 255]` of a `u8`'s. None of another range, nor of a
+    /// `char`'s, which `$rangeFromNext` steps by its code point.
+    fn range_from_bounds(&self, range: Ty<'tcx>, kind: RangeKind) -> Vec<Expr> {
+        let num = self.range_index(range).and_then(Num::of).filter(|num| !num.float());
+        match (kind, num) {
+            (RangeKind::From, Some(num)) => {
+                let (lo, hi) = num.range();
+                vec![num.literal(lo), num.literal(hi as i128)]
+            }
+            _ => Vec::new(),
+        }
+    }
+
+    /// `next()` of `receiver`, a range of type `range`, or `back` its
+    /// `next_back()`: its step, `RangeKind::step`'s, called, an `a..`'s of
+    /// integers given its type's bounds, `$rangeFromNext(r, 0, 255)`.
+    /// `None` of one JS doesn't step.
+    pub fn range_next(&self, range: Ty<'tcx>, back: bool, receiver: Expr) -> Option<Expr> {
+        let kind = self.range_kind(range)?;
+        let mut args = vec![receiver];
+        args.extend(self.range_from_bounds(range, kind));
+        Some(Expr::call_helper(kind.step(back)?, args))
+    }
+
+    /// A range of type `range`'s `next`, or `back` its `next_back`, as a
+    /// value, its `Iterator`'s: the helper, or of an `a..` of integers,
+    /// `$rangeFromStep(0, 255)`, its type's bounds given. `None` of one JS
+    /// doesn't step.
+    pub(crate) fn range_stepper(&self, range: Ty<'tcx>, back: bool) -> Option<Expr> {
+        let kind = self.range_kind(range)?;
+        let step = kind.step(back)?;
+        Some(stepper(step, self.range_from_bounds(range, kind)))
+    }
+
+    /// Whether an iterator of type `ty` steps an inclusive range it's lent,
+    /// `r.by_ref()`, `&mut r`, or an adapter of one: what std's `fold`
+    /// leaves exhausted at its last, where `next` steps it past, so a
+    /// consumer std routes through `fold` takes it by its `fold` (#414).
+    pub(crate) fn steps_lent_inclusive(&self, ty: Ty<'tcx>) -> bool {
+        ty.walk().any(|arg| {
+            arg.as_type().is_some_and(|t| {
+                matches!(t.kind(), ty::Ref(_, inner, rustc_middle::ty::Mutability::Mut)
+                    if self.range_kind(*inner) == Some(RangeKind::Inclusive))
+            })
+        })
+    }
+
+    pub(crate) fn range_index(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        match ty.kind() {
+            ty::Adt(_, args) => args.types().next(),
+            _ => None,
+        }
+    }
+
+    /// A range's start and end as its `RangeBounds` gives them, `Bound`s of
+    /// type `bound`, of its value `range` of type `ty`, a range of std's or a
+    /// pair of `Bound`s: `{ TAG: "Included", _0: r.start }`, `"Unbounded"`,
+    /// or the pair's own items. `range` is read once a bound, from a literal
+    /// itself; `None` of a type that's neither. The one answer, of a
+    /// `RangeBounds` dictionary's and of a B-tree's range alike.
+    pub(crate) fn range_bound_values(
+        &mut self,
+        range: Expr,
+        ty: Ty<'tcx>,
+        bound: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<[Expr; 2]>> {
+        use crate::recognition::RangeBound;
+        let Some((start, end)) = crate::recognition::range_bounds(self.tcx, ty) else {
+            return Ok(None);
+        };
+        let literal = matches!(range.kind, js::ExprKind::Object(..) | js::ExprKind::Array(..))
+            && (range.reads_same() || !range.has_effects());
+        let range = match literal || range.reads_same() {
+            true => range,
+            false => self.spill(Role::Range, range, out),
+        };
+        let variant = |name: &str| match bound.kind() {
+            ty::Adt(adt, _) => (adt.variants().iter_enumerated())
+                .find(|(_, v)| v.name.as_str() == name)
+                .map(|(i, _)| i),
+            _ => None,
+        };
+        // An inclusive one's, as std's: its start, Rust's, included, and its
+        // end, or of one exhausted, its start excluded, so it holds nothing
+        // (#414).
+        if self.range_kind(ty).is_some()
+            && let (parts, Some(exhausted)) = self.range_state(range.clone(), ty, out)
+            && let [start, _] = parts.as_slice()
+        {
+            let (Some(included), Some(excluded)) = (variant("Included"), variant("Excluded")) else {
+                return Err(self.unsupported(span, "this range's bounds"));
+            };
+            let from = self.adt_value(bound, included, vec![start.clone()], &[], None, span)?;
+            let to = self.adt_value(
+                bound,
+                included,
+                vec![Expr::member(range.clone(), "end")],
+                &[],
+                None,
+                span,
+            )?;
+            let before = self.adt_value(bound, excluded, vec![start.clone()], &[], None, span)?;
+            return Ok(Some([from, Expr::cond(exhausted, before, to)]));
+        }
+        let value = |this: &mut Self, part: RangeBound| -> R<Expr> {
+            Ok(match part {
+                RangeBound::Item(i) => Expr::index(range.clone(), Expr::int(i as i128)),
+                RangeBound::Field(kind, field) => {
+                    let index = variant(kind).ok_or_else(|| this.unsupported(span, "this range's bounds"))?;
+                    this.adt_value(bound, index, vec![Expr::member(range.clone(), field)], &[], None, span)?
+                }
+                RangeBound::Unbounded => {
+                    let index = variant("Unbounded").ok_or_else(|| this.unsupported(span, "this range's bounds"))?;
+                    this.adt_value(bound, index, Vec::new(), &[], None, span)?
+                }
+            })
+        };
+        let start = value(self, start)?;
+        let end = value(self, end)?;
+        Ok(Some([start, end]))
+    }
+
+    /// The bounds of `{ start: a, end: b }` itself, if each reads the same
+    /// wherever it's read, or does nothing, `i + 1`: what it reads, nothing
+    /// changes between.
+    pub(crate) fn range_literal_parts(&self, range: &Expr, kind: RangeKind) -> Option<Vec<Expr>> {
+        let js::ExprKind::Object(props, ..) = &range.kind else {
+            return None;
+        };
+        if props.len() != kind.bounds().len() {
+            return None;
+        }
+        kind.bounds()
+            .iter()
+            .map(|name| {
+                props.iter().find_map(|prop| match prop {
+                    Prop::Field(field, value) if field == name && (value.reads_same() || !value.has_effects()) => {
+                        Some(value.clone())
+                    }
+                    _ => None,
+                })
+            })
+            .collect()
+    }
+
+    /// The one bound of `{ start: a }` or `{ end: b }` itself, whatever it
+    /// does: of a range read once, its bound read where it's made.
+    pub(crate) fn range_literal_bound(&self, range: &Expr, kind: RangeKind) -> Option<Expr> {
+        let (&[name], js::ExprKind::Object(props, ..)) = (kind.bounds(), &range.kind) else {
+            return None;
+        };
+        match props.as_slice() {
+            [Prop::Field(field, value)] if field == name => Some(value.clone()),
+            _ => None,
+        }
+    }
+
+    /// A range's bounds, each to be read once or more: from `{ start: a,
+    /// end: b }` itself, or from the range, a `const` first if reading it
+    /// again would differ.
+    pub(crate) fn range_parts(&mut self, range: Expr, kind: RangeKind, out: &mut Vec<Stmt>) -> Vec<Expr> {
+        if let Some(parts) = self.range_literal_parts(&range, kind) {
+            return parts;
+        }
+        let range = if range.reads_same() {
+            range
+        } else {
+            self.spill(Role::Range, range, out)
+        };
+        kind.bounds()
+            .iter()
+            .map(|name| Expr::member(range.clone(), *name))
+            .collect()
+    }
+
+    /// A range's own state, as Rust's: its bounds, and of `a..=b` of
+    /// integers, whether it's exhausted. Its steps leave it unwrapped,
+    /// `next` past its type's last, `next_back` before its first, `nth` past
+    /// either (#414): a bound past its type's is that, exhausted, and each
+    /// bound wrapped is Rust's, `r.start & 255`. Of `{ start: 1, end: 3 }`,
+    /// constants, never stepped, its parts and `None`, as of another range;
+    /// a clone made in place, `{ start: r.start, end: r.end }`, is what it
+    /// copies.
+    pub(crate) fn range_state(&mut self, range: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>) -> (Vec<Expr>, Option<Expr>) {
+        let kind = self.range_kind(ty).expect("a range");
+        if let Some(parts) = self.range_literal_parts(&range, kind)
+            && parts.iter().all(Expr::is_constant)
+        {
+            return (parts, None);
+        }
+        if self.never_exhausted(&range) {
+            return (self.range_parts(range, kind, out), None);
+        }
+        let index = self.range_index(ty);
+        let num = index.and_then(Num::of).filter(|num| !num.float());
+        let text = index.is_some_and(|index| index.is_char());
+        if kind != RangeKind::Inclusive || (num.is_none() && !text) {
+            return (self.range_parts(range, kind, out), None);
+        }
+        let range = match range.reads_same() {
+            true => range,
+            false => self.spill(Role::Range, range, out),
+        };
+        // One used up as std's `fold` leaves it, or a `char`'s past its
+        // last, holds Rust's bounds in `exhausted`.
+        let held = Expr::member(range.clone(), "exhausted");
+        let own = Expr::bin(Op::Coalesce, held.clone(), range.clone());
+        let used = Expr::bin(Op::Ne, held, Expr::js_undefined());
+        let [start, end] = ["start", "end"].map(|bound| Expr::member(own.clone(), bound));
+        let Some(num) = num else {
+            return (vec![start, end], Some(used));
+        };
+        let (lo, hi) = num.range();
+        let past = Expr::bin(Op::Gt, Expr::member(range.clone(), "start"), num.literal(hi as i128));
+        let before = Expr::bin(Op::Lt, Expr::member(range, "end"), num.literal(lo));
+        let exhausted = Expr::bin(Op::Or, Expr::bin(Op::Or, used, past), before);
+        (vec![num.wrap(start), num.wrap(end)], Some(exhausted))
+    }
+
+    /// `a == b` of two ranges of type `ty` (ADR 0129): `a.start === b.start
+    /// && a.end === b.end`, Rust's, and whether each is exhausted, as std's
+    /// derive compares it (#414).
+    pub(crate) fn range_eq(&mut self, a: Expr, b: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        // A `RangeFull`'s, of no bounds, has no bound's type to compare.
+        let index = self.range_index(ty);
+        let (a, a_exhausted) = self.range_state(a, ty, out);
+        let (b, b_exhausted) = self.range_state(b, ty, out);
+        let mut parts = Vec::new();
+        for (x, y) in a.into_iter().zip(b) {
+            parts.push(self.eq_value(x, y, index.expect("a bound's type"), false, span, out)?);
+        }
+        parts.extend(match (a_exhausted, b_exhausted) {
+            (Some(x), Some(y)) => Some(Expr::bin(Op::Eq, x, y)),
+            (Some(x), None) | (None, Some(x)) => Some(Expr::unary(UnaryOp::Not, x)),
+            (None, None) => None,
+        });
+        Ok((parts.into_iter())
+            .reduce(|all, part| Expr::bin(Op::And, all, part))
+            .unwrap_or_else(|| Expr::bool(true)))
+    }
+
+    /// `{:?}` of a range: its bounds', around its dots, `1..4` or `..=4`,
+    /// and of one exhausted, ` (exhausted)` after, as std's (#414). Of
+    /// `written`, each piece written as it's made, as std's writes them
+    /// straight to the formatter, `self.start.fmt(f)?; write!(f, "..")?`,
+    /// where a bound may stop part-way (`composed_written`, #1530); else
+    /// the pieces joined.
+    pub(crate) fn range_debug(
+        &mut self,
+        range: Expr,
+        ty: Ty<'tcx>,
+        span: Span,
+        pretty: &Pretty,
+        written: bool,
+    ) -> R<Expr> {
+        let kind = self.range_kind(ty).expect("a range");
+        let index = self.range_index(ty);
+        let shown = |this: &mut Self, (parts, exhausted): (Vec<Expr>, Option<Expr>)| -> R<Expr> {
+            let mut parts = parts.into_iter();
+            let mut pieces = Vec::new();
+            if matches!(kind, RangeKind::Exclusive | RangeKind::Inclusive | RangeKind::From) {
+                let start = parts.next().expect("a start");
+                pieces.push(this.debug_string_with(start, index.expect("a bound's type"), span, pretty)?);
+            }
+            pieces.push(Expr::str(kind.dots()));
+            if let Some(end) = parts.next() {
+                pieces.push(this.debug_string_with(end, index.expect("a bound's type"), span, pretty)?);
+            }
+            if let Some(exhausted) = exhausted {
+                pieces.push(Expr::cond(exhausted, Expr::str(" (exhausted)"), Expr::str("")));
+            }
+            Ok(match written {
+                true => this.composed_written(pieces),
+                false => join(pieces),
+            })
+        };
+        if let Some(parts) = self.range_literal_parts(&range, kind)
+            && (kind != RangeKind::Inclusive || parts.iter().all(Expr::is_constant))
+        {
+            return shown(self, (parts, None));
+        }
+        let fresh = self.never_exhausted(&range);
+        let param = js::Name::declared("range".to_string());
+        let state = match fresh {
+            true => (
+                kind.bounds()
+                    .iter()
+                    .map(|name| Expr::member(Expr::var(param.clone()), *name))
+                    .collect(),
+                None,
+            ),
+            false => self.range_state(Expr::var(param.clone()), ty, &mut Vec::new()),
+        };
+        let body = shown(self, state)?;
+        let f = Expr::arrow(
+            vec![param.into()],
+            vec![StmtKind::Return(Some(body)).at(js::Span::NONE)],
+        );
+        Ok(self.applied(f, range))
+    }
+
+    /// A range's function, of its arguments' values and types.
+    pub(crate) fn range_call(
+        &mut self,
+        op: RangeOp,
+        values: Vec<Expr>,
+        tys: &[Ty<'tcx>],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        if op == RangeOp::New {
+            let props = ["start", "end"]
+                .into_iter()
+                .zip(values)
+                .map(|(name, value)| Prop::Field(name.into(), value))
+                .collect();
+            return Ok(Expr::object(props));
+        }
+        let range_ty = tys[0].peel_refs();
+        let kind = self.range_kind(range_ty).expect("a range's method");
+        let index = self.range_index(range_ty);
+        if op == RangeOp::Contains {
+            let item_ty = tys[1].peel_refs();
+            let Some(index) = index else {
+                return Err(self.unsupported(span, &format!("`contains` of a `{range_ty}`")));
+            };
+            let [range, item]: [Expr; 2] = values.try_into().ok().unwrap();
+            if index.peel_refs() != item_ty || !(self.is_primitive_ord(index) || self.is_text_ord(index)) {
+                return self.contains_ordered(range, item, range_ty, (index, item_ty), span, out);
+            }
+            let index = Some(index);
+            let parts = self.range_parts(range, kind, out);
+            let item = if item.reads_same() {
+                item
+            } else {
+                self.spill(Role::Item, item, out)
+            };
+            // As Rust's: the start's test, then the end's; of `char`s, by code
+            // point (ADR 0183).
+            let text = index.is_some_and(|index| self.is_text_ord(index));
+            let mut compare = |op: Op, a: Expr, b: Expr| match text {
+                true => self.text_compare(op, a, b),
+                false => Expr::bin(op, a, b),
+            };
+            let tests: Vec<Expr> = match (kind, parts.as_slice()) {
+                (RangeKind::Exclusive, [start, end]) => vec![
+                    compare(Op::Le, start.clone(), item.clone()),
+                    compare(Op::Lt, item, end.clone()),
+                ],
+                (RangeKind::Inclusive, [start, end]) => vec![
+                    compare(Op::Le, start.clone(), item.clone()),
+                    compare(Op::Le, item, end.clone()),
+                ],
+                (RangeKind::From, [start]) => vec![compare(Op::Le, start.clone(), item)],
+                (RangeKind::To, [end]) => vec![compare(Op::Lt, item, end.clone())],
+                (RangeKind::ToInclusive, [end]) => vec![compare(Op::Le, item, end.clone())],
+                _ => vec![Expr::bool(true)],
+            };
+            return Ok(tests
+                .into_iter()
+                .reduce(|all, test| Expr::bin(Op::And, all, test))
+                .expect("a test"));
+        }
+        if matches!(op, RangeOp::Next | RangeOp::NextBack) {
+            if index.and_then(Num::of).is_none() {
+                return Err(self.unsupported(span, &format!("stepping through a `{range_ty}`")));
+            }
+            let range = values.into_iter().next().expect("the range");
+            let Some(name) = kind.step(op == RangeOp::NextBack) else {
+                return Err(self.unsupported(span, &format!("stepping through a `{range_ty}`")));
+            };
+            return Ok(Expr::call(Expr::helper(name), vec![range]));
+        }
+        let range = values.into_iter().next().expect("the range");
+        // Its own bounds, Rust's, as `range_state` reads them (#414).
+        if let RangeOp::Bound(_) | RangeOp::IntoInner = op {
+            let (parts, _) = self.range_state(range, range_ty, out);
+            return Ok(match (op, parts.as_slice()) {
+                (RangeOp::Bound("start"), [start, _]) => start.clone(),
+                (RangeOp::Bound(_), [_, end]) => end.clone(),
+                (_, [start, end]) => Expr::array(vec![start.clone(), end.clone()]),
+                _ => return Err(self.unsupported(span, &format!("this method of a `{range_ty}`"))),
+            });
+        }
+        let parts = self.range_parts(range, kind, out);
+        Ok(match (op, parts.as_slice()) {
+            // `!(start < end)`, of `a..=b` `!(start <= end)`, as std's.
+            (RangeOp::IsEmpty, [start, end]) => {
+                let method = if kind == RangeKind::Inclusive { "le" } else { "lt" };
+                let index = index.expect("a bound's type");
+                let ordered = self.bounds_ordered(method, (start.clone(), index), (end.clone(), index), span, out)?;
+                Expr::unary(UnaryOp::Not, ordered)
+            }
+            // What's left of the numbers, both bounds; of BigInts, an error.
+            (RangeOp::SizeHint, [start, end]) if index.and_then(Num::of).is_some_and(|n| !n.big()) => {
+                let left = self.spill(Role::Left, range_count(start.clone(), end.clone(), kind), out);
+                Expr::array(vec![left.clone(), left])
+            }
+            _ => return Err(self.unsupported(span, &format!("this method of a `{range_ty}`"))),
+        })
+    }
+
+    /// `contains` of a range whose bounds are ordered by their `PartialOrd`,
+    /// a crate's own type's or another's than the item's, as std's
+    /// `RangeBounds::contains`: `start <= item`, by `Idx: PartialOrd<U>`, and
+    /// only where it holds, `item < end`, `item <= end` of `a..=b`, by `U:
+    /// PartialOrd<Idx>` (#1158). A range of a type no `Step` steps is never
+    /// exhausted, so `a..=b`'s end is always included; an `a..=b` of
+    /// integers or `char`s that may have been stepped is refused, as its
+    /// `PartialOrd` would be given the start JS's steps leave past its end,
+    /// not Rust's, and its end's test, which an exhausted one's is `<`.
+    fn contains_ordered(
+        &mut self,
+        range: Expr,
+        item: Expr,
+        range_ty: Ty<'tcx>,
+        (index, item_ty): (Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let kind = self.range_kind(range_ty).expect("a range");
+        let (parts, exhausted) = self.range_state(range, range_ty, out);
+        if exhausted.is_some() {
+            return Err(self.unsupported(
+                span,
+                &format!("`contains` of a `{item_ty}` in a `{range_ty}` that may have been stepped"),
+            ));
+        }
+        let item = if item.reads_same() {
+            item
+        } else {
+            self.spill(Role::Item, item, out)
+        };
+        let (start, end) = match (kind, parts.as_slice()) {
+            (RangeKind::Exclusive | RangeKind::Inclusive, [start, end]) => (Some(start.clone()), Some(end.clone())),
+            (RangeKind::From, [start]) => (Some(start.clone()), None),
+            (RangeKind::To | RangeKind::ToInclusive, [end]) => (None, Some(end.clone())),
+            _ => return Err(self.unsupported(span, &format!("`contains` of a range of `{index}`"))),
+        };
+        let below = start
+            .map(|start| self.bounds_ordered("le", (start, index), (item.clone(), item_ty), span, out))
+            .transpose()?;
+        let mut later = Vec::new();
+        let above = end
+            .map(|end| {
+                let method = if matches!(kind, RangeKind::Inclusive | RangeKind::ToInclusive) {
+                    "le"
+                } else {
+                    "lt"
+                };
+                self.bounds_ordered(method, (item, item_ty), (end, index), span, &mut later)
+            })
+            .transpose()?;
+        Ok(match (below, above) {
+            (Some(below), Some(above)) if later.is_empty() => Expr::bin(Op::And, below, above),
+            // The end's test, which takes statements, runs only where the
+            // start's holds.
+            (Some(below), Some(above)) => {
+                let name = self.fresh(Role::Contained);
+                out.push(StmtKind::Let(name.clone(), Some(below)).at(js::Span::NONE));
+                later.push(StmtKind::Assign(Expr::var(&name), above).at(js::Span::NONE));
+                out.push(StmtKind::If(Expr::var(&name), later, None).at(js::Span::NONE));
+                Expr::var(&name)
+            }
+            (Some(test), None) => test,
+            (None, Some(test)) => {
+                out.extend(later);
+                test
+            }
+            (None, None) => Expr::bool(true),
+        })
+    }
+
+    /// Whether a range's bound or item `a` is before `b`, `method` `lt`, or
+    /// not after it, `le`, as `a_ty`'s `PartialOrd<b_ty>` says: the
+    /// ordering owner's `a < b`, JS's own `<` of numbers, by code point of
+    /// `char`s and strings (ADR 0183), a derived order's field by field, a
+    /// hand-written `lt` or `partial_cmp`, a type parameter's by its
+    /// dictionary. Never JS's `<` of two arrays, which compares their text,
+    /// `"10" < "9"`, or of two objects, which is never true.
+    fn bounds_ordered(
+        &mut self,
+        method: &str,
+        (a, a_ty): (Expr, Ty<'tcx>),
+        (b, b_ty): (Expr, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let method = trait_method(self.tcx, self.partial_ord_trait(), method);
+        let args = self.tcx.mk_args(&[a_ty.into(), b_ty.into()]);
+        let ordered = self.trait_call(method, args, vec![a, b], false, span, out)?;
+        ordered.ok_or_else(|| self.unsupported(span, &format!("the order of a `{a_ty}` and a `{b_ty}` in a range")))
+    }
+}
+
+/// A range's step as a value, `step` given the bounds an `a..` of integers
+/// wraps by: the helper, or `$rangeFromStep(0, 255)`.
+fn stepper(step: &'static str, bounds: Vec<Expr>) -> Expr {
+    match bounds.is_empty() {
+        true => Expr::helper(step),
+        false => Expr::call_helper("$rangeFromStep", bounds),
+    }
+}
+
+/// Of an `a..`'s step as `range_next` calls it, `$rangeFromNext(r, 0, 255)`,
+/// given what it's given after `r`, its bounds: the step as a value,
+/// `range_stepper`'s, `$rangeFromStep(0, 255)`, which a `for` of the range
+/// steps it by, `$iterator(r, $rangeFromStep(0, 255))` (rd260).
+pub fn range_from_stepper(bounds: &[Expr]) -> Expr {
+    stepper(RangeKind::From.step(false).expect("an `a..` steps"), bounds.to_vec())
+}
+
+/// How many numbers a range of `start` and `end` has left, of `kind`:
+/// `Math.max(end - start, 0)`, one more of `a..=b`, none once stepping has
+/// passed its end. A range's `len()` and `size_hint()` alike.
+pub(crate) fn range_count(start: Expr, end: Expr, kind: RangeKind) -> Expr {
+    // Of numbers known, the number, `(0..10)`'s 10.
+    if let (Some(start), Some(end)) = (start.as_int(), end.as_int()) {
+        let gap = end - start + i128::from(kind == RangeKind::Inclusive);
+        return Expr::int(gap.max(0));
+    }
+    let gap = Expr::bin(Op::Sub, end, start);
+    let gap = match kind {
+        RangeKind::Inclusive => Expr::bin(Op::Add, gap, Expr::int(1)),
+        _ => gap,
+    };
+    Expr::builtin(Expr::js_global("Math"), "max", vec![gap, Expr::int(0)])
+}
+
+/// A range made where it's stepped, `$iterator({ start: 0, end: n },
+/// $rangeNext)`, which nothing else steps, nor lends: its numbers, made as
+/// they're stepped, `$lazyRange(0, n)`, so `.find(f)` stops where Rust's
+/// does; of `a..=b`, `$lazyRange(a, b + 1)`. Of a number it starts at, as a
+/// `char`'s range starts at text.
+pub fn range_items(e: &mut Expr) {
+    if let Some(made) = lazy_range(crate::iterators::unlent(e)) {
+        *e = made;
+    }
+}
+
+/// A lazy range's own steps, of numbers it knows without stepping them, as
+/// std's range does (#163): `step_by(n)`, `.filter((_, i) => i % n ===
+/// 0)`, is `$lazyRange(a, b, n)`, and `skip(n)`, `.drop(n)`, starts it `n`
+/// steps on; a range's own `count()` and `last()` are `range_own_step`'s.
+/// Run after `range_items`, each of its source first.
+pub fn range_steps(e: &mut Expr) {
+    while let Some(folded) = range_step(e).or_else(|| reversed_step(e)) {
+        *e = folded;
+    }
+}
+
+/// Of a range made where it's stepped from its end, `$iterator({ start,
+/// end }, $rangeNextBack)`: its bounds, where `.of` reads them, as
+/// `range_own_step` does of one a variable holds; and `.drop(n)` of it, its
+/// end `n` before, as `Rev`'s `skip` is the range's `nth_back`, where its
+/// end is a number, not a BigInt `n` isn't; and `.step_by(n)` of it, its
+/// numbers from its end, `$lazyRangeBack(a, b, n)` (#163).
+fn reversed_step(e: &Expr) -> Option<Expr> {
+    if let Some(range) = crate::iterators::bounds_read(e) {
+        return Some(range.range.clone());
+    }
+    match &e.kind {
+        // `step_by(n)` of one, `$stepBy(range, n)`: its numbers from its end,
+        // `n` apart (#231).
+        _ if let Some([made, n]) = crate::iterators::stepped_every_parts(e)
+            && n.reads_same()
+            && let Some(range) = crate::iterators::stepped_range(made)
+            && range.back =>
+        {
+            let mut args = vec![range.start.clone(), range.end.clone(), n.clone()];
+            if range.inclusive {
+                args.push(Expr::bool(true));
+            }
+            Some(Expr::call_helper(LAZY_RANGE_BACK, args))
+        }
+        js::ExprKind::Call(callee, args) => {
+            let (js::ExprKind::Member(made, method), [n]) = (&callee.kind, &args[..]) else {
+                return None;
+            };
+            let range = crate::iterators::stepped_range(made)?;
+            if method != "drop" || !range.back || !n.reads_same() || range.end.as_int().is_none() {
+                return None;
+            }
+            let end = match (range.end.as_int(), n.as_int()) {
+                (Some(end), Some(n)) => Expr::int(end - n),
+                _ => Expr::bin(Op::Sub, range.end.clone(), n.clone()),
+            };
+            let bounds = Expr::object(vec![
+                Prop::Field("start".to_string(), range.start.clone()),
+                Prop::Field("end".to_string(), end),
+            ]);
+            Some(crate::iterators::stepped_range_by(bounds, range.step.clone()))
+        }
+        _ => None,
+    }
+}
+
+/// `$lazyRange(a, b, s)`'s bounds and step, each read once where it's used;
+/// its owner's reader of the form, a collect's `count_bound`'s too (#1441).
+pub(crate) fn lazy_range_parts(e: &Expr) -> Option<(Expr, Option<Expr>, Option<Expr>)> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    if callee.helper_name() != Some(LAZY_RANGE) || !args.iter().all(Expr::reads_same) {
+        return None;
+    }
+    match &args[..] {
+        [start] => Some((start.clone(), None, None)),
+        [start, end] => Some((start.clone(), Some(end.clone()), None)),
+        [start, end, step] => Some((start.clone(), Some(end.clone()), Some(step.clone()))),
+        _ => None,
+    }
+}
+
+fn range_step(e: &Expr) -> Option<Expr> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    // `step_by(n)` of one, `$stepBy(range, n)`: its numbers `n` apart.
+    if let Some([source, n]) = crate::iterators::stepped_every_parts(e)
+        && n.reads_same()
+        && let Some((start, end, None)) = lazy_range_parts(source)
+    {
+        let mut list = vec![start];
+        list.push(end.unwrap_or_else(|| Expr::global("Infinity")));
+        list.push(n.clone());
+        return Some(Expr::call_helper(LAZY_RANGE, list));
+    }
+    let js::ExprKind::Member(source, method) = &callee.kind else {
+        return None;
+    };
+    let (start, end, step) = lazy_range_parts(source)?;
+    let made = |start: Expr, step: Option<Expr>| {
+        let mut list = vec![start];
+        list.extend(end.clone().or_else(|| step.is_some().then(|| Expr::global("Infinity"))));
+        list.extend(step);
+        Expr::call_helper(LAZY_RANGE, list)
+    };
+    match (method.as_str(), &args[..]) {
+        ("drop", [n]) if n.reads_same() => {
+            let skipped = match &step {
+                Some(step) => Expr::bin(Op::Mul, n.clone(), step.clone()),
+                None => n.clone(),
+            };
+            let start = match (start.as_int(), skipped.as_int()) {
+                (Some(a), Some(k)) => Expr::int(a + k),
+                _ => Expr::bin(Op::Add, start, skipped),
+            };
+            Some(made(start, step))
+        }
+        _ => None,
+    }
+}
+
+/// `n` of `(_, i) => i % n === 0`, `step_by(n)`'s filter of what it keeps;
+/// and of items with a destructor, `(item, i) => { if (i % n === 0) {
+/// return true; } drop(item); return false; }`, each it passes over
+/// dropped (#718).
+pub(crate) fn every_nth(f: &Expr) -> Option<Expr> {
+    let js::ExprKind::Arrow(params, body) = &f.kind else {
+        return None;
+    };
+    let [js::Pattern::Name(_), js::Pattern::Name(i)] = params.as_slice() else {
+        return None;
+    };
+    let test = match body.as_slice() {
+        [
+            js::Stmt {
+                kind: js::StmtKind::Return(Some(test)),
+                ..
+            },
+        ] => test,
+        [
+            js::Stmt {
+                kind: js::StmtKind::If(test, kept, None),
+                ..
+            },
+            js::Stmt {
+                kind: js::StmtKind::Expr(_),
+                ..
+            },
+            js::Stmt {
+                kind: js::StmtKind::Return(Some(passed)),
+                ..
+            },
+        ] if matches!(passed.kind, js::ExprKind::Bool(false))
+            && matches!(kept.as_slice(), [js::Stmt { kind: js::StmtKind::Return(Some(t)), .. }] if matches!(t.kind, js::ExprKind::Bool(true))) =>
+        {
+            test
+        }
+        _ => return None,
+    };
+    let js::ExprKind::Binary(Op::Eq, rem, zero) = &test.kind else {
+        return None;
+    };
+    let js::ExprKind::Binary(Op::Rem, index, n) = &rem.kind else {
+        return None;
+    };
+    (zero.as_int() == Some(0) && matches!(&index.kind, js::ExprKind::Var(v) if v == i) && n.reads_same())
+        .then(|| (**n).clone())
+}
+
+/// `$lazyRange(a, b)` of `$iterator({ start: a, end: b }, $rangeNext)`, `a` a
+/// number (`range_items`).
+fn lazy_range(e: &Expr) -> Option<Expr> {
+    let range = crate::iterators::stepped_range(e)?;
+    if range.back || !matches!(range.start.kind, js::ExprKind::Num(_)) {
+        return None;
+    }
+    let end = match range.inclusive {
+        true => match range.end.as_int() {
+            Some(n) => Expr::int(n + 1),
+            None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),
+        },
+        false => range.end.clone(),
+    };
+    Some(Expr::call_helper(LAZY_RANGE, vec![range.start.clone(), end]))
+}
+
+/// A range's bounds, each read once: of `{ start: a, end: b }` made there,
+/// `a` and `b`, or of one that reads the same, `r.start` and `r.end`.
+pub(crate) fn range_bounds(range: &Expr) -> Option<(Expr, Expr)> {
+    match &range.kind {
+        js::ExprKind::Object(props, ..) => match &props[..] {
+            [js::Prop::Field(s, start), js::Prop::Field(e, end)] if s == "start" && e == "end" => {
+                Some((start.clone(), end.clone()))
+            }
+            _ => None,
+        },
+        _ if range.reads_same() => Some((Expr::member(range.clone(), "start"), Expr::member(range.clone(), "end"))),
+        _ => None,
+    }
+}

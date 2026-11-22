@@ -1,15 +1,15 @@
-// Mutations of src/lower/declarations/type_maps.rs, a trait whose impls for
+// Mutations of crates/rust-js-lower/src/declarations/type_maps.rs, a trait whose impls for
 // named unit structs are one TypeScript object type (ADR 1164).
 import type { Mutation } from "../../../mutations";
 
-const file = "src/lower/declarations/type_maps.rs";
+const file = "crates/rust-js-lower/src/declarations/type_maps.rs";
 const tests = ["test/declarations-type-maps.test.ts", "-t", "its keys and its lookup"];
 
 export const mutations: Mutation[] = [
   {
     name: "type-map-associated-alias-erased",
     breaks: "an event alias that excludes null is normalized to its underlying Option",
-    file: "src/lower/declarations/type_maps.rs",
+    file: "crates/rust-js-lower/src/declarations/type_maps.rs",
     find: "        Some(self.as_written(written, |out| out.ts(ty)))",
     replace: "        Some(self.ts(ty))",
     tests: ["test/declarations-type-maps.test.ts", "-t", "written event aliases"],

@@ -1,9 +1,9 @@
-// Mutations of src/lower/recognition/stable_keys.rs, whether a map's
+// Mutations of crates/rust-js-lower/src/recognition/stable_keys.rs, whether a map's
 // lookup of a key reads the same until the key is written (ADR 0059
 // amended, #1844).
 import type { Mutation } from "../../../mutations";
 
-const file = "src/lower/recognition/stable_keys.rs";
+const file = "crates/rust-js-lower/src/recognition/stable_keys.rs";
 const tests = ["test/corpus.test.ts", "-t", "^map_key_changed_between_test_and_index\\.rs$"];
 
 export const mutations: Mutation[] = [

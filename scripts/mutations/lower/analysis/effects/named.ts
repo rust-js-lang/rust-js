@@ -1,7 +1,7 @@
-// Mutations of src/lower/analysis/effects/named.rs, what std's signatures can't say of what a call writes (#2112 B).
+// Mutations of crates/rust-js-lower/src/analysis/effects/named.rs, what std's signatures can't say of what a call writes (#2112 B).
 import type { Mutation } from "../../../../mutations";
 
-const file = "src/lower/analysis/effects/named.rs";
+const file = "crates/rust-js-lower/src/analysis/effects/named.rs";
 const tests = ["test/intervals-shadow.test.ts", "-t", "keeps nothing the forgetting rules forget"];
 
 export const mutations: Mutation[] = [

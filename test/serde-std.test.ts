@@ -1,5 +1,5 @@
 // std's types whose serde impl is serde's own (#1623): each row of the
-// catalog, `src/lower/serde/std_forms.rs`, written and read against native
+// catalog, `crates/rust-js-lower/src/serde/std_forms.rs`, written and read against native
 // serde_json, the oracle, its errors among them, by family.
 import { beforeAll, expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";

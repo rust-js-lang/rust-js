@@ -1,0 +1,1229 @@
+//! How each Rust value is represented in JS: its shape, a number's kind and
+//! literal, an `Option`'s payload, a cell, what a `&mut` to it is (an
+//! object, a box, a handle), a constant's value. When a value is copied is
+//! `copies.rs`'s, and what can be represented `support.rs`'s.
+
+use super::bindings::{self, field_key};
+use super::recognition::StdItem;
+use super::{FnCx, R, Shape};
+use crate::temporary_names::Role;
+use rust_js_program::collections::IndexSet;
+use rust_js_program::js;
+use rust_js_program::js::{Expr, Op, Prop, Stmt, StmtKind};
+use rustc_abi::VariantIdx;
+use rustc_ast::Mutability;
+use rustc_hir::attrs::lang_items::LangItem;
+use rustc_hir::def::{CtorKind, DefKind};
+use rustc_middle::mir::ConstValue;
+use rustc_middle::mir::interpret::{AllocId, ConstAllocation, GlobalAlloc, GlobalId, Pointer, Scalar, alloc_range};
+use rustc_middle::ty;
+use rustc_middle::ty::Ty;
+use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::consts::ConstExt as _;
+use rustc_span::def_id::{DefId, LocalDefId};
+use rustc_span::{Span, Symbol};
+
+mod cells;
+mod consts;
+mod mut_ref;
+mod nones;
+mod options;
+mod variants;
+
+pub(crate) use cells::property_of_cell;
+pub use consts::{StdZeroSized, const_js, zero_sized_js};
+use consts::{Units, const_js_by};
+pub use mut_ref::{MutRefForm, SignatureForms, held_ts};
+pub use options::{NoneForm, NonePlace, Writers, may_look_like_none, none_form, null_params, payload_through};
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A variant without fields, as a body writes it: of a numbered enum,
+    /// its module's `const`, by its name, `Pending`, imported where it's
+    /// another module's or crate's (ADR 0722, amended), where this body
+    /// reads it so (`reads_by_name`); else its value,
+    /// `bindings::unit_variant`'s. The one answer of each test, value and
+    /// constant of one a body writes.
+    pub(crate) fn unit_variant(&self, adt: DefId, variant: &ty::VariantDef) -> Expr {
+        // A keyed enum's is an object of no keys, `{}`, which `in` tests (#504).
+        if self.krate.flattened.keyed.contains(&adt) {
+            return Expr::object(Vec::new());
+        }
+        match self.is_rust_fn(variant.def_id) && self.reads_by_name(variant.def_id) {
+            true => self.fn_ref(variant.def_id),
+            false => bindings::unit_variant(self.tcx, adt, variant),
+        }
+    }
+
+    /// A `const`'s value as this body writes it, `const_value_js`'s, each
+    /// keyed enum's variant its keys (#504).
+    pub(super) fn const_value_of(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, span: Span) -> Option<Expr> {
+        const_value_js(
+            self.tcx,
+            &self.krate.flattened.keyed,
+            self.typing_env,
+            def_id,
+            args,
+            span,
+        )
+    }
+
+    /// A value rustc computed, as a body writes it: `const_js`'s, each
+    /// variant without fields `unit_variant`'s.
+    pub fn const_value(&self, value: ty::Value<'tcx>) -> Option<Expr> {
+        // A module's namespace, `&ReactFiberReconciler` too (ADR 1037).
+        if let ty::Adt(adt, _) = value.ty.peel_refs().kind()
+            && super::classes::is_namespace(self.tcx, adt.did())
+        {
+            return self.namespace_value(adt.did());
+        }
+        let unit = |adt, variant: &ty::VariantDef| self.unit_variant(adt, variant);
+        const_js_by(
+            self.tcx,
+            value,
+            &Units {
+                unit: &unit,
+                keyed: &self.krate.flattened.keyed,
+            },
+        )
+    }
+
+    /// Which variant `subject` is, of its enum `ty`, as rustc numbers it, its
+    /// discriminant (ADR 0393): by its variant's name where its value says
+    /// it once (`named_discriminant`), else each variant's test in turn, the
+    /// last one's the rest. Of a type that's no enum, `0`, as Rust's is. Each
+    /// a BigInt where `big`, a 64-bit `repr`'s as a derived `Hash` reads it.
+    pub(crate) fn discriminant_value(&mut self, subject: Expr, ty: Ty<'tcx>, big: bool, out: &mut Vec<Stmt>) -> Expr {
+        let literal = |n: super::Discr| n.expr(big);
+        let zero = super::Discr::Signed(0);
+        let ty::Adt(adt, _) = ty.kind() else {
+            if subject.has_effects() {
+                out.push(StmtKind::Expr(subject).at(js::Span::NONE));
+            }
+            return literal(zero);
+        };
+        let adt = *adt;
+        if !adt.is_enum() {
+            return literal(zero);
+        }
+        let subject = match self.named_discriminant(subject, adt, big) {
+            Ok(named) => return named,
+            Err(subject) => *subject,
+        };
+        let mut variants: Vec<(VariantIdx, super::Discr)> = (adt.variants().indices())
+            .zip(super::discriminants(self.tcx, adt))
+            .map(|(variant, (_, n))| (variant, n))
+            .collect();
+        let Some((_, last)) = variants.pop() else {
+            return literal(zero);
+        };
+        let subject = match subject.reads_same() || variants.is_empty() {
+            true => subject,
+            false => self.spill(Role::Value, subject, out),
+        };
+        variants.into_iter().rev().fold(literal(last), |rest, (variant, n)| {
+            Expr::cond(
+                self.variant_test(subject.clone(), ty, adt, variant, false),
+                literal(n),
+                rest,
+            )
+        })
+    }
+
+    /// An enum's discriminant, of `subject`, where its value says its
+    /// variant's name once (ADR 0013): a string enum's is the name, a tagged
+    /// one's its tag (ADR 0284). `["Red", "Green"].indexOf(color)` when they
+    /// count up from 0, else looked up by name; each a BigInt where `big`.
+    /// `Err` of `subject` where it isn't so.
+    pub(crate) fn named_discriminant(
+        &self,
+        subject: Expr,
+        adt: ty::AdtDef<'tcx>,
+        big: bool,
+    ) -> Result<Expr, Box<Expr>> {
+        let tcx = self.tcx;
+        // A numbered enum's value is its discriminant (ADR 0722).
+        if bindings::numbered(tcx, adt) {
+            return Ok(match big {
+                true => super::std_types::number::to_bigint(subject),
+                false => subject,
+            });
+        }
+        let name = if is_string_enum(tcx, adt) {
+            subject
+        } else if is_fieldless_enum(adt)
+            && !bindings::is_untagged(tcx, adt.did())
+            && let Some(key) = bindings::declared_tag(tcx, adt.did())
+            && !adt
+                .variants()
+                .iter()
+                .any(|v| bindings::is_tagged_otherwise(tcx, adt.did(), v))
+        {
+            Expr::member(subject, &key)
+        } else {
+            return Err(Box::new(subject));
+        };
+        let discriminants = super::discriminants(tcx, adt);
+        let counting = (discriminants.iter().enumerate()).all(|(i, &(_, d))| d.as_i128() == Some(i as i128));
+        if counting {
+            let names = Expr::array(discriminants.into_iter().map(|(n, _)| Expr::str(n)).collect());
+            let index = Expr::builtin(names, "indexOf", vec![name]);
+            return Ok(if big {
+                super::std_types::number::to_bigint(index)
+            } else {
+                index
+            });
+        }
+        let table = Expr::object(
+            discriminants
+                .into_iter()
+                .map(|(n, d)| Prop::Field(n, d.expr(big)))
+                .collect(),
+        );
+        Ok(Expr::index(table, name))
+    }
+
+    /// Does a `ty` have one value, as a zero-sized type does: `()`, a unit
+    /// struct, `[S; 1]` of one? Then no write to one changes what a program
+    /// sees.
+    pub fn has_one_value(&self, ty: Ty<'tcx>) -> bool {
+        self.layout(ty).is_some_and(|layout| layout.is_zst())
+    }
+
+    /// A type that's the value it holds, which it always does: a
+    /// `ManuallyDrop`, what `pin!` pins. Not a `MaybeUninit`, which may hold
+    /// none yet, a cell to be written (ADR 0332).
+    pub(crate) fn always_holds(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        self.transparent(ty)
+            .filter(|_| self.recognition().uninit_of(ty).is_none())
+    }
+
+    /// A JS function: a closure, a function, a `dyn Fn` and the like, or a
+    /// type parameter bound by one of them, an `impl FnMut` too. A `&mut` to
+    /// one is the function (ADR 0099): calling it changes what it captured,
+    /// as calling it through the `&mut` does.
+    pub fn is_callable(&self, ty: Ty<'tcx>) -> bool {
+        let fn_trait = |id: DefId| self.tcx.fn_trait_kind_from_def_id(id).is_some();
+        match ty.kind() {
+            ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..) => true,
+            ty::Dynamic(predicates, ..) => super::recognition::is_fn_dyn(self.tcx, predicates),
+            _ if self.is_unknown(ty) => (self.declared_bounds(ty, self.typing_env.param_env).into_iter()).any(fn_trait),
+            _ => false,
+        }
+    }
+
+    /// Is a `ty` value a JS object? Then a reference to it, even `&mut`, can
+    /// be the object itself: changes through it change the one object (ADR 0025).
+    /// A value that a `&mut` to must be a box to change (ADR 0072): one that
+    /// isn't a JS object, as a `String`, a number or a fieldless enum is.
+    pub fn is_object(&self, ty: Ty<'tcx>) -> bool {
+        // An `impl Trait` a function returns is the value it stands for: a
+        // `&mut` to an `impl Iterator`'s array is the array.
+        let ty = self.reveal(ty);
+        // What's the value it holds is an object as that value is: a
+        // `&mut` to a transparent struct of an array is the array (ADR 0584).
+        if let Some(held) = self.always_holds(ty) {
+            return self.is_object(held);
+        }
+        matches!(self.shape(ty), Shape::Object(_) | Shape::Array(_))
+            || self.is_js_object(ty)
+            // A slice or an array is a JS array: `&mut` to one, as `sort` takes, is it.
+            || ty.is_slice()
+            // A `dyn Iterator` is a JS iterator, which steps itself.
+            || self.recognition().is_dyn_iter(ty)
+            || ty.is_array()
+            || [StdItem::Cell, StdItem::RefCell, StdItem::Atomic, StdItem::OnceCell, StdItem::LazyCell]
+                .into_iter()
+                .any(|item| self.is_std_type(ty, item))
+            // A counted `Rc`, and its `Weak`, are `{ value, strong, weak }` (ADR 0320).
+            || self.counted_rc(ty).is_some()
+            || self.counted_weak(ty).is_some()
+            // A lock, and a guard, which is its cell (ADR 0328).
+            || self.recognition().is_borrowed_cell(ty)
+            || self.is_guard(ty)
+            || self.is_vec_like(ty)
+            || self.is_map(ty)
+            // A union, the object of the field it holds (ADR 0406).
+            || self.is_union(ty)
+            // A `dyn` that's a pair is an object (ADR 0049): a `&mut` to one
+            // is the pair, whose `value` its `&mut self` methods write.
+            || matches!(ty.kind(), ty::Dynamic(..)) && self.is_pair_dyn(ty)
+            // An enum each of whose variants has fields: each is an object
+            // (ADR 0033). One with a fieldless variant isn't, the crate's,
+            // std's, `Bound`'s `Unbounded`, or serde_json's `Value`'s `Null`
+            // (ADR 0083): that variant is a string, which can't become
+            // another in place, so `*r = ..` is its place's, as a number's
+            // is (ADR 0147). `Option` is its value itself (ADR 0030), not an
+            // object.
+            || matches!(ty.kind(), ty::Adt(adt, args) if adt.is_enum()
+                && !self.tcx.is_lang_item(adt.did(), LangItem::Option)
+                // An untagged enum is its payload (ADR 0214), which `*r = v`
+                // can't make another's in place: a number isn't an object,
+                // an array no plain object, and a class's instance keeps its
+                // prototype (#347). A `&mut` to one is a place; but to one
+                // each of whose values is an array it holds itself, the
+                // array, which `*r = v` makes `v`'s items (rd490).
+                && (!bindings::is_untagged(self.tcx, adt.did())
+                    || super::untagged::arrays_in_place(self.tcx, *adt, args))
+                && adt.variants().iter().all(|v| !v.fields.is_empty()))
+    }
+
+    /// Each variant's payload of `ty`, an untagged enum, `None` where one has
+    /// none, its name's string or `undefined` (ADR 0676), or `ty` is no such
+    /// enum.
+    fn untagged_payloads(&self, ty: Ty<'tcx>) -> Option<Vec<Ty<'tcx>>> {
+        let (adt, args) = super::untagged::untagged_adt(self.tcx, self.reveal(ty))?;
+        (adt.variants().iter())
+            .map(|v| match v.fields.iter().collect::<Vec<_>>()[..] {
+                [field] => Some(field.ty(self.tcx, args).skip_normalization()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// Might a `ty` value be a JS object something changes in place? An
+    /// object, or an enum with a fieldless variant: not an object for a `&mut`
+    /// (ADR 0147), its variants with fields are objects all the same.
+    pub(super) fn may_be_object(&self, ty: Ty<'tcx>) -> bool {
+        self.is_object(ty)
+            || matches!(self.reveal(ty).kind(), ty::Adt(adt, _) if adt.is_enum()
+                && !self.tcx.is_lang_item(adt.did(), LangItem::Option)
+                && !bindings::is_untagged(self.tcx, adt.did())
+                && adt.variants().iter().any(|v| !v.fields.is_empty()))
+            // An untagged enum's, its payload, where one may be an object.
+            || self.untagged_payloads(ty).is_some_and(|payloads| payloads.iter().any(|&p| self.may_be_object(p)))
+    }
+
+    /// Field `field` of `base`, a `ty` enum's `variant`, as the enum holds
+    /// it: what a pattern's binding reads, and std's derived `Hash` of a
+    /// std enum (#1289). An `Option`'s `Some`'s value; a write's result's
+    /// `Ok`'s, `()` (ADRs 0187, 0462); else its property, a `Cell` a handle
+    /// on it, as a struct's (ADR 0288).
+    pub fn field_of_variant(
+        &mut self,
+        base: Expr,
+        ty: Ty<'tcx>,
+        variant: VariantIdx,
+        field: rustc_abi::FieldIdx,
+    ) -> Expr {
+        let ty::Adt(adt, args) = ty.kind() else {
+            unreachable!("a variant's field of an enum")
+        };
+        if self.tcx.is_lang_item(adt.did(), LangItem::Option) {
+            return self.some_value(base);
+        }
+        if self.is_write_result(ty) {
+            return Expr::js_undefined();
+        }
+        let variant = adt.variant(variant);
+        let read = Expr::member(base, variant_field(self.tcx, variant, field.as_usize()));
+        self.held(
+            read,
+            Some(&variant.fields[field]),
+            self.field_ty(&variant.fields[field], args),
+        )
+    }
+
+    /// An enum variant's fields as JS properties (ADR 0033): `_0`, `_1` for a
+    /// tuple variant, as in ReScript, and their names for a struct variant.
+    pub(super) fn variant_fields(
+        &self,
+        variant: &ty::VariantDef,
+        args: ty::GenericArgsRef<'tcx>,
+    ) -> Vec<(String, Ty<'tcx>)> {
+        variant
+            .fields
+            .iter()
+            .enumerate()
+            .map(|(i, f)| (variant_field(self.tcx, variant, i), self.field_ty(f, args)))
+            .collect()
+    }
+
+    /// How a struct or tuple type looks in JS.
+    pub fn shape(&self, ty: Ty<'tcx>) -> Shape<'tcx> {
+        if let Some(held) = self.always_holds(ty) {
+            return self.shape(held);
+        }
+        // A path is its text, a string (ADR 0173), whatever its fields; and a
+        // struct of std's that's a number, a `Duration`'s nanoseconds (ADRs
+        // 0177, 0188, 0447), has none in JS.
+        if self.is_std_wrapper(ty)
+            || self.is_js_object(ty)
+            || self.recognition().is_symbol_for(ty)
+            || self.recognition().is_path_like(ty)
+            || Num::of(ty).is_some()
+        {
+            return Shape::Other;
+        }
+        match ty.kind() {
+            ty::Tuple(tys) if !tys.is_empty() => Shape::Array(tys.to_vec()),
+            ty::Adt(adt, args) if adt.is_struct() => {
+                let variant = adt.non_enum_variant();
+                let fields = variant
+                    .fields
+                    .iter()
+                    .map(|f| (field_key(self.tcx, f), self.field_ty(f, args)));
+                match variant.ctor_kind() {
+                    _ if numbered_struct(*adt) => Shape::Array(fields.map(|(_, ty)| ty).collect()),
+                    None => Shape::Object(fields.collect()),
+                    Some(CtorKind::Fn | CtorKind::Const) => Shape::Other,
+                }
+            }
+            _ => Shape::Other,
+        }
+    }
+
+    /// Field `i` of `ty`, a struct, as rustc declares it, which `shape`
+    /// lists in its order: what `held` and `holding` ask of a struct's
+    /// field. `None` of a tuple's, or an enum's variant's.
+    pub fn struct_field_def(&self, ty: Ty<'tcx>, i: usize) -> Option<&'tcx ty::FieldDef> {
+        match ty.kind() {
+            ty::Adt(adt, _) if adt.is_struct() => adt.non_enum_variant().fields.get(rustc_abi::FieldIdx::from_usize(i)),
+            _ => None,
+        }
+    }
+
+    /// Whether a field of a `ty` value, a struct, is a property a getter may
+    /// answer: of a struct JS may have made, not the program's (rd204, ADR
+    /// 1022). What `project` says of each read of one, and a pattern's
+    /// subject asks, read once where it's tested (#430).
+    pub fn fields_answered_by_getters(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if self.krate.cell_borrows.pointers().js_may_make(adt.did()))
+    }
+
+    /// Whether a field of a `ty` value, a struct, may be a getter's as JS
+    /// gives it, of a struct JS may make or give (`js_may_give`), so a read
+    /// Rust makes once is made once, where the lowering would read it more
+    /// than once: an `Option` combinator's subject, `r.snap.map_or(..)`'s,
+    /// isn't plain data (`given_paths`; #1908, the user's decision
+    /// narrowing rd204's, ADR 1022, amended). Each read of it isn't a
+    /// getter's (`fields_answered_by_getters`): one Rust makes twice is
+    /// made twice, as before.
+    pub fn fields_read_once(&self, ty: Ty<'tcx>) -> bool {
+        self.fields_answered_by_getters(ty)
+            || matches!(ty.kind(), ty::Adt(adt, _) if self.krate.cell_borrows.pointers().js_may_give(adt.did()))
+    }
+
+    /// Field `i` of a `ty` value: `base.x`, or `base[0]` for tuples.
+    pub fn project(&self, base: Expr, ty: Ty<'tcx>, i: usize) -> Expr {
+        // What's the value it holds: that field is it, a marker beside it
+        // nothing (ADR 0584).
+        if self.always_holds(ty).is_some() {
+            let held = match ty.kind() {
+                ty::Adt(adt, _) => super::recognition::transparent_field(self.tcx, *adt).unwrap_or(0),
+                _ => 0,
+            };
+            return if i == held { base } else { Expr::js_undefined() };
+        }
+        // The registry's symbol's key (ADR 0634).
+        if self.recognition().is_symbol_for(ty) {
+            return symbol_key(base);
+        }
+        match (self.shape(ty), &base.kind) {
+            // A part of `[a, b]` (a `match (a, b)` subject) is just `a`.
+            (Shape::Array(_), js::ExprKind::Array(items, ..)) if !base.has_effects() => items[i].clone(),
+            // A part of the array rust-js made of it (`Known::Part`), but of a
+            // struct JS may make, a getter's.
+            (Shape::Array(tys), _) => {
+                let read = Expr::index(base, Expr::int(i as i128));
+                let read = match self.fields_answered_by_getters(ty) {
+                    true => read,
+                    false => Expr {
+                        facts: read.facts.with(js::Known::Part),
+                        ..read
+                    },
+                };
+                self.held_part(read, ty, i, tys[i])
+            }
+            // A flattened struct's fields are its parent's: read through it,
+            // `props.html.title` is `props.title` (ADR 0205).
+            // A flattened state's cell is the object it's in: a handle on
+            // it, whose writes set each key there (rd380, ADR 1044).
+            (Shape::Object(fields), _) if super::bindings::is_flatten_field(self.tcx, ty, i) => {
+                match super::bindings::flattened_state(self.tcx, fields[i].1) {
+                    Some((_, keys)) => {
+                        // Never counted: what would count its borrows is the
+                        // object, which is the parent's.
+                        if let Some(field) = self.struct_field_def(ty, i)
+                            && !self.quiet_field(field.did)
+                        {
+                            super::refusal::refuse(
+                                self.tcx,
+                                self.loud_at(field.did).unwrap_or_else(|| self.tcx.def_span(field.did)),
+                                super::refusal::Refused::Feature(
+                                    "a flattened state lent, or borrowed where another borrow of it may be: it's its object's own keys, which count no borrows; borrow it for a moment, `match &*chunk.state.borrow() { .. }`",
+                                ),
+                            );
+                        }
+                        // Of another crate's object, a library's, which its
+                        // program reads as Rust does (ADR 1022), a key the
+                        // variant written lacks is cleared, as Rust's value
+                        // has none (#1067); the crate's own keep it, as
+                        // upstream's do, a rejected chunk's `value` of
+                        // React's port (the lead's decision).
+                        let stale = match ty.ty_adt_def().map(|adt| adt.did()) {
+                            Some(adt) if !adt.is_local() => js::StaleKeys::Cleared,
+                            _ => js::StaleKeys::Kept,
+                        };
+                        Expr::stored_handle(base, js::Storage::in_place(&keys, stale))
+                    }
+                    None => base,
+                }
+            }
+            (Shape::Object(fields), _) => {
+                // Of a variable, or a field so read itself, of a struct only
+                // the program makes: no getter answers it (#1908's scope).
+                let own_base = matches!(base.kind, js::ExprKind::Var(_)) || base.facts.has(js::Known::Own);
+                let field = self.field_member(base, &fields[i].0);
+                // Of a JS object the program didn't build, a getter may
+                // answer it (rd204, ADR 1022); Rust's read of a field can't
+                // panic, so it throws only where what it's read of does: a
+                // getter's throw is none Rust sees (rd227, rd228).
+                let field = match self.fields_answered_by_getters(ty) {
+                    true => field.answered_by_a_getter().never_throws(),
+                    false if own_base && !self.fields_read_once(ty) => field.own_field(),
+                    false => field,
+                };
+                let def = self.struct_field_def(ty, i);
+                match self.nullable_cell_field(ty, (i, fields[i].1)) {
+                    true => self.nullable_cell_handle(field, def, fields[i].1),
+                    false => self.held(field, def, fields[i].1),
+                }
+            }
+            (Shape::Other, _) => unreachable!("fields of a type without fields"),
+        }
+    }
+
+    pub fn num(&self, ty: Ty<'tcx>, span: Span) -> R<Num> {
+        Num::of(ty).ok_or_else(|| super::refusal::refuse(self.tcx, span, super::refusal::Refused::Type("values", ty)))
+    }
+}
+
+/// Number representations. Up to 32 bits, `f32` and `f64`, a plain JS number,
+/// and `i64` and `u64`, a BigInt (ADR 0086); the difference is how results
+/// are wrapped back into range, or for an `f32`, rounded to one (ADR 0122).
+#[derive(Clone, Copy, PartialEq)]
+pub enum Num {
+    I8,
+    I16,
+    I32,
+    I64,
+    I128,
+    U8,
+    U16,
+    U32,
+    U64,
+    U128,
+    F32,
+    F64,
+}
+
+/// An `f32` as JS writes it: its shortest digits, `1.5`, where they're the
+/// number exactly, and else rounded to it, `Math.fround(0.1)` (ADR 0122).
+/// JS reads the digits as a double first, so `Math.fround` rounds twice:
+/// where that lands on the `f32` beside it, as `7.038531e-26`'s does, the
+/// digits are the fewest whose double rounds to the `f32` itself,
+/// `Math.fround(7.0385307e-26)`.
+pub fn f32_literal(v: f32) -> Expr {
+    let exact = f64::from(v);
+    let shortest: f64 = format!("{v:e}").parse().expect("Rust writes a float it reads");
+    if !v.is_finite() || shortest == exact {
+        return Expr::num(exact);
+    }
+    let rounded = |digits: f64| digits as f32 == v;
+    let digits = if rounded(shortest) {
+        shortest
+    } else {
+        // A double's 17 digits are the `f32` exactly, so one is found.
+        (1..=17)
+            .map(|count| {
+                format!("{exact:.*e}", count - 1)
+                    .parse()
+                    .expect("Rust writes a float it reads")
+            })
+            .find(|&digits| rounded(digits))
+            .expect("an f32's double is its own digits")
+    };
+    if digits == exact {
+        return Expr::num(exact);
+    }
+    Expr::builtin(Expr::js_global("Math"), "fround", vec![Expr::num(digits)])
+}
+
+impl Num {
+    pub fn of(ty: Ty<'_>) -> Option<Num> {
+        Some(match ty.kind() {
+            ty::Int(ty::IntTy::I8) => Num::I8,
+            ty::Int(ty::IntTy::I16) => Num::I16,
+            // `isize` and `usize` are 32 bits, as on wasm32 (ADR 0025).
+            ty::Int(ty::IntTy::I32 | ty::IntTy::Isize) => Num::I32,
+            ty::Int(ty::IntTy::I64) => Num::I64,
+            ty::Int(ty::IntTy::I128) => Num::I128,
+            ty::Uint(ty::UintTy::U8) => Num::U8,
+            ty::Uint(ty::UintTy::U16) => Num::U16,
+            ty::Uint(ty::UintTy::U32 | ty::UintTy::Usize) => Num::U32,
+            ty::Uint(ty::UintTy::U64) => Num::U64,
+            ty::Uint(ty::UintTy::U128) => Num::U128,
+            ty::Float(ty::FloatTy::F32) => Num::F32,
+            ty::Float(ty::FloatTy::F64) => Num::F64,
+            // A `NonZero<T>` is its number, and so is the pattern type it keeps
+            // it in, `(u32) is 1..` (ADR 0177).
+            ty::Pat(base, _) => return Num::of(*base),
+            ty::Adt(adt, args) if super::recognition::is_non_zero(adt.did()) => return Num::of(args.type_at(0)),
+            // A `Duration` is its nanoseconds (ADR 0188).
+            ty::Adt(adt, _) if super::recognition::is_duration(adt.did()) => Num::U128,
+            // An `ExitCode` is its `u8`, as wasm32's std keeps it (#2292).
+            ty::Adt(adt, _) if super::recognition::is_exit_code(adt.did()) => Num::U8,
+            // So is a clock's time, since a time before it, and a
+            // `SystemTimeError` the `Duration` it holds (ADR 0447).
+            ty::Adt(adt, _) => match super::recognition::clock_type(adt.did())? {
+                super::recognition::ClockType::Error => Num::U128,
+                _ => Num::I128,
+            },
+            _ => return None,
+        })
+    }
+
+    pub fn bits(self) -> u32 {
+        match self {
+            Num::I8 | Num::U8 => 8,
+            Num::I16 | Num::U16 => 16,
+            Num::I32 | Num::U32 | Num::F32 => 32,
+            Num::I64 | Num::U64 | Num::F64 => 64,
+            Num::I128 | Num::U128 => 128,
+        }
+    }
+
+    /// An `f32` or an `f64`: a JS number, not an integer (ADR 0122).
+    pub fn float(self) -> bool {
+        matches!(self, Num::F32 | Num::F64)
+    }
+
+    pub fn signed(self) -> bool {
+        matches!(self, Num::I8 | Num::I16 | Num::I32 | Num::I64 | Num::I128)
+    }
+
+    /// A 64-bit or a 128-bit integer: a JS BigInt, which mixes only with
+    /// another (ADRs 0086, 0171).
+    pub fn big(self) -> bool {
+        matches!(self, Num::I64 | Num::U64 | Num::I128 | Num::U128)
+    }
+
+    /// `n` as a literal of this type: `5`, or `5n`. A `u128`'s `n` is its
+    /// bits, as an `i128` holds them: `-1` is `u128::MAX`.
+    pub fn literal(self, n: i128) -> Expr {
+        match self {
+            Num::U128 => Expr::biguint(n as u128),
+            _ if self.big() => Expr::bigint(n),
+            _ => Expr::int(n),
+        }
+    }
+
+    /// The inclusive value range, for integers: its top a `u128`, which
+    /// `u128::MAX` needs.
+    pub(super) fn range(self) -> (i128, u128) {
+        let bits = self.bits();
+        if self.signed() {
+            (i128::MIN >> (128 - bits), (i128::MAX >> (128 - bits)) as u128)
+        } else {
+            (0, u128::MAX >> (128 - bits))
+        }
+    }
+
+    /// Wrap an exact JS result back into this type's range, like Rust's
+    /// wrapping arithmetic: `x | 0` for i32, `x >>> 0` for u32, and so on.
+    pub(super) fn wrap(self, e: Expr) -> Expr {
+        // A constant is wrapped here, not in the JS: `Code::NotFound as u32`
+        // is `404`, not `(404 + 0 | 0) >>> 0`.
+        // An `f32` constant is rounded here too.
+        if self == Num::F32
+            && let js::ExprKind::Num(n) = e.kind
+        {
+            return f32_literal(n as f32);
+        }
+        // A 128-bit one is in range already: `const_int` is of `i128`s.
+        if self.bits() == 128
+            && let Some(n) = const_int(&e)
+        {
+            return self.literal(n);
+        }
+        if !self.float()
+            && let Some(n) = const_int(&e)
+        {
+            let size = 1i128 << self.bits();
+            let wrapped = n.rem_euclid(size);
+            return self.literal(if self.signed() && wrapped >= size / 2 {
+                wrapped - size
+            } else {
+                wrapped
+            });
+        }
+        let bits = Expr::int(i128::from(self.bits()));
+        let as_n = |name: &str| {
+            Expr::call(
+                Expr::member(Expr::js_global("BigInt"), name),
+                vec![bits.clone(), e.clone()],
+            )
+        };
+        match self {
+            Num::I64 | Num::I128 => as_n("asIntN"),
+            Num::U64 | Num::U128 => as_n("asUintN"),
+            Num::I32 => Expr::bin(Op::BitOr, e, Expr::num(0)),
+            Num::U32 => Expr::bin(Op::UShr, e, Expr::num(0)),
+            Num::I8 | Num::I16 => {
+                let shift = 32 - self.bits();
+                Expr::bin(Op::Shr, Expr::bin(Op::Shl, e, Expr::num(shift)), Expr::num(shift))
+            }
+            Num::U8 | Num::U16 => Expr::bin(Op::BitAnd, e, Expr::int(self.range().1 as i128)),
+            // The nearest `f32`: of an exact result, Rust's (ADR 0122).
+            Num::F32 => Expr::builtin(Expr::js_global("Math"), "fround", vec![e]),
+            Num::F64 => e,
+        }
+    }
+}
+
+/// An integer the JS computes from constants alone: `404 + 0`, and of
+/// BigInts, whose bitwise operators are exact, `1n << 40n` (#1729), where
+/// a number's are of 32 bits, `1 << 40` being `256`.
+fn const_int(e: &Expr) -> Option<i128> {
+    Some(match &e.kind {
+        js::ExprKind::Num(n) if n.fract() == 0.0 && n.abs() < 9_007_199_254_740_992.0 => *n as i128,
+        js::ExprKind::BigInt(n) => *n,
+        js::ExprKind::Unary(js::UnaryOp::Neg, x) => -const_int(x)?,
+        js::ExprKind::Binary(op, a, b) => {
+            let exact = const_bigint(a) && const_bigint(b);
+            let (a, b) = (const_int(a)?, const_int(b)?);
+            match op {
+                Op::Add => a.checked_add(b)?,
+                Op::Sub => a.checked_sub(b)?,
+                Op::Mul => a.checked_mul(b)?,
+                Op::Shl if exact && (0..127).contains(&b) => a.checked_mul(1i128 << b)?,
+                Op::Shr if exact && (0..127).contains(&b) => a >> b,
+                Op::BitAnd if exact => a & b,
+                Op::BitOr if exact => a | b,
+                Op::BitXor if exact => a ^ b,
+                _ => return None,
+            }
+        }
+        _ => return None,
+    })
+}
+
+/// Whether `e` is a BigInt the JS computes from BigInt constants alone.
+fn const_bigint(e: &Expr) -> bool {
+    match &e.kind {
+        js::ExprKind::BigInt(_) => true,
+        js::ExprKind::Unary(js::UnaryOp::Neg, x) => const_bigint(x),
+        js::ExprKind::Binary(_, a, b) => const_bigint(a) && const_bigint(b),
+        _ => false,
+    }
+}
+
+/// Whether a value of `ty` is always `undefined` in JS: `()`, and a unit
+/// struct of no `#[rust_js::name]`, which is no class (ADR 0013). The JS
+/// rust-js makes leaves the key of one out, as an object does of each key
+/// whose value is written `undefined` (ADR 0280), and a JS caller may give
+/// it, `{ TAG: "Done", _0: undefined }`, so a field of one is declared
+/// optional, `_0?: undefined`, true of both (#1851).
+pub(crate) fn always_undefined(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    match ty.kind() {
+        ty::Tuple(items) => items.is_empty(),
+        ty::Adt(adt, _) => one_valued(tcx, ty) && bindings::unit_value(tcx, adt.did()).is_none(),
+        _ => false,
+    }
+}
+
+/// Whether every value of `ty` is the one JS value: a unit struct that's
+/// no class (ADR 0013), `undefined`, or its `#[rust_js::name]`'s string or
+/// boolean (ADRs 0223, 1164). Nothing written in place can change it, nor
+/// tell a clone of it from it, so no write puts it in the mutation set
+/// (`analysis::mutation`, ADR 0147, #2251). JS's answer, of no layout: of
+/// the zero-sized types `has_one_value` says, those JS holds as no object,
+/// as `{}` of `struct E {}` and `[]` of a `[T; 0]` are, written in place.
+pub(crate) fn one_valued(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct()
+        && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Const)
+        && !super::classes::is_class(tcx, adt.did()))
+}
+
+/// Whether `adt` is a tuple struct, `struct P(u8, u8)`, laid out as an
+/// array of its fields, `[1, 2]`, which `shape` says of it: each field an
+/// item, its value by its type alone, never a property its cell holds.
+pub(crate) fn numbered_struct(adt: ty::AdtDef<'_>) -> bool {
+    adt.is_struct() && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Fn)
+}
+
+pub(super) fn is_fieldless_enum(adt: ty::AdtDef<'_>) -> bool {
+    adt.is_enum() && adt.variants().iter().all(|v| v.fields.is_empty())
+}
+
+/// Whether an enum's JS value is a string, its variant's name (ADR 0013):
+/// a fieldless one's, but not a tagged one's (ADR 0284), whose variants are
+/// objects, `{ kind: "on" }`. What `===`, `includes` and a `Map`'s keys
+/// compare by: the one answer each asks.
+pub(super) fn is_string_enum(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> bool {
+    is_fieldless_enum(adt) && super::bindings::declared_tag(tcx, adt.did()).is_none() && !bindings::numbered(tcx, adt)
+}
+
+/// What rustc computes for constant `def_id` of `args`, or its `promoted`
+/// part, as a value tree (ADR 0031): the one evaluation, of an item's
+/// constant and a MIR body's alike. The query itself, not
+/// `const_eval_global_id_for_typeck`, which reports a constant too large
+/// for a value tree as rustc's own error where rust-js reports it as
+/// unsupported.
+pub fn valtree<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+    promoted: Option<rustc_middle::mir::Promoted>,
+    span: Span,
+) -> Option<ty::ValTree<'tcx>> {
+    let instance = super::items::resolve_instance_in(tcx, typing_env, def_id, args).ok()??;
+    let cid = GlobalId { instance, promoted };
+    let inputs = tcx.erase_and_anonymize_regions(typing_env.with_post_analysis_normalized(tcx).as_query_input(cid));
+    tcx.at(span).eval_to_valtree(inputs).ok()
+}
+
+/// Whether rustc's value of a `const` has no byte written, a
+/// `MaybeUninit::uninit()`'s: JS's `undefined` (ADR 0332), which a use
+/// needn't copy. Value trees hold no such value, so it's read from the
+/// memory rustc made of it.
+fn const_uninit<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+    span: Span,
+) -> bool {
+    let Ok(Some(instance)) = super::items::resolve_instance_in(tcx, typing_env, def_id, args) else {
+        return false;
+    };
+    let cid = GlobalId {
+        instance,
+        promoted: None,
+    };
+    let inputs = tcx.erase_and_anonymize_regions(typing_env.with_post_analysis_normalized(tcx).as_query_input(cid));
+    let Ok(alloc) = tcx.at(span).eval_to_allocation_raw(inputs) else {
+        return false;
+    };
+    let memory = tcx.global_alloc(alloc.alloc_id).unwrap_memory();
+    let whole = alloc_range(rustc_abi::Size::ZERO, memory.inner().size());
+    whole.size.bytes() > 0
+        && memory
+            .inner()
+            .init_mask()
+            .is_range_initialized(whole)
+            .is_err_and(|uninit| uninit.start == whole.start && uninit.size == whole.size)
+}
+
+/// A `const`'s value as JS writes it, where it can: what rustc computed
+/// (ADRs 0031, 0127), or `undefined` of one with no byte written.
+pub fn const_value_js<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    keyed: &IndexSet<DefId>,
+    typing_env: ty::TypingEnv<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+    span: Span,
+) -> Option<Expr> {
+    // A large byte constant's, of its memory, never a value tree of each
+    // byte (#1096).
+    let ty = tcx.type_of(def_id).instantiate(tcx, args).skip_normalization();
+    let ty = tcx.normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty));
+    if is_byte_ref(tcx, ty)
+        && let Ok(value) =
+            tcx.const_eval_resolve(typing_env, rustc_middle::mir::UnevaluatedConst::new(def_id, args), span)
+        && let Some(bytes) = byte_constant_js(tcx, value, ty)
+    {
+        return Some(bytes);
+    }
+    eval_const(tcx, typing_env, def_id, args, span)
+        .and_then(|value| const_js(tcx, keyed, value))
+        .or_else(|| const_uninit(tcx, typing_env, def_id, args, span).then(Expr::js_undefined))
+}
+
+/// What rustc computed for a `const`, as a value tree (ADR 0031).
+pub fn eval_const<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+    span: Span,
+) -> Option<ty::Value<'tcx>> {
+    let args = tcx
+        .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(args))
+        .ok()?;
+    let valtree = valtree(tcx, typing_env, def_id, args, None, span)?;
+    let ty = tcx.type_of(def_id).instantiate(tcx, args).skip_normalization();
+    Some(ty::Value {
+        ty: tcx.normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty)),
+        valtree,
+    })
+}
+
+/// What rustc computed for a `static` (ADR 0096), as a `const`'s value tree.
+/// rustc makes value trees only of constants, since a static is a place, so
+/// this reads one out of the static's memory. None for a value no value tree
+/// holds: a reference to another static, a pointer, a `dyn`.
+pub fn static_value<'tcx>(tcx: TyCtxt<'tcx>, def_id: LocalDefId) -> Option<ty::Value<'tcx>> {
+    let memory = tcx.eval_static_initializer(def_id).ok()?;
+    let ty = tcx.type_of(def_id).instantiate_identity().skip_normalization();
+    let valtree = valtree_at(tcx, Pointer::from(unchanging(tcx, memory)), ty)?;
+    Some(ty::Value { ty, valtree })
+}
+
+/// Memory rustc reads for a value tree only if it can't change, as a `static
+/// mut`'s or an atomic's can: a copy of it, marked so.
+fn unchanging<'tcx>(tcx: TyCtxt<'tcx>, memory: ConstAllocation<'tcx>) -> AllocId {
+    let mut copy = memory.inner().clone();
+    copy.mutability = Mutability::Not;
+    tcx.reserve_and_set_memory_alloc(tcx.mk_const_alloc(copy))
+}
+
+/// Where a pointer in a static's memory points, readable. A `&` in one is
+/// to memory of its own, a nested static; one to another static, of a
+/// `primitive` it reads, a number, `&A.count`, where that static can't
+/// change, is that static's: its value is the reference's, as a reference
+/// is its value (ADR 0023), and no program tells a number's copy from it.
+/// Any other is `None`.
+fn pointee(tcx: TyCtxt<'_>, pointer: Scalar, primitive: bool) -> Option<Pointer> {
+    let pointer = pointer.to_pointer(&tcx).into_pointer_or_addr().ok()?;
+    let (prov, offset) = pointer.prov_and_relative_offset();
+    let memory = match tcx.try_get_global_alloc(prov.alloc_id())? {
+        GlobalAlloc::Memory(memory) if memory.inner().mutability == Mutability::Not => return Some(pointer),
+        GlobalAlloc::Memory(memory) => memory,
+        GlobalAlloc::Static(d) if matches!(tcx.def_kind(d), DefKind::Static { nested: true, .. }) => {
+            tcx.eval_static_initializer(d).ok()?
+        }
+        GlobalAlloc::Static(d)
+            if primitive
+                && !tcx.is_mutable_static(d)
+                && tcx
+                    .type_of(d)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .is_freeze(tcx, ty::TypingEnv::fully_monomorphized()) =>
+        {
+            tcx.eval_static_initializer(d).ok()?
+        }
+        _ => return None,
+    };
+    Some(Pointer::new(unchanging(tcx, memory).into(), offset))
+}
+
+/// Of more bytes than this, a byte constant, `include_bytes!`'s, is base64
+/// text a runtime helper decodes, `$bytes("..")`, not a literal of each
+/// byte (#1096). To 16 KiB a literal costs the compiler nothing past its
+/// own, 112–120 MB; past it about 1.5 KB of memory a byte (256 KiB 485 MB
+/// and 0.8 s, 1 MiB 1.65 GB and 3.1 s), and 4.8 bytes of JS a byte, where
+/// base64's are 1.33: windows-bindgen's 32 MB took 7 GB and a minute.
+pub(crate) const LARGE_BYTES: usize = 16 * 1024;
+
+/// The bytes of a constant `value` of `ty`, a `&[u8; N]` or a `&[u8]`,
+/// where they're more than `LARGE_BYTES`: read from its memory, never made
+/// a value tree of each byte. None of fewer, or of memory that isn't bytes
+/// alone, uninitialized or a pointer's.
+fn large_bytes<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Option<Vec<u8>> {
+    let ty::Ref(_, inner, _) = ty.kind() else {
+        return None;
+    };
+    let (data, len) = match (inner.kind(), value) {
+        (ty::Array(item, len), ConstValue::Scalar(pointer)) if *item == tcx.types.u8 => {
+            (pointer, len.try_to_target_usize(tcx)?)
+        }
+        (ty::Slice(item), ConstValue::Slice { alloc_id, meta }) if *item == tcx.types.u8 => {
+            (Scalar::from_pointer(alloc_id.into(), &tcx), meta)
+        }
+        // One held in memory, two words: where its bytes are, and how many.
+        (ty::Slice(item), ConstValue::Indirect { alloc_id, offset }) if *item == tcx.types.u8 => {
+            let word = tcx.data_layout.pointer_size();
+            let memory = tcx.global_alloc(alloc_id).unwrap_memory();
+            let read = |at, provenance| {
+                memory
+                    .inner()
+                    .read_scalar(&tcx, alloc_range(offset + at, word), provenance)
+                    .ok()
+            };
+            let data = read(rustc_abi::Size::ZERO, true)?;
+            let len = read(word, false)?.to_target_usize(&tcx).discard_err()?;
+            (data, len)
+        }
+        _ => return None,
+    };
+    let len = usize::try_from(len).ok()?;
+    if len <= LARGE_BYTES {
+        return None;
+    }
+    let (prov, offset) = pointee(tcx, data, false)?.prov_and_relative_offset();
+    let memory = tcx.global_alloc(prov.alloc_id()).unwrap_memory();
+    let range = alloc_range(offset, rustc_abi::Size::from_bytes(len));
+    if memory.inner().init_mask().is_range_initialized(range).is_err()
+        || !memory.inner().provenance().range_empty(range, &tcx)
+    {
+        return None;
+    }
+    let start = usize::try_from(offset.bytes()).ok()?;
+    Some(
+        memory
+            .inner()
+            .inspect_with_uninit_and_ptr_outside_interpreter(start..start + len)
+            .to_vec(),
+    )
+}
+
+/// A byte constant `value` of `ty` past `LARGE_BYTES`, as JS: `$bytes("..")`
+/// of its base64 text, which decodes it into the array of numbers a smaller
+/// one's literal is, each time it's read, as that literal is made (#1096).
+/// The one place that form is written: a constant a body names in place,
+/// `include_bytes!`'s, and a `const` item's.
+pub fn byte_constant_js<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Option<Expr> {
+    let bytes = large_bytes(tcx, value, ty)?;
+    Some(Expr::call(Expr::helper("$bytes"), vec![Expr::str(base64(&bytes))]).never_throws())
+}
+
+/// Whether `ty` is a `&[u8; N]` or a `&[u8]`, a byte constant's type.
+pub fn is_byte_ref<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    matches!(ty.kind(), ty::Ref(_, inner, _) if matches!(inner.kind(), ty::Array(item, _) | ty::Slice(item) if *item == tcx.types.u8))
+}
+
+/// `bytes` as base64 text, RFC 4648's, which `atob` reads.
+pub(crate) fn base64(bytes: &[u8]) -> String {
+    const DIGITS: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut text = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for chunk in bytes.chunks(3) {
+        let n = (u32::from(chunk[0]) << 16)
+            | (u32::from(*chunk.get(1).unwrap_or(&0)) << 8)
+            | u32::from(*chunk.get(2).unwrap_or(&0));
+        for i in 0..4 {
+            text.push(match i <= chunk.len() {
+                true => DIGITS[(n >> (18 - 6 * i) & 63) as usize] as char,
+                false => '=',
+            });
+        }
+    }
+    text
+}
+
+/// The value tree of the `ty` at `at`, as rustc makes one for a constant.
+fn valtree_at<'tcx>(tcx: TyCtxt<'tcx>, at: Pointer, ty: Ty<'tcx>) -> Option<ty::ValTree<'tcx>> {
+    let (prov, offset) = at.prov_and_relative_offset();
+    valtree_of(
+        tcx,
+        ConstValue::Indirect {
+            alloc_id: prov.alloc_id(),
+            offset,
+        },
+        ty,
+    )
+}
+
+fn valtree_of<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Option<ty::ValTree<'tcx>> {
+    let typing_env = ty::TypingEnv::fully_monomorphized();
+    let word = tcx.data_layout.pointer_size();
+    let read = |words: u64, size, provenance| {
+        let ConstValue::Indirect { alloc_id, offset } = value else {
+            return None;
+        };
+        let memory = tcx.global_alloc(alloc_id).unwrap_memory();
+        memory
+            .inner()
+            .read_scalar(&tcx, alloc_range(offset + word * words, size), provenance)
+            .ok()
+    };
+    match ty.kind() {
+        ty::Bool | ty::Char | ty::Int(_) | ty::Uint(_) | ty::Float(_) => {
+            let scalar = match value {
+                ConstValue::Scalar(scalar) => scalar,
+                _ => read(0, tcx.layout_of(typing_env.as_query_input(ty)).ok()?.size, false)?,
+            };
+            Some(ty::ValTree::from_scalar_int(tcx, scalar.try_to_scalar_int().ok()?))
+        }
+        // A reference's value tree is its referent's. A `&str` or a `&[T]`
+        // is two words: where its items are, and how many.
+        ty::Ref(_, inner, _) if matches!(inner.kind(), ty::Str | ty::Slice(_)) => {
+            let (data, len) = match value {
+                ConstValue::Slice { alloc_id, meta } => (Scalar::from_pointer(alloc_id.into(), &tcx), meta),
+                _ => (
+                    read(0, word, true)?,
+                    read(1, word, false)?.to_target_usize(&tcx).discard_err()?,
+                ),
+            };
+            let len_usize = usize::try_from(len).ok()?;
+            match *inner.kind() {
+                ty::Str if len == 0 => Some(ty::ValTree::from_raw_bytes(tcx, &[])),
+                ty::Str => {
+                    let (prov, offset) = pointee(tcx, data, false)?.prov_and_relative_offset();
+                    let memory = tcx.global_alloc(prov.alloc_id()).unwrap_memory();
+                    let start = usize::try_from(offset.bytes()).ok()?;
+                    let bytes = memory
+                        .inner()
+                        .inspect_with_uninit_and_ptr_outside_interpreter(start..start + len_usize);
+                    Some(ty::ValTree::from_raw_bytes(tcx, bytes))
+                }
+                ty::Slice(_) if len == 0 => Some(ty::ValTree::zst(tcx)),
+                ty::Slice(item) => valtree_at(tcx, pointee(tcx, data, false)?, Ty::new_array(tcx, item, len)),
+                _ => None,
+            }
+        }
+        ty::Ref(_, inner, _) if inner.is_sized(tcx, typing_env) => {
+            let pointer = match value {
+                ConstValue::Scalar(scalar) => scalar,
+                _ => read(0, word, true)?,
+            };
+            let primitive = matches!(
+                inner.kind(),
+                ty::Bool | ty::Char | ty::Int(_) | ty::Uint(_) | ty::Float(_)
+            );
+            valtree_at(tcx, pointee(tcx, pointer, primitive)?, *inner)
+        }
+        ty::Adt(adt, _) if adt.is_union() => None,
+        ty::Array(..) | ty::Tuple(_) | ty::Adt(..) => {
+            let parts = tcx.try_destructure_mir_constant_for_user_output(value, ty)?;
+            // An enum's starts with its variant's index, as rustc's own does.
+            // (The destructured value has one for a struct too.)
+            let variant = parts.variant.filter(|_| ty.is_enum()).map(|v| {
+                ty::Const::new_value(tcx, ty::ValTree::from_scalar_int(tcx, v.as_u32().into()), tcx.types.u32)
+            });
+            let fields = parts
+                .fields
+                .iter()
+                .map(|&(field, ty)| Some(ty::Const::new_value(tcx, valtree_of(tcx, field, ty)?, ty)))
+                .collect::<Option<Vec<_>>>()?;
+            Some(ty::ValTree::from_branches(tcx, variant.into_iter().chain(fields)))
+        }
+        _ => None,
+    }
+}
+
+/// A struct that's a JS value, as `Recognition::is_js_object` tells one:
+/// `PhantomData` of an extern type or of `#[rust_js::js_object]` first.
+pub(super) fn marks_js_object<'tcx>(tcx: TyCtxt<'tcx>, adt: ty::AdtDef<'tcx>, args: ty::GenericArgsRef<'tcx>) -> bool {
+    adt.is_struct() && adt.non_enum_variant().fields.iter().next().is_some_and(|field| {
+        matches!(field.ty(tcx, args).skip_normalization().kind(), ty::Adt(marker, marked) if marker.is_phantom_data()
+        && marked.types().next().is_some_and(|t| match t.kind() {
+            ty::Foreign(_) => true,
+            ty::Adt(object, _) => tcx
+                .get_attrs_by_path(object.did(), &[Symbol::intern("rust_js"), Symbol::intern("js_object")])
+                .next()
+                .is_some(),
+            _ => false,
+        }))
+    })
+}
+
+/// The JS property for field `i` of an enum variant (ADR 0033): `_0` in a
+/// tuple variant, as in ReScript, and its name in a struct variant.
+pub fn variant_field(tcx: TyCtxt<'_>, variant: &ty::VariantDef, i: usize) -> String {
+    match variant.ctor_kind() {
+        Some(CtorKind::Fn) => js::positional(i),
+        // An enum variant's field a symbol never names (`validate`, ADR 1051).
+        _ => field_key(tcx, variant.fields.iter().nth(i).expect("a field of this variant"))
+            .text()
+            .to_owned(),
+    }
+}
+
+/// An `Ordering` is -1, 0 or 1 (ADR 0036), its discriminant, which a JS
+/// comparator returns as it is.
+pub(super) use super::recognition::ordering_value;
+
+/// A `js::SymbolFor` of `key`, the registry's symbol, `Symbol.for(key)`
+/// (ADR 0634): the one way one is made, a constant's, a value's, a
+/// constructor's.
+pub(super) fn symbol_for(key: Expr) -> Expr {
+    Expr::call(symbol_for_function(), vec![key])
+}
+
+/// `js::SymbolFor` itself, its constructor as a value: `Symbol.for`, the
+/// registry's function, which reads no `this` and only its first argument
+/// (ADR 0964).
+pub(super) fn symbol_for_function() -> Expr {
+    Expr::member(Expr::global("Symbol"), "for")
+}
+
+/// A `js::SymbolFor`'s key, its `.0`: `Symbol.keyFor(symbol)` (ADR 0634).
+fn symbol_key(symbol: Expr) -> Expr {
+    Expr::call(Expr::member(Expr::global("Symbol"), "keyFor"), vec![symbol])
+}
+
+/// The symbol whose key `read` is, where it's a `js::SymbolFor`'s,
+/// `symbol_key`'s: what a test of its key against text compares instead,
+/// `symbol === Symbol.for(text)` (ADR 0634).
+pub(super) fn symbol_of_key(read: &Expr) -> Option<&Expr> {
+    match &read.kind {
+        js::ExprKind::Call(callee, args)
+            if matches!(&callee.kind, js::ExprKind::Member(object, name)
+                if name == "keyFor" && matches!(&object.kind, js::ExprKind::Var(v) if v.is("Symbol"))) =>
+        {
+            match &args[..] {
+                [symbol] => Some(symbol),
+                _ => None,
+            }
+        }
+        _ => None,
+    }
+}
+
+/// A `char` constant (ADR 0034).
+fn char_value(value: ty::Value<'_>) -> Option<char> {
+    if !value.ty.is_char() {
+        return None;
+    }
+    char::from_u32(value.try_to_leaf()?.to_u32())
+}
+
+pub(super) fn num_literal(bits: u128, num: Num) -> Expr {
+    if num == Num::F64 {
+        return Expr::num(f64::from_bits(bits as u64));
+    }
+    if num == Num::F32 {
+        return f32_literal(f32::from_bits(bits as u32));
+    }
+    let unused = 128 - num.bits();
+    let n = if num.signed() {
+        ((bits << unused) as i128) >> unused
+    } else {
+        bits as i128
+    };
+    num.literal(n)
+}
+
+/// What takes a `()` given to JS: a binding's parameter, its `DefId` and
+/// index, or a `dyn` of a trait, the `()` a reference to it.
+pub(super) enum UnitTo<'tcx> {
+    Param(DefId, usize),
+    Dyn(Ty<'tcx>),
+}
+
+/// What JS is given of a `()` given to `to`, where it isn't `undefined`,
+/// what `()` is everywhere (ADR 0020), as a value of any shape, `x ===
+/// undefined` of `js::strict_equals(x, ())` (ADR 0775): `[]`, a list of
+/// none, where it's a list of items, a tuple of them its array. That's
+/// rest arguments, a variadic binding's last parameter or a `dyn` of
+/// `js::Rest`, spread, and a hook's dependencies, `react::DependencyList`,
+/// `use_memo(f, ())`'s `useMemo(f, [])`. The one answer.
+pub(super) fn unit_given<'tcx>(tcx: TyCtxt<'tcx>, to: UnitTo<'tcx>) -> Option<Expr> {
+    let rest = [Symbol::intern("rust_js"), Symbol::intern("rest")];
+    let lists = |id: DefId| {
+        super::recognition::is_dependency_list(tcx, id) || tcx.get_attrs_by_path(id, &rest).next().is_some()
+    };
+    let list = match to {
+        UnitTo::Param(def_id, i) => {
+            let declared = tcx.fn_sig(def_id).instantiate_identity().skip_normalization();
+            let declared = declared.skip_binder().inputs();
+            let bounded = |ty: Ty<'tcx>| {
+                tcx.param_env(def_id).caller_bounds().any(|clause| {
+                    clause
+                        .as_trait_clause()
+                        .is_some_and(|bound| bound.self_ty().skip_binder() == ty && lists(bound.def_id()))
+                })
+            };
+            (bindings::is_variadic(tcx, def_id) && i + 1 == declared.len())
+                || declared
+                    .get(i)
+                    .is_some_and(|&ty| matches!(ty.kind(), ty::Param(_)) && bounded(ty))
+        }
+        UnitTo::Dyn(ty) => matches!(ty.kind(), ty::Dynamic(traits, ..) if traits.principal_def_id().is_some_and(lists)),
+    };
+    list.then(|| Expr::array(Vec::new()))
+}

@@ -377,9 +377,9 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
             // playground's compiler links them (ADR 1181): the full WASI
             // build is CI's `wasm` job's, minutes of rustc's front end;
             // this is seconds.
-            job("the crates for WASI", ["cargo", "check", "--locked", "--quiet", "--target", "wasm32-wasip1", "--workspace", "--exclude", "rust-js"], {
+            job("the crates for WASI", ["cargo", "check", "--locked", "--quiet", "--target", "wasm32-wasip1", "--workspace", "--exclude", "rust-js", "--exclude", "rust-js-lower", "--exclude", "rust-js-mir"], {
               memory: peakGB.compilerCheck,
-              ci: "cargo check --locked --target wasm32-wasip1 --workspace --exclude rust-js",
+              ci: "cargo check --locked --target wasm32-wasip1 --workspace --exclude rust-js --exclude rust-js-lower --exclude rust-js-mir",
             }),
           ]
         : []),

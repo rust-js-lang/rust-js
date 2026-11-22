@@ -1,11 +1,11 @@
-// Mutations of src/lower/binding_calls.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/binding_calls.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "binding-arg-some-where-unanded",
     breaks: "a `SomeWhere` given to a binding isn't `t && v`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                if let Some((test, value, _)) = arg.some_where_parts() {\n",
     replace: "                if let Some((test, value, _)) = arg.some_where_parts().filter(|(_, _, there)| !there) {\n",
     tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-types.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-props-read.test.ts", "test/bindings.test.ts", "test/react.test.ts", "test/lowering-option-truth.test.ts", "test/snapshots.test.ts", "test/pilot.test.ts"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "trailing-null-fallback-omitted",
     breaks: "an explicit null fallback is omitted from a JavaScript callback",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                || arg.has_null_fallback()\n",
     replace: "",
     tests: ["test/none-given.test.ts", "-t", "explicit null fallback"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "keyed-method-a-member",
     breaks:
       "a method keyed by a global's value, `[Symbol.asyncIterator]`, is read as a property of its name, `iterable.Symbol.asyncIterator()`, not React's `iterable[ASYNC_ITERATOR]()` (rd585)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                let method = Expr::index(this, self.js_ref(&key));\n",
     replace: "                let method = Expr::member(this, key);\n",
     tests: ["test/js-globals.test.ts", "-t", "an async iterable's"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
     name: "static-constructor-refused",
     breaks:
       "`class.call_static(js::weak_map::new, ())` of a held class is refused, where React writes `new PossiblyWeakMap()`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "        JsForm::New(name) if !name.contains('#') => Some((f, None)),\n",
     replace: "",
     tests: [
@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
     name: "static-constructor-called",
     breaks:
       "a held class's constructor is called, `PossiblyWeakMap()`, which throws of a class",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    None => Expr::new_(this, args),\n",
     replace: "                    None => Expr::call(this, args),\n",
     tests: [
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     name: "static-none-given",
     breaks:
       "a trailing `None` given a held class's static or constructor is an argument, `new PossiblyWeakMap(undefined)` (ADR 0443)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    super::calls::is_undefined(arg) && is_optional_param(self.tcx, f, i)\n",
     replace: "                    super::calls::is_undefined(arg) && is_optional_param(self.tcx, f, i) && false\n",
     tests: [
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "this-alias-kept",
     breaks:
       "a variable that only holds a with_this function's `this` stays, `const state = this; state.count--;`, where upstream reads `this.count--` (rd196)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            body.retain(|stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if *name == alias));\n            js::read_as_this_of(&mut body, &alias);\n",
     replace: "",
     tests: [
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
     name: "this-alias-nested-read",
     breaks:
       "a variable that holds a with_this function's `this` is read as `this` where a function made in it reads it too, which then reads a variable no longer declared",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            if js::read_as_this_of(&mut body.clone(), &alias) {\n",
     replace: "            if false {\n",
     tests: [
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     name: "kind-object-any-value",
     breaks:
       "`kind.object()` is the value of any kind, a string's too, which `WeakMap.prototype.set` throws of (ADR 0910)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                Expr::some_where(test, this)\n",
     replace: "                {\n                    let _ = test;\n                    this\n                }\n",
     tests: ["test/js-object-kinds.test.ts", "-t", "one weak key"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     name: "instance-of-given-backwards",
     breaks:
       "`js::instance_of(value, constructor)` is `constructor instanceof value`, which throws of a value that's no function (ADR 0878)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                Expr::bin(Op::InstanceOf, this, args.remove(0)).answered_by_a_getter()\n",
     replace: "                Expr::bin(Op::InstanceOf, args.remove(0), this).answered_by_a_getter()\n",
     tests: [
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     name: "setter-write-only-makes-a-value",
     breaks:
       "a binding's setter, `INTERNALS.T = v`, is a write that can't throw, so in an `Ok` arm it's in `catch_unwind`'s `try`, whose `catch` takes what it throws where Rust's panic goes on",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                let property = Expr::member(this, name).answered_by_a_setter();\n",
     replace: "                let property = Expr::member(this, name);\n",
     tests: [
@@ -131,7 +131,7 @@ export const mutations: Mutation[] = [
     name: "js-class-of-the-constructor-call",
     breaks:
       "`js::class::<Component>()` is `Component.new`, no function, not the constructor `Component` (ADR 0761)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    js::ExprKind::Member(class, _) => *class,\n",
     replace:
       "                    js::ExprKind::Member(class, name) => Expr::member(*class, name),\n",
@@ -145,7 +145,7 @@ export const mutations: Mutation[] = [
     name: "any-of-of-a-known-type",
     breaks:
       "`js::any_of(5u32)` compiles, a second conversion of a value that's always there beside `js::unknown_of` (ADR 0909)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            && !ty::TypeVisitableExt::has_param(&generic_args.type_at(0))\n            && !self.nullish_as_it_is(generic_args.type_at(0))\n",
     replace: "            && false\n",
     tests: [
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     name: "binding-class-refused",
     breaks:
       "`js::class::<AbortController>()` of a binding's class is refused, as before, so React's `AbortControllerLocal` can't keep the host's class (ADR 0911)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    (None, Some(class)) => self.js_ref(&class),\n",
     replace:
       '                    (None, Some(_)) => return Err(self.unsupported(span, "a binding\'s class")),\n',
@@ -172,7 +172,7 @@ export const mutations: Mutation[] = [
     name: "js-throw-made-an-error",
     breaks:
       "`js::throw(value)` throws `new Error(value)`, an `Error` made of it, not the value itself, so a thenable React's Suspense waits on is lost",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                out.push(StmtKind::Throw(this).at(self.js_span(span)));\n",
     replace:
       '                out.push(StmtKind::Throw(Expr::new_(Expr::global("Error"), vec![this])).at(self.js_span(span)));\n',
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
     name: "js-throw-unthrown",
     breaks:
       "`js::throw(value)` throws nothing, so the function goes on past it, its value `undefined`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            (JsForm::Throw, Some(this)) if args.is_empty() => {\n                out.push(StmtKind::Throw(this).at(self.js_span(span)));\n",
     replace:
       "            (JsForm::Throw, Some(this)) if args.is_empty() => {\n                out.push(StmtKind::Expr(this).at(self.js_span(span)));\n",
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     name: "strict-equals-loose",
     breaks:
       '`js::strict_equals(a, b)` is `a == b`, so a `null` is an `undefined` and `1` is `"1"`, where JS\'s `===` says neither is',
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            (JsForm::StrictEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::Eq, this, args.remove(0)),\n",
     replace:
       "            (JsForm::StrictEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::LooseEq, this, args.remove(0)),\n",
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
     name: "static-getter-call-unsupported",
     breaks:
       "a call of a `get X.y` binding without a receiver, a class's static property, is rejected",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            (JsForm::Get(name), None) if args.is_empty() => match super::bindings::runs_nothing(self.tcx, def_id) {",
     replace:
       "            (JsForm::Get(name), None) if false => match super::bindings::runs_nothing(self.tcx, def_id) {",
@@ -220,7 +220,7 @@ export const mutations: Mutation[] = [
     name: "named-key-indexed",
     breaks:
       '`js::set(value, "name", ..)` is `value["name"]`, where a person writes `value.name`',
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            Expr::member(this, name.clone())",
     replace: "            Expr::index(this, key.clone())",
     tests: ["test/lowering-bindings.test.ts", "-t", "unknown JS value"],
@@ -229,7 +229,7 @@ export const mutations: Mutation[] = [
     name: "variadic-of-no-slice",
     breaks:
       "a variadic binding whose last parameter isn't a slice spreads it anyway, `Math.max(1, ...2)`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            if !last.is_some_and(collection) && !tuple && !rest && !object {\n",
     replace: "            if false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "variadic binding of no slice"],
@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-reversed",
     breaks: "`js::has(value, key)` asks `value in key`, not `key in value`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "Expr::bin(Op::In, args.remove(0), this)",
     replace: "Expr::bin(Op::In, this, args.remove(0))",
     tests: ["test/builtins-crate.test.ts", "-t", "string functions are JS's"],
@@ -245,7 +245,7 @@ export const mutations: Mutation[] = [
   {
     name: "truthy-once",
     breaks: "`js::truthy(value)` is `!value`, whether it's falsy",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, this))",
     replace: "Expr::unary(UnaryOp::Not, this)",
     tests: ["test/bindings.test.ts", "-t", "tested as JS tests it"],
@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
     name: "global-call-on-window",
     breaks:
       "a global function binding, `global::fetch(url)`, is called as `window.fetch(url)`, which a worker or Node has no `window` for",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            (JsForm::Call(name), None) => Expr::call(self.binding_ref(&name, named).or_at(fun_span), args),",
     replace:
       '            (JsForm::Call(name), None) => Expr::call(self.binding_ref(&format!("window.{name}"), named).or_at(fun_span), args),',
@@ -268,7 +268,7 @@ export const mutations: Mutation[] = [
     name: "new-binding-called",
     breaks:
       "a constructor binding, `weak_map::new()`, is called without `new`, `WeakMap()`, which throws",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            (JsForm::New(name), None) => Expr::new_(self.js_ref(&name).or_at(fun_span), args),",
     replace:
       "            (JsForm::New(name), None) => Expr::call(self.js_ref(&name).or_at(fun_span), args),",
@@ -282,7 +282,7 @@ export const mutations: Mutation[] = [
     name: "set-index-swapped",
     breaks:
       "a `set []` binding, `a.set_index(1, 4.0)`, assigns its key at its value, `a[4] = 1`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                let (key, value) = (args.remove(0), args.remove(0));",
     replace:
       "                let (value, key) = (args.remove(0), args.remove(0));",
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
     name: "setter-binding-called",
     breaks:
       'a setter binding, `history.set_scroll_restoration("auto")`, calls the property, `history.scrollRestoration("auto")`, instead of assigning it',
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                let value = args.remove(0);\n                // A setter may answer it, which may do anything, throw\n                // too: never a write that only makes a value (ADR 0660,\n                // amended).\n                let property = Expr::member(this, name).answered_by_a_setter();\n                out.push(StmtKind::Assign(property, value).at(self.js_span(span)));\n                Expr::js_undefined()\n",
     replace: "                Expr::call(Expr::member(this, name), args)\n",
     tests: [
@@ -309,7 +309,7 @@ export const mutations: Mutation[] = [
     name: "dict-get-of-options-plain",
     breaks:
       "a dictionary of Options is read `d[k]`, so a JSON `null` value reads as a missing key",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            (JsForm::GetIndex, Some(this)) if keyed_option => {",
     replace:
       "            (JsForm::GetIndex, Some(this)) if keyed_option && false => {",
@@ -319,7 +319,7 @@ export const mutations: Mutation[] = [
     name: "map-get-of-options-plain",
     breaks:
       "a JS `Map`'s `get` of an `Option` value is `map.get(key)`, so a key whose value is `None` reads as a key it lacks, `None` where Rust's is `Some(None)` (ADR 0884)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            (JsForm::Call(_), Some(this)) if keyed_option && super::bindings::reads_a_key(self.tcx, def_id) => {",
     replace:
       "            (JsForm::Call(_), Some(this)) if false && keyed_option && super::bindings::reads_a_key(self.tcx, def_id) => {",
@@ -334,7 +334,7 @@ export const mutations: Mutation[] = [
     name: "keyed-get-of-any-value",
     breaks:
       "every keyed read is told apart from a key it lacks, `$someGet(map, key)` of a `Map<K, u32>` too, and a `Dict`'s own key alone, `$dictGet`, so an inherited key, `toString`, reads `None` where JS's `d[k]` reads it (ADRs 0225, 0884)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "        let keyed_option = args.len() == 1 && self.gives_boxed_option(def_id, generic_args);",
     replace: "        let keyed_option = args.len() == 1;",
     tests: ["test/corpus.test.ts", "-t", "map_option_values"],
@@ -344,7 +344,7 @@ export const mutations: Mutation[] = [
     name: "skips-falsy-ternary",
     breaks:
       "a binding that skips what's falsy is given `test ? value : undefined`, where react.dev writes `test && value`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "        if super::bindings::skips_falsy(self.tcx, def_id) {",
     replace: "        if false {",
     tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
@@ -353,7 +353,7 @@ export const mutations: Mutation[] = [
     name: "skips-falsy-test-kept",
     breaks:
       'what skips what\'s falsy is given a test that keeps its `!!`, `(!!error || ready) && "b"`',
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    *arg = Expr::bin(Op::And, test.tested(), value.clone());\n",
     replace: "                    *arg = Expr::bin(Op::And, test.clone(), value.clone());\n",
     tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
@@ -362,7 +362,7 @@ export const mutations: Mutation[] = [
     name: "binding-undefined-left-out",
     breaks:
       "`Math.max(1, None::<f64>)`, of a parameter of any value, is `Math.max(1)`, `1` where it's `NaN`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "        given_to_js_but(&mut args, optional);\n",
     replace: "        let _ = optional;\n",
     tests: ["test/runtime-package.test.ts", "-t", "undefined given to JS"],
@@ -371,7 +371,7 @@ export const mutations: Mutation[] = [
     name: "static-setter-refused",
     breaks:
       "`set process.exitCode`, a global's property, is refused as a binding without a receiver",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                if args.len() == 1 && name.rsplit('#').next().is_some_and(super::bindings::has_steps) =>",
     replace: "                if false =>",
     tests: ["test/lowering-bindings.test.ts", "-t", "sets a static property"],
@@ -379,7 +379,7 @@ export const mutations: Mutation[] = [
   {
     name: "variadic-tuple-refused",
     breaks: "a variadic binding's tuple, an event's arguments, is refused",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            if !last.is_some_and(collection) && !tuple && !rest && !object {",
     replace:
       "            if !last.is_some_and(collection) && !rest && !object {",
@@ -389,7 +389,7 @@ export const mutations: Mutation[] = [
     name: "static-setter-of-import-refused",
     breaks:
       "`set events#EventEmitter.defaultMaxListeners`, an import's property, is refused, where JS assigns it",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                if args.len() == 1 && name.rsplit('#').next().is_some_and(super::bindings::has_steps) =>",
     replace:
       "                if args.len() == 1 && !name.contains('#') && name.contains('.') =>",
@@ -399,7 +399,7 @@ export const mutations: Mutation[] = [
     name: "dynamic-import-default-named",
     breaks:
       "a module's default export is imported by its function's name, so `import_module!` refuses it",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            let export = super::default_exports::exported_as(tcx, id, info.exported());\n",
     replace: "            let export = info.name.clone();\n",
     tests: ["test/bindings.test.ts", "-t", "js::import! loads a module"],
@@ -408,7 +408,7 @@ export const mutations: Mutation[] = [
     name: "binding-falsy-temporary-unsaid",
     breaks:
       "a temporary a function that skips what's falsy is given, from MIR, stays `test ? value : undefined`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    self.note_falsy(name);\n",
     replace: "",
     tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
@@ -417,8 +417,8 @@ export const mutations: Mutation[] = [
     name: "extern-fn-called-accepted",
     breaks:
       "another crate's function in an `extern` block is called as a binding, a second form (ADR 0373)",
-    file: "src/lower/binding_calls.rs",
-    find: "        if self.tcx.is_foreign_item(def_id) {\n            let refused = super::bindings::extern_fn_refused(self.tcx, def_id);\n            return Err(crate::lower::refusal::error(self.tcx, span, refused));\n        }\n",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
+    find: "        if self.tcx.is_foreign_item(def_id) {\n            let refused = super::bindings::extern_fn_refused(self.tcx, def_id);\n            return Err(crate::refusal::error(self.tcx, span, refused));\n        }\n",
     replace: "",
     tests: [
       "test/diagnostics.test.ts",
@@ -430,7 +430,7 @@ export const mutations: Mutation[] = [
     name: "binding-trailing-none-given",
     breaks:
       'a binding\'s trailing `None` of an optional parameter is written, `addRule("p", undefined, undefined)`',
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                && (is_optional_param(self.tcx, def_id, i + offset)\n",
     replace: "                && (false\n",
     tests: ["test/none-given.test.ts", "-t", "a WebIDL operation's trailing None"],
@@ -439,7 +439,7 @@ export const mutations: Mutation[] = [
     name: "rest-of-a-vec-refused",
     breaks:
       "a rest parameter given a `Vec` to spread, `max(&values)`, is refused",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                ty.is_slice() || self.is_std_type(ty, StdItem::Vec)\n",
     replace: "                ty.is_slice()\n",
     tests: [
@@ -452,7 +452,7 @@ export const mutations: Mutation[] = [
     name: "rest-declared-slice-accepted",
     breaks:
       "a variadic binding's slice declared, ADR 0221's old form, is accepted beside `impl js::Rest<T>`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            if declared.is_some_and(collection) {\n",
     replace: "            if false {\n",
     tests: [
@@ -465,7 +465,7 @@ export const mutations: Mutation[] = [
     name: "text-empty-last",
     breaks:
       '`concat_text(value)` is `value + ""`, not `"" + value` as React writes it',
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: 'Expr::bin(Op::Add, Expr::str(""), this)',
     replace: 'Expr::bin(Op::Add, this, Expr::str(""))',
     tests: ["test/bindings-any-values.test.ts", "-t", "concat_text of any value"],
@@ -474,7 +474,7 @@ export const mutations: Mutation[] = [
     name: "rest-of-none-keeps-none",
     breaks:
       "a `None` before a rest of none, `console::time_log(None, ())`, is `console.timeLog(undefined)`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                && (is_optional_param(self.tcx, def_id, i + offset)\n",
     replace: "                && (!is_variadic(self.tcx, def_id) && is_optional_param(self.tcx, def_id, i + offset)\n",
     tests: [
@@ -487,7 +487,7 @@ export const mutations: Mutation[] = [
     name: "rest-value-refused-by-a-call",
     breaks:
       "a variadic binding given rest arguments as a value, `console::warn(&(name,) as &dyn Rest<..>)`, is refused",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            let rest = last.is_some_and(|ty| is_rest_value(self.tcx, ty));\n",
     replace: "            let rest = false;\n",
     tests: ["test/js-object.test.ts", "-t", "console is a value"],
@@ -496,7 +496,7 @@ export const mutations: Mutation[] = [
     name: "rest-imported",
     breaks:
       "a function whose last parameter is `#[rust_js::rest]` is imported by `js::import!`, which its holder calls with the slice whole",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "        if self.takes_rest(id) {\n",
     replace: "        if false {\n",
     tests: ["test/rest-parameters.test.ts", "-t", "refused: imported"],
@@ -505,7 +505,7 @@ export const mutations: Mutation[] = [
     name: "getters-unseen",
     breaks:
       "a binding's read of a property isn't known for one a getter may be, so a chain reads `request.url` in its test and again for its binding",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "keyed(this, args.remove(0)).answered_by_a_getter(),",
     replace: "keyed(this, args.remove(0)),",
     tests: [
@@ -518,7 +518,7 @@ export const mutations: Mutation[] = [
     name: "get-getter-unseen",
     breaks:
       "a `get x` binding's read isn't said to be one a getter may answer, so a let chain reads it twice",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    false => Expr::member(this, name).answered_by_a_getter(),\n",
     replace: "                    false => Expr::member(this, name),\n",
     tests: [
@@ -530,7 +530,7 @@ export const mutations: Mutation[] = [
   {
     name: "js-new-this-called",
     breaks: "`js::new(f, ..)` is `f(..)`, a call, not `new f(..)`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            (JsForm::NewThis, Some(this)) => Expr::new_(this, args),\n",
     replace:
       "            (JsForm::NewThis, Some(this)) => Expr::call(this, args),\n",
@@ -543,7 +543,7 @@ export const mutations: Mutation[] = [
   {
     name: "js-delete-read",
     breaks: "`js::delete(o, key)` is `o[key]`, a read, not `delete o[key]`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                Expr::unary(UnaryOp::Delete, keyed(this, args.remove(0)))\n",
     replace: "                keyed(this, args.remove(0))\n",
     tests: ["test/js-object.test.ts", "-t", "delete is JS's operator"],
@@ -552,7 +552,7 @@ export const mutations: Mutation[] = [
     name: "rest-typed-array-refused",
     breaks:
       "a typed array given as rest arguments isn't spread but refused: `String.fromCharCode(...bytes)` doesn't compile",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            let object = last.is_some_and(|ty| self.is_js_object(ty.peel_refs()));\n",
     replace: "            let object = false;\n",
     tests: [
@@ -565,7 +565,7 @@ export const mutations: Mutation[] = [
     name: "binding-method-not-a-getter",
     breaks:
       "a binding's method of a JS value isn't said to be one a getter may answer, so a call's value is read past it",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    true => method.answered_by_a_getter(),\n",
     replace: "                    true => method,\n",
     tests: [
@@ -578,7 +578,7 @@ export const mutations: Mutation[] = [
     name: "typed-receiver-method-a-getters",
     breaks:
       "a binding's method of a declared type, webapi's Element, is taken for one a getter may answer, so DOM calls hold their arguments",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            |ty| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if super::declarations::any_shape(tcx, adt.did())),",
     replace: "            |_| true,",
     tests: ["test/snapshots.test.ts", "-t", "^counter"],
@@ -587,7 +587,7 @@ export const mutations: Mutation[] = [
     name: "new-of-a-method-the-global-class",
     breaks:
       "`window.new_error_event(..)` constructs the global `ErrorEvent`, `new ErrorEvent(..)`, not the window's, which a jsdom window that isn't the global object holds apart (ADR 0891)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                let class = name.split('.').fold(this, Expr::member);\n",
     replace:
       "                let class = { drop(this); self.js_ref(&name) };\n",
@@ -601,7 +601,7 @@ export const mutations: Mutation[] = [
     name: "binding-call-runs-nothing-unmarked",
     breaks:
       "a weak set's `has(fiber)` isn't marked as running none of the program's code, so a copy of a module's variable read past it is kept, `const failedBoundaries$1 = failedBoundaries;` (ADR 0277, amended)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    true => value.runs_nothing(),\n",
     replace: "                    true => value,\n",
     tests: [
@@ -614,7 +614,7 @@ export const mutations: Mutation[] = [
     name: "every-binding-call-runs-nothing",
     breaks:
       "a binding's call that may run the program's code, `before.call()`, is taken to run none, so a copy of a module's variable read past it is the variable, which the callback set (ADR 0277, amended)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                match (self.krate.cell_borrows).lowered_call_runs_nothing(\n                    &self.recognition(),\n                    (def_id, generic_args),\n                    call,\n                ) {\n",
     replace: "                match { let _ = call; true } {\n",
     tests: [
@@ -627,7 +627,7 @@ export const mutations: Mutation[] = [
     name: "js-null-written-undefined",
     breaks:
       "`js::null()` is `undefined`, as any `None`, so a fiber made `memoized_state: Cell::new(js::null())` has no `memoizedState` (ADR 0935, amended)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            (JsForm::Null, None) if args.is_empty() => Expr::null(),\n",
     replace:
       "            (JsForm::Null, None) if args.is_empty() => Expr::js_undefined(),\n",
@@ -641,7 +641,7 @@ export const mutations: Mutation[] = [
     name: "binding-function-value-an-arrow",
     breaks:
       'a binding\'s function given to `function::bind` or `function::name` is an arrow of it, `((label, ..) => console.timeStamp(label, ..)).bind(..)`, whose name is "" (ADR 0907, amended)',
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                *arg = self.binding_fn_pointer(f, f_args.skip_binder(), (span, false), span)?;\n",
     replace: "                let _ = self.binding_fn_pointer(f, f_args.skip_binder(), (span, false), span)?;\n",
     tests: [
@@ -654,7 +654,7 @@ export const mutations: Mutation[] = [
     name: "any-function-value-itself",
     breaks:
       "a function of the crate's given to `function::name` is taken for a binding's, its arrow made of its call, `add.name` lost (ADR 0907, amended)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            if is_binding(tcx, f) {\n",
     replace: "            if true {\n",
     tests: [
@@ -667,7 +667,7 @@ export const mutations: Mutation[] = [
     name: "callback-binding-function-itself",
     breaks:
       "a binding's function given as a binding's callback is the function itself, `then(parseFloat)`, which JS may give more than Rust does (ADR 0907, amended)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "    of_any_shape.then(\n",
     replace: "    true.then(\n",
     tests: [
@@ -680,7 +680,7 @@ export const mutations: Mutation[] = [
     name: "bound-method-an-arrow",
     breaks:
       "`function::bind` of a binding's method, its receiver bound first and its `this` the same, is an arrow of it bound, `((self, ..) => self.measure(..)).bind(performance, performance, ..)`, not React's `performance.measure.bind(performance, ..)`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                && js::same_path(this_arg, receiver)\n",
     replace: "                && false\n",
     tests: [
@@ -693,7 +693,7 @@ export const mutations: Mutation[] = [
     name: "bound-none-left-out-of-a-part",
     breaks:
       "a trailing `None` bound where parameters are left to the call is left out, so what the call gives next is taken for it, `console.timeStamp.bind(console, label)`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            if first + args.len() - 1 == params {\n",
     replace: "            if true {\n",
     tests: [
@@ -706,7 +706,7 @@ export const mutations: Mutation[] = [
     name: "bound-none-kept",
     breaks:
       "a trailing `None` bound where each parameter is bound stays, `performance.measure.bind(performance, name, options, undefined)`, not as its call leaves it out",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    || bound.is_some_and(|(f, first)| i > 0 && is_optional_param(self.tcx, f, first + i - 1)))\n",
     replace: "                    || bound.is_some_and(|_: (DefId, usize)| false))\n",
     tests: [
@@ -719,7 +719,7 @@ export const mutations: Mutation[] = [
     name: "with-this-this-a-variable",
     breaks:
       "a `with_this` closure's `this` stays the variable it's named, which no one declares, not JS's `this`, a `ReferenceError` (ADR 0972)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                } else if js::read_as_this_of(&mut body, &this) {\n",
     replace: "                } else if false {\n",
     tests: ["test/js-functions.test.ts", "-t", "is what it's called on"],
@@ -728,7 +728,7 @@ export const mutations: Mutation[] = [
     name: "with-this-set-this-in-place",
     breaks:
       "a `with_this` closure that sets its `this` assigns JS's, `this = undefined`, a `SyntaxError`, not a `let` of its own (ADR 0972)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                if js::Writes::of(&body).may_replace(&this) {\n",
     replace: "                if false {\n",
     tests: ["test/js-functions.test.ts", "-t", "sets its `this`"],
@@ -737,7 +737,7 @@ export const mutations: Mutation[] = [
     name: "with-this-tuple-no-parameters",
     breaks:
       "a `with_this` closure's tuple isn't the function's parameters, so `function () { .. a + b .. }` reads names no one declares (ADR 0972)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "        let tuple = (params.len() > 1).then(|| params.remove(1));\n",
     replace:
       "        let tuple = (params.len() > 1).then(|| params.remove(1)).filter(|_| false);\n",
@@ -747,7 +747,7 @@ export const mutations: Mutation[] = [
     name: "with-this-item-left-out-dropped",
     breaks:
       "an item a `with_this` closure's tuple leaves out, `(_, b)`, is no parameter, so `function (b)` takes the first argument for the second (a wrong answer, ADR 0972)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                for item in items {\n                    own.push(match item {\n                        Some(pattern) => pattern,\n                        None => js::Pattern::Name(self.fresh(Role::Unread)),\n                    });\n                }\n",
     replace: "                own.extend(items.into_iter().flatten());\n",
     tests: ["test/js-functions.test.ts", "-t", "sets its `this`"],
@@ -756,7 +756,7 @@ export const mutations: Mutation[] = [
     name: "with-this-tuple-whole-unread",
     breaks:
       "a `with_this` closure that reads its tuple whole reads a name no one declares, not `const pair = [pair$1, pair$2];` (ADR 0972)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                body.insert(0, StmtKind::Const(tuple, whole).at(js::Span::NONE));\n",
     replace: "                let _ = (tuple, whole);\n",
     tests: ["test/js-functions.test.ts", "-t", "sets its `this`"],
@@ -765,7 +765,7 @@ export const mutations: Mutation[] = [
     name: "with-this-of-a-variable-an-arrow",
     breaks:
       "`js::function::with_this` of what isn't a closure written in its call compiles nothing that says so (ADR 0972)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "        let js::ExprKind::Arrow(mut params, mut body) = closure.kind else {\n",
     replace:
       "        let js::ExprKind::Arrow(mut params, mut body) = closure.kind else {\n            return Ok(Expr::js_undefined());\n",
@@ -779,7 +779,7 @@ export const mutations: Mutation[] = [
     name: "with-this-rest-one-value",
     breaks:
       "Scheduler's wrapCallback, `function::with_this` of rest arguments, is `function (args) { return callback.apply(this, args); }`, given a JS caller's first argument alone, and a Rust call's spread ones the same",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "        let gathers = (items.last()).is_some_and(|&ty| super::bindings::is_rest_value(self.tcx, ty));\n",
     replace:
       "        let gathers = (items.last()).is_some_and(|&ty| super::bindings::is_rest_value(self.tcx, ty)) && false;\n",
@@ -789,7 +789,7 @@ export const mutations: Mutation[] = [
     name: "loose-equals-strict",
     breaks:
       '`js::loose_equals(typed, value)` is `typed === value`, so ReactDOMInput\'s `"0.0"` typed where the value is `0` is clobbered (a wrong answer, ADR 1012)',
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                Expr::bin(Op::LooseEq, this, args.remove(0)).answered_by_a_getter()\n",
     replace: "                Expr::bin(Op::Eq, this, args.remove(0)).answered_by_a_getter()\n",
     tests: ["test/js-any-values.test.ts", "-t", "loose_equals"],
@@ -798,7 +798,7 @@ export const mutations: Mutation[] = [
     name: "receiver-iteration-unmarked",
     breaks:
       "a `Set`'s `values()` isn't marked its own iteration, so its collect is `Array.from(set.values())`, not upstream's `Array.from(set)` (bw8)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            js::ExprKind::Call(..) if super::bindings::iterates_receiver(self.tcx, def_id) => value.receiver_iterated(),\n",
     replace: "",
     tests: ["test/js-collections.test.ts", "-t", "own iteration collected"],
@@ -807,7 +807,7 @@ export const mutations: Mutation[] = [
     name: "or-other-unspilled",
     breaks:
       "`js::or(a, counted())` is `a || globalThis.counted()`, which skips the call Rust makes where `a` is truthy (rd181)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                if other.has_effects() {\n                    if this.has_effects() {",
     replace:
       "                if false {\n                    if this.has_effects() {",
@@ -817,7 +817,7 @@ export const mutations: Mutation[] = [
     name: "runs-nothing-read-a-getter",
     breaks:
       "a read that runs nothing, `HTMLElement.prototype`, is one a getter may answer, so `element.focus || HTMLElement.prototype.focus` holds its right side first (rd181)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    true => Expr::member(this, name),\n",
     replace:
       "                    true => Expr::member(this, name).answered_by_a_getter(),\n",
@@ -827,7 +827,7 @@ export const mutations: Mutation[] = [
     name: "static-call-given-itself",
     breaks:
       "a class's static called on it is given its own binding first, `localPromise.resolve(Promise.resolve, null)` (rd235)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    return Err(self.unsupported(span, what));\n                };\n                args.remove(0);\n",
     replace:
       "                    return Err(self.unsupported(span, what));\n                };\n",
@@ -841,7 +841,7 @@ export const mutations: Mutation[] = [
     name: "global-set-quoted-refused",
     breaks:
       "`set window['$RT']` is refused as a write of no property, where it writes the global's quoted key",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "name.rsplit('#').next().is_some_and(super::bindings::has_steps)",
     replace:
       "name.rsplit('#').next().is_some_and(|member| member.contains('.'))",
@@ -851,7 +851,7 @@ export const mutations: Mutation[] = [
     name: "to-number-of-number",
     breaks:
       "`js::to_number(width)` is `Number(width)`, which makes `1` of `1n`, where react-art's `+width` throws",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                self.js_conversion(def_id, generic_args, Expr::unary(UnaryOp::Plus, this))\n",
     replace: "                self.js_conversion(def_id, generic_args, Expr::call(Expr::global(\"Number\"), vec![this]))\n",
     tests: ["test/js-any-values.test.ts", "-t", "to_number is JS's unary"],
@@ -860,7 +860,7 @@ export const mutations: Mutation[] = [
     name: "subtract-of-number",
     breaks:
       "`js::subtract(length, 1.0)` is `+length - 1`, whose TypeError of a BigInt says it can't be made a number, where `length - 1`'s says it can't be mixed with one (rd564)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                self.js_conversion(def_id, generic_args, Expr::bin(Op::Sub, this, args.remove(0)))\n",
     replace:
       "                self.js_conversion(def_id, generic_args, Expr::bin(Op::Sub, Expr::unary(UnaryOp::Plus, this), args.remove(0)))\n",
@@ -870,7 +870,7 @@ export const mutations: Mutation[] = [
     name: "indexed-list-iterator-unsaid",
     breaks:
       "`Iterator.from(list)` of a `NodeList` isn't said to step an array's items, and its `for` stays a `for…of`, not upstream's index loop (ADR 1042)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            Some(_) if self.of_indexed_list(def_id, generic_args) => {\n",
     replace: "            Some(_) if false => {\n",
     tests: ["test/lowering-index-loops.test.ts", "-t", "NodeList's items is an index loop"],
@@ -878,7 +878,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-prototype-replaced-allowed",
     breaks: "a class's prototype with methods replaced at load compiles, its methods assigned to the prototype it replaces, `chunk.then` undefined (#448)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                if name == \"prototype\"\n                    && let Some(adt) =\n                        (super::classes::with_prototype_members",
     replace: "                if false\n                    && let Some(adt) =\n                        (super::classes::with_prototype_members",
     tests: ["test/classes.test.ts", "-t", "replaced at load"],
@@ -886,7 +886,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-prototype-replaced-where-a-function-runs",
     breaks: "a class's prototype replaced where a function runs compiles, after its methods were assigned, dropping them (#448)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    if !(self.frame.owner == self.item && super::bindings::is_on_load(self.tcx, self.item)) {\n",
     replace: "                    if false {\n",
     tests: ["test/classes.test.ts", "-t", "prototype replaced"],
@@ -895,7 +895,7 @@ export const mutations: Mutation[] = [
     name: "class-typed-of-a-crate-struct",
     breaks:
       "a `#[rust_js::class]` struct's `Classed` of a signature is taken, so `js::new` of it is given what its constructor needn't take (ADR 1049)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    (Some(_), _) if self.typed_class_given(def_id, generic_args) => {\n",
     replace: "                    (Some(_), _) if false && self.typed_class_given(def_id, generic_args) => {\n",
     tests: ["test/classes.test.ts", "-t", "what a class is refused says what to write"],
@@ -904,7 +904,7 @@ export const mutations: Mutation[] = [
     name: "in-answers-nothing",
     breaks:
       "`js::has(m, \"default\")`'s `\"default\" in m` is taken to do nothing, so nothing reading it, it goes, and `catch_unwind` of it is never `Err` where `m` is `undefined` (#462, P0)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                Expr::bin(Op::In, args.remove(0), this).answered_by_a_getter()\n",
     replace: "                Expr::bin(Op::In, args.remove(0), this)\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a caught value nothing reads that may throw"],
@@ -912,7 +912,7 @@ export const mutations: Mutation[] = [
   {
     name: "loose-equals-answers-nothing",
     breaks: "`js::loose_equals(m, 1.0)`'s `m == 1` is taken to do nothing, so an object's `valueOf` that throws, unread, never runs (#462)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                Expr::bin(Op::LooseEq, this, args.remove(0)).answered_by_a_getter()\n",
     replace: "                Expr::bin(Op::LooseEq, this, args.remove(0))\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a caught value nothing reads that may throw"],
@@ -920,7 +920,7 @@ export const mutations: Mutation[] = [
   {
     name: "instance-of-given-answers-nothing",
     breaks: "`js::instance_of(m, c)`'s `m instanceof c` is taken to do nothing, so its throw of a `c` that's no function, unread, never happens (#462)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                Expr::bin(Op::InstanceOf, this, args.remove(0)).answered_by_a_getter()\n",
     replace: "                Expr::bin(Op::InstanceOf, this, args.remove(0))\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a caught value nothing reads that may throw"],
@@ -928,7 +928,7 @@ export const mutations: Mutation[] = [
   {
     name: "conversion-of-any-answers-nothing",
     breaks: "`js::to_number(m).unwrap()`'s `+m` of any value is taken to do nothing, so its throw of a symbol, unread, never happens (#462)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            true => converted.answered_by_a_getter(),\n            false => converted,\n",
     replace: "            true => converted,\n            false => converted,\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a caught value nothing reads that may throw"],
@@ -936,7 +936,7 @@ export const mutations: Mutation[] = [
   {
     name: "conversion-of-text-answers",
     breaks: "`js::to_number(s)` of text, which throws nothing, is taken to do something, so unread it stays, `const _n = +s;`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            true => converted.answered_by_a_getter(),\n            false => converted,\n",
     replace: "            true => converted.answered_by_a_getter(),\n            false => converted.answered_by_a_getter(),\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a caught value nothing reads that may throw"],
@@ -945,7 +945,7 @@ export const mutations: Mutation[] = [
     name: "any-of-of-nullish-refused",
     breaks:
       "`js::any_of(())` is refused, though no conversion takes a value that's `undefined` as it is (rd645)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            && !self.nullish_as_it_is(generic_args.type_at(0))\n",
     replace: "",
     tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
@@ -954,7 +954,7 @@ export const mutations: Mutation[] = [
     name: "method-call-unmarked",
     breaks:
       "`function::call` of a method read of its `this` stays `f.call`, `instance._applyProps.call(instance, instance, props)`, where upstream calls the method, `instance._applyProps(instance, props)` (rd334)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                let own = |at| self.frame.facts.method_calls.contains(&at);\n",
     replace: "                let own = |_| false;\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "function::call of js::method whose this is its value"],
@@ -963,7 +963,7 @@ export const mutations: Mutation[] = [
     name: "rest-function-itself-given-back",
     breaks:
       "a function of rest arguments given to `function::bind` is the function itself, whose bound function Rust calls with a slice: `offset.bind(null, by)([1, 2])` gives the rest one array (#540, ADR 0664, amended)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            } else if itself == Itself::Unreturned\n                && let Some(itself)",
     replace: "            } else if let Some(itself)",
     tests: ["test/rest-parameters.test.ts", "-t", "a function of rest arguments JS reads as a value is the function itself"],
@@ -971,7 +971,7 @@ export const mutations: Mutation[] = [
   {
     name: "es-class-prototype-replaced-allowed",
     breaks: "an ES class's prototype replaced compiles, `Plugin.prototype = ..`, which JS doesn't let be written: the load throws (rd682)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    && let Some(adt) = super::classes::es_classes(self.tcx).into_iter().find(|&adt| names(adt))\n",
     replace: "                    && let Some(adt) = super::classes::es_classes(self.tcx).into_iter().find(|_| false)\n",
     tests: ["test/es-classes.test.ts", "-t", "what an ES class is refused"],
@@ -980,7 +980,7 @@ export const mutations: Mutation[] = [
     name: "imported-getter-read-once",
     breaks:
       "`js::import!` of a getter gives its export's value, `m.version`, which a call of it, `v()`, then calls, a number, and throws (#581)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "        let value = match getter {\n",
     replace: "        let value = match false {\n",
     tests: ["test/bindings.test.ts", "-t", "js::import! of a getter reads its export"],
@@ -989,7 +989,7 @@ export const mutations: Mutation[] = [
     name: "imported-namespace-a-property",
     breaks:
       "`js::import!` of a namespace's getter, `get ./dialog.js#*`, reads the module's property `\"*\"`, `undefined`, not the module (#581)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                let export = match export == js::NAMESPACE {\n",
     replace: "                let export = match false {\n",
     tests: ["test/bindings.test.ts", "-t", "js::import! of a getter reads its export"],
@@ -997,7 +997,7 @@ export const mutations: Mutation[] = [
   {
     name: "es-class-prototype-read-unrecorded",
     breaks: "a read of an ES class's prototype, `js::class::<T>().prototype()`, isn't recorded, so `class(es, fields)` of it compiles, its fields declared over a setter it may define there of a field's name (#568)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    self.dependencies.borrow_mut().prototypes_read.insert(adt);\n",
     replace: "",
     tests: ["test/es-classes.test.ts", "-t", "fields that would change what it does are refused"],
@@ -1005,7 +1005,7 @@ export const mutations: Mutation[] = [
   {
     name: "this-binding-any",
     breaks: "a binding of its own `#[link_name = \"this\"]` given nothing reads the function's `this`, which no analysis of `js::this()` checks where it's read (rd683)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    && super::recognition::js_root_fn(self.tcx, def_id).is_some_and(|name| name.as_str() == \"this\") =>\n",
     replace: "                    && true =>\n",
     tests: ["test/this.test.ts", "-t", "refused"],
@@ -1013,7 +1013,7 @@ export const mutations: Mutation[] = [
   {
     name: "shown-number-unmarked-plain",
     breaks: "`js::shown(n)` of a number isn't marked text, so its template is `$shown(n)` (#1676)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    true => this.plain(),\n",
     replace: "                    true => this,\n",
     tests: ["test/bindings-any-values.test.ts", "-t", "js::shown"],
@@ -1022,15 +1022,15 @@ export const mutations: Mutation[] = [
     name: "method-call-by-a-shared-span",
     breaks:
       "a `function::call` of a `js::method` is taken as its method's own call where any THIR call at its span is, of two a macro's repetition writes there, so `a.focus()` is called of `a` where Rust gives `b` (#1671 change 3 M5)",
-    file: "src/lower/binding_calls.rs",
-    find: "                match crate::lower::body_queries::each_call_at(self.frame.thir, span, own) {\n",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
+    find: "                match crate::body_queries::each_call_at(self.frame.thir, span, own) {\n",
     replace: "                match self.frame.thir.exprs.iter_enumerated().any(|(at, e)| matches!(e.kind, rustc_middle::thir::ExprKind::Call { fn_span, .. } if fn_span == span) && own(at)) {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "a macro's repetition writes is asked of its own call"],
   },
   {
     name: "is-when-untested",
     breaks: "`js::Is::when` runs its test of any value, `year(2024)` of a number, where it tells first that it's a `T`, `typeof value === \"string\"` (#1828)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                Expr::bin(Op::And, is, Expr::call(test, vec![value]))\n",
     replace: "                Expr::call(test, vec![value])\n",
     tests: ["test/js-predicates.test.ts", "-t", "upstream's predicate"],
@@ -1039,7 +1039,7 @@ export const mutations: Mutation[] = [
     name: "global-getter-reads-differ",
     breaks:
       "a global's getter that runs nothing is taken for one a getter answers, so React's `function::bind(Performance::measure, Some(&performance()), (performance(), ..))` is `((self, ..) => self.measure(..)).bind(performance, performance, ..)`, not upstream's `performance.measure.bind(performance, ..)` (#1862)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                true => self.js_ref(&name).or_at(fun_span),\n",
     replace: "                true => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),\n",
     tests: ["test/webapi-globals.test.ts", "-t", "a global a host may lack"],
@@ -1047,7 +1047,7 @@ export const mutations: Mutation[] = [
   {
     name: "downcast-of-a-type-parameter-allowed",
     breaks: "`js::downcast::<T>` of a type parameter isn't refused as of one whose class JS doesn't know, its refusal another's",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                if super::generic_facts::is_type_parameter(ty) {\n",
     replace: "                if false && super::generic_facts::is_type_parameter(ty) {\n",
     tests: ["test/js-downcast.test.ts", "-t", "a type parameter is refused"],
@@ -1055,7 +1055,7 @@ export const mutations: Mutation[] = [
   {
     name: "downcast-value-read-twice",
     breaks: "`js::downcast` of a call reads it twice, `pick(elements) instanceof HTMLButtonElement ? pick(elements) : undefined`, its code run twice where Rust runs it once",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    false => self.spill(Role::Value, value, out),\n",
     replace: "                    false => value,\n",
     tests: ["test/js-downcast.test.ts", "-t", "the class's instance"],
@@ -1063,7 +1063,7 @@ export const mutations: Mutation[] = [
   {
     name: "downcast-unchecked",
     breaks: "`js::downcast` gives the value whatever it is, a `div` as a button, as TypeScript's cast does, where Rust's is `None`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                Expr::some_where(test, value)\n            }\n            // The value where it's an object or an array, as one value:\n",
     replace: "                {\n                    let _ = test;\n                    value\n                }\n            }\n            // The value where it's an object or an array, as one value:\n",
     tests: ["test/js-downcast.test.ts", "-t", "the class's instance"],
@@ -1072,7 +1072,7 @@ export const mutations: Mutation[] = [
     name: "trailing-none-given-undefined",
     breaks:
       "a binding's trailing `None` known only where the call runs is given `undefined`, `setFullYear(2026, undefined)`, NaN, where Rust's call leaves it out, `setFullYear(2026)` (#1842)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "        let laddered = !is_variadic(self.tcx, def_id)\n",
     replace: "        let laddered = false\n",
     tests: ["test/none-given.test.ts", "-t", "a binding's trailing None is no argument"],
@@ -1080,7 +1080,7 @@ export const mutations: Mutation[] = [
   {
     name: "undefined-is-absent-laddered",
     breaks: "a WebIDL operation's trailing `None` is a call of each count, `base != null ? new URL(url, base) : new URL(url)`, where WebIDL takes `undefined` as no argument (#1842)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            && !super::bindings::undefined_is_absent(self.tcx, def_id);\n",
     replace: "            && true;\n",
     tests: ["test/none-given.test.ts", "-t", "a WebIDL operation's trailing None"],
@@ -1088,7 +1088,7 @@ export const mutations: Mutation[] = [
   {
     name: "trailing-none-tested-undefined",
     breaks: "a trailing `Option` of one `None` is tested `!== undefined`, so JS's `null`, the `None` it is, is given, `setFullYear(2026, null)`, January (#1842, #1840)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            let test = Expr::bin(Op::LooseNe, inner[last].clone(), Expr::null());\n",
     replace: "            let test = Expr::bin(Op::Ne, inner[last].clone(), Expr::js_undefined());\n",
     tests: ["test/none-given.test.ts", "-t", "a binding's trailing None is no argument"],
@@ -1096,7 +1096,7 @@ export const mutations: Mutation[] = [
   {
     name: "trailing-some-never-undefined-tested",
     breaks: "a trailing `Some` whose value JS reads as never `undefined`, `Some(at - 1.0)`, is tested, `at - 1 != null ? text.lastIndexOf(\"/\", at - 1) : ..`, held apart (#1842)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                || ((!arg.may_be_undefined() || present.get(i).is_some_and(|p| p.present))\n",
     replace: "                || ((false)\n",
     tests: ["test/none-given.test.ts", "-t", "a binding's trailing None is no argument"],
@@ -1104,7 +1104,7 @@ export const mutations: Mutation[] = [
   {
     name: "trailing-argument-made-again",
     breaks: "a trailing argument of a ladder is made again in each test and call, `month() != null ? d.setFullYear(2026, month()) : ..`, which calls `month` twice (#1842)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            if !of.reads_same() && !super::calls::is_undefined(&of) {\n",
     replace: "            if false && !of.reads_same() && !super::calls::is_undefined(&of) {\n",
     tests: ["test/none-given.test.ts", "-t", "a binding's trailing None is no argument"],
@@ -1112,7 +1112,7 @@ export const mutations: Mutation[] = [
   {
     name: "any-shape-literal-none-left-out",
     breaks: "a literal `None` of an `Option<&Unknown>` is left out, `String()`, \"\", where `js::string(None)` is `String(undefined)`, \"undefined\" (#1868)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                && !(bound.is_none() && any_shape(i))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unknown_none_given_as_undefined.rs$"],
@@ -1120,7 +1120,7 @@ export const mutations: Mutation[] = [
   {
     name: "each-count-unbound-callee-held",
     breaks: "an unbound callee that reads the same, `(0, s.f)`, is held in a variable of its own, `const value = (0, s.f); value(..)`, where it's read in each branch (#1876)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            js::ExprKind::Unbound(ref of) if of.reads_same() => callee,\n",
     replace: "",
     tests: ["test/lowering-held-receivers.test.ts", "-t", "with_this function may be is still held"],
@@ -1128,7 +1128,7 @@ export const mutations: Mutation[] = [
   {
     name: "each-count-call-unplaced",
     breaks: "a call of each count is of no place in the source, so a comment before an argument, `/* preinitModuleScript */ href`, is before the statement (rd710, #1876)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "        if value.span.is_none() {\n            value.span = at;\n        }\n",
     replace: "        let _ = at;\n",
     tests: ["test/corpus.test.ts", "-t", "^call_argument_comments_across_lines.rs$"],
@@ -1137,7 +1137,7 @@ export const mutations: Mutation[] = [
   {
     name: "each-count-unsaid",
     breaks: "a call of each count says nothing of itself, so ADR 0610's forwarding function of a field the crate fills with its own functions stays a function, `function unlink(link, sub) { return sub != null ? .. }`, not upstream's `const { link, unlink } = createReactiveSystem(0)` (#1890)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            ladder.facts = ladder.facts.with(js::Known::EachCount);\n",
     replace: "",
     tests: ["test/forwarding-each-count.test.ts", "-t", "crate's own functions is that field"],
@@ -1145,7 +1145,7 @@ export const mutations: Mutation[] = [
   {
     name: "trailing-some-present-unasked",
     breaks: "a binding's trailing `Some` its writes make, `Some(view.byte_length())`, is tested where it's given, a call of each count, as MIR's `presence` isn't asked (#1842, #2178)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                || ((!arg.may_be_undefined() || present.get(i).is_some_and(|p| p.present))\n",
     replace: "                || ((!arg.may_be_undefined() || false)\n",
     tests: ["test/none-given.test.ts"],
@@ -1154,8 +1154,8 @@ export const mutations: Mutation[] = [
     name: "any-value-entries-nulled",
     breaks:
       "a map of any value's entries written where they're given write a `None` `null`, `new Map([[\"none\", null]])` (#443)",
-    file: "src/lower/binding_calls.rs",
-    find: "                    !self.boxed_payload(payload)\n                        && crate::lower::representation::none_form(\n                            self.tcx,\n                            crate::lower::representation::NonePlace::CollectionValue(payload),\n                        ) == crate::lower::representation::NoneForm::Null\n",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
+    find: "                    !self.boxed_payload(payload)\n                        && crate::representation::none_form(\n                            self.tcx,\n                            crate::representation::NonePlace::CollectionValue(payload),\n                        ) == crate::representation::NoneForm::Null\n",
     replace: "                    !self.boxed_payload(payload)\n",
     tests: [
       "test/js-collections.test.ts",
@@ -1167,7 +1167,7 @@ export const mutations: Mutation[] = [
     name: "nullable-any-given-its-pair",
     breaks:
       "a `Some(&frames)` given to a binding's `#[rust_js::nullable]` `Option<&dyn Any>`, webapi's `animate`'s, is the pair that downcasts it, `{value, impl}`, not `frames` (rd170)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::never_if(nulled))\n",
     replace: "                    .written(value, js::Undefined::never_if(nulled))\n",
     tests: [
@@ -1180,7 +1180,7 @@ export const mutations: Mutation[] = [
     name: "nullable-param-some-coalesced",
     breaks:
       "what's `null` or a value already given to a binding's nullable parameter, a nullable function's result or a nullable field's read, is `value ?? null`, `JSON.stringify(items, chosen(all) ?? null, 0)`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::never_if(nulled))\n",
     replace: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::ByForm)\n",
     // A nullable function's result and a nullable field's read, `null` or a
@@ -1192,10 +1192,10 @@ export const mutations: Mutation[] = [
     name: "unit-given-binding-array",
     breaks:
       "a `()` given a binding as any value is its tuple's `[]`, never `===` anything: `x === []` of `js::strict_equals(x, ())` (ADR 0775)",
-    file: "src/lower/binding_calls.rs",
-    find: "                    .unwrap_or(value)\n            }\n",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
+    find: ".unwrap_or(value)\n            }\n",
     replace:
-      "                    .unwrap_or(Expr::array(Vec::new()))\n            }\n",
+      ".unwrap_or(Expr::array(Vec::new()))\n            }\n",
     tests: ["test/corpus.test.ts", "-t", "^unit_given_to_js.rs$"],
     snapshots: true,
   },
@@ -1203,7 +1203,7 @@ export const mutations: Mutation[] = [
     name: "lazy-never-its-value",
     breaks:
       "`use_state(|| 0)` is `useState(() => 0)`, the closure, where it's `useState(0)`",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            () if named(bindings::lazy_params(tcx, def_id)) => self.lazy_value(value, ty),\n",
     replace:
       "            () if named(bindings::lazy_params(tcx, def_id)) => value,\n",
@@ -1213,7 +1213,7 @@ export const mutations: Mutation[] = [
     name: "lazy-call-its-value",
     breaks:
       "`use_state(|| load().len())` is `useState(load().length)`, which calls `load` every render",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    ] if !given.has_effects() => given.clone(),\n",
     replace: "                    ] => given.clone(),\n",
     tests: ["test/react.test.ts", "-t", "use_state's first state"],
@@ -1221,7 +1221,7 @@ export const mutations: Mutation[] = [
   {
     name: "lazy-item-never-its-value",
     breaks: "`use_state(String::new)` is `useState(() => \"\")`, the arrow std writes, where it's `useState(\"\")` (#1494)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            ty::FnDef(def_id, args) =>",
     replace: "            ty::FnDef(def_id, args) if false =>",
     tests: ["test/react.test.ts", "-t", "what its function item gives"],
@@ -1230,7 +1230,7 @@ export const mutations: Mutation[] = [
     name: "lazy-function-its-value",
     breaks:
       "state that's a function, `use_state(|| |n| n + 1)`, is `useState((n) => ..)`, which React calls for the state",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                if params.is_empty() && !self.is_callable(gives) && !self.is_unknown(gives) =>\n",
     replace:
       "                if params.is_empty() && !self.is_unknown(gives) =>\n",
@@ -1240,7 +1240,7 @@ export const mutations: Mutation[] = [
     name: "nullable-type-parameter-of-any",
     breaks:
       "a binding's nullable type parameter given an `Option` is given `undefined` for `None`, `createCursor(undefined)`, and any other value `?? null` (ADR 0586, amended)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "            () if let Some(payload) = self.option_of(ty)\n",
     replace: "            () if let Some(payload) = self.option_of(ty).xor(Some(ty))\n",
     tests: [
@@ -1253,15 +1253,15 @@ export const mutations: Mutation[] = [
     name: "nullable-entries-undefined",
     breaks:
       'entries written where they\'re given of a map of `Option` values keep `undefined` for `None`, `new Map([["none", undefined]])`, which `get` reads as a key it lacks (ADR 0884, amended)',
-    file: "src/lower/binding_calls.rs",
-    find: "            () if crate::lower::representation::none_form(\n                tcx,\n                crate::lower::representation::NonePlace::BindingEntries(def_id, i),\n",
-    replace: "            () if false && crate::lower::representation::none_form(\n                tcx,\n                crate::lower::representation::NonePlace::BindingEntries(def_id, i),\n",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
+    find: "            () if crate::representation::none_form(\n                tcx,\n                crate::representation::NonePlace::BindingEntries(def_id, i),\n",
+    replace: "            () if false && crate::representation::none_form(\n                tcx,\n                crate::representation::NonePlace::BindingEntries(def_id, i),\n",
     tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
   {
     name: "nullable-any-given-as-optional",
     breaks: "a nullable parameter's `Option<&dyn Any>` is given as an optional one's, `?.value`, its `None` `undefined` (#1581)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::never_if(nulled))\n",
     replace: "                    .written(self.any_given_to_js(value, ty, false), js::Undefined::never_if(nulled))\n",
     tests: [
@@ -1273,7 +1273,7 @@ export const mutations: Mutation[] = [
   {
     name: "any-none-made-null-unsaid",
     breaks: "a nullable parameter's `Option<&dyn Any>`, made `null` for `None` already, is written `?? null` again, which would make a `Some` of what's `undefined` `null` (#1581)",
-    file: "src/lower/binding_calls.rs",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                let nulled = nulled || self.any_none_made_null(ty);\n",
     replace: "                let nulled = nulled;\n",
     tests: [
@@ -1287,9 +1287,9 @@ export const mutations: Mutation[] = [
     name: "mir-jsx-shapeless",
     breaks:
       "a JSX call from MIR has no THIR call for its shape: props in the struct's order",
-    file: "src/lower/binding_calls.rs",
-    find: "        let call = crate::lower::body_queries::the_call_of_at(thir, def_id, fn_span)?;\n",
-    replace: "        let call = crate::lower::body_queries::the_call_of_at(thir, def_id, fn_span).filter(|_| false)?;\n",
+    file: "crates/rust-js-lower/src/binding_calls.rs",
+    find: "        let call = crate::body_queries::the_call_of_at(thir, def_id, fn_span)?;\n",
+    replace: "        let call = crate::body_queries::the_call_of_at(thir, def_id, fn_span).filter(|_| false)?;\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",

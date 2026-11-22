@@ -1,11 +1,11 @@
-// Mutations of src/lower/analysis/unwinding.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/analysis/unwinding.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "local-with-callback-assumed-nonthrowing",
     breaks: "a LocalKey with callback that panics is treated as an infallible destructor",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "                                    never.contains(&callback)\n",
     replace: "                                    true || never.contains(&callback)\n",
     tests: ["test/lowering-local-key-unwinding.test.ts", "-t", "callback that can panic"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "local-with-callback-proof-discarded",
     breaks: "a proved eager-key restore keeps duplicated cleanup instead of a finally",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "                                    never.contains(&callback)\n",
     replace: "                                    false && never.contains(&callback)\n",
     tests: ["test/lowering-local-key-unwinding.test.ts", "-t", "proved nonthrowing"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "local-with-generic-callback-unproved",
     breaks: "a generic destructor does not prove its instantiated LocalKey callback",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "                return self.never_unwinds(callback, args, walk)\n",
     replace: "                return false && self.never_unwinds(callback, args, walk)\n",
     tests: ["test/lowering-local-key-unwinding.test.ts", "-t", "generic LocalKey"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "assert-steps-on",
     breaks:
       "a function whose bound or divisor check may panic is taken for one that never unwinds, so a panic in it skips the drops of what its caller holds",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "            | TerminatorKind::Return\n",
     replace:
       "            | TerminatorKind::Return\n            | TerminatorKind::Assert { .. }\n",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     name: "user-display-shown-whole",
     breaks:
       "a `Display` of the crate's is taken for one that can't fail, so a function printing one that panics is taken for one that never unwinds",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "    ty.is_primitive() || ty.is_str() || recognition.is_lang_adt(ty, LangItem::String)\n",
     replace: "    let _ = (ty, recognition);\n    true\n",
     tests: ["test/corpus.test.ts", "-t", "^never_unwinding_calls.rs$"],
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
     name: "closure-never-candidate",
     breaks:
       "a closure is never one that never unwinds, so a collect of items with a destructor whose closure stage can't panic is `$collectDropping(v.values().map(f), drop)`, where `v.map(f)` would do (#701)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "            DefKind::Closure => !tcx.is_coroutine(id),\n",
     replace: "            DefKind::Closure => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_stages_that_never_unwind.rs$"],
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
   {
     name: "drop-never-steps-on",
     breaks: "a `Drop` that drops nothing is taken to may unwind, so a call of a function that gives a temporary on is wrapped in a `try` that only rethrows (#717)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "            TerminatorKind::Drop { .. } => dead.contains(&at),\n",
     replace: "            TerminatorKind::Drop { .. } => false,\n",
     snapshots: true,
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     name: "cell-set-of-copies-only",
     breaks:
       "a `Cell`'s set of an `Option` of a reference or of an `Rc` no count is kept of is one that may panic, so a guard that restores it drops after its `try` and in a `$cleanup` (#861)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "        _ if name == \"set\" && of_a_cell(tcx, callee) => args.types().all(|ty| !drops(ty)),\n",
     replace:
       "        _ if name == \"set\" && of_a_cell(tcx, callee) => args.types().all(|ty| !drops(ty) && ty.is_trivially_pure_clone_copy()),\n",
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
     name: "cell-set-of-what-drops",
     breaks:
       "a `Cell`'s set of a value whose old one has a destructor is taken for one that never panics, so a guard that restores it drops its old value in a `finally` that runs as a panic unwinds, where a panic of that drop must abort (#847, #861)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "        _ if name == \"set\" && of_a_cell(tcx, callee) => args.types().all(|ty| !drops(ty)),\n",
     replace: "        _ if name == \"set\" && of_a_cell(tcx, callee) => args.types().all(|ty| !drops(ty) || true),\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_restores_never_unwind.rs$"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     name: "cell-replace-may-panic",
     breaks:
       "a `Cell`'s replace, which drops nothing, is one that may panic, so a guard whose drop replaces a thread-local drops after its `try` and in a `$cleanup` (#861)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "        _ if name == \"replace\" && of_a_cell(tcx, callee) => true,\n",
     replace: "        _ if name == \"replace\" && of_a_cell(tcx, callee) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_restores_never_unwind.rs$"],
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
     name: "option-take-may-panic",
     breaks:
       "an `Option`'s take is one that may panic, so a guard whose drop restores what it takes, `CURRENT.set(self.0.take())`, drops after its `try` and in a `$cleanup` (#861)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "        _ if name == \"take\" && of_an_option(tcx, recognition, callee) => true,\n",
     replace: "        _ if name == \"take\" && of_an_option(tcx, recognition, callee) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_restores_never_unwind.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
     name: "instance-drops-may-panic",
     breaks:
       "a generic function judged for a use takes each drop of what's of its type parameters, given a value whose drop can't panic, for one that may, so a guard whose drop calls it drops after its `try` and in a `$cleanup` (#861)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "                (!(self.may_panic)(ty)).then_some(at)\n",
     replace: "                (!(self.may_panic)(ty) && false).then_some(at)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_judged_per_use.rs$"],
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
     name: "instance-calls-unresolved",
     breaks:
       "a generic function judged for a use takes each call of a trait's method, a closure's `call_mut` of one that can't panic, for one that may, so `Defer(|| DEPTH.set(previous))` drops after its `try` and in a `$cleanup` (#861)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "                ty::InstanceKind::Item(def) => self.never_unwinds(def, instance.args, walk),\n",
     replace: "                ty::InstanceKind::Item(def) => def == callee && self.never_unwinds(def, instance.args, walk),\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_judged_per_use.rs$"],
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
   {
     name: "quiet-writes-allowed",
     breaks: "a comparator that writes through a captured `&mut`, counting its calls, is quiet, so its sort is JS's and counts another number (#925)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "        .filter(|(_, mir, _)| writes_only_locals(mir))\n",
     replace: "",
     tests: ["test/docs.test.ts"],
@@ -137,7 +137,7 @@ export const mutations: Mutation[] = [
   {
     name: "quiet-prints-allowed",
     breaks: "a comparator that prints is quiet, so its sort is JS's and prints another sequence of comparisons (#925)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "    std_quiet(\n        (tcx, recognition),\n        (callee, args, nonzero_divisor(operands)),",
     replace: "    std_never_unwinds((tcx, recognition), (callee, args), drops)\n        || std_quiet(\n        (tcx, recognition),\n        (callee, args, nonzero_divisor(operands)),",
     tests: ["test/corpus.test.ts", "-t", "^sort_stable_seen.rs$"],
@@ -145,15 +145,15 @@ export const mutations: Mutation[] = [
   {
     name: "std-comparison-always-quiet",
     breaks: "std's order of what holds an order that counts, an `Option<Counted>`'s, is quiet, so its sort is JS's (#925)",
-    file: "src/lower/analysis/unwinding.rs",
-    find: "        return !crate::lower::ordering::order_may(recognition, ty, impl_seen) && !(gives_one && drops(ty));",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
+    find: "        return !crate::ordering::order_may(recognition, ty, impl_seen) && !(gives_one && drops(ty));",
     replace: "        return !(gives_one && drops(ty));",
     tests: ["test/corpus.test.ts", "-t", "^sort_stable_seen.rs$"],
   },
   {
     name: "yield-seen",
     breaks: "an async body that awaits is never quiet, its waiting taken for something seen, so its future dropped unawaited is refused though nothing it runs shows (#965)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "                TerminatorKind::Yield { .. } => true,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^future_size_unwinds.rs$"],
@@ -161,7 +161,7 @@ export const mutations: Mutation[] = [
   {
     name: "coroutine-drop-seen",
     breaks: "an async body's end where its future is dropped before it's done is taken for something seen, so no async body is quiet (#965)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "                | TerminatorKind::CoroutineDrop\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^future_sizes.rs$"],
@@ -169,7 +169,7 @@ export const mutations: Mutation[] = [
   {
     name: "get-context-seen",
     breaks: "an `.await`'s reading of its body's context is taken for something seen, so no body that awaits is quiet (#965)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "    if tcx.is_lang_item(callee, LangItem::GetContext) {\n        return Some(None);\n    }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^future_size_unwinds.rs$"],
@@ -177,7 +177,7 @@ export const mutations: Mutation[] = [
   {
     name: "parameters-future-awaited-seen",
     breaks: "an async fn that only awaits the future it's given, `async fn awaited(f: impl Future)`, is never quiet, whatever it's given (#965)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "                        Some(Some(awaited)) => awaited.has_param() || quiet_future(recognition, quiet, awaited),\n",
     replace: "                        Some(Some(awaited)) => quiet_future(recognition, quiet, awaited),\n",
     tests: ["test/corpus.test.ts", "-t", "^(future_sizes|future_held_where_nothing_shows).rs$"],
@@ -185,7 +185,7 @@ export const mutations: Mutation[] = [
   {
     name: "pin-views-seen",
     breaks: "a pin of a future and its `as_mut()` are taken for something seen, so a future held past another pinned ready future's await is refused (#965)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "        _ if own_is(LangItem::Pin) => matches!(\n",
     replace: "        _ if false && own_is(LangItem::Pin) => matches!(\n",
     tests: ["test/corpus.test.ts", "-t", "^future_held_where_nothing_shows.rs$"],
@@ -193,23 +193,23 @@ export const mutations: Mutation[] = [
   {
     name: "ready-made-seen",
     breaks: "`future::ready(v)` is taken for something seen, so a future held past `ready(3).await` is refused (#965)",
-    file: "src/lower/analysis/unwinding.rs",
-    find: "            Some(crate::lower::recognition::Std::Future(_))\n",
-    replace: "            Some(crate::lower::recognition::Std::Future(_)) if false\n",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
+    find: "            Some(crate::recognition::Std::Future(_))\n",
+    replace: "            Some(crate::recognition::Std::Future(_)) if false\n",
     tests: ["test/corpus.test.ts", "-t", "^future_held_where_nothing_shows.rs$"],
   },
   {
     name: "ready-awaited-seen",
     breaks: "an `.await` of a ready future is taken for something seen, so a future held past it is refused (#965)",
-    file: "src/lower/analysis/unwinding.rs",
-    find: "        _ => recognition.is_std_type(future, crate::lower::recognition::StdItem::FutureReady),\n",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
+    find: "        _ => recognition.is_std_type(future, crate::recognition::StdItem::FutureReady),\n",
     replace: "        _ => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^future_held_where_nothing_shows.rs$"],
   },
   {
     name: "quiet-drop-impl-seen",
     breaks: "a drop by a `Drop` that runs nothing seen, `impl Drop for Big { fn drop(&mut self) {} }`, or of an async body's own state, is taken for something seen, so a future of such a body dropped unawaited is refused (#965)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "                dead.extend(quiet_drops(tcx, mir, &quiet, &|ty| runs(ty, *id)));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^future_size_unwinds.rs$"],
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
   {
     name: "formatting-unwinding-unseen",
     breaks: "a writer's `write!` into its `Formatter` is taken to unwind where a panic may be caught, so every writer streams through the line and a `Vec` of a derived `Debug` is refused (#1496); as the corpus stands only how its JS reads changes, which its snapshot holds (#1453)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "                            || (unwinding == Unwinding::ButThroughWhatsShown && formats(tcx, callee))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^stopping_writers_where_a_panic_is_caught.rs$"],
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
   {
     name: "impossible-branch-taken-to-unwind",
     breaks: "an exhaustive `match`'s impossible branch, a derived `Debug`'s of an enum, is taken to unwind as it's shown, so a `Vec` of the enum in a `println!` of a crate that catches panics is refused (#1496); as the corpus stands only how its JS reads changes, which its snapshot holds (#1453)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "                let unreachable = unwinding == Unwinding::ButThroughWhatsShown;\n",
     replace: "                let unreachable = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^stopping_writers_where_a_panic_is_caught.rs$"],
@@ -235,7 +235,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-mir-calls-unfollowed",
     breaks: "a std function's calls aren't followed to what they resolve to, so one that runs the program's `PartialOrd` is taken never to unwind (#1666)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "            std_mir_never_unwinds(tcx, typing_env, (callee, callee_args), depth - 1)\n",
     replace: "            { let _ = (callee, callee_args); true }\n",
     tests: ["test/corpus.test.ts", "-t", "^range_(inclusive_)?is_empty_of_a_panicking_order_unwinds.rs$"],
@@ -243,7 +243,7 @@ export const mutations: Mutation[] = [
   {
     name: "never-unwinds-asked-each-way",
     breaks: "whether a generic function's drop never unwinds judges a function again for each way to it, so a chain of generic functions each calling the next twice is judged 2 to the power of its depth times, and forty deep never compiles (#1821's follow-up)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "        if let Some(&known) = walk.known.get(&(id, args)) {\n",
     replace: "        if let Some(&known) = walk.known.get(&(id, args)).filter(|_| false) {\n",
     tests: ["test/type-depth.test.ts", "-t", "each judged once"],
@@ -251,7 +251,7 @@ export const mutations: Mutation[] = [
   {
     name: "quiet-cell-write-unasked",
     breaks: "a guard's restore of a `RefCell` no borrow of which is checked, `ACTIVE.set(prev.clone())`, is taken to panic, so it drops in a `catch` and a `$cleanup`, not a `finally` (#1930)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "                || (self.quiet_cell)(callee, callee_args)\n",
     replace: "",
     tests: ["test/lowering-guard-restores.test.ts"],
@@ -259,7 +259,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-clone-may-unwind",
     breaks: "an `Rc`'s clone, `prev.clone()` of a guard's restore, is taken to panic (#1930)",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "                .is_some_and(|own| shared_pointer(tcx, recognition, own)) =>\n",
     replace: "                .is_some_and(|own| shared_pointer(tcx, recognition, own) && false) =>\n",
     tests: ["test/lowering-guard-restores.test.ts"],
@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-new-may-unwind",
     breaks: "`fmt::Arguments::new` is taken to may unwind, as any std call, so a `format_args!` of what can't unwind is guarded",
-    file: "src/lower/analysis/unwinding.rs",
+    file: "crates/rust-js-lower/src/analysis/unwinding.rs",
     find: "    let arguments = method_of == Some(MethodOf::Type(StdPath::FmtArguments));\n",
     replace: "    let arguments = false;\n",
     tests: ["test/lowering-unwinds.test.ts"],

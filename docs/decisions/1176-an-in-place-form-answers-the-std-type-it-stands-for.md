@@ -85,7 +85,7 @@ call the form's step instead of re-deciding from types.
 
 ## Amended: one owner names each form, and the net runs it both ways (2026-11-20, step 3's 1b and (d))
 
-**The owner.** `src/lower/iterators/in_place_forms.rs` names each form
+**The owner.** `crates/rust-js-lower/src/iterators/in_place_forms.rs` names each form
 lowering makes a std adapter or consumer as in place (`InPlaceForm`),
 the std types it stands for (as std_steps.txt names its rows), and
 where it's chosen (`Where`).
@@ -96,7 +96,7 @@ where it's chosen (`Where`).
 - `flattened_form` chooses between `$flatMap` and JS's `flatMap`.
 - adapters.rs emits what they answer, byte for byte as before.
 
-**The table.** `src/lower/iterators/in_place_forms.txt` is the owner's
+**The table.** `crates/rust-js-lower/src/iterators/in_place_forms.txt` is the owner's
 table (`BLESS=1 cargo test in_place_forms`, the contract-table
 pattern). test/iterator-steps.test.ts reads it:
 - The net's forms are the table's pairs, both ways.

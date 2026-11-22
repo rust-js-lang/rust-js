@@ -1,11 +1,11 @@
-// Mutations of src/lower/std_types/number/generic.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/std_types/number/generic.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "ordering-predicate-wrong-zero",
     breaks: "Ordering predicates compare against one instead of zero",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "        self.binary(op, value, Expr::int(0), None, ty, span)\n",
     replace: "        self.binary(op, value, Expr::int(1), None, ty, span)\n",
     tests: ["test/corpus.test.ts","-t","^ordering_predicates.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "min-chain-nested",
     breaks:
       "`a.min(b).min(c)` is `Math.min(Math.min(a, b), c)`, not `Math.min(a, b, c)`",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "                    js::ExprKind::Call(inner, args) if math && js::same_path(&inner, &callee) => args,\n",
     replace:
       "                    js::ExprKind::Call(inner, args) if false && js::same_path(&inner, &callee) => args,\n",
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     name: "min-chain-of-a-helper-flattened",
     breaks:
       "`a.min(b).min(c)` of floats splices `$f64Min`'s arguments into another `$f64Min`, which takes two",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "                    js::ExprKind::Call(inner, args) if math && js::same_path(&inner, &callee) => args,\n",
     replace:
       "                    js::ExprKind::Call(inner, args) if js::same_path(&inner, &callee) => args,\n",
@@ -35,8 +35,8 @@ export const mutations: Mutation[] = [
     name: "array-of-slice-aliased",
     breaks:
       "`<[T; N]>::try_from(&v[..])` is `v`, which a write to `v` after changes",
-    file: "src/lower/std_types/number/generic.rs",
-    find: "                    (false, None) => crate::lower::iterators::owned_items(slice.clone()),",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
+    find: "                    (false, None) => crate::iterators::owned_items(slice.clone()),",
     replace: "                    (false, None) => slice.clone(),",
     tests: [
       "test/lowering-collections.test.ts",
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "array-of-part-copied-twice",
     breaks: "`<[T; N]>::try_from(&v[1..3])` copies `$slice`'s copy again",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "                    (false, None) if fresh => slice.clone(),",
     replace: "                    (false, None) if false => slice.clone(),",
     tests: ["test/corpus.test.ts", "-t", "slice_to_array"],
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-size-of-val-item-unscaled",
     breaks: "`size_of_val` of a slice of a wider item is its length, not its bytes (#1101)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "                        1 => length,",
     replace: "                        _ => length,",
     tests: ["test/corpus.test.ts", "-t", "size_of_val_of_a_slice"],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-align-of-val-its-size",
     breaks: "`align_of_val` of a slice is its length's bytes, not its item's alignment (#1101)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "                    && fact != TypeFact::Align\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "size_of_val_of_a_slice"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
   {
     name: "size-align-swap",
     breaks: "`align_of` is the type's size",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "        let bytes = if fact == TypeFact::Align {\n            layout.align.abi.bytes()",
     replace:
       "        let bytes = if fact == TypeFact::Align {\n            layout.size.bytes()",
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     name: "type-name-unerased",
     breaks:
       "`type_name` names the type as written, `Vec<Option<&str>>`, not rustc's paths",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "            _ => rustc_const_eval::util::type_name(self.tcx, of),",
     replace: "            _ => of.to_string(),",
     tests: ["test/corpus.test.ts", "-t", "std_odds"],
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
     name: "duration-subsec-whole",
     breaks:
       "`subsec_nanos()` is all of a `Duration`'s nanoseconds, not those under a second",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "    let part = Expr::bin(Op::Rem, duration, Expr::bigint(1_000_000_000));",
     replace: "    let part = duration;",
     tests: ["test/corpus.test.ts", "-t", "duration"],
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-to-array-any-length",
     breaks: "a slice into an array of another length is `Ok`",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: '                let fits = Expr::bin(Op::Eq, Expr::member(slice.clone(), "length"), Expr::int(len as i128));',
     replace: "                let fits = Expr::bool(true || len > 0);",
     tests: ["test/corpus.test.ts", "-t", "slice_to_array"],
@@ -108,7 +108,7 @@ export const mutations: Mutation[] = [
     name: "non-zero-try-from-kind",
     breaks:
       "`NonZeroU8::try_from(0u8)`'s error is its kind, `Zero`, which `{:?}` can't show, where each parse error is its message",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "number would be zero for non-zero type",
     replace: "Zero",
     tests: ["test/corpus.test.ts", "-t", "nonzero"],
@@ -116,7 +116,7 @@ export const mutations: Mutation[] = [
   {
     name: "needs-drop-inverted",
     breaks: "`mem::needs_drop::<T>()` answers the opposite of rustc",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "Expr::bool(of.needs_drop(self.tcx, self.typing_env))",
     replace: "Expr::bool(!of.needs_drop(self.tcx, self.typing_env))",
     tests: ["test/corpus.test.ts", "-t", "^needs_drop.rs$"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
     name: "assoc-fact-not-read",
     breaks:
       "`size_of::<A::Item>()` isn't read from `A: Array`'s dictionary, and is refused",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "                .is_some_and(|facts| facts.iter().any(|&(_, f)| f == fact))\n",
     replace: "                .is_some_and(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_type_facts.rs$"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-type-name-refused",
     breaks: "`type_name` of a type that holds a type parameter is an error",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "        if fact == TypeFact::Name && of.has_param() {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^type_names_generic.rs$"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "checked-ilog-unchecked",
     breaks: "`checked_ilog10()` is `ilog10()`, which panics of zero",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: '    if checked {\n        given.push(Expr::bool(true));\n    }\n    Expr::call_helper("$ilog", given)\n',
     replace: '    let _ = checked;\n    Expr::call_helper("$ilog", given)\n',
     tests: ["test/corpus.test.ts", "-t", "^number_methods.rs$"],
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
     name: "sort-fact-one-kind",
     breaks:
       "every caller gives `TSort` the small sort of a `Copy` item of 8 bytes, which leaves a wider one's ties where std's doesn't",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "            return Ok(Expr::str(self.sort_kind(of, span)?));\n",
     replace: '            return Ok(Expr::str("network"));\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
     name: "vec-to-array-err-empty",
     breaks:
       "a `Vec` refused as an array gives back nothing in its `Err`, not the `Vec`",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "                    true => slice.clone(),\n                    false => Expr::js_undefined(),",
     replace:
       "                    true => Expr::js_undefined(),\n                    false => Expr::js_undefined(),",
@@ -169,7 +169,7 @@ export const mutations: Mutation[] = [
     name: "vec-to-array-copied",
     breaks:
       "a `Vec` moved into an array is copied first, `v.slice()`, as nothing else has it",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "                let value = match (target.is_ref() || owned, self.bits_copy_fn(item)) {",
     replace: "                let value = match (target.is_ref(), self.bits_copy_fn(item)) {",
     tests: ["test/corpus.test.ts", "-t", "^vec_into_array.rs$"],
@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
     name: "slice-to-array-items-shared",
     breaks:
       "an array made of a slice of `Copy` structs, `try_into()`, holds the slice's objects, so changing one changes the slice",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "                    (false, Some(copy)) => Expr::builtin(slice.clone(), \"map\", vec![copy]),",
     replace: "                    (false, Some(_)) => Expr::builtin(slice.clone(), \"slice\", vec![]),",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
@@ -188,7 +188,7 @@ export const mutations: Mutation[] = [
     name: "one-shot-never",
     breaks:
       "no type is a `OneShot`, so a held flatten of `Option`s steps by the general impl, its hint `(0, None)`",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "            }\n            return Ok(Expr::bool(holds));\n        }\n        // `N` of an array",
     replace:
       "            }\n            return Ok(Expr::bool(holds && fact != TypeFact::OneShot));\n        }\n        // `N` of an array",
@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
     name: "tried-int-below-unchecked",
     breaks:
       "`usize::try_from(-1)` only tested is `Ok`, as the bound below wasn't tested (#366)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "    let below = (from_lo < lo).then(|| compared(Op::Lt, lo));\n",
     replace:
       "    let below = (from_lo < lo && false).then(|| compared(Op::Lt, lo));\n",
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
     name: "tried-int-above-unchecked",
     breaks:
       "`u8::try_from(256)` only tested is `Ok`, as the bound above wasn't tested (#366)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "    let above = (from_hi > hi).then(|| compared(Op::Gt, hi as i128));\n",
     replace:
       "    let above = (from_hi > hi && false).then(|| compared(Op::Gt, hi as i128));\n",
@@ -218,7 +218,7 @@ export const mutations: Mutation[] = [
     name: "tried-int-not-made-big",
     breaks:
       "`i64::try_from(n)` of a `u32` only tested is the number, not its BigInt, so `wide + 1n` throws (#366)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "        (false, true) => Expr::converted(js::Conversion::BigInt, n),\n",
     replace: "        (false, true) => n,\n",
     tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
@@ -227,7 +227,7 @@ export const mutations: Mutation[] = [
     name: "in-place-items-given-none",
     breaks:
       "a caller gives generic code of a `Vec`'s `IntoIter` no buffer std collects it in, in place, `undefined`, so a panic stopping its collect drops what's left first (#672)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "                Some(InPlaceSource::Items(item)) => Ok(Expr::array(vec![\n",
     replace: "                Some(InPlaceSource::Items(item)) if false => Ok(Expr::array(vec![\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
@@ -236,7 +236,7 @@ export const mutations: Mutation[] = [
     name: "built-layout-given-unread",
     breaks:
       "a type built of a function's type parameters whose layout its caller gives, `Held<J>`, is measured as if rustc knew it, and refused, `size_of` of a type parameter (#737)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "        (matches!(of.kind(), ty::Alias(..)) || !matches!(of.kind(), ty::Param(_)) && of.has_param())\n",
     replace: "        matches!(of.kind(), ty::Alias(..))\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_of_a_built_type.rs$"],
@@ -245,8 +245,8 @@ export const mutations: Mutation[] = [
     name: "const-size-of-built-type-asked",
     breaks:
       "the constant size of a type built from a type parameter that's no array, `&Vec<T>`, is asked of a caller who can't give it, so generic code's `rows.iter().flatten()` is refused in the build of std's structs (#813)",
-    file: "src/lower/std_types/number/generic.rs",
-    find: "            TypeFact::ConstSize => crate::lower::recognition::known_by_bounds(of.peel_refs()),\n",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
+    find: "            TypeFact::ConstSize => crate::recognition::known_by_bounds(of.peel_refs()),\n",
     replace: "            TypeFact::ConstSize => of.has_param() || matches!(of.kind(), ty::Alias(..)),\n",
     tests: ["test/iterator-forms.test.ts", "-t", "generic_flatten_of_vecs"],
   },
@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
     name: "const-size-of-a-const-length-none",
     breaks:
       "an array of a const parameter's length is said to have no constant size, so std's flatten of them hints no upper bound, where Rust's is the rows times `N` (#813)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "                    None => self.const_arg(len, span),\n",
     replace: "                    None => Ok(Expr::js_undefined()),\n",
     tests: ["test/iterator-forms.test.ts", "-t", "generic_flatten_of_vecs"],
@@ -262,7 +262,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-eq-fact-always-true",
     breaks: "a caller gives `TEq` `true` of a type only `PartialEq`, so `==` of `Rc`s of `f64::NAN` in generic code is `true` of one allocation, where std calls `eq` (#931)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "            return Ok(Expr::bool(holds));\n        }\n        // Of a type whose fact is the facts of what it holds",
     replace: "            return Ok(Expr::bool(true));\n        }\n        // Of a type whose fact is the facts of what it holds",
     tests: ["test/corpus.test.ts", "-t", "^rc_eq_generic_by_address_first.rs$"],
@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-eq-fact-unrefused",
     breaks: "a caller gives `TEq` of a fieldless enum with its own `eq`, whose `===` two allocations share, so a generic `==` of `Rc`s of it skips its `eq` (#931)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "                self.check_rc_allocations(&format!(\"std::rc::Rc<{of}>\"), of, span)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_eq_generic_of_a_fieldless_enum_refused.rs$"],
@@ -278,15 +278,15 @@ export const mutations: Mutation[] = [
   {
     name: "vec-collect-trusted-by-next",
     breaks: "a caller gives `IVecCollect` of a `TrustedLen` as `\"next\"`, so generic code's collect of an endless one steps it before std's \"capacity overflow\" (#1239)",
-    file: "src/lower/std_types/number/generic.rs",
-    find: "            let way = crate::lower::recognition::vec_collect_way(in_place, trusted);\n",
-    replace: "            let way = crate::lower::recognition::vec_collect_way(in_place, false);\n",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
+    find: "            let way = crate::recognition::vec_collect_way(in_place, trusted);\n",
+    replace: "            let way = crate::recognition::vec_collect_way(in_place, false);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
   },
   {
     name: "vec-collect-of-a-built-type-never-in-place",
     breaks: "`IVecCollect` of an adapter generic code makes of its type parameter's iterator is never `\"inPlace\"`, so a panic of a collect std makes in place drops what's left of its source before what it collected (#1239)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "            None => self.caller_in_place(of, item, span)?,\n",
     replace: "            None => Expr::bool(false),\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-collect-of-a-built-type-never-trusted",
     breaks: "`IVecCollect` of an adapter generic code makes of its type parameter's iterator is never `\"fold\"`, so an endless `TrustedLen` is stepped before std's \"capacity overflow\" (#1239)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "            None => self.type_fact_value(of, TypeFact::TrustedLen, span)?,\n",
     replace: "            None => Expr::bool(false),\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
@@ -302,15 +302,15 @@ export const mutations: Mutation[] = [
   {
     name: "rc-instance-fact-false",
     breaks: "a caller says a class's counted `Rc` is a box, so generic code's `Rc::new` of its instance makes a box its readers take for the instance: `chunk.bump is not a function` (#1423)",
-    file: "src/lower/std_types/number/generic.rs",
-    find: "            let instance = crate::lower::std_types::rc::counted_as_instance(self.tcx, of)\n",
-    replace: "            let instance = false && crate::lower::std_types::rc::counted_as_instance(self.tcx, of)\n",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
+    find: "            let instance =\n                crate::std_types::rc::counted_as_instance(self.tcx, of)",
+    replace: "            let instance = false && crate::std_types::rc::counted_as_instance(self.tcx, of)",
     tests: ["test/corpus.test.ts", "-t", "^class_rc_made_by_generic_code.rs$"],
   },
   {
     name: "in-place-way-a-bare-string",
     breaks: "a caller tells generic code a collect is in place as the string `\"inPlace\"`, which `$collectVec` doesn't take for in place: it's grown by `next`, its capacity room for its hint, not its source's buffer's (#1259)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "                return Ok(Expr::object(vec![rust_js_program::js::Prop::Field(way.into(), size)]));\n",
     replace: "                return Ok(Expr::str(way));\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collected_in_place_capacity.rs$"],
@@ -318,7 +318,7 @@ export const mutations: Mutation[] = [
   {
     name: "rustc-known-generic-layouts-refused",
     breaks: "generic code's `size_of::<Box<dyn Fn(&T) -> usize>>()`, of a type whose layout rustc knows whatever `T` is, is refused, \"`size_of` of a type parameter\" (#1420)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "            .then(|| self.tcx.layout_of(self.typing_env.as_query_input(of)).ok())\n",
     replace: "            .then(|| None::<rustc_middle::ty::layout::TyAndLayout<'tcx>>)\n",
     tests: ["test/corpus.test.ts", "-t", "^size_of_what_rustc_knows_of_any_parameter.rs$"],
@@ -326,15 +326,15 @@ export const mutations: Mutation[] = [
   {
     name: "array-of-a-slice-cloned",
     breaks: "an array made of a slice of a `Copy` type with a hand-written `Clone` calls that `clone`, where std's copies its bits",
-    file: "src/lower/std_types/number/generic.rs",
-    find: "                    (false, Some(copy)) => Expr::builtin(slice.clone(), \"map\", vec![copy]),\n                    (false, None) if fresh => slice.clone(),\n                    (false, None) => crate::lower::iterators::owned_items(slice.clone()),\n",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
+    find: "                    (false, Some(copy)) => Expr::builtin(slice.clone(), \"map\", vec![copy]),\n                    (false, None) if fresh => slice.clone(),\n                    (false, None) => crate::iterators::owned_items(slice.clone()),\n",
     replace: "                    (false, _) => self.clone_items(slice.clone(), item, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },
   {
     name: "lend-offset-given-zero",
     breaks: "a caller gives generic code 0 for a lend's offset, not rustc's layout of its instance (#1478)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "            return Ok(Expr::int(i128::from(at)));\n",
     replace: "            return Ok(Expr::int(i128::from(at * 0)));\n",
     tests: ["test/corpus.test.ts","-t","^generic_lend_offsets_given_by_callers.rs$"],
@@ -342,7 +342,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-name-marks-params-alone",
     breaks: "`type_name` of a type holding an associated type only a caller knows marks its type parameters alone, so `Cow<[I::Item]>` is named `[!]` and `Option<I::Item>` crashes the compiler (#1603)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "        if !self.cx.is_unknown(t) {\n",
     replace: "        if !matches!(t.kind(), ty::Param(_)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^type_name_of_an_associated_type_within.rs$"],
@@ -350,7 +350,7 @@ export const mutations: Mutation[] = [
   {
     name: "random-access-of-a-param-taken-here",
     breaks: "whether a type parameter's `TrustedRandomAccessNoCoerce` may hold is asked of rustc here, which takes it for no, not of its caller's `IRandomAccess`: generic code's `cloned()` of its source gets no reader by index, and std's zip of it reads `NaN` (#1982)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "        if self.given_fact_of(of, fact).is_some() {\n            return true;\n        }\n",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^zip_of_a_generic_sources_copies_moved_through_generic_code"],
@@ -358,7 +358,7 @@ export const mutations: Mutation[] = [
   {
     name: "fused-fact-of-a-parameter-built-type-unreduced",
     breaks: "whether a type built of type parameters is a `FusedIterator` is answered by rustc's selection, which can't say, so std's compiled `Fuse` of a `Map<Self, F>` is told `false` though its caller says `Self` is fused, and a flatten of a `Vec`'s items with std's iterator structs drops its source and function at its first `None` (#2243)",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "        // a `&mut I`, `I`'s, each's (ADR 0975).\n        if let Some(held) = self.held_instead(of, fact) {\n",
     replace: "        // a `&mut I`, `I`'s, each's (ADR 0975).\n        if fact != TypeFact::Fused && let Some(held) = self.held_instead(of, fact) {\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
@@ -366,7 +366,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-name-untagged",
     breaks: "a library's `type_name` of a type parameter is refused naming no issue, where it's #1657's",
-    file: "src/lower/std_types/number/generic.rs",
+    file: "crates/rust-js-lower/src/std_types/number/generic.rs",
     find: "                let issue = if fact == TypeFact::Name { \" (#1657)\" } else { \"\" };\n",
     replace: "                let issue = if fact == TypeFact::Id { \" (#1657)\" } else { \"\" };\n",
     tests: ["test/crates-refused.test.ts", "-t", "PhantomData of a type parameter"],

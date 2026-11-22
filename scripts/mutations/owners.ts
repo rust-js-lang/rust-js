@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "owners-top-pub-super-not-a-candidate",
-    breaks: "a `pub(super)` function of a module right under `src/lower/`, which the whole front end may ask, is left out of the table",
+    breaks: "a `pub(super)` function of a module right under `crates/rust-js-lower/src/`, which the whole front end may ask, is left out of the table",
     file,
     find: "const visible = (TOP(file) ? VISIBLE_TOP : VISIBLE).exec(lines[at]!);",
     replace: "const visible = VISIBLE.exec(lines[at]!);",

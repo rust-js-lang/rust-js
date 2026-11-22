@@ -1,4 +1,4 @@
-// Mutations of src/lower/traits/dyns.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/traits/dyns.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "dyn-tail-holder-unchecked",
     breaks:
       "a struct whose last field is a `dyn` behind a `Mutex` compiles, never given its `impl`, so its call reads `undefined.grow`, not refused (#375)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                || !self.is_own_struct(self.tail_holder(target)))\n",
     replace: "                || false)\n",
     tests: ["test/limitations.test.ts", "-t", "behind a .Mutex"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "dyn-tail-in-a-cell-unpeeled",
     breaks:
       "a struct whose last field is made a `dyn` in a `RefCell` that's the struct, `Rc<RefCell<Framed<dyn Shape>>>`, isn't given its `impl`, so a borrow's call reads `undefined.grow` (#375)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            ty::Adt(_, args) if self.is_value_cell(pointee) => args.type_at(0),\n",
     replace:
       "            ty::Adt(_, args) if false && self.is_value_cell(pointee) => args.type_at(0),\n",
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     name: "dyn-bound-lifetimes",
     breaks:
       "a `dyn for<'a>` trait's dictionary is asked of rustc with its lifetime bound, and rustc panics",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                self.tcx\n                    .instantiate_bound_regions_with_erased(p.with_self_ty(self.tcx, self_ty))",
     replace: "                p.with_self_ty(self.tcx, self_ty).skip_binder()",
     tests: ["test/corpus.test.ts", "-t", "higher_ranked_dyn"],
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "own-pointer-unsize",
     breaks:
       "a pointer of the crate's own, unsized to a `dyn`, is the value it was, not a `dyn`'s",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "        if let ty::Adt(adt, _) = target.kind()\n            && self.krate.foreign.compiled_by_rust_js(adt.did())\n",
     replace:
       "        if let ty::Adt(adt, _) = target.kind()\n            && (adt.did().is_local() || self.krate.foreign.in_library(adt.did()))\n            && false\n",
@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
     name: "dyn-of-cell-copied",
     breaks:
       "`&mut n as &mut dyn Counter` holds the handle as its `value`, and `bump` writes the handle's field, not `n`",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "        if self.is_cell(source) {\n",
     replace: "        if false && self.is_cell(source) {\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_mut"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     name: "dyn-upcast-copied",
     breaks:
       "`up(s).bump()` of a `&mut dyn Sub` writes a copy of its `value`, and `n` never changes",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            if matches!(target.kind(), ty::Ref(_, _, Mutability::Mut)) {\n",
     replace:
       "            if false && matches!(target.kind(), ty::Ref(_, _, Mutability::Mut)) {\n",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`s.parse::<i64>()?` into a `Box<dyn Error>` is a pair of the dictionary ADR 0186 gives std's parse errors, where it's its message, `$parseErrorDyn(\"ParseIntError\")`",
     snapshots: true,
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            _ if self.is_parse_error(ty) => \"$parseErrorDyn\",\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "std_errors_boxed"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-error-dyn-refused",
     breaks: "`serde_json::from_str(s)?` into a `Box<dyn Error>` is an error",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            _ if self.is_json_error(ty) => \"$jsonErrorDyn\",\n",
     replace: "",
     tests: ["test/serde-values.test.ts", "-t", "Box<dyn Error> shows as serde_json"],
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     name: "dyn-cell-refused",
     breaks:
       "a `RefCell<dyn T>` is refused, as a struct whose last field is a `dyn`",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            ty::Dynamic(predicates, ..) => predicates\n                .principal_def_id()\n                .filter(|&id| self.krate.foreign.compiled_by_rust_js(id)),\n            _ => None,\n",
     replace: "            ty::Dynamic(..) => None,\n            _ => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     name: "dyn-cell-of-fn-mut",
     breaks:
       "a `RefCell<dyn FnMut>` is taken for a pair, and its guard's `value` called, where it's the function",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            ty::Dynamic(predicates, ..) => predicates\n                .principal_def_id()\n                .filter(|&id| self.krate.foreign.compiled_by_rust_js(id)),\n            _ => None,\n",
     replace:
       "            ty::Dynamic(predicates, ..) => predicates.principal_def_id(),\n            _ => None,\n",
@@ -100,7 +100,7 @@ export const mutations: Mutation[] = [
     name: "dyn-cell-literal-helper",
     breaks:
       "a `RefCell<dyn T>` made where it's coerced is `$dynCell({ value }, impl)`, not `{ value, impl }`",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "        if let js::ExprKind::Object(props, ..) = &holder.kind\n",
     replace:
       "        if let js::ExprKind::Object(props, ..) = &Expr::js_undefined().kind\n",
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     name: "counted-dyn-cell-unrefused",
     breaks:
       "a `Weak<RefCell<dyn T>>` is made as an `Rc`'s, not refused, and its upgrade fails",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            if self.counted_weak(target).is_some() {\n                return Err(",
     replace: "            if false {\n                return Err(",
     tests: ["test/diagnostics.test.ts", "-t", "a Weak of a RefCell of a dyn"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     name: "dyn-cell-clash-unchecked",
     breaks:
       "a cell made a `dyn` of two traits with a method of one name is given one `impl` that calls the other's",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                && !methods(other).is_disjoint(&named)\n",
     replace: "                && false\n",
     tests: [
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
     name: "dyn-cell-clash-of-supertrait",
     breaks:
       "a cell made a `dyn` of a trait and of its supertrait, whose methods are the same, is refused",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                && !under(trait_id, other)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cell_supertrait.rs$"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     name: "dyn-cell-clash-of-subtrait",
     breaks:
       "a cell made a `dyn` of a supertrait and of a trait under it, whose methods are the same, is refused",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                && !under(other, trait_id)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cell_supertrait.rs$"],
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
     name: "dyn-cell-clash-of-bound",
     breaks:
       "a generic cell made a `dyn` of two of its bounds with a method of one name is given one `impl` that calls the other's",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                && (bounds.contains(&other) || self.has_user_impl(other, held))\n",
     replace: "                && self.has_user_impl(other, held)\n",
     tests: [
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
     name: "dyn-cell-upcast-unrefused",
     breaks:
       "a `RefCell<dyn Sub>` as a `RefCell<dyn Base>` is given a dictionary that takes a pair, and its call fails",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            if matches!(from.type_at(0).kind(), ty::Dynamic(..)) {\n",
     replace: "            if false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a RefCell of a dyn upcast"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
     name: "dyn-tail-unrefused",
     breaks:
       "an `Rc<Fat<dyn T>>`, which may be counted, whose last field would be dropped through its `impl`, isn't refused",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            && (!self.holds_a_dyn_tail(target)\n                || self.is_dyn_debug(tail)\n",
     replace:
       "            && (false\n                || self.is_dyn_debug(tail)\n",
@@ -187,7 +187,7 @@ export const mutations: Mutation[] = [
     name: "dyn-tail-parent-root",
     breaks:
       "a `&Fat<Fat<dyn T>>`'s `impl` is given the outer struct, not the one the `dyn` is in",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            path.push((ty, adt.non_enum_variant().fields.len() - 1));\n",
     replace: "            return path;\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_struct_tails.rs$"],
@@ -196,7 +196,7 @@ export const mutations: Mutation[] = [
     name: "dyn-tail-reborrow-refused",
     breaks:
       "a `&Fat<dyn T>` reborrowed as one, `foo(&x.ptr)`, is refused as an upcast",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                if erased(concrete) == erased(tail) {\n",
     replace: "                if erased(concrete) == erased(tail) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_struct_tails.rs$"],
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
     name: "counted-rc-unsized-around",
     breaks:
       "a counted `Rc` made an `Rc<dyn T>` is a pair around the `Rc`, which each use reads as an `Rc` of a pair",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "        if self.counted_rc(source).is_some() || self.counted_weak(source).is_some() {\n            return self.counted_unsized(source, target, value, span, out);\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_dyn_destructors.rs$"],
@@ -214,7 +214,7 @@ export const mutations: Mutation[] = [
     name: "counted-rc-same-dyn-refused",
     breaks:
       "an `Rc<dyn T>` or a `Weak<dyn T>` unsized to itself, a slice's, is refused",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "        if self.tcx.erase_and_anonymize_regions(source) == self.tcx.erase_and_anonymize_regions(target) {\n            return Ok(value);\n        }\n        if let Some(pointee) = self.counted_rc(source)",
     replace: "        if let Some(pointee) = self.counted_rc(source)",
     tests: ["test/corpus.test.ts", "-t", "^rc_dyn_upcast_counted.rs$"],
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     name: "auto-trait-upcast-repaired",
     breaks:
       "a `dyn T + Send` as a `dyn Send` is a pair around its pair, whose dictionary has no `$drop`, so the value is never dropped",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            let Some(to) = self.dyn_trait_ref(target, self_ty) else {\n                return Ok(value);\n",
     replace:
       "            let Some(to) = self.dyn_trait_ref(target, self_ty) else {\n                return Ok(Expr::object(vec![Prop::Field(js::HELD.into(), value), Prop::Field(js::DICTIONARY.into(), Expr::object(Vec::new()))]));\n",
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     name: "auto-trait-dictionary-dropless",
     breaks:
       "a `dyn Send`'s dictionary is `{}`, without its value's drop, which then never runs",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            None => Ok(Expr::object(self.dictionary_drop(self_ty, span)?.into_iter().collect())),\n",
     replace: "            None => Ok(Expr::object(Vec::new())),\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_auto_traits.rs$"],
@@ -243,7 +243,7 @@ export const mutations: Mutation[] = [
     name: "auto-trait-tail-owned",
     breaks:
       "a `*const Fat<dyn Send>`, whose last field is a `dyn` of no trait, is made where no pointer to one can hold it",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                if self.recognition().is_pair_dyn(traits) || self.is_dyn_debug(tail))\n",
     replace:
       "                if traits.principal_def_id().is_some_and(|id| self.krate.foreign.compiled_by_rust_js(id)) || self.is_dyn_debug(tail))\n",
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
     name: "boxed-dyn-tail-not-given",
     breaks:
       "a `Box<Fat<dyn Show>>` is the struct with no `impl`, which dropping its last field reads",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "        target.is_ref() || target.is_box() || self.is_rc(target)\n",
     replace: "        target.is_ref() || self.is_rc(target)\n",
     tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
@@ -266,7 +266,7 @@ export const mutations: Mutation[] = [
     name: "auto-trait-dyn-tail-not-given",
     breaks:
       "a struct whose last field is a `dyn Send` or a `dyn Display` is given no `impl`, which dropping or showing that field reads",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "        matches!(tail.kind(), ty::Dynamic(traits, ..) if self.recognition().is_pair_dyn(traits))\n",
     replace:
       "        matches!(tail.kind(), ty::Dynamic(traits, ..) if traits.principal_def_id().is_some_and(|id| self.krate.foreign.compiled_by_rust_js(id)))\n",
@@ -276,7 +276,7 @@ export const mutations: Mutation[] = [
     name: "boxed-dyn-tail-refused",
     breaks:
       "a `Box<Fat<dyn Show>>`, a struct whose last field is a `dyn`, is refused, as an `Rc` of one is",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            && (!self.holds_a_dyn_tail(target)\n                || self.is_dyn_debug(tail)\n",
     replace:
       "            && (!target.is_ref()\n                || self.is_dyn_debug(tail)\n",
@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
     name: "dyn-tail-given-spilled",
     breaks:
       "a struct that holds its `dyn` field itself is spilled before it's given its `impl`, `const value = { .. }; $dynCell(value, ..)`",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            if path.is_empty() && !counted {\n",
     replace: "            if false && path.is_empty() && !counted {\n",
     tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
     name: "unit-dyn-given-undefined",
     breaks:
       "a `()` as a `dyn` JS is given the value of is `undefined`, a trailing one left out: `useEffect(effect)`, run on every render, of `use_effect(effect, Some(&()))`, `[]`",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "        let value = match self.pointee(source).is_unit() {\n",
     replace:
       "        let value = match self.pointee(source).is_unit() && false {\n",
@@ -306,16 +306,16 @@ export const mutations: Mutation[] = [
     name: "unit-dyn-given-array",
     breaks:
       "a `()` as a `dyn` of any value is `[]`, not `undefined`: `kinds([], ..)` of `kinds(Some(&()), ..)` (ADR 0775)",
-    file: "src/lower/traits/dyns.rs",
-    find: "            .unwrap_or(value),\n",
-    replace: "            .unwrap_or(Expr::array(Vec::new())),\n",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
+    find: "                    .unwrap_or(value)\n",
+    replace: "                    .unwrap_or(Expr::array(Vec::new()))\n",
     tests: ["test/unit-given.test.ts", "-t", "any value is undefined"],
   },
   {
     name: "counted-dyn-cell-refused",
     breaks:
       "a counted `Rc<RefCell<C>>` made an `Rc<RefCell<dyn T>>` is refused, though its cell is shared, given its `impl` in place",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            if self.counted_rc(target).is_some() {\n                let rc = match value.reads_same() {\n",
     replace:
       '            if self.counted_rc(target).is_some() {\n                return Err(self.unsupported(span, "mutant"));\n                #[allow(unreachable_code)]\n                let rc = match value.reads_same() {\n',
@@ -325,7 +325,7 @@ export const mutations: Mutation[] = [
     name: "dyn-cell-given-generic",
     breaks:
       "a `RefCell<dyn T>`, its pair, is given to generic code that reads it as a cell of a value, and JS throws",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                && self.cell_dyn_trait(given).is_some()\n",
     replace: "                && false\n",
     tests: ["test/limitations.test.ts", "-t", "RefCell. of a .dyn"],
@@ -334,7 +334,7 @@ export const mutations: Mutation[] = [
     name: "dyn-tail-through-wrapper",
     breaks:
       "a struct's last field a `ManuallyDrop<dyn T>` is taken for a struct of its own, given the `impl`",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            let field = self.unwrapped(self.field_ty(last, args));\n",
     replace: "            let field = self.field_ty(last, args);\n",
     tests: ["test/corpus.test.ts", "-t", "manually_drop_unsized"],
@@ -343,7 +343,7 @@ export const mutations: Mutation[] = [
     name: "dyn-shown-of-read-pair-refused",
     breaks:
       "a struct's `dyn` last field, shown, is refused as made where it's shown",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "        if !pair.parts_read_same() {\n",
     replace: "        if !pair.reads_same() {\n",
     tests: ["test/corpus.test.ts", "-t", "manually_drop_unsized"],
@@ -351,7 +351,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-dyn-tail-refused",
     breaks: "an `Rc` of a struct whose last field is a `dyn` is refused",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "        target.is_ref() || target.is_box() || self.is_rc(target)\n",
     replace: "        target.is_ref() || target.is_box()\n",
     tests: ["test/corpus.test.ts", "-t", "rc_dyn_struct_tail"],
@@ -360,7 +360,7 @@ export const mutations: Mutation[] = [
     name: "counted-rc-dyn-tail-uncelled",
     breaks:
       "a counted `Rc` of a struct whose last field is a `dyn` is given the `impl` itself, not its struct",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                true => self.counted_pointee(value.clone(), self.pointee(source)),\n",
     replace: "                true => value.clone(),\n",
     tests: ["test/corpus.test.ts", "-t", "rc_dyn_struct_tail"],
@@ -369,17 +369,17 @@ export const mutations: Mutation[] = [
     name: "fn-dyn-unwrapped",
     breaks:
       "a type parameter's function made a `dyn Fn` doesn't carry its drop",
-    file: "src/lower/traits/dyns.rs",
-    find: "            if handed || self.drops(function) == crate::lower::drops::Drops::Nothing {\n",
-    replace: "            if true || handed || self.drops(function) == crate::lower::drops::Drops::Nothing {\n",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
+    find: "            if handed || self.drops(function) == crate::drops::Drops::Nothing {\n",
+    replace: "            if true || handed || self.drops(function) == crate::drops::Drops::Nothing {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$"],
   },
   {
     name: "pointee-not-of-raw-pointer",
     breaks:
       "a raw pointer's pointee is the pointer, so `*const dyn Trait` isn't unsized to a pair",
-    file: "src/lower/traits/dyns.rs",
-    find: "            _ if let Some((inner, _)) = crate::lower::pointers::raw_pointee(self.tcx, ty) => inner,\n",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
+    find: "            _ if let Some((inner, _)) = crate::pointers::raw_pointee(self.tcx, ty) => inner,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_pointers.rs$"],
   },
@@ -387,16 +387,16 @@ export const mutations: Mutation[] = [
     name: "dyn-of-generic-trait-refused",
     breaks:
       "`&dyn Convert<String>` of a generic trait is refused, as if its parameters had no dictionary",
-    file: "src/lower/traits/dyns.rs",
-    find: "    pub(in crate::lower) fn dyn_supported(&self, id: DefId) -> bool {\n        self.tcx\n            .associated_items(id)\n",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
+    find: "    pub(crate) fn dyn_supported(&self, id: DefId) -> bool {\n        self.tcx\n            .associated_items(id)\n",
     replace:
-      "    pub(in crate::lower) fn dyn_supported(&self, id: DefId) -> bool {\n        self.tcx.generics_of(id).own_params.len() <= 1\n            && self.tcx\n            .associated_items(id)\n",
+      "    pub(crate) fn dyn_supported(&self, id: DefId) -> bool {\n        self.tcx.generics_of(id).own_params.len() <= 1\n            && self.tcx\n            .associated_items(id)\n",
     tests: ["test/corpus.test.ts", "-t", "generic_traits"],
   },
   {
     name: "counted-rc-upcast-refused",
     breaks: "a counted `Rc<dyn Sub>` as an `Rc<dyn Super>` is refused",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            && self.is_pair_dyn(pointee)\n            && let (Some(from), Some(to))",
     replace:
       "            && self.is_pair_dyn(pointee)\n            && false\n            && let (Some(from), Some(to))",
@@ -405,7 +405,7 @@ export const mutations: Mutation[] = [
   {
     name: "counted-rc-own-trait-viewed",
     breaks: "an `Rc<dyn Sub + Send>` as an `Rc<dyn Sub>` is a view of itself",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            if from == to {\n                return Ok(value);\n            }\n",
     replace: "",
     snapshots: true,
@@ -415,7 +415,7 @@ export const mutations: Mutation[] = [
     name: "handed-closure-given-its-drop",
     breaks:
       "a closure made a `dyn Fn` to hand to JS is given its drop where it's made one, `$dropping(f, drop)`, which nothing runs (ADR 0873)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            if handed || self.drops(function)",
     replace: "            if self.drops(function)",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
@@ -425,7 +425,7 @@ export const mutations: Mutation[] = [
     name: "fn-made-dyn-fn-once-unconsumed",
     breaks:
       "a `Fn` closure made a `Box<dyn FnOnce()>` and called never drops what it took, where std's `call_once` consumes it (#409)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            if once && !handed && dropping {",
     replace: "            if false && once && !handed && dropping {",
     tests: ["test/corpus.test.ts", "-t", "^fn_boxed_once_drops.rs$"],
@@ -434,8 +434,8 @@ export const mutations: Mutation[] = [
     name: "fn-once-closure-consumed-twice",
     breaks:
       "an `FnOnce` closure made a `dyn FnOnce` drops what it took in its body and again as its call returns (#409)",
-    file: "src/lower/traits/dyns.rs",
-    find: "                && crate::lower::recognition::function_kind(self.tcx, self.frame.owner, called)\n                    != Some(ty::ClosureKind::FnOnce);\n",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
+    find: "                && crate::recognition::function_kind(self.tcx, self.frame.owner, called)\n                    != Some(ty::ClosureKind::FnOnce);\n",
     replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_boxed_once_drops.rs$"],
   },
@@ -443,8 +443,8 @@ export const mutations: Mutation[] = [
     name: "fn-once-dyn-consumed-again",
     breaks:
       "a `dyn FnOnce` made a `dyn FnOnce` again, returned or given on, is wrapped to drop as its call returns, dropping what it took twice (#409)",
-    file: "src/lower/traits/dyns.rs",
-    find: "                && !matches!(called.kind(), ty::Dynamic(of, ..) if crate::lower::recognition::is_fn_once_dyn(self.tcx, of))\n",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
+    find: "                && !matches!(called.kind(), ty::Dynamic(of, ..) if crate::recognition::is_fn_once_dyn(self.tcx, of))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_once_drops_itself.rs$"],
   },
@@ -452,7 +452,7 @@ export const mutations: Mutation[] = [
     name: "fn-dyn-made-once-always-wrapped",
     breaks:
       "a `dyn Fn` made a `dyn FnOnce` is wrapped to drop as it's called, `$droppingOnce(f, ..)`, where the program makes no `dyn Fn` of what has something to drop, not `queueMicrotask(callback)` (#409)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                ty::Dynamic(of, ..) => facts.fn_dyns_drop.drops(self.tcx, of),\n",
     replace: "                ty::Dynamic(..) => true,\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "calls once moves"],
@@ -461,7 +461,7 @@ export const mutations: Mutation[] = [
     name: "borrowed-fn-dyn-carries-its-drop",
     breaks:
       "a `dyn Fn` of a borrowed function, `Rc::new(&*greet)`, is that function, and the `Rc`'s drop runs the drop it carries, so `drop boxed` prints while `greet` is still held",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                && facts.fn_dyns_drop.any()\n                && self.may_carry_a_drop(borrowed)\n",
     replace: "                && facts.fn_dyns_drop.any()\n                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
@@ -470,7 +470,7 @@ export const mutations: Mutation[] = [
     name: "borrowed-box-fn-dyn-carries-its-drop",
     breaks:
       "a `dyn Fn` of a borrowed `Box<dyn Fn>`, `Rc::new(&greet)`, is its function, and the `Rc`'s drop runs the drop it carries, so `drop boxed` prints while `greet` is still held",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            _ if function.is_box() => self.carries_own_drop(function.expect_boxed_ty()),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
@@ -479,7 +479,7 @@ export const mutations: Mutation[] = [
     name: "borrowed-closure-fn-dyn-carries-its-drop",
     breaks:
       "a `dyn Fn` of a borrowed `impl Fn`, `Box::new(&count)`, is its function, and the `Box`'s drop runs the drop it carries, so `drop returned` prints while `count` is still held",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            ty::Closure(id, _) => self.krate.closure_facts.carries_its_drop(self.tcx, id),\n",
     replace: "            ty::Closure(..) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^(dyn_fn_of_a_borrowed_function|boxed_fn_given_to_consumers_drops).rs$"],
@@ -489,7 +489,7 @@ export const mutations: Mutation[] = [
     name: "borrowed-fn-dyn-in-counted-rc-unwrapped",
     breaks:
       "a counted `Rc` of a borrowed function made a `dyn Fn` keeps the function itself in its cell, `{ value: greet, .. }`, whose last drop runs the drop `greet` carries",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                    *held = Expr::call_helper(\"$borrowed\", vec![std::mem::replace(held, Expr::taken())]);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
@@ -498,7 +498,7 @@ export const mutations: Mutation[] = [
     name: "boxed-fn-dyn-boxed-again-drops-itself",
     breaks:
       "a `Box<dyn Fn>` boxed again, `Box::new(greeter(\"twice\"))`, is wrapped in a function of its own carrying a drop that disposes the one it holds, `$dropping(f, () => { $dispose(f); })`, where it's the same function, its drop the one it carries (#1109; since #1221's `$dropping` wraps a function that carries a drop already, it drops once either way, so its snapshot holds it)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            let carried = self.carries_own_drop(function);\n",
     replace:
       "            let carried = matches!(function.kind(), ty::Closure(..) | ty::Dynamic(..)) && self.carries_own_drop(function);\n",
@@ -508,7 +508,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-impl-pair-a-box",
     breaks: "a `&mut` to an object made a `&mut dyn` of a generic impl, `impl<T: Default> Reset for T`, is `{ value: c, impl }`, whose `*self = T::default()` leaves `c` as it was (#968)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                .any(|item| self.param_is_box(item.def_id, 0) && self.entry_gives_box(item.def_id, tr.args, 0))\n",
     replace: "                .any(|item| self.param_is_box(item.def_id, 0) && !self.entry_gives_box(item.def_id, tr.args, 0))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
@@ -516,7 +516,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-impl-pair-of-supertraits-only",
     breaks: "a generic impl's pair is asked of the trait's supertraits alone, so `impl<T: Default> Reset for T`'s is a box again (#968)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "        rustc_middle::ty::elaborate::supertraits(self.tcx, ty::Binder::dummy(tr)).any(|tr| {\n",
     replace: "        rustc_middle::ty::elaborate::supertraits(self.tcx, ty::Binder::dummy(tr)).skip(1).any(|tr| {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
@@ -524,7 +524,7 @@ export const mutations: Mutation[] = [
   {
     name: "concrete-impl-pair-written-in-place",
     breaks: "every `&mut dyn` of an object is a getter and a setter, where a concrete impl's is the object itself, `{ value: c, impl }`",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            && self.pair_written_whole(target, pointee)\n",
     replace: "            && (true || self.pair_written_whole(target, pointee))\n",
     tests: ["test/lowering-dyn-pairs.test.ts"],
@@ -532,7 +532,7 @@ export const mutations: Mutation[] = [
   {
     name: "reborrowed-pair-place-unfixed",
     breaks: "a `&mut dyn` pair of a reborrow, `&mut *x`, reads `x.value` whenever it's read, so `x = &mut q` before it's used writes `q` (#968)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                    Expr::pair(self.place_where_made(Expr::held(cell), out), dictionary)\n",
     replace: "                    Expr::pair(Expr::held(cell), dictionary)\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
@@ -541,7 +541,7 @@ export const mutations: Mutation[] = [
     name: "allocation-function-unwrapped",
     breaks:
       "a `Box<dyn Fn>` of a `fn` pointer is the pointer itself where the crate reads a `dyn Fn`'s address, so two boxes of one are `===` (#1053)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            let own = self.krate.counted.own_function(self.tcx, source);\n",
     replace: "            let own = false && self.krate.counted.own_function(self.tcx, source);\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_boxes.rs$"],
@@ -550,7 +550,7 @@ export const mutations: Mutation[] = [
     name: "shared-allocation-unrefused",
     breaks:
       "a `dyn Fn` made of an `Rc` of a `fn` pointer shared before is made a function of its own, apart from its clone's, not refused (#1053)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            if self.krate.counted.shared_before_apart(self.tcx, source) {\n",
     replace: "            if false && self.krate.counted.shared_before_apart(self.tcx, source) {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_of_a_shared_rc_refused.rs$"],
@@ -559,7 +559,7 @@ export const mutations: Mutation[] = [
     name: "counted-allocation-function-whole",
     breaks:
       "a counted `Rc`'s function of its own is made of the `Rc`, `(arg0) => rc(arg0)`, not of what its cell holds, so `rc.value` is `undefined` (#1053)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                true => (false, self.held_own_function(predicates, value, out)),\n",
     replace: "                true => (true, value),\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_by_rc_as_ptr.rs$"],
@@ -568,7 +568,7 @@ export const mutations: Mutation[] = [
     name: "counted-held-function-read-late",
     breaks:
       "a counted `Rc` held before it's unsized, its function made one of its own that reads its cell when it's called, `rc.value = (arg0) => rc.value(arg0)`, calls itself (#1053)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "        let f = self.spill(Role::F, Expr::held(rc.clone()), out);\n",
     replace: "        let f = Expr::held(rc.clone());\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_by_rc_as_ptr.rs$"],
@@ -577,7 +577,7 @@ export const mutations: Mutation[] = [
     name: "allocation-function-drop-lost",
     breaks:
       "a `Box<dyn Fn>` of a cloned closure that drops what it holds, made a function of its own, carries no drop, so dropping the box drops nothing (#1053)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                true => self.own_function(predicates, f, out),\n                false => f,\n            };\n",
     replace: "                true => return Ok(self.own_function(predicates, f, out)),\n                false => f,\n            };\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_boxes.rs$"],
@@ -586,7 +586,7 @@ export const mutations: Mutation[] = [
     name: "rc-new-function-drop-lost",
     breaks:
       "`Rc::new` of a cloned closure that drops what it holds, made a function of its own, carries no drop, so the last `Rc`'s drop drops nothing (#1053)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "        let own = self.own_function_of(count, f, out);\n        Ok(Expr::call_helper(\n            \"$dropping\",\n            vec![own, Expr::arrow(Vec::new(), dropped)],\n        ))\n",
     replace: "        let own = self.own_function_of(count, f, out);\n        Ok(own)\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_by_rc_as_ptr.rs$"],
@@ -595,7 +595,7 @@ export const mutations: Mutation[] = [
     name: "own-function-of-no-arguments",
     breaks:
       "a function of its own of a `dyn Fn(u32)` takes nothing and passes nothing on, so its call gives `NaN` (#1053)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            Some(ty::Tuple(args)) => args.len(),\n            _ => 0,\n        };\n        self.own_function_of(count, f, out)\n",
     replace: "            Some(ty::Tuple(_args)) => 0,\n            _ => 0,\n        };\n        self.own_function_of(count, f, out)\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_boxes.rs$"],
@@ -604,7 +604,7 @@ export const mutations: Mutation[] = [
     name: "mut-ref-of-a-boxed-function-its-cell",
     breaks:
       "a `&mut Box<dyn FnMut>` made a `&mut dyn FnMut` is the cell JS holds the box in, `{ value }`, not the function in it: its call throws `f is not a function` (#1222)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                ty::Ref(_, _, Mutability::Mut) if self.mut_ref_form(function).is_cell() => Expr::held(value),\n",
     replace: "                ty::Ref(_, _, Mutability::Mut) if false => Expr::held(value),\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_boxed_function_as_dyn.rs$"],
@@ -613,7 +613,7 @@ export const mutations: Mutation[] = [
     name: "fn-once-dyn-of-a-box-unpeeled",
     breaks:
       "a `Box<Box<dyn FnOnce>>` made a `dyn FnOnce` is taken for a `Fn` made one, `$droppingOnce`, so the inner's drop runs after its call consumed it: twice (#1221)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            let called = std::iter::successors(Some(function), |ty| ty.boxed_ty())\n                .last()\n                .unwrap_or(function);\n",
     replace: "            let called = function;\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_function_boxed_again.rs$"],
@@ -622,8 +622,8 @@ export const mutations: Mutation[] = [
     name: "fn-once-dyn-of-a-parameter-unasked",
     breaks:
       "generic code's `F: FnOnce` made a `dyn FnOnce` is taken for a `Fn` made one, `$droppingOnce`, though its caller's function drops what it holds as its body ends: a `Fn`-kind closure given it drops twice (#1221)",
-    file: "src/lower/traits/dyns.rs",
-    find: "                && crate::lower::recognition::function_kind(self.tcx, self.frame.owner, called)\n                    != Some(ty::ClosureKind::FnOnce);\n",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
+    find: "                && crate::recognition::function_kind(self.tcx, self.frame.owner, called)\n                    != Some(ty::ClosureKind::FnOnce);\n",
     replace:
       "                && !matches!(called.kind(), ty::Closure(_, args) if args.as_closure().kind() == ty::ClosureKind::FnOnce);\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_function_boxed_again.rs$"],
@@ -631,7 +631,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-error-dictionary-key-wrong",
     breaks: "std's error dictionaries are given their types' names, not their `TypeId` keys, so a downcast of a `dyn Error` to `io::Error` or `ParseIntError` finds `None`",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "        Some(Expr::call(Expr::helper(helper), vec![Expr::str(self.type_id_key(ty))]))\n",
     replace: "        Some(Expr::call(Expr::helper(helper), vec![Expr::str(&format!(\"{ty}\"))]))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
@@ -639,7 +639,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-of-a-mut-holds-the-object",
     breaks: "a `dyn` made of a `&mut` to an object holds the object, where its impl for `&mut T` reads generic code's box: `as_dyn.total()` throws (#1414)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "                self.form_given(Form::Box, (tr.def_id, declared, pointee), value, span)?\n",
     replace: "                value\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_given_for_a_bound.rs$"],
@@ -647,7 +647,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-pair-of-a-lent-iterator-boxed",
     breaks: "a `&mut` to `by_ref()`'s lender made a `&mut dyn` of a blanket impl's trait is its in-place cell's pair, a box of the box, so generic code that steps it through the `&mut T` the trait gives back throws `it.back is not a function` (#1571)",
-    file: "src/lower/traits/dyns.rs",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
     find: "            Some(tr) if self.in_generic_box(pointee) => {\n",
     replace: "            Some(tr) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_lent_iterator_steps_it.rs$"],

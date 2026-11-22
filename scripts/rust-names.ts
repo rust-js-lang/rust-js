@@ -56,7 +56,7 @@ export function snake(name: string): string {
 
 /** A Rust name as rust-js writes it in JS (ADR 0573): `set_count` is
  * `setCount`; leading and trailing `_`s stay, `_unused`, `self_`, and so
- * does a name with no lowercase letter, `FOO_BAR`. src/lower.rs's
+ * does a name with no lowercase letter, `FOO_BAR`. crates/rust-js-lower/src/lib.rs's
  * `camel_case` is the rule; `test/bindings.test.ts` holds this equal to it,
  * compiling each name. */
 export function camelCase(name: string): string {

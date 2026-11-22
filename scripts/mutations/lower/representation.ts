@@ -1,4 +1,4 @@
-// Mutations of src/lower/representation.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/representation.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "untagged-written-in-place",
     breaks:
       "`*cell = Matrix::Cell(v)` through a `&mut` to an untagged enum is `$assign(cell, v)`, which changes no number: the matrix keeps its old cell (#347)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                && (!bindings::is_untagged(self.tcx, adt.did())\n                    || super::untagged::arrays_in_place(self.tcx, *adt, args))\n                && adt.variants().iter().all(|v| !v.fields.is_empty()))\n",
     replace:
       "                && adt.variants().iter().all(|v| !v.fields.is_empty()))\n",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "unit-given-rest-not-a-list",
     breaks:
       'a variadic binding\'s rest of none, `()`, is `undefined`, spread, `called("a", ...undefined)`, which throws, not no argument (ADR 0775)',
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            (bindings::is_variadic(tcx, def_id) && i + 1 == declared.len())\n",
     replace: "            false\n",
     tests: ["test/unit-given.test.ts", "-t", "rest arguments is none"],
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     name: "unit-given-dependencies-not-a-list",
     breaks:
       "a hook's dependencies of none, `()`, are `undefined`, `useMemo(f)`, run each render, not `useMemo(f, [])` (ADR 0775)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        super::recognition::is_dependency_list(tcx, id) || tcx.get_attrs_by_path(id, &rest).next().is_some()\n",
     replace: "        tcx.get_attrs_by_path(id, &rest).next().is_some()\n",
     tests: ["test/unit-given.test.ts", "-t", "hook's dependencies"],
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "unit-given-bound-not-a-list",
     breaks:
       "a `()` given a parameter bounded by `DependencyList`, `use_memo(f, ())`, is `undefined`, not `[]` (ADR 0775)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                    .is_some_and(|&ty| matches!(ty.kind(), ty::Param(_)) && bounded(ty))\n",
     replace:
       "                    .is_some_and(|&ty| matches!(ty.kind(), ty::Param(_)) && bounded(ty) && false)\n",
@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
     name: "unit-given-dyn-not-a-list",
     breaks:
       "a `()` as a `&dyn DependencyList`, `use_effect(f, Some(&()))`, is `undefined`, run each render, not `[]` (ADR 0775)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        UnitTo::Dyn(ty) => matches!(ty.kind(), ty::Dynamic(traits, ..) if traits.principal_def_id().is_some_and(lists)),\n",
     replace:
       "        UnitTo::Dyn(ty) => matches!(ty.kind(), ty::Dynamic(traits, ..) if traits.principal_def_id().is_some_and(lists) && false),\n",
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "numbered-discriminant-tested",
     breaks:
       "a numbered enum's `as u8` tests each variant in turn, `kind === 0 ? 0 : ..`, where its value is its discriminant",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        if bindings::numbered(tcx, adt) {\n",
     replace: "        if false && bindings::numbered(tcx, adt) {\n",
     tests: [
@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
     name: "numbered-variant-written-as-number",
     breaks:
       "a numbered enum's variant a body writes is its number, `payload._status = 0`, where it's its module's `const`, `Pending`",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        match self.is_rust_fn(variant.def_id) && self.reads_by_name(variant.def_id) {\n",
     replace: "        match false && self.is_rust_fn(variant.def_id) {\n",
     tests: [
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     name: "load-reads-variant-by-name",
     breaks:
       "a thread-local's value reads another module's variant by name, `{ value: Pending }`, which an import cycle may load first: `Cannot access 'Pending' before initialization` (ADR 0722)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        match self.is_rust_fn(variant.def_id) && self.reads_by_name(variant.def_id) {\n",
     replace: "        match self.is_rust_fn(variant.def_id) {\n",
     tests: ["test/corpus.test.ts", "-t", "load_cycle_values"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     name: "numbered-constant-as-number",
     breaks:
       "a constant rustc made of a numbered enum's variant, `[Some(Request::Pending), None]`, is its number in a body, `[5, undefined]`, not its `const`",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        const_js_by(\n            self.tcx,\n            value,\n            &Units {\n                unit: &unit,\n",
     replace: "        const_js_by(\n            self.tcx,\n            value,\n            &Units {\n                unit: &|adt, variant| bindings::unit_variant(self.tcx, adt, variant),\n",
     tests: [
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "i32-wrap",
     breaks: "`i32` arithmetic doesn't wrap at 32 bits",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            Num::I32 => Expr::bin(Op::BitOr, e, Expr::num(0)),",
     replace: "            Num::I32 => e,",
     tests: ["test/corpus.test.ts", "-t", "wrapping\\.rs"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "u64-wrap",
     breaks: "`u64` arithmetic doesn't wrap at 64 bits",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: '            Num::U64 | Num::U128 => as_n("asUintN"),',
     replace: "            Num::U64 | Num::U128 => e,",
     tests: ["test/corpus.test.ts", "-t", "wrapping\\.rs"],
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     name: "static-struct-variant",
     breaks:
       "a static struct's fields are read one place along, after a variant index only an enum has",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            let variant = parts.variant.filter(|_| ty.is_enum()).map(|v| {",
     replace: "            let variant = parts.variant.map(|v| {",
     tests: ["test/corpus.test.ts", "-t", "statics"],
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
     name: "dyn-not-object",
     breaks:
       "a `&mut dyn Counter` is taken for a cell, and its pair read as `pair.value`",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            || matches!(ty.kind(), ty::Dynamic(..)) && self.is_pair_dyn(ty)\n",
     replace:
       "            || false && matches!(ty.kind(), ty::Dynamic(..)) && self.is_pair_dyn(ty)\n",
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
   {
     name: "f32-literal-unrounded",
     breaks: "`0.1f32` is the double 0.1, which no `f32` is",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "    if !v.is_finite() || shortest == exact {",
     replace:
       "    if true {\n        return Expr::num(shortest);\n    }\n    if !v.is_finite() || shortest == exact {",
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
     name: "f32-literal-rounded-twice",
     breaks:
       "an `f32` literal is `Math.fround` of its shortest digits even where JS's double of them rounds to the `f32` beside it, `7.038531e-26`'s, ryu's regression (#1883)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "    let digits = if rounded(shortest) {\n",
     replace: "    let digits = if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^f32_literal_rounded_twice.rs$"],
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
     name: "mixed-enum-object",
     breaks:
       "an enum with a fieldless variant, the crate's or std's `Bound`, is an object for a `&mut`, so `*self = Light::Off` is refused, and `*r = Bound::Unbounded` a `TypeError`",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                && adt.variants().iter().all(|v| !v.fields.is_empty()))",
     replace:
       "                && adt.variants().iter().any(|v| !v.fields.is_empty()))",
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
     name: "u128-literal-signed",
     breaks:
       "a `u128` past `i128::MAX`, `u128::MAX`, is written as the `i128` of its bits, `-1n`",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            Num::U128 => Expr::biguint(n as u128),",
     replace: "            Num::U128 => Expr::bigint(n),",
     tests: ["test/corpus.test.ts", "-t", "integers_128"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
   {
     name: "u128-range-halved",
     breaks: "a `u128`'s range ends at `i128::MAX`",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            (0, u128::MAX >> (128 - bits))",
     replace:
       "            (0, (u128::MAX >> (128 - bits)) >> u32::from(bits == 128))",
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
   {
     name: "wrap-128-as-64",
     breaks: "a 128-bit result is wrapped to 64 bits",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        let bits = Expr::int(i128::from(self.bits()));",
     replace: "        let bits = Expr::int(64);",
     tests: ["test/corpus.test.ts", "-t", "integers_128"],
@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
   {
     name: "non-zero-not-a-number",
     breaks: "a `NonZero` integer is an error, not its number",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            ty::Adt(adt, args) if super::recognition::is_non_zero(adt.did()) => return Num::of(args.type_at(0)),",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "nonzero"],
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
   {
     name: "duration-not-a-number",
     breaks: "a `Duration` is std's struct, which rust-js has no value for",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            ty::Adt(adt, _) if super::recognition::is_duration(adt.did()) => Num::U128,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "duration"],
@@ -215,7 +215,7 @@ export const mutations: Mutation[] = [
     name: "flattened-field-read-as-member",
     breaks:
       "`props.html.title` is `props.html.title`, which JS's flat props don't have",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            (Shape::Object(fields), _) if super::bindings::is_flatten_field(self.tcx, ty, i) => {",
     replace: "            (Shape::Object(fields), _) if false && super::bindings::is_flatten_field(self.tcx, ty, i) => {",
     tests: ["test/jsx-props.test.ts", "-t", "chain of flattened"],
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     name: "struct-variant-fields-numbered",
     breaks:
       "a struct variant's fields are `_0`, `_1` as a tuple variant's are, so a JS caller's `{ TAG: \"Rect\", w, h }` isn't the shape it gets",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: '        Some(CtorKind::Fn) => js::positional(i),\n        // An enum variant\'s field a symbol never names (`validate`, ADR 1051).\n        _ => field_key(tcx, variant.fields.iter().nth(i).expect("a field of this variant"))\n            .text()\n            .to_owned(),',
     replace: "        _ => js::positional(i),",
     tests: [
@@ -236,7 +236,7 @@ export const mutations: Mutation[] = [
   {
     name: "guard-not-object",
     breaks: "a `&mut` to a guard's number is a box of the guard",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            || self.is_guard(ty)\n            || self.is_vec_like(ty)\n",
     replace: "            || self.is_vec_like(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^locks"],
@@ -245,7 +245,7 @@ export const mutations: Mutation[] = [
     name: "tagged-enum-a-string",
     breaks:
       "a tagged enum's fieldless variant, an object, is taken for its name, and compared, looked for and kept as a key by JS's identity",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "    is_fieldless_enum(adt) && super::bindings::declared_tag(tcx, adt.did()).is_none() && !bindings::numbered(tcx, adt)\n",
     replace: "    is_fieldless_enum(adt) && !bindings::numbered(tcx, adt)\n",
     tests: ["test/corpus.test.ts", "-t", "tagged_enum_values"],
@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
     name: "tagged-enum-cast-refused",
     breaks:
       "a tagged enum's cast, `light as i32`, is refused, not looked up by its tag",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            Expr::member(subject, &key)\n",
     replace: "            return Err(Box::new(subject));\n",
     tests: ["test/corpus.test.ts", "-t", "^tagged_enum_values.rs$"],
@@ -263,7 +263,7 @@ export const mutations: Mutation[] = [
     name: "discriminant-chain-last-zero",
     breaks:
       "an enum with fields' last variant's discriminant is 0, its first's, not its own",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "fold(literal(last),",
     replace: "fold(literal(zero),",
     tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
@@ -272,7 +272,7 @@ export const mutations: Mutation[] = [
     name: "static-ref-to-static-refused",
     breaks:
       "a static referring to another static's number, `&A.count`, is refused",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            if primitive\n                && !tcx.is_mutable_static(d)\n",
     replace:
       "            if false\n                && !tcx.is_mutable_static(d)\n",
@@ -282,7 +282,7 @@ export const mutations: Mutation[] = [
     name: "path-shape-object",
     breaks:
       "a `PathBuf` is taken for an object of its fields, so `buf.push(..)` can't change its place",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            || self.recognition().is_path_like(ty)\n            || Num::of(ty).is_some()\n",
     replace: "            || Num::of(ty).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
@@ -290,7 +290,7 @@ export const mutations: Mutation[] = [
   {
     name: "union-not-object",
     breaks: "a `&mut` to a union is a box of it, not the object it is",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            || self.is_union(ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
@@ -300,7 +300,7 @@ export const mutations: Mutation[] = [
     name: "const-uninit-unseen",
     breaks:
       "a constant with no byte written isn't seen as one, and a use of it that may change is a clone, refused",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "    whole.size.bytes() > 0\n",
     replace: "    false && whole.size.bytes() > 0\n",
     tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
@@ -309,7 +309,7 @@ export const mutations: Mutation[] = [
     name: "const-value-uninit-unsaid",
     breaks:
       "a constant with no byte written has no JS value, so a use of it that may change is a clone, refused",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        .or_else(|| const_uninit(tcx, typing_env, def_id, args, span).then(Expr::js_undefined))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
@@ -318,7 +318,7 @@ export const mutations: Mutation[] = [
     name: "one-value-never",
     breaks:
       "a `&mut` to a unit struct in what a call gave, `f()[0].touch()`, has its place held in a variable first, as a number's is, though no write changes it",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        self.layout(ty).is_some_and(|layout| layout.is_zst())\n",
     replace:
       "        self.layout(ty).is_some_and(|layout| layout.is_zst() && false)\n",
@@ -329,7 +329,7 @@ export const mutations: Mutation[] = [
     name: "number-shape-fields",
     breaks:
       "a `&mut Duration` is an object whose fields are written, so what's assigned through it is lost",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            || self.recognition().is_path_like(ty)\n            || Num::of(ty).is_some()\n",
     replace: "            || self.recognition().is_path_like(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^duration_by_mut.rs$"],
@@ -338,7 +338,7 @@ export const mutations: Mutation[] = [
     name: "never-falsy-duration",
     breaks:
       "a `Duration` is taken for an object, so `None` of one is tested `!o`, which `ZERO` passes",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            || self.recognition().is_path_like(ty)\n            || Num::of(ty).is_some()\n",
     replace: "            || self.recognition().is_path_like(ty)\n",
     snapshots: true,
@@ -348,7 +348,7 @@ export const mutations: Mutation[] = [
     name: "discriminant-big-as-number",
     breaks:
       "a 64-bit `repr`'s discriminant, as a derived `Hash` reads it, is a number, not a BigInt",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        let literal = |n: super::Discr| n.expr(big);\n",
     replace: "        let literal = |n: super::Discr| n.expr(false);\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
@@ -356,7 +356,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninit-always-holds",
     breaks: "a `&mut` to a `MaybeUninit` is what it holds, not a cell to write",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            .filter(|_| self.recognition().uninit_of(ty).is_none())\n",
     replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
@@ -365,7 +365,7 @@ export const mutations: Mutation[] = [
     name: "transparent-mut-a-cell",
     breaks:
       "a `&mut` to a `#[repr(transparent)]` struct of an array is a handle, which an index writes nothing through",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        if let Some(held) = self.always_holds(ty) {\n            return self.is_object(held);\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
@@ -374,7 +374,7 @@ export const mutations: Mutation[] = [
     name: "transparent-field-projected",
     breaks:
       "a `#[repr(transparent)]` struct's field dropped, as a library's drop does, is a field of no shape, and rust-js crashes",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        if self.always_holds(ty).is_some() {\n            let held",
     replace: "        if false {\n            let held",
     tests: [
@@ -387,7 +387,7 @@ export const mutations: Mutation[] = [
     name: "registered-symbol-key-itself",
     breaks:
       "the registry's symbol's key, `.0`, is the symbol, not `Symbol.keyFor(symbol)`",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            return symbol_key(base);\n",
     replace: "            return base;\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "Symbol.for its key"],
@@ -396,7 +396,7 @@ export const mutations: Mutation[] = [
     name: "nullable-cell-handle-plain",
     breaks:
       "a handle on a nullable field's `Cell` given to a helper stores its `None` as `undefined`",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                    true => self.nullable_cell_handle(field, def, fields[i].1),\n",
     replace:
       "                    true => self.held(field, def, fields[i].1),\n",
@@ -410,7 +410,7 @@ export const mutations: Mutation[] = [
     name: "js-made-field-plain",
     breaks:
       "a field of a struct JS made is read as plain data, `styleProp.margin` read again where the `let` of it is used, a getter run twice (rd204)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                    true => field.answered_by_a_getter().never_throws(),\n",
     replace: "                    true => field.never_throws(),\n",
     tests: [
@@ -423,7 +423,7 @@ export const mutations: Mutation[] = [
     name: "js-made-field-read-may-panic",
     breaks:
       "a read of a field of a struct JS made isn't known to throw only where its object does, so describeNode's loop isn't in its guard's one try (rd227)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                    true => field.answered_by_a_getter().never_throws(),\n",
     replace: "                    true => field.answered_by_a_getter(),\n",
     tests: [
@@ -436,7 +436,7 @@ export const mutations: Mutation[] = [
     name: "namespace-value-undefined",
     breaks:
       "a namespace's value, `&Reconciler`, is `undefined`, not its module's namespace (ADR 1037)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            return self.namespace_value(adt.did());\n",
     replace: "            return Some(Expr::js_undefined());\n",
     tests: [
@@ -448,7 +448,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-state-counted-allowed",
     breaks: "a flattened state lent or held where another borrow may meet it compiles, though nothing can count its borrows (rd380)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                            && !self.quiet_field(field.did)\n",
     replace: "                            && false\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "refused"],
@@ -456,7 +456,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-state-refused-at-its-field",
     breaks: "a flattened state held where another borrow may meet it is refused at the field's declaration, not at the borrow (rd432)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                                self.loud_at(field.did).unwrap_or_else(|| self.tcx.def_span(field.did)),\n",
     replace: "                                self.tcx.def_span(field.did),\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "refused"],
@@ -464,7 +464,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-state-no-handle",
     breaks: "a flattened state's cell is its parent alone, as a flattened struct is, so its borrows are boxes of the parent (rd380)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                        Expr::stored_handle(base, js::Storage::in_place(&keys, stale))\n",
     replace: "                        { let _ = (keys, stale); base }\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
@@ -473,7 +473,7 @@ export const mutations: Mutation[] = [
     name: "untagged-arrays-a-place",
     breaks:
       "a `&mut` to an untagged enum of arrays is a place, so `*node = ..` through a `RefCell` its holders share gives one holder another array (rd490)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                    || super::untagged::arrays_in_place(self.tcx, *adt, args))\n",
     replace: "                    || false)\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
@@ -481,7 +481,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-unit-a-name",
     breaks: "a keyed enum's variant without fields is its name, a string, which `in` throws of (#504)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        if self.krate.flattened.keyed.contains(&adt) {\n            return Expr::object(Vec::new());\n",
     replace: "        if false {\n            return Expr::object(Vec::new());\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_enum.rs$"],
@@ -489,7 +489,7 @@ export const mutations: Mutation[] = [
   {
     name: "tuple-part-unknown",
     breaks: "a tuple's part isn't said to be one (`Known::Part`), so its tests read in MIR's order, `(b === 3 && a === 2) || ..`, not as written (#674, #756)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                        facts: read.facts.with(js::Known::Part),\n",
     replace: "                        facts: read.facts,\n",
     tests: ["test/lowering-match-paths.test.ts", "-t", "alternatives test a tuple's parts in the order written"],
@@ -497,7 +497,7 @@ export const mutations: Mutation[] = [
   {
     name: "large-bytes-at-the-limit",
     breaks: "a byte constant of 16 KiB exactly, the limit, is base64 text too, where it's a literal of each byte (#1096)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "    if len <= LARGE_BYTES {\n",
     replace: "    if len < LARGE_BYTES {\n",
     tests: ["test/corpus.test.ts", "-t", "^byte_constants_large.rs$"],
@@ -506,7 +506,7 @@ export const mutations: Mutation[] = [
   {
     name: "large-bytes-unpadded",
     breaks: "a large byte constant's base64 text, whose bytes aren't three to a group, is padded with a digit, not `=`: `atob` reads a byte more, and its length and items are wrong (#1096)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                false => '=',\n",
     replace: "                false => 'A',\n",
     tests: ["test/corpus.test.ts", "-t", "^byte_constants_large.rs$"],
@@ -514,7 +514,7 @@ export const mutations: Mutation[] = [
   {
     name: "large-bytes-named-as-literal",
     breaks: "a `const` item's large byte constant is a value tree of each byte, a literal, where it's base64 text: 1.5 KB of the compiler's memory a byte (#1096)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "    if is_byte_ref(tcx, ty)\n",
     replace: "    if false\n",
     tests: ["test/corpus.test.ts", "-t", "^byte_constants_large.rs$"],
@@ -523,7 +523,7 @@ export const mutations: Mutation[] = [
   {
     name: "large-bytes-slice-in-memory-unread",
     breaks: "a large `&[u8]` constant held in memory, two words, isn't read as bytes: a literal of each, where it's base64 text (#1096)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        (ty::Slice(item), ConstValue::Indirect { alloc_id, offset }) if *item == tcx.types.u8 => {\n",
     replace: "        (ty::Slice(item), ConstValue::Indirect { alloc_id, offset }) if false && *item == tcx.types.u8 => {\n",
     tests: ["test/corpus.test.ts", "-t", "^byte_constants_large.rs$"],
@@ -532,7 +532,7 @@ export const mutations: Mutation[] = [
   {
     name: "variant-cell-field-read",
     breaks: "a `Cell` a variant's field holds is read as a cell, `slot.n.value`, where a pattern binds it",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        self.held(\n            read,\n            Some(&variant.fields[field]),\n            self.field_ty(&variant.fields[field], args),\n        )\n",
     replace: "        read\n",
     tests: ["test/lowering-cells.test.ts", "-t", "a cell in a field is the property it holds"],
@@ -540,7 +540,7 @@ export const mutations: Mutation[] = [
   {
     name: "wide-constant-shift-unfolded",
     breaks: "a 64-bit constant made of a shift is `BigInt.asIntN(64, 1n << 40n)`, not its value, `1099511627776n` (#1729)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                Op::Shl if exact && (0..127).contains(&b) => a.checked_mul(1i128 << b)?,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^wide_constant_shifts_folded.rs$"],
@@ -549,7 +549,7 @@ export const mutations: Mutation[] = [
   {
     name: "number-shifts-folded-exactly",
     breaks: "32-bit shifts of constants are folded as if exact, `((1 << 31) >> 1) + 1` of an `i32` positive, where JS's and Rust's are of 32 bits, negative (#1729)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                Op::Shl if exact && (0..127).contains(&b) => a.checked_mul(1i128 << b)?,\n                Op::Shr if exact && (0..127).contains(&b) => a >> b,\n",
     replace: "                Op::Shl if (0..127).contains(&b) => a.checked_mul(1i128 << b)?,\n                Op::Shr if (0..127).contains(&b) => a >> b,\n",
     tests: ["test/corpus.test.ts", "-t", "^wide_constant_shifts_folded.rs$"],
@@ -558,7 +558,7 @@ export const mutations: Mutation[] = [
     name: "unit-field-always-there",
     breaks:
       "a `()` field is declared required, `_0: undefined`, where the JS rust-js makes leaves its key out, so `{ TAG: \"Done\" }` isn't a `Step` under `exactOptionalPropertyTypes` (#1851)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        ty::Tuple(items) => items.is_empty(),\n        ty::Adt(adt, _) => one_valued(",
     replace: "        ty::Tuple(items) => items.is_empty() && false,\n        ty::Adt(adt, _) => one_valued(",
     tests: ["test/declarations-results.test.ts", "-t", "always undefined"],
@@ -566,7 +566,7 @@ export const mutations: Mutation[] = [
   {
     name: "unit-struct-field-always-there",
     breaks: "a unit struct's field, `undefined` in JS, is declared required, its key left out of what rust-js makes (#1851)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "        && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Const)\n        && !super::classes::is_class(tcx, adt.did()))",
     replace: "        && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Fn)\n        && !super::classes::is_class(tcx, adt.did()))",
     tests: ["test/declarations-results.test.ts", "-t", "always undefined"],
@@ -575,7 +575,7 @@ export const mutations: Mutation[] = [
     name: "given-fields-not-read-once",
     breaks:
       "a struct an exported function is given counts as plain Rust data, `r.snap.map_or(0.0, |s| s.threshold)` read twice, `r.snap != null ? r.snap.threshold : 0` (#1908)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            || matches!(ty.kind(), ty::Adt(adt, _) if self.krate.cell_borrows.pointers().js_may_give(adt.did()))\n",
     replace: "",
     tests: ["test/getter-reads.test.ts", "-t", "js_given_options"],
@@ -583,7 +583,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-field-unmarked",
     breaks: "a field of a struct only the program makes isn't said to be one no getter answers, so an `Option` combinator's subject of it, `history.open`, is held in a `const` and its closure's condition a nested function (#1908's scope)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                    false if own_base && !self.fields_read_once(ty) => field.own_field(),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^undo_stack_map_reentered\\.rs$"],
@@ -593,7 +593,7 @@ export const mutations: Mutation[] = [
     name: "placed-part-read-as-its-place",
     breaks:
       "a tuple struct's field held in a place of its own, `Wrap(I, u8)`'s `0`, is read as the place, not what's in it (#2255)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                self.held_part(read, ty, i, tys[i])\n",
     replace: "                read\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
@@ -601,7 +601,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-flattened-state-keys-kept",
     breaks: "a library's object's flattened state written whole keeps the keys an earlier variant set, which Rust's value has none of, so the program reads stale keys on what its library made (#1067)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "                            Some(adt) if !adt.is_local() => js::StaleKeys::Cleared,\n",
     replace: "                            Some(adt) if !adt.is_local() => js::StaleKeys::Kept,\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "variant lacks"],
@@ -609,7 +609,7 @@ export const mutations: Mutation[] = [
   {
     name: "exit-code-not-a-number",
     breaks: "an `ExitCode` isn't its `u8`, so its constants and `==` aren't a number's, where wasm32's std keeps one (#2292)",
-    file: "src/lower/representation.rs",
+    file: "crates/rust-js-lower/src/representation.rs",
     find: "            ty::Adt(adt, _) if super::recognition::is_exit_code(adt.did()) => Num::U8,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "process_termination_reports"],

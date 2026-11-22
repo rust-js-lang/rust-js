@@ -1,19 +1,19 @@
-// Mutations of src/lower/analysis/validation.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/analysis/validation.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "spread-field-refused",
     breaks: "a flattened `js::Spread` is refused as no struct of named fields, so `{ ...given, source }` can't be written (ADR 1164)",
-    file: "src/lower/analysis/validation.rs",
-    find: "                ty::Adt(adt, _) if crate::lower::recognition::is_js_spread(tcx, adt.did()) => true,\n",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
+    find: "                ty::Adt(adt, _) if crate::recognition::is_js_spread(tcx, adt.did()) => true,\n",
     replace: "",
     tests: ["test/js-spread.test.ts", "-t", "JS's own spread"],
   },
   {
     name: "spread-unflattened-allowed",
     breaks: "a `js::Spread` field without `flatten` compiles, the copy a key of its own (ADR 1164)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "            if !bindings::is_flatten(tcx, field) {\n",
     replace: "            if false {\n",
     tests: ["test/js-spread.test.ts", "-t", "unflattened, or alone"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "spread-alone-allowed",
     breaks: "a struct of a `js::Spread` alone compiles, a second form of `js::object::spread` (ADR 1164)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "            } else if parent.fields.len() == 1 {\n",
     replace: "            } else if false {\n",
     tests: ["test/js-spread.test.ts", "-t", "unflattened, or alone"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "projected-lent-refused",
     breaks: "a flattened struct of a derived `Clone` or `PartialEq` lent whole is refused, though its clone and `==` read its fields alone (#1820)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                        && bindings::plain_struct(tcx, expr.ty).is_none()\n                        && reads_whole(expr.ty) =>\n",
     replace: "                        && reads_whole(expr.ty) =>\n",
     tests: ["test/lowering.test.ts", "-t", "flattened field lent whole"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "projected-written-read",
     breaks: "a flattened struct lent mutably, or written whole, is taken as read by value, its projection (#1820)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                        && (bindings::plain_struct(tcx, expr.ty).is_none() || written.contains(&e))\n",
     replace: "                        && bindings::plain_struct(tcx, expr.ty).is_none()\n",
     tests: ["test/lowering.test.ts", "-t", "flattened field lent whole"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "projected-read-refused",
     breaks: "a flattened struct read whole by value, `let a = p.anchor`, is refused, though it's its fields alone (#1820)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                        && (bindings::plain_struct(tcx, expr.ty).is_none() || written.contains(&e))\n",
     replace: "",
     tests: ["test/jsx-props.test.ts", "-t", "own props"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "untagged-records-shadow-unchecked",
     breaks: "a flattened untagged enum whose record has a key its parent has too, `keyCode`, or its test member, `nativeEvent`, is taken as its parent's keys, which the parent's own would answer (#1818)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                && let Some(key) = shadowed_of(tcx, parent, &keys)\n",
     replace: "                && let Some(key) = shadowed_of(tcx, parent, &keys).filter(|_| false)\n",
     tests: ["test/flattened-untagged.test.ts", "-t", "couldn't be its one object"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "untagged-records-written-whole",
     breaks: "a flattened untagged enum of records written whole, which would leave the other record's keys, isn't refused (#1818)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                        && !(flattened.enum_of_keys(expr.ty) && matched.contains(&e)) =>\n",
     replace: "                        && !(flattened.enum_of_keys(expr.ty) && placed.contains(&e)) =>\n",
     tests: ["test/flattened-untagged.test.ts", "-t", "couldn't be its one object"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "untagged-records-matched-refused",
     breaks: "a flattened untagged enum of records matched where it's flattened, the parent object, is refused as read whole (#1818)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                        && !(flattened.enum_of_keys(expr.ty) && matched.contains(&e)) =>\n",
     replace: "                        && !(keyed(expr.ty) && matched.contains(&e)) =>\n",
     tests: ["test/flattened-untagged.test.ts", "-t", "declared an intersection"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
     name: "flattened-variant-field-allowed",
     breaks:
       "an enum variant's flattened field is made nested, without an error",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "        if tcx.def_kind(id) == DefKind::Enum {",
     replace: "        if false && tcx.def_kind(id) == DefKind::Enum {",
     tests: ["test/lowering.test.ts", "-t", "flattened field of an enum"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     name: "init-of-nested-function",
     breaks:
       "a function a thread-local's `init` makes is taken for the `init`, its value the thread-local's",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "        if matches!(tcx.def_kind(p), DefKind::Fn | DefKind::AssocFn | DefKind::Closure) {\n            return None;\n        }\n",
     replace: "",
     tests: [
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-reference-refused",
     breaks: "a flattened field that's a reference to a struct is refused",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "            let object = match ty.peel_refs().kind() {",
     replace: "            let object = match ty.kind() {",
     tests: [
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     name: "mixed-read-through",
     breaks:
       "a struct of two rests is read through one of them, whose keys JS mixed",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                    if is_mixed(thir[lhs].ty) && bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize()) =>",
     replace:
       "                    if false && bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize()) =>",
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
   {
     name: "mixed-taken-apart",
     breaks: "a struct of two rests is taken apart, into two JS rests",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                && is_mixed(pat.ty)",
     replace: "                && false",
     tests: ["test/jsx-props.test.ts", "-t", "two flattened fields"],
@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
   {
     name: "mixed-one-rest",
     breaks: "a struct of one rest is taken as one of two",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "            > 1\n        {\n            mixed.insert",
     replace: "            > 0\n        {\n            mixed.insert",
     tests: ["test/jsx-props.test.ts", "-t", "flattened"],
@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
   {
     name: "flatten-js-object-refused",
     breaks: "a flattened `Dict` is refused as no struct of named fields too, beside its own refusal, which names `js::object::spread` (#1822)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: " && !std(adt) || marks_js_object(tcx, adt, args)\n",
     replace: " && !std(adt)\n",
     tests: ["test/lowering.test.ts", "-t", "flattened JS object is refused"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     name: "extern-fn-declared-accepted",
     breaks:
       "a function in an `extern` block, a second form of a binding, is accepted where it's declared (ADR 0373)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                if tcx.is_foreign_item(def_id)\n                    && tcx.fn_sig(def_id).skip_binder().abi() == rustc_abi::ExternAbi::Rust =>\n",
     replace:
       "                if false && tcx.is_foreign_item(def_id)\n                    && tcx.fn_sig(def_id).skip_binder().abi() == rustc_abi::ExternAbi::Rust =>\n",
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
     name: "extern-type-accepted",
     breaks:
       "an `extern` type, a second form of a JS type, is accepted (ADR 0373)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "            DefKind::ForeignTy => {\n",
     replace: "            DefKind::ForeignTy if false => {\n",
     tests: ["test/diagnostics.test.ts", "-t", "an extern type"],
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
     name: "rest-of-closure-allowed",
     breaks:
       "a closure's parameter marked `#[rust_js::rest]` is gathered, though what calls it gives what its type says",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "            let refused = if tcx.is_closure_like(def_id) {\n",
     replace: "            let refused = if false {\n",
     tests: [
@@ -181,8 +181,8 @@ export const mutations: Mutation[] = [
     name: "rest-of-trait-method-allowed",
     breaks:
       "a trait method's parameter marked `#[rust_js::rest]` is gathered by one impl, though a call through its trait gives the slice whole",
-    file: "src/lower/analysis/validation.rs",
-    find: "            } else if tcx.trait_impl_of_assoc(def_id).is_some()\n                || tcx\n                    .trait_of_assoc(def_id)\n                    .is_some_and(|t| !crate::lower::classes::is_class_trait(tcx, t))\n            {\n",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
+    find: "            } else if tcx.trait_impl_of_assoc(def_id).is_some()\n                || tcx\n                    .trait_of_assoc(def_id)\n                    .is_some_and(|t| !crate::classes::is_class_trait(tcx, t))\n            {\n",
     replace: "            } else if false {\n",
     tests: [
       "test/rest-parameters.test.ts",
@@ -194,7 +194,7 @@ export const mutations: Mutation[] = [
     name: "rest-of-component-allowed",
     breaks:
       "a component's props marked `#[rust_js::rest]` are gathered, though React gives it one object",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "            } else if bindings::is_component(tcx, def_id) {\n",
     replace: "            } else if false {\n",
     tests: [
@@ -207,7 +207,7 @@ export const mutations: Mutation[] = [
     name: "rest-not-last-allowed",
     breaks:
       "a parameter marked `#[rust_js::rest]` before another is allowed, which JS's rest parameter can't be",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "            } else if index + 1 != count {\n",
     replace: "            } else if false {\n",
     tests: [
@@ -220,7 +220,7 @@ export const mutations: Mutation[] = [
     name: "rest-of-no-slice-allowed",
     breaks:
       "a `Vec` marked `#[rust_js::rest]` is allowed, its call given the `Vec` whole",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "            } else if !matches!(ty.kind(), ty::Ref(_, slice, rustc_hir::Mutability::Not) if slice.is_slice()) {\n",
     replace:
       "            } else if !matches!(ty.kind(), ty::Ref(_, slice, _) if slice.is_slice()) {\n",
@@ -230,7 +230,7 @@ export const mutations: Mutation[] = [
     name: "rest-pattern-allowed",
     breaks:
       "a slice taken apart where it's given and marked `#[rust_js::rest]` is allowed, gathered as no name",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "            } else if name.is_none() {\n",
     replace: "            } else if false {\n",
     tests: ["test/rest-parameters.test.ts", "-t", "refused: a pattern"],
@@ -239,7 +239,7 @@ export const mutations: Mutation[] = [
     name: "parameter-name-repeat-allowed",
     breaks:
       "a parameter's `#[rust_js::name]` that repeats its camelCase name, a second way to write it, is no error",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "    } else if given.as_str() == default {\n",
     replace: "    } else if false {\n",
     tests: [
@@ -252,7 +252,7 @@ export const mutations: Mutation[] = [
     name: "parameter-name-any-text",
     breaks:
       'a parameter\'s `#[rust_js::name = "my-name"]`, no JS name, is written as it is, a syntax error',
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "    if !rust_js_program::names::is_identifier(given.as_str()) || rust_js_program::names::kept_word(given.as_str()) {\n",
     replace: "    if false {\n",
     tests: [
@@ -265,7 +265,7 @@ export const mutations: Mutation[] = [
     name: "static-mut-pointer-refused",
     breaks:
       "a raw pointer to a `static mut`, `&raw mut TOTAL`, is refused as an address, not a handle on its place (ADR 0096, amended)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                Some(_) if raw => continue,\n",
     replace:
       '                Some(_) if raw => Refused::Memory("raw addresses of statics"),\n',
@@ -279,7 +279,7 @@ export const mutations: Mutation[] = [
     name: "static-pointer-unrefused",
     breaks:
       "a raw pointer to an immutable `static`, `&raw const LIMIT`, compiles, which rust-js has no place of (ADR 0096)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: '                Some(d) if raw && !tcx.is_mutable_static(d) => Refused::Memory("raw addresses of statics"),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^static_raw_address.rs$"],
@@ -288,7 +288,7 @@ export const mutations: Mutation[] = [
     name: "let-name-of-pattern-allowed",
     breaks:
       "a `let (x, y)`'s `#[rust_js::name]`, which names neither, is ignored, not refused (ADR 0855, amended)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "            let rustc_hir::PatKind::Binding(_, _, ident, None) = local.pat.kind else {\n",
     replace:
       "            let rustc_hir::PatKind::Binding(_, _, ident, None) = local.pat.kind else {\n                continue;\n            };\n            if false {\n",
@@ -302,7 +302,7 @@ export const mutations: Mutation[] = [
     name: "let-name-unchecked",
     breaks:
       "a `let`'s `#[rust_js::name]` that's no string, no JS name or the name it has anyway is not refused (ADR 0855, amended)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "        for (local, attr) in bindings::named_lets(tcx, owner) {\n",
     replace:
       "        for (local, attr) in bindings::named_lets(tcx, owner).into_iter().filter(|_| false) {\n",
@@ -316,7 +316,7 @@ export const mutations: Mutation[] = [
     name: "let-name-same-allowed",
     breaks:
       '`#[rust_js::name = "value"] let value`, a second way to write its name, is not refused (ADR 0855, amended)',
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "            let default = rust_js_program::casing::camel_case(ident.name.as_str());\n",
     replace: "            let default = String::new();\n",
     tests: [
@@ -329,16 +329,16 @@ export const mutations: Mutation[] = [
     name: "rest-of-class-trait-refused",
     breaks:
       "a trait of classes' default's `#[rust_js::rest]` is refused, where each class's prototype's method takes rest arguments (rd283)",
-    file: "src/lower/analysis/validation.rs",
-    find: "                    .is_some_and(|t| !crate::lower::classes::is_class_trait(tcx, t))\n",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
+    find: "                    .is_some_and(|t| !crate::classes::is_class_trait(tcx, t))\n",
     replace: "                    .is_some_and(|_| true)\n",
     tests: ["test/classes-traits.test.ts"],
   },
   {
     name: "subclass-impl-refused",
     breaks: "a class's impl of react's `Component` is refused, as any binding trait's is",
-    file: "src/lower/analysis/validation.rs",
-    find: "                    || crate::lower::classes::subclass_impl_class(tcx, def_id.to_def_id()).is_some()\n",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
+    find: "                    || crate::classes::subclass_impl_class(tcx, def_id.to_def_id()).is_some()\n",
     replace: "                    || false\n",
     tests: [
       "test/class-components.test.ts",
@@ -349,7 +349,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-lent-refused",
     breaks: "a flattened keyed enum lent whole, `&node.kind`, is refused, so a node can't be given to its kind's functions (a struct lent whole is its projection since #1820)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                        && !lent.contains(&e)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_enum.rs$"],
@@ -357,7 +357,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-reference-lent-whole",
     breaks: "a flattened reference lent whole is refused as a type whose `Clone` would read the parent's fields, not as the copy of its referent it would be (#1819)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                        && expr.ty.is_ref() =>\n",
     replace: "                        && false =>\n",
     tests: ["test/lowering.test.ts", "-t", "flattened reference is refused"],
@@ -365,7 +365,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-param-js-object-allowed",
     breaks: "a JS object given to a flattened type parameter is copied into its parent, as a flattened field of one would be (#1822)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                    ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => bindings::js_object_copied().into(),\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "flattened JS object is refused"],
@@ -373,7 +373,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-lent-mutably",
     breaks: "a flattened field lent mutably, which may replace it whole, is taken as its parent's object",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                    borrow_kind: rustc_middle::mir::BorrowKind::Shared,\n",
     replace: "                    borrow_kind: _,\n",
     tests: ["test/lowering.test.ts", "-t", "flattened field lent whole"],
@@ -381,7 +381,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-lent-read-whole",
     breaks: "a flattened field of a type whose clone spreads it is lent whole, so its clone holds the parent's fields too",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                        && reads_whole(expr.ty) =>\n",
     replace: "                        && false =>\n",
     tests: ["test/lowering.test.ts", "-t", "flattened field lent whole"],
@@ -389,7 +389,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-lent-shadow-unseen",
     breaks: "a flattened field lent whole whose parent has a name it has too is taken as its parent's object, whose name is the parent's",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "            return Some(field.name);\n",
     replace: "            return None;\n",
     tests: ["test/lowering.test.ts", "-t", "flattened field lent whole"],
@@ -397,7 +397,7 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-std-struct-allowed",
     breaks: "a flattened `RefCell` of a struct, std's struct of named fields, is accepted, read as the parent's own (rd380)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "adt.is_struct() && adt.non_enum_variant().ctor.is_none() && !std(adt)",
     replace: "adt.is_struct() && adt.non_enum_variant().ctor.is_none()",
     tests: ["test/classes-flattened-state.test.ts", "-t", "refused"],
@@ -405,23 +405,23 @@ export const mutations: Mutation[] = [
   {
     name: "reads-whole-by-any-impl",
     breaks: "a flattened state's `RefCell` reads it whole by the `Clone` std has of any `RefCell`, where only its state's would, so every borrow of it is refused (rd380)",
-    file: "src/lower/analysis/validation.rs",
-    find: ".any(|tr| crate::lower::recognition::trait_holds_in(tcx, env, ty, tr) != Some(false))",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
+    find: ".any(|tr| crate::recognition::trait_holds_in(tcx, env, ty, tr) != Some(false))",
     replace: ".any(|_| true)",
     tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
   },
   {
     name: "namespace-value-read-allowed",
     breaks: "a Rust read of a namespace thread-local, `NOOP.with(..)`, is lowered as a cell's, which no JS variable is (rd293, ADR 1037, amended)",
-    file: "src/lower/analysis/validation.rs",
-    find: "                && crate::lower::classes::is_value_namespace(tcx, def_id)\n",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
+    find: "                && crate::classes::is_value_namespace(tcx, def_id)\n",
     replace: "                && false\n",
     tests: ["test/namespace-values.test.ts", "-t", "Rust reads is refused"],
   },
   {
     name: "keyed-shadow-unchecked",
     breaks: "a keyed enum flattened into a parent with a field of one of its keys compiles, and the parent's own is overwritten (#504)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "    shadowed_of(tcx, parent, &keyed.keys)\n",
     replace: "    shadowed_of(tcx, parent, &keyed.keys).filter(|_| false)\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "no key tells"],
@@ -429,7 +429,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-param-given-anything",
     breaks: "a struct's flattened type parameter given a number compiles, though it has no keys (#504)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                    _ => \"a flattened type parameter is given a struct of named fields or an enum whose variants each have a field no other variant has, with at most one variant of no fields\".into(),\n",
     replace: "                    _ => continue,\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "no key tells"],
@@ -437,7 +437,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-param-given-a-struct-refused",
     breaks: "a struct's flattened type parameter given a struct is refused as one given an enum no key tells, so React's DetailedHTMLProps<AnchorHTMLAttributes, ..> is (#504's regression)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                    ty::Adt(adt, args) if plain(*adt, args) => continue,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_param.rs$"],
@@ -445,7 +445,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-placed-refused",
     breaks: "a flattened keyed enum matched where it's a place, or written whole, is refused as one read whole (#504)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                        && !(keyed(expr.ty) && placed.contains(&e))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_enum.rs$"],
@@ -453,7 +453,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-placed-anything",
     breaks: "a flattened field of any type matched or written whole compiles, a type parameter's too (#504)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                        && !(keyed(expr.ty) && placed.contains(&e))\n",
     replace: "                        && !placed.contains(&e)\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "moved out"],
@@ -462,7 +462,7 @@ export const mutations: Mutation[] = [
     name: "own-cell-calls-read-whole",
     breaks:
       "a flattened state's cell given to its own `get_mut` or `into_inner` is refused as flattened props read whole (#687)",
-    file: "src/lower/analysis/validation.rs",
+    file: "crates/rust-js-lower/src/analysis/validation.rs",
     find: "                        && !own_calls.contains(&e)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_got_mut.rs$"],

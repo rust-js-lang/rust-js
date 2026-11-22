@@ -1,11 +1,11 @@
-// Mutations of src/lower/analysis/type_facts/carried.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/analysis/type_facts/carried.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "library-associated-uncarried",
     breaks: "a fact of a library trait's associated type, `size_of::<A::Item>()` of smallvec's code a consumer compiles, is no dictionary's, so it's refused, \"`size_of` of a type parameter\" (#476)",
-    file: "src/lower/analysis/type_facts/carried.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "        ) if def_id.is_local() || foreign.is_library(def_id.krate) => Some(*def_id),\n",
     replace: "        ) if def_id.is_local() => Some(*def_id),\n",
     tests: ["test/crates.test.ts", "-t", "item_size_of_instance"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "uncarried-associated-read",
     breaks: "a consumer's fact of a library trait's associated type that the library's dictionaries don't carry is read of them, `undefined` (#476)",
-    file: "src/lower/analysis/type_facts/carried.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "    assoc.is_local() || carried.contains(&fact) || fact == TypeFact::Room && carried.contains(&TypeFact::Size)\n",
     replace: "    assoc.is_local() || foreign.is_library(assoc.krate) || carried.contains(&fact) || fact == TypeFact::Room && carried.contains(&TypeFact::Size)\n",
     tests: ["test/crates-refused.test.ts", "-t", "associated type its dictionaries don't carry"],
@@ -21,39 +21,39 @@ export const mutations: Mutation[] = [
   {
     name: "into-iterator-sizes-uncarried",
     breaks: "a library's trait's associated `IntoIterator`'s constant size isn't carried whatever asks it, so a consumer's generic flatten of its own array impl's items is refused, \"which no caller gives\" (#1341)",
-    file: "src/lower/analysis/type_facts/carried.rs",
-    find: "            if crate::lower::recognition::trait_holds_in(tcx, typing_env, projection, into_iterator) == Some(true)\n",
-    replace: "            if crate::lower::recognition::trait_holds_in(tcx, typing_env, projection, into_iterator) == Some(false)\n",
+    file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
+    find: "            if crate::recognition::trait_holds_in(tcx, typing_env, projection, into_iterator) == Some(true)\n",
+    replace: "            if crate::recognition::trait_holds_in(tcx, typing_env, projection, into_iterator) == Some(false)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_trait_items_flattened_where_its_hint_is_seen"],
   },
   {
     name: "iterator-assoc-sizes-carried",
     breaks: "an associated type its bounds make an `Iterator` has its constant size carried by every impl's dictionary, so an impl that makes it its `T: Iterator` asks it, and is refused (#1341)",
-    file: "src/lower/analysis/type_facts/carried.rs",
-    find: "                && crate::lower::recognition::const_size_unknown(tcx, typing_env, projection)\n",
+    file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
+    find: "                && crate::recognition::const_size_unknown(tcx, typing_env, projection)\n",
     replace: "                && true\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_passed_through_a_chain_of_impls.rs$"],
   },
   {
     name: "library-assoc-layouts-uncarried",
     breaks: "a library's trait's associated type's size isn't carried by its dictionaries, so a consumer's generic `size_of::<Self::Item>()` of its own impl of rand_core's `BlockRngCore` is refused, \"`size_of` of a type parameter\" (#1420)",
-    file: "src/lower/analysis/type_facts/carried.rs",
-    find: "            if library\n                && crate::lower::library::escapes",
-    replace: "            if false\n                && crate::lower::library::escapes",
+    file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
+    find: "            if library\n                && crate::library::escapes",
+    replace: "            if false\n                && crate::library::escapes",
     tests: ["test/crates.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
   },
   {
     name: "private-trait-assoc-layouts-carried",
     breaks: "a library's private trait carries its associated types' sizes, which no consumer can ask: its JS as a library isn't its program's (#1420)",
-    file: "src/lower/analysis/type_facts/carried.rs",
-    find: "                && crate::lower::library::escapes(tcx, library, trait_id.to_def_id())\n",
+    file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
+    find: "                && crate::library::escapes(tcx, library, trait_id.to_def_id())\n",
     replace: "                && true\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_type_fields.rs$"],
   },
   {
     name: "unsized-assoc-layouts-carried",
     breaks: "a library's trait's `?Sized` associated type has its size carried, which a `str`'s hasn't: its impl is refused (#1420)",
-    file: "src/lower/analysis/type_facts/carried.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "                && projection.is_sized(tcx, typing_env)\n",
     replace: "                && true\n",
     tests: ["test/crates.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-assoc-layouts-carried",
     breaks: "a library's trait's generic associated type, `type Made<T>`, has its size carried, of no one type: its manifest lists it (#1420)",
-    file: "src/lower/analysis/type_facts/carried.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "                && tcx.generics_of(item.def_id).own_params.is_empty()\n",
     replace: "                && true\n",
     tests: ["test/crates.test.ts", "-t", "carry the layouts of the associated types"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "untemplated-assoc-layouts-carried",
     breaks: "a library's trait carries the size of an associated type one of its impls gives as a type its contract can't say, `(T, Box<dyn Fn(&T) -> usize>)`: that impl is refused (#1420)",
-    file: "src/lower/analysis/type_facts/carried.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "                Some(super::Asked::Built(built, ..)) => foreign.templates(imp, built),\n",
     replace: "                Some(super::Asked::Built(..)) => true,\n",
     tests: ["test/crates.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "other-assoc-layouts-carried",
     breaks: "a library's trait carries the size of an associated type one of its impls gives as another trait's, whose dictionaries carry none: that impl is refused (#1420)",
-    file: "src/lower/analysis/type_facts/carried.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "                Some(super::Asked::Carried(..)) => false,\n",
     replace: "                Some(super::Asked::Carried(..)) => true,\n",
     tests: ["test/crates.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "unknown-layout-assoc-carried",
     breaks: "a library's trait carries the size of an associated type one of its impls gives as a std associated type of its parameter, typenum's `<<U as Len>::Output as Add<B1>>::Output`: that impl is refused (#1420)",
-    file: "src/lower/analysis/type_facts/carried.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "                None => tcx.layout_of(typing_env.as_query_input(ty)).is_ok(),\n",
     replace: "                None => true,\n",
     tests: ["test/crates.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-of-a-library-traits-item-uncarried",
     breaks: "a consumer's copy of a library's growth of its trait's associated type's items asks their `Room`, which the library's manifest names as its `Size`, and isn't given it, so its growth isn't kept and `capacity()` refuses it (#1260)",
-    file: "src/lower/analysis/type_facts/carried.rs",
+    file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "    assoc.is_local() || carried.contains(&fact) || fact == TypeFact::Room && carried.contains(&TypeFact::Size)\n",
     replace: "    assoc.is_local() || carried.contains(&fact)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: capacity_of_a_library_traits_item"],

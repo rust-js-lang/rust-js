@@ -1,4 +1,4 @@
-// Mutations of src/lower/analysis/cell_borrows/at_hand.rs (ADR 0093): what
+// Mutations of crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs (ADR 0093): what
 // of the crate is a value at hand, whose property reads meet no getter of
 // the program's (#2106, ADR 1173).
 import type { Mutation } from "../../../../mutations";
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
   {
     name: "at-hand-of-any-capture",
     breaks: "a property read of any variable runs nothing, a JS caller's `&Locale` parameter's too, whose getter may call back into the program while a borrow is held, where Rust panics `already borrowed` (#2106)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "            ExprKind::UpvarRef { var_hir_id, .. } => self.vars.contains(var_hir_id),\n",
     replace: "            ExprKind::UpvarRef { .. } => true,\n",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "a JS caller's locale"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
   {
     name: "at-hand-of-any-binding",
     breaks: "a binding's result is at hand whether or not it makes it, `Map.get`'s of what a JS caller stored too (#2106)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "                    matches!(js_form(tcx, callee), JsForm::New(_) | JsForm::Null) || creates(tcx, callee)\n",
     replace: "                    matches!(js_form(tcx, callee), JsForm::New(_) | JsForm::Null) || true\n",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "what a map kept"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "creates-unread",
     breaks: "a binding that `creates` its result, `regExp.exec(s)`, isn't taken to, so a read of its match keeps the vercel-ui SDK's memo checked (#2106)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "                    matches!(js_form(tcx, callee), JsForm::New(_) | JsForm::Null) || creates(tcx, callee)\n",
     replace: "                    matches!(js_form(tcx, callee), JsForm::New(_) | JsForm::Null)\n",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "the match exec made"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "at-hand-combinator-parameter-lost",
     breaks: "an `Option` combinator's closure parameter given an at-hand payload, `.and_then(|matched| matched.get(1))`, isn't at hand (#2106)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "        if !combinator || !self.holds(recognition, thir, *subject) {\n",
     replace: "        if true {\n",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "the match exec made"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "at-hand-of-any-variable",
     breaks: "a property read of any variable runs nothing, a JS caller's parameter read while its function holds a `RefCell` guard too, whose getter may call back and borrow it again (#2106)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "            ExprKind::VarRef { id } => self.vars.contains(id) || self.slot_params.contains(id),\n",
     replace: "            ExprKind::VarRef { .. } => true,\n",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "a guard held over a JS caller's locale"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "at-hand-assignment-unread",
     breaks: "a variable a JS caller's value is assigned over one a builtin made is still taken to be at hand, its read under a held cell plain (#2110)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "                        .all(|&(thir, value)| at_hand.holds(&in_body(thir), thir, value))\n",
     replace: "                        .all(|_| true)\n",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "a JS caller's locale is assigned to"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "at-hand-loan-unread",
     breaks: "a variable lent `&mut` or bound `ref mut` is still taken to be at hand, though what's written through the loan isn't seen (#2110)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "                !lent.contains(var)\n                    && ",
     replace: "                ",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "lent mutably"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "at-hand-mut-borrow-not-lending",
     breaks: "a `&mut` borrow of a variable isn't taken to lend it, so `std::mem::swap(&mut locale, ..)` leaves it at hand (#2110)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "                    borrow_kind: BorrowKind::Mut { .. },\n",
     replace: "                    borrow_kind: BorrowKind::Fake(_),\n",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "lent mutably"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "at-hand-ref-mut-not-lending",
     breaks: "a `ref mut` binding isn't taken to lend what it binds into, so `*slot = tag` leaves the variable at hand (#2110)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "                lends |= matches!(",
     replace: "                lends |= false && matches!(",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "ref mut"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "at-hand-capture-assignment-unseen",
     breaks: "a closure's assignment to its own capture isn't seen, so a `move` closure reads a JS caller's locale it assigned as at hand (#2110)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "        ExprKind::UpvarRef { var_hir_id, .. } => Some((*var_hir_id, true)),\n",
     replace: "        ExprKind::UpvarRef { .. } => None,\n",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "a closure assigns"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "at-hand-parameters-unread",
     breaks: "a private function's parameter is never at hand, so a memo that maximizes the locale it made through `maximized(tag)` gets `$withBorrowMut` (#2111)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "            for (&callee, sites) in &calls.sites {",
     replace: "            for (&callee, sites) in calls.sites.iter().filter(|_| false) {",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "through a private function"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "at-hand-callers-unasked",
     breaks: "a function `only_called` doesn't list, one also used as a `fn` pointer, is taken as called only where it's seen, so its parameter is at hand though a caller of the pointer may give it a JS caller's locale (#2111)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "                    && only_called.contains_key(&callee)\n",
     replace: "                    && callee.is_local()\n",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "also used as a value"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "at-hand-thread-local-unread",
     breaks: "a thread-local whose initializer a builtin made isn't at hand, so a `js::map::new()` thread-local's `has` and `set` under a held borrow get `$withBorrowMut` (#2111)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "                    at_hand.keys.insert(key);",
     replace: "                    let _ = key;",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "thread-local map a builtin made"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "at-hand-cast-not-passed-on",
     breaks: "a cast of what's at hand isn't, so a locale the memo made, read as the program's struct, gets `$withBorrowMut` (#2111)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "                Some((callee, _)) if is_binding(tcx, callee) && matches!(js_form(tcx, callee), JsForm::This) => {",
     replace: "                Some((callee, _)) if false && is_binding(tcx, callee) && matches!(js_form(tcx, callee), JsForm::This) => {",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "a locale the memo made, cast"],
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
   {
     name: "slot-writes-unread",
     breaks: "a thread-local is a slot whatever's written to it, so one a JS caller's set is stored in reads it plainly under a held borrow, its override's re-entry passing where Rust panics (#2114)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "!at_hand.slots.contains(&key) && writes.iter().all(|write| at_hand.written(&in_body, write))",
     replace: "!at_hand.slots.contains(&key) && true",
     tests: ["test/at-hand-slots.test.ts", "-t", "a JS caller's set is written"],
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
   {
     name: "slot-reads-unknown",
     breaks: "a slot's `get` isn't taken to read what it holds, so React's Fizz hooks' `renderPhaseUpdates` keeps a copy and a memo of a `Cell`'s map its check (#2114)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "Some(Std::CellGet | Std::CellTake | Std::CellReplace) => true,",
     replace: "Some(Std::CellGet | Std::CellTake | Std::CellReplace) => false,",
     tests: ["test/at-hand-slots.test.ts", "-t", "a private Cell's map"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   {
     name: "slot-lent-value-unbound",
     breaks: "what a slot's `with_borrow_mut` closure is lent isn't at hand, so a private thread-local's set's `has` keeps the memo's borrow checked (#2114)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "at_hand.slot_params.extend(params.iter().copied());",
     replace: "let _ = params;",
     tests: ["test/at-hand-slots.test.ts", "-t", "a private thread-local's set"],
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
   {
     name: "local-cell-writes-unread",
     breaks: "a local cell its closures share is at hand whatever's written to it, so one a JS caller's map is replaced into reads it plainly under a held borrow (#2114)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "                    && writes.iter().all(|write| at_hand.written(&in_body, write))\n",
     replace: "                    && true\n",
     tests: ["test/at-hand-slots.test.ts", "-t", "a JS caller's map is written to"],
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
   {
     name: "local-cell-reads-unknown",
     breaks: "what a local cell's `borrow()` reads isn't taken to be at hand, so React's noop renderer's `suspenseyThingCache` map's `get` keeps its memo's borrow checked (#2114)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "                        Some(Std::Borrow { mutable: false, .. } | Std::CellReplace | Std::CellTake)\n",
     replace: "                        Some(Std::Borrow { mutable: false, .. } | Std::CellReplace | Std::CellTake) if false\n",
     tests: ["test/at-hand-slots.test.ts", "-t", "its map a builtin made, reads plainly"],
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
   {
     name: "returns-unread",
     breaks: "a call of a function whose every value is at hand isn't taken to be, so a locale a private function makes and returns keeps its memo's borrow checked (#2116)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "Some((callee, _)) if self.returns.contains(&callee) => true,",
     replace: "Some((callee, _)) if self.returns.contains(&callee) => false,",
     tests: ["test/at-hand-returns.test.ts", "-t", "a private function makes and returns"],
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
   {
     name: "returns-each-return-unasked",
     breaks: "a function's `return` values aren't asked, only its body's, so one that returns a JS caller's locale on one path is taken at hand and its read under a held borrow is plain (#2116)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "                        .all(|value| at_hand.holds(&in_body(thir), thir, value))\n",
     replace: "                        .all(|_| true)\n",
     tests: ["test/at-hand-returns.test.ts", "-t", "may return of a JS caller's"],
@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
   {
     name: "returns-callers-unasked",
     breaks: "a function whose callers aren't all known, one also used as a value, is asked of its returns too, against `only_called` (#2116)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: ".filter(|body| only_called.contains_key(&body.def_id))",
     replace: ".filter(|body| !tcx.is_closure_like(body.def_id) && only_called.len() < usize::MAX)",
     tests: ["test/at-hand-returns.test.ts", "-t", "also used as a value"],
@@ -183,7 +183,7 @@ export const mutations: Mutation[] = [
   {
     name: "catch-unwind-unread",
     breaks: "what `catch_unwind` gives isn't taken at hand, so a locale made in it keeps its memo's borrow checked (#2116)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "matches!(tcx.item_name(callee).as_str(), \"catch_unwind\")",
     replace: "matches!(tcx.item_name(callee).as_str(), \"catch_unwind_never\")",
     tests: ["test/at-hand-returns.test.ts", "-t", "catch_unwind gives, or its fallback"],
@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallback-unasked",
     breaks: "an `Option`'s or a `Result`'s fallback isn't asked, so a JS caller's locale given as `unwrap_or_else`'s is read plainly under a held borrow (#2116)",
-    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/at_hand.rs",
     find: "                            false => self.makes_at_hand(recognition, thir, *fallback),\n",
     replace: "                            false => true,\n",
     tests: ["test/at-hand-returns.test.ts", "-t", "fallback is a JS caller's"],

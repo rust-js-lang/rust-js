@@ -23,7 +23,7 @@ be two places per type, each a one-off.
 
 ## Decision
 
-**`src/lower/serde/std_forms.rs` is the one catalog of std types whose
+**`crates/rust-js-lower/src/serde/std_forms.rs` is the one catalog of std types whose
 impl is serde's own: `std_form(ty)` gives a type's row, and the writer
 and the reader each ask it before anything else of an ADT.** A row is a
 form:

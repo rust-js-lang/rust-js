@@ -50,10 +50,10 @@ test("the committed @rust-js/std's helpers are the compiler's, each exported onc
 test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf, $repeating, $repeatingN, $rev, $closing, $holding, $mapEnds, $copied, $cloned, $copiedGiven, $filterEnds, $somes, $someItems, $filterDropping, $enumerate, $taking, $skipping, $memchrIter, $stdIterator, $stepsOf, $successors, $lazyScan, $lazyMapWhile, $lazyTakeWhile, $lazySkipWhile, $lazyChain, $lazyZip, $trustedZip, $zipEnds, $trustedZipEnds, $stepBy, $flattenEnds, $flatMap, $lazyRange, $lazyRangeBack, $treeSetAlgebra, $hashSetUnion, $mapExtractIf, $splice, $splicing, $decodeUtf16, $cycle, $chars, $charIndices, $repeatingWith, $onceWith, $lazySplitBy, $lazyRsplitBy, $lazySplitTerminatorBy, $lazySplitInclusiveBy, $lazyMatchesBy, $lazyMatchIndicesBy, $lazySliceSplitBy, $lazySliceSplitByMut, $lazyChunkBy, $lazyChunkByMut and the runtime's generators", () => {
   const printed = run([compiler, "--runtime-module"]);
   const generators = [...printed.matchAll(/^export function\* (\$[\w$]+)/gm)].map((m) => m[1]);
-  const source = readFileSync(join(root, "src", "lower", "iterators.rs"), "utf8");
+  const source = readFileSync(join(root, "crates", "rust-js-lower", "src", "iterators.rs"), "utf8");
   const list = source.match(/pub\(crate\) const ITERATOR_HELPERS: \[&str; \d+\] = \[([^\]]*)\]/)![1];
   // A range's, named where ranges are.
-  const range = readFileSync(join(root, "src", "lower", "std_types", "range.rs"), "utf8");
+  const range = readFileSync(join(root, "crates", "rust-js-lower", "src", "std_types", "range.rs"), "utf8");
   const named = (constant: string) => range.match(new RegExp(`pub\\(crate\\) const ${constant}: &str = "(\\$\\w+)";`))![1];
   const listed = [
     ...list

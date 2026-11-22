@@ -120,6 +120,7 @@ export const everything = [
   "Cargo.toml",
   "Cargo.lock",
   "build.rs",
+  "rustc-rpath.rs",
   "rust-toolchain.toml",
   "rustfmt.toml",
 ];

@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/bounds.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/bounds.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "index-in-bounds-a-part",
     breaks:
       "React's `completedSegments.borrow()[0]` in bounds, of MIR's temporary of the borrow, is `const [contentSegment] = $borrow(completedSegments);`, a pattern, not the index it is (ADR 0598, amended)",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: "            Std::Index => return Ok(Value::Expr(Expr::indexed(items.clone(), exprs.remove(0)))),\n",
     replace: "            Std::Index => return Ok(Value::Expr(at(&exprs[0]))),\n",
     tests: ["test/lowering-parts.test.ts", "-t", "an item read by its index is no pattern"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "removed-item-dropped",
     breaks:
       "a `remove(i)` in bounds whose item is read gives the array it spliced, `[3]`, not the item, `3`",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: "                    false => Expr::index(spliced, Expr::int(0)),\n",
     replace: "                    false => spliced,\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     name: "removed-first-spliced",
     breaks:
       "`remove(0)` shown in bounds is `targets.splice(0, 1)[0]`, not `targets.shift()` (rd103)",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: "        let first = |index: &Expr| index.as_int() == Some(0);\n",
     replace: "        let first = |_: &Expr| false;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
     name: "remove-insert-in-bounds-checked",
     breaks:
       "a `remove` or an `insert` the body's ranges show in bounds is checked, `$removeAt`, `$insertAt` (rd103)",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: "            Std::Comb(Comb::Swap | Comb::SwapRemove | Comb::Remove | Comb::Insert) => true,\n",
     replace: "            Std::Comb(Comb::Swap | Comb::SwapRemove) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
     name: "vec-item-written-in-place",
     breaks:
       "`points[i] = p` of a `Vec` of objects is `$assign($index(points, i), p)`, not `points[$at(points, i)] = p`",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: "                if self.mut_ref_form(*item).is_cell() || written_through_at_once(state.body, state.at))\n",
     replace: "                if self.mut_ref_form(*item).is_cell())\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_item_written_whole.rs$"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     name: "vec-item-dropped-then-written-in-place",
     breaks:
       "`names[0] = first` of a `Vec` whose items drop is `$assign`, as the old value's drop between was taken for something run",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: "        && uses.1 == 2 + usize::from(dropped.is_some())\n",
     replace: "        && uses.1 == 2\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_item_written_whole.rs$"],
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     name: "written-at-once-cleanup-counted",
     breaks:
       "the cleanup's write of `*r` where the drop unwinds is counted a use, so `names[0] = first` is `$assign`",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: "            if !data.is_cleanup {\n",
     replace: "            if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_item_written_whole.rs$"],
@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
     name: "written-at-once-never",
     breaks:
       "`queue.borrow_mut()[i] = item` of a variable `i` spills it, `const index = i; queue[index] = item;`, though nothing runs before the write",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: "            let at_once = written_through_at_once(state.body, state.at);\n",
     replace:
       "            let at_once = false && written_through_at_once(state.body, state.at);\n",
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
     name: "written-at-once-of-an-operation-held",
     breaks:
       "`table[i] = prefix + 1` holds its index, `const index = i; table[index] = ..`, as an operation of values made before was taken for something run (#353)",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: "        mir::Rvalue::BinaryOp(_, operands) => read(&operands.0) && read(&operands.1),\n",
     replace: "        mir::Rvalue::BinaryOp(..) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^index_written_by_an_operation.rs$"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     name: "written-at-once-of-a-negation-held",
     breaks:
       "`signs[i] = -n` holds its index, `const index = i;`, as a negation of a value made before was taken for something run (#353)",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: "        mir::Rvalue::Use(o, _) | mir::Rvalue::UnaryOp(_, o) | mir::Rvalue::Cast(_, o, _) => read(o),\n",
     replace:
       "        mir::Rvalue::Use(o, _) | mir::Rvalue::Cast(_, o, _) => read(o),\n",
@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
     name: "written-at-once-of-a-cast-held",
     breaks:
       "`bytes[k] = wide as u8` holds its index, `const index = k;`, as a cast of a value made before was taken for something run (#353)",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: "        mir::Rvalue::Use(o, _) | mir::Rvalue::UnaryOp(_, o) | mir::Rvalue::Cast(_, o, _) => read(o),\n",
     replace:
       "        mir::Rvalue::Use(o, _) | mir::Rvalue::UnaryOp(_, o) => read(o),\n",
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     name: "swap-remove-shifted",
     breaks:
       "`swap_remove`'s item is taken from the front, so a heap's `pop` gives its second item",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: '            _ => Expr::call(Expr::member(items, "pop"), Vec::new()),',
     replace:
       '            _ => Expr::call(Expr::member(items, "shift"), Vec::new()),',
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     name: "swap-remove-last-unswapped",
     breaks:
       "`swap_remove(i)` swaps `i` with itself, so a heap's `pop` gives its last item",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: '                let last = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));\n                (exprs.remove(0), last)',
     replace:
       '                let _ = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));\n                let i = exprs.remove(0);\n                (i.clone(), i)',
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
     name: "mir-index-mut-a-value",
     breaks:
       "`v[i] += 1` of numbers through `index_mut` changes a copy of the element",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: "            return Ok(Value::Ref(Expr::index(items, index)));\n",
     replace: "            return Ok(Value::Expr(Expr::index(items, index)));\n",
     tests: ["test/corpus.test.ts", "-t", "compound_assignment_order"],
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
     name: "mir-checked-index-copied",
     breaks:
       "a parameter MIR checks an element's place at is copied first, `const index = i;`, and the item a handle, where what's lent there is used after more runs (`at_once` the rest, ADR 0881, amended)",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: "js::ExprKind::Var(v) if at_once || self.alike_local(v));\n",
     replace: "js::ExprKind::Var(v) if at_once);\n",
     tests: [
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     name: "index-mut-known-checked",
     breaks:
       "an item's place through `index_mut` the ranges show in bounds is checked, `$index(heap, 0);` before `heap[0] = last`",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: "            if checked {\n",
     replace: "            if true || checked {\n",
     tests: [
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
     name: "const-index-spilled",
     breaks:
       "a `const` index, `SYNC_LANE_INDEX`, is held in a variable of its own, its element a getter and a setter (ADR 0894, amended)",
-    file: "src/lower/mir/bounds.rs",
+    file: "crates/rust-js-mir/src/bounds.rs",
     find: "            let index_kept =\n                index.is_fixed() ||",
     replace: "            let index_kept =\n                index.is_constant() ||",
     tests: [

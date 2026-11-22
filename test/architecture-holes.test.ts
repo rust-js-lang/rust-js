@@ -23,7 +23,7 @@ test("each undefined says whether it's a value or a hole", () => {
   // What `mem::replace` takes a value out of is a hole, never JS's value,
   // but a list's item taken where the list is still made whole, whose
   // place JS's `undefined` holds and nothing reads (`take_field`).
-  const printed = new Set(["src/lower/mir/operands.rs: replace(&mut items[field], Value::Expr(Expr::js_undefined()"]);
+  const printed = new Set(["crates/rust-js-mir/src/operands.rs: replace(&mut items[field], Value::Expr(Expr::js_undefined()"]);
   const taken = sources.flatMap((file) =>
     [...read(file).matchAll(/replace\(\s*[^;]*?,\s*(?:Value::Expr\()?Expr::js_undefined\(\)/g)]
       .map((m) => `${file}: ${m[0].replaceAll(/\s+/g, " ")}`)

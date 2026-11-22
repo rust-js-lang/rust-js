@@ -1,4 +1,4 @@
-// Mutations of src/lower/serde/std_forms.rs, the catalog of std types'
+// Mutations of crates/rust-js-lower/src/serde/std_forms.rs, the catalog of std types'
 // serde forms (#1623).
 import type { Mutation } from "../../../mutations";
 
@@ -10,7 +10,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-range-row-missing",
     breaks: "a `Range` has no row, so writing or reading one is refused where serde writes `{\"start\",\"end\"}` (#1623)",
-    file: "src/lower/serde/std_forms.rs",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
     find: '            Some(RangeKind::Exclusive) => return range("Range"),\n',
     replace: "",
     tests: ranges,
@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-struct-form-unknown-field-kept",
     breaks: "a std struct form ignores a field it doesn't know, where serde's own visitor refuses it, `unknown field `step`, expected `start` or `end`` (#1623)",
-    file: "src/lower/serde/std_forms.rs",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
     find: '                    js::Prop::Field("deny".into(), Expr::bool(true)),\n',
     replace: "",
     tests: ranges,
@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-struct-form-derive-words",
     breaks: "a std struct form's sequence too short says a derive's words, `struct Range with 2 elements`, where serde's visitor says `struct Range` (#1623)",
-    file: "src/lower/serde/std_forms.rs",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
     find: '                    js::Prop::Field("expecting".into(), expected.clone()),\n',
     replace: "",
     tests: ranges,
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-enum-form-declared-order",
     breaks: "`Bound`'s variants are named in the enum's declared order, `Included`, `Excluded`, `Unbounded`, where serde's message lists `Unbounded`, `Included`, `Excluded` (#1623)",
-    file: "src/lower/serde/std_forms.rs",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
     find: '&["Unbounded", "Included", "Excluded"]',
     replace: '&["Included", "Excluded", "Unbounded"]',
     tests: ranges,
@@ -42,15 +42,15 @@ export const mutations: Mutation[] = [
   {
     name: "std-duration-row-missing",
     breaks: "a `Duration` has no row, so writing or reading one is refused where serde writes `{\"secs\",\"nanos\"}` (#1623)",
-    file: "src/lower/serde/std_forms.rs",
-    find: "        if crate::lower::recognition::is_duration_ty(ty) {\n",
-    replace: "        if false && crate::lower::recognition::is_duration_ty(ty) {\n",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
+    find: "        if crate::recognition::is_duration_ty(ty) {\n",
+    replace: "        if false && crate::recognition::is_duration_ty(ty) {\n",
     tests: time,
   },
   {
     name: "std-system-time-written-before-epoch",
     breaks: "a `SystemTime` before the epoch is written as a negative offset, where serde's is `SystemTime must be later than UNIX_EPOCH` (#1623)",
-    file: "src/lower/serde/std_forms.rs",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
     find: "                            Some(helper) => Expr::call_helper(helper, vec![value]),\n",
     replace: "                            Some(_) => value,\n",
     tests: time,
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-system-time-past-unix-read",
     breaks: "a `SystemTime` whose offset unix's `i64` seconds can't hold is read, where serde's is `overflow deserializing SystemTime`, of no position (#1623)",
-    file: "src/lower/serde/std_forms.rs",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
     find: "                    Some(then) => Expr::call_helper(then, vec![read]),\n",
     replace: "                    Some(_) => read,\n",
     tests: time,
@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-wrapper-row-missing",
     breaks: "a `Reverse` or a `Wrapping` has no row, so writing or reading one is refused where serde writes what it holds (#1623)",
-    file: "src/lower/serde/std_forms.rs",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
     find: "        if self.is_reverse(ty) || self.is_std_type(ty, StdItem::Wrapping) {\n",
     replace: "        if false {\n",
     tests: wrappers,
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-newtype-written-as-its-array",
     breaks: "a `Reverse` or a `Wrapping` is written as the array that holds it, `[3]`, where serde writes what it holds, `3` (#1623)",
-    file: "src/lower/serde/std_forms.rs",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
     find: "self.write_json(Expr::index(value, Expr::int(0)), json, inner, span, out)",
     replace: "self.write_json(value, json, Ty::new_tup(self.tcx, &[inner]), span, out)",
     tests: wrappers,
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-newtype-read-unwrapped",
     breaks: "a `Reverse` or a `Wrapping` read is what it holds, not its tuple struct's array, so reading its field gives `undefined` (#1623)",
-    file: "src/lower/serde/std_forms.rs",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
     find: "                _ => Expr::array(vec![read]),\n",
     replace: "                _ => read,\n",
     tests: wrappers,
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-mutex-row-missing",
     breaks: "a `Mutex` has no row, so writing or reading one is refused where serde writes what it holds (#1623)",
-    file: "src/lower/serde/std_forms.rs",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
     find: "            (StdItem::Mutex, CellKind::Lock { exclusive: true }),\n",
     replace: "",
     tests: ["test/serde-std.test.ts", "-t", "a Cell, a RefCell, a Mutex and an RwLock"],
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-cell-read-unmade",
     breaks: "a cell read from JSON is what it holds, not `::new` of it, so a `RefCell` or a `Mutex` read has no `value` to borrow (#1623)",
-    file: "src/lower/serde/std_forms.rs",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
     find: "                StdForm::Cell(cell, ..) => self.cell_made(cell, read),\n",
     replace: "                StdForm::Cell(..) => read,\n",
     tests: ["test/serde-std.test.ts", "-t", "a Cell, a RefCell, a Mutex and an RwLock"],
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-saturating-read-as-its-type",
     breaks: "a `Saturating` is read as what it holds, refusing what's past its type, where serde's visitor clamps it (#1623)",
-    file: "src/lower/serde/std_forms.rs",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
     find: "            return Some(StdForm::Saturating(args.type_at(0), num));\n",
     replace: "            let _ = num;\n            return Some(StdForm::Newtype(args.type_at(0)));\n",
     tests: ["test/serde-std.test.ts", "-t", "an i128, a u128 and a Saturating"],
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-path-row-missing",
     breaks: "a `PathBuf` has no row, so writing or reading one is refused where serde writes its text (#1623)",
-    file: "src/lower/serde/std_forms.rs",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
     find: "        if self.recognition().is_path_like(ty) {\n",
     replace: "        if false {\n",
     tests: ["test/serde-std.test.ts", "-t", "a path, a Cow and a boxed str or slice"],
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-cow-row-missing",
     breaks: "a `Cow` has no row, so writing or reading one is refused where serde writes what it borrows or owns (#1623)",
-    file: "src/lower/serde/std_forms.rs",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
     find: "        if self.recognition().cow_parts(ty).is_some() {\n",
     replace: "        if false {\n",
     tests: ["test/serde-std.test.ts", "-t", "a path, a Cow and a boxed str or slice"],
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-cow-read-unwrapped",
     breaks: "a `Cow` read is its owned value, not `Cow::Owned` of it, so its `to_mut()` and `matches!` read a string's `TAG` (#1623)",
-    file: "src/lower/serde/std_forms.rs",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
     find: "                let made = self.cow_values(CowOp::From { owned: true }, read, cow, span, &mut body)?;\n",
     replace: "                let made = read;\n",
     tests: ["test/serde-std.test.ts", "-t", "a path, a Cow and a boxed str or slice"],
@@ -138,9 +138,9 @@ export const mutations: Mutation[] = [
   {
     name: "saturating-no-std-form",
     breaks: "a `Saturating<int>` is no std form of serde's, as its integer, but a struct of its field",
-    file: "src/lower/serde/std_forms.rs",
-    find: "                crate::lower::recognition::StdPath::NumSaturating,\n",
-    replace: "                crate::lower::recognition::StdPath::ThreadAccessError,\n",
+    file: "crates/rust-js-lower/src/serde/std_forms.rs",
+    find: "adt.did(), crate::recognition::StdPath::NumSaturating)\n",
+    replace: "adt.did(), crate::recognition::StdPath::ThreadAccessError)\n",
     tests: ["test/serde-std.test.ts"],
   },
 ];

@@ -1,9 +1,9 @@
-// Mutations of src/lower/analysis/effects.rs, what a statement may write,
+// Mutations of crates/rust-js-lower/src/analysis/effects.rs, what a statement may write,
 // the query the MIR intervals' facts are kept by (#2112 B). Each makes the
 // query keep a fact a write reaches, which its shadow's row sees.
 import type { Mutation } from "../../../mutations";
 
-const file = "src/lower/analysis/effects.rs";
+const file = "crates/rust-js-lower/src/analysis/effects.rs";
 const tests = ["test/intervals-shadow.test.ts", "-t", "keeps nothing the forgetting rules forget"];
 // What the transfer that asks the query proves of what no write reaches.
 const proofs = ["test/intervals-shadow.test.ts", "-t", "keeps what the rules prove"];
@@ -93,9 +93,9 @@ export const mutations: Mutation[] = [
   {
     name: "reached-cap-overwritten",
     breaks: "what code given a place may write takes each target's cap from the last way to it, an overwrite, so the answer is the order the targets come in, and a write lowered to `Items` leaves a fact a `Whole` write forgets (#2112 B 3b)",
-    file: "src/lower/analysis/effects.rs",
+    file: "crates/rust-js-lower/src/analysis/effects.rs",
     find: "        let at = given.places.entry(t).or_insert(cap);\n        *at = (*at).max(cap);\n",
     replace: "        given.places.insert(t, cap);\n",
-    unitTests: "lower::analysis::effects::tests::what_code_reaches_is_the_targets_never_their_order",
+    unitTests: "analysis::effects::tests::what_code_reaches_is_the_targets_never_their_order",
   },
 ];

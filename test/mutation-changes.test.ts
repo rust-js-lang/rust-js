@@ -134,24 +134,24 @@ test("a change to the corpus's harness runs no mutation of a case, a change to a
 // or a tests module's file whole.
 test("a unit-tested mutation is a change's where the change touches its unit tests", () => {
   const jumps = "fn tidy() {\n    a();\n}\n\n#[cfg(test)]\nmod tests {\n    #[test]\n    fn chain() {}\n}\n";
-  const files: Record<string, string> = { "src/lower/jumps.rs": jumps, "src/lower/jumps/tests.rs": "#[test]\nfn more() {}\n", "src/lower.rs": jumps };
+  const files: Record<string, string> = { "src/pipeline/jumps.rs": jumps, "src/pipeline/jumps/tests.rs": "#[test]\nfn more() {}\n", "src/pipeline.rs": jumps };
   const read = (file: string) => files[file];
-  const unit = { name: "unit", breaks: "", file: "src/lower/x.rs", find: "a", replace: "b", unitTests: "lower::jumps::tests::chain" };
+  const unit = { name: "unit", breaks: "", file: "src/pipeline/x.rs", find: "a", replace: "b", unitTests: "pipeline::jumps::tests::chain" };
   const names = (changes: Change[]) => changedMutations([unit], [unit], changes, read, read).map((m) => m.name);
-  expect(names([{ file: "src/lower/jumps.rs", lines: [[8, 8]] }])).toEqual(["unit"]);
-  expect(names([{ file: "src/lower/jumps.rs", lines: [[9, 9]], base: true }])).toEqual(["unit"]);
-  expect(names([{ file: "src/lower/jumps/tests.rs", lines: [[1, 1]] }])).toEqual(["unit"]);
+  expect(names([{ file: "src/pipeline/jumps.rs", lines: [[8, 8]] }])).toEqual(["unit"]);
+  expect(names([{ file: "src/pipeline/jumps.rs", lines: [[9, 9]], base: true }])).toEqual(["unit"]);
+  expect(names([{ file: "src/pipeline/jumps/tests.rs", lines: [[1, 1]] }])).toEqual(["unit"]);
   // A parent's tests may be its, of an inline `mod jumps`; not the code
   // above its tests, another module's tests, nor a test file's.
-  expect(names([{ file: "src/lower.rs", lines: [[8, 8]] }])).toEqual(["unit"]);
-  expect(names([{ file: "src/lower/jumps.rs", lines: [[2, 2]] }])).toEqual([]);
+  expect(names([{ file: "src/pipeline.rs", lines: [[8, 8]] }])).toEqual(["unit"]);
+  expect(names([{ file: "src/pipeline/jumps.rs", lines: [[2, 2]] }])).toEqual([]);
   expect(names([{ file: "src/other.rs", lines: [[8, 8]] }, { file: "test/x.test.ts", lines: [[1, 1]] }])).toEqual([]);
   // Another crate's, from its own root (ADR 1181).
   expect([unitTestsModule("crates/rust-js-program/src/lib.rs"), unitTestsModule("crates/rust-js-program/src/js/name.rs")]).toEqual(["", "js::name"]);
-  expect([unitTestsModule("src/main.rs"), unitTestsModule("src/lower/mod.rs"), unitTestsModule("src/lower/jumps.rs"), unitTestsModule("test/x.ts")]).toEqual([
+  expect([unitTestsModule("src/main.rs"), unitTestsModule("src/pipeline/mod.rs"), unitTestsModule("src/pipeline/jumps.rs"), unitTestsModule("test/x.ts")]).toEqual([
     "",
-    "lower",
-    "lower::jumps",
+    "pipeline",
+    "pipeline::jumps",
     undefined,
   ]);
 });

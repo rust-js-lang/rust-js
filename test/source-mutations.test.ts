@@ -221,7 +221,7 @@ function bindingsSource(name: string, testSource: string) {
 }
 
 test("a mutant of the bindings crates' Rust is judged by the tests that build them, and inconclusive where none does", async () => {
-  expect([ofBindingsCrate("builtins/src/lib.rs"), ofBindingsCrate("webapi/src/a.rs"), ofBindingsCrate("builtins/build.sh"), ofBindingsCrate("src/lower.rs")]).toEqual([true, true, false, false]);
+  expect([ofBindingsCrate("builtins/src/lib.rs"), ofBindingsCrate("webapi/src/a.rs"), ofBindingsCrate("builtins/build.sh"), ofBindingsCrate("crates/rust-js-lower/src/lib.rs")]).toEqual([true, true, false, false]);
   const caught = bindingsSource("source-mutation-bindings", builtTest);
   expect((await executeSource(caught, bindingsMutation)).result).toBe("caught");
   const unbuilt = bindingsSource("source-mutation-bindings-unbuilt", builtTest.replaceAll("buildReact", "read"));

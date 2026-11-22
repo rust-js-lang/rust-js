@@ -1,8 +1,8 @@
-// Mutations of src/lower/classes/receivers.rs (ADR 0093): what a function's
+// Mutations of crates/rust-js-lower/src/classes/receivers.rs (ADR 0093): what a function's
 // JS takes its `self` as, its body's and a JS caller's (ADR 1091).
 import type { Mutation } from "../../../mutations";
 
-const file = "src/lower/classes/receivers.rs";
+const file = "crates/rust-js-lower/src/classes/receivers.rs";
 
 export const mutations: Mutation[] = [
   {
@@ -28,8 +28,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding's method a struct's interface declares is declared of its `self`, `isPersistent(self: Event): boolean`, where its object is called by it (rd144, ADR 1091)",
     file,
-    find: "    let bound = crate::lower::bindings::is_binding(tcx, function)\n",
-    replace: "    let bound = false && crate::lower::bindings::is_binding(tcx, function)\n",
+    find: "    let bound = crate::bindings::is_binding(tcx, function)\n",
+    replace: "    let bound = false && crate::bindings::is_binding(tcx, function)\n",
     tests: ["test/declarations-bound-methods.test.ts"],
   },
 ];

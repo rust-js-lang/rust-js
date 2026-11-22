@@ -1,4 +1,4 @@
-// Mutations of src/lower/literals.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/literals.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 const concat = [
@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     name: "concat-piece-unplaced",
     breaks:
       "a `concat!`'s pieces have no place, so a comment between them goes after the strings, or nowhere (ADR 0641)",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: "            true => js::Span::NONE,\n            false => at(call\n",
     replace:
       "            _ if true => js::Span::NONE,\n            _ => at(call\n",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     name: "format-string-concat-unseen",
     breaks:
       "a format string of a `concat!` is one template, as if its pieces weren't in the source",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: "                let mut pieces = concat_arguments(code, &tokens[i..=i + close])?;",
     replace: "                let mut pieces: Vec<StrPiece> = None?;",
     tests: format,
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     name: "format-string-literal-unread",
     breaks:
       "a format string's literal isn't read, so one written across lines is a template of `\\n`s",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: "            } => return Some(vec![piece(kind, code)?]),",
     replace: "            } => return None,",
     tests: [
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "concat-println-newline-unread",
     breaks:
       "a `println!` of a `concat!` of literals alone is one string, as its line break isn't in the pieces",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: "        Some(line) if line == joined => pieces.last_mut()?.text.push('\\n'),\n",
     replace: "",
     tests: format,
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
     name: "concat-one-literal",
     breaks:
       "a `concat!` of literals is one string, not its pieces joined by `+`",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: "    let pieces = match recognition::from_concat(tcx, span) {",
     replace: "    let pieces = match false {",
     tests: concat,
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "concat-trailing-comma-refused",
     breaks: "a `concat!` with a comma after its last argument is one string",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: "        [rest @ .., (TokenKind::Comma, _)] => rest,\n",
     replace: "",
     tests: concat,
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     name: "concat-negative-unsigned",
     breaks:
       "a negative number of a `concat!`, `-3`, is its digits alone, and so the one string",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: '                text: format!("-{}", number(*kind, code)?),',
     replace: "                text: number(*kind, code)?,",
     tests: concat,
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     name: "concat-bool-unread",
     breaks:
       "a `bool` of a `concat!` isn't a piece, and so the `concat!` is one string",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: '        TokenKind::Ident if code == "true" || code == "false" => code.to_owned(),\n',
     replace: "",
     tests: concat,
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
   {
     name: "concat-piece-lines-flattened",
     breaks: "a piece of a `concat!` written across lines is a string of `\\n`s",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: "    let lines = written_across_lines(&text, code);",
     replace: "    let lines = false;",
     tests: concat,
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
   {
     name: "literal-lines-flattened",
     breaks: "a string literal written across lines is a string of `\\n`s",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: ".is_ok_and(|code| written_across_lines(text, &code));",
     replace: ".is_ok_and(|_| false);",
     tests: ["test/lowering-strings.test.ts", "-t", "written across lines"],
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
   {
     name: "raw-lines-escaped",
     breaks: "a raw string written across lines is one line of `\\n`s",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: "            Some('r') => true,",
     replace: "            Some('r') => false,",
     tests: [
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "literal-lines-cooked-unread",
     breaks: "a string written across lines, not raw, is a string of `\\n`s",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: "            Some('\"') => code.match_indices('\\n').any(|(i, _)| !code[..i].ends_with('\\\\')),",
     replace: "            Some('\"') => false,",
     tests: [
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
     name: "continued-line-kept",
     breaks:
       "a string whose line ends in `\\` is printed with a line break where it has `\\n`",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: "            Some('\"') => code.match_indices('\\n').any(|(i, _)| !code[..i].ends_with('\\\\')),",
     replace: "            Some('\"') => code.contains('\\n'),",
     tests: [
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
   {
     name: "literal-lines-of-none",
     breaks: "a raw string with no line break is a template literal",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: "    text.contains('\\n')\n        && match code.chars().next() {",
     replace: "    true\n        && match code.chars().next() {",
     tests: [
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
     name: "const-string-unwritten",
     breaks:
       "a `const` of a string is one literal, though its source writes it across lines or as `concat!`'s pieces",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: "            string_literal(tcx, text, lit.span, at).or_at(value.span)\n",
     replace: "            value.clone()\n",
     tests: [
@@ -178,7 +178,7 @@ export const mutations: Mutation[] = [
     name: "static-array-items-unplaced",
     breaks:
       "a `static`'s array's items are where no code is written, so a line comment after one, `\"Parallel\\u200b\", // Padded ..`, is lost (rd344a)",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: "                .map(|(item, written)| item.or_at(at(written.span)))\n",
     replace: "                .map(|(item, _)| item)\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a comment after an item of a static's array"],
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
   {
     name: "const-number-unplaced",
     breaks: "a `const` of `1e4` isn't where its literal is, so it's `10000`",
-    file: "src/lower/literals.rs",
+    file: "crates/rust-js-lower/src/literals.rs",
     find: "        js::ExprKind::Num(_) => value.or_at(at(body.value.span)),\n",
     replace: "        js::ExprKind::Num(_) => value,\n",
     tests: [

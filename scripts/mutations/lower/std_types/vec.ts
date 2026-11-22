@@ -1,4 +1,4 @@
-// Mutations of src/lower/std_types/vec.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/std_types/vec.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "to-vec-shallow",
     breaks:
       "`to_vec()` of structs shares each with the original, which a change to the copy changes",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "            Some(item) if ty.is_ref() => self.clone_items(items, item, span)?,",
     replace: "            Some(item) if false && ty.is_ref() => self.clone_items(items, item, span)?,",
     tests: ["test/corpus.test.ts", "-t", "collection_methods"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "text-empty-by-length",
     breaks: "a string's `is_empty()` is `text.length === 0`, not `!text`",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "            Std::IsEmpty if self.is_string_like(tys[0].peel_refs()) => ",
     replace:
       "            Std::IsEmpty if false && self.is_string_like(tys[0].peel_refs()) => ",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "capacity-args-dropped",
     breaks:
       "what a call JS has nothing of is given doesn't run, `assert_unchecked(loud(value) <= 9)`'s, a call's effects lost",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "                    if value.has_effects() {\n",
     replace: "                    if false && value.has_effects() {\n",
     tests: ["test/corpus.test.ts", "-t", "^assert_unchecked.rs$"],
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     name: "with-capacity-untracked",
     breaks:
       "`Vec::with_capacity(n)` keeps no capacity, so it's asked less than `n`",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: '                    (CapacityOp::WithCapacity, true) => helper("$withCapacity", vec![arg()]),\n',
     replace:
       "                    (CapacityOp::WithCapacity, true) => Expr::array(vec![arg()].into_iter().take(0).collect()),\n",
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
   {
     name: "reserve-untracked",
     breaks: "`v.reserve(n)` keeps no room",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "                    (CapacityOp::Reserve { exact: false }, true) => {\n                        helper(\"$reserve\", vec![arg(), arg(), reserved_size])\n                    }\n",
     replace: "                    (CapacityOp::Reserve { exact: false }, true) => {\n                        let _ = (arg(), arg());\n                        Expr::js_undefined()\n                    }\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
   {
     name: "clear-given-no-drop",
     breaks: "`clear` of items with a destructor drops none",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "            Std::Clear => match self.items_drop(tys[0], span)? {\n",
     replace:
       "            Std::Clear => match self.items_drop(tys[0], span)?.filter(|_| false) {\n",
@@ -59,7 +59,7 @@ export const mutations: Mutation[] = [
   {
     name: "retain-given-no-drop",
     breaks: "`retain` of items with a destructor is given no drop",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: '                Expr::call(Expr::helper("$retain"), self.dropping(vec![v, keep], tys[0], span)?)\n',
     replace:
       '                Expr::call(Expr::helper("$retain"), vec![v, keep])\n',
@@ -69,8 +69,8 @@ export const mutations: Mutation[] = [
     name: "to-vec-moved-made-copied",
     breaks:
       "an array made here and moved, `[..].map(f).into()`, is copied again",
-    file: "src/lower/std_types/vec.rs",
-    find: "            _ => crate::lower::iterators::owned_items(items),\n",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
+    find: "            _ => crate::iterators::owned_items(items),\n",
     replace: "                    _ => Expr::call(Expr::member(items, \"slice\"), vec![]),\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_deque_retain_swaps.rs$"],
     snapshots: true,
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
     name: "boxed-pop-front-unboxed",
     breaks:
       "`pop_front` of a type parameter's items gives its item unboxed, which generic code reads as `Some` of what's in it",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: '            Std::Method("shift") if boxed => Expr::call(Expr::helper("$shift"), vec![arg()]),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_rc_drops.rs$"],
@@ -88,15 +88,15 @@ export const mutations: Mutation[] = [
     name: "deque-index-as-slice",
     breaks:
       "a `VecDeque`'s index past its end panics with a slice's message, `index out of bounds: the len is ..`, not `out of bounds access`",
-    file: "src/lower/std_types/vec.rs",
-    find: "        if self.is_std_type(items_ty.peel_refs(), crate::lower::recognition::StdItem::VecDeque) {",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
+    find: "        if self.is_std_type(items_ty.peel_refs(), crate::recognition::StdItem::VecDeque) {",
     replace: "        if false {",
     tests: ["test/corpus.test.ts", "-t", "^deque_index_out_of_bounds.rs$"],
   },
   {
     name: "room-of-none-more-checked",
     breaks: "`reserve(0)` checks room it can't run out of",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "        (Some(0), _) => true,\n",
     replace: "        (Some(0), _) => len.is_none(),\n",
     snapshots: true,
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     name: "room-more-of-no-size-unchecked",
     breaks:
       "`reserve(n)` of items of no size past `usize::MAX` of them is no panic",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "        (_, Some(0)) => len.is_none(),\n",
     replace: "        (_, Some(0)) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-known-count-unchecked",
     breaks: "`String::with_capacity(usize::MAX)` is no panic",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "        (Some(n), Some(size)) => len.is_none() && n * size <= BYTES,\n",
     replace: "        (Some(_), Some(_)) => len.is_none(),\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-of-its-length-left-out",
     breaks: "`reserve(n)` checks room for `n` alone, not its length and `n`",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "            Some(len) => Expr::bin(Op::Add, len, count),\n",
     replace: "            Some(_) => count,\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
   {
     name: "with-capacity-room-unchecked",
     breaks: "`Vec::with_capacity(n)` past `isize::MAX` bytes is no panic",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "                        let n = once(self, 0, Role::N);\n                        self.room_for((None, n), size, span, out);\n",
     replace: "                        let _ = once(self, 0, Role::N);\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
   {
     name: "reserve-room-unchecked",
     breaks: "`v.reserve(n)` past `isize::MAX` bytes is no panic",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "                        self.room_for((Some(len), n), size, span, out);\n",
     replace: "                        let _ = (len, n, size);\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-count-read-twice",
     breaks: "`Vec::with_capacity(f())` calls `f` in the check and again",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "                    if !given[at].reads_same() {\n",
     replace: "                    if false {\n",
     snapshots: true,
@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
   {
     name: "table-room-bound-past-it",
     breaks: "`HashMap::with_capacity(usize::MAX)` is taken to fit, no panic",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "                n <= i128::from(u32::MAX / 8) && (16 + 3 * n) * (size + 1) + 2 * align + 24 <= BYTES\n",
     replace: "                n >= 0\n",
     tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
     name: "room-of-a-constant-count-checked",
     breaks:
       "`vec![None; LANES]` of a `const` that fits checks room it can't run out of, `$roomFor(LANES, 12)`",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "        if value.is_some_and(|value| room_fits(None, &Expr::int(i128::from(value)), &size)) {\n",
     replace:
       "        if false && value.is_some_and(|value| room_fits(None, &Expr::int(i128::from(value)), &size)) {\n",
@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
     name: "room-of-a-constant-count-unchecked",
     breaks:
       "`vec![0u32; ALL]` of a `const` past `isize::MAX` bytes is no panic",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "        if value.is_some_and(|value| room_fits(None, &Expr::int(i128::from(value)), &size)) {\n",
     replace: "        if value.is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     name: "utf16-sort-by-kept",
     breaks:
       "`sort_by(|a, b| a.encode_utf16().cmp(b.encode_utf16()))` is a comparator of `$iterCmp`, where JS's `sort()` is that order (ADR 0945)",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "                    ty::Slice(elem) | ty::Array(elem, _) if self.sorts_as_js_strings(tys[1], *elem) => {\n",
     replace:
       "                    ty::Slice(elem) | ty::Array(elem, _) if false => {\n",
@@ -194,7 +194,7 @@ export const mutations: Mutation[] = [
   {
     name: "joined-cows-as-lists",
     breaks: "`join(\",\")` of `Cow<str>`s joins them as lists, `$joinWith`, which throws `list is not iterable` (#495)",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "                    .filter(|&item| self.recognition().is_cow(item)) =>",
     replace: "                    .filter(|_| false) =>",
     tests: ["test/corpus.test.ts", "-t", "^cow_texts_joined.rs$"],
@@ -202,15 +202,15 @@ export const mutations: Mutation[] = [
   {
     name: "deque-retain-as-vec",
     breaks: "a `VecDeque`'s `retain` drops each it doesn't keep as it goes, a `Vec`'s, where std's is its `retain_mut`, which drops them after the last call (#909)",
-    file: "src/lower/std_types/vec.rs",
-    find: "            Std::Retain if self.is_std_type(tys[0].peel_refs(), crate::lower::recognition::StdItem::VecDeque) => {\n",
-    replace: "            Std::Retain if false && self.is_std_type(tys[0].peel_refs(), crate::lower::recognition::StdItem::VecDeque) => {\n",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
+    find: "            Std::Retain if self.is_std_type(tys[0].peel_refs(), crate::recognition::StdItem::VecDeque) => {\n",
+    replace: "            Std::Retain if false && self.is_std_type(tys[0].peel_refs(), crate::recognition::StdItem::VecDeque) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_deque_retain_swaps.rs$"],
   },
   {
     name: "capacity-of-no-size-its-length",
     breaks: "`capacity()` of a `Vec` of items of no size is its length, where std's is `usize::MAX` (#1180)",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "                    (CapacityOp::Of, _) => helper(\"$capacity\", [arg()].into_iter().chain(grown_size).collect()),\n",
     replace: "                    (CapacityOp::Of, _) => helper(\"$capacity\", vec![arg()]),\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
@@ -218,7 +218,7 @@ export const mutations: Mutation[] = [
   {
     name: "capacity-of-an-unsized-room-known",
     breaks: "`capacity()` of a fresh `Vec` of an impl's associated type's items, which may be of no size, `()`'s `usize::MAX`, is its kept 0 instead of refused (#1260)",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "                        helper(\"$capacity\", vec![helper(\"$untracked\", vec![arg()])])\n",
     replace: "                        helper(\"$capacity\", vec![arg()])\n",
     tests: ["test/vec-capacity.test.ts", "-t", "an impl's growth of an associated type's items"],
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-item-size-of-a-param-none",
     breaks: "room for a type parameter's items is checked by their count alone, as if they had no size, though its caller gives their size, so no `capacity overflow` panics where std's does (#1432)",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "        self.room_value(item).unwrap_or_else(|| Expr::int(0))\n",
     replace: "        Expr::int(self.layout(item).map_or(0, |layout| i128::from(layout.size.bytes())))\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow_of_generic_items.rs$"],
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
   {
     name: "remove-unchecked",
     breaks: "a `Vec::remove` past its end is JS's `splice`, which removes nothing and gives `undefined`, where std panics `removal index (is 3) should be < len (is 1)`",
-    file: "src/lower/std_types/vec.rs",
+    file: "crates/rust-js-lower/src/std_types/vec.rs",
     find: "        out.push(StmtKind::If(past, vec![StmtKind::Expr(refused).at(js_span)], None).at(js_span));\n",
     replace: "",
     tests: ["test/borrow-forms.test.ts", "-t", "checked where they're called"],

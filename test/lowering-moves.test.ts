@@ -1,5 +1,5 @@
 // Where a temporary MIR made is read: in its place, where what the
-// program does stays the same (src/lower/mir/tidy/moves.rs, ADR 0750).
+// program does stays the same (crates/rust-js-mir/src/tidy/moves.rs, ADR 0750).
 // Each test is a program of its own, compiled and run.
 
 import { beforeAll, expect, test } from "bun:test";

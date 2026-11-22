@@ -1,4 +1,4 @@
-// Mutations of src/lower/calls.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/calls.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "none-argument-given",
     breaks:
       "a trailing `None` given a function value is an argument, `cb(undefined)` of `cb(None)`, where a person writes `cb()` (rd271, ADR 0443, amended)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "        || matches!(arg.kind, js::ExprKind::Undefined)\n",
     replace: "        || matches!(arg.kind, js::ExprKind::Null)\n",
     tests: [
@@ -19,7 +19,7 @@ export const mutations: Mutation[] = [
     name: "none-argument-any-undefined",
     breaks:
       "a trailing `undefined` given a function value is left out whatever its type, so a `Some(())` given an `Option<()>` would be too",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "            && matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option))\n",
     replace: "            && true\n",
     tests: ["test/corpus.test.ts", "-t", "^option_arguments.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
     name: "bool-call-result-unknown",
     breaks:
       "a call of another module's function that gives a `bool` isn't known one, so `ready && isSupported(name) && (..)` is `!!(ready && isSupported(name)) && (..)` (rd145)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "    if output.is_bool() {\n        facts = facts.with(Known::Boolean);\n",
     replace: "    if false {\n        facts = facts.with(Known::Boolean);\n",
     tests: [
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     name: "trait-nullable-result-trusted",
     breaks:
       "a trait's method marked `#[rust_js::nullable]` is taken to give `null`, whose impl gives `undefined`: `internals.T = PPeek.peek(queue)` stores it (ADR 0841, amended)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "    none_form(tcx, NonePlace::FnResult(def_id)).stores_null() && tcx.trait_of_assoc(def_id).is_none()\n",
     replace: "    none_form(tcx, NonePlace::FnResult(def_id)).stores_null()\n",
     tests: [
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     name: "apply-pattern-called",
     breaks:
       "a closure taking a pair apart, `|&(_, age)| age`, is called where it's inlined, `(([, age]) => age)(item)`, not `item[1]`",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "        js::Pattern::Array(items) => {\n",
     replace: "        js::Pattern::Array(items) if false => {\n",
     tests: [
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     name: "promise-result-unsettled",
     breaks:
       "a JS promise of a `Result` that rejects throws at its `.await`, not an `Err`",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: '            Catching::PromiseResult => Expr::call(Expr::helper("$settle"), vec![value]),\n',
     replace: "            Catching::PromiseResult => value,\n",
     tests: [
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     name: "variadic-array-not-spread-out",
     breaks:
       "rest arguments written out are one array argument, `Math.max([a, b, 1])`, `total([1, 2])`",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "        }) => args.extend(items),\n",
     replace: "        }) => args.push(Expr::array(items)),\n",
     tests: ["test/bindings.test.ts", "-t", "variadic binding"],
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     name: "variadic-slice-given-whole",
     breaks:
       "rest arguments a variable holds are one argument, `Math.max(values)`, `total(v)`, not spread",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "        Some(last) => args.push(Expr::spread(last)),\n",
     replace: "        Some(last) => args.push(last),\n",
     tests: ["test/bindings.test.ts", "-t", "variadic binding"],
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
     name: "rest-call-not-spread",
     breaks:
       "a call of the crate's function whose last parameter is `#[rust_js::rest]` gives its slice whole, `total(v)`, where the function gathers `...xs`",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "        if self.takes_rest(def_id) {\n            spread_rest(args);",
     replace: "        if false {\n            spread_rest(args);",
     tests: [
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     name: "library-rest-unknown",
     breaks:
       "a library's function whose last parameter is `#[rust_js::rest]` is called with its slice whole by another crate",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "super::bindings::takes_rest(self.tcx, def_id) || self.krate.foreign.takes_rest(def_id)",
     replace: "super::bindings::takes_rest(self.tcx, def_id)",
     tests: ["test/rest-parameters.test.ts", "-t", "library's rest function"],
@@ -121,7 +121,7 @@ export const mutations: Mutation[] = [
     name: "rest-value-type-parameter-allowed",
     breaks:
       "rest arguments as a value given as a type parameter's value are compiled, so `f(a)` of an `F: Fn(A)` gives the closure one array",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "        self.check_rest_unspread(def_id, generic_args, span)?;\n",
     replace: "",
     tests: [
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
     name: "rest-value-binding-refused",
     breaks:
       "a variadic binding given rest arguments as a value, `function::call(f, None, args)`, is refused as a type parameter's value",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "        if !super::bindings::is_binding(self.tcx, def_id)\n            && generic_args\n",
     replace: "        if true\n            && generic_args\n",
     tests: [
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
     name: "and-then-of-nullable-none-undefined",
     breaks:
       "an `and_then` of a nullable function kept in a variable gives `undefined` for `None`, `owner ? nameOfOwner(owner) : undefined`, where upstream and the function write `null` (ADR 0841, amended)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "        ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) && !super::bindings::is_binding(tcx, *def_id) => {\n            Expr::null()\n        }\n",
     replace: "",
     tests: [
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     name: "and-then-of-closure-of-nullable-none-undefined",
     breaks:
       "React's `nextInstance ? tryHydrateActivity(fiber, nextInstance) : undefined`, an `and_then` of a closure of a nullable function's call giving `undefined` for `None` (ADR 0841, amended)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "        ty::Closure(..) if returns_nulled && !returned.is_some_and(bindings_null) => Expr::null(),\n",
     replace: "",
     tests: [
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
     name: "and-then-of-a-binding-nulled",
     breaks:
       "`and_then` of a closure of a nullable binding's call, `labels.item(0)`, writes `null` where what it's of is `None`, `option != null ? option.item(0) : null`, not JS's `input.labels?.item(0)` (ADR 0298, amended)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "        ty::Closure(..) if returns_nulled && !returned.is_some_and(bindings_null) => Expr::null(),\n",
     replace:
       "        ty::Closure(..) if returns_nulled => Expr::null(),\n",
@@ -188,7 +188,7 @@ export const mutations: Mutation[] = [
     name: "and-then-binding-null",
     breaks:
       "an `and_then` of a nullable binding is `node != null ? node.firstChild : null`, not JS's `node?.firstChild` (rd81)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: " && !super::bindings::is_binding(tcx, *def_id)",
     replace: "",
     tests: [
@@ -201,7 +201,7 @@ export const mutations: Mutation[] = [
     name: "unit-argument-given",
     breaks:
       "a `()` given a function value JS may have made is an argument, `resolve(undefined)` of `resolve(())`",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "    (ty.is_unit() && !arg.has_effects())\n",
     replace: "    (false && !arg.has_effects())\n",
     tests: ["test/corpus.test.ts", "-t", "^unit_arguments.rs$"],
@@ -210,7 +210,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-absent-kept",
     breaks: "a trailing `None` given a function value JS may have made is an argument, `cb(undefined)` of `cb(None)` (ADR 0443, amended)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "        last = last && absent(i, arg);\n",
     replace: "        last = false && absent(i, arg);\n",
     tests: ["test/js-functions.test.ts", "-t", "a trailing None given a function value is no argument"],
@@ -218,7 +218,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-absent-of-any",
     breaks: "a trailing `undefined` given what may be JS's is left out wherever it's an `Option`'s, `Math.max(1)` of a pointer of `Math.max`, `1` where it's `NaN` (ADR 0330)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "            && bindings.iter().all(|&f| super::bindings::is_optional_param(tcx, f, i))\n",
     replace: "\n",
     tests: ["test/runtime-package.test.ts", "-t", "an undefined given to JS is an argument"],
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
   {
     name: "fn-item-conversion-unasked",
     breaks: "a function given as a value whose call converts an argument, an `Option` an `IntoIterator` takes, is its name, so `map(total)` iterates the `Option`'s value and throws (#281)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "        ) || self.converts_arguments(def_id, args, span)?)\n",
     replace: "        ))\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_item_converting_argument.rs$"],
@@ -235,7 +235,7 @@ export const mutations: Mutation[] = [
     name: "namespace-method-value-itself",
     breaks:
       "a namespace's method as a value is its module's function, given the namespace as its first argument (ADR 1037)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "            Some(Member::Constructor | Member::Method | Member::Getter | Member::Own | Member::Namespace)\n",
     replace: "            Some(Member::Constructor | Member::Method | Member::Getter | Member::Own)\n",
     tests: [
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
     name: "rest-function-itself-never",
     breaks:
       "a function of rest arguments JS reads as a value, `function::name(&signal_oper)`, is the arrow of its call, whose `name` is `\"\"`, so alien-signals' `isSignal` is `false`, and `function::call(&total, None, (1.0, 2.0))` spreads its first argument (#540, ADR 0664, amended)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "        if !self.takes_rest(def_id)\n            || self.tcx.trait_of_assoc(def_id).is_some()\n",
     replace: "        if true\n            || self.tcx.trait_of_assoc(def_id).is_some()\n",
     tests: ["test/rest-parameters.test.ts", "-t", "a function of rest arguments JS reads as a value is the function itself"],
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
     name: "rest-function-itself-unnamed",
     breaks:
       "a library's function of rest arguments JS reads, `function::name(&dep::total)`, is its import by name, `total$1.name` beside `import * as Dep`, where its path names it through its module, `Dep.total.name` (#540, ADR 1018)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "        Ok(Some(self.named_fn_ref(def_id, None, named)))\n",
     replace: "        Ok(Some(self.named_fn_ref(def_id, None, span)))\n",
     tests: ["test/rest-parameters.test.ts", "-t", "a function of rest arguments JS reads as a value is the function itself"],
@@ -265,7 +265,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-method-value-itself",
     breaks: "a class's method as a value is the prototype's function itself, `Component.prototype.forceUpdate`, which a call through it gives no `this` (ADR 0761)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "            Some(Member::Constructor | Member::Method | Member::Getter | Member::Own | Member::Namespace)\n",
     replace: "            Some(Member::Constructor | Member::Getter | Member::Own | Member::Namespace)\n",
     tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
@@ -273,7 +273,7 @@ export const mutations: Mutation[] = [
   {
     name: "object-method-value-itself",
     breaks: "an object's method as a value is its module's function itself, `DO_NOT_USE_queryFirstNode`, which a call through it gives no `this` (ADR 0943)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "            Some(Member::Constructor | Member::Method | Member::Getter | Member::Own | Member::Namespace)\n",
     replace: "            Some(Member::Constructor | Member::Method | Member::Getter | Member::Namespace)\n",
     tests: ["test/classes.test.ts", "-t", "an object's methods are its literal's own"],
@@ -281,7 +281,7 @@ export const mutations: Mutation[] = [
   {
     name: "getter-value-unread",
     breaks: "a class's getter as a value, `.map(QueenPosition::left_diagonal)`, is its function, not the arrow reading it (#357)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "            Some(Member::Constructor | Member::Method | Member::Getter | Member::Own | Member::Namespace)\n",
     replace: "            Some(Member::Constructor | Member::Method | Member::Own | Member::Namespace)\n",
     tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
@@ -289,7 +289,7 @@ export const mutations: Mutation[] = [
   {
     name: "pattern-parts-top-level-only",
     breaks: "a parameter's pattern is read as its argument's parts at its top alone, so an `Option`'s `map(|((k,), x)| (k, x))` reads `k`, which nothing declares, and the JS is refused, itertools 0.10.5's `cons_tuples` (#1900)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "                    parts.extend(pattern_parts(item, &Expr::index(arg.clone(), Expr::int(i as i128)))?);\n",
     replace: "                    parts.extend(match item {\n                        js::Pattern::Name(n) => Some((n, Expr::index(arg.clone(), Expr::int(i as i128)))),\n                        _ => None,\n                    });\n",
     tests: ["test/corpus.test.ts", "-t", "^option_map_of_a_nested_pattern.rs$"],
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-never-into-callbacks",
     breaks: "a closure whose callback reads its parameter isn't put in place where what it's given never changes, so it's held, `const then = (e) => $position(DAYS, (day) => day === e); extension != null ? then(extension) : undefined`, where the vercel-ui SDK's port reads `$position(DAYS, (day) => day === extension)` (G6)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "        let into_callbacks = args.iter().all(fixed);\n",
     replace: "        let into_callbacks = false && args.iter().all(fixed);\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_applied_into_its_callbacks\\.rs$"],
@@ -306,7 +306,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-into-callbacks-of-what-changes",
     breaks: "a closure is put in place into a callback that runs later where what it's given is a variable set after, `given.map(|n| move |k| n + k)` then `given = Some(100)`: the callback reads 100, 101 where Rust gives 6 (G6)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "js::ExprKind::Var(v) if unchanging(v));\n",
     replace: "js::ExprKind::Var(_));\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_applied_into_its_callbacks\\.rs$"],
@@ -315,7 +315,7 @@ export const mutations: Mutation[] = [
     name: "class-constructor-called",
     breaks:
       "a class's `Component::new(..)` is `Component(..)`, called, not constructed, so its `this` is `undefined` (ADR 0761)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "                    _ => Expr::new_(*class, args),\n",
     replace: "                    _ => Expr::call(*class, args),\n",
     tests: [
@@ -328,10 +328,10 @@ export const mutations: Mutation[] = [
     name: "class-method-called-as-a-function",
     breaks:
       "a class's `component.force_update(..)` is `Component.forceUpdate(component, ..)`, of a method the constructor doesn't have (ADR 0761)",
-    file: "src/lower/calls.rs",
-    find: "            (Some(crate::lower::classes::Member::Method), js::ExprKind::Member(_, name)) if !args.is_empty() => {\n",
+    file: "crates/rust-js-lower/src/calls.rs",
+    find: "            (Some(crate::classes::Member::Method), js::ExprKind::Member(_, name)) if !args.is_empty() => {\n",
     replace:
-      "            (Some(crate::lower::classes::Member::Method), js::ExprKind::Member(_, name)) if false => {\n",
+      "            (Some(crate::classes::Member::Method), js::ExprKind::Member(_, name)) if false => {\n",
     tests: [
       "test/classes.test.ts",
       "-t",
@@ -342,20 +342,20 @@ export const mutations: Mutation[] = [
     name: "getter-called",
     breaks:
       "a class's getter's Rust call is a call, `a.leftDiagonal()` of a property that's its value (#357)",
-    file: "src/lower/calls.rs",
-    find: "            (Some(crate::lower::classes::Member::Getter), js::ExprKind::Member(_, name)) if args.len() == 1 => {\n",
+    file: "crates/rust-js-lower/src/calls.rs",
+    find: "            (Some(crate::classes::Member::Getter), js::ExprKind::Member(_, name)) if args.len() == 1 => {\n",
     replace:
-      "            (Some(crate::lower::classes::Member::Getter), js::ExprKind::Member(_, name)) if false => {\n",
+      "            (Some(crate::classes::Member::Getter), js::ExprKind::Member(_, name)) if false => {\n",
     tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
   },
   {
     name: "object-method-called-as-a-function",
     breaks:
       "a call of an object's method is a call of its module's function, `containsNode(scope, fiber)`, whose `this` is then nothing (ADR 0943)",
-    file: "src/lower/calls.rs",
-    find: "            (Some(crate::lower::classes::Member::Own), _) if !args.is_empty() => {\n",
+    file: "crates/rust-js-lower/src/calls.rs",
+    find: "            (Some(crate::classes::Member::Own), _) if !args.is_empty() => {\n",
     replace:
-      "            (Some(crate::lower::classes::Member::Own), _) if false => {\n",
+      "            (Some(crate::classes::Member::Own), _) if false => {\n",
     tests: [
       "test/classes.test.ts",
       "-t",
@@ -366,7 +366,7 @@ export const mutations: Mutation[] = [
     name: "forwarded-called-in-its-module-by-its-name",
     breaks:
       "a namespace's own module calls its method that's another module's function by the method's name, which that module re-exports but doesn't declare (rd292b)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "            Some(&target) if module_of(def_id) == Some(self.module) || module_of(target) == module_of(def_id) => target,\n",
     replace: "            Some(&target) if module_of(target) == module_of(def_id) => target,\n",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
@@ -375,7 +375,7 @@ export const mutations: Mutation[] = [
     name: "namespace-fn-shim-by-name",
     breaks:
       "a namespace's method as a `fn`, whose `self` is its parameter, calls the module's own function, `(a, b) => updateContainer(a, b)`, not `a.updateContainer(b)` (ADR 1037)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "            let (by_name, flattened) = receiver_named.unwrap_or((false, false));\n",
     replace: "            let (by_name, flattened) = receiver_named.unwrap_or((true, false));\n",
     tests: ["test/namespaces.test.ts", "-t", "a namespace's methods are its module's functions"],
@@ -384,7 +384,7 @@ export const mutations: Mutation[] = [
     name: "namespace-value-called-by-name",
     breaks:
       "a namespace's method called through a value JS gives, another instance of the module, calls the module's own function, `createContainer(4)` (ADR 1037)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "            if !by_name {\n",
     replace: "            if false {\n",
     tests: ["test/namespaces.test.ts", "-t", "a namespace's methods are its module's functions"],
@@ -392,15 +392,15 @@ export const mutations: Mutation[] = [
   {
     name: "flattened-state-given-whole",
     breaks: "`new` of a class whose constructor takes its flattened state's keys is given the state's object, `new ReactPromise({ status })`, the keys shifted (rd380)",
-    file: "src/lower/calls.rs",
-    find: "                        crate::lower::classes::new_of_state(*class, args, (at, &keys), &own)\n",
+    file: "crates/rust-js-lower/src/calls.rs",
+    find: "                        crate::classes::new_of_state(*class, args, (at, &keys), &own)\n",
     replace: "                        Expr::new_(*class, args)\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
   },
   {
     name: "getter-read-moved",
     breaks: "a class's getter's read is taken for a field's, moved past a call after it, so its body's `println!` comes after that call's (rd679)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "                Expr::member(args.remove(0), name).answered_by_a_getter()\n",
     replace: "                Expr::member(args.remove(0), name)\n",
     tests: ["test/corpus.test.ts", "-t", "^class_getters.rs$"],
@@ -409,15 +409,15 @@ export const mutations: Mutation[] = [
     name: "namespace-through-this-read",
     breaks:
       "a namespace's method through a value is taken for one that may read its `this`, so the noop Flight client's thread-local stays `NOOP.createContainer(..)`, not taken apart (#561)",
-    file: "src/lower/calls.rs",
-    find: "                    facts: js::Facts::of(js::Known::ThisUnread).with(js::Known::NamespaceMethod),\n                    ..Expr::call(\n                        Expr::member(receiver,",
-    replace: "                    facts: js::Facts::NONE,\n                    ..Expr::call(\n                        Expr::member(receiver,",
+    file: "crates/rust-js-lower/src/calls.rs",
+    find: "                    facts: js::Facts::of(js::Known::ThisUnread).with(js::Known::NamespaceMethod),\n                    ..Expr::call(Expr::member(receiver,",
+    replace: "                    facts: js::Facts::NONE,\n                    ..Expr::call(Expr::member(receiver,",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
   },
   {
     name: "namespace-method-unmarked",
     breaks: "a namespace's method through a value isn't marked one, so a thread-local of a namespace read only for its methods keeps its member calls (#561, #584)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "                    facts: js::Facts::of(js::Known::ThisUnread).with(js::Known::NamespaceMethod),\n",
     replace: "                    facts: js::Facts::of(js::Known::ThisUnread),\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
@@ -426,7 +426,7 @@ export const mutations: Mutation[] = [
     name: "own-module-forwarded-call-own",
     breaks:
       "a call by name of a namespace's method that's its own module's function, in another module, imports the method's name, `close`, beside the function's alias, `closeFlight` (#566)",
-    file: "src/lower/calls.rs",
+    file: "crates/rust-js-lower/src/calls.rs",
     find: "            Some(&target) if module_of(def_id) == Some(self.module) || module_of(target) == module_of(def_id) => target,\n",
     replace: "            Some(&target) if module_of(def_id) == Some(self.module) => target,\n",
     tests: ["test/method-forwarding.test.ts", "-t", "a namespace's method that only passes its parameters on to its module's function"],

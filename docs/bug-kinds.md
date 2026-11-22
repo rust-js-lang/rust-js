@@ -41,7 +41,7 @@ The area is the owner whose question was answered wrongly, as
 [the architecture](architecture.md)'s tables name it, not the file where
 the wrong JS shows: tidy's looped drops (`mir/tidy/unwinds.rs`) are
 `drops-unwind`, since where a drop runs is the drops owner's question.
-Paths are `src/lower/`'s, except those starting with `src/`, `tooling/`
+Paths are `crates/rust-js-lower/src/`'s, except those starting with `src/`, `tooling/`
 or `typescript/`.
 
 | Label | Its questions | Owners |

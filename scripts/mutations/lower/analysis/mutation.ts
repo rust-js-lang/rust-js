@@ -1,4 +1,4 @@
-// Mutations of src/lower/analysis/mutation.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/analysis/mutation.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "placed-copy-itself",
     breaks:
       "a `Copy` fieldless enum's iterator given generic code bound by `Clone` takes no clone dictionary, so `it.clone()` is the place itself and stepping one steps the other (#2255)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "    let itself = |ty| clones_itself(tcx, counted, ty) && !placed_by_generic_code(tcx, ty);\n",
     replace: "    let itself = |ty| clones_itself(tcx, counted, ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],
@@ -15,9 +15,9 @@ export const mutations: Mutation[] = [
     name: "unit-struct-object-like",
     breaks:
       "a unit struct, `undefined` or its name's string in JS, is object-like, so generic code given a `&mut` of one puts it in the mutation set and its clone, `keep(&mut m)`'s dictionary and itertools' `take_while_ref`'s, is refused (#2251)",
-    file: "src/lower/analysis/mutation.rs",
-    find: "                || crate::lower::recognition::weak_pointee(tcx, ty).is_some()\n                || crate::lower::representation::one_valued(tcx, ty) =>\n",
-    replace: "                || crate::lower::recognition::weak_pointee(tcx, ty).is_some() =>\n",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
+    find: "                || crate::recognition::weak_pointee(tcx, ty).is_some()\n                || crate::representation::one_valued(tcx, ty) =>\n",
+    replace: "                || crate::recognition::weak_pointee(tcx, ty).is_some() =>\n",
     tests: ["test/corpus.test.ts", "-t", "^unit_struct_written_by_generic_code_clones_itself.rs$"],
   },
 
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     name: "closure-param-binding-unchanging",
     breaks:
       "a `for_each` closure's pattern binding a tuple's part `&mut`, `|(i, (a, b))|`, isn't a change of the tuple in place, so `[(1, 'a'); 3].to_vec()`'s items are one, each written thrice (#1076)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "            if let Some(pattern) = &param.pat {\n",
     replace: "            if let Some(pattern) = param.pat.as_ref().filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^for_each_changes_items_in_place.rs$"],
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "replaced-whole-not-mutation",
     breaks:
       "`*p = P::default()` through a `&mut` isn't a change in place, so `let b = a` shares `a`'s object, and resetting `b` resets `a`",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "            {\n                mutated.insert(body.thir[lhs].ty);\n            }",
     replace: "            {}",
     tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     name: "replaced-string-mutated",
     breaks:
       "a `String` replaced through a `&mut` counts as changed in place, so its `clone()` is refused",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "                && object_like(tcx, body.thir[lhs].ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
     name: "everything-copies-itself",
     breaks:
       "a struct changed in place counts as its own copy, so `kept(p)` shares `p`'s object",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "            let primitive = match adt.is_struct() {\n",
     replace: "            let primitive = true || match adt.is_struct() {\n",
     tests: [
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     name: "unit-struct-copies-apart",
     breaks:
       "a unit struct, `undefined` or its name's string in JS, takes a copy function, so `twice(Marker)` and the vercel UI kernel's `on(target, Click, ..)` are given one",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "adt.non_enum_variant().ctor_kind() == Some(rustc_hir::def::CtorKind::Const)",
     replace: "false",
     tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
@@ -74,24 +74,24 @@ export const mutations: Mutation[] = [
     name: "loud-unit-copies-itself",
     breaks:
       "a unit struct whose hand-written `Clone` prints counts as its own copy, so `units_of(&[Unit, Unit])` takes no copy function and never runs its clone",
-    file: "src/lower/analysis/mutation.rs",
-    find: "primitive && crate::lower::std_impls::trivially_cloned(",
-    replace: "primitive || crate::lower::std_impls::trivially_cloned(",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
+    find: "primitive && crate::std_impls::trivially_cloned(",
+    replace: "primitive || crate::std_impls::trivially_cloned(",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },
   {
     name: "string-enum-copies-apart",
     breaks: "a fieldless enum, a string in JS, takes a copy function, so `twice(mode)` is given one",
-    file: "src/lower/analysis/mutation.rs",
-    find: "crate::lower::representation::is_string_enum(tcx, *adt)\n",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
+    find: "crate::representation::is_string_enum(tcx, *adt)",
     replace: "false\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
   },
   {
     name: "numbered-enum-copies-apart",
     breaks: "a `#[repr(u8)]` fieldless enum, a number in JS, takes a copy function, so `twice(level)` is given one",
-    file: "src/lower/analysis/mutation.rs",
-    find: "|| crate::lower::bindings::numbered(tcx, *adt)\n",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
+    find: "|| crate::bindings::numbered(tcx, *adt)",
     replace: "|| false\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
   },
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
     name: "option-copies-not-itself",
     breaks:
       "an `Option` of a reference takes a copy function, so `twice(name)` is given `{ copy: (value) => value }`",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "LangItem::Option) => copies_itself(tcx, args.type_at(0)),",
     replace: "LangItem::Option) => false,",
     tests: [
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     name: "changing-closure-copies-itself",
     breaks:
       "a closure that changes what it captured counts as its own copy, so copying one under a `Copy` bound compiles and its copies share their state",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "args.as_closure().kind() == ty::ClosureKind::Fn,",
     replace: "true,",
     tests: ["test/corpus.test.ts", "-t", "copied_closure_bound"],
@@ -121,17 +121,17 @@ export const mutations: Mutation[] = [
     name: "pointee-copies-shared",
     breaks:
       "a copy of what a pointer points to is the same object, so two copies' pointers are one",
-    file: "src/lower/analysis/mutation.rs",
-    find: "            if let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, expr.ty)\n",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
+    find: "            if let Some((pointee, _)) = crate::pointers::raw_pointee(tcx, expr.ty)\n",
     replace:
-      "            if let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, expr.ty)\n                && false\n",
+      "            if let Some((pointee, _)) = crate::pointers::raw_pointee(tcx, expr.ty)\n                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
     name: "std-macro-pointee-copied",
     breaks:
       "a thread-local's value, which std's `thread_local!` points to, is taken for one the crate changes in place, so a library's function that makes one, `Cell::new(None)` of a `Cell<Option<&str>>`, is compiled here, and refused for reading its library's private `NEXT_ID`",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "                && !expr.span.in_external_macro(tcx.sess.source_map())\n",
     replace: "",
     tests: [
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     name: "part-borrow-unchanged",
     breaks:
       "a struct whose text is changed through a `&mut` of it, `copy[0].0.push('?')`, isn't copied when cloned, so the original changes too",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "                } if !object_like(tcx, body.thir[arg].ty) => Some(arg),\n",
     replace: "                } if false => Some(arg),\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_changed_part.rs$"],
@@ -153,7 +153,7 @@ export const mutations: Mutation[] = [
     name: "part-borrow-objects",
     breaks:
       "a `&mut` of a part that's an object, changed in place, counts its holder changed, so it's copied where it needn't be",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "                } if !object_like(tcx, body.thir[arg].ty) => Some(arg),\n",
     replace: "                } if true => Some(arg),\n",
     tests: ["test/corpus.test.ts", "-t", "^default_method_clones.rs$"],
@@ -163,7 +163,7 @@ export const mutations: Mutation[] = [
     name: "array-borrowed-mut-unchanged",
     breaks:
       "an array something takes `&mut` of, to sort it or change it through a slice, isn't seen to change, so a copy made before shares it, and a grid's rows are one array",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "                } if matches!(body.thir[arg].ty.kind(), ty::Array(..)) => {\n",
     replace:
       "                } if false && matches!(body.thir[arg].ty.kind(), ty::Array(..)) => {\n",
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
     name: "ref-mut-holders-unseen",
     breaks:
       "a `ref mut` binding of a pattern, `let (a, _) = &mut t`, isn't seen to change the tuple or struct it's a field of, so a copy made before shares it",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "        mutated.insert(pat.ty.peel_refs());\n    }\n    holds || parts\n",
     replace: "    }\n    holds || parts\n",
     tests: ["test/corpus.test.ts", "-t", "^ref_mut_bindings_copied.rs$"],
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
     name: "flattened-rows-unchanged",
     breaks:
       "a grid's rows changed through `as_flattened_mut()` are one array, `new Array(3).fill([0, 0])`, so a change shows in each",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "                    mutated.insert(*row);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flattened_rows_apart.rs$"],
@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
     name: "option-mut-changes-in-place",
     breaks:
       "an `Option` a closure writes through a `&mut` counts as changed in place, so a slice of them's `to_vec()` is `xs.map((item) => item)`, not `xs.slice()`",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "if adt.is_enum()) && object_like(tcx, ty)",
     replace: "if adt.is_enum())",
     tests: [
@@ -204,16 +204,16 @@ export const mutations: Mutation[] = [
     name: "rc-written-through-mut-changed-in-place",
     breaks:
       "an `Rc` written through a `&mut` is taken for one changed in place, so its clone, React's `pending.next.borrow().clone()`, is refused",
-    file: "src/lower/analysis/mutation.rs",
-    find: "            if crate::lower::recognition::rc_pointee(tcx, ty).is_some()\n                || crate::lower::recognition::weak_pointee(tcx, ty).is_some()\n                || crate::lower::representation::one_valued(tcx, ty) =>\n",
-    replace: "            if crate::lower::representation::one_valued(tcx, ty) =>\n",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
+    find: "            if crate::recognition::rc_pointee(tcx, ty).is_some()\n                || crate::recognition::weak_pointee(tcx, ty).is_some()\n                || crate::representation::one_valued(tcx, ty) =>\n",
+    replace: "            if crate::representation::one_valued(tcx, ty) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_assigned_through_mut.rs$"],
   },
   {
     name: "string-clone-not-itself",
     breaks:
       "a `String` given a `T: Clone` is taken to be no clone of itself, so its function takes a `TClone`, `read(names, { clone })` (ADR 0914, amended)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "        ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::String) => true,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^refcell_field_places.rs$"],
@@ -223,17 +223,17 @@ export const mutations: Mutation[] = [
     name: "counted-rc-clones-itself",
     breaks:
       "a counted `Rc` given a `T: Clone` is taken to be its own clone, so the clone adds nothing to its count and its last owner drops what it holds early (ADR 0914, amended)",
-    file: "src/lower/analysis/mutation.rs",
-    find: "        _ if let Some(pointee) = crate::lower::recognition::rc_pointee(tcx, ty) => !counted.counts(tcx, pointee),\n",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
+    find: "        _ if let Some(pointee) = crate::recognition::rc_pointee(tcx, ty) => !counted.counts(tcx, pointee),\n",
     replace:
-      "        _ if let Some(_) = crate::lower::recognition::rc_pointee(tcx, ty) => true,\n",
+      "        _ if let Some(_) = crate::recognition::rc_pointee(tcx, ty) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_generic_given_drops.rs$"],
   },
   {
     name: "unboxed-param-given",
     breaks:
       "every type parameter is taken to be given what may look like `None`, so a JS caller of React's `flushSyncFromReconciler` gets `{ $someNone: 0 }` where its callback gave `undefined` (ADR 0051, amended)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "        .filter(|param| !nullish.contains(param))\n",
     replace: "        .filter(|_| false)\n",
     tests: ["test/compiler.test.ts", "-t", "an Option of a generic T"],
@@ -242,8 +242,8 @@ export const mutations: Mutation[] = [
     name: "nullish-given-unseen",
     breaks:
       "no type a caller gives is taken to look like `None`, so `relay(())`'s `Some(())` is `undefined`, `None` (ADR 0051, amended)",
-    file: "src/lower/analysis/mutation.rs",
-    find: "        &|ty| !crate::lower::representation::may_look_like_none(recognition.tcx, ty),\n",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
+    find: "        &|ty| !crate::representation::may_look_like_none(recognition.tcx, ty),\n",
     replace: "        &|_| true,\n",
     tests: ["test/corpus.test.ts", "-t", "^unboxed_type_params.rs$"],
   },
@@ -251,7 +251,7 @@ export const mutations: Mutation[] = [
     name: "closure-write-through-capture-unseen",
     breaks:
       "a closure's write of a `Copy` struct it took by reference, `|x| p = Point { x }`, doesn't change its type in place, so `let q = p;` isn't copied and the closure's `$assign` changes `q` too (#469)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "            && matches!(captured.info.capture_kind, ty::UpvarCapture::ByRef(_))\n",
     replace: "            && matches!(captured.info.capture_kind, ty::UpvarCapture::ByValue)\n",
     tests: ["test/corpus.test.ts", "-t", "^captured_copy_written_whole.rs$"],
@@ -260,7 +260,7 @@ export const mutations: Mutation[] = [
     name: "closure-field-write-through-capture-unseen",
     breaks:
       "a closure's write of a field it took alone, `|x| pair.a = Point { x }`, is taken as a write of what it didn't take, so `let q = pair.a;` isn't copied and the closure's `$assign` changes `q` too (#469)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "            && captured.place.projections.len() == fields.len()\n",
     replace: "            && captured.place.projections.is_empty()\n",
     tests: ["test/corpus.test.ts", "-t", "^captured_copy_written_whole.rs$"],
@@ -268,7 +268,7 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-whole-write-unseen",
     breaks: "a whole write of what a `Box` holds, `*c += *d << 1` of a `Box<Wrapping<u32>>`, isn't taken as a change in place, so `Box::new(*c)` isn't copied and the `$assign` changes it too (#967)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "                && body.thir[boxed].ty.is_box()\n",
     replace: "                && body.thir[boxed].ty.is_box() && false\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_copy_written_whole.rs$"],
@@ -276,7 +276,7 @@ export const mutations: Mutation[] = [
   {
     name: "op-assign-through-a-reference-unseen",
     breaks: "std's `op=` of a `Wrapping` a reference refers to, `*c.as_mut().unwrap() += d`, isn't taken as a change in place, so a copy read out before, `Some(*c.as_mut().unwrap())`, shares the object the `$assign` changes (#1020)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "                && body.thir[through].ty.is_ref()\n",
     replace: "                && body.thir[through].ty.is_ref() && false\n",
     tests: ["test/corpus.test.ts", "-t", "^wrapping_written_through_a_reference.rs$"],
@@ -284,7 +284,7 @@ export const mutations: Mutation[] = [
   {
     name: "capture-written-through-a-box-unseen",
     breaks: "a closure's write of a `Copy` struct it took through a box, `|w| (*frame).size = Size { w }`, isn't counted as changing the type in place, so a copy read out before shares the object the write `$assign`s (#997)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "                (ProjectionKind::Deref, None) => true,\n",
     replace: "                (ProjectionKind::Deref, None) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_copy_captured_written.rs$"],
@@ -292,7 +292,7 @@ export const mutations: Mutation[] = [
   {
     name: "raw-pointer-part-write-unseen",
     breaks: "a raw pointer to a part of a `Copy` value taken by value, `&raw mut point.y`, isn't counted as changing the value in place, so `moved(start, 10)`'s write through it changes the caller's `start` (#1386)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "                ExprKind::RawBorrow {\n                    mutability: Mutability::Mut,\n                    arg,\n                } => Some(arg),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(raw_pointer_writes_a_copy|pointer_to_a_parameter_taken_by_value).rs$"],
@@ -300,7 +300,7 @@ export const mutations: Mutation[] = [
   {
     name: "custom-mir-writes-unread",
     breaks: "what custom MIR changes in place, a write to an enum variant's field, isn't read from its MIR, so a `Copy` enum's copy shares one object with what it's copied from (#1396)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "        custom_mir_writes(tcx, body, &mut mutated);\n",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "custom MIR's copy of a Copy enum it changes after is apart"],
@@ -308,7 +308,7 @@ export const mutations: Mutation[] = [
   {
     name: "rewritten-not-mutated",
     breaks: "an object kept inside a place written over, `$assign(t.r, value.r)`, isn't changed in place, so a `Copy` value read from it shares the object the write changes (#1484)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "                for place in std::iter::once(written).chain(kept) {\n",
     replace: "                for place in std::iter::once(written).chain(kept.into_iter().take(0)) {\n",
     tests: ["test/corpus.test.ts","-t","^address_kept_when_assigned_again.rs$"],
@@ -316,7 +316,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-writes-unseen",
     breaks: "what a call gives a `&mut` to where it resolves to generic code's `&mut T` isn't taken to change in place, so `let mut b = a` shares `a` and the in-place writer refuses (#1665)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "            generic_writes(tcx, &mir.body, &mut mutated);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(copy_(written_whole_by_generic_code|written_by_clone_from|swapped_and_replaced_by_generic_code)_is_its_own|in_place_cell_moved_out|replace_through_mut)\\.rs$"],
@@ -324,7 +324,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-writes-unresolved",
     breaks: "a call's `&mut Self` is read off the trait's declaration, not what it resolves to, so `AddAssign` of a `Wrapping<u8>` marks it changed in place and its numbers' literals are copied (#1665)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "            Ok(Some(instance)) if !matches!(instance.def, ty::InstanceKind::Virtual(..)) => instance.def_id(),\n",
     replace: "            Ok(Some(_)) => callee,\n",
     tests: ["test/corpus.test.ts", "-t", "^saturating_ops_at_every_width.rs$"],
@@ -333,7 +333,7 @@ export const mutations: Mutation[] = [
   {
     name: "ref-cell-contents-unseen",
     breaks: "what a `RefCell` holds isn't taken to change in place, so `RefCell::new(a)` of a `Copy` struct shares `a` and its `replace` refuses (#1665)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "            held_by_ref_cells(tcx, &mir.body, &mut mutated);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_contents_written_in_place_are_copied.rs$"],
@@ -341,7 +341,7 @@ export const mutations: Mutation[] = [
   {
     name: "unsized-writes-unseen",
     breaks: "a `&mut X` made a `&mut dyn Trait` isn't taken to change `X` in place, so `let mut b = a` shares `a` and the pair's write refuses (#1665)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "            mutated.insert(to);\n        }\n    }\n    for data in mir.basic_blocks.iter() {\n",
     replace: "            let _ = to;\n        }\n    }\n    for data in mir.basic_blocks.iter() {\n",
     tests: ["test/corpus.test.ts", "-t", "^copy_written_whole_through_a_dyn_is_its_own.rs$"],
@@ -349,7 +349,7 @@ export const mutations: Mutation[] = [
   {
     name: "param-changed-taken-as-only-read",
     breaks: "a parameter its function changes in place is taken as only read, so `normalize(a)` changes the caller's `a` (#1801)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "                PlaceContext::MutatingUse(_)\n",
     replace: "                PlaceContext::MutatingUse(rustc_middle::mir::visit::MutatingUseContext::Borrow)\n",
     tests: ["test/corpus.test.ts", "-t", "^copy_given_to_a_function_that_only_reads_it.rs$"],
@@ -357,7 +357,7 @@ export const mutations: Mutation[] = [
   {
     name: "param-borrowed-taken-as-only-read",
     breaks: "a parameter its function borrows shared is taken as only read, so a copied closure given uncopied has its original's address, and `ptr::eq` of the two holds (#1801)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "                            | NonMutatingUseContext::SharedBorrow\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^copied_closures_lent_to_generic_code.rs$"],
@@ -365,15 +365,15 @@ export const mutations: Mutation[] = [
   {
     name: "compared-every-caller-a-number",
     breaks: "generic code compares a type parameter by JS's `<` though a caller gives it a struct, whose `<` is false (#1874)",
-    file: "src/lower/analysis/mutation.rs",
-    find: "        &|ty| crate::lower::ordering::compares_by_operator(ty),\n",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
+    find: "        &|ty| crate::ordering::compares_by_operator(ty),\n",
     replace: "        &|_| true,\n",
     tests: ["test/corpus.test.ts", "-t", "^compared_keeps_its_dictionary.rs$"],
   },
   {
     name: "compared-export-by-operator",
     breaks: "a `pub` generic function, which JS or another crate may call with any type, compares by JS's own operators, given no dictionary (#1874)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "    id.is_local() && seen_whole(tcx, id, Fact::CopiedApart(foreign)) && seen_whole(tcx, id, Fact::Shared)\n",
     replace: "    id.is_local() && seen_whole(tcx, id, Fact::CopiedApart(foreign))\n",
     tests: ["test/corpus.test.ts", "-t", "^compared_keeps_its_dictionary.rs$"],
@@ -382,7 +382,7 @@ export const mutations: Mutation[] = [
   {
     name: "compare-bounded-direct-only",
     breaks: "a type parameter compared by an `Ord` bound, which extends `PartialOrd`, compares by its dictionary though every caller gives a number (#1874)",
-    file: "src/lower/analysis/mutation.rs",
+    file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "        rustc_middle::ty::elaborate::supertrait_def_ids(tcx, tr).any(|tr| compares.contains(&Some(tr)))\n",
     replace: "        compares.contains(&Some(tr))\n",
     tests: ["test/corpus.test.ts", "-t", "^compared_by_operator.rs$"],

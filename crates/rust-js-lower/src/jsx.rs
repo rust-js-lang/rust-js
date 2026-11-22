@@ -1,0 +1,936 @@
+//! Lower JSX bindings into the framework-independent JS tree.
+
+use super::{FnCx, R, Shape, fn_def, js_ident};
+use crate::temporary_names::{Base, Role};
+use rust_js_program::casing::camel_case;
+use rust_js_program::collections::IndexMap;
+use rust_js_program::js;
+use rust_js_program::js::{Expr, Prop, Stmt, StmtKind};
+
+use rustc_hir::def::DefKind;
+use rustc_middle::thir::{self, ExprId, ExprKind};
+use rustc_middle::ty;
+use rustc_middle::ty::Ty;
+use rustc_span::{BytePos, Span};
+
+/// How a closure's body is its one call whose JS gives `undefined`
+/// (`closure_calls_for_nothing`): as the program wrote it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum OneCall {
+    /// The body's value, `|| f()` or `|| { f() }`, with no `;`: `() =>
+    /// f()` (ADR 0883).
+    Value,
+    /// A statement, `|| { f(); }`: a block, but a handler's (ADR 0040).
+    Statement,
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A props struct's fields by their names: JSX's attributes, which
+    /// a symbol names none of (`validate`, ADR 1051).
+    fn prop_types(&self, ty: Ty<'tcx>) -> Option<Vec<(String, Ty<'tcx>)>> {
+        match self.shape(ty) {
+            Shape::Object(fields) => Some(Self::named_fields(fields)),
+            _ => None,
+        }
+    }
+
+    /// Element construction is inert (ADR 0040). Capture its inputs at the
+    /// original evaluation point while leaving the element in the JSX tree.
+    pub fn capture_jsx(&mut self, value: &mut Expr, out: &mut Vec<Stmt>) -> bool {
+        match &mut value.kind {
+            js::ExprKind::Jsx(jsx) => {
+                if let js::JsxTag::Component(tag) = &mut jsx.tag {
+                    self.capture_jsx_input(Base::Role(Role::Component), tag, out);
+                }
+                for prop in &mut jsx.props {
+                    match prop {
+                        Prop::Field(name, value)
+                        | Prop::Getter(name, value)
+                        | Prop::Setter(name, value)
+                        | Prop::Method(name, value) => self.capture_jsx_input(Base::Named(&js_ident(name)), value, out),
+                        Prop::Keyed(..) | Prop::KeyedMethod(..) => {
+                            unreachable!("a JSX attribute is named by text (ADR 1051)")
+                        }
+                        Prop::Spread(value) => {
+                            // JSX spreads read properties now, not when the
+                            // later element is built. Preserve getters too.
+                            let old = std::mem::replace(value, Expr::taken());
+                            *value = self.spill(Role::Props, Expr::object(vec![Prop::Spread(old)]), out);
+                        }
+                    }
+                }
+                for child in &mut jsx.children {
+                    self.capture_jsx_input(Base::Role(Role::Children), child, out);
+                }
+                true
+            }
+            js::ExprKind::Cond(test, yes, no) if jsx_tree(yes) || jsx_tree(no) => {
+                self.capture_jsx_input(Base::Role(Role::Condition), test, out);
+                let mut then = Vec::new();
+                let mut otherwise = Vec::new();
+                self.capture_jsx_input(Base::Role(Role::Children), yes, &mut then);
+                self.capture_jsx_input(Base::Role(Role::Children), no, &mut otherwise);
+                branch_captures((*test.clone(), then, otherwise), value.span, out);
+                true
+            }
+            js::ExprKind::SomeWhere(test, yes) if jsx_tree(yes) => {
+                self.capture_jsx_input(Base::Role(Role::Condition), test, out);
+                let mut then = Vec::new();
+                self.capture_jsx_input(Base::Role(Role::Children), yes, &mut then);
+                branch_captures((*test.clone(), then, Vec::new()), value.span, out);
+                true
+            }
+            // Item by item, but not of `...items`, which is no value alone.
+            js::ExprKind::Array(items, ..)
+                if items.iter().any(jsx_tree) && !items.iter().any(|i| matches!(i.kind, js::ExprKind::Spread(_))) =>
+            {
+                for item in items {
+                    self.capture_jsx_input(Base::Role(Role::Children), item, out);
+                }
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// An object being made, which a field may still be given, a style's
+    /// `CSSProperties::new().opacity(..)`: what it's made of read now, as an
+    /// element's is (`capture_jsx`), the object made where it's used.
+    pub fn capture_object(&mut self, value: &mut Expr, out: &mut Vec<Stmt>) -> bool {
+        let js::ExprKind::Object(props, ..) = &mut value.kind else {
+            return false;
+        };
+        if props.iter().any(|p| {
+            matches!(
+                p,
+                Prop::Getter(..) | Prop::Setter(..) | Prop::Method(..) | Prop::Keyed(..) | Prop::KeyedMethod(..)
+            )
+        }) {
+            return false;
+        }
+        for prop in props {
+            match prop {
+                // An object in it, a flattened struct's JSX takes apart, an
+                // object still, what it's made of read now too.
+                Prop::Field(name, value) => {
+                    if !self.reads_alike(value, out)
+                        && !self.capture_jsx(value, out)
+                        && !self.capture_object(value, out)
+                    {
+                        let old = std::mem::replace(value, Expr::taken());
+                        *value = self.spill(Base::Named(&camel_case(&js_ident(name))), old, out);
+                    }
+                }
+                Prop::Getter(..) | Prop::Setter(..) | Prop::Method(..) | Prop::Keyed(..) | Prop::KeyedMethod(..) => {
+                    unreachable!("none")
+                }
+                Prop::Spread(value) => {
+                    // A spread reads its properties now.
+                    let old = std::mem::replace(value, Expr::taken());
+                    *value = self.spill(Role::Props, Expr::object(vec![Prop::Spread(old)]), out);
+                }
+            }
+        }
+        true
+    }
+
+    /// Whether `value` reads the same wherever it's read: a constant, a
+    /// function, an import, or a variable nothing writes again, a `const`
+    /// of `out`'s, or a field of a plain Rust value of one.
+    fn reads_alike(&self, value: &Expr, out: &[Stmt]) -> bool {
+        match &value.kind {
+            js::ExprKind::Symbol(_) | js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..) => true,
+            // `error != null`, an `Option`'s test (ADR 0298, amended), reads as
+            // `error` does.
+            js::ExprKind::Binary(..) if let Some(a) = js::null_test(value, true).or(js::null_test(value, false)) => {
+                self.reads_alike(a, out)
+            }
+            // `p.size`: a field can't change while its value doesn't, where the
+            // value is plain Rust data. A JS object's getter, `n.textContent`,
+            // can, and so can what's reached through a `Cell` or a `&mut`.
+            // So can't a props pattern's rest's, a JS object of what it was
+            // given (ADR 0195).
+            js::ExprKind::Member(object, _) => {
+                matches!(&object.kind, js::ExprKind::Var(name)
+                    if self.plain_local(name) || self.locals.rests.contains_key(name))
+                    && self.reads_alike(object, out)
+            }
+            js::ExprKind::Var(name) => {
+                self.alike_local(name)
+                    || self
+                        .locals
+                        .vars
+                    .values()
+                    .any(|var| !var.mutable && matches!(&var.place.kind, js::ExprKind::Var(n) if n == name))
+                    || out
+                        .iter()
+                        .any(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == name))
+                    || self.krate.fns.iter().any(|(id, f)| {
+                        f.module == self.module
+                            && name.is(&f.name)
+                            && matches!(self.tcx.def_kind(*id), DefKind::Fn | DefKind::AssocFn)
+                    })
+                    // An import's binding, which JS never lets the module change.
+                    || self.krate.imports[&self.module].values().any(|alias| name.is(alias))
+            }
+            _ => value.is_constant(),
+        }
+    }
+
+    /// Whether `value` is a field, of a field or more, of a variable of
+    /// plain Rust data (`plain_local`), `p.title`, `options.debugChannel
+    /// .writable`: what reads the same each time, as nothing changes the
+    /// variable or what's in it (rd614). Not a field of what JS may give or
+    /// make, whose field a getter may answer anew, `p.style.margin` where
+    /// `p.style` is (`given_paths`, #1908).
+    pub(super) fn plain_field(&self, value: &Expr) -> bool {
+        let mut objects = Vec::new();
+        let mut of = value;
+        while let js::ExprKind::Member(object, _) = &of.kind {
+            objects.push(&**object);
+            of = object;
+        }
+        let js::ExprKind::Var(name) = &of.kind else {
+            return false;
+        };
+        if objects.is_empty() || !self.plain_local(name) {
+            return false;
+        }
+        let given = self.given_of(name);
+        // Each object a field's read of, its path: `p`, `p.style`.
+        !objects
+            .iter()
+            .any(|object| path_of(object).is_none_or(|path| given.contains(&path)))
+    }
+
+    /// Whether `value` reads only variables that never change, so it's the
+    /// same read before or after anything else: a `useState` value, a
+    /// parameter, and elements of them.
+    fn reads_unchanging(&self, value: &Expr, out: &[Stmt]) -> bool {
+        if !value.reads_only_vars() {
+            return false;
+        }
+        // Each variable it reads, by its own name, of what reads only them.
+        let mut vars = Vec::new();
+        value.clone().each_mut(&mut |e| {
+            if let js::ExprKind::Var(var) = &e.kind {
+                vars.push(var.clone());
+            }
+        });
+        vars.into_iter().all(|var| self.reads_alike(&Expr::var(var), out))
+    }
+
+    fn capture_jsx_input(&mut self, base: Base<'_>, value: &mut Expr, out: &mut Vec<Stmt>) {
+        let stable = self.reads_alike(value, out);
+        if !stable && !self.capture_jsx(value, out) {
+            let map = matches!(&value.kind, js::ExprKind::Call(f, _) if matches!(&f.kind, js::ExprKind::Member(_, name) if name == "map"));
+            let old = std::mem::replace(value, Expr::taken());
+            *value = self.spill(if map { Base::Role(Role::Items) } else { base }, old, out);
+        }
+    }
+
+    // ── JSX (ADR 0040) ──────────────────────────────────────────────────
+
+    /// A JSX element, of what its binding is given.
+    pub fn jsx_values(&mut self, tag: &str, args: Vec<JsxArg<'tcx>>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        self.jsx = true;
+        let mut args = args.into_iter();
+        let (tag, props, children) = match (tag, args.len()) {
+            ("*", 2) => {
+                let component = args.next().expect("two");
+                let tag = component.value;
+                if !matches!(
+                    tag.kind,
+                    js::ExprKind::Var(_) | js::ExprKind::Symbol(_) | js::ExprKind::Member(..)
+                ) {
+                    return Err(self.unsupported(
+                        component.span,
+                        "a JSX component other than a named function or module member",
+                    ));
+                }
+                // JSX reads a lowercase name as a DOM element's, and Fast
+                // Refresh only keeps the state of a capitalized component.
+                if let Some(name) = match &tag.kind {
+                    js::ExprKind::Var(name) => Some(name.word()), // word: JSX reads a lowercase tag as a DOM element's
+                    js::ExprKind::Symbol(symbol) => Some(symbol.export.as_str()),
+                    _ => None,
+                } && !name.starts_with(|c: char| c.is_ascii_uppercase())
+                {
+                    let message =
+                        format!("rust-js: a React component's name starts with an uppercase letter, not `{name}`");
+                    return Err(crate::refusal::error(self.tcx, component.span, message));
+                }
+                let (props, children) = self.jsx_props(args.next().expect("two"), out)?;
+                (js::JsxTag::Component(tag), props, children)
+            }
+            // A `react::Tag` the function names, `<Comp>`, whose value is the
+            // tag, as JSX reads a capitalized variable's (ADR 0220).
+            ("$", 1) => match args.next().expect("one") {
+                JsxArg {
+                    value:
+                        tag @ Expr {
+                            kind: js::ExprKind::Var(_),
+                            ..
+                        },
+                    ..
+                } => (js::JsxTag::Component(tag), Vec::new(), Vec::new()),
+                tag => return Err(self.unsupported(tag.span, "a JSX tag other than a variable")),
+            },
+            (tag, 0 | 1) if tag != "*" => {
+                let children = match args.next() {
+                    Some(children) => self.jsx_children(children, out),
+                    None => Vec::new(),
+                };
+                let tag = match tag {
+                    "" => js::JsxTag::Fragment,
+                    t if t.contains('#') => js::JsxTag::Component(self.js_ref(t)),
+                    t => js::JsxTag::Intrinsic(t.to_string()),
+                };
+                (tag, Vec::new(), children)
+            }
+            _ => return Err(self.unsupported(span, "this JSX binding's signature")),
+        };
+        Ok(Expr::jsx(js::Jsx { tag, props, children }))
+    }
+
+    /// A component's props as attributes: a struct's fields, with its
+    /// `children` as the element's; `()` for none; anything else spread,
+    /// `{...props}`.
+    fn jsx_props(&mut self, props: JsxArg<'tcx>, out: &mut Vec<Stmt>) -> R<(Vec<Prop>, Vec<Expr>)> {
+        let JsxArg {
+            value,
+            ty,
+            expr: props,
+            span: props_span,
+        } = props;
+        let mut fields = match value.kind {
+            js::ExprKind::Undefined => return Ok((Vec::new(), Vec::new())),
+            js::ExprKind::Object(fields, ..) => fields,
+            _ => return Ok((vec![Prop::Spread(value)], Vec::new())),
+        };
+        // As written, as JSX's are, its children last; then what a base
+        // gives, in the struct's order (ADR 0203), as the struct's object
+        // lists them (ADR 0674). Each where it's written, which MIR's value
+        // doesn't say: a `key` written before it goes before it.
+        if let Some(props) = props
+            && let ExprKind::Adt(adt) = &self.frame.thir[super::body_queries::strip(self.frame.thir, props)].kind
+            && let Some(types) = self.prop_types(ty)
+        {
+            for f in adt.fields.iter() {
+                let name = &types[f.name.as_usize()].0;
+                for prop in &mut fields {
+                    if let Prop::Field(key, value)
+                    | Prop::Getter(key, value)
+                    | Prop::Setter(key, value)
+                    | Prop::Method(key, value) = prop
+                        && key == name
+                        && value.span.is_none()
+                    {
+                        value.span = self.js_span(self.frame.thir[f.expr].span);
+                    }
+                }
+            }
+        }
+        // Read before the children, where a prop after them, a base's, is
+        // made after them, as Rust makes it, and the order shows: it does
+        // something, or reads what children that do something might change,
+        // `{..base}` of `bump(&mut base)`. A constant is made nowhere, nor
+        // is an object of them, a flattened struct none of whose fields is
+        // given, and children that read only what never changes read the same after.
+        if let Some(i) = fields
+            .iter()
+            .position(|p| matches!(p, Prop::Field(name, _) if name == "children"))
+            && let Prop::Field(_, children) = &fields[i]
+            && fields[i + 1..].iter().any(|p| {
+                let (Prop::Field(_, value)
+                | Prop::Getter(_, value)
+                | Prop::Setter(_, value)
+                | Prop::Method(_, value)
+                | Prop::Spread(value)
+                | Prop::Keyed(_, value)
+                | Prop::KeyedMethod(_, value)) = p;
+                value.has_effects() && !self.reads_unchanging(children, out)
+                    || children.has_effects() && !value.is_constant() && !self.reads_unchanging(value, out)
+            })
+        {
+            for prop in &mut fields {
+                self.read_first(prop, out);
+            }
+        }
+        let rest_fields: Vec<String> = match self.prop_types(ty) {
+            Some(types) => (types.into_iter().enumerate())
+                .filter(|&(i, _)| super::bindings::is_rest_field(self.tcx, ty, i))
+                .map(|(_, (name, _))| name)
+                .collect(),
+            _ => Vec::new(),
+        };
+        // Where each prop is written, by its name: its value's place in the
+        // source, a flattened struct made here followed in (ADR 0213).
+        let mut written = IndexMap::default();
+        if let Some(props) = props {
+            self.written_at(props, ty, &mut written);
+        }
+        // What gives each prop, by its name, where the struct is made here.
+        let mut given = IndexMap::default();
+        if let Some(props) = props
+            && let ExprKind::Adt(adt) = &self.frame.thir[super::body_queries::strip(self.frame.thir, props)].kind
+            && let Some(types) = self.prop_types(ty)
+        {
+            for field in adt.fields.iter() {
+                given.insert(types[field.name.as_usize()].0.clone(), field.expr);
+            }
+        }
+        let mut attrs = Vec::new();
+        let mut children = Vec::new();
+        for field in fields {
+            match field {
+                // None given, an `Element`'s default (ADR 0192).
+                Prop::Field(name, value) if name == "children" && matches!(value.kind, js::ExprKind::Undefined) => {}
+                // What a `Rest` holds is the element's props, `{...rest}` (ADR 0195),
+                // and so is a flattened struct's: one made here, each field
+                // given, an attribute of its own (ADR 0204).
+                Prop::Field(name, value) if rest_fields.contains(&name) => {
+                    let Some(types) = self.prop_types(ty) else {
+                        unreachable!("a struct's fields")
+                    };
+                    let field_ty = types.iter().find(|(n, _)| *n == name).expect("the field").1;
+                    let own: Vec<String> = (types.iter())
+                        .filter(|(n, _)| !rest_fields.contains(n))
+                        .map(|(n, _)| n.clone())
+                        .collect();
+                    let span = props_span;
+                    let flattened = self.flattened_attrs(field_ty, value, &own, span)?;
+                    // Where its fields are written, the first: a struct made
+                    // there, `AnchorHTMLAttributes { .., ..props }`, is.
+                    let first = (flattened.iter())
+                        .filter_map(|prop| match prop {
+                            Prop::Field(key, _)
+                            | Prop::Getter(key, _)
+                            | Prop::Setter(key, _)
+                            | Prop::Method(key, _) => written.get(key).copied(),
+                            Prop::Spread(_) => None,
+                            Prop::Keyed(..) | Prop::KeyedMethod(..) => {
+                                unreachable!("a JSX attribute is named by text (ADR 1051)")
+                            }
+                        })
+                        .min();
+                    for prop in flattened {
+                        // A spread is where its struct is written, before what
+                        // it's updated with.
+                        let at = match &prop {
+                            Prop::Spread(_) => written.get(&name).copied().or(first),
+                            Prop::Field(key, _)
+                            | Prop::Getter(key, _)
+                            | Prop::Setter(key, _)
+                            | Prop::Method(key, _) => written.get(key).copied(),
+                            Prop::Keyed(..) | Prop::KeyedMethod(..) => {
+                                unreachable!("a JSX attribute is named by text (ADR 1051)")
+                            }
+                        };
+                        attrs.push((at, prop));
+                    }
+                }
+                Prop::Field(name, value) if name == "children" => {
+                    let Some(types) = self.prop_types(ty) else {
+                        unreachable!("a struct's fields")
+                    };
+                    let mut child_ty = types.into_iter().find(|(n, _)| *n == name).expect("the field").1;
+                    // Shown only if a test holds, `test && <el />`, as an
+                    // element's child is (ADR 0235). Given by reference, to
+                    // children of any node, `&(a, b)`, what's referred to.
+                    let value = match given.get(&name) {
+                        Some(&child) => {
+                            let child = self.referred_children(child);
+                            child_ty = self.frame.thir[child].ty;
+                            self.shown_if(child, value)
+                        }
+                        None => value,
+                    };
+                    children = self.spread_children(value, child_ty, out);
+                }
+                other => {
+                    let at = match &other {
+                        Prop::Field(key, _) | Prop::Getter(key, _) | Prop::Setter(key, _) | Prop::Method(key, _) => {
+                            written.get(key).copied()
+                        }
+                        // A base's, `{..*props}`, before what it's updated
+                        // with, which JSX's order says wins (ADR 0250).
+                        Prop::Spread(_) => Some(BytePos(0)),
+                        Prop::Keyed(..) | Prop::KeyedMethod(..) => {
+                            unreachable!("a JSX attribute is named by text (ADR 1051)")
+                        }
+                    };
+                    attrs.push((at, other));
+                }
+            }
+        }
+        // As written, where a struct's companion made them in its order
+        // (ADR 0213): what does something is made first, in Rust's order.
+        let order = |attrs: &[(Option<BytePos>, Prop)]| -> Vec<usize> {
+            let mut order: Vec<usize> = (0..attrs.len()).collect();
+            order.sort_by_key(|&i| attrs[i].0.unwrap_or(BytePos(u32::MAX)));
+            order
+        };
+        let sorted = order(&attrs);
+        if sorted.iter().enumerate().any(|(i, &j)| i != j) {
+            let effects = |(_, prop): &(Option<BytePos>, Prop)| {
+                let (Prop::Field(_, value)
+                | Prop::Getter(_, value)
+                | Prop::Setter(_, value)
+                | Prop::Method(_, value)
+                | Prop::Spread(value)
+                | Prop::Keyed(_, value)
+                | Prop::KeyedMethod(_, value)) = prop;
+                value.has_effects()
+            };
+            if attrs.iter().filter(|attr| effects(attr)).count() > 1 {
+                for (_, prop) in &mut attrs {
+                    self.read_first(prop, out);
+                }
+            }
+        }
+        let mut attrs: Vec<Option<Prop>> = attrs.into_iter().map(|(_, prop)| Some(prop)).collect();
+        let attrs = sorted.into_iter().filter_map(|i| attrs[i].take()).collect();
+        Ok((attrs, children))
+    }
+
+    /// The children a props struct's `&'a dyn ReactNode` is given, by
+    /// reference and made any node, or its `Option` of one: what's referred
+    /// to, `(a, b)` of `&(a, b)`, its children each a child, as JSX's are.
+    fn referred_children(&self, e: ExprId) -> ExprId {
+        let e = self.strip(e);
+        match self.frame.thir[e].kind {
+            ExprKind::PointerCoercion { source, .. } => self.referred_children(source),
+            ExprKind::Borrow { arg, .. } => self.referred_children(arg),
+            // `Some(&(a, b))`, of optional children.
+            ExprKind::Adt(ref some) if self.option_of(self.frame.thir[e].ty).is_some() && some.fields.len() == 1 => {
+                self.referred_children(some.fields[0].expr)
+            }
+            _ => e,
+        }
+    }
+
+    /// `prop`'s value read into a `const` first, unless it's a constant (ADR
+    /// 0194). What reads the same where the prop is written, a variable, or a
+    /// flattened struct made here (ADR 0213), is read there again as tidy
+    /// writes what a `const` holds where it's read.
+    fn read_first(&mut self, prop: &mut Prop, out: &mut Vec<Stmt>) {
+        let (name, value) = match prop {
+            Prop::Field(name, value)
+            | Prop::Getter(name, value)
+            | Prop::Setter(name, value)
+            | Prop::Method(name, value) => (name.as_str(), value),
+            Prop::Spread(value) => ("props", value),
+            Prop::Keyed(..) | Prop::KeyedMethod(..) => unreachable!("a JSX attribute is named by text (ADR 1051)"),
+        };
+        if !value.is_constant() {
+            let old = std::mem::replace(value, Expr::taken());
+            *value = self.spill(Base::Named(&camel_case(&js_ident(name))), old, out);
+        }
+    }
+
+    /// Whether a closure's body is one call whose JS gives `undefined`
+    /// whatever it is: a function of the crate's that gives `()`, a closure
+    /// of its own, or a binding that says so, `#[rust_js::returns_undefined]`
+    /// (ADR 0040), and how it's written. A component's handler of one, held
+    /// or written in place, returns it, `onSubmit={() => submit(false)}`:
+    /// it reads what Rust's gives, `undefined`; and any closure whose body
+    /// is its call's value, `|| f()`, is `() => f()` (ADR 0883).
+    pub fn closure_calls_for_nothing(&self, body: &super::Body<'tcx>) -> Option<OneCall> {
+        let thir = &body.thir;
+        let root = body.root()?;
+        let mut call = super::body_queries::strip(thir, root);
+        let mut written = OneCall::Value;
+        if let ExprKind::Block { block } = thir[call].kind {
+            call = match (&thir[block].stmts[..], thir[block].expr) {
+                ([], Some(value)) => super::body_queries::strip(thir, value),
+                ([stmt], None) => match thir[*stmt].kind {
+                    thir::StmtKind::Expr { expr, .. } => {
+                        written = OneCall::Statement;
+                        super::body_queries::strip(thir, expr)
+                    }
+                    _ => return None,
+                },
+                _ => return None,
+            };
+        }
+        let ExprKind::Call { fun, ref args, .. } = thir[call].kind else {
+            return None;
+        };
+        let (def_id, _) = fn_def(thir[fun].ty)?;
+        if !thir[call].ty.is_unit() {
+            return None;
+        }
+        let nothing = match self.tcx.trait_of_assoc(def_id) {
+            // A closure of the crate's, `next()`: Rust's, which gives nothing.
+            Some(fn_trait) if self.tcx.fn_trait_kind_from_def_id(fn_trait).is_some() => {
+                matches!(thir[args[0]].ty.peel_refs().kind(), ty::Closure(..))
+            }
+            _ if super::bindings::is_binding(self.tcx, def_id) => super::bindings::returns_undefined(self.tcx, def_id),
+            _ => def_id.is_local(),
+        };
+        nothing.then_some(written)
+    }
+
+    /// Where each prop `props`, a struct of type `ty`, is given is written,
+    /// by its name: a field's value's place, and a flattened struct's made
+    /// here, each of its own (ADR 0213).
+    fn written_at(&self, props: ExprId, ty: Ty<'tcx>, written: &mut IndexMap<String, BytePos>) {
+        let ExprKind::Adt(adt) = &self.frame.thir[super::body_queries::strip(self.frame.thir, props)].kind else {
+            return;
+        };
+        let Some(types) = self.prop_types(ty) else { return };
+        let made_here = |field: &thir::FieldExpr| {
+            let i = field.name.as_usize();
+            super::bindings::is_flatten_field(self.tcx, ty, i)
+                && matches!(
+                    self.frame.thir[super::body_queries::strip(self.frame.thir, field.expr)].kind,
+                    ExprKind::Adt(_)
+                )
+        };
+        // Its own names first, which a flattened struct's of the same name,
+        // never given, doesn't take the place of (ADR 0205).
+        for field in adt.fields.iter().filter(|field| !made_here(field)) {
+            let key = &types[field.name.as_usize()].0;
+            written
+                .entry(key.clone())
+                .or_insert(self.frame.thir[field.expr].span.source_callsite().lo());
+        }
+        for field in adt.fields.iter().filter(|field| made_here(field)) {
+            let mut inner = IndexMap::default();
+            self.written_at(field.expr, types[field.name.as_usize()].1, &mut inner);
+            for (key, at) in inner {
+                written.entry(key).or_insert(at);
+            }
+        }
+    }
+
+    /// The attributes `value`, a flattened struct of type `ty`, gives: each
+    /// field of one made here, and of a flattened one in it, but one whose
+    /// name the props have, `own`, which theirs is (ADR 0205); another
+    /// value, `{...value}`.
+    fn flattened_attrs(&mut self, ty: Ty<'tcx>, value: Expr, own: &[String], span: Span) -> R<Vec<Prop>> {
+        let js::ExprKind::Object(props, ..) = value.kind else {
+            return Ok(match value.kind {
+                js::ExprKind::Undefined => Vec::new(),
+                _ => vec![Prop::Spread(value)],
+            });
+        };
+        let Some(types) = self.prop_types(ty) else {
+            unreachable!("a flattened struct's fields")
+        };
+        let mut shadowing = own.to_vec();
+        shadowing.extend(
+            (types.iter().enumerate())
+                .filter(|&(i, _)| !super::bindings::is_flatten_field(self.tcx, ty, i))
+                .map(|(_, (n, _))| n.clone()),
+        );
+        let mut attrs = Vec::new();
+        // What an update's base gives, `..props`, where it's a props pattern's
+        // rest: that rest spread, `{...props}`, before what the update gives,
+        // as it holds no key its pattern named, which the props' own may be.
+        let mut rest = None;
+        // Each field by its name, as its object lists them as written (ADR 0674).
+        let tcx = self.tcx;
+        let flattened = |name: &str| {
+            (types.iter().position(|(n, _)| n == name)).filter(|&i| super::bindings::is_flatten_field(tcx, ty, i))
+        };
+        for prop in props {
+            match prop {
+                Prop::Field(name, value) if let Some(i) = flattened(&name) => {
+                    for attr in self.flattened_attrs(types[i].1, value, &shadowing, span)? {
+                        match attr {
+                            Prop::Spread(value) if matches!(&value.kind, js::ExprKind::Var(v) if self.locals.rests.contains_key(v)) => {
+                                rest = Some(value)
+                            }
+                            attr => attrs.push(attr),
+                        }
+                    }
+                }
+                Prop::Field(name, value)
+                    if matches!(&value.kind, js::ExprKind::Member(object, key)
+                        if key == &name && matches!(&object.kind, js::ExprKind::Var(v) if self.locals.rests.contains_key(v))) =>
+                {
+                    let js::ExprKind::Member(object, _) = value.kind else {
+                        unreachable!("matched above")
+                    };
+                    rest = Some(*object);
+                }
+                Prop::Field(name, value) if own.contains(&name) => {
+                    if !matches!(value.kind, js::ExprKind::Undefined) {
+                        return Err(self.unsupported(
+                            span,
+                            &format!("giving flattened props' `{name}`, which the props have too: give theirs"),
+                        ));
+                    }
+                }
+                prop => attrs.push(prop),
+            }
+        }
+        if let Some(rest) = rest {
+            attrs.insert(0, Prop::Spread(rest));
+        }
+        Ok(attrs)
+    }
+
+    fn jsx_children(&mut self, children: JsxArg<'tcx>, out: &mut Vec<Stmt>) -> Vec<Expr> {
+        let value = match children.expr {
+            Some(e) => self.shown_if(e, children.value),
+            None => children.value,
+        };
+        self.spread_children(value, children.ty, out)
+    }
+
+    /// A child shown only if a test holds, `test ? <b /> : undefined`, as JSX
+    /// writes it, `test && <b />` (ADR 0235): the test is `false` when it
+    /// fails, which renders nothing, as `undefined` does, as each test is a
+    /// boolean, a Rust condition's or a pattern's (`x != null`, `!!text`),
+    /// never `0` nor `""`, which render as text. An `Option` of a JS
+    /// object mapped is one when there, so it's its own test:
+    /// `variant.Icon && <variant.Icon />`.
+    fn shown_if(&self, child: ExprId, value: Expr) -> Expr {
+        // Children are a tuple, of tuples too: each its own.
+        if let ExprKind::Tuple { fields } = &self.frame.thir[self.strip(child)].kind
+            && let js::ExprKind::Array(items, layout) = &value.kind
+            && fields.len() == items.len()
+        {
+            let items = (items.iter().cloned())
+                .zip(fields.iter())
+                .map(|(item, &field)| self.shown_if(field, item))
+                .collect();
+            return Expr {
+                facts: js::Facts::NONE,
+                kind: js::ExprKind::Array(items, layout.clone()),
+                span: value.span,
+                held_as: Default::default(),
+            };
+        }
+        let Some((test, shown, _)) = value.some_where_parts() else {
+            return value;
+        };
+        let (test, shown) = (test.clone(), shown.clone());
+        Expr {
+            facts: js::Facts::NONE,
+            kind: js::ExprKind::Binary(js::Op::And, Box::new(test), Box::new(shown)),
+            span: value.span,
+            held_as: Default::default(),
+        }
+    }
+
+    /// A tuple of children is several, `("Count is ", count)`: `Count is {count}`.
+    /// Anything else is one: a `Vec` is `{items}`, which React renders item by item.
+    pub(super) fn spread_children(&mut self, value: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>) -> Vec<Expr> {
+        let ty::Tuple(tys) = *ty.kind() else { return vec![value] };
+        let parts = match value.kind {
+            js::ExprKind::Array(items, ..) => items,
+            _ if tys.is_empty() => Vec::new(),
+            _ => {
+                let tuple = if value.has_effects() {
+                    self.spill(Role::Children, value, out)
+                } else {
+                    value
+                };
+                (0..tys.len())
+                    .map(|i| Expr::index(tuple.clone(), Expr::int(i as i128)))
+                    .collect()
+            }
+        };
+        parts
+            .into_iter()
+            .zip(tys.iter())
+            .flat_map(|(part, t)| self.spread_children(part, t, out))
+            .collect()
+    }
+
+    /// What `<el {...props}>` spreads: a struct's fields, or a JS value's own
+    /// properties, a `Rest`'s or a `js::Unknown` read from JSON say, or
+    /// none, `undefined`, which JS spreads as nothing (ADR 0268).
+    pub fn jsx_spread_checked(&self, name: &str, ty: Ty<'tcx>, span: Span) -> R<()> {
+        let js_object = |ty: Ty<'tcx>| self.recognition().is_js_object(ty.peel_refs());
+        // Through a reference, the struct itself, which JS spreads alike.
+        let spread = ty.peel_refs();
+        if name == "..."
+            && !matches!(self.shape(spread), Shape::Object(_))
+            && !js_object(spread)
+            && !self.option_of(spread).is_some_and(js_object)
+        {
+            return Err(self.unsupported(span, "JSX props spread of a non-struct value"));
+        }
+        Ok(())
+    }
+
+    /// An attribute set on what isn't an element being made.
+    pub fn one_expression(&self, span: Span) -> crate::refusal::Refusal {
+        let message = "rust-js makes JSX from one expression: set an element's props in the chain that makes it";
+        crate::refusal::error(self.tcx, span, message)
+    }
+
+    /// Where `e`'s value is written, its own span: a block's, `{ let mut n
+    /// = 0; while .. {} n }`, is held where tidy's declarations put it,
+    /// after the block's loop, as a `const` (#434).
+    fn value_at(&self, e: ExprId) -> js::Span {
+        self.js_span(self.frame.thir[e].span)
+    }
+
+    /// An element's attribute, `name`, given: the element made, its value,
+    /// what that needs done first, and whether it's simple.
+    pub fn jsx_prop_values(
+        &mut self,
+        name: String,
+        mut element: Expr,
+        given: JsxArg<'tcx>,
+        (mut first, simple): (Vec<Stmt>, bool),
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let value_span = given.span;
+        // Where it's written, which MIR's value, a constant's, doesn't say:
+        // a block's, its value's, after what the block does first (#434).
+        let at = (given.expr).map_or_else(|| self.js_span(value_span), |e| self.value_at(e));
+        let (children, mut lowered) = match name.as_str() {
+            "children" => (self.jsx_children(given, &mut first), None),
+            _ => (Vec::new(), Some(given.value)),
+        };
+        // The receiver is evaluated before the argument. JSX prints attributes
+        // before children; later attributes must not jump ahead of earlier
+        // children. Likewise, statements introduced by an argument must not
+        // jump ahead of any deferred receiver evaluations. These temporaries
+        // preserve Rust evaluation order, independently of output formatting.
+        let js::ExprKind::Jsx(jsx) = &mut element.kind else {
+            unreachable!("checked above")
+        };
+        if !simple {
+            // One read already, a `const` of its own, is read as it is (ADR 0194).
+            for prop in &mut jsx.props {
+                let (base, value) = match prop {
+                    Prop::Field(name, value)
+                    | Prop::Getter(name, value)
+                    | Prop::Setter(name, value)
+                    | Prop::Method(name, value) => (name.as_str(), value),
+                    Prop::Spread(value) => ("props", value),
+                    Prop::Keyed(..) | Prop::KeyedMethod(..) => {
+                        unreachable!("a JSX attribute is named by text (ADR 1051)")
+                    }
+                };
+                if !value.is_constant() {
+                    let old = std::mem::replace(value, Expr::taken());
+                    *value = self.spill(Base::Named(&camel_case(&js_ident(base))), old, out);
+                }
+            }
+            for value in &mut jsx.children {
+                if !self.reads_alike(value, out) {
+                    let old = std::mem::replace(value, Expr::taken());
+                    *value = self.spill(Role::Children, old, out);
+                }
+            }
+        }
+        out.extend(first);
+        let js::ExprKind::Jsx(jsx) = &mut element.kind else {
+            unreachable!("checked above")
+        };
+        let Some(value) = lowered.take() else {
+            jsx.children.extend(children);
+            return Ok(element);
+        };
+        let mut value = value.or_at(at);
+        // An event's handler that only passes on what it's given is the
+        // function it passes on to, `onClick={onClear}` (ADR 0198): held in
+        // a `const` of its own, or written in place.
+        if let Some(taker) = super::passed_on::Taker::prop(&name) {
+            let forwarding = self.forwarding();
+            let spilled = match (&value.kind, out.last().map(|s| &s.kind)) {
+                (js::ExprKind::Var(var), Some(StmtKind::Const(declared, arrow))) if var == declared => {
+                    super::passed_on::passed_on(arrow, taker, forwarding)
+                }
+                _ => None,
+            };
+            if let Some(handler) = spilled {
+                out.pop();
+                value = handler;
+            } else if let Some(handler) = super::passed_on::passed_on(&value, taker, forwarding) {
+                value = handler;
+            }
+        }
+        // A component's `key`, which `jsx!` gives last, goes where it was
+        // written: `jsx!` reads each in that order already (ADR 0254). A
+        // base's spread, written last and put first (ADR 0250), follows it.
+        let at = match name.as_str() {
+            "key" => {
+                let written = self.js_span(value_span).lo;
+                jsx.props.iter().position(|prop| match prop {
+                    Prop::Spread(v) if v.span.is_none() => true,
+                    Prop::Field(_, v)
+                    | Prop::Getter(_, v)
+                    | Prop::Setter(_, v)
+                    | Prop::Method(_, v)
+                    | Prop::Spread(v) => !v.span.is_none() && v.span.lo > written,
+                    Prop::Keyed(..) | Prop::KeyedMethod(..) => {
+                        unreachable!("a JSX attribute is named by text (ADR 1051)")
+                    }
+                })
+            }
+            _ => None,
+        };
+        let prop = if name == "..." {
+            Prop::Spread(value)
+        } else {
+            Prop::Field(name, value)
+        };
+        match at {
+            Some(at) => jsx.props.insert(at, prop),
+            None => jsx.props.push(prop),
+        }
+        Ok(element)
+    }
+}
+
+/// A JSX binding's argument: its value, its type, and its THIR expression
+/// where there's one, for its shape, and its span.
+pub struct JsxArg<'tcx> {
+    pub value: Expr,
+    pub ty: Ty<'tcx>,
+    pub expr: Option<ExprId>,
+    pub span: Span,
+}
+
+/// JSX syntax evaluated here, rather than inside a callback passed elsewhere.
+fn jsx_tree(value: &Expr) -> bool {
+    match &value.kind {
+        js::ExprKind::Jsx(_) => true,
+        js::ExprKind::Cond(_, yes, no) => jsx_tree(yes) || jsx_tree(no),
+        js::ExprKind::SomeWhere(_, yes) => jsx_tree(yes),
+        js::ExprKind::Array(items, ..) => items.iter().any(jsx_tree),
+        _ => false,
+    }
+}
+
+/// `a.b.c` of a chain of a variable's members, its path; `None` of another
+/// read.
+fn path_of(e: &Expr) -> Option<js::Path> {
+    match &e.kind {
+        js::ExprKind::Var(name) => Some(js::Path::var(name)),
+        _ => e.path(),
+    }
+}
+
+/// A conditional JSX value's captures, `then` and `otherwise` each of its
+/// branches', kept conditional: only their result bindings are visible to
+/// the deferred JSX expression.
+fn branch_captures((test, mut then, mut otherwise): (Expr, Vec<Stmt>, Vec<Stmt>), span: js::Span, out: &mut Vec<Stmt>) {
+    for statement in then.iter_mut().chain(&mut otherwise) {
+        match &mut statement.kind {
+            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => {
+                out.push(StmtKind::Let(name.clone(), None).at(statement.span));
+                statement.kind = StmtKind::Assign(Expr::var(&*name), value.clone());
+            }
+            StmtKind::Let(name, None) => {
+                out.push(StmtKind::Let(name.clone(), None).at(statement.span));
+            }
+            _ => {}
+        }
+    }
+    then.retain(|s| !matches!(s.kind, StmtKind::Let(_, None)));
+    otherwise.retain(|s| !matches!(s.kind, StmtKind::Let(_, None)));
+    if !then.is_empty() || !otherwise.is_empty() {
+        out.push(StmtKind::If(test, then, Some(otherwise)).at(span));
+    }
+}

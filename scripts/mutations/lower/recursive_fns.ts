@@ -1,4 +1,4 @@
-// Mutations of src/lower/recursive_fns.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/recursive_fns.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 const perModule = ["test/corpus.test.ts", "-t", "^recursive_fns_per_module.rs$"];
@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     name: "module-fn-made-before-unseen",
     breaks:
       "a body doesn't see the module's functions the bodies before it made, `Settled`'s, so each makes its own, `eqHir$1` beside `eqHir` (#1671 change 4, M2)",
-    file: "src/lower/recursive_fns.rs",
+    file: "crates/rust-js-lower/src/recursive_fns.rs",
     find: "        if let Some(made) = (self.settled.module_fns.made.get(&key)).or_else(|| here.made.get(&key)) {\n",
     replace: "        if let Some(made) = here.made.get(&key) {\n",
     tests: perModule,
@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     name: "fn-pointer-keyed-as-its-value",
     breaks:
       "a generic function's pointer is keyed as its value is, and the instance's value, which takes generic code's forms, is the pointer's `const` too, or the other way round",
-    file: "src/lower/recursive_fns.rs",
+    file: "crates/rust-js-lower/src/recursive_fns.rs",
     find: "        let name = self.module_fn((Kind::FnPointer, fn_def_ty, base), &[], |cx, _, _| make(cx))?;",
     replace: "        let name = self.module_fn((Kind::FnValue, fn_def_ty, base), &[], |cx, _, _| make(cx))?;",
     tests: ["test/corpus.test.ts", "-t", "^generic_fn_pointer_takes_its_types_forms\\.rs$"],
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
   {
     name: "instance-value-alias-written",
     breaks: "an instance's value its drops left the function itself is written as an alias, `const keepLoud = keep`, and read as one (#974)",
-    file: "src/lower/recursive_fns.rs",
+    file: "crates/rust-js-lower/src/recursive_fns.rs",
     find: "        let aliases = self.take_aliases();\n",
     replace: "        let aliases: IndexMap<js::Name, Expr> = IndexMap::default();\n",
     tests: ["test/corpus.test.ts", "-t", "^function_value_drops_by_need.rs$"],
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
   {
     name: "instance-value-unread-written",
     breaks: "an instance's value nothing reads, `count4` of a direct call, is written (#974)",
-    file: "src/lower/recursive_fns.rs",
+    file: "crates/rust-js-lower/src/recursive_fns.rs",
     find: "        self.drop_unread_values(&read);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^const_generics.rs$"],
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
   {
     name: "module-dictionary-as-function",
     breaks: "a module's dictionary `const` is written as a function returning it, which generic code reads as the dictionary (#944)",
-    file: "src/lower/recursive_fns.rs",
+    file: "crates/rust-js-lower/src/recursive_fns.rs",
     find: "                constant: matches!(kind, Kind::Dictionary(_)) || kind.is_fn_value(),\n",
     replace: "                constant: kind.is_fn_value(),\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "an Ord dictionary holds its PartialOrd"],
@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
     name: "recursive-fn-made-at-each-site",
     breaks:
       "each place that compares a recursive type makes its module's function again, which takes the first one's place, so the places before it call a function no module writes (#517)",
-    file: "src/lower/recursive_fns.rs",
+    file: "crates/rust-js-lower/src/recursive_fns.rs",
     find: "        if let Some(made) = (self.settled.module_fns.made.get(&key)).or_else(|| here.made.get(&key)) {\n",
     replace: "        if let Some(made) = None::<&Made<'tcx>> {\n",
     tests: perModule,
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
     name: "recursive-fn-of-any-type",
     breaks:
       "inside a recursive type's `==` function, another recursive type's `==`, `HirKind`'s in `Hir`'s, calls the outer one, `eqHir(a.kind, b.kind)` (#511, #517)",
-    file: "src/lower/recursive_fns.rs",
+    file: "crates/rust-js-lower/src/recursive_fns.rs",
     find: "        let key = (self.module, kind, self.tcx.erase_and_anonymize_regions(ty));\n",
     replace: "        let key = (self.module, kind, self.tcx.types.unit);\n",
     tests: ["test/corpus.test.ts", "-t", "^recursive_eq.rs$"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "recursive-fn-of-any-module",
     breaks:
       "a recursive type's `==` compared in two modules is written in one of them, and the other calls a function it doesn't have (#517)",
-    file: "src/lower/recursive_fns.rs",
+    file: "crates/rust-js-lower/src/recursive_fns.rs",
     find: "        let key = (self.module, kind, self.tcx.erase_and_anonymize_regions(ty));\n",
     replace: "        let key = (rustc_span::def_id::CRATE_MOD_ID, kind, self.tcx.erase_and_anonymize_regions(ty));\n",
     tests: perModule,
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
     name: "recursive-fn-hidden-by-a-variable",
     breaks:
       "a module's `eqExpr` is named as the variable `let eq_expr = a == b` of the function that makes it is, which hides it there: `const eqExpr = eqExpr(a, b)` throws (#517)",
-    file: "src/lower/recursive_fns.rs",
+    file: "crates/rust-js-lower/src/recursive_fns.rs",
     find: "        taken.extend(self.names.borrow().iter().cloned());\n",
     replace: "",
     tests: perModule,
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     name: "recursive-fn-imports-unmerged",
     breaks:
       "a module's recursive `==` that calls another module's hand-written `PartialEq`, `setPartialEq_eq`, is written where nothing imports it: what it uses isn't its callers' too (#517)",
-    file: "src/lower/recursive_fns.rs",
+    file: "crates/rust-js-lower/src/recursive_fns.rs",
     find: "    into.references.extend(uses.references.iter().copied());\n",
     replace: "",
     tests: perModule,
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
     name: "recursive-fn-of-a-generic-type-shared",
     breaks:
       "a generic recursive type's `==`, `Tree<T>`'s in a function given `T`'s dictionary, is its module's function, which reads a dictionary it isn't given (#517)",
-    file: "src/lower/recursive_fns.rs",
+    file: "crates/rust-js-lower/src/recursive_fns.rs",
     find: "        if ty.has_param() || ty.has_aliases() {\n",
     replace: "        if false {\n",
     tests: perModule,

@@ -1,0 +1,1171 @@
+//! What each `Drop` of a MIR body drops (ADR 0364), as rustc's drop
+//! elaboration finds it: rustc's dataflow of what's initialized says,
+//! before each, whether what it drops is there, isn't, or may be, which a
+//! flag of its own then says as the body runs, set where rustc sets it.
+
+use crate::MirCx;
+use rust_js_lower::temporary_names::Role;
+use rust_js_program::collections::{IndexMap, IndexSet};
+use rustc_abi::FieldIdx;
+use rustc_index::IndexVec;
+use rustc_middle::mir::{
+    self, BasicBlock, Location, Place, ProjectionElem, StatementKind, TerminatorKind, UnwindAction,
+};
+use rustc_middle::ty::consts::ConstExt as _;
+use rustc_middle::ty::{self, Ty};
+use rustc_mir_dataflow::impls::MaybeUninitializedPlaces;
+use rustc_mir_dataflow::move_paths::{LookupResult, MoveData, MovePathIndex};
+use rustc_mir_dataflow::{
+    Analysis, DropFlagState, drop_flag_effects_for_function_entry, drop_flag_effects_for_location,
+    move_path_children_matching, on_all_children_bits, on_lookup_result_bits,
+};
+use rustc_span::Span;
+
+use super::State;
+use super::local_facts::QuietCells;
+use rust_js_lower::R;
+use rust_js_lower::analysis::mir_reads::drop_flow::{flowing, maybe_inits, quiet_drops};
+use rust_js_lower::drops::Drops;
+use rust_js_program::js::{self, Expr, Stmt, StmtKind};
+
+/// How a drop drops what it drops, rustc's `DropStyle`: not at all, as
+/// it's never there; as it's always there; as its flag says; or part by
+/// part, as some of it has moved.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(super) enum Style {
+    Dead,
+    Static,
+    Conditional,
+    Open,
+}
+
+pub(super) struct Elaboration<'tcx> {
+    pub(super) move_data: MoveData<'tcx>,
+    /// Before each `Drop`, of each path under what it drops: whether it
+    /// may be initialized, and whether it may not be.
+    states: IndexMap<(BasicBlock, MovePathIndex), (bool, bool)>,
+    /// The paths a flag says the drop of.
+    pub(super) flagged: IndexVec<MovePathIndex, bool>,
+    /// Each flag as the body starts: a parameter's is set.
+    pub(super) initial: IndexVec<MovePathIndex, bool>,
+    /// The flags set before a statement or a terminator.
+    pub(super) sets: IndexMap<Location, Vec<(MovePathIndex, bool)>>,
+    /// The blocks whose `Drop` drops what's behind a pointer that drops
+    /// nothing itself, `*self`'s field: there, as borrowck says.
+    behind: IndexSet<BasicBlock>,
+}
+
+impl<'tcx> Elaboration<'tcx> {
+    /// Before the `Drop` ending `block`, whether `path` may be there, and
+    /// whether it may not be, as rustc's dataflow says.
+    pub(super) fn presence(&self, block: BasicBlock, path: MovePathIndex) -> (bool, bool) {
+        self.states.get(&(block, path)).copied().unwrap_or((false, false))
+    }
+
+    /// Whether the `Drop` ending `block` drops `place`, or may.
+    pub(super) fn drops(&self, block: BasicBlock, place: Place<'tcx>) -> bool {
+        match self.move_data.rev_lookup.find(place.as_ref()) {
+            LookupResult::Exact(path) => self.style(block, path, true) != Style::Dead,
+            LookupResult::Parent(parent) => parent.is_some() || self.behind.contains(&block),
+        }
+    }
+
+    /// How the `Drop` ending `block` drops `path`: all of it, `deep`, or
+    /// only what isn't a part of its own, as rustc's `drop_style`.
+    pub(super) fn style(&self, block: BasicBlock, path: MovePathIndex, deep: bool) -> Style {
+        let state = |path| self.states.get(&(block, path)).copied().unwrap_or((false, false));
+        let ((init, uninit), parts) = match deep {
+            true => {
+                let (mut init, mut uninit, mut count) = (false, false, 0);
+                on_all_children_bits(&self.move_data, path, |child| {
+                    let (i, u) = state(child);
+                    init |= i;
+                    uninit |= u;
+                    count += 1;
+                });
+                ((init, uninit), count != 1)
+            }
+            false => (state(path), false),
+        };
+        match (init, uninit, parts) {
+            (false, _, _) => Style::Dead,
+            (true, false, _) => Style::Static,
+            (true, true, false) => Style::Conditional,
+            (true, true, true) => Style::Open,
+        }
+    }
+
+    /// The paths each `Drop` reads, of a local: one that's there, or may be.
+    pub(super) fn read(&self, body: &mir::Body<'tcx>) -> Vec<mir::Local> {
+        let mut read = Vec::new();
+        for (block, data) in body.basic_blocks.iter_enumerated() {
+            if let TerminatorKind::Drop { place, .. } = &data.terminator().kind
+                && self.drops(block, *place)
+            {
+                read.push(place.local);
+            }
+        }
+        read
+    }
+}
+
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
+    /// Whether `place`, a call's destination, is a local holding an iterator
+    /// dropped by closing it that the body drops, a variable's or a
+    /// temporary's: held, `$held(..)`, so its owner drops what it steps
+    /// where Rust does, at its scope's or its statement's end, not as it's
+    /// done or an adapter in it ends (ADR 0570 amended, #206). Not one only
+    /// moved, into a consumer that takes it, which drops it at its end.
+    /// Of a generic body, an iterator of a type it's given, which may be
+    /// one: a function's `impl Iterator` stepped by `next()` (#392).
+    pub(super) fn holds_dropped_iterator(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
+        // A `Box<I>` is `I` in JS (#1270).
+        let mut ty = state.body.local_decls[place.local].ty;
+        while let Some(inner) = ty.boxed_ty() {
+            ty = inner;
+        }
+        place.projection.is_empty()
+            && (self.dropped_by_closing(ty) || self.recognition().bounded_iterator(ty))
+            && self.owned_where_run(state, place.local)
+    }
+
+    /// What the body does first of its parameters: the copy of each JS
+    /// gives again that it changes in place (`kept_starts`, #1723); and
+    /// `$held(it);` of each parameter that holds an iterator dropped by
+    /// closing it the body drops, as a variable's is held where it's
+    /// made: the function owns what it's given, and drops it where Rust
+    /// does, not as it's done (#392). Not std's struct, compiled, which
+    /// steps what it holds as Rust does, and has no `hold()`.
+    pub(super) fn parameters_first(&mut self, state: &State<'_, 'tcx>) -> R<Vec<Stmt>> {
+        // Each JS gives again that it changes, its copy (#1723).
+        let mut out = self.kept_starts(state.body, &state.parts, &|local| state.locals.names[local].clone())?;
+        for local in state.body.args_iter() {
+            let ty = state.body.local_decls[local].ty;
+            if !rust_js_lower::recognition::is_compiled_std_iterator(self.tcx, ty)
+                && self.holds_dropped_iterator(state, local.into())
+                && !state.locals.names[local].is_unnamed()
+            {
+                let name = Expr::var(&state.locals.names[local]);
+                out.push(StmtKind::Expr(Expr::call_helper("$held", vec![name])).at(js::Span::NONE));
+            }
+        }
+        Ok(out)
+    }
+
+    /// Whether the body drops `local` where it runs on, not only as a panic
+    /// unwinds past it; or steps it by reference before what takes it drops
+    /// it (#392). Not one only moved into a call: a consumer's, `collect`'s,
+    /// whose value holds no iterator; an adapter dropped by closing, held
+    /// itself, whose `hold()` holds it; or a call whose value holds it,
+    /// `Holder<Take<..>>` (#243), where it's std's struct, compiled, as an
+    /// iterator type is wherever its values meet (1f3e1a7b0), which steps
+    /// what it holds as Rust does and has no `hold()` (ADR 0570, amended).
+    fn owned_where_run(&self, state: &State<'_, 'tcx>, local: mir::Local) -> bool {
+        let Some(drops) = state.facts.drops() else {
+            return false;
+        };
+        let body = state.body;
+        let dropped = (body.basic_blocks.iter_enumerated()).any(|(block, data)| {
+            !data.is_cleanup
+                && matches!(&data.terminator().kind, TerminatorKind::Drop { place: dropped, .. }
+                    if dropped.local == local && dropped.projection.is_empty() && drops.drops(block, *dropped))
+        });
+        // Stepped by reference, `it.next()`'s `&mut it`, it may reach its end
+        // well before what takes it, `drop(it)` or a consumer, drops it
+        // (#392). Of what drops something JS sees.
+        let lent = self.drops(body.local_decls[local].ty) != Drops::Nothing
+            && (body.basic_blocks.iter()).any(|data| {
+                !data.is_cleanup
+                    && data.statements.iter().any(|statement| {
+                        matches!(&statement.kind, mir::StatementKind::Assign(assign)
+                        if matches!(&assign.1, mir::Rvalue::Ref(_, _, lent) | mir::Rvalue::RawPtr(_, lent)
+                            if lent.local == local && lent.projection.is_empty()))
+                    })
+            });
+        dropped || lent || self.moved_into_a_holder(body, local)
+    }
+
+    /// Whether `local` is moved into a value that holds it, which its owner
+    /// drops where Rust does: an aggregate, `Some(it)`, a struct, an array
+    /// or a tuple, or a call whose value's type holds its type and isn't an
+    /// iterator itself, `RefCell::new(it)` (#1270); not std's struct, compiled.
+    /// Nor an adapter of it made in place, an iterator, held through its own
+    /// `hold()` where its owner holds it, and closing what it holds where
+    /// it's done; nor a consumer, whose value holds no iterator. But std's
+    /// adapter compiled, `iterator_fuse(it, ..)`, which has no `hold()` and
+    /// drops what it holds by the drop it's given, where Rust's drop glue
+    /// or std's own code drops it, never as it's stepped to its end: what
+    /// it's given is held, so a `fuse()` of a `FusedIterator` keeps a
+    /// `map`'s closure past its end, as Rust's does (#2039). The one answer
+    /// of every place a temporary iterator can be moved into.
+    fn moved_into_a_holder(&self, body: &mir::Body<'tcx>, local: mir::Local) -> bool {
+        // Std's struct, compiled, which steps what it holds as Rust does and
+        // has no `hold()` (#243); and what std's own bodies move into theirs,
+        // a flatten's `frontiter`, which they drop where they replace it. A
+        // library's body, read from its optimized MIR where a program
+        // compiles it (ADR 0914), holds what it moves as the crate's own
+        // does (#1366).
+        if rust_js_lower::recognition::is_compiled_std_iterator(self.tcx, body.local_decls[local].ty)
+            || rust_js_lower::recognition::is_std_crate(self.tcx, body.source.def_id())
+        {
+            return false;
+        }
+        // It, and each temporary it's moved into whole, `_4 = move _2`, which
+        // MIR makes of what it gives a call, `fuse(move _4)` (#2039).
+        let mut values = vec![local];
+        loop {
+            let more: Vec<mir::Local> = (body.basic_blocks.iter())
+                .flat_map(|data| &data.statements)
+                .filter_map(|statement| match &statement.kind {
+                    mir::StatementKind::Assign(assign) => match (&assign.0, &assign.1) {
+                        (to, mir::Rvalue::Use(mir::Operand::Move(from), ..))
+                            if to.projection.is_empty()
+                                && from.projection.is_empty()
+                                && values.contains(&from.local) =>
+                        {
+                            Some(to.local)
+                        }
+                        _ => None,
+                    },
+                    _ => None,
+                })
+                .filter(|to| !values.contains(to))
+                .collect();
+            if more.is_empty() {
+                break;
+            }
+            values.extend(more);
+        }
+        let moved = |operand: &mir::Operand<'tcx>| matches!(operand, mir::Operand::Move(place) if values.contains(&place.local) && place.projection.is_empty());
+        let ty = self.tcx.erase_and_anonymize_regions(body.local_decls[local].ty);
+        // Std's struct compiled, as the call makes it: not an adapter this
+        // body makes in place, a JS iterator whose `hold()` holds it.
+        let compiled = |made: Ty<'tcx>, at: rustc_span::Span| {
+            rust_js_lower::recognition::is_compiled_std_iterator(self.tcx, made)
+                && !(self.frame.facts.in_place_adapters).made_at(self.frame.thir, at)
+        };
+        let holds = |made: Ty<'tcx>, at: rustc_span::Span| {
+            let made = self.tcx.erase_and_anonymize_regions(made);
+            // An iterator itself, as the body's bounds say, generic code's
+            // `Take<Cycle<I>>` too, whose item is `I::Item`.
+            let iterator =
+                rust_js_lower::recognition::std_item(self.tcx, rust_js_lower::recognition::StdItem::Iterator);
+            made != ty
+                && made.walk().any(|part| part.as_type() == Some(ty))
+                && (!self.recognition().may_hold_by_bounds(made, iterator) || compiled(made, at))
+        };
+        (body.basic_blocks.iter()).any(|data| {
+            !data.is_cleanup
+                && (data.statements.iter().any(|statement| {
+                    matches!(&statement.kind, mir::StatementKind::Assign(assign)
+                        if matches!(&assign.1, mir::Rvalue::Aggregate(_, operands) if operands.iter().any(moved)))
+                }) || matches!(&data.terminator().kind, TerminatorKind::Call { args, destination, fn_span, .. }
+                    if args.iter().any(|arg| moved(&arg.node))
+                        && holds(destination.ty(&body.local_decls, self.tcx).ty, *fn_span)))
+        })
+    }
+
+    /// What `body`'s drops drop, `None` if none drops anything JS sees, and
+    /// its calls of cells no borrow of which can meet another
+    /// (`QuietCells`). Not an unchecked guard's, of a cell no borrow of
+    /// which is counted, which is the value itself: never there to drop,
+    /// so no flag says it and it reads nothing, as where no cell of its
+    /// type is counted (`QuietCells::unchecked_guards`, ADR 0863, amended;
+    /// #700).
+    /// And compared with rustc's own, where the session records it
+    /// (`--drops-shadow`, `elaborated.rs`).
+    pub(super) fn mir_elaboration(
+        &self,
+        mir: &rust_js_lower::analysis::Mir<'tcx>,
+    ) -> (Option<Elaboration<'tcx>>, QuietCells) {
+        let cells = self.mir_quiet_cells(&mir.body, &mir.promoted);
+        let elaboration = self.elaborated(&mir.body, &cells.unchecked_guards());
+        self.shadow_drops(mir, elaboration.as_ref(), &cells.unchecked_guards());
+        (elaboration, cells)
+    }
+
+    /// `mir_elaboration`'s drops, but those of `quiet_guards`.
+    fn elaborated(&self, body: &mir::Body<'tcx>, quiet_guards: &IndexSet<mir::Local>) -> Option<Elaboration<'tcx>> {
+        let tcx = self.tcx;
+        let drops = |ty| self.drops(ty) != Drops::Nothing;
+        let any = body.basic_blocks.iter().any(|data| {
+            matches!(&data.terminator().kind, TerminatorKind::Drop { place, .. }
+                if drops(place.ty(&body.local_decls, tcx).ty))
+        });
+        if !any {
+            return None;
+        }
+        // rustc's `ElaborateDrops`, of the paths whose drop JS sees.
+        let move_data = MoveData::gather_moves(body, tcx, drops);
+        // A std body, read from its crate's MIR, has its drops
+        // elaborated by rustc already: each `Drop` left drops what's there,
+        // and its flags are the body's own locals. Its dataflow isn't run,
+        // which its optimized switches wouldn't let be.
+        let elaborated = !body.source.def_id().is_local();
+        // A `Drop` of what JS drops nothing of runs nothing, so it never
+        // unwinds: the cleanup it would unwind to isn't reached from it, as
+        // rustc's elaboration finds of a drop of what isn't there
+        // (`compute_dead_unwinds`). The dataflow runs on the body without
+        // those edges, so what's made after a `Box::new(closure)` isn't
+        // taken to be dropped where the box's drop would unwind; and
+        // without the edges borrowck alone follows (`flowing`).
+        let quiet = quiet_drops(tcx, body, &drops);
+        let flow = &flowing(body, &quiet);
+        let mut cursors = (!elaborated).then(|| {
+            let inits = maybe_inits(tcx, flow, &move_data);
+            let uninits = MaybeUninitializedPlaces::new(tcx, flow, &move_data)
+                .mark_inactive_variants_as_uninit()
+                .iterate_to_fixpoint(tcx, flow, None)
+                .into_results_cursor(flow);
+            (inits, uninits)
+        });
+        let mut states = IndexMap::default();
+        // `--without-moves`: every path there before each drop, as if
+        // nothing had moved, a test's wrong elaboration, which the
+        // comparison with rustc's refuses (`elaborated.rs`).
+        let moveless = rust_js_lower::session::caches(tcx).without_moves;
+        let mut flagged = IndexVec::from_elem(false, &move_data.move_paths);
+        let mut behind = IndexSet::default();
+        for (block, data) in body.basic_blocks.iter_enumerated() {
+            let TerminatorKind::Drop { place, .. } = &data.terminator().kind else {
+                continue;
+            };
+            if place.projection.is_empty() && quiet_guards.contains(&place.local) {
+                continue;
+            }
+            let path = match move_data.rev_lookup.find(place.as_ref()) {
+                LookupResult::Exact(path) => path,
+                LookupResult::Parent(None) if place.is_indirect() && drops(place.ty(&body.local_decls, tcx).ty) => {
+                    behind.insert(block);
+                    continue;
+                }
+                LookupResult::Parent(_) => continue,
+            };
+            let at = body.terminator_loc(block);
+            if let Some((inits, uninits)) = &mut cursors {
+                inits.seek_before_primary_effect(at);
+                uninits.seek_before_primary_effect(at);
+            }
+            on_all_children_bits(&move_data, path, |child| {
+                let state = match &cursors {
+                    Some(_) if moveless => (true, false),
+                    Some((inits, uninits)) => (inits.get().contains(child), uninits.get().contains(child)),
+                    None => (true, false),
+                };
+                states.insert((block, child), state);
+                // One that may be there and may not: a flag says (`collect_drop_flags`).
+                if state.0 && state.1 {
+                    flagged[child] = true;
+                }
+            });
+        }
+        drop(cursors);
+        let mut initial = IndexVec::from_elem(false, &move_data.move_paths);
+        drop_flag_effects_for_function_entry(body, &move_data, |path, state| {
+            initial[path] = state == DropFlagState::Present;
+        });
+        let mut sets: IndexMap<Location, Vec<(MovePathIndex, bool)>> = IndexMap::default();
+        let mut set = |at: Location, path: MovePathIndex, present: bool| {
+            if flagged[path] {
+                sets.entry(at).or_default().push((path, present));
+            }
+        };
+        // A call's result, where its unwinding cleans up: as it returns.
+        for data in body.basic_blocks.iter() {
+            if let TerminatorKind::Call {
+                destination,
+                target: Some(target),
+                unwind: UnwindAction::Cleanup(_),
+                ..
+            } = data.terminator().kind
+            {
+                let at = Location {
+                    block: target,
+                    statement_index: 0,
+                };
+                on_lookup_result_bits(&move_data, move_data.rev_lookup.find(destination.as_ref()), |child| {
+                    set(at, child, true)
+                });
+            }
+        }
+        // What each statement and terminator moves and makes; a `Drop`'s
+        // is the drop's own.
+        for (block, data) in body.basic_blocks.iter_enumerated() {
+            for index in 0..=data.statements.len() {
+                if index == data.statements.len() && matches!(data.terminator().kind, TerminatorKind::Drop { .. }) {
+                    continue;
+                }
+                let at = Location {
+                    block,
+                    statement_index: index,
+                };
+                drop_flag_effects_for_location(body, &move_data, at, |path, state| {
+                    set(at, path, state == DropFlagState::Present)
+                });
+            }
+            // A call's result, where it doesn't unwind to a cleanup: before it.
+            if let TerminatorKind::Call {
+                destination,
+                target: Some(_),
+                unwind: UnwindAction::Continue | UnwindAction::Unreachable | UnwindAction::Terminate(_),
+                ..
+            } = data.terminator().kind
+            {
+                let at = body.terminator_loc(block);
+                on_lookup_result_bits(&move_data, move_data.rev_lookup.find(destination.as_ref()), |child| {
+                    set(at, child, true)
+                });
+            }
+        }
+        Some(Elaboration {
+            move_data,
+            states,
+            flagged,
+            initial,
+            sets,
+            behind,
+        })
+    }
+}
+
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
+    /// The flag that says whether `place` is there to drop: its variable's
+    /// name, a part's by its field's, `pair$a$live`. A temporary's is MIR's
+    /// local's until tidy names it for what its drop is of (`tidy/flags.rs`).
+    pub(super) fn flag_name(&mut self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> js::Name {
+        // Of its local by its id, or of one named nothing, by MIR's word.
+        let local = &state.locals.names[place.local];
+        let unnamed = rust_js_lower::temporary_names::temporary(place.local.as_usize());
+        let source = match local.is_unnamed() {
+            true => Err(unnamed.as_str()),
+            false => Ok(local),
+        };
+        let mut parts: Vec<String> = Vec::new();
+        let mut ty = mir::PlaceTy::from_ty(state.body.local_decls[place.local].ty);
+        for elem in place.projection {
+            if let ProjectionElem::Field(field, _) = elem {
+                let key = match (ty.ty.kind(), ty.variant_index) {
+                    // One a symbol names, by its Rust name (ADR 1051).
+                    (ty::Adt(adt, _), variant) => {
+                        let field = &adt.variant(variant.unwrap_or(rustc_abi::FIRST_VARIANT)).fields[field];
+                        match rust_js_lower::bindings::field_key(self.tcx, field).name() {
+                            Some(key) => key.to_string(),
+                            None => field.name.to_string(),
+                        }
+                    }
+                    _ => field.as_usize().to_string(),
+                };
+                parts.push(key);
+            }
+            ty = ty.projection_ty(self.tcx, elem);
+        }
+        self.unspelled_as(|k| js::Name::suffixed(source, &parts, js::Suffix::Live, k))
+    }
+
+    /// The flags set before `at`, as rustc sets them, after what's made
+    /// before: a call's cleanup reads them as they were where it was made.
+    pub(super) fn flag_sets(&mut self, state: &mut State<'_, 'tcx>, at: Location, out: &mut Vec<Stmt>) -> R<()> {
+        let Some(sets) = state.facts.drops().and_then(|drops| drops.sets.get(&at)).cloned() else {
+            return Ok(());
+        };
+        if !state.pending.is_empty() {
+            self.flush(state, out)?;
+        }
+        for (path, present) in sets {
+            let flag = state.naming.flags()[path].clone().expect("a flagged path");
+            out.push(StmtKind::Assign(Expr::var(&flag), Expr::bool(present)).at(js::Span::NONE));
+        }
+        Ok(())
+    }
+
+    /// The `Drop` that ends `block`, of `place`: what's there of it,
+    /// dropped. As a panic unwinds, `cleanup`, its flags aren't read again.
+    pub(super) fn mir_drop(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        block: BasicBlock,
+        place: Place<'tcx>,
+        cleanup: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        let Some(drops) = state.facts.drops() else {
+            return Ok(());
+        };
+        // A guard of a field's `RefCell` no borrow of which can meet another
+        // counted nothing, so its drop releases nothing (ADR 0863, amended):
+        // a checked one's, whose drop the elaboration keeps, as an unchecked
+        // one's it leaves out (`unchecked_guards`, #700).
+        if place.projection.is_empty() && state.facts.quiet_cells().guards.contains(&place.local) {
+            return Ok(());
+        }
+        // What `?` of a write's result made, which holds nothing to drop,
+        // whole, as a flag says or a variant's parts at a time.
+        if self.write_branch(state, place) {
+            return Ok(());
+        }
+        match drops.move_data.rev_lookup.find(place.as_ref()) {
+            LookupResult::Exact(path) => self.elaborate_drop(state, block, (place, path), cleanup, span, out),
+            // Behind a pointer, which borrowck says is there.
+            LookupResult::Parent(_) if drops.drops(block, place) => self.drop_place(state, place, span, out),
+            // Of nothing JS sees.
+            LookupResult::Parent(_) => Ok(()),
+        }
+    }
+
+    /// rustc's `elaborate_drop`: all of `path`, as it's there.
+    fn elaborate_drop(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        block: BasicBlock,
+        (place, path): (Place<'tcx>, MovePathIndex),
+        cleanup: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        match state.facts.drops().expect("elaborated").style(block, path, true) {
+            Style::Dead => Ok(()),
+            Style::Static => self.drop_place(state, place, span, out),
+            Style::Conditional => self.complete_drop(state, block, (place, path), span, out),
+            Style::Open => self.open_drop(state, block, (place, path), cleanup, span, out),
+        }
+    }
+
+    /// rustc's `complete_drop`: `place`, as the flag of `path` says.
+    fn complete_drop(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        block: BasicBlock,
+        (place, path): (Place<'tcx>, MovePathIndex),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        match state.facts.drops().expect("elaborated").style(block, path, false) {
+            Style::Dead => Ok(()),
+            Style::Static => self.drop_place(state, place, span, out),
+            Style::Conditional | Style::Open => {
+                let flag = state.naming.flags()[path].clone().expect("a flagged path");
+                let mut then = Vec::new();
+                self.drop_place(state, place, span, &mut then)?;
+                out.push(StmtKind::If(Expr::var(&flag), then, None).at(self.js_span(span)));
+                Ok(())
+            }
+        }
+    }
+
+    /// rustc's `open_drop`: of a value some of which has moved, each part
+    /// that's there, in order, then its flag cleared.
+    fn open_drop(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        block: BasicBlock,
+        (place, path): (Place<'tcx>, MovePathIndex),
+        cleanup: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        let tcx = self.tcx;
+        let ty = place.ty(&state.body.local_decls, tcx).ty;
+        // rustc's `open_drop_for_box_contents`: of a `Box` what it holds of
+        // which has moved, `take(*n)` on one way, `Partial { y, ..*p }`,
+        // what's left of what it holds, as its own path says; its pointer
+        // and allocator drop nothing in JS. Not its fields, which hold
+        // nothing that drops (#967).
+        if ty.is_box() {
+            let interior = tcx.mk_place_deref(place);
+            let drops = state.facts.drops().expect("elaborated");
+            let interior_path =
+                move_path_children_matching(&drops.move_data, path, |elem| matches!(elem, ProjectionElem::Deref));
+            match interior_path {
+                Some(inner) if drops.style(block, inner, true) == Style::Dead => {}
+                Some(inner) => self.elaborate_drop(state, block, (interior, inner), cleanup, span, out)?,
+                None => self.complete_drop(state, block, (interior, path), span, out)?,
+            }
+            if !cleanup && let Some(flag) = &state.naming.flags()[path] {
+                out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js::Span::NONE));
+            }
+            return Ok(());
+        }
+        let fields: Vec<Ty<'tcx>> = match ty.kind() {
+            ty::Tuple(items) => items.iter().collect(),
+            ty::Closure(..) | ty::Coroutine(..) | ty::CoroutineClosure(..) => {
+                rust_js_lower::recognition::held_types(ty).map_or_else(Vec::new, |(_, held)| held.to_vec())
+            }
+            ty::Adt(adt, args) if adt.is_struct() => adt
+                .non_enum_variant()
+                .fields
+                .iter()
+                .map(|f| self.field_ty(f, args))
+                .collect(),
+            ty::Adt(adt, args) if adt.is_enum() => {
+                return self.open_drop_variants(state, block, (place, path), (*adt, args), cleanup, span, out);
+            }
+            ty::Array(_, len) if let Some(size) = len.try_to_target_usize(tcx) => {
+                return self.open_drop_array(state, block, (place, path), size, cleanup, span, out);
+            }
+            _ => {
+                let what = format!("dropping what's left of a `{ty}` some of which has moved, from its MIR");
+                return Err(self.unsupported(span, &what));
+            }
+        };
+        self.drop_ladder(state, block, (place, path, path), fields, cleanup, span, out)?;
+        if !cleanup && let Some(flag) = &state.naming.flags()[path] {
+            out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js::Span::NONE));
+        }
+        Ok(())
+    }
+
+    /// rustc's `open_drop_for_array`: of an array of `size` items some of
+    /// which have moved, `[a, b, c] = items`, what's left: each item moved
+    /// by its own path, and each run of the rest, as its flag says, a
+    /// subslice, one drop of them all, the last first.
+    #[allow(clippy::too_many_arguments)]
+    fn open_drop_array(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        block: BasicBlock,
+        (place, path): (Place<'tcx>, MovePathIndex),
+        size: u64,
+        cleanup: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        // An item's path: a subslice moved, `[a, rest @ ..]`, is each of its
+        // items' too, as rustc's move paths have an array's.
+        let drops = state.facts.drops().expect("elaborated");
+        let item_path = |i: u64| {
+            move_path_children_matching(
+                &drops.move_data,
+                path,
+                |elem| matches!(elem, ProjectionElem::ConstantIndex { offset, .. } if offset == i),
+            )
+        };
+        let paths: Vec<Option<MovePathIndex>> = (0..size).map(item_path).collect();
+        // Each item moved by its own path, and each run of the rest between.
+        let mut pieces = Vec::new();
+        let mut i = 0;
+        while i < size {
+            let end = match paths[i as usize] {
+                Some(_) => i + 1,
+                None => (i..size).find(|&j| paths[j as usize].is_some()).unwrap_or(size),
+            };
+            let elem = match end - i {
+                1 => ProjectionElem::ConstantIndex {
+                    offset: i,
+                    min_length: size,
+                    from_end: false,
+                },
+                _ => ProjectionElem::Subslice {
+                    from: i,
+                    to: end,
+                    from_end: false,
+                },
+            };
+            pieces.push((self.tcx.mk_place_elem(place, elem), paths[i as usize]));
+            i = end;
+        }
+        // Last first, as rustc's ladder has them, each run in order, each
+        // after one whose drop panics still dropped (`each_ladder_step`).
+        let mut steps = Vec::new();
+        for (part, subpath) in pieces.into_iter().rev() {
+            let mut step = Vec::new();
+            match subpath {
+                Some(subpath) => self.elaborate_drop(state, block, (part, subpath), cleanup, span, &mut step)?,
+                None => self.complete_drop(state, block, (part, path), span, &mut step)?,
+            }
+            steps.push(step);
+        }
+        self.each_ladder_step(steps, cleanup, span, out);
+        if !cleanup && let Some(flag) = &state.naming.flags()[path] {
+            out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js::Span::NONE));
+        }
+        Ok(())
+    }
+
+    /// rustc's `drop_ladder`: each of `fields` of `place`, a struct's or a
+    /// variant's whose path is `parts`, that's there, in order. One with no
+    /// path of its own is there as `path`'s flag says. Each after one whose
+    /// drop panics still dropped as it unwinds, as the ladder's unwind
+    /// edges drop them (`each_ladder_step`, #2146).
+    #[allow(clippy::too_many_arguments)]
+    fn drop_ladder(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        block: BasicBlock,
+        (place, path, parts): (Place<'tcx>, MovePathIndex, MovePathIndex),
+        fields: Vec<Ty<'tcx>>,
+        cleanup: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        let mut steps = Vec::new();
+        for (i, field_ty) in fields.into_iter().enumerate() {
+            if self.drops(field_ty) == Drops::Nothing {
+                continue;
+            }
+            let field = FieldIdx::from_usize(i);
+            let part = self.tcx.mk_place_field(place, field, field_ty);
+            let drops = state.facts.drops().expect("elaborated");
+            let subpath = move_path_children_matching(
+                &drops.move_data,
+                parts,
+                |elem| matches!(elem, ProjectionElem::Field(at, _) if at == field),
+            );
+            let mut step = Vec::new();
+            match subpath {
+                Some(subpath) if drops.style(block, subpath, true) == Style::Dead => {}
+                Some(subpath) => self.elaborate_drop(state, block, (part, subpath), cleanup, span, &mut step)?,
+                None => self.complete_drop(state, block, (part, path), span, &mut step)?,
+            }
+            steps.push(step);
+        }
+        self.each_ladder_step(steps, cleanup, span, out);
+        Ok(())
+    }
+
+    /// A ladder's steps, each a part's drop, in turn: on the way out, as
+    /// drop glue runs them, each after one whose drop panics run as it
+    /// unwinds (`each_dropped`, #2146); in a cleanup, where a panic aborts,
+    /// each as it is.
+    fn each_ladder_step(&mut self, steps: Vec<Vec<Stmt>>, cleanup: bool, span: Span, out: &mut Vec<Stmt>) {
+        match cleanup {
+            true => out.extend(steps.into_iter().flatten()),
+            false => out.extend(rust_js_lower::drops::each_dropped(
+                steps,
+                self.js_span(span),
+                &mut self.catch_names(),
+            )),
+        }
+    }
+
+    /// rustc's `open_drop_for_multivariant`: of an enum some of which has
+    /// moved, each variant some of whose fields have, those left, if it's
+    /// that variant; any other, all of it, if it holds what drops something.
+    /// Then its flag cleared.
+    #[allow(clippy::too_many_arguments)]
+    fn open_drop_variants(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        block: BasicBlock,
+        (place, path): (Place<'tcx>, MovePathIndex),
+        (adt, args): (ty::AdtDef<'tcx>, ty::GenericArgsRef<'tcx>),
+        cleanup: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        let ty = place.ty(&state.body.local_decls, self.tcx).ty;
+        let mut arms = Vec::new();
+        let (mut otherwise, mut glue) = (false, false);
+        for (variant, def) in adt.variants().iter_enumerated() {
+            let drops = state.facts.drops().expect("elaborated");
+            let parts = move_path_children_matching(
+                &drops.move_data,
+                path,
+                |elem| matches!(elem, ProjectionElem::Downcast(_, at) if at == variant),
+            );
+            let fields: Vec<Ty<'tcx>> = def.fields.iter().map(|f| self.field_ty(f, args)).collect();
+            match parts {
+                Some(parts) => {
+                    let base = self.tcx.mk_place_downcast(place, adt, variant);
+                    let mut dropped = Vec::new();
+                    self.drop_ladder(state, block, (base, path, parts), fields, cleanup, span, &mut dropped)?;
+                    arms.push((variant, dropped));
+                }
+                None => {
+                    otherwise = true;
+                    glue |= fields.iter().any(|&f| self.drops(f) != Drops::Nothing);
+                }
+            }
+        }
+        // What `?` made, `Try::branch(r)`: `r`, whose `Err` or `None` is its
+        // `Break`, its value its `Continue`.
+        let branch = match place.projection.is_empty() {
+            true => state.branches.get(&place.local).cloned(),
+            false => None,
+        };
+        let subject = match &branch {
+            Some((tried, _)) => tried.clone(),
+            None => self.mir_place(state, place, span, out)?,
+        };
+        // The variants not taken apart: all of it, or nothing.
+        let mut chain: Option<Vec<Stmt>> = match (otherwise, glue) {
+            // As its own flag says: a way that moved it whole, a `match`'s
+            // `other => keep(other)`, cleared it, as the variants taken
+            // apart's own flags say of them (#2064).
+            (true, true) => {
+                let mut whole = Vec::new();
+                let whole_ty = branch.as_ref().map_or(ty, |(_, tried_ty)| *tried_ty);
+                let none = self.place_none(state, place);
+                self.drop_value_of((subject.clone(), none), whole_ty, span, &mut whole)?;
+                Some(match &state.naming.flags()[path] {
+                    Some(flag) => vec![StmtKind::If(Expr::var(flag), whole, None).at(self.js_span(span))],
+                    None => whole,
+                })
+            }
+            (true, false) => Some(Vec::new()),
+            // The last variant taken apart is what's left.
+            (false, _) => arms.pop().map(|(_, dropped)| dropped),
+        };
+        let js_span = self.js_span(span);
+        // Of an enum JS may have made or given, its tag read once where more
+        // than one arm tests it, as Rust's drop reads its discriminant once
+        // (`held_tag`, ADR 1022, #2208).
+        let held = match (&branch, arms.len() > 1) {
+            (None, true) => self
+                .held_tag(&subject, ty, adt)
+                .map(|tag| self.spill(Role::Kind, tag, out)),
+            _ => None,
+        };
+        for (variant, dropped) in arms.into_iter().rev() {
+            let test = match &branch {
+                Some((_, tried_ty)) => {
+                    let failed = self.tried_failed(subject.clone(), *tried_ty);
+                    match variant.as_u32() {
+                        0 => Expr::unary(js::UnaryOp::Not, failed),
+                        _ => failed,
+                    }
+                }
+                None => {
+                    let none = self.place_none(state, place);
+                    self.mir_variant_test(
+                        (subject.clone(), held.as_ref()),
+                        ty,
+                        adt,
+                        &[variant],
+                        &[],
+                        (false, none),
+                    )
+                }
+            };
+            chain = Some(match (dropped.is_empty(), chain) {
+                (true, Some(rest)) if !rest.is_empty() => {
+                    vec![StmtKind::If(Expr::unary(js::UnaryOp::Not, test), rest, None).at(js_span)]
+                }
+                (true, _) => Vec::new(),
+                (false, rest) => vec![StmtKind::If(test, dropped, rest.filter(|r| !r.is_empty())).at(js_span)],
+            });
+        }
+        out.extend(chain.unwrap_or_default());
+        if !cleanup && let Some(flag) = &state.naming.flags()[path] {
+            out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js::Span::NONE));
+        }
+        Ok(())
+    }
+
+    /// `place`, dropped: its own `drop`, then each part's.
+    fn drop_place(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        place: Place<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        let ty = place.ty(&state.body.local_decls, self.tcx).ty;
+        let value = self.mir_place(state, place, span, out)?;
+        // Its `None`, where it's an `Option`, the one MIR says (`place_none`).
+        let none = self.place_none(state, place);
+        self.drop_value_of((value, none), ty, span, out)
+    }
+
+    /// Whether `place` is what `?` of a write's result made, its
+    /// `ControlFlow`, or its `Break`'s residual: its `Err` is thrown on,
+    /// where a write may fail, or never made, where none may
+    /// (`tried_write`), so it holds nothing to drop, whole or a variant's
+    /// parts at a time, and its value is the write's, never a `{ TAG }`
+    /// (#1403): `undefined.TAG` where its parts were dropped by their
+    /// variants (nightly 43133510260's tidy stages). Asked once, of each
+    /// drop `mir_drop` lowers, before the elaboration's ways split.
+    fn write_branch(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
+        (state.branches.get(&place.local)).is_some_and(|&(_, tried)| self.is_write_result(tried))
+    }
+
+    /// What a panic drops as it unwinds from a terminator: its cleanup
+    /// blocks' drops, in order, nothing if it has none.
+    pub(super) fn mir_unwind(&mut self, state: &mut State<'_, 'tcx>, unwind: UnwindAction) -> R<Vec<Stmt>> {
+        let UnwindAction::Cleanup(block) = unwind else {
+            return Ok(Vec::new());
+        };
+        self.mir_cleanup(state, block)
+    }
+
+    /// What cleanup `block` and those after it drop, in order. A test of a
+    /// drop flag optimized MIR keeps, another crate's (ADRs 0561, 0914),
+    /// `switchInt(copy _4) -> [0: bb3, otherwise: bb4]`, is an `if` of what
+    /// each way drops, each to its end.
+    fn mir_cleanup(&mut self, state: &mut State<'_, 'tcx>, mut block: BasicBlock) -> R<Vec<Stmt>> {
+        let mut out = Vec::new();
+        loop {
+            let data = &state.body.basic_blocks[block];
+            // Where its Rust is, as a cleanup has no span of its own.
+            let span = data.terminator().source_info.span;
+            // A discriminant the block's switch tests, read there as a value,
+            // never written to a temporary the function doesn't declare (#424).
+            let tested = match &data.terminator().kind {
+                TerminatorKind::SwitchInt { discr, .. } => discr.place().and_then(|place| place.as_local()),
+                _ => None,
+            };
+            let mut discriminant = None;
+            // A `Drop`'s replacing value, written as the old one's drop
+            // unwinds, of variables: made of nothing made before the
+            // cleanup, and what the cleanup makes to write it, a 2018
+            // closure's `_19 = copy (*_18)` of the `&mut` it captures, read
+            // by what follows in it, none left at its end (#1681).
+            let made = std::mem::take(&mut state.pending);
+            let mut written = Ok(());
+            for (index, statement) in data.statements.iter().enumerate() {
+                let step = match &statement.kind {
+                    StatementKind::StorageDead(_) | StatementKind::StorageLive(_) | StatementKind::Nop => Ok(()),
+                    StatementKind::Assign(assign)
+                        if matches!(&assign.1, mir::Rvalue::Discriminant(_)) && assign.0.as_local() == tested =>
+                    {
+                        discriminant = Some(&assign.1);
+                        Ok(())
+                    }
+                    StatementKind::Assign(assign) => {
+                        let at = Location {
+                            block,
+                            statement_index: index,
+                        };
+                        let (place, rvalue) = &**assign;
+                        self.flag_sets(state, at, &mut out)
+                            .and_then(|()| self.mir_assign(state, place, rvalue, span, &mut out))
+                    }
+                    _ => Err(self.unsupported(span, "this cleanup, from its MIR")),
+                };
+                if step.is_err() {
+                    written = step;
+                    break;
+                }
+            }
+            let left = std::mem::replace(&mut state.pending, made);
+            written?;
+            if !left.is_empty() {
+                return Err(self.unsupported(span, "this cleanup, from its MIR"));
+            }
+            match data.terminator().kind {
+                TerminatorKind::Drop { place, target, .. } => {
+                    self.mir_drop(state, block, place, true, span, &mut out)?;
+                    block = target;
+                }
+                TerminatorKind::Goto { target } => block = target,
+                TerminatorKind::UnwindResume | TerminatorKind::UnwindTerminate(_) => return Ok(out),
+                // Or of an enum's discriminant, which a std body's cleanup
+                // tests before it drops a variant's field, `Option`'s `Some`,
+                // as the MIR a std built to unwind ships has it (#424).
+                TerminatorKind::SwitchInt { ref discr, ref targets }
+                    if let [(value, then)] = targets.iter().collect::<Vec<_>>()[..] =>
+                {
+                    let ty = discr.ty(&state.body.local_decls, self.tcx);
+                    let subject = match discriminant {
+                        Some(rvalue) => self.mir_rvalue(state, rvalue, span, &mut out)?,
+                        None => self.mir_operand(state, discr, &mut out)?,
+                    };
+                    // A drop flag's, `0: unset`, tested as it's set, `if
+                    // (flag) { drop(x); }`, which `settled_flags` settles.
+                    let (test, then, otherwise) = match ty.is_bool() && value == 0 {
+                        true => (self.value_expr(subject, span)?, targets.otherwise(), then),
+                        false => (
+                            self.switch_test(&subject, ty, value, span, (None, None))?,
+                            then,
+                            targets.otherwise(),
+                        ),
+                    };
+                    let then = self.mir_cleanup(state, then)?;
+                    let otherwise = self.mir_cleanup(state, otherwise)?;
+                    let js_span = self.js_span(span);
+                    out.push(match (then.is_empty(), otherwise.is_empty()) {
+                        (true, true) => return Ok(out),
+                        (false, true) => StmtKind::If(test, then, None).at(js_span),
+                        (true, false) => StmtKind::If(test.negated_test(), otherwise, None).at(js_span),
+                        (false, false) => StmtKind::If(test, then, Some(otherwise)).at(js_span),
+                    });
+                    return Ok(out);
+                }
+                _ => return Err(self.unsupported(span, "this cleanup, from its MIR")),
+            }
+        }
+    }
+
+    /// `body`, run so that a panic in it drops `cleanup` as it unwinds: a
+    /// `try` whose `catch` drops it and throws the panic on. What `body`
+    /// declares, it assigns, declared before. A cleanup that runs nothing,
+    /// of what's all moved, an `FnOnce`'s own self given away, needs none.
+    /// `body` in a `try` whose `finally` is `finally`, each `const` it
+    /// makes a `let` before, read after it (#487); what's made before its
+    /// last statement that may throw, the call, before it.
+    pub(super) fn unwinding_finally(&mut self, body: Vec<Stmt>, finally: Vec<Stmt>, out: &mut Vec<Stmt>) {
+        // What's made before the call, the box, before it: a throw of it
+        // has written nothing to copy back.
+        let first = body.iter().rposition(|s| !s.cannot_throw()).unwrap_or(0);
+        let mut body = body.into_iter();
+        out.extend(body.by_ref().take(first));
+        let mut inner = Vec::new();
+        for stmt in body {
+            match stmt.kind {
+                StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => {
+                    out.push(StmtKind::Let(name.clone(), None).at(stmt.span));
+                    inner.push(StmtKind::Assign(Expr::var(name), value).at(stmt.span));
+                }
+                StmtKind::Let(name, None) => out.push(StmtKind::Let(name, None).at(stmt.span)),
+                kind => inner.push(Stmt {
+                    kind,
+                    span: stmt.span,
+                    facts: stmt.facts,
+                }),
+            }
+        }
+        out.extend(rust_js_lower::drops::dropped_after(
+            inner,
+            finally,
+            js::Span::NONE,
+            &mut self.catch_names(),
+        ));
+    }
+
+    pub(super) fn unwinding(&mut self, body: Vec<Stmt>, cleanup: Vec<Stmt>, span: js::Span, out: &mut Vec<Stmt>) {
+        if cleanup.is_empty() {
+            out.extend(body);
+            return;
+        }
+        // What can't throw needs no `catch`: a value made of values, and
+        // what's made so before what can, a closure the call is given.
+        let first = body.iter().take_while(|s| s.only_makes_values()).count();
+        let mut body = body.into_iter();
+        out.extend(body.by_ref().take(first));
+        let mut body = body.peekable();
+        if body.peek().is_none() {
+            return;
+        }
+        let mut inner = Vec::new();
+        for stmt in body {
+            match stmt.kind {
+                StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => {
+                    out.push(StmtKind::Let(name.clone(), None).at(stmt.span));
+                    inner.push(StmtKind::Assign(Expr::var(name), value).at(stmt.span));
+                }
+                StmtKind::Let(name, None) => out.push(StmtKind::Let(name, None).at(stmt.span)),
+                kind => inner.push(Stmt {
+                    kind,
+                    span: stmt.span,
+                    facts: stmt.facts,
+                }),
+            }
+        }
+        let error = self.fresh(Role::Error);
+        let mut handler = cleanup;
+        handler.push(StmtKind::Throw(Expr::var(&error)).at(span));
+        // Of drops alone, a drop too, what's left dropped as one panics
+        // (#2215).
+        let dropping = inner.iter().all(|stmt| stmt.facts.has(js::Known::Drop));
+        let tried = StmtKind::TryCatch(inner, Some(error), handler).at(span);
+        out.push(if dropping {
+            tried.knowing(js::Known::Drop)
+        } else {
+            tried
+        });
+    }
+}
+
+/// The cleanup a panic of a terminator unwinds to, if it drops anything
+/// there: the first block of it that does anything, past those that drop
+/// nothing and write nothing, so calls whose cleanups differ only by what
+/// they don't drop, a temporary each moved on, `v.into_iter().enumerate()`'s
+/// beside a live `D`, unwind to one cleanup, and what's made between them
+/// stays made in place (#723).
+pub(super) fn cleans_up<'tcx>(
+    body: &mir::Body<'tcx>,
+    drops: Option<&Elaboration<'tcx>>,
+    unwind: UnwindAction,
+) -> Option<BasicBlock> {
+    let (UnwindAction::Cleanup(start), Some(drops)) = (unwind, drops) else {
+        return None;
+    };
+    // Whether `block` writes nothing as it unwinds: no statement but a
+    // storage marker's, and no drop flag set.
+    let writes_nothing = |block: BasicBlock| {
+        let data = &body.basic_blocks[block];
+        let quiet = (data.statements.iter()).all(|s| {
+            matches!(
+                s.kind,
+                StatementKind::StorageDead(_) | StatementKind::StorageLive(_) | StatementKind::Nop
+            )
+        });
+        quiet
+            && (0..=data.statements.len())
+                .all(|statement_index| !(drops.sets).contains_key(&Location { block, statement_index }))
+    };
+    let mut block = start;
+    // The first block that writes something, where the cleanup starts once
+    // something's dropped.
+    let mut first = None;
+    loop {
+        if first.is_none() && !writes_nothing(block) {
+            first = Some(block);
+        }
+        match body.basic_blocks[block].terminator().kind {
+            TerminatorKind::Drop { place, target, .. } => {
+                if drops.drops(block, place) {
+                    return Some(first.unwrap_or(block));
+                }
+                block = target;
+            }
+            TerminatorKind::Goto { target } => block = target,
+            TerminatorKind::UnwindResume | TerminatorKind::UnwindTerminate(_) => return None,
+            // What `mir_unwind` says it doesn't support.
+            _ => return Some(first.unwrap_or(block)),
+        }
+    }
+}
+
+/// The names of `body`'s drop flags, for `tidy`: rust-js's own, and those
+/// it was given (`constant_flags`).
+pub(super) fn flag_names(state: &State<'_, '_>, body: &mir::Body<'_>) -> IndexSet<js::Name> {
+    let given = constant_flags(body)
+        .into_iter()
+        .map(|local| state.locals.names[local].clone());
+    state.naming.flag_names().into_iter().chain(given).collect()
+}
+
+/// The drop flags `body` was given before rust-js saw it, a library's
+/// optimized MIR's, `_9 = const false; .. switchInt(_9)`: each `bool` only
+/// ever set to a constant and only tested, which `tidy`'s flags settle as
+/// rust-js's own (#381).
+fn constant_flags(body: &mir::Body<'_>) -> Vec<mir::Local> {
+    use mir::visit::{PlaceContext, Visitor};
+    struct Uses(IndexMap<mir::Local, usize>);
+    impl<'tcx> Visitor<'tcx> for Uses {
+        fn visit_local(&mut self, local: mir::Local, context: PlaceContext, _: Location) {
+            if !matches!(context, PlaceContext::NonUse(_)) {
+                *self.0.entry(local).or_default() += 1;
+            }
+        }
+    }
+    let mut uses = Uses(IndexMap::default());
+    uses.visit_body(body);
+    // Each local's uses that set it to a constant or test it.
+    let mut flag_uses: IndexMap<mir::Local, usize> = IndexMap::default();
+    for data in body.basic_blocks.iter() {
+        for stmt in &data.statements {
+            if let StatementKind::Assign(assign) = &stmt.kind
+                && let (place, mir::Rvalue::Use(mir::Operand::Constant(_), _)) = &**assign
+                && let Some(local) = place.as_local()
+            {
+                *flag_uses.entry(local).or_default() += 1;
+            }
+        }
+        if let TerminatorKind::SwitchInt {
+            discr: mir::Operand::Copy(place) | mir::Operand::Move(place),
+            ..
+        } = &data.terminator().kind
+            && let Some(local) = place.as_local()
+        {
+            *flag_uses.entry(local).or_default() += 1;
+        }
+    }
+    let mut flags: Vec<mir::Local> = (flag_uses.into_iter())
+        .filter(|(local, n)| body.local_decls[*local].ty.is_bool() && uses.0.get(local) == Some(n))
+        .map(|(local, _)| local)
+        .collect();
+    flags.sort();
+    flags
+}

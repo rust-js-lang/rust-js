@@ -75,7 +75,7 @@ test("each reader the lowering names is one $json has", () => {
   const start = codecs.indexOf("const $json = {");
   const table = codecs.slice(start, codecs.indexOf("\n};", start));
   const has = new Set([...table.matchAll(/^ {2}([A-Za-z_$][\w$]*):/gm)].map((m) => m[1]));
-  const lowering = read("src/lower/serde/de.rs");
+  const lowering = read("crates/rust-js-lower/src/serde/de.rs");
   const named = [...lowering.matchAll(/\breader\("([A-Za-z_$][\w$]*)"\)/g)].map((m) => m[1]);
   const numbers = ["u8", "u16", "u32", "u64", "usize", "i8", "i16", "i32", "i64", "isize", "f32", "f64"];
   expect(named.length).toBeGreaterThan(10);

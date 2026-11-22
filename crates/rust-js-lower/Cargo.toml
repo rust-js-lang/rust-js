@@ -1,0 +1,23 @@
+# The lowering's base (ADR 1181, #2299): `FnCx`, the lowering's context,
+# and what every lowering asks, the analyses, recognition, representation
+# and the session; MIR's lowering, `rust-js-mir`, builds on it, through
+# `MirHooks` for what only it can do. It reads rustc and owned output.
+[package]
+name = "rust-js-lower"
+version = "0.0.4"
+edition = "2024"
+publish = false
+# A unit test binary's rpath to rustc's libraries (the checkout's script).
+build = "../../rustc-rpath.rs"
+
+[dependencies]
+rust-js-program = { path = "../rust-js-program" }
+indexmap.workspace = true
+rustc-hash.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+imbl = { version = "7.0.2", default-features = false }
+
+# Owned output's test conveniences, a `Name` of a word alone (its `testing`).
+[dev-dependencies]
+rust-js-program = { path = "../rust-js-program", features = ["testing"] }

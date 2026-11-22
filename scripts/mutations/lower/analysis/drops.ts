@@ -1,4 +1,4 @@
-// Mutations of src/lower/analysis/drops.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/analysis/drops.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "item-may-drop-ignored",
     breaks:
       "a function given an associated type whose impl's type drops is given no drop of it, so `*it = other` drops nothing (#978)",
-    file: "src/lower/analysis/drops.rs",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "                if runs(ty, caller) || item_may_drop(tcx, foreign, ty, &runs) {\n",
     replace: "                if runs(ty, caller) {\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_dropped.rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "impl-drops-unseeded",
     breaks:
       "a generic impl isn't given drops, so what its methods, their helpers, or a default of its trait drop is never dropped",
-    file: "src/lower/analysis/drops.rs",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "        if drops_nothing_derived(tcx, imp) {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "drop_impl"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "default-body-drops-unpassed",
     breaks:
       "a default body gives its value to a generic helper, which isn't given a drop, and drops nothing",
-    file: "src/lower/analysis/drops.rs",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "        let Some(trait_id) = tcx.trait_of_assoc(method) else {\n",
     replace:
       "        let Some(trait_id) = tcx.trait_of_assoc(method).filter(|_| false) else {\n",
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "drops-without-destructors",
     breaks:
       "a crate with no destructor gives its generic impls drops nothing calls: right, but not the JS a person writes",
-    file: "src/lower/analysis/drops.rs",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "    if !library && !drops_any(tcx, all_bodies, &runs) && !foreign.libraries_drop() {",
     replace: "    if false {",
     tests: ["test/corpus.test.ts", "-t", "generic_traits"],
@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
     name: "library-drops-skipped",
     breaks:
       "a library with no destructor gives its generic impls no drops, though its consumers' values may have one",
-    file: "src/lower/analysis/drops.rs",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "    if !library && !drops_any(tcx, all_bodies, &runs) && !foreign.libraries_drop() {",
     replace: "    if !drops_any(tcx, all_bodies, &runs) && !foreign.libraries_drop() {",
     tests: ["test/crates.test.ts", "-t", "impl_drops"],
@@ -53,20 +53,20 @@ export const mutations: Mutation[] = [
     name: "trait-method-own-drops-not-taken",
     breaks:
       "an impl's generic method takes no drop for its own type parameters, so what it's given is never dropped",
-    file: "src/lower/analysis/drops.rs",
-    find: "        for index in crate::lower::traits::own_drop_params(tcx, foreign, id) {\n            given.insert((id, index));\n",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
+    find: "        for index in crate::traits::own_drop_params(tcx, foreign, id) {\n            given.insert((id, index));\n",
     replace:
-      "        for index in crate::lower::traits::own_drop_params(tcx, foreign, id) {\n            let _ = (id, index);\n",
+      "        for index in crate::traits::own_drop_params(tcx, foreign, id) {\n            let _ = (id, index);\n",
     tests: ["test/corpus.test.ts", "-t", "generic_method_drops"],
   },
   {
     name: "component-destructor-not-refused",
     breaks:
       "a component given a type with a destructor is given a drop React can't pass, and drops nothing",
-    file: "src/lower/analysis/drops.rs",
-    find: "            if crate::lower::bindings::is_component(tcx, callee) {",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
+    find: "            if crate::bindings::is_component(tcx, callee) {",
     replace:
-      "            if false && crate::lower::bindings::is_component(tcx, callee) {",
+      "            if false && crate::bindings::is_component(tcx, callee) {",
     tests: [
       "test/jsx-types.test.ts",
       "-t",
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
     name: "item-drops-not-given",
     breaks:
       "a std trait's associated type of a type parameter given a drop, `I::IntoIter`, is given none, and refused",
-    file: "src/lower/analysis/drops.rs",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "            if holds && given.insert((id, slot)) {\n",
     replace:
       "            if false && holds && given.insert((id, slot)) {\n",
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
     name: "guard-given-generic-undropped",
     breaks:
       "a guard given to generic code isn't dropped there, so its cell stays borrowed and a later `borrow_mut()` panics",
-    file: "src/lower/analysis/drops.rs",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "                if runs(ty, caller) || item_may_drop(tcx, foreign, ty, &runs) {\n",
     replace: "                if false && runs(ty, caller) || item_may_drop(tcx, foreign, ty, &runs) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_guard_drop.rs$"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     name: "nested-item-drop-ungiven",
     breaks:
       "a drop slot of an associated type of one isn't given, though its caller's type has a destructor",
-    file: "src/lower/analysis/drops.rs",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "                Some(of) => alias.self_ty() == of,\n",
     replace: "                Some(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_item_drops.rs$"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     name: "item-slot-of-callers-item-unseen",
     breaks:
       "`second(Gen(0))`, whose iterator has no destructor but its items do, is given no drop for them, and leaks the one it skips",
-    file: "src/lower/analysis/drops.rs",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "                    _ if !item.has_param() && runs(item, caller) => {\n                        given.insert(slot);\n",
     replace:
       "                    _ if !item.has_param() && runs(item, caller) => {\n",
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     name: "item-slot-of-callers-param-unseen",
     breaks:
       "`made_second::<Loud>`'s iterator's items, its `T`, aren't given `second` its drop",
-    file: "src/lower/analysis/drops.rs",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "                    ty::Param(param) => passed.push(((caller, param.index), slot)),\n",
     replace: "                    ty::Param(_) => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^yielded_item_drops.rs$"],
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
     name: "item-slot-of-callers-item-slot-unseen",
     breaks:
       "`relayed`'s `J::Item` drop isn't passed on to `second`'s `I::Item`",
-    file: "src/lower/analysis/drops.rs",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "                        if let Some(own) = callers_items.iter().position(|&own| own == item) {\n",
     replace:
       "                        if let Some(own) = callers_items.iter().position(|&own| own == item).filter(|_| false) {\n",
@@ -133,8 +133,8 @@ export const mutations: Mutation[] = [
   {
     name: "derived-clone-drops-nothing",
     breaks: "a derived `Clone` that clones a type parameter's field before another is taken to drop nothing, so std's compiled `Chain::clone` is given no drop of its `a` and drops none of its clone where `b`'s clone panics (#1517)",
-    file: "src/lower/analysis/drops.rs",
-    find: "    if makes && crate::lower::generic_facts::makes_a_param_field_first(tcx, trait_ref.self_ty()) {\n        return false;\n    }\n",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
+    find: "    if makes && crate::generic_facts::makes_a_param_field_first(tcx, trait_ref.self_ty()) {\n        return false;\n    }\n",
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
   },
@@ -142,16 +142,16 @@ export const mutations: Mutation[] = [
     name: "std-maker-given-no-drop",
     breaks:
       "std's compiled `repeat_n` is given no drop of what its `RepeatN` holds, so in the build of std's bodies `repeat_n(L(1), 0)` never drops `L(1)` (#1458)",
-    file: "src/lower/analysis/drops.rs",
-    find: "            if crate::lower::generic_facts::holds_type_parameter(made, param.index)\n",
-    replace: "            if false && crate::lower::generic_facts::holds_type_parameter(made, param.index)\n",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
+    find: "            if crate::generic_facts::holds_type_parameter(made, param.index)\n",
+    replace: "            if false && crate::generic_facts::holds_type_parameter(made, param.index)\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
   },
   {
     name: "libraries-drop-unasked",
     breaks:
       "a consumer none of whose own values drops gives generic code no drops, though a library's own code gives the library's generic impl's method it compiles, `Bag`'s `extend`, a value that drops: `drop Up 3` never printed (#1591)",
-    file: "src/lower/analysis/drops.rs",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "    if !library && !drops_any(tcx, all_bodies, &runs) && !foreign.libraries_drop() {\n",
     replace: "    if !library && !drops_any(tcx, all_bodies, &runs) {\n",
     tests: ["test/crates.test.ts", "-t", "library_extend_drops_the_crates_iterator|library_extend_given_a_middle_crates_iterator"],
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
   {
     name: "generic-destructors-unseen",
     breaks: "a crate whose only values with a destructor are made in generic code is taken to drop nothing, so that code is given no drops and they leak (#1650)",
-    file: "src/lower/analysis/drops.rs",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "                    true => own_destructor(expr.ty),\n",
     replace: "                    true => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_struct_with_a_destructor_dropped_on_an_early_return.rs$"],
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
   {
     name: "impl-trait-item-drop-unrevealed",
     breaks: "a trait method's `impl Trait` is taken to drop as its impl's opaque type, which runs nothing, not as what it hides, so generic code given one by value takes no `dropT` and never drops it, `drop hidden alone` unprinted (#2006)",
-    file: "src/lower/analysis/drops.rs",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "            runs(hidden, imp)\n",
     replace: "            runs(declared, imp)\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_trait_value_given_to_generic_code.rs$"],
@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-trait-item-drop-unasked",
     breaks: "an associated type of a rust-js library's trait isn't asked whether its impls' types drop, so a library's generic function the crate compiles itself, `relay_same<U>(x: impl Same<U>)` given one, takes no `dropU` and never drops it (#2007)",
-    file: "src/lower/analysis/drops.rs",
+    file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "    let Some(trait_id) = (tcx.trait_of_assoc(item)).filter(|id| id.is_local() || foreign.is_library(id.krate)) else {\n",
     replace: "    let Some(trait_id) = (tcx.trait_of_assoc(item)).filter(|id| id.is_local() || false && foreign.is_library(id.krate)) else {\n",
     tests: ["test/crates.test.ts", "-t", "library_trait_item_dropped_through_a_bound"],

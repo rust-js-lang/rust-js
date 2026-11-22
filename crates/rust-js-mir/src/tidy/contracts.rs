@@ -1,0 +1,366 @@
+//! What holds of a body between tidy's stages (ADR 0659), checked in a
+//! debug build after each: of every body, its jumps land and its names are
+//! declared once in a list; and, once a stage ensures it, nothing follows a
+//! jump, each label is one a jump names, no `if` is empty and none tests a
+//! constant. A check that fails names the first stage that broke it.
+
+use rust_js_program::js::validate::{self, Problem};
+use rust_js_program::js::{ExprKind, Stmt, StmtKind};
+
+/// A property of a body, and why a body doesn't have it.
+pub(super) struct Contract {
+    pub(super) name: &'static str,
+    pub(super) broken: fn(&[Stmt]) -> Option<String>,
+}
+
+/// What holds of every body, after every stage.
+pub(super) const ALWAYS: &[Contract] = &[JUMPS_LAND, DECLARED_ONCE];
+
+/// Each `break` is in a loop, a `switch` or the block it names, and each
+/// `continue` in a loop, the one it names: JS that parses.
+pub(super) const JUMPS_LAND: Contract = Contract {
+    name: "each jump lands",
+    broken: |body| first(body, |p| matches!(p, Problem::Unlanded(_))),
+};
+
+/// No list declares a name twice, which JS refuses.
+pub(super) const DECLARED_ONCE: Contract = Contract {
+    name: "each name declared once in a list",
+    broken: |body| first(body, |p| matches!(p, Problem::Twice(_))),
+};
+
+/// No statement follows a `return`, a `throw`, a `break` or a `continue` in
+/// its list: none that never runs.
+pub(super) const NOTHING_AFTER_A_JUMP: Contract = Contract {
+    name: "nothing after a jump",
+    broken: |body| {
+        let mut found = None;
+        rust_js_program::js::each_list(body, &mut |stmts| {
+            if found.is_none()
+                && let Some(i) = stmts.iter().position(jumps)
+                && i + 1 < stmts.len()
+            {
+                found = Some(format!("{} after a {}", described(&stmts[i + 1]), jump_name(&stmts[i])));
+            }
+        });
+        found
+    },
+};
+
+/// Each label is one a jump inside it names, but a loop's the program
+/// wrote, which preparation drops where nothing names it (wl4).
+pub(super) const LABELS_NAMED: Contract = Contract {
+    name: "each label named",
+    broken: |body| {
+        let mut found = None;
+        rust_js_program::js::each_list(body, &mut |stmts| {
+            for stmt in stmts.iter() {
+                let written = |l: &rust_js_program::js::Name| !crate::is_block_label(l);
+                if found.is_none()
+                    && !matches!(&stmt.kind, StmtKind::While { label: Some(l), .. }
+                        | StmtKind::ForOf { label: Some(l), .. }
+                        | StmtKind::For { label: Some(l), .. } if written(l))
+                    && let StmtKind::Labeled(label, inner)
+                    | StmtKind::While {
+                        label: Some(label),
+                        body: inner,
+                        ..
+                    }
+                    | StmtKind::ForOf {
+                        label: Some(label),
+                        body: inner,
+                        ..
+                    }
+                    | StmtKind::For {
+                        label: Some(label),
+                        body: inner,
+                        ..
+                    } = &stmt.kind
+                    && !rust_js_program::js::names_jump(inner, label)
+                {
+                    found = Some(format!("`{}` named by no jump", label.word()));
+                }
+            }
+        });
+        found
+    },
+};
+
+/// No `if` does nothing either way: what decided it is gone, or its
+/// branches were emptied, and the test goes with them.
+pub(super) const NO_EMPTY_IF: Contract = Contract {
+    name: "no empty if",
+    broken: |body| {
+        let mut found = None;
+        rust_js_program::js::each_list(body, &mut |stmts| {
+            if found.is_none()
+                && stmts.iter().any(|stmt| {
+                    matches!(&stmt.kind, StmtKind::If(_, then, other)
+                        if then.is_empty() && other.as_ref().is_none_or(|other| other.is_empty()))
+                })
+            {
+                found = Some("an `if` of no statements".into());
+            }
+        });
+        found
+    },
+};
+
+/// No `if` tests a constant: its branch is in its place, the other gone.
+pub(super) const NO_CONSTANT_TEST: Contract = Contract {
+    name: "no constant test",
+    broken: |body| {
+        let mut found = None;
+        rust_js_program::js::each_list(body, &mut |stmts| {
+            if found.is_none()
+                && let Some(value) = stmts.iter().find_map(|stmt| match &stmt.kind {
+                    StmtKind::If(test, ..) => match test.kind {
+                        ExprKind::Bool(value) => Some(value),
+                        _ => None,
+                    },
+                    _ => None,
+                })
+            {
+                found = Some(format!("an `if ({value})`"));
+            }
+        });
+        found
+    },
+};
+
+/// A statement, as a message names it: `const x`, an `if`.
+fn described(stmt: &Stmt) -> String {
+    match &stmt.kind {
+        StmtKind::Const(name, _) => format!("`const {}`", name.word()),
+        StmtKind::Let(name, _) => format!("`let {}`", name.word()),
+        StmtKind::Destructure { .. } => "a destructuring".into(),
+        StmtKind::Assign(..) | StmtKind::Compound(..) => "an assignment".into(),
+        StmtKind::Expr(_) => "an expression".into(),
+        StmtKind::If(..) => "an `if`".into(),
+        StmtKind::While { .. } | StmtKind::ForOf { .. } | StmtKind::For { .. } => "a loop".into(),
+        StmtKind::Labeled(label, _) => format!("block `{}`", label.word()),
+        StmtKind::Switch { .. } => "a `switch`".into(),
+        StmtKind::Try(..) | StmtKind::TryCatch(..) => "a `try`".into(),
+        _ => jump_name(stmt).into(),
+    }
+}
+
+fn jump_name(stmt: &Stmt) -> &'static str {
+    match stmt.kind {
+        StmtKind::Return(_) => "`return`",
+        StmtKind::Throw(_) => "`throw`",
+        StmtKind::Break(_) => "`break`",
+        _ => "`continue`",
+    }
+}
+
+fn jumps(stmt: &Stmt) -> bool {
+    matches!(
+        stmt.kind,
+        StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(_) | StmtKind::Continue(_)
+    )
+}
+
+/// The first of `body`'s problems of a rule, as `js::validate` finds it:
+/// the one place each rule is (#1681).
+fn first(body: &[Stmt], of: fn(&Problem) -> bool) -> Option<String> {
+    validate::body(body)
+        .into_iter()
+        .find(of)
+        .map(|problem| problem.to_string())
+}
+
+/// What runs as a panic unwinds is guarded where it may throw (#847): no
+/// `finally` holds what may throw, which it can't tell from what the
+/// normal path runs, and each `catch` that throws on what it caught runs
+/// what may throw before in `$cleanup`, where a throw aborts, as Rust's
+/// does where a drop panics as a panic unwinds. And where what's caught
+/// may be a stack overflow, Rust's abort with no drop run (#1193), what a
+/// program sees is guarded too: a `finally` of it is of a body thrown on
+/// through `$unwindsOn` (`aborting_finally`), and a `catch`'s is in
+/// `$cleanup(.., error)`.
+pub(super) const UNWINDING_GUARDED: Contract = Contract {
+    name: "what unwinds is guarded",
+    broken: |body| {
+        let mut found = None;
+        rust_js_program::js::each_list(body, &mut |stmts| {
+            let unguarded = stmts.iter().any(|stmt| match &stmt.kind {
+                StmtKind::Try(body, finally) => {
+                    use rust_js_lower::drops::{catches_unwind, is_aborting, live_guarded, may_throw, unseen};
+                    may_throw(finally)
+                        || !unseen(finally) && !(live_guarded(finally) && (is_aborting(body) || catches_unwind(body)))
+                }
+                StmtKind::TryCatch(_, Some(error), handler) => match handler.split_last() {
+                    Some((last, drops)) => {
+                        matches!(&last.kind, StmtKind::Throw(thrown)
+                            if matches!(&thrown.kind, ExprKind::Var(v) if v == error))
+                            && !rust_js_lower::drops::is_cleanup(drops)
+                    }
+                    None => false,
+                },
+                _ => false,
+            });
+            if unguarded && found.is_none() {
+                found = Some("a `finally`, or a `catch` that throws on, runs what may throw unguarded".into());
+            }
+        });
+        found
+    },
+};
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rust_js_program::js::{Expr, Span};
+
+    fn stmt(kind: StmtKind) -> Stmt {
+        kind.at(Span::NONE)
+    }
+
+    fn holds(contract: &Contract, body: &[Stmt]) -> bool {
+        (contract.broken)(body).is_none()
+    }
+
+    #[test]
+    fn what_unwinds_is_guarded() {
+        let call = |f: &str| stmt(StmtKind::Expr(Expr::call(Expr::var(f), vec![])));
+        let rethrow = || stmt(StmtKind::Throw(Expr::var("error")));
+        let caught = |handler| stmt(StmtKind::TryCatch(vec![call("f")], Some("error".into()), handler));
+        let guarded = stmt(StmtKind::Expr(Expr::call_helper(
+            "$cleanup",
+            vec![Expr::arrow(vec![], vec![call("drop")])],
+        )));
+        assert!(holds(
+            &UNWINDING_GUARDED,
+            &[stmt(StmtKind::Try(vec![call("f")], vec![]))]
+        ));
+        assert!(!holds(
+            &UNWINDING_GUARDED,
+            &[stmt(StmtKind::Try(vec![call("f")], vec![call("drop")]))]
+        ));
+        assert!(holds(&UNWINDING_GUARDED, &[caught(vec![guarded, rethrow()])]));
+        // A `finally` of what a program sees, which never throws: of a body
+        // thrown on through `$unwindsOn`, as a stack overflow aborts (#1193).
+        let seen = || {
+            let mut call = Expr::call(Expr::var("console.log"), vec![]);
+            call.facts = call.facts.with(rust_js_program::js::Known::NeverThrows);
+            stmt(StmtKind::Expr(call))
+        };
+        let scope = |body| stmt(StmtKind::Try(body, vec![seen()]));
+        assert!(!holds(&UNWINDING_GUARDED, &[scope(vec![call("f")])]));
+        let mut aborting = scope(vec![call("f")]);
+        rust_js_lower::drops::aborting_finally(&mut aborting);
+        assert!(holds(&UNWINDING_GUARDED, &[aborting]));
+        assert!(!holds(&UNWINDING_GUARDED, &[caught(vec![call("drop"), rethrow()])]));
+        // A `catch` that handles what it caught isn't a cleanup.
+        assert!(holds(&UNWINDING_GUARDED, &[caught(vec![call("report")])]));
+    }
+
+    #[test]
+    fn a_jump_lands_where_it_may() {
+        let loop_ = |label: Option<&str>, body| {
+            stmt(StmtKind::While {
+                label: label.map(Into::into),
+                cond: Expr::bool(true),
+                body,
+            })
+        };
+        let break_ = |label: Option<&str>| stmt(StmtKind::Break(label.map(Into::into)));
+        let continue_ = |label: Option<&str>| stmt(StmtKind::Continue(label.map(Into::into)));
+        assert!(holds(&JUMPS_LAND, &[loop_(None, vec![break_(None), continue_(None)])]));
+        assert!(holds(
+            &JUMPS_LAND,
+            &[stmt(StmtKind::Labeled("l".into(), vec![break_(Some("l"))]))]
+        ));
+        assert!(holds(
+            &JUMPS_LAND,
+            &[loop_(Some("o"), vec![loop_(None, vec![continue_(Some("o"))])])]
+        ));
+        assert!(!holds(&JUMPS_LAND, &[break_(None)]));
+        assert!(!holds(
+            &JUMPS_LAND,
+            &[stmt(StmtKind::Labeled("l".into(), vec![continue_(None)]))]
+        ));
+        assert!(!holds(
+            &JUMPS_LAND,
+            &[stmt(StmtKind::Labeled("l".into(), vec![continue_(Some("l"))]))]
+        ));
+        assert!(!holds(&JUMPS_LAND, &[loop_(Some("o"), vec![]), break_(Some("o"))]));
+    }
+
+    #[test]
+    fn a_name_is_declared_once_in_a_list() {
+        let const_ = |name: &str| stmt(StmtKind::Const(name.into(), Expr::bool(true)));
+        assert!(holds(
+            &DECLARED_ONCE,
+            &[
+                const_("a"),
+                stmt(StmtKind::If(Expr::bool(true), vec![const_("a")], None))
+            ]
+        ));
+        assert!(!holds(
+            &DECLARED_ONCE,
+            &[const_("a"), stmt(StmtKind::Let("a".into(), None))]
+        ));
+    }
+
+    #[test]
+    fn nothing_follows_a_jump() {
+        let ret = stmt(StmtKind::Return(None));
+        let after = stmt(StmtKind::Expr(Expr::bool(true)));
+        assert!(holds(&NOTHING_AFTER_A_JUMP, &[after.clone(), ret.clone()]));
+        assert!(!holds(&NOTHING_AFTER_A_JUMP, &[ret.clone(), after.clone()]));
+        assert!(!holds(
+            &NOTHING_AFTER_A_JUMP,
+            &[stmt(StmtKind::If(Expr::bool(true), vec![ret, after], None))]
+        ));
+    }
+
+    #[test]
+    fn an_if_does_something() {
+        let if_ = |then: Vec<Stmt>, other: Option<Vec<Stmt>>| stmt(StmtKind::If(Expr::var("c"), then, other));
+        let ret = stmt(StmtKind::Return(None));
+        assert!(holds(&NO_EMPTY_IF, &[if_(vec![ret.clone()], None)]));
+        assert!(holds(&NO_EMPTY_IF, &[if_(vec![], Some(vec![ret.clone()]))]));
+        assert!(!holds(&NO_EMPTY_IF, &[if_(vec![], None)]));
+        assert!(!holds(&NO_EMPTY_IF, &[if_(vec![], Some(vec![]))]));
+        assert!(!holds(&NO_EMPTY_IF, &[if_(vec![if_(vec![], None)], None)]));
+    }
+
+    #[test]
+    fn no_if_tests_a_constant() {
+        let ret = stmt(StmtKind::Return(None));
+        assert!(holds(
+            &NO_CONSTANT_TEST,
+            &[stmt(StmtKind::If(Expr::var("c"), vec![ret.clone()], None))]
+        ));
+        assert!(!holds(
+            &NO_CONSTANT_TEST,
+            &[stmt(StmtKind::If(Expr::bool(true), vec![ret.clone()], None))]
+        ));
+        assert!(!holds(
+            &NO_CONSTANT_TEST,
+            &[stmt(StmtKind::If(
+                Expr::var("c"),
+                vec![stmt(StmtKind::If(Expr::bool(false), vec![ret], None))],
+                None
+            ))]
+        ));
+    }
+
+    #[test]
+    fn a_label_is_named() {
+        let block = |body| stmt(StmtKind::Labeled("l".into(), body));
+        assert!(holds(
+            &LABELS_NAMED,
+            &[block(vec![stmt(StmtKind::Break(Some("l".into())))])]
+        ));
+        assert!(!holds(&LABELS_NAMED, &[block(vec![stmt(StmtKind::Break(None))])]));
+        let loop_ = stmt(StmtKind::While {
+            label: Some("o".into()),
+            cond: Expr::bool(true),
+            body: vec![stmt(StmtKind::Continue(Some("o".into())))],
+        });
+        assert!(holds(&LABELS_NAMED, &[loop_]));
+    }
+}

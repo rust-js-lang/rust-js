@@ -1,4 +1,4 @@
-// Mutations of src/lower/declarations/imports.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/declarations/imports.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "reexport-undeclared",
     breaks:
       "a module's `pub use` isn't in its `.d.ts`, and TypeScript that imports it finds nothing",
-    file: "src/lower/declarations/imports.rs",
+    file: "crates/rust-js-lower/src/declarations/imports.rs",
     find: "    for (statement, reexport) in reexports {",
     replace: "    for (statement, reexport) in reexports.into_iter().take(0) {",
     tests: ["test/declarations.test.ts", "-t", "re-export what a module"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "type-import-default-beside-names",
     breaks:
       "a module's declarations import another's default class and one of its other types as one, `import type Complex, { Parts } from \"./complex.js\";`, which TypeScript refuses, so the build fails (#373)",
-    file: "src/lower/declarations/imports.rs",
+    file: "crates/rust-js-lower/src/declarations/imports.rs",
     find: "        Some(default) if !names.is_empty() => vec![import(Vec::new(), Some(default)), import(names, None)],\n",
     replace: "",
     tests: [
@@ -28,8 +28,8 @@ export const mutations: Mutation[] = [
     name: "default-class-type-imported-by-name",
     breaks:
       "a module's declarations import another's default class `import type { Complex }`",
-    file: "src/lower/declarations/imports.rs",
-    find: '        let default = crate::lower::default_exports::exported_as(self.tcx, did, &name) == "default";\n',
+    file: "crates/rust-js-lower/src/declarations/imports.rs",
+    find: '        let default = crate::default_exports::exported_as(self.tcx, did, &name) == "default";\n',
     replace: "        let default = false;\n",
     tests: [
       "test/classes.test.ts",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-reexports-ungrouped",
     breaks: "a `pub use` of two types of one module is two `export type` statements, not one (rd642)",
-    file: "src/lower/declarations/imports.rs",
+    file: "crates/rust-js-lower/src/declarations/imports.rs",
     find: "if was.lo() == at.lo() && *was_from == from =>",
     replace: "if false && *was_from == from =>",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-reexports-of-values",
     breaks: "a type's re-export is a value's, `export { Kind } from`, which names no value of the module (rd642)",
-    file: "src/lower/declarations/imports.rs",
+    file: "crates/rust-js-lower/src/declarations/imports.rs",
     find: "        let mut declaration = json!({ \"kind\": \"export\", \"names\": names, \"typeOnly\": true });\n",
     replace: "        let mut declaration = json!({ \"kind\": \"export\", \"names\": names });\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
   {
     name: "package-default-type-imported-as-a-name",
     breaks: "a JS module's default type is imported among its names, `import type { ModuleDependency } from ..`, which the module doesn't export (rd678)",
-    file: "src/lower/declarations/imports.rs",
+    file: "crates/rust-js-lower/src/declarations/imports.rs",
     find: "    for (from, names, default) in of_modules(packages) {\n        declarations.extend(type_imports(json!({ \"specifier\": from }), names, default));\n",
     replace: "    for (from, names, default) in of_modules(packages) {\n        declarations.extend(type_imports(json!({ \"specifier\": from }), [names, default.into_iter().collect()].concat(), None));\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "its module's default is imported as its default"],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
   {
     name: "relative-binding-type-not-relinked",
     breaks: "a nested declaration imports a binding type using the crate-root-relative source path instead of its own file's path",
-    file: "src/lower/declarations/imports.rs",
+    file: "crates/rust-js-lower/src/declarations/imports.rs",
     find: "    for (from, names, default) in of_modules(packages) {\n        declarations.extend(type_imports(json!({ \"specifier\": from }), names, default));\n",
     replace: "    for (from, names, default) in of_modules(packages) {\n        declarations.extend(type_imports(json!({ \"from\": from }), names, default));\n",
     tests: ["test/declarations-relative-imports.test.ts", "-t", "a relative binding type"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-reexport-undocumented",
     breaks: "a `pub use` of types alone is declared `export type { Size as Measure }` without its doc comment, which documents it (#1869)",
-    file: "src/lower/declarations/imports.rs",
+    file: "crates/rust-js-lower/src/declarations/imports.rs",
     find: "            true => super::comments::documented_at(declaration, tcx, item, Some(at)),\n",
     replace: "            true => declaration,\n",
     tests: ["test/reexport-docs.test.ts", "-t", "nowhere in the JS"],
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
   {
     name: "mixed-reexport-doc-on-its-type",
     breaks: "a `pub use` of a type and a value gives its doc comment to the type's `export type` too, where the JS has it on the value's statement (#1869)",
-    file: "src/lower/declarations/imports.rs",
+    file: "crates/rust-js-lower/src/declarations/imports.rs",
     find: "            false => declaration,\n",
     replace: "            false => super::comments::documented(declaration, tcx, item),\n",
     tests: ["test/reexport-docs.test.ts", "-t", "a type and a value"],
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
   {
     name: "value-reexport-undocumented",
     breaks: "a `pub use` of a value's declaration, `export { width } from` in the .d.ts, has none of its comments, where its JS statement has its `//` comments and its doc comment (#1880)",
-    file: "src/lower/declarations/imports.rs",
+    file: "crates/rust-js-lower/src/declarations/imports.rs",
     find: "            Some(item) => super::comments::documented_at(declaration, tcx, item, Some(*statement)),\n",
     replace: "            Some(_) => declaration,\n",
     tests: ["test/reexport-docs.test.ts", "-t", "(a value is its declaration's too|a type and a value)"],

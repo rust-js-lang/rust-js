@@ -1,0 +1,839 @@
+//! What a crate does that rust-js refuses, found before any of it is lowered.
+
+use crate::bindings;
+use crate::recognition::{StdItem, from_serde_derive, is_from_str, is_std_def, known_derive};
+use crate::refusal::{Refused, refuse};
+use crate::representation::marks_js_object;
+use crate::traits;
+use crate::{Body, strip};
+use rust_js_program::collections::IndexSet;
+use rustc_hir::def::DefKind;
+use rustc_hir::find_attr;
+use rustc_middle::mir::BorrowKind;
+use rustc_middle::thir::{ExprId, ExprKind, PatKind, Thir};
+use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{self, Ty};
+use rustc_span::def_id::{DefId, LocalDefId};
+use rustc_span::{Span, Symbol};
+
+/// Report each item rust-js can't compile yet. False if there was one.
+pub(super) fn reject_unsupported(
+    tcx: TyCtxt<'_>,
+    foreign: &crate::library::Foreign<'_, '_>,
+    markers: &[(LocalDefId, Symbol)],
+) -> bool {
+    let mut valid = true;
+    for def_id in tcx.hir_crate_items(()).definitions() {
+        let what = match tcx.def_kind(def_id) {
+            // A function in an `extern "Rust"` block, where a JS function
+            // was bound: a binding of one is an ordinary function, the one
+            // form (ADR 0373). One of C's, which JS has none of, is refused
+            // where it's called.
+            DefKind::Fn
+                if tcx.is_foreign_item(def_id)
+                    && tcx.fn_sig(def_id).skip_binder().abi() == rustc_abi::ExternAbi::Rust =>
+            {
+                let refused = super::super::bindings::extern_fn_refused(tcx, def_id.to_def_id());
+                tcx.dcx().span_err(tcx.def_span(def_id), refused);
+                valid = false;
+                continue;
+            }
+            // An `extern` type: a JS type is one form, a struct of a
+            // `JsObject` (ADR 0111), stable Rust.
+            DefKind::ForeignTy => {
+                let name = tcx.item_name(def_id.to_def_id());
+                tcx.dcx().span_err(
+                    tcx.def_span(def_id),
+                    format!(
+                        "rust-js: a JS type is declared as a struct of a `JsObject`, `pub struct {name}(PhantomData<js::JsObject>);`, not an `extern` type (ADR 0373)"
+                    ),
+                );
+                valid = false;
+                continue;
+            }
+            // `#[eii] static HELLO: u64;`, which the linker makes another
+            // item: rust-js has none to link it to, and JS would read a name
+            // nothing defines (ADR 0109).
+            _ if find_attr!(tcx, def_id, EiiImpl(..) | EiiDeclaration(..) | RustcEiiForeignItem) => {
+                "externally implementable items"
+            }
+            _ if markers.iter().any(|&(marker, _)| marker == def_id) => continue,
+            _ if from_serde_derive(tcx, def_id) => continue,
+            // std's storage for a thread-local: JS needs none.
+            _ if in_thread_local(tcx, def_id).is_some() => continue,
+            // Methods, trait impls' included (ADRs 0047, 0049). Derives like
+            // `#[derive(Clone)]` write impls that are never called.
+            DefKind::AssocFn => continue,
+            // A `type const`, of `min_generic_const_args`, has no body to type-check.
+            DefKind::AssocConst if tcx.is_direct_const(def_id.to_def_id()) => "type constants",
+            // A type's own `const`, as `Vec2::ZERO`: its value where it's used,
+            // as rustc computed it (ADR 0031). A trait's too, and in generic code
+            // its impl's dictionary's (ADR 0106). Not one with parameters of its own.
+            DefKind::AssocConst if tcx.generics_of(def_id).own_params.is_empty() => continue,
+            DefKind::AssocConst => "generic constants",
+            // An `Iterator`'s `Item` (ADR 0055), an operator's `Output` (ADR
+            // 0064) and a `TryFrom`'s `Error`: rustc works out what they are.
+            DefKind::AssocTy
+                if tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some_and(|imp| {
+                    let tr = tcx
+                        .impl_trait_ref(imp)
+                        .instantiate_identity()
+                        .skip_normalization()
+                        .def_id;
+                    is_std_def(tcx, tr, StdItem::Iterator)
+                        || is_std_def(tcx, tr, StdItem::TryFrom)
+                        || is_from_str(tcx, tr)
+                        || is_std_def(tcx, tr, StdItem::IntoIterator)
+                        || traits::is_operator(tcx, tr)
+                }) =>
+            {
+                continue;
+            }
+            // A trait's own, a type only a caller knows in generic code, as a
+            // type parameter is (ADR 0106); a generic one too, of lifetimes,
+            // which JS hasn't, or of no bound a dictionary has (ADR 0146).
+            DefKind::AssocTy if traits::gat_supported(tcx, def_id.to_def_id()) => continue,
+            DefKind::AssocTy => "generic associated types with bounds",
+            // Named, as which one stops a crate is what's worth knowing.
+            DefKind::Impl { of_trait: true } if !known_derive(tcx, def_id.to_def_id()) => {
+                let trait_id = tcx
+                    .impl_trait_ref(def_id)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .def_id;
+                // A class's of the binding's class it extends (rd331).
+                if traits::implementable(tcx, foreign, trait_id)
+                    || crate::classes::subclass_impl_class(tcx, def_id.to_def_id()).is_some()
+                {
+                    continue;
+                }
+                refuse(tcx, tcx.def_span(def_id), Refused::Implementing(trait_id));
+                valid = false;
+                continue;
+            }
+            DefKind::Static { .. } if tcx.is_thread_local_static(def_id.to_def_id()) => "`#[thread_local]` statics",
+            _ => continue,
+        };
+        refuse(tcx, tcx.def_span(def_id), Refused::Feature(what));
+        valid = false;
+    }
+    valid
+}
+
+/// Report each reference rust-js can't make to a static yet (ADR 0096): a
+/// `&mut` to a `static mut` or a part of one, and a raw address of an
+/// immutable one. A shared one is the value it points to, as any is; a raw
+/// pointer to a `static mut`, `&raw mut COUNT`, a handle on its place (ADRs
+/// 0096, amended, 0407), which its module keeps its box for where it's
+/// given on (`std_types/cell.rs::plain_statics`). False if there was one.
+pub(super) fn reject_static_references(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> bool {
+    let mut valid = true;
+    for body in all_bodies {
+        let thir = &body.thir;
+        for expr in thir.exprs.iter() {
+            let (arg, raw) = match expr.kind {
+                ExprKind::Borrow {
+                    borrow_kind: BorrowKind::Mut { .. },
+                    arg,
+                } => (arg, false),
+                ExprKind::RawBorrow { arg, .. } => (arg, true),
+                _ => continue,
+            };
+            let refused = match static_of(thir, arg) {
+                Some(d) if tcx.is_foreign_item(d) => continue,
+                Some(d) if raw && !tcx.is_mutable_static(d) => Refused::Memory("raw addresses of statics"),
+                Some(_) if raw => continue,
+                Some(d) if tcx.is_mutable_static(d) => Refused::Feature("`&mut` references to a `static mut`"),
+                _ => continue,
+            };
+            refuse(tcx, expr.span, refused);
+            valid = false;
+        }
+    }
+    valid
+}
+
+/// The static that place `e` is, or is a part of.
+pub(super) fn static_of(thir: &Thir<'_>, e: ExprId) -> Option<DefId> {
+    match thir[strip(thir, e)].kind {
+        ExprKind::Field { lhs, .. } | ExprKind::Index { lhs, .. } => static_of(thir, lhs),
+        ExprKind::Deref { arg } => match thir[strip(thir, arg)].kind {
+            ExprKind::StaticRef { def_id, .. } => Some(def_id),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+/// Report a read of a namespace thread-local, `NOOP.with(..)`, whose
+/// value's fields are its module's exports, which JS reads: no cell holds
+/// it (rd293, ADR 1037, amended). False if there was one.
+pub(super) fn reject_namespace_value_reads(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> bool {
+    let mut valid = true;
+    for body in all_bodies {
+        for expr in body.thir.exprs.iter() {
+            if let ExprKind::NamedConst { def_id, .. } = expr.kind
+                && crate::classes::is_value_namespace(tcx, def_id)
+            {
+                tcx.dcx().span_err(
+                    expr.span,
+                    format!(
+                        "rust-js: `{}` is its module's namespace, whose fields are the module's exports, which JS reads: Rust reads the value it's made of, `create_react_noop(..)`, or calls what it holds where it's made (ADR 1037)",
+                        tcx.item_name(def_id)
+                    ),
+                );
+                valid = false;
+            }
+        }
+    }
+    valid
+}
+
+/// `thread_local!` (ADR 0037) is a `const NAME: LocalKey<T>` whose block holds
+/// `fn __rust_std_internal_init_fn() -> T { init }`, then std's storage for
+/// it. In JS, it's a variable of its module, made from `init`.
+pub fn is_thread_local(tcx: TyCtxt<'_>, d: LocalDefId) -> bool {
+    matches!(tcx.def_kind(d), DefKind::Const)
+        && matches!(tcx.type_of(d).instantiate_identity().skip_normalization().kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::LocalKey))
+}
+
+/// The thread-local whose block `d` is in, if any.
+/// The thread-local whose `init` `d` is: one inside it, with no function
+/// between, as a function the `init` makes is its own (ADR 0296).
+pub fn init_of(tcx: TyCtxt<'_>, d: LocalDefId) -> Option<LocalDefId> {
+    let mut parent = tcx.opt_local_parent(d);
+    while let Some(p) = parent {
+        if is_thread_local(tcx, p) {
+            return Some(p);
+        }
+        if matches!(tcx.def_kind(p), DefKind::Fn | DefKind::AssocFn | DefKind::Closure) {
+            return None;
+        }
+        parent = tcx.opt_local_parent(p);
+    }
+    None
+}
+
+pub(super) fn in_thread_local(tcx: TyCtxt<'_>, d: LocalDefId) -> Option<LocalDefId> {
+    let mut parent = tcx.opt_local_parent(d);
+    while let Some(p) = parent {
+        if is_thread_local(tcx, p) {
+            return Some(p);
+        }
+        parent = tcx.opt_local_parent(p);
+    }
+    None
+}
+
+/// Report what flattened props (ADR 0204, 0205) can't be: a flattened field
+/// that isn't a struct of named fields; a flattened field read whole,
+/// which JS's props don't have; one of a struct of more than one rest read
+/// through, or such a struct taken apart, whose rests JS's object mixes;
+/// and a struct with one made anywhere but as JSX's props, or a flattened
+/// field's value there, which JSX holds flat. False if there was one.
+pub(super) fn reject_flatten_misuse<'tcx>(
+    recognition: &crate::recognition::Recognition<'_, 'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    flattened: &bindings::Flattened,
+) -> bool {
+    let tcx = recognition.tcx;
+    let mut valid = true;
+    let mut refuse = |span: Span, what: String| {
+        refuse(tcx, span, Refused::Feature(&what));
+        valid = false;
+    };
+    // The structs of more than one rest: made, `{ ...template, ...files }`,
+    // but neither taken apart nor read through, as JS's object has their
+    // keys mixed.
+    let mut mixed = IndexSet::default();
+    // A struct of named fields, not std's, which is the object it is; or a
+    // JS object, a `Dict` whose keys spread.
+    let std = |adt: ty::AdtDef<'_>| crate::recognition::is_std_crate(tcx, adt.did());
+    let plain = |adt: ty::AdtDef<'tcx>, args| {
+        adt.is_struct() && adt.non_enum_variant().ctor.is_none() && !std(adt) || marks_js_object(tcx, adt, args)
+    };
+    for id in tcx.hir_crate_items(()).definitions() {
+        // An enum's variant's, which nothing makes flat: it'd be nested.
+        if tcx.def_kind(id) == DefKind::Enum {
+            let variants = tcx.adt_def(id).variants();
+            for field in variants
+                .iter()
+                .flat_map(|v| v.fields.iter())
+                .filter(|f| bindings::is_flatten(tcx, f))
+            {
+                refuse(tcx.def_span(field.did), "flattening an enum variant's field".into());
+            }
+            continue;
+        }
+        if tcx.def_kind(id) != DefKind::Struct {
+            continue;
+        }
+        let parent = tcx.adt_def(id).non_enum_variant();
+        let own = tcx.type_of(id).instantiate_identity().skip_normalization();
+        if (0..parent.fields.len())
+            .filter(|&i| bindings::is_rest_field(tcx, own, i))
+            .count()
+            > 1
+        {
+            mixed.insert(id.to_def_id());
+        }
+        // A `js::Spread` is a struct's flattened field, the copy its literal
+        // begins with; a struct of it alone is `js::object::spread`'s copy
+        // (ADR 1164).
+        let spread = |field: &&ty::FieldDef| {
+            matches!(tcx.type_of(field.did).instantiate_identity().skip_normalization().kind(),
+                ty::Adt(adt, _) if crate::recognition::is_js_spread(tcx, adt.did()))
+        };
+        for field in parent.fields.iter().filter(spread) {
+            if !bindings::is_flatten(tcx, field) {
+                refuse(
+                    tcx.def_span(field.did),
+                    "a `js::Spread` field is flattened, `#[cfg_attr(rust_js, rust_js::flatten)]`: the copy of a value's own keys a struct's object begins with, `{ ...given, .. }` (ADR 1164)".into(),
+                );
+            } else if parent.fields.len() == 1 {
+                refuse(
+                    tcx.def_span(field.did),
+                    "a struct of a `js::Spread` alone is the copy itself, `js::object::spread(value)` (ADR 1164)"
+                        .into(),
+                );
+            }
+        }
+        for field in parent.fields.iter().filter(|f| bindings::is_flatten(tcx, f)) {
+            let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+            // A struct or a JS object (`plain`), or a reference to one. Or a
+            // `RefCell` of a discriminated union, the parent's own tag and
+            // fields (rd380, ADR 1044); no other cell, which a struct of
+            // named fields of std's is not.
+            // Or an enum told by its keys, its variants' fields the
+            // parent's (#504), or a type parameter, given one.
+            let object = match ty.peel_refs().kind() {
+                _ if bindings::flattened_state(tcx, ty).is_some() => true,
+                // A `js::Spread`, a copy of a value's own keys, `{ ...given,
+                // .. }` (ADR 1164).
+                ty::Adt(adt, _) if crate::recognition::is_js_spread(tcx, adt.did()) => true,
+                // Or an untagged enum of records, its record's keys the
+                // parent's (#1818): by value, as `flattened` finds it.
+                ty::Adt(adt, _) if adt.is_enum() => {
+                    flattened.keyed.contains(&adt.did()) || flattened.untagged.contains(&adt.did())
+                }
+                ty::Param(_) => !ty.is_ref(),
+                ty::Adt(adt, args) => plain(*adt, args),
+                _ => false,
+            };
+            if !object {
+                refuse(
+                    tcx.def_span(field.did),
+                    format!(
+                        "flattening `{ty}`: a flattened field is a struct of named fields, a `RefCell` of a `#[rust_js::tag]` enum, or an enum whose variants each have a field no other variant has, with at most one variant of no fields, or a `#[rust_js::untagged]` enum each of whose variants holds a struct of named fields"
+                    ),
+                );
+            }
+            // A reference its parent's object copies, which must be seen
+            // to be its referent (#1819).
+            let typing_env = ty::TypingEnv::non_body_analysis(tcx, id.to_def_id());
+            for reference in bindings::copied_references(tcx, ty) {
+                if let Some(why) = bindings::copy_seen(tcx, typing_env, reference) {
+                    refuse(tcx.def_span(field.did), format!("flattening `{reference}`, {why}"));
+                }
+            }
+            // A keyed enum's keys are its parent's, which can't hold one
+            // of its own of the same name (#504).
+            if let ty::Adt(adt, _) = ty.kind()
+                && let Some(key) = flattened
+                    .keyed(tcx, *adt)
+                    .and_then(|keyed| shadowed_key(tcx, parent, &keyed))
+            {
+                refuse(
+                    tcx.def_span(field.did),
+                    format!("flattening `{ty}`, whose `{key}` is a key of its parent's own"),
+                );
+            }
+            // An untagged enum's records' keys are its parent's too, and its
+            // test reads them, which a key of the parent's own would answer
+            // (#1818).
+            if let ty::Adt(adt, _) = ty.kind()
+                && flattened.untagged.contains(&adt.did())
+                && let Some(keys) = bindings::untagged_records(tcx, *adt)
+                && let Some(key) = shadowed_of(tcx, parent, &keys)
+            {
+                refuse(
+                    tcx.def_span(field.did),
+                    format!(
+                        "flattening `{ty}`, whose `{key}` is a key of its parent's own, which its untagged test would read"
+                    ),
+                );
+            }
+        }
+    }
+    // What a struct's flattened type parameter is given, each type once: a
+    // keyed enum, or another type parameter, of generic code (#504).
+    let mut given_once = IndexSet::default();
+    for body in all_bodies {
+        for expr in body.thir.exprs.iter() {
+            for (parent, given) in flattened.given_params(expr.ty) {
+                if !given_once.insert((parent, given)) {
+                    continue;
+                }
+                let fields = tcx.adt_def(parent).non_enum_variant();
+                let why = match given.kind() {
+                    ty::Param(_) => continue,
+                    ty::Adt(adt, _) if flattened.keyed.contains(&adt.did()) => {
+                        match flattened.keyed(tcx, *adt).and_then(|keyed| shadowed_key(tcx, fields, &keyed)) {
+                            Some(key) => format!("its `{key}` is a key of the parent's own"),
+                            None => continue,
+                        }
+                    }
+                    // A JS object, which its parent's object would copy, as a
+                    // flattened field of one is refused (#1822).
+                    ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => bindings::js_object_copied().into(),
+                    // A struct, flattened as a field of one is (ADR 0204).
+                    ty::Adt(adt, args) if plain(*adt, args) => continue,
+                    _ => "a flattened type parameter is given a struct of named fields or an enum whose variants each have a field no other variant has, with at most one variant of no fields".into(),
+                };
+                refuse(
+                    expr.span,
+                    format!("flattening `{given}` into `{}`: {why}", tcx.def_path_str(parent)),
+                );
+            }
+        }
+    }
+    let is_mixed = |ty: Ty<'tcx>| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if mixed.contains(&adt.did()));
+    for body in all_bodies {
+        let thir = &body.thir;
+        // Taken apart where they're given, which JS's one rest is.
+        for param in thir.params.iter() {
+            if let Some(pat) = &param.pat
+                && matches!(pat.kind, PatKind::Leaf { .. })
+                && is_mixed(pat.ty)
+            {
+                refuse(
+                    pat.span,
+                    "props with more than one rest taken apart: they have one rest, a `Rest` or a flattened field"
+                        .into(),
+                );
+            }
+        }
+        // A flattened field read through, `props.html.title`, is its parent's,
+        // a reference's too, `(*report.item).line`.
+        let read_through = bindings::read_through(thir);
+        // Whether a value of `ty` has an impl whose JS reads its object
+        // whole: a clone's spread, `==`'s `$eq`, a comparison's or a hash's.
+        // Its own impl, as rustc selects it: a `RefCell<State>`'s `Clone` is
+        // `State`'s, none of a state of none (rd380); where rustc can't say,
+        // of a type of parameters, it may.
+        let reads_whole = |ty: Ty<'tcx>| {
+            if !matches!(ty.kind(), ty::Adt(..)) {
+                return true;
+            }
+            let items = tcx.lang_items();
+            let hash = crate::recognition::std_item(tcx, crate::recognition::StdItem::Hash);
+            let env = ty::TypingEnv::fully_monomorphized();
+            [
+                items.clone_trait(),
+                items.eq_trait(),
+                items.partial_ord_trait(),
+                Some(hash),
+            ]
+            .into_iter()
+            .flatten()
+            .any(|tr| crate::recognition::trait_holds_in(tcx, env, ty, tr) != Some(false))
+        };
+        // A flattened field lent whole, `&state.base`, is its parent's
+        // object, which has its fields (ADR 0204, amended).
+        let lent: IndexSet<ExprId> = (thir.exprs.iter())
+            .filter_map(|expr| match expr.kind {
+                ExprKind::Borrow {
+                    borrow_kind: rustc_middle::mir::BorrowKind::Shared,
+                    arg,
+                } => Some(strip(thir, arg)),
+                _ => None,
+            })
+            .collect();
+        // What's no read of a value, but a place written or lent mutably,
+        // which a struct's projection, its fields' copy, isn't (#1820).
+        let written: IndexSet<ExprId> = (thir.exprs.iter())
+            .filter_map(|expr| match expr.kind {
+                ExprKind::Borrow {
+                    borrow_kind: rustc_middle::mir::BorrowKind::Mut { .. },
+                    arg,
+                }
+                | ExprKind::RawBorrow { arg, .. }
+                | ExprKind::Assign { lhs: arg, .. }
+                | ExprKind::AssignOp { lhs: arg, .. } => Some(strip(thir, arg)),
+                _ => None,
+            })
+            .collect();
+        // A flattened state's cell given whole to its own `get_mut`, through
+        // the `&mut` rustc holds alone, or `into_inner`, which moves it: the
+        // handle on its object's keys, whose `&mut` is the handle and whose
+        // value moved out a copy of its variant's (#687, ADR 1044, amended).
+        // Of the body's own typing environment, as its calls are generic.
+        let recognition = crate::recognition::Recognition {
+            typing_env: ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(body.def_id)),
+            ..*recognition
+        };
+        let own_calls: IndexSet<ExprId> = (thir.exprs.iter())
+            .filter_map(|expr| {
+                let ExprKind::Call { fun, ref args, .. } = expr.kind else {
+                    return None;
+                };
+                let mut cell = strip(thir, *args.first()?);
+                if let ExprKind::Borrow {
+                    borrow_kind: BorrowKind::Mut { .. },
+                    arg,
+                } = thir[cell].kind
+                {
+                    cell = strip(thir, arg);
+                }
+                bindings::flattened_state(tcx, thir[cell].ty)?;
+                let (id, generic_args) = crate::fn_def(thir[fun].ty)?;
+                matches!(
+                    recognition.classify(id, generic_args),
+                    Some(crate::Std::CellGetMut | crate::Std::CellGet)
+                )
+                .then_some(cell)
+            })
+            .collect();
+        // A keyed enum's field is its parent's keys where it's matched, a
+        // place a `match` or a `let` tests, or written whole (#504).
+        // An untagged enum of records, matched there, never written whole,
+        // which would leave another record's keys (#1818).
+        let keyed = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if flattened.keyed.contains(&adt.did()));
+        let placed: IndexSet<ExprId> = (thir.exprs.iter())
+            .filter_map(|expr| match expr.kind {
+                ExprKind::Match { scrutinee: at, .. }
+                | ExprKind::Let { expr: at, .. }
+                | ExprKind::Assign { lhs: at, .. } => Some(strip(thir, at)),
+                _ => None,
+            })
+            .collect();
+        let matched: IndexSet<ExprId> = (thir.exprs.iter())
+            .filter_map(|expr| match expr.kind {
+                ExprKind::Match { scrutinee: at, .. } | ExprKind::Let { expr: at, .. } => Some(strip(thir, at)),
+                _ => None,
+            })
+            .collect();
+        for (e, expr) in thir.exprs.iter_enumerated() {
+            match expr.kind {
+                ExprKind::Field { lhs, name, .. }
+                    if is_mixed(thir[lhs].ty) && bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize()) =>
+                {
+                    refuse(
+                        expr.span,
+                        "reading props of more than one rest through one of them: JS's object has their keys mixed"
+                            .into(),
+                    );
+                }
+                // Lent whole, it's its parent's object, which holds a name
+                // the parent, or what it's flattened in, has too as theirs
+                // (ADR 0205): refused.
+                ExprKind::Field { lhs, name, .. }
+                    if bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize())
+                        && lent.contains(&e)
+                        && let Some(shadowed) = shadowed_in(tcx, thir, lhs, expr.ty) =>
+                {
+                    refuse(
+                        expr.span,
+                        format!(
+                            "lending a flattened `{}` whole, its parent's object, whose `{shadowed}` is the parent's",
+                            expr.ty
+                        ),
+                    );
+                }
+                // A reference lent whole would be its parent's object, a copy
+                // of its referent, not it (#1819): refused.
+                ExprKind::Field { lhs, name, .. }
+                    if bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize())
+                        && lent.contains(&e)
+                        && expr.ty.is_ref() =>
+                {
+                    refuse(
+                        expr.span,
+                        format!(
+                            "lending a flattened `{}` whole: it would be its parent's object, a copy of what it refers to, not its referent",
+                            expr.ty
+                        ),
+                    );
+                }
+                // Lent whole, it's its parent's object, which a clone spreads
+                // and `==` compares whole, the parent's fields too: of a type
+                // that has either, refused.
+                ExprKind::Field { lhs, name, .. }
+                    if bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize())
+                        && lent.contains(&e)
+                        && bindings::plain_struct(tcx, expr.ty).is_none()
+                        && reads_whole(expr.ty) =>
+                {
+                    refuse(
+                        expr.span,
+                        format!(
+                            "lending a flattened `{}` whole, its parent's object, where its `Clone`, `PartialEq`, `PartialOrd` or `Hash` would read the parent's fields too",
+                            expr.ty
+                        ),
+                    );
+                }
+                ExprKind::Field { lhs, name, .. }
+                    if bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize())
+                        && !read_through.contains(&e)
+                        && !lent.contains(&e)
+                        // A struct read by value, its projection (#1820).
+                        && (bindings::plain_struct(tcx, expr.ty).is_none() || written.contains(&e))
+                        && !own_calls.contains(&e)
+                        && !(keyed(expr.ty) && placed.contains(&e))
+                        && !(flattened.enum_of_keys(expr.ty) && matched.contains(&e)) =>
+                {
+                    refuse(
+                        expr.span,
+                        "reading flattened props whole: take them apart where they're given, `Props { a, anchor }: Props`, or read through them, `anchor.html.title`".into(),
+                    );
+                }
+                _ => {}
+            }
+        }
+    }
+    valid
+}
+
+/// Report each flattened reference whose referent the crate changes in
+/// place or compares the address of, `changed`'s, the mutation owner's
+/// (#1819): its parent's object is a copy of it, which either would tell
+/// from it. Of the crate's structs, and a library's it names, whose
+/// parent this crate makes too.
+pub(super) fn reject_flattened_copies<'tcx>(
+    recognition: &crate::recognition::Recognition<'_, 'tcx>,
+    flattened: &bindings::Flattened,
+    changed: &IndexSet<Ty<'tcx>>,
+) {
+    let tcx = recognition.tcx;
+    let local = tcx.hir_crate_items(()).definitions().map(LocalDefId::to_def_id);
+    let named = flattened.params.keys().copied().filter(|id| !id.is_local());
+    for id in local.chain(named) {
+        if tcx.def_kind(id) != DefKind::Struct {
+            continue;
+        }
+        for field in (tcx.adt_def(id).non_enum_variant().fields.iter()).filter(|f| bindings::is_flatten(tcx, f)) {
+            let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+            for reference in bindings::copied_references(tcx, ty) {
+                let ty::Ref(_, referent, _) = *reference.kind() else {
+                    continue;
+                };
+                if bindings::copy_seen_in_crate(recognition, changed, referent) {
+                    refuse(
+                        tcx,
+                        tcx.def_span(field.did),
+                        Refused::Feature(&format!(
+                            "flattening `{reference}`, whose `{referent}` is changed in place or its address compared, which its parent's object, a copy of it, would answer apart from it"
+                        )),
+                    );
+                }
+            }
+        }
+    }
+}
+
+/// A key of `keyed`'s that `parent`, a struct, has as its own field's
+/// (#504).
+fn shadowed_key(tcx: TyCtxt<'_>, parent: &ty::VariantDef, keyed: &bindings::Keyed) -> Option<String> {
+    shadowed_of(tcx, parent, &keyed.keys)
+}
+
+/// A key of `keys`, a flattened enum's, that `parent`, a struct, has as
+/// its own field's (#504, #1818).
+fn shadowed_of(tcx: TyCtxt<'_>, parent: &ty::VariantDef, keys: &[String]) -> Option<String> {
+    (parent.fields.iter())
+        .filter(|field| !bindings::is_flatten(tcx, field))
+        .filter_map(|field| bindings::field_key(tcx, field).name().map(str::to_owned))
+        .find(|key| keys.contains(key))
+}
+
+/// The names of `ty`'s fields its JS object has: a struct's own, and,
+/// through each flattened field, its struct's.
+fn object_names<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> IndexSet<rustc_span::Symbol> {
+    // A flattened state's: its tag and its variants' fields (rd380).
+    if let Some((_, keys)) = bindings::flattened_state(tcx, ty.peel_refs()) {
+        return keys.iter().map(|key| rustc_span::Symbol::intern(key)).collect();
+    }
+    let ty::Adt(adt, args) = ty.peel_refs().kind() else {
+        return IndexSet::default();
+    };
+    if !adt.is_struct() {
+        return IndexSet::default();
+    }
+    let mut names = IndexSet::default();
+    for field in &adt.non_enum_variant().fields {
+        match bindings::is_flatten(tcx, field) {
+            true => names.extend(object_names(tcx, field.ty(tcx, args).skip_normalization())),
+            false => _ = names.insert(field.name),
+        }
+    }
+    names
+}
+
+/// Of a flattened field of type `lent`, lent whole from `of`, its parent,
+/// a name of its object's that its parent, or a struct that parent is
+/// flattened in, has as its own (ADR 0205), which JS's one object holds as
+/// theirs.
+fn shadowed_in<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    thir: &rustc_middle::thir::Thir<'tcx>,
+    mut of: ExprId,
+    lent: Ty<'tcx>,
+) -> Option<rustc_span::Symbol> {
+    let names = object_names(tcx, lent);
+    loop {
+        if let ty::Adt(adt, _) = thir[of].ty.peel_refs().kind()
+            && adt.is_struct()
+            && let Some(field) = (adt.non_enum_variant().fields.iter())
+                .find(|field| !bindings::is_flatten(tcx, field) && names.contains(&field.name))
+        {
+            return Some(field.name);
+        }
+        let mut lhs = strip(thir, of);
+        while let ExprKind::Deref { arg } = thir[lhs].kind {
+            lhs = strip(thir, arg);
+        }
+        match thir[lhs].kind {
+            ExprKind::Field { lhs: parent, name, .. }
+                if bindings::is_flatten_field(tcx, thir[parent].ty, name.as_usize()) =>
+            {
+                of = parent;
+            }
+            _ => return None,
+        }
+    }
+}
+
+/// Report each `#[rust_js::rest]` that isn't JS's rest parameter (ADR
+/// 0664): one of a closure, given what its type says, of a trait's method,
+/// which each impl's call gives alike, but a default of a trait of classes,
+/// each class's prototype's (rd283), or of a component, which React gives
+/// its props; one not the last parameter, not a shared slice's, or not a
+/// name. Each says what to write. False if there was one.
+pub(super) fn reject_rest_misuse(tcx: TyCtxt<'_>) -> bool {
+    let mut valid = true;
+    for owner in tcx.hir_body_owners() {
+        let def_id = owner.to_def_id();
+        let count = tcx.hir_body_owned_by(owner).params.len();
+        for (index, param) in bindings::marked_rest(tcx, owner) {
+            let ty = tcx.typeck(owner).node_type(param.hir_id);
+            let name = match param.pat.kind {
+                rustc_hir::PatKind::Binding(_, _, ident, None) => Some(ident),
+                _ => None,
+            };
+            let refused = if tcx.is_closure_like(def_id) {
+                "a function's last parameter, not a closure's: a closure takes rest arguments as a value, `args: &dyn js::Rest<T>`, which its type says".to_string()
+            } else if tcx.trait_impl_of_assoc(def_id).is_some()
+                || tcx
+                    .trait_of_assoc(def_id)
+                    .is_some_and(|t| !crate::classes::is_class_trait(tcx, t))
+            {
+                "a function's last parameter, not a trait method's, which each impl's call gives alike".to_string()
+            } else if bindings::is_component(tcx, def_id) {
+                "a function's last parameter, not a component's, which React gives its props".to_string()
+            } else if index + 1 != count {
+                "a function's last parameter, as JS's rest parameter is".to_string()
+            } else if !matches!(ty.kind(), ty::Ref(_, slice, rustc_hir::Mutability::Not) if slice.is_slice()) {
+                let name = name.map_or_else(|| "args".to_string(), |ident| ident.to_string());
+                // As it's written, `Vec<f64>`.
+                let written = tcx.sess.source_map().span_to_snippet(param.ty_span);
+                format!(
+                    "a slice's, `{name}: &[T]`, not a `{}`'s",
+                    written.unwrap_or_else(|_| ty.to_string())
+                )
+            } else if name.is_none() {
+                "a parameter's name, `args: &[T]`, not a pattern's: JS's rest parameter is an array".to_string()
+            } else {
+                continue;
+            };
+            tcx.dcx()
+                .span_err(param.span, format!("rust-js: `#[rust_js::rest]` is {refused}"));
+            valid = false;
+        }
+    }
+    valid
+}
+
+/// Report each parameter's and `let`'s `#[rust_js::name]` that names
+/// nothing it can (ADR 0855, amended): one of a pattern, or of `self`,
+/// which has a name of its own; not a string; not a name a JS variable may
+/// have; or the name it has anyway, a second way to write it (ADR 0573).
+/// Each says what to write. False if there was one.
+pub(super) fn reject_parameter_name_misuse(tcx: TyCtxt<'_>) -> bool {
+    let mut valid = true;
+    for owner in tcx.hir_body_owners() {
+        for (local, attr) in bindings::named_lets(tcx, owner) {
+            let rustc_hir::PatKind::Binding(_, _, ident, None) = local.pat.kind else {
+                tcx.dcx().span_err(
+                    attr.span(),
+                    "rust-js: `#[rust_js::name]` names a `let` that binds a name, `let value = ..`, not a pattern",
+                );
+                valid = false;
+                continue;
+            };
+            let Some(given) = attr.value_str() else {
+                tcx.dcx().span_err(
+                    attr.span(),
+                    "rust-js: write a `let`'s JS name as a string, `#[cfg_attr(rust_js, rust_js::name = \"$$typeof\")]`",
+                );
+                valid = false;
+                continue;
+            };
+            let default = rust_js_program::casing::camel_case(ident.name.as_str());
+            valid &= names_a_variable(tcx, attr, ident, given, &default, "a `let`'s");
+        }
+        for (param, attr) in bindings::named_parameters(tcx, owner) {
+            let ident = match param.pat.kind {
+                rustc_hir::PatKind::Binding(_, _, ident, None) if ident.name != rustc_span::symbol::kw::SelfLower => {
+                    ident
+                }
+                _ => {
+                    tcx.dcx().span_err(
+                        attr.span(),
+                        "rust-js: `#[rust_js::name]` names a parameter that's a name, `context: T`, not a pattern or `self`",
+                    );
+                    valid = false;
+                    continue;
+                }
+            };
+            let Some(given) = attr.value_str() else {
+                tcx.dcx().span_err(
+                    attr.span(),
+                    "rust-js: write a parameter's JS name as a string, `#[cfg_attr(rust_js, rust_js::name = \"Context\")]`",
+                );
+                valid = false;
+                continue;
+            };
+            let default = crate::default_parameter_name(tcx, owner.to_def_id(), ident.name.as_str());
+            valid &= names_a_variable(tcx, attr, ident, given, &default, "a parameter's");
+        }
+    }
+    valid
+}
+
+/// Whether a binding's `#[rust_js::name = "given"]` is a name a JS variable
+/// may have, and not the `default` it has anyway (ADR 0855, amended):
+/// reported where it isn't, `what` saying whose it is.
+fn names_a_variable(
+    tcx: TyCtxt<'_>,
+    attr: &rustc_hir::Attribute,
+    ident: rustc_span::Ident,
+    given: rustc_span::Symbol,
+    default: &str,
+    what: &str,
+) -> bool {
+    if !rust_js_program::names::is_identifier(given.as_str()) || rust_js_program::names::kept_word(given.as_str()) {
+        tcx.dcx().span_err(
+            attr.span(),
+            format!("rust-js: {what} JS name is a name JS lets a variable have, not `{given}`"),
+        );
+        false
+    } else if given.as_str() == default {
+        tcx.dcx().span_err(
+            attr.span(),
+            format!("rust-js: `{ident}` is `{given}` in JS without `#[rust_js::name = \"{given}\"]`: remove it"),
+        );
+        false
+    } else {
+        true
+    }
+}

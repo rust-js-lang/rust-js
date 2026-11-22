@@ -1,11 +1,11 @@
-// Mutations of src/lower/recognition.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/recognition.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "downcast-mut-no-cell",
     breaks: "`downcast_mut::<u8>()` bound by a pattern is a copy",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "                | Std::Any(AnyOp::DowncastMut)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninit-write-no-cell",
     breaks: "`let r: &mut String = slot.write(..)` is an error",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "                | Std::Uninit(UninitOp::Write | UninitOp::InitMut)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "leak-not-cell",
     breaks:
       "`let r = Box::leak(b)` is an error, its `&mut` not the call's own cell",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "                | Std::Leak\n                | Std::OptionIterMut",
     replace: "                | Std::OptionIterMut",
     tests: ["test/corpus.test.ts", "-t", "leaked_string_written"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "from-utf8-mut-not-cell",
     breaks: "`from_utf8_mut(bytes)`'s `&mut str` isn't the call's own cell",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "                        | TextOp::FromUtf8Mut { .. }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "str_mut"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-end-mut-not-cell",
     breaks: "`split_first_mut()`'s handle isn't the call's own cell",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "                        | SliceOp::SplitEndMut { .. }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-off-mut-not-cell",
     breaks: "`split_off_first_mut()`'s handle isn't the call's own cell",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "                        | SliceOp::SplitOff { mutable: true, .. }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "slice_split_off"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "disjoint-not-cell",
     breaks: "`get_disjoint_mut`'s handles aren't the call's own cells",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: " | SliceOp::GetDisjointMut { .. }",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "slice_disjoint"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "select-not-cell",
     breaks: "`select_nth_unstable`'s handle isn't the call's own cell",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "                        | SliceOp::SelectNth { .. }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "sort_unstable_ties"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "deque-insert-mut-not-cell",
     breaks: "`insert_mut`'s handle isn't the call's own cell",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "                        | SliceOp::DequeInsert { mutable: true }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "deque_push_mut"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-iter-mut-not-cell",
     breaks: "`iter_mut()`'s handle isn't the call's own cell",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "                | Std::OptionIterMut\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "option_result_mut"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-mut-not-cell",
     breaks: "a B-tree's `range_mut` items aren't cells it makes",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: " | MapOp::TreeRange { mutable: true }\n",
     replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "btree_range_mut"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "deque-range-mut-not-cell",
     breaks: "a deque's `range_mut` items aren't cells it makes",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "                | Std::Slice(SliceOp::DequeRangeMut)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "deque_range_mut"],
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-as-mut-not-cell",
     breaks: "a pointer's `as_mut()` is refused as a `&mut` used as a value",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "                | Std::Pointer(PointerOp::AsMut | PointerOp::PlaceMut)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     name: "generic-index-mut-not-a-cell",
     breaks:
       "`&mut v[i]` of an `I: SliceIndex<[T]>`, its dictionary's handle, is taken as no cell, and refused",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "                | Std::Slice(SliceOp::GenericIndex { mutable: true })\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_index_generic.rs$"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     name: "replaced-made-an-iterator-again",
     breaks:
       "`mem::replace`'s old value is made an iterator again, as a std call that makes one of an array is: in a crate that reads a capacity, `$iter(old)` of a reversed range, whose `len()` throws (#1238)",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "        matches!(self, Std::Replace | Std::MemTake)\n",
     replace: "        matches!(self, Std::MemTake)\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_replaced_where_capacities_are_kept.rs$"],
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
     name: "mir-std-hash-dispatched",
     breaks:
       "a std type's `hash` in a body of optimized MIR, a library's its consumer compiles, is called through an inline dictionary, `({ hash(value, state, H) { .. } }).hash(digit[0] % 10, state, HHasher)`, not written in place as its library's is (ADRs 0463, 0914)",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_) | Std::Io(_)\n",
     replace: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Io(_)\n",
     // How the JS reads, which its snapshots hold: the writes in place,
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
     name: "mir-same-trait-dispatched",
     breaks:
       "MIR's `b.as_ref()` of a `Box<dyn Any>` asks for `AsRef`'s evidence, not the same JS value",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_) | Std::Io(_)\n",
     replace: "            Std::Any(_) | Std::FmtTo(_) | Std::Hash(_) | Std::Io(_)\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_any"],
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
   {
     name: "known-source-through-trait-call",
     breaks: "a known source's own method goes through the generic trait call, which gives a `Cursor` as the object, not in its box; as the corpus stands only how its JS reads changes, which its snapshot holds (#1453)",
-    file: "src/lower/recognition.rs",
+    file: "crates/rust-js-lower/src/recognition.rs",
     find: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_) | Std::Io(_)\n",
     replace: "            Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_)\n",
     tests: ["test/corpus.test.ts", "-t", "^(io_cursor|io_read_chain_take_bytes).rs$"],

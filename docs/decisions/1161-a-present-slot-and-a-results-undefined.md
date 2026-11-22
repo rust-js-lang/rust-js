@@ -144,7 +144,7 @@ The amendment above found the default after lowering, in the JS: the
 body's first statements `width = width ?? <literal>`, moved into the
 parameter list. A decision of the Rust's, recovered from the JS's shape.
 It's now the parameters' owner's, `literal_defaults` in
-src/lower/signatures.rs beside `Form::Undefinable`: of the body's MIR,
+crates/rust-js-lower/src/signatures.rs beside `Form::Undefinable`: of the body's MIR,
 each parameter marked `none_undefined` whose entry, before any other
 effect, calls `Option::unwrap_or` of it, of a temporary copy of it, or
 of a `map` of it that's the option itself in JS (`maps_to_itself`),

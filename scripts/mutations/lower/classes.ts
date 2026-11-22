@@ -1,7 +1,7 @@
-// Mutations of src/lower/classes.rs (ADR 0093): a JS class (ADR 0761).
+// Mutations of crates/rust-js-lower/src/classes.rs (ADR 0093): a JS class (ADR 0761).
 import type { Mutation } from "../../mutations";
 
-const file = "src/lower/classes.rs";
+const file = "crates/rust-js-lower/src/classes.rs";
 const base = [
   "test/classes.test.ts",
   "-t",
@@ -139,7 +139,7 @@ export const mutations: Mutation[] = [
     name: "class-display-no-member",
     breaks:
       "a class's `Display`'s `fmt` is no prototype method, its `self` no `this` (#358)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "    if shown_class(tcx, def_id).is_some() {\n",
     replace: "    if false {\n",
     tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
     name: "class-display-refused",
     breaks:
       "a class's `impl Display` is refused as any trait impl with items is (#358)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "            DefKind::Impl { of_trait: true } if displayed_class(tcx, id).is_none() => {\n",
     replace: "            DefKind::Impl { of_trait: true } => {\n",
     tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
@@ -288,7 +288,7 @@ export const mutations: Mutation[] = [
     name: "class-trait-of-any-impls",
     breaks:
       "a trait a plain struct implements too is a trait of classes, its class's impl no dictionary, which the plain struct's callers need (rd283)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "        && impls.all(|imp| class_of_impl(tcx, imp).is_some())\n",
     replace: "        && impls.any(|imp| class_of_impl(tcx, imp).is_some())\n",
     tests: ["test/classes-traits.test.ts"],
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
     name: "class-trait-bound-allowed",
     breaks:
       "a trait of classes bounds a type parameter, whose generic code is given no dictionary (rd283)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                && is_class_trait(tcx, bound.def_id())\n",
     replace: "                && false\n",
     tests: ["test/classes-traits.test.ts"],
@@ -306,7 +306,7 @@ export const mutations: Mutation[] = [
     name: "class-trait-dyn-allowed",
     breaks:
       "a trait of classes is a `dyn`'s, which no dictionary is made for (rd283)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                ty::Dynamic(predicates, ..) => predicates.principal_def_id().filter(|&t| is_class_trait(tcx, t)),\n",
     replace:
       "                ty::Dynamic(predicates, ..) => predicates.principal_def_id().filter(|_| false),\n",
@@ -316,8 +316,8 @@ export const mutations: Mutation[] = [
     name: "class-trait-rest-overridden",
     breaks:
       "a class's own method of a default that takes rest arguments is given them spread, where it takes a slice (rd283)",
-    file: "src/lower/classes.rs",
-    find: "                        .is_some_and(|item| crate::lower::bindings::takes_rest(tcx, item))\n",
+    file: "crates/rust-js-lower/src/classes.rs",
+    find: "                        .is_some_and(|item| crate::bindings::takes_rest(tcx, item))\n",
     replace: "                        .is_some_and(|_| false)\n",
     tests: ["test/classes-traits.test.ts"],
   },
@@ -325,7 +325,7 @@ export const mutations: Mutation[] = [
     name: "class-trait-method-hidden",
     breaks:
       "a trait of classes' method named as the class's field is on its prototype, where the instance's own property hides it (rd283)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                    if fields.contains(&named) && !own.is_some_and(|own| field_accessor(tcx, own).is_some()) {\n",
     replace: "                    if false {\n",
     tests: ["test/classes-traits.test.ts"],
@@ -334,7 +334,7 @@ export const mutations: Mutation[] = [
     name: "namespace-methods-an-objects",
     breaks:
       "a `#[rust_js::namespace]`'s methods are its type's object's, given `self`, not its module's functions (ADR 1037)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "        return method.then_some(Member::Namespace);\n",
     replace: "        return None;\n",
     tests: [
@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [
   {
     name: "namespace-by-value-allowed",
     breaks: "a namespace's method of `self` by value isn't refused (ADR 1037)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                        matches!(sig.inputs()[0].kind(), ty::Ref(_, _, ty::Mutability::Not))\n",
     replace: "                        !sig.inputs().is_empty()\n",
     tests: ["test/namespaces.test.ts", "-t", "what a namespace is refused"],
@@ -355,7 +355,7 @@ export const mutations: Mutation[] = [
     name: "field-accessor-held-allowed",
     breaks:
       "a trait of classes' method that gives a field is held as a function, `let given = <Root as RootType>::internal_root;`, though it's no function JS has (rd304)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                && !fields_given(tcx, typing_env, (method, args)).is_empty()\n",
     replace: "                && fields_given(tcx, typing_env, (method, args)).is_empty() && false\n",
     tests: ["test/classes-traits.test.ts", "-t", "bounds no type parameter"],
@@ -364,7 +364,7 @@ export const mutations: Mutation[] = [
     name: "field-accessor-name-clash-refused",
     breaks:
       "a trait of classes' method that gives a field, named as that field, `fn items(&self) -> &RefCell<..> { &self.items }`, is refused as a method the field hides, though it's no method (rd304)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                    if fields.contains(&named) && !own.is_some_and(|own| field_accessor(tcx, own).is_some()) {\n",
     replace: "                    if fields.contains(&named) {\n",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_field_borrows.rs$"],
@@ -373,7 +373,7 @@ export const mutations: Mutation[] = [
     name: "private-class-exported",
     breaks:
       "a private `#[rust_js::class]` whose methods are `pub` is exported, `export function Wrapper`, which a package's `export *` exposes where upstream's module keeps it (rd325)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "    ((exported && through_its_value) || extending) && (public || elsewhere)\n",
     replace: "    (exported && through_its_value) || extending\n",
     tests: ["test/classes.test.ts", "-t", "a private class is its module's own"],
@@ -382,7 +382,7 @@ export const mutations: Mutation[] = [
     name: "class-value-of-any-member",
     breaks:
       "a `pub` class whose `new` isn't `pub` is exported, `export function ReactTestInstance`, where any of its methods is, a value a package's `export *` exposes where upstream's module keeps it (ADR 0761, amended, the user's decision)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "        class_of(tcx, method).is_none() || matches!(member(tcx, method), Some(Member::Constructor | Member::Static));\n",
     replace: "        class_of(tcx, method).is_none() || member(tcx, method).is_some();\n",
     tests: ["test/classes.test.ts", "-t", "exports its type alone"],
@@ -391,7 +391,7 @@ export const mutations: Mutation[] = [
     name: "class-value-not-of-static",
     breaks:
       "a class whose `pub` static, `Made.of(5)`, JS reaches through its constructor function, isn't exported where its `new` isn't `pub`: its static can't be called (ADR 0761, amended)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "        class_of(tcx, method).is_none() || matches!(member(tcx, method), Some(Member::Constructor | Member::Static));\n",
     replace: "        class_of(tcx, method).is_none() || matches!(member(tcx, method), Some(Member::Constructor));\n",
     tests: ["test/classes.test.ts", "-t", "exports its type alone"],
@@ -399,7 +399,7 @@ export const mutations: Mutation[] = [
   {
     name: "subclass-methods-not-the-prototypes",
     breaks: "a class component's `componentDidMount` is no method of its class, which React never calls",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "            trait_impl_class(tcx, imp).or_else(|| subclass_impl_class(tcx, imp))\n",
     replace: "            trait_impl_class(tcx, imp)\n",
     tests: [
@@ -411,7 +411,7 @@ export const mutations: Mutation[] = [
   {
     name: "subclass-unexported",
     breaks: "a `pub` class component whose impl is react's `Component`'s alone isn't exported, so nothing can render it",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "    ((exported && through_its_value) || extending) && (public || elsewhere)\n",
     replace: "    exported && through_its_value && (public || elsewhere)\n",
     tests: [
@@ -423,7 +423,7 @@ export const mutations: Mutation[] = [
   {
     name: "subclass-homeless",
     breaks: "a class component React constructs, of no `new`, is in no module: its superclass imported nowhere",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "    let made = constructor_of(tcx, adt).or_else(|| superclass(tcx, adt).map(|(imp, _)| imp));\n",
     replace: "    let made = constructor_of(tcx, adt);\n",
     tests: [
@@ -435,7 +435,7 @@ export const mutations: Mutation[] = [
   {
     name: "subclass-of-two-allowed",
     breaks: "a class that implements react's `Component` twice extends whichever comes first, `this.props` of the other's type",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                if extends.len() > 1 {\n",
     replace: "                if false {\n",
     tests: [
@@ -447,7 +447,7 @@ export const mutations: Mutation[] = [
   {
     name: "subclass-without-new-refused",
     breaks: "a class component React constructs is refused for having no `fn new`, though React makes it",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                    None if extends.is_empty() => refuse(\n",
     replace: "                    None if true => refuse(\n",
     tests: [
@@ -459,7 +459,7 @@ export const mutations: Mutation[] = [
   {
     name: "subclass-field-set-after-allowed",
     breaks: "a class component React constructs may have an `f64` field, which is `undefined` until set, no number",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                            if !starts_undefined(tcx, field) {\n",
     replace: "                            if false {\n",
     tests: [
@@ -471,7 +471,7 @@ export const mutations: Mutation[] = [
   {
     name: "subclass-new-of-any-arity",
     breaks: "a class component's `fn new(props, more)` is allowed, its `super(props, more)` given what React never passes",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                                && sig.inputs().len() != 1\n",
     replace: "                                && false\n",
     tests: [
@@ -483,7 +483,7 @@ export const mutations: Mutation[] = [
   {
     name: "subclass-declared-its-type-alone",
     breaks: "a `pub` class component of no `pub` constructor is declared `declare class Counter` and `export type { Counter }`, though its JS exports the class React constructs",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "    superclass(tcx, class).is_some()\n        || (tcx.inherent_impls(class).iter())\n",
     replace: "    false\n        || (tcx.inherent_impls(class).iter())\n",
     tests: ["test/class-components.test.ts", "-t", "an ES class React renders"],
@@ -492,7 +492,7 @@ export const mutations: Mutation[] = [
     name: "class-trait-of-types-refused",
     breaks:
       "a `#[rust_js::class]` struct's `impl js::Classed`, of a type alone, which no JS is of, is refused as a trait of methods (ADR 1049)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                    && (tcx.associated_item_def_ids(id).iter()).any(|&item| tcx.def_kind(item) != DefKind::AssocTy)\n",
     replace: "                    && !tcx.associated_item_def_ids(id).is_empty()\n",
     tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
@@ -500,7 +500,7 @@ export const mutations: Mutation[] = [
   {
     name: "namespace-value-of-anything",
     breaks: "a namespace thread-local of what's no struct of named fields, a `u32`, is let through, whose module then exports nothing it says (rd293, ADR 1037, amended)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                if !thread_local || value_namespace_exports(tcx, id).is_none() || !tcx.visibility(id).is_public() {\n",
     replace: "                if !thread_local || !tcx.visibility(id).is_public() {\n",
     tests: ["test/namespace-values.test.ts", "-t", "no struct of named fields"],
@@ -508,7 +508,7 @@ export const mutations: Mutation[] = [
   {
     name: "subclass-getter-a-method",
     breaks: "a getter of the binding's class a class extends, `get type()` its trait marks, is a method, `type() { .. }`, which webpack reads as a function (rd679)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "        return Some(match trait_getter(tcx, def_id) {\n",
     replace: "        return Some(match false {\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "is its class's getter"],
@@ -516,7 +516,7 @@ export const mutations: Mutation[] = [
   {
     name: "subclass-getter-misuse-unchecked",
     breaks: "a getter's mark on a method of the class a class extends that can't apply is dropped, not refused (rd679)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                if let Some(why) = trait_getter_misuse(tcx, id) {\n",
     replace: "                if let Some(why) = None::<String> {\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "marked as the trait marks it"],
@@ -524,7 +524,7 @@ export const mutations: Mutation[] = [
   {
     name: "constructor-field-allowed",
     breaks: "a class's field named `constructor` compiles, its `.d.ts` `constructor: number;`, which TypeScript refuses, so the build fails reading what it wrote (rd750)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                if let Some(at) = fields::named_constructor(tcx, id) {\n",
     replace: "                if let Some(at) = None::<rustc_span::Span> {\n",
     tests: ["test/es-classes.test.ts", "-t", "field named constructor is refused"],
@@ -532,7 +532,7 @@ export const mutations: Mutation[] = [
   {
     name: "thenable-trait-method-unseen",
     breaks: "a class's method of a trait of classes isn't asked, so its `then` is adopted where its value is awaited (#1071)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "    inherent.chain(traits).any(named)\n",
     replace: "    inherent.chain(traits.filter(|_| false)).any(named)\n",
     tests: ["test/lowering-thenables.test.ts"],
@@ -541,7 +541,7 @@ export const mutations: Mutation[] = [
     name: "class-trait-of-the-crate-alone",
     breaks:
       "a library's trait of classes is a dictionary's in its consumer: its calls of the library's class's methods compile a copy of each, its own class's impl of it is refused, and a `then` of one is adopted where its value is awaited (#1073)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "    tcx.def_kind(trait_id) == DefKind::Trait\n        && !tcx.associated_item_def_ids(trait_id).is_empty()\n",
     replace: "    trait_id.is_local()\n        && tcx.def_kind(trait_id) == DefKind::Trait\n        && !tcx.associated_item_def_ids(trait_id).is_empty()\n",
     tests: ["test/library-classes.test.ts"],
@@ -550,7 +550,7 @@ export const mutations: Mutation[] = [
     name: "class-trait-of-every-crates-impls",
     breaks:
       "a library's trait of classes is a trait of classes in its consumer only where each impl the consumer has is a class's too, so one of what's no class makes it a dictionary's there, called where the library calls its prototype (#1073)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "        .filter(|imp| imp.krate == trait_id.krate)\n",
     replace: "",
     tests: ["test/library-classes.test.ts", "-t", "implements it for a class alone"],
@@ -559,7 +559,7 @@ export const mutations: Mutation[] = [
     name: "class-trait-library-impls-unseen",
     breaks:
       "a library's class's method of its trait of classes isn't asked where its consumer awaits one, so its `then` is adopted and the `.await` never ends (#1073)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "    (local.chain(libraries)).filter(move |&imp| trait_impl_class(tcx, imp) == Some(adt))\n",
     replace: "    (local.chain(libraries.filter(|_| false))).filter(move |&imp| trait_impl_class(tcx, imp) == Some(adt))\n",
     tests: ["test/library-classes.test.ts", "-t", "then"],
@@ -568,7 +568,7 @@ export const mutations: Mutation[] = [
     name: "library-class-trait-impl-of-no-class-allowed",
     breaks:
       "a consumer's impl of a library's trait of classes for what's no class compiles, its calls of `plain.render(2)` on a prototype it hasn't (#1073)",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                if !tcx.impl_trait_id(id).is_local() && is_class_trait(tcx, tcx.impl_trait_id(id)) =>\n",
     replace: "                if false =>\n",
     tests: ["test/library-classes.test.ts", "-t", "implements it for a class alone"],
@@ -576,7 +576,7 @@ export const mutations: Mutation[] = [
   {
     name: "error-class-constructor-arity-refused",
     breaks: "a class that extends `Error` is held to a component's one parameter, `fn new(props: P)`, so `Uncaused::new(prefix, count)` is refused where its `super` is given its fields",
-    file: "src/lower/classes.rs",
+    file: "crates/rust-js-lower/src/classes.rs",
     find: "                                && !errors::extends_error(tcx, class)\n",
     replace: "                                && !false\n",
     tests: ["test/error-classes.test.ts", "-t", "JS's own subclass of Error"],

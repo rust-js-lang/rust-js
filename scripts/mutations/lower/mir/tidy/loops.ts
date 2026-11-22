@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/tidy/loops.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/tidy/loops.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-loops-kept",
     breaks:
       "`const iter = $iter(xs); while (true) { const t = $next(iter); … }` stays, not `for (const x of xs)`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "            stmts.splice(i..i + 2, held.into_iter().chain(made));\n",
     replace: "            let _ = (held, made);\n",
     tests: ["test/lowering-loops.test.ts", "-t", "loops from MIR read"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-for-range-kept",
     breaks:
       "a range's `while (true)` with `$rangeNext` stays, not `for (let i = 0; i < k; i++)`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    if mutable || !counted {\n",
     replace: "    if true {\n",
     tests: ["test/lowering-loops.test.ts", "-t", "loops from MIR read"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-for-inclusive-range-kept",
     breaks:
       "an inclusive range's `while` stepping `$rangeInclusiveNext` stays, not `for (let i = 0; i <= k; i++)`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: '        Some("$rangeInclusiveNext") => Some("$rangeInclusiveNext"),\n',
     replace: "",
     tests: ["test/lowering-loops.test.ts", "-t", "loops from MIR read"],
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-for-inclusive-range-exclusive",
     breaks: "`for i in 0..=k` stops before `k`, `i < k`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "if inclusive { Op::Le } else { Op::Lt }",
     replace: "if inclusive { Op::Lt } else { Op::Lt }",
     tests: ["test/corpus.test.ts", "-t", "inclusive_range_loops"],
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-for-of-assigned-kept",
     breaks:
       "a loop inside another, whose iterator is a `let` assigned each time, stays `while (true)` stepping it",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "                && by_id.get(iter) == Some(&2) =>\n",
     replace: "                && by_id.get(iter) == Some(&99) =>\n",
     tests: [
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-range-end-length-kept",
     breaks:
       "a range's loop to `v.length` of a `v` the body only reads stays `while (true)`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "            if length == \"length\" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n",
     replace:
       "            if false && length == \"length\" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n",
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-range-end-unheld",
     breaks:
       "a range loop whose end is a call stays `while (true)` stepping `$rangeNext`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    let held = (!same).then(|| (js::Name::counter(\"end\"), end.clone()));\n",
     replace:
       "    if !same {\n        return None;\n    }\n    let held = (!same).then(|| (js::Name::counter(\"end\"), end.clone()));\n",
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-chars-arrayed",
     breaks: "a string's `chars()` iterated is `Array.from(code)`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "            let iterable = by_next_alone(taken_part(unarrayed(iterated(source.clone()))));\n",
     replace:
       "            let iterable = by_next_alone(taken_part(iterated(source.clone())));\n",
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-loop-as-while",
     breaks:
       "a `loop` the program wrote, its first test leaving, is `while (!t)`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        if !written_while(stmts[i].span) {\n",
     replace: "        if false && !written_while(stmts[i].span) {\n",
     tests: ["test/lowering-loops.test.ts", "-t", "while. loop from MIR tests"],
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     name: "mir-for-of-span-lost",
     breaks:
       "a `for\u2026of` made of MIR's loop has no span, so its label isn't the program's",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    let mut out = vec![looped.at(span)];\n",
     replace: "    let mut out = vec![looped.at(js::Span::NONE)];\n",
     tests: [
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
     name: "mir-labeled-break-loop-kept",
     breaks:
       "a `break 'outer` out of an inner loop from MIR leaves the outer a `while (true)` of `$next`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        StmtKind::Labeled(l, within) if let [only] = within.as_slice() => (only, Some(l.clone())),\n",
     replace:
       "        StmtKind::Labeled(_, within) if let [_] = within.as_slice() => (second, None::<Name>),\n",
@@ -131,7 +131,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-next-some-loop-kept",
     breaks:
       "MIR's loop over items that may be `None` stays a `$nextSome` loop, a `null` item read as `undefined`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: '        Some("$nextSome") => Some("$nextSome"),\n',
     replace: "",
     tests: ["test/bindings.test.ts", "-t", "a defined value is an unknown"],
@@ -139,7 +139,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-unread-count-underscore",
     breaks: "MIR's range count the body doesn't read is `_`, `_++`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    let name = match name.is_unread() {\n        true => js::Name::counter(\"i\"),\n        false => name,\n",
     replace: "    let name = match name.is_unread() && false {\n        true => js::Name::counter(\"i\"),\n        false => name,\n",
     tests: ["test/lowering-loops.test.ts", "-t", "an unread count of a range"],
@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-char-range-counted",
     breaks:
       "a `char` range's loop is JS's counted `for`, whose `++` of text stops after one",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    if mutable || !counted {\n",
     replace: "    if mutable {\n",
     tests: [
@@ -161,7 +161,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-number-variable-range-uncounted",
     breaks:
       "a range from a number variable, `k..n`, stays a `$rangeNext` loop, not a counted `for`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v))\n",
     replace: "",
     tests: [
@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
     name: "dictionary-loop-kept",
     breaks:
       "a `for` over an adapter's `I` stays a `while (true)` stepping its dictionary, not `for (const b of $iterator(..))`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "                .then_some(DICTIONARY)\n",
     replace:
       "                .then_some(DICTIONARY)\n                .filter(|_| false)\n",
@@ -185,7 +185,7 @@ export const mutations: Mutation[] = [
     name: "dictionary-loop-boxed",
     breaks:
       "a `for` over an adapter's `I` of a generic item binds its `Some` still boxed",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "                boxed = true;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
@@ -194,7 +194,7 @@ export const mutations: Mutation[] = [
     name: "loop-test-of-else-unread",
     breaks:
       "`while (true) { if (t) { break; } else { rest } }` stays `while (true)`, not `while (!t) { rest }`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "            let rest = otherwise.take().unwrap_or_default();\n            body.extend(rest);\n",
     replace: "",
     tests: [
@@ -207,7 +207,7 @@ export const mutations: Mutation[] = [
     name: "while-of-else-break-unread",
     breaks:
       "`while (true) { if (t) { rest } else { break; } }`, a `while` whose test calls, stays `while (true) { if (!t) { break; } rest }`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "                (Some(exit), None) => matches!(exit.as_slice(), [b] if own_break(b)),\n",
     replace: "                (Some(_), None) => false,\n",
     tests: ["test/lowering-written-loops.test.ts"],
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     name: "while-of-tail-break-unread",
     breaks:
       "`while (true) { if (t) { .. } break; }` stays so, not `while (t) { .. }`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "                (None, Some(last)) => own_break(last),\n",
     replace: "                (None, Some(_)) => false,\n",
     tests: ["test/lowering-written-loops.test.ts"],
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
     name: "broken-after-continued-then",
     breaks:
       "`if (t) { b; continue; } else { a }` then the loop's `break` is `if (t) { b; continue; } a; break;`, not the `if` and its `else` as written",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        && then.last().is_some_and(goes_on)\n",
     replace: "        && false\n",
     tests: ["test/lowering-written-loops.test.ts"],
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     name: "broken-after-else-unbroken",
     breaks:
       "of `if (t) { b; continue; } else { a } break;`, `a` goes round again, not leaving",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        leaves(otherwise);\n",
     replace: "",
     tests: ["test/lowering-written-loops.test.ts"],
@@ -243,7 +243,7 @@ export const mutations: Mutation[] = [
     name: "while-test-of-true-only",
     breaks:
       "a guard's `while (a) { if (t) { rest } else { break; } }`, the rest of its test read in place, stays so, not `while (a && t) { rest }`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        if let StmtKind::While { cond, body, .. } = &mut stmts[i].kind\n            && let (\n",
     replace:
       "        if let StmtKind::While { cond, body, .. } = &mut stmts[i].kind\n            && matches!(cond.kind, ExprKind::Bool(true))\n            && let (\n",
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
     name: "while-test-joined-dropped",
     breaks:
       "a `while (a)`'s test, joined by the rest of it, `while (t)`, which reads past the length",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "                _ => Expr::bin(Op::And, std::mem::replace(cond, Expr::taken()), test),\n",
     replace: "                _ => test,\n",
     tests: [
@@ -270,17 +270,17 @@ export const mutations: Mutation[] = [
     name: "keys-in-loop-of",
     breaks:
       "a `for` loop of `js::keys_in(o)` stays a `for…of` of its iterator, `$keysIn(o)`, not `for (const key in o)`",
-    file: "src/lower/mir/tidy/loops.rs",
-    find: "            if let Some(object) = crate::lower::iterators::keys_in_source(&iterable) {\n",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
+    find: "            if let Some(object) = rust_js_lower::iterators::keys_in_source(&iterable) {\n",
     replace:
-      "            if let Some(object) = crate::lower::iterators::keys_in_source(&iterable).filter(|_| false) {\n",
+      "            if let Some(object) = rust_js_lower::iterators::keys_in_source(&iterable).filter(|_| false) {\n",
     tests: ["test/js-object.test.ts", "-t", "a for loop of keys_in"],
   },
   {
     name: "keys-in-counter-closed-over",
     breaks:
       "a closure that reads an enumerate's count is given the one counter, which it reads changed, not its turn's",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "            closed_over |= js::mentions_of(inner, counter) > 0;\n",
     replace: "            closed_over |= false;\n",
     tests: ["test/js-object.test.ts", "-t", "a for loop of keys_in"],
@@ -289,7 +289,7 @@ export const mutations: Mutation[] = [
     name: "keys-in-continue-uncounted",
     breaks:
       "a `continue` of the loop goes on to the next turn without its count, so React's diff checks more than it should",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "            if ours {\n                stmts.insert(i, step());\n",
     replace: "            if ours {\n",
     tests: ["test/js-object.test.ts", "-t", "a for loop of keys_in"],
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
   {
     name: "keys-in-end-uncounted",
     breaks: "a turn that ends without a `continue` isn't counted",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    if !body.last().is_some_and(ends) {\n        body.push(step());\n    }\n",
     replace: "",
     tests: ["test/js-object.test.ts", "-t", "a for loop of keys_in"],
@@ -306,7 +306,7 @@ export const mutations: Mutation[] = [
     name: "for-of-part-not-sliced",
     breaks:
       "a `for` of a slice's first items steps its iterator's `take`, `xs.values().take(n)`, not the part, `xs.slice(0, n)`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    let part = if counted_chain(&iterable) {\n",
     replace: "    let part = if false {\n",
     tests: [
@@ -319,7 +319,7 @@ export const mutations: Mutation[] = [
     name: "for-of-enumerated-part-kept",
     breaks:
       "a `for` of a slice's first items with their indices steps `xs.entries().take(n)`, not the part's `entries()`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        && name == \"take\"\n        && let [n] = &args[..]\n        && let Some(items) = iterators::enumerated_of(it)\n            .filter(|e| e.form == iterators::EnumeratedForm::Mapped)\n            .map(|e| e.source)\n",
     replace: "        && name == \"take!\"\n        && let [n] = &args[..]\n        && let Some(items) = iterators::enumerated_of(it)\n            .filter(|e| e.form == iterators::EnumeratedForm::Mapped)\n            .map(|e| e.source)\n",
     tests: [
@@ -332,7 +332,7 @@ export const mutations: Mutation[] = [
     name: "for-of-enumerated-skip-sliced",
     breaks:
       "a `for` of a slice's items past some with their indices steps the part's `entries()`, `xs.slice(1).entries()`, whose indices start at 0",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        && name == \"take\"\n        && let [n] = &args[..]\n        && let Some(items) = iterators::enumerated_of(it)\n            .filter(|e| e.form == iterators::EnumeratedForm::Mapped)\n            .map(|e| e.source)\n        && counted_chain(&Expr::call(Expr::member(items.clone(), \"take\"), vec![n.clone()]))\n    {\n        let part = sliced(&Expr::call(Expr::member(items.clone(), \"take\"), vec![n.clone()]));\n",
     replace: "        && (name == \"take\" || name == \"drop\")\n        && let [n] = &args[..]\n        && let Some(items) = iterators::enumerated_of(it)\n            .filter(|e| e.form == iterators::EnumeratedForm::Mapped)\n            .map(|e| e.source)\n        && counted_chain(&Expr::call(Expr::member(items.clone(), name.as_str()), vec![n.clone()]))\n    {\n        let part = sliced(&Expr::call(Expr::member(items.clone(), name.as_str()), vec![n.clone()]));\n",
     tests: [
@@ -345,7 +345,7 @@ export const mutations: Mutation[] = [
     name: "for-from-the-end-past-it",
     breaks:
       "a `for` over an array's items from its end starts past its last, `v[v.length]`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: '        let last = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));\n',
     replace: '        let last = Expr::member(items.clone(), "length");\n',
     tests: ["test/corpus.test.ts", "-t", "^rev_loops.rs$"],
@@ -354,7 +354,7 @@ export const mutations: Mutation[] = [
     name: "for-from-the-end-start-read-each-step",
     breaks:
       "a range's start the body changes is read each step by the `for`'s test, where Rust read it once",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    if mutable || !number(range.start, numbers) || !number(range.end, numbers) || !same {\n",
     replace: "    if mutable || !number(range.start, numbers) || !number(range.end, numbers) {\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_loops.rs$"],
@@ -363,7 +363,7 @@ export const mutations: Mutation[] = [
     name: "for-from-the-end-of-text",
     breaks:
       "a range of `char`s from its end is counted down by `--`, which text isn't",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    if mutable || !number(range.start, numbers) || !number(range.end, numbers) || !same {\n",
     replace: "    if mutable || !same {\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_loops.rs$"],
@@ -372,7 +372,7 @@ export const mutations: Mutation[] = [
     name: "for-from-the-end-inclusive-short",
     breaks:
       "an inclusive range from its end starts below its end, `(a..=b).rev()` missing `b`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        (true, _) => range.end.clone(),\n",
     replace:
       "        (true, _) => Expr::bin(Op::Sub, range.end.clone(), Expr::int(1)),\n",
@@ -382,7 +382,7 @@ export const mutations: Mutation[] = [
     name: "while-exit-continue-moved",
     breaks:
       "a `while (true) { if (t) { exit } rest }` whose exit goes on with the loop is `while (!t) { rest } exit`, its `continue` the outer loop's",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "            && !js::continues(exit, label.as_ref())\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^while_exit_continues.rs$"],
@@ -391,7 +391,7 @@ export const mutations: Mutation[] = [
     name: "loop-bound-let-kept",
     breaks:
       "a `for mut` binding's `let`, declared first in its function for MIR's assignment, stays beside the loop's own, `let propName; for (let propName in value)`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    body.retain(|s| {\n        !matches!(&s.kind, StmtKind::Let(name, None)\n",
     replace:
       "    body.retain(|s| {\n        true || !matches!(&s.kind, StmtKind::Let(name, None)\n",
@@ -405,7 +405,7 @@ export const mutations: Mutation[] = [
     name: "countdown-of-max-unnumbered",
     breaks:
       "`(0..to.max(0) as usize).rev()` steps `$iterator({ start: 0, end: Math.max(to, 0) }, $rangeNextBack)`, not `for (let i = Math.max(to, 0) - 1; i >= 0; i--)` (#367)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: '                    && matches!(name.as_str(), "max" | "min")))\n',
     replace: '                    && matches!(name.as_str(), "none")))\n',
     tests: ["test/corpus.test.ts", "-t", "^rev_loops.rs$"],
@@ -415,7 +415,7 @@ export const mutations: Mutation[] = [
     name: "range-of-arithmetic-uncounted",
     breaks:
       "`for j in i + 1..m.len()` is a `$rangeNext` while loop, not `for (let j = i + 1; j < m.length; j++)` (#368)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        || matches!(&start.kind, ExprKind::Binary(op, ..) if matches!(op, Op::Add | Op::Sub | Op::Mul\n",
     replace:
       "        || matches!(&start.kind, ExprKind::Binary(op, ..) if false && matches!(op, Op::Add | Op::Sub | Op::Mul\n",
@@ -429,7 +429,7 @@ export const mutations: Mutation[] = [
     name: "held-end-of-computed-start-refused",
     breaks:
       "`for j in i * 2..m.len()` of a body that changes `m` keeps `$rangeNext`, its end not held first (#368)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    if held.is_some() && !(start.is_constant() || (start.reads_only_vars() && !end.has_effects())) {\n",
     replace:
       "    if held.is_some() && !(start.is_constant() || matches!(start.kind, ExprKind::Var(_))) {\n",
@@ -443,7 +443,7 @@ export const mutations: Mutation[] = [
     name: "reversed-range-to-one-at-least-one",
     breaks:
       "`(1..n).rev()` is `for (let i = n - 1; i >= 1; i--)`, not the `i > 0` React's findBoundingRects writes (ADR 0961)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        (Some(1), _) => Expr::bin(Op::Gt, Expr::var(&name), Expr::int(0)),\n",
     replace:
       "        (Some(-1), _) => Expr::bin(Op::Gt, Expr::var(&name), Expr::int(0)),\n",
@@ -454,7 +454,7 @@ export const mutations: Mutation[] = [
     name: "while-of-a-copy-untested",
     breaks:
       "a loop that copies a thread-local first and tests the copy stays `while (true) { const hydrationParentFiber$1 = hydrationParentFiber; if (hydrationParentFiber$1 == null) { return; } .. }`, not React's `while (hydrationParentFiber != null)` (ADR 0860, amended)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        let copied = copy_tested_first(&mut stmts[i]);\n",
     replace: "        let copied: Option<Vec<Stmt>> = None;\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_over_a_thread_local.rs$"],
@@ -464,7 +464,7 @@ export const mutations: Mutation[] = [
     name: "while-of-a-copy-of-an-item",
     breaks:
       "a loop that copies an array's item first and tests it reads the item twice, `while (xs[i] != null) { const x = xs[i]; .. }`, not `while ((x = xs[i]) != null)` (ADR 0860, amended)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    if !named(value)\n",
     replace: "    if false\n",
     tests: [
@@ -477,7 +477,7 @@ export const mutations: Mutation[] = [
     name: "counted-to-lengths-unmade",
     breaks:
       "a loop of `(0..).step_by(2)` that breaks where `batch.get(i)` has no item stays `for (const i of $stepBy($iterator({ start: 0 }, $rangeFromStep(..)), 2))`, not `for (let i = 0; i < batch.length; i += 2)` (rd260)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "            && let Some(counted) = counted_to_length(iterable, pattern, body, present_breaks)\n",
     replace:
       "            && let Some(counted) = counted_to_length(iterable, pattern, body, present_breaks).filter(|_| false)\n",
@@ -491,7 +491,7 @@ export const mutations: Mutation[] = [
     name: "counted-break-of-any-none",
     breaks:
       "a loop that breaks where an item `flatten()` gives is `None`, `const id = batch[i]; if (id == null) break;`, is counted to the length, so a `None` item no longer ends it (rd260)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        || !(within(first.span) || within(second.span))\n",
     replace:
       "        || !(within(first.span) || within(second.span) || true)\n",
@@ -505,7 +505,7 @@ export const mutations: Mutation[] = [
     name: "counted-of-another-index",
     breaks:
       "a loop that breaks where `batch.get(k)` has no item, `k` another variable, is counted to the length by `i` (rd260)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    if !matches!(&index.kind, ExprKind::Var(i) if i == name)\n",
     replace: "    if !matches!(&index.kind, ExprKind::Var(_))\n",
     tests: [
@@ -518,7 +518,7 @@ export const mutations: Mutation[] = [
     name: "counted-step-past-most",
     breaks:
       "a step that may pass `usize`'s most, `step_by(2_147_483_649)`, where Rust's panics, is `i += 2147483649` (rd260)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        || n > i128::from(i32::MAX) + 1\n",
     replace: "        || n < 0\n",
     tests: [
@@ -531,7 +531,7 @@ export const mutations: Mutation[] = [
     name: "looped-drops-break-kept",
     breaks:
       "the `break` that left the loop, its exit, is kept after its `for`, at the `try`'s end, which then breaks what holds it, or no loop at all (rd191, #442)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    {\n        exit.pop();\n    }\n",
     replace: "    {}\n",
     tests: [
@@ -545,7 +545,7 @@ export const mutations: Mutation[] = [
     name: "held-range-end-kept",
     breaks:
       "a range whose end is a call that may panic, made in a `try` of its own, stays `while ((k = $rangeNext(iter)) != null)`, not `let end; try { end = id(n); } catch ..` then `for (let k = 0; k < end; k++)`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: '    if start_key != "start" || end_key != "end" || !same || !end.has_effects() {\n',
     replace: "    if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
@@ -555,7 +555,7 @@ export const mutations: Mutation[] = [
     name: "held-end-of-captured-start",
     breaks:
       "a range's start a closure may set is read after its end's call, `for (let k = s; k < end; k++)` once `end = id(n)` has run, where Rust read it before",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v));\n",
     replace: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(_));\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
@@ -565,7 +565,7 @@ export const mutations: Mutation[] = [
     name: "held-end-of-variable-start-unmade",
     breaks:
       "a range's end that may throw, its start a variable, stays MIR's `try { iter = { start: s, end: id(n) }; } catch ..` and `while ((k = $rangeNext(iter)) != null)`",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v));\n",
     replace: "    let same = start.is_constant();\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
@@ -575,7 +575,7 @@ export const mutations: Mutation[] = [
     name: "range-from-loop-unmade",
     breaks:
       "a loop of `a..` stays `const iter = { start: 1 }; let n; while ((n = $rangeFromNext(iter, 0, 4294967295)) != null)`, not `for (const n of $iterator({ start: 1 }, $rangeFromStep(0, 4294967295)))`, and isn't counted to a length (rd260)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: '        Some("$rangeFromNext") => Some("$rangeFromNext"),\n',
     replace: '        Some("$rangeFromNext") => None,\n',
     tests: [
@@ -588,24 +588,24 @@ export const mutations: Mutation[] = [
   {
     name: "stepped-range-for-unmade",
     breaks: "a range's `step_by(n)` in a `for` stays `for (const i of $lazyRange(0, v.length, 2))`, not `for (let i = 0; i < v.length; i += 2)` (rd260)",
-    file: "src/lower/mir/tidy/loops.rs",
-    find: "            } else if let Some((range, n)) = crate::lower::iterators::stepped_by(&iterable)\n",
-    replace: "            } else if let Some((range, n)) = crate::lower::iterators::stepped_by(&iterable).filter(|_| false)\n",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
+    find: "            } else if let Some((range, n)) = rust_js_lower::iterators::stepped_by(&iterable)\n",
+    replace: "            } else if let Some((range, n)) = rust_js_lower::iterators::stepped_by(&iterable).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^stepped_range_loops.rs$"],
     snapshots: true,
   },
   {
     name: "stepped-range-back-counted-up",
     breaks: "`(0..n).rev().step_by(3)`'s loop counts up from its start, `for (let i = 0; i < n; i += 3)`, not down from its end: `[0, 3, 6, 9]`, not `[9, 6, 3, 0]` (rd260)",
-    file: "src/lower/mir/tidy/loops.rs",
-    find: "                && let Some(range) = crate::lower::iterators::stepped_range(range).filter(|range| !range.back)\n",
-    replace: "                && let Some(range) = crate::lower::iterators::stepped_range(range)\n",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
+    find: "                && let Some(range) = rust_js_lower::iterators::stepped_range(range).filter(|range| !range.back)\n",
+    replace: "                && let Some(range) = rust_js_lower::iterators::stepped_range(range)\n",
     tests: ["test/corpus.test.ts", "-t", "^stepped_range_loops.rs$"],
   },
   {
     name: "counted-some-at-unread",
     breaks: "a stepped index to a slice of items that may be `None`, `let Some(x) = v.get(i) else { break };`, keeps its iterator and `$someAt`, not `for (let i = 0; i < v.length; i += 2) { const x = v[i]; .. }` (rd260)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "            if callee.helper_name() == Some(\"$someAt\")\n",
     replace: "            if callee.helper_name() == Some(\"$someAt-\")\n",
     tests: ["test/corpus.test.ts", "-t", "^stepped_range_loops.rs$"],
@@ -614,7 +614,7 @@ export const mutations: Mutation[] = [
   {
     name: "counted-loop-of-any-iterator",
     breaks: "a `for` over a string's `chars()` or a map's items is an index loop, `s[i]` a UTF-16 unit, not a char, and a map no array (ADR 1042)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    if !source.facts.has(js::Known::ArrayItems) || js::Writes::sets(body, array) {\n",
     replace: "    if js::Writes::sets(body, array) {\n",
     tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
@@ -622,7 +622,7 @@ export const mutations: Mutation[] = [
   {
     name: "counted-loop-of-a-reassigned-array",
     breaks: "an index loop over an array the body assigns reads another array at the next step, where `for…of` stepped the first",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    if !source.facts.has(js::Known::ArrayItems) || js::Writes::sets(body, array) {\n",
     replace: "    if !source.facts.has(js::Known::ArrayItems) {\n",
     tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
@@ -630,15 +630,15 @@ export const mutations: Mutation[] = [
   {
     name: "indexed-range-unsliced",
     breaks: "a loop over a range of a slice in bounds, `&v[1..]`, is `for (const x of v.slice(1))`, a copy, not an index loop from 1 (rd376)",
-    file: "src/lower/mir/tidy/loops.rs",
-    find: "            if crate::lower::iterators::fresh_iter_source(source).is_some_and(|s| s.facts.has(js::Known::Sliced))\n",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
+    find: "            if rust_js_lower::iterators::fresh_iter_source(source).is_some_and(|s| s.facts.has(js::Known::Sliced))\n",
     replace: "            if false\n",
     tests: ["test/lowering-index-loops.test.ts", "-t", "a loop over a range of a slice in bounds"],
   },
   {
     name: "indexed-range-end-changed",
     breaks: "a loop over `&v[..end]` whose body changes `end`, which Rust read once, tests the changed `end` each step: fewer items (rd376)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    if end.as_ref().is_some_and(|end| !same(end)) {\n",
     replace: "    if false {\n",
     tests: ["test/lowering-index-loops.test.ts", "-t", "a loop over a range of a slice in bounds"],
@@ -647,7 +647,7 @@ export const mutations: Mutation[] = [
     name: "counted-down-start-of-sums-unread",
     breaks:
       "a range stepped from its end whose start is a sum of variables the body doesn't assign, `(i + 1..end).rev()`, is stepped by `$iterator(.., $rangeNextBack)`, not `for (let j = end - 1; j > i; j--)` (rd529)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "            ExprKind::Binary(_, a, b) => reads_same(a, body) && reads_same(b, body),\n",
     replace: "            ExprKind::Binary(..) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^range_rev_from_computed.rs$"],
@@ -657,7 +657,7 @@ export const mutations: Mutation[] = [
     name: "counted-down-start-assigned",
     breaks:
       "a range stepped from its end whose start reads a variable the body assigns is a `for` that reads it again at each step, `j >= start * 2`, where Rust read it once, and stops early (rd529)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "            ExprKind::Var(v) => !js::Writes::sets(body, v),\n",
     replace: "            ExprKind::Var(_) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^range_rev_from_computed.rs$"],
@@ -666,7 +666,7 @@ export const mutations: Mutation[] = [
     name: "counted-down-sum-not-a-number",
     breaks:
       "a sum of numbers, `i + 1`, isn't taken as a number a range steps, so `(i + 1..end).rev()` is stepped by `$iterator(.., $rangeNextBack)` (rd529)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "            || matches!(&e.kind, ExprKind::Binary(Op::Add, a, b) if number(a, numbers) && number(b, numbers))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_rev_from_computed.rs$"],
@@ -676,7 +676,7 @@ export const mutations: Mutation[] = [
     name: "counted-down-past-one-kept",
     breaks:
       "a range stepped from its end down to one past another is `j >= i + 1`, not upstream's `j > i` (rd529)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        (_, ExprKind::Binary(Op::Add, past, one)) if one.as_int() == Some(1) => {\n",
     replace: "        (_, ExprKind::Binary(Op::Add, past, one)) if one.as_int() == Some(-1) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^range_rev_from_computed.rs$"],
@@ -686,7 +686,7 @@ export const mutations: Mutation[] = [
     name: "loop-item-a-temporary",
     breaks:
       "an index loop's item, `const x = xs[i];`, is taken for a temporary of the body's first statement, so the comment above that is above it (#526)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    let mut stepped = vec![bound.at(item_at(span))];\n    stepped.extend(body);\n",
     replace: "    let mut stepped = vec![bound.at(js::Span::NONE)];\n    stepped.extend(body);\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "a comment above a loop body's first statement is after its item"],
@@ -695,7 +695,7 @@ export const mutations: Mutation[] = [
     name: "loop-from-the-end-item-a-temporary",
     breaks:
       "a loop stepped from its end's item, `let x = xs[i];`, is taken for a temporary of the body's first statement, so the comment above that is above it (#526)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "        let mut stepped = vec![bound.at(item_at(span))];\n",
     replace: "        let mut stepped = vec![bound.at(js::Span::NONE)];\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "a comment above a loop body's first statement is after its item"],
@@ -703,9 +703,9 @@ export const mutations: Mutation[] = [
   {
     name: "for-of-string-iterator-kept",
     breaks: "a `for` over a string's `chars()` reads `for (const c of s[Symbol.iterator]())`, not `for (const c of s)`",
-    file: "src/lower/mir/tidy/loops.rs",
-    find: "    if let Some(s) = crate::lower::iterators::string_iterated(&e) {\n",
-    replace: "    if let Some(s) = crate::lower::iterators::string_iterated(&e).filter(|_| false) {\n",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
+    find: "    if let Some(s) = rust_js_lower::iterators::string_iterated(&e) {\n",
+    replace: "    if let Some(s) = rust_js_lower::iterators::string_iterated(&e).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^long_text_read_char_by_char.rs$"],
     snapshots: true,
   },
@@ -713,7 +713,7 @@ export const mutations: Mutation[] = [
     name: "loop-exit-break-moved-past-the-loop",
     breaks:
       "a loop's way out that leaves by the loop's own `break` where a test holds, `if (!eq) { break; } return ..;`, is moved past the `for` as it is: its `break` in no loop, the JS a syntax error, rand 0.7's `update_weights` (#1422)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    if breaks(&exit, label.as_ref()) || js::continues(&exit, label.as_ref()) {\n",
     replace: "    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_exit_tested_after_the_loop.rs$"],
@@ -722,7 +722,7 @@ export const mutations: Mutation[] = [
     name: "loop-exit-break-tested-left-a-loop",
     breaks:
       "a loop's way out that leaves by the loop's own `break` where a test holds stays a `while (true)` of its steps, not a `for` and the rest after it where the test doesn't hold (#1422)",
-    file: "src/lower/mir/tidy/loops.rs",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
     find: "    if let Some(at) = exit.iter().position(|s| own_break(s).is_some())\n",
     replace: "    if let Some(at) = exit.iter().position(|s| own_break(s).is_some()).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_exit_tested_after_the_loop.rs$"],

@@ -1,4 +1,4 @@
-// Mutations of src/lower/drops/scopes.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/drops/scopes.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "item-drop-not-generic",
     breaks:
       "generic code's `collect()` of an associated type's iterator with a destructor never drops it, after it or closing it (#978)",
-    file: "src/lower/drops/scopes.rs",
+    file: "crates/rust-js-lower/src/drops/scopes.rs",
     find: "        self.given_drop(ty).is_some() || matches!(ty.kind(), ty::Alias(..)) && self.item_drop(ty).is_some()\n",
     replace: "        self.given_drop(ty).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_dropped.rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "default-drops-impl-indices",
     breaks:
       "a default copied into an impl takes the impl's drops by their indices, so `Self` drops as the impl's `T` does",
-    file: "src/lower/drops/scopes.rs",
+    file: "crates/rust-js-lower/src/drops/scopes.rs",
     find: "            params: std::mem::replace(&mut self.drop_state.param_drops, drops),\n",
     replace:
       "            params: { drop(drops); self.drop_state.param_drops.clone() },\n",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
   {
     name: "hoisted-drops-lost",
     breaks: "a body's drop functions aren't declared at its top",
-    file: "src/lower/drops/scopes.rs",
+    file: "crates/rust-js-lower/src/drops/scopes.rs",
     find: "        std::mem::replace(&mut self.drop_state.hoisted, enclosing).map_or_else(Vec::new, |hoisted| hoisted.defs)\n",
     replace:
       "        std::mem::replace(&mut self.drop_state.hoisted, enclosing).map_or_else(Vec::new, |_| Vec::new())\n",
@@ -34,8 +34,8 @@ export const mutations: Mutation[] = [
     name: "given-item-drop-unfound",
     breaks:
       "a std trait's associated type's drop, given, isn't found by its type, and isn't called",
-    file: "src/lower/drops/scopes.rs",
-    find: "        (crate::lower::recognition::known_by_bounds(ty) && self.drop_state.param_drops.contains_key(&ty)).then_some(ty)\n",
+    file: "crates/rust-js-lower/src/drops/scopes.rs",
+    find: "        (crate::recognition::known_by_bounds(ty) && self.drop_state.param_drops.contains_key(&ty)).then_some(ty)\n",
     replace: "        (matches!(ty.kind(), ty::Param(_)) && self.drop_state.param_drops.contains_key(&ty)).then_some(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
   },
@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     name: "given-drop-use-unnoted",
     breaks:
       "a drop a function is given and uses isn't noted as used, so a caller of one that takes only those it uses passes none, and what it drops of the caller's is never dropped (ADR 0300, #887)",
-    file: "src/lower/drops/scopes.rs",
+    file: "crates/rust-js-lower/src/drops/scopes.rs",
     find: "        self.drop_state.used_drops.insert(ty);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "drop"],
@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
   {
     name: "item-drop-of-a-dictionary-unread",
     breaks: "an associated type's drop isn't read of its impl's dictionary, so an impl's method holding its items' iterators, by a where clause `Self::Item: IntoIterator`, never drops what each holds: `drop 6` never printed (ADR 0451, amended)",
-    file: "src/lower/drops/scopes.rs",
+    file: "crates/rust-js-lower/src/drops/scopes.rs",
     find: "        Some(Expr::member(dictionary, item_drop_key(self.tcx, item)))\n",
     replace: "        let _ = (dictionary, item);\n        None\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_method_drops_its_items_iterator.rs$"],

@@ -1,0 +1,1091 @@
+//! A block's tail: its own jumps, its `else`s, what it returns, and the
+//! jumps threaded through it to where they end.
+
+use super::*;
+
+/// Whether `stmts` jump for loop `label`: an unnamed `break` or `continue`
+/// of its own, or one that names it, however deep.
+pub(super) fn own_jumps(stmts: &[Stmt], label: Option<&js::Name>) -> bool {
+    stmts.iter().any(|stmt| match &stmt.kind {
+        StmtKind::Break(None) | StmtKind::Continue(None) => true,
+        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => Some(l) == label,
+        StmtKind::If(_, a, b) => own_jumps(a, label) || b.as_deref().is_some_and(|b| own_jumps(b, label)),
+        StmtKind::Labeled(_, body) => own_jumps(body, label),
+        // Whose `break` of a loop names it (ADR 0629), its `continue` the loop's.
+        StmtKind::Switch { cases, default, .. } => js::case_lists(cases, default).any(|body| own_jumps(body, label)),
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => own_jumps(a, label) || own_jumps(b, label),
+        // In a loop of its own, one that names it.
+        StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+            label.is_some_and(|l| js::names_jump(body, l))
+        }
+        _ => false,
+    })
+}
+
+/// `result = e; return result;` is `return e;`: nothing reads the return
+/// place once it's returned, nor could a closure.
+pub(in crate::tidy) fn returned(stmts: &mut Vec<Stmt>, result: &js::Name) {
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        let assigns = matches!(&stmts[i].kind, StmtKind::Assign(target, _)
+            if matches!(&target.kind, ExprKind::Var(name) if name == result));
+        let returns = matches!((&stmts[i].kind, &stmts[i + 1].kind), (StmtKind::Assign(target, _), StmtKind::Return(Some(value)))
+            if matches!((&target.kind, &value.kind), (ExprKind::Var(a), ExprKind::Var(b)) if a == b));
+        if assigns && returns {
+            let StmtKind::Assign(_, value) = stmts.remove(i).kind else {
+                unreachable!("matched")
+            };
+            stmts[i].kind = StmtKind::Return(Some(value));
+        }
+        i += 1;
+    }
+}
+
+/// `l: { .. result = a; break l; .. result = b; } return result;`, a
+/// function's returns MIR jumps out of a block for, a loop's too, in any
+/// list of statements: each a `return` where it's made, `return a;`, and
+/// the block's statements where nothing jumps to its end. Each is the
+/// `return` it jumps to, whatever else reads `result`.
+pub(in crate::tidy) fn returned_from_block(stmts: &mut Vec<Stmt>, result: &js::Name) {
+    let [.., block, last] = stmts.as_mut_slice() else {
+        return;
+    };
+    if !matches!(&last.kind, StmtKind::Return(Some(v)) if matches!(&v.kind, ExprKind::Var(r) if r == result)) {
+        return;
+    }
+    let StmtKind::Labeled(label, body) = &mut block.kind else {
+        return;
+    };
+    let label = label.clone();
+    // Its jumps threaded to where it ends.
+    threaded_jumps(body, &label);
+    returned_where_made(body, &label, result);
+    let mut jumps = !body.last().is_some_and(ends);
+    js::statement_lists(body, &mut |list| jumps |= js::names_jump(list, &label));
+    // Where nothing goes on to its end, and its statements fit in its place.
+    let at = stmts.len() - 2;
+    if jumps || !matches!(&stmts[at].kind, StmtKind::Labeled(_, body) if fits_in_place(stmts, at, body)) {
+        return;
+    }
+    stmts.pop();
+    let Some(StmtKind::Labeled(_, body)) = stmts.pop().map(|s| s.kind) else {
+        unreachable!("matched")
+    };
+    stmts.extend(body);
+}
+
+/// Of block `label`, followed by `return result`: each `break label` once
+/// the result is made, a `return` where it's made.
+fn returned_where_made(body: &mut Vec<Stmt>, label: &js::Name, result: &js::Name) {
+    js::statement_lists(body, &mut |list| {
+        let mut i = 1;
+        while i < list.len() {
+            if matches!(&list[i].kind, StmtKind::Break(Some(l)) if l == label) && made_at_ends(&list[..i], result) {
+                returned_at_ends(&mut list[..i]);
+                list.remove(i);
+            } else {
+                i += 1;
+            }
+        }
+    });
+    if made_at_ends(body, result) {
+        returned_at_ends(body);
+    }
+    // A block whose `break`s are `return`s now: its statements in its place.
+    js::statement_lists(body, &mut unlabeled);
+}
+
+/// A `break label` after a block: its statements in its place, its own
+/// `break`s that one. One after an `if` of two branches is
+/// `returned_where_made`'s, which returns at the end of each. A `while
+/// (true)`'s own `break`s, after it, are `made_at_ends`', which returns
+/// where each makes the result.
+fn threaded_jumps(body: &mut Vec<Stmt>, label: &js::Name) {
+    js::statement_lists(body, &mut |list| {
+        for i in (0..list.len().saturating_sub(1)).rev() {
+            if !matches!(&list[i + 1].kind, StmtKind::Break(Some(l)) if l == label) {
+                continue;
+            }
+            if matches!(&list[i].kind, StmtKind::Labeled(_, block) if fits_in_place(list, i, block)) {
+                let StmtKind::Labeled(inner, mut block) = list.remove(i).kind else {
+                    unreachable!("matched")
+                };
+                relabeled(&mut block, &inner, label);
+                list.splice(i..i, block);
+            }
+        }
+    });
+}
+
+/// `l: { ..; while (..) { ..; break l; } ..; } return;`, a block MIR made
+/// of the returns it joined, the program's early `return`s, which a loop
+/// inside it leaves by: each such `break l` the `return;` it goes to, as
+/// written, `while (..) { if (node.return === null) { return; } .. }`,
+/// which no `break` of no label can say, its other `break`s too, and the
+/// block, which nothing names then, its statements in its place, where they
+/// fit (ADR 0742, amended). Only of the `return`s the program wrote that
+/// MIR joined there (`joined_returns`), a loop's among them, not a loop's
+/// own end; not a block the program labeled (`written`), whose `break`s it
+/// wrote; nor one of no such `return`, whose `break`s other passes make an
+/// `if`'s branch, `&&`, `||` or a guard of.
+/// The same jump either way: the block's end goes on to that `return;`
+/// alone. A block inside such a block, that a `break` of the outer one
+/// followed, is one too once that `break` is a `return;`: React's Fizz
+/// renderNode's `let .. else { return; }` in each arm of a `match`, whose
+/// `if`s inside return early too (rd499).
+pub(in crate::tidy) fn returns_past_blocks(
+    stmts: &mut Vec<Stmt>,
+    written: &crate::hints::Written,
+    returns: &[js::Span],
+    starts: &[u32],
+) {
+    returns_past(stmts, written, returns, starts, &IndexSet::default());
+}
+
+/// `returns_past_blocks`, where a block labeled of `joined_past` is
+/// followed by a `return;` that was a `break` of a block around it, which
+/// MIR joined into the same `return` its own `break`s go to.
+fn returns_past(
+    stmts: &mut Vec<Stmt>,
+    written: &crate::hints::Written,
+    returns: &[js::Span],
+    starts: &[u32],
+    joined_past: &IndexSet<js::Name>,
+) {
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        let (returned, joined) = (stmts[i + 1].kind.clone(), stmts[i + 1].span);
+        let StmtKind::Labeled(label, body) = &mut stmts[i].kind else {
+            i += 1;
+            continue;
+        };
+        if !matches!(returned, StmtKind::Return(None)) || written.blocks.iter().any(|block| label.is(&block.label)) {
+            i += 1;
+            continue;
+        }
+        // The returns the program wrote that MIR joined, where it did: a
+        // loop's among them, which leaves the block by them. The `return;`
+        // after it says no place, or was MIR's `break` of a block around
+        // it, given the place of a `return` written for that way (rd499):
+        // of the returns not already a way out of the block around written
+        // in it, so a `return` written once after `if`s whose failing tests
+        // go on to it, `if let Some(x) = a { if x > 2 && .. { ..; return; }
+        // } return;`, stays theirs.
+        let joins = if joined.is_none() {
+            joined_returns(body, label, returns, starts)
+        } else if joined_past.contains(&*label) {
+            let mut taken = Vec::new();
+            js::each_list(body, &mut |list| {
+                taken.extend(
+                    (list.iter())
+                        .filter(|s| matches!(s.kind, StmtKind::Return(None)))
+                        .map(|s| s.span),
+                )
+            });
+            let left: Vec<js::Span> = (returns.iter()).filter(|r| !taken.contains(r)).copied().collect();
+            joined_returns(body, label, &left, starts)
+        } else {
+            None
+        };
+        let Some(joins) = joins else {
+            i += 1;
+            continue;
+        };
+        let label = label.clone();
+        // The blocks inside it a `break` of it follows, which goes where
+        // theirs do: once it's a `return;`, theirs are each a `return` too,
+        // React's Fizz renderNode's `if`s that return early in a `match`'s
+        // arm, past a block of the arms (rd499).
+        let mut inner = IndexSet::default();
+        js::each_list(body, &mut |list| {
+            for pair in list.windows(2) {
+                if let [
+                    Stmt {
+                        kind: StmtKind::Labeled(own, _),
+                        ..
+                    },
+                    Stmt {
+                        kind: StmtKind::Break(Some(l)),
+                        ..
+                    },
+                ] = pair
+                    && *l == label
+                {
+                    inner.insert(own.clone());
+                }
+            }
+        });
+        returned_as_written(body, &label, &returned, (&joins, &written.let_elses), 0);
+        if !inner.is_empty()
+            && let StmtKind::Labeled(_, body) = &mut stmts[i].kind
+        {
+            js::statement_lists(body, &mut |list| returns_past(list, written, returns, starts, &inner));
+        }
+        let fits = matches!(&stmts[i].kind, StmtKind::Labeled(_, body) if fits_in_place(stmts, i, body));
+        if fits {
+            let StmtKind::Labeled(_, body) = stmts.remove(i).kind else {
+                unreachable!("matched")
+            };
+            stmts.splice(i..i, body);
+            continue;
+        }
+        i += 1;
+    }
+}
+
+/// `try { l: { .. } } finally { .. }` that ends the function, its `finally`
+/// a scope's drops (`drop scopes`): the block's end goes on to the
+/// function's end, its `return;`, as `l: { .. } return;`'s does, and a
+/// `return;` in the `try` runs the `finally` as leaving the block does. So
+/// its `break`s are as `returns_past_blocks` writes them, the program's
+/// early `return`s, `if (task != null) { run(task); return; }`, not `break
+/// bb18` (rd502).
+pub(in crate::tidy) fn returns_past_blocks_in_try(
+    body: &mut [Stmt],
+    written: &crate::hints::Written,
+    returns: &[js::Span],
+    starts: &[u32],
+) {
+    let Some(StmtKind::Try(tried, _)) = body.last_mut().map(|s| &mut s.kind) else {
+        return;
+    };
+    if !matches!(tried.last().map(|s| &s.kind), Some(StmtKind::Labeled(..))) {
+        return;
+    }
+    // The `return;` it ends with then, of no place, is the function's end,
+    // which `tail_returns` takes away as it does any it ends with.
+    tried.push(StmtKind::Return(None).at(js::Span::NONE));
+    returns_past_blocks(tried, written, returns, starts);
+}
+
+/// The `return`s the program wrote in `body`, a block MIR made that a
+/// `return;` of no place of its own follows, where MIR joined them into
+/// that one, each branch's `break` of the block: `if (tag === 1) { ..;
+/// return; } else if (tag === 2) { ..; return; }` (rd100), a written
+/// `return` for each `break`. Not a `return` the program wrote once, which
+/// the block's ways go on to, a last arm's `_ => { // .. return; }`, whose
+/// place it has; nor a block more of whose ways go on to the function's end
+/// than the program wrote `return`s in it. A `return` written after the
+/// last of the block's statements is the block's too, up to where the
+/// next statement of the function, of `starts`, is written: a comment
+/// before it, `target.blocked_on.set(Some(n)); // We don't .. return;`, is
+/// then its own (rd108).
+fn joined_returns(body: &[Stmt], label: &js::Name, returns: &[js::Span], starts: &[u32]) -> Option<Vec<js::Span>> {
+    let ((lo, hi), mut breaks) = (placed(body), 0);
+    // The places of the blocks inside it a `return;` MIR joined follows,
+    // whose own the `return`s written in them are.
+    let mut inner = Vec::new();
+    js::each_list(body, &mut |list| {
+        for (i, stmt) in list.iter().enumerate() {
+            breaks += usize::from(matches!(&stmt.kind, StmtKind::Break(Some(l)) if l == label));
+            if let StmtKind::Labeled(_, block) = &stmt.kind
+                && list
+                    .get(i + 1)
+                    .is_some_and(|s| matches!(s.kind, StmtKind::Return(None)) && s.span.is_none())
+            {
+                inner.push(placed(block));
+            }
+        }
+    });
+    let hi = (starts.iter().copied())
+        .filter(|&at| at >= hi)
+        .min()
+        .unwrap_or(u32::MAX);
+    // Not one an inner block's `break`s are: a let chain's `if let Some(o)
+    // = o && !href.is_empty() { .. }` whose body's `if` returns early is
+    // gone on from past its end, not by those `return`s, which MIR joined
+    // past a block inside it (preload's `// We already have a stylesheet
+    // ..`).
+    let written: Vec<_> = (returns.iter())
+        .filter(|r| lo <= r.lo && r.hi <= hi)
+        .filter(|r| !inner.iter().any(|&(lo, hi)| lo <= r.lo && r.hi <= hi))
+        .copied()
+        .collect();
+    (breaks > 0 && written.len() >= breaks).then_some(written)
+}
+
+/// Where `stmts` are written, from the first written to the furthest.
+pub(in crate::tidy) fn placed(stmts: &[Stmt]) -> (u32, u32) {
+    let (mut lo, mut hi) = (u32::MAX, 0);
+    js::each_list(stmts, &mut |list| {
+        for stmt in list.iter().filter(|s| !s.span.is_none()) {
+            (lo, hi) = (lo.min(stmt.span.lo), hi.max(stmt.span.hi));
+        }
+    });
+    (lo, hi)
+}
+
+/// Each `break label` of `stmts`, however deep, `returned`, at the place
+/// of the `return` the program wrote for that way out, of `written`: the
+/// first after what runs just before it, from `at`, so what comes after
+/// sees a `return` written there (`tail_returns`). Where it went on to.
+/// What runs just before it is the statement before it in its list, where
+/// that is written, not the furthest written of all before it; after an
+/// `if` whose branch leaves, the `if`'s test, not its branch. MIR may put
+/// what's written later first: the `_` arm of `match tag { .., 3 | 27 => {
+/// log.push(2); return; } _ => { log.push(3); } }` at a function's end,
+/// `if (tag !== 3 && tag !== 27) { log.push(3); return; } log.push(2);
+/// break bb;`, whose `break` is still the `return` after `log.push(2)`;
+/// and a `let … else`'s `else` after the rest, `if (root != null) { if
+/// (fiber.tag !== 3) { ..; return; } break bb; } log.push(0); break bb;`,
+/// each `break` the `return` after `fiber.tag == 3` and `log.push(0)`
+/// (#435). An `if` whose test says no place, a call's value, is placed by
+/// where the `if` is written (#438). A block its own `break`s leave, before
+/// a `break`, is one `returns_past` takes apart, each of its ways its own
+/// `return` (rd499).
+/// A `let … else`'s `else`, which MIR puts after the rest, is gone on to
+/// from where it's written, before the rest (`let_else_of`, rd499).
+/// This is the one owner of where a joined written `return` is (ADR 0742,
+/// 0879, amended, #437).
+fn returned_as_written(
+    stmts: &mut [Stmt],
+    label: &js::Name,
+    returned: &StmtKind,
+    (written, let_elses): (&[js::Span], &[js::Span]),
+    mut at: u32,
+) -> u32 {
+    for stmt in stmts {
+        if matches!(&stmt.kind, StmtKind::Break(Some(l)) if l == label) {
+            stmt.kind = returned.clone();
+            if let Some(place) = (written.iter()).filter(|r| r.lo >= at).min_by_key(|r| r.lo) {
+                (stmt.span, at) = (*place, place.hi);
+            }
+            continue;
+        }
+        if !stmt.span.is_none() {
+            at = stmt.span.lo;
+        }
+        // A `let … else`'s `else`, which MIR puts after the rest, `if (p !=
+        // null) { ..; break bb43; } else { break bb78; }`, is gone on to from
+        // where it's written, after its `let` and before the rest: React's
+        // Fizz flushCompletedQueues' `break` is the `return` in that `else`
+        // (rd499).
+        let else_at = match &stmt.kind {
+            StmtKind::If(_, a, Some(b)) => let_else_of(a, b, at, let_elses),
+            _ => None,
+        };
+        let inner = |list: &mut Vec<Stmt>, at: &mut u32| {
+            *at = returned_as_written(list, label, returned, (written, let_elses), *at)
+        };
+        match &mut stmt.kind {
+            StmtKind::If(_, a, b) => {
+                inner(a, &mut at);
+                if let Some(b) = b {
+                    match else_at {
+                        Some(mut from) => {
+                            inner(b, &mut from);
+                            at = at.max(from);
+                        }
+                        None => inner(b, &mut at),
+                    }
+                }
+            }
+            StmtKind::While { body, .. }
+            | StmtKind::DoWhile { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::For { body, .. }
+            | StmtKind::Labeled(_, body) => inner(body, &mut at),
+            StmtKind::Switch { cases, default, .. } => {
+                js::case_lists_mut(cases, default).for_each(|list| inner(list, &mut at))
+            }
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                inner(a, &mut at);
+                inner(b, &mut at);
+            }
+            _ => {}
+        }
+        match &stmt.kind {
+            // An `if` whose branch leaves is gone on from by its test alone,
+            // `if (fiber.tag !== 3) { ..; return; } break bb;` of `if
+            // fiber.tag == 3 { return; }`: the `return` after the test, where
+            // it's written; of a test that doesn't say, a closure's value,
+            // `if DID_WARN.with(|d| d.has(..)) { return; }`, the `if`'s own
+            // place, its condition's.
+            StmtKind::If(test, then, None)
+                if then.last().is_some_and(ends) && !(test.span.is_none() && stmt.span.is_none()) =>
+            {
+                at = if test.span.is_none() {
+                    stmt.span.hi
+                } else {
+                    test.span.hi
+                };
+            }
+            _ if !stmt.span.is_none() => at = at.max(stmt.span.hi),
+            _ => {}
+        }
+    }
+    at
+}
+
+/// Where `otherwise`, an `if`'s `else` after `then`, its rest, is written,
+/// gone on to from `at`: a `let … else`'s `else`, of `let_elses`, the first
+/// written from `at`, in which each of `otherwise`'s written statements is,
+/// and none of `then`'s is from `at` to its end.
+fn let_else_of(then: &[Stmt], otherwise: &[Stmt], at: u32, let_elses: &[js::Span]) -> Option<u32> {
+    let e = (let_elses.iter()).filter(|e| e.lo >= at).min_by_key(|e| e.lo)?;
+    let within = |s: &Stmt| e.lo <= s.span.lo && s.span.hi <= e.hi;
+    let mut fits = true;
+    js::each_list(otherwise, &mut |list| {
+        fits &= list.iter().filter(|s| !s.span.is_none()).all(within)
+    });
+    js::each_list(then, &mut |list| {
+        fits &= !(list.iter().filter(|s| !s.span.is_none())).any(|s| s.span.lo >= at && s.span.lo < e.hi)
+    });
+    fits.then_some(e.lo)
+}
+
+/// Where the first of `stmts` that says is written, inside a loop's or a
+/// `try`'s too.
+pub(in crate::tidy) fn first_written(stmts: &[Stmt]) -> Option<u32> {
+    stmts.iter().find_map(|stmt| match &stmt.kind {
+        // An `if`'s where its branch is, a `match`'s test written before
+        // each arm, else its own.
+        StmtKind::If(_, then, _) => first_written(then).or((!stmt.span.is_none()).then_some(stmt.span.lo)),
+        _ if !stmt.span.is_none() => Some(stmt.span.lo),
+        StmtKind::ForOf { body, .. }
+        | StmtKind::For { body, .. }
+        | StmtKind::While { body, .. }
+        | StmtKind::Labeled(_, body)
+        | StmtKind::Try(body, _)
+        | StmtKind::TryCatch(body, ..) => first_written(body),
+        StmtKind::Switch { cases, default, .. } => js::case_lists(cases, default).find_map(|body| first_written(body)),
+        _ => None,
+    })
+}
+
+/// Whether `stmts` end assigning `result`, or leaving, each branch of an
+/// `if` that ends them too: a `return`, a `throw`, or a jump, which, to a
+/// block's end, stays, as the block does then.
+pub(in crate::tidy) fn made_at_ends(stmts: &[Stmt], result: &js::Name) -> bool {
+    match stmts.last().map(|s| &s.kind) {
+        Some(StmtKind::Assign(target, _)) => matches!(&target.kind, ExprKind::Var(r) if r == result),
+        Some(StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Continue(_) | StmtKind::Break(_)) => true,
+        // Or a `while (true)` left only once the result is made, where it
+        // goes on to what they end at, or never left.
+        Some(StmtKind::While { cond, body, label }) => {
+            matches!(cond.kind, ExprKind::Bool(true)) && broken_made(body, true, label.as_ref(), result)
+        }
+        Some(StmtKind::If(_, then, Some(otherwise))) => made_at_ends(then, result) && made_at_ends(otherwise, result),
+        // Or a block each of whose `break`s follows what makes it, as its
+        // end does, which goes on to what they end at: its statements in
+        // its place, where they fit, once those are `return`s.
+        Some(StmtKind::Labeled(label, body)) => {
+            made_at_ends(body, result)
+                && broken_made(body, false, Some(label), result)
+                && fits_in_place(stmts, stmts.len() - 1, body)
+        }
+        _ => false,
+    }
+}
+
+/// Whether each `break` in `stmts` that leaves loop `looped` follows what
+/// makes `result`, as `made_at_ends` says: one of no label where `own`,
+/// not in a loop or a `switch` of their own, and one of its label.
+fn broken_made(stmts: &[Stmt], own: bool, looped: Option<&js::Name>, result: &js::Name) -> bool {
+    stmts.iter().enumerate().all(|(i, stmt)| match &stmt.kind {
+        StmtKind::Break(l) if (own && l.is_none()) || (l.is_some() && l.as_ref() == looped) => {
+            made_at_ends(&stmts[..i], result)
+        }
+        StmtKind::If(_, a, b) => {
+            broken_made(a, own, looped, result) && b.as_deref().is_none_or(|b| broken_made(b, own, looped, result))
+        }
+        StmtKind::Labeled(_, body) => broken_made(body, own, looped, result),
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+            broken_made(a, own, looped, result) && broken_made(b, own, looped, result)
+        }
+        StmtKind::Switch { cases, default, .. } => {
+            js::case_lists(cases, default).all(|body| broken_made(body, false, looped, result))
+        }
+        StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+            broken_made(body, false, looped, result)
+        }
+        _ => true,
+    })
+}
+
+/// `stmts`, of `made_at_ends`, returning what they assign the result; of
+/// a `while (true)`'s, where each of its `break`s is.
+pub(in crate::tidy) fn returned_at_ends(stmts: &mut [Stmt]) {
+    let Some(last) = stmts.last_mut() else { return };
+    match &mut last.kind {
+        StmtKind::Assign(_, value) => {
+            let value = std::mem::replace(value, Expr::taken());
+            last.kind = StmtKind::Return(Some(value));
+        }
+        StmtKind::If(_, then, Some(otherwise)) => {
+            returned_at_ends(then);
+            returned_at_ends(otherwise);
+        }
+        StmtKind::While { body, label, .. } => returned_breaks(body, true, label.as_ref()),
+        StmtKind::Labeled(label, body) => {
+            returned_breaks(body, false, Some(label));
+            returned_at_ends(body);
+        }
+        _ => {}
+    }
+}
+
+/// Each `break` of `broken_made`'s in `stmts`, the `return` of what makes
+/// the result before it.
+fn returned_breaks(stmts: &mut Vec<Stmt>, own: bool, looped: Option<&js::Name>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        match &mut stmts[i].kind {
+            StmtKind::Break(l) if (own && l.is_none()) || (l.is_some() && l.as_ref() == looped) => {
+                returned_at_ends(&mut stmts[..i]);
+                stmts.remove(i);
+                continue;
+            }
+            StmtKind::If(_, a, b) => {
+                returned_breaks(a, own, looped);
+                if let Some(b) = b {
+                    returned_breaks(b, own, looped);
+                }
+            }
+            StmtKind::Labeled(_, body) => returned_breaks(body, own, looped),
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                returned_breaks(a, own, looped);
+                returned_breaks(b, own, looped);
+            }
+            StmtKind::Switch { cases, default, .. } => {
+                js::case_lists_mut(cases, default).for_each(|body| returned_breaks(body, false, looped));
+            }
+            StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+                returned_breaks(body, false, looped)
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+}
+
+/// What follows a `return`, a `throw`, a `break` or a `continue` in the
+/// same list never runs, nor what follows an `if` each of whose branches
+/// ends so, nor a `while (true)` no `break` leaves.
+pub(in crate::tidy) fn unreachable_after(stmts: &mut Vec<Stmt>) {
+    if let Some(at) = stmts.iter().position(ends) {
+        stmts.truncate(at + 1);
+    }
+}
+
+/// A `break l` that ends labeled block `l`, or a `continue l` that ends
+/// loop `l`'s body, where it would go on anyway: in the tails of the `if`s
+/// that end them too.
+pub(in crate::tidy) fn tail_jumps(stmts: &mut [Stmt]) {
+    for stmt in stmts {
+        match &mut stmt.kind {
+            StmtKind::Labeled(label, body) => drop_tail(body, &StmtKind::Break(Some(label.clone()))),
+            StmtKind::While {
+                label: Some(label),
+                body,
+                ..
+            } => drop_tail(body, &StmtKind::Continue(Some(label.clone()))),
+            _ => {}
+        }
+    }
+}
+
+/// A block MIR made that ends `if (c) { a } else { b } return v;`, a
+/// match's arm of `return v` that some of the `if`'s paths go on to and the
+/// rest leave past with a `break` of the block, `getArrayKind`'s: the
+/// `return` at the end of each path that goes on to it, and each `break` of
+/// the block a path ends with gone, now where the block ends, so nothing
+/// names it (ADR 0754). So too where the `if` and its `return` end a branch
+/// of the `if` that ends the block, which ends where the block does, `l: {
+/// if (typeof s === "string") { if (s === "a") { .. } else { break l; }
+/// return; } }` (ADR 0755). Only of a `return` `returns_one_value` takes;
+/// and not where a `break` of the block would be left, deeper than a path's
+/// end. The `if` has an `else`: a `let … else`'s guard, `if (c) { s; break
+/// l; } return v;`, has none, and stays one.
+pub(in crate::tidy) fn returns_into_branches(stmts: &mut [Stmt]) {
+    // `stmts`, which end where block `label` does: theirs, or of the
+    // branches of the `if` they end with.
+    fn at_ends(stmts: &mut Vec<Stmt>, label: &js::Name) {
+        if returned_into_branches(stmts, label) {
+            return;
+        }
+        if let Some(StmtKind::If(_, then, otherwise)) = stmts.last_mut().map(|s| &mut s.kind) {
+            at_ends(then, label);
+            if let Some(otherwise) = otherwise {
+                at_ends(otherwise, label);
+            }
+        }
+    }
+    for stmt in stmts {
+        if stmt.span.is_none()
+            && let StmtKind::Labeled(label, body) = &mut stmt.kind
+            && crate::is_block_label(label)
+        {
+            let label = label.clone();
+            at_ends(body, &label);
+        }
+    }
+}
+
+/// Whether `stmt` is a `return` of one value, a constant or a name, or of
+/// none: one that reads as it's written wherever it's put, in each branch
+/// that goes on to it (ADR 0754), or for each `break` of a block it follows
+/// (ADR 0755).
+pub(super) fn returns_one_value(stmt: &Stmt) -> bool {
+    let one_value =
+        |e: &Expr| e.is_constant() || matches!(e.kind, ExprKind::Var(_)) || matches!(e.kind, ExprKind::Undefined);
+    // A function's call of such, `made(kind, mode)`, reads as written
+    // wherever it's put too, React's getTag's `return
+    // createFiberFromScope(type, pendingProps, mode, lanes, key);` (ADR
+    // 0955).
+    let call_of_values = |e: &Expr| {
+        matches!(&e.kind, ExprKind::Call(callee, args)
+            if matches!(callee.kind, ExprKind::Var(_)) && args.iter().all(one_value))
+    };
+    matches!(&stmt.kind, StmtKind::Return(value) if value.as_ref().is_none_or(|e| one_value(e) || call_of_values(e)))
+}
+
+/// `stmts`, which end where block `label` does, as `returns_into_branches`
+/// has them; whether they were.
+fn returned_into_branches(stmts: &mut Vec<Stmt>, label: &js::Name) -> bool {
+    // `stmts`, `exit` at the end of each path of them that goes on, and the
+    // `break label` each that leaves ends with gone.
+    fn into(stmts: &mut Vec<Stmt>, exit: &Stmt, label: &js::Name) {
+        let leaves = |last: &Stmt| match &last.kind {
+            StmtKind::Break(Some(l)) => l != label,
+            StmtKind::If(_, _, Some(_)) => false,
+            _ => ends(last),
+        };
+        if stmts.last().is_some_and(leaves) {
+            return;
+        }
+        let Some(last) = stmts.last_mut() else {
+            stmts.push(exit.clone());
+            return;
+        };
+        match &mut last.kind {
+            StmtKind::Break(Some(l)) if l == label => {
+                stmts.pop();
+            }
+            StmtKind::If(test, then, otherwise @ Some(_)) => {
+                into(then, exit, label);
+                let rest = otherwise.as_mut().expect("matched");
+                into(rest, exit, label);
+                // A `then` of nothing left: `if (!c) { s }`. An `else` of
+                // nothing left is the later passes' to take out, as they
+                // do: since `returns past blocks` takes the blocks inside
+                // one of joined returns apart, no program's JS was made by
+                // taking it out here (rd499).
+                if then.is_empty() && !rest.is_empty() {
+                    *test = std::mem::replace(test, Expr::taken()).negated_test();
+                    *then = otherwise.take().expect("matched");
+                }
+            }
+            StmtKind::If(test, then, otherwise @ None) if js::names_jump(then, label) => {
+                into(then, exit, label);
+                match then.is_empty() {
+                    true => {
+                        *test = std::mem::replace(test, Expr::taken()).negated_test();
+                        *then = vec![exit.clone()];
+                    }
+                    false => *otherwise = Some(vec![exit.clone()]),
+                }
+            }
+            _ => stmts.push(exit.clone()),
+        }
+    }
+    let [.., before, last] = stmts.as_slice() else {
+        return false;
+    };
+    if !matches!(&before.kind, StmtKind::If(_, _, Some(_))) || !returns_one_value(last) {
+        return false;
+    }
+    let mut threaded = stmts.clone();
+    let exit = threaded.pop().expect("matched");
+    into(&mut threaded, &exit, label);
+    if js::names_jump(&threaded, label) {
+        return false;
+    }
+    *stmts = threaded;
+    true
+}
+
+/// Whether `stmts` always end with a `break label`.
+pub(super) fn leaves(stmts: &[Stmt], label: &js::Name) -> bool {
+    match stmts.last().map(|s| &s.kind) {
+        Some(StmtKind::Break(Some(l))) => l == label,
+        Some(StmtKind::If(_, then, Some(otherwise))) => leaves(then, label) && leaves(otherwise, label),
+        _ => false,
+    }
+}
+
+/// `jump` where it ends `stmts`, or a branch of the `if` that ends them.
+/// Not a `break` the program wrote of a block it labeled, where it's
+/// written, its span (ADR 0790).
+pub(in crate::tidy) fn drop_tail(stmts: &mut Vec<Stmt>, jump: &StmtKind) {
+    let same = |stmt: &Stmt| match (&stmt.kind, jump) {
+        (StmtKind::Break(Some(a)), StmtKind::Break(Some(_))) if !crate::is_block_label(a) && !stmt.span.is_none() => {
+            false
+        }
+        (StmtKind::Continue(Some(_)), StmtKind::Continue(Some(_))) if !stmt.span.is_none() => false,
+        (StmtKind::Break(Some(a)), StmtKind::Break(Some(b)))
+        | (StmtKind::Continue(Some(a)), StmtKind::Continue(Some(b))) => a == b,
+        _ => false,
+    };
+    if stmts.last().is_some_and(same) {
+        stmts.pop();
+    } else if let Some(StmtKind::If(_, then, otherwise)) = stmts.last_mut().map(|s| &mut s.kind) {
+        drop_tail(then, jump);
+        if let Some(otherwise) = otherwise {
+            drop_tail(otherwise, jump);
+        }
+        // A branch with nothing left, as `emptied_branch` writes it: `if
+        // (!on) {} else { s }` of a guard's arm is `if (on) { s }`, and a
+        // let chain's `if (usable == null) {} else if (..) { .. }` is
+        // `if (usable != null && ..) { .. }`, as no later pass writes it.
+        let last = stmts.pop().expect("matched");
+        if let Some(kind) = emptied_branch(last.kind) {
+            stmts.push(Stmt { kind, ..last });
+        }
+    } else if let Some(StmtKind::Try(body, _)) = stmts.last_mut().map(|s| &mut s.kind) {
+        // A `try`'s, its `finally` run as it goes on to the end anyway: a
+        // borrow's around a loop, `try { for (..) { .. } break bb26; }
+        // finally { $unborrow(nodes); }` (rd200).
+        drop_tail(body, jump);
+    } else if let StmtKind::Break(_) = jump
+        && let Some(StmtKind::Labeled(_, body)) = stmts.last_mut().map(|s| &mut s.kind)
+    {
+        // A block that ends it, whose end is its end: the program's
+        // `found: { ..; v = 2; break bb21; }` in MIR's `bb21: { .. }`,
+        // which then names nothing (#447). Not a loop's `continue`, which
+        // the program wrote there, `continue;` in a `switch`'s case.
+        drop_tail(body, jump);
+    }
+}
+
+/// Each `break from` and `continue from` in `stmts`, however deep, `to`'s.
+pub(in crate::tidy) fn relabeled(stmts: &mut Vec<Stmt>, from: &js::Name, to: &js::Name) {
+    js::statement_lists(stmts, &mut |list| {
+        for stmt in list.iter_mut() {
+            if let StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) = &mut stmt.kind
+                && l == from
+            {
+                *l = to.clone();
+            }
+        }
+    });
+}
+
+/// A `while (true)` nothing `break`s, what the program wrote after it MIR
+/// moved into its one way out, `if (t) { e = f(e); continue outer; }`: that
+/// way out a `break`, and what it does, after the loop, as written. Not of
+/// what reads a name the loop declares; what it declares is its Rust
+/// block's, named apart from what's beside the loop already.
+pub(in crate::tidy) fn exits_after(stmts: &mut Vec<Stmt>, breaks: &[(js::Span, js::Span)]) {
+    let mut i = 0;
+    while i < stmts.len() {
+        if let Some((before, after)) = exit_after(stmts, i, breaks) {
+            stmts.splice(i + 1..i + 1, after);
+            let n = before.len();
+            stmts.splice(i..i, before);
+            i += n;
+        }
+        i += 1;
+    }
+}
+
+/// The value an `if` the program wrote with an `else` gives, returned:
+/// `if (t) { return a; } return b;`, as each path returns, is `return t ? a
+/// : b;`, as a person writes the function's value of two small ones, and as
+/// `x = t ? a : b` is of a variable's (`branch_values`). Not of a guard the
+/// program wrote, an `if` with no `else`, nor of a `return` it wrote in
+/// each branch, a statement; nor where `folds_into_return` says it's a
+/// branch of its own. A comment before a branch's value is before it in the
+/// conditional (ADR 0658).
+pub(in crate::tidy) fn returned_values(
+    stmts: &mut Vec<Stmt>,
+    elses: &[(js::Span, js::Span, js::Span)],
+    returns: &[js::Span],
+    booleans: &IndexSet<js::Path>,
+) {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    let Some(at) = stmts.len().checked_sub(2) else {
+        return;
+    };
+    let (if_stmt, last) = (&stmts[at], &stmts[at + 1..]);
+    // A branch's value, where its statement was, of a `return` the program
+    // didn't write in it: none, or the one it wrote of the `if`, `return if
+    // c { a } else { b };`, whose value the `if` is.
+    let of_if = |span: js::Span| returns.iter().any(|r| within(r, span) && within(r, if_stmt.span));
+    let returned = |stmts: &[Stmt]| match stmts {
+        [
+            Stmt {
+                kind: StmtKind::Return(Some(value)),
+                span,
+                ..
+            },
+        ] if small(value) && (!written(returns, *span) || of_if(*span)) => Some(spanned(value, *span)),
+        _ => None,
+    };
+    let StmtKind::If(test, then, None) = &if_stmt.kind else {
+        return;
+    };
+    if let (Some(yes), Some(no)) = (returned(then), returned(last))
+        && folds_into_return(&yes, &no)
+        && !(super::super::logicals::alike_branches(&yes, &no) && test.has_effects())
+        && elses.iter().any(|(cond, ..)| within(cond, if_stmt.span))
+    {
+        // Its branches as written: the test negated where MIR turned them,
+        // `if a == 0 || a > b { a } else { b }`'s `a !== 0 && !(a > b)` of
+        // `return b` (ADR 0879, amended).
+        let folded = match written_order(if_stmt.span, then, last, elses) {
+            Some(true) => conditional(test.clone().negated_test(), no, yes, booleans, true),
+            order => conditional(test.clone(), yes, no, booleans, order.is_some()),
+        };
+        let span = if_stmt.span;
+        stmts.truncate(at);
+        stmts.push(StmtKind::Return(Some(folded)).at(span));
+    }
+}
+
+/// `if (!t) { exit } rest`, of an `if t { rest }` the program wrote without
+/// an `else` (`Written::thens`), `rest` written in its `then`, never going
+/// on, as `exit` doesn't: `if (t) { rest } exit`, as written, which runs
+/// the same either way round. MIR's structure
+/// makes a guard of it where `exit` is short, `if __DEV__ { .. } return
+/// None;`'s `if (!__DEV__) { return null; } ..` (ADR 0879, amended).
+pub(in crate::tidy) fn written_thens(stmts: &mut Vec<Stmt>, thens: &[(js::Span, js::Span)]) {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    for at in 0..stmts.len() {
+        let (if_stmt, rest) = (&stmts[at], &stmts[at + 1..]);
+        let StmtKind::If(_, exit, None) = &if_stmt.kind else {
+            continue;
+        };
+        let Some((_, then)) = thens.iter().find(|(cond, _)| within(cond, if_stmt.span)) else {
+            continue;
+        };
+        let written = |s: &Stmt| within(then, s.span);
+        if !exit.last().is_some_and(ends)
+            || !rest.iter().any(written)
+            || !rest.iter().all(|s| s.span.is_none() || written(s))
+            || !rest.last().is_some_and(ends)
+        {
+            continue;
+        }
+        let rest = stmts.split_off(at + 1);
+        let StmtKind::If(test, exit, None) = std::mem::replace(&mut stmts[at].kind, StmtKind::Break(None)) else {
+            unreachable!("matched")
+        };
+        stmts[at].kind = StmtKind::If(test.negated_test(), rest, None);
+        stmts.extend(exit);
+        break;
+    }
+}
+
+/// `if (a) { x } else if (b) { y } else { z; continue; } break;`, a chain of
+/// `if`s the program wrote without an `else` (`Written::thens`) whose jumps
+/// MIR joined after it, the last `else` the rest, which never goes on: each
+/// `if` ends with the jump it wrote, `if (a) { x; break; } if (b) { y;
+/// break; } z; continue;`, as React's findCurrentFiberUsingSlowPath writes
+/// it (ADR 0879, amended). The same statements run on each path: the jump
+/// after the chain was reached only from its `then`s.
+pub(in crate::tidy) fn written_jumps_of_ifs(stmts: &mut Vec<Stmt>, thens: &[(js::Span, js::Span)]) {
+    let without_else = |s: &Stmt| {
+        thens
+            .iter()
+            .any(|(cond, _)| !s.span.is_none() && cond.lo <= s.span.lo && s.span.hi <= cond.hi)
+    };
+    // Of `chain`, an `if` followed by `jump`: each `then` ending with it,
+    // and the last `else`, which never goes on, after them.
+    fn unchained(chain: &Stmt, jump: &Stmt, without_else: &dyn Fn(&Stmt) -> bool) -> Option<Vec<Stmt>> {
+        let StmtKind::If(test, then, Some(otherwise)) = &chain.kind else {
+            return None;
+        };
+        if !without_else(chain) {
+            return None;
+        }
+        let rest = match otherwise.as_slice() {
+            [.., last] if ends(last) => otherwise.clone(),
+            [inner] => unchained(inner, jump, without_else)?,
+            _ => return None,
+        };
+        let mut then = then.clone();
+        if !then.last().is_some_and(ends) {
+            then.push(jump.clone());
+        }
+        Some(
+            std::iter::once(StmtKind::If(test.clone(), then, None).at(chain.span))
+                .chain(rest)
+                .collect(),
+        )
+    }
+    if let [.., chain, jump] = stmts.as_slice()
+        && matches!(
+            jump.kind,
+            StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Return(_)
+        )
+        && let Some(unchained) = unchained(chain, jump, &without_else)
+    {
+        stmts.truncate(stmts.len() - 2);
+        stmts.extend(unchained);
+    }
+}
+
+/// What a run of statements a function ends with returns, as a person
+/// writes it: `if (a) { if (b) { return t; } } return f;` is `return a &&
+/// b ? t : f;` of a `bool`, and a `let … else`'s guard first, `if (!(a &&
+/// b)) { return f; } t` (`branch_values`'s last).
+pub(in crate::tidy) fn returned_branches(
+    stmts: &mut Vec<Stmt>,
+    returns: &[js::Span],
+    booleans: &IndexSet<js::Path>,
+    program: &crate::hints::Written,
+) {
+    let (continues, elses) = (&program.continues, &program.elses);
+    // `if (a) { if (b) { return t; } } return f;`, last: `return a && b ? t : f;`.
+    if let [.., last_if, last] = stmts.as_slice()
+        && let StmtKind::Return(Some(no)) = &last.kind
+        && let StmtKind::If(first, then, _) = &last_if.kind
+        && let Some((tests, yes)) = returned_chain(std::slice::from_ref(last_if))
+        && small(&yes)
+        && small(no)
+        && boolean_branch(&yes, no)
+        // Not a `match` of constants the program wrote, a `switch` whose
+        // arms give `true` and `false`, React DOM's isCustomElement's
+        // (ADR 0629, amended, rd15).
+        && !switched(first, last_if.span, &program.switches)
+        // Not where the program wrote `return`, an early one.
+        && !written(returns, last.span)
+        && !writes_return(std::slice::from_ref(last_if), returns)
+    {
+        let test = (tests.into_iter())
+            .rev()
+            .reduce(|b, a| Expr::bin(Op::And, a, b))
+            .expect("one");
+        // Of an `if` the program wrote with an `else`, as it wrote it.
+        let written_if = written_branches(last_if.span, then, std::slice::from_ref(last), elses)
+            || written_values(last_if.span, (&yes, no), elses);
+        let value = conditional(test, yes, no.clone(), booleans, written_if);
+        let span = last_if.span;
+        stmts.truncate(stmts.len() - 2);
+        stmts.push(StmtKind::Return(Some(value)).at(span));
+    } else if let [before @ .., last_if, last] = stmts.as_slice()
+        && let StmtKind::Return(Some(_)) = &last.kind
+        && written(returns, last.span)
+        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if))
+        // Not `if c { return a; } else { return b; }`'s: a `let … else`'s
+        // rest ends where it goes on, not at a `return` the program wrote;
+        // nor `if c { continue; } return b;`'s, an `if` the program wrote
+        // of a `continue` (ADR 0684).
+        && !body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(_)) && written(returns, s.span))
+        && !tests_continue(continues, last_if.span)
+        && !declared(&body).any(|name| declared(before).any(|n| n == name))
+    {
+        // `f` the program wrote, a `let … else`'s else: `if (!(a && b)) {
+        // return f; } t`.
+        let test = (tests.into_iter())
+            .rev()
+            .reduce(|b, a| Expr::bin(Op::And, a, b))
+            .expect("one");
+        let (span, guard) = (last_if.span, stmts.pop().expect("the return"));
+        stmts.pop();
+        stmts.push(StmtKind::If(test.negated_test(), vec![guard], None).at(span));
+        stmts.extend(body);
+    }
+}
+
+/// Of `if (a) { const x = e; if (b) { s } }`, `s` ending where it leaves:
+/// `[a, b]` and `const x = e; s`, what a level binds before its test, a
+/// read that does nothing, written into later tests, as `broken_chain`'s:
+/// each kept, so not a property, which a test would read again
+/// (`bound_into`).
+pub(in crate::tidy) fn returning_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Vec<Stmt>)> {
+    let [
+        bound @ ..,
+        Stmt {
+            kind: StmtKind::If(test, inner, None),
+            ..
+        },
+    ] = stmts
+    else {
+        return None;
+    };
+    let (mut tests, body) = match returning_chain(inner) {
+        Some(chain) => chain,
+        None if inner.last().is_some_and(ends) => (Vec::new(), inner.clone()),
+        None => return None,
+    };
+    tests.insert(0, test.clone());
+    for test in &mut tests {
+        *test = bound_into(test, bound, &|_, _| 1)?;
+    }
+    let mut all = bound.to_vec();
+    all.extend(body);
+    unread_bound(&mut all, bound.len());
+    Some((tests, all))
+}
+
+/// Whether of `c ? yes : no` one is `true` or `false`: `c || no` or `c &&
+/// yes`, not `?:`.
+fn boolean_branch(yes: &Expr, no: &Expr) -> bool {
+    matches!(yes.kind, ExprKind::Bool(_)) || matches!(no.kind, ExprKind::Bool(_))
+}
+
+/// Of `if (a) { if (b) { return t; } }`: its tests, `[a, b]`, and `t`.
+pub(in crate::tidy) fn returned_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Expr)> {
+    match stmts {
+        [
+            Stmt {
+                kind: StmtKind::Return(Some(yes)),
+                ..
+            },
+        ] => Some((Vec::new(), yes.clone())),
+        [
+            Stmt {
+                kind: StmtKind::If(test, inner, None),
+                ..
+            },
+        ] => {
+            let (mut tests, yes) = returned_chain(inner)?;
+            tests.insert(0, test.clone());
+            Some((tests, yes))
+        }
+        _ => None,
+    }
+}
+
+/// `if (a) { if (b) { s } else { j } } else { j }`, `j` one jump, MIR's
+/// `a && b` whose failing tests each jump the same way, `lanes !== 1 &&
+/// lanes !== 2`'s past a guarded arm: `if (a && b) { s } else { j }`, as an
+/// `&&` of calls reaches tidy (lb2).
+pub(in crate::tidy) fn joined_ands(stmts: &mut [Stmt]) {
+    let jump = |s: &[Stmt]| matches!(s, [j] if matches!(j.kind, StmtKind::Break(_) | StmtKind::Continue(_)));
+    // A comparison of what's matched with a constant, `lanes !== 1`, as
+    // MIR's `switchInt` makes the parts of one such guard: not a presence
+    // test, `x != null`, nor parts of two subjects, which other passes
+    // read as they are.
+    fn compared(e: &Expr) -> Option<&Expr> {
+        match &e.kind {
+            ExprKind::Binary(Op::Eq | Op::Ne, x, c) => {
+                matches!(c.kind, ExprKind::Num(..) | ExprKind::Str(..) | ExprKind::Var(..)).then_some(&**x)
+            }
+            _ => None,
+        }
+    }
+    for stmt in stmts.iter_mut() {
+        let StmtKind::If(test, then, Some(otherwise)) = &mut stmt.kind else {
+            continue;
+        };
+        if let [
+            Stmt {
+                kind: StmtKind::If(b, inside, Some(inner)),
+                ..
+            },
+        ] = &then[..]
+            && jump(otherwise)
+            && jump(inner)
+            && crate::tidy::decisions::same_stmt(&inner[0], &otherwise[0])
+            && let (Some(x), Some(y)) = (compared(test), compared(b))
+            && js::same_path(x, y)
+        {
+            let (b, inside) = (b.clone(), inside.clone());
+            *test = Expr::bin(Op::And, test.clone(), b);
+            *then = inside;
+        }
+    }
+}

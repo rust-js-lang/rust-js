@@ -1,11 +1,11 @@
-// Mutations of src/lower/analysis/arguments.rs (rd332, rd683).
+// Mutations of crates/rust-js-lower/src/analysis/arguments.rs (rd332, rd683).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "arguments-unread",
     breaks: "a function that reads `js::arguments()` isn't one, so its calls leave out a trailing `undefined` and a closure that forwards to it is it, `new LinearGradient()` (rd332)",
-    file: "src/lower/analysis/arguments.rs",
+    file: "crates/rust-js-lower/src/analysis/arguments.rs",
     find: "            None => _ = reading.functions.insert(body.def_id),\n",
     replace: "            None => {}\n",
     tests: ["test/arguments.test.ts"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-in-closure-kept",
     breaks: "`js::arguments()` in a closure, an arrow whose `arguments` is the function's around it, is compiled (rd332)",
-    file: "src/lower/analysis/arguments.rs",
+    file: "crates/rust-js-lower/src/analysis/arguments.rs",
     find: "    if tcx.is_closure_like(def_id) {\n",
     replace: "    if false && tcx.is_closure_like(def_id) {\n",
     tests: ["test/arguments.test.ts"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-in-generic-kept",
     breaks: "`js::arguments()` in a generic function, whose JS is given dictionaries too, is compiled (rd332)",
-    file: "src/lower/analysis/arguments.rs",
+    file: "crates/rust-js-lower/src/analysis/arguments.rs",
     find: "    if generic {\n",
     replace: "    if false && generic {\n",
     tests: ["test/arguments.test.ts"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-in-trait-method-kept",
     breaks: "`js::arguments()` in a trait's method, called through its dictionary, is compiled (rd332)",
-    file: "src/lower/analysis/arguments.rs",
+    file: "crates/rust-js-lower/src/analysis/arguments.rs",
     find: "    if tcx.trait_of_assoc(def_id).is_some() || tcx.trait_impl_of_assoc(def_id).is_some() {\n",
     replace: "    if false {\n",
     tests: ["test/arguments.test.ts"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "arguments-in-plain-method-kept",
     breaks: "`js::arguments()` in a method of what's no class, given the value first, is compiled (rd332)",
-    file: "src/lower/analysis/arguments.rs",
+    file: "crates/rust-js-lower/src/analysis/arguments.rs",
     find: "        None if tcx.associated_item(def_id).is_method() => Some(\n",
     replace: "        None if false => Some(\n",
     tests: ["test/arguments.test.ts"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "with-this-arguments-refused",
     breaks: "`js::arguments()` in a `function::with_this` function, a JS `function` whose `arguments` is its own, is refused as an arrow's (rd509)",
-    file: "src/lower/analysis/arguments.rs",
+    file: "crates/rust-js-lower/src/analysis/arguments.rs",
     find: "        if let Some(&params) = functions_made.get(&body.def_id) {\n",
     replace: "        if let Some(&params) = functions_made.get(&body.def_id).filter(|_| false) {\n",
     tests: ["test/arguments.test.ts"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "this-unread",
     breaks: "a function that reads `js::this()` isn't one, so its call through a module's namespace gives it the namespace, `Inner.onSomething()`, and a closure that forwards to it is it, given the `this` JS calls the closure with (rd683)",
-    file: "src/lower/analysis/arguments.rs",
+    file: "crates/rust-js-lower/src/analysis/arguments.rs",
     find: "            None => _ = reading.this.insert(body.def_id),\n",
     replace: "            None => {}\n",
     tests: ["test/this.test.ts"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "this-in-closure-kept",
     breaks: "`js::this()` in a closure, an arrow whose `this` is the function's around it, is compiled (rd683)",
-    file: "src/lower/analysis/arguments.rs",
+    file: "crates/rust-js-lower/src/analysis/arguments.rs",
     find: "    } else if tcx.is_closure_like(def_id) {\n",
     replace: "    } else if false {\n",
     tests: ["test/this.test.ts", "-t", "refused"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "this-in-with-this-kept",
     breaks: "`js::this()` in a `function::with_this` closure, whose `this` is its first parameter, is compiled, a second way to read it (rd683)",
-    file: "src/lower/analysis/arguments.rs",
+    file: "crates/rust-js-lower/src/analysis/arguments.rs",
     find: "    if with_this {\n",
     replace: "    if false {\n",
     tests: ["test/this.test.ts", "-t", "refused"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "this-in-method-kept",
     breaks: "`js::this()` in a method, whose `this` is its `self` or its type, is compiled (rd683)",
-    file: "src/lower/analysis/arguments.rs",
+    file: "crates/rust-js-lower/src/analysis/arguments.rs",
     find: "    } else if tcx.def_kind(def_id) == DefKind::AssocFn {\n",
     replace: "    } else if false {\n",
     tests: ["test/this.test.ts", "-t", "refused"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "this-in-generic-kept",
     breaks: "`js::this()` in a generic function, whose JS is given dictionaries no JS caller gives, is compiled (rd683)",
-    file: "src/lower/analysis/arguments.rs",
+    file: "crates/rust-js-lower/src/analysis/arguments.rs",
     find: "    } else if generic() {\n",
     replace: "    } else if false {\n",
     tests: ["test/this.test.ts", "-t", "refused"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "this-reader-value-kept",
     breaks: "a function that reads `js::this()` given as a value, a fn pointer or a `dyn Fn`, is compiled, which JS may call on what holds it where Rust gives no `this` (rd683)",
-    file: "src/lower/analysis/arguments.rs",
+    file: "crates/rust-js-lower/src/analysis/arguments.rs",
     find: "                && !called.contains(&id)\n",
     replace: "                && false\n",
     tests: ["test/this.test.ts", "-t", "refused|library"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "this-reader-call-refused",
     breaks: "a function that reads `js::this()` given to `function::call`, which calls it with the `this` it's given, is refused as a value (rd683)",
-    file: "src/lower/analysis/arguments.rs",
+    file: "crates/rust-js-lower/src/analysis/arguments.rs",
     find: "            called.insert(f);\n",
     replace: "            _ = f;\n",
     tests: ["test/this.test.ts", "-t", "reads its this"],

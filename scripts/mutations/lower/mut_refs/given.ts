@@ -1,8 +1,8 @@
-// Mutations of src/lower/mut_refs/given.rs, what a type parameter is given
+// Mutations of crates/rust-js-lower/src/mut_refs/given.rs, what a type parameter is given
 // for a `&mut` to a function or an iterator (#992, #1909).
 import type { Mutation } from "../../../mutations";
 
-const file = "src/lower/mut_refs/given.rs";
+const file = "crates/rust-js-lower/src/mut_refs/given.rs";
 const through = ["test/corpus.test.ts", "-t", "^fn_given_through_a_mut_box.rs$"];
 const refused = ["test/corpus.test.ts", "-t", "^fn_box_called_and_given_back_refused.rs$"];
 

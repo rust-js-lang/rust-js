@@ -1006,7 +1006,7 @@ pub fn counted() -> f64 {
 });
 
 // A binding generator's camelCase, scripts/rust-names.ts's, is rust-js's,
-// src/lower.rs's `camel_case` (ADR 0573): each name compiled is the JS one
+// crates/rust-js-lower/src/lib.rs's `camel_case` (ADR 0573): each name compiled is the JS one
 // the generators write `#[rust_js::name]` where it differs from. And one
 // that repeats it is rust-js's error, a second way to write the name.
 test("a generator's camelCase is the compiler's, and a name that repeats it is an error", async () => {

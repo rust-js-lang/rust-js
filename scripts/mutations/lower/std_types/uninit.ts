@@ -1,11 +1,11 @@
-// Mutations of src/lower/std_types/uninit.rs (ADR 0332).
+// Mutations of crates/rust-js-lower/src/std_types/uninit.rs (ADR 0332).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "uninit-write-unwritten",
     breaks: "`slot.write(v)` writes nothing",
-    file: "src/lower/std_types/uninit.rs",
+    file: "crates/rust-js-lower/src/std_types/uninit.rs",
     find: "                    out.push(StmtKind::Assign(place.clone(), value).at(self.js_span(span)));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninit-write-object-boxed",
     breaks: "`write`'s `&mut` to an object is a box of it",
-    file: "src/lower/std_types/uninit.rs",
+    file: "crates/rust-js-lower/src/std_types/uninit.rs",
     find: "                match self.mut_ref_form(held).is_cell() {\n                    true => Expr::handle(place),",
     replace:
       "                match true {\n                    true => Expr::handle(place),",
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     name: "uninit-handle-kept",
     breaks:
       "`point.write(v)` writes through a getter and setter, not the place",
-    file: "src/lower/std_types/uninit.rs",
+    file: "crates/rust-js-lower/src/std_types/uninit.rs",
     find: "                    js::ExprKind::Handle(place, _) => *place,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     name: "uninit-array-undefined",
     breaks:
       "an array of `MaybeUninit`s not yet written, arrayvec's `ArrayVec::new`, is `undefined`, so writing an item through its pointer fails",
-    file: "src/lower/std_types/uninit.rs",
+    file: "crates/rust-js-lower/src/std_types/uninit.rs",
     find: "            ty::Array(each, len) if !(boxed || written_whole) || self.recognition().uninit_of(each).is_some() => {\n",
     replace: "            ty::Array(each, len) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^zeroed_uninit_arrays.rs$"],
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     name: "uninit-array-param-undefined",
     breaks:
       "`MaybeUninit::<A>::uninit()` of an array type parameter is nothing, which a pointer can't step into",
-    file: "src/lower/std_types/uninit.rs",
+    file: "crates/rust-js-lower/src/std_types/uninit.rs",
     find: "            _ if std::iter::successors(Some(item), |&t| self.recognition().uninit_of(t))\n                .any(|t| self.is_array_param(t)) =>\n",
     replace: "            _ if false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^uninit_array_param.rs$"],
@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
     name: "uninit-of-uninit-array-param-undefined",
     breaks:
       "an uninit `MaybeUninit<A>` of an array type parameter is nothing, which a pointer can't step into",
-    file: "src/lower/std_types/uninit.rs",
+    file: "crates/rust-js-lower/src/std_types/uninit.rs",
     find: "            _ if std::iter::successors(Some(item), |&t| self.recognition().uninit_of(t))\n                .any(|t| self.is_array_param(t)) =>\n",
     replace: "            _ if self.is_array_param(item) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^uninit_array_param.rs$"],
@@ -59,7 +59,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninit-array-of-plain-items-undefined",
     breaks: "a `MaybeUninit<[u32; N]>` is `undefined`, so a write through `m.as_mut_ptr() as *mut u32` throws where native Rust runs (#1255)",
-    file: "src/lower/std_types/uninit.rs",
+    file: "crates/rust-js-lower/src/std_types/uninit.rs",
     find: "            ty::Array(each, len) if !(boxed || written_whole) || self.recognition().uninit_of(each).is_some() => {\n",
     replace: "            ty::Array(each, len) if self.recognition().uninit_of(each).is_some() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_array_written_through_its_pointer.rs$"],
@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninit-written-whole-unasked",
     breaks: "a `MaybeUninit<[u8; 2]>` only written whole and read whole is its slots, `let m = Array.from({ length: 2 }); m = [7, 8];`, where it's its value, `const m = [7, 8]` (#1258)",
-    file: "src/lower/std_types/uninit.rs",
+    file: "crates/rust-js-lower/src/std_types/uninit.rs",
     find: "            ty::Array(each, len) if !(boxed || written_whole) || self.recognition().uninit_of(each).is_some() => {\n",
     replace: "            ty::Array(each, len) if !boxed || self.recognition().uninit_of(each).is_some() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_array_written_through_its_pointer.rs$"],
@@ -76,7 +76,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninit-written-whole-given-anywhere",
     breaks: "a `MaybeUninit<[u32; 2]>` given to a function that writes it through its pointer is taken for one written whole, `undefined`, and the write throws (#1258)",
-    file: "src/lower/std_types/uninit.rs",
+    file: "crates/rust-js-lower/src/std_types/uninit.rs",
     find: "                            _ => false,\n",
     replace: "                            _ => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_array_written_through_its_pointer.rs$"],
@@ -84,7 +84,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninit-written-whole-of-no-write",
     breaks: "a `MaybeUninit<[u8; 2]>` written whole by its `write` is taken for one written another way, its slots, `let m = Array.from({ length: 2 }); m = [7, 8];` (#1258)",
-    file: "src/lower/std_types/uninit.rs",
+    file: "crates/rust-js-lower/src/std_types/uninit.rs",
     find: "                            Some(Std::Uninit(UninitOp::Write)) => given,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_array_written_through_its_pointer.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninit-written-whole-named-is-used",
     breaks: "a `let` of a `MaybeUninit<[u8; 2]>`, which only names it, is taken for a use that may write it an item at a time, its slots, `let m = Array.from({ length: 2 }); m = [7, 8];` (#1258)",
-    file: "src/lower/std_types/uninit.rs",
+    file: "crates/rust-js-lower/src/std_types/uninit.rs",
     find: "                Some(StatementKind::FakeRead(..) | StatementKind::PlaceMention(..) | StatementKind::AscribeUserType(..)) => {\n                    true\n",
     replace: "                Some(StatementKind::FakeRead(..) | StatementKind::PlaceMention(..) | StatementKind::AscribeUserType(..)) => {\n                    false\n",
     tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_array_written_through_its_pointer.rs$"],
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninit-written-whole-given-boxed",
     breaks: "a `MaybeUninit<[u32; 2]>` given to `Box::new`, which is what it's given, is taken for one read whole, `undefined`, so a function given the box's reference and writing through its pointer throws (#1258)",
-    file: "src/lower/std_types/uninit.rs",
+    file: "crates/rust-js-lower/src/std_types/uninit.rs",
     find: "                                    && Some(gives.peel_refs()) == self.recognition().uninit_of(made)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_array_written_through_its_pointer.rs$"],
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninit-read-uncopied",
     breaks: "`m.assume_init_read()` of a `MaybeUninit<[u32; 2]>` is the array in place, so a later write through its pointer shows in what was read (#1265)",
-    file: "src/lower/std_types/uninit.rs",
+    file: "crates/rust-js-lower/src/std_types/uninit.rs",
     find: "            UninitOp::Read => self.copy_if_needed(arg(), item),\n",
     replace: "            UninitOp::Read => arg(),\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_read_is_a_copy.rs$"],
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninit-read-not-a-whole-read",
     breaks: "a `MaybeUninit<[u32; 2]>` read by `assume_init_read()` isn't taken for one read whole, so it's its slots, `Array.from({ length: 2 })`, where it's its value (#1265, #1258)",
-    file: "src/lower/std_types/uninit.rs",
+    file: "crates/rust-js-lower/src/std_types/uninit.rs",
     find: "                            Some(Std::Same | Std::Uninit(UninitOp::Read)) => {\n",
     replace: "                            Some(Std::Same) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_read_is_a_copy.rs$"],

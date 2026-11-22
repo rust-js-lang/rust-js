@@ -1,11 +1,11 @@
-// Mutations of src/lower/bindings/nullable.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/bindings/nullable.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "nested-nullable-outer-null",
     breaks: "a nullable `Option<Option<T>>` field's `None` is `null`, as a nullable `Option`'s, and its `Some(None)` boxed (#470)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "    said_nullable(tcx, field) && !nested_option(tcx, field) && !value_option(tcx, field)\n",
     replace: "    said_nullable(tcx, field) && !value_option(tcx, field)\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "any-value-none-nulled",
     breaks:
       "a map of any value, `Map<K, Option<&Unknown>>`, writes a `None` `null`, `data.set(key, value ?? null)`, so an `undefined` comes back `null` (#443)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "    any_value(tcx, payload) != Some(AnyValue::Shape)\n",
     replace: "    let _ = (tcx, payload, any_value);\n    true\n",
     tests: [
@@ -27,7 +27,7 @@ export const mutations: Mutation[] = [
     name: "any-value-read-held",
     breaks:
       "a map of any value's `get` is JS's read alone, which can't tell a key it lacks from one whose value is `undefined` (#443)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "                holds_none_as_null(tcx, of.type_at(0))\n",
     replace: "                true\n",
     tests: [
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     name: "any-value-entries-refused",
     breaks:
       "a map of any value made of entries made before is refused, though it holds them as they are (#443)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "                            && holds_none_as_null(tcx, args.type_at(0))\n",
     replace: "",
     tests: [
@@ -53,17 +53,17 @@ export const mutations: Mutation[] = [
     name: "nullable-refcell-refused",
     breaks:
       "`#[rust_js::nullable]` of a field's `RefCell<Option<T>>` is refused (ADR 0863)",
-    file: "src/lower/bindings/nullable.rs",
-    find: "            if (cell(*adt, crate::lower::recognition::StdItem::Cell)\n                || cell(*adt, crate::lower::recognition::StdItem::RefCell))\n",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
+    find: "            if (cell(*adt, crate::recognition::StdItem::Cell) || cell(*adt, crate::recognition::StdItem::RefCell))\n",
     replace:
-      "            if cell(*adt, crate::lower::recognition::StdItem::Cell)\n",
+      "            if cell(*adt, crate::recognition::StdItem::Cell)\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "a nullable RefCell field"],
   },
   {
     name: "nullable-generic-cell-field-refused",
     breaks:
       "`#[rust_js::nullable]` of a generic struct's `RefCell<T>` or `Cell<T>` field is refused, React's `StackCursor<T>`'s `current` (ADR 0586, amended)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "            matches!(args.type_at(0).kind(), ty::Param(_))\n",
     replace: "            false\n",
     tests: [
@@ -76,7 +76,7 @@ export const mutations: Mutation[] = [
     name: "nullable-thread-local-of-options-refused",
     breaks:
       "`#[rust_js::nullable]` of a thread-local a generic constructor makes of an `Option`, `StackCursor<Option<Rc<HiddenContext>>>`, is refused (ADR 0586, amended)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "    matches!(held.kind(), ty::Adt(adt, args) if !tcx.is_lang_item(adt.did(), LangItem::Option) && args.types().any(option))\n",
     replace: "    let _ = (held, option);\n    false\n",
     tests: [
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     name: "nullable-option-init-undefined",
     breaks:
       "a nullable thread-local of an `Option`'s `init` writes its `None` `undefined`, `__DEV__ ? f : undefined`",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "    nullable_result(tcx, body) || tcx.opt_parent(body).is_some_and(|key| nullable_local_option(tcx, key))\n",
     replace: "    nullable_result(tcx, body)\n",
     tests: [
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     name: "nullable-local-of-no-option-kept",
     breaks:
       "a `#[rust_js::nullable]` thread-local of a number is taken as one whose `None` is `null`, nothing to do (ADR 0586, amended)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "            (!of_option).then_some(\n",
     replace: "            false.then_some(\n",
     tests: [
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     name: "nullable-const-of-no-option-kept",
     breaks:
       "a `#[rust_js::nullable]` `const` of a number is taken as one whose `None` is `null`, nothing to do (ADR 0586, amended)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "        _ => (!option(ty)).then_some(\n",
     replace: "        _ => (!option(ty) && false).then_some(\n",
     tests: [
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     name: "nullable-const-taken-for-a-thread-local",
     breaks:
       "a `#[rust_js::nullable]` `const` of an `Option` is refused as a thread-local of no `Cell` of one, `export const NoTransition = null` unwritable (ADR 0586, amended)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "        ty::Adt(key, args) if is_std_def(tcx, key.did(), StdItem::LocalKey) => {\n",
     replace:
       "        ty::Adt(key, args) if is_std_def(tcx, key.did(), StdItem::LocalKey) || true => {\n",
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     name: "nullable-thread-local-of-option-refused",
     breaks:
       "a `#[rust_js::nullable]` thread-local of an `Option` itself, React's `callComponentInDEV`, is refused",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "            let of_option = nullable_option(tcx, held).is_some() || made_of_options(tcx, held);\n",
     replace:
       "            let of_option = nullable_option(tcx, held).is_some_and(|option| option != held) || made_of_options(tcx, held);\n",
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
     name: "nullable-result-js-null-unnamed",
     breaks:
       "`#[rust_js::nullable]` on a function returning an array of `Option`s is refused without naming `js::null()`, the way its `None`s are `null` (ADR 0935, amended)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "    let holds_option = output.walk().any(|arg| arg.as_type().is_some_and(is_option));\n",
     replace:
       "    let holds_option = false && output.walk().any(|arg| arg.as_type().is_some_and(is_option));\n",
@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
     name: "closure-nullable-not-an-option-allowed",
     breaks:
       "a closure's `#[rust_js::nullable(name)]` of a binding that's no `Option`, or of none, is taken without a word (ADR 0861, amended)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "                if !option {\n",
     replace: "                if false && !option {\n",
     tests: ["test/js-constructors.test.ts", "-t", "nullable"],
@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
     name: "fn-param-nullable-allowed",
     breaks:
       "a function's parameter marked `#[rust_js::nullable]` is taken without a word, where the function says it, `#[rust_js::nullable(value)]` (ADR 0861, amended)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "            if !closure {\n",
     replace: "            if false && !closure {\n",
     tests: ["test/js-constructors.test.ts", "-t", "nullable"],
@@ -188,7 +188,7 @@ export const mutations: Mutation[] = [
     name: "nullable-values-unread",
     breaks:
       "no collection holds its value's `None` as `null`, so `map.set(key, None)` is `map.set(key, undefined)`, which a held `get`, `map.get(key)`, reads as a key it lacks (ADR 0884, amended)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "    (tcx.generics_of(adt).own_params.iter())\n        .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { .. }) && names.contains(&param.name))",
     replace:
       "    (tcx.generics_of(adt).own_params.iter())\n        .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { .. }) && names.contains(&param.name) && false)",
@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
     name: "nullable-value-written-undefined",
     breaks:
       "a collection's value given a binding as itself, `set(key, value: V)`, isn't written `null` for `None`, `map.set(key, undefined)`, which `map.get(key)` reads as a key it lacks (ADR 0884, amended)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "    named\n        || input.is_some_and(\n            |input| matches!(input.kind(), ty::Param(p) if nullable_type_params(tcx, def_id).contains(&p.index)),\n        )\n}",
     replace: "    named\n}",
     tests: ["test/corpus.test.ts", "-t", "^map_none_held_as_null.rs$"],
@@ -207,7 +207,7 @@ export const mutations: Mutation[] = [
     name: "nullable-value-read-boxed",
     breaks:
       "a keyed read of a value a collection holds `None` of as `null` isn't JS's read held where it's made, `appearing.get(name) === null`, but `$someGet`'s box (ADR 0884, amended)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "    tcx.is_lang_item(adt.did(), LangItem::Option)\n        && nullable_type_params(tcx, def_id).contains(&p.index)\n",
     replace:
       "    tcx.is_lang_item(adt.did(), LangItem::Option)\n        && nullable_type_params(tcx, def_id).contains(&p.index)\n        && false\n",
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
     name: "nullable-entries-made-before-taken",
     breaks:
       "entries made before `new Map`, which hold a `None` as `undefined`, are taken for a map of `Option` values, whose `get` reads it as a key it lacks (ADR 0884, amended)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "            _ => return false,\n        }\n    }\n}",
     replace: "            _ => return true,\n        }\n    }\n}",
     tests: [
@@ -230,7 +230,7 @@ export const mutations: Mutation[] = [
     name: "nullable-entries-in-place-refused",
     breaks:
       'entries written where they\'re given, `map::new(Some(&[("none", None)]))`, are refused as made before (ADR 0884, amended)',
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "                return fields.iter().all(|&field| {",
     replace:
       "                return fields.is_empty() && fields.iter().all(|&field| {",
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
     name: "value-field-boxed",
     breaks:
       "a nullable field of what may be `undefined` holds ADR 0051's box, `$some(undefined)` (rd645)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "    undefined_never_null(tcx, value)\n",
     replace: "    false && undefined_never_null(tcx, value)\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
@@ -249,7 +249,7 @@ export const mutations: Mutation[] = [
     name: "unit-held-boxed",
     breaks:
       "a nullable field of an `Option<()>` holds the box, `$some(undefined)`, not `undefined` (rd645)",
-    file: "src/lower/bindings/nullable.rs",
+    file: "crates/rust-js-lower/src/bindings/nullable.rs",
     find: "    match ty.kind() {\n        ty::Tuple(items) => items.is_empty(),\n",
     replace: "    match ty.kind() {\n        ty::Tuple(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],

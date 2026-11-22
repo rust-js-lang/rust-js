@@ -11,7 +11,7 @@ can observe changes; only how long a compile takes.
 
 Whether a field or a function gets a React name, a component's props or
 a hook's `useX`, is found once for a crate, `props_structs` and `hooks`
-in `src/lower/bindings.rs`, and kept in a static, `of_crate`, so the
+in `crates/rust-js-lower/src/bindings.rs`, and kept in a static, `of_crate`, so the
 playground, which compiles its crate again and again in one process,
 finds it again when the crate is the same and anew when it changed. The
 key was the crate's identity and its content: another crate's, its

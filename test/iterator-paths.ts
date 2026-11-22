@@ -8,7 +8,7 @@
 // adapter, a `Box` of it and a `&mut` of it, and the wrappers nested: a
 // `Box` of a `Box`, a `&mut` of a `Box`, and generic code's `Box<J>` of
 // a type parameter's value. Its rows are
-// std's steps catalog's (src/lower/recognition/std_steps.txt, read by
+// std's steps catalog's (crates/rust-js-lower/src/recognition/std_steps.txt, read by
 // test/std-steps-catalog.ts): of each adapter A and each step s that A
 // writes, the consumer that asks s, so a hand-written form that passes on
 // another set of steps than std's adapter, or closes or drops in another

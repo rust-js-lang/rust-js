@@ -34,7 +34,7 @@ const root = join(import.meta.dir, "..");
  * lowering's iterator value and its marks (ADR 1092's owners): files, and
  * the functions whose body a hunk is in. */
 const shared = {
-  files: ["crates/rust-js-program/src/runtime/forward.js", "crates/rust-js-program/src/runtime/closing.js", "src/lower/iterators/value.rs"],
+  files: ["crates/rust-js-program/src/runtime/forward.js", "crates/rust-js-program/src/runtime/closing.js", "crates/rust-js-lower/src/iterators/value.rs"],
   functions: ["$consume", "$consumed", "$closing", "$closed", "$forward", "$given", "$givenDrop", "$knowing", "$held", "$iterator"],
 };
 
@@ -44,7 +44,7 @@ const shared = {
  * adapters it names, whatever its source, as a removal does: every one
  * runs. The held flip's (bb518fcca) ran a sample of its `map` rows, and
  * none of `chain.flatten`'s, whose `map` its id doesn't name (#1780). */
-export const deciding = ["src/lower/body_queries/in_place.rs", "src/lower/iterators/transparent.rs"];
+export const deciding = ["crates/rust-js-lower/src/body_queries/in_place.rs", "crates/rust-js-lower/src/iterators/transparent.rs"];
 
 /** `names` and each adapter whose text calls one of them (`adapterCalls`):
  * a change to `map` reaches `flatten`'s rows, whose per-item `map` their

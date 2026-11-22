@@ -1,4 +1,4 @@
-// Mutations of src/lower/analysis/namespaces.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/analysis/namespaces.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "namespace-through-keyword",
     breaks:
       "a path through `super` alone, `super::extract_events(1)`, is read through its module's namespace, `Plugin.extractEvents(1)`, though it names no module of its own (rd114)",
-    file: "src/lower/analysis/namespaces.rs",
+    file: "crates/rust-js-lower/src/analysis/namespaces.rs",
     find: "        && !module.ident.is_path_segment_keyword()\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "read through its namespace"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "namespace-through-reexport",
     breaks:
       "a function a module `use`s but its file doesn't re-export, `plugins::paired()` of `pub(crate) use crate::shared::doubled as paired`, is read through that module's namespace, `Plugins.paired`, which it doesn't export (rd114, rd137)",
-    file: "src/lower/analysis/namespaces.rs",
+    file: "crates/rust-js-lower/src/analysis/namespaces.rs",
     find: "        && (tcx.parent(function) == named || reexports(named))\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "read through its namespace"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "namespace-of-a-value-path",
     breaks:
       "a function given as a value through its module, `.map(plugin::doubled)`, is its named import while its calls are the namespace's (rd114)",
-    file: "src/lower/analysis/namespaces.rs",
+    file: "crates/rust-js-lower/src/analysis/namespaces.rs",
     find: "            hir::ExprKind::Path(ref qpath) => Some(qpath),\n            hir::ExprKind::Call(callee, _) => match callee.kind {\n",
     replace:
       "            hir::ExprKind::Call(callee, _) => match callee.kind {\n",
@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
     name: "namespace-of-functions-alone",
     breaks:
       "a thread-local, a `static` or a `const` read through its module path, `plugin::CALLS.get()`, is its named import beside the module's namespace, `import { calls }` and `import * as Plugin`, two import forms of one module (rd114a, ADR 1018)",
-    file: "src/lower/analysis/namespaces.rs",
+    file: "crates/rust-js-lower/src/analysis/namespaces.rs",
     find: "    let Res::Def(DefKind::Fn | DefKind::Const | DefKind::Static { .. }, function) = path.res else {\n",
     replace: "    let Res::Def(DefKind::Fn, function) = path.res else {\n",
     tests: ["test/corpus.test.ts", "-t", "^module_path_namespace.rs$"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "namespace-of-a-callable-value",
     breaks:
       "a thread-local of a `with_this` function read through its module, `report::REPORT.with(|report| report())`, is `Report.report()`, which gives it the namespace object as its `this`, where Rust gives it `None` (rd114a, ADR 1018)",
-    file: "src/lower/analysis/namespaces.rs",
+    file: "crates/rust-js-lower/src/analysis/namespaces.rs",
     find: "        && !holds_a_callable(tcx, function);\n",
     replace: "        && (true || !holds_a_callable(tcx, function));\n",
     tests: [
@@ -59,7 +59,7 @@ export const mutations: Mutation[] = [
     name: "library-root-namespace-by-file",
     breaks:
       "a library's root's namespace is named by its JS file, `import * as Lib from \"../dep/lib.js\"`, not its crate, `Dep` (rd114c, ADR 1018)",
-    file: "src/lower/analysis/namespaces.rs",
+    file: "crates/rust-js-lower/src/analysis/namespaces.rs",
     find: "        Some((from, _)) if !module.is_crate_root() => {\n",
     replace: "        Some((from, _)) => {\n",
     tests: [
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     name: "reexported-path-not-through",
     breaks:
       "a function a module re-exports, called through that module's path, `plugins::doubled(2)`, imports the function from where it's defined, not `Plugins.doubled(2)`, as React DOM's `SimpleEventPlugin.registerEvents()` reads (rd137)",
-    file: "src/lower/analysis/namespaces.rs",
+    file: "crates/rust-js-lower/src/analysis/namespaces.rs",
     find: "        && (tcx.parent(function) == named || reexports(named))\n",
     replace: "        && tcx.parent(function) == named\n",
     tests: [
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
     name: "namespace-import-unrenamed",
     breaks:
       "a namespace's import is named after its file, not as the `use` that renames its struct names it, `import * as Reconciler` of `use reconciler::Reconciler as DefaultConfig` (rd292b)",
-    file: "src/lower/analysis/namespaces.rs",
+    file: "crates/rust-js-lower/src/analysis/namespaces.rs",
     find: "        .filter(|&(id, _)| named(id))\n",
     replace: "        .filter(|&(id, _)| named(id) && false)\n",
     tests: ["test/namespaces.test.ts", "-t", "use renames it"],
@@ -93,9 +93,9 @@ export const mutations: Mutation[] = [
   {
     name: "reexported-constant-from-its-definer",
     breaks: "a `const` read through a module that re-exports it, SchedulerNative's `scheduler::UNSTABLE_USER_BLOCKING_PRIORITY`, is imported from its definer, `import { UserBlockingPriority } from '../SchedulerPriorities.js'`, not read off that module's namespace, `Scheduler.unstable_UserBlockingPriority` (rd800, #628)",
-    file: "src/lower/analysis/namespaces.rs",
-    find: "        function.is_local()\n            && (crate::lower::reexports::reexporting_use(\n",
-    replace: "        function.is_local()\n            && tcx.def_kind(function) == DefKind::Fn\n            && (crate::lower::reexports::reexporting_use(\n",
+    file: "crates/rust-js-lower/src/analysis/namespaces.rs",
+    find: "        function.is_local()\n            && (crate::reexports::reexporting_use(",
+    replace: "        function.is_local()\n            && tcx.def_kind(function) == DefKind::Fn\n            && (crate::reexports::reexporting_use(",
     tests: ["test/reexports-through.test.ts", "-t", "a constant read through a module that re-exports it"],
   },
 ];

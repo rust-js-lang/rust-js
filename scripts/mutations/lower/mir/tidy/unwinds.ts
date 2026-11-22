@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/tidy/unwinds.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/tidy/unwinds.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
 const panics = [
@@ -12,7 +12,7 @@ export const mutations: Mutation[] = [
     name: "scoped-drops-kept-per-statement",
     breaks:
       "each statement a value's drop ends stays its own `try { .. } catch (error) { drop(x); throw error; }`, not one `try { .. } finally { drop(x) }`",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        let run = scope_end(stmts, i, result).filter(|&end| taken(&stmts[i..end]));\n",
     replace: "        let run = scope_end(stmts, i, result).filter(|_| false);\n",
     tests: panics,
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "scoped-guard-kept-per-statement",
     breaks: "each statement a lock's guard's scope holds stays its own `try { .. } catch (error) { $unlock(g); throw error; }`, not one `try` whose `catch` marks its poison and whose `finally` releases it (#1438)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        if let Some(end) = run.filter(|&end| finally_holds(&stmts[end]) || parts(end).is_some()) {\n",
     replace: "        if let Some(end) = run.filter(|&end| finally_holds(&stmts[end])) {\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "returned-through-catch-kept",
     breaks: "a lock's guard's scope that gives what it makes last keeps `result = e;` in its `try` and `return result;` after, not `return e;` in it (#1438)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        ] => (inner, handler),\n        _ => (body, &[]),\n",
     replace: "        ] => (body, &[]),\n        _ => (body, &[]),\n",
     tests: ["test/corpus.test.ts", "-t", "^locks.rs$"],
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     name: "scoped-drop-left-in-catch",
     breaks:
       "a statement's `catch` in a scope keeps the scope's drop, which a panic then runs twice, there and in the `finally`",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "                handler.remove(handler.len() - 2);\n",
     replace: "",
     tests: panics,
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   {
     name: "scope-across-throwing-statement",
     breaks: "a run goes on past a statement that may throw outside any `try`",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "                _ => stmt.only_makes_values(),\n",
     replace: "                _ => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^(drop_on_panic|question_drops|vec_destructors|dyn_auto_traits|scoped_drops_cross|drop_scopes|while_test_ends_in_throw).rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
     name: "scoped-drops-if-uncovered",
     breaks:
       "an `if` in a guard's scope ends its run, so each statement keeps a `try` and `catch` of the drop, not one `finally`",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "                StmtKind::If(test, a, b) => {\n                    !test.may_throw()\n",
     replace:
       "                StmtKind::If(test, a, b) => {\n                    false && !test.may_throw()\n",
@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
     name: "scoped-drops-exit-kept",
     breaks:
       "a way out of a guard's scope keeps its drop in the `try`, which the `finally` runs again",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "            out.push(leaving);\n            continue;\n",
     replace:
       "            out.push(stmt);\n            out.push(leaving);\n            continue;\n",
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
     name: "scope-declarations-unhoisted",
     breaks:
       "what a scope declares and what follows it reads is declared inside its `try`, out of reach",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "            let hoisted = hoist_read_after(&mut body, &rest);\n",
     replace: "            let hoisted: Vec<Stmt> = Vec::new();\n",
     tests: [
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     name: "scope-lets-left-before",
     breaks:
       "a `let x;` only a scope reads stays before its `try`, `let tmp; try { tmp = .. }`",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        if elsewhere == 0 && js::mentions_of(rest, name) == 0 && js::mentions_of(std::slice::from_ref(drop), name) == 0\n",
     replace: "        if false\n",
     tests: panics,
@@ -108,7 +108,7 @@ export const mutations: Mutation[] = [
     name: "result-not-returned-in-try",
     breaks:
       "`let result; try { result = e; } finally { .. } return result;` stays, where it's `try { return e; } finally { .. }`",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        if found {\n            stmts.remove(i + 2);\n",
     replace: "        if found && false {\n            stmts.remove(i + 2);\n",
     tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
     name: "scoped-drops-unread-in-place",
     breaks:
       "what a statement's `try` held apart stays apart once its scope is one `finally`, `const tmp = lines[s].includes(..); if (tmp)`",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "            stmts.extend(rest);\n            scoped = true;\n",
     replace: "            stmts.extend(rest);\n",
     tests: [
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
     name: "guard-try-at-drop",
     breaks:
       "a guard's `try` is where its drop is, so the blank line before the guard's `let` is in its block, where none is printed (ADR 0865, amended)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "                Some(lo) if !drop.span.is_none() && lo < drop.span.lo => js::Span { lo, hi: drop.span.hi },\n",
     replace:
       "                Some(lo) if false => js::Span { lo, hi: drop.span.hi },\n",
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     name: "guard-try-at-first",
     breaks:
       "a guard's `try` starts at its first statement, so a comment after the guard's `let` is before the `try`, not in it (ADR 0865, amended)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "                    .filter(|&&(guard, end)| end == drop.span.hi && written < guard && guard < lo)\n",
     replace: "                    .filter(|_| false)\n",
     tests: [
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
     name: "guard-try-at-an-earlier-guard",
     breaks:
       "a run's `try` starts at an earlier guard's `let` the same block drops, `swapped`'s, and the blank line before the run is lost (ADR 0865, amended)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "                    .filter(|&&(guard, end)| end == drop.span.hi && written < guard && guard < lo)\n",
     replace:
       "                    .filter(|&&(guard, end)| end == drop.span.hi && guard < lo)\n",
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
     name: "guard-try-first-unwritten",
     breaks:
       "a guard's `try` whose first statement is a temporary's, `result = scope()`, placed nowhere, is where its drop is (ADR 0865, amended)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        | StmtKind::Return(Some(value))\n            if !value.span.is_none() =>\n",
     replace:
       "        | StmtKind::Return(Some(value))\n            if false =>\n",
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
     name: "guard-try-past-first",
     breaks:
       "a guard's `try` whose first statement is a call's own `try`, placed nowhere, is where its drop is, and the blank line before the guard's `let` is lost (ADR 0865, amended)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        StmtKind::Try(body, _) | StmtKind::TryCatch(body, ..) => body.first().and_then(written_at),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^struct_update_drops.rs$"],
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     name: "fixed-return-kept-in-finally",
     breaks:
       "a function or a constant a guard's scope returns last stays in its `try`, `try { try { .. } catch { .. } return noop; } finally { .. }`, not after one `try`, `catch` and `finally`",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "                StmtKind::Assign(_, value) if value.is_fixed() => {\n",
     replace:
       "                StmtKind::Assign(_, value) if false && value.is_fixed() => {\n",
@@ -207,7 +207,7 @@ export const mutations: Mutation[] = [
     name: "unthrown-catch-kept",
     breaks:
       "a `catch_unwind` whose `catch` drops what's held, no scope's `finally` taking it, keeps that `try`, though its call never throws (ADR 0873)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "    if !stmts.iter().any(unthrown) {\n",
     replace: "    if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
     name: "thrown-catch-dropped",
     breaks:
       "a `try` whose body may throw loses the `catch` that drops what's held as it unwinds (ADR 0873)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "            if body.iter().all(Stmt::cannot_throw) && handler",
     replace: "            if handler",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
     name: "unwrap-tested-made",
     breaks:
       "the `try` of an `unwrap()` of an option a call makes is its test, which runs the call again for its value, `counted()` twice",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        let given = option.reads_same()\n            && rest",
     replace: "        let given = rest",
     tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
@@ -235,7 +235,7 @@ export const mutations: Mutation[] = [
     name: "unwrap-tested-drops-lost",
     breaks:
       "an `unwrap()`'s test throws its panic without the drops its `catch` ran, so the task no impl takes isn't dropped",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        handler.push(StmtKind::Throw(panic).at(last.span));\n",
     replace: "        handler = vec![StmtKind::Throw(panic).at(last.span)];\n",
     tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
@@ -244,7 +244,7 @@ export const mutations: Mutation[] = [
     name: "return-place-out-of-scope",
     breaks:
       "an early `return callback();` from a guard's scope, of the function's return place, ends the scope: a `try` of each way out and a `let result`, where React's `runWithFiberInDEV` returns in its one `try` (ADR 0693, amended)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "                    name == self.result || self.declared.contains(name) && !self.set_by_closures.contains(name)\n",
     replace: "                    self.declared.contains(name) && !self.set_by_closures.contains(name)\n",
     tests: [
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
     name: "looped-drops-never",
     breaks:
       "a `for` over a `RefCell`'s borrow drops it in a `catch` around each step and before each way out, not one `try { for .. } finally { $unborrow(..) }` (rd191)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        if for_made && item.is_none() {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_loops.rs$"],
@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
     name: "early-looped-drops-of-any-loop",
     breaks:
       "a loop of a user iterator, which no `for` is made of, takes its value's `finally` early, its exhaustion's `return` then inside it, `while (true) { .. if (x == null) { return acc; } }` (rd200)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        if for_made && item.is_none() {\n",
     replace: "        if false && for_made && item.is_none() {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
     name: "looped-drops-outer-break-refused",
     breaks:
       "a loop over a borrow that leaves the block it's in, `break 'get_instance`, keeps a `catch` of the drop around each step, React Float's hydrateHoistable's `bb93:` (rd200)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "            StmtKind::Break(Some(label)) => !inside.labels.contains(label),\n",
     replace:
       "            StmtKind::Break(Some(label)) if inside.labels.contains(label) => false,\n            StmtKind::Break(Some(_)) => return false,\n",
@@ -288,7 +288,7 @@ export const mutations: Mutation[] = [
     name: "looped-drop-inner-continue-leaves",
     breaks:
       "every labeled `continue` is a way out of the loop that drops, an inner loop's `continue bb10` and its own `continue bb5` alike: the drop of a value given again in an inner loop is the outer loop's `finally`, run once at its end (generated program 12454574), or a loop over a borrow with a `continue 'outer` keeps a `catch` of the drop around each step (#440)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "            StmtKind::Continue(Some(label)) => !inside.labels.contains(label) && inside.own != Some(label),\n",
     replace: "            StmtKind::Continue(Some(_)) => true,\n",
     tests: [
@@ -302,7 +302,7 @@ export const mutations: Mutation[] = [
     name: "looped-drop-inner-loop-labels-unseen",
     breaks:
       "the labels of the loops inside a loop that drops a value aren't its own, so an inner loop's `continue bb10` leaves it: a value given again there was dropped once, at the outer loop's end (generated program 12454574), which `names_dropped` now refuses too (#463), and a loop over a borrow with an inner loop's `continue` is a `catch` of the drop around each step, not one `try`",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "            StmtKind::While { label, .. }\n            | StmtKind::DoWhile { label, .. }\n            | StmtKind::For { label, .. }\n            | StmtKind::ForOf { label, .. } => label.clone(),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(drop_reassigned_in_inner_loop|looped_drops_jumps)\\.rs$"],
@@ -312,7 +312,7 @@ export const mutations: Mutation[] = [
     name: "looped-drops-own-continue-leaves",
     breaks:
       "the loop's own `continue bb2`, kept in a loop in it, is a way out of it, so a loop over a borrow with one stays a `catch` of the drop around each step (#440)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "            StmtKind::Continue(Some(label)) => !inside.labels.contains(label) && inside.own != Some(label),\n",
     replace: "            StmtKind::Continue(Some(label)) => !inside.labels.contains(label),\n",
     tests: ["test/corpus.test.ts", "-t", "^looped_drops_jumps.rs$"],
@@ -322,7 +322,7 @@ export const mutations: Mutation[] = [
     name: "ended-exit-unmoved",
     breaks:
       "a borrow loop's way out where it's done, `$unborrow(borrow); return false;`, stays in the `try`, `try { for (..) { .. } return false; } finally { .. }`, not after it, as the loop's end is written (#442)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "            Some(item) if for_made => ended_exit(",
     replace: "            Some(item) if false && for_made => ended_exit(",
     tests: [
@@ -336,7 +336,7 @@ export const mutations: Mutation[] = [
     name: "run-labels-unseen",
     breaks:
       "a block's `break` in what's before a loop, `bb42: { .. break bb42; }`, is a way out of the run, so a scope's `try` is cut around it (#442)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "            let labels = own_labels(&mut run);\n",
     replace: "            let labels: Vec<Name> = Vec::new();\n",
     tests: [
@@ -350,7 +350,7 @@ export const mutations: Mutation[] = [
     name: "wide-run-unextended",
     breaks:
       "an early loop's run stops at what has no way out before it, `if (..) { .. }`, so the scope's `try`s before it stay `catch`es each (#442)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "                    || wide && first.is_some_and(|first| first < start - 1) && !escapes(&stmts[start - 1..start]))\n",
     replace: ")\n",
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
@@ -360,7 +360,7 @@ export const mutations: Mutation[] = [
     name: "escapes-own-labels-unseen",
     breaks:
       "a block's `break` of itself is taken for a way out of it, so an early run stops at it (#442)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "            StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.iter().any(|i| l.is(i)),\n",
     replace:
       "            StmtKind::Break(Some(_)) | StmtKind::Continue(Some(_)) => true,\n",
@@ -371,7 +371,7 @@ export const mutations: Mutation[] = [
     name: "branches-given-unreturned",
     breaks:
       "a guard's scope whose value is an `if`'s, React's flushSync's, stays `let result; try { if (f != null) { result = f(); } else { result = undefined; } } finally { .. } return result;`, not each branch's `return` in the `try` (rd286)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        StmtKind::If(_, then, Some(otherwise)) => {\n            let ended",
     replace:
       "        StmtKind::If(_, then, Some(otherwise)) if false => {\n            let ended",
@@ -382,7 +382,7 @@ export const mutations: Mutation[] = [
     name: "looped-drop-past-its-write",
     breaks:
       "an assignment's drop of the old value in a loop, `dDrop(held); held = noisy; continue;`, is a `finally` around the assignment, which drops the new value and never the old (#463)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        if dropped && (!unseen_by_drops(&stmt) || names_dropped(&stmt, drop)) {\n",
     replace: "        if dropped && !unseen_by_drops(&stmt) {\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_assigned_after_a_loop.rs$"],
@@ -391,7 +391,7 @@ export const mutations: Mutation[] = [
     name: "looped-drop-past-what-runs-code",
     breaks:
       "a statement after an inner `for` that runs the program's code, `console.log(..)`, is in the `finally`'s `try`, so it runs before what the `for` left is dropped (#465)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) => !value.has_effects(),\n        StmtKind::Assign(target, value) => matches!(target.kind, ExprKind::Var(_)) && !value.has_effects(),\n        _ => false,\n",
     replace: "        _ => stmt.cannot_throw(),\n",
     tests: ["test/corpus.test.ts", "-t", "^for_left_drops_its_rest_where_it_ends.rs$"],
@@ -400,7 +400,7 @@ export const mutations: Mutation[] = [
     name: "looped-drop-past-a-field-write",
     breaks:
       "a write of a field after an inner `for`, which a drop may read, runs before the drop, in the `finally`'s `try` (#465)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        StmtKind::Assign(target, value) => matches!(target.kind, ExprKind::Var(_)) && !value.has_effects(),\n",
     replace: "        StmtKind::Assign(_, value) => !value.has_effects(),\n",
     tests: ["test/corpus.test.ts", "-t", "^for_left_drops_its_rest_where_it_ends.rs$"],
@@ -409,7 +409,7 @@ export const mutations: Mutation[] = [
     name: "scoped-loops-left-to-their-steps",
     breaks:
       "a loop in an `if` in a drop guard's scope keeps each step's own `try` until `loops` has read it, so it's `$iter(xs.toReversed())` and `$next`, not a `for` (rd711)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        js::each_list(run, &mut |list| found |= list.iter().any(|s| stepped(s).is_some()));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^guard_scope_loop_in_an_if.rs$"],
@@ -418,31 +418,31 @@ export const mutations: Mutation[] = [
   {
     name: "finally-holds-what-may-throw",
     breaks: "a scope's `finally` holds a drop that may panic, which it can't tell a panic as a panic unwinds, where Rust aborts (#847)",
-    file: "src/lower/mir/tidy/unwinds.rs",
-    find: "    crate::lower::drops::finally_holds(std::slice::from_ref(drop))\n",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
+    find: "    rust_js_lower::drops::finally_holds(std::slice::from_ref(drop))\n",
     replace: "    true\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_replace_panics.rs$"],
   },
   {
     name: "cleanups-left-unguarded",
     breaks: "a `catch` that throws on runs its drops unguarded, so a drop's panic there replaces the panic where Rust aborts (#847)",
-    file: "src/lower/mir/tidy/unwinds.rs",
-    find: "        *handler = crate::lower::drops::cleanup(drops, Some(error), span);\n",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
+    find: "        *handler = rust_js_lower::drops::cleanup(drops, Some(error), span);\n",
     replace: "        *handler = drops;\n",
     tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_locals.rs$"],
   },
   {
     name: "tested-unwrap-drops-unguarded",
     breaks: "an `unwrap()`'s panic runs its drops unguarded, so a drop's panic there replaces it where Rust aborts (#847)",
-    file: "src/lower/mir/tidy/unwinds.rs",
-    find: "        let mut handler = crate::lower::drops::cleanup(handler, None, last.span);\n",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
+    find: "        let mut handler = rust_js_lower::drops::cleanup(handler, None, last.span);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_vec.rs$"],
   },
   {
     name: "dropped-at-breaks-off",
     breaks: "an early return out of a guard's scope whose drop may throw is a `break` of MIR's label to the drop after it, a label the program never wrote (#861)",
-    file: "src/lower/mir/tidy/unwinds.rs",
+    file: "crates/rust-js-mir/src/tidy/unwinds.rs",
     find: "        if breaks_dropped(&mut taken, &label, &tail, true) {\n",
     replace: "        if false && breaks_dropped(&mut taken, &label, &tail, true) {\n",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "drops where it leaves"],

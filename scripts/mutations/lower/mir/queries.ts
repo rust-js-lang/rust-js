@@ -1,4 +1,4 @@
-// Mutations of src/lower/mir/queries.rs (ADR 0093).
+// Mutations of crates/rust-js-mir/src/queries.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "tested-and-taken-returned",
     breaks:
       "an `Option` or `Result` given back whole is taken for one only tested: a `try_from`'s `return result;` of nothing made (#366), a `position`'s `-1` given back as `None` (rd316)",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "    local != mir::RETURN_PLACE && calls == 1 && {\n",
     replace: "    calls == 1 && {\n",
     tests: ["test/corpus.test.ts", "-t", "^(try_from_int_tested|position_index_of).rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "tested-and-taken-let-mention-unknown",
     breaks:
       "a `let Ok(n) = u8::try_from(i) else { .. }` is `$tryFromInt`, and a `let Some(i) = xs.iter().position(f) else { .. }` `$position`, as the `let`'s mention of its value was taken for a read of it whole (#366, rd316)",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "NonMutatingUseContext::Inspect | NonMutatingUseContext::PlaceMention",
     replace: "NonMutatingUseContext::Inspect",
     tests: ["test/corpus.test.ts", "-t", "^(try_from_int_tested|position_index_of).rs$"],
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     name: "tested-and-taken-other-variant-read",
     breaks:
       'a `try_from` whose error is read, `Err(e) => format!("{e}")`, is taken for one only tested, its error never made (#366)',
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "                ) => variant.as_u32() == self.1,\n",
     replace: "                ) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "mir-early-exit-not-negated",
     breaks:
       "a branch that returns, written first, is taken when its test fails, not when it holds",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "            let mut out = vec![StmtKind::If(test.negated_test(), otherwise, None).at(span)];\n",
     replace:
       "            let mut out = vec![StmtKind::If(test, otherwise, None).at(span)];\n",
@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
     name: "mir-static-read-movable",
     breaks:
       "a read of a static, which any call may change, is moved past a call that changes it",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "                stable &= !state.naming.borrowed_names().contains(name) && state.own_names.contains(name);\n",
     replace:
       "                stable &= !state.naming.borrowed_names().contains(name);\n",
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "from-end-place-not-same",
     breaks:
       "an item counted from the end through a `&mut`, `[.., last]`, is a handle, not its place `v[v.length - 1]`",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "                    || from_end(object, index)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_pattern_mut_rest.rs$"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     name: "mir-early-exit-panic-last",
     breaks:
       "a check that panics is written after what goes on, `if (n === 6) { return n; } fail()`, not `if (n !== 6) { fail() } return n;`",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "        Some(otherwise) if panics == [false, true] => {\n",
     replace:
       "        Some(otherwise) if panics == [false, true] && false => {\n",
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
     name: "mir-panics-through-calls-not",
     breaks:
       "a panic whose message a call makes isn't seen as one, its check written last",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "            TerminatorKind::Goto { target }\n            | TerminatorKind::Call {\n                target: Some(target), ..\n            }\n",
     replace: "            TerminatorKind::Goto { target }\n",
     tests: [
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
     name: "mir-early-exit-both-returning-flipped",
     breaks:
       "of two branches that both return, the second is first, `if (!c) { return b; } return a;`",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "        Some(otherwise) if panics == [true, false] || exits(&then) => {\n",
     replace:
       "        Some(otherwise) if panics == [true, false] || exits(&then) && !exits(&otherwise) => {\n",
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
     name: "mir-bounds-check-inline",
     breaks:
       "an index nothing proves in bounds is checked by an `if … throw` of its own, not `$index(xs, i)`",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "        _ if written.projection.last() == Some(&PlaceElem::Index(local)) => Some((local, true)),\n        _ => None,\n",
     replace: "        _ => None,\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "nothing proves in bounds"],
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     name: "mir-bounds-ref-unchecked-here",
     breaks:
       "a shared reference to an element, `&xs[i]`, is checked by an `if … throw`",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "        | Rvalue::Ref(_, BorrowKind::Shared, read)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(leak|loop_drops).rs$"],
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     name: "mir-division-checked-twice",
     breaks:
       "a `%` or `/` from MIR is checked before the division checks it, `if ((2 === -1) & \u2026) throw`",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "            AssertKind::DivisionByZero(_)\n                | AssertKind::RemainderByZero(_)\n                | AssertKind::Overflow(BinOp::Div | BinOp::Rem, ..)\n",
     replace: "            AssertKind::Overflow(BinOp::Shl, ..)\n",
     tests: [
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
     name: "mir-frozen-borrow-a-variable",
     breaks:
       "a match guard's shared borrow of `k.level` makes `k` a variable, its payloads held, `const t = k._0; return t;`",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "&& !place.is_indirect() && !frozen {",
     replace: "&& !place.is_indirect() {",
     tests: [
@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
     name: "mir-arm-written-at-test",
     breaks:
       "an arm that tests a field first, `Done { ok: true }`, is placed where its test is spanned, the `match`, first",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "    written_within(body, block, 4)\n",
     replace: "    written_within(body, block, 0)\n",
     tests: [
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
     name: "mir-async-captured-refused",
     breaks:
       "MIR's `async fn` that captures its array parameter first is refused",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "        .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_only_vars() || copy(value)))\n",
     replace:
       "        .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_only_vars()))\n",
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
     name: "constant-index-checked",
     breaks:
       "an array's constant index below its constant length is checked, `$index(grid, 1)`",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "                BinOp::Lt => Some(a < b),\n",
     replace: "                BinOp::Lt => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^array_repeat.rs$"],
@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
     name: "constant-divisor-checked",
     breaks:
       "a constant divisor is checked against 0 where a panic would drop, `if (2 === 0)`",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "                BinOp::Eq => Some(a == b),\n",
     replace: "                BinOp::Eq => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_operand_leaves.rs$"],
@@ -201,7 +201,7 @@ export const mutations: Mutation[] = [
     name: "constant-division-overflow-checked",
     breaks:
       "a signed division by a constant other than -1 is checked for overflow where a panic would drop",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "                (Some(false), _) | (_, Some(false)) => Some(false),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^drop_operand_leaves.rs$"],
@@ -211,7 +211,7 @@ export const mutations: Mutation[] = [
     name: "division-check-across-a-call",
     breaks:
       "a division's check is left to its helper though a call runs between, `v[f()] = a % b`: `f` runs before a zero divisor panics",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "            TerminatorKind::Goto { target } => block = *target,\n            _ => return false,\n",
     replace:
       "            TerminatorKind::Goto { target } => block = *target,\n            _ => return true,\n",
@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
     name: "pin-borrow-a-write",
     breaks:
       "a `&mut` to a pin counts as a write of it, so its binding is a handle",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: " && place.projection.is_empty() && !itself {",
     replace: " && place.projection.is_empty() {",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
@@ -231,8 +231,8 @@ export const mutations: Mutation[] = [
     name: "mir-some-value-unsteady",
     breaks:
       "MIR refuses `ref mut x` of a boxed `Some`'s payload, `$someValue(o)`",
-    file: "src/lower/mir/queries.rs",
-    find: "        js::ExprKind::Call(..) => crate::lower::std_types::option::some_value_of(place).is_some_and(steady_place),\n",
+    file: "crates/rust-js-mir/src/queries.rs",
+    find: "        js::ExprKind::Call(..) => rust_js_lower::std_types::option::some_value_of(place).is_some_and(steady_place),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "ref_mut_of_mut_payload"],
     snapshots: true,
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
     name: "reassigned-param-alike",
     breaks:
       "a `mut` parameter assigned once is read as what never changes, its argument not counted as its first value, so a read of it an operand takes before it's assigned, `n + { n += 1; n }`'s `n`, reads its new value, `n + n`",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "    written_again(state, local) && !(!is_parameter",
     replace: "    (state.locals.writes[local] > 1) && !(!is_parameter",
     tests: ["test/corpus.test.ts", "-t", "^mut_param_moved_out.rs$"],
@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
     name: "mir-alike-once-each-way-unseen",
     breaks:
       "a variable each of a `match`'s arms assigns, `let variant = match ..`, isn't alike, so JSX holds `const Icon = variant.Icon` first, not `variant.Icon && <variant.Icon />`",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "    written_again(state, local) && !(!is_parameter(state, local) && once_each_way(state.body, local, whole))\n",
     replace: "    written_again(state, local)\n",
     tests: [
@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
     name: "macro-fn-starts-at-the-macro",
     breaks:
       "a function a macro writes starts where the macro does, so a comment in it before the `fn` is dropped",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "        Some(name) if whole.from_expansion() && !name.from_expansion() => {\n",
     replace: "        Some(name) if false => {\n",
     tests: [
@@ -280,7 +280,7 @@ export const mutations: Mutation[] = [
     name: "written-break-not-first",
     breaks:
       "of an `if` whose branches each leave, a `return` and a `break` the program wrote, the `return`'s is first, its test negated (ADR 0790)",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "        }) => !span.is_none(),\n",
     replace: "        }) => false,\n",
     tests: [
@@ -293,7 +293,7 @@ export const mutations: Mutation[] = [
     name: "index-parameter-not-given-once",
     breaks:
       "an element at a parameter's index, `root.lanes.borrow_mut()[index] |= lane`, is a getter and a setter of it, the parameter counted as written never",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "    state.locals.writes[local] + usize::from(is_parameter(state, local)) == 1\n}\n",
     replace: "    state.locals.writes[local] == 1\n}\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_vec_element_places.rs$"],
@@ -303,7 +303,7 @@ export const mutations: Mutation[] = [
     name: "const-index-unsettled",
     breaks:
       "a place at a `const` index isn't settled, so its value is made in a `const value` first, no compound (ADR 0894, amended)",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "                && (index.is_fixed() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name)))\n",
     replace:
       "                && (index.is_constant() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name)))\n",
@@ -317,7 +317,7 @@ export const mutations: Mutation[] = [
     name: "guard-goto-of-nowhere-followed",
     breaks:
       "a `goto` rustc places nowhere, a `continue`'s back to its loop's start, is followed as a guard's failure is, and React's `if (exitStatus !== ROOT_ERRORED) { continue; }` is turned, its `else` first",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "TerminatorKind::Goto { target } if only_goes_on && !here.is_dummy() => block = target,",
     replace:
       "TerminatorKind::Goto { target } if only_goes_on => block = target,",
@@ -328,7 +328,7 @@ export const mutations: Mutation[] = [
     name: "variant-read-taken-for-written",
     breaks:
       'a block that reads an enum\'s variant to test it is taken for written at the `match`\'s subject, before the arms, and a failed guard\'s way on goes first: `if (!(size(s) > 10)) { .. return "other"; } return "big";`',
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "StatementKind::Assign(assign) if matches!(assign.1, Rvalue::Discriminant(_)))",
     replace: "StatementKind::Assign(assign) if matches!(assign.1, Rvalue::Discriminant(_)) && false)",
     tests: [
@@ -342,7 +342,7 @@ export const mutations: Mutation[] = [
     name: "guard-failure-at-its-goto",
     breaks:
       'a guard that fails, `_ if name == "HTML" => 2`, is taken for written where MIR spans its `goto`, before the arm it goes on to, and the arms are turned, `if (name !== "HTML") { return 3; } return 2;`',
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "    for _ in 0..8 {\n",
     replace: "    for _ in 0..0 {\n",
     tests: [
@@ -356,7 +356,7 @@ export const mutations: Mutation[] = [
     name: "named-constant-truth-unknown",
     breaks:
       "a check of a named constant, `-i64::MAX`'s of overflow, which rustc's value says passes, is written, an IIFE that throws `attempt to negate with overflow` where chrono's `TimeDelta::MIN` loads (#467)",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "            (constant.const_.try_to_scalar_int()).or_else(|| constant.const_.try_eval_scalar_int(tcx, typing_env))?;\n",
     replace: "            constant.const_.try_to_scalar_int()?;\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing is its module's const"],
@@ -364,7 +364,7 @@ export const mutations: Mutation[] = [
   {
     name: "derefs-capture-whole-unseen",
     breaks: "a closure's borrow it gives on, `kept(&entry.value)`, counts as a deref, so a getter's field is read where the closure calls, not where it's made (rd631)",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "                && (!matches!(elems.next(), Some(PlaceElem::Deref)) || lent)\n",
     replace: "                && !matches!(elems.next(), Some(PlaceElem::Deref))\n",
     tests: ["test/lowering-moves.test.ts", "-t", "a closure's borrow of a getter's field"],
@@ -373,7 +373,7 @@ export const mutations: Mutation[] = [
     name: "unreachable-past-false-edge-unseen",
     breaks:
       "a `match`'s arm of only `unsafe { unreachable_unchecked() }`, past its test's false edge, is taken for one that's reached, so its test and throw stay (rd643)",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "            TerminatorKind::Goto { target }\n            | TerminatorKind::FalseEdge {\n                real_target: target, ..\n            } => target,\n",
     replace: "            TerminatorKind::Goto { target } => target,\n",
     tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
@@ -382,7 +382,7 @@ export const mutations: Mutation[] = [
   {
     name: "once-each-way-box-content-unwritten",
     breaks: "a box written through, `*n += 1`, is taken for assigned once, so a read of it before is read past the write, `pair(n, n)` where Rust reads 5 then 6 (#980)",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "                if place.local == local && whole(place) {",
     replace: "                if place.local == local && place.projection.is_empty() {",
     tests: ["test/corpus.test.ts", "-t", "^box_read_before_its_write.rs$"],
@@ -390,7 +390,7 @@ export const mutations: Mutation[] = [
   {
     name: "count-place-written-is-indirect",
     breaks: "a write through a box held in a field, `*w.0 = ..`, is taken for one through a reference, as MIR's `is_indirect` says, so `w` stays alike and a read of it is moved past the write (#1033)",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "        if written == Some(false) {\n",
     replace: "        if written.is_some() && !place.is_indirect() {\n",
     tests: ["test/corpus.test.ts", "-t", "^box_held_in_a_field_written.rs$"],
@@ -399,7 +399,7 @@ export const mutations: Mutation[] = [
     name: "written-at-an-inlined-callees",
     breaks:
       "where a foreign body's block is written is its inlined callee's own span, of another file, so which of two arms is first is the order rustc read their files in: std's `Skip::next` tests `!(skip.n > 0)` first, `Ipv4Addr == IpAddr` its `V6` arm (ADR 0879, amended)",
-    file: "src/lower/mir/queries.rs",
+    file: "crates/rust-js-mir/src/queries.rs",
     find: "    let first = own_span(body, first.map_or(data.terminator().source_info, |s| s.source_info)).source_callsite();\n",
     replace: "    let first = first.map_or(data.terminator().source_info.span, |s| s.source_info.span).source_callsite();\n",
     tests: ["test/std-package.test.ts", "-t", "std's paths asked first"],

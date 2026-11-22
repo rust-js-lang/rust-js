@@ -85,9 +85,9 @@ test("a row is five cells, its owners and APIs the names it ticks, its source a 
 });
 
 test("an owner is its module, its submodules and its folder", () => {
-  const files = ["src/lower/iterators.rs", "src/lower/iterators/eager.rs", "src/lower/drops/types.rs", "crates/rust-js-program/src/names.rs", "crates/rust-js-program/src/runtime/steps.js", "crates/rust-js-program/src/prepare/shadows.rs", "src/lower/iterators_more.rs"];
-  expect(files.filter((file) => ofOwner("iterators.rs", file, files))).toEqual(["src/lower/iterators.rs", "src/lower/iterators/eager.rs"]);
-  expect(files.filter((file) => ofOwner("drops/", file, files))).toEqual(["src/lower/drops/types.rs"]);
+  const files = ["crates/rust-js-lower/src/iterators.rs", "crates/rust-js-lower/src/iterators/eager.rs", "crates/rust-js-lower/src/drops/types.rs", "crates/rust-js-program/src/names.rs", "crates/rust-js-program/src/runtime/steps.js", "crates/rust-js-program/src/prepare/shadows.rs", "crates/rust-js-lower/src/iterators_more.rs"];
+  expect(files.filter((file) => ofOwner("iterators.rs", file, files))).toEqual(["crates/rust-js-lower/src/iterators.rs", "crates/rust-js-lower/src/iterators/eager.rs"]);
+  expect(files.filter((file) => ofOwner("drops/", file, files))).toEqual(["crates/rust-js-lower/src/drops/types.rs"]);
   expect(files.filter((file) => ofOwner("names.rs", file, files))).toEqual(["crates/rust-js-program/src/names.rs"]);
   expect(files.filter((file) => ofOwner("runtime/steps.js", file, files))).toEqual(["crates/rust-js-program/src/runtime/steps.js"]);
   expect(files.filter((file) => ofOwner("crates/rust-js-program/src/prepare/shadows.rs", file, files))).toEqual(["crates/rust-js-program/src/prepare/shadows.rs"]);
@@ -131,7 +131,7 @@ test("a candidate is visible outside its module, and a helper's mark is above it
     "/// Says.",
     "// helper: only its callers' shape",
     "#[inline]",
-    "pub(in crate::lower) fn helped() -> R<bool> { Ok(true) }",
+    "pub(crate) fn helped() -> R<bool> { Ok(true) }",
     "pub fn made() -> Option<Expr> { None }",
     "// helper: not this one's",
     "",
@@ -140,18 +140,18 @@ test("a candidate is visible outside its module, and a helper's mark is above it
     "#[cfg(test)]",
     "mod tests { pub fn t() -> bool { true } }",
   ].join("\n");
-  const found = candidates("src/lower/x/z.rs", source, new Set(["Side"])).map((c) => ({ ...c, file: "src/lower/x.rs" }));
+  const found = candidates("crates/rust-js-lower/src/x/z.rs", source, new Set(["Side"])).map((c) => ({ ...c, file: "crates/rust-js-lower/src/x.rs" }));
   expect(found.map(({ name, helper, line }) => [name, helper, line])).toEqual([
     ["asks", false, 1],
     ["helped", true, 6],
     ["side", false, 10],
   ]);
-  // A `pub(super)` of a module right under src/lower/ reaches the whole front end.
-  expect(candidates("src/lower/x.rs", source, new Set(["Side"])).map((c) => c.name)).toEqual(["asks", "beside", "helped", "side"]);
-  const files = ["src/lower/x.rs", "src/lower/y.rs"];
+  // A `pub(super)` of a module right under crates/rust-js-lower/src/ reaches the whole front end.
+  expect(candidates("crates/rust-js-lower/src/x.rs", source, new Set(["Side"])).map((c) => c.name)).toEqual(["asks", "beside", "helped", "side"]);
+  const files = ["crates/rust-js-lower/src/x.rs", "crates/rust-js-lower/src/y.rs"];
   const row = { line: 9, question: "", owners: ["x.rs"], api: ["asks", "Held::helped"], primitives: [], guesses: [], source: 1, sourceSaid: "" };
-  const elsewhere = { ...found[0]!, file: "src/lower/y.rs" };
-  expect(completeness([row], [...found, elsewhere], files)).toEqual({ unclassified: ["src/lower/x.rs side", "src/lower/y.rs asks"], both: ["src/lower/x.rs:6 helped"] });
+  const elsewhere = { ...found[0]!, file: "crates/rust-js-lower/src/y.rs" };
+  expect(completeness([row], [...found, elsewhere], files)).toEqual({ unclassified: ["crates/rust-js-lower/src/x.rs side", "crates/rust-js-lower/src/y.rs asks"], both: ["crates/rust-js-lower/src/x.rs:6 helped"] });
 });
 
 test("a primitive is its owners' alone, and read by one of them", () => {
@@ -160,14 +160,14 @@ test("a primitive is its owners' alone, and read by one of them", () => {
   expect(primitivePattern(".items !== undefined").test("if (x.items  !==  undefined)")).toBe(true);
   expect(primitivePattern("$sliced").test("$sliced2(x)")).toBe(false);
   const code = new Map([
-    ["src/lower/x.rs", "tcx.fn_sig(d)"],
-    ["src/lower/x/y.rs", "tcx.fn_sig(e)"],
-    ["src/lower/z.rs", "let s = tcx.fn_sig(f);"],
+    ["crates/rust-js-lower/src/x.rs", "tcx.fn_sig(d)"],
+    ["crates/rust-js-lower/src/x/y.rs", "tcx.fn_sig(e)"],
+    ["crates/rust-js-lower/src/z.rs", "let s = tcx.fn_sig(f);"],
   ]);
   const row = (primitives: string[], guesses: string[] = []) => ({ line: 3, question: "", owners: ["x.rs"], api: [], primitives, guesses, source: 1, sourceSaid: "" });
-  expect(exclusivity([row(["tcx.fn_sig"])], code)).toEqual({ outside: ["`tcx.fn_sig` (line 3) in src/lower/z.rs"], unread: [] });
+  expect(exclusivity([row(["tcx.fn_sig"])], code)).toEqual({ outside: ["`tcx.fn_sig` (line 3) in crates/rust-js-lower/src/z.rs"], unread: [] });
   expect(exclusivity([row(["tcx.gone"])], code)).toEqual({ outside: [], unread: ["`tcx.gone` (line 3)"] });
   // A guess a primitive replaced is its owners' alone too, though none reads it.
-  expect(exclusivity([row([], ["tcx.fn_sig"])], code)).toEqual({ outside: ["`tcx.fn_sig` (line 3) in src/lower/z.rs"], unread: [] });
+  expect(exclusivity([row([], ["tcx.fn_sig"])], code)).toEqual({ outside: ["`tcx.fn_sig` (line 3) in crates/rust-js-lower/src/z.rs"], unread: [] });
   expect(exclusivity([row([], ["tcx.gone"])], code)).toEqual({ outside: [], unread: [] });
 });

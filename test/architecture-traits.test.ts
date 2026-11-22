@@ -23,13 +23,13 @@ const sources = compilerRustFiles();
 // the impl's beside the body's, and the analysis's of its own.
 test("a copied default is put in its impl's terms by default_args alone", () => {
   const defines = /\bfn (default_args|default_typing_env)\b/;
-  expect(sources.filter(file => defines.test(read(file)))).toEqual(["src/lower/traits/given.rs"]);
+  expect(sources.filter(file => defines.test(read(file)))).toEqual(["crates/rust-js-lower/src/traits/given.rs"]);
   const asks = /\bdefault_(args|typing_env)\(/;
   expect(sources.filter(file => asks.test(read(file)))).toEqual([
-    "src/lower/analysis/type_facts/collects.rs",
-    "src/lower/traits/drop_params.rs",
-    "src/lower/traits/impls/defaults.rs",
-    "src/lower/traits/impls.rs",
+    "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
+    "crates/rust-js-lower/src/traits/drop_params.rs",
+    "crates/rust-js-lower/src/traits/impls/defaults.rs",
+    "crates/rust-js-lower/src/traits/impls.rs",
   ]);
   // Nor a second environment beside the body's, the impl's, which a call
   // resolved in alone, missing a bound of the default's own parameter (ADR
@@ -49,22 +49,22 @@ test("a copied default is put in its impl's terms by default_args alone", () => 
 test("a per-parameter fact of the body being lowered is keyed by declared_param", () => {
   const reads = /krate\.given\.(unboxed|compared)\b/;
   const readers = sources.filter(file => reads.test(read(file)));
-  expect(readers).toEqual(["src/lower/items.rs", "src/lower/ordering.rs", "src/lower/representation/options.rs"]);
+  expect(readers).toEqual(["crates/rust-js-lower/src/items.rs", "crates/rust-js-lower/src/ordering.rs", "crates/rust-js-lower/src/representation/options.rs"]);
   expect(readers.filter(file => !/\bdeclared_param\(/.test(read(file)))).toEqual([]);
   const frameKey = /typeck_root_def_id\(self\.frame\.owner\)/;
   expect(sources.filter(file => frameKey.test(read(file)))).toEqual([
-    "src/lower/bodies.rs",
-    "src/lower/drops.rs",
-    "src/lower/iterators/back_facts.rs",
-    "src/lower/iterators/hint_asks.rs",
-    "src/lower/mir/closures.rs",
-    "src/lower/representation/options.rs",
-    "src/lower/traits/given.rs",
+    "crates/rust-js-lower/src/bodies.rs",
+    "crates/rust-js-lower/src/drops.rs",
+    "crates/rust-js-lower/src/iterators/back_facts.rs",
+    "crates/rust-js-lower/src/iterators/hint_asks.rs",
+    "crates/rust-js-lower/src/representation/options.rs",
+    "crates/rust-js-lower/src/traits/given.rs",
+    "crates/rust-js-mir/src/closures.rs",
   ]);
   // The one mapping of a copied default's parameter back to its own
   // numbering, beside `default_args`.
   expect(sources.filter(file => /\bfn (default_param|declared_param|declared_ty)\b/.test(read(file)))).toEqual([
-    "src/lower/traits/given.rs",
+    "crates/rust-js-lower/src/traits/given.rs",
   ]);
 });
 
@@ -78,10 +78,10 @@ test("a per-parameter fact of the body being lowered is keyed by declared_param"
 // slots and the type facts had each counted past the parameters themselves.
 test("a drop slot is numbered by drop_params.rs alone", () => {
   const defines = /\bfn (item_slot|slot_item|slot_index|drop_slot)\b/;
-  expect(sources.filter(file => defines.test(read(file)))).toEqual(["src/lower/traits/drop_params.rs"]);
+  expect(sources.filter(file => defines.test(read(file)))).toEqual(["crates/rust-js-lower/src/traits/drop_params.rs"]);
   const counts = /generics_of\([^)]*\)\s*\.count\(\)( as u32)?\s*\+|checked_sub\(count\)|\bfn slot_of\b/;
-  expect(sources.filter(file => counts.test(read(file)))).toEqual(["src/lower/traits/drop_params.rs"]);
-  const lowering = sources.filter(file => /^src\/lower\/(drops|traits)/.test(file) || file === "src/lower/drops.rs");
+  expect(sources.filter(file => counts.test(read(file)))).toEqual(["crates/rust-js-lower/src/traits/drop_params.rs"]);
+  const lowering = sources.filter(file => /^src\/lower\/(drops|traits)/.test(file) || file === "crates/rust-js-lower/src/drops.rs");
   expect(lowering.filter(file => /u32::MAX/.test(read(file)))).toEqual([]);
 });
 
@@ -94,16 +94,16 @@ test("a drop slot is numbered by drop_params.rs alone", () => {
 // the corpus, of `chainRead(..)`, `takeRead(..)` or an impl's object.
 test("$readerDefaults is given std's own readers and the crate's alone", () => {
   const writes = sources.filter(file => read(file).includes('"$readerDefaults"'));
-  expect(writes).toEqual(["src/lower/traits/dictionaries.rs", "src/lower/traits/impls.rs"]);
-  const text = read("src/lower/traits/dictionaries.rs");
+  expect(writes).toEqual(["crates/rust-js-lower/src/traits/dictionaries.rs", "crates/rust-js-lower/src/traits/impls.rs"]);
+  const text = read("crates/rust-js-lower/src/traits/dictionaries.rs");
   expect(text.split('"$readerDefaults"').length).toBe(2);
   const at = text.indexOf('"$readerDefaults"');
   const arm = text.lastIndexOf("None if ", at);
   expect(text.slice(arm, text.indexOf("=>", arm))).toBe(
-    "None if crate::lower::recognition::is_std_reader(self.tcx, tr.self_ty()) ",
+    "None if crate::recognition::is_std_reader(self.tcx, tr.self_ty()) ",
   );
   expect(text.slice(arm, at)).not.toMatch(/\n {12}(None|Some)\b/);
-  const impls = read("src/lower/traits/impls.rs");
+  const impls = read("crates/rust-js-lower/src/traits/impls.rs");
   expect(impls.split('"$readerDefaults"').length).toBe(2);
   const own = impls.lastIndexOf("\n", impls.indexOf('"$readerDefaults"'));
   expect(impls.slice(own, impls.indexOf('"$readerDefaults"')).trim()).toMatch(/^false if self\.own_reader_impl\(tr\) =>/);
@@ -124,8 +124,8 @@ test("$readerDefaults is given std's own readers and the crate's alone", () => {
 // lifetime, `Spans<'a>`, was a trait ref rustc can't select by, and
 // rust-js crashed (#951).
 test("a trait's arguments of a type are args_of's alone", () => {
-  const repeated = files("src/lower")
-    .filter((file) => file.endsWith(".rs") && file !== "src/lower/recognition/traits.rs")
+  const repeated = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")]
+    .filter((file) => file.endsWith(".rs") && file !== "crates/rust-js-lower/src/recognition/traits.rs")
     .flatMap((file) => (/mk_args_from_iter\(\s*std::iter::repeat_n\(/.test(read(file)) ? [file] : []));
   expect(repeated).toEqual([]);
 });
@@ -139,9 +139,9 @@ test("a trait's arguments of a type are args_of's alone", () => {
 // itertools' test_core was refused twice over.
 test("which trait impls a compile has is asked of traits.rs alone", () => {
   const asks = /\ball_local_trait_impls\b/;
-  expect(sources.filter(file => asks.test(read(file)))).toEqual(["src/lower/traits.rs"]);
+  expect(sources.filter(file => asks.test(read(file)))).toEqual(["crates/rust-js-lower/src/traits.rs"]);
   const defines = /\bfn (declared_impls|declared_impls_of|lowered_impls|is_lowered_impl)\b/;
-  expect(sources.filter(file => defines.test(read(file)))).toEqual(["src/lower/traits.rs"]);
+  expect(sources.filter(file => defines.test(read(file)))).toEqual(["crates/rust-js-lower/src/traits.rs"]);
 });
 
 // Whether a type is `Copy` is rustc's trait solver's answer, asked in one
@@ -149,5 +149,5 @@ test("which trait impls a compile has is asked of traits.rs alone", () => {
 // their own way, beside the bound as written or a library's own view.
 test("whether a type is `Copy` is asked of copies.rs alone", () => {
   const asks = /\btype_is_copy_modulo_regions\b|\bis_copy_modulo_regions\b/;
-  expect(sources.filter(file => asks.test(read(file)))).toEqual(["src/lower/copies.rs"]);
+  expect(sources.filter(file => asks.test(read(file)))).toEqual(["crates/rust-js-lower/src/copies.rs"]);
 });

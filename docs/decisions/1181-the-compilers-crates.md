@@ -36,7 +36,7 @@ crate is a directory of `crates/`, named for its package:
   on `rust-js-program` alone.
 
 The front end depends on `rust-js-program` only; the driver on both.
-#2299 cuts `src/lower/` into crates of its own by the same rules.
+#2299 cuts `crates/rust-js-lower/src/` into crates of its own by the same rules.
 
 **One list.** The root `Cargo.toml`'s `[workspace] members` lists the
 crates, and `default-members` all of them, so a plain `cargo build`, `test`
@@ -208,7 +208,7 @@ possible is building and testing owned output and printing without rustc.
 
 ## Amendment: MIR's lowering's methods on a newtype of its own (#2299, 2026-11-22)
 
-`src/lower/` cuts into a base crate, which holds `FnCx`, the lowering's
+`crates/rust-js-lower/src/` cuts into a base crate, which holds `FnCx`, the lowering's
 context, and a crate of MIR's lowering, `mir`, which writes 565 methods
 on it: 232 private, 269 `pub(super)`, 59 `pub(in mir)`. A crate can't
 give a type of another inherent methods. #2299's plan wrote each `mir`
@@ -240,7 +240,7 @@ four signatures twice and a `use`, of 565 at scale. The JS is the same.
 
 ## Amendment: what crosses the lowering's crate lines is `pub` (#2299's commit 8, 2026-11-22)
 
-Each item of `src/lower/` another of its crates will name, `mir`'s of the
+Each item of `crates/rust-js-lower/src/` another of its crates will name, `mir`'s of the
 base, the driver's of the base and of `mir`, is `pub` a commit before the
 cut, which a single crate compiles whatever their visibility, so the cut
 moves files and rewrites paths alone:
@@ -272,3 +272,47 @@ moves files and rewrites paths alone:
   as `mir` names them; the driver's files still name each item by the
   facade alone, never `lower::<module>::`, which
   test/architecture-mir.test.ts holds.
+
+## Amendment: the lowering is two crates (#2299's cut, 2026-11-22)
+
+`crates/rust-js-lower/src/` is cut by the rules above, its last step:
+
+- **`rust-js-lower`**, the lowering's base: `crates/rust-js-lower/src/lib.rs` its root,
+  `crates/rust-js-lower/src/lib.rs`, and every module of `crates/rust-js-lower/src/`
+  but `mir` and the pipeline. `FnCx`, the analyses, recognition,
+  representation and the session; it depends on `rust-js-program`.
+- **`rust-js-mir`**, MIR's lowering: `crates/rust-js-mir/src/lib.rs` and `mir/`, its
+  methods `MirCx`'s (commit 7); it depends on the base, which asks it only
+  through `MirHooks` (commit 5), and on `rust-js-program`.
+- **The pipeline** is the binary's, the driver's side, `src/pipeline.rs`
+  and `src/pipeline/`: it names both crates, starts each session with
+  MIR's hooks, and is what main.rs and worker.rs ask besides the base's
+  facade, `rust_js_lower::…`.
+
+What the rules above say, and what changed with it:
+
+- **rustc's crates are no longer the binary's alone.** The two crates read
+  THIR and MIR: each root says `#![feature(rustc_private)]` and its
+  `extern crate rustc_*`, `.cargo/config.toml`'s `RUSTC_BOOTSTRAP` names
+  them, and a unit test's binary links `rustc_driver` as the compiler
+  does. test/architecture-crates.test.ts holds which crates may; the
+  plain WASI check excludes them with the binary. The playground's WASI
+  build takes them from `wasm/lower/` and `wasm/mir/`, manifests of their
+  sources whose rustc crates are `wasm/rustc`'s, as `wasm/Cargo.toml`
+  builds the binary.
+- **Paths:** each file's, as its crate writes them (`crate::lower::` the
+  base's `crate::`, MIR's `rust_js_lower::`; MIR's root's `super::` the
+  base's), and what the cut made visible across, by rustc's errors: the
+  re-exports and the items they name, the fields and functions only one
+  crate's own paths had named.
+- **Two crates may share a top-level module's name**, the base's and
+  MIR's `drops` as `lower::drops` and `lower::mir::drops` had: each crate
+  names its own first, and `scripts/move-paths.ts` leaves a name two
+  crates declare where a third names it; the binary's own names are no
+  other crate's.
+- **The mutation lists stay where they are,** `scripts/mutations/lower/`
+  and `lower/mir/`, each mutation's `file:` its path: the base's and
+  MIR's files share names, so a list by its path below its crate's
+  `src/` would be two crates' lists. The lowering's rules read the two
+  crates and the pipeline where they read `crates/rust-js-lower/src/`, each a module of
+  the layer rules as `lower` was one.

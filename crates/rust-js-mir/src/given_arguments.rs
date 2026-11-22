@@ -1,0 +1,407 @@
+//! A `fmt::Arguments` given on, as `arguments_use` says, is a function
+//! that makes its text (#1565): made where the `format_args!` is written,
+//! its operands evaluated there, and called where std formats it, so its
+//! values' `Display` and `Debug` run there, as often as it's formatted.
+//! One given to a parameter a function writes into a writer a piece at a
+//! time (`WrittenArguments`) writes each piece into the sink it claims,
+//! `const f = $sink(); ..; return f.done();`: a write of it arms that sink
+//! with its writer's, `$writingInto(f, args)`, so each piece is a call of
+//! the writer's, and called plainly it gives its text (#1652, step 6 of
+//! ADR 1135).
+
+use super::*;
+use rust_js_lower::analysis::mir_reads::arguments_use::{ArgumentsUse, arguments_use, holds_text, std_formats_param};
+use rust_js_lower::display::SinkWrite;
+use rustc_middle::mir::{Local, Rvalue, StatementKind, TerminatorKind};
+
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
+    /// Whether the call of `known` into `destination` makes an `Arguments`
+    /// the body gives on, which is a function of its text.
+    pub(super) fn makes_arguments_given_on(
+        &self,
+        state: &State<'_, 'tcx>,
+        known: Option<Std>,
+        destination: Place<'tcx>,
+    ) -> bool {
+        matches!(known, Some(Std::FmtNew | Std::FmtStr))
+            && (destination.as_local())
+                .is_none_or(|local| arguments_use(&self.recognition(), state.body, local) == ArgumentsUse::GivenOn)
+    }
+
+    /// Of an `Arguments` given on, what `format_args!` gives it, `values`:
+    /// each operand evaluated now, held where it's anything but a variable
+    /// or a constant, so what the function formats is what Rust evaluated
+    /// where the macro is written, however late it's called.
+    pub(super) fn arguments_operands_held(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        values: &mut [Value<'tcx>],
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        self.flush(state, out)?;
+        if let Some(Value::List(items, _)) = values.get_mut(1) {
+            for item in items.iter_mut() {
+                if let Value::Fmt(_, _, value) = item
+                    && !matches!(value.kind, js::ExprKind::Var(_))
+                    && !value.is_constant()
+                {
+                    *value = self.spill(Base::Temporary, std::mem::replace(value, Expr::taken()), out);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// The function of an `Arguments` given on, of what `format_args!`
+    /// made of it, `made`: `() => text`.
+    /// One that may fail makes its text piece by piece, what it made
+    /// before the error given with it, `$fmtWritten`'s, as one formatted
+    /// where it's made writes it (ADR 0187).
+    /// One given to a writer a piece at a time, `made` its writes (or a
+    /// literal's text, one `write_str`), writes each into the sink it
+    /// claims first: `() => { const f = $sink(); f.write("a"); ..; return
+    /// f.done(); }`, what it wrote before an error given with it.
+    pub(super) fn arguments_given_on(&mut self, made: Value<'tcx>, sink: bool, span: Span) -> R<Value<'tcx>> {
+        if sink {
+            let (writes, fails) = match made {
+                Value::Writes(writes, fails) => (writes, fails),
+                made => (vec![SinkWrite::Str(self.value_expr(made, span)?)], false),
+            };
+            let f = self.fresh(Role::F);
+            let done = Expr::call(Expr::member(Expr::var(&f), "done"), Vec::new());
+            let written: Vec<Stmt> = (writes.into_iter())
+                .map(|write| write.written_into(&Expr::var(&f), js::Span::NONE))
+                .collect();
+            let mut body = vec![StmtKind::Const(f, Expr::call_helper("$sink", Vec::new())).at(js::Span::NONE)];
+            match fails || self.krate.failing.any {
+                true => {
+                    let error = self.fresh(Role::Error);
+                    let thrown = Expr::call_helper("$fmtWritten", vec![Expr::var(&error), done.clone()]);
+                    body.push(
+                        StmtKind::TryCatch(written, Some(error), vec![StmtKind::Throw(thrown).at(js::Span::NONE)])
+                            .at(js::Span::NONE),
+                    );
+                }
+                false => body.extend(written),
+            }
+            body.push(StmtKind::Return(Some(done)).at(js::Span::NONE));
+            return Ok(Value::Expr(Expr::arrow(Vec::new(), body)));
+        }
+        let (text, fails) = match made {
+            Value::Printing(text, fails) => (text, fails),
+            Value::Fmt(_, _, text) => (text, true),
+            made => (self.value_expr(made, span)?, false),
+        };
+        let body = match fails {
+            false => vec![StmtKind::Return(Some(text)).at(js::Span::NONE)],
+            true => {
+                let name = self.fresh(Role::Text);
+                let made = Expr::var(&name);
+                let mut written = Vec::new();
+                rust_js_lower::display::append_written(&made, text, true, js::Span::NONE, &mut written);
+                let error = self.fresh(Role::Error);
+                let thrown = Expr::call_helper("$fmtWritten", vec![Expr::var(&error), made.clone()]);
+                vec![
+                    StmtKind::Let(name, Some(Expr::str(""))).at(js::Span::NONE),
+                    StmtKind::TryCatch(written, Some(error), vec![StmtKind::Throw(thrown).at(js::Span::NONE)])
+                        .at(js::Span::NONE),
+                    StmtKind::Return(Some(made)).at(js::Span::NONE),
+                ]
+            }
+        };
+        Ok(Value::Expr(Expr::arrow(Vec::new(), body)))
+    }
+
+    /// Each `Arguments` std's call `callee` is given by value, its
+    /// `operands`' `values`, that's a function, of a place not made its
+    /// text here (`holds_text`): called, its text made where std formats
+    /// it, as one that may print or fail where any writer of the crate's
+    /// may, as a `dyn`'s value is.
+    pub(super) fn arguments_formatted(
+        &mut self,
+        state: &State<'_, 'tcx>,
+        (callee, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        (operands, arg_tys): (&[&Operand<'tcx>], &[Ty<'tcx>]),
+        values: &mut [Value<'tcx>],
+        span: Span,
+    ) -> R<()> {
+        // Only std's own calls; a std trait's method an impl of the crate's
+        // defines, a writer's own `write_fmt` (#1695), is held by the
+        // checks below: its `Arguments` holds its text, or the function is
+        // what it writes (`takes_arguments_function`).
+        if !rust_js_lower::recognition::is_std_crate(self.tcx, callee) {
+            return Ok(());
+        }
+        // Nor a std trait's method that resolves to the crate's impl, which
+        // is one of the crate's functions, its `Arguments` the function as
+        // any is (#1695), whether it writes it a piece at a time or reads
+        // it as text, `args.to_string()` (#2058): what rustc resolves the
+        // call to says, not the trait's path.
+        if let Ok(Some(instance)) = rust_js_lower::traits::resolve(self.tcx, self.typing_env, callee, generic_args)
+            && !rust_js_lower::recognition::is_std_crate(self.tcx, instance.def_id())
+        {
+            return Ok(());
+        }
+        for (i, value) in values.iter_mut().enumerate() {
+            let (Some(operand), Some(&ty)) = (operands.get(i), arg_tys.get(i)) else {
+                continue;
+            };
+            if !self.is_lang_adt(ty, LangItem::FormatArguments) || !std_formats_param(&self.recognition(), callee, i) {
+                continue;
+            }
+            let text = (operand.place())
+                .and_then(|place| place.as_local())
+                .is_some_and(|local| holds_text(&self.recognition(), state.body, local));
+            if text || self.takes_arguments_function(state, (callee, generic_args), i) {
+                continue;
+            }
+            let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::taken())), span)?;
+            *value = self.arguments_called(given, ty);
+        }
+        Ok(())
+    }
+
+    /// `given`, an `Arguments` of `ty` held as the function that makes its
+    /// text, called where it's formatted: as one that may print or fail
+    /// where any writer of the crate's may, as a `dyn`'s value is.
+    pub(super) fn arguments_called(&self, given: Expr, ty: Ty<'tcx>) -> Value<'tcx> {
+        let called = Expr::call(given, Vec::new());
+        let fails = self.krate.failing.any;
+        match self.krate.prints.any_writer_prints() {
+            true => Value::Printing(called, fails),
+            false if fails => Value::Fmt(Std::FmtNew, ty, called),
+            false => Value::Expr(called),
+        }
+    }
+
+    /// Each `Arguments` a writer's `write_fmt` is given, its `operands`'
+    /// `values`, held as a function, a parameter's, a constant's or one
+    /// given on (`holds_text`): called, its text what's written (#1722).
+    pub(super) fn arguments_written_as_text(
+        &mut self,
+        state: &State<'_, 'tcx>,
+        operands: &[&Operand<'tcx>],
+        values: &mut [Value<'tcx>],
+        span: Span,
+    ) -> R<()> {
+        for (operand, value) in operands.iter().zip(values.iter_mut()) {
+            let ty = operand.ty(&state.body.local_decls, self.tcx);
+            if !self.is_lang_adt(ty, LangItem::FormatArguments) || !matches!(value, Value::Expr(_)) {
+                continue;
+            }
+            let text = (operand.place())
+                .and_then(|place| place.as_local())
+                .is_some_and(|local| holds_text(&self.recognition(), state.body, local));
+            if !text {
+                let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::taken())), span)?;
+                *value = self.arguments_called(given, ty);
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
+    /// Whether `local`, an `Arguments` the body makes and gives on, is given,
+    /// as it is or through what it's copied to, to a parameter a call writes
+    /// into a writer a piece at a time (`WrittenArguments::writes`): the
+    /// function that writes into the sink it claims (#1652, step 6).
+    pub(super) fn given_to_a_writer(&self, body: &mir::Body<'tcx>, local: Local) -> bool {
+        let written = &self.krate.written;
+        written.arguments.arms
+            && rust_js_lower::analysis::given_to_a_write(
+                &self.recognition(),
+                (&written.arguments, Some(written)),
+                body,
+                local,
+            )
+    }
+
+    /// Whether `operand`, an `Arguments` given to what writes it into a
+    /// writer a piece at a time, is the function that writes into the sink
+    /// it claims (#1652, step 6): through each of what it's copied or lent
+    /// from, a `format_args!` the body makes, which `given_to_a_writer`
+    /// makes so; a parameter of the function being lowered that it writes
+    /// so (`WrittenArguments`), whose every caller gives one; or one kept, a
+    /// field's, a call's result, which only one kept so is
+    /// (`given_to_a_write`). Of what holds one, `&[a, b]` given a generic
+    /// writer's `&[T]`, each `Arguments` it's made of (#1745).
+    pub(super) fn sink_form_given(&self, body: &mir::Body<'tcx>, operand: &Operand<'tcx>) -> bool {
+        // A constant's, which is made so as what it returns.
+        let Some(place) = operand.place() else {
+            return operand.constant().is_some();
+        };
+        let recognition = self.recognition();
+        // Read of a place, `self.0`, or through a reference, `*args`.
+        let read = |place: Place<'tcx>| place.projection.iter().any(|p| p != mir::ProjectionElem::Deref);
+        let mut sources = vec![place.local];
+        let mut at = 0;
+        while let Some(&local) = sources.get(at) {
+            at += 1;
+            if body.local_kind(local) == mir::LocalKind::Arg {
+                let index = local.as_u32() - 1;
+                if !(self.krate.written.arguments.marks(&recognition, self.item)).contains(&index) {
+                    return false;
+                }
+                continue;
+            }
+            let made = body.basic_blocks.iter().find_map(|data| match &data.terminator().kind {
+                TerminatorKind::Call { func, destination, .. } if destination.as_local() == Some(local) => Some(
+                    rust_js_lower::fn_def(func.ty(&body.local_decls, self.tcx))
+                        .and_then(|(id, generic_args)| recognition.classify(id, generic_args)),
+                ),
+                _ => None,
+            });
+            match made {
+                Some(Some(Std::FmtNew | Std::FmtStr)) => {
+                    if arguments_use(&recognition, body, local) != ArgumentsUse::GivenOn {
+                        return false;
+                    }
+                    continue;
+                }
+                // A call's result, `Option::unwrap`'s of what it was kept in.
+                Some(_) => continue,
+                None => {}
+            }
+            let mut assigned = 0;
+            for statement in body.basic_blocks.iter().flat_map(|data| data.statements.iter()) {
+                let StatementKind::Assign(assign) = &statement.kind else {
+                    continue;
+                };
+                if assign.0.as_local() != Some(local) {
+                    continue;
+                }
+                assigned += 1;
+                // Copied, moved, lent, `&args`, `&self.0`, or lent again,
+                // `&*args`, as `Display::fmt(&args, f)` is given it.
+                let from = match &assign.1 {
+                    // A constant's.
+                    Rvalue::Use(Operand::Constant(_), _) => continue,
+                    Rvalue::Use(from, _) => from.place(),
+                    Rvalue::Ref(_, _, from) => Some(*from),
+                    // Made a slice, `&[a, b]` as a `&[T]`.
+                    Rvalue::Cast(
+                        mir::CastKind::PointerCoercion(ty::adjustment::PointerCoercion::Unsize, _),
+                        from,
+                        _,
+                    ) => from.place(),
+                    // Made of what it holds, `[a, b]`: each `Arguments` there.
+                    Rvalue::Aggregate(_, operands) => {
+                        for operand in operands.iter() {
+                            if let Some(from) = operand.place()
+                                && rust_js_lower::analysis::holds_arguments(self.tcx, from.ty(body, self.tcx).ty)
+                                && !read(from)
+                                && !sources.contains(&from.local)
+                            {
+                                sources.push(from.local);
+                            }
+                        }
+                        continue;
+                    }
+                    _ => None,
+                };
+                match from {
+                    Some(from) if read(from) => {}
+                    Some(from) if !sources.contains(&from.local) => sources.push(from.local),
+                    Some(_) => {}
+                    None => return false,
+                }
+            }
+            if assigned == 0 {
+                return false;
+            }
+        }
+        true
+    }
+
+    /// Refuses a call of `callee` that gives a parameter it writes into a
+    /// writer a piece at a time an `Arguments` that isn't the function that
+    /// writes into the sink it claims, `operands`' (`sink_form_given`): one
+    /// a function returned, or a field held, which the writer's sink can't
+    /// be armed for (#1652). std's `write_fmt` refuses its own
+    /// (`arguments_not_written`).
+    pub(super) fn arguments_given_to_writers(
+        &self,
+        state: &State<'_, 'tcx>,
+        (callee, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        operands: &[&Operand<'tcx>],
+        span: Span,
+    ) -> R<()> {
+        let recognition = self.recognition();
+        if recognition.writes_arguments_piecewise(callee, generic_args)
+            || recognition.formatter_write_fmt(callee, generic_args)
+        {
+            return Ok(());
+        }
+        for (i, operand) in operands.iter().enumerate() {
+            if self
+                .krate
+                .written
+                .arguments
+                .writes(&recognition, (callee, generic_args), i)
+                && self.is_lang_adt(operand.ty(&state.body.local_decls, self.tcx), LangItem::FormatArguments)
+                && !self.sink_form_given(state.body, operand)
+            {
+                return Err(self.refused_piecewise(
+                    span,
+                    "an `fmt::Arguments` made elsewhere given to a function that writes it into a writer",
+                ));
+            }
+        }
+        // A type parameter it writes into a writer through its dictionary,
+        // `own(w, &args)`'s `T`, given an `Arguments`: the function that
+        // writes into the sink it claims where the body makes it, or it's
+        // kept, as `given_to_a_writer` makes it; one of the function's own
+        // parameters isn't followed so (#1793).
+        for (i, operand) in operands.iter().enumerate() {
+            if rust_js_lower::analysis::holds_arguments(self.tcx, operand.ty(&state.body.local_decls, self.tcx))
+                && self.krate.written.writes_at(&recognition, callee, i)
+                && !self.sink_form_given(state.body, operand)
+            {
+                let what = "an `fmt::Arguments` a parameter gives, or a value holds, given to generic code that writes it into a writer";
+                let why = "std writes it a piece at a time, which isn't followed for one given so (#1793)";
+                return Err(rust_js_lower::refusal::refuse(
+                    self.tcx,
+                    span,
+                    rust_js_lower::refusal::Refused::Because(what, why),
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    /// Whether the call of `callee` at `state.at` takes the `Arguments` it's
+    /// given at `index` as the function it is, which it writes into a
+    /// writer a piece at a time: a `W: fmt::Write`'s `write_fmt`, given it
+    /// for its dictionary's `writeFmt`; a writer's of the crate's own, or a
+    /// `Formatter`'s of a writer that writes through a sink, given one its
+    /// function writes so, `$writingInto(f, args)` (#1652, step 6). Not
+    /// called to make its text first.
+    pub(super) fn takes_arguments_function(
+        &self,
+        state: &State<'_, 'tcx>,
+        (callee, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        index: usize,
+    ) -> bool {
+        let recognition = self.recognition();
+        if index != 1
+            || !self
+                .krate
+                .written
+                .arguments
+                .writes(&recognition, (callee, generic_args), index)
+        {
+            return false;
+        }
+        if recognition.writes_through_a_dictionary(callee, generic_args) {
+            return true;
+        }
+        let given = match &state.body.basic_blocks[state.at].terminator().kind {
+            TerminatorKind::Call { args, .. } => args
+                .get(index)
+                .is_some_and(|arg| self.sink_form_given(state.body, &arg.node)),
+            _ => false,
+        };
+        given && (!recognition.formatter_write_fmt(callee, generic_args) || self.writes_through_a_sink(state))
+    }
+}

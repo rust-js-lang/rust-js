@@ -1,8 +1,8 @@
-// Mutations of src/lower/analysis/intervals/cells.rs, what the MIR intervals
+// Mutations of crates/rust-js-lower/src/analysis/intervals/cells.rs, what the MIR intervals
 // know of a collection a `RefCell` holds (ADR 1137, #1741).
 import type { Mutation } from "../../../../mutations";
 
-const file = "src/lower/analysis/intervals/cells.rs";
+const file = "crates/rust-js-lower/src/analysis/intervals/cells.rs";
 const tests = ["test/lowering-integer-ranges.test.ts", "-t", "a collection a RefCell holds"];
 
 export const mutations: Mutation[] = [
@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     name: "cells-calls-write-nothing",
     breaks: "a call of the crate's given a `RefCell`, `shorten_cell(v)`, is taken as writing nothing of it, so `v.borrow()[k]` under `k < v.borrow().len()` past it is unchecked and reads `undefined` where Rust panics; a callback or a `fn` pointer's call is no named callee, and forgets regardless",
     file,
-    find: "        !crate::lower::analysis::reads_only(self.tcx, callee, callee_args)\n",
+    find: "        !crate::analysis::reads_only(self.tcx, callee, callee_args)\n",
     replace: "        let _ = (callee, callee_args);\n        false\n",
     tests: ["test/bounds-matrix.test.ts", "-t", "refcell, tested wrap"],
   },
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
   {
     name: "keys-kept-when-cells-change",
     breaks: "a key a `RefCell`'s map holds is kept past a call that may write the cell, so `cache.borrow()[&k]` past `clear()` is taken in bounds, a proved-call-bounds line",
-    file: "src/lower/analysis/intervals/cells.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/cells.rs",
     find: "        self.keys.retain(|&(map, _)| map != cell);\n",
     replace: "",
     tests: ["test/intervals-shadow.test.ts", "-t", "contains_key"],
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
   {
     name: "equal-lengths-kept-when-resized",
     breaks: "two slices as long are kept so when one's length may change, so `left[i]` under `i < terraces.len()` past `left.pop()` is taken in bounds, a proved-call-bounds line",
-    file: "src/lower/analysis/intervals/cells.rs",
+    file: "crates/rust-js-lower/src/analysis/intervals/cells.rs",
     find: "        self.equal_lens.retain(|&(a, b)| a != cell && b != cell);\n",
     replace: "",
     tests: ["test/intervals-shadow.test.ts", "-t", "a table is as long"],

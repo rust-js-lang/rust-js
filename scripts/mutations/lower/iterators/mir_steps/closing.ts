@@ -1,4 +1,4 @@
-// Mutations of src/lower/iterators/mir_steps/closing.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/iterators/mir_steps/closing.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "compiled-last-by-next",
     breaks:
       "`last()` of std's struct, a zip's, steps it by `next()`, not by its `fold` as std's default `last` does: its closure runs once more (#380)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "                || self.compiled_struct(iter_ty, &it)\n                || unwinds_holding)\n",
     replace: "                || false && self.compiled_struct(iter_ty, &it)\n                || unwinds_holding)\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_fold_steps_the_shorter.rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "uncounted-eq-compared",
     breaks:
       "`eq()` of two maps of unequal lengths, which rust-js can't count, steps and compares their items, running closures Rust's `SpecIterEq` never runs (ADR 0998)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        if lengths.is_none()\n            && trusted\n",
     replace:
       "        if false\n            && lengths.is_none()\n            && trusted\n",
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
     name: "iter-eq-not-trusted",
     breaks:
       "`eq()` of two `TrustedLen` iterators isn't given their lengths, and compares items std's `SpecIterEq` never steps (ADR 0992)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "                (a.zip(b)).filter(|_| spilled.is_empty())\n",
     replace:
       "                (a.zip(b)).filter(|_| false && spilled.is_empty())\n",
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     name: "mir-user-by-ref-wrapped",
     breaks:
       "`by_ref()` of the crate's iterator from MIR is a JS iterator over it, which its own `next` doesn't step",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        if method == Some(IterMethod::ByRef) && self.is_user_iterator(iter_ty) {\n",
     replace:
       "        if false && method == Some(IterMethod::ByRef) && self.is_user_iterator(iter_ty) {\n",
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     name: "given-iterator-next-as-js",
     breaks:
       "`next` of an adapter's `I` steps it as a JS iterator, not by its dictionary, which a range isn't",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: '            IterMethod::Next => (iterator, "next"),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "given-iterator-into-iter-as-js",
     breaks:
       "a `for` over an adapter's `I`, or `by_ref()` of it, makes a JS iterator of it, `Iterator.from` of a range",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "            IterMethod::ByRef | IterMethod::IntoIter => {\n",
     replace:
       "            IterMethod::ByRef | IterMethod::IntoIter if false => {\n",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     name: "last-of-destructors-uncounted",
     breaks:
       "`last()` of items with a destructor collects them, and drops none it passes",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "            Some(drop) => {\n                let mut given = vec![it, drop];\n",
     replace:
       '            Some(_) if true => Ok(self.last_of(Expr::call(Expr::member(it, "toArray"), Vec::new()), item, made)),\n            Some(drop) => {\n                let mut given = vec![it, drop];\n',
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     name: "take-of-owned-refused",
     breaks:
       "`take` of an iterator that owns items with a destructor is refused",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        if method.is_some_and(IterMethod::holds_its_source) {\n",
     replace:
       "        if false && method.is_some_and(IterMethod::holds_its_source) {\n",
@@ -92,7 +92,7 @@ export const mutations: Mutation[] = [
     name: "take-of-lent-refused",
     breaks:
       "`by_ref().take(n)` of items with a destructor is refused, where what it hasn't given is its lender's",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "                true => Ok(it),\n                false => self.closing(it, iter_ty, span),\n",
     replace:
       '                true => Err(self.unsupported(span, "a lent adapter")),\n                false => self.closing(it, iter_ty, span),\n',
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     name: "skip-of-owned-unskipped",
     breaks:
       "`skip` of an iterator that owns items with a destructor is JS's `drop`, which drops none it skips",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: '                Expr::call_helper("$skipping", vec![it, n, drop])\n',
     replace:
       '                {\n                    let _ = drop;\n                    Expr::call(Expr::member(it, "drop"), vec![n])\n                }\n',
@@ -116,8 +116,8 @@ export const mutations: Mutation[] = [
     name: "crate-iterator-unclosed",
     breaks:
       "a crate's iterator with a destructor an adapter holds isn't closed by its own drop",
-    file: "src/lower/iterators/mir_steps/closing.rs",
-    find: "                    || self.is_user_iterator(ty) && self.drops(ty) != crate::lower::drops::Drops::Nothing",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
+    find: " || self.is_user_iterator(ty) && self.drops(ty) != crate::drops::Drops::Nothing",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
     snapshots: true,
@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
     name: "eq-other-not-closing",
     breaks:
       "`eq`'s other side that owns items with a destructor isn't closed to drop what's left",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "            Some(drop) => {\n                let it = self.js_iterator(other);\n                self.closed_by(it, drop, other_ty)\n            }\n",
     replace: "            Some(_) => other,\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
     name: "held-source-own-drop-unclosed",
     breaks:
       "an adapter of the crate's iterator with a `Drop`, whose items have none, never closes it, so it's never dropped",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        if method.is_some_and(IterMethod::holds_its_source) {\n",
     replace:
       "        if dropping.is_some() && method.is_some_and(IterMethod::holds_its_source) {\n",
@@ -145,7 +145,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-next-back-refused",
     breaks: "`next_back(&mut it)` of an `I` given as it is is refused",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "            IterMethod::NextBack => self.extension_entry_of(self.recognition().double_ended_iterator()?),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^next_back_generic.rs$"],
@@ -153,7 +153,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-len-refused",
     breaks: "`len()` of an `I` given as it is is refused",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "            IterMethod::Len => self.extension_entry_of(self.recognition().exact_size_iterator()?),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
@@ -162,7 +162,7 @@ export const mutations: Mutation[] = [
     name: "given-iterator-closed-as-wrapper",
     breaks:
       "an adapter of a type parameter given as it is drops the JS iterator stepping it, not the value",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "                let stepped = self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty);\n",
     replace: "                let stepped = self.is_user_iterator(ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_of_an_impls_own_associated_type.rs$"],
@@ -172,7 +172,7 @@ export const mutations: Mutation[] = [
     name: "iter-partial-cmp-total",
     breaks:
       "`partial_cmp` of two iterators compares by `cmp`, giving an `Ordering` of a NaN",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        let compare = self.cmp_fn(item, method != IterMethod::Cmp, span)?;\n",
     replace: "        let compare = self.cmp_fn(item, false, span)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^iter_compare.rs$"],
@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
   {
     name: "iter-lt-as-le",
     breaks: "`lt` of two iterators is `le`, true of equal ones",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "            IterMethod::Lt => Op::Lt,\n",
     replace: "            IterMethod::Lt => Op::Le,\n",
     tests: ["test/corpus.test.ts", "-t", "^iter_compare.rs$"],
@@ -188,7 +188,7 @@ export const mutations: Mutation[] = [
   {
     name: "eq-other-raw",
     breaks: "eq's other side is a JS iterator",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "            None => self.as_js_iterator(other, other_ty, span)?,\n",
     replace: "            None => other,\n",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
     name: "last-dropping-unboxed",
     breaks:
       "`last()` of `Option`s with a destructor whose last is `None` is `None`, not `Some(None)`: `$lastDropping`'s item unboxed (#204)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "                if item.is_some_and(|item| self.boxed_payload(item)) {\n                    given.push(Expr::bool(true));\n",
     replace:
       "                if false {\n                    given.push(Expr::bool(true));\n",
@@ -207,7 +207,7 @@ export const mutations: Mutation[] = [
     name: "drain-passed-as-slice",
     breaks:
       "a `Drain`'s `nth_back(k)` drops the `k` it passes as one slice, front to back, where std's drops each as it's passed, generic code's `rev().nth(k)` of one too (#234, #704)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        (self.array_source(ty) == Some(true) || self.is_unknown(ty)) && !self.recognition().drops_passed_as_slice(ty)\n",
     replace: "        self.array_source(ty) == Some(true) && !self.recognition().drops_passed_as_slice(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^(nth_passes_a_slice_or_each|vec_skipped_from_back_drops).rs$"],
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     name: "consumer-source-unclosed",
     breaks:
       "a consumer that takes each item of an owning source, `for_each`, `fold`, is given it unclosed, so a panic in its closure drops none of what's left (#422)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "            true => self.closing(it, iter_ty, span),\n            false => Ok(it),\n        }\n    }\n",
     replace: "            true => Ok(it),\n            false => Ok(it),\n        }\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
     name: "own-last-of-destructors-undropped",
     breaks:
       "`last()` of items with a destructor through a `chain` of the crate's iterators with their own `last` is the chain's own `last`, which drops neither side's `a` where `b` has one (#494)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        if drops_none\n            && (self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)\n                || self.compiled_struct(iter_ty, &it)\n                || unwinds_holding)\n",
     replace: "        if self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)\n            || drops_none && (self.compiled_struct(iter_ty, &it) || unwinds_holding)\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     name: "dropping-last-folded-first",
     breaks:
       "`last()` of items with a destructor is of `$folded`, which folds a chain's sides as one and passes the `last` std asks of each (#494)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "            true => self.by_its_fold(it, iter_ty, false),\n            false => it,\n",
     replace: "            _ => self.by_its_fold(it, iter_ty, false),\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
@@ -243,7 +243,7 @@ export const mutations: Mutation[] = [
   {
     name: "consumer-closes-lent",
     breaks: "a consumer of an iterator lent by `by_ref()` closes it, which drops the crate's iterator its owner still holds (#422, #637)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "            && !lent\n            && match method {\n",
     replace: "            && match method {\n",
     tests: ["test/corpus.test.ts", "-t", "^consumed_own_iterator_dropped_once.rs$"],
@@ -251,15 +251,15 @@ export const mutations: Mutation[] = [
   {
     name: "last-holding-unclosed",
     breaks: "`last()` of a `peekable()` of a `Vec`'s items, mapped by a closure that panics, is an array's last, which never closes what the source has left (#653)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
-    find: "        let unwinds_holding =\n            self.drops(iter_ty) != crate::lower::drops::Drops::Nothing && self.steps_may_panic(iter_ty);\n",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
+    find: "        let unwinds_holding = self.drops(iter_ty) != crate::drops::Drops::Nothing && self.steps_may_panic(iter_ty);\n",
     replace: "        let unwinds_holding = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^compiled_adapters_closed_as_a_collect_unwinds.rs$"],
   },
   {
     name: "own-collect-unclosed",
     breaks: "a `collect()` of the crate's iterator with a `Drop`, whose `next` panics, drops what it collected before the iterator, where std's frame drops the iterator first (#655)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "                Some(IterMethod::Collect) => self.is_user_iterator(iter_ty) || by_bounds,\n",
     replace: "                Some(IterMethod::Collect) => by_bounds,\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_of_own_iterator_drops_it_first.rs$"],
@@ -268,7 +268,7 @@ export const mutations: Mutation[] = [
     name: "parameter-collect-unclosed",
     breaks:
       "generic code's `src.collect()` of a type parameter's iterator whose `next` panics drops what it collected before it, `dropI` after the collect, where std's collect frame drops it first (#640)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "                Some(IterMethod::Collect) => self.is_user_iterator(iter_ty) || by_bounds,\n",
     replace: "                Some(IterMethod::Collect) => self.is_user_iterator(iter_ty),\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_closes_its_source.rs$"],
@@ -276,7 +276,7 @@ export const mutations: Mutation[] = [
   {
     name: "slicing-of-each-dropper",
     breaks: "a `Drain`'s or a B-tree's `IntoIter` is given a `Vec`'s steps, so generic code's `nth_back(k)` of it drops what it passes as one slice, 5, 6, 7, where std's drops each, 7, 6 (#704)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        if !self.recognition().drops_passed_as_slice(ty) {\n            return None;\n",
     replace: "        if self.array_source(ty.peel_refs()) != Some(true) {\n            return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
@@ -284,15 +284,15 @@ export const mutations: Mutation[] = [
   {
     name: "slicing-front-unasked",
     breaks: "a `Vec`'s `IntoIter` whose items' drop may panic isn't given its slice's steps where only its front is stepped, so its `nth` stops dropping at the panic, where std's slice drops the rest (#703)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
-    find: "        (self.drop_may_panic(item) || back && self.drops(item) != crate::lower::drops::Drops::Nothing).then_some(item)\n",
-    replace: "        (back && self.drops(item) != crate::lower::drops::Drops::Nothing).then_some(item)\n",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
+    find: "        (self.drop_may_panic(item) || back && self.drops(item) != crate::drops::Drops::Nothing).then_some(item)\n",
+    replace: "        (back && self.drops(item) != crate::drops::Drops::Nothing).then_some(item)\n",
     tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
   },
   {
     name: "nth-of-a-vec-unsliced",
     breaks: "a held `Vec`'s `IntoIter`'s own `nth(k)` drops what it passes one at a time, stopping at a panicking drop, where std's slice drops the rest (#703)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "            Some(IterMethod::Nth | IterMethod::AdvanceBy) => self.slicing(it, iter_ty, false, span)?,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
@@ -300,15 +300,15 @@ export const mutations: Mutation[] = [
   {
     name: "folds-held-function-never",
     breaks: "no fold is seen to move a held function, so a `step_by` over one is a filter, whose fold drops it before what's left, and a `TrustedLen` collect steps it by `next` (#710)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
-    find: "        (moved && (recognition.held_function(ty)).is_some_and(|f| self.drops(f) != crate::lower::drops::Drops::Nothing))\n",
-    replace: "        (false && moved && (recognition.held_function(ty)).is_some_and(|f| self.drops(f) != crate::lower::drops::Drops::Nothing))\n",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
+    find: "        (moved && (recognition.held_function(ty)).is_some_and(|f| self.drops(f) != crate::drops::Drops::Nothing))\n",
+    replace: "        (false && moved && (recognition.held_function(ty)).is_some_and(|f| self.drops(f) != crate::drops::Drops::Nothing))\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
   {
     name: "eq-closes-unasked",
     breaks: "`it.eq(other)` of the crate's iterator with a `Drop`, of items without one, is closed by `dropping_source` where `consumer_closes` says it's dropped after, so it's dropped twice (#1123)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        if dropping.is_none() {\n            return Ok(it);\n        }\n",
     replace: "        if dropping.is_none() && method != Some(IterMethod::Eq) {\n            return Ok(it);\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
@@ -317,8 +317,8 @@ export const mutations: Mutation[] = [
     name: "closing-closes-again",
     breaks:
       "a value its consumer closed already is closed again, so the crate's iterator with a `Drop` a `collect()` into an `Option` closes is dropped twice and its items read as `undefined` (#1144)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
-    find: "        if crate::lower::iterators::closed_parts(&it).is_some() {\n            return Ok(it);\n        }\n",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
+    find: "        if crate::iterators::closed_parts(&it).is_some() {\n            return Ok(it);\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iterator_comparisons_drop_as_std.rs$"],
   },
@@ -326,7 +326,7 @@ export const mutations: Mutation[] = [
     name: "cmp-argument-unclosed",
     breaks:
       "`a.cmp(b)` and the comparisons never close `b`, so the crate's iterator with a `Drop` given them is never dropped (#1146)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        let other = self.compared_closing(other, other_ty, span)?;\n        let compare = self.cmp_fn(",
     replace: "        let compare = self.cmp_fn(",
     tests: ["test/corpus.test.ts", "-t", "^iterator_comparisons_drop_as_std.rs$"],
@@ -334,7 +334,7 @@ export const mutations: Mutation[] = [
   {
     name: "partition-of-param-dropped-after",
     breaks: "`partition` and `unzip` of a type parameter's iterator drop it after the call, so as a panic unwinds what they collected is dropped before what's left of their source, where std's fold drops that first (#1150, #1161)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "                Some(IterMethod::Partition | IterMethod::Unzip) => true,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
@@ -342,7 +342,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-eq-of-trusted-allowed",
     breaks: "a library's generic `eq` of two iterators its consumers may give `TrustedLen` compiles, comparing item by item where std compares their lengths first, a wrong answer no caller is seen to refuse (#1182)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        let consumers_give = self.krate.library\n",
     replace: "        let consumers_give = false && self.krate.library\n",
     tests: ["test/diagnostics.test.ts", "-t", "a library's eq of what its consumers give compiles"],
@@ -350,7 +350,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-eq-of-a-filter-refused",
     breaks: "a library's generic `eq` of a filter, which is never `TrustedLen`, is refused as one its consumers may give `TrustedLen` (#1182)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "                ty::Adt(adt, _) => self.tcx.all_impls(trusted).any(|imp| {\n",
     replace: "                ty::Adt(adt, _) => true || self.tcx.all_impls(trusted).any(|imp| {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a library's eq of what its consumers give compiles"],
@@ -358,7 +358,7 @@ export const mutations: Mutation[] = [
   {
     name: "length-first-whole-uncounted",
     breaks: "a `Vec` given whole to generic code's `eq` isn't counted, so it's refused where std compares its length first (#1182)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        let whole = self.slice_item(ty.peel_refs()).is_some() && !self.implements_iterator(ty);\n",
     replace: "        let whole = false;\n",
     tests: ["test/crates.test.ts", "-t", "length_first_eq"],
@@ -366,7 +366,7 @@ export const mutations: Mutation[] = [
   {
     name: "length-first-pure-uncollected",
     breaks: "a `TrustedLen` side that runs nothing and drops nothing, which JS can't count, is compared item by item, so the other side's items drop where std's compares lengths first (#1182)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "            return Ok(Expr::str(\"pure\"));\n",
     replace: "            return Ok(Expr::bool(false));\n",
     tests: ["test/crates.test.ts", "-t", "length_first_eq"],
@@ -374,7 +374,7 @@ export const mutations: Mutation[] = [
   {
     name: "length-first-endless-collected",
     breaks: "generic code's `eq` of an endless `TrustedLen` side, `0..` or `repeat(x)`, collects it first, which never ends, where std compares its hint's `None` with the other's length (#2168)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        if self.recognition().endless_by_type(iter) {\n            return Ok(Expr::str(\"endless\"));\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_eq_of_an_endless_trusted_len.rs$"],
@@ -382,7 +382,7 @@ export const mutations: Mutation[] = [
   {
     name: "length-first-given-unasked",
     breaks: "generic code's `eq` reads no `LengthFirst` of its sides, comparing item by item where std compares two `TrustedLen`s' lengths first (#1182)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "            Some(_) => self.iterable_js_iterator(other, other_ty, span)?,\n            None => self.as_js_iterator(other, other_ty, span)?,\n",
     replace: "            Some(_) | None => self.as_js_iterator(other, other_ty, span)?,\n",
     tests: ["test/crates.test.ts", "-t", "length_first_eq"],
@@ -391,7 +391,7 @@ export const mutations: Mutation[] = [
     name: "eq-length-of-a-call-read-again",
     breaks:
       "`(0..made(2)).zip(made(1)..made(4)).eq(..)` reads each length before making its iterator of the same text, so `made(1)` and `made(4)` run twice (#1483)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "                    unless_run_again(count).ok()\n",
     replace: "                    count.ok()\n",
     tests: ["test/corpus.test.ts", "-t", "^counted_where_made_runs_each_part_once.rs$"],
@@ -400,8 +400,8 @@ export const mutations: Mutation[] = [
     name: "closes-to-drop-box-unpeeled",
     breaks:
       "generic code's `Box<I>` in place isn't closed to drop what it holds, so its `zip(..).nth(1)` never drops the crate's iterator (#2219)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
-    find: "        // What a sized box holds, closed as it is (#2219).\n        let ty = crate::lower::recognition::held_unboxed(ty);\n",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
+    find: "        // What a sized box holds, closed as it is (#2219).\n        let ty = crate::recognition::held_unboxed(ty);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_box_of_an_iterator_is_what_it_holds.rs$"],
   },
@@ -409,25 +409,25 @@ export const mutations: Mutation[] = [
     name: "box-lend-closed-outside",
     breaks:
       "a sized box's lend is closed by the box's drop given the lend, not what it holds, so a drop that reads what the crate's iterator holds throws (#2219)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
-    find: "        if let Some(held) = crate::lower::iterators::held_by_a_box(&it) {\n",
-    replace: "        if let Some(held) = None::<&Expr>.filter(|_| crate::lower::iterators::held_by_a_box(&it).is_some()) {\n",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
+    find: "        if let Some(held) = crate::iterators::held_by_a_box(&it) {\n",
+    replace: "        if let Some(held) = None::<&Expr>.filter(|_| crate::iterators::held_by_a_box(&it).is_some()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_box_of_an_iterator_is_what_it_holds.rs$"],
   },
   {
     name: "consumer-closes-box-param",
     breaks:
       "a fold of generic code's `Box<I>` with a closure that owns a destructor, where the drop check refuses it, compiles and closes the box first, so the box's value drops before the closure where std's `fold` drops its `f` first (#2219)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
-    find: "        let by_bounds = crate::lower::recognition::known_by_bounds(crate::lower::recognition::held_unboxed(iter_ty));\n",
-    replace: "        let by_bounds = crate::lower::recognition::known_by_bounds(iter_ty);\n",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
+    find: "        let by_bounds = crate::recognition::known_by_bounds(crate::recognition::held_unboxed(iter_ty));\n",
+    replace: "        let by_bounds = crate::recognition::known_by_bounds(iter_ty);\n",
     tests: ["test/diagnostics.test.ts", "-t", "Box<I> folded by a closure that holds a destructor"],
   },
   {
     name: "closing-box-unlent",
     breaks:
       "generic code's sized `Box<J>` an adapter holds from its back is closed as `J` and never lent as the box, so a `rev()`'s fold reaches `Take`'s own `rfold`, which skips by one `nth_back(1)`, where std's `Box` folds by its `next_back`, `nth_back(2)` then `nth_back(0)` (#2227)",
-    file: "src/lower/iterators/mir_steps/closing.rs",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        Ok(self.lent_as_its_box(closed, ty))\n",
     replace: "        Ok(closed)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_box_found_from_its_back_steps_the_box.rs$"],

@@ -1,11 +1,11 @@
-// Mutations of src/lower/pointers/catalog.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/pointers/catalog.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "pointer-ops-unknown",
     breaks: "std's functions of a raw pointer are refused",
-    file: "src/lower/pointers/catalog.rs",
+    file: "crates/rust-js-lower/src/pointers/catalog.rs",
     find: "    if let Some(item) = std_path_item(tcx, id)\n        && let Some(&(_, op)) = POINTER_FNS.iter().find(|&&(of, _)| of == item)\n    {\n        return Some(op);\n    }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-methods-unknown",
     breaks: "a raw pointer's methods, and a `NonNull`'s, are refused",
-    file: "src/lower/pointers/catalog.rs",
+    file: "crates/rust-js-lower/src/pointers/catalog.rs",
     find: "        .find(|(name, _)| *name == method.as_str())\n        .map(|&(_, op)| op)\n",
     replace: "        .find(|_| false)\n        .map(|&(_, op)| op)\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "offset-from-refused",
     breaks: "`p.offset_from(q)` of two pointers into one array is refused",
-    file: "src/lower/pointers/catalog.rs",
+    file: "crates/rust-js-lower/src/pointers/catalog.rs",
     find: '    ("offset_from", PointerOp::OffsetFrom),\n    ("offset_from_unsigned", PointerOp::OffsetFrom),\n    ("byte_offset_from", PointerOp::ByteOffsetFrom),\n    ("byte_offset_from_unsigned", PointerOp::ByteOffsetFrom),\n    ("as_ref", PointerOp::AsRef),\n',
     replace: '    ("byte_offset_from", PointerOp::ByteOffsetFrom),\n    ("byte_offset_from_unsigned", PointerOp::ByteOffsetFrom),\n    ("as_ref", PointerOp::AsRef),\n',
     tests: ["test/corpus.test.ts", "-t", "^pointer_offset_from.rs$"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "uninit-as-ptr-unrecognized",
     breaks:
       "a `MaybeUninit`'s `as_mut_ptr()` isn't a pointer to its value, and is refused",
-    file: "src/lower/pointers/catalog.rs",
+    file: "crates/rust-js-lower/src/pointers/catalog.rs",
     find: "    (\n        MethodOf::Type(StdPath::MemMaybeUninit),\n        \"as_mut_ptr\",\n        PointerOp::FromRef,\n    ),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^maybe_uninit_pointer.rs$"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     name: "wrapping-add-as-step",
     breaks:
       "`wrapping_add` steps by items within the allocation, so semver's rotation can't leave it",
-    file: "src/lower/pointers/catalog.rs",
+    file: "crates/rust-js-lower/src/pointers/catalog.rs",
     find: '    ("wrapping_add", PointerOp::WrappingAdd { sub: false }),',
     replace: '    ("wrapping_add", PointerOp::Add),',
     tests: ["test/corpus.test.ts", "-t", "^tagged_pointers.rs$"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "unaligned-read-unknown",
     breaks: "`read_unaligned` is refused",
-    file: "src/lower/pointers/catalog.rs",
+    file: "crates/rust-js-lower/src/pointers/catalog.rs",
     find: '    ("read_unaligned", PointerOp::Read),\n    ("write", PointerOp::Write),\n    ("write_volatile", PointerOp::Write),',
     replace:
       '    ("write", PointerOp::Write),\n    ("write_volatile", PointerOp::Write),',
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     name: "rc-as-ptr-refused",
     breaks:
       "`Rc::as_ptr` isn't a pointer to what the `Rc` points at, so React's `a.as_ref().map(Rc::as_ptr)` is refused",
-    file: "src/lower/pointers/catalog.rs",
+    file: "crates/rust-js-lower/src/pointers/catalog.rs",
     find: "    (MethodOf::Type(StdPath::Rc), \"as_ptr\", PointerOp::RcAsPtr),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_as_ptr.rs$"],
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
   {
     name: "items-range-refused",
     breaks: "a slice's `as_mut_ptr_range()` is refused, hashbrown's and smallvec's cursor over its ends (#1256)",
-    file: "src/lower/pointers/catalog.rs",
+    file: "crates/rust-js-lower/src/pointers/catalog.rs",
     find: "    (MethodOf::Slice, \"as_mut_ptr_range\", PointerOp::ItemsRange),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_pointer_range_walked_by_a_cursor.rs$"],
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
   {
     name: "swap-nonoverlapping-refused",
     breaks: "`ptr::swap_nonoverlapping` is refused (#1256)",
-    file: "src/lower/pointers/catalog.rs",
+    file: "crates/rust-js-lower/src/pointers/catalog.rs",
     find: "    (StdPath::PtrSwapNonoverlappingFn, PointerOp::SwapEach),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^items_swapped_nonoverlapping.rs$"],
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
   {
     name: "byte-offset-from-refused",
     breaks: "a raw pointer's `byte_offset_from` is refused (#1256)",
-    file: "src/lower/pointers/catalog.rs",
+    file: "crates/rust-js-lower/src/pointers/catalog.rs",
     find: '    ("byte_offset_from", PointerOp::ByteOffsetFrom),\n    ("byte_offset_from_unsigned", PointerOp::ByteOffsetFrom),\n    ("as_ref", PointerOp::AsRef),',
     replace: '    ("as_ref", PointerOp::AsRef),',
     tests: ["test/corpus.test.ts", "-t", "^byte_offset_from_is_an_address_difference.rs$"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
   {
     name: "arith-offset-intrinsic-unanswered",
     breaks: "`intrinsics::arith_offset(p, n)`, called as itself, is refused where it's `p.wrapping_offset(n)` (#1384)",
-    file: "src/lower/pointers/catalog.rs",
+    file: "crates/rust-js-lower/src/pointers/catalog.rs",
     find: "    (StdPath::IntrinsicsArithOffsetFn, PointerOp::WrappingAdd { sub: false }),\n",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "intrinsics called as themselves run as their methods"],

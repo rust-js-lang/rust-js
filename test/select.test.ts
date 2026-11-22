@@ -50,7 +50,7 @@ const map: TestMap = {
     "test/iterator-forms.test.ts test/corpus/x.rs": bits(0),
     "test/iterator-forms.test.ts test/corpus/y.rs": bits(2),
   },
-  includes: { "src/lower/helper.txt": [{ file: "crates/rust-js-program/src/runtime.rs", line: 5 }] },
+  includes: { "src/helper.txt": [{ file: "crates/rust-js-program/src/runtime.rs", line: 5 }] },
   corpusReaders: ["test/two.test.ts"],
   noCompiler: ["test/tool.test.ts"],
 };
@@ -76,7 +76,7 @@ test("a change to a function's code runs the tests that ran it, and those the ma
     forms: ["x.rs"],
   });
   // A file `include_str!` reads, by the line that reads it.
-  expect(picked(of("src/lower/helper.txt"))).toEqual({
+  expect(picked(of("src/helper.txt"))).toEqual({
     files: ["test/architecture.test.ts", "test/std-package.test.ts", "test/tool.test.ts", "test/two.test.ts"],
     cases: ["y.rs"],
     forms: ["y.rs"],
@@ -126,7 +126,7 @@ test("others' changes since the map's commit run the tests whose functions they 
 // map's, so a skipped commit's tests run in it. Each commit's selection is
 // a part of the batch's, whatever the batch (ADR 1101, amended).
 test("a batch of commits selects every test any one of them selects", () => {
-  const commits = [["src/a.rs"], ["test/helper.ts"], ["test/corpus/y.rs"], ["docs/notes.md"], ["src/lower/helper.txt"]];
+  const commits = [["src/a.rs"], ["test/helper.ts"], ["test/corpus/y.rs"], ["docs/notes.md"], ["src/helper.txt"]];
   const batch = of(...commits.flat());
   for (const changed of commits) {
     const alone = of(...changed);
@@ -259,7 +259,7 @@ test("a sanity pass's cap is never empty for the compiler's code: the map's test
   expect([fromMap.files, fromMap.cases, fromMap.capped]).toEqual([["test/one.test.ts", "test/two.test.ts"], ["x.rs"], "some (from the map at 0: 2 files, 1 cases)"]);
   // A file the map has no function of, one others changed too: the corpus.
   for (const given of [map, undefined]) {
-    const corpus = capOf(["src/lower/mir/tidy.rs"], files, cases, given);
+    const corpus = capOf(["crates/rust-js-mir/src/tidy.rs"], files, cases, given);
     expect([corpus.files, corpus.cases, corpus.capped]).toEqual([["test/corpus.test.ts"], cases, "corpus"]);
     expect(outcome(corpus)).toBe("capped corpus");
   }
@@ -344,7 +344,7 @@ test("every architecture test reads the compiler's sources, so runs on every cha
 });
 
 test("check:fast runs what the selection selected: its files, its cases in parts, and lint; everything where it's none", () => {
-  const plain = { all: false, changed: ["src/lower/drops.rs"], branch: [], added: [], extra: [], cores: 12 };
+  const plain = { all: false, changed: ["crates/rust-js-lower/src/drops.rs"], branch: [], added: [], extra: [], cores: 12 };
   const given = { caseList: "/cases.txt", formsList: "/forms.txt" };
   const selected = jobs({ ...plain, picked: { ...given, files: new Set(["test/lowering-cells.test.ts", "test/jsx.test.ts"]), cases: ["a.rs", "b.rs"], forms: [] } }).jobs;
   const testJobs = (list: typeof selected) => list.filter((job) => job.cmd[0] === "bun" && job.cmd[1] === "test").map((job) => job.name);

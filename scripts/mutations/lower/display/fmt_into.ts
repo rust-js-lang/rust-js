@@ -1,4 +1,4 @@
-// Mutations of src/lower/display/fmt_into.rs (ADR 0093): a value only a
+// Mutations of crates/rust-js-lower/src/display/fmt_into.rs (ADR 0093): a value only a
 // dictionary knows written into a writer's sink by its `fmtInto` (#1652,
 // step 5 of ADR 1135).
 import type { Mutation } from "../../../mutations";
@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
   {
     name: "listed-writer-given-mut-ref-unboxed",
     breaks: "a library's formatting impl of a `&mut` of its type, written a piece at a time, is given the object where its dictionary reads generic code's box of it, `arg0.value` of no box (#1824)",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "            let value = match self.in_generic_box(ty) {\n",
     replace: "            let value = match false {\n",
     tests: ["test/writer-sink.test.ts", "-t", "of a &mut of its type"],
@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-into-dyn-unwritten",
     breaks: "a `dyn Display` written into a writer is refused, as its pair's dictionary isn't asked",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "            if self.dynamic_trait(ty).is_none() {\n",
     replace: "            if true {\n",
     tests: sink,
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-into-dyn-error-debug-unfollowed",
     breaks: "a `dyn Error`'s `Debug` written into a writer is refused, as std's errors' pieces weren't followed, rand_core 0.5.1's `write!(f, \"{:?}\", self.inner)` (#2250)",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "            if self.dynamic_trait(ty).is_none() {\n",
     replace: "            if self.dynamic_trait(ty).is_none() || kind != Std::FmtDisplay && !matches!(ty.kind(), ty::Dynamic(traits, ..) if traits.principal_def_id() == Some(self.debug_trait())) {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_debug_written_piecewise.rs$"],
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-into-generic-unwritten",
     breaks: "a `T` written into a writer is refused, as its caller's dictionary isn't asked",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "        } else if self.formatted_by_dictionary(trait_id, ty) {\n",
     replace: "        } else if false {\n",
     tests: sink,
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-into-impl-entry-left-out",
     breaks: "an impl of the crate's own given a generic writer carries no `fmtInto`, which the writer calls",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "        if !(listed || printing || self.krate.written.of_adt(adt, tr.def_id)) {\n",
     replace: "        if true {\n",
     tests: sink,
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-into-std-entry-left-out",
     breaks: "a std value's dictionary given a generic writer, an `i32`'s, carries no `fmtInto`, which the writer calls",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "        if !written && !printing {\n",
     replace: "        if true {\n",
     tests: sink,
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-into-generic-impl-dictionaries-dropped",
     breaks: "a generic impl's writer, `Duo<T>`'s, armed by its `fmtInto` is given no `TDisplay`, so its `T`'s write throws",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "        args.extend(extra);\n",
     replace: "",
     tests: sink,
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-into-debug-never-pretty",
     breaks: "a std value's `Debug` written by its `fmtInto` under `{:#?}` writes it on one line",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "                let pretty = Pretty::When(given.clone()).alternate();\n",
     replace: "                let pretty = Pretty::Plain.alternate();\n",
     tests: sink,
@@ -73,15 +73,15 @@ export const mutations: Mutation[] = [
   {
     name: "published-library-type-refused",
     breaks: "a library's published type written into a consumer's own writer is refused, though its dictionary's `fmtInto` writes it",
-    file: "src/lower/display/fmt_into.rs",
-    find: "            self.krate.foreign.lists_fmt_into(adt)\n",
-    replace: "            false\n",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
+    find: "            self.krate.foreign.lists_fmt_into(adt) && crate::recognition::std_crate(",
+    replace: "            false && crate::recognition::std_crate(",
     tests: ["test/writer-sink.test.ts", "-t", "published type"],
   },
   {
     name: "listed-library-copy-without-fmt-into",
     breaks: "a consumer's own copy of a library's derived `Debug` its contract lists has no `fmtInto`, which the consumer calls",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "        let listed = !adt.is_local() && !compiled_std && self.krate.foreign.lists_fmt_into(adt);\n",
     replace: "        let listed = false;\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's published type is written into a consumer's writer a piece at a time"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-only-type-refused",
     breaks: "a private type only a published one's field holds, whose `Debug` nothing shows, rustls-pki-types' `BytesInner`, is refused for a `fmtInto` nothing calls",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "        if !writes_through_sink && !listed && !self.krate.written.given_adt(adt, tr.def_id) {\n",
     replace: "        if false {\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's published type is written into a consumer's writer a piece at a time"],
@@ -97,15 +97,15 @@ export const mutations: Mutation[] = [
   {
     name: "std-fmt-fn-value-plain",
     breaks: "a std formatting trait's `fmt` taken as a `fn` pointer, `self.format(f, fmt::Display::fmt)`, is its text where a framed writer arms it, \"didn't write through its sink\"",
-    file: "src/lower/display/fmt_into.rs",
-    find: "        if self.krate.prints.framed.is_empty() || !crate::lower::recognition::is_fmt_method(self.tcx, def_id) {\n",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
+    find: "        if self.krate.prints.framed.is_empty() || !crate::recognition::is_fmt_method(self.tcx, def_id) {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_fn_value_of_a_std_fmt.rs$"],
   },
   {
     name: "impl-fmt-into-options-always",
     breaks: "a generic impl's `fmtInto` gives its writer the options where it takes none, so they land where its dictionaries belong, `TDisplay` undefined (#1739)",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "        if takes_options {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_instances.rs$"],
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
   {
     name: "impl-fmt-into-options-never",
     breaks: "a generic impl's `fmtInto` gives its writer no options where it takes them, so its dictionary lands where its options belong (#1739)",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "        if takes_options {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_instances_with_options.rs$"],
@@ -121,8 +121,8 @@ export const mutations: Mutation[] = [
   {
     name: "std-listed-by-dictionary",
     breaks: "a std adapter's `Debug` is written by its dictionary made here, which is made of what writes it, and rustc's stack overflows (#1712)",
-    file: "src/lower/display/fmt_into.rs",
-    find: "                && crate::lower::recognition::std_crate(self.tcx, adt.krate).is_none()\n",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
+    find: " && crate::recognition::std_crate(self.tcx, adt.krate).is_none()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_std_adapters)\\.rs$"],
     snapshots: true,
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-compiled-impl-fmt-into-left-out",
     breaks: "`@rust-js/std`'s dictionary of a compiled adapter's `Debug` carries no `fmtInto` (#1712)",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "        if !adt.is_local() && !listed && !compiled_std {\n",
     replace: "        if !adt.is_local() && !listed {\n",
     tests: ["test/std-package.test.ts"],
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
   {
     name: "impl-fmt-into-options-by-callers",
     breaks: "a dictionary's `fmtInto` gives its writer options by whether its callers' writers take them, not as its own `fmt` entry does (#1712)",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "                self.compiled_writer_takes_options(instance.def_id()),\n",
     replace: "                self.takes_options(instance.def_id()),\n",
     tests: ["test/std-package.test.ts"],
@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
   {
     name: "printing-impl-without-fmt-into",
     breaks: "a printing type's dictionary carries no `fmtInto` where a generic writer is framed, so its prints land inside `{:#?}`'s indent (#1712)",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "        let printing = self.krate.prints.framed_generic && self.krate.prints.types.contains(&adt);\n",
     replace: "        let printing = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_printing_in_a_generic)\\.rs$"],
@@ -154,23 +154,23 @@ export const mutations: Mutation[] = [
   {
     name: "fn-value-of-a-dictionary-type-plain",
     breaks: "a std formatting trait's `fmt` taken as a `fn` pointer of a type only a dictionary knows is its text, itertools' `Format`, and its framed writer throws (#1712)",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "        if (self.recognition().formatted_by(trait_id, shown)).is_some_and(|adt| adt.is_local()) {\n",
-    replace: "        if (self.recognition().formatted_by(trait_id, shown)).is_some_and(|adt| adt.is_local()) || crate::lower::recognition::known_by_a_dictionary(shown) {\n",
+    replace: "        if (self.recognition().formatted_by(trait_id, shown)).is_some_and(|adt| adt.is_local()) || crate::recognition::known_by_a_dictionary(shown) {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_fn_value_of_a_dictionary_type\\.rs$"],
   },
   {
     name: "fmt-into-of-self-type",
     breaks: "a dictionary of the crate's impl of a reference or a `Box` of its type, `impl Display for &ByRef`, carries no `fmtInto`, so generic code's write of it into a writer throws (#1798)",
-    file: "src/lower/display/fmt_into.rs",
-    find: "        let Some(adt) = of_impl.and_then(|imp| crate::lower::recognition::formatted_adt(self.tcx, imp)) else {\n",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
+    find: "        let Some(adt) = of_impl.and_then(|imp| crate::recognition::formatted_adt(self.tcx, imp)) else {\n",
     replace: "        let Some(adt) = of_impl.and(tr.self_ty().ty_adt_def().map(|adt| adt.did())) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
   },
   {
     name: "dictionary-write-past-own-reference",
     breaks: "a library's type written through a reference with a `Display` of its own is asked of the type, whose impl has none, so it's refused (#1798)",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "        let ty = self.shown_ref_type(kind, ty);\n        let (dictionary, value)",
     replace: "        let ty = ty.peel_refs();\n        let (dictionary, value)",
     tests: ["test/writer-sink.test.ts", "-t", "a library's formatting impls of a reference"],
@@ -178,7 +178,7 @@ export const mutations: Mutation[] = [
   {
     name: "best-effort-impl-refused",
     breaks: "a library's impl dictionary of a value it makes a `dyn` of alone, whose writer isn't framed, is refused, not left without `fmtInto`, so the library is refused (#1797)",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "            if !(listed || printing) && self.krate.written.best_effort_adt(adt, tr.def_id) {\n",
     replace: "            if false && !(listed || printing) && self.krate.written.best_effort_adt(adt, tr.def_id) {\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's dyn Debug written through generic code"],
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
   {
     name: "best-effort-std-refused",
     breaks: "a library's std dictionary of a value it makes a `dyn` of alone, whose writes aren't followed, a `Duration`'s, is refused, not left without `fmtInto`, so the library is refused (#1797)",
-    file: "src/lower/display/fmt_into.rs",
+    file: "crates/rust-js-lower/src/display/fmt_into.rs",
     find: "            if !printing && self.krate.written.best_effort(self.tcx, ty) {\n",
     replace: "            if false && !printing && self.krate.written.best_effort(self.tcx, ty) {\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's dyn left without fmtInto"],

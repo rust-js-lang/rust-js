@@ -1,11 +1,11 @@
-// Mutations of src/lower/std_types/heap.rs (ADR 0333).
+// Mutations of crates/rust-js-lower/src/std_types/heap.rs (ADR 0333).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "heap-by-cmp",
     breaks: "a heap asks `cmp`, where std's asks `<=` and `>=`, `partial_cmp`'s (#937)",
-    file: "src/lower/std_types/heap.rs",
+    file: "crates/rust-js-lower/src/std_types/heap.rs",
     find: "        let compare = self.operators(item, span)?;\n        values.push(compare);\n",
     replace: "        let compare = self.cmp_fn(item, false, span)?;\n        values.push(compare);\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "heap-pop-unboxed",
     breaks:
       "a `BinaryHeap`'s `pop()` of items that could look like `None` gives its top unboxed: a `None` it holds is an empty heap's `None` (#318)",
-    file: "src/lower/std_types/heap.rs",
+    file: "crates/rust-js-lower/src/std_types/heap.rs",
     find: "            values.push(Expr::bool(boxed));\n",
     replace: "            values.push(Expr::bool(false));\n",
     tests: ["test/corpus.test.ts", "-t", "^heap_pop_of_a_param.rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-drain-kept",
     breaks: "`drain()` leaves its heap full",
-    file: "src/lower/std_types/heap.rs",
+    file: "crates/rust-js-lower/src/std_types/heap.rs",
     find: '            return Ok(Expr::call(Expr::member(heap, "splice"), vec![Expr::int(0)]));',
     replace:
       '            return Ok(Expr::call(Expr::member(heap, "slice"), vec![Expr::int(0)]));',
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-retain-given-no-drop",
     breaks: "a heap's `retain` of items with a destructor is given no drop",
-    file: "src/lower/std_types/heap.rs",
+    file: "crates/rust-js-lower/src/std_types/heap.rs",
     find: "            values.extend(self.std_drop_function(item, span)?);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^heap_destructors.rs$"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-unwinding-given-no-drop",
     breaks: "a heap's `pop`, `into_sorted_vec` and `from` of items whose comparison panics leak what std's frame drops as it unwinds (#901)",
-    file: "src/lower/std_types/heap.rs",
+    file: "crates/rust-js-lower/src/std_types/heap.rs",
     find: "            HeapOp::Pop | HeapOp::IntoSorted | HeapOp::From if self.order_may_panic(item) => {\n",
     replace: "            HeapOp::Pop | HeapOp::IntoSorted | HeapOp::From if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^heap_sift_unwinds.rs$"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-unwinding-always-given",
     breaks: "a heap's `pop` of items whose comparison never panics is given their drop for nothing (#901)",
-    file: "src/lower/std_types/heap.rs",
+    file: "crates/rust-js-lower/src/std_types/heap.rs",
     find: "            HeapOp::Pop | HeapOp::IntoSorted | HeapOp::From if self.order_may_panic(item) => {\n",
     replace: "            HeapOp::Pop | HeapOp::IntoSorted | HeapOp::From => {\n",
     tests: ["test/lowering-std-unwinds.test.ts", "-t", "heap"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-peek-mut-generic-unboxed",
     breaks: "`BinaryHeap::peek_mut` in generic code gives the top, not a cell of it, so a write through it doesn't sift: the order's wrong (#1007)",
-    file: "src/lower/std_types/heap.rs",
+    file: "crates/rust-js-lower/src/std_types/heap.rs",
     find: "                    if self.mut_ref_form(item).is_cell() {\n",
     replace: "                    if self.mut_ref_form(item).is_cell() && !self.is_unknown(item) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],

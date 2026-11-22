@@ -210,7 +210,7 @@ function. So `Some` of one is the function itself, and `if let Some(f)
 `R` is any type still, an `Option` too, so `Some(f())` stays `$some`,
 which is `f()` itself where it isn't nullish: upstream's `R | void` can't
 tell `Some(None)` from `None`, and Rust can. `defined_by_its_bounds` in
-`src/lower/representation.rs` is the one answer, of `boxed_payload` and
+`crates/rust-js-lower/src/representation.rs` is the one answer, of `boxed_payload` and
 `can_be_nullish`. What's boxed is decided where each `Some` is made, as
 `$some` does at run time, so a caller's `Some(closure)` and the generic
 code that reads it agree whatever either knows.
@@ -254,7 +254,7 @@ export function flushSync(f) {
 ```
 
 - **Which parameters**, `unboxed_params` in
-  `src/lower/analysis/mutation.rs`, as ADR 0289 finds a `Copy` bound's
+  `crates/rust-js-lower/src/analysis/mutation.rs`, as ADR 0289 finds a `Copy` bound's
   and ADR 0914, amended, a `Clone` bound's: of a function only its
   crate's calls call (`copies_by_callers`), each type parameter none of
   its calls gives a type that may look like `None`
@@ -333,7 +333,7 @@ function pickBoxed(x, keep) {
 }
 ```
 
-- **Which lowering a call calls**, `src/lower/analysis/js_given.rs`
+- **Which lowering a call calls**, `crates/rust-js-lower/src/analysis/js_given.rs`
   (`JsGiven`): each lowering takes its type parameters as a set of those
   unboxed and, of those, those JS gives (`Params`). A function's own JS
   takes them as its crate's calls give them (`unboxed_params`), or, of one

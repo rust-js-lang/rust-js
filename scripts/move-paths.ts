@@ -23,12 +23,12 @@
 // (`bun scripts/format.ts`). A path from a crate to the binary's module
 // can't be written, as no crate depends on the binary: it's said, and left.
 //
-//   bun scripts/move-paths.ts src/lower/iterators/mir_steps/ src/lower/iterators/mir_steps/
+//   bun scripts/move-paths.ts crates/rust-js-lower/src/iterators/mir_steps/ crates/rust-js-lower/src/iterators/mir_steps/
 //   bun scripts/move-paths.ts src/collections.rs crates/rust-js-program/src/collections.rs
 //   bun scripts/move-paths.ts                    # the Rust paths alone
 //   bun scripts/move-paths.ts --widen ..         # and make pub what another crate
 //                                                # names, as rustc says (`widened`)
-//   bun scripts/move-paths.ts --check src/lower/iterators/mir_steps/   # what still names it
+//   bun scripts/move-paths.ts --check crates/rust-js-lower/src/iterators/mir_steps/   # what still names it
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
@@ -58,6 +58,16 @@ export function textFiles(at = root): string[] {
  * of `a/b.rs` leaves `a/b.rsx`), nor one it ends (`crates/rust-js-program/src/js.rs` leaves
  * `crates/rust-js-program/src/js.rs`, which a second run met as written),
  * but one relative to a folder below the root, `"../a/b.rs"`. */
+/** Where `text` spells `path`, a file's or a directory's, as a join's
+ * string segments, `"src", "lower", "iterators.rs"`: a form the rewrite
+ * can't see, said so it's written whole (#2299's cut missed two). */
+export function segmented(text: string, path: string): boolean {
+  const parts = path.replace(/\/$/, "").split("/").filter(Boolean);
+  if (parts.length < 2) return false;
+  const quoted = parts.map((part) => `["'\`]${part.replace(/[.*+?^${}()|[\]\\]/g, "\\export function rewritten(text: string, pairs: [string, string][]): string {")}["'\`]`);
+  return new RegExp(quoted.join("\\s*,\\s*")).test(text);
+}
+
 export function rewritten(text: string, pairs: [string, string][]): string {
   let out = text;
   for (const [from, to] of pairs) {
@@ -234,9 +244,11 @@ export function rustPathsRewritten(file: string, text: string, modulesOf: Map<st
   const rewrites: Rewrite[] = [];
   const line = (at: number) => code.slice(0, at).split("\n").length;
   // The crate a top-level module of `own`'s root path is of, where it's
-  // another's.
+  // another's: never one `own` declares itself, as the lowering's base and
+  // MIR's crate both have a `drops` (#2299).
+  const ownModules = new Set(topModules(own, at));
   const elsewhere = (module: string): CompilerCrate | undefined => {
-    const crate = modulesOf.get(module);
+    const crate = ownModules.has(module) ? undefined : modulesOf.get(module);
     return crate && crate !== own ? crate : undefined;
   };
   const reachable = (crate: CompilerCrate, at: number, module: string) => {
@@ -365,8 +377,9 @@ export function listRewritten(text: string, modulesOf: Map<string, CompilerCrate
   const file = /\bfile:\s*"([^"]+)"/.exec(text)?.[1];
   const own = file === undefined ? undefined : crateOf(file, at);
   if (!own || !file!.endsWith(".rs")) return text;
+  const ownModules = new Set(topModules(own, at));
   const moved = (module: string) => {
-    const crate = modulesOf.get(module);
+    const crate = ownModules.has(module) ? undefined : modulesOf.get(module);
     return crate && crate !== own && crate.dir !== "" ? crate : undefined;
   };
   const rust = (code: string) =>
@@ -379,6 +392,41 @@ export function listRewritten(text: string, modulesOf: Map<string, CompilerCrate
       );
   // Its `find`s and `replace`s, each a string of its file's Rust.
   return text.replace(/\b(find|replace):(\s*)("(?:[^"\\]|\\.)*")/g, (_, key, space, string) => `${key}:${space}${rust(string)}`);
+}
+
+type Span = { file_name: string; line_start: number; label?: string | null };
+type Message = { message: string; code?: { code: string } | null; spans: Span[]; children: { message: string; spans: Span[] }[] };
+
+/** Where rustc says an item another crate names is private, each the line
+ * it's *defined* on, `file:line`, and its name: a "defined here" note's,
+ * never the use's own span, which a field's literal or a parameter's type
+ * can be, where `pub` is a syntax error (#2299's cut); and a type a public
+ * item hands out that its crate keeps (`private_interfaces`). Of the files
+ * `ours` says are a crate's of the compiler's. */
+export function privateSites(message: Message, ours: (file: string) => boolean): [string, string | undefined][] {
+  const code = message.code?.code ?? "";
+  const at = (span: Span) => `${span.file_name}:${span.line_start}`;
+  if (["private_interfaces", "private_bounds"].includes(code)) {
+    return message.children
+      .filter((child) => /only usable at visibility/.test(child.message))
+      .flatMap((child) => child.spans.filter((span) => ours(span.file_name)).map((span): [string, undefined] => [at(span), undefined]));
+  }
+  if (!["E0603", "E0624", "E0616"].includes(code)) return [];
+  const name = /`(\w+)` is private/.exec(message.message)?.[1];
+  return message.children
+    .filter((child) => /defined here/.test(child.message))
+    .flatMap((child) => child.spans.filter((span) => ours(span.file_name)).map((span): [string, string | undefined] => [at(span), name]));
+}
+
+/** The line, 1-based, of the `use` whose list holds line `n` of `lines`,
+ * which runs over lines from above the item rustc names; `n` where none
+ * does, up to the statement before. */
+export function statementLine(lines: string[], n: number): number {
+  for (let k = n; k >= 1; k--) {
+    if (/^\s*(?:pub(?:\s*\([^)]*\))?\s+)?use\s/.test(lines[k - 1]!)) return k;
+    if (k > 1 && (/[;}]\s*$/.test(lines[k - 2]!) || /^\s*$/.test(lines[k - 2]!))) break;
+  }
+  return n;
 }
 
 export function widened(at = root): string[] {
@@ -403,24 +451,8 @@ export function widened(at = root): string[] {
     // Every target, the tests' too, which name a crate's `testing` items.
     const built = Bun.spawnSync(["cargo", "build", "--quiet", "--all-targets", "--message-format=json"], { cwd: at, stdout: "pipe", stderr: "pipe" });
     const sites = new Map<string, string | undefined>();
-    type Span = { file_name: string; line_start: number; label?: string | null };
-    const walk = (message: { message: string; code?: { code: string } | null; spans: Span[]; children: { message: string; spans: Span[] }[] }) => {
-      // A type a public item hands out that its crate keeps to itself, as
-      // `private_interfaces` warns: the type, where the warning says it is.
-      if (["private_interfaces", "private_bounds"].includes(message.code?.code ?? "")) {
-        for (const child of message.children) {
-          if (!/only usable at visibility/.test(child.message)) continue;
-          for (const span of child.spans) if (crateOf(span.file_name, at)?.dir) sites.set(`${span.file_name}:${span.line_start}`, undefined);
-        }
-        return;
-      }
-      if (!["E0603", "E0624", "E0616"].includes(message.code?.code ?? "")) return;
-      const name = /`(\w+)` is private/.exec(message.message)?.[1];
-      for (const span of message.spans) if (span.label && /defined here|private/.test(span.label) && crateOf(span.file_name, at)?.dir) sites.set(`${span.file_name}:${span.line_start}`, name);
-      for (const child of message.children) {
-        if (!/defined here/.test(child.message)) continue;
-        for (const span of child.spans) if (crateOf(span.file_name, at)?.dir) sites.set(`${span.file_name}:${span.line_start}`, name);
-      }
+    const walk = (message: Message) => {
+      for (const [site, name] of privateSites(message, (file) => !!crateOf(file, at)?.dir)) sites.set(site, name);
     };
     for (const line of built.stdout.toString().split("\n")) {
       if (!line.startsWith("{")) continue;
@@ -431,9 +463,15 @@ export function widened(at = root): string[] {
     let changed = 0;
     for (const [site, name] of sites) {
       const [file, number] = [site.slice(0, site.lastIndexOf(":")), Number(site.slice(site.lastIndexOf(":") + 1))];
-      const line = readFileSync(join(at, file), "utf8").split("\n")[number - 1]!;
+      const lines = readFileSync(join(at, file), "utf8").split("\n");
+      const line = lines[number - 1]!;
       if (declares(line)) {
         if (widen(file, number)) changed++;
+        continue;
+      }
+      const start = statementLine(lines, number);
+      if (start !== number && /^\s*(?:pub(?:\s*\([^)]*\))?\s+)?use\s/.test(lines[start - 1]!)) {
+        if (widen(file, start)) changed++;
         continue;
       }
       // A glob's re-export, `stmt_walk::*,`, which rustc names for the item
@@ -496,9 +534,18 @@ if (import.meta.main) {
     }
   }
   console.log(`rewrote ${changed} files`);
+  for (const file of textFiles()) {
+    const text = readFileSync(join(root, file), "utf8");
+    for (const [from] of pairs) if (segmented(text, from)) console.log(`${file} spells ${from} as a join's segments, which this can't rewrite: write it whole`);
+  }
   // And the Rust paths into a module another crate now has.
   const modulesOf = new Map<string, CompilerCrate>();
-  for (const crate of compilerCrates()) for (const module of topModules(crate)) modulesOf.set(module, crate);
+  // A name two crates both declare, `drops` of the lowering's base and of
+  // MIR's, is neither's from a third: each crate names its own first, and a
+  // path through another root to it can't be told, so it's left (#2299).
+  const declaring = new Map<string, CompilerCrate[]>();
+  for (const crate of compilerCrates()) for (const module of topModules(crate)) declaring.set(module, [...(declaring.get(module) ?? []), crate]);
+  for (const [module, crates] of declaring) if (crates.length === 1) modulesOf.set(module, crates[0]!);
   const problems: string[] = [];
   let paths = 0;
   for (const file of compilerRustFiles()) {

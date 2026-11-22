@@ -1,4 +1,4 @@
-// Mutations of src/lower/std_types/values.rs (ADR 0093).
+// Mutations of crates/rust-js-lower/src/std_types/values.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "discriminant-of-a-callers-type-zero",
     breaks:
       "`mem::discriminant` of a type parameter's value is the constant `0`, so `discriminant(&Circle(1.0)) == discriminant(&Square(2.0))` in generic code is `true` (#1014)",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                if self.is_unknown(of) {\n",
     replace: "                if false && self.is_unknown(of) {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a discriminant in generic code"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "values-comb-subject-dropped",
     breaks:
       "an `Option`'s combinator is given its argument where its subject goes",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                return self.comb_values(comb, (values, tys), made, generic_args, call.span, out);\n",
     replace: "                return self.comb_values(comb, (values[1..].to_vec(), &tys[1..]), made, generic_args, call.span, out);\n",
     tests: [
@@ -27,7 +27,7 @@ export const mutations: Mutation[] = [
   {
     name: "values-map-call-refused",
     breaks: "a map's method is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            Std::Map(op) => return self.map_values(op, (values.collect(), tys), generic_args, call.span, out),\n",
     replace:
       '            Std::Map(_) => return Err(self.unsupported(call.span, "a map\'s method")),\n',
@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
   {
     name: "values-range-call-refused",
     breaks: "a range's method, `r.contains(&x)`, is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            Std::Range(op) => return self.range_call(op, values.collect(), tys, call.span, out),\n",
     replace:
       '            Std::Range(_) => return Err(self.unsupported(call.span, "a range\'s method")),\n',
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "ok-or-else-refused",
     breaks:
       "`ok_or_else` of a value with a destructor, bitflags' parser's, is an error",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                            | Comb::Err\n                            | Comb::OkOrElse\n",
     replace: "                            | Comb::Err\n",
     tests: ["test/corpus.test.ts", "-t", "option_combinator_drops"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     name: "boxed-as-ref-refused",
     breaks:
       "`as_ref()` of an `Option` of an `Option` is an error, where it's the same value",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            // `as_ref()`: the same value, box and all.\n            | Std::Pointee\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     name: "boxed-filter-refused",
     breaks:
       "`filter` of an `Option` of an `Option` is an error, where it keeps its own box",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And | Comb::Xor)\n",
     replace:
       "            | Std::Comb(Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And | Comb::Xor)\n",
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-map-drops-refused",
     breaks: "`map` of an `Option` whose value has a destructor is an error",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    // function it leaves unrun is dropped there (ADR 0469).\n                    | Std::OptionMap\n",
     replace:
       "                    // function it leaves unrun is dropped there (ADR 0469).\n",
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
   {
     name: "result-map-drops-refused",
     breaks: "`map` of a `Result` whose value has a destructor is an error",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                        Comb::ResultMap\n                            | Comb::Filter\n",
     replace: "                        Comb::Filter\n",
     tests: ["test/corpus.test.ts", "-t", "option_map_drops"],
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
     name: "unwrap-unchecked-keeps-drops",
     breaks:
       "`unwrap_unchecked()` can't take a value with a destructor, so `Some(Guard(5)).unwrap_unchecked()` is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::UnwrapErr\n                    | Std::UnwrapUnchecked\n",
     replace: "                    | Std::UnwrapErr\n",
     tests: [
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "once-boxed-get-refused",
     breaks: "`get` of a `OnceCell<()>` is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            | Std::Once(OnceOp::Get | OnceOp::Take)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "once_cells"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-remove-refused",
     breaks: "`remove` from a map of values with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                            | MapOp::Remove\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "map_drops"],
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
   {
     name: "guard-value-takes-drops",
     breaks: "a guard's `deref_mut()` is an error, a value with a destructor",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    // What a guard guards, through its `&mut` (ADR 0328).\n                    | Std::GuardValue { .. }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^locks"],
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
   {
     name: "is-some-and-of-drops-refused",
     breaks: "`is_some_and` of a value with a destructor is an error",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                            | Comb::IsSomeAnd\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "combinators_owned_drops"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwrap-err-of-guard-refused",
     breaks: "`unwrap_err()` of a `Result` of a guard is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::UnwrapErr\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "try_lock"],
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-iter-takes-drops-refused",
     breaks: "`Some(x).into_iter()` of what has a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::OptionIter\n                    | Std::IterSource(IterSource::Once)\n",
     replace: "                    | Std::IterSource(IterSource::Once)\n",
     tests: ["test/corpus.test.ts", "-t", "loop_drops"],
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
   {
     name: "once-takes-drops-refused",
     breaks: "`iter::once(x)` of what has a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::OptionIter\n                    | Std::IterSource(IterSource::Once)\n",
     replace: "                    | Std::OptionIter\n",
     tests: ["test/corpus.test.ts", "-t", "loop_drops"],
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     name: "option-as-mut-same",
     breaks:
       "`list.next.as_mut()` of a handle on `list.next` is the handle, not the `Option`",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            Std::Pointee => self.through_refs(arg(), tys[0]).0,\n",
     replace: "            Std::Pointee => arg(),\n",
     tests: ["test/corpus.test.ts", "-t", "boxed_array_iter"],
@@ -169,7 +169,7 @@ export const mutations: Mutation[] = [
     name: "map-option-refused",
     breaks:
       "a map's `get`, `insert` or `remove` of a value that could look like `None` is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            | Std::Map(MapOp::Get | MapOp::Insert | MapOp::Remove)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_values_like_none.rs$"],
@@ -177,7 +177,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-as-ref-option-refused",
     breaks: "a pointer's `as_ref()` of what could look like `None` is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            | Std::Pointer(PointerOp::AsRef | PointerOp::AsMut)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
     name: "pointer-ops-would-drop",
     breaks:
       "a raw pointer's `write` is taken as dropping what it's given, so a generic `push` given a type with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Pointer(_)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_vec_raw.rs$"],
@@ -195,7 +195,7 @@ export const mutations: Mutation[] = [
     name: "user-io-write-of-a-droppable",
     breaks:
       "a write to a writer of bytes of the crate's with a destructor, arrayvec's `ArrayVec<u8, CAP>`, is refused as though the write dropped it",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::UserIoWrite\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_write_impl.rs$"],
@@ -204,7 +204,7 @@ export const mutations: Mutation[] = [
     name: "repeat-value-refused",
     breaks:
       "`repeat` and `repeat_n` of a value with a destructor are refused, as std calls that may drop it",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::IterSource(IterSource::Repeat | IterSource::RepeatN)\n",
     replace: "",
     tests: [
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
     name: "extend-moving-all-refused",
     breaks:
       "`v.extend(items)` of items with a destructor is refused, though it moves each",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            && !moves_all\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
     name: "swap-takes-drops",
     breaks:
       "a generic `swap` of items with a destructor takes none of its callers'",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Comb(Comb::Swap | Comb::ExtendFromSlice)\n",
     replace: "                    | Std::Comb(Comb::ExtendFromSlice)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_nothing.rs$"],
@@ -235,7 +235,7 @@ export const mutations: Mutation[] = [
     name: "extend-from-slice-takes-drops",
     breaks:
       "a generic `extend_from_slice` of items with a destructor takes none of its callers'",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Comb(Comb::Swap | Comb::ExtendFromSlice)\n",
     replace: "                    | Std::Comb(Comb::Swap)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_nothing.rs$"],
@@ -244,7 +244,7 @@ export const mutations: Mutation[] = [
     name: "slice-get-takes-drops",
     breaks:
       "a generic `get_mut` of items with a destructor takes none of its callers'",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::SliceGet\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_nothing.rs$"],
@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [
     name: "generic-index-mut-takes-drops",
     breaks:
       "a generic index's `index_mut` of items with a destructor takes none of its callers'",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Slice(SliceOp::GenericIndex { mutable: true })\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_nothing.rs$"],
@@ -262,7 +262,7 @@ export const mutations: Mutation[] = [
     name: "set-len-takes-drops",
     breaks:
       "a generic `set_len` of items with a destructor takes none of its callers'",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Alloc(_)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_nothing.rs$"],
@@ -271,7 +271,7 @@ export const mutations: Mutation[] = [
     name: "send-of-dropper-refused",
     breaks:
       "a send of a value with a destructor is an error, though the channel's queue owns it",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Channel(ChannelOp::Send)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^channel_of_droppers.rs$"],
@@ -280,7 +280,7 @@ export const mutations: Mutation[] = [
     name: "vec-moves-refused",
     breaks:
       "`insert`, `remove`, `swap_remove`, `split_off` and `rotate` of a vector of values with destructors are refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                        Comb::Insert | Comb::Remove | Comb::SwapRemove | Comb::SplitOff | Comb::Rotate { .. }\n",
     replace: "                        Comb::Then\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
@@ -288,7 +288,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-sorts-refused",
     breaks: "sorting a vector of values with destructors is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::SortByKey\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
   {
     name: "mem-take-refused",
     breaks: "`mem::take` of a vector of values with destructors is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::MemTake\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
@@ -305,7 +305,7 @@ export const mutations: Mutation[] = [
     name: "vec-drops-refused",
     breaks:
       "`truncate`, `retain` and `clear` of a vector of values with destructors are refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Clear\n                    | Std::Retain\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
@@ -313,7 +313,7 @@ export const mutations: Mutation[] = [
   {
     name: "drain-of-destructors-refused",
     breaks: "`drain` of a vector of values with destructors is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Text(TextOp::Drain | TextOp::Splice)\n",
     replace: "                    | Std::Text(TextOp::Splice)\n",
     tests: ["test/corpus.test.ts", "-t", "^drain_destructors.rs$"],
@@ -321,7 +321,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-take-of-destructors-refused",
     breaks: "`take` of an `Option` of a value with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::OptionTake\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^option_destructors.rs$"],
@@ -329,7 +329,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-take-if-of-destructors-refused",
     breaks: "`take_if` of an `Option` of a value with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::OptionPlace(OptionPlaceOp::TakeIf)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^option_destructors.rs$"],
@@ -338,7 +338,7 @@ export const mutations: Mutation[] = [
     name: "deque-front-of-destructors-refused",
     breaks:
       "`push_front` and `pop_front` of a `VecDeque` of values with destructors are refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: '                    | Std::Method("unshift" | "shift")\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
@@ -347,7 +347,7 @@ export const mutations: Mutation[] = [
     name: "option-insert-of-destructors-refused",
     breaks:
       "`insert` and `get_or_insert` of an `Option` of a value with a destructor are refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                        OptionPlaceOp::Insert\n",
     replace: "                        OptionPlaceOp::TakeIf\n",
     tests: ["test/corpus.test.ts", "-t", "^option_destructors.rs$"],
@@ -356,7 +356,7 @@ export const mutations: Mutation[] = [
     name: "map-drops-refused",
     breaks:
       "`retain`, `extend`, `clear` and `or_insert` of a map of values with destructors are refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Map(MapOp::Retain | MapOp::Extend | MapOp::Clear | MapOp::OrInsert | MapOp::DrainAll)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
@@ -364,7 +364,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-moves-refused",
     breaks: "`push` and `pop` of a heap of values with destructors are refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Heap(HeapOp::Push | HeapOp::Pop | HeapOp::IntoSorted | HeapOp::From | HeapOp::Append)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^heap_destructors.rs$"],
@@ -372,7 +372,7 @@ export const mutations: Mutation[] = [
   {
     name: "lock-into-inner-refused",
     breaks: "a lock's `into_inner` of a value with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Lock\n                    // A `PoisonError`'s",
     replace: "                    // A `PoisonError`'s",
     tests: ["test/corpus.test.ts", "-t", "^lock_destructors.rs$"],
@@ -381,8 +381,8 @@ export const mutations: Mutation[] = [
     name: "partition-moves-unseen",
     breaks:
       "`partition` of items with a destructor is refused, as if it dropped some",
-    file: "src/lower/std_types/values.rs",
-    find: "                && crate::lower::recognition::keeps_each(self.tcx.item_name(def_id).as_str())\n",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
+    find: "                && crate::recognition::keeps_each(self.tcx.item_name(def_id).as_str())\n",
     replace: "                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^(picked_items_drop|iterator_consumed_by_extend_unzip_partition_eq).rs$"],
   },
@@ -390,7 +390,7 @@ export const mutations: Mutation[] = [
     name: "poison-guard-dropped",
     breaks:
       "`into_inner()` of a lock's guard is refused, as if it dropped the guard it gives back",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::PoisonData\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
@@ -399,7 +399,7 @@ export const mutations: Mutation[] = [
     name: "find-map-lent-refused",
     breaks:
       "`find_map` through a `&mut` of items with a destructor is refused, as if it took the iterator whole",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                && (tys[0].is_ref() || self.ends_holding_nothing(tys[0])))\n",
     replace: "                && self.ends_holding_nothing(tys[0]))\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps_drop.rs$"],
@@ -408,17 +408,17 @@ export const mutations: Mutation[] = [
     name: "find-map-boxed-refused",
     breaks:
       "`find_map` of a function giving an `Option` of what could look like `None` is refused",
-    file: "src/lower/std_types/values.rs",
-    find: "            | Std::IterComb(crate::lower::combinators::IterComb::FindMap | crate::lower::combinators::IterComb::Nth)\n",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
+    find: "            | Std::IterComb(crate::combinators::IterComb::FindMap | crate::combinators::IterComb::Nth)\n",
     replace:
-      "            | Std::IterComb(crate::lower::combinators::IterComb::Nth)\n",
+      "            | Std::IterComb(crate::combinators::IterComb::Nth)\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
   },
   {
     name: "boxed-unwrap-refused",
     breaks:
       "`unwrap_or_else` of an `Option` of an `Option` of a type parameter is refused, where it gives the inner one as it's held",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            | Std::Comb(\n                Comb::UnwrapOrElse | Comb::UnwrapOrDefault | Comb::ResultUnwrapOrElse | Comb::ResultUnwrapOrDefault\n            )\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_unwraps.rs$"],
@@ -426,7 +426,7 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-take-if-refused",
     breaks: "`take_if` of an `Option<Option<T>>` is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            | Std::OptionTake\n            | Std::OptionPlace(OptionPlaceOp::TakeIf)\n            // A `OnceCell`'s",
     replace: "            | Std::OptionTake\n            // A `OnceCell`'s",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
@@ -435,7 +435,7 @@ export const mutations: Mutation[] = [
     name: "unused-value-calls-refused",
     breaks:
       "`unwrap_or`, `ok_or`, `or` and `then_some` of a value with a destructor are refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Comb(Comb::OkOr | Comb::Or | Comb::ResultOr | Comb::ThenSome | Comb::And | Comb::ResultAnd | Comb::Xor | Comb::Zip)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unused_value_drops.rs$"],
@@ -444,7 +444,7 @@ export const mutations: Mutation[] = [
     name: "cycle-takes-drops-refused",
     breaks:
       "`cycle()` of an iterator with a destructor is refused as taking a value it might drop",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Step(StepOp::Cycle)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cycle_of_an_items_iterator_clones_its_item.rs$"],
@@ -454,7 +454,7 @@ export const mutations: Mutation[] = [
     name: "boxed-pop-front-refused",
     breaks:
       "`pop_front` of a type parameter's items is refused, its `Some` unboxed",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: '            | Std::Method("pop" | "shift")\n',
     replace: '            | Std::Method("pop")\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_rc_drops.rs$"],
@@ -463,7 +463,7 @@ export const mutations: Mutation[] = [
     name: "boxed-and-refused",
     breaks:
       "`and` of a type parameter's `Option` is refused, its box taken for none",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And | Comb::Xor)\n",
     replace:
       "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::Xor)\n",
@@ -472,7 +472,7 @@ export const mutations: Mutation[] = [
   {
     name: "unpaired-calls-refused",
     breaks: "`xor` and `zip` of values with a destructor are refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "| Comb::ResultAnd | Comb::Xor | Comb::Zip)\n",
     replace: "| Comb::ResultAnd)\n",
     tests: ["test/corpus.test.ts", "-t", "^unpaired_option_drops.rs$"],
@@ -480,7 +480,7 @@ export const mutations: Mutation[] = [
   {
     name: "retain-mut-refused",
     breaks: "`retain_mut` of values with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Slice(SliceOp::RetainMut { .. })\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^retain_mut_drops.rs$"],
@@ -488,7 +488,7 @@ export const mutations: Mutation[] = [
   {
     name: "collection-from-refused",
     breaks: "`VecDeque::from(v)` of values with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::ToVec\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^collection_from_drops.rs$"],
@@ -496,7 +496,7 @@ export const mutations: Mutation[] = [
   {
     name: "splice-refused",
     breaks: "`splice` of values with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Text(TextOp::Drain | TextOp::Splice)\n",
     replace: "                    | Std::Text(TextOp::Drain)\n",
     tests: ["test/corpus.test.ts", "-t", "^splice_and_inspect_drops.rs$"],
@@ -505,7 +505,7 @@ export const mutations: Mutation[] = [
     name: "inspect-refused",
     breaks:
       "`inspect` of an `Option` or a `Result` of a value with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Comb(Comb::Inspect | Comb::ResultInspect { .. })\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^splice_and_inspect_drops.rs$"],
@@ -514,7 +514,7 @@ export const mutations: Mutation[] = [
     name: "extract-if-refused",
     breaks:
       "`extract_if` of a vector's or a list's values with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Slice(SliceOp::ExtractIf { .. })\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^extract_if_drops.rs$"],
@@ -522,7 +522,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-extract-if-refused",
     breaks: "`extract_if` of a map's values with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Map(MapOp::ExtractIf)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^extract_if_drops.rs$"],
@@ -530,7 +530,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-from-refused",
     breaks: "a map made of items with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Map(MapOp::From { .. })\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_collect_drops.rs$"],
@@ -539,7 +539,7 @@ export const mutations: Mutation[] = [
     name: "lending-slice-ops-refused",
     breaks:
       "`split_at_mut` and the rest of a slice's lending ops are refused of values with a destructor",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            || matches!(known, Std::Slice(op) if op.lends());\n",
     replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
@@ -547,7 +547,7 @@ export const mutations: Mutation[] = [
   {
     name: "fill-refused",
     breaks: "`fill` of values with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Slice(SliceOp::Fill | SliceOp::FillWith)\n",
     replace: "                    | Std::Slice(SliceOp::FillWith)\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
@@ -555,7 +555,7 @@ export const mutations: Mutation[] = [
   {
     name: "first-refused",
     breaks: "`first_mut` of values with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::First\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
@@ -563,7 +563,7 @@ export const mutations: Mutation[] = [
   {
     name: "last-refused",
     breaks: "`last_mut` of values with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::SliceLast\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
@@ -571,7 +571,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-from-slice-refused",
     breaks: "`clone_from_slice` of values with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Slice(SliceOp::CloneFromSlice)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
@@ -580,7 +580,7 @@ export const mutations: Mutation[] = [
     name: "capacity-of-destructors-refused",
     breaks:
       "`shrink_to_fit` and `reserve` of values with a destructor are refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Capacity(_)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^default_and_pop_if_drops.rs$"],
@@ -589,7 +589,7 @@ export const mutations: Mutation[] = [
     name: "pop-if-and-defaults-refused",
     breaks:
       "`pop_if` and `unwrap_or_default` of values with a destructor are refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Comb(Comb::PopIf | Comb::UnwrapOrDefault | Comb::ResultUnwrapOrDefault)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^default_and_pop_if_drops.rs$"],
@@ -597,7 +597,7 @@ export const mutations: Mutation[] = [
   {
     name: "array-map-of-destructors-refused",
     breaks: "an array's `map` of values with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: '                    | Std::Method("map")\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^default_and_pop_if_drops.rs$"],
@@ -605,7 +605,7 @@ export const mutations: Mutation[] = [
   {
     name: "pop-front-if-refused",
     breaks: "`pop_front_if` of values with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Slice(SliceOp::PopFrontIf)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^default_and_pop_if_drops.rs$"],
@@ -613,7 +613,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-as-mut-refused",
     breaks: "an `Option`'s `as_mut` of a value with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Pointee\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^default_and_pop_if_drops.rs$"],
@@ -622,7 +622,7 @@ export const mutations: Mutation[] = [
     name: "peekable-methods-refused",
     breaks:
       "a `Peekable`'s `peek` and `next_if` of items with a destructor are refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Step(StepOp::Peek | StepOp::PeekMut | StepOp::NextIf | StepOp::NextIfEq)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^peekable_drops.rs$"],
@@ -631,7 +631,7 @@ export const mutations: Mutation[] = [
     name: "once-cell-ops-refused",
     breaks:
       "a `OnceCell`'s `set` and `take` of a value with a destructor are refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Once(_)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
@@ -639,7 +639,7 @@ export const mutations: Mutation[] = [
   {
     name: "any-downcasts-refused",
     breaks: "a `dyn Any`'s downcasts of what may hold a destructor are refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Any(AnyOp::Is | AnyOp::DowncastRef | AnyOp::DowncastMut | AnyOp::Downcast)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any_counted_rc.rs$"],
@@ -648,7 +648,7 @@ export const mutations: Mutation[] = [
     name: "cell-take-of-boxed-option-refused",
     breaks:
       "a `Cell`'s `take()` of an `Option` of what could look like `None` is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            | Std::CellTake\n            | Std::CellReplace\n            | Std::CellGet\n            | Std::OptionTake",
     replace:
       "            | Std::CellReplace\n            | Std::CellGet\n            | Std::OptionTake",
@@ -658,7 +658,7 @@ export const mutations: Mutation[] = [
     name: "cell-replace-of-boxed-option-refused",
     breaks:
       "a `Cell`'s `replace()` of an `Option` of what could look like `None` is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            | Std::CellTake\n            | Std::CellReplace\n            | Std::CellGet\n            | Std::OptionTake",
     replace:
       "            | Std::CellTake\n            | Std::CellGet\n            | Std::OptionTake",
@@ -668,7 +668,7 @@ export const mutations: Mutation[] = [
     name: "cell-get-of-boxed-option-refused",
     breaks:
       "a `Cell`'s `get()` of an `Option` of what could look like `None` is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            | Std::CellTake\n            | Std::CellReplace\n            | Std::CellGet\n            | Std::OptionTake",
     replace:
       "            | Std::CellTake\n            | Std::CellReplace\n            | Std::OptionTake",
@@ -677,7 +677,7 @@ export const mutations: Mutation[] = [
   {
     name: "successors-takes-drops-refused",
     breaks: "`successors` of a value with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::IterSource(IterSource::Successors)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^successors_drops.rs$"],
@@ -685,7 +685,7 @@ export const mutations: Mutation[] = [
   {
     name: "fill-with-takes-drops-refused",
     breaks: "`fill_with` of items with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Slice(SliceOp::Fill | SliceOp::FillWith)\n",
     replace: "                    | Std::Slice(SliceOp::Fill)\n",
     tests: ["test/corpus.test.ts", "-t", "^fill_with_drops.rs$"],
@@ -694,7 +694,7 @@ export const mutations: Mutation[] = [
     name: "swap-with-slice-takes-drops-refused",
     breaks:
       "`swap_with_slice` of items with a destructor is refused, where it drops none",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Slice(SliceOp::SwapWithSlice)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^swap_with_slice_drops.rs$"],
@@ -703,7 +703,7 @@ export const mutations: Mutation[] = [
     name: "mem-take-boxed-option-refused",
     breaks:
       "`mem::take` and `mem::replace` of an `Option<Option<i32>>` are refused, though each gives the old value as it's kept, boxed already",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            | Std::MemTake\n            | Std::Replace\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_results.rs$"],
@@ -712,7 +712,7 @@ export const mutations: Mutation[] = [
     name: "unwind-of-a-destructor",
     breaks:
       "`catch_unwind` of a closure that holds a value with a destructor, and `resume_unwind` of one, are refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Unwind(_)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "catch_unwind_drops"],
@@ -720,7 +720,7 @@ export const mutations: Mutation[] = [
   {
     name: "extend-of-nothing-held-refused",
     breaks: "`v.extend((2..4).map(D))` of items with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: " || self.drops(tys[1]) == Drops::Nothing))",
     replace: "))",
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
@@ -728,7 +728,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-split-off-refused",
     breaks: "`BTreeMap::split_off` of values with a destructor is refused",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                            | MapOp::TreeSplitOff\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
@@ -737,7 +737,7 @@ export const mutations: Mutation[] = [
     name: "get-mut-drop-refused",
     breaks:
       "a `RefCell`'s `get_mut` of a value with a destructor is refused, though it drops nothing (ADR 0863)",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    // A cell's `get_mut`, a `&mut` to what it holds, which a\n                    // write through drops as it's written (ADR 0863).\n                    | Std::CellGetMut\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^refcell_plain_field_drops.rs$"],
@@ -746,7 +746,7 @@ export const mutations: Mutation[] = [
     name: "local-borrow-nested-option-refused",
     breaks:
       "a thread-local's `with_borrow` whose closure gives an `Option` of an `Option`, React's SimpleEventPlugin's `names.get(dom).cloned()`, is refused, though it's the closure's own, boxed as it makes it (rd111)",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            // A thread-local's closure's, as it gives it (rd111).\n            | Std::LocalWith { .. }\n            | Std::LocalBorrow { .. }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^local_borrow_nested_option.rs$"],
@@ -755,7 +755,7 @@ export const mutations: Mutation[] = [
     name: "rc-new-closure-shared",
     breaks:
       "`Rc::new` of a `Copy` closure, where the crate reads a `dyn Fn`'s address, is the closure itself, so two `Rc::new(add)`s are `===` where Rust's two allocations are apart (#1053)",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            && self.krate.counted.own_function_given(self.tcx, pointee)\n",
     replace: "            && false\n            && self.krate.counted.own_function_given(self.tcx, pointee)\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_addresses_of_rcs.rs$"],
@@ -764,7 +764,7 @@ export const mutations: Mutation[] = [
     name: "rc-new-closure-own-uncounted",
     breaks:
       "a counted `Rc::new` of a closure made a function of its own is that function, not `{ value, strong, weak }`, so `$rcClone` and `$ptrTo(rc.value)` read nothing (#1053)",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            return Ok(self\n                .counted_same(def_id, generic_args, own.clone(), call.span)?\n                .unwrap_or(own));\n",
     replace: "            return Ok(own);\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_by_rc_as_ptr.rs$"],
@@ -772,7 +772,7 @@ export const mutations: Mutation[] = [
   {
     name: "consumed-argument-refused",
     breaks: "an iterator with a destructor that `extend`, `unzip` or `partition` takes by value, which `consumed_call` drops after it, is refused as one a std function might drop (#1120)",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                None if consumed == Some(at) => self.tcx.types.unit,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
@@ -780,15 +780,15 @@ export const mutations: Mutation[] = [
   {
     name: "discriminant-of-a-wide-repr-a-number",
     breaks: "a `Discriminant` of an enum of a `u128` `repr` is a number, its `{:?}` `Discriminant(-1)` where Rust's is `u128::MAX` (#1131)",
-    file: "src/lower/std_types/values.rs",
-    find: ".or(crate::lower::Num::of(of.discriminant_ty(self.tcx)))",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
+    find: ".or(crate::Num::of(of.discriminant_ty(self.tcx)))",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^discriminants_past_32_bits.rs$"],
   },
   {
     name: "moves-of-drops-refused",
     breaks: "`push_mut`, `insert_mut`, `push_front_mut` and `swap_remove_front` of items with a destructor are refused, though each moves an item and drops none (#1274)",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                        SliceOp::PushMut { .. } | SliceOp::PushFrontMut | SliceOp::DequeSwapRemove { .. }\n",
     replace: "                        SliceOp::PushFrontMut | SliceOp::DequeSwapRemove { .. }\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_accessors_of_items_with_a_destructor.rs$"],
@@ -796,7 +796,7 @@ export const mutations: Mutation[] = [
   {
     name: "btree-ends-of-drops-refused",
     breaks: "a B-tree's `pop_first`, `first_entry`, `range_mut` and an entry's `insert`, of values with a destructor, are refused (#1274)",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                            | MapOp::TreeEnd { .. }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^mut_accessors_of_items_with_a_destructor.rs$"],
@@ -804,7 +804,7 @@ export const mutations: Mutation[] = [
   {
     name: "peek-mut-of-drops-refused",
     breaks: "a heap's `peek_mut` of items with a destructor is refused, though it lends its top (#1274)",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::Heap(HeapOp::PeekTop { .. } | HeapOp::PeekPop | HeapOp::PeekMut)\n",
     replace: "                    | Std::Heap(HeapOp::PeekTop { .. } | HeapOp::PeekPop)\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_accessors_of_items_with_a_destructor.rs$"],
@@ -812,15 +812,15 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-new-of-dropping-refused",
     breaks: "`io::Error::new` of a value with a destructor is refused, rand_core's `From<Error> for io::Error` with it",
-    file: "src/lower/std_types/values.rs",
-    find: "IoErrorOp::New | crate::lower::std_types::io_error::IoErrorOp::Other)",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
+    find: "IoErrorOp::New | crate::std_types::io_error::IoErrorOp::Other)",
     replace: "IoErrorOp::FromRawOsError)",
     tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
   },
   {
     name: "lent-object-record-dropped",
     breaks: "a call of std's that lends an object from inside its receiver is let through but its record isn't made, its address an allocation of its own (#1475)",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "            Some(record) => record(made),\n",
     replace: "            Some(_) => made,\n",
     tests: ["test/corpus.test.ts","-t","^address_of_an_object_std_lends_from_its_storage.rs$"],
@@ -828,7 +828,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-flatten-drops-refused",
     breaks: "`Option<Option<T>>::flatten()` of a value with a destructor, which moves the inner `Option` out and drops nothing, is refused (#1857)",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::OptionFlatten\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^option_flatten_of_a_value_with_a_destructor.rs$"],
@@ -836,15 +836,15 @@ export const mutations: Mutation[] = [
   {
     name: "box-take-of-a-destructor-refused",
     breaks: "`Box::take` of a value with a destructor is refused, where it moves the value out and drops nothing, as `Option::take` does (#1656)",
-    file: "src/lower/std_types/values.rs",
-    find: "                    | Std::Uninit(crate::lower::std_types::uninit::UninitOp::BoxTake)\n",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
+    find: "                    | Std::Uninit(crate::std_types::uninit::UninitOp::BoxTake)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^box_take_moves_out_and_leaves_the_box_unwritten\\.rs$"],
   },
   {
     name: "box-map-of-a-destructor-refused",
     breaks: "`Box::map` of a value with a destructor is refused, where it moves the value into `f`, whose it is, and drops none of it (#1656)",
-    file: "src/lower/std_types/values.rs",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
     find: "                    | Std::BoxMap\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^box_map_gives_its_value_to_f_and_drops_none\\.rs$"],
@@ -852,8 +852,8 @@ export const mutations: Mutation[] = [
   {
     name: "box-map-unmapped",
     breaks: "`Box::map(b, f)` is the box's value, `f` never called (#1656)",
-    file: "src/lower/std_types/values.rs",
-    find: "                crate::lower::calls::apply(arg(), vec![boxed])\n",
+    file: "crates/rust-js-lower/src/std_types/values.rs",
+    find: "                crate::calls::apply(arg(), vec![boxed])\n",
     replace: "                boxed\n",
     tests: ["test/corpus.test.ts", "-t", "^box_map_gives_its_value_to_f_and_drops_none\\.rs$"],
   },
