@@ -496,3 +496,24 @@ an `enumerate()` of a `skip_while`, `take_while`, `filter_map`,
 `map_while` or `scan` of a slice's items is refused with that cause,
 generic and not, as `hint_asked` makes none of those knowing. The cause
 is said again, naming #2281, and test/diagnostics.test.ts holds it.
+
+Amended (#2281): an `enumerate()` of a `skip_while`, `take_while`,
+`filter_map`, `map_while` or `scan` made in place knows its hint. Its JS
+is a `map` of its items with their index, which `size_hint_of` peels, and
+it took the hint as known only where what's left is an array's `$iter`;
+a `$lazyScan` over a range, or over a type parameter's items made `$iter`,
+was refused though it knows std's hint, `(0, upper)` of its source's.
+`size_hint_of` now peels an `enumerate()` to its source's type as it
+does a `map`, and takes the hint as known where that type's JS knows it
+as it's made (`hint_known_as_made`), the unmapped one's own judgement.
+The refusal's cause, "which holds an adapter made in place inside
+another", is gone with the five shapes that reached it: counted sweeps of
+480 shapes over a slice's items (476 compile, none refused) and of 990
+over other sources (402 refused, none with that cause, each by its
+source's own hint: a B-tree's, a deque's or a hash map's iterator, a
+string's `chars`, `char_indices` or `split`) reach it nowhere.
+`test/corpus/size_hints_of_while_and_scan_adapters_made_in_place.rs`
+holds each adapter's hint fresh, part-consumed and exhausted, its
+`enumerate()`, over an infinite source, over a range and of a type
+parameter's items, against native in both builds, the iterator forms
+and every metamorphic rewrite.

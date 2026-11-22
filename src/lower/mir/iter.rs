@@ -232,7 +232,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             it = (**source).clone();
             mapped = true;
-            source_ty = source_ty.and_then(|ty| crate::lower::recognition::mapped_source(self.tcx, ty));
+            // A `map`'s source, or an `enumerate()`'s, made a JS `map` of
+            // its items with their index, whose hint is its source's (#2281).
+            source_ty = source_ty.and_then(|ty| {
+                crate::lower::recognition::mapped_source(self.tcx, ty)
+                    .or_else(|| crate::lower::recognition::enumerated_source(self.tcx, ty))
+            });
         }
         // Of the crate's own, its `$iterator`'s, which has its impl's
         // `size_hint` where it writes one, else std's `(0, None)`.
@@ -242,14 +247,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // of one whose hint is std's is its `$Steps`, the `false` arm's,
             // or a JS adapter `in_place_adapter_hint` answers (ADR 0093's
             // unreached sites, 2026-11-18).
-            true => crate::lower::iterators::is_stepped_items(&it),
+            // Or a source whose JS knows std's hint as it's made, the one
+            // judgement of the unmapped, a `$lazyScan` over a range or of a
+            // type parameter's items made `$iter` (#2281).
+            true => {
+                crate::lower::iterators::is_stepped_items(&it)
+                    || source_ty.is_some_and(|ty| self.hint_known_as_made(ty))
+            }
             // Or of std's adapters of those, each a `$Steps` with std's
             // hint (#733).
             false => own || self.hint_known_as_made(iter_ty),
         };
         if !known {
-            let why = self.hint_refused_because(iter_ty);
-            return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, from its MIR{why}")));
+            return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, from its MIR")));
         }
         // Of one given as it is, by its dictionary, which has its impl's
         // own where there's one (ADR 0411).

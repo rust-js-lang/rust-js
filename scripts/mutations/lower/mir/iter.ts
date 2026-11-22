@@ -935,4 +935,20 @@ export const mutations: Mutation[] = [
     replace: "        let hint = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_grown_by_a_take_of_a_cycle_of_a_map.rs$"],
   },
+  {
+    name: "enumerate-made-a-map-unpeeled",
+    breaks: "an `enumerate()` made a JS `map` of its items with their index isn't peeled to its source's type, so the hint of one of a `scan` over a range or of a type parameter's items is refused (#2281)",
+    file: "src/lower/mir/iter.rs",
+    find: "                    .or_else(|| crate::lower::recognition::enumerated_source(self.tcx, ty))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^size_hints_of_while_and_scan_adapters_made_in_place.rs$"],
+  },
+  {
+    name: "mapped-hint-source-unasked",
+    breaks: "a mapped source whose JS knows std's hint as it's made isn't taken for one, only an array's `$iter`, so an `enumerate()` of a `$lazyScan` is refused (#2281)",
+    file: "src/lower/mir/iter.rs",
+    find: "                    || source_ty.is_some_and(|ty| self.hint_known_as_made(ty))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^size_hints_of_while_and_scan_adapters_made_in_place.rs$"],
+  },
 ];

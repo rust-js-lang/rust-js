@@ -935,12 +935,4 @@ export const mutations: Mutation[] = [
     replace: "        let js_iterator = match ty.kind() {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_box_enumerated_asks_its_own_nth.rs$"],
   },
-  {
-    name: "hint-refusal-names-no-cause",
-    breaks: "a refusal of `size_hint()` lost to an adapter made in place inside another doesn't say so, nor #2281",
-    file: "src/lower/iterators/knowing.rs",
-    find: "            true => \", which holds an adapter made in place inside another, as JS's own, which keeps no hint (#2281)\",\n",
-    replace: '            true => "",\n',
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint of an enumerate of a skip_while"],
-  },
 ];
