@@ -8,17 +8,19 @@
 // | ok|fail | <note>` (DEVELOPMENT.md, "Pushing").
 import { spawnSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
-import { hostname, loadavg } from "node:os";
+import { loadavg } from "node:os";
 import { devTimesLog } from "../test/bounded";
 import { liveLeases } from "./leases";
 
 /** Who a line of the log is of: the machine and the agent its sessions
- * name, `RUST_JS_MACHINE` and `RUST_JS_AGENT`, each machine's own; else the
- * host's name and `-`, and `unset` says which wasn't set, which the line
- * says, as the M1's and the MacBook's lines read as the mini's. */
-export function whoRuns(env: Record<string, string | undefined> = process.env, host = hostname()): { machine: string; agent: string; unset: string[] } {
+ * name, `RUST_JS_MACHINE` and `RUST_JS_AGENT`, each machine's own; or,
+ * where either isn't set, which, `unset`, and no line is written: one
+ * under the host's name sat apart from the same machine's runs, a
+ * check:fast's `<host>.local | -` beside its pushes' `m6 | ioX` (#2322). */
+export function whoRuns(env: Record<string, string | undefined> = process.env): { machine: string; agent: string } | { unset: string[] } {
   const unset = ["RUST_JS_MACHINE", "RUST_JS_AGENT"].filter((name) => !env[name]);
-  return { machine: env.RUST_JS_MACHINE || host, agent: env.RUST_JS_AGENT || "-", unset };
+  if (unset.length > 0) return { unset };
+  return { machine: env.RUST_JS_MACHINE!, agent: env.RUST_JS_AGENT! };
 }
 
 /** A run's line of the log. */
@@ -80,11 +82,14 @@ export function devTimes(
 ): void {
   try {
     const who = whoRuns();
-    const unset = who.unset.length > 0 ? ` (${who.unset.join(", ")} unset: the host's name)` : "";
+    if ("unset" in who) {
+      console.error(`${kind}'s times not written to ${devTimesLog}: ${who.unset.join(" and ")} unset, which name the machine and the agent of its line`);
+      return;
+    }
     const sha = spawnSync("git", ["rev-parse", "--short", "HEAD"], { cwd, encoding: "utf8" }).stdout?.trim() || "-";
     const began = Number(process.env.RUST_JS_TIMED_OTHERS);
     const others: [number, number] | undefined = Number.isFinite(began) && process.env.RUST_JS_TIMED_OTHERS !== undefined ? [began, otherRuns()] : undefined;
-    const line = timesLine({ at: new Date(), machine: who.machine, agent: who.agent, kind, sha, total: (performance.now() - started) / 1000, phases, selection, load: loadavg(), others, ok, note: `${note}${unset}` });
+    const line = timesLine({ at: new Date(), machine: who.machine, agent: who.agent, kind, sha, total: (performance.now() - started) / 1000, phases, selection, load: loadavg(), others, ok, note });
     appendFileSync(devTimesLog, `${line}\n`);
   } catch {
     // A log that can't be written says nothing of the run.

@@ -69,4 +69,12 @@ export const mutations: Mutation[] = [
     replace: "  return Math.max(...done.map((r) => r.end)) - Math.min(...done.map((r) => r.start));\n",
     tests: ["test/timing.test.ts", "-t", "a group's time is its files' own"],
   },
+  {
+    name: "job-seconds-divided-again",
+    breaks: "check:fast's line divides each job's seconds by 1,000 again, so every job it names reads `0s` (#2322)",
+    file: "scripts/checkFast.ts",
+    find: "  return results.map((r) => [r.job.name, r.end - r.start]);\n",
+    replace: "  return results.map((r) => [r.job.name, (r.end - r.start) / 1000]);\n",
+    tests: ["test/select.test.ts", "-t", "says its selection on its line"],
+  },
 ];

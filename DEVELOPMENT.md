@@ -875,7 +875,8 @@ checked:
   (`check` or `sanity`) and what was selected, `select all (why)`,
   `select some (N files, M cases)`, `select capped …` or `select none`, the
   map's commit and how far behind it is. Each machine's sessions set
-  `RUST_JS_MACHINE` and `RUST_JS_AGENT`, which name its lines.
+  `RUST_JS_MACHINE` and `RUST_JS_AGENT`, which name its lines; a run
+  without them writes none, saying which isn't set (#2322).
   A tracked change not committed is refused. A rebase whose conflicts are
   each a blessed baseline's, a file .gitattributes merges as
   `merge=binary` (`regenerated` in scripts/push.ts), takes main's and

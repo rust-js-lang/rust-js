@@ -431,7 +431,9 @@ check's suite takes one machine of a small selection, which leaves room
 for it. The lag and the 20-job cap's minutes before and after are in
 #1989. The line says who ran it
 by `RUST_JS_MACHINE` and `RUST_JS_AGENT`, each machine's sessions' own
-(`whoRuns`), else the host's name with a note. It's written on every exit,
+(`whoRuns`); without either no line is written, saying which isn't set
+(#2322), where it was the host's name, apart from the machine's other
+runs. It's written on every exit,
 including a signal's.
 
 ### Amended: a failed check says which commit broke what (2026-11-16)

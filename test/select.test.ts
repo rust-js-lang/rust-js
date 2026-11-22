@@ -8,7 +8,7 @@ import { expect, test } from "bun:test";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { jobs, ranKey, totalKey } from "../scripts/checkFast";
+import { jobSeconds, jobs, ranKey, totalKey } from "../scripts/checkFast";
 import { onlyPushedFiles, phases as pushPhases } from "../scripts/push";
 import { ownsTimes, slowest, timesLine, whoRuns } from "../scripts/devTimes";
 import { failedIn, misses } from "../scripts/selector-audit";
@@ -402,8 +402,11 @@ test("bun run push says its selection on its line, and runs the check and the po
   expect(push).toContain('`${base}..HEAD`');
   // Its line on every exit, a signal's too, and who ran it, each machine's.
   expect(push).toContain('for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const)');
-  expect(whoRuns({ RUST_JS_MACHINE: "m1-lisa", RUST_JS_AGENT: "ioX" }, "host")).toEqual({ machine: "m1-lisa", agent: "ioX", unset: [] });
-  expect(whoRuns({}, "host.local")).toEqual({ machine: "host.local", agent: "-", unset: ["RUST_JS_MACHINE", "RUST_JS_AGENT"] });
+  expect(whoRuns({ RUST_JS_MACHINE: "m1-lisa", RUST_JS_AGENT: "ioX" })).toEqual({ machine: "m1-lisa", agent: "ioX" });
+  // Not under the host's name, apart from the machine's other lines: none
+  // written, saying which isn't set (#2322).
+  expect(whoRuns({})).toEqual({ unset: ["RUST_JS_MACHINE", "RUST_JS_AGENT"] });
+  expect(whoRuns({ RUST_JS_MACHINE: "m6" })).toEqual({ unset: ["RUST_JS_AGENT"] });
   // Each run of the loop writes its own line through the one writer, but
   // one that's a step of another's, whose environment says so: a push's
   // check:fast, a retirement's port regen, check:fast's corpus parts.
@@ -413,6 +416,9 @@ test("bun run push says its selection on its line, and runs the check and the po
   expect(env.RUST_JS_TIMED_BY).toBe("push");
   expect(env.RUST_JS_TIMED_OTHERS).toBe("2");
   expect(slowest([["a", 1], ["b", 9], ["c", 5]], 2)).toEqual([["b", 9], ["c", 5]]);
+  // A job's seconds, its run's `Ran` holding its start and end in seconds
+  // already: corpus 5/12's 190 s, not `0s` (#2322).
+  expect(slowest(jobSeconds([{ job: { name: "corpus 5/12" }, start: 10, end: 200 }, { job: { name: "compat" }, start: 0, end: 297 }]))).toEqual([["compat", 297], ["corpus 5/12", 190]]);
   for (const file of ["scripts/push.ts", "scripts/checkFast.ts", "scripts/mutations.ts", "scripts/react-in-rust.ts", "test/corpus.test.ts"]) {
     expect(readFileSync(join(root, file), "utf8")).toContain("ownsTimes(");
   }

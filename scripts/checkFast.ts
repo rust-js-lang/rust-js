@@ -1014,10 +1014,16 @@ if (import.meta.main) {
   // Its line in the machine's log, its slowest jobs its steps; a mutant's
   // or a retirement's run is its runner's line.
   if (owns) {
-    const steps: [string, number][] = results.map((r) => [r.job.name, (r.end - r.start) / 1000]);
-    devTimes("check:fast", { started: 0, phases: slowest(steps), selection: scope, ok: failed.length === 0, note: failed.length ? `${failed.length} failed` : "" });
+    devTimes("check:fast", { started: 0, phases: slowest(jobSeconds(results)), selection: scope, ok: failed.length === 0, note: failed.length ? `${failed.length} failed` : "" });
   }
   process.exit(failed.length === 0 ? 0 : 1);
+}
+
+/** Each job's name and its seconds, from its start to its end, which a
+ * run's `Ran` holds in seconds from the run's start: the log's steps
+ * (#2322, where they were divided by 1,000 again, each `0s`). */
+export function jobSeconds(results: { job: { name: string }; start: number; end: number }[]): [string, number][] {
+  return results.map((r) => [r.job.name, r.end - r.start]);
 }
 
 /** What the install is of: the root's manifest, each workspace's and the

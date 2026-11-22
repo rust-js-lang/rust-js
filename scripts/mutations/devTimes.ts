@@ -21,4 +21,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: line,
   },
+  {
+    name: "times-written-under-the-host",
+    breaks: "a run without `RUST_JS_MACHINE` or `RUST_JS_AGENT` is taken as named, so its line is written under no machine, apart from the machine's other runs (#2322)",
+    file: "scripts/devTimes.ts",
+    find: "  if (unset.length > 0) return { unset };\n",
+    replace: "",
+    tests: line,
+  },
 ];
