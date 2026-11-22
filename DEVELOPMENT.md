@@ -693,6 +693,14 @@ checked:
   origin/main`. If `main` was force-pushed (`forced update`, an author
   rewrite), `git rebase --onto origin/main <old tip>`, so the old commits
   don't come back.
+- **Rebased onto a move, rewrite the branch's paths**: `bun scripts/move-paths.ts
+  --rebase` after the rebase, or on a conflict's resolved tree, rewrites the
+  lines the branch wrote, never `main`'s, for the files `main` moved since
+  the branch's old base (`ORIG_HEAD`'s, or given): a path to a file, and a
+  Rust path resolved where it was written, `crate::lower::iterators` in
+  `crates/rust-js-lower` as `crate::iterators`. It says what it can't
+  write, a path into the binary or into a crate this one doesn't depend
+  on. A no-arguments run is the mover's, after `git mv`.
 - **See the rebase finish before checking**: `git status` says `rebasing`
   while it waits on a conflict, and checks run then test a half-applied
   branch, which passes or fails for no reason of its own.

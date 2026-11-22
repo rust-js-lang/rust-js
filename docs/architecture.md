@@ -60,7 +60,9 @@ as `rust_js_program::collections::IndexMap`; `--widen` makes `pub` what
 another crate names, as rustc says it, so a crate's public items are what
 its dependents use and no more; and the Rust of each mutation's `find`
 and `replace`, so a mutation of a file that names a moved module still
-applies. Run it with no pairs on a branch after a move lands. A crate
+applies. With no pairs it takes the moves `git mv` made. A branch rebased
+onto a move runs `--rebase`, which rewrites only the lines the branch wrote,
+each path resolved in the crate and module it was written in. A crate
 builds for WASI on its own (check:fast's "the crates for WASI"). A crate's
 test-only conveniences, a `Name` of a word alone, are its `testing`
 feature, which the binary's tests enable as a dev-dependency and resolver

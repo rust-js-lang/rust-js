@@ -7,7 +7,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { root } from "./support";
 import { binaryCrate, compilerCrates, type CompilerCrate } from "../scripts/compiler-crates";
-import { privateSites, rewritten, rustPathsRewritten, segmented, statementLine, textFiles } from "../scripts/move-paths";
+import { boundNames, codeOf, privateSites, rewritten, rustPathsRewritten, segmented, statementLine, textFiles } from "../scripts/move-paths";
 
 const crates = compilerCrates();
 const binary = binaryCrate();
@@ -60,10 +60,20 @@ test("the root names its modules bare, but not a later part of a path", () => {
   );
 });
 
-test("a comment's path is rewritten, a string's isn't", () => {
-  expect(rewrite("src/pipeline/a.rs", '/// See [crate::js::Expr].\nconst S: &str = "crate::js::Expr";\n').text).toBe(
+test("a comment's path is rewritten where the move at hand moved its module, a string's never", () => {
+  const text = '/// See [crate::js::Expr].\nconst S: &str = "crate::js::Expr";\n';
+  expect(rustPathsRewritten("src/pipeline/a.rs", text, modulesOf, root, new Set(["js"])).text).toBe(
     '/// See [rust_js_program::js::Expr].\nconst S: &str = "crate::js::Expr";\n',
   );
+  // In a settled tree, prose naming another crate's module is left: it
+  // can't be told from an example (a sweep of main rewrote five files so).
+  expect(rewrite("src/pipeline/a.rs", text).text).toBe(text);
+});
+
+test("a root's bare name it imports itself is its import's, never a moved module's", () => {
+  const root = "use rust_js_program::js::{self, Expr};\nuse std::collections as output;\n\nfn f() -> js::Name {\n    output::x()\n}\n";
+  expect(rewrite("src/main.rs", root).text).toBe(root);
+  expect(boundNames(codeOf(root))).toEqual(new Set(["js", "Expr", "output"]));
 });
 
 test("a crate's path to the binary's module is said, never written", () => {
@@ -125,6 +135,9 @@ test("a source a test or a script joins from segments is there, and a move says 
   expect(segmented('join(root, "src", "lower", "iterators.rs")', "src/lower/")).toBe(true);
   expect(segmented('join(root, "src", "lowering")', "src/lower/")).toBe(false);
   expect(segmented('"src/lower/iterators.rs"', "src/lower/")).toBe(false);
+  // A part with a `.`, escaped as a part, not taken for the match.
+  expect(segmented('join(root, "src", "lower.rs")', "src/lower.rs")).toBe(true);
+  expect(segmented('join(root, "src", "lowerxrs")', "src/lower.rs")).toBe(false);
   const joins = textFiles()
     // Where `root` is the checkout's, support's or a script's own, never a fixture's
     // directory a test names so; not this file, whose examples are strings.

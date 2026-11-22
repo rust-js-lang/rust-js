@@ -93,8 +93,9 @@ When contributing code:
   end in the binary, `src/`, and owned output and printing in `crates/`,
   with no rustc. Name another crate's item by its crate's path,
   `rust_js_program::collections::IndexMap`; make `pub` only what another
-  crate uses. Move a module between crates with `bun scripts/move-paths.ts`,
-  and run it with no arguments on a branch after a move lands.
+  crate uses. Move a module between crates with `git mv`, then `bun
+  scripts/move-paths.ts`; rebased onto a move, run `bun scripts/move-paths.ts
+  --rebase`, which rewrites the branch's own lines alone.
 - **Carry decisions forward as explicit data.** A later phase consumes an
   earlier phase's answer rather than reconstructing it from names, generated
   text, or implementation details.

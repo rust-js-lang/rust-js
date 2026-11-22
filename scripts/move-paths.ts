@@ -18,14 +18,25 @@
 //   use crate::{collections::IndexSet,  use crate::lower::Body;
 //       lower::Body};                   use rust_js_program::collections::IndexSet;
 //
-// With no pairs it rewrites those alone: run it on a branch after a move
-// lands, so the branch's own code follows. rustfmt lays out what it writes
-// (`bun scripts/format.ts`). A path from a crate to the binary's module
-// can't be written, as no crate depends on the binary: it's said, and left.
+// Two modes, one a job:
 //
-//   bun scripts/move-paths.ts crates/rust-js-lower/src/iterators/mir_steps/ crates/rust-js-lower/src/iterators/mir_steps/
+// - The mover's, after `git mv`: with no pairs it takes the working tree's
+//   renames, and rewrites every file. With none it says so and does nothing.
+// - Everyone else's, a branch rebased onto a move: `--rebase` rewrites
+//   only the lines the branch wrote (scripts/move-paths-rebase.ts), each
+//   path resolved in the crate and module it was written in, against the
+//   moves since the branch's old base, `ORIG_HEAD`'s or the one given.
+//   Main's lines are never touched (a sweep of every file rewrote five of
+//   main's settled ones, #2294's P1).
+//
+// rustfmt lays out what it writes (`bun scripts/format.ts`). A path from a
+// crate to the binary's module can't be written, as no crate depends on the
+// binary: it's said, and left.
+//
+//   bun scripts/move-paths.ts                    # after git mv: its renames
+//   bun scripts/move-paths.ts --rebase [<old-base>]   # after a rebase
 //   bun scripts/move-paths.ts src/collections.rs crates/rust-js-program/src/collections.rs
-//   bun scripts/move-paths.ts                    # the Rust paths alone
+//                                                # a move git can't see, as pairs
 //   bun scripts/move-paths.ts --widen ..         # and make pub what another crate
 //                                                # names, as rustc says (`widened`)
 //   bun scripts/move-paths.ts --check crates/rust-js-lower/src/iterators/mir_steps/   # what still names it
@@ -53,21 +64,21 @@ export function textFiles(at = root): string[] {
   return out;
 }
 
-/** `text` with each of `pairs`' `from` written as its `to`: a path, the
- * whole of it or a prefix of one, never a longer name it begins (a `from`
- * of `a/b.rs` leaves `a/b.rsx`), nor one it ends (`crates/rust-js-program/src/js.rs` leaves
- * `crates/rust-js-program/src/js.rs`, which a second run met as written),
- * but one relative to a folder below the root, `"../a/b.rs"`. */
 /** Where `text` spells `path`, a file's or a directory's, as a join's
  * string segments, `"src", "lower", "iterators.rs"`: a form the rewrite
  * can't see, said so it's written whole (#2299's cut missed two). */
 export function segmented(text: string, path: string): boolean {
   const parts = path.replace(/\/$/, "").split("/").filter(Boolean);
   if (parts.length < 2) return false;
-  const quoted = parts.map((part) => `["'\`]${part.replace(/[.*+?^${}()|[\]\\]/g, "\\export function rewritten(text: string, pairs: [string, string][]): string {")}["'\`]`);
+  const quoted = parts.map((part) => `["'\`]${part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["'\`]`);
   return new RegExp(quoted.join("\\s*,\\s*")).test(text);
 }
 
+/** `text` with each of `pairs`' `from` written as its `to`: a path, the
+ * whole of it or a prefix of one, never a longer name it begins (a `from`
+ * of `a/b.rs` leaves `a/b.rsx`), nor one it ends (`crates/rust-js-program/src/js.rs` leaves
+ * `crates/rust-js-program/src/js.rs`, which a second run met as written),
+ * but one relative to a folder below the root, `"../a/b.rs"`. */
 export function rewritten(text: string, pairs: [string, string][]): string {
   let out = text;
   for (const [from, to] of pairs) {
@@ -165,11 +176,11 @@ function inlineModules(code: string): [number, number][] {
 type Rewrite = { from: number; to: number; text: string };
 
 /** A use tree's parts: `a::b::{c, d::e}` is `["a", "b"]` and its group. */
-type Tree = { path: string[]; group?: Tree[]; tail?: string };
+export type Tree = { path: string[]; group?: Tree[]; tail?: string };
 
 /** The use tree `text` is, parsed, or nothing where it's of a shape this
  * doesn't read (it's left as it is then, and said). */
-function parseTree(text: string): Tree | undefined {
+export function parseTree(text: string): Tree | undefined {
   let at = 0;
   const space = () => {
     while (/\s/.test(text[at] ?? "")) at++;
@@ -220,7 +231,7 @@ function parseTree(text: string): Tree | undefined {
   return parsed && at === text.length ? parsed : undefined;
 }
 
-function printTree(tree: Tree): string {
+export function printTree(tree: Tree): string {
   const path = tree.path.join("::");
   const joined = (rest: string) => (path ? `${path}::${rest}` : rest);
   if (tree.group) {
@@ -233,9 +244,39 @@ function printTree(tree: Tree): string {
   return tree.tail ? `${path} ${tree.tail}` : path;
 }
 
+/** The names `code` binds at its top itself, each `use`'s last segment or
+ * alias, `mod x` and `extern crate x`: a root's bare `js::Name` where it
+ * says `use rust_js_program::js;` is its import's, never a moved module's
+ * (a sweep of main rewrote five settled files so). */
+export function boundNames(code: string): Set<string> {
+  const names = new Set<string>();
+  // A group's `self`, `js::{self, Expr}`, binds the path it's in.
+  const leaves = (tree: Tree, above: string[]) => {
+    const path = tree.path[0] === "self" ? above : [...above, ...tree.path];
+    if (tree.group) tree.group.forEach((item) => leaves(item, path));
+    else if (tree.tail?.startsWith("as ")) names.add(tree.tail.slice(3).replace(/^r#/, ""));
+    else if (tree.tail !== "*" && path.length > 0) names.add(path.at(-1)!.replace(/^r#/, ""));
+  };
+  for (const m of code.matchAll(/(?:^|[^\w$])use\s+(?:::)?([^;]*);/g)) {
+    const tree = parseTree(m[1]!.trim());
+    if (tree) leaves(tree, []);
+  }
+  for (const m of code.matchAll(/\b(?:mod|extern\s+crate)\s+([a-z_]\w*)(?:\s+as\s+([a-z_]\w*))?/g)) names.add(m[2] ?? m[1]!);
+  return names;
+}
+
 /** What `file`'s text becomes, its paths into other crates' modules made
- * theirs, and what it can't rewrite. */
-export function rustPathsRewritten(file: string, text: string, modulesOf: Map<string, CompilerCrate>, at = root): { text: string; problems: string[] } {
+ * theirs, and what it can't rewrite. A path in a comment, which nothing
+ * checks, is rewritten only where it names one of `moved`, a module the
+ * move at hand put in another crate: in a settled tree, `crate::assign` in
+ * prose of a module its file's crate hasn't can't be told from an example. */
+export function rustPathsRewritten(
+  file: string,
+  text: string,
+  modulesOf: Map<string, CompilerCrate>,
+  at = root,
+  moved = new Set<string>(),
+): { text: string; problems: string[] } {
   const own = crateOf(file, at)!;
   const ownModule = modulePath(file, at);
   const code = codeOf(text);
@@ -325,12 +366,14 @@ export function rustPathsRewritten(file: string, text: string, modulesOf: Map<st
   // out of any inline module, and not a later part of a path or of a use
   // tree's group, `std::{collections::HashMap}`'s.
   if (ownModule.length === 0) {
+    const bound = boundNames(code);
     const uses = [...code.matchAll(/(^|[^\w$])use\s+[^;]*;/g)].map((m) => [m.index! + m[1]!.length, m.index! + m[0].length] as const);
     for (const m of code.matchAll(/(^|[^\w$:.])([a-z_]\w*)(\s*::)/g)) {
       const at = m.index! + m[1]!.length;
       if (inHandled(at) || toRoot(at) !== 0) continue;
       const inUse = uses.find(([from, to]) => from <= at && at < to);
       if (inUse && !/^use\s+$/.test(code.slice(inUse[0], at))) continue;
+      if (bound.has(m[2]!)) continue;
       const crate = elsewhere(m[2]!);
       if (!crate || !reachable(crate, at, m[2]!)) continue;
       rewrites.push({ from: at, to: at, text: `${crate.name}::` });
@@ -353,7 +396,7 @@ export function rustPathsRewritten(file: string, text: string, modulesOf: Map<st
   const commented = codeOf(text, true);
   for (const m of commented.matchAll(/(^|[^\w$])(crate::)([a-z_]\w*)\b/g)) {
     const at = m.index! + m[1]!.length;
-    if (code.slice(at, at + 5) === "crate") continue;
+    if (code.slice(at, at + 5) === "crate" || !moved.has(m[3]!)) continue;
     const crate = elsewhere(m[3]!);
     if (crate && crate.dir !== "") rewrites.push({ from: at, to: at + m[2]!.length, text: `${crate.name}::` });
   }
@@ -378,8 +421,9 @@ export function listRewritten(text: string, modulesOf: Map<string, CompilerCrate
   const own = file === undefined ? undefined : crateOf(file, at);
   if (!own || !file!.endsWith(".rs")) return text;
   const ownModules = new Set(topModules(own, at));
+  const bound = file === own.rootFile && existsSync(join(at, file!)) ? boundNames(codeOf(readFileSync(join(at, file!), "utf8"))) : new Set<string>();
   const moved = (module: string) => {
-    const crate = ownModules.has(module) ? undefined : modulesOf.get(module);
+    const crate = ownModules.has(module) || bound.has(module) ? undefined : modulesOf.get(module);
     return crate && crate !== own && crate.dir !== "" ? crate : undefined;
   };
   const rust = (code: string) =>
@@ -497,12 +541,40 @@ if (import.meta.main) {
     console.log(named.length === 0 ? `nothing names ${args[1]}` : named.join("\n"));
     process.exit(named.length === 0 ? 0 : 1);
   }
-  if (args.length % 2 !== 0) throw new Error("usage: bun scripts/move-paths.ts [<from> <to> ..]");
+  const { pathPairs, rebase, renames } = await import("./move-paths-rebase");
+  const git = (...command: string[]) => Bun.spawnSync(["git", ...command], { cwd: root }).stdout.toString().trim();
+  if (args[0] === "--rebase") {
+    const onto = git("merge-base", "HEAD", "origin/main");
+    const from = args[1] ?? git("merge-base", "ORIG_HEAD", "origin/main");
+    if (!from || from === onto) {
+      console.log(`nothing moved: the branch's base before the rebase is ${from || "unknown"}, its base now ${onto}; give the old base, \`--rebase <commit>\``);
+      process.exit(from ? 0 : 1);
+    }
+    const done = rebase(root, from, onto);
+    console.log(`rewrote ${done.files.length} of the branch's files for the moves ${from.slice(0, 9)}..${onto.slice(0, 9)}${done.files.map((file) => `\n  ${file}`).join("")}`);
+    for (const problem of done.problems) console.error(problem);
+    process.exit(done.problems.length > 0 ? 1 : 0);
+  }
+  if (args.length % 2 !== 0) throw new Error("usage: bun scripts/move-paths.ts [--rebase [<old-base>] | <from> <to> ..]");
   const pairs: [string, string][] = [];
   for (let i = 0; i < args.length; i += 2) pairs.push([args[i]!, args[i + 1]!]);
+  // No pairs: the moves `git mv` made, the working tree's renames.
+  if (pairs.length === 0) {
+    const staged = renames(root, "HEAD");
+    if (staged.length === 0) {
+      console.log("nothing moved: git mv first; after a rebase, use --rebase");
+      process.exit(0);
+    }
+    const files = new Set(git("ls-files").split("\n"));
+    const before = git("ls-tree", "-r", "--name-only", "HEAD").split("\n");
+    pairs.push(...pathPairs(staged, (file) => files.has(file) && existsSync(join(root, file)), before));
+  }
   // A moved file's mutation list, moved beside it, as each list is its
   // file's (test/mutations.test.ts); the lists' paths rewritten with the rest.
   for (const [from, to] of [...pairs]) {
+    // Into another crate, a file's list stays where it is, its `file:` the
+    // new path (#2299's, and a crate's root has no folder of lists).
+    if (crateOf(from)?.name !== crateOf(to)?.name || belowSrc(to) === "") continue;
     const lists = from.endsWith("/") ? [join("scripts", "mutations", belowSrc(from))] : [listOf(from)];
     for (const list of lists) {
       const target = from.endsWith("/") ? join("scripts", "mutations", belowSrc(to)) : listOf(to);
@@ -546,11 +618,19 @@ if (import.meta.main) {
   const declaring = new Map<string, CompilerCrate[]>();
   for (const crate of compilerCrates()) for (const module of topModules(crate)) declaring.set(module, [...(declaring.get(module) ?? []), crate]);
   for (const [module, crates] of declaring) if (crates.length === 1) modulesOf.set(module, crates[0]!);
+  const moved = new Set(
+    pairs.flatMap(([, to]) => {
+      const crate = crateOf(to);
+      if (!crate) return [];
+      const below = belowSrc(to);
+      return below === "" || to === crate.rootFile ? topModules(crate) : [below.split("/")[0]!.replace(/\.rs$/, "")];
+    }),
+  );
   const problems: string[] = [];
   let paths = 0;
   for (const file of compilerRustFiles()) {
     const text = readFileSync(join(root, file), "utf8");
-    const next = rustPathsRewritten(file, text, modulesOf);
+    const next = rustPathsRewritten(file, text, modulesOf, root, moved);
     problems.push(...next.problems);
     if (next.text !== text) {
       writeFileSync(join(root, file), next.text);
