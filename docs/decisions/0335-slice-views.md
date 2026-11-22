@@ -124,3 +124,44 @@ Held by `test/corpus/chunks_from_their_back.rs`.
 items swapped where they are, checked as the view is, no view made: the
 view is held unmade until it's used, and given alone to what has a form
 of its own over a range, that ([1073](1073-a-part-of-a-slice-reversed-is-reversed-in-place.md)).
+
+## Amendment (2026-11-22, #2252): what a slice's chunks and windows were cut of is kept
+
+std's derived `Debug` of a `Chunks` and a `Windows` shows its struct:
+the slice it has left, `v`, and the size it cuts by, `Chunks { v: [5],
+chunk_size: 2 }`. The array of chunks or windows that `$chunks` and
+`$windows` make knew neither, so `{:?}` of one was refused. Std's own
+`Chunks::next` cuts by `split_at_unchecked`, a raw pointer's (ADR 0407),
+so its struct isn't compiled. Its state follows exactly from what
+rust-js holds, though, once the array keeps what it was cut of:
+
+- `$chunks` and `$windows` keep their source, their size and their kind
+  on the array they make, under a symbol, `$partsOf`, which no read of the
+  array sees.
+- What's left of one, the `$iter` stepping it at `at` before `end`, is
+  std's `v`: of chunks `source[at·size .. min(end·size, len)]`, of
+  windows `source[at .. end + size − 1]` (`$partsLeft`). This is checked
+  against std's `next` and `next_back`: stepped from either end, once it's
+  done (a `Windows` keeps what's shorter than its window), and of a
+  source shorter than its window.
+- What a clone, a cycle or generic code is given of what's left
+  (`stepped_left`) keeps that record, of the part of its source from the
+  first left (`$partsStepped`). A copy of the array of chunks alone would
+  lose it.
+- They're `recognition::shows_its_slice`'s, the one owner of what std's
+  `Debug` shows of an iterator over an array. Beside `Iter([..])`'s tuple
+  it now answers a struct of the slice and the field of its size,
+  `chunk_size` or `size`, asked by each path that writes `{:?}`: inline,
+  into a writer a piece at a time, and of a part that may stop part-way.
+
+A `ChunksMut`'s `Debug` stays refused, now saying why. std derives it of
+the raw pointer it holds, `v: Pointer { addr: 0x16d53e4b4, metadata: 1
+}`, an address, which JS hasn't (ADR 0407). The obvious follow-up is
+`chunks_exact`'s and `rchunks`', built on the same arrays. Each has a
+struct of its own, `ChunksExact { v, rem, chunk_size }`, so each needs
+rows of its own.
+
+This was needed first by S2 of #2252, `Zip`'s compiled `Debug`, which asks
+its sides' `Debug`: `v.chunks(1).zip(v.iter())` printed `Zip` by type
+before. ADR 0262's case: results change (refused before), and Rust's text
+is kept.

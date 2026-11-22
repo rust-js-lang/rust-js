@@ -194,11 +194,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A slice's iterator, `Iter([..])`, and a `Vec`'s, an array's or a
             // `Drain`'s, `IntoIter([..])`: std's `debug_tuple` of what it has
             // left, its `as_slice()` (ADR 0473, #1530).
-            ty::Adt(..) if let Some(type_name) = self.recognition().shows_its_slice(ty) => {
-                let item = self.iterator_item(ty).expect("an iterator's item").peel_refs();
-                let left = self.stepped_left(subject("it"), ty, false, span)?;
-                let shown = self.debug_string_with(left, Ty::new_slice(self.tcx, item), span, pretty)?;
-                apply(self.composed_tuple(type_name, vec![shown], pretty), "it")
+            // A slice's chunks or windows, `Chunks { v: [..], chunk_size: 2
+            // }`, their `debug_struct` of it and their size (#2252).
+            ty::Adt(..) if let Some(slice) = self.recognition().shows_its_slice(ty) => {
+                let (left, item) = self.slice_left(subject("it"), ty, slice, span)?;
+                let shown = self.debug_string_with(left, Ty::new_slice(self.tcx, item.peel_refs()), span, pretty)?;
+                let Some(field) = slice.size else {
+                    return Ok(Some(apply(self.composed_tuple(slice.name, vec![shown], pretty), "it")));
+                };
+                let size = Expr::call_helper("$partsSize", vec![subject("it")]);
+                let size = self.debug_string_with(size, self.tcx.types.usize, span, pretty)?;
+                let steps = vec![
+                    ("field", vec![Expr::str("v"), made_when_taken(shown)]),
+                    ("field", vec![Expr::str(field), made_when_taken(size)]),
+                ];
+                let made = self.composed(DebugBuilder::Struct, Some(Expr::str(slice.name)), pretty, steps);
+                apply(made, "it")
             }
             // `start..end`, each piece written as it's made (#1530).
             _ if self.range_kind(ty).is_some() => self.range_debug(value.clone(), ty, span, pretty, true)?,

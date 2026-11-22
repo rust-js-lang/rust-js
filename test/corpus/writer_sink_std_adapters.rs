@@ -4,7 +4,8 @@
 // `Peekable`'s by `@rust-js/std`'s compiled bodies, framed so a writer arms
 // them, and a `Cycle`'s, which the plain build holds as the runtime's, by
 // its `Cycle { orig: .., iter: .. }`; each of an array's and a `Vec`'s
-// iterator, `IntoIter([1, 2])`, by what it has left. Through a derived
+// iterator, `IntoIter([1, 2])`, by what it has left, and a slice's chunks
+// and windows, `Chunks { v: [3], chunk_size: 2 }`. Through a derived
 // `Debug` and a builder of the crate's own, `{:#?}` too, and printed.
 use std::fmt::{self, Write};
 use std::iter::{Cycle, Enumerate, Fuse, Peekable};
@@ -56,10 +57,24 @@ where
     write!(log, "|{:?}", Shown(it.cycle(), peeked)).unwrap();
 }
 
+/// An iterator a generic writer writes, a clone of it and itself once
+/// stepped, `{:#?}` too.
+fn parts_written<I: Iterator + Clone + fmt::Debug>(log: &mut Log, it: I) {
+    let mut it = it;
+    write!(log, "|{:?}", it.clone()).unwrap();
+    it.next();
+    write!(log, "|{:?}", it.clone()).unwrap();
+    write!(log, "|{:#?}", it).unwrap();
+}
+
 fn main() {
     let mut log = Log(Vec::new());
     written(&mut log, vec![1, 2].into_iter());
     written(&mut log, [10u8, 20].into_iter());
+    // A slice's chunks and windows, their struct of what they have left
+    // and their size (#2252).
+    parts_written(&mut log, [1, 2, 3].chunks(2));
+    parts_written(&mut log, [4, 5, 6].windows(2));
     println!("{:?}", log.0);
     println!("{:?}", holder([5].into_iter()));
 }

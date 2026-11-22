@@ -2,9 +2,11 @@
 
 import {
   $catchUnwind,
+  $chunks,
   $composed,
   $debugList,
   $debugStr,
+  $debugStruct,
   $debugTuple,
   $drain,
   $fmtError,
@@ -15,11 +17,14 @@ import {
   $next,
   $nextBack,
   $out,
+  $partsLeft,
+  $partsSize,
   $pretty,
   $print,
   $printing,
   $rangeInclusiveNext,
   $sink,
+  $windows,
   $writeTry,
 } from "@rust-js/std";
 
@@ -53,6 +58,32 @@ function failingDebug_fmt(failing, options) {
     throw $fmtWritten(error, f);
   }
   return f;
+}
+
+/** A slice's chunks a derived `Debug` writes into a writer (#2252). */
+function partsDebug_fmt(parts, options) {
+  const f = $sink();
+  try {
+    const struct = $debugStruct(f, "Parts", options?.alternate);
+    struct.field("parts", () =>
+      $composed((f) => {
+        const struct = $debugStruct(f, "Chunks", options?.alternate);
+        struct.field("v", () =>
+          $composed((f) => {
+            const list = $debugList(f, options?.alternate);
+            list.entries($partsLeft(parts.parts), (entry) => failingDebug_fmt(entry, options));
+            list.finish();
+          }),
+        );
+        struct.field("chunk_size", () => String($partsSize(parts.parts)));
+        struct.finish();
+      }),
+    );
+    struct.finish();
+  } catch (error) {
+    throw $fmtWritten(error, f.done());
+  }
+  return f.done();
 }
 
 function once(n) {
@@ -885,6 +916,71 @@ function main() {
       $out(" r\n");
     });
   });
+  // A slice's chunks and windows, their struct of what they have left
+  // and their size (#2252).
+  shown("s", () => {
+    const grids = [[1], [2], [3]];
+    const chunks = $iter($chunks(grids, 2));
+    $nextBack(chunks);
+    $printing(() => {
+      $out("s ");
+      $out(
+        $composed((f) => {
+          const struct = $debugStruct(f, "Chunks");
+          struct.field("v", () =>
+            $composed((f) => {
+              const list = $debugList(f);
+              list.entries($partsLeft(chunks), (entry) => gridDebug_fmt(entry));
+              list.finish();
+            }),
+          );
+          struct.field("chunk_size", () => String($partsSize(chunks)));
+          struct.finish();
+        }),
+      );
+      $out(" t\n");
+    });
+    const value = $iter($chunks(grids, 2));
+    $printing(() => {
+      $out("u ");
+      $out(
+        $composed((f) => {
+          const struct = $debugStruct(f, "Chunks", true);
+          struct.field("v", () =>
+            $composed((f) => {
+              const list = $debugList(f, true);
+              list.entries($partsLeft(value), (entry) => gridDebug_fmt(entry, { alternate: true }));
+              list.finish();
+            }),
+          );
+          struct.field("chunk_size", () => String($partsSize(value)));
+          struct.finish();
+        }),
+      );
+      $out(" v\n");
+    });
+  });
+  shown("w", () => {
+    const windows = $iter($windows([[1], [3]], 1));
+    $printing(() => {
+      $out("w ");
+      $out(
+        $composed((f) => {
+          const struct = $debugStruct(f, "Windows");
+          struct.field("v", () =>
+            $composed((f) => {
+              const list = $debugList(f);
+              list.entries($partsLeft(windows), (entry) => gridDebug_fmt(entry));
+              list.finish();
+            }),
+          );
+          struct.field("size", () => String($partsSize(windows)));
+          struct.finish();
+        }),
+      );
+      $out(" x\n");
+    });
+  });
 
   // Those whose `Debug` is their part's.
   shown("k", () => {
@@ -1177,10 +1273,83 @@ function main() {
   });
   failed(text$9, written);
   let text$10 = "";
+  const value$4 = $iter($chunks([[1], [2], [3]], 2));
   written = $writeTry(() => {
     try {
-      text$10 += "k ";
-      text$10 += ((value) =>
+      text$10 += "y ";
+      text$10 += $composed((f) => {
+        const struct = $debugStruct(f, "Chunks");
+        struct.field("v", () =>
+          $composed((f) => {
+            const list = $debugList(f);
+            list.entries($partsLeft(value$4), (entry) => failingDebug_fmt(entry));
+            list.finish();
+          }),
+        );
+        struct.field("chunk_size", () => String($partsSize(value$4)));
+        struct.finish();
+      });
+    } catch (error) {
+      text$10 += $fmtPartial(error);
+      throw error;
+    }
+  });
+  failed(text$10, written);
+  let text$11 = "";
+  const value$5 = $iter($windows([[1], [3]], 2));
+  written = $writeTry(() => {
+    try {
+      text$11 += "z ";
+      text$11 += $composed((f) => {
+        const struct = $debugStruct(f, "Windows", true);
+        struct.field("v", () =>
+          $composed((f) => {
+            const list = $debugList(f, true);
+            list.entries($partsLeft(value$5), (entry) =>
+              failingDebug_fmt(entry, { alternate: true }),
+            );
+            list.finish();
+          }),
+        );
+        struct.field("size", () => String($partsSize(value$5)));
+        struct.finish();
+      });
+    } catch (error) {
+      text$11 += $fmtPartial(error);
+      throw error;
+    }
+  });
+  failed(text$11, written);
+  const failing = [[1], [2], [3]];
+  let text$12 = "";
+  const value$6 = { parts: $iter($chunks(failing.slice(0, 2), 1)) };
+  written = $writeTry(() => {
+    try {
+      text$12 += "p ";
+      text$12 += partsDebug_fmt(value$6);
+    } catch (error) {
+      text$12 += $fmtPartial(error);
+      throw error;
+    }
+  });
+  failed(text$12, written);
+  let text$13 = "";
+  const value$7 = { parts: $iter($chunks(failing, 2)) };
+  written = $writeTry(() => {
+    try {
+      text$13 += "o ";
+      text$13 += partsDebug_fmt(value$7);
+    } catch (error) {
+      text$13 += $fmtPartial(error);
+      throw error;
+    }
+  });
+  failed(text$13, written);
+  let text$14 = "";
+  written = $writeTry(() => {
+    try {
+      text$14 += "k ";
+      text$14 += ((value) =>
         $composed((f) => {
           const tuple = $debugTuple(f, "");
           tuple.field(() => failingDebug_fmt(value[0][0]));
@@ -1188,10 +1357,10 @@ function main() {
           tuple.finish();
         }))([[[1]], { TAG: "Owned", _0: [3] }]);
     } catch (error) {
-      text$10 += $fmtPartial(error);
+      text$14 += $fmtPartial(error);
       throw error;
     }
   });
-  failed(text$10, written);
+  failed(text$14, written);
 }
 //# sourceMappingURL=case.js.map

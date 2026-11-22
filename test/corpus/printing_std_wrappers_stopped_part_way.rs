@@ -44,6 +44,12 @@ impl fmt::Debug for Failing {
     }
 }
 
+/// A slice's chunks a derived `Debug` writes into a writer (#2252).
+#[derive(Debug)]
+struct Parts<'a> {
+    parts: std::slice::Chunks<'a, Failing>,
+}
+
 fn once(n: u32) -> OnceCell<Grid> {
     let cell = OnceCell::new();
     if n > 0 {
@@ -178,6 +184,16 @@ fn main() {
         println!("8 {drain:#?} 9");
     });
     shown("q", || println!("q {:?} r", Some([Grid(1)].iter())));
+    // A slice's chunks and windows, their struct of what they have left
+    // and their size (#2252).
+    shown("s", || {
+        let grids = [Grid(1), Grid(2), Grid(3)];
+        let mut chunks = grids.chunks(2);
+        chunks.next_back();
+        println!("s {chunks:?} t");
+        println!("u {:#?} v", grids.chunks(2));
+    });
+    shown("w", || println!("w {:?} x", [Grid(1), Grid(3)].windows(1)));
 
     // Those whose `Debug` is their part's.
     shown("k", || println!("k {:?} l", (Wrapping(Grid(1)), Saturating(Grid(3)))));
@@ -233,6 +249,31 @@ fn main() {
     failed(text, written);
     let mut text = String::new();
     let written = write!(text, "j {:#?}", [Failing(3)].iter());
+    failed(text, written);
+    let mut text = String::new();
+    let written = write!(text, "y {:?}", [Failing(1), Failing(2), Failing(3)].chunks(2));
+    failed(text, written);
+    let mut text = String::new();
+    let written = write!(text, "z {:#?}", [Failing(1), Failing(3)].windows(2));
+    failed(text, written);
+    let failing = [Failing(1), Failing(2), Failing(3)];
+    let mut text = String::new();
+    let written = write!(
+        text,
+        "p {:?}",
+        Parts {
+            parts: failing[..2].chunks(1)
+        }
+    );
+    failed(text, written);
+    let mut text = String::new();
+    let written = write!(
+        text,
+        "o {:?}",
+        Parts {
+            parts: failing.chunks(2)
+        }
+    );
     failed(text, written);
     let mut text = String::new();
     let written = write!(

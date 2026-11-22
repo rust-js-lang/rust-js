@@ -215,20 +215,25 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(self.reveal(ty).kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::VecSplice))
     }
 
-    /// The name std's `Debug` gives an iterator over an array, which shows
-    /// the slice it has left, `IntoIter([2, 3])`: a slice's `Iter`, and a
-    /// `Vec`'s and an array's `IntoIter` and `Drain` (ADR 0473).
-    pub(crate) fn shows_its_slice(&self, ty: Ty<'tcx>) -> Option<&'static str> {
+    /// What std's `Debug` shows of an iterator over an array, the slice it
+    /// has left: `IntoIter([2, 3])` of a slice's `Iter`, and a `Vec`'s and
+    /// an array's `IntoIter` and `Drain` (ADR 0473); and of a slice's chunks
+    /// and windows, their struct, the slice they have left and the size
+    /// they're cut by, `Chunks { v: [3], chunk_size: 2 }` (#2252).
+    pub(crate) fn shows_its_slice(&self, ty: Ty<'tcx>) -> Option<SliceShown> {
         let ty::Adt(adt, _) = ty.kind() else { return None };
+        let of = |name, size| Some(SliceShown { name, size });
         if self.is_std_type(ty, StdItem::SliceIter) {
-            return Some("Iter");
+            return of("Iter", None);
         }
         if self.is_std_type(ty, StdItem::ArrayIntoIter) {
-            return Some("IntoIter");
+            return of("IntoIter", None);
         }
         match std_path_item(self.tcx, adt.did()) {
-            Some(StdPath::VecIntoIter) => Some("IntoIter"),
-            Some(StdPath::VecDrain) => Some("Drain"),
+            Some(StdPath::VecIntoIter) => of("IntoIter", None),
+            Some(StdPath::VecDrain) => of("Drain", None),
+            Some(StdPath::SliceChunks) => of("Chunks", Some("chunk_size")),
+            Some(StdPath::SliceWindows) => of("Windows", Some("size")),
             _ => None,
         }
     }
@@ -1202,4 +1207,14 @@ impl IterMethod {
                 | IterMethod::Cloned
         )
     }
+}
+
+/// What std's `Debug` shows of an iterator over an array (`shows_its_slice`):
+/// its name, and of a slice's chunks or windows, the field of the size
+/// they're cut by, `chunk_size` or `size`, beside the slice they have left,
+/// `v`; else its tuple of that slice alone.
+#[derive(Clone, Copy)]
+pub(crate) struct SliceShown {
+    pub(crate) name: &'static str,
+    pub(crate) size: Option<&'static str>,
 }

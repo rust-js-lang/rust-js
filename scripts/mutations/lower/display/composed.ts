@@ -71,8 +71,8 @@ export const mutations: Mutation[] = [
     name: "composed-slice-iterators-refused",
     breaks: "`{:?}` of a slice's `Iter` or a `Vec`'s `IntoIter` of a part that may stop part-way is refused, where std's `debug_tuple` writes it (#1530)",
     file: "src/lower/display/composed.rs",
-    find: "            ty::Adt(..) if let Some(type_name) = self.recognition().shows_its_slice(ty) => {\n",
-    replace: "            ty::Adt(..) if false && let Some(type_name) = self.recognition().shows_its_slice(ty) => {\n",
+    find: "            ty::Adt(..) if let Some(slice) = self.recognition().shows_its_slice(ty) => {\n",
+    replace: "            ty::Adt(..) if false && let Some(slice) = self.recognition().shows_its_slice(ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
   },
   {
@@ -84,4 +84,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
   },
 
+  {
+    name: "composed-parts-size-left-out",
+    breaks: "a slice's chunks whose items' `Debug` may stop part-way show no `chunk_size`, `Chunks { v: [..] }` (#2252)",
+    file: "src/lower/display/composed.rs",
+    find: "                    (\"field\", vec![Expr::str(field), made_when_taken(size)]),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
+  },
 ];

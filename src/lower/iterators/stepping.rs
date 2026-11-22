@@ -385,8 +385,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `owns` that need one (ADR 0181). Of one just made, `$iter(items)`,
     /// nothing's stepped: `items`, which Rust lends it or it owns.
     pub(in crate::lower) fn stepped_left(&mut self, it: Expr, ty: ty::Ty<'tcx>, owns: bool, span: Span) -> R<Expr> {
+        // A slice's chunks or windows: what they were cut of kept, of what's
+        // left, which std's `Debug` of one shows (`$partsStepped`, #2252).
+        let parts = (self.recognition().shows_its_slice(ty)).is_some_and(|slice| slice.size.is_some());
         let left = match fresh_iter_source(&it) {
             Some(items) => items.clone(),
+            None if parts => Expr::call_helper("$partsStepped", vec![it.clone()]),
             None => Expr::call(
                 Expr::member(Expr::member(it.clone(), "items"), "slice"),
                 vec![Expr::member(it.clone(), "at"), Expr::member(it, "end")],

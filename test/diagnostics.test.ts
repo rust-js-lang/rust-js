@@ -242,6 +242,9 @@ for (const [name, source, message, crate] of [
   // which the JS doesn't keep: refused, as `Zip` alone is only of those
   // that are (#2252).
   ["a Zip of chars' Debug", "pub fn f() -> String { format!(\"{:?}\", \"ab\".chars().zip(\"cd\".chars())) }", "`{:?}` of a `std::iter::Zip<std::str::Chars<'_>, std::str::Chars<'_>>`"],
+  // A slice's `chunks_mut`, whose derived `Debug` std writes of the raw
+  // pointer it holds, an address JS hasn't (ADR 0407, #2252).
+  ["a ChunksMut's Debug", "pub fn f(v: &mut [u8]) -> String { format!(\"{:?}\", v.chunks_mut(2)) }", "`{:?}` of a slice's `ChunksMut` yet: std's `Debug` of it shows the address of the raw pointer it holds, which JS hasn't (ADR 0407)"],
   ["an OpenOptions' Debug", "pub fn f() -> String { format!(\"{:?}\", std::fs::OpenOptions::new()) }", "`{:?}` of a `std::fs::OpenOptions`, which shows what the OS says of it (#1418)"],
   // A write's result held inside what generic code has as a `Result` of its
   // type parameters, a `Vec<Result<T, E>>`'s items, `{ TAG }` there, where

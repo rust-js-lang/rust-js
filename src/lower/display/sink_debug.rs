@@ -177,9 +177,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return helper("$writeDebugMap", vec![items, write, write_value, pretty.clone()]);
         }
         // An iterator over an array or a slice, `IntoIter([2, 3])`, its
-        // `debug_tuple` of what it has left (ADR 0473; #1712).
-        if let Some(name) = self.recognition().shows_its_slice(ty) {
-            let item = self.iterator_item(ty).expect("an iterator's item");
+        // `debug_tuple` of what it has left (ADR 0473; #1712); a slice's
+        // chunks or windows, their `debug_struct` of it and their size,
+        // `Chunks { v: [3], chunk_size: 2 }`, of a value read twice (#2252).
+        if let Some(slice) = self.recognition().shows_its_slice(ty)
+            && (slice.size.is_none() || value.reads_same())
+        {
+            let (_, item) = self.slice_left(value.clone(), ty, slice, span)?;
             let Some(write) =
                 self.writing_fn(|cx, entry| cx.debug_sink_writes(entry, item, (options, pretty), span))?
             else {
@@ -187,7 +191,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let pretty_list = pretty.clone();
             let Some(list) = self.writing_fn(|cx, it| {
-                let left = cx.stepped_left(it, ty, false, span)?;
+                let (left, _) = cx.slice_left(it, ty, slice, span)?;
                 Ok(Some(vec![SinkWrite::Helper(
                     "$writeDebugList",
                     vec![left, write, pretty_list],
@@ -196,10 +200,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             else {
                 return Ok(None);
             };
-            let field = Expr::array(vec![value, list]);
+            let Some(field) = slice.size else {
+                let field = Expr::array(vec![value, list]);
+                return helper(
+                    "$writeDebugTuple",
+                    vec![Expr::str(slice.name), Expr::array(vec![field]), pretty.clone()],
+                );
+            };
+            let usize = self.tcx.types.usize;
+            let Some(size_write) =
+                self.writing_fn(|cx, size| cx.debug_sink_writes(size, usize, (options, pretty), span))?
+            else {
+                return Ok(None);
+            };
+            let size = Expr::call_helper("$partsSize", vec![value.clone()]);
+            let fields = vec![
+                Expr::array(vec![Expr::str("v"), value, list]),
+                Expr::array(vec![Expr::str(field), size, size_write]),
+            ];
             return helper(
-                "$writeDebugTuple",
-                vec![Expr::str(name), Expr::array(vec![field]), pretty.clone()],
+                "$writeDebugStruct",
+                vec![Expr::str(slice.name), Expr::array(fields), pretty.clone()],
             );
         }
         // A range's, which std writes straight to the formatter, no builder:

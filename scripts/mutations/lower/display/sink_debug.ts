@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "slice-iter-debug-unwritten",
     breaks: "an array's iterator's `Debug` in a framed writer, `IntoIter([1, 2])`, is refused (#1712)",
     file: "src/lower/display/sink_debug.rs",
-    find: "        if let Some(name) = self.recognition().shows_its_slice(ty) {\n",
-    replace: "        if let Some(name) = self.recognition().shows_its_slice(ty).filter(|_| false) {\n",
+    find: "        if let Some(slice) = self.recognition().shows_its_slice(ty)\n",
+    replace: "        if let Some(slice) = self.recognition().shows_its_slice(ty).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_std_adapters)\\.rs$"],
   },
   {
@@ -121,5 +121,13 @@ export const mutations: Mutation[] = [
     find: "            if !value.reads_same() || !out.is_empty() {\n                return Ok(None);\n            }\n            let mut writes = Vec::new();\n",
     replace: "            if !value.reads_same() || !out.is_empty() || exhausted.is_some() {\n                return Ok(None);\n            }\n            let mut writes = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_written_into_a_generic_writer.rs$"],
+  },
+  {
+    name: "sink-parts-size-left-out",
+    breaks: "a slice's chunks written into a writer show no `chunk_size`, `Chunks { v: [..] }` (#2252)",
+    file: "src/lower/display/sink_debug.rs",
+    find: "                Expr::array(vec![Expr::str(field), size, size_write]),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","^writer_sink_std_adapters.rs$"],
   },
 ];

@@ -636,4 +636,12 @@ export const mutations: Mutation[] = [
     replace: "            && declared.len() == parts.len()\n            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^crates_iterator_in_a_tuple_given_to_generic_code.rs$"],
   },
+  {
+    name: "parts-stepped-as-items",
+    breaks: "what's left of a slice's chunks or windows, a clone's, is a copy of the array of them that keeps no record of what they were cut of, so `{:?}` of the clone can't say its `v` (#2252)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "            None if parts => Expr::call_helper(\"$partsStepped\", vec![it.clone()]),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_std_adapters.rs$"],
+  },
 ];

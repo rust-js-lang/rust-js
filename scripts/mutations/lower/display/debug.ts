@@ -651,4 +651,28 @@ export const mutations: Mutation[] = [
     replace: "                Pretty::Always | Pretty::When(_) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_shown_by_options\\.rs$"],
   },
+  {
+    name: "parts-left-as-stepped",
+    breaks: "what's left of a slice's chunks is read as an array's iterator's, its chunks left, `v: [[3, 4], [5]]`, not the slice they cover (#2252)",
+    file: "src/lower/display/debug.rs",
+    find: "        Ok((Expr::call_helper(\"$partsLeft\", vec![it]), element))\n",
+    replace: "        Ok((self.stepped_left(it, ty, false, span)?, element))\n",
+    tests: ["test/corpus.test.ts", "-t", "^debug_of_chunks_and_windows.rs$"],
+  },
+  {
+    name: "parts-size-shown-plainly",
+    breaks: "the size `{:x?}` of a slice's chunks shows is plain, `chunk_size: 2` where std's options show it so too only by chance, never of `{:#?}`'s line (#2252)",
+    file: "src/lower/display/debug.rs",
+    find: "                        let size = self.debug_string_with(size, self.tcx.types.usize, span, pretty)?;\n",
+    replace: "                        let size = self.debug_string_with(size, self.tcx.types.usize, span, &Pretty::Plain)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^debug_of_chunks_and_windows.rs$"],
+  },
+  {
+    name: "chunks-mut-shown-without-address",
+    breaks: "`{:?}` of a slice's `ChunksMut`, whose derived `Debug` std writes of the address of its raw pointer, says only that it isn't supported yet, not why it can't be (ADR 0407, #2252)",
+    file: "src/lower/display/debug.rs",
+    find: "                    crate::lower::recognition::StdPath::SliceChunksMut,\n",
+    replace: "                    crate::lower::recognition::StdPath::SliceSplitMut,\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a ChunksMut's Debug"],
+  },
 ];

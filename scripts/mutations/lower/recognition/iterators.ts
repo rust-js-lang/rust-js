@@ -277,8 +277,8 @@ export const mutations: Mutation[] = [
     name: "array-iterator-debug-misnamed",
     breaks: "a `Vec`'s `IntoIter` shows as a slice's `Iter`",
     file: "src/lower/recognition/iterators.rs",
-    find: "            Some(StdPath::VecIntoIter) => Some(\"IntoIter\"),\n",
-    replace: "            Some(StdPath::VecIntoIter) => Some(\"Iter\"),\n",
+    find: "            Some(StdPath::VecIntoIter) => of(\"IntoIter\", None),\n",
+    replace: "            Some(StdPath::VecIntoIter) => of(\"Iter\", None),\n",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
   },
   {
@@ -689,5 +689,21 @@ export const mutations: Mutation[] = [
     find: "        let holds_nothing = source.is_ref()\n            || ",
     replace: "        let holds_nothing = ",
     tests: ["test/corpus.test.ts", "-t", "^generic_box_of_an_iterator_is_what_it_holds.rs$"],
+  },
+  {
+    name: "chunks-debug-unshown",
+    breaks: "`{:?}` of a slice's `Chunks` is refused, std's `Chunks { v: [..], chunk_size: 2 }` (#2252)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            Some(StdPath::SliceChunks) => of(\"Chunks\", Some(\"chunk_size\")),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^debug_of_chunks_and_windows.rs$"],
+  },
+  {
+    name: "windows-debug-a-tuple",
+    breaks: "`{:?}` of a slice's `Windows` is a tuple of what's left, `Windows([..])`, without std's `size` (#2252)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            Some(StdPath::SliceWindows) => of(\"Windows\", Some(\"size\")),\n",
+    replace: "            Some(StdPath::SliceWindows) => of(\"Windows\", None),\n",
+    tests: ["test/corpus.test.ts", "-t", "^debug_of_chunks_and_windows.rs$"],
   },
 ];
