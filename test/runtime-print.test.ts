@@ -20,7 +20,7 @@ test("stdout's line is written at its newline, standard error at once", () => {
   const module = join(fixture("runtime-line-writer"), "runtime.js");
   writeFileSync(module, run([compiler, "--runtime-module"]));
   const script = `
-const { $out, $printing } = await import(${JSON.stringify(module)});
+const { $flushStdout, $out, $printing } = await import(${JSON.stringify(module)});
 const seen = [];
 const shown = process.stdout.write.bind(process.stdout);
 process.stdout.write = (text) => (seen.push("out " + JSON.stringify(String(text))), true);
@@ -33,10 +33,12 @@ $printing(() => {
   $out("\\n");
 });
 $printing(() => $out("open "));
+seen.push("flush");
+$flushStdout();
 shown(seen.join("|") + "\\n");
 `;
   expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe(
-    'out "a inner\\n"|err "err\\n"|out "b\\n"|out "open "\n',
+    'out "a inner\\n"|err "err\\n"|out "b\\n"|flush|out "open "\n',
   );
 });
 

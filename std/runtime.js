@@ -13762,7 +13762,7 @@ export function $write(text, error) {
   if (error) $flushAhead();
   const stream = globalThis.process?.[error ? "stderr" : "stdout"];
   if (stream?.write) {
-    if (error) stream.write(text);
+    if (error) $hostWrite(2, text);
     else $stdoutWrite(text);
     return;
   }
@@ -13786,10 +13786,7 @@ export function $write(text, error) {
 // While stdout holds a line left unended, the host's `console.log` is
 // wrapped, so a whole line any crate prints by it, `println!`'s
 // (ADR 0087), comes after what's held, as one `LineWriter` writes every
-// crate's natively: the held text joined to the line, one `console.log`,
-// never written apart, as Bun's `console.log` writes the descriptor itself
-// and a stream's write before it can come out after it through a pipe
-// (#2320, #2347). Unwrapped once nothing's held.
+// crate's natively (`$heldLog`, #2320). Unwrapped once nothing's held.
 export function $wrapLog() {
   if ($stdout().wrapper !== undefined) return;
   const log = globalThis.console?.log;
@@ -13816,37 +13813,22 @@ export function $unwrapLog() {
 export function $holdRefused(why) {
   return new Error(`rust-js: stdout holds a line left unended, and on this host ${why}, so a line printed now would come out before it`);
 }
-// A `console.log` while stdout holds text: of one string, every `println!`
-// rust-js writes, the held text joined to it; of anything else, a JS
-// caller's values, what's held written first where the host's `console.log`
-// writes through the stream, Node's, and refused where it doesn't, Bun's;
-// as of held bytes that aren't text.
+// A `console.log` while stdout holds text: what's held written first, by
+// the host's own write, which its `console.log` comes after (`$hostWrite`,
+// #2347), then the line. Where there's no stream, a browser's console,
+// whose every `console.log` is a line, the held text joined to a line of one
+// string, every `println!` rust-js writes; values can't follow it on its
+// line, and are refused.
 export function $heldLog(log, self, args) {
-  const stream = globalThis.process?.stdout;
-  const held = stream?.write ? $heldText() : $stdout().printed[0];
-  if (args.length === 1 && typeof args[0] === "string" && held !== undefined) {
-    if (stream?.write) $stdout().held = [];
-    else $stdout().printed[0] = "";
-    $unwrapLog();
-    return log.call(self, held + args[0]);
+  if (globalThis.process?.stdout?.write) {
+    $flushStdout();
+    return log.apply(self, args);
   }
-  if (!stream?.write || globalThis.Bun !== undefined) {
-    throw $holdRefused(held === undefined ? "what's held isn't text, which console.log can't write" : "a console.log of values can't follow it but apart");
-  }
-  $flushStdout();
-  return log.apply(self, args);
-}
-// What's held, as text: each string, and each byte chunk's UTF-8, or none
-// where a chunk isn't UTF-8, or splits a character.
-export function $heldText() {
-  let text = "";
-  const decoder = new TextDecoder("utf-8", { fatal: true });
-  try {
-    for (const held of $stdout().held) text += typeof held === "string" ? held : decoder.decode(held, { stream: true });
-    return text + decoder.decode();
-  } catch {
-    return undefined;
-  }
+  if (args.length !== 1 || typeof args[0] !== "string") throw $holdRefused("a console.log of values can't follow it but apart");
+  const held = $stdout().printed[0];
+  $stdout().printed[0] = "";
+  $unwrapLog();
+  return log.call(self, held + args[0]);
 }
 // What std's stdout `LineWriter` holds of a line left unended, a
 // `print!`'s or a `write_all`'s, text or bytes, as each was written, till
@@ -13870,30 +13852,57 @@ export function $stdoutWrite(chunk) {
     }
     return;
   }
-  const stream = globalThis.process.stdout;
-  for (const held of $stdout().held) stream.write(held);
+  for (const held of $stdout().held) $hostWrite(1, held);
   $stdout().held = [];
   $unwrapLog();
-  stream.write(chunk.slice(0, end + 1));
+  $hostWrite(1, chunk.slice(0, end + 1));
   if (end + 1 < chunk.length) $stdoutWrite(chunk.slice(end + 1));
-}
-// What a line a panic stopped, or a `format!` made as one formats, leaves
-// unended, written at once, after what's held: a crate that leaves no line
-// unended itself prints its whole lines by `console.log`, which nothing
-// held would come before, so it isn't held behind them (#2319, #2320).
-export function $printUnheld(text) {
-  const stream = globalThis.process?.stdout;
-  if (!stream?.write) return $print(text);
-  $flushStdout();
-  stream.write(text);
 }
 // `io::stdout().flush()`: what's held, written.
 export function $flushStdout() {
   const stream = globalThis.process?.stdout;
   if (!stream?.write) return;
-  for (const held of $stdout().held) stream.write(held);
+  for (const held of $stdout().held) $hostWrite(1, held);
   $stdout().held = [];
   $unwrapLog();
+}
+// The host's write of `chunk`, text or bytes, to standard stream `fd`,
+// 1 or 2, by measurement each host's own (#2347). Bun's `console.log` and
+// `console.error` write the descriptor themselves, at once, and its
+// streams buffer, so through a pipe a stream's write could come out after a
+// `console.log` made after it: Bun's is the descriptor's, `fs.writeSync`,
+// as its console's are. Node's `console.log` writes through the stream, so
+// a descriptor's write could overtake what it's queued there: Node's is the
+// stream's. A browser has neither, and never comes here.
+export function $hostWrite(fd, chunk) {
+  const fs = globalThis.Bun === undefined ? undefined : globalThis.process.getBuiltinModule("node:fs");
+  if (fs === undefined) {
+    globalThis.process[fd === 1 ? "stdout" : "stderr"].write(chunk);
+    return;
+  }
+  $writeAll((bytes) => fs.writeSync(fd, bytes), chunk);
+}
+// `chunk` written whole by `write`, which writes some of the bytes it's
+// given and says how many, or throws: a descriptor that would block,
+// `EAGAIN`, tried again after `pause`'s wait, not at once, up to
+// `limit` times in a row, past which it's thrown.
+export function $writeAll(write, chunk, pause = $pause, limit = 60_000) {
+  let bytes = typeof chunk === "string" ? new TextEncoder().encode(chunk) : chunk;
+  let waits = 0;
+  while (bytes.length > 0) {
+    try {
+      bytes = bytes.subarray(write(bytes));
+      waits = 0;
+    } catch (error) {
+      if (error?.code !== "EAGAIN" || ++waits > limit) throw error;
+      pause(1);
+    }
+  }
+}
+// A wait of `ms` milliseconds that doesn't spin: `Atomics.wait` on a
+// slot no one wakes.
+export function $pause(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 // std's stdout `LineWriter` (#1490, ADR 1130): what's written while a line
 // is formatted held till its newline, each whole line then written at once,
@@ -14066,7 +14075,7 @@ export function $printing(write) {
     if ($printFrames.length === 0 && $lineHeld !== "") {
       const rest = $lineHeld;
       $lineHeld = "";
-      $printUnheld(rest);
+      $print(rest);
     }
     // What was written ahead of a line a panic stopped, which never reaches
     // it (#1761).
@@ -14142,7 +14151,7 @@ export function $formatting(make) {
     if ($printFrames.length === 0 && $lineHeld !== "") {
       const rest = $lineHeld;
       $lineHeld = "";
-      $printUnheld(rest);
+      $print(rest);
     }
   }
 }
@@ -14153,7 +14162,7 @@ export const $decoders = [];
 export function $printBytes(bytes, error) {
   if (error) $flushAhead();
   const stream = globalThis.process?.[error ? "stderr" : "stdout"];
-  if (stream?.write && error) stream.write(Uint8Array.from(bytes));
+  if (stream?.write && error) $hostWrite(2, Uint8Array.from(bytes));
   else if (stream?.write) $stdoutWrite(Uint8Array.from(bytes));
   else $write(($decoders[error] ??= new TextDecoder()).decode(Uint8Array.from(bytes), { stream: true }), error);
   return bytes.length;

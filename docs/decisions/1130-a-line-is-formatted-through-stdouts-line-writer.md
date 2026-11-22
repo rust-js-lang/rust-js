@@ -744,7 +744,7 @@ and a stream's write before it can come out after it through a pipe (6 of
 200 such lines, #2347). A one-string `console.log` isn't format-processed
 on Node or Bun, so the joined line is exactly the bytes.
 
-Where the held text can't be joined, there are two cases:
+Where the held text can't be joined, there are two cases (amended below: each host's own write makes both Node's, and Bun refuses neither):
 - **Node**, a `console.log` of values or after held bytes that aren't
   UTF-8: what's held is written by the stream first. Node's `console.log`
   writes through the same stream, in order.
@@ -772,3 +772,51 @@ Held by:
 - `test/stdout-hold.test.ts`: joined and unwrapped, a stream and a console recorded, Node's flush and Bun's refusals.
 
 Mutations: `hold-wrapper-never-installed`, `hold-wrapper-never-removed`, `held-text-written-apart`, `stdout-held-per-copy`, `held-values-logged-apart-on-bun` (`runtime/print.ts`).
+
+## Amendment: each host writes the standard streams its own way, and a stopped line is held (2026-11-23, #2347)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept.
+
+On Bun, through a pipe, a line the runtime wrote by `process.stdout.write`
+could come out after a `console.log` line made after it, with nothing held:
+6 of 200 lines of 20 KB. Bun's `console.log` and `console.error` write the
+descriptor themselves, at once, while its streams buffer.
+
+**Every write of the runtime to stdout and stderr is `$hostWrite(fd, chunk)`,
+the host's own, chosen by measurement.**
+- **Bun's** is the descriptor's, `fs.writeSync`, as its console's are: 0
+  of 200 out of order, on stdout and on stderr (a runtime's `eprint!`, then
+  a `console.error`). `fs` is `process.getBuiltinModule("node:fs")`, no
+  import a browser would fail on.
+- **Node's** stays the stream's. Node's `console.log` writes through the
+  stream, so a descriptor's write overtakes what's queued there: with
+  `fs.writeSync`, 197 of the 200 lines came out of order on Node, and with
+  the stream, none.
+- A write that would block, `EAGAIN`, is tried again after a 1 ms wait,
+  `Atomics.wait` on a slot no one wakes, never in a hot loop, and up to
+  60,000 times in a row before it's thrown (`$writeAll`). Bun's descriptors
+  blocked in every run measured, so none waited.
+
+With each host's write in order with its `console.log`, what #2320 joined
+needn't be. On Node and Bun, what's held is written first and then the
+line, values or held bytes that aren't text alike. The two Bun refusals
+above are gone. Only a browser's console still joins the held text to a
+line of one string (its every `console.log` is a line), and refuses values
+after it.
+
+**What a line a caught panic stopped leaves unended is held, as `print!`'s
+is.** It was written at once (`$printUnheld`, #2319), so a whole line a
+library's `console.log` printed couldn't come before it. #2320's wrapper
+makes that so already, and natively it stays in the `LineWriter` past the
+standard error written after it: `println!("before {} after", Breaks)`,
+whose `Display` panics, caught, then `eprintln!("err")` and
+`println!("end")`, is `err\nbefore end\n` natively. The JS wrote
+`before err\nend\n`.
+
+Held by:
+- `test/stdout-hold.test.ts`: on Node and Bun through a pipe, 200 whole lines then a `console.log`, on stdout and on stderr, byte for byte; held text before a line, values and non-UTF-8 bytes; the retry's wait and limit, by an injected writer; a browser's join and refusal;
+- `test/corpus/stopped_line_held_past_stderr.rs` in `test/stream-order.test.ts`;
+- test/runtime-print.test.ts's unfinished line held till a flush.
+
+Mutations: `bun-written-by-its-stream`, `stderr-written-by-its-stream`, `blocked-write-tried-at-once`, `blocked-write-tried-past-its-limit`, `stopped-line-written-at-once` (`runtime/print.ts`).
