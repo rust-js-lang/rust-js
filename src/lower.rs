@@ -53,6 +53,7 @@ mod field_keys;
 mod format_args;
 mod format_spec;
 mod generic_facts;
+mod held;
 mod instances;
 mod items;
 mod iterators;
@@ -67,6 +68,7 @@ mod loops;
 mod mir;
 mod mut_refs;
 mod named_constants;
+mod noted;
 mod ordering;
 mod parameter_names;
 mod passed_on;
@@ -314,7 +316,7 @@ struct Locals {
     rests: IndexMap<js::Name, Vec<String>>,
     /// What lowering a body from its MIR found of its variables (ADR 0364),
     /// mir.rs's, which the rest ask of it.
-    mir: mir::Found,
+    mir: noted::Found,
 }
 
 /// How a Rust struct or tuple type is represented in JS (ADR 0020).
@@ -1124,7 +1126,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => self.fresh(Base::Named(&unhyphenated(&base.text()))),
         };
         let name = match base {
-            Base::Role(role) if role.says_nothing() => name.suggested(mir::held_names(&value), role.text()),
+            Base::Role(role) if role.says_nothing() => name.suggested(held::held_names(&value), role.text()),
             _ => name,
         };
         let (span, marks) = (value.span, iterators::marks_kept(&value));

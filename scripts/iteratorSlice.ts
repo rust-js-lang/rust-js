@@ -103,7 +103,7 @@ export const iteratorPaths = [
   "src/lower/recognition/methods.rs",
   "src/lower/recognition/chars.rs",
   "src/lower/recognition/sorts.rs",
-  "src/lower/mir/noted.rs",
+  "src/lower/noted.rs",
   "src/lower/analysis/iterator_steps.rs",
   "src/lower/analysis/type_facts/knowing.rs",
   "src/lower/analysis/back_stepped.rs",

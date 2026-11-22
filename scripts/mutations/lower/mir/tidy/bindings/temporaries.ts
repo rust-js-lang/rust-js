@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary of a call's value, a `println!` argument's, is named by its role, `const value = RangePull.pullTwo(..)`, not its call's name, `pullTwo` (#890, #837)",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "                        true => crate::lower::mir::temporaries::held_names(value),\n",
+    find: "                        true => crate::lower::held::held_names(value),\n",
     replace: "                        true => Vec::new(),\n",
     tests: ["test/corpus.test.ts", "-t", "^(boxed_option_unwraps|option_iterator_of_generic_items|blanket_iterator_trait|interpreter).rs$"],
     snapshots: true,

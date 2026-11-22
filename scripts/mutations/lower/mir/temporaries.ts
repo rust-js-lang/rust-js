@@ -20,15 +20,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_beside_a_wrapper.rs$"],
   },
   {
-    name: "place-where-made-handle-unfixed",
-    breaks:
-      "a handle on a `Cell` a field is, `node.0.v` borrowed before `node.0 = b`, isn't fixed where it's made, so `set` writes the new node's (#1034)",
-    file: "src/lower/mir/temporaries.rs",
-    find: "            js::ExprKind::Handle(on, storage) => Expr::stored_handle(self.place_where_made(*on, out), storage),\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^reference_a_field_holds_set_again.rs$"],
-  },
-  {
     name: "cell-box-captured-as-value",
     breaks:
       "a cell's box held apart from a later field, `Cell::new(Some(point))`, is named after the box's key, `const value`, not after what it holds, `point` (rd413)",
@@ -591,24 +582,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "subject-not-named-by-its-call",
-    breaks: "an `Option` read twice is named after what reads it, `option` or a closure's parameter, `l`, not after the call that made it, `next` (#769)",
-    file: "src/lower/mir/temporaries.rs",
-    find: "            .filter(|name| !self.names.borrow().contains(*name) || self.locals.mir.subjects.contains(*name))\n",
-    replace: "            .filter(|_| false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "subject-name-taken-from-the-program",
-    breaks: "a subject named after its call takes a name the program's own has, `make$1` beside its `make` (#769)",
-    file: "src/lower/mir/temporaries.rs",
-    find: "            .filter(|name| !self.names.borrow().contains(*name) || self.locals.mir.subjects.contains(*name))\n",
-    replace: "            .filter(|_| true)\n",
-    tests: ["test/corpus.test.ts", "-t", "^option_combinator_drops.rs$"],
-    snapshots: true,
-  },
-  {
     name: "local-marks-dropped",
     breaks:
       "a local's read by its name lacks what its value's maker marked it, so a `rev()` made knowing its back, held in a variable before it's stepped from its back, is refused (#730)",
@@ -616,22 +589,6 @@ export const mutations: Mutation[] = [
     find: "        read.facts = read.facts.and(marks);\n",
     replace: "        let _ = marks;\n",
     tests: ["test/corpus.test.ts", "-t", "^(rev_made_knowing_its_back|own_iterator_flattened_from_its_back).rs$"],
-  },
-  {
-    name: "pair-place-holder-unnamed",
-    breaks: "what a pair's place is reached through, a reassigned `x` of `x.value`, isn't named where the pair's made, so the pair reads what `x` is later (#968)",
-    file: "src/lower/mir/temporaries.rs",
-    find: "            js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_name(name) => {\n",
-    replace: "            js::ExprKind::Var(name) if false && !self.alike_local(name) => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
-  },
-  {
-    name: "kept-place-object-unnamed",
-    breaks: "the object a kept place is reached through, `h.node` of `h.node.count`, isn't named where the borrow's made, so `h.node = other` after moves the handle to the other node (#988)",
-    file: "src/lower/mir/temporaries.rs",
-    find: "            js::ExprKind::Member(_, field) => {\n                let field = field.clone();\n                self.spill(Base::Named(&field), e, out)\n            }\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^kept_handle_of_a_place_set_again.rs$"],
   },
   {
     name: "discriminant-number-not-big",

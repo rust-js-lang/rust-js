@@ -86,13 +86,14 @@ test("a block label is matched at a word's start", () => {
 // A value read in place knows the name its temporary is given,
 // `Expr::held_as` (ADR 0569, #769): set where a pending temporary is taken,
 // `mir/temporaries.rs`, and read by the spill of a subject alone,
-// `spill_subject`, there too. Every other expression is made with none.
+// `spill_subject`, through `held_name`, both in `held.rs` since #2299.
+// Every other expression is made with none.
 test("a temporary's name a value carries is set and read in one place each", () => {
   const files = compilerRustFiles().filter((file) => file !== "src/js.rs");
   const with_ = (pattern: RegExp) => files.filter((file) => pattern.test(read(file))).sort();
   expect(with_(/HeldAs\(Some/)).toEqual(["src/lower/mir/temporaries.rs"]);
-  expect(with_(/\.held_as\.0/)).toEqual(["src/lower/mir/temporaries.rs"]);
-  expect(read("src/lower/mir/temporaries.rs").match(/\.held_as\.0/g)?.length).toBe(1);
+  expect(with_(/\.held_as\.0/)).toEqual(["src/lower/held.rs"]);
+  expect(read("src/lower/held.rs").match(/\.held_as\.0/g)?.length).toBe(1);
 });
 
 // A name lowering makes that isn't spelled yet, `value#1`, is one form

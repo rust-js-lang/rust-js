@@ -91,7 +91,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                     // (#890, #837); not an argument held, which MIR's rule
                     // names `arg`.
                     let names = match names.is_empty() && !is_held_arg(name) {
-                        true => crate::lower::mir::temporaries::held_names(value),
+                        true => crate::lower::held::held_names(value),
                         false => names,
                     };
                     renames.push((name.clone(), name.suggested(names, any.text())));

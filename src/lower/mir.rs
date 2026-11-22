@@ -12,9 +12,8 @@
 //!
 //! The function's THIR is beside it, for its shape: names and spans.
 
-mod made;
+use crate::lower::noted::Made;
 use crate::lower::temporary_names::{Base, Role};
-pub(super) use made::Made;
 use rust_js_program::collections::{IndexMap, IndexSet};
 mod alternatives;
 mod assign;
@@ -37,7 +36,6 @@ mod local_facts;
 pub(in crate::lower) mod locals;
 mod nested_options;
 mod none_forms;
-mod noted;
 mod nulled;
 mod offsets;
 mod operands;
@@ -50,7 +48,6 @@ use crate::lower::analysis::Mir;
 use crate::lower::analysis::mir_reads::presence::{ArgProof, Presence};
 use crate::lower::analysis::mir_reads::referred::referred_constant;
 mod queries;
-pub(in crate::lower) use temporaries::held_names;
 mod rvalues;
 mod scopes;
 mod std_calls;
@@ -155,77 +152,6 @@ enum Value<'tcx> {
 /// A parameter taken apart: its index, THIR's pattern, and the local MIR
 /// binds each name the pattern binds to.
 type ParamPattern = (usize, js::Pattern, Vec<(Local, js::Name)>);
-
-/// What lowering a body from its MIR found of its variables, which goes
-/// with them where a body inside it is lowered (`Locals`): each read and
-/// written here alone, and asked of by the rest, `alike_local`.
-#[derive(Default)]
-pub(super) struct Found {
-    /// Of a body lowered from its MIR (ADR 0364): the names of its locals
-    /// that read the same wherever they're read, assigned once and never
-    /// borrowed, and of those of plain Rust data, whose fields don't change
-    /// either, which `reads_alike` and `plain_field` ask of.
-    /// And of the others' arrays, their items, `...items`.
-    pub(super) alike: IndexSet<js::Name>,
-    pub(super) plain: IndexSet<js::Path>,
-    /// Of those of plain data, each path to what they hold whose fields a
-    /// getter may answer, each read anew, `p.style` (`given_paths`, #1908).
-    pub(super) given: IndexSet<js::Path>,
-    /// And those of plain Rust data written again, a `mut` parameter
-    /// assigned after what it's read for: each the same until it's written
-    /// (`written_before_read`, #121).
-    pub(super) settled: IndexSet<js::Name>,
-    /// And the places that hold its cells, `&mut`s to what JS can't change
-    /// in place: a box or a handle, whose `value` is what it points at,
-    /// unlike a struct's field of that name. Its locals', by name, and a
-    /// place a reborrow found one at, `o.value` of `&mut **u`.
-    pub(super) cells: Vec<Expr>,
-    /// Of a body lowered from its MIR, its inclusive ranges no step can
-    /// leave exhausted, by name: each a `let` not `mut`, so never lent as a
-    /// `&mut`, made only by `a..=b`, which `range_state` reads as it is
-    /// (#418).
-    pub(super) fresh_ranges: IndexSet<js::Name>,
-    /// Of a body lowered from its MIR, the `Vec` each `collect()` std may
-    /// make in place is made of, by the call's span: its variable's name,
-    /// `in_place_collect_sources`'s (#1259).
-    pub(super) in_place_sources: rust_js_program::collections::IndexMap<rustc_span::Span, js::Name>,
-    /// Of a body lowered from its MIR, the temporaries a function that skips
-    /// what's falsy is given, whose `test ? value : undefined` is given as
-    /// `test && value` (`#[rust_js::skips_falsy]`) where it's moved to.
-    pub(super) falsy: IndexSet<js::Name>,
-    /// And the temporaries such a `test && value` tests: read for their
-    /// truth alone.
-    pub(super) tested: IndexSet<js::Name>,
-    /// Of a body lowered from its MIR, the `const`s it made that tidy
-    /// reads in place where it can, as its temporaries.
-    pub(super) made: Made,
-    /// Each name `spill_subject` gave a subject after its call, `nth`: another
-    /// of it is `nth$1`, which tidy writes `nth` where their scopes are apart.
-    pub(in crate::lower) subjects: IndexSet<String>,
-
-    /// Of a body lowered from its MIR, each literal its patterns name by
-    /// a `const`, named once tidy's done (`FnCx::named_text`, ADR 0590,
-    /// amended).
-    pub(super) named_texts: Vec<crate::lower::named_constants::NamedText>,
-    /// Of a body lowered from its MIR, each dictionary it made of a type
-    /// known whole that holds a function, and the name it would have: one
-    /// written twice or more is declared once at the body's top and named
-    /// where it was (ADR 0979).
-    pub(super) dictionaries: Vec<(String, Expr)>,
-    /// Whether a body from its MIR is being lowered, whose top they go at.
-    pub(super) declaring: bool,
-    /// Of a body lowered from its MIR, each closure it makes of one call:
-    /// where it's written, and what it passes its call on to, which says
-    /// where it may be that function (ADR 0605, amended).
-    pub(super) forwarding: Vec<crate::lower::passed_on::Forwarding>,
-    /// And where each is written of one call whose JS gives `undefined`
-    /// anyway, and how: a handler's, or one of its value, `() => f()` (ADRs
-    /// 0040, 0883).
-    pub(super) concise: Vec<(js::Span, crate::lower::jsx::OneCall)>,
-    /// Of a body lowered from its MIR, each field path it reads,
-    /// `element.editable`, and whether it's a `bool` each time.
-    pub(super) paths: IndexMap<js::Path, bool>,
-}
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A writer's state, of `aliases`, the locals that are its `Formatter`,

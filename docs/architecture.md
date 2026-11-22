@@ -769,7 +769,8 @@ area's sweep phrases it as one.
 | Which function does a call call, whose parameters say what it's given: a trait method's impl, the crate's trait's own, a compiled std body's? (ADRs 0463, 0478, 0933, #1156) | `mir/assign.rs` | `call_callee` | | 1 |
 | Does nothing read what the call being lowered gives? (ADR 0847, rd418) | `mir/dispatch/known_calls.rs` | `result_unread` | | 1 |
 | Which static does a constant point to the start of? | `mir/operands.rs` | `const_static` | | 1 |
-| Is a range a variable no step can leave exhausted? (#418) | `mir/noted.rs` | `never_exhausted` | | 1: `never_exhausted` (a MIR local's `Name`, its identity, not its spelling) |
+| Is a range a variable no step can leave exhausted? (#418) | `noted.rs` | `never_exhausted` | | 1: `never_exhausted` (a MIR local's `Name`, its identity, not its spelling) |
+| What MIR's lowering notes and holds of a body's variables, kept with them where a body inside it is lowered: which locals are alike and plain, the `const`s it holds a value in and the name a held value knows (#2299 moved them to the base, which asks them) | `noted.rs`; `noted/made.rs`; `held.rs` | `alike_local`, `plain_local`, `plain_type`, `Found`, `Made`; `spill_subject`, `held_in_place`, `place_where_made`, `held_name`, `held_names`, `module_name` | | 1 |
 | What body does a closure's `call_once` run, itself taken by value? (ADR 1020) | `analysis/prepared.rs` | `called_once` | | 1 |
 
 **Calls.** `mir/dispatch.rs::mir_call` handles special calls and sends evaluated

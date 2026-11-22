@@ -96,7 +96,7 @@ source by its THIR collect node, and `mir/locals.rs`'
 `in_place_source_names` gives MIR's call at a span its source's name, a
 `js::Name` of that local's form (`state.locals.names[local]`, ADR 1150's
 S4a), where each THIR collect there has the same source
-(`span_join::each_call_at`); `mir/noted.rs`' `in_place_source(span)`
+(`span_join::each_call_at`); `noted.rs`' `in_place_source(span)`
 projects its fields. The analysis's refusal of collects at one span whose
 sources differ is gone: they compile, corpus case
 collect_in_place_in_a_macro's `each_bumped!(c, d)` of two variables apart.
