@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     name: "base-run-past-the-checkouts-changes",
     breaks: "a survivor's run at the base checks out the base over the checkout's own changes, and its checking out back discards them (#2222)",
     file: "scripts/latent-survivors.ts",
-    find: ' || status.stdout.trim() !== ""',
-    replace: "",
+    find: '  if (status.stdout.trim() !== "") return { results: {}, why:',
+    replace: "  if (false) return { results: {}, why:",
     tests: ["test/survivors.test.ts", "-t", "leaves the run's checkout as it found it"],
   },
   {

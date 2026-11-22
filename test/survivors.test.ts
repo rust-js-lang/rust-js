@@ -37,14 +37,17 @@ test("a survivor's run at the base leaves the run's checkout as it found it, and
   const work = join(dir, "target", "mutants");
   mkdirSync(work, { recursive: true });
   writeFileSync(join(work, "results.json"), "the run's own\n");
-  // No runner at the base: none of its results, and all as it was.
-  expect(await resultsAt(dir, work, base, ["a"])).toEqual({});
+  // No runner at the base: none of its results, said why, and all as it was.
+  const none = await resultsAt(dir, work, base, ["a"]);
+  expect(none.results).toEqual({});
+  // Said, whichever step found nothing there: its packages, or its runner.
+  expect(none.why).toMatch(/^(?:its runner knows none of them|its packages don't install)/);
   expect(git("rev-parse", "HEAD").stdout.trim()).toBe(head);
   expect(readFileSync(join(dir, "a.txt"), "utf8")).toBe("head\n");
   expect(readFileSync(join(work, "results.json"), "utf8")).toBe("the run's own\n");
   // A change of the checkout's own: never checked out past it.
   writeFileSync(join(dir, "a.txt"), "changed\n");
-  expect(await resultsAt(dir, work, base, ["a"])).toEqual({});
+  expect(await resultsAt(dir, work, base, ["a"])).toEqual({ results: {}, why: "the checkout has changes of its own, which checking out the base would lose:\nM a.txt" });
   expect(readFileSync(join(dir, "a.txt"), "utf8")).toBe("changed\n");
   expect(git("rev-parse", "HEAD").stdout.trim()).toBe(head);
 });

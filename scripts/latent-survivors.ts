@@ -39,27 +39,37 @@ const runsOwn = ["results.json", "timings.json"];
  * again, 283 to 320 s of a CI shard (#2222). Its runner takes the checkout's
  * mutants' lock, so the run gives it up first. None where the checkout has
  * changes of its own, which checking out the base would lose, where it
- * can't be set up, or where its run doesn't end within `baseLimit`. */
-export async function resultsAt(root: string, work: string, base: string, names: string[]): Promise<Record<string, string>> {
+ * can't be set up, or where its run doesn't end within `baseLimit`; and
+ * then `why`, which a CI log shows: six of a check's eight shards found
+ * none and said nothing of it, each survivor the push's (#2341). */
+export async function resultsAt(root: string, work: string, base: string, names: string[]): Promise<{ results: Record<string, string>; why?: string }> {
   const git = (args: string[]) => run(["git", ...args], root, 120_000);
+  const tail = (exit: { stdout: string; stderr: string }) => `${exit.stdout}\n${exit.stderr}`.trim().split("\n").slice(-30).join("\n");
   const head = (await git(["rev-parse", "HEAD"])).stdout.trim();
   const status = await git(["status", "--porcelain", "--untracked-files=no"]);
-  if (head === "" || status.code !== 0 || status.stdout.trim() !== "") return {};
+  if (head === "" || status.code !== 0) return { results: {}, why: `git can't say the checkout's state: ${tail(status)}` };
+  if (status.stdout.trim() !== "") return { results: {}, why: `the checkout has changes of its own, which checking out the base would lose:\n${status.stdout.trim()}` };
   const kept = runsOwn.filter((name) => existsSync(join(work, name))).map((name) => [name, readFileSync(join(work, name), "utf8")] as const);
   for (const name of runsOwn) rmSync(join(work, name), { force: true });
   try {
-    if ((await git(["checkout", "--quiet", "--detach", base])).code !== 0) return {};
-    if ((await run(["bun", "install", "--frozen-lockfile"], root, 600_000)).code !== 0) return {};
+    const checkout = await git(["checkout", "--quiet", "--detach", base]);
+    if (checkout.code !== 0) return { results: {}, why: `git can't check out ${base}: ${tail(checkout)}` };
+    const install = await run(["bun", "install", "--frozen-lockfile"], root, 600_000);
+    if (install.code !== 0) return { results: {}, why: `its packages don't install at ${base}: ${tail(install)}` };
     // Of those the base has: one it doesn't is the push's, and its runner
     // refuses a name it doesn't know.
     const listed = await run(["bun", "scripts/mutations.ts", "--list"], root, 600_000);
     const there = new Set(listed.stdout.split("\n").map((line) => line.split("\t")[0]));
     const known = names.filter((name) => there.has(name));
-    if (known.length === 0) return {};
+    if (known.length === 0) return { results: {}, why: `its runner knows none of them (\`--list\` exited ${listed.code}): ${tail(listed)}` };
     const ran = await run(["bun", "scripts/mutations.ts", ...known], root, baseLimit);
     const at = join(work, "results.json");
-    if (ran.timedOut || ran.signal || !existsSync(at)) return {};
-    return (JSON.parse(readFileSync(at, "utf8")) as Results).results;
+    if (ran.timedOut || ran.signal) return { results: {}, why: `its run didn't end within ${baseLimit / 60_000} min: ${tail(ran)}` };
+    if (!existsSync(at)) return { results: {}, why: `its run wrote no results.json (exited ${ran.code}): ${tail(ran)}` };
+    const results = (JSON.parse(readFileSync(at, "utf8")) as Results).results;
+    // Its tail too, where none survived there: what it judged and why.
+    const survived = known.filter((name) => results[name]?.startsWith("SURVIVED"));
+    return survived.length < known.length ? { results, why: `its run's end (exited ${ran.code}):\n${tail(ran)}` } : { results };
   } finally {
     // Back as the run found it: the checkout, which was clean, its
     // packages, and what the run wrote of its own.
@@ -81,7 +91,12 @@ export async function latentSurvivors(
 ): Promise<string[]> {
   const survived = Object.keys(results).filter((name) => results[name].startsWith("SURVIVED"));
   if (survived.length === 0) return [];
-  const { latent, ours } = latentOf(results, await resultsAt(root, work, base, survived));
+  const at = await resultsAt(root, work, base, survived);
+  const { latent, ours } = latentOf(results, at.results);
+  // Each of the push's, as the base judged it, and why the base's run said
+  // what it did: a misfire's cause in the log, never silence (#2341).
+  for (const name of ours) console.log(`at ${base.slice(0, 9)}, ${name}: ${at.results[name] ?? "not run there"}`);
+  if (ours.length > 0 && at.why) console.log(`the run at ${base.slice(0, 9)}: ${at.why}`);
   writeFileSync(join(work, "latent.json"), JSON.stringify({ base, latent: latent.map((name) => ({ name, breaks: breaks(name) })) }, null, 2) + "\n");
   if (latent.length > 0) console.log(`latent, surviving at ${base} too, not this push's: ${latent.join(", ")}`);
   if (ours.length > 0) console.log(`this push's, caught at ${base.slice(0, 9)} or not run there: ${ours.join(", ")}`);
