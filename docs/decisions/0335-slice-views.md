@@ -155,8 +155,12 @@ rust-js holds, though, once the array keeps what it was cut of:
   into a writer a piece at a time, and of a part that may stop part-way.
 
 A `ChunksMut`'s `Debug` stays refused, now saying why. std derives it of
-the raw pointer it holds, `v: Pointer { addr: 0x16d53e4b4, metadata: 1
-}`, an address, which JS hasn't (ADR 0407). The obvious follow-up is
+the raw slice pointer it holds, `v: Pointer { addr: 0x16d53e4b4,
+metadata: 1 }`. `{:?}` of a pointer to a slice is refused in rust-js,
+where it's the slice itself (ADR 0407), with no address of ADR 0562's.
+That's the follow-up: `{:?}` of a raw slice pointer, its address and its
+length (corrected 2026-11-22: not impossible, as first written, since
+rust-js shows a handle pointer's ADR 0562 address). The obvious follow-up is
 `chunks_exact`'s and `rchunks`', built on the same arrays. Each has a
 struct of its own, `ChunksExact { v, rem, chunk_size }`, so each needs
 rows of its own.

@@ -422,8 +422,8 @@ what's held before it, as a browser's console takes whole lines
   `Once` or a `Successors`, `{:?}` is refused (#2252, #2289). A slice's `Chunks` and `Windows` show std's
   struct of them, `Chunks { v: [5], chunk_size: 2 }`: the slice they have
   left, as stepping from either end leaves it, and the size they cut by;
-  a `ChunksMut`'s is refused, as std's shows the address of the raw
-  pointer it holds (ADR 0407). A range's `Debug`, `1..4`, is its
+  a `ChunksMut`'s is refused, as std's shows the raw slice pointer it
+  holds, `Pointer { addr, metadata }`, which rust-js doesn't show yet. A range's `Debug`, `1..4`, is its
   start, its dots and its end, each a call of the writer's, the bounds by
   the same options, as std writes it; of a `RangeInclusive` of numbers or
   `char`s, then ` (exhausted)` where it's been stepped through, a write

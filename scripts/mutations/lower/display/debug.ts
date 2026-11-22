@@ -653,7 +653,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "chunks-mut-shown-without-address",
-    breaks: "`{:?}` of a slice's `ChunksMut`, whose derived `Debug` std writes of the address of its raw pointer, says only that it isn't supported yet, not why it can't be (ADR 0407, #2252)",
+    breaks: "`{:?}` of a slice's `ChunksMut`, whose derived `Debug` std writes of its raw slice pointer, says only that it isn't supported, not what it waits on (ADR 0407, #2252)",
     file: "src/lower/display/debug.rs",
     find: "                    crate::lower::recognition::StdPath::SliceChunksMut,\n",
     replace: "                    crate::lower::recognition::StdPath::SliceSplitMut,\n",

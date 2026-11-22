@@ -769,8 +769,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // searcher's state, which its JS, the pieces it finds, doesn't
             // keep until std's search is compiled (ADR 0060, amended, #2004).
             // A slice's `chunks_mut`, whose `Debug` std derives of the raw
-            // pointer it holds, `v: Pointer { addr: 0x16d53e4b4, metadata: 1
-            // }`: an address, which JS hasn't (ADR 0407, #2252).
+            // slice pointer it holds, `v: Pointer { addr: 0x16d53e4b4,
+            // metadata: 1 }`, which rust-js doesn't show yet: a pointer to a
+            // slice is the slice, which has no address of ADR 0562's (ADR
+            // 0407, #2252).
             ty::Adt(adt, _)
                 if crate::lower::recognition::is_std_path(
                     self.tcx,
@@ -783,7 +785,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     span,
                     crate::lower::refusal::Refused::Because(
                         "`{:?}` of a slice's `ChunksMut`",
-                        "std's `Debug` of it shows the address of the raw pointer it holds, which JS hasn't (ADR 0407)",
+                        "std's `Debug` of it shows the raw slice pointer it holds, `Pointer { addr, metadata }`, and `{:?}` of a pointer to a slice, which is the slice, isn't supported (ADR 0407, #2252)",
                     ),
                 ))
             }
