@@ -20,4 +20,21 @@ export const mutations: Mutation[] = [
       "\"Location {{ file: {file}, line: {}, column: {} }}\",",
     tests: ["test/corpus.test.ts", "-t", "^track_caller.rs$"],
   },
+  {
+    name: "tracked-declaration-untaken",
+    breaks: "a trait's tracked method without a default takes the location only where the crate's own impls read it, so a library's impl that reads it, called through an app's generic code, is given none (#2350)",
+    file: "crates/rust-js-lower/src/std_types/location.rs",
+    find: " || tracked_without_default(tcx, id)\n",
+    replace: "\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: track_caller$"],
+  },
+  {
+    name: "tracked-default-taken-as-a-declaration",
+    breaks: "a trait's tracked default, which has a body that decides, takes the location in every crate whether it reads it or not (#2350)",
+    file: "crates/rust-js-lower/src/std_types/location.rs",
+    find: "        && !tcx.defaultness(id).has_value()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
+    snapshots: true,
+  },
 ];

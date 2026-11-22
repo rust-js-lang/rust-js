@@ -2,7 +2,7 @@
 
 import { $locationLine } from "@rust-js/std";
 
-const hereValue = () => here("test/corpus/track_caller_traits.rs:112:1");
+const hereValue = () => here("test/corpus/track_caller_traits.rs:119:1");
 
 export function entry() {
   main();
@@ -11,10 +11,11 @@ export function entry() {
 const unitTracked = {
   fromDefault: (unit, location) => location,
   inherited: unitTracked_inherited,
-  onlyImpl: (unit, location = "test/corpus/track_caller_traits.rs:41:5") =>
+  onlyImpl: (unit, location = "test/corpus/track_caller_traits.rs:48:5") =>
     unitTracked_onlyImpl(unit, location),
   boxed: unitTracked_boxed,
   unread: unitTracked_unread,
+  quiet: (unit) => 3,
   tagged: unitTracked_tagged,
 };
 // Its declaration's `#[track_caller]` is its own too.
@@ -45,6 +46,7 @@ const flagTracked = {
   onlyImpl: flagTracked_onlyImpl,
   boxed: flagTracked_boxed,
   unread: flagTracked_unread,
+  quiet: (flag) => 3,
   tagged: (flag, tag, location, TDisplay) => flagTracked_tagged(flag, tag, TDisplay),
 };
 function flagTracked_fromDefault(flag, location) {
@@ -58,7 +60,7 @@ function flagTracked_inherited(flag, location) {
 }
 
 function flagTracked_onlyImpl(flag) {
-  return "test/corpus/track_caller_traits.rs:76:9";
+  return "test/corpus/track_caller_traits.rs:83:9";
 }
 
 function flagTracked_boxed(flag, location) {
@@ -75,12 +77,12 @@ function flagTracked_tagged(flag, tag, TDisplay) {
 
 function generic(t, TTracked) {
   console.log(
-    `${TTracked.tagged(t, 5, "test/corpus/track_caller_traits.rs:96:22", { fmt: String })}`,
+    `${TTracked.tagged(t, 5, "test/corpus/track_caller_traits.rs:103:22", { fmt: String })}`,
   );
   return [
-    TTracked.fromDefault(t, "test/corpus/track_caller_traits.rs:97:8"),
-    TTracked.inherited(t, "test/corpus/track_caller_traits.rs:97:26"),
-    TTracked.onlyImpl(t, "test/corpus/track_caller_traits.rs:97:41"),
+    TTracked.fromDefault(t, "test/corpus/track_caller_traits.rs:104:8"),
+    TTracked.inherited(t, "test/corpus/track_caller_traits.rs:104:26"),
+    TTracked.onlyImpl(t, "test/corpus/track_caller_traits.rs:104:41"),
   ];
 }
 
@@ -88,7 +90,7 @@ function passedOn(t, location, TTracked) {
   return TTracked.inherited(t, location);
 }
 
-function pointerInside(location) {
+function pointerInside() {
   const f = hereValue;
   return f();
 }
@@ -99,9 +101,9 @@ function here(location) {
 
 function main() {
   const unit = undefined;
-  console.log(`${unitTracked.fromDefault(unit, "test/corpus/track_caller_traits.rs:118:25")}`);
-  console.log(`${unitTracked_inherited(unit, "test/corpus/track_caller_traits.rs:119:25")}`);
-  console.log(`${unitTracked_onlyImpl(unit, "test/corpus/track_caller_traits.rs:120:25")}`);
+  console.log(`${unitTracked.fromDefault(unit, "test/corpus/track_caller_traits.rs:125:25")}`);
+  console.log(`${unitTracked_inherited(unit, "test/corpus/track_caller_traits.rs:126:25")}`);
+  console.log(`${unitTracked_onlyImpl(unit, "test/corpus/track_caller_traits.rs:127:25")}`);
   for (const at of generic(unit, unitTracked)) {
     console.log(`${at}`);
   }
@@ -112,14 +114,16 @@ function main() {
   for (let i = 0; i < objects.length; i++) {
     const object = objects[i];
     console.log(
-      `${object.impl.fromDefault(object.value, "test/corpus/track_caller_traits.rs:129:37")} ${object.impl.inherited(object.value, "test/corpus/track_caller_traits.rs:129:60")} ${object.impl.onlyImpl(object.value)}`,
+      `${object.impl.fromDefault(object.value, "test/corpus/track_caller_traits.rs:136:37")} ${object.impl.inherited(object.value, "test/corpus/track_caller_traits.rs:136:60")} ${object.impl.onlyImpl(object.value)}`,
     );
-    console.log(`${object.impl.unread(object.value)}`);
+    console.log(
+      `${object.impl.unread(object.value, "test/corpus/track_caller_traits.rs:137:34")} ${object.impl.quiet(object.value)}`,
+    );
   }
-  console.log(`${passedOn(unit, "test/corpus/track_caller_traits.rs:132:20", unitTracked)}`);
+  console.log(`${passedOn(unit, "test/corpus/track_caller_traits.rs:139:20", unitTracked)}`);
   const boxed = { impl: unitTracked };
-  console.log(`${boxed.impl.boxed(boxed.value, "test/corpus/track_caller_traits.rs:134:26")}`);
-  console.log(`${flagTracked_boxed([true], "test/corpus/track_caller_traits.rs:135:41")}`);
-  console.log(`${pointerInside("test/corpus/track_caller_traits.rs:136:20")}`);
+  console.log(`${boxed.impl.boxed(boxed.value, "test/corpus/track_caller_traits.rs:141:26")}`);
+  console.log(`${flagTracked_boxed([true], "test/corpus/track_caller_traits.rs:142:41")}`);
+  console.log(`${pointerInside()}`);
 }
 //# sourceMappingURL=case.js.map

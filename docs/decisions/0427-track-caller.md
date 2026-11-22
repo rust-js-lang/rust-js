@@ -44,9 +44,10 @@ const at = here({ file: "test/corpus/track_caller.rs", line: 41, column: 14 });
 - **Which functions take it is `analysis::caller_locations`'s**, once for
   the crate: one that tracks its caller, `#[track_caller]` or its trait's
   declaration's, as rustc's `codegen_fn_attrs` says, and reads
-  `Location::caller()` in its own body, or calls one that takes it. One
-  that reads nothing of it takes none, so `v[i]` of an `Index` of the
-  crate's is the call it was. A library's manifest says it of each item it
+  `Location::caller()` in its own body, or calls one that takes it, or
+  raises a panic itself (amended, #2350). One that reads and raises
+  nothing of it takes none, so `v[i]` of an `Index` of the crate's that
+  raises nothing is the call it was. A library's manifest says it of each item it
   exports, `takes_location`, which its consumers' calls give. Every
   function's parameters and calls ask `takes_caller_location`, the one
   question.
@@ -175,3 +176,40 @@ Held by corpus cases: `std_function_value_panic.rs`, `_once.rs`,
 `std_function_value_in_a_local_panic.rs`, each against native's location.
 `own_track_caller_value_panic.rs` waits on #2350, the crate's own
 `#[track_caller]` function naming its own line.
+
+## Amendment: a tracked function that raises a panic itself takes the location (2026-11-23, #2350)
+
+rustc places every panic a `#[track_caller]` function raises itself where
+it was called, as each of its tracked calls is given that location: a
+`panic!`, whose `panic_fmt` tracks its caller, an `unwrap()`, a `Vec`'s
+`v[i]`, and the function's own `Assert`s, a division's by zero or a
+slice's bound. Every one of them is raised at `caller_location`, the
+given location where there is one; but only `Location::caller()` and a
+call of one that takes it made a function take it, so one that only
+panicked was given none and named its own line, `main.rs:4:9` where native
+Rust names its caller's, `main.rs:10:20`. `caller_locations` now asks of
+each tracking function, by its MIR, which a std body alone has (ADR 0561),
+or else its THIR, whether it raises one itself: an `Assert`, or a call of
+std's that tracks its caller, neither the crate's compiled here nor a
+library's, whose taking it is found as theirs is. So a crate's `Index`
+impl of a `Vec`, whose trait tracks its caller, takes it, and `grid[7]`
+names its line, as natively; one that raises nothing, `quiet`'s unchecked
+`x + 1`, or calls only such a one, takes none, still the parameter only
+where something reads it. The THIR scan saw a function's coercion to a
+pointer, `let f: fn() = here`, as a call; its MIR doesn't, so a function
+that only calls through one no longer takes a location it never read.
+Std's compiled `Repeat::last` and `count` take it too, which #2324 gives
+them where they're called.
+
+A trait's method without a default whose declaration tracks its caller
+takes the location in every crate alike, as rustc's every impl of it
+does: whether one of its impls reads it can't be what decides, as one
+crate's generic call is given another's dictionary, and a library's
+manifest, of functions, can't say it of a declaration without a body.
+So wasm-bindgen's `UnwrapThrowExt::expect_throw`, whose impls now take it
+as they call `expect`, isn't refused as a library's method its manifest
+can't speak of, and std's `Index::index` is given it by every crate's
+generic code; an entry whose impl reads none passes it on to nothing. A
+default, whose body decides, takes it as that body does; an impl that
+tracks its caller where its declaration doesn't is still refused in a
+library, as before (`std_types::location::tracked_without_default`).

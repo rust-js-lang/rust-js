@@ -7302,6 +7302,9 @@
               "clone"
             ]
           }
+        ],
+        "facts": [
+          "takes_location"
         ]
       },
       {
@@ -7320,6 +7323,9 @@
               "clone"
             ]
           }
+        ],
+        "facts": [
+          "takes_location"
         ]
       },
       {
@@ -17568,7 +17574,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "fe4425bf50e4411a"
+      "hash": "9e0685409213009d"
     },
     {
       "file": "iter.js.map",

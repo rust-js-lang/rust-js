@@ -31,9 +31,10 @@ pub fn checked(n: u32, why: Option<&str>) -> u32 {
     n
 }
 
+// Raises nothing, so it takes no location (#2350).
 #[track_caller]
 pub fn unwrapped(n: Option<u32>) -> u32 {
-    n.unwrap()
+    n.unwrap_or(0)
 }
 
 pub fn zeros<const N: usize>() -> [u8; N] {

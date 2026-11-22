@@ -18,7 +18,11 @@ export function entry() {
 
 function pickedIterator_next(picked, SIndexUsize) {
   const next = $next(picked.indices);
-  return next != null ? $some(SIndexUsize.index(picked.slice, next)) : undefined;
+  return next != null
+    ? $some(
+        SIndexUsize.index(picked.slice, next, "test/corpus/index_through_a_generic_bound.rs:20:48"),
+      )
+    : undefined;
 }
 
 function pick(slice, indices, SIndexUsize) {
@@ -29,18 +33,15 @@ function pick(slice, indices, SIndexUsize) {
 }
 
 function first(items, SIndexUsize) {
-  return SIndexUsize.index(items, 0);
+  return SIndexUsize.index(items, 0, "test/corpus/index_through_a_generic_bound.rs:35:11");
 }
 
 export const squaresIndexUsize = { index: squaresIndexUsize_index };
 
-function squaresIndexUsize_index(squares, i) {
+function squaresIndexUsize_index(squares, i, location) {
   const TABLE = [0, 1, 4, 9, 16];
   if (i >= 5) {
-    throw $stringPanic(
-      `index out of bounds: the len is 5 but the index is ${i}`,
-      "test/corpus/index_through_a_generic_bound.rs:45:10",
-    );
+    throw $stringPanic(`index out of bounds: the len is 5 but the index is ${i}`, location);
   }
   return TABLE[i];
 }

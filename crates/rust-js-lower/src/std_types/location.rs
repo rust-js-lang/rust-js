@@ -42,14 +42,27 @@ pub(crate) fn location_op(tcx: TyCtxt<'_>, id: DefId) -> Option<LocationOp> {
 
 /// Whether `id` takes its caller's location, the crate's, which
 /// `caller_locations` says (ADR 0427), or a library's, as its manifest
-/// does: the one question its parameters, its calls and its declaration
-/// ask.
+/// does; or, in every crate alike, as one crate's generic call is given
+/// another's dictionary, a trait's method without a default whose
+/// declaration tracks its caller, `Index::index`, as rustc's every impl of
+/// it does (#2350): the one question its parameters, its calls and its
+/// declaration ask.
 pub(crate) fn takes_location(
+    tcx: TyCtxt<'_>,
     caller_locations: &IndexSet<rustc_span::def_id::DefId>,
     foreign: &crate::library::Foreign<'_, '_>,
     id: rustc_span::def_id::DefId,
 ) -> bool {
-    caller_locations.contains(&id) || foreign.takes_location(id)
+    caller_locations.contains(&id) || foreign.takes_location(id) || tracked_without_default(tcx, id)
+}
+
+/// Whether `id` is a trait's method without a default whose declaration
+/// tracks its caller, which no crate's manifest need say (#2350).
+pub(crate) fn tracked_without_default(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.trait_of_assoc(id).is_some()
+        && matches!(tcx.def_kind(id), rustc_hir::def::DefKind::AssocFn)
+        && !tcx.defaultness(id).has_value()
+        && crate::recognition::tracks_caller(tcx, id)
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -77,7 +90,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// library's (`takes_location`).
     // helper: delegates to its owner's answer (#2172)
     pub(crate) fn takes_caller_location(&self, id: rustc_span::def_id::DefId) -> bool {
-        takes_location(self.krate.caller_locations, self.krate.foreign, id)
+        takes_location(self.tcx, self.krate.caller_locations, self.krate.foreign, id)
     }
 
     /// The location a call at `span` gives, or `Location::caller()` there

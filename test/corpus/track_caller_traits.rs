@@ -23,6 +23,13 @@ trait Tracked {
     #[track_caller]
     fn unread(&self) -> u32;
 
+    // A tracked default that reads and raises nothing: its body decides,
+    // so it takes none, nor do its entries (#2350).
+    #[track_caller]
+    fn quiet(&self) -> u32 {
+        3
+    }
+
     #[track_caller]
     fn tagged<T: std::fmt::Display>(&self, tag: T) -> String
     where
@@ -127,7 +134,7 @@ fn main() {
     let objects: [&dyn Tracked; 2] = [&Unit, &Flag(false)];
     for object in objects {
         println!("{} {} {}", object.from_default(), object.inherited(), object.only_impl());
-        println!("{}", object.unread());
+        println!("{} {}", object.unread(), object.quiet());
     }
     println!("{}", passed_on(&unit));
     let boxed: Box<dyn Tracked> = Box::new(Unit);

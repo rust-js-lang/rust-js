@@ -46,8 +46,8 @@ const $wrapIndexI = new WeakMap();
 
 export function wrapIndexI(ISliceIndexTSlice, dropT, dropI) {
   return $traitImpl($wrapIndexI, [ISliceIndexTSlice, dropT, dropI], () => ({
-    index(wrap, index) {
-      return wrapIndexI_index(wrap, index, ISliceIndexTSlice, dropT, dropI);
+    index(wrap, index, location) {
+      return wrapIndexI_index(wrap, index, location, ISliceIndexTSlice, dropT, dropI);
     },
     $drop(wrap) {
       $dropItems(wrap[0], (item) => {
@@ -57,11 +57,11 @@ export function wrapIndexI(ISliceIndexTSlice, dropT, dropI) {
     $dropOutput: ISliceIndexTSlice.$dropOutput,
   }));
 }
-function wrapIndexI_index(wrap, index, ISliceIndexTSlice, dropT, dropI) {
+function wrapIndexI_index(wrap, index, location, ISliceIndexTSlice, dropT, dropI) {
   return ISliceIndexTSlice.index(index, wrap[0]);
 }
 
-function wrapIndexMutI_indexMut(wrap, index, ISliceIndexTSlice, dropT, dropI) {
+function wrapIndexMutI_indexMut(wrap, index, location, ISliceIndexTSlice, dropT, dropI) {
   return ISliceIndexTSlice.indexMut(index, wrap[0]);
 }
 
@@ -121,9 +121,21 @@ function main() {
   const w = [v];
   try {
     try {
-      wrapIndexMutI_indexMut(w, 0, $sliceIndexes.item, loudDrop_drop).value[0] = "z";
+      wrapIndexMutI_indexMut(
+        w,
+        0,
+        "test/corpus/generic_drops_nothing.rs:61:6",
+        $sliceIndexes.item,
+        loudDrop_drop,
+      ).value[0] = "z";
       console.log(
-        `${wrapIndexI_index(w, { start: 0, end: 2 }, $sliceIndexes.range, loudDrop_drop)
+        `${wrapIndexI_index(
+          w,
+          { start: 0, end: 2 },
+          "test/corpus/generic_drops_nothing.rs:62:21",
+          $sliceIndexes.range,
+          loudDrop_drop,
+        )
           .map((l) => l[0])
           .join("")}`,
       );

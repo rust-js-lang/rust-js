@@ -10,28 +10,59 @@ const $smallIndexI = new WeakMap();
 
 export function smallIndexI(ISliceIndexU32Slice) {
   return $traitImpl($smallIndexI, [ISliceIndexU32Slice], () => ({
-    index: (small, index) => smallIndexI_index(small, index, ISliceIndexU32Slice),
+    index: (small, index, location) =>
+      smallIndexI_index(small, index, location, ISliceIndexU32Slice),
   }));
 }
-function smallIndexI_index(small, index, ISliceIndexU32Slice) {
+function smallIndexI_index(small, index, location, ISliceIndexU32Slice) {
   return ISliceIndexU32Slice.index(index, small.items);
 }
 
-function smallIndexMutI_indexMut(small, index, ISliceIndexU32Slice) {
+function smallIndexMutI_indexMut(small, index, location, ISliceIndexU32Slice) {
   return ISliceIndexU32Slice.indexMut(index, small.items);
 }
 
 function main() {
   const s = { items: [1, 2, 3, 4] };
-  smallIndexMutI_indexMut(s, 1, $sliceIndexes.item).value = 20;
-  smallIndexMutI_indexMut(s, { start: 2 }, $sliceIndexes.from).value.sort((a, b) => $cmp(b, a));
-  const value = smallIndexMutI_indexMut(s, { end: 1 }, $sliceIndexes.toInclusive).value;
+  smallIndexMutI_indexMut(
+    s,
+    1,
+    "test/corpus/slice_index_generic.rs:27:6",
+    $sliceIndexes.item,
+  ).value = 20;
+  smallIndexMutI_indexMut(
+    s,
+    { start: 2 },
+    "test/corpus/slice_index_generic.rs:28:6",
+    $sliceIndexes.from,
+  ).value.sort((a, b) => $cmp(b, a));
+  const value = smallIndexMutI_indexMut(
+    s,
+    { end: 1 },
+    "test/corpus/slice_index_generic.rs:29:6",
+    $sliceIndexes.toInclusive,
+  ).value;
   value[0] = (value[$at(value, 0, "test/corpus/slice_index_generic.rs:29:5")] + 5) >>> 0;
-  const value$1 = smallIndexI_index(s, 1, $sliceIndexes.item);
-  const value$2 = smallIndexI_index(s, { start: 1, end: 3 }, $sliceIndexes.range);
-  const value$3 = smallIndexI_index(s, undefined, $sliceIndexes.full);
+  const value$1 = smallIndexI_index(
+    s,
+    1,
+    "test/corpus/slice_index_generic.rs:30:39",
+    $sliceIndexes.item,
+  );
+  const value$2 = smallIndexI_index(
+    s,
+    { start: 1, end: 3 },
+    "test/corpus/slice_index_generic.rs:30:46",
+    $sliceIndexes.range,
+  );
+  const value$3 = smallIndexI_index(
+    s,
+    undefined,
+    "test/corpus/slice_index_generic.rs:30:56",
+    $sliceIndexes.full,
+  );
   console.log(
-    `${value$1} [${value$2.join(", ")}] [${value$3.join(", ")}] [${s.items.join(", ")}] ${smallIndexI_index(s, { end: 1 }, $sliceIndexes.toInclusive).length}`,
+    `${value$1} [${value$2.join(", ")}] [${value$3.join(", ")}] [${s.items.join(", ")}] ${smallIndexI_index(s, { end: 1 }, "test/corpus/slice_index_generic.rs:30:72", $sliceIndexes.toInclusive).length}`,
   );
 }
 //# sourceMappingURL=case.js.map

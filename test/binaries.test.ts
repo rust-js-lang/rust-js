@@ -127,6 +127,29 @@ test("a part of a slice used apart from where it's indexed names where it's inde
   });
 }, 300_000);
 
+test("a panic a `#[track_caller]` function raises itself names where it was called", () => {
+  // rustc places each panic a tracking function raises, `panic!`'s, std's
+  // that tracks its caller, `unwrap`'s, a `Vec`'s index, and its own
+  // `Assert`s, a division's and a slice's bound, where it was called, so it
+  // takes its caller's location (#2350).
+  const tracked = [
+    "#[track_caller]\nfn check(n: u32) -> u32 {\n    if n > 3 {\n        panic!(\"too big: {n}\");\n    }\n    n\n}\n\nfn main() {\n    println!(\"{}\", check(1));\n    println!(\"{}\", check(std::hint::black_box(5)));\n}\n",
+    "#[track_caller]\nfn first(v: &[u32]) -> u32 {\n    *v.first().unwrap()\n}\n\nfn main() {\n    println!(\"{}\", first(&[4]));\n    println!(\"{}\", first(std::hint::black_box(&[])));\n}\n",
+    "#[track_caller]\nfn share(total: u32, n: u32) -> u32 {\n    total / n\n}\n\nfn main() {\n    println!(\"{}\", share(6, 2));\n    println!(\"{}\", share(6, std::hint::black_box(0)));\n}\n",
+    "#[track_caller]\nfn at(v: &[u32], i: usize) -> u32 {\n    v[i]\n}\n\nfn main() {\n    println!(\"{}\", at(&[1, 2], 1));\n    println!(\"{}\", at(&[1, 2], std::hint::black_box(5)));\n}\n",
+    "#[track_caller]\nfn at(v: &Vec<u32>, i: usize) -> u32 {\n    v[i]\n}\n\nfn main() {\n    let v = vec![1, 2];\n    println!(\"{}\", at(&v, 1));\n    println!(\"{}\", at(&v, std::hint::black_box(5)));\n}\n",
+    // Passed on: one that calls another that raises one.
+    "#[track_caller]\nfn check(n: u32) -> u32 {\n    if n > 3 {\n        panic!(\"too big\");\n    }\n    n\n}\n\n#[track_caller]\nfn twice(n: u32) -> u32 {\n    check(n) + check(n * 2)\n}\n\nfn main() {\n    println!(\"{}\", twice(1));\n    println!(\"{}\", twice(std::hint::black_box(3)));\n}\n",
+    // The crate's `Index`, whose trait tracks its caller, of a `Vec`; and
+    // through generic code's dictionary.
+    "struct Grid(Vec<u32>);\n\nimpl std::ops::Index<usize> for Grid {\n    type Output = u32;\n    fn index(&self, i: usize) -> &u32 {\n        &self.0[i]\n    }\n}\n\nfn main() {\n    let grid = Grid(vec![4, 5]);\n    println!(\"{}\", grid[1]);\n    println!(\"{}\", grid[std::hint::black_box(7)]);\n}\n",
+    "struct Grid(Vec<u32>);\n\nimpl std::ops::Index<usize> for Grid {\n    type Output = u32;\n    fn index(&self, i: usize) -> &u32 {\n        &self.0[i]\n    }\n}\n\nfn get<G: std::ops::Index<usize, Output = u32>>(g: &G, i: usize) -> u32 {\n    g[i]\n}\n\nfn main() {\n    let grid = Grid(vec![4, 5]);\n    println!(\"{}\", get(&grid, 0));\n    println!(\"{}\", get(&grid, std::hint::black_box(9)));\n}\n",
+  ];
+  tracked.forEach((source, i) => {
+    expect(same(`tracked${i}`, source).status).toBe(101);
+  });
+}, 300_000);
+
 test("each panic std raises in its own code names std's line, as its hook does", () => {
   const kinds = [
     "let mut d: std::collections::VecDeque<u8> = [1, 2].into();\n    d.swap(0, std::hint::black_box(5));",

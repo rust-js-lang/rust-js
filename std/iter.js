@@ -10024,12 +10024,9 @@ export function repeatIterator_nth(repeat, n, AClone, dropA) {
   return $some(AClone.clone(repeat.element));
 }
 
-export function repeatIterator_last(repeat, AClone, dropA) {
+export function repeatIterator_last(repeat, location, AClone, dropA) {
   try {
-    throw $panic(
-      "iterator is infinite",
-      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:111:9",
-    );
+    throw $panic("iterator is infinite", location);
   } catch (error) {
     $cleanup(() => {
       repeat.return();
@@ -10038,12 +10035,9 @@ export function repeatIterator_last(repeat, AClone, dropA) {
   }
 }
 
-export function repeatIterator_count(repeat, AClone, dropA) {
+export function repeatIterator_count(repeat, location, AClone, dropA) {
   try {
-    throw $panic(
-      "iterator is infinite",
-      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:121:9",
-    );
+    throw $panic("iterator is infinite", location);
   } catch (error) {
     $cleanup(() => {
       repeat.return();
@@ -12410,10 +12404,20 @@ export function repeat(elt, TClone, dropT) {
         return repeatIterator_advanceBy(iterator, n, TClone, dropT);
       },
       last(iterator) {
-        return repeatIterator_last(iterator, TClone, dropT);
+        return repeatIterator_last(
+          iterator,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:65:5",
+          TClone,
+          dropT,
+        );
       },
       count(iterator) {
-        return repeatIterator_count(iterator, TClone, dropT);
+        return repeatIterator_count(
+          iterator,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:65:5",
+          TClone,
+          dropT,
+        );
       },
       takes: ["last", "count"],
       close(iterator) {

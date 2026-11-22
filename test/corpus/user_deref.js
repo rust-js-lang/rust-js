@@ -36,20 +36,12 @@ function outerDeref_deref(outer) {
 
 export const gridIndex_usize__usize_ = { index: gridIndex_usize__usize__index };
 
-function gridIndex_usize__usize__index(grid, [row, col]) {
-  return $index(
-    grid.cells,
-    ((Math.imul(row, grid.width) >>> 0) + col) >>> 0,
-    "test/corpus/user_deref.rs:64:20",
-  );
+function gridIndex_usize__usize__index(grid, [row, col], location) {
+  return $index(grid.cells, ((Math.imul(row, grid.width) >>> 0) + col) >>> 0, location);
 }
 
-function gridIndexMut_usize__usize__indexMut(grid, [row, col]) {
-  return $index(
-    grid.cells,
-    ((Math.imul(row, grid.width) >>> 0) + col) >>> 0,
-    "test/corpus/user_deref.rs:70:24",
-  );
+function gridIndexMut_usize__usize__indexMut(grid, [row, col], location) {
+  return $index(grid.cells, ((Math.imul(row, grid.width) >>> 0) + col) >>> 0, location);
 }
 
 function main() {
@@ -70,10 +62,13 @@ function main() {
 
   const item = { x: 0, y: 0 };
   const grid = { cells: Array.from({ length: 4 }, () => ({ ...item })), width: 2 };
-  gridIndexMut_usize__usize__indexMut(grid, [1, 0]).x = 7;
-  Point.shift(gridIndexMut_usize__usize__indexMut(grid, [0, 1]), 3);
-  const point = gridIndex_usize__usize__index(grid, [1, 0]);
-  const value = gridIndex_usize__usize__index(grid, [0, 1]);
+  gridIndexMut_usize__usize__indexMut(grid, [1, 0], "test/corpus/user_deref.rs:87:9").x = 7;
+  Point.shift(
+    gridIndexMut_usize__usize__indexMut(grid, [0, 1], "test/corpus/user_deref.rs:88:9"),
+    3,
+  );
+  const point = gridIndex_usize__usize__index(grid, [1, 0], "test/corpus/user_deref.rs:89:36");
+  const value = gridIndex_usize__usize__index(grid, [0, 1], "test/corpus/user_deref.rs:89:50");
   console.log(
     `${pointDebug_fmt(point)} ${pointDebug_fmt(value)} [${grid.cells.map((item) => pointDebug_fmt(item)).join(", ")}]`,
   );

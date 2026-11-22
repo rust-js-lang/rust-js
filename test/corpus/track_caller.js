@@ -8,7 +8,7 @@ import {
   $locationLine,
 } from "@rust-js/std";
 
-const hereValue = () => here("test/corpus/track_caller.rs:13:1");
+const hereValue = () => here("test/corpus/track_caller.rs:16:1");
 
 export function entry() {
   main();
@@ -26,40 +26,44 @@ function quiet(x) {
   return x + 1;
 }
 
+function calm(x) {
+  return (quiet(x) * 2) >>> 0;
+}
+
 function inClosure() {
-  const inner = () => $locationLine("test/corpus/track_caller.rs:29:20");
+  const inner = () => $locationLine("test/corpus/track_caller.rs:37:20");
   return inner();
 }
 
 function both(location) {
-  const inner = () => $locationLine("test/corpus/track_caller.rs:35:20");
+  const inner = () => $locationLine("test/corpus/track_caller.rs:43:20");
   return [$locationLine(location), inner()];
 }
 
 export const gridIndexUsize = { index: gridIndexUsize_index };
-function gridIndexUsize_index(grid, i) {
-  return $index(grid[0], i, "test/corpus/track_caller.rs:44:16");
+function gridIndexUsize_index(grid, i, location) {
+  return $index(grid[0], i, location);
 }
 
 function main() {
-  const at = here("test/corpus/track_caller.rs:49:14");
+  const at = here("test/corpus/track_caller.rs:57:14");
   console.log(
     `${$locationLine(at)} ${$locationColumn(at)} ${$locationFile(at).endsWith("track_caller.rs")}`,
   );
-  console.log(`${through("test/corpus/track_caller.rs:51:20")}`);
-  console.log(`${quiet(1)}`);
+  console.log(`${through("test/corpus/track_caller.rs:59:20")}`);
+  console.log(`${quiet(1)} ${calm(1)}`);
   console.log(`${inClosure()}`);
-  const value = both("test/corpus/track_caller.rs:54:22");
+  const value = both("test/corpus/track_caller.rs:62:22");
   console.log(`(${value[0]}, ${value[1]})`);
   const grid = [[4, 5]];
-  console.log(`${gridIndexUsize_index(grid, 1)}`);
+  console.log(`${gridIndexUsize_index(grid, 1, "test/corpus/track_caller.rs:64:24")}`);
   const pointer = hereValue;
   console.log(`${$locationLine(pointer())} ${$locationColumn(pointer())}`);
   const lines = [undefined, undefined].map(() =>
-    $locationLine(here("test/corpus/track_caller.rs:59:50")),
+    $locationLine(here("test/corpus/track_caller.rs:67:50")),
   );
   console.log(`[${lines.join(", ")}]`);
   console.log(`${at} ${$locationDebug(at)}`);
-  console.log('Location { file: "test/corpus/track_caller.rs", line: 62, column: 22 }');
+  console.log('Location { file: "test/corpus/track_caller.rs", line: 70, column: 22 }');
 }
 //# sourceMappingURL=case.js.map

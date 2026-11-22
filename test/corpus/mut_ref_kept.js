@@ -7,12 +7,12 @@ export function entry() {
 }
 
 export const gridIndexUsize = { index: gridIndexUsize_index };
-function gridIndexUsize_index(grid, i) {
-  return $index(grid[0], i, "test/corpus/mut_ref_kept.rs:12:16");
+function gridIndexUsize_index(grid, i, location) {
+  return $index(grid[0], i, location);
 }
 
-function gridIndexMutUsize_indexMut(grid, i) {
-  $index(grid[0], i, "test/corpus/mut_ref_kept.rs:18:20");
+function gridIndexMutUsize_indexMut(grid, i, location) {
+  $index(grid[0], i, location);
   return {
     get value() {
       return grid[0][i];
@@ -34,11 +34,11 @@ function go(t, TBump) {
 
 function main() {
   const g = [[1, 2, 3]];
-  gridIndexMutUsize_indexMut(g, 1).value = 20;
-  const value = gridIndexMutUsize_indexMut(g, 2);
+  gridIndexMutUsize_indexMut(g, 1, "test/corpus/mut_ref_kept.rs:52:6").value = 20;
+  const value = gridIndexMutUsize_indexMut(g, 2, "test/corpus/mut_ref_kept.rs:53:6");
   value.value = (value.value + 5) >>> 0;
   console.log(
-    `${gridIndexUsize_index(g, 0)} ${gridIndexUsize_index(g, 1)} ${gridIndexUsize_index(g, 2)}`,
+    `${gridIndexUsize_index(g, 0, "test/corpus/mut_ref_kept.rs:54:27")} ${gridIndexUsize_index(g, 1, "test/corpus/mut_ref_kept.rs:54:33")} ${gridIndexUsize_index(g, 2, "test/corpus/mut_ref_kept.rs:54:39")}`,
   );
 
   let n$1 = 1;

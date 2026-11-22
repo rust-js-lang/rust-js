@@ -8,8 +8,8 @@ export function entry() {
 
 export const tSliceIndexId = { index: tSliceIndexId_index };
 
-function tSliceIndexId_index(self, index) {
-  return $index(self, index[0], "test/corpus/default_crate_index.rs:13:10");
+function tSliceIndexId_index(self, index, location) {
+  return $index(self, index[0], location);
 }
 
 const fixedAutomaton = {
@@ -22,7 +22,9 @@ const fixedAutomaton = {
   replaceAll(fixed, replaceWith, BAsRefStr) {
     let dst = "";
     fixedAutomaton.each(fixed, (id) => {
-      dst += BAsRefStr.asRef(tSliceIndexId_index(replaceWith, id));
+      dst += BAsRefStr.asRef(
+        tSliceIndexId_index(replaceWith, id, "test/corpus/default_crate_index.rs:32:49"),
+      );
     });
     return dst;
   },

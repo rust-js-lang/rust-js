@@ -370,10 +370,12 @@ pub(super) type Exported = IndexSet<(Vec<String>, String)>;
 /// from "./ReactFiberWorkLoop.js"` (rd292b).
 /// A library's trait method without a default whose entries take its
 /// caller's location, refused: its manifest, of functions, can't say so to
-/// its consumers' calls through them (ADR 0427).
+/// its consumers' calls through them (ADR 0427); but where its declaration
+/// tracks its caller, which every crate sees and takes it by (#2350).
 pub fn refuse_unsaid_locations(tcx: TyCtxt<'_>, caller_locations: &IndexSet<DefId>, fns: &IndexMap<DefId, FnInfo>) {
     let mut unsaid: Vec<DefId> = (caller_locations.iter())
         .filter(|&&id| tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))
+        .filter(|&&id| !super::std_types::location::tracked_without_default(tcx, id))
         .filter(|&&id| reachable(tcx, id))
         .copied()
         .collect();

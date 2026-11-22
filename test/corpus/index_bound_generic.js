@@ -10,15 +10,16 @@ const $bufferIndexJ = new WeakMap();
 
 export function bufferIndexJ(JSliceIndexTSlice) {
   return $traitImpl($bufferIndexJ, [JSliceIndexTSlice], () => ({
-    index: (buffer, index) => bufferIndexJ_index(buffer, index, JSliceIndexTSlice),
+    index: (buffer, index, location) =>
+      bufferIndexJ_index(buffer, index, location, JSliceIndexTSlice),
   }));
 }
 
-function bufferIndexJ_index(buffer, index, JSliceIndexTSlice) {
+function bufferIndexJ_index(buffer, index, location, JSliceIndexTSlice) {
   return JSliceIndexTSlice.index(index, buffer.buffer);
 }
 
-function bufferIndexMutJ_indexMut(buffer, index, JSliceIndexTSlice) {
+function bufferIndexMutJ_indexMut(buffer, index, location, JSliceIndexTSlice) {
   return JSliceIndexTSlice.indexMut(index, buffer.buffer);
 }
 
@@ -42,19 +43,47 @@ function second(items) {
 
 function main() {
   const b = { buffer: [1, 2, 3, 4] };
-  const value = bufferIndexJ_index(b, 1, $sliceIndexes.item);
-  const value$1 = bufferIndexJ_index(b, { start: 1, end: 3 }, $sliceIndexes.range);
-  const value$2 = bufferIndexJ_index(b, undefined, $sliceIndexes.full);
+  const value = bufferIndexJ_index(
+    b,
+    1,
+    "test/corpus/index_bound_generic.rs:63:36",
+    $sliceIndexes.item,
+  );
+  const value$1 = bufferIndexJ_index(
+    b,
+    { start: 1, end: 3 },
+    "test/corpus/index_bound_generic.rs:63:43",
+    $sliceIndexes.range,
+  );
+  const value$2 = bufferIndexJ_index(
+    b,
+    undefined,
+    "test/corpus/index_bound_generic.rs:63:53",
+    $sliceIndexes.full,
+  );
   console.log(
     `${value} [${value$1.join(", ")}] [${value$2.join(", ")}] [${bufferIndexJ_index(
       b,
       { start: 2, end: 3 },
+      "test/corpus/index_bound_generic.rs:63:61",
       $sliceIndexes.inclusive,
     ).join(", ")}]`,
   );
-  bufferIndexMutJ_indexMut(b, 0, $sliceIndexes.item).value = 10;
-  bufferIndexMutJ_indexMut(b, { start: 1, end: 3 }, $sliceIndexes.range).value.reverse();
-  console.log(`[${bufferIndexJ_index(b, { end: 2 }, $sliceIndexes.to).join(", ")}]`);
+  bufferIndexMutJ_indexMut(
+    b,
+    0,
+    "test/corpus/index_bound_generic.rs:64:6",
+    $sliceIndexes.item,
+  ).value = 10;
+  bufferIndexMutJ_indexMut(
+    b,
+    { start: 1, end: 3 },
+    "test/corpus/index_bound_generic.rs:65:6",
+    $sliceIndexes.range,
+  ).value.reverse();
+  console.log(
+    `[${bufferIndexJ_index(b, { end: 2 }, "test/corpus/index_bound_generic.rs:66:24", $sliceIndexes.to).join(", ")}]`,
+  );
   console.log(
     `${pick([5, 6, 7], 2, $sliceIndexes.item)} [${pick(
       [5, 6, 7],

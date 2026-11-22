@@ -434,4 +434,12 @@ export const mutations: Mutation[] = [
     replace: "                let _ = (item, count);\n",
     tests: ["test/crates.test.ts", "-t", "^two crates: library_iterator_growing_by_its_parameters_take$"],
   },
+  {
+    name: "tracked-declaration-refused",
+    breaks: "a library's trait method without a default whose declaration tracks its caller is refused, though every crate sees it takes the location, wasm-bindgen's `expect_throw` among them (#2350)",
+    file: "crates/rust-js-lower/src/library.rs",
+    find: "        .filter(|&&id| !super::std_types::location::tracked_without_default(tcx, id))\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: track_caller$"],
+  },
 ];
