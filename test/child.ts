@@ -186,13 +186,26 @@ export const footprintLimit = 5_000;
  * a test's stand-in for one that hangs. */
 export function footprints(pids: number[], tool: string[] = ["footprint"]): Map<number, number> {
   const held = new Map<number, number>();
-  if (process.platform !== "darwin" || pids.length === 0) return held;
+  if (process.platform !== "darwin" || pids.length === 0 || hung.has(tool.join(" "))) return held;
   const args = pids.flatMap((pid) => ["--pid", String(pid)]);
   const cmd = [...tool, ...args, "-f", "bytes", "--noCategories"];
-  const out = Bun.spawnSync(cmd, { timeout: footprintLimit, killSignal: "SIGKILL" }).stdout.toString();
-  for (const [, pid, bytes] of out.matchAll(/\[(\d+)\]: .*Footprint: (\d+) B/g)) held.set(Number(pid), Number(bytes));
+  const p = Bun.spawnSync(cmd, { timeout: footprintLimit, killSignal: "SIGKILL" });
+  for (const [, pid, bytes] of p.stdout.toString().matchAll(/\[(\d+)\]: .*Footprint: (\d+) B/g)) held.set(Number(pid), Number(bytes));
+  // Stopped past its limit: not asked again in this process, its `rss`
+  // read instead. One that hung did so for every process, while what it
+  // waited on, a debugger's authorization never given, stayed, and each
+  // job of a run waited its limit out, the corpus's 15 minutes past 45
+  // (#2329).
+  if (p.exitedDueToTimeout) {
+    hung.add(tool.join(" "));
+    console.error(`${tool[0]} hung past ${footprintLimit / 1000} s: this run reads what each process holds by its rss from now on (#2329)`);
+  }
   return held;
 }
+
+/** Each `footprint` command that hung in this process, `footprints`'
+ * `tool`'s words, never asked again. */
+const hung = new Set<string>();
 
 /** What `tree`, a process and what it started (`processTree`), holds
  * together, in bytes: each its footprint (`footprints`), or its resident

@@ -218,6 +218,12 @@ test("a footprint that hangs is stopped past its limit", () => {
   const hangs = [process.execPath, "-e", "await Bun.sleep(600000)"];
   expect(footprints([process.pid], hangs)).toEqual(new Map());
   expect(Date.now() - started).toBeLessThan(footprintLimit + 5_000);
+  // And not asked again in this process, where each job of a run waited its
+  // limit out (#2329); another tool, the real one, still asked.
+  const again = Date.now();
+  expect(footprints([process.pid], hangs)).toEqual(new Map());
+  expect(Date.now() - again).toBeLessThan(1_000);
+  expect(footprints([process.pid]).get(process.pid) ?? 0).toBeGreaterThan(0);
 }, underLoad(30_000));
 
 // A run's command goes with the process that ran it: one SIGKILLed, by a

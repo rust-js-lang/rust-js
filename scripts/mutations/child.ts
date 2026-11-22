@@ -25,4 +25,12 @@ export const mutations: Mutation[] = [
     replace: "const observedOverdueMs: number | undefined = undefined;",
     tests: ["test/child.test.ts","-t","late child observation"],
   },
+  {
+    name: "footprint-asked-again-after-hanging",
+    breaks: "a footprint that hung is asked again at each process measured, so each job of a run waits out its limit while what it waits on stays, the corpus's 15 minutes past 45 (#2329)",
+    file: "test/child.ts",
+    find: "    hung.add(tool.join(\" \"));\n",
+    replace: "",
+    tests: ["test/child.test.ts", "-t", "a footprint that hangs is stopped past its limit"],
+  },
 ];
