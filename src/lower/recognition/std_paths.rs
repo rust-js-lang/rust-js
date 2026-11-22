@@ -752,38 +752,59 @@ pub(super) fn std_path_parent(tcx: TyCtxt<'_>, id: DefId) -> Option<DefId> {
         .or_else(|| tcx.opt_parent(id))
 }
 
-/// Each of std's items' visible parent: the module std shows it in, the
-/// first that does of a walk of std's crates' public modules, breadth first
-/// from each crate root it starts at, as rustc's `visible_parent_map` walks.
-/// rustc's walks every crate's modules, the first time anything asks, 37 ms
-/// of each of the React port's compiles (4.1% of its compiler's time,
-/// #2314), where a recognizer asks only of std's items, and std's path is
-/// std's whatever else the program's crates re-export. rustc's also puts
-/// a parent that re-exports a child as `_`, or is or re-exports by a
-/// `#[doc(hidden)]` item, after any other: none of what std's recognizers
-/// ask is told apart by it, in the corpus's 2,897 cases with their
-/// snapshots, so it's not kept. Once a session.
+/// Each of std's items' visible parent, as rustc's `visible_parent_map`
+/// finds it, of std's crates alone: the same walk, breadth first from each
+/// crate root it starts at, in its order, each public child's first parent
+/// kept, one re-exported as `_`, of a `#[doc(hidden)]` module or by a
+/// `#[doc(hidden)]` re-export only where no other is: without that, a
+/// crate that names `extern crate core` has other parents of
+/// `core::panicking`'s functions than rustc's, and other answers of what's
+/// under std's modules (the crate corpus's, #2314). rustc's walks every
+/// crate's modules, the first time anything asks, 37 ms of each of the
+/// React port's compiles (4.1% of its compiler's time, #2314), where a
+/// recognizer asks only of std's items, and std's path is std's whatever
+/// else the program's crates re-export. Once a session.
 fn std_visible_parents(tcx: TyCtxt<'_>) -> std::rc::Rc<rustc_hash::FxHashMap<DefId, DefId>> {
     (crate::lower::session::caches(tcx).std_visible_parents)
         .get_or_init(|| {
             let mut parents: rustc_hash::FxHashMap<DefId, DefId> = Default::default();
+            let mut fallback: IndexMap<DefId, DefId> = IndexMap::default();
             let mut queue: std::collections::VecDeque<DefId> = (tcx.crates(()).iter())
                 .filter(|&&krate| !tcx.missing_extern_crate_item(krate) && super::std_crate(tcx, krate).is_some())
                 .map(|krate| krate.as_def_id())
                 .collect();
             while let Some(module) = queue.pop_front() {
                 for child in tcx.module_children(module) {
-                    let Some(id) = child.res.opt_def_id().filter(|_| child.vis.is_public()) else {
+                    if !child.vis.is_public() {
+                        continue;
+                    }
+                    let Some(id) = child.res.opt_def_id() else {
                         continue;
                     };
+                    let hidden = child.ident.name == rustc_span::kw::Underscore
+                        || tcx.is_doc_hidden(module)
+                        || (child.reexport_chain.first())
+                            .and_then(|reexport| reexport.id())
+                            .is_some_and(|reexport| tcx.is_doc_hidden(reexport));
                     if parents.contains_key(&id) {
                         continue;
                     }
-                    parents.insert(id, module);
+                    if !hidden {
+                        parents.insert(id, module);
+                    }
+                    if fallback.contains_key(&id) {
+                        continue;
+                    }
+                    if hidden {
+                        fallback.insert(id, module);
+                    }
                     if child.res.module_like_def_id().is_some() {
                         queue.push_back(id);
                     }
                 }
+            }
+            for (id, module) in fallback {
+                parents.entry(id).or_insert(module);
             }
             std::rc::Rc::new(parents)
         })

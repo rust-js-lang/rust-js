@@ -116,14 +116,17 @@ crate's public modules. It cost 37 ms in each of the React port's
 compiles, and its answer for a std item depended on the program's crate
 graph: a dependency that re-exported a std item nearer its root than std
 does became that item's parent. `std_visible_parents` now does the same
-walk, public children only, each child's first parent kept, but starts
-only from std's crates (this ADR's `std_crate`). rustc's also ranks a
-parent that re-exports a child as `_`, or a `#[doc(hidden)]` one, after
-any other. That ranking is left out: with it taken away, every one of the
-corpus's 2,897 cases is the same, its snapshot too, so no output can show
-it. The parent std writes an item in, rather than the module it's defined
-in, does show: `core::iter::Take`, defined in `core::iter::adapters::take`,
-is std's `iter::Take` (mutation `std-path-parent-defined-in`, caught by
+walk, with the same rules (public children only; a child re-exported as
+`_`, by a `#[doc(hidden)]` module or by a `#[doc(hidden)]` re-export
+ranked after any other parent), but starts only from std's crates (this
+ADR's `std_crate`). That ranking stays even though no output yet shows it.
+Without it, in a crate that names `extern crate core`,
+`core::panicking::panic_fmt` and `panic_display` get other parents than
+rustc gives them, and other answers to what's under std's modules (453 of
+the crate corpus's shadowed calls). The parent std writes an item in,
+rather than the module it's defined in, does show in output:
+`core::iter::Take`, defined in `core::iter::adapters::take`, is std's
+`iter::Take` (mutation `std-path-parent-defined-in`, caught by
 drop_order_through_take_adapters' snapshot). An item that isn't std's, and a std crate's root, have
 no std parent. A temporary shadow check compared both answers and found no
 difference, in recognitions and in std items' parents: 11.68M calls in the
