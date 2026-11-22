@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "  const added = (at: number, item: string) => (controls?.(item) ?? []).reduce((sum, [, cost]) => sum + cost + 0 * at, 0);\n",
     tests: ["test/shards.test.ts", "-t", "a shard's tests as the compiler is are dealt with its mutations"],
   },
+  {
+    name: "shard-times-one-folder",
+    breaks: "a run's shards' times are read as one, so no shard's machine can be told from another's (#2304 (b))",
+    file: "scripts/shard.ts",
+    find: "    .map((entry) => entry.parentPath)\n",
+    replace: "    .map(() => dir)\n",
+    tests: ["test/shards.test.ts", "-t", "each shard's times are merged at the plan's speed"],
+  },
 ];

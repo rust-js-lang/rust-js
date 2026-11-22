@@ -301,6 +301,20 @@ export function timingsUnder(dir: string): Map<string, number> {
   return seconds;
 }
 
+/** `timingsUnder`'s, of each folder a `timings.json` is in under `dir`, a
+ * run's shards' downloaded each to its own, `mutation-timings-<n>/`: by
+ * shard, so each is judged against its own machine (`normalizedShardTimes`). */
+export function timingsByShard(dir: string): Map<string, Map<string, number>> {
+  const shards = new Map<string, Map<string, number>>();
+  if (!existsSync(dir)) return shards;
+  const files = readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name === "timings.json")
+    .map((entry) => entry.parentPath)
+    .sort();
+  for (const folder of files) shards.set(folder, timingsUnder(folder));
+  return shards;
+}
+
 /** How many parts a file of cases runs in at once on `cores`, each a
  * process of its own, `RUST_JS_CASES=i/n` (test/support.ts): one for each
  * two cores. A case is a compile, then its runs, one core at a time, so

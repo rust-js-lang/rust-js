@@ -242,4 +242,20 @@ export const mutations: Mutation[] = [
     replace: "    .filter((run) => run.id !== ownRun || true)\n",
     tests: ["test/shards.test.ts", "-t", "as many as the account's jobs free"],
   },
+  {
+    name: "shard-speed-kept-in-times",
+    breaks: "a shard's times are merged as its machine ran them, so a mutation last run on a machine a third slower is dealt a third longer next time (#2304 (b))",
+    file: "scripts/ci.ts",
+    find: "    for (const [name, seconds] of own) out.set(name, seconds / speed);\n",
+    replace: "    for (const [name, seconds] of own) out.set(name, seconds + 0 * speed);\n",
+    tests: ["test/shards.test.ts", "-t", "each shard's times are merged at the plan's speed"],
+  },
+  {
+    name: "shard-speed-of-a-few",
+    breaks: "a shard of a few timed mutations is scaled by them, so a new mutation beside one that grew is taken for its machine's speed (#2304 (b))",
+    file: "scripts/ci.ts",
+    find: "    const speed = ratios.length < 20 ? 1 : Math.min(2, Math.max(0.5, ratios[ratios.length >> 1]!));\n",
+    replace: "    const speed = ratios.length < 1 ? 1 : Math.min(2, Math.max(0.5, ratios[ratios.length >> 1]!));\n",
+    tests: ["test/shards.test.ts", "-t", "each shard's times are merged at the plan's speed"],
+  },
 ];

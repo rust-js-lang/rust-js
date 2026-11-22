@@ -1372,3 +1372,24 @@ shard's tests as the compiler is are dealt with its mutations"; mutations
 `deal-control-runs-unread` and `deal-control-runs-counted-twice`, and the
 moved `tests-as-it-is-corpus-cases-uncounted` and
 `tests-as-it-is-modes-merged`.
+
+## Amendment: each shard's times are merged at the plan's speed (2026-11-22, #2304 (b))
+
+A run's mutation times are merged after it, the newest of each mutation
+over the plan's, the nightly's as each check's, for the next plan to deal
+by. Nightly 44963035271 was dealt evenly, 6,710 to 6,744 s a shard, but its
+shards 1, 13, 14, 15 and 16 took 1.22 to 1.32 times the plan's time of each
+of their mutations at the median, and its others 0.89 to 1.01: a whole
+shard alike, on one image, shards 1 and 2 started together, so GitHub's
+machines, not the mutations. Merged as they ran, a mutation's newest time
+was its machine's as much as its own, and the next deal took it so. **Each
+shard's times are now divided by its machine's speed before the merge**
+(`normalizedShardTimes`): the median of its mutations' times over the
+plan's, of those the plan timed at over half a second, at least 20, held to
+0.5–2, each shard read from its own artifact's folder (`timingsByShard`).
+A mutation that grew against its shard's others keeps what it grew by. A
+slow machine still makes its shard longer; the deal can't know which
+machine a shard gets. Held by `test/shards.test.ts`, "each shard's times
+are merged at the plan's speed, its machine's taken out"; mutations
+`shard-speed-kept-in-times`, `shard-speed-of-a-few` and
+`shard-times-one-folder`.

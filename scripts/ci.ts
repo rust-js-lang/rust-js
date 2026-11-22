@@ -22,7 +22,7 @@ import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDec
 import { changedSince, controlRuns, corpusCaseNames, type Mutation, mutationFile, mutations, TESTS_AS_IT_IS, testSet } from "./mutations";
 import { outcome, type Selection, selectChange, suiteFiles } from "./select";
 import { downloaded } from "./artifacts";
-import { browsers, caseFiles, dealtByGroup, drivesBrowser, fewestShards, type ShardFacts, shardFacts, shardTimings, testFileSeconds, timingsUnder } from "./shard";
+import { browsers, caseFiles, dealtByGroup, drivesBrowser, fewestShards, type ShardFacts, shardFacts, shardTimings, testFileSeconds, timingsByShard, timingsUnder } from "./shard";
 import { timed, timings } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -834,6 +834,28 @@ export function mergedTimings(base: ReadonlyMap<string, number>, ran: ReadonlyMa
   return new Map([...base, ...ran]);
 }
 
+/** Each shard's times, `shards`, as its machine would be had it run at the
+ * plan's speed, `base`: divided by the median of its mutations' times over
+ * the plan's, of those the plan timed at over half a second, at least 20, and
+ * held to 0.5–2. GitHub's machines differ: nightly 44963035271's shards 1,
+ * 13, 14, 15 and 16 took 1.22 to 1.32 times what the plan gave each of their
+ * mutations, at the median, its others 0.89 to 1.01, a whole shard's alike,
+ * so the newest time of a mutation was its machine's as much as its own, and
+ * the next deal took it so (#2304 (b)). A mutation that grew, against its
+ * shard's others, keeps what it grew by. */
+export function normalizedShardTimes(base: ReadonlyMap<string, number>, shards: ReadonlyMap<string, ReadonlyMap<string, number>>): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const own of shards.values()) {
+    const ratios = [...own]
+      .filter(([name]) => (base.get(name) ?? 0) > 0.5)
+      .map(([name, seconds]) => seconds / base.get(name)!)
+      .sort((a, b) => a - b);
+    const speed = ratios.length < 20 ? 1 : Math.min(2, Math.max(0.5, ratios[ratios.length >> 1]!));
+    for (const [name, seconds] of own) out.set(name, seconds / speed);
+  }
+  return out;
+}
+
 /** In CI, after a run's mutation shards (rustc-tests.yml's
  * `mutation-timings`): the times its plan gave them (`encoded`, none of a
  * first nightly's) and each shard's own under `ran`, merged into
@@ -842,12 +864,14 @@ export function mergedTimings(base: ReadonlyMap<string, number>, ran: ReadonlyMa
  * None where no shard's times were read: no file and no outputs, so no
  * upload, and the next plan reads an older run's. */
 function mergeMutationTimings(encoded: string, ran: string) {
-  const own = timingsUnder(ran);
-  if (own.size === 0) {
+  const shards = timingsByShard(ran);
+  if (shards.size === 0) {
     console.error(`no shard's times under ${ran}: nothing merged`);
     return;
   }
   const base = encoded === "" ? new Map<string, number>() : decodedTimings(encoded, mutations.map((m) => m.name));
+  // Each shard's at the plan's speed, its machine's own taken out.
+  const own = normalizedShardTimes(base, shards);
   const merged = mergedTimings(base, own);
   const out = join("target", MERGED_MUTATION_TIMES, "timings.json");
   mkdirSync(join(root, out, ".."), { recursive: true });

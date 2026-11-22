@@ -8,11 +8,11 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { gunzipSync } from "node:zlib";
 import { join } from "node:path";
-import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, mutationShardPlan, heldJobs, freeJobs, shardSummary, CONCURRENT_JOBS, SHARD_BUDGET_SECONDS, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, testShardList, testShards, testShardSeconds, timingsRuns } from "../scripts/ci";
+import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, mutationShardPlan, heldJobs, freeJobs, normalizedShardTimes, shardSummary, CONCURRENT_JOBS, SHARD_BUDGET_SECONDS, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, testShardList, testShards, testShardSeconds, timingsRuns } from "../scripts/ci";
 import { controlRuns, mutations, testsAsItIsRuns, testsAsItIsSeconds } from "../scripts/mutations";
 import { jobs } from "../scripts/checkFast";
 import { runs } from "../scripts/iteratorSlice";
-import { balancedByGroup, browsers, casePartCores, dealtByGroup, fewestShards, shardFacts, shareOfShard, slots, testFileSeconds, testShardFiles } from "../scripts/shard";
+import { balancedByGroup, browsers, casePartCores, dealtByGroup, fewestShards, shardFacts, shareOfShard, slots, testFileSeconds, testShardFiles, timingsByShard } from "../scripts/shard";
 import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, compilerBuildsAsked, memoryBudget, nightly, parts, peakGB, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
 import { fixture, root } from "./support";
 
@@ -571,6 +571,35 @@ test("a shard's tests as the compiler is are dealt with its mutations", () => {
   expect(dealt.load.map((load) => +load.toFixed(1))).toEqual([30 + 1 + 7.7, 29 + 7.7]);
   // Without them, the least-loaded shard took it, as before.
   expect(dealtByGroup(["x1", "y1", "x2"], 2, seconds, () => "suite").shards).toEqual([["x1"], ["x2", "y1"]]);
+});
+
+// GitHub's machines differ by a third: nightly 44963035271's shards 1 and
+// 13 to 16 took 1.22 to 1.32 times the plan's time of each of their
+// mutations, at the median, its others 0.89 to 1.01 (#2304 (b)). The merge
+// takes each shard's machine out, by that median, so the next deal reads a
+// mutation's time, not its machine's; one that grew against its shard's
+// others keeps what it grew by, and a shard of few timed ones is as it ran.
+test("each shard's times are merged at the plan's speed, its machine's taken out", () => {
+  const names = Array.from({ length: 30 }, (_, i) => `m${i}`);
+  const base = new Map(names.map((name) => [name, 2]));
+  const slow = new Map(names.slice(0, 15).map((name) => [name, 2.6]));
+  const usual = new Map(names.slice(15).map((name) => [name, name === "m20" ? 10 : 2]));
+  const few = new Map([["new", 4], ["m0", 3]]);
+  const shards = new Map<string, ReadonlyMap<string, number>>([["slow", new Map([...slow, ...names.slice(15, 20).map((n) => [n, 2.6] as [string, number])])], ["usual", usual], ["few", few]]);
+  // Of 20 timed ones at least: the slow shard's 1.3 taken out.
+  const merged = normalizedShardTimes(base, new Map([["slow", new Map([...slow, ...names.slice(15, 20).map((n) => [n, 2.6] as [string, number])])]]));
+  expect(+merged.get("m0")!.toFixed(2)).toBe(2);
+  expect(normalizedShardTimes(base, new Map([["usual", usual]])).get("m20")).toBe(10);
+  expect(normalizedShardTimes(base, new Map([["few", few]])).get("m0")).toBe(3);
+  expect(normalizedShardTimes(base, shards).size).toBe(31);
+  // Read by shard, each folder its own.
+  const dir = mkdtempSync(join(tmpdir(), "shard-times-"));
+  for (const [shard, times] of [["mutation-timings-1", { a: { build: 1, tests: 1 } }], ["mutation-timings-2", { b: { build: 3, tests: 0 } }]] as const) {
+    mkdirSync(join(dir, shard), { recursive: true });
+    writeFileSync(join(dir, shard, "timings.json"), JSON.stringify(times));
+  }
+  expect([...timingsByShard(dir).values()].map((times) => [...times])).toEqual([[["a", 2]], [["b", 3]]]);
+  rmSync(dir, { recursive: true, force: true });
 });
 
 test("a change's untimed mutations are dealt first, in turn, each its file's usual or the timed ones' 90th percentile, so no shard takes several", () => {
