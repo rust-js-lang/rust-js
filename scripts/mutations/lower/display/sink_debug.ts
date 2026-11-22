@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "slice-iter-debug-unwritten",
     breaks: "an array's iterator's `Debug` in a framed writer, `IntoIter([1, 2])`, is refused (#1712)",
     file: "src/lower/display/sink_debug.rs",
-    find: "        if let Some(slice) = self.recognition().shows_its_slice(ty)\n",
-    replace: "        if let Some(slice) = self.recognition().shows_its_slice(ty).filter(|_| false)\n",
+    find: "        if let Some(slice) = self.recognition().shows_its_slice(ty)\n            && (slice.left",
+    replace: "        if let Some(slice) = self.recognition().shows_its_slice(ty).filter(|_| false)\n            && (slice.left",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_std_adapters)\\.rs$"],
   },
   {
@@ -129,5 +129,13 @@ export const mutations: Mutation[] = [
     find: "                Expr::array(vec![Expr::str(field), size, size_write]),\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","^writer_sink_std_adapters.rs$"],
+  },
+  {
+    name: "sink-item-left-around-dropped",
+    breaks: "`once(x)` written into a writer shows its inner `IntoIter { .. }` alone (#2252)",
+    file: "src/lower/display/sink_debug.rs",
+    find: "                    struct_of(around, \"inner\", value, write_inner)\n",
+    replace: "                    { let _ = (around, write_inner); struct_of(slice.name, \"inner\", value, write_item) }\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_std_adapters.rs$"],
   },
 ];

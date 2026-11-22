@@ -92,4 +92,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
   },
+  {
+    name: "composed-item-left-around-dropped",
+    breaks: "`once(x)` whose item's `Debug` may stop part-way shows its inner `IntoIter { .. }` alone (#2252)",
+    file: "src/lower/display/composed.rs",
+    find: "                            made = struct_of(self, around, \"inner\", made);\n",
+    replace: "                            let _ = around;\n",
+    tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
+  },
 ];

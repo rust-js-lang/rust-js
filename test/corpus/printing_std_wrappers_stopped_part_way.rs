@@ -194,6 +194,9 @@ fn main() {
         println!("u {:#?} v", grids.chunks(2));
     });
     shown("w", || println!("w {:?} x", [Grid(1), Grid(3)].windows(1)));
+    // An iterator of one item at most, its `Item { opt: .. }` (#2252).
+    shown("g", || println!("g {:?} h", std::iter::once(Grid(3))));
+    shown("e", || println!("e {:#?} f", Some(Grid(3)).into_iter()));
 
     // Those whose `Debug` is their part's.
     shown("k", || println!("k {:?} l", (Wrapping(Grid(1)), Saturating(Grid(3)))));
@@ -249,6 +252,9 @@ fn main() {
     failed(text, written);
     let mut text = String::new();
     let written = write!(text, "j {:#?}", [Failing(3)].iter());
+    failed(text, written);
+    let mut text = String::new();
+    let written = write!(text, "n {:?}", std::iter::once(Failing(3)));
     failed(text, written);
     let mut text = String::new();
     let written = write!(text, "y {:?}", [Failing(1), Failing(2), Failing(3)].chunks(2));

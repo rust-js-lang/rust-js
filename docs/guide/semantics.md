@@ -418,12 +418,16 @@ what's held before it, as a browser's console takes whole lines
   `FlattenCompat` as stepping leaves it, and a `Zip`'s, whose `ZipFmt`
   its sides' facts pick as std's specialization picks it by their types:
   of two random-access sides, slices' iterators or ranges, `Zip` alone;
-  of others, `Zip { a: Chars(['b']), b: Iter([7]) }`. Of a `StepBy`, a
-  `Once` or a `Successors`, `{:?}` is refused (#2252, #2289). A slice's `Chunks` and `Windows` show std's
+  of others, `Zip { a: Chars(['b']), b: Iter([7]) }`; and a
+  `Successors`', `Successors { next: Some(100) }`, std's struct where its
+  `{:?}` is asked. An `Option`'s iterators and `once(x)` show the item
+  they have left, `Once { inner: IntoIter { inner: Item { opt: Some(7) }
+  } }`. Of a `StepBy` of an integer range, `{:?}` is refused (#2289). A slice's `Chunks` and `Windows` show std's
   struct of them, `Chunks { v: [5], chunk_size: 2 }`: the slice they have
   left, as stepping from either end leaves it, and the size they cut by;
   a `ChunksMut`'s is refused, as std's shows the raw slice pointer it
-  holds, `Pointer { addr, metadata }`, which rust-js doesn't show yet. A range's `Debug`, `1..4`, is its
+  holds, `Pointer { addr, metadata }`, which rust-js doesn't show yet
+  (#2293). A range's `Debug`, `1..4`, is its
   start, its dots and its end, each a call of the writer's, the bounds by
   the same options, as std writes it; of a `RangeInclusive` of numbers or
   `char`s, then ` (exhausted)` where it's been stepped through, a write

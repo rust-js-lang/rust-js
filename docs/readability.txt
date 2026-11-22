@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2853
-lines	388412
+files	2854
+lines	388853
 temporaries	0	0
 labeled blocks	0	0
 while (true)	245	6.3
-$iter	3433	88.4
+$iter	3446	88.6
 Iterator.from	310	8
 return;	451	11.6
-renamed x$1	17445	449.1
-role fallbacks	9707	249.9
+renamed x$1	17479	449.5
+role fallbacks	9726	250.1
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	60
@@ -590,6 +590,7 @@ test/corpus/debug_of_a_zip.js	272	0	0	0	12	0	0	2	2
 test/corpus/debug_of_adapters_compiled_as_their_meaning.js	154	0	0	0	2	0	0	0	2
 test/corpus/debug_of_chunks_and_windows.js	226	0	0	0	14	0	0	13	8
 test/corpus/debug_of_flatten_and_flat_map.js	311	0	0	0	6	0	0	5	0
+test/corpus/debug_of_once_and_successors.js	222	0	0	0	8	0	0	24	15
 test/corpus/debug_options.js	41	0	0	0	0	0	0	0	1
 test/corpus/debug_text_precision.js	17	0	0	0	0	0	0	0	0
 test/corpus/decided_tests_past_a_call.js	69	0	0	0	0	0	0	0	0
@@ -1935,7 +1936,7 @@ test/corpus/printing_builder_written_step_by_step.js	498	0	0	0	0	1	0	38	15
 test/corpus/printing_derived_debug_stopped_part_way.js	125	0	0	0	0	0	0	0	0
 test/corpus/printing_std_cells_stopped_part_way.js	329	0	0	0	0	0	0	17	3
 test/corpus/printing_std_value_stopped_part_way.js	199	0	0	0	0	0	0	0	6
-test/corpus/printing_std_wrappers_stopped_part_way.js	1367	0	0	0	14	0	0	87	22
+test/corpus/printing_std_wrappers_stopped_part_way.js	1471	0	0	0	17	0	0	94	26
 test/corpus/printing_writer_refused_into_a_string.js	95	0	0	0	0	0	0	0	1
 test/corpus/printing_writer_shown_by_derived_debugs_and_builders.js	198	0	0	0	0	0	0	2	2
 test/corpus/printing_writer_shown_in_std_values.js	159	0	0	0	0	0	0	8	5
@@ -2766,7 +2767,7 @@ test/corpus/writer_sink_phantom_data.js	108	0	0	0	0	0	0	0	2
 test/corpus/writer_sink_pieces.js	1462	0	0	0	0	0	0	222	32
 test/corpus/writer_sink_printing_in_a_generic.js	126	0	0	0	0	0	0	4	3
 test/corpus/writer_sink_rest.js	1097	0	0	0	0	0	0	89	3
-test/corpus/writer_sink_std_adapters.js	287	0	0	0	7	0	0	17	4
+test/corpus/writer_sink_std_adapters.js	402	0	0	0	9	0	0	20	4
 test/corpus/writer_sink_unit_made_by_a_call.js	55	0	0	0	0	0	0	0	0
 test/corpus/writer_with_its_own_write_fmt.js	82	0	0	0	0	0	0	0	0
 test/corpus/written_breaks_beside_an_else.js	150	0	0	1	0	0	0	2	0

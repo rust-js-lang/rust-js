@@ -215,25 +215,31 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(self.reveal(ty).kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::VecSplice))
     }
 
-    /// What std's `Debug` shows of an iterator over an array, the slice it
-    /// has left: `IntoIter([2, 3])` of a slice's `Iter`, and a `Vec`'s and
-    /// an array's `IntoIter` and `Drain` (ADR 0473); and of a slice's chunks
-    /// and windows, their struct, the slice they have left and the size
-    /// they're cut by, `Chunks { v: [3], chunk_size: 2 }` (#2252).
+    /// What std's `Debug` shows of an iterator over an array, what it has
+    /// left: `IntoIter([2, 3])` of a slice's `Iter`, and a `Vec`'s and an
+    /// array's `IntoIter` and `Drain` (ADR 0473); of a slice's chunks and
+    /// windows, their struct, the slice they have left and the size they're
+    /// cut by, `Chunks { v: [3], chunk_size: 2 }`; and of an `Option`'s
+    /// iterators and `once(x)`'s, the item they have left, `IntoIter {
+    /// inner: Item { opt: Some(5) } }`, `Once { inner: .. }` around it
+    /// (#2252).
     pub(crate) fn shows_its_slice(&self, ty: Ty<'tcx>) -> Option<SliceShown> {
         let ty::Adt(adt, _) = ty.kind() else { return None };
-        let of = |name, size| Some(SliceShown { name, size });
+        let of = |name, left| Some(SliceShown { name, left });
         if self.is_std_type(ty, StdItem::SliceIter) {
-            return of("Iter", None);
+            return of("Iter", ShownLeft::Slice);
         }
         if self.is_std_type(ty, StdItem::ArrayIntoIter) {
-            return of("IntoIter", None);
+            return of("IntoIter", ShownLeft::Slice);
         }
         match std_path_item(self.tcx, adt.did()) {
-            Some(StdPath::VecIntoIter) => of("IntoIter", None),
-            Some(StdPath::VecDrain) => of("Drain", None),
-            Some(StdPath::SliceChunks) => of("Chunks", Some("chunk_size")),
-            Some(StdPath::SliceWindows) => of("Windows", Some("size")),
+            Some(StdPath::VecIntoIter) => of("IntoIter", ShownLeft::Slice),
+            Some(StdPath::VecDrain) => of("Drain", ShownLeft::Slice),
+            Some(StdPath::SliceChunks) => of("Chunks", ShownLeft::Sized("chunk_size")),
+            Some(StdPath::SliceWindows) => of("Windows", ShownLeft::Sized("size")),
+            Some(StdPath::OptionIntoIter) => of("IntoIter", ShownLeft::Item(None)),
+            Some(StdPath::OptionIter) => of("Iter", ShownLeft::Item(None)),
+            Some(StdPath::IterOnce) => of("IntoIter", ShownLeft::Item(Some("Once"))),
             _ => None,
         }
     }
@@ -1210,11 +1216,21 @@ impl IterMethod {
 }
 
 /// What std's `Debug` shows of an iterator over an array (`shows_its_slice`):
-/// its name, and of a slice's chunks or windows, the field of the size
-/// they're cut by, `chunk_size` or `size`, beside the slice they have left,
-/// `v`; else its tuple of that slice alone.
+/// its name, and how what it has left is shown.
 #[derive(Clone, Copy)]
 pub(crate) struct SliceShown {
     pub(crate) name: &'static str,
-    pub(crate) size: Option<&'static str>,
+    pub(crate) left: ShownLeft,
+}
+
+/// How std's `Debug` shows what an iterator over an array has left: its
+/// tuple of the slice, `Iter([2, 3])`; its struct of the slice, `v`, and
+/// the field of the size it's cut by, `Chunks { v: [3], chunk_size: 2 }`;
+/// or its struct of the item it has left, `IntoIter { inner: Item { opt:
+/// Some(5) } }`, in the struct named around it, `Once { inner: .. }`.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ShownLeft {
+    Slice,
+    Sized(&'static str),
+    Item(Option<&'static str>),
 }

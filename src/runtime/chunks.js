@@ -46,3 +46,11 @@ function $partsStepped(it) {
   parts[$partsOf] = { source: $part(source, from, source.length), size, windows };
   return parts;
 }
+
+// What an iterator of one item at most, `it`, an `Option`'s or `once(x)`'s
+// `$iter`, has left, as std's `Item`'s `opt` holds it: its item, boxed
+// where its type looks like `None` (ADR 0051), else nothing (#2252).
+function $itemLeft(it, boxed) {
+  if (it.at >= it.end) return undefined;
+  return boxed ? $some(it.items[it.at]) : it.items[it.at];
+}

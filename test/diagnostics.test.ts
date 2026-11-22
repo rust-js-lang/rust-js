@@ -239,8 +239,8 @@ for (const [name, source, message, crate] of [
   ["a str split's Debug", "pub fn f() -> String { format!(\"{:?}\", \"a b\".split(' ')) }", "`{:?}` of a `std::str::Split<'_, char>`, which shows std's searcher's state (#2004)"],
   ["a str matches' Debug", "pub fn f() -> String { format!(\"{:?}\", \"a b\".matches(\"a\")) }", "`{:?}` of a `std::str::Matches<'_, &str>`, which shows std's searcher's state (#2004)"],
   // A slice's `chunks_mut`, whose derived `Debug` std writes of the raw
-  // slice pointer it holds, which rust-js doesn't show yet (#2252).
-  ["a ChunksMut's Debug", "pub fn f(v: &mut [u8]) -> String { format!(\"{:?}\", v.chunks_mut(2)) }", "`{:?}` of a slice's `ChunksMut` yet: std's `Debug` of it shows the raw slice pointer it holds, `Pointer { addr, metadata }`, and `{:?}` of a pointer to a slice, which is the slice, isn't supported (ADR 0407, #2252)"],
+  // slice pointer it holds, which rust-js doesn't show yet (#2293).
+  ["a ChunksMut's Debug", "pub fn f(v: &mut [u8]) -> String { format!(\"{:?}\", v.chunks_mut(2)) }", "`{:?}` of a slice's `ChunksMut` yet: std's `Debug` of it shows the raw slice pointer it holds, `Pointer { addr, metadata }`, and `{:?}` of a pointer to a slice, which is the slice, isn't supported (ADR 0407, #2293)"],
   ["an OpenOptions' Debug", "pub fn f() -> String { format!(\"{:?}\", std::fs::OpenOptions::new()) }", "`{:?}` of a `std::fs::OpenOptions`, which shows what the OS says of it (#1418)"],
   // A write's result held inside what generic code has as a `Result` of its
   // type parameters, a `Vec<Result<T, E>>`'s items, `{ TAG }` there, where

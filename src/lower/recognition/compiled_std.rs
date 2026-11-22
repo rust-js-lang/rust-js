@@ -292,6 +292,12 @@ pub(super) const COMPILED_STD: &[(StdPath, Option<&str>, &str)] = &[
     (StdPath::IterCycle, Some("Iterator"), "advance_by"),
     (StdPath::IterCycle, Some("Clone"), "clone"),
     (StdPath::IterCycle, Some("Debug"), "fmt"),
+    // A plain struct a free function makes, std's where `{:?}` is asked of
+    // it (`MEANING_ONLY`, #2252).
+    (StdPath::IterSuccessors, Some("Iterator"), "next"),
+    (StdPath::IterSuccessors, Some("Iterator"), "size_hint"),
+    (StdPath::IterSuccessors, Some("Clone"), "clone"),
+    (StdPath::IterSuccessors, Some("Debug"), "fmt"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
@@ -457,6 +463,7 @@ const COMPILED_STD_FNS: &[(StdPath, Option<StdPath>)] = &[
     (StdPath::IoTakeFn, None),
     (StdPath::IterRepeatNFn, Some(StdPath::IterRepeatN)),
     (StdPath::IterRepeatFn, Some(StdPath::IterRepeat)),
+    (StdPath::IterSuccessorsFn, Some(StdPath::IterSuccessors)),
 ];
 
 /// The `Iterator` methods a compiled std struct is made a JS iterator with
@@ -629,6 +636,13 @@ const MEANING_ONLY: &[StdPath] = &[
     // Proof: test/corpus/cloned_kept_as_its_source.rs; the copy matrix's
     // rows ITERATOR_TABLE=copies ITERATOR_MATRIX=/[ .]cloned[ .|]/.
     StdPath::IterCloned,
+    // Kept, proved equal: `successors(first, f)`'s `$successors`, each item
+    // the one before's successor, ending at `None`, what's held dropped
+    // where std drops it; std's struct where `{:?}` is asked of it, its
+    // `Successors { next: .. }` (ADR 0932).
+    // Proof: test/corpus/iterator_sources.rs;
+    // test/corpus/debug_of_once_and_successors.rs.
+    StdPath::IterSuccessors,
 ];
 
 /// Whether std's struct named `type_name` is compiled for this build:

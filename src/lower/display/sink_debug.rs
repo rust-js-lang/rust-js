@@ -179,9 +179,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // An iterator over an array or a slice, `IntoIter([2, 3])`, its
         // `debug_tuple` of what it has left (ADR 0473; #1712); a slice's
         // chunks or windows, their `debug_struct` of it and their size,
-        // `Chunks { v: [3], chunk_size: 2 }`, of a value read twice (#2252).
+        // `Chunks { v: [3], chunk_size: 2 }`, of a value read twice; an
+        // `Option`'s iterators and `once(x)`'s, their `debug_struct` of the
+        // item left, `IntoIter { inner: Item { opt: .. } }` (#2252).
         if let Some(slice) = self.recognition().shows_its_slice(ty)
-            && (slice.size.is_none() || value.reads_same())
+            && let crate::lower::recognition::ShownLeft::Item(around) = slice.left
+        {
+            let (_, opt_ty) = self.slice_left(value.clone(), ty, slice, span)?;
+            let Some(write_opt) =
+                self.writing_fn(|cx, opt| cx.debug_sink_writes(opt, opt_ty, (options, pretty), span))?
+            else {
+                return Ok(None);
+            };
+            // `(f, it) => $writeDebugStruct(f, name, [[field, value of it, write]], pretty)`.
+            let struct_of = |name: &str, field: &str, value: Expr, write: Expr| {
+                let fields = Expr::array(vec![Expr::array(vec![Expr::str(field), value, write])]);
+                SinkWrite::Helper("$writeDebugStruct", vec![Expr::str(name), fields, pretty.clone()])
+            };
+            let Some(write_item) = self.writing_fn(|cx, it| {
+                let (opt, _) = cx.slice_left(it, ty, slice, span)?;
+                Ok(Some(vec![struct_of("Item", "opt", opt, write_opt.clone())]))
+            })?
+            else {
+                return Ok(None);
+            };
+            let write = match around {
+                None => struct_of(slice.name, "inner", value, write_item),
+                Some(around) => {
+                    let Some(write_inner) = self
+                        .writing_fn(|_, it| Ok(Some(vec![struct_of(slice.name, "inner", it, write_item.clone())])))?
+                    else {
+                        return Ok(None);
+                    };
+                    struct_of(around, "inner", value, write_inner)
+                }
+            };
+            return Ok(Some(vec![write]));
+        }
+        if let Some(slice) = self.recognition().shows_its_slice(ty)
+            && (slice.left == crate::lower::recognition::ShownLeft::Slice || value.reads_same())
         {
             let (_, item) = self.slice_left(value.clone(), ty, slice, span)?;
             let Some(write) =
@@ -200,7 +236,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             else {
                 return Ok(None);
             };
-            let Some(field) = slice.size else {
+            let crate::lower::recognition::ShownLeft::Sized(field) = slice.left else {
                 let field = Expr::array(vec![value, list]);
                 return helper(
                     "$writeDebugTuple",

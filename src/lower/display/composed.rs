@@ -196,10 +196,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // left, its `as_slice()` (ADR 0473, #1530).
             // A slice's chunks or windows, `Chunks { v: [..], chunk_size: 2
             // }`, their `debug_struct` of it and their size (#2252).
+            // An `Option`'s iterators and `once(x)`'s, `IntoIter { inner: Item
+            // { opt: .. } }`, `Once { inner: .. }` around it (#2252).
             ty::Adt(..) if let Some(slice) = self.recognition().shows_its_slice(ty) => {
+                use crate::lower::recognition::ShownLeft;
                 let (left, item) = self.slice_left(subject("it"), ty, slice, span)?;
+                let field = match slice.left {
+                    ShownLeft::Item(around) => {
+                        let opt = self.debug_string_with(left, item, span, pretty)?;
+                        let struct_of = |cx: &mut Self, name: &str, field: &str, shown: Expr| {
+                            let steps = vec![("field", vec![Expr::str(field), made_when_taken(shown)])];
+                            cx.composed(DebugBuilder::Struct, Some(Expr::str(name)), pretty, steps)
+                        };
+                        let item = struct_of(self, "Item", "opt", opt);
+                        let mut made = struct_of(self, slice.name, "inner", item);
+                        if let Some(around) = around {
+                            made = struct_of(self, around, "inner", made);
+                        }
+                        return Ok(Some(apply(made, "it")));
+                    }
+                    ShownLeft::Sized(field) => Some(field),
+                    ShownLeft::Slice => None,
+                };
                 let shown = self.debug_string_with(left, Ty::new_slice(self.tcx, item.peel_refs()), span, pretty)?;
-                let Some(field) = slice.size else {
+                let Some(field) = field else {
                     return Ok(Some(apply(self.composed_tuple(slice.name, vec![shown], pretty), "it")));
                 };
                 let size = Expr::call_helper("$partsSize", vec![subject("it")]);

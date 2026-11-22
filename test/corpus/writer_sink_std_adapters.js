@@ -4,6 +4,7 @@ import {
   $chunks,
   $debugStr,
   $debugTuple,
+  $itemLeft,
   $iter,
   $next,
   $partsLeft,
@@ -16,6 +17,7 @@ import {
   $windows,
   $writeBy,
   $writeDebugList,
+  $writeDebugOption,
   $writeDebugStruct,
   $writeDebugTuple,
   $writeInteger,
@@ -146,8 +148,8 @@ function partsWritten(log, it, IIterator, IClone, IDebug) {
 
 function main() {
   const debug = { fmt: (value, options) => String(value), fmtInto: $writeInteger };
-  const clone = { clone: (value) => $iter($partsStepped(value)) };
-  const intoIterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
+  const clone$1 = { clone: (value) => $iter($partsStepped(value)) };
+  const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const intoIterDebug = {
     fmt(value, options) {
       return options?.alternate
@@ -186,11 +188,11 @@ function main() {
     },
   };
   const log = [[]];
-  written(log, $iter([1, 2]), { next: $next }, intoIterClone, intoIterDebug, debug, true);
-  written(log, $iter([10, 20]), { next: $next }, intoIterClone, intoIterDebug, debug, true);
+  written(log, $iter([1, 2]), { next: $next }, clone, intoIterDebug, debug, true);
+  written(log, $iter([10, 20]), { next: $next }, clone, intoIterDebug, debug, true);
   // A slice's chunks and windows, their struct of what they have left
   // and their size (#2252).
-  partsWritten(log, $iter($chunks([1, 2, 3], 2)), { next: $next }, clone, {
+  partsWritten(log, $iter($chunks([1, 2, 3], 2)), { next: $next }, clone$1, {
     fmt(value, options) {
       return options?.alternate
         ? $pretty(
@@ -234,7 +236,7 @@ function main() {
       );
     },
   });
-  partsWritten(log, $iter($windows([4, 5, 6], 2)), { next: $next }, clone, {
+  partsWritten(log, $iter($windows([4, 5, 6], 2)), { next: $next }, clone$1, {
     fmt(value, options) {
       return options?.alternate
         ? $pretty(
@@ -278,9 +280,122 @@ function main() {
       );
     },
   });
+  // An iterator of one item at most, `Once { inner: IntoIter { inner:
+  // Item { opt: .. } } }` (#2252).
+  partsWritten(log, $iter([8]), { next: $next }, clone, {
+    fmt(value, options) {
+      return options?.alternate
+        ? $pretty(
+            "Once {",
+            [
+              `inner: ${options?.alternate ? $pretty("IntoIter {", [`inner: ${options?.alternate ? $pretty("Item {", [`opt: ${((value) => (value == null ? "None" : options?.alternate ? $pretty("Some(", [String(value)], ")") : `Some(${value})`))($itemLeft(value, false))}`], "}") : `Item { opt: ${((value) => (value == null ? "None" : options?.alternate ? $pretty("Some(", [String(value)], ")") : `Some(${value})`))($itemLeft(value, false))} }`}`], "}") : `IntoIter { inner: ${options?.alternate ? $pretty("Item {", [`opt: ${((value) => (value == null ? "None" : options?.alternate ? $pretty("Some(", [String(value)], ")") : `Some(${value})`))($itemLeft(value, false))}`], "}") : `Item { opt: ${((value) => (value == null ? "None" : options?.alternate ? $pretty("Some(", [String(value)], ")") : `Some(${value})`))($itemLeft(value, false))} }`} }`}`,
+            ],
+            "}",
+          )
+        : `Once { inner: ${options?.alternate ? $pretty("IntoIter {", [`inner: ${options?.alternate ? $pretty("Item {", [`opt: ${((value) => (value == null ? "None" : options?.alternate ? $pretty("Some(", [String(value)], ")") : `Some(${value})`))($itemLeft(value, false))}`], "}") : `Item { opt: ${((value) => (value == null ? "None" : options?.alternate ? $pretty("Some(", [String(value)], ")") : `Some(${value})`))($itemLeft(value, false))} }`}`], "}") : `IntoIter { inner: ${options?.alternate ? $pretty("Item {", [`opt: ${((value) => (value == null ? "None" : options?.alternate ? $pretty("Some(", [String(value)], ")") : `Some(${value})`))($itemLeft(value, false))}`], "}") : `Item { opt: ${((value) => (value == null ? "None" : options?.alternate ? $pretty("Some(", [String(value)], ")") : `Some(${value})`))($itemLeft(value, false))} }`} }`} }`;
+    },
+    fmtInto(f, value, options) {
+      $writeDebugStruct(
+        f,
+        "Once",
+        [
+          [
+            "inner",
+            value,
+            (f, value) => {
+              $writeDebugStruct(
+                f,
+                "IntoIter",
+                [
+                  [
+                    "inner",
+                    value,
+                    (f, value) => {
+                      $writeDebugStruct(
+                        f,
+                        "Item",
+                        [
+                          [
+                            "opt",
+                            $itemLeft(value, false),
+                            (f, value) => {
+                              $writeDebugOption(
+                                f,
+                                value,
+                                (f, value) => {
+                                  $writeInteger(f, value, options);
+                                },
+                                options?.alternate,
+                              );
+                            },
+                          ],
+                        ],
+                        options?.alternate,
+                      );
+                    },
+                  ],
+                ],
+                options?.alternate,
+              );
+            },
+          ],
+        ],
+        options?.alternate,
+      );
+    },
+  });
+  partsWritten(log, $iter(9 == null ? [] : [9]), { next: $next }, clone, {
+    fmt(value, options) {
+      return options?.alternate
+        ? $pretty(
+            "IntoIter {",
+            [
+              `inner: ${options?.alternate ? $pretty("Item {", [`opt: ${((value) => (value == null ? "None" : options?.alternate ? $pretty("Some(", [String(value)], ")") : `Some(${value})`))($itemLeft(value, false))}`], "}") : `Item { opt: ${((value) => (value == null ? "None" : options?.alternate ? $pretty("Some(", [String(value)], ")") : `Some(${value})`))($itemLeft(value, false))} }`}`,
+            ],
+            "}",
+          )
+        : `IntoIter { inner: ${options?.alternate ? $pretty("Item {", [`opt: ${((value) => (value == null ? "None" : options?.alternate ? $pretty("Some(", [String(value)], ")") : `Some(${value})`))($itemLeft(value, false))}`], "}") : `Item { opt: ${((value) => (value == null ? "None" : options?.alternate ? $pretty("Some(", [String(value)], ")") : `Some(${value})`))($itemLeft(value, false))} }`} }`;
+    },
+    fmtInto(f, value, options) {
+      $writeDebugStruct(
+        f,
+        "IntoIter",
+        [
+          [
+            "inner",
+            value,
+            (f, value) => {
+              $writeDebugStruct(
+                f,
+                "Item",
+                [
+                  [
+                    "opt",
+                    $itemLeft(value, false),
+                    (f, value) => {
+                      $writeDebugOption(
+                        f,
+                        value,
+                        (f, value) => {
+                          $writeInteger(f, value, options);
+                        },
+                        options?.alternate,
+                      );
+                    },
+                  ],
+                ],
+                options?.alternate,
+              );
+            },
+          ],
+        ],
+        options?.alternate,
+      );
+    },
+  });
   console.log(`[${log[0].map((item) => $debugStr(item)).join(", ")}]`);
   console.log(
-    `${holderDebug_fmt(holder($iter([5]), { next: $next }, intoIterClone, true), undefined, { fmt: (value, options) => (options?.alternate ? $pretty("IntoIter(", [options?.alternate ? $pretty("[", value.items.slice(value.at, value.end), "]") : `[${value.items.slice(value.at, value.end).join(", ")}]`], ")") : `IntoIter(${options?.alternate ? $pretty("[", value.items.slice(value.at, value.end), "]") : `[${value.items.slice(value.at, value.end).join(", ")}]`})`) })}`,
+    `${holderDebug_fmt(holder($iter([5]), { next: $next }, clone, true), undefined, { fmt: (value, options) => (options?.alternate ? $pretty("IntoIter(", [options?.alternate ? $pretty("[", value.items.slice(value.at, value.end), "]") : `[${value.items.slice(value.at, value.end).join(", ")}]`], ")") : `IntoIter(${options?.alternate ? $pretty("[", value.items.slice(value.at, value.end), "]") : `[${value.items.slice(value.at, value.end).join(", ")}]`})`) })}`,
   );
 }
 //# sourceMappingURL=case.js.map

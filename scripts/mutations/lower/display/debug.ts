@@ -659,4 +659,20 @@ export const mutations: Mutation[] = [
     replace: "                    crate::lower::recognition::StdPath::SliceSplitMut,\n",
     tests: ["test/diagnostics.test.ts", "-t", "a ChunksMut's Debug"],
   },
+  {
+    name: "item-left-around-dropped",
+    breaks: "`{:?}` of `once(x)` shows its inner `IntoIter { .. }` alone, inline (#2252)",
+    file: "src/lower/display/debug.rs",
+    find: "                            Some(around) => self.struct_shown(pretty, around, vec![(\"inner\", shown)]),\n",
+    replace: "                            Some(_) => shown,\n",
+    tests: ["test/corpus.test.ts", "-t", "^debug_of_once_and_successors.rs$"],
+  },
+  {
+    name: "item-left-unboxed",
+    breaks: "the item left of `once(())`, `undefined`, is read as no item, `opt: None` where std's has `Some(())` (ADR 0051, #2252)",
+    file: "src/lower/display/debug.rs",
+    find: "                let boxed = Expr::bool(self.boxed_payload(item));\n",
+    replace: "                let boxed = Expr::bool(false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^debug_of_once_and_successors.rs$"],
+  },
 ];

@@ -387,7 +387,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn stepped_left(&mut self, it: Expr, ty: ty::Ty<'tcx>, owns: bool, span: Span) -> R<Expr> {
         // A slice's chunks or windows: what they were cut of kept, of what's
         // left, which std's `Debug` of one shows (`$partsStepped`, #2252).
-        let parts = (self.recognition().shows_its_slice(ty)).is_some_and(|slice| slice.size.is_some());
+        let parts = (self.recognition().shows_its_slice(ty))
+            .is_some_and(|slice| matches!(slice.left, crate::lower::recognition::ShownLeft::Sized(_)));
         let left = match fresh_iter_source(&it) {
             Some(items) => items.clone(),
             None if parts => Expr::call_helper("$partsStepped", vec![it.clone()]),

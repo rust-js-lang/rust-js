@@ -287,3 +287,28 @@ A `StepBy` of an integer range stays refused (#2289): std's
 `SpecRangeSetup` keeps the range as a count, which ADR 0917 compiles
 apart. ADR 0262's case: results change (refused before), and Rust's text
 is kept.
+
+## Amendment (2026-11-22, #2252): `Successors`, and why `Once` isn't std's struct
+
+`Successors` joins `MEANING_ONLY`. Its `next`, `size_hint`, `clone` and
+`Debug` are compiled, and its maker, `successors`, is in
+`COMPILED_STD_FNS`. So wherever `{:?}` is asked of it, it's std's struct,
+`Successors { next: Some(100) }`, its closure left out by std's
+hand-written `Debug`. Everywhere else it's the recognizers' `$successors`,
+proved against native by `iterator_sources.rs`.
+
+`Once` was tried the same way and isn't compiled. Optimized MIR inlines
+`option::IntoIter`'s internals into its `size_hint`, down to
+`Option::len`'s `discriminant as usize`, which rust-js can't read of an
+`Option<T>` whose form its caller decides. It doesn't need to be, either:
+rust-js holds `once(x)`, like an `Option`'s `into_iter()` and `iter()`, as
+the array of the one item it has, whose state is all std's derived
+`Debug` shows. So `recognition::shows_its_slice`, the owner of what std's
+`Debug` shows of an iterator over an array (ADR 0335, amended), answers
+them a third form, the item left in std's `Item { opt: .. }`. That's
+`IntoIter { inner: Item { opt: Some(5) } }`, `Iter { .. }` of an
+`Option`'s `iter()`, and `Once { inner: .. }` around it (`$itemLeft`),
+written inline, into a writer a piece at a time, and of a part that may
+stop. Held by `debug_of_once_and_successors.rs` against native, and by
+rows in `writer_sink_std_adapters.rs` and
+`printing_std_wrappers_stopped_part_way.rs`.

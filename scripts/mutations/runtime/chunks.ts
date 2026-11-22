@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "  parts[$partsOf] = { source, size, windows };\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_std_adapters.rs$"],
   },
+  {
+    name: "item-left-never-boxed",
+    breaks: "the item left of an iterator of one item at most is never boxed, so `once(())`'s `Some(())` reads as `None` (ADR 0051, #2252)",
+    file: "src/runtime/chunks.js",
+    find: "  return boxed ? $some(it.items[it.at]) : it.items[it.at];\n",
+    replace: "  return it.items[it.at];\n",
+    tests: ["test/corpus.test.ts", "-t", "^debug_of_once_and_successors.rs$"],
+  },
 ];

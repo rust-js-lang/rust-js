@@ -18,7 +18,7 @@ pub(crate) use io::{
 };
 mod held;
 mod iterators;
-pub(crate) use iterators::SliceShown;
+pub(crate) use iterators::{ShownLeft, SliceShown};
 mod js_items;
 mod json;
 mod lengths;

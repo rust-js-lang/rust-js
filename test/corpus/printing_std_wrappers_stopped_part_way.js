@@ -13,6 +13,7 @@ import {
   $fmtPartial,
   $fmtWritten,
   $force,
+  $itemLeft,
   $iter,
   $next,
   $nextBack,
@@ -981,6 +982,72 @@ function main() {
       $out(" x\n");
     });
   });
+  // An iterator of one item at most, its `Item { opt: .. }` (#2252).
+  shown("g", () => {
+    const value = $iter([[3]]);
+    $printing(() => {
+      $out("g ");
+      $out(
+        $composed((f) => {
+          const struct = $debugStruct(f, "Once");
+          struct.field("inner", () =>
+            $composed((f) => {
+              const struct = $debugStruct(f, "IntoIter");
+              struct.field("inner", () =>
+                $composed((f) => {
+                  const struct = $debugStruct(f, "Item");
+                  struct.field("opt", () =>
+                    ((value) =>
+                      value == null
+                        ? "None"
+                        : $composed((f) => {
+                            const tuple = $debugTuple(f, "Some");
+                            tuple.field(() => gridDebug_fmt(value));
+                            tuple.finish();
+                          }))($itemLeft(value, false)),
+                  );
+                  struct.finish();
+                }),
+              );
+              struct.finish();
+            }),
+          );
+          struct.finish();
+        }),
+      );
+      $out(" h\n");
+    });
+  });
+  shown("e", () => {
+    const option = [3];
+    const value = $iter(option == null ? [] : [option]);
+    $printing(() => {
+      $out("e ");
+      $out(
+        $composed((f) => {
+          const struct = $debugStruct(f, "IntoIter", true);
+          struct.field("inner", () =>
+            $composed((f) => {
+              const struct = $debugStruct(f, "Item", true);
+              struct.field("opt", () =>
+                ((value) =>
+                  value == null
+                    ? "None"
+                    : $composed((f) => {
+                        const tuple = $debugTuple(f, "Some", true);
+                        tuple.field(() => gridDebug_fmt(value, { alternate: true }));
+                        tuple.finish();
+                      }))($itemLeft(value, false)),
+              );
+              struct.finish();
+            }),
+          );
+          struct.finish();
+        }),
+      );
+      $out(" f\n");
+    });
+  });
 
   // Those whose `Debug` is their part's.
   shown("k", () => {
@@ -1273,20 +1340,34 @@ function main() {
   });
   failed(text$9, written);
   let text$10 = "";
-  const value$4 = $iter($chunks([[1], [2], [3]], 2));
+  const value$4 = $iter([[3]]);
   written = $writeTry(() => {
     try {
-      text$10 += "y ";
+      text$10 += "n ";
       text$10 += $composed((f) => {
-        const struct = $debugStruct(f, "Chunks");
-        struct.field("v", () =>
+        const struct = $debugStruct(f, "Once");
+        struct.field("inner", () =>
           $composed((f) => {
-            const list = $debugList(f);
-            list.entries($partsLeft(value$4), (entry) => failingDebug_fmt(entry));
-            list.finish();
+            const struct = $debugStruct(f, "IntoIter");
+            struct.field("inner", () =>
+              $composed((f) => {
+                const struct = $debugStruct(f, "Item");
+                struct.field("opt", () =>
+                  ((value) =>
+                    value == null
+                      ? "None"
+                      : $composed((f) => {
+                          const tuple = $debugTuple(f, "Some");
+                          tuple.field(() => failingDebug_fmt(value));
+                          tuple.finish();
+                        }))($itemLeft(value$4, false)),
+                );
+                struct.finish();
+              }),
+            );
+            struct.finish();
           }),
         );
-        struct.field("chunk_size", () => String($partsSize(value$4)));
         struct.finish();
       });
     } catch (error) {
@@ -1296,22 +1377,20 @@ function main() {
   });
   failed(text$10, written);
   let text$11 = "";
-  const value$5 = $iter($windows([[1], [3]], 2));
+  const value$5 = $iter($chunks([[1], [2], [3]], 2));
   written = $writeTry(() => {
     try {
-      text$11 += "z ";
+      text$11 += "y ";
       text$11 += $composed((f) => {
-        const struct = $debugStruct(f, "Windows", true);
+        const struct = $debugStruct(f, "Chunks");
         struct.field("v", () =>
           $composed((f) => {
-            const list = $debugList(f, true);
-            list.entries($partsLeft(value$5), (entry) =>
-              failingDebug_fmt(entry, { alternate: true }),
-            );
+            const list = $debugList(f);
+            list.entries($partsLeft(value$5), (entry) => failingDebug_fmt(entry));
             list.finish();
           }),
         );
-        struct.field("size", () => String($partsSize(value$5)));
+        struct.field("chunk_size", () => String($partsSize(value$5)));
         struct.finish();
       });
     } catch (error) {
@@ -1320,24 +1399,37 @@ function main() {
     }
   });
   failed(text$11, written);
-  const failing = [[1], [2], [3]];
   let text$12 = "";
-  const value$6 = { parts: $iter($chunks(failing.slice(0, 2), 1)) };
+  const value$6 = $iter($windows([[1], [3]], 2));
   written = $writeTry(() => {
     try {
-      text$12 += "p ";
-      text$12 += partsDebug_fmt(value$6);
+      text$12 += "z ";
+      text$12 += $composed((f) => {
+        const struct = $debugStruct(f, "Windows", true);
+        struct.field("v", () =>
+          $composed((f) => {
+            const list = $debugList(f, true);
+            list.entries($partsLeft(value$6), (entry) =>
+              failingDebug_fmt(entry, { alternate: true }),
+            );
+            list.finish();
+          }),
+        );
+        struct.field("size", () => String($partsSize(value$6)));
+        struct.finish();
+      });
     } catch (error) {
       text$12 += $fmtPartial(error);
       throw error;
     }
   });
   failed(text$12, written);
+  const failing = [[1], [2], [3]];
   let text$13 = "";
-  const value$7 = { parts: $iter($chunks(failing, 2)) };
+  const value$7 = { parts: $iter($chunks(failing.slice(0, 2), 1)) };
   written = $writeTry(() => {
     try {
-      text$13 += "o ";
+      text$13 += "p ";
       text$13 += partsDebug_fmt(value$7);
     } catch (error) {
       text$13 += $fmtPartial(error);
@@ -1346,10 +1438,22 @@ function main() {
   });
   failed(text$13, written);
   let text$14 = "";
+  const value$8 = { parts: $iter($chunks(failing, 2)) };
   written = $writeTry(() => {
     try {
-      text$14 += "k ";
-      text$14 += ((value) =>
+      text$14 += "o ";
+      text$14 += partsDebug_fmt(value$8);
+    } catch (error) {
+      text$14 += $fmtPartial(error);
+      throw error;
+    }
+  });
+  failed(text$14, written);
+  let text$15 = "";
+  written = $writeTry(() => {
+    try {
+      text$15 += "k ";
+      text$15 += ((value) =>
         $composed((f) => {
           const tuple = $debugTuple(f, "");
           tuple.field(() => failingDebug_fmt(value[0][0]));
@@ -1357,10 +1461,10 @@ function main() {
           tuple.finish();
         }))([[[1]], { TAG: "Owned", _0: [3] }]);
     } catch (error) {
-      text$14 += $fmtPartial(error);
+      text$15 += $fmtPartial(error);
       throw error;
     }
   });
-  failed(text$14, written);
+  failed(text$15, written);
 }
 //# sourceMappingURL=case.js.map

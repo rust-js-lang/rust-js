@@ -956,6 +956,8 @@ const $repeatClone = new WeakMap();
 const $repeatADebug = new WeakMap();
 const $cycleClone = new WeakMap();
 const $cycleDebug = new WeakMap();
+const $successorsClone = new WeakMap();
+const $successorsDebug = new WeakMap();
 const $flattenCompatDebug = new WeakMap();
 
 export function peekableIterator_next(peekable, IIterator = { next: $next }, dropI, dropIItem) {
@@ -10385,6 +10387,83 @@ export function cycleDebug_fmt(cycle, options, IDebug) {
   return f.done();
 }
 
+export function successorsIterator_next(successors, dropT, dropF) {
+  const result = undefined;
+  const next = successors.next$;
+  successors.next$ = result;
+  if (next == null) {
+    return result;
+  }
+  const item = $someValue(next);
+  let tmp;
+  try {
+    tmp = successors.succ(item);
+  } catch (error) {
+    $cleanup(() => {
+      dropT?.(item);
+    }, error);
+    throw error;
+  }
+  try {
+    if (successors.next$ != null) {
+      dropT?.($someValue(successors.next$));
+    }
+  } catch (error) {
+    $cleanup(() => {
+      successors.next$ = tmp;
+      dropT?.(item);
+    }, error);
+    throw error;
+  }
+  successors.next$ = tmp;
+  return $some(item);
+}
+
+export function successorsIterator_sizeHint(successors, dropT, dropF) {
+  if (successors.next$ != null) {
+    return [1, undefined];
+  }
+  return [0, 0];
+}
+
+export function successorsClone_clone(successors, TClone, FClone, dropT, dropF) {
+  const value =
+    successors.next$ == null ? undefined : $some(TClone.clone($someValue(successors.next$)));
+  let result;
+  try {
+    result = $stdIterator(
+      { next$: value, succ: FClone.clone(successors.succ) },
+      successors.$steps,
+      successors.$knows,
+    );
+  } catch (error) {
+    $cleanup(() => {
+      if (value !== undefined) {
+        dropT?.($someValue(value));
+      }
+    }, error);
+    throw error;
+  }
+  return result;
+}
+
+export function successorsDebug_fmt(successors, options, TDebug, dropT, dropF) {
+  const f = $sink();
+  const struct = $debugStruct(f, "Successors", options?.alternate);
+  struct.fieldWith("next", successors.next$, (f, value) => {
+    $writeDebugOption(
+      f,
+      value,
+      (f, value) => {
+        $writeBy(f, TDebug, $someValue(value), options);
+      },
+      options?.alternate,
+    );
+  });
+  struct.finish();
+  return f.done();
+}
+
 export function iterator_peekable(self, SelfIterator = { next: $next }, dropSelf, dropSelfItem) {
   return $stdIterator(
     { iter: self },
@@ -12314,6 +12393,33 @@ export function repeat(elt, TClone, dropT) {
       takes: ["last", "count"],
       close(iterator) {
         dropT?.(iterator.element);
+      },
+    },
+  );
+}
+
+export function successors(first, succ, dropT, dropF) {
+  return $stdIterator(
+    { next$: first, succ },
+    {
+      next(iterator) {
+        return successorsIterator_next(iterator, dropT, dropF);
+      },
+      hint(iterator) {
+        return successorsIterator_sizeHint(iterator, dropT, dropF);
+      },
+      close(iterator) {
+        try {
+          if (iterator.next$ != null) {
+            dropT?.($someValue(iterator.next$));
+          }
+        } catch (error) {
+          $cleanup(() => {
+            dropF?.(iterator.succ);
+          }, error);
+          throw error;
+        }
+        dropF?.(iterator.succ);
       },
     },
   );
@@ -16754,6 +16860,31 @@ export function cycleDebug(IDebug) {
   return $traitImpl($cycleDebug, [IDebug], () => ({
     fmt: (cycle, options) => cycleDebug_fmt(cycle, options, IDebug),
     fmtInto: (f, value, options) => $writingInto(f, cycleDebug_fmt, value, options, IDebug),
+  }));
+}
+
+export function successorsClone(TClone, FClone, dropT, dropF) {
+  return $traitImpl($successorsClone, [TClone, FClone, dropT, dropF], () => ({
+    clone(successors) {
+      return successorsClone_clone(successors, TClone, FClone, dropT, dropF);
+    },
+    $drop(successors) {
+      successors.return();
+    },
+  }));
+}
+
+export function successorsDebug(TDebug, dropT, dropF) {
+  return $traitImpl($successorsDebug, [TDebug, dropT, dropF], () => ({
+    fmt(successors, options) {
+      return successorsDebug_fmt(successors, options, TDebug, dropT, dropF);
+    },
+    $drop(successors) {
+      successors.return();
+    },
+    fmtInto(f, value, options) {
+      return $writingInto(f, successorsDebug_fmt, value, options, TDebug, dropT, dropF);
+    },
   }));
 }
 

@@ -75,6 +75,10 @@ fn main() {
     // and their size (#2252).
     parts_written(&mut log, [1, 2, 3].chunks(2));
     parts_written(&mut log, [4, 5, 6].windows(2));
+    // An iterator of one item at most, `Once { inner: IntoIter { inner:
+    // Item { opt: .. } } }` (#2252).
+    parts_written(&mut log, std::iter::once(8));
+    parts_written(&mut log, Some(9).into_iter());
     println!("{:?}", log.0);
     println!("{:?}", holder([5].into_iter()));
 }

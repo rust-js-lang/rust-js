@@ -9891,6 +9891,149 @@
         ]
       },
       {
+        "key": "core::iter::sources::successors::{impl#3}",
+        "rust_path": "rust_js_std::<core::iter::Successors<T, F> as core::clone::Clone>",
+        "module": [
+          "iter"
+        ],
+        "export": "successorsClone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::successors::{impl#3}::clone",
+        "rust_path": "rust_js_std::<core::iter::Successors<T, F> as core::clone::Clone>::clone",
+        "module": [
+          "iter"
+        ],
+        "export": "successorsClone_clone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::successors::{impl#2}",
+        "rust_path": "rust_js_std::<core::iter::Successors<T, F> as core::fmt::Debug>",
+        "module": [
+          "iter"
+        ],
+        "export": "successorsDebug",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::successors::{impl#2}::fmt",
+        "rust_path": "rust_js_std::<core::iter::Successors<T, F> as core::fmt::Debug>::fmt",
+        "module": [
+          "iter"
+        ],
+        "export": "successorsDebug_fmt",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "written_into"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::successors::{impl#0}::next",
+        "rust_path": "rust_js_std::<core::iter::Successors<T, F> as core::iter::Iterator>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "successorsIterator_next",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::successors::{impl#0}::size_hint",
+        "rust_path": "rust_js_std::<core::iter::Successors<T, F> as core::iter::Iterator>::size_hint",
+        "module": [
+          "iter"
+        ],
+        "export": "successorsIterator_sizeHint",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::take::{impl#14}",
         "rust_path": "rust_js_std::<core::iter::Take<I> as core::clone::Clone>",
         "module": [
@@ -16031,6 +16174,29 @@
         ]
       },
       {
+        "key": "core::iter::sources::successors::successors",
+        "rust_path": "rust_js_std::core::iter::successors",
+        "module": [
+          "iter"
+        ],
+        "export": "successors",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::net::ip_addr::{impl#2}::is_ipv4",
         "rust_path": "rust_js_std::core::net::IpAddr::is_ipv4",
         "module": [
@@ -16595,6 +16761,9 @@
       "core::iter::sources::repeat_n::{impl#4}",
       "core::iter::sources::repeat_n::{impl#5}",
       "core::iter::sources::repeat_n::{impl#6}",
+      "core::iter::sources::successors::{impl#0}",
+      "core::iter::sources::successors::{impl#2}",
+      "core::iter::sources::successors::{impl#3}",
       "core::net::ip_addr::{impl#0}",
       "core::net::ip_addr::{impl#10}",
       "core::net::ip_addr::{impl#11}",
@@ -16673,7 +16842,8 @@
       "core::iter::adapters::take_while::TakeWhile",
       "core::iter::adapters::zip::Zip",
       "core::iter::sources::repeat::Repeat",
-      "core::iter::sources::repeat_n::RepeatN"
+      "core::iter::sources::repeat_n::RepeatN",
+      "core::iter::sources::successors::Successors"
     ],
     "modules": [
       {
@@ -17077,6 +17247,10 @@
         "cycleIterator_advanceBy",
         "cycleClone_clone",
         "cycleDebug_fmt",
+        "successorsIterator_next",
+        "successorsIterator_sizeHint",
+        "successorsClone_clone",
+        "successorsDebug_fmt",
         "iterator_peekable",
         "iterator_fuse",
         "iterator_rev",
@@ -17102,6 +17276,7 @@
         "trustedRandomAccessNoCoerce_size",
         "repeatN",
         "repeat",
+        "successors",
         "iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked",
         "fuseFuseImplI_tryRfold",
         "fuseFuseImplIFusedIterator_tryRfold",
@@ -17217,6 +17392,8 @@
         "repeatADebug",
         "cycleClone",
         "cycleDebug",
+        "successorsClone",
+        "successorsDebug",
         "flattenCompatDebug"
       ],
       "links": [
@@ -17391,7 +17568,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "033113451eca263d"
+      "hash": "efbdbfda66ea4818"
     },
     {
       "file": "iter.js.map",

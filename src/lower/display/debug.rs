@@ -658,30 +658,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // An iterator over an array, `IntoIter([2, 3])`, of what it has
             // left (ADR 0473); a slice's chunks or windows, their struct of
-            // it and their size, `Chunks { v: [3], chunk_size: 2 }` (#2252).
+            // it and their size, `Chunks { v: [3], chunk_size: 2 }`; an
+            // `Option`'s iterators and `once(x)`'s, their struct of the item
+            // left, `IntoIter { inner: Item { opt: Some(5) } }` (#2252).
             ty::Adt(..) if let Some(slice) = self.recognition().shows_its_slice(ty) => {
+                use crate::lower::recognition::ShownLeft;
                 let name = slice.name;
                 let it_name = js::Name::declared("it".to_string());
                 let (left, item) = self.slice_left(Expr::var(&it_name), ty, slice, span)?;
-                let items = self.debug_items(left, item, "[", "]", span, pretty)?;
-                let shown = match slice.size {
-                    None => {
+                let shown = match slice.left {
+                    ShownLeft::Slice => {
+                        let items = self.debug_items(left, item, "[", "]", span, pretty)?;
                         let plain = join(vec![Expr::str(format!("{name}(")), items.clone(), Expr::str(")")]);
                         self.pretty_or(pretty, plain, &format!("{name}("), Expr::array(vec![items]), ")")
                     }
-                    Some(field) => {
+                    ShownLeft::Sized(field) => {
+                        let items = self.debug_items(left, item, "[", "]", span, pretty)?;
                         let size = Expr::call_helper("$partsSize", vec![Expr::var(&it_name)]);
                         let size = self.debug_string_with(size, self.tcx.types.usize, span, pretty)?;
-                        let v = join(vec![Expr::str("v: "), items]);
-                        let size = join(vec![Expr::str(format!("{field}: ")), size]);
-                        let plain = join(vec![
-                            Expr::str(format!("{name} {{ ")),
-                            v.clone(),
-                            Expr::str(", "),
-                            size.clone(),
-                            Expr::str(" }"),
-                        ]);
-                        self.pretty_or(pretty, plain, &format!("{name} {{"), Expr::array(vec![v, size]), "}")
+                        self.struct_shown(pretty, name, vec![("v", items), (field, size)])
+                    }
+                    ShownLeft::Item(around) => {
+                        let opt = self.debug_string_with(left, item, span, pretty)?;
+                        let item = self.struct_shown(pretty, "Item", vec![("opt", opt)]);
+                        let shown = self.struct_shown(pretty, name, vec![("inner", item)]);
+                        match around {
+                            Some(around) => self.struct_shown(pretty, around, vec![("inner", shown)]),
+                            None => shown,
+                        }
                     }
                 };
                 let show = Expr::arrow(
@@ -772,7 +776,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // slice pointer it holds, `v: Pointer { addr: 0x16d53e4b4,
             // metadata: 1 }`, which rust-js doesn't show yet: a pointer to a
             // slice is the slice, which has no address of ADR 0562's (ADR
-            // 0407, #2252).
+            // 0407, #2293).
             ty::Adt(adt, _)
                 if crate::lower::recognition::is_std_path(
                     self.tcx,
@@ -785,7 +789,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     span,
                     crate::lower::refusal::Refused::Because(
                         "`{:?}` of a slice's `ChunksMut`",
-                        "std's `Debug` of it shows the raw slice pointer it holds, `Pointer { addr, metadata }`, and `{:?}` of a pointer to a slice, which is the slice, isn't supported (ADR 0407, #2252)",
+                        "std's `Debug` of it shows the raw slice pointer it holds, `Pointer { addr, metadata }`, and `{:?}` of a pointer to a slice, which is the slice, isn't supported (ADR 0407, #2293)",
                     ),
                 ))
             }
@@ -801,10 +805,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What `it`, an iterator over an array of `ty` that `shows_its_slice`
-    /// says `slice` of, has left as std's `Debug` shows it, and the type of
-    /// its items: of an array's iterator, what it steps (`stepped_left`);
-    /// of a slice's chunks or windows, the slice they cover, std's struct's
-    /// `v`, of their source as stepping leaves them (`$partsLeft`, #2252).
+    /// says `slice` of, has left as std's `Debug` shows it, and its type:
+    /// of an array's iterator, what it steps (`stepped_left`), of its items'
+    /// type; of a slice's chunks or windows, the slice they cover, std's
+    /// struct's `v`, of their source as stepping leaves them (`$partsLeft`),
+    /// of its items' type; of an iterator of one item at most, std's
+    /// `Item`'s `opt`, the `Option` of the item it has left (`$itemLeft`,
+    /// #2252).
     pub(super) fn slice_left(
         &mut self,
         it: Expr,
@@ -812,14 +819,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         slice: crate::lower::recognition::SliceShown,
         span: Span,
     ) -> R<(Expr, Ty<'tcx>)> {
+        use crate::lower::recognition::ShownLeft;
         let item = self.iterator_item(ty).expect("an iterator's item");
-        if slice.size.is_none() {
-            return Ok((self.stepped_left(it, ty, false, span)?, item));
+        match slice.left {
+            ShownLeft::Slice => Ok((self.stepped_left(it, ty, false, span)?, item)),
+            ShownLeft::Item(_) => {
+                let boxed = Expr::bool(self.boxed_payload(item));
+                Ok((
+                    Expr::call_helper("$itemLeft", vec![it, boxed]),
+                    Ty::new_option(self.tcx, item),
+                ))
+            }
+            ShownLeft::Sized(_) => {
+                let ty::Slice(element) = *item.peel_refs().kind() else {
+                    return Err(self.unsupported(span, &format!("`{{:?}}` of a `{ty}`")));
+                };
+                Ok((Expr::call_helper("$partsLeft", vec![it]), element))
+            }
         }
-        let ty::Slice(element) = *item.peel_refs().kind() else {
-            return Err(self.unsupported(span, &format!("`{{:?}}` of a `{ty}`")));
-        };
-        Ok((Expr::call_helper("$partsLeft", vec![it]), element))
+    }
+
+    /// A struct's `Debug` text, of `name` and its `fields`' texts, `Chunks
+    /// { v: [3], chunk_size: 2 }`, on lines of their own where `pretty` says
+    /// (#2252).
+    fn struct_shown(&mut self, pretty: &Pretty, name: &str, fields: Vec<(&str, Expr)>) -> Expr {
+        let fields: Vec<Expr> = (fields.into_iter())
+            .map(|(field, shown)| join(vec![Expr::str(format!("{field}: ")), shown]))
+            .collect();
+        let mut plain = vec![Expr::str(format!("{name} {{ "))];
+        for (at, field) in fields.iter().enumerate() {
+            if at > 0 {
+                plain.push(Expr::str(", "));
+            }
+            plain.push(field.clone());
+        }
+        plain.push(Expr::str(" }"));
+        self.pretty_or(pretty, join(plain), &format!("{name} {{"), Expr::array(fields), "}")
     }
 
     /// Of another of std's enums whose variants hold what they hold by
