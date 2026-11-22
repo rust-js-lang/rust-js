@@ -21,12 +21,12 @@
 //! read first and kept (ADR 0079).
 
 use super::{Attrs, Rule, SerdeDefault, Tagging};
-use crate::js::{self, Expr, Op, Pattern, Prop, Stmt, StmtKind};
 use crate::lower::bindings::variant_name;
 use crate::lower::recognition::{StdItem, std_item};
 use crate::lower::representation::Num;
 use crate::lower::temporary_names::{Base, Role};
 use crate::lower::{FnCx, R, Shape};
+use rust_js_program::js::{self, Expr, Op, Pattern, Prop, Stmt, StmtKind};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::CtorKind;
 use rustc_middle::ty::consts::ConstExt as _;

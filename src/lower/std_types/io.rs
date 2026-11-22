@@ -8,7 +8,6 @@
 //! struct, `{ byte }`, by `$repeatReader`. `BufReader<R>`, std's fields
 //! flattened, `{ inner, buf, pos, filled }`, by `$bufReader(RRead)`.
 
-use crate::js::{Expr, Prop, Stmt};
 use crate::lower::bindings;
 use crate::lower::calls::Call;
 use crate::lower::generic_facts::Form;
@@ -16,6 +15,7 @@ use crate::lower::plain;
 use crate::lower::recognition::{ByteSource, IoOp, Std, StdItem};
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{Expr, Prop, Stmt};
 use rustc_middle::ty;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -87,11 +87,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // where a box made for the call would be dropped with it.
                 let slice_writer = crate::lower::recognition::is_byte_slice(tr.self_ty().peel_refs());
                 let receiver = match &receiver.kind {
-                    crate::js::ExprKind::Object(props, ..)
+                    rust_js_program::js::ExprKind::Object(props, ..)
                         if slice_writer
-                            && let [crate::js::Prop::Field(key, held)] = props.as_slice()
-                            && key == crate::js::HELD
-                            && matches!(held.kind, crate::js::ExprKind::Var(_)) =>
+                            && let [rust_js_program::js::Prop::Field(key, held)] = props.as_slice()
+                            && key == rust_js_program::js::HELD
+                            && matches!(held.kind, rust_js_program::js::ExprKind::Var(_)) =>
                     {
                         Expr::handle(held.clone())
                     }
@@ -101,7 +101,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // through, an `io::empty()` local's: a plain box of the place,
                 // which reads the same (#1329).
                 let receiver = match (receiver.kind, source) {
-                    (crate::js::ExprKind::Handle(place, _), Some(source)) if !source.writes_its_box() => {
+                    (rust_js_program::js::ExprKind::Handle(place, _), Some(source)) if !source.writes_its_box() => {
                         crate::lower::mut_refs::boxed(*place)
                     }
                     (kind, _) => Expr { kind, ..receiver },

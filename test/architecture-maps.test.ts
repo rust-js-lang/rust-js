@@ -46,6 +46,6 @@ test("only a B-tree's clone makes one of sorted entries, `ofSorted`", () => {
   expect(arm.match(/"ofSorted"/g)?.length).toBe(1);
   expect(read("src/lower/std_impls/clones.rs").match(/"ofSorted"/g)?.length).toBe(1);
   // The runtime defines it and never calls it.
-  const runtime = files("src/runtime").filter((path) => path.endsWith(".js"));
+  const runtime = files("crates/rust-js-program/src/runtime").filter((path) => path.endsWith(".js"));
   expect(runtime.filter((file) => /\.ofSorted\(/.test(read(file)))).toEqual([]);
 });

@@ -12,7 +12,7 @@
 //! rewrite where it's about to be made (`applies`, `run`, `rewrite`), and
 //! never by a phase before or after.
 
-use crate::js::{self, Expr, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, Stmt, StmtKind};
 use std::cell::Cell;
 
 /// One of preparation's rewrites, as `--prepare-without` names it.

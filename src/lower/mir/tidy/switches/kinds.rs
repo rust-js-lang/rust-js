@@ -2,9 +2,9 @@
 //! untagged enum's kinds (ADR 0668): what each test of a variant, wherever
 //! MIR tests it, says of what `typeof` tells.
 
-use crate::js::{Expr, ExprKind, Op, UnaryOp};
 use crate::lower::mir::hints::{Constant, SUBJECT};
 use crate::lower::untagged::TypeofCase;
+use rust_js_program::js::{Expr, ExprKind, Op, UnaryOp};
 
 use super::{Values, alike, alternatives, compared};
 

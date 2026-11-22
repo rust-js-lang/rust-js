@@ -1,11 +1,11 @@
-// Mutations of src/runtime/taking.js (ADR 0542).
+// Mutations of crates/rust-js-program/src/runtime/taking.js (ADR 0542).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "taking-length-its-source",
     breaks: "an explicit `take`'s length is its source's, not the fewer of that and how many it takes",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "  taking.len = () => taking.sizeHint()[0];\n",
     replace: "  taking.len = () => taking.iter.len();\n",
     tests: ["test/corpus.test.ts", "-t", "^(held_back_folds_by_try_rfold|own_back_through_adapters|counted_adapter_given_back_from_its_back).rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "taking-front-uncounted",
     breaks: "an explicit `take` stepped from its front never stops",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "      taking.n--;\n      return taking.iter.next();\n",
     replace: "      return taking.iter.next();\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_of_a_borrowed_iterator_where_addresses_are_asked.rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "taking-rfold-untrimmed",
     breaks: "a `take`'s `rfold` folds its source untrimmed, not after its `nth_back` past what it won't give (#220)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "        taking.n === 0 || !$consumed(taking, () => kept(init, unwind, ends), ends)\n",
     replace: "        taking.n === 0\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "taking-nth-back-unasked",
     breaks: "a `take`'s `nth_back` steps by `next_back`, not its source's `nth_back` (#220)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "    $forwardBack(taking, iter, { nthBack, rfold, tryRfold, advanceBackBy });\n",
     replace: "    $forwardBack(taking, iter, { rfold, tryRfold, advanceBackBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     name: "taking-passed-undropped",
     breaks:
       "what a `take`'s source's `nth_back` past what it won't give finds, which std's `Take::rfold` and `nth_back` let go of, isn't dropped: `ds().into_iter().take(3).rev().sum()` never drops `D(4)` (#718)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "      drop?.(step.value);\n      return true;\n",
     replace: "      return true;\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     name: "taking-nth-back-past-undropped",
     breaks:
       "a `take`'s `nth_back` past its end lets what its source's `nth_back` finds go undropped, where std's drops it: `take(3).rev().nth(5)` of a `Vec` of five never drops `D(1)` (#718)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "      if (len > 0) passed(len - 1);\n",
     replace: "      if (len > 0) $nthBackOf(taking.iter, len - 1, drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     name: "taking-trim-unwind-undropped",
     breaks:
       "a `take`'s `rfold` whose trimming panics drops neither its accumulator nor what's left (#826)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "        taking.n === 0 || !$consumed(taking, () => kept(init, unwind, ends), ends)\n",
     replace: "        taking.n === 0 || !trimmed()\n",
     tests: ["test/corpus.test.ts", "-t", "^take_from_its_back_drops_as_std.rs$"],
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
   {
     name: "taking-own-nth-back-unmarked",
     breaks: "a `take(n)`'s `nth_back` isn't marked its source's own, so a `step_by(n)` over it from its back never calls the crate's own `nth_back` (#834)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "    $ownsAs(taking, iter, \"nthBack\");\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_take_stepped_by_from_its_back_drops_a_slice.rs$"],
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-back-uncounted",
     breaks: "a `take` stepped from its back doesn't count down, so it gives more than it takes",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "      const past = Math.max(taking.iter.len() - taking.n, 0);\n      taking.n--;\n",
     replace: "      const past = Math.max(taking.iter.len() - taking.n, 0);\n",
     tests: ["test/corpus.test.ts", "-t", "^(own_back_through_adapters).rs$"],
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-back-by-next",
     breaks: "a `take`'s `next_back` steps its source back by `next_back`, not its `nth_back` past what it won't give (#220)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "      return $nthBackOf(taking.iter, past, drop);\n    };\n  }\n  // Std's `Take::advance_by(m)`",
     replace: "      for (let k = 0; k < past; k++) taking.iter.back();\n      return taking.iter.back();\n    };\n  }\n  // Std's `Take::advance_by(m)`",
     tests: ["test/corpus.test.ts", "-t", "^(own_back_through_adapters).rs$"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-count-stepped",
     breaks: "a `take` counts by stepping each item, not its source's `advance_by`, so a reversed `Vec`'s drop from the back where std drops them as one slice, front to back (#826)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "  $forward(taking, iter, { advanceBy, count, nth: of(\"nth\", nth), tryFold: of(\"tryFold\", tryFold), fold: of(\"tryFold\", fold) });\n",
     replace: "  $forward(taking, iter, { nth: of(\"nth\", nth), tryFold: of(\"tryFold\", tryFold), fold: of(\"tryFold\", fold) });\n",
     tests: ["test/corpus.test.ts", "-t", "^(take_from_its_back_drops_as_std).rs$"],
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-nth-stepped",
     breaks: "a `take` has no `nth` of its own, so `$Steps`' default steps each item and the crate's own `nth` never runs, where std's `Take::nth` calls its source's (#835)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "  $forward(taking, iter, { advanceBy, count, nth: of(\"nth\", nth), tryFold: of(\"tryFold\", tryFold), fold: of(\"tryFold\", fold) });\n",
     replace: "  $forward(taking, iter, { advanceBy, count, tryFold: of(\"tryFold\", tryFold), fold: of(\"tryFold\", fold) });\n",
     tests: ["test/corpus.test.ts", "-t", "^(take_of_own_nth_where_known_back|own_nth_through_adapters).rs$"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-try-fold-by-next",
     breaks: "a `take`'s `try_fold` steps it by `next`, not its source's `try_fold`",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "  $forward(taking, iter, { advanceBy, count, nth: of(\"nth\", nth), tryFold: of(\"tryFold\", tryFold), fold: of(\"tryFold\", fold) });\n",
     replace: "  $forward(taking, iter, { advanceBy, count, nth: of(\"nth\", nth), fold: of(\"tryFold\", fold) });\n",
     tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-nth-past-end-undropped",
     breaks: "a `take`'s `nth` past its end lets go of what its source's `nth(n - 1)` finds undropped, where std's `Take::nth` drops it (#261, #835)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "      if (!step.done) dropItem?.(step.value);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(take_of_own_nth_where_known_back|vec_skipped_from_back_drops).rs$"],
@@ -121,7 +121,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-nth-past-end-unasked",
     breaks: "a `take`'s `nth` past what's left doesn't ask its source's `nth(n - 1)`",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "    if (taking.n > 0) {\n      const step = taking.iter.nth(taking.n - 1, dropItem);\n      taking.n = 0;\n      if (!step.done) dropItem?.(step.value);\n    }\n",
     replace: "    taking.n = 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_own_steps_clone_none.rs$"],
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-own-nth-needs-item-drop",
     breaks: "a `take` of a closed compiled struct, which has no item drop of its own, isn't its own `nth`, so a chain over it steps each item (#286)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "  $ownsAs(taking, iter, \"nth\");\n",
     replace: "  if (iter.dropItem !== undefined) $ownsAs(taking, iter, \"nth\");\n",
     tests: ["test/corpus.test.ts", "-t", "^(own_nth_skipped_in_place).rs$"],
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-own-nth-unset",
     breaks: "a `take` of a reversed `Vec` doesn't say its `nth` drops what it passes, so a `chain` of it is stepped one at a time from the back (#261)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "  $ownsAs(taking, iter, \"nth\");\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(vec_skipped_from_back_drops).rs$"],
@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-try-fold-unstopped",
     breaks: "a `take`'s `try_fold` doesn't stop once it's taken `n`",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "      (a) => (stopped = broke(a)) || full,",
     replace: "      (a) => (stopped = broke(a)),",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-fold-by-next",
     breaks: "a `take`'s fold steps it by `next`, so a `Skip` inside asks the crate's own `nth(n)`, not `nth(n - 1)` (#213)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "    const folded = $consumed(taking.iter, () => tryFoldOf(init, g, () => false, unwind, true, ends), ends);\n",
     replace: "    const folded = $Steps.prototype.fold.call(taking, init, g, unwind, ends);\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_whose_rest_panics_as_dropped_leaks_its_result.rs$"],
@@ -163,7 +163,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-fold-source-kept",
     breaks: "a `take`'s fold leaves its source open, what it didn't take never dropped (#213)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "    const folded = $consumed(taking.iter, () => tryFoldOf(init, g, () => false, unwind, true, ends), ends);\n    $closedAfter(ends, () => $closed(taking.iter));\n",
     replace: "    const folded = $consumed(taking.iter, () => taking.tryFold(init, g, () => false, unwind));\n",
     tests: ["test/corpus.test.ts", "-t", "^(consumer_drops_what_is_left).rs$"],
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-fold-unclosed",
     breaks: "a `take` whose stage panics inside a fold leaves what's left undropped (#423)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "    const folded = $consumed(taking.iter, () => tryFoldOf(init, g, () => false, unwind, true, ends), ends);\n",
     replace: "    const folded = tryFoldOf(init, g, () => false, unwind, true);\n",
     tests: ["test/corpus.test.ts", "-t", "^(panic_mid_fold_drops).rs$"],
@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-fold-unwind-lost",
     breaks: "a `take` drops the `unwind` its fold is given, so a stage's panic before it leaves the accumulator undropped (#423)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "    const folded = $consumed(taking.iter, () => tryFoldOf(init, g, () => false, unwind, true, ends), ends);\n",
     replace: "    const folded = $consumed(taking.iter, () => tryFoldOf(init, g, () => false, undefined, true, ends), ends);\n",
     tests: ["test/corpus.test.ts", "-t", "^(panic_mid_fold_drops).rs$"],
@@ -187,7 +187,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-fold-closes-at-its-limit",
     breaks: "a `take`'s fold closes its source at its limit, before what drops with its `f`, a `map`'s function (#710)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "    const folded = $consumed(taking.iter, () => tryFoldOf(init, g, () => false, unwind, true, ends), ends);\n",
     replace: "    const folded = $consumed(taking.iter, () => tryFoldOf(init, g, () => false, unwind, false, ends), ends);\n",
     tests: ["test/corpus.test.ts", "-t", "^(fold_drops_moved_function_first).rs$"],
@@ -195,7 +195,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-count-by-nth",
     breaks: "a `take`'s `count` folds, so a `Skip` inside asks the crate's own `nth`, where std's advances it and asks none (#213)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "    const counted = k === 0 ? 0 : $consumed(taking, () => k - $advanceByOf(taking.iter, k, dropItem));\n",
     replace: "    const counted = taking.fold(0, (c) => c + 1);\n",
     tests: ["test/corpus.test.ts", "-t", "^by_ref_chains.rs$"],
@@ -204,7 +204,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-count-unconsumed",
     breaks: "a `take(n).count()` whose source's step panics never closes its source, so a chain's second side is never dropped (#647)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "    const counted = k === 0 ? 0 : $consumed(taking, () => k - $advanceByOf(taking.iter, k, dropItem));\n",
     replace: "    const counted = k === 0 ? 0 : k - $advanceByOf(taking.iter, k, dropItem);\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_take_count_drops_a_slice.rs$"],
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-held-limit-closes",
     breaks: "a held `take` drops what its source has left at its limit, not where its owner drops it (#206)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "      if (taking.n === 0) return taking.held ? done : $closed(taking.iter);\n",
     replace: "      if (taking.n === 0) return $closed(taking.iter);\n",
     tests: ["test/corpus.test.ts", "-t", "^(held_iterator_dropped_by_its_owner).rs$"],
@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-nth-past-end-closed-held",
     breaks: "a held `take` asked past its end, a `skip`'s fold's `nth`, drops what its source has left then, not where its owner drops it (#242)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "    return taking.held ? done : $closed(taking.iter);\n  };",
     replace: "    return $closed(taking.iter);\n  };",
     tests: ["test/corpus.test.ts", "-t", "^skip_of_short_take_drops.rs$"],
@@ -230,7 +230,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-hint-dropped",
     breaks: "a `take(3)` of the crate's iterator gives `(0, None)`, not its source's fewer and `n` (#733)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "  taking.sizeHint = () => $takeHint(taking.iter, taking.n);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(size_hint_of_adapters|capacity_exact_size_adapters).rs$"],
@@ -238,7 +238,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-back-of-a-lengthless-source",
     breaks: "a `take` of a source that doesn't know its length has a back, which steps through its source's missing `len` (#830)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "  if (iter.len !== undefined) {\n    // Std's `Take::next_back`",
     replace: "  if (true) {\n    // Std's `Take::next_back`",
     tests: ["test/runtime-package.test.ts", "-t", "a take of a source that doesn't know its length has no back"],
@@ -246,7 +246,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-advance-back-by-by-nth-back",
     breaks: "a `take(n)` advanced from its back trims its source by `nth_back`, then steps it, where std's asks its source's `advance_back_by` once, the trimmed and the passed as one `Vec` slice, front to back (#2121)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "    $forwardBack(taking, iter, { nthBack, rfold, tryRfold, advanceBackBy });\n",
     replace: "    $forwardBack(taking, iter, { nthBack, rfold, tryRfold });\n",
     tests: ["test/corpus.test.ts", "-t", "^take_advanced_from_its_back_by_its_source.rs$"],
@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
   {
     name: "taking-back-steps-only-of-its-sources",
     breaks: "a `take`'s `nth_back`, `rfold` and `try_rfold` are std's only where its source writes one of them, so of a source that writes only `next_back` they step its own `next_back`, its source's `nth_back` each time, one `next_back` fewer than std's (#2136)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "    $forwardBack(taking, iter, { nthBack, rfold, tryRfold, advanceBackBy });\n",
     replace: "    if (iter.nthBack !== undefined || iter.rfold !== undefined || iter.tryRfold !== undefined) $forwardBack(taking, iter, { nthBack, rfold, tryRfold, advanceBackBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps_of_a_source_that_writes_none.rs$"],
@@ -262,7 +262,7 @@ export const mutations: Mutation[] = [
   {
     name: "taking-fold-ends-kept",
     breaks: "a `take`'s `fold` gives its source's `try_fold` nothing of what drops with its closure, so where a `skip` inside panics in its `nth(n - 1)` the accumulator drops before the closure, where std's `Take::fold` moves `f` into its `try_fold`, whose frame drops `f` first (#2196)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "tryFoldOf(init, g, () => false, unwind, true, ends), ends);\n",
     replace: "tryFoldOf(init, g, () => false, unwind, true), ends);\n",
     tests: ["test/corpus.test.ts", "-t", "^take_fold_drops_its_closure_first.rs$"],
@@ -271,7 +271,7 @@ export const mutations: Mutation[] = [
     name: "taking-len-of-its-source-alone",
     breaks:
       "a `take`'s `len` is there only where its source has one, so generic code bound by `ExactSizeIterator` given `$taking` of std's compiled `Fuse` throws `it.len is not a function`, where std's `Take::len` is its hint's (#2194)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "  taking.len = () => taking.sizeHint()[0];\n  if (iter.len !== undefined) {\n",
     replace: "  if (iter.len !== undefined) {\n    taking.len = () => taking.sizeHint()[0];\n",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
@@ -280,7 +280,7 @@ export const mutations: Mutation[] = [
     name: "taking-count-unowned",
     breaks:
       "`$taking` doesn't mark its `count`, std's `Take::count`, its source's `advance_by`, its own, so what passes a `count` on by its mark counts it by its fold (#2212)",
-    file: "src/runtime/taking.js",
+    file: "crates/rust-js-program/src/runtime/taking.js",
     find: "  $owns(taking, \"count\");\n",
     replace: "",
     tests: ["test/iterator-steps.test.ts", "-t", "each form marks its own the count and last"],

@@ -5,7 +5,7 @@
 
 use rust_js_program::collections::IndexSet;
 
-use crate::js::{self, Expr, ExprKind, Function, Name, Pattern, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, ExprKind, Function, Name, Pattern, Stmt, StmtKind};
 
 /// `function`'s shadows of their own value, and each of its closures'.
 pub(super) fn function(function: &mut Function) {

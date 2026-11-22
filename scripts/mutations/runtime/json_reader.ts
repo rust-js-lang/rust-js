@@ -1,11 +1,11 @@
-// Mutations of src/runtime/json_reader.js (ADR 0093).
+// Mutations of crates/rust-js-program/src/runtime/json_reader.js (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "hinted-text-unpeeked",
     breaks: "a hand-written visitor's `deserialize_map` given text of a kind it has no method for, `[1,2,3]`, is refused where it's read, not as serde_json's `peek_invalid_type` refuses it where it starts",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    if (kind !== undefined && !visitor[kind]) throw this.peekInvalidType(expected);\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-f64-correctly-rounded",
     breaks: "a JSON float is read correctly rounded, as JS reads one, where serde_json's own multiplication by a power of ten gives another `f64`",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "  f64FromParts(positive, significand, exponent) {\n    let f = Number(significand);",
     replace: "  f64FromParts(positive, significand, exponent) {\n    const read = Number(`${significand}e${exponent}`);\n    if (Number.isFinite(read)) return positive ? read : -read;\n    let f = Number(significand);",
     tests: ["test/serde.test.ts", "-t", "numbers are written and read as serde_json does"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-trailing-text-read",
     breaks: "text after a value is read past, where serde_json says `trailing characters`",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    if (this.parseWhitespace() !== -1) throw this.peekError(\"trailing characters\");\n",
     replace: "    this.parseWhitespace();\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-depth-unbounded",
     breaks: "a value nested 129 deep is read, where serde_json stops at 128, `recursion limit exceeded`",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    this.remainingDepth = 128;\n",
     replace: "    this.remainingDepth = 1024;\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-column-past-index",
     breaks: "an error's column is one past serde_json's, which counts the bytes before it on its line",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    return new $JsonError(message, line, index - start);\n",
     replace: "    return new $JsonError(message, line, index - start + 1);\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-line-of-cr",
     breaks: "an error's line counts carriage returns, where serde_json counts `\\n`",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    for (let i = 0; i < start; i++) if (this.bytes[i] === 10) line++;\n",
     replace: "    for (let i = 0; i < start; i++) if (this.bytes[i] === 13) line++;\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-peek-error-at-index",
     breaks: "an error of what's next is at the byte before it, where serde_json's `peek_error` is at it",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    return this.errorAt(Math.min(this.bytes.length, this.index + 1), message);\n",
     replace: "    return this.errorAt(this.index, message);\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-leading-zero-read",
     breaks: "`01` is read as 1, where serde_json says `invalid number`",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "      if (p >= 48 && p <= 57) throw this.peekError(\"invalid number\");\n      return this.parseNumber(positive, 0);\n",
     replace: "      return this.parseNumber(positive, 0);\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-negative-zero-an-integer",
     breaks: "`-0` is the integer 0, where serde_json reads it as the float `-0.0`",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    if (significand === 0 || significand > 9223372036854775808n) {\n",
     replace: "    if (significand > 9223372036854775808n) {\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-i64-min-a-float",
     breaks: "`-9223372036854775808` is a float, where serde_json reads it as `i64::MIN`",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    if (significand === 0 || significand > 9223372036854775808n) {\n",
     replace: "    if (significand === 0 || significand >= 9223372036854775808n) {\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-decimal-eof-invalid",
     breaks: "`1.` at the end is `invalid number`, where serde_json says `EOF while parsing a value`",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "      throw this.peekError(this.peek() === -1 ? \"EOF while parsing a value\" : \"invalid number\");\n",
     replace: "      throw this.peekError(\"invalid number\");\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-infinite-read",
     breaks: "`1e400` is infinity, where serde_json says `number out of range`",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "          if (!Number.isFinite(f)) throw this.error(\"number out of range\");\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-control-character-read",
     breaks: "a control character in a string is read, where serde_json refuses it",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    this.escaped = false;\n    for (;;) {\n      while (this.index < bytes.length) {\n        const c = bytes[this.index];\n        if (c === 34 || c === 92 || c < 32) break;\n",
     replace: "    this.escaped = false;\n    for (;;) {\n      while (this.index < bytes.length) {\n        const c = bytes[this.index];\n        if (c === 34 || c === 92) break;\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-invalid-escape-read",
     breaks: "`\\\\q` is read as `q`, where serde_json says `invalid escape`",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    throw this.error(\"invalid escape\");\n  }\n\n  parseUnicodeEscape() {\n",
     replace: "    return String.fromCharCode(c);\n  }\n\n  parseUnicodeEscape() {\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-hex-escape-unvalidated",
     breaks: "`\\\\uZZZZ` is read as a character, where serde_json says `invalid escape`",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    if (!valid) throw this.error(\"invalid escape\");\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-lone-trailing-surrogate-read",
     breaks: "a lone `\\\\udd80` is read, where serde_json says `lone leading surrogate in hex escape`",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    if (n >= 0xdc00 && n <= 0xdfff) throw this.error(\"lone leading surrogate in hex escape\");\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-surrogate-pair-unchecked",
     breaks: "`\\\\ud83e\\\\u0041` is read as a pair, where serde_json refuses the second as no trailing surrogate",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    if (n2 < 0xdc00 || n2 > 0xdfff) throw this.error(\"lone leading surrogate in hex escape\");\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-list-trailing-comma-unnamed",
     breaks: "`[1,2,]` is `trailing characters`, where serde_json says `trailing comma`",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "\"trailing comma\" : \"trailing characters\");\n",
     replace: "\"trailing characters\" : \"trailing characters\");\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-map-trailing-comma-unnamed",
     breaks: "`{\"a\":1,}` is `trailing characters`, where serde_json says `trailing comma`",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    throw this.peekError(c === 44 ? \"trailing comma\" : c === -1",
     replace: "    throw this.peekError(c === 44 ? \"trailing characters\" : c === -1",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-colon-unnamed",
     breaks: "a key with no colon after it is `expected value`, where serde_json says ``expected `:` ``",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    throw this.peekError(c === -1 ? \"EOF while parsing an object\" : \"expected `:`\");\n",
     replace: "    throw this.peekError(c === -1 ? \"EOF while parsing an object\" : \"expected value\");\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-tab-not-whitespace",
     breaks: "a tab between values isn't whitespace, where serde_json's is space, tab, newline and carriage return",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "      if (c !== 32 && c !== 10 && c !== 9 && c !== 13) return c;\n",
     replace: "      if (c !== 32 && c !== 10 && c !== 13) return c;\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-cr-not-whitespace",
     breaks: "a carriage return between values isn't whitespace, where serde_json's is",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "      if (c !== 32 && c !== 10 && c !== 9 && c !== 13) return c;\n",
     replace: "      if (c !== 32 && c !== 10 && c !== 9) return c;\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-ident-checked-loosely",
     breaks: "`tru` and `nul` are read to their end, where serde_json says `EOF while parsing a value`",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "      if (c === -1) throw this.error(\"EOF while parsing a value\");\n      if (c !== rest.charCodeAt(i)) throw this.error(\"expected ident\");\n",
     replace: "      if (c !== rest.charCodeAt(i)) throw this.error(\"expected ident\");\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-reader-escaped-borrowed",
     breaks: "a string of the text with an escape is said to borrow from it, so it goes to `visit_borrowed_str` (#1546)",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    return this.escaped ? \"transient\" : \"borrowed\";\n",
     replace: "    return \"borrowed\";\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
   {
     name: "text-option-null-as-unit",
     breaks: "a hand-written visitor's `deserialize_option` of the text gives `null` to its `visit_unit`, serde's content's rule, where serde_json's reader gives it to `visit_none` (#1597)",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: "    this.parseIdent(\"ull\");\n    return visitor.none();\n",
     replace: "    this.parseIdent(\"ull\");\n    return visitor.unit ? visitor.unit() : visitor.none();\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a visitor's deserialize_option is each reader's own"],
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-u128-negative-read",
     breaks: "a `-` before a `u128` is read on, where serde_json's is `number out of range` at the `-` (#1623)",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: '    if (negative && min === 0n) throw this.peekError("number out of range");\n',
     replace: "",
     tests: ["test/serde-std.test.ts", "-t", "an i128, a u128 and a Saturating"],
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-int128-range-unchecked",
     breaks: "a 128-bit integer past its type is read, where serde_json's is `number out of range` (#1623)",
-    file: "src/runtime/json_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
     find: '    if (value < min || value > max) throw this.error("number out of range");\n',
     replace: "",
     tests: ["test/serde-std.test.ts", "-t", "an i128, a u128 and a Saturating"],

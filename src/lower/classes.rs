@@ -166,8 +166,8 @@ pub(crate) fn exported_fields(
     tcx: TyCtxt<'_>,
     key: DefId,
     names: Vec<String>,
-    span: impl Fn(rustc_span::Span) -> crate::js::Span,
-) -> crate::js::Fields {
+    span: impl Fn(rustc_span::Span) -> rust_js_program::js::Span,
+) -> rust_js_program::js::Fields {
     let ty = tcx.type_of(key).instantiate_identity().skip_normalization();
     let struct_of = match ty.kind() {
         ty::Adt(_, args) if !names.is_empty() => match args.type_at(0).kind() {
@@ -177,11 +177,11 @@ pub(crate) fn exported_fields(
         _ => None,
     };
     let Some(adt) = struct_of else {
-        return crate::js::Fields::default();
+        return rust_js_program::js::Fields::default();
     };
     let at = (adt.non_enum_variant().fields.iter()).map(|field| span(tcx.def_span(field.did)));
-    let declared = (adt.did().as_local()).map_or(crate::js::Span::NONE, |local| span(tcx.source_span(local)));
-    crate::js::Fields {
+    let declared = (adt.did().as_local()).map_or(rust_js_program::js::Span::NONE, |local| span(tcx.source_span(local)));
+    rust_js_program::js::Fields {
         names: names.into_iter().zip(at).collect(),
         declared,
     }

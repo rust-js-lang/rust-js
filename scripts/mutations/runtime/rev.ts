@@ -1,11 +1,11 @@
-// Mutations of src/runtime/rev.js (ADR 0516).
+// Mutations of crates/rust-js-program/src/runtime/rev.js (ADR 0516).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "rev-hint-unpassed",
     breaks: "a `rev()` of what generic code is given has no size hint of its own: `(0, None)` where Rust's `Rev` gives its source's, `(3, Some(3))` (ADR 0989)",
-    file: "src/runtime/rev.js",
+    file: "crates/rust-js-program/src/runtime/rev.js",
     find: "  rev.sizeHint = () => $sizeHint(it);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hint_through_a_given_value.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "rev-unclosed",
     breaks: "a `Rev` dropped drops none of what it holds",
-    file: "src/runtime/rev.js",
+    file: "crates/rust-js-program/src/runtime/rev.js",
     find: "    () => it.return?.(),\n",
     replace: "    () => {},\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "rev-front-first",
     breaks: "`$rev` steps from the front",
-    file: "src/runtime/rev.js",
+    file: "crates/rust-js-program/src/runtime/rev.js",
     find: "    () => it.back(),\n",
     replace: "    () => it.next(),\n",
     tests: ["test/corpus.test.ts", "-t", "^(rev_drops|generic_double_ended).rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "rev-fold-by-next",
     breaks: "a `rev()`'s fold steps its source by `next_back`, not the crate's own `rfold` it reaches (#220)",
-    file: "src/runtime/rev.js",
+    file: "crates/rust-js-program/src/runtime/rev.js",
     find: "    fold: \"rfold\",\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "rev-nth-by-next",
     breaks: "a `rev()`'s `nth` steps its source by `next_back`, not the crate's own `nth_back` it reaches (#220)",
-    file: "src/runtime/rev.js",
+    file: "crates/rust-js-program/src/runtime/rev.js",
     find: "    nth: \"nthBack\",\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "rev-try-fold-by-next",
     breaks: "a `rev()`'s `try_fold` steps its source by `next_back`, not a `take`'s `try_rfold`, which trims by the crate's `nth_back` (#220)",
-    file: "src/runtime/rev.js",
+    file: "crates/rust-js-program/src/runtime/rev.js",
     find: "    tryFold: \"tryRfold\",\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "rev-advance-by-try-fold",
     breaks: "a `rev()`'s `advance_by` is `$Steps`' of its `try_fold`, not its source's `advance_back_by`, std's of `next_back` (#220)",
-    file: "src/runtime/rev.js",
+    file: "crates/rust-js-program/src/runtime/rev.js",
     find: "    advanceBy: (m, drop) => {\n",
     replace: "    unused: (m, drop) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "rev-own-nth-unset",
     breaks: "a reversed `Vec`'s `nth` isn't said to drop what it passes over, so `skip` drops each one by one from the back (#234)",
-    file: "src/runtime/rev.js",
+    file: "crates/rust-js-program/src/runtime/rev.js",
     find: "    nth: \"nthBack\",\n",
     replace: "    nth: it.nthBack && ((...args) => it.nthBack(...args)),\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "rev-advance-by-each",
     breaks: "a reversed `Vec`'s `advance_by`, a `chain`'s `nth`, drops what it passes one at a time from the back, not as its source's one slice (#250)",
-    file: "src/runtime/rev.js",
+    file: "crates/rust-js-program/src/runtime/rev.js",
     find: "      if (it.advanceBackBy !== undefined) return it.advanceBackBy(m, drop);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "rev-fold-unwind-lost",
     breaks: "a `rev` drops the `unwind` its fold is given (#423)",
-    file: "src/runtime/rev.js",
+    file: "crates/rust-js-program/src/runtime/rev.js",
     find: "    fold: \"rfold\",\n",
     replace: "    fold: it.rfold && ((init, f) => it.rfold(init, f)),\n",
     tests: ["test/corpus.test.ts", "-t", "^own_folds_unwind.rs$"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "rev-try-fold-unwind-lost",
     breaks: "a `Rev`'s `try_fold`, its source's `try_rfold`, gets no `unwind`: a stage's panic leaves the accumulator undropped (#423)",
-    file: "src/runtime/rev.js",
+    file: "crates/rust-js-program/src/runtime/rev.js",
     find: "    tryFold: \"tryRfold\",\n",
     replace: "    tryFold: it.tryRfold && ((init, f, broke) => it.tryRfold(init, f, broke)),\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_folds_unwind with"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "rev-rfold-by-back",
     breaks: "a `rev()` folded from its back steps its source by `next`, never its source's own `fold`, as std's `Rev::rfold` asks (#625)",
-    file: "src/runtime/rev.js",
+    file: "crates/rust-js-program/src/runtime/rev.js",
     find: "    rfold: \"fold\",\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_droppers_from_its_back.rs$"],
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     name: "rev-bounds-unpassed",
     breaks:
       "a range's `rev()` made knowing its back, `$rev(..)`, as a type generic code folds from its back is, has no bounds: its own `count()` throws `Cannot read properties of undefined (reading 'start')` where Rust gives 5 (#721, #1226)",
-    file: "src/runtime/rev.js",
+    file: "crates/rust-js-program/src/runtime/rev.js",
     find: "  if (it.of !== undefined) rev.of = it.of;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rev_range_counted_beside_a_generic_rfold.rs$"],

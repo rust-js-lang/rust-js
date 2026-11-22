@@ -2,7 +2,7 @@
 //! takes the state's keys, and each `new` gives them.
 
 use super::{Member, class_of, member};
-use crate::js::{self, Expr, ExprKind, Pattern, Prop, StmtKind};
+use rust_js_program::js::{self, Expr, ExprKind, Pattern, Prop, StmtKind};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 

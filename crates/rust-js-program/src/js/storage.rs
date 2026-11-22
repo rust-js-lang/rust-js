@@ -2,7 +2,7 @@
 //! 0791): as it's given, a flattened state's keys, or a `None` `null`.
 
 use super::*;
-use rust_js_program::collections::IndexMap;
+use crate::collections::IndexMap;
 
 /// What a nullable place's write is told of whether what it's given may
 /// be `undefined` (`Storage::written`, `Expr::may_be_undefined`): that MIR

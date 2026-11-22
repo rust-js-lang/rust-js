@@ -2,10 +2,10 @@
 //! a fieldless enum's value is, and the error it holds, a `dyn Error` pair
 //! (ADR 0141), where it was made of one.
 
-use crate::js::Expr;
 use crate::lower::calls::Call;
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::Expr;
 
 /// What's asked of an `io::Error`.
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -61,7 +61,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             IoErrorOp::RawOsError => Expr::member(values.next().expect("an error"), "code"),
             IoErrorOp::FromRawOsError => Expr::call_helper("$osErrorOf", vec![values.next().expect("a code")]),
             IoErrorOp::IsInterrupted => Expr::bin(
-                crate::js::Op::Eq,
+                rust_js_program::js::Op::Eq,
                 Expr::member(values.next().expect("an error"), "kind"),
                 Expr::str("Interrupted"),
             ),
@@ -80,8 +80,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let dictionary = self.error_dictionary(from, call.span)?;
         Ok(Expr::object(vec![
-            crate::js::Prop::Field(crate::js::HELD.into(), error),
-            crate::js::Prop::Field(crate::js::DICTIONARY.into(), dictionary),
+            rust_js_program::js::Prop::Field(rust_js_program::js::HELD.into(), error),
+            rust_js_program::js::Prop::Field(rust_js_program::js::DICTIONARY.into(), dictionary),
         ]))
     }
 }

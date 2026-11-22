@@ -38,7 +38,7 @@ import { resultsFile, verdictOf, type Result as CrateResult, type Verdict } from
 import { devTimes, ownsTimes } from "./devTimes";
 import { floorBytes } from "../test/bounded";
 import { freeBytes } from "../tooling/bounded.js";
-import { binaryCrate, compilerCrates, crateOf, isBinarySource } from "./compiler-crates";
+import { type CompilerCrate, compilerCrates, crateOf, crateOfModule, modulePath } from "./compiler-crates";
 
 const root = join(import.meta.dir, "..");
 
@@ -241,16 +241,17 @@ export async function harnessChangedSince(base: string): Promise<boolean> {
   return files.some((file) => harness.has(file));
 }
 
-/** The module of the crate's source file `file`, as a `cargo test` filter
- * names it from the crate's root, `src/lower/mir/tidy/jumps.rs`'s
- * `lower::mir::tidy::jumps`; the root's is `""`. Nothing for a file that
- * isn't the crate's Rust: the binary's, whose unit tests a mutation runs
- * (`--bin rust-js`), not another of the compiler's crates' (ADR 1181). */
+/** The module of a source file `file` of one of the compiler's crates, as
+ * a `cargo test` filter of its crate's unit tests names it from the
+ * crate's root (`unitTarget`), `src/lower/mir/tidy/jumps.rs`'s
+ * `lower::mir::tidy::jumps`, `crates/rust-js-program/src/js/name.rs`'s
+ * `js::name`; a crate's root's is `""`. Nothing for a file that isn't the
+ * compiler's Rust. */
 export function unitTestsModule(file: string): string | undefined {
-  if (!isBinarySource(file) || !file.endsWith(".rs")) return undefined;
-  const binary = binaryCrate();
-  if (file === binary.rootFile) return "";
-  return file.slice(binary.src.length + 1, -".rs".length).replace(/(?:^|\/)mod$/, "").split("/").join("::");
+  const crate = crateOf(file);
+  if (!crate || !file.endsWith(".rs")) return undefined;
+  if (file === crate.rootFile) return "";
+  return modulePath(file).join("::");
 }
 
 /** The lines of `source`, the crate's `file`, that its unit tests are: a
@@ -544,13 +545,15 @@ export function site(mutation: Mutation, read: (file: string) => string): Site |
   const source = read(mutation.file);
   const at = source.indexOf(mutation.find);
   if (at < 0 || source.indexOf(mutation.find, at + 1) >= 0) return undefined;
-  // A helper's JS is the compiler's by its one `include_str!`.
-  if (mutation.file.startsWith("src/runtime/") && mutation.file.endsWith(".js")) {
-    const call = `include_str!("runtime/${mutation.file.slice("src/runtime/".length)}")`;
-    const including = read("src/runtime.rs");
+  // A helper's JS is the compiler's by its one `include_str!`, in the
+  // runtime's module, of whichever crate holds it (ADR 1181).
+  const runtime = `${crateOfModule("runtime")!.src}/runtime`;
+  if (mutation.file.startsWith(`${runtime}/`) && mutation.file.endsWith(".js")) {
+    const call = `include_str!("runtime/${mutation.file.slice(runtime.length + 1)}")`;
+    const including = read(`${runtime}.rs`);
     const start = including.indexOf(call);
     if (start < 0 || including.indexOf(call, start + 1) >= 0) return undefined;
-    return { file: "src/runtime.rs", start, end: start + call.length };
+    return { file: `${runtime}.rs`, start, end: start + call.length };
   }
   if (!mutation.file.endsWith(".rs")) return undefined;
   const lines = source.split("\n");
@@ -764,13 +767,23 @@ export function syncTree(from: string, to: string, paths: string[]): string[] {
   return touched;
 }
 
+/** The `cargo test` target of `crate`'s unit tests: the binary's, or
+ * another crate's library's (ADR 1181). */
+export function unitTarget(crate: CompilerCrate): string[] {
+  return crate.dir === "" ? ["--bin", crate.package] : ["-p", crate.package, "--lib"];
+}
+
+/** The crate whose unit tests a unit-tested mutation's filter runs: its
+ * file's. */
+const unitCrate = (mutation: Mutation): CompilerCrate => crateOf(mutation.file)!;
+
 /** A compiler built from this checkout's crate with `files` written over
  * it, or as it is, or, `unit`, its unit tests' binary, `cargo test`'s; or
  * why it can't be built, `held` where the build isn't what it must be
  * (scripts/mutant-builds.ts). The crate is kept from the last build, what it
  * wrote put back: one built as it is is kept too, while the crate's sources
  * are what it was built from. `fresh`, with no incremental cache. */
-async function build(files?: Map<string, string>, slot = 0, unit = false, fresh = false): Promise<string | { problem: string; held?: true }> {
+async function build(files?: Map<string, string>, slot = 0, unit?: CompilerCrate, fresh = false): Promise<string | { problem: string; held?: true }> {
   // Never past the disk's floor: the pruner leaves the run's store alone
   // while it holds its lock (`mutantsStore`, #2272), so the run stops
   // itself, a build's verdict, below it, saying nothing of any mutant.
@@ -781,11 +794,11 @@ async function build(files?: Map<string, string>, slot = 0, unit = false, fresh 
   const target = slot === 0 ? join(work, "target") : join(work, `target-${slot}`);
   mkdirSync(crate, { recursive: true });
   syncTree(crateSource, crate, crateFiles);
-  const kept = join(work, "bin", unit ? "unmutated-tests" : "unmutated");
+  const kept = join(work, "bin", unit ? `unmutated-tests-${unit.package}` : "unmutated");
   const sources = createHash("sha256");
   for (const path of files ? [] : listed(crate, crateFiles).sort()) sources.update(path).update(readFileSync(join(crate, path)));
   const built = sources.digest("hex");
-  const stamp = join(work, unit ? "unmutated-tests.stamp" : "unmutated.stamp");
+  const stamp = join(work, unit ? `unmutated-tests-${unit.package}.stamp` : "unmutated.stamp");
   if (!files && existsSync(kept) && existsSync(stamp) && readFileSync(stamp, "utf8") === built) return kept;
   for (const [path, text] of files ?? []) {
     mkdirSync(dirname(join(crate, path)), { recursive: true });
@@ -793,18 +806,19 @@ async function build(files?: Map<string, string>, slot = 0, unit = false, fresh 
   }
   const missing = files && unapplied(files, crate, crateSource);
   if (missing) return { problem: `INCONCLUSIVE: its build isn't of it: ${missing}`, held: true };
-  // Unit tests are the binary's own, built in the same target as the
+  // Unit tests are a crate's own, the binary's or another of the
+  // compiler's crates' (ADR 1181), built in the same target as the
   // compiler, its dependencies shared: built once for a build of many,
   // each mutation's tests run as it by `RUST_JS_MUTANT` (#915).
   const command = unit
-    ? ["cargo", "test", "--no-run", "--quiet", "--locked", "--bin", "rust-js", "--message-format=json", "--target-dir", target]
+    ? ["cargo", "test", "--no-run", "--quiet", "--locked", ...unitTarget(unit), "--message-format=json", "--target-dir", target]
     : ["cargo", "build", "--quiet", "--locked", "--message-format=json", "--target-dir", target];
   const p = await run(command, crate, buildTimeout, fresh ? { CARGO_INCREMENTAL: "0" } : {});
   if (p.code !== 0 || stopped(p, buildTimeout)) {
     const why = stopped(p, buildTimeout) ?? p.stderr.split("\n").find((line) => line.startsWith("error")) ?? `exited ${p.code}`;
     return { problem: `doesn't build: ${why}` };
   }
-  const made = builtBinary(p.stdout, unit);
+  const made = builtBinary(p.stdout, unit !== undefined, unit === undefined || unit.dir === "" ? "rust-js" : unit.name);
   if (made === undefined) return { problem: `doesn't build: cargo named no ${unit ? "unit tests' " : ""}binary` };
   if (files && !made.rebuilt) return { problem: "INCONCLUSIVE: cargo didn't compile the crate again with it", held: true };
   const binary = made.binary;
@@ -1559,9 +1573,7 @@ async function retire(chosen: Mutation[]): Promise<void> {
   const names = chosen.map((m) => m.name).join(", ");
   const low = belowFloor(freeBytes(root));
   if (low) throw new Error(`--retire of ${names} judges nothing: ${low}`);
-  const unmutatedUnits = await retirePhase("control: unit tests' build", () => build(undefined, 0, true));
-  if (typeof unmutatedUnits !== "string") throw new Error(`the unit tests as the crate is ${unmutatedUnits.problem}`);
-  const unitControl = await retirePhase("control: unit tests", () => unitFailures(unmutatedUnits));
+  const unitControl = await retirePhase("control: unit tests", () => everyUnit(undefined, "the unit tests as the crate is"));
   // React's port, as the compiler is: what each mutant's regen is held to.
   const asItIs = await retirePhase("control: compiler build", () => build());
   if (typeof asItIs !== "string") throw new Error(`the compiler as it is ${asItIs.problem}`);
@@ -1639,6 +1651,21 @@ export function unjudgedSaid(asked: number, unjudged: string[]): string | undefi
 
 /** Of a compiler's unit tests, built as `binary`, those that failed and how
  * many passed: a mutant's, or its control's as the crate is. */
+/** Of each of the compiler's crates' unit tests, built with `files`, those
+ * that failed, and how many passed. */
+async function everyUnit(files: Map<string, string> | undefined, what: string): Promise<{ failed: Set<string>; passed: number }> {
+  const failed = new Set<string>();
+  let passed = 0;
+  for (const crate of compilerCrates()) {
+    const binary = await build(files, 0, crate);
+    if (typeof binary !== "string") throw new Error(`${what} ${binary.problem}`);
+    const of = await unitFailures(binary);
+    for (const name of of.failed) failed.add(name);
+    passed += of.passed;
+  }
+  return { failed, passed };
+}
+
 async function unitFailures(binary: string): Promise<{ failed: Set<string>; passed: number }> {
   const p = await unitTest(binary, "");
   if (judgeUnit(p) === "inconclusive") throw new Error(`the compiler's unit tests (${binary}) said nothing: ${endedAs(p)}\n${(p.stdout + p.stderr).slice(-1500)}`);
@@ -1692,9 +1719,7 @@ async function retireSuite(mutation: Mutation, unitControl: { failed: Set<string
   // Some fail there with any compiler, the compile cache's in a mutant's
   // own target say, and a unit test that reads the checkout's snapshots
   // from the crate's copy: they say nothing, and are said so.
-  const units = await retirePhase(`${mutation.name}: unit tests' build`, () => build(files, 0, true));
-  if (typeof units !== "string") throw new Error(`${mutation.name}'s unit tests ${units.problem}`);
-  const unit = await retirePhase(`${mutation.name}: unit tests`, () => unitFailures(units));
+  const unit = await retirePhase(`${mutation.name}: unit tests`, () => everyUnit(files, `${mutation.name}'s unit tests`));
   const unitCaught = [...unit.failed].filter((name) => !unitControl.failed.has(name)).map((name) => `cargo test: ${name}`);
   const unitSilent = [...unit.failed].filter((name) => unitControl.failed.has(name)).map((name) => `cargo test: ${name}`);
   // A unit test that caught it: it can't be retired, its suite unrun.
@@ -2159,11 +2184,13 @@ async function main() {
     }
   }
   // And each unit tests' filter, as the crate is: some run, and pass.
-  const filters = [...new Set(chosen.flatMap((m) => (m.unitTests === undefined ? [] : [m.unitTests])))];
-  if (filters.length > 0) {
-    const unitTests = await build(undefined, 0, true);
+  // Each crate's filters by its own unit tests (ADR 1181).
+  const filtersOf = new Map<CompilerCrate, Set<string>>();
+  for (const m of chosen) if (m.unitTests !== undefined) filtersOf.set(unitCrate(m), (filtersOf.get(unitCrate(m)) ?? new Set()).add(m.unitTests));
+  for (const [crate, filters] of filtersOf) {
+    const unitTests = await build(undefined, 0, crate);
     if (typeof unitTests !== "string") throw new Error(`the unit tests as the crate is ${unitTests.problem}`);
-    for (const [filter, p] of await Promise.all(filters.map(async (filter) => [filter, await unitTest(unitTests, filter)] as const))) {
+    for (const [filter, p] of await Promise.all([...filters].map(async (filter) => [filter, await unitTest(unitTests, filter)] as const))) {
       if (judgeUnit(p) !== "survived") {
         problems.push(`\`cargo test ${filter}\` doesn't run and pass as the crate is:\n${(p.stdout + p.stderr).slice(-1500)}`);
         failedUnits.set(filter, "INCONCLUSIVE: its unit tests don't run and pass as the crate is");
@@ -2209,7 +2236,9 @@ async function main() {
   // Those unit tests catch in builds of their own, of the unit tests'
   // binary alone.
   const ofUnit = (unit: boolean) => sited.filter((s) => (s.mutation.unitTests !== undefined) === unit);
-  const queue: Sited[][] = [...batches(ofUnit(true), size), ...batches(ofUnit(false), size), ...sited.filter((s) => s.site === undefined).map((s) => [s])];
+  // A build of many's unit tests are one crate's (`unitTarget`).
+  const unitsOf = (crate: CompilerCrate) => ofUnit(true).filter((s) => unitCrate(s.mutation) === crate);
+  const queue: Sited[][] = [...compilerCrates().flatMap((crate) => batches(unitsOf(crate), size)), ...batches(ofUnit(false), size), ...sited.filter((s) => s.site === undefined).map((s) => [s])];
   // What each took of the shard's time, its build's share and its tests'
   // (`shareOfShard`), in seconds: what the shards and a check's plan deal
   // and size them by.
@@ -2394,7 +2423,7 @@ async function main() {
     }
     const began = performance.now();
     const files = schema(batch, read);
-    const unit = batch[0].mutation.unitTests !== undefined;
+    const unit = batch[0].mutation.unitTests !== undefined ? unitCrate(batch[0].mutation) : undefined;
     const compiler = files instanceof Map ? await build(files, slot, unit) : files;
     const building = (performance.now() - began) / 1000;
     const names = batch.length === 1 ? batch[0].mutation.name : `${batch[0].mutation.name} and ${batch.length - 1} more`;

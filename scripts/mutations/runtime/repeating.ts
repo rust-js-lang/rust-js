@@ -1,11 +1,11 @@
-// Mutations of src/runtime/repeating.js (ADR 0422).
+// Mutations of crates/rust-js-program/src/runtime/repeating.js (ADR 0422).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "repeating-n-unhinted",
     breaks: "`repeat_n(x, n)` hints `(0, None)`, so a `map` of it, collected, asks no room and runs its closure until memory runs out, where std panics `capacity overflow` first (#246)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "  it.sizeHint = () => [left, left];\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeating-closed-undropped",
     breaks: "a `repeat`'s value isn't dropped when its iterator is closed",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "    () => $close(it, () => drop?.(value)),\n",
     replace: "    () => $close(it, () => {}),\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeating-closed-twice",
     breaks: "a `repeat`'s value is dropped each time its iterator is closed, so a `take(2)` of it, closed at its limit and again at its collect's end, drops it twice (#708)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "    () => $close(it, () => drop?.(value)),\n",
     replace: "    () => drop?.(value),\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeating-js-iterator",
     breaks: "a `repeat` is JS's iterator, whose `take` is done with it once a clone throws, a panic, so the value it holds is never dropped as the panic unwinds (#708)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "  const it = new $Steps(\n    () => ({ done: false, value: clone(value) }),\n",
     replace: "  const it = ((next, close) => Iterator.from({ next, return: () => (close(), { done: true }) }))(\n    () => ({ done: false, value: clone(value) }),\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-n-none-kept",
     breaks: "`repeat_n` of a count of none drops none of its value",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "  if (left === 0) drop?.(value);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_and_peek_mut.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-n-last-cloned",
     breaks: "`repeat_n`'s last item is a clone, its value never given or dropped",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "      return { done: false, value: left === 0 ? value : clone(value) };\n",
     replace: "      return { done: false, value: clone(value) };\n",
     tests: ["test/corpus.test.ts", "-t", "^(repeat_n_and_peek_mut|repeat_own_steps_clone_none).rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-n-closed-kept",
     breaks: "`repeat_n` dropped before its last drops none of its value",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "        left = 0;\n        drop?.(value);\n",
     replace: "        left = 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_and_peek_mut.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-advance-clones",
     breaks: "`repeat(x).take(n).count()` steps it by `next`, cloning each, where std's `Repeat::advance_by` makes none (#1124)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "  $forward(it, undefined, { advanceBy: () => 0, count: infinite, last: infinite });\n",
     replace: "  $forward(it, undefined, { count: infinite, last: infinite });\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_own_steps_clone_none.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-n-advance-clones",
     breaks: "`repeat_n(x, n).nth(k)` clones each it passes, where std's `RepeatN::advance_by` counts down (#1124)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "  $forward(it, undefined, { advanceBy, last, count: countLeft });\n",
     replace: "  $forward(it, undefined, { last, count: countLeft });\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_own_steps_clone_none.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-n-own-last-cloned",
     breaks: "`repeat_n(x, n).last()` clones each item before its last, where std's gives the value itself (#1124)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "  $forward(it, undefined, { advanceBy, last, count: countLeft });\n",
     replace: "  $forward(it, undefined, { advanceBy, count: countLeft });\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_own_steps_clone_none.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-n-count-steps",
     breaks: "`repeat_n(x, n).count()` clones each item, where std's is its length (#1124)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "  $forward(it, undefined, { advanceBy, last, count: countLeft });\n",
     replace: "  $forward(it, undefined, { advanceBy, last });\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_own_steps_clone_none.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-own-nth-unflagged",
     breaks: "a `repeat`'s own `nth` isn't said to be its own, so `skip(n)` steps each it passes, cloning it (#1124)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "  return $owns(it, \"nth\", \"last\", \"count\");\n}\n\n// `it`, whose every step",
     replace: "  return $owns(it, \"last\", \"count\");\n}\n\n// `it`, whose every step",
     tests: ["test/corpus.test.ts", "-t", "^repeat_own_steps_clone_none.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-count-steps-forever",
     breaks: "`repeat(x).count()` steps it forever, where std's panics, as it never ends (#1138)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "  $forward(it, undefined, { advanceBy: () => 0, count: infinite, last: infinite });\n",
     replace: "  $forward(it, undefined, { advanceBy: () => 0, last: infinite });\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_count_panics.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-infinite-undropped",
     breaks: "`repeat(x).count()` panics leaving `x` undropped, where `count(self)` drops it as it unwinds (#1138)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "      () => it.return(),\n    );\n",
     replace: "      () => {},\n    );\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_count_panics.rs$"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeating-holds-no-element",
     breaks: "a held `take(n)` of a `repeat` stepped from its back, std's `Take<Repeat<T>>::next_back`, reads no `element` of the `$repeating` it holds, clones `undefined`, and throws (#1139)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "  it.element = value;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeating-carries-no-clone",
     breaks: "a `repeat`'s `clone()` and `cycle()` find no clone it carries, and throw (#1139)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "  $cloning(it, () => $repeating(clone(value), clone, drop));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeating-take-backless",
     breaks: "a `take(n)` of a `repeat` made in place has no back, so its `rev()` throws (#1139)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "    return $backAsFront(taken, () => taken.sizeHint()[0]);\n",
     replace: "    return taken;\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeating-n-backless",
     breaks: "a `repeat_n`'s `$repeatingN` has no back or length, so its `rev()`, `nth_back` and `len()` throw (#1139)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "  $backAsFront(it, () => left);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "back-as-front-nth-back-by-steps",
     breaks: "`nth_back` of a `repeat_n` steps each item it passes from its back, cloning and dropping each, where std's `nth` clones none (#1139)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "  $forward(it, it, { nthBack: \"nth\", advanceBackBy: \"advanceBy\" });\n",
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-n-clone-counts-from-the-start",
     breaks: "a `repeat_n`'s clone counts from its first count, not what it has left, so a clone made part way gives more items than std's (#1579)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "$repeatingN(clone(value), left, clone, drop) :",
     replace: "$repeatingN(clone(value), count, clone, drop) :",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_cloned.rs$"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-n-clone-of-done-clones",
     breaks: "a done `repeat_n`'s clone clones the value it gave away, `clone 2`, where std's clone of its `None` clones nothing (#1579)",
-    file: "src/runtime/repeating.js",
+    file: "crates/rust-js-program/src/runtime/repeating.js",
     find: "(left > 0 ? $repeatingN(clone(value), left, clone, drop) : $repeatingN(undefined, 0))",
     replace: "$repeatingN(clone(value), left, clone, drop)",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_cloned.rs$"],

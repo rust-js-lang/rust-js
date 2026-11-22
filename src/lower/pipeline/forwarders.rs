@@ -89,7 +89,7 @@ pub(super) fn found<'tcx>(
 /// needn't import.
 fn in_place<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (module, functions): (LocalModId, &mut Vec<crate::js::Function>),
+    (module, functions): (LocalModId, &mut Vec<rust_js_program::js::Function>),
     forwarders: &IndexMap<DefId, DefId>,
     (fns, foreign, paths): (
         &IndexMap<DefId, super::super::FnInfo>,
@@ -137,7 +137,7 @@ pub(super) struct InPlace {
 
 pub(super) fn reexported<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (module, functions): (LocalModId, &mut Vec<crate::js::Function>),
+    (module, functions): (LocalModId, &mut Vec<rust_js_program::js::Function>),
     forwarders: &IndexMap<DefId, DefId>,
     (fns, foreign, paths): (
         &IndexMap<DefId, super::super::FnInfo>,

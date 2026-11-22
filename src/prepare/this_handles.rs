@@ -8,7 +8,7 @@
 //! yet, which preparation spells apart from what its scope reads, `this$$1`
 //! where it reads another `this$` (`reclaim::spelled`, ADR 1150).
 
-use crate::js::{self, Name, Stmt};
+use rust_js_program::js::{self, Name, Stmt};
 
 /// Of a function's `body`, before its handles are written.
 pub(super) fn this_read_apart(body: &mut Vec<Stmt>) {

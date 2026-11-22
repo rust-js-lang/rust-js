@@ -13,8 +13,8 @@
 //! table of tidy's own (#1681 change 3).
 
 use super::reclaim::names_mut;
-use crate::js::{self, Name, scopes};
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js::{self, Name, scopes};
 
 /// `module`'s temporaries spelled, each item's in the order the program
 /// first reads them, as tidy named them: one made in a `try` before a
@@ -62,8 +62,8 @@ pub(super) fn spelled(module: &mut js::Module) {
             let base = name.made_base().expect("suggested is made");
             let to = (name.preferred().iter().cloned())
                 .chain(std::iter::once(base.to_string()))
-                .chain((1..).map(|k| crate::names::given_apart(base, k)))
-                .filter(|to| !crate::names::kept_word(to))
+                .chain((1..).map(|k| rust_js_program::names::given_apart(base, k)))
+                .filter(|to| !rust_js_program::names::kept_word(to))
                 .take(64 + name.preferred().len())
                 .find(|to| {
                     tree.as_ref().is_some_and(|tree| {
@@ -87,7 +87,7 @@ pub(super) fn spelled(module: &mut js::Module) {
                     let base = (name.preferred().iter().map(String::as_str))
                         .find(|word| !words.contains(*word))
                         .unwrap_or(base);
-                    crate::names::fresh_apart(&mut words, base)
+                    rust_js_program::names::fresh_apart(&mut words, base)
                 }
             };
             words.insert(to.clone());

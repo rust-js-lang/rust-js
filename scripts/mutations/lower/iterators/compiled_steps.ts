@@ -116,9 +116,9 @@ export const mutations: Mutation[] = [
     name: "compiled-rev-closes-nothing",
     breaks: "a held `Rev` closed, or dropped, drops nothing it holds",
     file: "src/lower/iterators/compiled_steps.rs",
-    find: "            if !body.is_empty() {\n                props.push(crate::js::Prop::Field(\n",
+    find: "            if !body.is_empty() {\n                props.push(rust_js_program::js::Prop::Field(\n",
     replace:
-      "            if false {\n                props.push(crate::js::Prop::Field(\n",
+      "            if false {\n                props.push(rust_js_program::js::Prop::Field(\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std"],
   },
   {

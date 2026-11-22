@@ -67,7 +67,7 @@ test("a JS key the compiler or the runtime writes is camelCase", () => {
   const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
   expect(lowering.flatMap((file) => code(read(file)).filter((line) => keyed.test(line)).map((line) => `${file}: ${line.trim()}`))).toEqual([]);
   // A helper's object key or method, `writeU32(n)`, `{ writeStr: .. }`.
-  const runtime = files("src/runtime").filter((file) => file.endsWith(".js"));
+  const runtime = files("crates/rust-js-program/src/runtime").filter((file) => file.endsWith(".js"));
   expect(runtime.length).toBeGreaterThan(100);
   const defined = /^\s+[a-z][a-z0-9]*_[a-z0-9_]*\s*(?:\(|:)/;
   expect(runtime.flatMap((file) => code(read(file)).filter((line) => defined.test(line)).map((line) => `${file}: ${line.trim()}`))).toEqual([]);
@@ -89,7 +89,7 @@ test("a block label is matched at a word's start", () => {
 // `spill_subject`, through `held_name`, both in `held.rs` since #2299.
 // Every other expression is made with none.
 test("a temporary's name a value carries is set and read in one place each", () => {
-  const files = compilerRustFiles().filter((file) => file !== "src/js.rs");
+  const files = compilerRustFiles().filter((file) => file !== "crates/rust-js-program/src/js.rs");
   const with_ = (pattern: RegExp) => files.filter((file) => pattern.test(read(file))).sort();
   expect(with_(/HeldAs\(Some/)).toEqual(["src/lower/mir/temporaries.rs"]);
   expect(with_(/\.held_as\.0/)).toEqual(["src/lower/held.rs"]);
@@ -110,9 +110,9 @@ test("a temporary's name a value carries is set and read in one place each", () 
 test("an unspelled name is made, spelled and refused in one place each", () => {
   const outsideTests = (file: string) => read(file).split("#[cfg(test)]")[0];
   const with_ = (pattern: RegExp) => sources.filter((file) => pattern.test(outsideTests(file)));
-  expect(with_(/names::made\(/)).toEqual(["src/js/name.rs"]);
+  expect(with_(/names::made\(/)).toEqual(["crates/rust-js-program/src/js/name.rs"]);
   expect(with_(/Name::made\(/)).toEqual(["src/lower.rs"]);
-  expect(with_(/names::made_base\(/)).toEqual(["src/js/name.rs", "src/js/validate.rs"]);
+  expect(with_(/names::made_base\(/)).toEqual(["crates/rust-js-program/src/js/name.rs", "crates/rust-js-program/src/js/validate.rs"]);
   // Preparation's speller, a loop's counter's its `counters` (#2032).
   // And its imports' spelling, which gives way to the program's names not
   // spelled yet by the word they'll take (#2070).
@@ -128,8 +128,8 @@ test("an unspelled name is made, spelled and refused in one place each", () => {
 // A `catch`'s declarations ask `given_apart_of` (#1681 change 3).
 test("a name given apart is read by its name's API alone", () => {
   const outsideTests = (file: string) => read(file).split("#[cfg(test)]")[0];
-  const reading = sources.filter((file) => file !== "src/names.rs" && /names::apart\(/.test(outsideTests(file)));
-  expect(reading.sort()).toEqual(["src/js/name.rs", "src/prepare/reclaim.rs"]);
+  const reading = sources.filter((file) => file !== "crates/rust-js-program/src/names.rs" && /names::apart\(/.test(outsideTests(file)));
+  expect(reading.sort()).toEqual(["crates/rust-js-program/src/js/name.rs", "src/prepare/reclaim.rs"]);
 });
 
 // A place a tree reads is keyed by `js::Path` alone (ADR 1150, step 3): its
@@ -139,7 +139,7 @@ test("a name given apart is read by its name's API alone", () => {
 // "element.editable", `call_path`'s "isItem()" and plain's "...items" were:
 // two variables of one word would be one key.
 test("a place is keyed by js::Path, never a name formatted with its fields", () => {
-  const scope = sources.filter(file => file.startsWith("src/lower/") || file.startsWith("src/js/") || file === "src/js.rs");
+  const scope = sources.filter(file => file.startsWith("src/lower/") || file.startsWith("crates/rust-js-program/src/js/") || file === "crates/rust-js-program/src/js.rs");
   const shapes = [
     /fn \w+\((?:e|expr|value): &(?:js::)?Expr\) -> Option<String>/,
     /format!\("\.\.\.\{/,
@@ -167,7 +167,7 @@ test("link reads no name's word", () => {
 // no word.
 test("js::scopes' words are asked only where names are spelled or checked", () => {
   const spelling = (file: string) => file.startsWith("src/prepare/") || file === "src/prepare.rs"
-    || file.startsWith("src/to_oxc") || file === "src/js/scopes.rs" || file === "src/js/validate.rs";
+    || file.startsWith("src/to_oxc") || file === "crates/rust-js-program/src/js/scopes.rs" || file === "crates/rust-js-program/src/js/validate.rs";
   const asked = sources.filter(file => !spelling(file)).flatMap(file => {
     const text = read(file);
     const items = [...text.matchAll(/js::scopes::(\w+)/g)].map(m => m[1])
@@ -188,7 +188,7 @@ test("js::scopes' words are asked only where names are spelled or checked", () =
 // flag's `$live`, is a `js::Suffix`, a closed kind (ADR 1150): nothing
 // writes one as text, `format!("{name}$live")`, outside its owner.
 test("a suffix is a js::Suffix, never written as text", () => {
-  const writing = sources.filter((file) => file !== "src/js/name.rs" && /\{[^}]*\}\$live/.test(read(file)));
+  const writing = sources.filter((file) => file !== "crates/rust-js-program/src/js/name.rs" && /\{[^}]*\}\$live/.test(read(file)));
   expect(writing).toEqual([]);
 });
 
@@ -198,8 +198,8 @@ test("a suffix is a js::Suffix, never written as text", () => {
 // a word only to spell or respell it; a question of kinship it asks goes
 // through `Name` (`given_apart_of`, `is_origin_of`).
 test("a name's kinship and form are never asked by parsing its word outside its owners", () => {
-  const owners = (file: string) => file === "src/js/name.rs" || file === "src/names.rs"
-    || file === "src/runtime.rs" || file.startsWith("src/to_oxc")
+  const owners = (file: string) => file === "crates/rust-js-program/src/js/name.rs" || file === "crates/rust-js-program/src/names.rs"
+    || file === "crates/rust-js-program/src/runtime.rs" || file.startsWith("src/to_oxc")
     || file === "src/prepare.rs" || file.startsWith("src/prepare/");
   const patterns = [/\.apart_of\(\)/g, /names::apart\(/g, /split\('\$'\)/g, /split_once\('\$'\)/g,
     /starts_with\('\$'\)/g, /starts_with\("_\$"\)/g, /strip_prefix\("__arg"\)/g, /\bparam\.root\(\)/g];
@@ -217,7 +217,7 @@ test("a name's kinship and form are never asked by parsing its word outside its 
 // validation `Problem` it makes, which names what it refuses. No other.
 test("a name's word is read outside preparation and printing only where JS sees it or a diagnostic says it", () => {
   const outside = (file: string) => !file.startsWith("src/prepare/") && file !== "src/prepare.rs"
-    && !file.startsWith("src/to_oxc") && file !== "src/js/name.rs" && file !== "src/js/scopes.rs";
+    && !file.startsWith("src/to_oxc") && file !== "crates/rust-js-program/src/js/name.rs" && file !== "crates/rust-js-program/src/js/scopes.rs";
   // The spans of each `format!(..)` and `Problem::X(..)`, by their brackets.
   const messages = (text: string) => [...text.matchAll(/format!\(|Problem::\w+\(/g)].map((m) => {
     let depth = 0;
@@ -258,7 +258,7 @@ test("no walk asks a variable by its word", () => {
     const text = read(file);
     const lines = text.split("\n");
     const of = (f: string) => {
-      const own = !file.startsWith("src/js/") && new RegExp(`\\bfn ${f}\\b`).test(text);
+      const own = !file.startsWith("crates/rust-js-program/src/js/") && new RegExp(`\\bfn ${f}\\b`).test(text);
       return lines.filter((line) => !new RegExp(`\\bfn ${f}\\b`).test(line))
         .flatMap((line) => [...line.matchAll(new RegExp(`(?<![\\w.])(js::)?${f}\\(`, "g"))])
         .filter((call) => call[1] !== undefined || !own).length;

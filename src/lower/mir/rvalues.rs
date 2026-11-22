@@ -948,7 +948,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if let js::ExprKind::Member(of, key) = &target.kind
                         && key == js::HELD
                         && let js::ExprKind::Call(callee, _) = &of.kind
-                        && !callee.helper_name().is_some_and(crate::runtime::names_a_place)
+                        && !callee
+                            .helper_name()
+                            .is_some_and(rust_js_program::runtime::names_a_place)
                         && !crate::lower::pointers::lends_a_place_handle(of)
                     {
                         return Err(refuse(

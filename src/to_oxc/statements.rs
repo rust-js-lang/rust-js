@@ -2,11 +2,11 @@
 //! namespace, a constant, a pattern, and each statement.
 
 use super::*;
-use crate::js::Name;
 use oxc_ast::ast::{
     ClassBody, ClassElement, ClassHeritage, ClassType, Function, MethodDefinitionKind, MethodDefinitionType,
     PropertyDefinitionType,
 };
+use rust_js_program::js::Name;
 
 impl<'a> Cx<'a> {
     pub(super) fn params(&self, kind: FormalParameterKind, patterns: &[js::Pattern]) -> FormalParameters<'a> {
@@ -863,7 +863,7 @@ impl<'a> Cx<'a> {
             js::Pattern::Object(fields, rest) => {
                 let fields = fields.iter().map(|(field, var, default)| {
                     // A field that isn't a JS name, `data-platform`, is quoted.
-                    let key = if crate::names::is_identifier(field) {
+                    let key = if rust_js_program::names::is_identifier(field) {
                         PropertyKey::new_static_identifier(SPAN, self.name(field), b)
                     } else {
                         PropertyKey::new_string_literal(SPAN, self.name(field), None, b)

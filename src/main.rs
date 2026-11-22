@@ -53,24 +53,20 @@ mod comments;
 mod css_modules;
 mod format;
 mod hooks;
-mod js;
 mod jsx_syntax;
 mod library;
 mod link;
 mod lower;
 mod manifest;
-mod names;
 mod node_session;
 mod output;
 mod packages;
-mod paths;
 mod phase_times;
 mod prepare;
 mod prettier;
 mod program;
 mod publish;
 mod reachability;
-mod runtime;
 mod settings;
 #[cfg(not(target_os = "wasi"))]
 mod source_format;
@@ -619,12 +615,12 @@ fn run() -> ExitCode {
             return ExitCode::SUCCESS;
         }
         Ok(command::Command::Knowns) => {
-            for known in js::Known::ALL {
+            for known in rust_js_program::js::Known::ALL {
                 let role = match known.role() {
-                    js::Role::Permits => "permits",
-                    js::Role::AsWritten => "as written",
-                    js::Role::Warns => "warns",
-                    js::Role::Form => "form",
+                    rust_js_program::js::Role::Permits => "permits",
+                    rust_js_program::js::Role::AsWritten => "as written",
+                    rust_js_program::js::Role::Warns => "warns",
+                    rust_js_program::js::Role::Form => "form",
                 };
                 println!("{} {role}", known.name());
             }
@@ -645,7 +641,7 @@ fn run() -> ExitCode {
             };
         }
         Ok(command::Command::RuntimeModule) => {
-            print!("{}", runtime::package_module());
+            print!("{}", rust_js_program::runtime::package_module());
             return ExitCode::SUCCESS;
         }
         Ok(command::Command::StdDeclarations) => {
@@ -842,7 +838,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
     } = build;
     // Before anything is lowered: a fact forgotten is one never said, and
     // which of tidy's passes fire recorded from the first body (#1461).
-    js::forget_known(&without_known);
+    rust_js_program::js::forget_known(&without_known);
     if tidy_fired.is_some() {
         lower::session::record_tidy_fired();
     }
@@ -883,7 +879,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
     ]
     .into_iter()
     .flatten()
-    .map(|path| paths::absolute(path))
+    .map(|path| rust_js_program::paths::absolute(path))
     .collect::<Result<_, _>>()?;
     let recording = prepare_fired.is_some();
     plan.prepare = (prepare::Passes::without(&prepare_without, recording), prepare_fired);
@@ -990,9 +986,13 @@ fn finish_build(prepared: Prepared, exit: ExitCode) -> Result<ExitCode, String> 
             // And the printer's, of its declarations (`printer_reads`).
             reading.extend(printer_reads.clone().unwrap_or_default());
             if let Some(previous) = plan.manifest.as_ref().filter(|path| path.exists()) {
-                reading.push(paths::absolute(previous)?);
+                reading.push(rust_js_program::paths::absolute(previous)?);
             }
-            let coverage = callbacks.std_coverage.as_deref().map(paths::absolute).transpose()?;
+            let coverage = callbacks
+                .std_coverage
+                .as_deref()
+                .map(rust_js_program::paths::absolute)
+                .transpose()?;
             plan.dep_info = Some((
                 path.clone(),
                 Box::new(move |read: &[PathBuf], wrote: &[PathBuf]| {
@@ -1010,7 +1010,10 @@ fn finish_build(prepared: Prepared, exit: ExitCode) -> Result<ExitCode, String> 
         // where it's asked (ADR 1127): the driver's to write, as the
         // decisions' counts are, once all that reads a fact has run.
         if let Some(path) = &knowns_found {
-            let found: String = js::known_found().iter().map(|name| format!("{name}\n")).collect();
+            let found: String = rust_js_program::js::known_found()
+                .iter()
+                .map(|name| format!("{name}\n"))
+                .collect();
             std::fs::write(path, found)
                 .map_err(|error| format!("can't write the facts found to {}: {error}", path.display()))?;
         }

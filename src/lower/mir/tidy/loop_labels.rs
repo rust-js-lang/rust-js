@@ -8,7 +8,7 @@
 
 use rust_js_program::collections::IndexSet;
 
-use crate::js::{self, Expr, Name, Op, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, Name, Op, Stmt, StmtKind};
 
 /// The label a loop's given where the program named it none and a `switch`
 /// of guarded arms that fall through, which MIR's tests give no `if` chain

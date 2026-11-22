@@ -1,11 +1,11 @@
-// Mutations of src/js/applied.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/js/applied.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "applied-handle-write-answer-unasked",
     breaks: "a write through a handle a closure applied in place is given is stored by its form alone, not by what MIR said of it (#2112 S4b)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "                let given = stmt.facts.written();\n",
     replace: "                let given = { let _ = &stmt.facts; crate::js::Undefined::ByForm };\n",
     tests: ["test/lowering-nullable.test.ts", "test/lowering-nullable-reads.test.ts", "test/lowering-nullable-borrows.test.ts", "test/lowering-module-variables.test.ts", "test/lowering-nullable-tests.test.ts"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "applied-unspelled-spelled-again",
     breaks:
       "a closure's shadow of its parameter lowering made already, `currentCallbacks#1`, is made again, so what its handle reads is held, `const currentCallbacks$1 = currentCallbacks` (ADR 1150)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "    for from in declared.into_iter().filter(|name| !name.is_unspelled()) {\n",
     replace: "    for from in declared {\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_shadow_of_its_handle.rs$"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-tail-switch-unseen",
     breaks: "a closure called last in a `switch`'s case at the function's end stays `return ((e) => { throw e; })(e);` (rd378)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "        StmtKind::Switch { cases, default, .. } => leaving_cases(cases, default).any(|list| tail_applied(list, whole)),\n",
     replace: "",
     tests: ["test/lowering-throws.test.ts", "-t", "switch case's value, is its throw"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "leaving-cases-last-unseen",
     breaks: "a `switch`'s `default`, whose end leaves it with no `break;` written, isn't a case that leaves, so its closure called last stays one (rd378)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "        .filter(move |(i, _)| *i == last || !falls[*i])\n",
     replace: "        .filter(move |(i, _)| *i != last && !falls[*i])\n",
     tests: ["test/lowering-throws.test.ts", "-t", "switch case's value, is its throw"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-case-return-unbroken",
     breaks: "a closure called last in a case that leaves its `switch`, whose `return;` is that case's `break;`, stays `((seen) => { .. return; .. })(seen)` (rd379)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "        if !(leaves && returns_as_breaks(&mut broken)) {\n",
     replace: "        if !(false && returns_as_breaks(&mut broken)) {\n",
     tests: ["test/lowering-switch-ends.test.ts", "-t", "ends a switch's case is its body"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-return-not-broken",
     breaks: "a closure's `return;` in its loop isn't that loop's `break`, so one called before the function's end stays a closure",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "            stmt.kind = StmtKind::Break(None);\n            true\n",
     replace: "            false\n",
     tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-tail-returns-refused",
     breaks: "a closure whose `return;` ends the function, called last, stays a closure",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "    if any && !tail && !returns_broken(&mut body) {\n",
     replace: "    if any && !returns_broken(&mut body) {\n",
     tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-closures-skipped",
     breaks: "a thread-local's `with(|&f| ..)` in a closure's body stays `((f) => { .. })(f)`, where in a function's it's its body",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "        ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => applied_in(inner, true),\n",
     replace: "",
     tests: ["test/lowering-cells.test.ts", "-t", "closure's body where it's called"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-nested-not-again",
     breaks: "a thread-local's `with` in another's closure that reads the outer parameter leaves the outer one `((d) => { .. })(DEFAULT)` (rd661)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "    while closures_applied(body) {\n        applied_in(body, ends_function);\n    }\n",
     replace: "    closures_applied(body);\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_with_nested.rs$"],
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-imported-refused",
     breaks: "another module's thread-local's `with(|&report| ..)` stays `((report) => { .. })(report)`, React's `REPORT_GLOBAL_ERROR`'s",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "            ExprKind::Symbol(_) => false,\n",
     replace: "",
     tests: ["test/lowering-cells.test.ts", "-t", "another module's thread-local"],
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-param-unread",
     breaks: "a closure's parameter, called with what's another name, is left unread, so its body reads a variable that isn't",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "        && !substituted(&mut body, &|v| (v == param).then(|| read.clone()))\n",
     replace: "        && false\n",
     tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-branch-read-taken",
     breaks: "a tested flag's closure is in place though a block of its body declares a word its branch reads, `return n` reading the block's `n`, not the function's (#1681 change 3)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "    super::scopes::not_read_as_themselves(&replaced, &read)\n        .is_empty()\n        .then_some(replaced)\n",
     replace: "    Some(replaced)\n",
     unitTests: "js::applied::tests::a_tested_flag_is_in_place_but_where_a_block_shadows_what_its_branch_reads",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-shadow-kept",
     breaks: "a thread-local's `with(|held| { let held = held.as_ref().unwrap(); .. })`, whose parameter tidy sets, is its body still setting it, `held = $unwrap(held);`, the module's `const`",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "    if let Some((param, _)) = parameter\n        && Writes::sets(&body, param)\n",
     replace: "    if let Some((param, _)) = parameter\n        && false\n        && Writes::sets(&body, param)\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_with_in_place.rs$"],
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-shadow-set-again-const",
     breaks: "a parameter's shadow set again after, `items += bump(4)`, is a `const`, which throws where it's set",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "            true => StmtKind::Let(to, Some(value)),\n            false => StmtKind::Const(to, value),\n",
     replace: "            _ => StmtKind::Const(to, value),\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_with_in_place.rs$"],
@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
     name: "applied-shadow-not-apart",
     breaks:
       "a parameter's shadow is made a holder of the parameter, not of the thread-local the handle it's given reads, so it stays, `const current$1 = current;`, where it's the thread-local",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "        let of = given.unwrap_or(param);\n",
     replace: "        let of = param;\n",
     tests: ["test/corpus.test.ts", "-t", "^(thread_local_with_in_place|thread_local_shadow_of_its_handle).rs$"],
@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
   {
     name: "named-call-never-applied",
     breaks: "a `Drop`'s one drop calls its function, `restoreDrop_drop(_restore)`, where it's its body",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "    block_of(&call, whole, false, false, false).or_else(|| value_of(&call, whole))\n",
     replace: "    block_of(&call, whole, false, false, false).filter(|_| false).or_else(|| value_of(&call, whole))\n",
     tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-value-kept",
     breaks: "a thread-local's `with` as an `if`'s test or a value stays a closure called, `if (((didWarn) => ..)(didWarn))`",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "            let inlined = |stmt: &Stmt| block_of(stmt, &whole, false, true, false).or_else(|| value_of(stmt, &whole));\n",
     replace: "            let inlined = |stmt: &Stmt| block_of(stmt, &whole, false, true, false);\n",
     tests: ["test/lowering-cells.test.ts", "-t", "with is its closure's body"],
@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-value-early-return",
     breaks: "a closure that returns before its end is its body in place, its `return` the function's, which gives what the closure gave",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "    if !matches!(last.kind, StmtKind::Return(Some(_))) || returns(before).0 {\n",
     replace: "    if !matches!(last.kind, StmtKind::Return(Some(_))) {\n",
     tests: ["test/corpus.test.ts", "-t", "thread_local_with_in_place"],
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-value-operand-unseen",
     breaks: "a closure called as the first operand of what a statement evaluates stays one, `const total = ((internals) => ..)(internals) + bump(3)`",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "        ExprKind::Binary(_, a, _) | ExprKind::Cond(a, ..) | ExprKind::Member(a, _) | ExprKind::Index(a, _) => {\n",
     replace: "        ExprKind::Cond(a, ..) | ExprKind::Member(a, _) | ExprKind::Index(a, _) => {\n",
     tests: ["test/corpus.test.ts", "-t", "thread_local_with_in_place"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "applied-clash-kept",
     breaks: "a `Drop`'s body's name that's the caller's own is kept, `const doubled = ..` where the caller's parameter is `doubled`, which JS refuses",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "        super::stmt_walk::replaced(&mut body, &from, &to);\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "lazy-local-with-unheld",
     breaks: "a thread-local made where it's first used, given a closure, stays `((x) => { .. })(x())`, not held first",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "    if held && let Some((param, arg)) = parameter {\n",
     replace: "    if held && false && let Some((param, arg)) = parameter {\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_runs_a_cycle.rs$"],
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
   {
     name: "unused-parameter-argument-kept",
     breaks: "a unit struct's `Drop`, given its guard's box, stays a function each drop calls, `finishFlushingDrop_drop({ value: _finish })` (ADR 0608, amended)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "        _ if !arg.has_effects() && mentions_of(&body, param) == 0 => false,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^drop_unit_guard.rs$"],
@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
   {
     name: "returned-closure-called",
     breaks: "React's warnAboutUpdateOnNotYetMountedFiberInDEV, a thread-local's `with_borrow_mut` whose closure returns early, the function's value, is `return ((didWarn) => { .. })(didWarn);` and the variable a box (bx1, ADR 0581, amended)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: ".or_else(|| returned_block(&stmts[last], whole))",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^returned_closure_body.rs$"],
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
   {
     name: "tail-branch-unapplied",
     breaks: "a closure called where it's made that ends the function in an `else` the program wrote, React's `EXCEPTION.with(|e| js::throw(..))`, is `return ((exception) => { throw exception; })(exception);` (rd106)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "            tail_applied(then, whole) || branch(otherwise)\n",
     replace: "            false\n",
     tests: ["test/lowering-throws.test.ts", "-t", "a with whose closure throws"],
@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
     name: "applied-argument-at-call",
     breaks:
       "a closure's parameter read in its body in place is where the call is, so a comment above a thread-local's `with` prints inside an index loop's test, `i <\n// We listen ..\nmediaEventTypes.length` (rd355)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "    read.each_mut(&mut |e| e.span = Span::NONE);\n",
     replace: "",
     tests: ["test/lowering-index-loops.test.ts", "-t", "a comment above a loop over a thread-local's array"],
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
   {
     name: "value-in-place-comment-moved",
     breaks: "the comment before the closure's value, `// Whether it's three.`, is above the `try`, not before what reads the value (ADR 0706, amended)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "        stmts[at].span.lo = made.span.lo;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_value_in_place.rs$"],
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
   {
     name: "value-in-place-comment-lost",
     breaks: "the comment in `catch_unwind`'s closure, `// Called once.`, above the value the program names, the closure's first line, is lost once the value's read where it's read: the reader, its span widened to start where the value's did, holds it inside, before no statement (rd16)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "        stmts.insert(at, StmtKind::Comments.at(made.span));\n",
     replace: "",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment in catch_unwind's closure is in the try"],
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
   {
     name: "returns-set-rest-dropped",
     breaks: "what follows a guard isn't its `else`, so a closure that returns early stays a closure called (rd60)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "                    true => replaced(&[branch, rest].concat(), true, replace),\n",
     replace: "                    true => replaced(branch, true, replace),\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "returns early sets the value"],
@@ -242,7 +242,7 @@ export const mutations: Mutation[] = [
   {
     name: "returns-replaced-goes-on-anywhere",
     breaks: "a `return` replaced by what goes on, `found = 0;` or an arm that does nothing, is where it was though more of the closure follows, which then runs",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "                if !last && !made.last().is_some_and(ends) {\n",
     replace: "                if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_(arms_where_returned|value_in_place).rs$"],
@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
   {
     name: "returns-replaced-nothing-unnegated",
     breaks: "a branch replaced by nothing, a guard's `return false;` whose arm does nothing, leaves its `if` testing what it did, so the other branch's statements run where it holds",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "                    (true, false) => StmtKind::If(test.clone().negated_test(), no, None),\n",
     replace: "                    (true, false) => StmtKind::If(test.clone(), no, None),\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_arms_where_returned.rs$"],
@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
   {
     name: "returned-in-loop-jumps",
     breaks: "an arm placed in the closure's loop, `if (limit > 3) { break; } return 90 + seen;`, breaks the closure's loop, not the one around the `match`",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "                    if jumps || !made.last().is_some_and(ends) {\n",
     replace: "                    if !made.last().is_some_and(ends) {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_arms_where_returned.rs$"],
@@ -266,7 +266,7 @@ export const mutations: Mutation[] = [
   {
     name: "returned-in-loop-goes-on",
     breaks: "an arm that does nothing, placed in the closure's loop, goes on with that loop, not past the `try`",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "                    if jumps || !made.last().is_some_and(ends) {\n",
     replace: "                    if jumps {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_arms_where_returned.rs$"],
@@ -275,7 +275,7 @@ export const mutations: Mutation[] = [
     name: "unread-parameter-read-given",
     breaks:
       "a generic `Drop` whose body reads what it's given for its type parameter, `TDefault.default()` and `dropT?.(old)`, is its body where it's dropped, which reads names the caller hasn't (#501)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "                && (unread.iter()).all(|p| matches!(p, Pattern::Name(n) if mentions_of(&body, n) == 0))\n",
     replace: "                && (unread.iter()).all(|p| matches!(p, Pattern::Name(_)))\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
@@ -284,7 +284,7 @@ export const mutations: Mutation[] = [
   {
     name: "closure-of-nothing-refused",
     breaks: "a closure of no parameters, a guard's `|| ..`, called with nothing, stays its call, `restore();` (#501)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "        ([], []) => None,\n",
     replace: "",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard of a closure"],
@@ -293,7 +293,7 @@ export const mutations: Mutation[] = [
     name: "expression-closure-kept",
     breaks:
       "a guard's closure of an expression, `() => log(..)`, stays `const onDrop = () => ..; .. onDrop();`, where its body is what drops it (#501)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "    block_of(&call, whole, false, false, false).or_else(|| value_of(&call, whole))\n",
     replace: "    block_of(&call, whole, false, false, false)\n",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard of a closure"],
@@ -302,7 +302,7 @@ export const mutations: Mutation[] = [
     name: "handle-given-not-applied",
     breaks:
       "a closure given a handle on a nullable thread-local, a `with_borrow_mut`'s, stays its call of the handle, `((t) => { .. })({ get value() .. })` (#541)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "            ExprKind::Handle(place, _)\n                if place.reads_same()\n",
     replace: "            ExprKind::Handle(place, _)\n                if false && place.reads_same()\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
@@ -312,7 +312,7 @@ export const mutations: Mutation[] = [
     name: "through-handles-skipped",
     breaks:
       "a closure applied in place of a handle keeps the handle's writes, `({ get value() .. }).value = noneOf(1)` (#541)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "        through_handles(&mut body);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
@@ -322,7 +322,7 @@ export const mutations: Mutation[] = [
     name: "through-handles-as-given",
     breaks:
       "what's written through a handle applied in place is stored as it is, `current = noneOf(1)`, not as the handle stores it (#541)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "                    let written = storage.written(std::mem::replace(value, Expr::taken()), given);\n",
     replace: "                    let written = std::mem::replace(value, Expr::taken());\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
@@ -331,7 +331,7 @@ export const mutations: Mutation[] = [
     name: "tested-flag-unapplied",
     breaks:
       "a closure whose `bool` only the next `if` tests stays a call given a handle, `((didWarn) => { .. })({ get value() { .. } })`, not upstream's `if (didWarn.has(componentName)) { return; }` (#571)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "            if let Some((i, inlined)) = (0..stmts.len()).find_map(|i| Some((i, tested_of(stmts, i, &whole)?))) {\n",
     replace:
       "            if let Some((i, inlined)) = (0..stmts.len()).find_map(|i| Some((i, tested_of(stmts, i, &whole).filter(|_| false)?))) {\n",
@@ -342,7 +342,7 @@ export const mutations: Mutation[] = [
     name: "tested-flag-read-again",
     breaks:
       "a flag read again after the `if` that tests it, `format!(\"seen {fresh}\")`, is folded into the closure's returns, and that read finds no variable (#571)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: " || mentions_of(whole, name) != 1 {\n",
     replace: " {\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_returned_early_tested.rs$"],
@@ -351,7 +351,7 @@ export const mutations: Mutation[] = [
     name: "tested-flag-any-branch",
     breaks:
       "a branch that does more than return, `println!(\"seen {n}\"); return;`, is copied to each of the closure's returns (#571)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "        _ => false,\n    };\n    if !leaves(&yes)",
     replace: "        _ => true,\n    };\n    if !leaves(&yes)",
     tests: ["test/corpus.test.ts", "-t", "^closure_returned_early_tested.rs$"],
@@ -361,7 +361,7 @@ export const mutations: Mutation[] = [
     name: "tested-flag-negation-unflipped",
     breaks:
       "a flag tested negated, `if !fresh { return 0; }`, runs its branch where the closure gave `true`, so a fresh number is 0 (#571)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "            (otherwise, then.clone())\n",
     replace: "            (then.clone(), otherwise)\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_returned_early_tested.rs$"],
@@ -370,7 +370,7 @@ export const mutations: Mutation[] = [
     name: "set-value-held-never",
     breaks:
       "a `Some` arm's binding into a nullable thread-local's lent place, in place, stays a copy of the module's variable, `const didWarn$1 = didWarn;` (rd723)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "        set_values_held(&mut body, param);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^lent_place_set_read_in_place.rs$"],
@@ -380,7 +380,7 @@ export const mutations: Mutation[] = [
     name: "set-value-held-handle-mentioned",
     breaks:
       "a branch that sets the place through the handle, `*count = Some(n + 1);`, reads its binding as the place after the write, so `n > 1` reads the new count (rd723)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: " || mentions_of(rest, handle) > 0 || ",
     replace: " || ",
     tests: ["test/corpus.test.ts", "-t", "^lent_place_set_read_in_place.rs$"],
@@ -389,7 +389,7 @@ export const mutations: Mutation[] = [
     name: "set-value-held-any-test",
     breaks:
       "a branch whose test is more than that the place is set, `count != null && count > limit`, reads its binding as the place, beyond the one form rd723 takes",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "            if !null_test(test, true).is_some_and(is_held) {\n",
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^lent_place_set_read_in_place.rs$"],
@@ -399,7 +399,7 @@ export const mutations: Mutation[] = [
     name: "set-value-held-any-value",
     breaks:
       "a branch that begins with what isn't the place, `const stamp = tick();`, reads `stamp` as its call, so each read calls `tick()` again (rd723)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "            if !is_held(value) || ",
     replace: "            if ",
     tests: ["test/corpus.test.ts", "-t", "^lent_place_set_read_in_place.rs$"],
@@ -408,7 +408,7 @@ export const mutations: Mutation[] = [
     name: "set-value-held-closure-read",
     breaks:
       "a branch with a closure reading the binding, `const count = () => set.size;`, loses its binding, so the closure reads a name nothing declares (rd723)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "            if !substituted(&mut read, &|v| (v == set).then(|| value.clone())) {\n                continue;\n            }\n",
     replace: "            substituted(&mut read, &|v| (v == set).then(|| value.clone()));\n",
     tests: ["test/corpus.test.ts", "-t", "^lent_place_set_read_in_place.rs$"],
@@ -417,7 +417,7 @@ export const mutations: Mutation[] = [
     name: "set-of-never",
     breaks:
       "a closure whose value a `let` holds that returns before its end stays a call, a nullable thread-local's given its seven-line getter and setter handle (#591)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "find_map(|i| Some((i, set_of(&stmts[i], &whole)?)))",
     replace: "find_map(|i| Some((i, None::<Vec<Stmt>>?)))",
     tests: ["test/corpus.test.ts", "-t", "^closure_returned_early_set.rs$"],
@@ -426,7 +426,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-of-return-dropped",
     breaks: "each `return v` is `v;`, which sets nothing, so the `let` is `undefined` (#591, a wrong answer)",
-    file: "src/js/applied.rs",
+    file: "crates/rust-js-program/src/js/applied.rs",
     find: "Some(vec![StmtKind::Assign(to.clone(), value.clone()).at(at)]);\n    let set = returns_replaced(&inlined, &set)?;",
     replace: "Some(vec![StmtKind::Expr(value.clone()).at(at)]);\n    let set = returns_replaced(&inlined, &set)?;",
     tests: ["test/corpus.test.ts", "-t", "^closure_returned_early_set.rs$"],

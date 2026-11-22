@@ -1,11 +1,11 @@
-// Mutations of src/runtime/utf8.js (ADR 0172).
+// Mutations of crates/rust-js-program/src/runtime/utf8.js (ADR 0172).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "escape-ascii-text",
     breaks: "a byte slice's `escape_ascii()` is its escape's text, not its bytes: stepped it gives `char`s, its `sum()` 0 (ADR 0971)",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "  return Array.from(text, (c) => c.charCodeAt(0));\n",
     replace: "  return text;\n",
     tests: ["test/corpus.test.ts", "-t", "^(slice_bytes_text|byte_escape).rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf8-surrogates-accepted",
     breaks: "`ED A0 80`, a surrogate's bytes, is taken for UTF-8",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "    const high = first === 0xed ? 0x9f : first === 0xf4 ? 0x8f : 0xbf;",
     replace: "    const high = first === 0xf4 ? 0x8f : 0xbf;",
     tests: ["test/corpus.test.ts", "-t", "utf8_decoding"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf8-past-max-accepted",
     breaks: "`F4 90 80 80`, past U+10FFFF, is taken for UTF-8",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "    const high = first === 0xed ? 0x9f : first === 0xf4 ? 0x8f : 0xbf;",
     replace: "    const high = first === 0xed ? 0x9f : 0xbf;",
     tests: ["test/corpus.test.ts", "-t", "utf8_decoding"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf8-incomplete-as-invalid",
     breaks: "bytes ending inside a sequence are an invalid sequence, not an incomplete one",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "      if (i + k >= bytes.length) return [i, undefined];",
     replace: "      if (i + k >= bytes.length) return [i, k];",
     tests: ["test/corpus.test.ts", "-t", "utf8_decoding"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf8-error-length-whole",
     breaks: "a bad sequence's length is its first byte's width, not where it went bad",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "      if (k === 1 ? byte < low || byte > high : (byte & 0xc0) !== 0x80) return [i, k];",
     replace: "      if (k === 1 ? byte < low || byte > high : (byte & 0xc0) !== 0x80) return [i, width];",
     tests: ["test/corpus.test.ts", "-t", "utf8_decoding"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf8-lossy-always-owned",
     breaks: "`from_utf8_lossy` of valid UTF-8 is owned, not borrowed",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: '  return { TAG: $utf8Check(bytes) === undefined ? "Borrowed" : "Owned", _0: $utf8Decode(bytes) };',
     replace: '  return { TAG: "Owned", _0: $utf8Decode(bytes) };',
     tests: ["test/corpus.test.ts", "-t", "utf8_decoding"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf8-drops-bom",
     breaks: "`String::from_utf8_lossy` of text beginning with U+FEFF drops it, as a byte order mark",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: 'new TextDecoder("utf-8", { ignoreBOM: true })',
     replace: "new TextDecoder()",
     tests: ["test/corpus.test.ts", "-t", "matrix_strings"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "from-utf8-mut-unwritten",
     breaks: "a `&mut str` of bytes isn't written through to them",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "      new TextEncoder().encode(next).forEach((byte, i) => (bytes[i] = byte));\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","str_mut"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "from-utf8-mut-unchecked-result",
     breaks: "`from_utf8_unchecked_mut` gives a `Result`",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "  if (unchecked) return text;\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","str_mut"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "escape-ascii-unnamed",
     breaks: "`escape_ascii` writes a tab as `\\x09`, not `\\t`",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "    if (byte in named) text += named[byte];\n",
     replace: "    if (false) text += named[byte];\n",
     tests: ["test/corpus.test.ts","-t","slice_bytes_text"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "escape-ascii-delete-printed",
     breaks: "`escape_ascii` prints `\\x7f` as itself",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "    else if (byte >= 0x20 && byte < 0x7f) text += String.fromCharCode(byte);",
     replace: "    else if (byte >= 0x20 && byte <= 0x7f) text += String.fromCharCode(byte);",
     tests: ["test/corpus.test.ts","-t","slice_bytes_text"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "escape-ascii-hex-unpadded",
     breaks: "`escape_ascii` writes `\\x0`, not `\\x00`",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "byte.toString(16).padStart(2, \"0\")",
     replace: "byte.toString(16)",
     tests: ["test/corpus.test.ts","-t","slice_bytes_text"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf8-chunks-incomplete-dropped",
     breaks: "`utf8_chunks` leaves out bytes that end inside a sequence",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "    const stop = !bad ? end : bad[1] === undefined ? bytes.length : end + bad[1];",
     replace: "    const stop = !bad ? end : bad[1] === undefined ? end + 1 : end + bad[1];",
     tests: ["test/corpus.test.ts","-t","slice_bytes_text"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf8-chunks-one-bad-byte",
     breaks: "`utf8_chunks` cuts each bad byte alone, not the sequence Rust cuts",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "end + bad[1];\n    chunks.push(",
     replace: "end + 1;\n    chunks.push(",
     tests: ["test/corpus.test.ts","-t","slice_bytes_text"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "byte-escape-shows-all",
     breaks: "`{}` of a byte's escape partly stepped shows all of it",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "  return String.fromCharCode.apply(null, it.items.slice(it.at, it.end));",
     replace: "  return String.fromCharCode.apply(null, it.items);",
     tests: ["test/corpus.test.ts", "-t", "^byte_escape.rs$"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "encode-utf8-unwritten",
     breaks: "`encode_utf8` writes nothing to its buffer",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "  bytes.forEach((b, i) => (buf[i] = b));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "encode-utf8-text-apart",
     breaks: "the `&mut str` `encode_utf8` gives is a text of its own, so a change through it isn't written to the buffer",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "  return $utf8Mut(buf, bytes.length);\n",
     replace: "  return { value: c };\n",
     tests: ["test/corpus.test.ts", "-t", "^encode_utf8_written.rs$"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf8-mut-whole-buffer",
     breaks: "the `&mut str` `encode_utf8` gives reads the whole buffer, its zero bytes too",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "length === bytes.length ? bytes : bytes.slice(0, length)",
     replace: "bytes",
     tests: ["test/corpus.test.ts", "-t", "^encode_utf8_written.rs$"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf8-error-unpadded",
     breaks: "`{:3?}` of a `Utf8Error` pads none of its numbers",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "  const n = (number) => $padIntegral(true, \"\", String(number), options);\n",
     replace: "  const n = (number) => String(number);\n",
     tests: ["test/corpus.test.ts", "-t", "^format_options_reached.rs$"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "encode-char-utf16-unwritten",
     breaks: "encode_utf16 writes its units into buf",
-    file: "src/runtime/utf8.js",
+    file: "crates/rust-js-program/src/runtime/utf8.js",
     find: "for (let i = 0; i < c.length; i++) buf[i] = c.charCodeAt(i);",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "str_odds"],

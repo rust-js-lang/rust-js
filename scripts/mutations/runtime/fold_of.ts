@@ -1,11 +1,11 @@
-// Mutations of src/runtime/fold_of.js.
+// Mutations of crates/rust-js-program/src/runtime/fold_of.js.
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "collect-dropping-keeps-collected",
     breaks: "a `collect` a panic stops leaves what it had collected undropped (#422)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "    if (drop !== undefined) $dropItems(items, drop);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(panic_mid_iteration_drops|collect_close_panics).rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-rest-first-ignored",
     breaks: "a `collect` std does otherwise than in place, a panic stopping it, drops what it collected before what's left, where std drops what's left first (#423)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  return restFirst ? $unwinds(run, rest, collected) : $unwinds(run, collected, rest);",
     replace: "  return $unwinds(run, collected, rest);",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "fold-to-array-unwinds-nothing",
     breaks: "a compiled std struct's collect, a `zip`'s, a panic stopping it, drops neither what it collected nor what's left (#423)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  const unwinding = (run) => $collectUnwinding(run, it, items, unwind === undefined ? drop : undefined, restFirst);\n",
     replace: "  const unwinding = (run) => run();\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "fold-dropping-step-unwinds-nothing",
     breaks: "a fold of a JS iterator with no fold of its own, a `flat_map`'s, whose step panics leaves the accumulator undropped (#423)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  return $foldBy(it, \"next\", init, f, unwind, ends);\n",
     replace: "  return $foldBy(it, \"next\", init, f, undefined, ends);\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_in_own_next_drops.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "fold-dropping-given-to-own-fold-lost",
     breaks: "a fold of an iterator with its own fold gives it no `unwind` (#423)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  if (typeof it.fold === \"function\") return it.fold(init, f, unwind);",
     replace: "  if (typeof it.fold === \"function\") return it.fold(init, f);",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "fold-to-array-collected-last",
     breaks: "a collect in place of std's struct, a `map`'s, a stage panicking, drops what's left before what it collected, where std's `InPlaceDrop` drops what it collected first (#423)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  const folded = unwinding(() => it.tryFold(items, push, () => false, unwind));\n",
     replace: "  const folded = unwinding(() => it.tryFold(items, push, () => false, undefined));\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^panic_mid_iteration_drops with"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "fold-of-unwind-lost",
     breaks: "a dictionary's `fold` of std's struct, `$foldOf`, gives it no `unwind`: generic code's fold of a `copied()` of the crate's own behind a `fuse()`, whose `next` panics, drops none of what it folded (#615)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "function $foldOf(it, init, f, unwind, ends) {\n  return it.fold(init, f, unwind, ends);\n",
     replace: "function $foldOf(it, init, f, unwind) {\n  return it.fold(init, f);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_unwind_given_on.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "fold-to-array-in-place-drops-again",
     breaks: "an in-place collect whose discarded item's drop panics drops what it collected, which std's `InPlaceDrop`, moved into the stage's result, leaks (#681)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  const unwinding = (run) => $collectUnwinding(run, it, items, unwind === undefined ? drop : undefined, restFirst);\n",
     replace: "  const unwinding = (run) => $collectUnwinding(run, it, items, drop, restFirst);\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_leaks_what_a_discard_strands.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "fold-to-array-foldless",
     breaks: "an in-place collect of a JS iterator's own helper, which has no `fold`, throws `it.fold is not a function` (#681)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  if (typeof it.fold !== \"function\") return $collectDropping(it, drop, restFirst);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_counted_uses.rs$"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
     name: "collect-end-unwound-leaks",
     breaks:
       "a collect into a `Vec` whose last drop of what it steps panics, a `take()`'s of a flatten, leaks what it collected, where std's `from_iter` drops the `Vec` it holds as it unwinds (#677)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  $unwinds(close, () => drop && $dropItems(items, drop));\n",
     replace: "  $unwinds(close, () => undefined);\n",
     tests: ["test/corpus.test.ts", "-t", "^(collect_close_panics|collected_in_place_dropped_as_the_rest_panics).rs$"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
     name: "in-place-collect-unheld",
     breaks:
       "a collect into a `Vec` in place of a `take(3)` closes the `take`'s source at its limit, inside its fold, so where the rest's drop panics what it collected is never dropped (#843)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  it.hold?.();\n  const folded = unwinding(() => it.tryFold(",
     replace: "  const folded = unwinding(() => it.tryFold(",
     tests: ["test/corpus.test.ts", "-t", "^collected_in_place_dropped_as_the_rest_panics.rs$"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     name: "in-place-close-unguarded",
     breaks:
       "a collect into a `Vec` in place, a `take(3)` of a `Vec`'s, whose rest's drop panics as it's closed at the end, leaks what it collected, where std's in-place guard drops it after the rest (#843)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  $collectEnded($inPlaceSource(it), items, drop);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^collected_in_place_dropped_as_the_rest_panics.rs$"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     name: "in-place-guard-over-the-adapters",
     breaks:
       "a collect into a `Vec` in place of a `map(f)` whose `f` holds what panics as it's dropped at the end drops what it collected, which std's `from_iter` has made its result by then and rustc leaks (#843)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  $collectEnded($inPlaceSource(it), items, drop);\n",
     replace: "  $collectEnded(() => it.return?.(), items, drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^collected_in_place_leaked_past_an_adapters_drop.rs$"],
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-place-by-fold",
     breaks: "an in-place collect folds, which moves a compiled `Map`'s function before what's left, where std's `try_fold` by `&mut` keeps it (#710)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  if (!inPlace || typeof it.tryFold !== \"function\") return unwinding(() => it.fold(items, push, unwind));\n",
     replace: "  return unwinding(() => it.fold(items, push, unwind));\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^fold_drops_moved_function_first with std"],
@@ -121,7 +121,7 @@ export const mutations: Mutation[] = [
   {
     name: "consume-unheld",
     breaks: "what `$consume` folds closes itself as it's stepped to its end, a `step_by`'s source, before the consumer's closure drops (#734)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  it.hold?.();\n  const close = () => it.return?.();\n",
     replace: "  const close = () => it.return?.();\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
     name: "in-place-source-not-through-structs",
     breaks:
       "a collect in place of std's compiled `map(f)` guards the struct's whole close, so `f`'s drop's panic drops what it collected, which std's `from_iter` has made its result by then and rustc leaks (#852)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "    const inner = holder.$steps?.inner?.(holder);\n",
     replace: "    const inner = undefined;\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^collected_in_place_(leaked_past_an_adapters_drop|through_adapters_leaked_past_their_drop) with std"],
@@ -139,7 +139,7 @@ export const mutations: Mutation[] = [
     name: "in-place-source-struct-closed-whole",
     breaks:
       "a collect in place through std's compiled structs closes the struct that holds its source whole under the guard, a `map`'s function's drop too, so its panic drops what it collected (#852)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "      drop = () => holder.$steps.dropInner?.(holder);\n",
     replace: "      drop = () => holder.return();\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^collected_in_place_leaked_past_an_adapters_drop with std"],
@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
     name: "in-place-source-rest-unguarded",
     breaks:
       "a collect in place of std's compiled `take(3)` drops what's left of its source with no guard, after the adapters, so the rest's drop's panic leaks what it collected, where std's in-place guard drops it (#843, #852)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "      drop = () => holder.$steps.dropInner?.(holder);\n",
     replace: "      drop = () => {};\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^collected_in_place_dropped_as_the_rest_panics with std"],
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-unwound-as-glue",
     breaks: "what's left of a collect's source and what it collected, each its own frame's, are dropped as one value's fields as a panic unwinds, so where the first's drop panics, the second is dropped before the abort Rust makes there (a wrong answer, #862)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  return restFirst ? $unwinds(run, rest, collected) : $unwinds(run, collected, rest);\n",
     replace: "  return restFirst ? $unwinds(run, () => $inTurn(rest, collected)) : $unwinds(run, () => $inTurn(collected, rest));\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_map_collect_second_panic_aborts.rs$"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
     name: "extend-text-pieces-lost",
     breaks:
       "a `String`'s `extend` stepped by `$extendText` appends its pieces only once all are stepped, so a panic part-way loses what came before it (#1127)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "    for (let step = it.next(); !step.done; step = it.next()) push(step.value);\n  }, it, pushed, undefined, false);\n",
     replace: "    const all = [];\n    for (let step = it.next(); !step.done; step = it.next()) all.push(step.value);\n    all.forEach(push);\n  }, it, pushed, undefined, false);\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "extend-text-iterable-unstepped",
     breaks: "a generic `Extend`'s dictionary of a `String` given an array steps nothing of it, as it's no iterator (#1127)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "function $extendText(it, push) {\n  if (typeof it.next !== \"function\" && typeof it.fold !== \"function\") it = it[Symbol.iterator]();\n",
     replace: "function $extendText(it, push) {\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
   {
     name: "each-of-unclosed",
     breaks: "`$eachOf` leaves what it steps unclosed where a step throws, so serde's `collect_seq` of a panicking iterator never drops what's left (#1141)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "      for (let step = it.next(); !step.done; step = it.next()) f(step.value);\n    },\n    () => it.return?.(),\n",
     replace: "      for (let step = it.next(); !step.done; step = it.next()) f(step.value);\n    },\n    () => {},\n",
     tests: ["test/serde.test.ts", "-t", "collect_seq and collect_map drop"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-dropping-of-folded-by-next",
     breaks: "a collect of what `$folded` made steps it by `next`, which lists it whole first, so what it collected before a step panics is leaked, a `LinkedList`'s in generic code (#1161)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "    it.byItsFold && typeof it.fold === \"function\"\n",
     replace: "    false\n",
     tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-vec-by-fold-untrusted",
     breaks: "`$collectVec` of a `TrustedLen` asks room of its hint as of another, its first item first, so an endless one is stepped before std's \"capacity overflow\" (#1239)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  if (how === \"fold\") return $foldToArray($roomForHint(it, size, true, false), drop, true, false);\n",
     replace: "  if (how === \"fold\") return $foldToArray($roomForHint(it, size, false, false), drop, true, false);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-vec-by-next-unhinted",
     breaks: "`$collectVec` by `next` asks nothing of its hint, where std's `SpecFromIterNested` asks it after its first item (#1239)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  return $grownVec($roomForHint(it, size, false, false, drop), (grown) => $collectDropping(grown, drop, true));\n",
     replace: "  return $grownVec(it, (grown) => $collectDropping(grown, drop, true));\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-vec-in-place-rest-first",
     breaks: "`$collectVec` in place of items that drop drops what's left of its source before what it collected as a panic unwinds, where std's in-place collect drops what it collected first (#1239)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  if (typeof how === \"object\") return $inPlaceCapacityFrom($foldToArray(it, drop, false, true), it, how.inPlace, size);\n",
     replace: "  if (typeof how === \"object\") return $inPlaceCapacityFrom($collectDropping(it, drop, true), it, how.inPlace, size);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-vec-fold-collected-first",
     breaks: "`$collectVec` by fold of items that drop drops what it collected before what's left as a panic unwinds, where `extend_trusted`'s fold drops what's left first (#1239)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  if (how === \"fold\") return $foldToArray($roomForHint(it, size, true, false), drop, true, false);\n",
     replace: "  if (how === \"fold\") return $foldToArray($roomForHint(it, size, true, false), drop, false, false);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
@@ -229,7 +229,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-collect-way-js-fold-by-next",
     breaks: "the runtime's `$vecCollectWay` says a `TrustedLen` not collected in place is collected by `next`, which the compiler's `vec_collect_way` and std's `SpecFromIter` fold (#1239)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  return inPlace ? { inPlace: source[0] } : trusted ? \"fold\" : \"next\";\n",
     replace: "  return inPlace ? { inPlace: source[0] } : \"next\";\n",
     tests: ["test/runtime-package.test.ts", "-t", "vecCollectWay answers"],
@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-vec-by-next-capacity-untracked",
     breaks: "`$collectVec` by `next` keeps no capacity, so `capacity()` of generic code's collect into a `B: FromIterator` its caller gives as a `Vec` throws #1180's refusal, where std's is its growth's (#1263)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  return $grownVec($roomForHint(it, size, false, false, drop), (grown) => $collectDropping(grown, drop, true));\n",
     replace: "  return $collectDropping($roomForHint(it, size, false, false, drop), drop, true);\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_generic_collects.rs$"],
@@ -245,7 +245,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-vec-in-place-capacity-kept",
     breaks: "`$collectVec` in place keeps its items' count as its capacity, where std's is its source's buffer's, which isn't kept: `capacity()` gives a wrong number instead of #1180's refusal (#1263)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  if (typeof how === \"object\") return $inPlaceCapacityFrom($foldToArray(it, drop, false, true), it, how.inPlace, size);\n",
     replace: "  if (typeof how === \"object\") return $untracked($foldToArray(it, drop, false, true));\n",
     tests: ["test/vec-capacity.test.ts", "-t", "growth wasn't kept throws"],
@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-collect-way-in-place-a-bare-string",
     breaks: "the runtime's way of what a generic caller's caller gives says in place as the string `\"inPlace\"`, which `$collectVec` doesn't take for in place: grown by `next`, its capacity room for its hint (#1259)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  return inPlace ? { inPlace: source[0] } : trusted ? \"fold\" : \"next\";\n",
     replace: "  return inPlace ? \"inPlace\" : trusted ? \"fold\" : \"next\";\n",
     tests: ["test/corpus.test.ts", "-t", "^(vec_collected_in_place_capacity|capacity_of_generic_collects|vec_collect_as_its_caller_knows).rs$"],
@@ -261,7 +261,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-counted-as-a-vec",
     breaks: "generic code's `collect()` into an `Rc<[T]>` of a `TrustedLen` collects as a `Vec`, dropping what it wrote before what's left, and panicking `capacity overflow` where std unwraps a `LayoutError` (#1678, #1694)",
-    file: "src/runtime/fold_of.js",
+    file: "crates/rust-js-program/src/runtime/fold_of.js",
     find: "  if (trusted) return $collectDropping($roomForCounted(it, size, align), drop, true);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_(unwinding|room).rs$"],

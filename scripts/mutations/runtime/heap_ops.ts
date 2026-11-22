@@ -1,11 +1,11 @@
-// Mutations of src/runtime/heap_ops.js (ADR 0333).
+// Mutations of crates/rust-js-program/src/runtime/heap_ops.js (ADR 0333).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "heap-rebuild-always",
     breaks: "`append` rebuilds the whole heap, where std sifts the tail up",
-    file: "src/runtime/heap_ops.js",
+    file: "crates/rust-js-program/src/runtime/heap_ops.js",
     find: "  if (better) {",
     replace: "  if (true) {",
     tests: ["test/corpus.test.ts", "-t", "heap_methods"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-rebuild-never",
     breaks: "`append` sifts the tail up, where std rebuilds the whole heap",
-    file: "src/runtime/heap_ops.js",
+    file: "crates/rust-js-program/src/runtime/heap_ops.js",
     find: "  if (better) {",
     replace: "  if (false) {",
     tests: ["test/corpus.test.ts", "-t", "heap_methods"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-append-unswapped",
     breaks: "`append` of a larger heap puts its items after the smaller's",
-    file: "src/runtime/heap_ops.js",
+    file: "crates/rust-js-program/src/runtime/heap_ops.js",
     find: "heap.length < other.length ? [other.slice(), heap.slice()] : [heap.slice(), other.slice()];",
     replace: "[heap.slice(), other.slice()];",
     tests: ["test/corpus.test.ts", "-t", "heap_methods"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-retain-rebuilt-whole",
     breaks: "`retain` rebuilds from the start, not from the first item it dropped",
-    file: "src/runtime/heap_ops.js",
+    file: "crates/rust-js-program/src/runtime/heap_ops.js",
     find: "    $heapRebuildTail(heap, Math.min(from, heap.length), ord);",
     replace: "    $heapRebuildTail(heap, 0, ord);",
     tests: ["test/corpus.test.ts", "-t", "heap_methods"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "peek-mut-always-sifts",
     breaks: "a `PeekMut` only read compares on its drop, calling `Ord` std's doesn't",
-    file: "src/runtime/heap_ops.js",
+    file: "crates/rust-js-program/src/runtime/heap_ops.js",
     find: "  if (guard.changed) $siftDown(",
     replace: "  if (true) $siftDown(",
     tests: ["test/corpus.test.ts", "-t", "heap_peek_mut"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "peek-mut-never-sifts",
     breaks: "a changed top isn't sifted down",
-    file: "src/runtime/heap_ops.js",
+    file: "crates/rust-js-program/src/runtime/heap_ops.js",
     find: "  if (guard.changed) $siftDown(",
     replace: "  if (false) $siftDown(",
     tests: ["test/corpus.test.ts", "-t", "heap_peek_mut"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "peek-mut-top-copy",
     breaks: "`*top = 0` of a number writes a copy",
-    file: "src/runtime/heap_ops.js",
+    file: "crates/rust-js-program/src/runtime/heap_ops.js",
     find: "  if (!handle) return heap[0];",
     replace: "  return heap[0];",
     tests: ["test/corpus.test.ts", "-t", "heap_peek_mut"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-retain-drops-none",
     breaks: "a heap's `retain` of items with a destructor drops none it doesn't keep",
-    file: "src/runtime/heap_ops.js",
+    file: "crates/rust-js-program/src/runtime/heap_ops.js",
     find: "      if (drop !== undefined) drop(x);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^heap_destructors.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-extend-unrebuilt",
     breaks: "`extend` of a `BinaryHeap` pushes its items and never rebuilds its order",
-    file: "src/runtime/heap_ops.js",
+    file: "crates/rust-js-program/src/runtime/heap_ops.js",
     find: "  } finally {\n    $heapRebuildTail(heap, start, ord);\n  }\n",
     replace: "  } finally {\n  }\n",
     tests: ["test/corpus.test.ts", "-t", "^heap_extend.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-append-spread-arguments",
     breaks: "a heap's `append` spreads its items into one `push`, more than a JS call takes as arguments: `RangeError` (ADR 0919)",
-    file: "src/runtime/heap_ops.js",
+    file: "crates/rust-js-program/src/runtime/heap_ops.js",
     find: "  $extend(heap, first);\n  $extend(heap, rest);\n",
     replace: "  heap.push(...first, ...rest);\n",
     tests: ["test/corpus.test.ts", "-t", "^runtime_long_writes.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-extend-unclosed",
     breaks: "`heap.extend(it)` steps it by `for..of`, which closes nothing where its step panics, its source's items never dropped (#1141)",
-    file: "src/runtime/heap_ops.js",
+    file: "crates/rust-js-program/src/runtime/heap_ops.js",
     find: "    $extend(heap, items);\n",
     replace: "    for (const item of items) heap.push(item);\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-extend-unrebuilt-on-a-panic",
     breaks: "a heap whose `extend` panics part-way isn't rebuilt, where std's `RebuildOnDrop` rebuilds it as it unwinds, so it sorts wrong after (#1141)",
-    file: "src/runtime/heap_ops.js",
+    file: "crates/rust-js-program/src/runtime/heap_ops.js",
     find: "  } finally {\n    $heapRebuildTail(heap, start, ord);\n  }\n",
     replace: "  } finally {\n  }\n  $heapRebuildTail(heap, start, ord);\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-append-capacities-unswapped",
     breaks: "a heap's `append` of a longer one keeps each one's capacity, where std swaps them first (#1180)",
-    file: "src/runtime/heap_ops.js",
+    file: "crates/rust-js-program/src/runtime/heap_ops.js",
     find: "    $capacities.set(heap, theirs);\n    $capacities.set(other, mine);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "heap-top-handle-placeless",
     breaks: "a heap's top's handle is an accessor on no place it records, whose address is refused (#1474)",
-    file: "src/runtime/heap_ops.js",
+    file: "crates/rust-js-program/src/runtime/heap_ops.js",
     find: "  return $ptr(heap, 0);\n",
     replace: "  return { get value() { return heap[0]; }, set value(value) { heap[0] = value; } };\n",
     tests: ["test/corpus.test.ts","-t","^address_of_a_mut_std_lends_from_its_storage.rs$"],

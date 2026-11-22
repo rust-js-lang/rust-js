@@ -10,7 +10,7 @@ import { adapterCalls } from "./iterator-matrix";
 
 const adapters = new Set(["map", "filter", "skip", "take", "fuse", "enumerate", "chain", "rev", "step_by", "zip", "take_while", "copied", "cloned"]);
 const consumers = new Set(["fold", "rfold", "any", "all", "count", "nth", "for", "nth_back"]);
-const hunk = (added: string[], removed: string[] = [], head = "", file = "src/runtime/back_steps.js"): Hunk => ({ file, at: 1, added, removed, head });
+const hunk = (added: string[], removed: string[] = [], head = "", file = "crates/rust-js-program/src/runtime/back_steps.js"): Hunk => ({ file, at: 1, added, removed, head });
 
 test("a hunk names the adapters its code's identifiers are of, as they're inflected", () => {
   expect(named(hunk(["  const taking = $taking(iter, n, drop);"]), adapters, consumers).adapters).toEqual(["take"]);
@@ -32,8 +32,8 @@ test("a hunk that names no adapter names its consumers", () => {
 });
 
 test("generic code's, what every adapter shares and what's taken away are said", () => {
-  expect(named(hunk(["  dropped.each = drop?.each;"], [], "function $givenDrop(drop) {", "src/runtime/iterator.js"), adapters, consumers)).toMatchObject({ generic: true, shared: true });
-  expect(named(hunk(["x"], [], "", "src/runtime/forward.js"), adapters, consumers).shared).toBe(true);
+  expect(named(hunk(["  dropped.each = drop?.each;"], [], "function $givenDrop(drop) {", "crates/rust-js-program/src/runtime/iterator.js"), adapters, consumers)).toMatchObject({ generic: true, shared: true });
+  expect(named(hunk(["x"], [], "", "crates/rust-js-program/src/runtime/forward.js"), adapters, consumers).shared).toBe(true);
   expect(named(hunk(["        return enumerated;"], ["        let item = it.item();", "        return enumerated(item);"]), adapters, consumers)).toMatchObject({ adapters: ["enumerate"], removes: true });
 });
 
@@ -90,7 +90,7 @@ test("what decides each chain's form runs each row of what it names, and of each
   const outside = (added: string[], file: string): Hunk => ({ ...hunk(added, [], "fn decide_held() {", file), outside: true });
   expect(naming(outside(['const HELD_FLIPPED: [&str; 2] = ["enumerate", "map"];'], "src/lower/body_queries/in_place.rs"), adapters, consumers)).toMatchObject({ head: "" });
   expect(naming(outside(["// what a `map` decides"], "src/lower/body_queries/in_place.rs"), adapters, consumers)).toBeUndefined();
-  expect(naming(outside(['const NAMES: [&str; 1] = ["map"];'], "src/runtime/back_steps.js"), adapters, consumers)).toBeUndefined();
+  expect(naming(outside(['const NAMES: [&str; 1] = ["map"];'], "crates/rust-js-program/src/runtime/back_steps.js"), adapters, consumers)).toBeUndefined();
   expect(adapterCalls().get("flatten")).toEqual(new Set(["map"]));
   const reach = reached(new Set(["map"]));
   expect([...reach].sort()).toEqual(["flatten", "map"]);
@@ -176,7 +176,7 @@ test("a hunk names the adapters of the match arm it's in", () => {
 // not each row of `count` and `for`.
 test("a helper's hunk names no consumer by its variables or comments", () => {
   const capacity: Hunk = {
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     at: 41,
     added: [
       "// The least capacity std's `Vec` of items of `size` bytes grows to,",

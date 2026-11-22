@@ -1,11 +1,11 @@
-// Mutations of src/runtime/sort_unstable.js (ADR 0342).
+// Mutations of crates/rust-js-program/src/runtime/sort_unstable.js (ADR 0342).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "insertion-gap-unwritten",
     breaks: "an insertion sort whose comparison panics leaves its gap holding the item moved over it: one item twice, the moving one gone (#908)",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "    } finally {\n      v[gap] = item;\n    }\n",
     replace: "      v[gap] = item;\n    } finally {\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^sort_unstable_unwinds.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "lomuto-gap-unwritten",
     breaks: "a Lomuto partition whose comparison panics leaves the item it took out of the slice (#908)",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "    if (!placed) v[gap] = taken;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^sort_unstable_unwinds.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "hoare-gap-unwritten",
     breaks: "a Hoare partition whose comparison panics leaves the item it took out of the slice (#908)",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "  } finally {\n    if (gap !== undefined) v[gap.at] = gap.item;\n  }\n",
     replace: "    if (gap !== undefined) v[gap.at] = gap.item;\n  } finally {\n  }\n",
     tests: ["test/corpus.test.ts", "-t", "^sort_unstable_unwinds.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "small-sort-merge-uncopied",
     breaks: "a small sort whose merge's comparison panics leaves the slice half merged, items twice and gone, where std's guard copies its sorted halves back (#908)",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "    if (!merged) for (let i = 0; i < len; i++) v[start + i] = scratch[i];\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^sort_unstable_unwinds.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "sort-insertion-limit",
     breaks: "an unstable sort of 17 to 20 is a quicksort, not insertion sort",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "  if (len <= 20) {",
     replace: "  if (len <= 16) {",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "sort-run-ignored",
     breaks: "an unstable sort of items in order already sorts them again",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "  if (runLength === len) {\n    if (reversed) v.reverse();\n    return;\n  }\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "sort-reversed-kept",
     breaks: "an unstable sort of items in reverse leaves them so",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "    if (reversed) v.reverse();\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "sort-heapsort-at-once",
     breaks: "an unstable sort heapsorts at once",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "2 * Math.floor(Math.log2(len | 1))",
     replace: "0",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "heapsort-sibling-flipped",
     breaks: "heapsort sifts to the smaller child",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "isLess(v[start + child], v[start + child + 1])) child++;",
     replace: "isLess(v[start + child + 1], v[start + child])) child++;",
     tests: ["test/corpus.test.ts","-t","sort_unstable_adversary"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "pivot-rec-later",
     breaks: "the pivot is a median of 3 up to 128 items, not 64",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "  return (len < 64 ? $median3(",
     replace: "  return (len < 128 ? $median3(",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "median3-flipped",
     breaks: "the median of 3 picks the wrong one",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "  if (x === y) return isLess(v[b], v[c]) !== x ? c : b;",
     replace: "  if (x === y) return isLess(v[b], v[c]) === x ? c : b;",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "quicksort-ancestor-ignored",
     breaks: "a quicksort partitions what equals its ancestor's pivot again",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "      const lt = $sortPartition(v, start, end, pivot, (a, b) => !isLess(b, a), kind);\n      start += lt + 1;\n      ancestor = undefined;\n      continue;",
     replace: "      ancestor = undefined;\n      continue;",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "lomuto-taken-misread",
     breaks: "Lomuto's partition puts back the wrong item last",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "    const item = right === undefined ? taken : v[right];",
     replace: "    const item = right === undefined ? v[base] : v[right];",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "hoare-gap-unfilled",
     breaks: "Hoare's partition loses the item it took out",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "  if (gap !== undefined) v[gap.at] = gap.item;\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "sort13-pair-wrong",
     breaks: "the 13-item network's first pair is another",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "  0, 12, 1, 10, 2, 9,",
     replace: "  0, 11, 1, 10, 2, 9,",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "network-never-merged",
     breaks: "the network small sort sorts 32 at once, not two halves merged",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "  const noMerge = len < 18;",
     replace: "  const noMerge = len < 33;",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "general-no-sort8",
     breaks: "the general small sort of 8-byte items starts from 4",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "  if (sort8 && len >= 16) {",
     replace: "  if (false && sort8 && len >= 16) {",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "merge-up-unstable",
     breaks: "the merge takes the right of two equal items first",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "    const up = !isLess(src[right], src[left]);",
     replace: "    const up = isLess(src[left], src[right]);",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "select-max-looped",
     breaks: "`select_nth_unstable` of the last index partitions, not swaps the max in",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "  if (index === len - 1) $swapItems(v, $extremeIndex(v, 0, len, isLess, true), index);\n  else if",
     replace: "  if",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "select-limit-later",
     breaks: "introselect falls back on the median of medians later",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "  let limit = 16;",
     replace: "  let limit = 64;",
     tests: ["test/corpus.test.ts","-t","sort_unstable_adversary"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "ninther-unswapped",
     breaks: "a ninther keeps its first median above its third",
-    file: "src/runtime/sort_unstable.js",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
     find: "  if (isLess(at(h), at(b))) [b, h] = [h, b];\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","sort_unstable_adversary"],

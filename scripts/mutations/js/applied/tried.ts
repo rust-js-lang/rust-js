@@ -1,11 +1,11 @@
-// Mutations of src/js/applied/tried.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/js/applied/tried.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "tried-const-called",
     breaks: "`catch_unwind(|| { .. })`'s body whose value an `Ok` arm reads stays a closure called in the `try`, `const value = (() => { .. })();`",
-    file: "src/js/applied/tried.rs",
+    file: "crates/rust-js-program/src/js/applied/tried.rs",
     find: "            StmtKind::Const(_, value)\n            | StmtKind::Assign(\n",
     replace: "            StmtKind::Assign(\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_nested_ok.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "tried-return-called",
     breaks: "`catch_unwind(|| { .. })`'s body returned stays a closure called in the `try`",
-    file: "src/js/applied/tried.rs",
+    file: "crates/rust-js-program/src/js/applied/tried.rs",
     find: "            match body_of(value).filter(|body| body.last().is_some_and(ends)) {\n",
     replace: "            match body_of(value).filter(|_| false) {\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "getIODescription"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "tried-last-return-dropped",
     breaks: "a closure's body whose value nothing reads is in the `try` without its last `return`'s value, `step(n)` never called",
-    file: "src/js/applied/tried.rs",
+    file: "crates/rust-js-program/src/js/applied/tried.rs",
     find: "                    && value.has_effects()\n",
     replace: "                    && false\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a catch_unwind that heads an if let chain is a try"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "tried-assigned-kept-applied",
     breaks: "a closure's value a `try` sets, `result = (() => { ..; return v; })();`, stays a closure called, not its body and `result = v;` (rd551)",
-    file: "src/js/applied/tried.rs",
+    file: "crates/rust-js-program/src/js/applied/tried.rs",
     find: "                    kind: ExprKind::Var(_), ..\n",
     replace: "                    kind: ExprKind::Num(_), ..\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_thrown_named.rs$"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "tried-kept-where-made",
     breaks: "a closure's value the `try` keeps is set where the `match` is, so the comment before its `return` is before the `let` (rd551)",
-    file: "src/js/applied/tried.rs",
+    file: "crates/rust-js-program/src/js/applied/tried.rs",
     find: "                let span = tried_extent(last.span, tried[0].span);\n",
     replace: "                let span = tried[0].span;\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_thrown_named.rs$"],
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-where-made-read-leaving",
     breaks: "a `catch` that reads the variable as it leaves, `return done + 20;`, sees it set where the value is made, before what panics after it (rd534)",
-    file: "src/js/applied/tried.rs",
+    file: "crates/rust-js-program/src/js/applied/tried.rs",
     find: "            let leaves = caught.last().is_some_and(ends) && mentions_of(caught, variable) == 0;\n",
     replace: "            let leaves = caught.last().is_some_and(ends);\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_value_set_where_made.rs$"],
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-where-made-goes-on",
     breaks: "a `catch` that goes on to what reads the variable, `catch { note(6); } return done;`, sees it set where the value is made (rd534)",
-    file: "src/js/applied/tried.rs",
+    file: "crates/rust-js-program/src/js/applied/tried.rs",
     find: "            let leaves = caught.last().is_some_and(ends) && mentions_of(caught, variable) == 0;\n",
     replace: "            let leaves = mentions_of(caught, variable) == 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_value_set_where_made.rs$"],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-where-made-read-before-set",
     breaks: "a `catch` that reads the variable before it sets it, `note(done); done = 30;`, sees it set where the value is made (rd534)",
-    file: "src/js/applied/tried.rs",
+    file: "crates/rust-js-program/src/js/applied/tried.rs",
     find: "            leaves || first_set.is_some_and(|first| mentions_of(&caught[..first], variable) == 0)\n",
     replace: "            leaves || first_set.is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_value_set_where_made.rs$"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-where-made-declared-anywhere",
     breaks: "a variable declared outside a loop whose `catch` breaks to what reads it is set where the value is made (rd534)",
-    file: "src/js/applied/tried.rs",
+    file: "crates/rust-js-program/src/js/applied/tried.rs",
     find: "        let same = declared(variable)\n",
     replace: "        let same = true\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_value_set_where_made.rs$"],
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-where-made-read-between",
     breaks: "what follows the value in the `try` reads the variable set early, `before = total;` (rd534)",
-    file: "src/js/applied/tried.rs",
+    file: "crates/rust-js-program/src/js/applied/tried.rs",
     find: "            && mentions_of(&tried[..set], variable) == 0\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_value_set_where_made.rs$"],
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-where-made-closure-reads",
     breaks: "a closure what follows the value makes, `() => next`, reads the variable, which changes after (rd534)",
-    file: "src/js/applied/tried.rs",
+    file: "crates/rust-js-program/src/js/applied/tried.rs",
     find: "            && !read_in_a_closure(between, value)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_value_set_where_made.rs$"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-where-made-throw-unasked",
     breaks: "what follows the value may throw where the `catch` reads the variable, `done += 10;`, which sees it set early (rd534)",
-    file: "src/js/applied/tried.rs",
+    file: "crates/rust-js-program/src/js/applied/tried.rs",
     find: "            && (between.iter().all(Stmt::cannot_throw) || binding != Some(variable) && unseen(caught));\n",
     replace: "            ;\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_value_set_where_made.rs$"],
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-where-made-comment-lost",
     breaks: "the comment before the closure's value, `// What it found.`, is above the variable's `let`, not where it was (rd534)",
-    file: "src/js/applied/tried.rs",
+    file: "crates/rust-js-program/src/js/applied/tried.rs",
     find: "    if span.is_none() {\n",
     replace: "    if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_value_set_where_made.rs$"],
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
   {
     name: "returns-set-never",
     breaks: "a closure that returns early, its value a `let`'s, stays `found = (() => { if (n === 0) { return 0; } .. })();`, a closure called (rd60)",
-    file: "src/js/applied/tried.rs",
+    file: "crates/rust-js-program/src/js/applied/tried.rs",
     find: "                let Some(set) = returns_replaced(&body, &set).filter(|_| !shadowed) else {\n",
     replace: "                let Some(set) = None::<Vec<Stmt>>.filter(|_| !shadowed) else {\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "returns early sets the value"],
@@ -121,7 +121,7 @@ export const mutations: Mutation[] = [
   {
     name: "tried-extent-of-the-value-alone",
     breaks: "a `try`'s statement of a `match`'s `Ok` value is of the value alone, not through the `Ok` arm, so the comment above `Ok(v) => v,` is above the `try` or lost, of `catch_unwind(|| parse(s))` and of `js::eval(code)` alike (rd630)",
-    file: "src/js/applied/tried.rs",
+    file: "crates/rust-js-program/src/js/applied/tried.rs",
     find: "            hi: value.hi.max(made_of.hi),\n",
     replace: "            hi: value.hi,\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "Ok arm is above its value"],

@@ -1,10 +1,10 @@
 //! A channel on one thread, `mpsc::channel()`: a queue its two ends share
 //! (ADR 0142).
 
-use crate::js::{Expr, Stmt};
 use crate::lower::calls::Call;
 use crate::lower::recognition::{ChannelOp, Std};
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{Expr, Stmt};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A channel's call (ADR 0142): `None` if `known` is another.

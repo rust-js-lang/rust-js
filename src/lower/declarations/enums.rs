@@ -23,8 +23,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         // One without fields, its name's string, or `null` or
                         // `undefined` (ADR 0676).
                         None => match crate::lower::untagged::unit_value(self.tcx, v).map(|e| e.kind) {
-                            Some(crate::js::ExprKind::Null) => keyword("null"),
-                            Some(crate::js::ExprKind::Undefined) => keyword("undefined"),
+                            Some(rust_js_program::js::ExprKind::Null) => keyword("null"),
+                            Some(rust_js_program::js::ExprKind::Undefined) => keyword("undefined"),
                             _ => json!({ "kind": "literal", "value": variant_name(self.tcx, v) }),
                         },
                     })
@@ -112,8 +112,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
     /// A variant's value as its literal type, `"Empty"`, `0` or `true`.
     pub(super) fn variant_literal(&self, variant: &ty::VariantDef) -> Value {
         let value = match crate::lower::bindings::variant_tag(self.tcx, variant).kind {
-            crate::js::ExprKind::Bool(b) => json!(b),
-            crate::js::ExprKind::Num(n) => json!(n as i64),
+            rust_js_program::js::ExprKind::Bool(b) => json!(b),
+            rust_js_program::js::ExprKind::Num(n) => json!(n as i64),
             _ => json!(variant_name(self.tcx, variant)),
         };
         json!({ "kind": "literal", "value": value })

@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a call of the runtime's that only reads, `$debugStr(s)`, isn't read past a call",
     file: "src/lower/mir/tidy/stability.rs",
-    find: "        ExprKind::Call(callee, args) if callee.helper_name().is_some_and(crate::runtime::is_pure) => {\n            args.iter().all(past)\n        }\n",
+    find: "        ExprKind::Call(callee, args) if callee.helper_name().is_some_and(rust_js_program::runtime::is_pure) => {\n            args.iter().all(past)\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^text_edits.rs$"],
     snapshots: true,

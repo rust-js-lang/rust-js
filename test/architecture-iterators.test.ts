@@ -24,8 +24,8 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 test("an iterator's steps are given by $forward alone", () => {
   const given = /\.(fold|tryFold|rfold|tryRfold|nth|nthBack|last|count|countItems|advanceBy|advanceBackBy|advance)\s*=\s*(\([^)]*\)\s*=>|\w+\s*=>|function\b|\()/;
   expect(given.test("  it.nth = (k) => step(nth(iterator, k));")).toBe(true);
-  const giving = files("src/runtime")
-    .filter((file) => file.endsWith(".js") && file !== "src/runtime/forward.js")
+  const giving = files("crates/rust-js-program/src/runtime")
+    .filter((file) => file.endsWith(".js") && file !== "crates/rust-js-program/src/runtime/forward.js")
     .filter((file) => read(file).split("\n").some((line) => !line.trimStart().startsWith("//") && given.test(line)));
   expect(giving).toEqual([]);
 });
@@ -39,11 +39,11 @@ test("an iterator's own facts are written by $owns alone", () => {
   expect(writes.test("  if (it.ownNth) closing.ownNth = true;")).toBe(true);
   expect(writes.test("  if (own !== undefined) it[$ownStep(name)] = true;")).toBe(true);
   expect(writes.test("  if (it.ownNth === true) return;")).toBe(false);
-  const writing = files("src/runtime")
-    .filter((file) => file.endsWith(".js") && file !== "src/runtime/forward.js")
+  const writing = files("crates/rust-js-program/src/runtime")
+    .filter((file) => file.endsWith(".js") && file !== "crates/rust-js-program/src/runtime/forward.js")
     .filter((file) => read(file).split("\n").some((line) => !line.trimStart().startsWith("//") && writes.test(line)));
   expect(writing).toEqual([]);
-  expect(read("src/runtime/forward.js")).toContain("function $ownsAs(adapter, source, ...steps)");
+  expect(read("crates/rust-js-program/src/runtime/forward.js")).toContain("function $ownsAs(adapter, source, ...steps)");
 });
 
 // An iterator's lifecycle, open, taking, taken or closed, is one field,
@@ -56,12 +56,12 @@ test("an iterator's lifecycle is written by closing.js's transitions alone", () 
   expect(writes.test("    it.$closed = true;")).toBe(true);
   expect(writes.test("  let closed = false;")).toBe(true);
   expect(writes.test("  if (it.$state === \"open\") return;")).toBe(false);
-  const writing = files("src/runtime")
-    .filter((file) => file.endsWith(".js") && file !== "src/runtime/closing.js")
+  const writing = files("crates/rust-js-program/src/runtime")
+    .filter((file) => file.endsWith(".js") && file !== "crates/rust-js-program/src/runtime/closing.js")
     .filter((file) => /\$Steps|\$closing|\$stdIterator/.test(read(file)))
     .filter((file) => read(file).split("\n").some((line) => !line.trimStart().startsWith("//") && writes.test(line)));
   expect(writing).toEqual([]);
-  const closing = read("src/runtime/closing.js");
+  const closing = read("crates/rust-js-program/src/runtime/closing.js");
   const transitions = ["function $close(it, drop)", "function $takenBy(it, run, closesItself = false)", "function $stateFrom(target, value)"];
   for (const transition of transitions) expect(closing).toContain(transition);
   const outside = closing.slice(0, closing.indexOf("function $close(it, drop)"));
@@ -171,7 +171,7 @@ test("every runtime fold takes what drops with its f", () => {
   const without = /\b(r?fold)\s*(=|:)\s*(\w+(\.\w+)?\s*&&\s*)?\(+\s*init, \w+, unwind\)\s*=>|^\s*r?fold\(init, \w+, unwind\)\s*\{|\(init, \w+, unwind\) => r?fold\(/m;
   expect(without.test("  const fold = (init, f, unwind) => {")).toBe(true);
   expect(without.test("  const fold = (init, f, unwind, ends) => {")).toBe(false);
-  const lacking = files("src/runtime")
+  const lacking = files("crates/rust-js-program/src/runtime")
     .filter((file) => file.endsWith(".js"))
     .filter((file) => read(file).split("\n").some((line) => !line.trimStart().startsWith("//") && without.test(line)));
   expect(lacking).toEqual([]);
@@ -190,7 +190,7 @@ test("every runtime tryFold takes what drops with its f", () => {
   expect(without.test("  const tryFold = (init, f, broke, unwind) => {")).toBe(true);
   expect(without.test("  tryFold(init, f, broke, unwind) {")).toBe(true);
   expect(without.test("  const tryFold = (init, f, broke, unwind, ends) => {")).toBe(false);
-  const lacking = files("src/runtime")
+  const lacking = files("crates/rust-js-program/src/runtime")
     .filter((file) => file.endsWith(".js"))
     .filter((file) => read(file).split("\n").some((line) => !line.trimStart().startsWith("//") && without.test(line)));
   expect(lacking).toEqual([]);
@@ -208,7 +208,7 @@ test("a consumer's closure folded by value is dropped by $consume alone", () => 
   expect(writing.sort()).toEqual(["src/lower/iterators/mir_steps/backs.rs", "src/lower/iterators/mir_steps/consumers.rs"]);
   const asking = lowering.filter((file) => read(file).includes("consumed_function("));
   expect(asking.sort()).toEqual(["src/lower/iterators/mir_steps/consumers.rs", "src/lower/mir/dispatch.rs"]);
-  expect(read("src/runtime/fold_of.js")).toContain("function $consume(it, step, init, f, unwind, ends)");
+  expect(read("crates/rust-js-program/src/runtime/fold_of.js")).toContain("function $consume(it, step, init, f, unwind, ends)");
 });
 
 // What the iterators' code is, which runs the iterator matrix's slice in a
@@ -250,7 +250,7 @@ test("an expression rebuilt of its own kind keeps its value's marks", () => {
 // lowering writes one.
 test("std's Chain is $lazyChain alone", () => {
   const chains = /^(?:function\*? |const |let |class )(\$\w*[Cc]hain\w*)\b/gm;
-  const declared = files("src/runtime")
+  const declared = files("crates/rust-js-program/src/runtime")
     .filter((file) => file.endsWith(".js"))
     .flatMap((file) => [...read(file).matchAll(chains)].map((m) => m[1]));
   expect(declared).toEqual(["$lazyChain"]);
@@ -268,11 +268,11 @@ test("an adapter's parts are closed in turn by $inTurn alone", () => {
   const back = (lines: string[]) =>
     lines.flatMap((line, i) => (i > 0 && closes.test(line) && closes.test(lines[i - 1]) ? [`${i}: ${lines[i - 1].trim()} ${line.trim()}`] : []));
   expect(back(["    a.return?.();", "    b.return?.();"])).toHaveLength(1);
-  const by = files("src/runtime")
+  const by = files("crates/rust-js-program/src/runtime")
     .filter((file) => file.endsWith(".js"))
     .flatMap((file) => back(read(file).split("\n")).map((line) => `${file}:${line}`));
   expect(by).toEqual([]);
-  expect(read("src/runtime/steps.js")).toContain("function $inTurn(...runs)");
+  expect(read("crates/rust-js-program/src/runtime/steps.js")).toContain("function $inTurn(...runs)");
 });
 
 // What a runtime helper drops as a panic unwinds is `$unwinds(run,
@@ -284,35 +284,35 @@ test("an adapter's parts are closed in turn by $inTurn alone", () => {
 // aren't an iterator's: what each runs as it throws is its own owner's, the
 // panic points of #854 to make one with it.
 const ownUnwinding: Record<string, string> = {
-  "src/runtime/borrow.js": "a `RefCell` borrow given back as the call it guards throws",
-  "src/runtime/dedup_by.js": "a `Vec`'s `dedup_by` of a test that may panic, its items kept as std's guard keeps them",
-  "src/runtime/fmt_error.js": "a `fmt::Error` caught to become `write!`'s `Err`, not a drop",
-  "src/runtime/from_json.js": "serde's decoding error caught to become a `Result`, not a drop",
-  "src/runtime/heap_ops.js": "a `BinaryHeap`'s `retain` of a test that may panic",
-  "src/runtime/json_content.js": "serde's decoding error caught to become a `Result`, not a drop",
-  "src/runtime/json_decoder.js": "serde's decoding error caught to become a `Result`, not a drop",
-  "src/runtime/json_flat.js": "serde's decoding error caught to become a `Result`, not a drop",
-  "src/runtime/json_read.js": "JSON.parse's `SyntaxError` caught to become a `Result`, not a drop",
-  "src/runtime/json_reader.js": "serde's decoding error caught to become a `Result`, not a drop",
-  "src/runtime/json_value.js": "serde's encoding error caught to become a `Result`, not a drop",
-  "src/runtime/debug_builders.js": "a `Debug` builder's part's write error caught as std's `result`, and what a part a panic stopped wrote written through `{:#?}`'s adapter before it goes on, not a drop (#1533)",
-  "src/runtime/fs.js": "Node's error of a call of the OS's caught to become std's `io::Error`, a pipe's positioned read or write tried again where it is, and a collected file's close, whose error std's drop ignores, not a drop (#1156)",
-  "src/runtime/json_value_reader.js": "serde's decoding error caught to become a `Result`, not a drop",
-  "src/runtime/map_ops.js": "a map's `retain` of a test that may panic",
-  "src/runtime/print.js": "a line formatted through stdout's: its frame popped, and what's left of the line written, as a panic leaves it, not a drop (#1490)",
-  "src/runtime/pop_if_cell.js": "a `Vec`'s `pop_if` cell written back as its test returns or panics, not a drop (#906)",
-  "src/runtime/rc.js": "`Rc::unwrap_or_clone` of a clone that may panic",
-  "src/runtime/retain.js": "a `Vec`'s `retain` of a test that may panic, its items kept as std's guard keeps them",
-  "src/runtime/should_panic.js": "a `#[should_panic]` test's panic caught, not a drop",
-  "src/runtime/sift_down.js": "a `BinaryHeap`'s sift's hole written back as a comparison panics, as std's `Hole` writes it, not a drop (#901)",
-  "src/runtime/sort_stable.js": "a stable sort's merge, its copy written back where the gap is as a comparison panics, as std's `MergeState` writes it, not a drop (#925)",
-  "src/runtime/sort_unstable.js": "an unstable sort's gaps, and its small sort's merge, written back as a comparison panics, as std's guards write them, not a drop (#908)",
-  "src/runtime/sift_up.js": "a `BinaryHeap`'s sift's hole written back as a comparison panics, as std's `Hole` writes it, not a drop (#901)",
-  "src/runtime/slice_ops.js": "a slice's `is_sorted_by` and `retain_mut` of a function that may panic",
-  "src/runtime/to_json.js": "serde's encoding error caught to become a `Result`, not a drop",
-  "src/runtime/try.js": "`?`'s early return of an `Err` thrown and caught, not a drop",
-  "src/runtime/writer_sink.js": "the sink armed for a writer shown into a writer disarmed as the writer returns or panics, and a writer that never claimed it rust-js's error, not a drop (#1652)",
-  "src/runtime/unwind.js": "`catch_unwind`, the one catch of a panic",
+  "crates/rust-js-program/src/runtime/borrow.js": "a `RefCell` borrow given back as the call it guards throws",
+  "crates/rust-js-program/src/runtime/dedup_by.js": "a `Vec`'s `dedup_by` of a test that may panic, its items kept as std's guard keeps them",
+  "crates/rust-js-program/src/runtime/fmt_error.js": "a `fmt::Error` caught to become `write!`'s `Err`, not a drop",
+  "crates/rust-js-program/src/runtime/from_json.js": "serde's decoding error caught to become a `Result`, not a drop",
+  "crates/rust-js-program/src/runtime/heap_ops.js": "a `BinaryHeap`'s `retain` of a test that may panic",
+  "crates/rust-js-program/src/runtime/json_content.js": "serde's decoding error caught to become a `Result`, not a drop",
+  "crates/rust-js-program/src/runtime/json_decoder.js": "serde's decoding error caught to become a `Result`, not a drop",
+  "crates/rust-js-program/src/runtime/json_flat.js": "serde's decoding error caught to become a `Result`, not a drop",
+  "crates/rust-js-program/src/runtime/json_read.js": "JSON.parse's `SyntaxError` caught to become a `Result`, not a drop",
+  "crates/rust-js-program/src/runtime/json_reader.js": "serde's decoding error caught to become a `Result`, not a drop",
+  "crates/rust-js-program/src/runtime/json_value.js": "serde's encoding error caught to become a `Result`, not a drop",
+  "crates/rust-js-program/src/runtime/debug_builders.js": "a `Debug` builder's part's write error caught as std's `result`, and what a part a panic stopped wrote written through `{:#?}`'s adapter before it goes on, not a drop (#1533)",
+  "crates/rust-js-program/src/runtime/fs.js": "Node's error of a call of the OS's caught to become std's `io::Error`, a pipe's positioned read or write tried again where it is, and a collected file's close, whose error std's drop ignores, not a drop (#1156)",
+  "crates/rust-js-program/src/runtime/json_value_reader.js": "serde's decoding error caught to become a `Result`, not a drop",
+  "crates/rust-js-program/src/runtime/map_ops.js": "a map's `retain` of a test that may panic",
+  "crates/rust-js-program/src/runtime/print.js": "a line formatted through stdout's: its frame popped, and what's left of the line written, as a panic leaves it, not a drop (#1490)",
+  "crates/rust-js-program/src/runtime/pop_if_cell.js": "a `Vec`'s `pop_if` cell written back as its test returns or panics, not a drop (#906)",
+  "crates/rust-js-program/src/runtime/rc.js": "`Rc::unwrap_or_clone` of a clone that may panic",
+  "crates/rust-js-program/src/runtime/retain.js": "a `Vec`'s `retain` of a test that may panic, its items kept as std's guard keeps them",
+  "crates/rust-js-program/src/runtime/should_panic.js": "a `#[should_panic]` test's panic caught, not a drop",
+  "crates/rust-js-program/src/runtime/sift_down.js": "a `BinaryHeap`'s sift's hole written back as a comparison panics, as std's `Hole` writes it, not a drop (#901)",
+  "crates/rust-js-program/src/runtime/sort_stable.js": "a stable sort's merge, its copy written back where the gap is as a comparison panics, as std's `MergeState` writes it, not a drop (#925)",
+  "crates/rust-js-program/src/runtime/sort_unstable.js": "an unstable sort's gaps, and its small sort's merge, written back as a comparison panics, as std's guards write them, not a drop (#908)",
+  "crates/rust-js-program/src/runtime/sift_up.js": "a `BinaryHeap`'s sift's hole written back as a comparison panics, as std's `Hole` writes it, not a drop (#901)",
+  "crates/rust-js-program/src/runtime/slice_ops.js": "a slice's `is_sorted_by` and `retain_mut` of a function that may panic",
+  "crates/rust-js-program/src/runtime/to_json.js": "serde's encoding error caught to become a `Result`, not a drop",
+  "crates/rust-js-program/src/runtime/try.js": "`?`'s early return of an `Err` thrown and caught, not a drop",
+  "crates/rust-js-program/src/runtime/writer_sink.js": "the sink armed for a writer shown into a writer disarmed as the writer returns or panics, and a writer that never claimed it rust-js's error, not a drop (#1652)",
+  "crates/rust-js-program/src/runtime/unwind.js": "`catch_unwind`, the one catch of a panic",
 };
 
 test("a runtime helper drops what it holds as a panic unwinds by $unwinds alone", () => {
@@ -320,7 +320,7 @@ test("a runtime helper drops what it holds as a panic unwinds by $unwinds alone"
   expect(unwinding.test("  } finally {")).toBe(true);
   expect(unwinding.test("    try {")).toBe(true);
   const owners = new Set(["$unwinds", "$dropsUnwinding", "$inTurnOf"]);
-  const catching = files("src/runtime")
+  const catching = files("crates/rust-js-program/src/runtime")
     .filter((file) => file.endsWith(".js") && !(file in ownUnwinding))
     .flatMap((file) => {
       let fn = "";
@@ -328,7 +328,7 @@ test("a runtime helper drops what it holds as a panic unwinds by $unwinds alone"
         .split("\n")
         .flatMap((line, i) => {
           fn = /^function (\$\w+)/.exec(line)?.[1] ?? fn;
-          const own = file === "src/runtime/steps.js" && owners.has(fn);
+          const own = file === "crates/rust-js-program/src/runtime/steps.js" && owners.has(fn);
           return !line.trimStart().startsWith("//") && unwinding.test(line) && !own ? [`${file}:${i + 1} (${fn})`] : [];
         });
     });
@@ -371,7 +371,7 @@ test("what the lowering runs as a panic unwinds is guarded by drops/parts.rs alo
   expect(tidy.match(/StmtKind::Try\([^)]*\)\.at\(/g)?.length).toBe(2);
   expect(tidy.match(/finally_holds\)?/g)?.length).toBeGreaterThanOrEqual(3);
   // And the runtime's one cleanup is `$cleanup`'s too.
-  expect(read("src/runtime/steps.js")).toMatch(/function \$dropsUnwinding\(drops\) \{\n  \$cleanup\(/);
+  expect(read("crates/rust-js-program/src/runtime/steps.js")).toMatch(/function \$dropsUnwinding\(drops\) \{\n  \$cleanup\(/);
 });
 
 // An iterator value's facts are written once, by lower/iterators/value.rs's
@@ -590,25 +590,25 @@ test("an iterator std's code consumes is dropped by mir_iter_call's consumed_cal
 test("the runtime steps what may be a Rust iterator by its stepping helpers alone", () => {
   const steps = /(for \(const [^)]* of (items|it|iter|entries|iterable|replacement|units|source)\)|Array\.from\((items|it|iter|entries|iterable|replacement|units|source)[,)]|\.\.\.(items|it|iter|entries|iterable|replacement|units|source)\b)/;
   const never: Record<string, [number, string]> = {
-    "src/runtime/btree.js": [4, "a B-tree made of a collect's array or another tree's entries"],
-    "src/runtime/extract_if.js": [1, "a map's entries"],
-    "src/runtime/fold_of.js": [1, "`$foldToArray`'s copy of an array"],
-    "src/runtime/hashed_map.js": [3, "a map or a set made of a collect's array or another's entries or items, or a map's entries given handles"],
-    "src/runtime/hasher.js": [1, "a collection's items, hashed"],
-    "src/runtime/index_map.js": [1, "a map's entries"],
-    "src/runtime/key_map.js": [1, "a map made of a collect's array or another map's entries"],
-    "src/runtime/key_set.js": [1, "a set made of a collect's array or another set's items"],
-    "src/runtime/made.js": [1, "a slice, a deque, a map or a set being cloned"],
-    "src/runtime/map_ops.js": [4, "a map's entries, or a collect's array, `$treeFrom`'s gated by `unwinding_collect`"],
-    "src/runtime/mut_entries.js": [1, "a map's entries"],
-    "src/runtime/nth.js": [1, "`$lastStep`'s JS iterator with no `last`, which every `$Steps` has"],
-    "src/runtime/ord_map.js": [5, "a map made of a collect's array or another map's entries"],
-    "src/runtime/ord_tree.js": [2, "a tree made of a collect's array or another tree's entries"],
-    "src/runtime/rest.js": [1, "an iterator over an array, `steps_an_array`'s"],
-    "src/runtime/steps.js": [1, "`$inTurnOf`'s drops, or a map's keys"],
+    "crates/rust-js-program/src/runtime/btree.js": [4, "a B-tree made of a collect's array or another tree's entries"],
+    "crates/rust-js-program/src/runtime/extract_if.js": [1, "a map's entries"],
+    "crates/rust-js-program/src/runtime/fold_of.js": [1, "`$foldToArray`'s copy of an array"],
+    "crates/rust-js-program/src/runtime/hashed_map.js": [3, "a map or a set made of a collect's array or another's entries or items, or a map's entries given handles"],
+    "crates/rust-js-program/src/runtime/hasher.js": [1, "a collection's items, hashed"],
+    "crates/rust-js-program/src/runtime/index_map.js": [1, "a map's entries"],
+    "crates/rust-js-program/src/runtime/key_map.js": [1, "a map made of a collect's array or another map's entries"],
+    "crates/rust-js-program/src/runtime/key_set.js": [1, "a set made of a collect's array or another set's items"],
+    "crates/rust-js-program/src/runtime/made.js": [1, "a slice, a deque, a map or a set being cloned"],
+    "crates/rust-js-program/src/runtime/map_ops.js": [4, "a map's entries, or a collect's array, `$treeFrom`'s gated by `unwinding_collect`"],
+    "crates/rust-js-program/src/runtime/mut_entries.js": [1, "a map's entries"],
+    "crates/rust-js-program/src/runtime/nth.js": [1, "`$lastStep`'s JS iterator with no `last`, which every `$Steps` has"],
+    "crates/rust-js-program/src/runtime/ord_map.js": [5, "a map made of a collect's array or another map's entries"],
+    "crates/rust-js-program/src/runtime/ord_tree.js": [2, "a tree made of a collect's array or another tree's entries"],
+    "crates/rust-js-program/src/runtime/rest.js": [1, "an iterator over an array, `steps_an_array`'s"],
+    "crates/rust-js-program/src/runtime/steps.js": [1, "`$inTurnOf`'s drops, or a map's keys"],
   };
   const counts: Record<string, number> = {};
-  for (const file of files("src/runtime").filter((file) => file.endsWith(".js"))) {
+  for (const file of files("crates/rust-js-program/src/runtime").filter((file) => file.endsWith(".js"))) {
     const found = read(file).split("\n").filter((line) => !line.trimStart().startsWith("//") && steps.test(line)).length;
     if (found > 0) counts[file] = found;
   }
@@ -620,7 +620,7 @@ test("the runtime steps what may be a Rust iterator by its stepping helpers alon
 // knowing its back, the one form; `$zipBack`, its second, is gone (ADR 0493,
 // #740, the user's decision). A new one fails here.
 test("a reversed zip has one form, never `$zipBack`", () => {
-  const sources = ["src/lower.rs", ...files("src/lower"), ...files("src/runtime")];
+  const sources = ["src/lower.rs", ...files("src/lower"), ...files("crates/rust-js-program/src/runtime")];
   const found = sources.filter((path) => read(path).includes("$zipBack"));
   expect([found, "a reversed zip is `$rev($zipEnds(a, b))` (ADR 0493)"]).toEqual([[], "a reversed zip is `$rev($zipEnds(a, b))` (ADR 0493)"]);
 });

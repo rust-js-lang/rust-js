@@ -2,7 +2,7 @@
 //! read, as JS writes it: `if ((next = node.nextSibling) !== null) {
 //! break; }` (rd148).
 
-use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 
 /// `let v; while (true) { ..; const t = e; if (t !== null) { v = t; break;
 /// } .. }`, the loop's value given at its one way out, `let next = loop {

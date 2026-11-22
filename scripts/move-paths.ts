@@ -24,7 +24,7 @@
 // can't be written, as no crate depends on the binary: it's said, and left.
 //
 //   bun scripts/move-paths.ts src/lower/iterators/mir_steps/ src/lower/iterators/mir_steps/
-//   bun scripts/move-paths.ts crates/rust-js-program/src/collections.rs crates/rust-js-program/crates/rust-js-program/src/collections.rs
+//   bun scripts/move-paths.ts src/collections.rs crates/rust-js-program/src/collections.rs
 //   bun scripts/move-paths.ts                    # the Rust paths alone
 //   bun scripts/move-paths.ts --widen ..         # and make pub what another crate
 //                                                # names, as rustc says (`widened`)
@@ -36,7 +36,8 @@ import { compilerCrates, compilerRustFiles, crateOf, modulePath, topModules, typ
 
 const root = join(import.meta.dir, "..");
 const searched = ["scripts", "test", "docs", "src", "crates", ".github", "DEVELOPMENT.md", "CONTRIBUTING.md", "TESTS.md", "AGENTS.md"];
-const skipped = new Set(["node_modules", "corpus", "known", "fixtures", "target"]);
+// And the guide, whose paths are an app's, `src/lib.rs`, never the compiler's.
+const skipped = new Set(["node_modules", "corpus", "known", "fixtures", "target", "guide"]);
 
 /** Each text file under `searched`, by its path from the checkout. */
 export function textFiles(at = root): string[] {
@@ -54,13 +55,15 @@ export function textFiles(at = root): string[] {
 
 /** `text` with each of `pairs`' `from` written as its `to`: a path, the
  * whole of it or a prefix of one, never a longer name it begins (a `from`
- * of `a/b.rs` leaves `a/b.rsx`). */
+ * of `a/b.rs` leaves `a/b.rsx`), nor one it ends (`crates/rust-js-program/src/js.rs` leaves
+ * `crates/rust-js-program/src/js.rs`, which a second run met as written),
+ * but one relative to a folder below the root, `"../a/b.rs"`. */
 export function rewritten(text: string, pairs: [string, string][]): string {
   let out = text;
   for (const [from, to] of pairs) {
     const escaped = from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const boundary = from.endsWith("/") ? "" : "(?![\\w.-])";
-    out = out.replace(new RegExp(`${escaped}${boundary}`, "g"), to);
+    out = out.replace(new RegExp(`(?<=(?:^|[^\\w./-])(?:\\.\\./)*)${escaped}${boundary}`, "g"), to);
   }
   return out;
 }
@@ -321,6 +324,14 @@ export function rustPathsRewritten(file: string, text: string, modulesOf: Map<st
       rewrites.push({ from: at, to: at, text: `${crate.name}::` });
     }
   }
+  // A path through its own crate's name, of a file that moved into the
+  // crate it named: `crate::`, as a crate names itself.
+  if (own.dir !== "") {
+    for (const m of codeOf(text, true).matchAll(new RegExp(`(^|[^\\w$:])(${own.name}\\s*::)`, "g"))) {
+      const at = m.index! + m[1]!.length;
+      rewrites.push({ from: at, to: at + m[2]!.length, text: "crate::" });
+    }
+  }
   if (/\$crate\s*::/.test(code)) {
     for (const m of code.matchAll(/\$crate\s*::\s*([a-z_]\w*)/g)) {
       if (elsewhere(m[1]!)) problems.push(`${file}:${line(m.index!)}: \`$crate::${m[1]}\` names a module of another crate: write its crate's path`);
@@ -346,17 +357,59 @@ export function rustPathsRewritten(file: string, text: string, modulesOf: Map<st
  * of a crate is what the crate makes public, and nothing more (ADR 1181).
  * rustc's privacy errors, a private item (E0603), method (E0624) or field
  * (E0616), each point at where the item is defined. */
+/** A mutation list's text (scripts/mutations/**), its `find`s and
+ * `replace`s Rust of its file, with the paths `rustPathsRewritten` writes
+ * there: `crate::x` of a module another crate has, its crate's, and a
+ * crate's own name, where its file moved into it, `crate::`. */
+export function listRewritten(text: string, modulesOf: Map<string, CompilerCrate>, at = root): string {
+  const file = /\bfile:\s*"([^"]+)"/.exec(text)?.[1];
+  const own = file === undefined ? undefined : crateOf(file, at);
+  if (!own || !file!.endsWith(".rs")) return text;
+  const moved = (module: string) => {
+    const crate = modulesOf.get(module);
+    return crate && crate !== own && crate.dir !== "" ? crate : undefined;
+  };
+  const rust = (code: string) =>
+    code
+      .replace(/(^|[^\w$])crate::([a-z_]\w*)\b/g, (whole, before, module) => (moved(module) ? `${before}${moved(module)!.name}::${module}` : whole))
+      .replace(new RegExp(`(^|[^\\w$:])${own.name}::`, "g"), own.dir === "" ? "$&" : "$1crate::")
+      // A crate's root names its modules bare, `paths::absolute(..)`.
+      .replace(/(^|[^\w$:.{,]\s*|\()([a-z_]\w*)::/g, (whole, before, module) =>
+        file === own.rootFile && moved(module) ? `${before}${moved(module)!.name}::${module}::` : whole,
+      );
+  // Its `find`s and `replace`s, each a string of its file's Rust.
+  return text.replace(/\b(find|replace):(\s*)("(?:[^"\\]|\\.)*")/g, (_, key, space, string) => `${key}:${space}${rust(string)}`);
+}
+
 export function widened(at = root): string[] {
   const made: string[] = [];
+  const visibility = /^(\s*)(?:pub(?:\s*\([^)]*\))?\s+)?/;
+  // An item, or a field, `name: T`, at the start of `line`, by its
+  // visibility and what follows it.
+  const declares = (line: string, name = "[A-Za-z_]\\w*") =>
+    new RegExp(`^(\\s*)(?:pub(?:\\s*\\([^)]*\\))?\\s+)?((?:(?:const|unsafe|async|extern\\s+"[^"]*")\\s+)*(?:fn|struct|enum|union|const|static|type|trait|mod|use)\\s+${name}\\b|${name}\\s*:(?!:))`).exec(line);
+  const widen = (file: string, number: number): boolean => {
+    const lines = readFileSync(join(at, file), "utf8").split("\n");
+    const line = lines[number - 1]!;
+    const head = visibility.exec(line)!;
+    const next = `${head[1]}pub ${line.slice(head[0].length)}`;
+    if (/^\s*pub\s/.test(line) || next === line) return false;
+    lines[number - 1] = next;
+    writeFileSync(join(at, file), lines.join("\n"));
+    made.push(`${file}:${number}`);
+    return true;
+  };
   for (let round = 0; round < 20; round++) {
     const built = Bun.spawnSync(["cargo", "build", "--quiet", "--message-format=json"], { cwd: at, stdout: "pipe", stderr: "pipe" });
-    const sites = new Set<string>();
-    const walk = (message: { code?: { code: string } | null; spans: { file_name: string; line_start: number; label?: string | null }[]; children: { message: string; spans: { file_name: string; line_start: number }[] }[] }) => {
+    const sites = new Map<string, string | undefined>();
+    type Span = { file_name: string; line_start: number; label?: string | null };
+    const walk = (message: { message: string; code?: { code: string } | null; spans: Span[]; children: { message: string; spans: Span[] }[] }) => {
       if (!["E0603", "E0624", "E0616"].includes(message.code?.code ?? "")) return;
-      for (const span of message.spans) if (span.label && /defined here|private/.test(span.label) && crateOf(span.file_name, at)?.dir) sites.add(`${span.file_name}:${span.line_start}`);
+      const name = /`(\w+)` is private/.exec(message.message)?.[1];
+      for (const span of message.spans) if (span.label && /defined here|private/.test(span.label) && crateOf(span.file_name, at)?.dir) sites.set(`${span.file_name}:${span.line_start}`, name);
       for (const child of message.children) {
         if (!/defined here/.test(child.message)) continue;
-        for (const span of child.spans) if (crateOf(span.file_name, at)?.dir) sites.add(`${span.file_name}:${span.line_start}`);
+        for (const span of child.spans) if (crateOf(span.file_name, at)?.dir) sites.set(`${span.file_name}:${span.line_start}`, name);
       }
     };
     for (const line of built.stdout.toString().split("\n")) {
@@ -366,20 +419,24 @@ export function widened(at = root): string[] {
     }
     if (sites.size === 0) return made;
     let changed = 0;
-    for (const site of sites) {
+    for (const [site, name] of sites) {
       const [file, number] = [site.slice(0, site.lastIndexOf(":")), Number(site.slice(site.lastIndexOf(":") + 1))];
-      const lines = readFileSync(join(at, file), "utf8").split("\n");
-      const line = lines[number - 1]!;
-      const item = /^(\s*)(?:pub(?:\s*\([^)]*\))?\s+)?((?:(?:const|unsafe|async|extern\s+"[^"]*")\s+)*(?:fn|struct|enum|union|const|static|type|trait|mod|use)\b|[a-z_]\w*\s*:)/.exec(line);
-      if (!item) throw new Error(`${site}: rustc says an item here is private, but this line declares none: \`${line.trim()}\``);
-      const next = `${item[1]}pub ${line.slice(item[0].length - item[2]!.length)}`;
-      if (next === line) continue;
-      lines[number - 1] = next;
-      writeFileSync(join(at, file), lines.join("\n"));
-      made.push(site);
-      changed++;
+      const line = readFileSync(join(at, file), "utf8").split("\n")[number - 1]!;
+      if (declares(line)) {
+        if (widen(file, number)) changed++;
+        continue;
+      }
+      // A glob's re-export, `stmt_walk::*,`, which rustc names for the item
+      // it re-exports: that item, declared in the glob's module.
+      const glob = /\b([a-z_]\w*)::\*/.exec(line)?.[1];
+      if (!glob || !name) continue;
+      const base = /(?:^|\/)(?:lib|main|mod)\.rs$/.test(file) ? dirname(file) : file.replace(/\.rs$/, "");
+      const module = [`${base}/${glob}.rs`, `${base}/${glob}/mod.rs`].find((path) => existsSync(join(at, path)));
+      if (!module) continue;
+      const text = readFileSync(join(at, module), "utf8").split("\n");
+      for (const [i, each] of text.entries()) if (declares(each, name) && widen(module, i + 1)) changed++;
     }
-    if (changed === 0) throw new Error(`rustc still says items are private: ${[...sites].join(", ")}`);
+    if (changed === 0) throw new Error(`rustc still says items are private: ${[...sites.keys()].join(", ")}`);
   }
   throw new Error("still widening after 20 rounds");
 }
@@ -440,6 +497,15 @@ if (import.meta.main) {
     problems.push(...next.problems);
     if (next.text !== text) {
       writeFileSync(join(root, file), next.text);
+      paths++;
+    }
+  }
+  // And the Rust of each mutation list's `find`s and `replace`s.
+  for (const list of textFiles().filter((file) => file.startsWith("scripts/mutations/") && file.endsWith(".ts"))) {
+    const text = readFileSync(join(root, list), "utf8");
+    const next = listRewritten(text, modulesOf);
+    if (next !== text) {
+      writeFileSync(join(root, list), next);
       paths++;
     }
   }

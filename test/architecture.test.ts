@@ -25,9 +25,9 @@ const layers = {
   driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/clippy.rs", "src/std_sysroot.rs", "src/source_format.rs", "src/source_format/",
     "src/phase_times.rs", "src/worker.rs"],
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
-  owned: ["src/library.rs", "src/library/", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs", "src/js/",
-    "src/prepare.rs", "src/prepare/", "src/output.rs", "src/output/", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
-    "src/paths.rs", "src/packages.rs", "src/css_modules.rs", "crates/rust-js-program/src/"],
+  owned: ["src/library.rs", "src/library/", "src/reachability.rs", "src/link.rs", "src/program.rs", "src/comments.rs",
+    "src/prepare.rs", "src/prepare/", "src/output.rs", "src/output/", "src/publish.rs", "src/manifest.rs", "src/settings.rs", "src/hooks.rs",
+    "src/packages.rs", "src/css_modules.rs", "crates/rust-js-program/src/"],
   printing: ["src/to_oxc.rs", "src/to_oxc/", "src/format.rs", "src/format/", "src/typescript.rs", "src/prettier.rs", "src/node_session.rs"],
 };
 const layerOf = (file: string) =>
@@ -58,7 +58,7 @@ const orchestration: Record<string, string[]> = {
   "src/output/local_js.rs": ["src/to_oxc.rs"],
   "src/hooks.rs": ["src/format.rs"],
 };
-// A top-level module of `crate`'s, as the file it is: `src/js.rs`, or a
+// A top-level module of `crate`'s, as the file it is: `crates/rust-js-program/src/js.rs`, or a
 // folder's, `src/lower/`.
 // A name of no module is an item of the crate's root, its `main.rs`'s or
 // `lib.rs`'s: the driver's `finish_build`, which its worker calls (#2301).
@@ -140,8 +140,8 @@ test("the layer check finds a module however a file names it", () => {
   const cases: [string, string, string[]][] = [
     ["src/manifest.rs", "use crate::lower::Body;", ["src/lower.rs"]],
     ["src/manifest.rs", "use super::lower::Body;", ["src/lower.rs"]],
-    ["src/output.rs", "use crate::{js::{self, Expr}, program, to_oxc};", ["src/js.rs", "src/program.rs", "src/to_oxc.rs"]],
-    ["src/lower/drops/types.rs", "use super::super::super::js::Expr;", ["src/js.rs"]],
+    ["src/output.rs", "use crate::{lower::{self, Body}, program, to_oxc};", ["src/lower.rs", "src/program.rs", "src/to_oxc.rs"]],
+    ["src/lower/drops/types.rs", "use super::super::super::output::Plan;", ["src/output.rs"]],
     ["src/lower/drops/types.rs", "use super::super::traits::Route;", []],
     ["src/format.rs", 'mod tests {\n    use super::*;\n    fn f() { let s = "{"; let c = \'}\'; }\n}\nuse super::lower::Body;', ["src/lower.rs"]],
     ["src/manifest.rs", '// crate::lower, in a comment\nfn f() { let s = "super::lower"; }', []],
@@ -149,12 +149,12 @@ test("the layer check finds a module however a file names it", () => {
     ["src/manifest.rs", "use crate::*;\nfn sneak(_: lower::Body) {}", [WHOLE]],
     ["src/manifest.rs", "use super::*;", [WHOLE]],
     ["src/manifest.rs", "use crate as root;\nfn sneak(_: root::lower::Body) {}", [WHOLE]],
-    ["src/manifest.rs", "use crate::{self as root, js};", ["src/js.rs", WHOLE]],
+    ["src/manifest.rs", "use crate::{self as root, output};", ["src/output.rs", WHOLE]],
     ["src/format.rs", "mod tests {\n    use super::*;\n}", []],
     ["src/lower/drops/types.rs", "use super::*;", []],
     ["src/lower/drops/types.rs", "use rust_js_program::{collections::IndexMap, lines};", ["crates/rust-js-program/src/collections.rs", "crates/rust-js-program/src/lines.rs"]],
     ["crates/rust-js-program/src/decisions.rs", "use crate::collections::IndexMap;", ["crates/rust-js-program/src/collections.rs"]],
-    ["src/worker.rs", "use crate::{finish_build, lower, js};", ["src/js.rs", "src/lower.rs", "src/main.rs"]],
+    ["src/worker.rs", "use crate::{finish_build, lower, output};", ["src/lower.rs", "src/main.rs", "src/output.rs"]],
   ];
   for (const [file, text, expected] of cases) expect(usedModules(file, text), text).toEqual(expected);
 });
@@ -239,23 +239,23 @@ test("runtime imports are chosen before printing", () => {
   // The printer is given them, chosen where the module is prepared.
   expect(read("src/to_oxc.rs")).not.toMatch(/imported_helpers|read_vars|read_helpers/);
   expect(read("src/output.rs")).toContain("imported_helpers(helper_sources, &js_module.read_helpers())");
-  expect(read("src/runtime.rs")).not.toMatch(/fn imported_helpers\([^)]*code: &str/);
+  expect(read("crates/rust-js-program/src/runtime.rs")).not.toMatch(/fn imported_helpers\([^)]*code: &str/);
 });
 
 // Each runtime helper is one lowering asks for, or another helper needs: a
 // helper nothing asks for is JS the package ships for nothing (the third
 // architecture audit: `$sliceEnd`'s, since THIR's lowering went).
 test("each runtime helper is asked for, or needed by another", () => {
-  const runtime = read("src/runtime.rs");
+  const runtime = read("crates/rust-js-program/src/runtime.rs");
   const list = runtime.slice(runtime.indexOf("helpers! {"), runtime.indexOf("}", runtime.indexOf("helpers! {")));
   const helpers = [...list.matchAll(/^\s+([A-Z]\w*),/gm)].map(m => m[1]);
   expect(helpers.length).toBeGreaterThan(200);
   // Asked for by being written, by a name it exports (ADR 0103), or read
   // by another helper's JS.
   const files = new Map([...runtime.matchAll(/Helper::(\w+) => include_str!\("runtime\/([\w.]+)"\)/g)].map(m => [m[1], m[2]]));
-  const source = (helper: string) => read(`src/runtime/${files.get(helper)}`);
+  const source = (helper: string) => read(`crates/rust-js-program/src/runtime/${files.get(helper)}`);
   const declared = (helper: string) => [...source(helper).matchAll(/^(?:async function\*? |function\*? |class |const |let )(\$\w+)/gm)].map(m => m[1]);
-  const writing = sources.filter(file => file !== "src/runtime.rs").map(read).join("\n");
+  const writing = sources.filter(file => file !== "crates/rust-js-program/src/runtime.rs").map(read).join("\n");
   const readBy = (helper: string, name: string) => helpers.some(other => other !== helper && new RegExp(`(?<![\\w.$"'])\\$${name.slice(1)}\\b(?!\\s*:)`).test(source(other)));
   const unasked = helpers.filter(name => !declared(name).some(own => writing.includes(`"${own}"`) || readBy(name, own)));
   expect(unasked).toEqual([]);
@@ -277,19 +277,19 @@ test("a helper is written as the runtime's", () => {
 // never matches (the second architecture review). Each other `$` name is
 // listed with what it is, spelled once.
 test("each `$` name the compiler writes is the runtime's", () => {
-  const runtime = files("src/runtime").filter(file => file.endsWith(".js")).map(read).join("\n");
+  const runtime = files("crates/rust-js-program/src/runtime").filter(file => file.endsWith(".js")).map(read).join("\n");
   const declared = new Set([...runtime.matchAll(/^(?:export )?(?:async function\*? |function\*? |class |const |let )(\$\w+)/gm)].map(m => m[1]));
   const others = new Map([
     ["$someNone", "src/lower/std_types/option.rs"], // a `Some` of `None`'s box's field (ADR 0051)
-    ["$drop", "src/js.rs"], // a `dyn`'s dictionary's destructor
+    ["$drop", "crates/rust-js-program/src/js.rs"], // a `dyn`'s dictionary's destructor
     ["$steps", "src/lower/mir/rvalues/aggregate.rs"], // a compiled std iterator's `next` and `size_hint`, `$stdIterator`'s, its clone's too (ADR 0561)
     ["$knows", "src/lower/mir/rvalues/aggregate.rs"], // what a use gave a compiled std iterator, `$knowing`'s, its clone's too (ADR 0561, #1976)
     ["$tested", "src/prepare.rs"], // a variable marked as a test reads it, never printed
     ["$subject", "src/lower/mir/hints.rs"], // what a variant's test is of, as a `switch`'s constant has it, never printed (ADR 0668)
-    ["$circleShape", "src/names.rs"], // a dictionary's cache, in a unit test
+    ["$circleShape", "crates/rust-js-program/src/names.rs"], // a dictionary's cache, in a unit test
   ]);
   const unknown: string[] = [];
-  for (const file of sources.filter(file => file !== "src/runtime.rs")) {
+  for (const file of sources.filter(file => file !== "crates/rust-js-program/src/runtime.rs")) {
     for (const [, name] of read(file).matchAll(/"(\$[a-zA-Z]\w*)"/g)) {
       if (!declared.has(name) && others.get(name) !== file) unknown.push(`${file}: ${name}`);
     }
@@ -345,7 +345,7 @@ test("only the publisher and the driver write files", () => {
 // places wrote `new Error(..)` each, and `panic!("")` was `new Error("")`.
 test("a panic's Error is made in one place", () => {
   const made = /Expr::(?:var|global)\("Error"\)/;
-  expect(sources.filter(file => made.test(read(file)))).toEqual(["src/js/make/unwinding.rs"]);
+  expect(sources.filter(file => made.test(read(file)))).toEqual(["crates/rust-js-program/src/js/make/unwinding.rs"]);
 });
 
 test("library recognition cannot access function emission state", () => {
@@ -441,8 +441,8 @@ const idioms: [string, RegExp, string[]][] = [
   // What a box, a cell or a handle holds, and a `dyn` pair's dictionary
   // (ADRs 0099, 0049): the JS tree's names of the fields, `js::HELD` and
   // `js::DICTIONARY`, wherever they're written or read.
-  ["the held `value` field", /Expr::member\([^;]*?,\s*"value"\)|Field\("value"\.into\(\)|== "value"|HELD: &str = "value"/, ["src/js.rs"]],
-  ["the dictionary's `impl` field", /"impl"/, ["src/js.rs"]],
+  ["the held `value` field", /Expr::member\([^;]*?,\s*"value"\)|Field\("value"\.into\(\)|== "value"|HELD: &str = "value"/, ["crates/rust-js-program/src/js.rs"]],
+  ["the dictionary's `impl` field", /"impl"/, ["crates/rust-js-program/src/js.rs"]],
   // A std type's helpers, read and written where the type is lowered: a
   // pass of tidy's over them is the type's module's (the second review).
   ["a map's entry", /"\$orInsert"|"\$mutGet"/, ["src/lower/std_types/map.rs", "src/lower/std_types/map_entries.rs", "src/lower/mir/entries.rs", "src/lower/mut_refs.rs"]],
@@ -534,8 +534,8 @@ test("an enum's JS is `js`'s, and a `Result`'s `js::result`'s", () => {
   const code = (file: string) => read(file).split("\n").filter(line => !/^\s*\/\//.test(line)).join("\n");
   const askers = ["src/lower.rs", ...files("src/lower"), "src/prepare.rs", ...files("src/prepare")];
   for (const [owner, spelled] of [
-    ["src/js.rs", /"TAG"|format!\("_\{i\}"\)/],
-    ["src/js/result.rs", /"(?:Ok|Err)"/],
+    ["crates/rust-js-program/src/js.rs", /"TAG"|format!\("_\{i\}"\)/],
+    ["crates/rust-js-program/src/js/result.rs", /"(?:Ok|Err)"/],
   ] as const) {
     expect(code(owner), owner).toMatch(spelled);
     expect(askers.filter(file => spelled.test(code(file))), owner).toEqual([]);
@@ -1132,15 +1132,15 @@ test("an arrow that passes on what it's given is passed_on's alone", () => {
   const sources = compilerRustFiles();
   // A call's arguments matched to parameters by name, one by one.
   const byName = /\.zip\([^;]{0,200}?\.(?:all|map)\(\|\(\w+, \w+\)\|[^;]{0,120}?(?:ExprKind::Var\(\w+\)\)? if \w+(?: == \w+|\.is\(\w+\))|is_var\(|passed\()/;
-  expect(sources.filter((file) => byName.test(read(file)))).toEqual(["src/js/stmt_walk.rs"]);
+  expect(sources.filter((file) => byName.test(read(file)))).toEqual(["crates/rust-js-program/src/js/stmt_walk.rs"]);
   // A handler tested to be there, then called: of a function that takes an
   // arrow apart, from its `fn` to the next.
   const functions = (file: string) => read(file).split(/\n(?=\s*(?:pub(?:\([^)]*\))?\s+)?fn \w+)/);
   const optional = (f: string) => /ExprKind::Arrow\(/.test(f) && /null_test\([^]*StmtKind::If\(|StmtKind::If\([^]*null_test\(/.test(f);
   expect(sources.filter((file) => functions(file).some(optional))).toEqual(["src/lower/passed_on.rs"]);
   const owned = /fn (passed_on\(f: &Expr|passes_on|passed_handler|called_alone|called_by_name|calls_rust|closure_calls_rust|forwarded_to)\b/;
-  expect(sources.filter((file) => owned.test(read(file)))).toEqual(["src/js/stmt_walk.rs", "src/lower/passed_on.rs"]);
-  expect(sources.filter((file) => /\bpasses_on\(/.test(read(file).replace(/fn passes_on/g, ""))).sort()).toEqual(["src/js.rs", "src/lower/passed_on.rs", "src/prepare/forwarding.rs"]);
+  expect(sources.filter((file) => owned.test(read(file)))).toEqual(["src/lower/passed_on.rs", "crates/rust-js-program/src/js/stmt_walk.rs"]);
+  expect(sources.filter((file) => /\bpasses_on\(/.test(read(file).replace(/fn passes_on/g, ""))).sort()).toEqual(["crates/rust-js-program/src/js.rs", "src/lower/passed_on.rs", "src/prepare/forwarding.rs"]);
   // Who asks, each by its position, and where the closure's fact is made:
   // once, where MIR makes the closure.
   const asking = sources.filter((file) => file !== "src/lower/passed_on.rs" && /\bpassed_on\(/.test(read(file).replace(/fn passed_on\(/g, "")));
@@ -1296,7 +1296,7 @@ test("trait selection is asked through `traits::select` alone", () => {
 test("no caller of substitute falls back to the expression unrenamed", () => {
   const falls = /\.substitute(?:_in_callbacks)?\([^;]*?\)\)?\s*\.unwrap_or(?:_else)?\(/s;
   const rust = (dir: string) => files(dir).filter((file) => file.endsWith(".rs"));
-  expect(["src/lower.rs", ...rust("src/lower"), ...rust("src/js"), ...rust("src/prepare")].filter((file) => falls.test(read(file)))).toEqual([]);
+  expect(["src/lower.rs", ...rust("src/lower"), ...rust("crates/rust-js-program/src/js"), ...rust("src/prepare")].filter((file) => falls.test(read(file)))).toEqual([]);
   // The test sees the fallback written as it was.
   expect(falls.test("(target.substitute(&|v| (v == name).then(|| held.clone()))).unwrap_or(target)")).toBe(true);
 });
@@ -1332,13 +1332,13 @@ test("a bare template value is made only of text, a number or a bool", () => {
 });
 
 // Whether an iterator has its own method, not `$Steps.prototype`'s default,
-// is asked in one place, `$ownMethod` (src/runtime/steps.js, #2000): 13
+// is asked in one place, `$ownMethod` (crates/rust-js-program/src/runtime/steps.js, #2000): 13
 // readings in seven files had each asked `Object.hasOwn` of a step's name.
 test("the runtime asks whether an iterator has its own method by `$ownMethod` alone", () => {
   const steps = /Object\.hasOwn\([^,]+, "(next|back|advanceBy|advanceBackBy|nth|nthBack|fold|rfold|tryFold|tryRfold|sizeHint|len|last|count)"\)/;
-  const asking = readdirSync(join(root, "src/runtime"))
+  const asking = readdirSync(join(root, "crates/rust-js-program/src/runtime"))
     .filter((name) => name.endsWith(".js"))
-    .filter((name) => steps.test(read(`src/runtime/${name}`)));
+    .filter((name) => steps.test(read(`crates/rust-js-program/src/runtime/${name}`)));
   expect(asking).toEqual([]);
-  expect(read("src/runtime/steps.js")).toContain("function $ownMethod(it, step) {\n  return Object.hasOwn(it, step);\n}");
+  expect(read("crates/rust-js-program/src/runtime/steps.js")).toContain("function $ownMethod(it, step) {\n  return Object.hasOwn(it, step);\n}");
 });

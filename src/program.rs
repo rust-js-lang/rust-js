@@ -1,8 +1,8 @@
 //! Owned compiler output. No rustc or printer types cross this boundary.
 
-use crate::js;
-use crate::runtime::Helper;
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js;
+use rust_js_program::runtime::Helper;
 
 use std::path::{Path, PathBuf};
 

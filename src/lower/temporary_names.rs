@@ -4,9 +4,9 @@
 //! of the role it has, `value`, `arg`, `tmp`. Each place that names a
 //! temporary asks here; none spells a temporary's word itself.
 
-use crate::js;
 use crate::lower::FnCx;
 use crate::lower::recognition::StdItem;
+use rust_js_program::js;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
@@ -338,16 +338,16 @@ pub(in crate::lower) enum Base<'a> {
     Prefixed(Role, &'a str),
     /// What a `js::Suffix` says of a variable, `keyValue` of `key`, of it
     /// by its id, spelled by preparation (`js::Name::suffixed`).
-    Suffixed(&'a crate::js::Name, crate::js::Suffix),
+    Suffixed(&'a rust_js_program::js::Name, rust_js_program::js::Suffix),
     Named(&'a str),
     /// A local the program named, `let state`'s: of its word, the
     /// program's own variable (`js::Name::program`, ADR 1150), a
     /// variable it names again, one a closure moves in, of its own.
-    Program(&'a crate::js::Name),
+    Program(&'a rust_js_program::js::Name),
     /// A holder of another variable's value, of it by its id, not spelled
     /// yet: preparation spells it of what the source is spelled then
     /// (`js::Name::derived`).
-    Derived(&'a crate::js::Name),
+    Derived(&'a rust_js_program::js::Name),
     Local(usize),
     Temporary,
     HeldArg,
@@ -366,19 +366,19 @@ impl Base<'_> {
     /// `_$1` of an unread parameter's `_` given apart; a held argument's is
     /// one by its base, `HeldArg`, never by its word: its form is decided
     /// once, here, as it's made, and tidy asks that (#1681 change 3, S4).
-    pub(in crate::lower) fn name(&self, word: String) -> crate::js::Name {
+    pub(in crate::lower) fn name(&self, word: String) -> rust_js_program::js::Name {
         match self {
-            Base::Local(_) | Base::Temporary => crate::js::Name::temporary(word),
-            Base::HeldArg => crate::js::Name::held_arg(word),
+            Base::Local(_) | Base::Temporary => rust_js_program::js::Name::temporary(word),
+            Base::HeldArg => rust_js_program::js::Name::held_arg(word),
             // What Rust leaves `_`: a value nothing reads, or a parameter
             // the program names `_`, an `async` closure's `|_|`.
-            Base::Role(Role::Unread) => crate::js::Name::unread(word),
+            Base::Role(Role::Unread) => rust_js_program::js::Name::unread(word),
             Base::Program(name) if name.source() == rustc_span::symbol::kw::Underscore.as_u32() => {
-                crate::js::Name::unread(word)
+                rust_js_program::js::Name::unread(word)
             }
-            _ if spelled_as_temporary(&word) => crate::js::Name::temporary(word),
-            Base::Program(name) => crate::js::Name::program(word, name.source()),
-            _ => crate::js::Name::declared(word),
+            _ if spelled_as_temporary(&word) => rust_js_program::js::Name::temporary(word),
+            Base::Program(name) => rust_js_program::js::Name::program(word, name.source()),
+            _ => rust_js_program::js::Name::declared(word),
         }
     }
 
@@ -463,7 +463,7 @@ pub(in crate::lower) fn call_suggestion(tcx: TyCtxt<'_>, def_id: DefId) -> Optio
 /// `httpServer` of `HTTPServer`; none where that's no JS identifier.
 pub(in crate::lower) fn suggested(name: &str) -> Option<String> {
     let name = variable_name(&crate::lower::camel_case(name));
-    (crate::names::js_ident(&name) == name).then_some(name)
+    (rust_js_program::names::js_ident(&name) == name).then_some(name)
 }
 
 impl<'tcx> FnCx<'_, 'tcx> {

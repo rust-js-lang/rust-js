@@ -14,15 +14,15 @@ pub(in crate::lower) use self::generic::{int_as, int_out_of};
 pub(in crate::lower) use self::operators::*;
 use crate::lower::temporary_names::Role;
 
-use crate::js::StmtKind;
-use crate::js::result;
-use crate::js::{self, Expr, Op, Stmt, UnaryOp};
 use crate::lower::calls::Call;
 use crate::lower::discriminants;
 use crate::lower::recognition::IntNewtype;
 use crate::lower::recognition::{Std, TypeFact, any_trait};
 use crate::lower::representation::{Num, is_fieldless_enum};
 use crate::lower::{FnCx, R};
+use rust_js_program::js::StmtKind;
+use rust_js_program::js::result;
+use rust_js_program::js::{self, Expr, Op, Stmt, UnaryOp};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::{BinOp, UnOp};
 use rustc_middle::ty::{self, Ty, TypeFoldable, TypeVisitableExt};

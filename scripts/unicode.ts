@@ -3,9 +3,9 @@
 // answered as the pinned toolchain's std answers it, whatever Unicode
 // version a JS engine has. scripts/unicode/main.rs, built by the checkout's
 // toolchain, asks std of every `char`; this writes its answers as
-// src/runtime/unicode_tables.js, which src/runtime/unicode.js reads.
+// crates/rust-js-program/src/runtime/unicode_tables.js, which crates/rust-js-program/src/runtime/unicode.js reads.
 //
-//   bun scripts/unicode.ts [<file>]   # src/runtime/unicode_tables.js unless it's given
+//   bun scripts/unicode.ts [<file>]   # crates/rust-js-program/src/runtime/unicode_tables.js unless it's given
 //
 // Run it when the toolchain is bumped: test/unicode.test.ts fails until the
 // tables are its std's.
@@ -107,9 +107,9 @@ export function tables(rust: string, given: Answers): string {
 }
 
 if (import.meta.main) {
-  const out = process.argv[2] ?? join(root, "src", "runtime", "unicode_tables.js");
+  const out = process.argv[2] ?? join(root, "crates", "rust-js-program", "src", "runtime", "unicode_tables.js");
   const { rust, answers: given } = answers();
   if (given.debugExtended.length > 0)
-    throw new Error("this std's `{:?}` escapes a Grapheme_Extend `char` only where it's first: src/runtime/unicode.js asks no such table");
+    throw new Error("this std's `{:?}` escapes a Grapheme_Extend `char` only where it's first: crates/rust-js-program/src/runtime/unicode.js asks no such table");
   writeFileSync(out, tables(rust, given));
 }

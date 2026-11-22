@@ -155,8 +155,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
         let dictionary = self.dictionary_of(trait_id, keyword("unknown"));
         let property = |name: &str, ty: Value| json!({ "kind": "property", "name": name, "optional": false, "readonly": false, "type": ty });
         let members = [
-            property(crate::js::HELD, keyword("unknown")),
-            property(crate::js::DICTIONARY, dictionary),
+            property(rust_js_program::js::HELD, keyword("unknown")),
+            property(rust_js_program::js::DICTIONARY, dictionary),
         ];
         json!({ "kind": "object", "members": members })
     }

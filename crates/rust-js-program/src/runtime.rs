@@ -2,7 +2,7 @@
 //! `@rust-js/std`'s `runtime.js`, the module of every one (ADR 0103, #1095).
 
 /// Declares the helpers, and `Helper::ALL`, every one, for the package.
-use rust_js_program::collections::{IndexMap, IndexSet};
+use crate::collections::{IndexMap, IndexSet};
 macro_rules! helpers {
     ($($name:ident,)*) => {
         /// Runtime helpers, each imported by the modules that use it.
@@ -517,7 +517,7 @@ const NEVER_THROW: &[&str] = &[
 const ASKS_UNWINDING: &[&str] = &["$unlock", "$panicking"];
 
 /// Whether `name` is a helper that asks whether a panic unwinds.
-pub(crate) fn asks_unwinding(name: &str) -> bool {
+pub fn asks_unwinding(name: &str) -> bool {
     ASKS_UNWINDING.contains(&name)
 }
 
@@ -529,7 +529,7 @@ pub(crate) fn never_throws(name: &str) -> bool {
 }
 
 /// The helper that declares `name`, an export of the runtime's.
-pub(crate) fn helper_of(name: &str) -> Option<Helper> {
+pub fn helper_of(name: &str) -> Option<Helper> {
     static OWNERS: std::sync::LazyLock<IndexMap<&'static str, Helper>> = std::sync::LazyLock::new(|| {
         (Helper::ALL.iter())
             .flat_map(|&helper| declared(helper.source()).map(move |name| (name, helper)))
@@ -540,19 +540,19 @@ pub(crate) fn helper_of(name: &str) -> Option<Helper> {
 
 /// Whether `name` is a helper whose call names a place, the same one each
 /// time it's given the same: `$index(v, i)`, an item, checked (ADR 0056).
-pub(crate) fn names_a_place(name: &str) -> bool {
+pub fn names_a_place(name: &str) -> bool {
     name == "$index"
 }
 
 /// Whether `name` is a helper whose call is the index it's given of the
 /// array it's given, checked: `$at(v, i)`, `i` where it's in bounds, else
 /// a throw (ADR 0056). `v[$at(v, i)]` names the place `v[i]` does.
-pub(crate) fn checks_an_index(name: &str) -> bool {
+pub fn checks_an_index(name: &str) -> bool {
     name == "$at"
 }
 
 /// Whether `name` is a helper whose call does only what its arguments do.
-pub(crate) fn is_pure(name: &str) -> bool {
+pub fn is_pure(name: &str) -> bool {
     PURE.contains(&name)
 }
 
@@ -564,7 +564,7 @@ pub(crate) fn runs_given_values(name: &str) -> bool {
 }
 
 /// Whether `@rust-js/std`'s helpers export `name`: a name any module may import.
-pub(crate) fn exports(name: &str) -> bool {
+pub fn exports(name: &str) -> bool {
     static EXPORTS: std::sync::LazyLock<IndexSet<&'static str>> = std::sync::LazyLock::new(|| {
         Helper::ALL
             .iter()

@@ -1,11 +1,11 @@
-// Mutations of src/runtime/size_hint.js.
+// Mutations of crates/rust-js-program/src/runtime/size_hint.js.
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "generic-size-hint-stepped-whole",
     breaks: "`size_hint()` of a generic iterator partly stepped counts the items it's past",
-    file: "src/runtime/size_hint.js",
+    file: "crates/rust-js-program/src/runtime/size_hint.js",
     find: "$arrayIter(it) ? it.end - it.at : undefined;",
     replace: "$arrayIter(it) ? it.items.length : undefined;",
     tests: ["test/corpus.test.ts", "-t", "size_hint"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "size-hint-past-end",
     breaks: "a generic `size_hint()` counts what `next_back()` took",
-    file: "src/runtime/size_hint.js",
+    file: "crates/rust-js-program/src/runtime/size_hint.js",
     find: "it.end - it.at",
     replace: "it.items.length - it.at",
     tests: ["test/corpus.test.ts","-t","iter_next_back"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "size-hint-not-adapters-own",
     breaks: "an explicit adapter's size hint isn't its own",
-    file: "src/runtime/size_hint.js",
+    file: "crates/rust-js-program/src/runtime/size_hint.js",
     find: "  if (it?.sizeHint !== undefined) return it.sizeHint();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "size-hint-not-what-it-steps",
     breaks: "a `$iterator`'s size hint isn't that of the JS iterator it steps",
-    file: "src/runtime/size_hint.js",
+    file: "crates/rust-js-program/src/runtime/size_hint.js",
     find: "  if (typeof it?.of?.next === \"function\") return $sizeHint(it.of);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hint_through_a_given_value.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "size-hint-dictionary-unasked",
     breaks: "`$sizeHint` of a value given as it is doesn't ask its dictionary's own `size_hint`",
-    file: "src/runtime/size_hint.js",
+    file: "crates/rust-js-program/src/runtime/size_hint.js",
     find: "  if (iterator?.sizeHint !== undefined) return iterator.sizeHint(it);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "size-hint-range-given-unasked",
     breaks: "a range given as one, `{ next: $rangeFromNext }` of std's compiled zip, hints `(0, None)`, its own unasked (#400)",
-    file: "src/runtime/size_hint.js",
+    file: "crates/rust-js-program/src/runtime/size_hint.js",
     find: "  if (ranged !== undefined) return ranged(it);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "upper-only-unbounded",
     breaks: "a `filter()`'s hint is `(0, None)`, not `(0, Some(5))`, its source's upper bound (#733)",
-    file: "src/runtime/size_hint.js",
+    file: "crates/rust-js-program/src/runtime/size_hint.js",
     find: "  return [0, $sizeHint(source)[1]];\n",
     replace: "  return [0, undefined];\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-zero-asks-source",
     breaks: "a `take(0)`'s hint asks its source, which std's `Take` doesn't (#733)",
-    file: "src/runtime/size_hint.js",
+    file: "crates/rust-js-program/src/runtime/size_hint.js",
     find: "  if (n === 0) return [0, 0];\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     name: "hint-of-js-iterator-known",
     breaks:
       "a hint that meets JS's own iterator, a string's `chars().skip(n)`'s `drop(n)`, is taken for known: a library's `pub` generic `extend` by it keeps a capacity of 64 where std's is 44, silently (#1251)",
-    file: "src/runtime/size_hint.js",
+    file: "crates/rust-js-program/src/runtime/size_hint.js",
     find: "  if (!(it instanceof $Steps)) $hintUnknown = true;\n",
     replace: "",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     name: "hint-of-own-steps-unknown",
     breaks:
       "a hint of rust-js's own form, `$Steps`, std's default, is taken for unknown: a library's `pub` generic `extend` by the crate's own iterator throws at `capacity()` where std's is 32 (#1251)",
-    file: "src/runtime/size_hint.js",
+    file: "crates/rust-js-program/src/runtime/size_hint.js",
     find: "  if (!(it instanceof $Steps)) $hintUnknown = true;\n",
     replace: "  $hintUnknown = true;\n",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
   {
     name: "size-hint-unit-value-read",
     breaks: "a unit struct's iterator, `undefined`, given as it is to std's struct with a dictionary that has no `size_hint`, is asked its own `sizeHint`, which throws (itertools' laziness tests)",
-    file: "src/runtime/size_hint.js",
+    file: "crates/rust-js-program/src/runtime/size_hint.js",
     find: "  if (it?.sizeHint !== undefined) return it.sizeHint();\n",
     replace: "  if (it.sizeHint !== undefined) return it.sizeHint();\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^trait_default_takes_an_iterator_as_its_callers_give_it with"],

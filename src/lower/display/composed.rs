@@ -61,7 +61,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 apply(Expr::cond(none, Expr::str("None"), some), "value")
             }
             ty::Adt(_, args) if std(StdItem::Result) => {
-                let inside = || crate::js::result::held(subject("result"));
+                let inside = || rust_js_program::js::result::held(subject("result"));
                 // Each variant's name, as its derived `Debug` writes it.
                 let names: Vec<String> = match ty.kind() {
                     ty::Adt(adt, _) => adt.variants().iter().map(|v| v.name.to_string()).collect(),

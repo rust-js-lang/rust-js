@@ -1,11 +1,11 @@
-// Mutations of src/runtime/ord_map.js (ADR 0404).
+// Mutations of crates/rust-js-program/src/runtime/ord_map.js (ADR 0404).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "ord-map-of-sorted-empty",
     breaks: "an `$OrdMap` made of a clone's entries keeps none of them (#924)",
-    file: "src/runtime/ord_map.js",
+    file: "crates/rust-js-program/src/runtime/ord_map.js",
     find: "    this.#entries = Array.from(entries, ([key, value]) => [key, value]);\n",
     replace: "    this.#entries = [];\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_clone_own_keys.rs$|^btree_own_ord.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-set-of-sorted-items",
     breaks: "an `$OrdSet` made of a clone's items keeps them as items, not entries of each to itself (#924)",
-    file: "src/runtime/ord_map.js",
+    file: "crates/rust-js-program/src/runtime/ord_map.js",
     find: "      Array.from(items, (item) => [item, item]),\n",
     replace: "      Array.from(items),\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_clone_own_keys.rs$|^btree_clone_nodes_unwinds.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-set-of-sorted-unshaped",
     breaks: "a clone of a set of std's nodes is made in no shape, not its source's (#926)",
-    file: "src/runtime/ord_map.js",
+    file: "crates/rust-js-program/src/runtime/ord_map.js",
     find: "    const shape = from !== undefined && #items in from ? from.#items : undefined;\n",
     replace: "    const shape = undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_clone_nodes_unwinds.rs$|^btree_clone_own_keys.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-map-halving-misses",
     breaks: "an `$OrdMap` never finds a key, so it keeps two `cmp` finds `Equal`",
-    file: "src/runtime/ord_map.js",
+    file: "crates/rust-js-program/src/runtime/ord_map.js",
     find: "      if (order === 0) return this.#at(mid);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$|^btree_search_order.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-map-halving-goes-left",
     breaks: "an `$OrdMap`'s search goes the wrong way past a key less than the one given",
-    file: "src/runtime/ord_map.js",
+    file: "crates/rust-js-program/src/runtime/ord_map.js",
     find: "      if (order > 0) low = mid + 1;\n",
     replace: "      if (order < 0) low = mid + 1;\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$|^btree_search_order.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-map-end-first",
     breaks: "an `$OrdMap`'s last entry is its first, `last_key_value`'s and `pop_last`'s (#926)",
-    file: "src/runtime/ord_map.js",
+    file: "crates/rust-js-program/src/runtime/ord_map.js",
     find: "    return length === 0 ? undefined : this.#at(last ? length - 1 : 0);\n",
     replace: "    return length === 0 ? undefined : this.#at(0);\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_end_entries.rs$|^btree_own_ord.rs$|^btree_append_drops.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-map-insert-replaces-key",
     breaks: "an `$OrdMap`'s `insert` of a key it holds an equal one of replaces that key, where std keeps it",
-    file: "src/runtime/ord_map.js",
+    file: "crates/rust-js-program/src/runtime/ord_map.js",
     find: "      found.entry[1] = value;\n      return found.entry;\n    }\n    const entry = [key, value];\n    this.#entries",
     replace: "      found.entry[0] = key;\n      found.entry[1] = value;\n      return found.entry;\n    }\n    const entry = [key, value];\n    this.#entries",
     tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-map-appends",
     breaks: "an `$OrdMap`'s new key goes at its end, not where its order puts it",
-    file: "src/runtime/ord_map.js",
+    file: "crates/rust-js-program/src/runtime/ord_map.js",
     find: "    this.#entries.splice(found.i, 0, entry);\n",
     replace: "    this.#entries.push(entry);\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$|^btree_compare.rs$|^held_keys.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-map-delete-missing-removes",
     breaks: "removing a key an `$OrdMap` doesn't hold removes the one where it would go",
-    file: "src/runtime/ord_map.js",
+    file: "crates/rust-js-program/src/runtime/ord_map.js",
     find: "    if (found.there) this.#entries.splice(found.i, 1);\n",
     replace: "    this.#entries.splice(found.i, 1);\n",
     tests: ["test/runtime-package.test.ts", "-t", "reads as a Map"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-map-held-deleted-first",
     breaks: "a B-tree's `retain` takes out its first entry, not the one it walked to (#911)",
-    file: "src/runtime/ord_map.js",
+    file: "crates/rust-js-program/src/runtime/ord_map.js",
     find: "    if (i >= 0) this.#entries.splice(i, 1);\n",
     replace: "    if (i >= 0) this.#entries.splice(0, 1);\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_search_order.rs$|^btree_append_drops.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-map-handles-unwritten",
     breaks: "a B-tree's `iter_mut`, `retain`'s or an entry's handle on a number writes nothing back (#911, #926)",
-    file: "src/runtime/ord_map.js",
+    file: "crates/rust-js-program/src/runtime/ord_map.js",
     find: "      entry[1] = item;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^btree_search_order.rs$|^btree_nodes_seen.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-map-split-leaves-the-key",
     breaks: "a B-tree's `split_off(&k)` leaves `k` where std takes it with the rest (#911)",
-    file: "src/runtime/ord_map.js",
+    file: "crates/rust-js-program/src/runtime/ord_map.js",
     find: "    rest.#entries = this.#entries.splice(this.found(key).i);\n",
     replace: "    const at = this.found(key);\n    rest.#entries = this.#entries.splice(at.i + (at.there ? 1 : 0));\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_search_order.rs$|^btree_own_ord.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-map-replace-unwritten",
     breaks: "a set's `replace` keeps the item it held, where std puts the one given in its place (#926)",
-    file: "src/runtime/ord_map.js",
+    file: "crates/rust-js-program/src/runtime/ord_map.js",
     find: "    found.entry[0] = key;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^btree_search_order.rs$|^btree_append_drops.rs$"],

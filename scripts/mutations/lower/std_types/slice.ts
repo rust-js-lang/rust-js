@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     name: "disjoint-unchecked-result",
     breaks: "`get_disjoint_unchecked_mut` gives a `Result`",
     file: "src/lower/std_types/slice.rs",
-    find: "                    true => crate::js::result::held(result),",
+    find: "                    true => rust_js_program::js::result::held(result),",
     replace: "                    true => result,",
     tests: ["test/corpus.test.ts", "-t", "slice_disjoint"],
   },

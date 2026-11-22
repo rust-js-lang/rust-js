@@ -109,9 +109,9 @@ test("tidy decides no Option is there from a test of it", () => {
 // stores from what lowering wrote on the node, and are gone, with the
 // `Facts` that read them.
 test("no fact a JS node carries says what an Option's None is", () => {
-  const known = read("src/js/known.rs");
+  const known = read("crates/rust-js-program/src/js/known.rs");
   expect(known).not.toMatch(/^\s*None(?:Null|Undefined),/m);
-  const facts = read("src/js.rs");
+  const facts = read("crates/rust-js-program/src/js.rs");
   expect(facts).not.toMatch(/\bfn (?:of_presence|only_none|same_none)\(/);
   const named = compilerRustFiles().filter((file) => file.endsWith(".rs") && /\bKnown::None(?:Null|Undefined)\b/.test(read(file)));
   expect(named).toEqual([]);

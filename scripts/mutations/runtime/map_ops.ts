@@ -1,11 +1,11 @@
-// Mutations of src/runtime/map_ops.js (ADR 0325).
+// Mutations of crates/rust-js-program/src/runtime/map_ops.js (ADR 0325).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "retain-map-keeps-all",
     breaks: "a map's `retain` keeps what `f` rejects",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    if (!f(key, value)) {\n",
     replace: "    if (!f(key, value) && false) {\n",
     tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "retain-map-drops-handle",
     breaks: "a map's `retain` drops the handle its closure was given, not the value it held (#905)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "      const held = handles ? value.value : value;\n",
     replace: "      const held = value;\n",
     tests: ["test/corpus.test.ts", "-t", "retain_map_drops_held"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-end-reversed",
     breaks: "a B-tree's `first` is its last",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    if (!seen || (last ? order > 0 : order < 0)) {\n",
     replace: "    if (!seen || (last ? order < 0 : order > 0)) {\n",
     tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-range-end-included",
     breaks: "a B-tree's `a..b` range takes `b` too",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "      if (end.TAG === \"Included\" ? order > 0 : order >= 0) return false;\n",
     replace: "      if (order > 0) return false;\n",
     tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-range-unchecked",
     breaks: "a B-tree's range starting past its end is empty, not std's panic",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    if (order > 0) {\n      throw",
     replace: "    if (false) {\n      throw",
     tests: ["test/corpus.test.ts", "-t", "btree_range_panic"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-split-off-past-key",
     breaks: "`split_off(&k)` leaves `k` behind",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    if (cmp(k, key) >= 0) {\n",
     replace: "    if (cmp(k, key) > 0) {\n",
     tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-append-keeps-other",
     breaks: "`append` leaves the other map full",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  other.clear();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "is-subset-superset-same",
     breaks: "`is_superset` asks `is_subset`",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  const [inner, outer] = superset ? [b, a] : [a, b];\n",
     replace: "  const [inner, outer] = [a, b];\n",
     tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "end-entry-always-first",
     breaks: "`last_entry` is the first key's",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "(last ? cmp(key, end[1]) > 0 : cmp(key, end[1]) < 0)",
     replace: "(cmp(key, end[1]) < 0)",
     tests: ["test/corpus.test.ts","-t","btree_end_entries"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "entry-get-copied",
     breaks: "an entry's `get_mut` gives a copy of a number or text",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  return handle ? $mutGet(m, key) : m.get(key);",
     replace: "  return m.get(key);",
     tests: ["test/corpus.test.ts","-t","btree_end_entries"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "entry-insert-gives-new",
     breaks: "an entry's `insert` gives what it puts in",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  m.set(key, value);\n  return old;",
     replace: "  m.set(key, value);\n  return value;",
     tests: ["test/corpus.test.ts","-t","btree_end_entries"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "entry-remove-kept",
     breaks: "an entry's `remove` leaves it in the map",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  const value = m.get(key);\n  m.delete(key);\n  return entry",
     replace: "  const value = m.get(key);\n  return entry",
     tests: ["test/corpus.test.ts","-t","btree_end_entries"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "entry-remove-value-only",
     breaks: "`remove_entry` gives the value alone",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  return entry ? [key, value] : value;",
     replace: "  return value;",
     tests: ["test/corpus.test.ts","-t","btree_end_entries"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "entry-always-vacant",
     breaks: "a matched entry is `Vacant` with its key there",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  return { TAG: there ? \"Occupied\" : \"Vacant\",",
     replace: "  return { TAG: \"Vacant\",",
     tests: ["test/corpus.test.ts","-t","map_entry_match"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "vacant-insert-not-set",
     breaks: "a `VacantEntry`'s `insert` puts nothing in",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  m.set(key, value);\n  return handle ? $mutGet(m, key) : value;",
     replace: "  return handle ? $mutGet(m, key) : value;",
     tests: ["test/corpus.test.ts","-t","map_entry_match"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "vacant-insert-no-handle",
     breaks: "a `VacantEntry`'s `insert` of text gives the text, not a `&mut`",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  return handle ? $mutGet(m, key) : value;",
     replace: "  return value;",
     tests: ["test/corpus.test.ts","-t","map_entry_match"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-from-keeps-first",
     breaks: "a B-tree of paths or `Cow`s made of items keeps the first of equal ones, where std keeps the last",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "      tree.delete(key(item));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(path_keys|cow_keys).rs$"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-range-start-excluded-kept",
     breaks: "a B-tree's range from `Excluded(&2)` takes `2` too",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "      if (start.TAG === \"Included\" ? order < 0 : order <= 0) return false;\n",
     replace: "      if (order < 0) return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_range_bounds.rs$"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-range-equal-excluded-unchecked",
     breaks: "a B-tree's range of `(Excluded(&a), Excluded(&a))` is empty, not std's panic",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    if (order === 0 && start.TAG === \"Excluded\" && end.TAG === \"Excluded\") {\n",
     replace: "    if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_range_excluded_panic.rs$"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "retain-map-drops-none",
     breaks: "a map's `retain` of values with a destructor drops none it doesn't keep",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "        drop?.(held);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "extend-map-drops-none",
     breaks: "a map's `extend` drops none of the values it replaces",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "      drop?.(old);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     "name": "and-modify-vacant",
     "breaks": "an entry's `and_modify(f)` calls `f` where its key isn't there",
-    "file": "src/runtime/map_ops.js",
+    "file": "crates/rust-js-program/src/runtime/map_ops.js",
     "find": "  if (entry.TAG === \"Occupied\") f($entryGet(entry._0, handle));\n",
     "replace": "  if (true) f($entryGet(entry._0, handle));\n",
     "tests": [
@@ -185,7 +185,7 @@ export const mutations: Mutation[] = [
   {
     name: "remove-item-undropped",
     breaks: "a set's `remove` of an item with a destructor drops none",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  drop(found.key);\n  return true;\n",
     replace: "  return true;\n",
     tests: ["test/corpus.test.ts", "-t", "^map_key_drops.rs$"],
@@ -193,7 +193,7 @@ export const mutations: Mutation[] = [
   {
     name: "entry-key-undropped",
     breaks: "`entry(k)` where an equal key's there drops neither",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  if (there) dropKey?.(key);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_entry_held_drops_its_key.rs$"],
@@ -201,7 +201,7 @@ export const mutations: Mutation[] = [
   {
     name: "retain-key-undropped",
     breaks: "`retain` drops none of the keys it doesn't keep",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "        dropKey?.(key);\n      } finally {\n        drop?.(held);\n",
     replace: "      } finally {\n        drop?.(held);\n",
     tests: ["test/corpus.test.ts", "-t", "^map_key_drops.rs$"],
@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
   {
     name: "extend-key-undropped",
     breaks: "`extend` drops none of the keys it's given where equal ones are there",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "      if (!sorted) dropKey?.(item[0]);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_key_drops.rs$"],
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
   {
     name: "remove-entry-of-given-key",
     breaks: "`remove_entry` gives back the key it's asked with, not the one it held",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  return [found.key, found.value];\n",
     replace: "  return [key, found.value];\n",
     tests: ["test/corpus.test.ts", "-t", "^map_key_drops.rs$"],
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-from-unsorted",
     breaks: "a B-tree made of items drops the earlier of equal keys in the order it's given them, not its keys' order",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  for (const item of Array.from(items).sort((a, b) => cmp(key(a), key(b)))) {\n",
     replace: "  for (const item of Array.from(items)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_collect_drops.rs$"],
@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-from-keeps-earlier-key",
     breaks: "a B-tree made of items drops none of the keys a later equal one replaces",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "      const stored = $storedKey(tree, key(item));\n      dropKey?.(stored);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_collect_drops.rs$"],
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-from-keeps-earlier-value",
     breaks: "a B-tree made of items drops none of the values a later equal key replaces",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "      if (!set) drop?.(old);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_collect_drops.rs$"],
@@ -249,7 +249,7 @@ export const mutations: Mutation[] = [
   {
     name: "extend-map-gives-nothing",
     breaks: "a hash map made of items with a destructor is `undefined`",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  return m;\n}\n",
     replace: "}\n",
     tests: ["test/corpus.test.ts", "-t", "^map_collect_drops.rs$"],
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
   {
     name: "get-key-value-asked",
     breaks: "`get_key_value` gives back the key it was asked with, not the one it holds",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  return found.there ? [found.key, found.value] : undefined;\n",
     replace: "  return found.there ? [key, found.value] : undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^held_keys.rs$"],
@@ -265,7 +265,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-replace-asked",
     breaks: "a set's `replace` gives back the item it was given, not the one it held",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  return found.key;\n}\n\n// `s.take(x)`",
     replace: "  return found.there ? x : undefined;\n}\n\n// `s.take(x)`",
     tests: ["test/corpus.test.ts", "-t", "^held_keys.rs$"],
@@ -273,7 +273,7 @@ export const mutations: Mutation[] = [
   {
     name: "entry-asked-key",
     breaks: "an occupied entry's key is the one it was asked with, not the one the map holds",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "_0: [m, there ? $storedKey(m, key) : key]",
     replace: "_0: [m, key]",
     tests: ["test/corpus.test.ts", "-t", "^held_keys.rs$"],
@@ -281,7 +281,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-union-spread",
     breaks: "a hash set's `intersection` spreads the set, which Babel's loose spread keeps whole, one item (ADR 0919)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  if (op === \"intersection\") return Array.from(a).filter((item) => b.has(item));\n",
     replace: "  if (op === \"intersection\") return [...a].filter((item) => b.has(item));\n",
     tests: ["test/runtime-transpiled.test.ts"],
@@ -289,7 +289,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-retain-value-after-key-panic",
     breaks: "a map's `retain` that drops an entry whose key's drop panics leaves its value undropped, where std's drop of the pair goes on (#416)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "      try {\n        dropKey?.(key);\n      } finally {\n        drop?.(held);\n      }\n",
     replace: "      dropKey?.(key);\n      drop?.(held);\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_parts_past_a_panic.rs$"],
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-from-keeps-entries",
     breaks: "a `collect` into a hash map a panic stops leaves what it held undropped (#423)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    () => $dropItems(set ? m.keys() : m.entries(), $entryDropping(set, drop, dropKey)),\n",
     replace: "    () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -305,7 +305,7 @@ export const mutations: Mutation[] = [
   {
     name: "extend-map-rest-kept",
     breaks: "a map's `extend` of a `Vec` whose drop of a value it replaces panics leaks what's left of what it was given (#900)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "      () => $dropItems(items.slice(i + 1), $entryDropping(set, drop, dropKey)),\n",
     replace: "      () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^map_extend_unwinds_what_is_left.rs$"],
@@ -313,7 +313,7 @@ export const mutations: Mutation[] = [
   {
     name: "extend-map-rest-from-the-failed",
     breaks: "a map's `extend` of a `Vec` whose drop of a value it replaces panics drops the entry it was putting again with what's left (#900)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "items.slice(i + 1), $entryDropping",
     replace: "items.slice(i), $entryDropping",
     tests: ["test/corpus.test.ts", "-t", "^map_extend_unwinds_what_is_left.rs$"],
@@ -321,7 +321,7 @@ export const mutations: Mutation[] = [
   {
     name: "entry-dropping-value-only",
     breaks: "what drops a map's entry `extend` left drops its value alone, its key leaked (#900)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "      () => dropKey?.(key),\n      () => drop?.(value),\n",
     replace: "      () => drop?.(value),\n",
     tests: ["test/corpus.test.ts", "-t", "^map_extend_unwinds_what_is_left.rs$"],
@@ -329,7 +329,7 @@ export const mutations: Mutation[] = [
   {
     name: "extend-map-by-next",
     breaks: "a map's `collect` or `extend` steps an iterator with its own `fold` by `next`, so a `skip`'s first step is `nth(n)` and what it replaces is dropped after its source is (#494)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  if ($ownMethod(items, \"fold\")) {\n    items.fold(",
     replace: "  if (false) {\n    items.fold(",
     tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
@@ -337,7 +337,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-replace-given-leaked",
     breaks: "a B-tree set's `replace` whose search panics leaks the item it was given, where std drops it (#911)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    drop && (() => drop(x)),\n",
     replace: "",
     tests: ["test/corpus.test.ts",  "-t",  "^btree_search_order.rs$"],
@@ -345,7 +345,7 @@ export const mutations: Mutation[] = [
   {
     name: "retain-deletes-by-search",
     breaks: "a B-tree's `retain` takes out what it doesn't keep by searching for it, asking `cmp` where std's walk asks nothing (#911)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  if (m.deleteHeld !== undefined) m.deleteHeld(key);\n",
     replace: "  if (false) m.deleteHeld(key);\n",
     tests: ["test/corpus.test.ts",  "-t",  "^btree_search_order.rs$"],
@@ -353,7 +353,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-off-by-walk",
     breaks: "a B-tree's `split_off` compares each key it holds against the one given, where std's searches once (#911)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  if (m.splitOff !== undefined) return m.splitOff(key);\n",
     replace: "",
     tests: ["test/corpus.test.ts",  "-t",  "^btree_search_order.rs$"],
@@ -361,7 +361,7 @@ export const mutations: Mutation[] = [
   {
     name: "found-by-has",
     breaks: "a B-tree of its keys' own order is searched as another map is, again for each question, where std's searches once (#911)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  if (m.found !== undefined) return m.found(key);\n",
     replace: "",
     tests: ["test/corpus.test.ts",  "-t",  "^btree_search_order.rs$"],
@@ -369,7 +369,7 @@ export const mutations: Mutation[] = [
   {
     name: "drop-table-leaks",
     breaks: "a hashed map's `clone_from` never drops the entries it held (#922)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    if (drop) for (const entry of m) drop(entry);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-into-map-values-lost",
     breaks: "a hashed map's `clone_from` puts each key with itself as its value (#922)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  for (const entry of made) {\n    if (m instanceof Set) m.add(entry);\n    else m.set(entry[0], entry[1]);\n",
     replace: "  for (const entry of made) {\n    if (m instanceof Set) m.add(entry);\n    else m.set(entry[0], entry[0]);\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
@@ -385,7 +385,7 @@ export const mutations: Mutation[] = [
   {
     name: "extend-tree-key-dropped-last",
     breaks: "a B-tree's `extend` of a key it holds never drops the key given before the value's written (#921)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    if (sorted && replaced) $unwinds(() => dropKey(item[0]), drop && (() => drop(item[1])));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^btree_insert_drops_key_first.rs$"],
@@ -393,7 +393,7 @@ export const mutations: Mutation[] = [
   {
     name: "extend-tree-key-dropped-twice",
     breaks: "a B-tree's `extend` of a key it holds drops the key given again after the value's written (#921)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "      if (!sorted) dropKey?.(item[0]);\n",
     replace: "      dropKey?.(item[0]);\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_insert_drops_key_first.rs$"],
@@ -401,7 +401,7 @@ export const mutations: Mutation[] = [
   {
     name: "merging-first-key-in-loop",
     breaks: "`append` drops the first of the other's keys where it's equal as the loop's turn ends, where std's drops it at `merge`'s end (#926)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    if (first) firstHeld = true;\n",
     replace: "    if (false) firstHeld = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_append_drops.rs$|^btree_nodes_unwinds.rs$"],
@@ -409,7 +409,7 @@ export const mutations: Mutation[] = [
   {
     name: "merging-held-key-kept",
     breaks: "as a held value's drop panics in `append`, its key isn't dropped, where std's drops it (#926)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "      () => dropKey?.(taken.held[0]),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^btree_append_drops.rs$"],
@@ -417,7 +417,7 @@ export const mutations: Mutation[] = [
   {
     name: "merging-rest-leaked",
     breaks: "as `append` unwinds, the rest of the other's entries leak, where std's drops them (#926)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  const rest = (n) => () => $dropItems(items.slice(n), $entryDropping(false, drop, dropKey));\n",
     replace: "  const rest = (n) => () => {};\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_append_drops.rs$|^btree_nodes_unwinds.rs$"],
@@ -425,7 +425,7 @@ export const mutations: Mutation[] = [
   {
     name: "merging-value-kept",
     breaks: "`append` keeps the value an equal key held, where std's gives the other's (#926)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    return { held, putBack: () => (set ? m.add(own) : m.set(own, value)) };\n",
     replace: "    return { held, putBack: () => (set ? m.add(own) : m.set(own, held[1])) };\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_append_drops.rs$"],
@@ -433,7 +433,7 @@ export const mutations: Mutation[] = [
   {
     name: "entry-or-insert-value-kept",
     breaks: "an occupied entry's `or_insert(v)` keeps `v`, where std drops it (#926)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  if (entry.TAG === \"Occupied\") {\n    drop?.(value);\n",
     replace: "  if (entry.TAG === \"Occupied\") {\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_unwinds.rs$"],
@@ -441,7 +441,7 @@ export const mutations: Mutation[] = [
   {
     name: "entry-or-insert-searches-again",
     breaks: "an entry's `or_insert` searches the map again, where std writes where its search stopped (#926)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  return $vacantInsert(entry._0, value, handle);\n}\n\n// Its `or_insert_with",
     replace: "  return $vacantInsert(entry._0.slice(0, 2), value, handle);\n}\n\n// Its `or_insert_with",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_seen.rs$"],
@@ -449,7 +449,7 @@ export const mutations: Mutation[] = [
   {
     name: "entry-found-unkept",
     breaks: "`$entry` of a map whose search can be seen searches by `has`, twice, where std's searches once (#926)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  if (m.found !== undefined) {\n    const found = $unwinds(\n      () => m.found(key),\n      dropKey && (() => dropKey(key)),\n    );\n",
     replace: "  if (false) {\n    const found = $unwinds(\n      () => m.found(key),\n      dropKey && (() => dropKey(key)),\n    );\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_seen.rs$"],
@@ -457,7 +457,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-end-walked",
     breaks: "a B-tree's first or last of its keys' own order compares each key, where std's walks down its edge asking nothing (#926)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  if (m.endFound !== undefined) {\n    const end = m.endFound(last);\n    if (end === undefined) return undefined;\n",
     replace: "  if (false) {\n    const end = m.endFound(last);\n    if (end === undefined) return undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_seen.rs$"],
@@ -465,7 +465,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-from-sorted-by-js",
     breaks: "a bulk build of a tree whose order can be seen sorts with JS's sort and inserts each, where std's sorts stably and pushes (#926)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  if (nodes?.pushSorted === undefined) return $treeFrom(tree, items, set, TOrd.cmp, drop, dropKey);\n",
     replace: "  if (true) return $treeFrom(tree, items, set, TOrd.cmp, drop, dropKey);\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_seen.rs$"],
@@ -473,7 +473,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-from-sorted-eq-by-cmp",
     breaks: "a bulk build dedups by `cmp`, not its `PartialOrd()`'s `PartialEq()`'s `ne`, which a derived `==` doesn't count (#926, #962)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  const ne = partialOrd.PartialEq().ne;\n",
     replace: "  const ne = (a, b) => TOrd.cmp(a, b) !== 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_generic.rs$|^btree_nodes_seen.rs$"],
@@ -481,7 +481,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-from-sorted-set-by-cmp",
     breaks: "a set's bulk build sorts by `cmp`, where std's sorts by `<`, `partial_cmp`'s (#926)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  const isLess = set ? (a, b) => partialOrd.lt(a[0], b[0]) : (a, b) => TOrd.cmp(a[0], b[0]) < 0;\n",
     replace: "  const isLess = (a, b) => TOrd.cmp(a[0], b[0]) < 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_generic.rs$|^btree_nodes_seen.rs$"],
@@ -489,7 +489,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-from-sorted-sort-leaks",
     breaks: "as a bulk build's sort panics, its entries leak, where std drops its `Vec` (#926)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    dropEntry && (() => $dropItems(sorted, dropEntry)),\n  );\n  nodes.pushSorted",
     replace: "  );\n  nodes.pushSorted",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_unwinds.rs$"],
@@ -497,7 +497,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-range-searched-unchecked",
     breaks: "`extract_if` of a tree searches its range as `range` does, where std's walks from its start (#926)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    if (!checked) return { start, end, ord };\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_seen.rs$"],
@@ -505,7 +505,7 @@ export const mutations: Mutation[] = [
   {
     name: "extend-found-twice",
     breaks: "`extend` of a map found by `cmp` searches each key three times, where std's `insert` searches once (#926)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    // Of its keys' own order, `insert`'s one search (#926).\n    if (m.found !== undefined) {\n",
     replace: "    // Of its keys' own order, `insert`'s one search (#926).\n    if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_seen.rs$"],
@@ -513,7 +513,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-from-sorted-by-eq",
     breaks: "a B-tree's bulk build asks `!eq` of each two in a row, where std's `DedupSortedIter` asks `!=`, an impl's own (#962)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  const ne = partialOrd.PartialEq().ne;\n",
     replace: "  const ne = (a, b) => !partialOrd.PartialEq().eq(a, b);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -521,7 +521,7 @@ export const mutations: Mutation[] = [
   {
     name: "disjoint-duplicates-unseen",
     breaks: "a hash map's `get_disjoint_mut` of two keys that find one entry gives it twice, where std panics `duplicate keys found` (#1276)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "      throw new Error(\"duplicate keys found\");\n",
     replace: "      void 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_map_get_disjoint_mut.rs$"],
@@ -529,7 +529,7 @@ export const mutations: Mutation[] = [
   {
     name: "disjoint-missing-keys-duplicate",
     breaks: "a hash map's `get_disjoint_mut` of a key it doesn't hold, twice, panics, where std gives `None` of each (#1276)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    if (each.there && found.slice(0, i).some((other) => other.there && other.key === each.key)) {\n",
     replace: "    if (found.slice(0, i).some((other) => other.key === each.key)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_map_get_disjoint_mut.rs$"],
@@ -537,7 +537,7 @@ export const mutations: Mutation[] = [
   {
     name: "disjoint-mut-handle-searches",
     breaks: "`get_disjoint_mut`'s handle on a number or text searches for its key again, running its `hash` twice where std's runs it once (#1362)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  const handleOf = (each, i) => (each.entry === undefined ? $mutGet(m, keys[i]) : $entryHandle(each.entry));\n",
     replace: "  const handleOf = (each, i) => $mutGet(m, keys[i]);\n",
     tests: ["test/corpus.test.ts", "-t", "^map_entry_hashes_its_key_once.rs$"],
@@ -545,7 +545,7 @@ export const mutations: Mutation[] = [
   {
     name: "vacant-insert-entry-searched-again",
     breaks: "a `VacantEntry`'s `insert_entry` searches again for the entry it gives, so its key's `Hash` runs twice where std's runs once",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    return [m, key, { ...found, there: true, key, value, entry }];\n",
     replace: "    return [m, key, m.found(key)];\n",
     tests: ["test/corpus.test.ts", "-t", "^entry_insert_entry.rs$"],
@@ -553,7 +553,7 @@ export const mutations: Mutation[] = [
   {
     name: "vacant-insert-entry-not-there",
     breaks: "the `OccupiedEntry` a `VacantEntry`'s `insert_entry` gives keeps its search's answer that the key wasn't there, so its `remove()` takes nothing out",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "{ ...found, there: true, key, value, entry }",
     replace: "{ ...found, key, value, entry }",
     tests: ["test/corpus.test.ts", "-t", "^entry_insert_entry.rs$"],
@@ -561,7 +561,7 @@ export const mutations: Mutation[] = [
   {
     name: "insert-entry-write-short-circuited",
     breaks: "an occupied entry's `insert_entry` writes `v` as the argument of the optional drop, `drop?.($entryInsert(..))`, which a map of values with no destructor never evaluates, so `v` is never written",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    const old = $entryInsert(entry._0, value);\n    drop?.(old);\n",
     replace: "    drop?.($entryInsert(entry._0, value));\n",
     tests: ["test/corpus.test.ts", "-t", "^entry_insert_entry.rs$"],
@@ -569,7 +569,7 @@ export const mutations: Mutation[] = [
   {
     name: "hash-union-smaller-first",
     breaks: "a hash set's `union` steps the smaller set first, so its hint after a step isn't std's, and a `Vec` collected of what's left grows to another capacity (#1219)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "  const [first, second] = a.size >= b.size ? [a, b] : [b, a];\n",
     replace: "  const [first, second] = a.size >= b.size ? [b, a] : [a, b];\n",
     tests: ["test/corpus.test.ts", "-t", "^set_merges_collected_where_capacity_is_read.rs$"],
@@ -577,7 +577,7 @@ export const mutations: Mutation[] = [
   {
     name: "hash-union-hint-unbounded-below",
     breaks: "a hash set's `union` hints no lower bound, so a `Vec` collected of it grows from less than std's (#1219)",
-    file: "src/runtime/map_ops.js",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
     find: "    return [n, n + m];\n",
     replace: "    return [0, n + m];\n",
     tests: ["test/corpus.test.ts", "-t", "^set_merges_collected_where_capacity_is_read.rs$"],

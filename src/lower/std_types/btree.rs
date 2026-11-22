@@ -1,10 +1,10 @@
 //! A B-tree's own: which keys are std's own nodes and what their calls
 //! are given (#926, ADR 0404), its `range` and its `extract_if` (ADR 0325).
 
-use crate::js::{self, Expr, Stmt};
 use crate::lower::recognition::{StdItem, std_item, trait_method};
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{self, Expr, Stmt};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 

@@ -130,7 +130,7 @@ pub(in crate::lower) fn js_parameter_name<'tcx>(
         .flatten();
     let name = receiver.unwrap_or_else(|| ident.name.to_string());
     let named = super::parameter_name(tcx, function, &name);
-    crate::names::js_ident(&named)
+    rust_js_program::names::js_ident(&named)
 }
 
 /// Each of `function`'s parameters' names as its own JS writes them
@@ -501,7 +501,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let name = match base.is_empty() {
                 true => base,
-                false => crate::names::fresh_in(&mut taken, &base),
+                false => rust_js_program::names::fresh_in(&mut taken, &base),
             };
             params.push(JsParam {
                 origin: Origin::Evidence(slot),

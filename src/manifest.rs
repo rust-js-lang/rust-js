@@ -142,7 +142,7 @@ impl Manifest {
     /// `@rust-js/std`'s, committed and built into the compiler, which reads
     /// it wherever the checkout is (ADR 0561).
     pub fn relative_to(mut self, dir: &Path) -> Self {
-        let rel = |path: &mut PathBuf| *path = PathBuf::from(crate::paths::relative(dir, path));
+        let rel = |path: &mut PathBuf| *path = PathBuf::from(rust_js_program::paths::relative(dir, path));
         rel(&mut self.input);
         rel(&mut self.output);
         self.sources.iter_mut().for_each(rel);

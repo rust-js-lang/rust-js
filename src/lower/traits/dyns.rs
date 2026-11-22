@@ -411,7 +411,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => f,
             false => self.spill(Role::F, f, out),
         };
-        let params: Vec<crate::js::Name> = (0..count).map(|i| self.fresh(Base::Numbered(Role::Arg, i))).collect();
+        let params: Vec<rust_js_program::js::Name> =
+            (0..count).map(|i| self.fresh(Base::Numbered(Role::Arg, i))).collect();
         let call = Expr::call(f, params.iter().map(Expr::var).collect());
         Expr::arrow(
             params.into_iter().map(Into::into).collect(),

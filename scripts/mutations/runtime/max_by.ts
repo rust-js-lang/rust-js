@@ -1,11 +1,11 @@
-// Mutations of src/runtime/max_by.js (ADR 0464).
+// Mutations of crates/rust-js-program/src/runtime/max_by.js (ADR 0464).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "extreme-compare-reversed",
     breaks: "`max_by`'s `compare` is given the item first, `compare(item, kept)`, not std's `compare(kept, item)`",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "      () => (compare(kept, item) > 0) !== max,\n",
     replace: "      () => (compare(item, kept) < 0) !== max,\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-ties-earlier",
     breaks: "`max_by` keeps the earlier of two equal items, where std keeps the later",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "      () => (compare(kept, item) > 0) !== max,\n",
     replace: "      () => (compare(kept, item) >= 0) !== max,\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-passed-over-kept",
     breaks: "an item `max_by` passes over, later than what it keeps, isn't dropped",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "    drop?.(item);\n    return kept;\n",
     replace: "    return kept;\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-by-key-per-compare",
     breaks: "`max_by_key`'s key is made again for each comparison, not once for each item as std's",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "    () => $extremeBy(keyed, (a, b) => compare(a[0], b[0]), max, false, dropPair, dropped),\n",
     replace: "    () => $extremeBy(keyed, (a, b) => compare(key(a[1]), key(b[1])), max, false, dropPair, dropped),\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-listed-first",
     breaks: "`max_by_key` lists every item before its key is made of the first",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: " : Iterator.from(items);\n  let held;\n",
     replace: " : Iterator.from(Iterator.from(items).toArray());\n  let held;\n",
     tests: ["test/corpus.test.ts", "-t", "^consumers_step_each.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-folds-without-first",
     breaks: "`max()` of the crate's iterator folds it without first stepping it by `next`, as std's `reduce` does",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "    () => it.next(),\n",
     replace: "    () => ({ done: false, value: undefined }),\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-compare-throw-keeps-both",
     breaks: "a `max_by` or `min_by` whose comparison panics leaves the two it compared undropped (#423)",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "      () => drop?.(item),\n      () => drop?.(kept),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-key-throw-keeps-item",
     breaks: "a `max_by_key` whose key panics leaves the item it was asked of undropped (#423)",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "      () => [key(item), item],\n      () => drop?.(item),\n",
     replace: "      () => [key(item), item],\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-array-rest-kept",
     breaks: "a `max_by` of a `Vec`'s items whose comparison panics leaves what's after them undropped (#423)",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "  const it = Array.isArray(items) && drop !== undefined ? $closing($iter(items), $dropEach(drop)) : Iterator.from(items);",
     replace: "  const it = Iterator.from(items);",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-fold-unwind-lost",
     breaks: "a `max_by_key` gives its fold no `unwind`, so a key's panic drops what's left before the one it kept (#423)",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "    () => $foldDropping(it, first.value, keep, drop && unwind, given),\n",
     replace: "    () => $foldDropping(it, first.value, keep, undefined, given),\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-by-ends-unrun",
     breaks: "`$extremeBy` folds by its own loop where it's given what drops with its function, which it never runs (#734)",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "  if (ends !== undefined) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^max_by_drops_its_function_first.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-by-key-ends-before-its-source",
     breaks: "a `_key` form's key drops before its source where `reduce`'s first step ends, where std's `Map` drops its source first (#734)",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "      if (folding) ends();\n      else after = true;\n",
     replace: "      ends();\n",
     tests: ["test/corpus.test.ts", "-t", "^max_by_drops_its_function_first.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-by-key-pair-key-undropped",
     breaks: "a pair `max_by_key` passes over drops its item but not its key (#776)",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "            () => dropKey(pair[0]),\n",
     replace: "            undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-by-key-pair-not-in-turn",
     breaks: "a pair `max_by_key` passes over stops at its key's panicking drop, its item never dropped, where a tuple's drop glue goes on (#776)",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "      : (pair) =>\n          $inTurn(\n            () => dropKey(pair[0]),\n            drop && (() => drop(pair[1])),\n          );\n",
     replace: "      : (pair) => {\n          dropKey(pair[0]);\n          drop?.(pair[1]);\n        };\n",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-by-key-kept-key-undropped",
     breaks: "the pair `max_by_key` keeps gives its item back and never drops its key, which `let (_, x) = ..?` drops (#776)",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "    $unwinds(\n      () => dropKey(pair[0]),\n",
     replace: "    $unwinds(\n      () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-by-key-kept-item-leaked",
     breaks: "where the kept pair's key panics as it drops, its item, bound by `let (_, x)`, isn't dropped as it unwinds (#776)",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "      () => drop?.(pair[1]),\n",
     replace: "      () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-keeps-what-it-gave-back",
     breaks: "`max()` whose iterator's drop panics after its fold still holds the item it gave back, so the panic drops it, where std's leaks it (#1655)",
-    file: "src/runtime/max_by.js",
+    file: "crates/rust-js-program/src/runtime/max_by.js",
     find: "    () => $foldDropping(it, first.value, keep, drop && unwind, given),\n",
     replace: "    () => $foldDropping(it, first.value, keep, drop && unwind),\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs$"],

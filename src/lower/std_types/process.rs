@@ -7,9 +7,9 @@
 //! panics, saying which, and recognition's `NODE_ONLY` is the one list of
 //! them.
 
-use crate::js::Expr;
 use crate::lower::FnCx;
 use crate::lower::recognition::Std;
+use rust_js_program::js::Expr;
 
 /// What's asked of the process.
 #[derive(Clone, Copy, PartialEq, Debug)]

@@ -2,11 +2,11 @@
 //! std type's, or a bound's dictionary's (ADR 0052). A hand-written one is
 //! called instead.
 
-use crate::js::{self, Expr, Prop, StmtKind};
 use crate::lower::recognition::{self, StdItem, std_item};
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R, Shape, bindings, serde, std_types};
 use rust_js_program::collections::IndexSet;
+use rust_js_program::js::{self, Expr, Prop, StmtKind};
 use rustc_hir as hir;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{DefKind, Res};

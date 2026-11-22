@@ -1,11 +1,11 @@
-// Mutations of src/runtime/lazy_chain.js (ADR 0465).
+// Mutations of crates/rust-js-program/src/runtime/lazy_chain.js (ADR 0465).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "chain-nth-b-undropped",
     breaks: "a chain's `nth` past its `a` steps `b` by its `nth` given no drop: what `b` passes over, the crate's iterator's items, is never dropped (ADR 0925)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "    const dropping = second.dropItem ?? drop;\n",
     replace: "    const dropping = undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_trait_hides_own_iterator.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-nth-given-drop-unused",
     breaks: "a chain's `nth` past a compiled `fuse()`'s items, which has no item drop of its own, never drops them (#285)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "      const left = advanced(first, n, first.dropItem ?? drop);\n",
     replace: "      const left = advanced(first, n, first.dropItem);\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_trait_hides_own_iterator.rs$"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-count-stepped",
     breaks: "a chain's `count` steps each item, so a reversed `Vec`'s `take(2)` on its first side drops back to front, not as `Take::count`'s one slice (#283)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "  $forward(chained, first, { fold, last, nth, tryFold, count, advanceBy });\n",
     replace: "  $forward(chained, first, { fold, last, nth, tryFold, advanceBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-second-unclosed",
     breaks: "`chain`'s second side isn't closed with it, so none of it is dropped",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "    () => $closeEach(first, second),\n",
     replace: "    () => $closeEach(first),\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-fold-steps",
     breaks: "`chain`'s fold steps each side by `next`, not by its own `fold`, `a`'s then `b`'s",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "  $forward(chained, first, { fold, last, nth, tryFold, count, advanceBy });\n",
     replace: "  $forward(chained, first, { last, nth, tryFold, count, advanceBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_stepped_from_its_back_elsewhere.rs$"],
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-try-fold-by-next",
     breaks: "a chain's tryFold is a's then b's",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "  $forward(chained, first, { fold, last, nth, tryFold, count, advanceBy });\n",
     replace: "  $forward(chained, first, { fold, last, nth, count, advanceBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_stepped_from_its_back_elsewhere.rs$"],
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-last-first-unasked",
     breaks: "a chain's `last` asks only its second side's `last`, not its first's",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "      const a = lastOf(first);\n",
     replace: "      const a = done;\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_source_chained_or_skipped_asks_its_own_last_and_count.rs$"],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-nth-by-next",
     breaks: "a chain's `nth` steps it by `next`, not std's: its first side advanced, then its second's own `nth` (#214)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "  $forward(chained, first, { fold, last, nth, tryFold, count, advanceBy });\n",
     replace: "  $forward(chained, first, { fold, last, tryFold, count, advanceBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-second-closed-held-folded",
     breaks: "a held chain's second, done in its `try_fold`, `all`'s, is dropped then, not with the chain at its statement's end (#243)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "    if (!broke(folded) && !chained.held) second.return?.();\n",
     replace: "    if (!broke(folded)) second.return?.();\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-second-closed-held-stepped",
     breaks: "a held chain's second, done as it's stepped, is dropped then, not with the chain at its scope's end (#243)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "      if (step.done && !chained.held) second.return?.();\n",
     replace: "      if (step.done) second.return?.();\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-own-nth-unset",
     breaks: "a `chain` of two `Vec`s doesn't say its `nth` drops what it passes, so `skip` steps each from a reversed side's back (#250)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "    $owns(chained, \"nth\");\n    chained.dropItem = first.dropItem ?? second.dropItem;\n",
     replace: "    chained.dropItem = first.dropItem ?? second.dropItem;\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-advance-by-stepped",
     breaks: "a `chain` of a `chain` advanced, its `nth`, steps its first side one at a time, not std's `Chain::advance_by` of each side's (#250)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "  $forward(chained, first, { fold, last, nth, tryFold, count, advanceBy });\n",
     replace: "  $forward(chained, first, { fold, last, nth, tryFold, count });\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-fold-unwind-lost",
     breaks: "a `chain` drops the `unwind` its fold is given (#423)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "          folded = $foldDropping(first, folded, f, unwind);",
     replace: "          folded = $foldDropping(first, folded, f);",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-fold-unclosed",
     breaks: "a `chain` whose first side's stage panics inside a fold leaves its second side undropped (#423)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "  const fold = (init, f, unwind, ends) =>\n    $consumed(\n      chained,\n      () => {",
     replace: "  const fold = (init, f, unwind, ends) =>\n    ((_, run) => run())(\n      chained,\n      () => {",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-own-count-unsaid",
     breaks: "a chain of the crate's iterators with their own `count` doesn't say so, so a `skip`'s `count` of it folds it (#505)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "  if (first.ownCount || second.ownCount) $owns(chained, \"count\");\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^boxed_source_chained_or_skipped_asks_its_own_last_and_count.rs$"],
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-try-fold-unwind-lost",
     breaks: "a chain's `try_fold` gives its sides no `unwind`, so a `try_fold` into an `Option` never drops the accumulator a panicking stage strands (rd767)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "    folded = $lent(second).tryFold(folded, f, broke, unwind, ends);\n",
     replace: "    folded = $lent(second).tryFold(folded, f, broke, undefined, ends);\n",
     tests: ["test/corpus.test.ts", "-t", "^try_folds_of_stages_unwind.rs$"],
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-count-unconsumed",
     breaks: "a chain's `count` whose first side panics never drops its second (#647)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "  const count = (drop) =>\n    $consumed(chained, () => {\n",
     replace: "  const count = (drop) =>\n    ((_, run) => run())(chained, () => {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_source_chained_or_skipped_asks_its_own_last_and_count.rs$"],
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-last-unconsumed",
     breaks: "a chain's own `last`, a `skip`'s source's, whose first side panics never drops its second (#647)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "  const last = () =>\n    $consumed(chained, () => {\n",
     replace: "  const last = () =>\n    ((_, run) => run())(chained, () => {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_source_chained_or_skipped_asks_its_own_last_and_count.rs$"],
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-fold-ends-lost",
     breaks: "a chain's fold gives its second side's fold nothing of what drops with `f`, so the consumer's closure drops after that side's rest (#734)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "        folded = $foldDropping(second, folded, f, unwind, ends);\n",
     replace: "        folded = $foldDropping(second, folded, f, unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^(consumer_closure_dropped_first|chain_fold_drops_the_consumers_closure_before_its_second_sides).rs$"],
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-back-a-first",
     breaks: "a chain's back never steps `b`, so `rev()` gives `a`'s last first",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "    chained.back = () => {\n      if (second !== undefined) {\n",
     replace: "    chained.back = () => {\n      if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_chain.rs$"],
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-rfold-by-next",
     breaks: "a `chain`'s `rfold` steps its sides by `next_back`, not the crate's own `rfold` (#220)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "    $forward(chained, first, { rfold, tryRfold, advanceBackBy, nthBack });\n",
     replace: "    $forward(chained, first, { tryRfold, advanceBackBy, nthBack });\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-rfold-one-side",
     breaks: "a `chain`'s `rfold` folds its first side by `next_back` (#220)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "          folded = $foldBack(first, folded, f, unwind, ends);\n",
     replace: "          for (let at = first.back(); !at.done; at = first.back()) folded = f(folded, at.value);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-nth-back-unasked",
     breaks: "a `chain`'s `nth_back` steps its sides by `next_back`, not its own `nth_back` (#220)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "    $forward(chained, first, { rfold, tryRfold, advanceBackBy, nthBack });\n",
     replace: "    $forward(chained, first, { rfold, tryRfold, advanceBackBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-nth-back-b-undropped",
     breaks: "a chain's `nth_back` drops nothing it skips of `b`, where std's `b.advance_back_by` drops it (#752)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "        n = backBy(second, n, drop);\n",
     replace: "        n = backBy(second, n, undefined);\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_stepped_from_its_back_elsewhere.rs$"],
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-nth-back-a-undropped",
     breaks: "a chain's `nth_back` past `b` gives `a`'s own `nth_back` no drop, so what it skips of `a` is never dropped (#752)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "      if (first.nthBack !== undefined) return first.nthBack(n, first.dropItem ?? drop);\n",
     replace: "      if (first.nthBack !== undefined) return first.nthBack(n);\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_stepped_from_its_back_elsewhere.rs$"],
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-rfold-unconsumed",
     breaks: "a chain's `rfold` whose `b` side's fold panics never drops `a` (#739)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "    const rfold = (init, f, unwind, ends) =>\n      $consumed(\n",
     replace: "    const rfold = (init, f, unwind, ends) =>\n      ((_, run) => run())(\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_stepped_from_its_back_elsewhere.rs$"],
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-close-stops-at-a-panic",
     breaks: "closing a chain stops where its first side's drop panics, so its second is never dropped (#743)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "    () => $closeEach(first, second),\n",
     replace: "    () => {\n      first?.return?.();\n      second?.return?.();\n    },\n",
     tests: ["test/corpus.test.ts", "-t", "^parts_close_past_a_panic.rs$"],
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-try-fold-ends-lost",
     breaks: "a chain's `try_fold` gives its `b` side nothing of what drops with `f`, so where `b`'s first step panics the accumulator drops before the consumer's closure (#768)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "    folded = $lent(second).tryFold(folded, f, broke, unwind, ends);\n",
     replace: "    folded = $lent(second).tryFold(folded, f, broke, unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_stepped_from_its_back_elsewhere.rs$"],
@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
     name: "chain-last-unowned",
     breaks:
       "`$lazyChain` doesn't mark its `last`, std's `Chain::last`, each side's `last`, its own, so what passes a `last` on by its mark takes it by its fold (#2212)",
-    file: "src/runtime/lazy_chain.js",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
     find: "  $owns(chained, \"last\");\n",
     replace: "",
     tests: ["test/iterator-steps.test.ts", "-t", "each form marks its own the count and last"],

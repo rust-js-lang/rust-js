@@ -354,7 +354,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => {}
         }
         let in_place = self.caller_in_place(iter_ty, item, span)?;
-        Ok(Some(Expr::unary(crate::js::UnaryOp::Not, in_place)))
+        Ok(Some(Expr::unary(rust_js_program::js::UnaryOp::Not, in_place)))
     }
 
     /// Whether std collects an iterator of `iter_ty` into a `Vec` of
@@ -1272,7 +1272,7 @@ struct UnwindingCollect {
 /// A count `counted_in_place` read, of literals alone, its value: the fewer
 /// or the more of two, `Math.min(8, 3)`, a sum or a difference (#1441).
 fn folded_count(count: &Expr) -> Option<i128> {
-    use crate::js::ExprKind;
+    use rust_js_program::js::ExprKind;
     match &count.kind {
         ExprKind::Call(callee, args) => {
             let (ExprKind::Member(math, name), [a, b]) = (&callee.kind, &args[..]) else {

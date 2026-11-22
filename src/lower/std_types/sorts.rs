@@ -7,9 +7,9 @@ use rustc_middle::ty::TypeVisitableExt;
 use rustc_span::Span;
 
 use super::slice::{SliceOp, SortWith};
-use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::recognition::TypeFact;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What std's unstable sort picks by an item's type, of a type rustc

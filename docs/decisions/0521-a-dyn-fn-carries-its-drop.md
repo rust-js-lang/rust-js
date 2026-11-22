@@ -278,7 +278,7 @@ dropped it wrongly (found by #1204's `dyn-fn` rewrite, five corpus cases):
   itself: a stack overflow. `$dropping` of a function that carries a drop
   already gives a function of its own that calls it, carrying the new
   drop, which drops the one it holds, as the box is another allocation
-  holding the first (`src/runtime/dropping.js`). A function that carries
+  holding the first (`crates/rust-js-program/src/runtime/dropping.js`). A function that carries
   none is given its drop in place, as before; no JS a compile writes
   changes.
 - **A `Box<Box<dyn FnOnce>>` made a `dyn FnOnce`** was taken for a `Fn`

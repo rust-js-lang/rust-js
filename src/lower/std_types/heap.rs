@@ -4,8 +4,8 @@
 use rustc_middle::ty::Ty;
 use rustc_span::Span;
 
-use crate::js::Expr;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::Expr;
 
 /// A `BinaryHeap`'s: a JS array kept in the order Rust's heap keeps it,
 /// by the same steps, so `{:?}` and `into_vec()` show what Rust's do.

@@ -1,11 +1,11 @@
-// Mutations of src/runtime/try_fold_some.js (ADR 0458).
+// Mutations of crates/rust-js-program/src/runtime/try_fold_some.js (ADR 0458).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "try-fold-some-goes-on",
     breaks: "`try_fold` into an `Option` goes on past a `None`",
-    file: "src/runtime/try_fold_some.js",
+    file: "crates/rust-js-program/src/runtime/try_fold_some.js",
     find: "    (made) => made == null,\n",
     replace: "    (made) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-fold-some-steps-one-more",
     breaks: "`try_fold` into an `Option` that stops steps one item more, which the caller doesn't get",
-    file: "src/runtime/try_fold_some.js",
+    file: "crates/rust-js-program/src/runtime/try_fold_some.js",
     find: "    (made) => made == null,\n",
     replace: "    (made) => made == null && (it.next(), true),\n",
     tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-fold-some-boxed-made",
     breaks: "`try_fold` into an `Option` of what could look like `None` gives its function what's made boxed",
-    file: "src/runtime/try_fold_some.js",
+    file: "crates/rust-js-program/src/runtime/try_fold_some.js",
     find: "(made, x) => f($someValue(made), x)",
     replace: "(made, x) => f(made, x)",
     tests: ["test/corpus.test.ts", "-t", "^try_for_each.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-fold-some-unboxed-result",
     breaks: "`try_fold` into an `Option` of what could look like `None` gives `Some(None)` as `None`",
-    file: "src/runtime/try_fold_some.js",
+    file: "crates/rust-js-program/src/runtime/try_fold_some.js",
     find: "    $some(init),\n",
     replace: "    init,\n",
     tests: ["test/corpus.test.ts", "-t", "^(try_for_each|try_fold).rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-fold-some-by-next",
     breaks: "try_fold into an Option is its iterator's tryFold",
-    file: "src/runtime/try_fold_some.js",
+    file: "crates/rust-js-program/src/runtime/try_fold_some.js",
     find: "    $lent(it).tryFold(\n      $some(init)",
     replace: "    new $Steps(() => it.next()).tryFold(\n      $some(init)",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-fold-some-unwind-lost",
     breaks: "a `try_fold` into an `Option` gives what it folds no `unwind`, so the accumulator a panicking step strands is never dropped (rd767)",
-    file: "src/runtime/try_fold_some.js",
+    file: "crates/rust-js-program/src/runtime/try_fold_some.js",
     find: "    unwind && ((made) => unwind($someValue(made))),\n",
     replace: "    undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_steps_behind_adapters_unwind.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-fold-some-ends-kept",
     breaks: "a `try_fold` into an `Option` doesn't give what it folds what drops with `f`, so a `skip_while()`'s first step drops the accumulator first (#768)",
-    file: "src/runtime/try_fold_some.js",
+    file: "crates/rust-js-program/src/runtime/try_fold_some.js",
     find: "      unwind && ((made) => unwind($someValue(made))),\n      once,\n",
     replace: "      unwind && ((made) => unwind($someValue(made))),\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],

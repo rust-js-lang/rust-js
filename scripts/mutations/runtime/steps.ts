@@ -1,4 +1,4 @@
-// Mutations of src/runtime/steps.js (#161, ADR 0669): each adapter of an
+// Mutations of crates/rust-js-program/src/runtime/steps.js (#161, ADR 0669): each adapter of an
 // iterator that may give `None` and then more stays ended, as JS's do.
 import type { Mutation } from "../../mutations";
 
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     name: "stepped-held-unheld",
     breaks:
       "a consumer that drops what it holds past its source's end steps it unheld, so a `take` at its limit closes the source, `drop 7` before the last key's `dropk 107` (#2027)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  const it = $stepsOf(items);\n  it.hold?.();\n  return it;\n",
     replace: "  const it = $stepsOf(items);\n  return it;\n",
     tests: ["test/corpus.test.ts", "-t", "sorted_keys_dropped_before_their_source"],
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "fold-by-unheld",
     breaks:
       "std's default fold steps what it folds unheld, so a generic `Box<I>` the crate also steps from its back, folded in place, drops `I` at its end inside its last step, and as that drop panics the fold drops its accumulator, `drop acc 6`, which std's `fold(self)` leaks (#2232)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "function $foldBy(it, by, init, f, unwind, ends) {\n  it.hold?.();\n",
     replace: "function $foldBy(it, by, init, f, unwind, ends) {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_source_dropped_after_its_fold.rs$"],
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-base-global",
     breaks: "`$Steps` extends the `Iterator` global itself, which a bundler can't tell is there, so it keeps the class, and every helper it calls, in a module that imports none (rd274)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "class $Steps extends /* @__PURE__ */ (() => Iterator)() {\n",
     replace: "class $Steps extends Iterator {\n",
     tests: ["test/runtime-package.test.ts", "-t", "tree-shakable"],
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-nth-drop-ungiven",
     breaks: "std's default `nth` of a `$Steps` advances without the items' drop, so a `skip` of a `take_while` never drops what it passes (#294)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    if (this.advanceBy(k, drop) > 0) return { done: true, value: undefined };\n",
     replace: "    if (this.advanceBy(k) > 0) return { done: true, value: undefined };\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-map-ended",
     breaks: "a `map` of an iterator that gives `None` then more stays ended, JS's helper",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  map(f) {\n",
     replace: "  mapStepped(f) {\n",
     tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-filter-ended",
     breaks: "a `filter` of an iterator that gives `None` then more stays ended",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  filter(keep, drop) {\n",
     replace: "  filterStepped(keep, drop) {\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-take-counts-no-none",
     breaks: "`take(n)` of an iterator that gives `None` then more counts only its items, as JS's does, not each step, as std's does",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  take(n) {\n",
     replace: "  takeStepped(n) {\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-drop-skips-past-none",
     breaks: "`skip(n)` of an iterator that gives `None` then more skips past the `None`",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    if (m === 0) return 0;\n    return this.tryFold(\n",
     replace: "    for (let i = 0; i < m; i++) this.next();\n    return 0;\n    return this.tryFold(\n",
     tests: ["test/corpus.test.ts", "-t", "^restarting_iterators.rs$"],
@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-map-fold-steps",
     breaks: "a `map` of the crate's iterator folds by `next`, not by its source's own `fold`",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    $forward(mapped, this, { fold: \"fold\", tryFold: \"tryFold\" }, (g, unwind) =>\n",
     replace: "    $forward(mapped, this, { tryFold: \"tryFold\" }, (g, unwind) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-filter-fold-steps",
     breaks: "a `filter` of the crate's iterator folds by `next`, not by its source's own `fold`",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "      { fold: \"fold\", tryFold: \"tryFold\" },\n      (g, unwind) => (a, x) => ($kept(",
     replace: "      { tryFold: \"tryFold\" },\n      (g, unwind) => (a, x) => ($kept(",
     tests: ["test/corpus.test.ts", "-t", "^discarded_drop_leaks_the_accumulator.rs$"],
@@ -92,7 +92,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-reduce-steps",
     breaks: "`sum()` of the crate's iterator steps it by `next`, not by its own `fold`",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    if (init.length > 0) return this.fold(init[0], (a, x) => f(a, x, i++));\n",
     replace: "    if (init.length > 0) return super.reduce(f, init[0]);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
@@ -100,7 +100,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-flat-map-fold-steps",
     breaks: "a `flat_map` folds by `next`, not by its own `fold`, so a panic past the inner iterator it's in drops its source before what's left of that one, 92 before 91, where std drops 91 first (#1971)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    $forward(flat, this, { fold });\n",
     replace: "    $forward(flat, this, {});\n",
     tests: ["test/iterator-matrix.test.ts"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-fold-unguarded",
     breaks: "a flatten's own fold doesn't stage its `f`: where `f` panics mid-fold, the accumulator it strands is never dropped (ADR 0465, #1971)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "        const made = unwind === undefined ? (x) => f(x, i++) : (x, a) => $staged(f, x, i++, a, unwind);\n",
     replace: "        const made = (x) => f(x, i++);\n",
     tests: ["test/runtime-package.test.ts", "-t", "a flatten's own fold drops what its stage strands"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-flat-map-unfused",
     breaks: "a `flat_map` steps its source again after it's given `None`, where std's fuses it",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "          if (ended) return { done: true, value: undefined };\n",
     replace: "",
     // A flatten of the crate's own iterator that gives `None` and then more,
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
   {
     name: "some-by-next",
     breaks: "some steps by tryFold",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  some(found) {",
     replace: "  someUnused(found) {",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   {
     name: "every-by-next",
     breaks: "every steps by tryFold",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  every(holds) {",
     replace: "  everyUnused(holds) {",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
   {
     name: "find-by-next",
     breaks: "find steps by tryFold",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  find(found) {",
     replace: "  findUnused(found) {",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-try-fold-by-next",
     breaks: "a map passes tryFold to its source",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    $forward(mapped, this, { fold: \"fold\", tryFold: \"tryFold\" }, (g, unwind) =>\n",
     replace: "    $forward(mapped, this, { fold: \"fold\" }, (g, unwind) =>\n",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
   {
     name: "filter-next-by-next",
     breaks: "a filter's next is its source's find",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "        const found = this.tryFold(false, (_, x) => $kept(keep, drop, x, i++) && ((item = x), true), (found) => found);",
     replace: "        let step;\n        do step = this.next(); while (!step.done && !$kept(keep, drop, step.value, i++));\n        const found = !step.done && ((item = step.value), true);",
     tests: ["test/corpus.test.ts", "-t", "^(filter_of_a_take_reversed_trims_by_its_try_rfold|take_rev_trims_from_the_back_in_each_holder|range_inclusive_exhausted).rs$"],
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-fold-unbroken",
     breaks: "tryFold stops where broke says",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "      if (broke(folded)) return folded;\n    }\n    return folded;\n  }\n  some(",
     replace: "    }\n    return folded;\n  }\n  some(",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-hint-lost",
     breaks: "a $Steps map's hint is its source's",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    mapped.sizeHint = () => $sizeHint(this);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_of_own_size_hint.rs$"],
@@ -183,7 +183,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-nth-by-next",
     breaks: "an adapter's `nth` steps it by `next`, not std's `advance_by` then `next`, so `step_by(2).map(..).nth(1)` asks the crate's own `nth(0)` first (#214)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    if (this.advanceBy(k, drop) > 0) return { done: true, value: undefined };\n",
     replace: "    for (; k > 0; k--) if (this.next().done) return { done: true, value: undefined };\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-advance-by-next",
     breaks: "`advance_by` steps by `next`, not std's `try_fold`, so `step_by(2).take(4).count()` asks the crate's own `nth(0)` (#214)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    if (m === 0) return 0;\n    return this.tryFold(\n",
     replace: "    for (let i = 0; i < m; i++) if (this.next().done) return m - i;\n    return 0;\n    return this.tryFold(\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
@@ -199,7 +199,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-hold-unpassed",
     breaks: "holding an adapter doesn't hold what it steps, so its source drops what it has left as the adapter ends (#206)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    for (const source of this.from ?? (this.iter === undefined ? [] : [this.iter])) source.hold?.();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-collected-unclosed",
     breaks: "an iterator rust-js makes, collected by JS's own `Array.from(it)`, isn't closed at its end, so a crate's own iterator's source stepped through an adapter, or what a held source a variable moved there has left, is never dropped, as `collect()` drops it (#206, bw8)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "        if (step.done) this.return();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^deque_into_iter_drops.rs$"],
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-of-js-protocol",
     breaks: "the runtime's own adapters step an iterator rust-js makes by JS's protocol, closed at its end, so a held chain's `b` is dropped at its end, not by its owner (#243, bw8)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  if (items instanceof $Steps) return items;\n  return Array.isArray(items)",
     replace: "  return Array.isArray(items)",
     tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
   {
     name: "staged-unwinds-nothing",
     breaks: "a stage that panics inside a fold leaves the accumulator its adapter's fold holds undropped (#423)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    () => unwind(a),\n",
     replace: "    () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-fold-unguarded",
     breaks: "a `map` that panics inside a fold leaves the accumulator undropped (#423)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "      unwind === undefined ? (a, x) => g(a, f(x, i++)) :",
     replace: "      true ? (a, x) => g(a, f(x, i++)) :",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
   {
     name: "filter-fold-unguarded",
     breaks: "a `filter` that panics inside a fold leaves the accumulator undropped (#423)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "      (g, unwind) => (a, x) => ($kept(keep, drop, x, i++, a, unwind) ? g(a, x) : a),",
     replace: "      (g, unwind) => (a, x) => ($kept(keep, drop, x, i++, a) ? g(a, x) : a),",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -249,7 +249,7 @@ export const mutations: Mutation[] = [
   {
     name: "base-fold-step-unguarded",
     breaks: "a stage an adapter steps by `next` that panics inside a fold leaves the accumulator undropped (#423)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    () => stepping && unwind?.(folded),\n",
     replace: "    () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
   {
     name: "kept-discard-drop-unwinds",
     breaks: "a `filter` or a `take_while` in a fold drops its accumulator where the drop of an item it discards panics, which std's closure has moved into what it gives, so rustc leaks it (#651)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  if (!kept) drop?.(x);\n  return kept;\n",
     replace: "  if (!kept) {\n    try {\n      drop?.(x);\n    } catch (error) {\n      unwind?.(a);\n      throw error;\n    }\n  }\n  return kept;\n",
     tests: ["test/corpus.test.ts", "-t", "^discarded_drop_leaks_the_accumulator.rs$"],
@@ -265,7 +265,7 @@ export const mutations: Mutation[] = [
   {
     name: "kept-throw-drops-acc-first",
     breaks: "a `filter`'s predicate that panics in a fold drops the accumulator before the item it was asked of, where std's closure frame drops the item first (#423)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    () => drop?.(x),\n    () => unwind?.(a),\n",
     replace: "    () => unwind?.(a),\n    () => drop?.(x),\n",
     tests: ["test/corpus.test.ts", "-t", "^discarded_drop_leaks_the_accumulator.rs$"],
@@ -273,7 +273,7 @@ export const mutations: Mutation[] = [
   {
     name: "kept-throw-keeps-item",
     breaks: "a `filter` or a `take_while` whose predicate panics leaves the item it was asked of undropped (#423)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    () => drop?.(x),\n    () => unwind?.(a),\n",
     replace: "    () => unwind?.(a),\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -281,7 +281,7 @@ export const mutations: Mutation[] = [
   {
     name: "filter-try-fold-by-next",
     breaks: "a `filter`'s `try_fold` steps it by `next`, not its source's `try_fold`, so a drop of what it discards that panics drops the accumulator rustc leaks (#651)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "      { fold: \"fold\", tryFold: \"tryFold\" },\n      (g, unwind) => (a, x) => ($kept(",
     replace: "      { fold: \"fold\" },\n      (g, unwind) => (a, x) => ($kept(",
     tests: ["test/corpus.test.ts", "-t", "^discarded_drop_leaks_the_accumulator.rs$"],
@@ -289,7 +289,7 @@ export const mutations: Mutation[] = [
   {
     name: "filter-dropping-native",
     breaks: "a filter of items with a destructor of a JS iterator's own helper is that helper's `filter`, which never drops what it discards (#651)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  const steps = it instanceof $Steps ? it : new $Steps(() => it.next(), () => it.return?.());\n",
     replace: "  const steps = it;\n",
     tests: ["test/corpus.test.ts", "-t", "^discarded_drop_leaks_the_accumulator.rs$"],
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-drop-js-own",
     breaks: "a `$Steps`' `drop(n)`, a `skip()` of items with nothing to drop, is JS's own `Iterator.prototype.drop`, not std's `Skip`: its fold, `nth` and `last` never ask its source's, and a panic in what it skips leaks the accumulator (#735)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    return $skipping(this, n);\n",
     replace: "    return Iterator.prototype.drop.call(this, n);\n",
     tests: ["test/corpus.test.ts", "-t", "^(own_last_and_nth_passed_on|consumer_drops_what_is_left)\\.rs$"],
@@ -305,7 +305,7 @@ export const mutations: Mutation[] = [
   {
     name: "ends-after-not-on-unwind",
     breaks: "a `try_fold` given what drops with `f` never drops it as a panic in it unwinds (#768)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  const made = $unwinds(() => run(once), once);\n",
     replace: "  const made = run(once);\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
@@ -313,7 +313,7 @@ export const mutations: Mutation[] = [
   {
     name: "ends-after-not-at-end",
     breaks: "a `try_fold` given what drops with `f` never drops it at its end (#768)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  once();\n  return made;\n",
     replace: "  return made;\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
@@ -321,7 +321,7 @@ export const mutations: Mutation[] = [
   {
     name: "step-holding-unguarded",
     breaks: "an adapter's first step, a `skip_while`'s predicate, that panics inside a fold leaves the accumulator undropped (#423)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  if (unwind === undefined && ends === undefined) return step();\n",
     replace: "  if (true) return step();\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -329,7 +329,7 @@ export const mutations: Mutation[] = [
   {
     name: "step-holding-drops-acc-first",
     breaks: "an adapter's first step taken while its fold's frame holds only its parameters drops the accumulator before what drops with `f`, where std's frame drops `fold` first (#768)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  return $unwinds(step, ends, () => unwind?.(init));\n",
     replace: "  return $unwinds(step, () => unwind?.(init), ends);\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
@@ -337,7 +337,7 @@ export const mutations: Mutation[] = [
   {
     name: "once-of-not-once",
     breaks: "what drops with a fold's `f`, run by an adapter's first step, runs again as the fold that took it closes (#768)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  return () => dropped || ((dropped = true), ends());\n",
     replace: "  return ends;\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
@@ -345,7 +345,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-turn-stops-at-a-throw",
     breaks: "what drops many parts in turn stops at the first whose drop panics, so a chain's or a zip's second side is never dropped (#743)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "      $dropsUnwinding(all.slice(i + 1).map((item) => () => run(item)));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^parts_close_past_a_panic.rs$"],
@@ -353,7 +353,7 @@ export const mutations: Mutation[] = [
   {
     name: "filter-count-hint-unasked",
     breaks: "a `filter()`'s `count()` asks its source's hint not first, as std's `Filter::count` does (#733)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "        $sizeHint(this);\n        return $Steps.prototype.count.call(kept, drop, ends);\n",
     replace: "        return $Steps.prototype.count.call(kept, drop, ends);\n",
     tests: ["test/iterator-steps.test.ts", "-t", "^\\$Steps\\.filter asks what it holds as std's Filter does$"],
@@ -361,7 +361,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwinds-drops-nothing",
     breaks: "a call std's frame makes while it owns what it drops runs none of those drops as it throws, so a fold whose stage panics leaves the accumulator and what's left undropped (#817)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    $dropsUnwinding(drops);\n    throw error;\n",
     replace: "    throw error;\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -369,7 +369,7 @@ export const mutations: Mutation[] = [
   {
     name: "fold-back-ends-after",
     breaks: "`$foldBack` closes what it steps before what drops with `f`, so an `rfold`'s closure drops after what's left (#734)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  $inTurn(ends, close);\n  return folded;\n}",
     replace: "  $inTurn(close, ends);\n  return folded;\n}",
     tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-next-unkept",
     breaks: "a `$Steps` stepped by JS's protocol keeps no steps of its own before, so `$closing` steps it by those that close it at its end, though what holds it drops it later (#1239)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "      this.ownNext = next;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^from_iter_holds_what_generic_code_gives\\.rs$"],
@@ -385,7 +385,7 @@ export const mutations: Mutation[] = [
   {
     name: "flatten-keeps-ended-source",
     breaks: "a flatten keeps its source past its first `None`, dropped only with the flatten, where std's `Fuse` drops it there (#1507)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "          if (step.done) {\n            ended = true;\n            this.return();\n",
     replace: "          if (step.done) {\n            ended = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_drops_its_source_at_its_end.rs$"],
@@ -393,7 +393,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-of-an-array-hintless",
     breaks: "a `Vec` given as a chain's side is stepped as JS's own array iterator, whose hint is none, so a `Vec` grown by the chain in a crate that reads its capacity grows by the other side's alone, 18 where std's is 14 (#1658)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  return Array.isArray(items) ? $iter(items) : Iterator.from(items);\n",
     replace: "  return Iterator.from(items);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_side_of_a_chain_counts_in_its_hint.rs$"],
@@ -401,7 +401,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-method-never",
     breaks: "no iterator is asked its own `advanceBy`, `advanceBackBy` or `fold`: each is stepped by std's default over `next`",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "  return Object.hasOwn(it, step);\n",
     replace: "  return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
@@ -410,7 +410,7 @@ export const mutations: Mutation[] = [
     name: "steps-map-lenless",
     breaks:
       "a `$Steps`' `map` has no `len`, so generic code bound by `ExactSizeIterator` given an `inspect` of a zip made JS's own map throws `it.len is not a function`, where std's `Inspect::len` is its source's (#2193)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    if (this.len !== undefined) mapped.len = () => this.len();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
@@ -419,7 +419,7 @@ export const mutations: Mutation[] = [
     name: "filter-count-unowned",
     breaks:
       "`$Steps`' `filter` doesn't mark its `count` its own, so a `skip(n)` of a filter counts by its fold and never asks the filter's source's hint, where std's `Skip::count` asks `Filter::count`, which asks it (#2212)",
-    file: "src/runtime/steps.js",
+    file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    $owns(kept, \"count\");\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^skip_of_a_filter_counts_by_its_count.rs$"],

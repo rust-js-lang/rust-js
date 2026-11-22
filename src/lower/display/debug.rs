@@ -723,7 +723,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             ty::Adt(_, args) if std(StdItem::Result) => {
                 let result_name = js::Name::declared("result".to_string());
-                let inside = || crate::js::result::held(Expr::var(&result_name));
+                let inside = || rust_js_program::js::result::held(Expr::var(&result_name));
                 let ok = self.debug_string_with(inside(), args.type_at(0), span, pretty)?;
                 let err = self.debug_string_with(inside(), args.type_at(1), span, pretty)?;
                 let f = Expr::arrow(

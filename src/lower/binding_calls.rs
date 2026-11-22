@@ -5,10 +5,10 @@ use super::bindings::{JsForm, is_binding, is_method, is_optional_param, is_rest_
 use super::calls::{given_to_js_but, spread_rest};
 use super::recognition::StdItem;
 use super::{FnCx, R};
-use crate::js;
-use crate::js::{Expr, Name, Op, StmtKind, UnaryOp};
 use crate::lower::bindings;
 use crate::lower::temporary_names::{Base, Role};
+use rust_js_program::js;
+use rust_js_program::js::{Expr, Name, Op, StmtKind, UnaryOp};
 use rustc_middle::thir;
 use rustc_middle::ty::Ty;
 use rustc_middle::ty::{self, TyCtxt};
@@ -1052,7 +1052,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             Some(js::Pattern::Name(tuple)) => {
-                let items: Vec<crate::js::Name> = (0..arity).map(|_| self.fresh(Base::Derived(&tuple))).collect();
+                let items: Vec<rust_js_program::js::Name> =
+                    (0..arity).map(|_| self.fresh(Base::Derived(&tuple))).collect();
                 let whole = match arity {
                     0 => Expr::js_undefined(),
                     _ => Expr::array(items.iter().map(Expr::var).collect()),
@@ -1132,7 +1133,7 @@ fn static_member<'tcx>(tcx: TyCtxt<'tcx>, generic_args: ty::GenericArgsRef<'tcx>
     match js_form(tcx, f) {
         JsForm::Call(name) if !name.contains('#') => {
             let (class, member) = name.rsplit_once('.')?;
-            (!class.is_empty() && crate::names::is_identifier(member)).then(|| (f, Some(member.to_string())))
+            (!class.is_empty() && rust_js_program::names::is_identifier(member)).then(|| (f, Some(member.to_string())))
         }
         JsForm::New(name) if !name.contains('#') => Some((f, None)),
         _ => None,

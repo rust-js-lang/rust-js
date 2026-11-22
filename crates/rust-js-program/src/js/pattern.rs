@@ -86,7 +86,7 @@ impl Pattern {
 }
 
 // Of a name made of its word alone, a test's (`Name`'s, #2034).
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 impl From<String> for Pattern {
     fn from(name: String) -> Pattern {
         Pattern::Name(name.into())
@@ -94,7 +94,7 @@ impl From<String> for Pattern {
 }
 
 // Of a name made of its word alone, a test's (`Name`'s, #2034).
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 impl From<&str> for Pattern {
     fn from(name: &str) -> Pattern {
         Pattern::Name(name.into())

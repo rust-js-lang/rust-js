@@ -1,11 +1,11 @@
-// Mutations of src/runtime/json_value_reader.js (ADR 0093).
+// Mutations of crates/rust-js-program/src/runtime/json_value_reader.js (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "json-value-array-left-over-kept",
     breaks: "a `Value`'s array with items over a tuple is read, where serde_json says `invalid length .., expected fewer elements in array`",
-    file: "src/runtime/json_value_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_value_reader.js",
     find: "    if (seq.count < items.length) throw $jsonError(`invalid length ${items.length}, expected fewer elements in array`);\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-value-object-unsorted",
     breaks: "a `Value`'s object is read in the order it was written, where serde_json's map is a `BTreeMap`, read by key",
-    file: "src/runtime/json_value_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_value_reader.js",
     find: "    const entries = $sortedEntries(this.value._0, $cmp);\n    const map = new $JsonValueMap(entries, this.kind);\n",
     replace: "    const entries = [...this.value._0];\n    const map = new $JsonValueMap(entries, this.kind);\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-value-enum-many-keys",
     breaks: "a `Value`'s object of two keys is read as an enum of its first, where serde_json says it expected a map with a single key",
-    file: "src/runtime/json_value_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_value_reader.js",
     find: "      if (value._0.size !== 1) throw $jsonError(\"invalid value: map, expected map with a single key\");\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-value-key-number-unchecked",
     breaks: "a key that isn't a number is read as one, where serde_json says it expected a number in quotes",
-    file: "src/runtime/json_value_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_value_reader.js",
     find: "    if (!(c === 45 || (c >= 48 && c <= 57))) throw $jsonError(\"invalid value: expected key to be a number in quotes\");\n    const value = read(json);\n",
     replace: "    const value = read(json);\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-value-key-number-unended",
     breaks: "a number key with more after it is read as its number",
-    file: "src/runtime/json_value_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_value_reader.js",
     find: "    if (json.peek() !== -1) throw $jsonError(\"invalid value: expected key to be a number in quotes\");\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-value-key-bool-any",
     breaks: "any key is read as a `bool`, `true` or not, where serde_json says it expected a boolean",
-    file: "src/runtime/json_value_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_value_reader.js",
     find: "    if (this.key === \"true\" || this.key === \"false\") return this.key === \"true\";\n",
     replace: "    return this.key === \"true\";\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-value-tuple-variant-empty",
     breaks: "a tuple variant of an empty array is read, where serde_json reads `[]` as a unit it isn't",
-    file: "src/runtime/json_value_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_value_reader.js",
     find: "    if (this.held._0.length === 0) throw $jsonError(`invalid type: null, expected ${options?.expecting ?? expected}`);\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-value-variant-any-shape",
     breaks: "a variant is read whatever it holds, where serde_json asks a tuple variant's for an array and a struct variant's for an object",
-    file: "src/runtime/json_value_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_value_reader.js",
     find: "    if (tag && this.held.TAG !== tag) throw reader.invalid(kind);\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-value-unit-variant-holds",
     breaks: "a unit variant holding a value is read, where serde_json asks it for `null`",
-    file: "src/runtime/json_value_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_value_reader.js",
     find: "    if (this.held !== undefined) new $JsonValueReader(this.held).unit();\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-value-option-of-null",
     breaks: "an `Option` of `null` reads what it holds of `null`, where serde_json's is `None`",
-    file: "src/runtime/json_value_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_value_reader.js",
     find: "    return this.value === \"Null\" ? undefined : read(this);\n",
     replace: "    return read(this);\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-value-unexpected-bool-unsaid",
     breaks: "a `bool` given for another type isn't named, where serde_json says ``boolean `true` ``",
-    file: "src/runtime/json_value_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_value_reader.js",
     find: "    if (tag === \"Bool\") return `boolean \\`${inner}\\``;\n",
     replace: "    if (tag === \"Bool\") return \"a boolean\";\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-value-string-by-reference",
     breaks: "a `Value`'s string is given by reference, `visit_str`, where serde_json gives it whole, `visit_string` (#1546)",
-    file: "src/runtime/json_value_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_value_reader.js",
     find: "    if (visit) return visit(inner, this.kind);\n",
     replace: "    if (visit) return visit(inner, \"transient\");\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "value-option-null-to-some",
     breaks: "a hand-written visitor's `deserialize_option` of a `Value` gives `Null` to its `visit_some`, not its `visit_none` (#1597)",
-    file: "src/runtime/json_value_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_value_reader.js",
     find: "    return this.value === \"Null\" ? visitor.none() : visitor.some(this);\n",
     replace: "    return visitor.some(this);\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a visitor's deserialize_option is each reader's own"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "missing-option-field-refused",
     breaks: "a missing field of a hand-written visitor's `deserialize_option` is `missing field`, where serde's `MissingFieldDeserializer` gives its `visit_none` (#1597)",
-    file: "src/runtime/json_value_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_value_reader.js",
     find: "      return visitor.none();\n",
     replace: "      throw $jsonError(`missing field \\`${this.name}\\``);\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a visitor's deserialize_option is each reader's own"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "value-seq-kind-unkept",
     breaks: "what a `&Value`'s array holds gives its strings whole, as an owned `Value`'s, where serde_json lends them (#1539)",
-    file: "src/runtime/json_value_reader.js",
+    file: "crates/rust-js-program/src/runtime/json_value_reader.js",
     find: "    return read(new $JsonValueReader(this.items[this.count - 1], this.kind));\n",
     replace: "    return read(new $JsonValueReader(this.items[this.count - 1]));\n",
     tests: ["test/serde-protocol.test.ts", "-t", "T::deserialize of a Value or a &Value"],

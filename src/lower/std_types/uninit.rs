@@ -2,12 +2,12 @@
 //! holds, or `undefined` before it's written, as JS has no memory that isn't
 //! a value. A `&mut` to one is a box, the place it's written to.
 
-use crate::js::{self, Expr, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::Std;
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
 use rust_js_program::collections::IndexSet;
+use rust_js_program::js::{self, Expr, Stmt, StmtKind};
 use rustc_middle::mir::visit::{PlaceContext, Visitor};
 use rustc_middle::mir::{self, Local, Operand, Rvalue, StatementKind, TerminatorKind};
 use rustc_middle::ty;

@@ -5,9 +5,9 @@ use crate::lower::temporary_names::Role;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
-use crate::js::{Expr, Op, Stmt, StmtKind};
 use crate::lower::bindings::{tag_key, variant_name};
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{Expr, Op, Stmt, StmtKind};
 
 /// A `Cow`'s own methods.
 #[derive(Clone, Copy, PartialEq)]
@@ -60,7 +60,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let tag = Expr::member(cow.clone(), tag_key(self.tcx, adt.did()));
         let borrowed = Expr::bin(Op::Eq, tag.clone(), Expr::str(variant_name(self.tcx, borrowed_variant)));
-        let value = Expr::member(cow.clone(), crate::js::positional(0));
+        let value = Expr::member(cow.clone(), rust_js_program::js::positional(0));
         let clone = self.owned_clone(value.clone(), owned, span, out)?;
         if op == CowOp::IntoOwned {
             return Ok(Expr::cond(borrowed, clone, value));
@@ -79,7 +79,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `cow == "a"` as `cow._0 === "a"`. `None` of another type.
     pub(in crate::lower) fn cow_deref(&self, cow: &Expr, ty: Ty<'tcx>) -> Option<(Expr, Ty<'tcx>)> {
         let (borrowed, _) = self.recognition().cow_parts(ty)?;
-        Some((Expr::member(cow.clone(), crate::js::positional(0)), borrowed))
+        Some((Expr::member(cow.clone(), rust_js_program::js::positional(0)), borrowed))
     }
 
     /// `items`, an array of `item`s a `String` is made of, as text: of
@@ -93,7 +93,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let cow = self.fresh(Role::Cow);
         let (read, _) = self.cow_deref(&Expr::var(&cow), item).expect("a Cow's parts");
-        let read = vec![StmtKind::Return(Some(read)).at(crate::js::Span::NONE)];
+        let read = vec![StmtKind::Return(Some(read)).at(rust_js_program::js::Span::NONE)];
         Expr::builtin(items, "map", vec![Expr::arrow(vec![cow.into()], read)])
     }
 

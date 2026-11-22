@@ -5,10 +5,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use crate::manifest::{self, Manifest, fingerprint};
-use crate::paths::{absolute, parent_dir, relative, relative_resolved, resolve, specifier_file};
+use rust_js_program::paths::{absolute, parent_dir, relative, relative_resolved, resolve, specifier_file};
 
 use crate::publish::Artifact;
-use crate::{js, program, to_oxc};
+use crate::{program, to_oxc};
+use rust_js_program::js;
 
 mod local_js;
 mod refusal;
@@ -277,8 +278,12 @@ impl OutputPlan {
                 reexports,
                 helpers: Vec::new(),
                 // Of std's own build, its package's `runtime.js` (#1095).
-                helpers_from: (self.std_bodies)
-                    .then(|| self.file_specifier(&module.path, &parent_dir(&self.output).join(crate::runtime::MODULE))),
+                helpers_from: (self.std_bodies).then(|| {
+                    self.file_specifier(
+                        &module.path,
+                        &parent_dir(&self.output).join(rust_js_program::runtime::MODULE),
+                    )
+                }),
                 items: module.items,
                 default_export: module.default_export,
                 default_declared: module.default_declared,
@@ -473,7 +478,7 @@ impl OutputPlan {
         }
         // Of the helpers it asked for, and what they use, the names its
         // prepared tree reads (ADR 0103).
-        js_module.helpers = crate::runtime::imported_helpers(helper_sources, &js_module.read_helpers());
+        js_module.helpers = rust_js_program::runtime::imported_helpers(helper_sources, &js_module.read_helpers());
         // A helper the module reads and didn't ask for would be a JS
         // error where it runs, its import left out: refused, as a
         // compiler's mistake, not written; of what's spelled as one, but
@@ -481,7 +486,7 @@ impl OutputPlan {
         if let Some(name) = (js_module.read_names().into_iter())
             .filter(|name| !name.is_the_programs())
             .map(js::Name::word) // word: a runtime helper is its export, by its word
-            .find(|name| crate::runtime::exports(name) && !js_module.helpers.contains(name))
+            .find(|name| rust_js_program::runtime::exports(name) && !js_module.helpers.contains(name))
         {
             return Err(format!(
                 "rust-js wrote `{name}` in {} without asking for the helper that declares it: a bug of rust-js's",
@@ -560,7 +565,7 @@ impl OutputPlan {
                 .chain(package.default.clone())
                 .chain(package.namespace.clone())
         }));
-        let test = crate::names::fresh_in(&mut taken, "test");
+        let test = rust_js_program::names::fresh_in(&mut taken, "test");
         // One namespace import per other module, named as lowering names its
         // namespace (rd114b, ADR 1018): a `Name` of its own, which
         // preparation spells apart from the module's names after the
@@ -601,7 +606,8 @@ impl OutputPlan {
                 Some((_, alias)) => js::Expr::member(js::Expr::var(alias), &registered.name),
                 None => js::Expr::module(&registered.name),
             };
-            let mut outcome = |(helper, name): (crate::runtime::Helper, &'static str), args: Vec<js::Expr>| {
+            let mut outcome = |(helper, name): (rust_js_program::runtime::Helper, &'static str),
+                               args: Vec<js::Expr>| {
                 helpers.push(helper);
                 js::Expr::arrow(
                     Vec::new(),
@@ -610,13 +616,13 @@ impl OutputPlan {
             };
             let body = match &registered.should_panic {
                 None if registered.returns_result => outcome(
-                    (crate::runtime::Helper::TestResult, "$testResult"),
+                    (rust_js_program::runtime::Helper::TestResult, "$testResult"),
                     vec![js::Expr::call(f, Vec::new())],
                 ),
                 None => f,
                 Some(expected) => {
                     let args = std::iter::once(f).chain(expected.iter().map(js::Expr::str)).collect();
-                    outcome((crate::runtime::Helper::ShouldPanic, "$shouldPanic"), args)
+                    outcome((rust_js_program::runtime::Helper::ShouldPanic, "$shouldPanic"), args)
                 }
             };
             let register = match registered.ignore {
@@ -631,7 +637,10 @@ impl OutputPlan {
         js_module.items.push(js::Item::Statements(registrations));
         helpers.sort();
         helpers.dedup();
-        helpers.into_iter().map(crate::runtime::Helper::source).collect()
+        helpers
+            .into_iter()
+            .map(rust_js_program::runtime::Helper::source)
+            .collect()
     }
 
     /// Where module `home`'s test file is (ADR 1076): its one module of
@@ -705,7 +714,7 @@ impl OutputPlan {
     /// `to`, a file, as module `from`'s file imports it: `./a.js`,
     /// `../../b.js`. The one way a specifier of a file is made.
     fn file_specifier(&self, from: &[String], to: &std::path::Path) -> String {
-        crate::paths::specifier(parent_dir(&self.js_path(from)), to)
+        rust_js_program::paths::specifier(parent_dir(&self.js_path(from)), to)
     }
 
     /// A relative module `specifier` a binding names, `#[link_name]`'s,

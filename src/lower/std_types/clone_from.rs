@@ -12,10 +12,10 @@ use rustc_middle::ty;
 use rustc_middle::ty::Ty;
 use rustc_span::Span;
 
-use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::copies::InPlaceWriter;
 use crate::lower::recognition::trait_method;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 
 /// One side of a `Result`'s `clone_from`, two `Ok`s or two `Err`s: the
 /// test of it, and its write (`result_sides`).

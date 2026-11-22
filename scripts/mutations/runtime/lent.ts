@@ -1,11 +1,11 @@
-// Mutations of src/runtime/lent.js (ADR 0071, #162).
+// Mutations of crates/rust-js-program/src/runtime/lent.js (ADR 0071, #162).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "lent-back-unpassed",
     breaks: "a JS iterator lent as a `&mut` keeps none of its back, so `r.copied().next_back()` of an `&mut R` throws `it.back is not a function` (ADR 0982)",
-    file: "src/runtime/lent.js",
+    file: "crates/rust-js-program/src/runtime/lent.js",
     find: "  lent: [\"next\", \"sizeHint\", \"advanceBy\", \"nth\", \"fold\", \"tryFold\", \"back\", \"advanceBackBy\", \"nthBack\", \"rfold\", \"tryRfold\", \"len\"],\n",
     replace: "  lent: [\"next\", \"sizeHint\", \"advanceBy\", \"nth\", \"fold\", \"tryFold\", \"advanceBackBy\", \"nthBack\", \"rfold\", \"tryRfold\", \"len\"],\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_parameter.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-nth-drop-unpassed",
     breaks: "a lent iterator's `nth` doesn't pass on the items' drop, so a chain's `nth` past a compiled `fuse()`'s items never drops them (#285)",
-    file: "src/runtime/lent.js",
+    file: "crates/rust-js-program/src/runtime/lent.js",
     find: "    nth: passed(\"nth\"),\n",
     replace: "    nth: it.nth && ((k) => it.nth(k)),\n",
     tests: ["test/corpus.test.ts", "-t", "^(chain_nth_drops_what_it_passes|own_nth_last_dropping).rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-nth-steps",
     breaks: "`nth` of a `&mut` of the crate's iterator steps it by `next`, not by its own `nth`, which std's `&mut I` gives it",
-    file: "src/runtime/lent.js",
+    file: "crates/rust-js-program/src/runtime/lent.js",
     find: "  lent: [\"next\", \"sizeHint\", \"advanceBy\", \"nth\", \"fold\", \"tryFold\", \"back\", \"advanceBackBy\", \"nthBack\", \"rfold\", \"tryRfold\", \"len\"],\n",
     replace: "  lent: [\"next\", \"sizeHint\", \"advanceBy\", \"fold\", \"tryFold\", \"back\", \"advanceBackBy\", \"nthBack\", \"rfold\", \"tryRfold\", \"len\"],\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-try-fold-own",
     breaks: "a lent iterator's tryFold is its iterator's",
-    file: "src/runtime/lent.js",
+    file: "crates/rust-js-program/src/runtime/lent.js",
     find: "  lent: [\"next\", \"sizeHint\", \"advanceBy\", \"nth\", \"fold\", \"tryFold\", \"back\", \"advanceBackBy\", \"nthBack\", \"rfold\", \"tryRfold\", \"len\"],\n",
     replace: "  lent: [\"next\", \"sizeHint\", \"advanceBy\", \"nth\", \"fold\", \"back\", \"advanceBackBy\", \"nthBack\", \"rfold\", \"tryRfold\", \"len\"],\n",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-struct-fields-unread",
     breaks: "a compiled std struct lent by `by_ref()` hasn't its fields, `iter` and `count`, which its compiled bodies read",
-    file: "src/runtime/lent.js",
+    file: "crates/rust-js-program/src/runtime/lent.js",
     find: "  if (it.$steps !== undefined) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^std_enumerate.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-fold-by-next",
     breaks: "a `&mut`'s `fold` steps its lender by `next`, where std's folds by its `try_fold`, an inclusive range's leaving it exhausted at its last (#414)",
-    file: "src/runtime/lent.js",
+    file: "crates/rust-js-program/src/runtime/lent.js",
     find: "  lent: [\"next\", \"sizeHint\", \"advanceBy\", \"nth\", \"fold\", \"tryFold\", \"back\", \"advanceBackBy\", \"nthBack\", \"rfold\", \"tryRfold\", \"len\"],\n",
     replace: "  lent: [\"next\", \"sizeHint\", \"advanceBy\", \"nth\", \"tryFold\", \"back\", \"advanceBackBy\", \"nthBack\", \"rfold\", \"tryRfold\", \"len\"],\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-try-fold-unwind-lost",
     breaks: "a `&mut`'s `try_fold` gives what it lends no `unwind`: a stage's panic leaves the accumulator undropped (#423)",
-    file: "src/runtime/lent.js",
+    file: "crates/rust-js-program/src/runtime/lent.js",
     find: "    tryFold: passed(\"tryFold\"),\n",
     replace: "    tryFold: it.tryFold && ((init, f, broke) => it.tryFold(init, f, broke)),\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^generic_folds_unwind.rs$|^panic_mid_fold_drops with"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "lent-hint-unpassed",
     breaks:
       "a JS iterator lent as a `&mut` has no `size_hint` of its own, so `held.by_ref().size_hint()` of a `Vec`'s `IntoIter` is std's default `(0, None)`, where `&mut I` passes on `I`'s (#745)",
-    file: "src/runtime/lent.js",
+    file: "crates/rust-js-program/src/runtime/lent.js",
     find: "  lent.sizeHint = () => $sizeHint(it);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     name: "lent-lends-unsaid",
     breaks:
       "a lent `Vec`'s `IntoIter` given its slice's steps where it's lent, by `$slicing` of the lent value, isn't, so a `by_ref().rev().nth(2)` drops what it passes from the back one by one, not as one slice (#755)",
-    file: "src/runtime/lent.js",
+    file: "crates/rust-js-program/src/runtime/lent.js",
     find: "  lent.lends = it;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-rfold-by-its-back",
     breaks: "a `&mut I` of a sized `I` folds from its back by `next_back`, std's default, not by `I`'s `try_rfold`, as std's `DoubleEndedIteratorRefSpec` does: a lent `take()` drops what it skips 4 then 5, where std drops 5 then 4 (#1986)",
-    file: "src/runtime/lent.js",
+    file: "crates/rust-js-program/src/runtime/lent.js",
     find: "  lent: [\"next\", \"sizeHint\", \"advanceBy\", \"nth\", \"fold\", \"tryFold\", \"back\", \"advanceBackBy\", \"nthBack\", \"rfold\", \"tryRfold\", \"len\"],\n",
     replace: "  lent: [\"next\", \"sizeHint\", \"advanceBy\", \"nth\", \"fold\", \"tryFold\", \"back\", \"advanceBackBy\", \"nthBack\", \"tryRfold\", \"len\"],\n",
     tests: ["test/corpus.test.ts", "-t", "^lent_iterator_folded_as_std_passes_it_on.rs$"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-unsized-folds-its-own",
     breaks: "a `&mut dyn` iterator's `rfold` and `try_rfold` are its iterator's, where std's `&mut I` of an unsized `I` takes the defaults over `next_back` (#1991)",
-    file: "src/runtime/lent.js",
+    file: "crates/rust-js-program/src/runtime/lent.js",
     find: "  lentUnsized: [\"next\", \"sizeHint\", \"advanceBy\", \"nth\", \"back\", \"advanceBackBy\", \"nthBack\", \"len\"],\n",
     replace: "  lentUnsized: [\"next\", \"sizeHint\", \"advanceBy\", \"nth\", \"back\", \"advanceBackBy\", \"nthBack\", \"rfold\", \"tryRfold\", \"len\"],\n",
     tests: ["test/corpus.test.ts", "-t", "^lent_iterator_folded_as_std_passes_it_on.rs$"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-struct-steps-of-its-struct",
     breaks: "a compiled std struct lent as a `&mut dyn` reads the steps it doesn't pass on, its `rfold`, from the struct, where std's unsized `&mut I` takes the default (#1991)",
-    file: "src/runtime/lent.js",
+    file: "crates/rust-js-program/src/runtime/lent.js",
     find: "        if (!passes.includes(step)) return target[key];\n",
     replace: "        if (!passes.includes(step)) return it[key];\n",
     tests: ["test/corpus.test.ts", "-t", "^lent_iterator_folded_as_std_passes_it_on.rs$"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "boxed-lend-undisposed",
     breaks: "a `Box`'s lend, dropped, never drops what it holds, so a `Box<dyn Iterator>` of a generic `I` that's a `Box<dyn Iterator>` with a destructor is never dropped (#2186)",
-    file: "src/runtime/lent.js",
+    file: "crates/rust-js-program/src/runtime/lent.js",
     find: "  if (owns && Object.hasOwn(it, $disposeKey)) lent[$disposeKey] = () => $disposeIterator(it);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     name: "boxed-lend-hold-stops",
     breaks:
       "a `Box`'s lend, held, never holds what it owns, so a generic `Box<I>` folded in place drops `I` at its end inside the fold's last step, and as that drop panics the fold drops its accumulator, `drop acc 6`, which std's `fold(self)` leaks (#2232)",
-    file: "src/runtime/lent.js",
+    file: "crates/rust-js-program/src/runtime/lent.js",
     find: "      lent.held = true;\n      it.hold?.();\n",
     replace: "      lent.held = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_source_dropped_after_its_fold.rs$"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-of-a-lend-lent-again",
     breaks: "a `&mut` lend of what a `&mut` lends already lends it again, so std's compiled struct a caller lent, given with a dictionary whose `lent` lends it, reads its fields through two lends and steps `NaN` (#2187)",
-    file: "src/runtime/lent.js",
+    file: "crates/rust-js-program/src/runtime/lent.js",
     find: "  if ((kind === \"lent\" && (it.lentAs === \"lent\" || it.lentAs === \"lentUnsized\")) || (kind === \"lentUnsized\" && it.lentAs === kind)) return it;\n",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^held_adapters_by_ref with std's iterator structs$"],

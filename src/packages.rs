@@ -128,7 +128,7 @@ pub fn read(dir: &Path, modules: &[Module<'_>], parse: impl Fn(&str) -> Result<E
     let text = std::fs::read_to_string(&manifest).map_err(|e| format!("{}: {e}", manifest.display()))?;
     let json: serde_json::Value = serde_json::from_str(&text).map_err(|e| format!("{}: {e}", manifest.display()))?;
     let mut read = Read {
-        files: vec![crate::paths::absolute(&manifest)?],
+        files: vec![rust_js_program::paths::absolute(&manifest)?],
         package: None,
         hand_written: false,
     };
@@ -136,7 +136,7 @@ pub fn read(dir: &Path, modules: &[Module<'_>], parse: impl Fn(&str) -> Result<E
         return Ok(read);
     };
     let exports = through(root_exports(dir, name, &json, modules, parse, &mut read)?, modules);
-    let dir = crate::paths::absolute(dir)?;
+    let dir = rust_js_program::paths::absolute(dir)?;
     read.package = Some(Package {
         name: name.to_string(),
         subpaths: subpaths(&dir, &json["exports"], modules),
@@ -163,7 +163,7 @@ fn root_exports(
     // modules' JS, which may not be written yet.
     let own = |file: &PathBuf| modules.iter().any(|module| module.files.contains(file));
     let candidates = root_entry(dir, json).into_iter().flatten();
-    let candidates = candidates.filter_map(|entry| crate::paths::absolute(&entry).ok());
+    let candidates = candidates.filter_map(|entry| rust_js_program::paths::absolute(&entry).ok());
     let Some(file) = candidates.into_iter().find(|file| own(file) || file.is_file()) else {
         return Ok(BTreeMap::new());
     };
@@ -197,7 +197,7 @@ fn root_exports(
                         .to_string_lossy()
                 )
             })?;
-            reexported(crate::paths::parent_dir(&file), &parsed, modules)
+            reexported(rust_js_program::paths::parent_dir(&file), &parsed, modules)
         }
     })
 }
@@ -266,7 +266,7 @@ fn subpath(dir: &Path, exports: &serde_json::Value, file: &Path) -> Option<Strin
         .find_map(|subpath| {
             let subpath = subpath.to_str()?.replace(std::path::MAIN_SEPARATOR, "/");
             let target = subpath_target(map, &format!("./{subpath}"))?;
-            let target = crate::paths::absolute(&dir.join(target.strip_prefix("./")?)).ok()?;
+            let target = rust_js_program::paths::absolute(&dir.join(target.strip_prefix("./")?)).ok()?;
             (target == file).then_some(subpath)
         })
 }
@@ -296,7 +296,7 @@ impl Scope {
 /// `LOOKUP_PACKAGE_SCOPE` finds it: the nearest `package.json` above it,
 /// below any `node_modules`. None where none is.
 pub fn scope(file: &Path) -> Result<Option<Scope>, String> {
-    let file = crate::paths::absolute(file)?;
+    let file = rust_js_program::paths::absolute(file)?;
     let Some(dir) = (file.ancestors().skip(1))
         .take_while(|dir| dir.file_name().is_none_or(|base| base != "node_modules"))
         .find(|dir| dir.join("package.json").is_file())
@@ -400,7 +400,7 @@ fn reexported(dir: &Path, entry: &Entry, modules: &[Module<'_>]) -> BTreeMap<(Ve
         if !crate::program::is_relative_specifier(specifier) {
             return None;
         }
-        let file = crate::paths::specifier_file(dir, specifier).ok()?;
+        let file = rust_js_program::paths::specifier_file(dir, specifier).ok()?;
         let bare = |file: &Path| match file.extension().and_then(|e| e.to_str()) {
             Some("js" | "jsx" | "mjs") => file.with_extension(""),
             _ => file.to_path_buf(),
@@ -443,12 +443,12 @@ fn reexported(dir: &Path, entry: &Entry, modules: &[Module<'_>]) -> BTreeMap<(Ve
 /// `package.json`, from `dir` up, through its links. As `tooling/patch.js`'s
 /// `lookup` finds an app's packages, for its own question.
 pub fn installed(dir: &Path, name: &str) -> Option<PathBuf> {
-    let dir = crate::paths::absolute(dir).ok()?;
+    let dir = rust_js_program::paths::absolute(dir).ok()?;
     (dir.ancestors())
         .filter(|dir| dir.file_name().is_none_or(|base| base != "node_modules"))
         .map(|dir| dir.join("node_modules").join(name))
         .find(|candidate| candidate.join("package.json").is_file())
-        .and_then(|found| crate::paths::absolute(&found).ok())
+        .and_then(|found| rust_js_program::paths::absolute(&found).ok())
 }
 
 /// Whether `package`'s entry re-exports each of `reexports`, a crate's

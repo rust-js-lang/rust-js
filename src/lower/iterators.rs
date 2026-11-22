@@ -43,8 +43,8 @@ use super::recognition::{StdItem, std_item, trait_method};
 use super::representation::Num;
 use super::std_types::range::RangeKind;
 use super::{FnCx, R, Std};
-use crate::js;
-use crate::js::{Expr, Op, Stmt, StmtKind};
+use rust_js_program::js;
+use rust_js_program::js::{Expr, Op, Stmt, StmtKind};
 
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;

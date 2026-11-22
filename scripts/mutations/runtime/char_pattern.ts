@@ -1,11 +1,11 @@
-// Mutations of src/runtime/char_pattern.js (#118).
+// Mutations of crates/rust-js-program/src/runtime/char_pattern.js (#118).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "split-once-by-first",
     breaks: "`rsplit_once(p)` splits at the first match",
-    file: "src/runtime/char_pattern.js",
+    file: "crates/rust-js-program/src/runtime/char_pattern.js",
     find: "  if (!last) {\n",
     replace: "  if (true) {\n",
     tests: ["test/corpus.test.ts", "-t", "^char_patterns.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "strip-by-untested",
     breaks: "`strip_prefix(p)` strips its first `char` whether `p` holds of it or not",
-    file: "src/runtime/char_pattern.js",
+    file: "crates/rust-js-program/src/runtime/char_pattern.js",
     find: "  if (c === undefined || !test(c)) return undefined;\n",
     replace: "  if (c === undefined) return undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^char_patterns.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "replace-by-unlimited",
     breaks: "`replacen(p, to, n)` replaces every match",
-    file: "src/runtime/char_pattern.js",
+    file: "crates/rust-js-program/src/runtime/char_pattern.js",
     find: "    if (count < n && test(c)) {\n",
     replace: "    if (test(c)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^char_patterns.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-once-asks-every-char",
     breaks: "`split_once` and `rsplit_once` by a closure ask it of every `char`, front to back, where std's `find` and `rfind` stop at the first that holds, from the front or from the back (#1501)",
-    file: "src/runtime/char_pattern.js",
+    file: "crates/rust-js-program/src/runtime/char_pattern.js",
     find: "  if (!last) {\n    let unit = 0;\n",
     replace: "  if (true) {\n    const found = $charMatches(s, test);\n    const at = last ? found[found.length - 1] : found[0];\n    return at === undefined ? undefined : split(at.unit, at.c);\n  }\n  if (!last) {\n    let unit = 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^str_split_once_by_a_closure_searches_as_std.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "char-searcher-ends-overlap",
     breaks: "a `str`'s search stepped from both ends asks a `char` its other end has, so a `char` is asked twice and a piece given twice (#1501)",
-    file: "src/runtime/char_pattern.js",
+    file: "crates/rust-js-program/src/runtime/char_pattern.js",
     find: "    while (front < back) {\n",
     replace: "    while (front < chars.length) {\n",
     tests: ["test/corpus.test.ts", "-t", "^str_searches_ask_a_closure_as_they_step.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-back-gives-trailing-empty",
     breaks: "`split_terminator`'s `next_back()` gives the empty piece its end leaves, which std's `SplitInternal` passes over first (#1501)",
-    file: "src/runtime/char_pattern.js",
+    file: "crates/rust-js-program/src/runtime/char_pattern.js",
     find: "    if (!at.allowTrailingEmpty) {\n",
     replace: "    if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^str_searches_ask_a_closure_as_they_step.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-inclusive-back-end-past-match",
     breaks: "`split_inclusive`'s `next_back()` ends what's left before its match, so the next piece from the back loses its `char` (#1501)",
-    file: "src/runtime/char_pattern.js",
+    file: "crates/rust-js-program/src/runtime/char_pattern.js",
     find: "    at.end = inclusive ? k + 1 : k;\n",
     replace: "    at.end = k;\n",
     tests: ["test/corpus.test.ts", "-t", "^str_searches_ask_a_closure_as_they_step.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "splitn-last-split-again",
     breaks: "`splitn(n, f)`'s last piece is split again, not what's left whole (#1501)",
-    file: "src/runtime/char_pattern.js",
+    file: "crates/rust-js-program/src/runtime/char_pattern.js",
     find: "    return $searchStep(count === 0 ? split.getEnd() : split.next(false));\n",
     replace: "    return $searchStep(split.next(false));\n",
     tests: ["test/corpus.test.ts", "-t", "^str_searches_ask_a_closure_as_they_step.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "char-matches-utf16-bytes",
     breaks: "`match_indices` of a predicate gives UTF-16 units, not UTF-8 bytes",
-    file: "src/runtime/char_pattern.js",
+    file: "crates/rust-js-program/src/runtime/char_pattern.js",
     find: "    byte.push(byte[byte.length - 1] + $byteLen(c));\n",
     replace: "    byte.push(byte[byte.length - 1] + c.length);\n",
     tests: ["test/corpus.test.ts", "-t", "^char_patterns.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "rsplitn-by-unlimited",
     breaks: "`rsplitn(n, p)` splits at every match, not at most `n` pieces",
-    file: "src/runtime/char_pattern.js",
+    file: "crates/rust-js-program/src/runtime/char_pattern.js",
     find: "    return $searchStep(count === 0 ? split.getEnd() : split.nextBack(false));\n",
     replace: "    return $searchStep(split.nextBack(false));\n",
     tests: ["test/corpus.test.ts", "-t", "^char_patterns.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-terminator-by-keeps-end",
     breaks: "`split_terminator(p)` keeps the empty piece its end leaves",
-    file: "src/runtime/char_pattern.js",
+    file: "crates/rust-js-program/src/runtime/char_pattern.js",
     find: "    return at.allowTrailingEmpty || at.end > at.start ? piece(at.start, at.end) : undefined;\n",
     replace: "    return piece(at.start, at.end);\n",
     tests: ["test/corpus.test.ts", "-t", "^(char_patterns|str_searches_ask_a_closure_as_they_step).rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-inclusive-by-trailing",
     breaks: "`split_inclusive(p)` gives an empty piece at the end",
-    file: "src/runtime/char_pattern.js",
+    file: "crates/rust-js-program/src/runtime/char_pattern.js",
     find: "  const split = $splitInternal(s, test, false);\n  const it = new $Steps(() => $searchStep(split.next(true)));\n",
     replace: "  const split = $splitInternal(s, test, true);\n  const it = new $Steps(() => $searchStep(split.next(true)));\n",
     tests: ["test/corpus.test.ts", "-t", "^char_patterns.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-by-unlimited",
     breaks: "`splitn(2, p)` of a predicate splits at every match, not leaving the rest whole",
-    file: "src/runtime/char_pattern.js",
+    file: "crates/rust-js-program/src/runtime/char_pattern.js",
     find: "function $lazySplitBy(s, test, n = Infinity) {\n  const split = $splitInternal(s, test, true);\n  let count = n;\n",
     replace: "function $lazySplitBy(s, test, n = Infinity) {\n  const split = $splitInternal(s, test, true);\n  let count = Infinity;\n",
     tests: ["test/corpus.test.ts", "-t", "^splitn_by.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "rmatches-by-from-start",
     breaks: "`rmatches` of a predicate gives its `char`s from the start",
-    file: "src/runtime/char_pattern.js",
+    file: "crates/rust-js-program/src/runtime/char_pattern.js",
     find: "  const [front, back] = rev ? [searcher.back, searcher.next] : [searcher.next, searcher.back];\n  const it = new $Steps(() => $searchStep(found(front())));\n",
     replace: "  const [front, back] = [searcher.next, searcher.back];\n  const it = new $Steps(() => $searchStep(found(front())));\n",
     tests: ["test/corpus.test.ts", "-t", "^matches_by_predicate.rs$"],

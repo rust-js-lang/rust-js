@@ -1,4 +1,4 @@
-// Mutations of src/js/stmt_walk.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/js/stmt_walk.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "same-without-facts",
     breaks:
       "statements alike but for what's known of their parts are the same, so one arm's field read stands for another's getter, its facts taken for both (rd687)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        if !facts {\n",
     replace: "        if true {\n",
     tests: ["test/webapi-objects.test.ts", "-t", "arms that each do the same"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "this-no-path",
     breaks: "`this` isn't a path, so `this.count = this.count - 1` isn't `this.count--` (rd196)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        (ExprKind::This, ExprKind::This) => true,\n",
     replace: "",
     tests: ["test/js-functions.test.ts", "-t", "a with_this thread-local is a function declaration"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "switch-of-a-case-break-ends",
     breaks: "a `switch` a case's `break` of no label leaves is taken to never go on, so what follows it is moved into its `default`, and a guarded arm that does nothing returns where Rust panics (a wrong answer, cw2)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "                && !(cases.iter().map(|case| &case.body).chain([default])).any(|body| breaks(body, None))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_does_nothing.rs$"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-member-not-a-path",
     breaks: "`current?.constructor` isn't one path, so `and_then` of it, a module variable's, is `current?.constructor != null ? current?.constructor.name : undefined`, not `current?.constructor?.name`",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        (ExprKind::OptionalMember(x, f), ExprKind::OptionalMember(y, g)) => f == g && same_path(x, y),\n",
     replace: "",
     tests: ["test/lowering-optional-chains.test.ts", "-t", "a property read of what may be None is an optional chain"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "nullish-equal-loose",
     breaks: "`==` of two `Option<&Unknown>`s is `a == b`, so `1` is `\"1\"`, as `==` makes one of the other",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "    Expr::bin(Op::Eq, either(a), either(b))\n",
     replace: "    Expr::bin(Op::LooseEq, either(a), either(b))\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "Option's Somes"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "nullish-equal-of-some-kept",
     breaks: "`a == Some(b)` of a value of any shape is `(a ?? null) === (b ?? null)`, where `a === b` answers the same",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "            if let (Some(a), Some(b)) = (nullish_operand(a), nullish_operand(b)) =>\n",
     replace: "            if let (Some(a), Some(b), false) = (nullish_operand(a), nullish_operand(b), true) =>\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "Option's Somes"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "returned-call-blocked",
     breaks: "a callback of one call is a block, `() => { setCount(1); }`, where what it gives is `undefined` or ignored",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        *body = vec![StmtKind::Return(Some(e.clone())).at(*span)];\n",
     replace: "",
     tests: ["test/lowering-bindings.test.ts", "-t", "callback returns a call that gives undefined"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "items-by-kind",
     breaks: "a module's items are its types, consts, statements, then functions, not where its Rust has them",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "    placed.sort_by_key(|(at, _)| *at);\n",
     replace: "",
     tests: ["test/modules.test.ts","-t","in source order, each after what it reads"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "load-reads-ignored",
     breaks: "a thread-local reading a later one is made before it, which JS throws on",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "                    .filter(|&d| d != i)\n",
     replace: "                    .filter(|&d| d != i && false)\n",
     tests: ["test/modules.test.ts","-t","in source order, each after what it reads"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "load-reads-not-called",
     breaks: "a thread-local calling a function that reads a later one is made before it, which JS throws on",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "                            item.visit_names(&mut |v| work.push(v));\n",
     replace: "",
     tests: ["test/modules.test.ts","-t","in source order, each after what it reads"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "load-held-run",
     breaks: "a function an initializer only holds, clz32's `clz32Fallback`, moves what it reads, `const { log, LN2 } = Math`, before the initializer",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "                        true => _ = seen.insert(v),\n",
     replace: "                        true => work.push(v),\n",
     tests: ["test/modules.test.ts", "-t", "a function an initializer only holds"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "load-holds-not-carried",
     breaks: "an initializer calling a function a `const` it reads holds, `picked[0](2)`, is made before what the function reads, which JS throws on",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "                        work.extend(holds.get(name).into_iter().flatten());\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "a function an initializer only holds"],
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
   {
     name: "nested-item-after",
     breaks: "a `const` in a function's body is after the function, not just before it",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "                    Some(outer) => (outer, false, own.lo),\n",
     replace: "                    Some(_) => (own.lo, true, own.lo),\n",
     tests: ["test/corpus.test.ts", "-t", "^local_consts.rs$"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "declared-functions-unprepared",
     breaks: "a function declared in a body is passed over by each pass over a module's lists, `s = s + t` left so",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "                own_blocks(&mut function.body, f);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "nested_fn_prepared"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
   {
     name: "same-path-index-unseen",
     breaks: "`files[\"/x\"] != null ? files[\"/x\"].visible : undefined` isn't `files[\"/x\"]?.visible`",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        (ExprKind::Index(x, i), ExprKind::Index(y, j)) => same_path(x, y) && same_key(i, j),\n",
     replace: "        (ExprKind::Index(x, i), ExprKind::Index(y, j)) if false => same_path(x, y) && same_key(i, j),\n",
     tests: ["test/lowering-optional-chains.test.ts", "-t", "property read of what may be None"],
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
   {
     name: "same-path-index-variable",
     breaks: "`files[name]` isn't the path `files[name]` tests",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        same_path(i, j)\n            || matches!((&i.kind, &j.kind), (ExprKind::Str(i)",
     replace: "        false\n            || matches!((&i.kind, &j.kind), (ExprKind::Str(i)",
     tests: ["test/lowering-optional-chains.test.ts", "-t", "property read of what may be None"],
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
   {
     name: "same-path-item-number-unseen",
     breaks: "`square[0] = square[0] * k` isn't known to write the place it reads, and stays so, not `square[0] *= k`",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "            || matches!((&i.kind, &j.kind), (ExprKind::Num(i), ExprKind::Num(j)) if i == j)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "dyn_generic|slice_patterns"],
@@ -145,7 +145,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-let-made-const",
     breaks: "a `let` set again is a `const`, which JS refuses to set",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "                && !writes.may_replace(name)\n",
     replace: "",
     tests: ["test/lowering-names.test.ts", "-t", "nothing sets again is a const"],
@@ -153,7 +153,7 @@ export const mutations: Mutation[] = [
   {
     name: "inner-if-leaving-unseen",
     breaks: "a branch that leaves by an inner `if` both of whose branches return keeps its `else`",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        StmtKind::If(_, then, Some(otherwise)) => then.last().is_some_and(ends) && otherwise.last().is_some_and(ends),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_errors_boxed.rs$"],
@@ -162,7 +162,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-endless-loop-goes-on",
     breaks: "what follows a `while (true)` no `break` leaves is kept, `return args; return result;`",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        StmtKind::While { label, cond, body } => {\n            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_ref())\n",
     replace: "        StmtKind::While { label, cond, body } => {\n            false && !breaks(body, label.as_ref())\n",
     tests: ["test/corpus.test.ts", "-t", "^or_before_a_returning_loop.rs$"],
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
   {
     name: "stmts-alike-by-name",
     breaks: "two drops alike but for the names they declare, `for (const item$1 of v)` and `for (const item of v)`, aren't, so a scope stays a `try` per statement",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        .map(|(i, name)| (name, format!(\"${i}\")))\n",
     replace: "        .map(|(_, name)| (name.clone(), name.word().to_string()))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_auto_traits.rs$"],
@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
   {
     name: "stmts-alike-by-span",
     breaks: "two drops alike but where each was written aren't, so a scope stays a `try` per statement",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "    unspan(&mut stmts);\n    let mut declared = Vec::new();\n",
     replace: "    let mut declared = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^(drop_on_panic|dyn_auto_traits).rs$"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
   {
     name: "some-inequality-loose",
     breaks: "an `Option` compared `!=` with a `Some(..)` is `!=`, where `!==` answers the same",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        ExprKind::Binary(Op::LooseNe, a, b) => Expr::bin(Op::Ne, *a, *b),\n",
     replace: "",
     tests: ["test/lowering-options.test.ts", "-t", "compared with a Some"],
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
   {
     name: "switch-goes-on",
     breaks: "a `switch` each of whose cases leaves is taken to go on, so a closure's body ending in one stays a closure in its `try`",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "                .all(|case| case.falls || case.body.last().is_some_and(ends))\n                && default.last().is_some_and(ends)\n",
     replace: "                .all(|_| false)\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
   {
     name: "tried-case-broken",
     breaks: "a `try` each of whose arms returns is taken to go on, so a `switch` case of one ends in a dead `break;`",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        StmtKind::TryCatch(body, _, caught) => body.last().is_some_and(ends) && caught.last().is_some_and(ends),\n",
     replace: "",
     tests: ["test/lowering-switch-ends.test.ts", "-t", "a case needs no break"],
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
   {
     name: "any-call-cannot-throw",
     breaks: "any helper's call is taken to catch what it runs throws, so a `try` that drops what's held as it unwinds is lost (ADR 0873)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "                if callee.helper_name() == Some(\"$catchUnwind\") && !args.iter().any(Expr::may_throw))\n",
     replace: "                if callee.helper_name().is_some() && !args.iter().any(Expr::may_throw))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
   {
     name: "handler-calling-nothing-kept",
     breaks: "`onClick={() => onClear()}`, not `onClick={onClear}`: a statement of the call is never passed on",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        ] if statement => call,\n",
     replace: "        ] if false => call,\n",
     tests: ["test/jsx-events.test.ts", "-t", "calls a function with nothing"],
@@ -229,7 +229,7 @@ export const mutations: Mutation[] = [
   {
     name: "rest-not-passed-on",
     breaks: "an arrow of rest arguments spread on, `(...data) => console.log(...data)`, isn't the function it passes them to",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "(Pattern::Rest(name), ExprKind::Spread(spread)) if matches!(",
     replace: "(Pattern::Rest(name), ExprKind::Spread(spread)) if false && matches!(",
     tests: ["test/js-object.test.ts", "-t", "console is a value"],
@@ -238,7 +238,7 @@ export const mutations: Mutation[] = [
     name: "rest-given-whole-passed-on",
     breaks:
       "`move |value| counted(&this, value)` of rest arguments given on as one array, `(...value) => counted(this$, value)`, is `counted.bind(null, this$)`, which gives `counted` each argument where it reads one array (#502, ADR 0605, amended)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "            _ => None,\n        })\n        .collect()\n}\n",
     replace: "            (Pattern::Rest(name), ExprKind::Var(v)) if v == name => Some(name),\n            _ => None,\n        })\n        .collect()\n}\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
@@ -246,7 +246,7 @@ export const mutations: Mutation[] = [
   {
     name: "diverging-call-goes-on",
     breaks: "a call that never returns is taken to go on, `let result; return result;` after it (ADR 0954)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        StmtKind::Expr(e) => e.facts.has(Known::Diverges),\n",
     replace: "",
     tests: ["test/lowering-written-branches.test.ts", "-t", "never returns"],
@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
   {
     name: "item-blocks-skip-constants",
     breaks: "a thread-local set only in a closure a `const` is made of is `const tries = 0;`, which the closure reassigns, a TypeError (ADR 0270, amended)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "            Item::Const(constant) => each_block_in_mut(&mut constant.value, f),\n",
     replace: "            Item::Const(_) => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_set_in_const_closure.rs$"],
@@ -262,7 +262,7 @@ export const mutations: Mutation[] = [
   {
     name: "item-exprs-skip-namespace-constants",
     breaks: "an impl's `const` closure that sets a thread-local writes `tries.value` of the number its variable is, a TypeError (ADR 0270, amended)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "                (namespace.constants.iter_mut()).for_each(|constant| constant.value.each_mut(f));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_set_in_const_closure.rs$"],
@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
   {
     name: "item-blocks-skip-namespace-constants",
     breaks: "an impl's `const` closure that alone sets a thread-local leaves it `const`, which the closure reassigns, a TypeError (ADR 0270, amended)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "                (namespace.constants.iter_mut()).for_each(|constant| each_block_in_mut(&mut constant.value, f));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_set_in_const_closure.rs$"],
@@ -278,7 +278,7 @@ export const mutations: Mutation[] = [
   {
     name: "statics-loaded-set-unseen",
     breaks: "a thread-local `js::on_load!` sets, its body in the module's statements, is a `const` assigned, which throws as the module loads (#201)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "            Item::Statements(stmts) => each_slotted_block_mut(stmts, f),\n",
     replace: "            Item::Statements(_) => {}\n",
     tests: ["test/modules.test.ts", "-t", "a module's items are in source order"],
@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
   {
     name: "this-read-in-nested-functions",
     breaks: "a function nested in a `with_this` function reads its own `this` for the outer one's, `inner.call(i)` of `outer.call(o)` reads `i in i`, not `i in o` (a wrong answer, ADR 0972)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "            && mentions_of(&function.body, name) > 0\n        {\n            nested = true;\n",
     replace: "            && false\n        {\n            nested = true;\n",
     tests: ["test/js-functions.test.ts", "-t", "a function nested in a with_this function"],
@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
   {
     name: "this-read-not-told-nested",
     breaks: "a function nested in a `with_this` function reads the outer `this` through a variable no one declares, a `ReferenceError` (ADR 0972)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "            nested = true;\n            replaced(&mut function.body, name, &apart);\n",
     replace: "            replaced(&mut function.body, name, &apart);\n",
     tests: ["test/js-functions.test.ts", "-t", "a function nested in a with_this function"],
@@ -302,7 +302,7 @@ export const mutations: Mutation[] = [
   {
     name: "reads-this-of-nested-functions",
     breaks: "an arrow in which a `with_this` function reads its own `this` is taken to read its maker's, so a `let` of it stays `const helper = () => ..`, not `function helper() { .. }` (ADR 0972)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "            function.body.clear();\n",
     replace: "",
     tests: ["test/js-functions.test.ts", "-t", "a function nested in a with_this function"],
@@ -310,7 +310,7 @@ export const mutations: Mutation[] = [
   {
     name: "taken-place-any",
     breaks: "a take of an item, `hiddenUpdates[index].take()`, is moved into its test's branch too, where only a path of variables and fields is (ADR 0996)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        ExprKind::Member(object, _) => taken_place(object),\n        _ => false,\n",
     replace: "        ExprKind::Member(object, _) => taken_place(object),\n        _ => true,\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "a binding of what take\\(\\) gives names it"],
@@ -318,7 +318,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-handle-this-unnamed",
     breaks: "a handle a class's method hands on, `bump(&self.reads)`, reads `this` in its accessors, the handle's own, so the field is never set (#359, #449)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        if let ExprKind::Handle(place, _) | ExprKind::Pair(place, ..) = &mut e.kind {\n            place.each_mut(&mut |part| {\n",
     replace: "        if let ExprKind::Handle(place, _) | ExprKind::Pair(place, ..) = &mut e.kind\n            && false\n        {\n            place.each_mut(&mut |part| {\n",
     tests: ["test/classes.test.ts", "-t", "Cell fields"],
@@ -327,7 +327,7 @@ export const mutations: Mutation[] = [
     name: "accessor-marks-misplaced",
     breaks:
       "a nested function's body set aside while a handle's `this` is read through a `const` is never put back, so the function is its mark alone (#359, ADR 1150)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "            && let Some(k) = marks.iter().position(|mark| mark == marked)\n",
     replace: "            && let Some(k) = None::<usize>.filter(|_| marks.contains(marked))\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_of_given_adapters_from_its_back.rs$"],
@@ -336,7 +336,7 @@ export const mutations: Mutation[] = [
   {
     name: "replaced-replaces-nothing",
     breaks: "a variable replaced by another, by its id, stays itself, so a `filter`'s temporary keeps its name where it's tested where it's made, `const option = chunks.get(id)` (#1619, ADR 1150)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        if name == from {\n            *name = to.clone();\n",
     replace: "        if name == from {\n            _ = to;\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_then_let_else_tests_one_value.rs$"],
@@ -345,7 +345,7 @@ export const mutations: Mutation[] = [
   {
     name: "canonical-binders-kept",
     breaks: "statements compared as alike keep each binder's own variable, so two arms that declare their own `value` alike are told apart and both written",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        if let Some(to) = names.get(name) {\n",
     replace: "        if let Some(to) = names.get(name).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(adapters_over_own_next_that_panics|array_partial_moves|back_folds_of_sources_made_knowing_their_back).rs$"],
@@ -355,7 +355,7 @@ export const mutations: Mutation[] = [
     name: "comments-block-scope",
     breaks:
       "a block of only comments counts as what may throw, so a scope's drop after an `if` of comments is a `catch` and a second drop, never one `finally` (rd429)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "            StmtKind::Let(_, None) | StmtKind::Comments => true,\n",
     replace: "            StmtKind::Let(_, None) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "drop_guard_restores_taken_fields"],
@@ -365,7 +365,7 @@ export const mutations: Mutation[] = [
     name: "on-load-destructured-names-unreserved",
     breaks:
       "a name an earlier `on_load!` body destructures is declared again by a later one",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "        StmtKind::Destructure { pattern, .. } => pattern.bound(),\n",
     replace: "",
     tests: [
@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
   {
     name: "namespace-constants-read-nothing-at-load",
     breaks: "a type's object is taken to read nothing as it's loaded, so one whose constant's value is a module's `const` declared after it is made first, and loading the module throws, `Cannot access 'UNSUPPORTED' before initialization`",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "                    Item::Namespace(namespace) => namespace.constants.iter().map(|c| &c.value).collect(),\n",
     replace: "                    Item::Namespace(_) => Vec::new(),\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_const_of_a_later_const.rs$"],
@@ -385,7 +385,7 @@ export const mutations: Mutation[] = [
   {
     name: "unprintable-hole-printed",
     breaks: "a module holding a hole is printable, its value taken and never put back printed where Rust has a value (ADR 1147)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "                ExprKind::Hole(hole) => hole.what(),\n",
     replace: "                ExprKind::Hole(Hole::Item(_)) => \"an item's hole\",\n",
     unitTests: "js::validate::tests::a_hole_is_refused",
@@ -393,7 +393,7 @@ export const mutations: Mutation[] = [
   {
     name: "arrow-body-declarations-unbound",
     breaks: "a dictionary whose function declares a `const` of its own reads as a local the body's top can't, so one written twice isn't declared once (#1511): the declarations `bound_names` gives, which `reads_only_at_top` binds (#1379)",
-    file: "src/js/stmt_walk.rs",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
     find: "            StmtKind::Const(name, _) | StmtKind::Let(name, _) => rename(name),\n",
     replace: "            StmtKind::Const(..) | StmtKind::Let(..) => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_extend\\.rs$"],

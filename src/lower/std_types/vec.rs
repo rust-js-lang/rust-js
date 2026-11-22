@@ -1,12 +1,12 @@
 //! A `Vec`'s or a slice's method (ADRs 0025, 0036).
 
-use crate::js;
-use crate::js::{Expr, Op, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::Std;
 use crate::lower::std_types::slice::SortWith;
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
+use rust_js_program::js;
+use rust_js_program::js::{Expr, Op, Stmt, StmtKind};
 use rustc_middle::ty;
 
 /// Whether `known` reads an item, which `flatten` makes the JS read itself.

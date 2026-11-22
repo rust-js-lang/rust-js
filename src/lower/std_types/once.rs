@@ -2,12 +2,12 @@
 //! a `Cell<Option<T>>` is, set once; in a field, the property, absent until
 //! it's set, and set where it's known empty by an assignment (ADR 0847).
 
-use crate::js::{Expr, Op, Prop, Stmt, StmtKind, result};
 use crate::lower::calls::Call;
 use crate::lower::recognition::Lend;
 use crate::lower::recognition::Std;
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{Expr, Op, Prop, Stmt, StmtKind, result};
 
 /// A `OnceCell`'s or `OnceLock`'s own methods.
 #[derive(Clone, Copy, PartialEq)]
@@ -42,7 +42,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let item = generic_args.type_at(0);
         let mut arg = || values.next().expect("rustc checked the arguments");
         Ok(Some(match op {
-            OnceOp::New => Expr::object(vec![Prop::Field(crate::js::HELD.into(), Expr::js_undefined())]),
+            OnceOp::New => Expr::object(vec![Prop::Field(
+                rust_js_program::js::HELD.into(),
+                Expr::js_undefined(),
+            )]),
             OnceOp::Get => Expr::held(arg()),
             // A `&mut` to an object is the object; to a number or text, a
             // `{ value }` box (ADR 0074), which the cell itself is once set.

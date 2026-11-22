@@ -403,8 +403,8 @@ export const mutations: Mutation[] = [
     name: "flattened-write-result-tagged",
     breaks: "`flatten()` of writes' results reads each as `{ TAG }`, `undefined.TAG` (#1410)",
     file: "src/lower/combinators/adapters.rs",
-    find: "            true => Expr::js_undefined(),\n            false => crate::js::result::held(result),\n",
-    replace: "            _ => crate::js::result::held(result),\n",
+    find: "            true => Expr::js_undefined(),\n            false => rust_js_program::js::result::held(result),\n",
+    replace: "            _ => rust_js_program::js::result::held(result),\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
   },
   {
@@ -412,7 +412,7 @@ export const mutations: Mutation[] = [
     breaks: "`flatten()` and std's `Flatten` struct's `IntoIterator` of writes' results read each as `{ TAG }`, `undefined.TAG` (#1410)",
     file: "src/lower/combinators/adapters.rs",
     find: "        let ok = self.variant_test(result.clone(), ty, adt, rustc_abi::VariantIdx::ZERO, false);\n",
-    replace: "        let ok = crate::js::result::is(result.clone(), true);\n",
+    replace: "        let ok = rust_js_program::js::result::is(result.clone(), true);\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^write_result_items.rs$|^write_result_items with"],
   },
   {

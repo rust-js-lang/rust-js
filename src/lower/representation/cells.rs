@@ -7,8 +7,8 @@
 use super::super::FnCx;
 use super::super::bindings;
 use super::super::recognition::StdItem;
-use crate::js;
-use crate::js::Expr;
+use rust_js_program::js;
+use rust_js_program::js::Expr;
 use rustc_middle::ty;
 use rustc_middle::ty::Ty;
 

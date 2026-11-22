@@ -51,7 +51,7 @@ wherever there is one, exact of a string, a map and a set alike.
   bounded, is `f.apply(null, units)`: `String.fromCharCode`'s, 4,096
   units at a time.
 - **`test/runtime-transpiled.test.ts` holds both**: it parses each of
-  `src/runtime/*.js` and fails on a spread of anything else, and it runs
+  `crates/rust-js-program/src/runtime/*.js` and fails on a spread of anything else, and it runs
   the compiler's runtime through Babel's loose spread, destructuring,
   for-of and template literals, each helper that steps text or a
   collection answering as it does untranspiled.

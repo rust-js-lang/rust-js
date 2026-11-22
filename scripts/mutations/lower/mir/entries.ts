@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`?` of a value's `Result` into an `io::Result<()>` throws its `{ TAG }` object, not its error, which its callers take for the `Err`",
     file: "src/lower/mir/entries.rs",
-    find: "        let error = crate::js::result::held(residual);\n",
+    find: "        let error = rust_js_program::js::result::held(residual);\n",
     replace: "        let error = residual;\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
@@ -272,7 +272,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`mem::take(&mut links[0].to)` names the item, `const item$1 = $index(links, 0);`, where `$index` reaches the same place each time it's read",
     file: "src/lower/mir/entries.rs",
-    find: "        js::ExprKind::Call(callee, args) if callee.helper_name().is_some_and(crate::runtime::names_a_place) => {\n            args.iter().any(reached_by_a_call)\n        }\n",
+    find: "        js::ExprKind::Call(callee, args)\n            if callee\n                .helper_name()\n                .is_some_and(rust_js_program::runtime::names_a_place) =>\n        {\n            args.iter().any(reached_by_a_call)\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^weak_uncounted_uses.rs$"],
     snapshots: true,

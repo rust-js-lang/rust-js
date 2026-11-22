@@ -36,7 +36,7 @@ const map: TestMap = {
         [37, 40],
       ],
     },
-    { file: "src/runtime.rs", spans: [[1, 9]] },
+    { file: "crates/rust-js-program/src/runtime.rs", spans: [[1, 9]] },
     {
       file: "src/c.rs",
       spans: [
@@ -60,7 +60,7 @@ const map: TestMap = {
     "test/iterator-forms.test.ts test/corpus/x.rs": bits(4),
     "test/iterator-forms.test.ts test/corpus/y.rs": bits(0),
   },
-  includes: { "src/runtime/helper.js": [{ file: "src/runtime.rs", line: 5 }] },
+  includes: { "crates/rust-js-program/src/runtime/helper.js": [{ file: "crates/rust-js-program/src/runtime.rs", line: 5 }] },
   corpusReaders: ["test/two.test.ts"],
   noCompiler: [],
 };
@@ -157,7 +157,7 @@ test("a new module of items nothing refers to selects nothing but what its users
   expect(pick(map, [{ file: "src/not-there.rs", hunks: "new" }], files, cases).kind).toBe("all");
 });
 
-test("a name no item declared, added to a `use`, changes nothing but the code changed to use it (4ba38fa64's src/js.rs:43)", () => {
+test("a name no item declared, added to a `use`, changes nothing but the code changed to use it (4ba38fa64's crates/rust-js-program/src/js.rs:43)", () => {
   const text = Array.from({ length: 50 }, (_, i) => `// line ${i + 1}`);
   text[21] = "pub use self::{";
   text[22] = "    imports::{Import, Package},";
@@ -185,9 +185,9 @@ test("a test carried over keeps its functions by their symbols, and one new sinc
 });
 
 test("a file read by `include_str!` is the line that reads it", () => {
-  expect(pick(map, [{ file: "src/runtime/helper.js", hunks: [[1, 1]] }], files, cases)).toMatchObject({ files: ["test/two.test.ts", "test/reads.test.ts"], cases: ["y.rs"], forms: [] });
-  const outside = { ...map, includes: { "src/runtime/helper.js": [{ file: "src/runtime.rs", line: 12 }] } };
-  expect(pick(outside, [{ file: "src/runtime/helper.js", hunks: [[1, 1]] }], files, cases).kind).toBe("all");
+  expect(pick(map, [{ file: "crates/rust-js-program/src/runtime/helper.js", hunks: [[1, 1]] }], files, cases)).toMatchObject({ files: ["test/two.test.ts", "test/reads.test.ts"], cases: ["y.rs"], forms: [] });
+  const outside = { ...map, includes: { "crates/rust-js-program/src/runtime/helper.js": [{ file: "crates/rust-js-program/src/runtime.rs", line: 12 }] } };
+  expect(pick(outside, [{ file: "crates/rust-js-program/src/runtime/helper.js", hunks: [[1, 1]] }], files, cases).kind).toBe("all");
 });
 
 test("a function's counted lines are joined over what's its own, not over an item nested in it", () => {
@@ -385,7 +385,7 @@ test("the merge of a recording's parts is the map of one part's recording", () =
     caseNames,
     readsSources: ["test/reads.test.ts"],
     corpusReaders: ["test/two.test.ts"],
-    includes: { "src/runtime/helper.js": [{ file: "src/a.rs", line: 3 }] },
+    includes: { "crates/rust-js-program/src/runtime/helper.js": [{ file: "src/a.rs", line: 3 }] },
     units: planUnits(files, shards, perShard, new Map([["test/two.test.ts", 30]])),
   });
   // What each part's tests write, as testMapCompiler.ts does: a file of
@@ -621,9 +621,9 @@ test("a private `use` changed is each function of its module's, where no code ou
   text[14] = "    let n: Name = Expr::of(s);";
   text[24] = "    held: Name,";
   const sources = (sites: { file: string; line: number }[]): Sources => ({
-    text: (file) => (file === "src/a.rs" ? text.join("\n") : file === "src/a/b.rs" ? "    field: Name," : file === "src/c.rs" ? "    other: Name," : file === "src/js.rs" ? "pub struct Name;" : undefined),
+    text: (file) => (file === "src/a.rs" ? text.join("\n") : file === "src/a/b.rs" ? "    field: Name," : file === "src/c.rs" ? "    other: Name," : file === "crates/rust-js-program/src/js.rs" ? "pub struct Name;" : undefined),
     // Declared at the map's commit, so no name new to the crate.
-    naming: (word) => (word === "Name" ? [{ file: "src/js.rs", line: 1 }, ...sites] : []),
+    naming: (word) => (word === "Name" ? [{ file: "crates/rust-js-program/src/js.rs", line: 1 }, ...sites] : []),
   });
   const named: Change = { file: "src/a.rs", hunks: [[3, 1, ["use crate::js::{Expr, Name, Stmt};"], ["use crate::js::{Expr, Stmt};"]]] };
   // Every function of a.rs, as a trait it brings changes how a method of

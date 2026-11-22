@@ -2,8 +2,8 @@
 //! what JS compares by value: numbers, strings, `char`s, `bool`s and
 //! fieldless enums.
 
-use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::temporary_names::Role;
+use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 
 use crate::lower::drops::dropped_after;
 use crate::lower::recognition::{KeyParts, StdItem, TypeFact, std_item};
@@ -1146,7 +1146,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let entry = js::Name::declared("entry".to_string());
             let pick = Expr::arrow(
                 vec![entry.clone().into()],
-                vec![StmtKind::Return(Some(Expr::index(Expr::var(entry), Expr::int(index)))).at(crate::js::Span::NONE)],
+                vec![
+                    StmtKind::Return(Some(Expr::index(Expr::var(entry), Expr::int(index))))
+                        .at(rust_js_program::js::Span::NONE),
+                ],
             );
             return Ok(method(entries, "map", vec![pick]));
         }

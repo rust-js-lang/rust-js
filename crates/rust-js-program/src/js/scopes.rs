@@ -5,7 +5,7 @@
 //! whether each read resolves (ADR 1143), and `alpha_eq` whether two trees
 //! are the same but for what their declarations are named.
 
-use rust_js_program::collections::IndexMap;
+use crate::collections::IndexMap;
 
 use crate::js::{self, Expr, ExprKind, Function, JsxTag, Name, Pattern, Prop, Stmt, StmtKind};
 
@@ -61,7 +61,7 @@ enum Event {
 }
 
 #[derive(Default)]
-pub(crate) struct Tree {
+pub struct Tree {
     scopes: Vec<Scope>,
     /// Each name's reads.
     pub(crate) reads: IndexMap<String, Vec<Read>>,
@@ -82,7 +82,7 @@ impl Tree {
     /// the module's (ADR 0267), the scopes inside it, its closures' and
     /// blocks' (ADR 0952); `None` where a scope declares a name twice, which
     /// JS refuses.
-    pub(crate) fn of(item: &js::Item) -> Option<Tree> {
+    pub fn of(item: &js::Item) -> Option<Tree> {
         let mut walk = Walk::default();
         walk.enter();
         walk.item(item, true);
@@ -93,7 +93,7 @@ impl Tree {
     /// top besides its items, `top` (`module_top`), its imports and
     /// packages, the scope around the item's, which a name the item declares
     /// shadows (`shadows`); `of`'s otherwise.
-    pub(crate) fn of_in(item: &js::Item, top: &[String]) -> Option<Tree> {
+    pub fn of_in(item: &js::Item, top: &[String]) -> Option<Tree> {
         let mut walk = Walk::default();
         walk.enter();
         top.iter().for_each(|name| walk.declare(name));
@@ -103,7 +103,7 @@ impl Tree {
 
     /// What `module` declares at its top besides its items: its imports'
     /// and its packages' names.
-    pub(crate) fn module_top(module: &js::Module) -> Vec<String> {
+    pub fn module_top(module: &js::Module) -> Vec<String> {
         let imported = (module.imports.iter())
             .flat_map(|import| import.named.iter().map(|(_, local)| local).chain(&import.namespace))
             .map(|local| local.word().to_string());
@@ -111,14 +111,14 @@ impl Tree {
     }
 
     /// Each name declared or read, in the order first met.
-    pub(crate) fn names(&self) -> impl Iterator<Item = &str> {
+    pub fn names(&self) -> impl Iterator<Item = &str> {
         let declared = self.declaring.keys().filter(|name| !self.reads.contains_key(*name));
         self.reads.keys().chain(declared).map(String::as_str)
     }
 
     /// `module`'s scopes: its imports', its packages' and its items' names
     /// the outermost's, then each item's own.
-    pub(crate) fn of_module(module: &js::Module) -> Tree {
+    pub fn of_module(module: &js::Module) -> Tree {
         Tree::of_top(Tree::module_top(module).iter(), &module.items)
     }
 
@@ -160,7 +160,7 @@ impl Tree {
     /// inside it? JS lets it where no read crosses (`renames`); a loop's
     /// counter a person writes doesn't: `j` inside a loop of `i`, and `j`
     /// of a loop that holds one of `i` (ADR 1042, `prepare::counters`).
-    pub(crate) fn shadows(&self, from: &str, to: &str) -> bool {
+    pub fn shadows(&self, from: &str, to: &str) -> bool {
         let ups = |scope: usize| std::iter::successors(self.scopes[scope].parent, |&up| self.scopes[up].parent);
         let declaring = self.declaring.get(from).map(Vec::as_slice).unwrap_or_default();
         let around = declaring
@@ -177,7 +177,7 @@ impl Tree {
     /// or inside one, `from` read inside its scope; or around one, it read
     /// inside `from`'s. So a made name the program's would then give way to
     /// doesn't take it (ADR 0357).
-    pub(crate) fn reclaims_to(&self, from: &str, apart: &dyn Fn(&Name) -> bool) -> bool {
+    pub fn reclaims_to(&self, from: &str, apart: &dyn Fn(&Name) -> bool) -> bool {
         let ups = |scope: usize| std::iter::successors(Some(scope), |&up| self.scopes[up].parent);
         let declaring = self.declaring.get(from).map(Vec::as_slice).unwrap_or_default();
         let read_in = |word: &str, scope: usize| {
@@ -199,7 +199,7 @@ impl Tree {
     /// scope that declares `from` declares `to` too; no read of `from`
     /// passes a declaration of `to` before its own; and no read of `to`
     /// passes one of `from` before its own.
-    pub(crate) fn renames(&self, from: &str, to: &str) -> bool {
+    pub fn renames(&self, from: &str, to: &str) -> bool {
         let Some(declaring) = self.declaring.get(from).filter(|d| !d.is_empty()) else {
             return false;
         };
@@ -325,7 +325,7 @@ impl Tree {
     }
 
     /// `from` named `to`, where [`Tree::renames`] said it keeps each read.
-    pub(crate) fn rename(&mut self, from: &str, to: &str) {
+    pub fn rename(&mut self, from: &str, to: &str) {
         let declaring = self.declaring.swap_remove(from).unwrap_or_default();
         for &scope in &declaring {
             if let Some(id) = self.scopes[scope].names.swap_remove(from) {
@@ -346,13 +346,13 @@ impl Tree {
 /// module's own names (ADR 1150), what's imported decided only by the reads
 /// its linked tree has. A helper is imported by its word, so the local
 /// gives way, as a local does to a function of the module's.
-pub(crate) fn locals_apart_from_module_reads(top: &[String], items: &mut [js::Item]) {
+pub fn locals_apart_from_module_reads(top: &[String], items: &mut [js::Item]) {
     let tree = Tree::of_top(top.iter(), items);
     let taking = tree.taking_module_reads();
     if taking.is_empty() {
         return;
     }
-    let mut taken: rust_js_program::collections::IndexSet<String> = tree.names().map(str::to_owned).collect();
+    let mut taken: crate::collections::IndexSet<String> = tree.names().map(str::to_owned).collect();
     for local in taking {
         let to = crate::names::fresh_in(&mut taken, local.word());
         js::respelled(items, &local, &to);
@@ -360,7 +360,7 @@ pub(crate) fn locals_apart_from_module_reads(top: &[String], items: &mut [js::It
 }
 
 /// The names a module's packages' imports declare at its top.
-pub(crate) fn packaged(packages: &[js::Package]) -> impl Iterator<Item = &String> {
+pub fn packaged(packages: &[js::Package]) -> impl Iterator<Item = &String> {
     (packages.iter()).flat_map(|package| {
         (package.named.iter().map(|(_, local)| local))
             .chain(&package.default)
@@ -371,28 +371,28 @@ pub(crate) fn packaged(packages: &[js::Package]) -> impl Iterator<Item = &String
 /// Each word `stmts` declare or read, their closures' and functions'
 /// too: the spelling question JS asks where a name is spelled into them, a
 /// word none of these may be, as JS would read it as one of them.
-pub(crate) fn spelled(stmts: &[Stmt]) -> rust_js_program::collections::IndexSet<String> {
+pub fn spelled(stmts: &[Stmt]) -> crate::collections::IndexSet<String> {
     Tree::of_body(stmts).names().map(str::to_owned).collect()
 }
 
 /// Each word `stmts` declare, their closures' and functions' too: the
 /// spelling question JS asks of a name spelled as one of them, which a
 /// reader, and JS inside that scope, takes for the declared one.
-pub(crate) fn declared_spelled(stmts: &[Stmt]) -> rust_js_program::collections::IndexSet<String> {
+pub fn declared_spelled(stmts: &[Stmt]) -> crate::collections::IndexSet<String> {
     Tree::of_body(stmts).declaring.keys().cloned().collect()
 }
 
 /// Whether each of `names` is in reach where `at`, read once in `body`, a
 /// function's, is read, by their ids ([`Tree::reach`]): asked by ids, no
 /// word, where a pass moves a closure's body to its call.
-pub(crate) fn reach(body: &[Stmt], at: &Name, names: &[&Name]) -> bool {
+pub fn reach(body: &[Stmt], at: &Name, names: &[&Name]) -> bool {
     Tree::of_body(body).reach(at, names)
 }
 
 /// Of `names`, each a read of which in `body`, a function's, JS's scopes
 /// resolve to another variable ([`Tree::not_read_as_themselves`]): asked
 /// by ids, no word, where a pass puts a variable's reads in new places.
-pub(crate) fn not_read_as_themselves(body: &[Stmt], names: &[&Name]) -> Vec<Name> {
+pub fn not_read_as_themselves(body: &[Stmt], names: &[&Name]) -> Vec<Name> {
     Tree::of_body(body).not_read_as_themselves(names)
 }
 
@@ -402,13 +402,13 @@ pub(crate) fn not_read_as_themselves(body: &[Stmt], names: &[&Name]) -> Vec<Name
 /// outside (#1681 change 3). `[(x) => x, x]` and `[(y) => y, y]` aren't:
 /// their last reads are of different names from outside. Where the names
 /// are the same too, by `==` alone.
-pub(crate) fn alpha_eq(a: &Expr, b: &Expr) -> bool {
+pub fn alpha_eq(a: &Expr, b: &Expr) -> bool {
     a == b || (unnamed(a) == unnamed(b) && events(a) == events(b))
 }
 
 /// `alpha_eq` of two functions, made apart: a copy's and its function's,
 /// or two classes' methods (#1681 change 3).
-pub(crate) fn alpha_eq_functions(a: &js::Function, b: &js::Function) -> bool {
+pub fn alpha_eq_functions(a: &js::Function, b: &js::Function) -> bool {
     let of = |f: &js::Function| Expr::new(ExprKind::Function(Box::new(f.clone())));
     alpha_eq(&of(a), &of(b))
 }

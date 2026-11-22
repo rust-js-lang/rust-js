@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "written-helper-unasked",
     breaks: "a helper written as the runtime's, tidying's `$lazyRange(0, n)`, isn't asked for, and its module doesn't import it: a ReferenceError where it runs",
     file: "src/link.rs",
-    find: "                    written.extend(crate::runtime::helper_of(name));\n",
+    find: "                    written.extend(rust_js_program::runtime::helper_of(name));\n",
     replace: "                    let _ = name;\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "a range made where it's stepped"],
   },

@@ -17,7 +17,7 @@
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { compilerSourceDirs } from "./compiler-crates";
+import { binaryCrate, compilerSourceDirs, crateOfModule, isCompilerSource } from "./compiler-crates";
 
 /** The page whose table it is. */
 export const OWNER_PAGE = "docs/architecture.md";
@@ -106,16 +106,19 @@ export function ownerTable(page: string): OwnerRow[] {
 }
 
 /** The repository path `owner` names, as the table spells it: a path
- * from `src/` where it starts so; else a module of the front end,
- * `iterators.rs`, `src/lower/iterators.rs`, or a folder, `drops/`, where
- * it or its submodules are files; else one at `src/`'s root, `names.rs`,
- * or the runtime's, `runtime/steps.js`. The one rule of it, which
- * test/architecture-iterators asks too. */
+ * of one of the compiler's crates' sources where it is one, `src/x.rs`;
+ * else a module of the front end, `iterators.rs`, `src/lower/iterators.rs`,
+ * or a folder, `drops/`, where it or its submodules are files; else one
+ * at the root of the crate that has its top-level module (ADR 1181),
+ * `names.rs`, `crates/rust-js-program/src/names.rs`, or the runtime's,
+ * `runtime/steps.js`. The one rule of it, which test/architecture-iterators
+ * asks too. */
 export function ownerPath(owner: string, files: readonly string[]): string {
-  if (owner.startsWith("src/")) return owner;
+  if (isCompilerSource(owner)) return owner;
   const lowered = `src/lower/${owner}`;
   const exists = files.some((f) => f === lowered || f.startsWith(lowered.endsWith(".rs") ? `${lowered.slice(0, -3)}/` : lowered));
-  return exists ? lowered : `src/${owner}`;
+  if (exists) return lowered;
+  return `${(crateOfModule(owner.replace(/[./].*$/, "")) ?? binaryCrate()).src}/${owner}`;
 }
 
 /** Whether `file`, a repository path, is of `owner` (`ownerPath`): that
@@ -363,7 +366,7 @@ export function exclusivity(rows: OwnerRow[], code: ReadonlyMap<string, string>)
 
 /** The repository's sources, in name order: each `.rs` of the compiler's
  * crates' (scripts/compiler-crates.ts), `src/`'s first, and each `.js` of
- * `src/runtime/`. */
+ * `crates/rust-js-program/src/runtime/`. */
 export function sources(root: string): string[] {
   const walk = (directory: string): string[] =>
     readdirSync(join(root, directory), { withFileTypes: true })
@@ -371,7 +374,7 @@ export function sources(root: string): string[] {
       .flatMap((entry) => (entry.isDirectory() ? walk(`${directory}/${entry.name}`) : [`${directory}/${entry.name}`]));
   return compilerSourceDirs(root)
     .flatMap(walk)
-    .filter((file) => file.endsWith(".rs") || (file.startsWith("src/runtime/") && file.endsWith(".js")));
+    .filter((file) => file.endsWith(".rs") || (file.startsWith("crates/rust-js-program/src/runtime/") && file.endsWith(".js")));
 }
 
 /** The front end's files, whose candidates completeness asks of. */

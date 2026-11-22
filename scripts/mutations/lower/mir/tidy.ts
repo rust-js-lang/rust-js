@@ -265,7 +265,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a contract is checked of what `--without-known` forgot: a `finally` the lowering wrote of what never throws is taken for unguarded without `NeverThrows`, and the compile panics where its JS is right (ADR 1127)",
     file: "src/lower/mir/tidy.rs",
-    find: "            if let Some(why) = crate::js::remembering(|| (contract.broken)(body)) {\n",
+    find: "            if let Some(why) = rust_js_program::js::remembering(|| (contract.broken)(body)) {\n",
     replace: "            if let Some(why) = (contract.broken)(body) {\n",
     tests: ["test/tidy-stages.test.ts", "-t", "flattened_state_got_mut after each"],
   },

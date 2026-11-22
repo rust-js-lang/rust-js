@@ -630,7 +630,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .count();
         match around {
             0 => word,
-            k => crate::names::given_apart(&word, k),
+            k => rust_js_program::names::given_apart(&word, k),
         }
     }
 

@@ -8,10 +8,10 @@
 use rustc_middle::thir::{ExprKind, PatKind};
 use rustc_middle::ty::{self, TyCtxt};
 
-use crate::js::{self, Expr};
 use crate::lower::Body;
 use crate::lower::bindings;
 use crate::lower::body_queries::strip;
+use rust_js_program::js::{self, Expr};
 
 /// Whether `body` is an inherent method of an untagged enum
 /// of no type parameters, of the crate's, whose one parameter is its `self`,

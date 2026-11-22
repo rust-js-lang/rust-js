@@ -1,11 +1,11 @@
 //! Stability of fresh literals before another expression in a call.
 use super::read_past_calls;
-use crate::js::{Expr, Prop};
 use rust_js_program::collections::IndexSet;
+use rust_js_program::js::{Expr, Prop};
 
 #[test]
 fn fresh_literals_require_stable_contents() {
-    let set: IndexSet<crate::js::Name> = IndexSet::from_iter(["changing".into()]);
+    let set: IndexSet<rust_js_program::js::Name> = IndexSet::from_iter(["changing".into()]);
     let plain = IndexSet::default();
     let allowed = |value: Expr| read_past_calls(&value, &set, &plain);
     let field = |value: Expr| Expr::object(vec![Prop::Field("entry".to_owned(), value)]);

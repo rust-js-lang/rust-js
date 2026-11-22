@@ -2,12 +2,12 @@
 //! a `$SipHasher`; and what std's `Hash` of its own types writes to a
 //! hasher, any `Hasher`, as std's impls write it.
 
-use crate::js::{self, Expr, Pattern, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::mut_refs::boxed;
 use crate::lower::recognition::{Std, StdItem, is_std_def, std_item};
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{self, Expr, Pattern, Stmt, StmtKind};
 use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -649,10 +649,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut arms = Vec::new();
                 for (discriminant, held) in [(0, ok), (1, err)] {
                     let mut arm = vec![hasher.write(&self.hasher_key("write_isize"), vec![Expr::int(discriminant)])];
-                    self.hash_writes(crate::js::result::held(value.clone()), held, hasher, span, &mut arm)?;
+                    self.hash_writes(
+                        rust_js_program::js::result::held(value.clone()),
+                        held,
+                        hasher,
+                        span,
+                        &mut arm,
+                    )?;
                     arms.push(arm);
                 }
-                let is_ok = crate::js::result::is(value, true);
+                let is_ok = rust_js_program::js::result::is(value, true);
                 let err = arms.pop();
                 out.push(StmtKind::If(is_ok, arms.pop().expect("`Ok`'s"), err).at(js::Span::NONE));
             }

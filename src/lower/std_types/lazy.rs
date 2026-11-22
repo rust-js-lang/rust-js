@@ -1,12 +1,12 @@
 //! `LazyCell` and `LazyLock` (ADR 0318): `{ init }`, whose `value` its
 //! `init` makes the first time it's used, as Rust's does.
 
-use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::Lend;
 use crate::lower::recognition::{Std, StdItem};
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{Expr, Op, Prop, Stmt, StmtKind};
 use rustc_middle::ty;
 
 /// The property of a `LazyCell`'s or `LazyLock`'s object that makes its

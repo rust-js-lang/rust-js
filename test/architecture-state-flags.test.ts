@@ -62,7 +62,7 @@ const audited: Record<string, number> = Object.fromEntries(
 test("a state is an enum, and loose flags only shrink", () => {
   const counts: [string, number][] = [
     ...compilerRustFiles().map((file) => [file, rustFlags(read(file))] as [string, number]),
-    ...files(join(root, "src", "runtime")).filter((file) => file.endsWith(".js")).map((file) => [file, runtimeFlags(read(file))] as [string, number]),
+    ...files(join(root, "crates", "rust-js-program", "src", "runtime")).filter((file) => file.endsWith(".js")).map((file) => [file, runtimeFlags(read(file))] as [string, number]),
   ];
   const changed = counts
     .filter(([file, now]) => now !== (audited[file] ?? 0))

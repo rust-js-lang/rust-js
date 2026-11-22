@@ -21,13 +21,13 @@ use rustc_middle::ty::{self, Mutability, Ty, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::iterators::{collected, is_js_iterator, made_array, stepped_range};
 use crate::lower::recognition::{IterMethod, StdItem, std_item};
 use crate::lower::representation::Num;
 use crate::lower::std_types::heap::HeapOp;
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R, bindings};
+use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a call of `def_id` at `span` is a `rev()`, an `enumerate()`

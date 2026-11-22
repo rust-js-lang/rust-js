@@ -1,11 +1,11 @@
-// Mutations of src/runtime/slice_view.js (ADR 0335).
+// Mutations of crates/rust-js-program/src/runtime/slice_view.js (ADR 0335).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "view-unchecked",
     breaks: "`&mut v[a..b]` past the end is made, and panics only when it's used",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);\n  const target = $partPlaced(",
     replace: "  const target = $partPlaced(",
     tests: ["test/corpus.test.ts","-t","slice_view_past_len"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "view-unwritten",
     breaks: "a write through a view isn't written to the slice",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "      items[start + i] = item;\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","slice_views"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "view-read-unshifted",
     breaks: "a view reads its slice from its start, not the view's",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "    (i) => items[start + i],",
     replace: "    (i) => items[i],",
     tests: ["test/corpus.test.ts","-t","slice_views"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "view-length-whole",
     breaks: "a view is as long as its slice",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "      if (key === \"length\") return length;\n",
     replace: "      if (key === \"length\") return items.length;\n",
     tests: ["test/corpus.test.ts","-t","slice_views"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "view-length-unset",
     breaks: "`*chunk = [..]` through a view throws, as `$assign` sets its length",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "      if (key === \"length\") return value === length;\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","slice_views"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "view-get-unchecked",
     breaks: "`get_mut(a..b)` past the end panics, not `None`",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "  return start <= end && end <= v.length ? $view(v, start, end) : undefined;",
     replace: "  return $view(v, start, end);",
     tests: ["test/corpus.test.ts","-t","slice_views"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-at-mut-checked-panics",
     breaks: "`split_at_mut_checked` past the end panics, not `None`",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "    if (checked) return undefined;\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","slice_views"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-at-mut-unchecked",
     breaks: "`split_at_mut(mid)` past the end doesn't panic with `mid > len`",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "    throw new Error(\"mid > len\");\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","split_at_mut_past_len"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-end-mut-no-handle",
     breaks: "`split_first_mut()`'s number is the number, not a handle on it",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "  return [handle ? $mutAt(v, at) : v[at], ",
     replace: "  return [v[at], ",
     tests: ["test/corpus.test.ts","-t","slice_views"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-last-mut-rest-from-one",
     breaks: "`split_last_mut()`'s rest starts after the first, not at it",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "last ? $view(v, 0, at) : $view(v, 1)]",
     replace: "$view(v, last ? 0 : 1, last ? at + 1 : v.length)]",
     tests: ["test/corpus.test.ts","-t","slice_views"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "chunks-mut-copies",
     breaks: "`chunks_mut` gives copies, not views",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "  return $chunks(v, n, $view);",
     replace: "  return $chunks(v, n);",
     tests: ["test/corpus.test.ts","-t","slice_views"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "as-chunks-mut-unkept",
     breaks: "a chunk read before its place is written follows it, so `chunks.swap(0, 1)` copies one into both",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "      for (const keep of read[i] ?? []) keep();\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","slice_arrays"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "as-chunks-mut-rest-first",
     breaks: "`as_chunks_mut` gives what's left first",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "  return back ? [$view(v, 0, rest), chunks] : [chunks, $view(v, v.length - rest)];",
     replace: "  return back ? [chunks, $view(v, 0, rest)] : [$view(v, v.length - rest), chunks];",
     tests: ["test/corpus.test.ts","-t","slice_arrays"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "as-rchunks-mut-from-start",
     breaks: "`as_rchunks_mut`'s chunks start at the start",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "  const start = back ? rest : 0;\n  const read = [];",
     replace: "  const start = 0;\n  const read = [];",
     tests: ["test/corpus.test.ts","-t","slice_arrays"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-view-transposed",
     breaks: "`as_flattened_mut` reads its arrays across, not in order",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "    (i) => v[Math.floor(i / n)][i % n],",
     replace: "    (i) => v[i % v.length][Math.floor(i / v.length)],",
     tests: ["test/corpus.test.ts","-t","slice_arrays"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "disjoint-overlap-unchecked",
     breaks: "`get_disjoint_mut` of the same index twice is `Ok`",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "      if (start < bounds[j][1] && bounds[j][0] < end) return { TAG: \"Err\", _0: \"OverlappingIndices\" };\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","slice_disjoint"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "disjoint-bounds-unchecked",
     breaks: "`get_disjoint_mut` past the end is `Ok`",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: " || end > v.length) return { TAG: \"Err\", _0: \"IndexOutOfBounds\" };",
     replace: ") return { TAG: \"Err\", _0: \"IndexOutOfBounds\" };",
     tests: ["test/corpus.test.ts","-t","slice_disjoint"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "disjoint-inclusive-backwards",
     breaks: "`get_disjoint_mut([2..=1])` is `Ok` of an empty view",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "    if (start > end || (inclusive && start === end) || end > v.length)",
     replace: "    if (start > end || end > v.length)",
     tests: ["test/corpus.test.ts","-t","slice_disjoint"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "disjoint-no-handle",
     breaks: "`get_disjoint_mut`'s numbers are the numbers, not handles on them",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: ": handle ? $mutAt(v, at) : v[at]);",
     replace: ": v[at]);",
     tests: ["test/corpus.test.ts","-t","slice_disjoint"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "reverse-range-unchecked",
     breaks: "`v[1..4].reverse()` of three items swaps past the end, where Rust panics before any moves (ADR 1073)",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);\n  for (let left = start,",
     replace: "  for (let left = start,",
     tests: ["test/corpus.test.ts", "-t", "^slice_range_reverse.rs$"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "reverse-range-short",
     breaks: "`v[a..b].reverse()` leaves its last item where it was (ADR 1073)",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "right = end - 1; left < right;",
     replace: "right = end - 2; left < right;",
     tests: ["test/corpus.test.ts", "-t", "^slice_range_reverse.rs$"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-view-unplaced",
     breaks: "a `&mut` view of part of a slice says nothing of where it is, so its `as_mut_ptr()` is another array's",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "  const target = $partPlaced([], items, start);\n",
     replace: "  const target = [];\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
   {
     name: "one-item-view-writes-nothing",
     breaks: "`slice::from_mut(&mut x)`'s view writes its item nowhere: `s[0] += 1` doesn't change `x` (#1336)",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "      h.value = item;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_from_mut.rs$"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
   {
     name: "one-item-view-reads-a-copy",
     breaks: "`slice::from_mut(&mut x)`'s view reads what `x` was, not what it is (#1336)",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "    () => h.value,\n",
     replace: "    ((kept) => () => kept)(h.value),\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_from_mut.rs$"],
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
   {
     name: "view-range-start-first",
     breaks: "a deque's `range_mut(5..7)` of three items says \"range start index 5\", checked as `&mut v[a..b]` is, where std's `slice::range` says \"range end index 7\" (#1937)",
-    file: "src/runtime/slice_view.js",
+    file: "crates/rust-js-program/src/runtime/slice_view.js",
     find: "  $checkRange(start, end, items.length, inclusive);\n  return $view(items, start, end);\n",
     replace: "  return $view(items, start, end, inclusive);\n",
     tests: ["test/corpus.test.ts", "-t", "^deque_range_checked_end_first.rs$"],

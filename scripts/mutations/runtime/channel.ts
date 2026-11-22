@@ -1,11 +1,11 @@
-// Mutations of src/runtime/channel.js (ADR 0093).
+// Mutations of crates/rust-js-program/src/runtime/channel.js (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "recv-disconnect-ignored",
     breaks: "`recv` of an empty channel whose senders are all dropped panics, where Rust's is an `Err`",
-    file: "src/runtime/channel.js",
+    file: "crates/rust-js-program/src/runtime/channel.js",
     find: "  if (channel.senders === 0) return { TAG: \"Err\", _0: undefined };\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "channels"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "send-receiver-dropped",
     breaks: "`send` to a channel whose receiver is dropped is `Ok`",
-    file: "src/runtime/channel.js",
+    file: "crates/rust-js-program/src/runtime/channel.js",
     find: "  if (!channel.receiving) return { TAG: \"Err\", _0: [item] };\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "channels"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "queued-items-undropped",
     breaks: "a channel's receiver, dropped, drops none of what's still queued",
-    file: "src/runtime/channel.js",
+    file: "crates/rust-js-program/src/runtime/channel.js",
     find: "  if (drop !== undefined) for (const item of channel.queue) drop(item);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^channel_of_droppers.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "channel-iter-waits-ends",
     breaks: "a channel's `iter()` of an empty queue a sender is still there of ends, where Rust's waits forever, not refused (#1176)",
-    file: "src/runtime/channel.js",
+    file: "crates/rust-js-program/src/runtime/channel.js",
     find: "    else throw $wouldWaitForever();\n",
     replace: "    else return;\n",
     tests: ["test/lowering.test.ts", "-t", "a channel.s iteration that would wait forever is refused"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "channel-iter-past-senders",
     breaks: "a channel's `iter()` whose senders are gone is refused, not ended (#1176)",
-    file: "src/runtime/channel.js",
+    file: "crates/rust-js-program/src/runtime/channel.js",
     find: "    else if (channel.senders === 0) return;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],

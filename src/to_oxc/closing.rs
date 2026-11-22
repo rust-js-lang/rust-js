@@ -94,7 +94,7 @@ pub(super) fn of_left_out(
         }
         let around = code(line_start, lo) + &code(hi, line_end);
         let key = (around.trim().trim_end_matches(',').trim_end().strip_suffix(':')).map(str::trim_end);
-        key.is_some_and(|key| crate::names::is_identifier(key.strip_prefix("r#").unwrap_or(key)))
+        key.is_some_and(|key| rust_js_program::names::is_identifier(key.strip_prefix("r#").unwrap_or(key)))
     })
 }
 

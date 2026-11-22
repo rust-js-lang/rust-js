@@ -1,11 +1,11 @@
-// Mutations of src/runtime/last_dropping.js (ADR 0098).
+// Mutations of crates/rust-js-program/src/runtime/last_dropping.js (ADR 0098).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "last-steps-not-folds",
     breaks: "`last` steps an adapter with a `fold` of its own by `next`, not by its `fold` as std's default does, so a `take_while` of a reversed `Vec`'s `skip` drops in the wrong order (#299)",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "  if ($ownMethod(it, \"fold\")) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "last-dropping-drops-none",
     breaks: "`last()` of items with a destructor drops none it passes",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "    if (seen) {\n      seen = false;\n      drop?.(last);\n    }\n    last = item;\n",
     replace: "    last = item;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "last-dropping-own-unused",
     breaks: "generic code's `last` of items with a destructor steps by `next`, not the crate's own `last`",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "  if (it.ownLast) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_last_dropping.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-last-each-stepped",
     breaks: "`a.chain(b).last()` steps every item in turn, dropping each as the next comes, not std's each side's own `last` (#232)",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "  if (it.sides !== undefined) {",
     replace: "  if (false) {",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-last-first-kept",
     breaks: "`a.chain(b).last()` never drops `a`'s last where `b` has one, as `b_last.or(a_last)` does (#232)",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "    if (aLast !== undefined) {\n      const value = $someValue(aLast);\n      drop?.(value);\n    }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-last-each-stepped",
     breaks: "`chain(..).skip(n).last()` steps every item, not its source's own `last` after what it skips (#232)",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "  if (it.skipped !== undefined) {",
     replace: "  if (false) {",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "last-throw-keeps-last",
     breaks: "a `last` whose stage panics leaves the one it kept undropped (#423)",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "  $foldBy(it, \"next\", undefined, (_, item) => keep(item), unwind);\n",
     replace: "  $foldBy(it, \"next\", undefined, (_, item) => keep(item));\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_in_own_next_drops.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "last-fold-unwind-lost",
     breaks: "a `last` gives its fold no `unwind`, so a stage's panic drops what's left before the one it kept (#423)",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "    it.fold(undefined, (_, item) => keep(item), drop && unwind);",
     replace: "    it.fold(undefined, (_, item) => keep(item));",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "last-inners-default",
     breaks: "a flatten's `last` is `Iterator`'s default, each item dropped as the next comes, not std's `FlattenCompat::last` (#645)",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "  if (it.inners !== undefined) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_last_takes_each_inner_last.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "last-inners-kept-on-panic",
     breaks: "a flatten's `last` whose inner iterator panics leaves the one kept before undropped until what's left of the source is (#645)",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "      const last = $unwinds(() => $lastDropping(make(), drop, true), unwind);\n",
     replace: "      const last = $lastDropping(make(), drop, true);\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_last_takes_each_inner_last.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "last-sides-b-unclosed",
     breaks: "a chain's `last` whose first side panics never drops its second (#647)",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "      () => b.return?.(),\n",
     replace: "      () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_side_panics_drops_the_other.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "last-sides-a-last-leaked",
     breaks: "a chain's `last` whose second side panics never drops the first side's last item (#647)",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "      () => {\n        if (aLast === undefined) return;\n        const value = $someValue(aLast);\n        drop?.(value);\n      },\n",
     replace: "      () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_side_panics_drops_the_other.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "last-dropping-own-given-no-drop",
     breaks: "`last()` asks an iterator's own `last` without the items' drop, so a `Vec`'s `IntoIter` a compiled flatten holds as its inner, given its steps by `$given`, which knows no drop, takes its back and drops nothing it has left (#648)",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "    const step = it.last(drop);\n",
     replace: "    const step = it.last();\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^vec_last_takes_its_back with"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "last-dropping-fold-drops-what-it-gave-back",
     breaks: "`last()` by its fold drops the item it kept as a panic unwinds out of the fold, though the fold had given it back: a `filter`'s discarded item's drop or a `take`'s source's dropped after, where rustc leaks it (#648)",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "    it.fold(undefined, (_, item) => keep(item), drop && unwind);\n",
     replace: "    try {\n      it.fold(undefined, (_, item) => keep(item), drop && unwind);\n    } catch (error) {\n      unwind();\n      throw error;\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^last_fold_gives_back_what_it_kept.rs$"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "last-dropping-skip-unclosed",
     breaks: "a `skip(1).last()` whose skipped item's drop panics never closes what it steps, so the rest of a `Vec`'s items are never dropped (#844)",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "    const source = $consumed(it, () => it.skipped());\n",
     replace: "    const source = it.skipped();\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_passed_item_drop_unwinds.rs$"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "flatten-last-back-inner-forgotten",
     breaks: "`last()` of a flatten stepped from its back first leaves out the inner it stepped from the back, which std's `FlattenCompat` fold reaches last, so its items aren't its `last` (#2051)",
-    file: "src/runtime/last_dropping.js",
+    file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "    if (back !== undefined) take(() => back);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_code_steps_adapters_as_std\\.rs$"],

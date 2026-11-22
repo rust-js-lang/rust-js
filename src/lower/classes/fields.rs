@@ -9,7 +9,7 @@ use rust_js_program::collections::IndexSet;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalModId};
 
-use crate::js::{self, ExprKind, Stmt, StmtKind};
+use rust_js_program::js::{self, ExprKind, Stmt, StmtKind};
 
 /// Of `module`'s items, the fields of each class that declares them,
 /// `#[rust_js::class(es, fields)]` (#568, the user's decision of

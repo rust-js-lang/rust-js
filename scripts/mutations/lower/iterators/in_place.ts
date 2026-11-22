@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     name: "does-f64-max-given-acts",
     breaks: "`$f64Max` given as it is acts, so a chain it folds stays lazy",
     file: "src/lower/iterators/in_place.rs",
-    find: "        js::ExprKind::Var(_) => !f.helper_name().is_some_and(crate::runtime::is_pure),\n",
+    find: "        js::ExprKind::Var(_) => !f.helper_name().is_some_and(rust_js_program::runtime::is_pure),\n",
     replace: "",
     tests: ["test/traits.test.ts", "-t", "MIR dictionaries are explicit"],
   },

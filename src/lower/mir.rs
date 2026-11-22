@@ -98,7 +98,7 @@ use super::std_types::rc::RcOp;
 use super::std_types::slice::SliceOp;
 use super::std_types::text::{StringEdit, TextOp, range_read};
 use super::{Body, FnCx, LoweredFn, R, Shape, bindings, fn_def};
-use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 
 /// What a temporary holds until it's used: a value, or a part of a
 /// `format_args!` that only its `Arguments` shows.

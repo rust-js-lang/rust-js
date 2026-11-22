@@ -6,7 +6,7 @@ use super::display::Pretty;
 use super::recognition::Std;
 use super::representation::Num;
 use super::{FnCx, R};
-use crate::js::{Expr, Op, Prop};
+use rust_js_program::js::{Expr, Op, Prop};
 use rustc_middle::ty::Ty;
 use rustc_span::Span;
 
@@ -131,7 +131,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some((borrowed, _)) = self.recognition().cow_parts(ty)
             && borrowed.is_str()
         {
-            return (Expr::member(value, crate::js::positional(0)), text);
+            return (Expr::member(value, rust_js_program::js::positional(0)), text);
         }
         if self.recognition().is_path_like(ty) || self.is_parse_error(ty) {
             return (value, text);

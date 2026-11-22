@@ -39,8 +39,8 @@ impl Module {
     }
 
     /// Each variable its code reads: its `Name`, each once.
-    pub fn read_names(&self) -> rust_js_program::collections::IndexSet<&Name> {
-        let mut names = rust_js_program::collections::IndexSet::default();
+    pub fn read_names(&self) -> crate::collections::IndexSet<&Name> {
+        let mut names = crate::collections::IndexSet::default();
         for item in &self.items {
             item.visit_names(&mut |name| {
                 names.insert(name);
@@ -69,7 +69,7 @@ impl Module {
 /// a loose one, as each did of the loose test the strict one is printed of
 /// (#2112 C S5). A `Some` of a caught JS `null` (ADR 0030) is the one
 /// question left of that: the same fold of the loose test meets it.
-pub(crate) fn null_test(test: &Expr, set: bool) -> Option<&Expr> {
+pub fn null_test(test: &Expr, set: bool) -> Option<&Expr> {
     match &test.kind {
         ExprKind::Binary(o, x, null)
             if o.tests_set() == Some(set) && matches!(null.kind, ExprKind::Null | ExprKind::Undefined) =>
@@ -84,7 +84,7 @@ pub(crate) fn null_test(test: &Expr, set: bool) -> Option<&Expr> {
 /// written as a path: a variable, or a field of one, `root.cancel`, a
 /// plain data property none of whose reads a getter answers (ADR 0996),
 /// so reading it twice reads the same value, and writing it runs nothing.
-pub(crate) fn taken_place(place: &Expr) -> bool {
+pub fn taken_place(place: &Expr) -> bool {
     if place.facts.has(Known::Getter) || place.facts.has(Known::Setter) {
         return false;
     }
@@ -100,7 +100,7 @@ pub(crate) fn taken_place(place: &Expr) -> bool {
 /// `v[0]`, or the runtime's checked item, `$index(v, i).hits`, which names
 /// the same place each time (ADR 0056)? The one answer, for each pass that
 /// asks whether two reads are of one place.
-pub(crate) fn same_path(a: &Expr, b: &Expr) -> bool {
+pub fn same_path(a: &Expr, b: &Expr) -> bool {
     let same_key = |i: &Expr, j: &Expr| {
         same_path(i, j)
             || matches!((&i.kind, &j.kind), (ExprKind::Str(i), ExprKind::Str(j)) if i == j)
@@ -273,7 +273,7 @@ fn closure_blocks(e: &mut Expr, f: &mut dyn FnMut(&mut Vec<Stmt>, Slot)) {
 /// answers the same, one side never `null` or `undefined`. So too
 /// `nullish_equal`'s `(a ?? null) === (b ?? null)`, whose `?? null` only
 /// makes a `null` of an `undefined`.
-pub(crate) fn strict_equality(e: Expr) -> Expr {
+pub fn strict_equality(e: Expr) -> Expr {
     match e.kind {
         ExprKind::Binary(Op::LooseEq, a, b) => Expr::bin(Op::Eq, *a, *b),
         ExprKind::Binary(Op::LooseNe, a, b) => Expr::bin(Op::Ne, *a, *b),
@@ -290,7 +290,7 @@ pub(crate) fn strict_equality(e: Expr) -> Expr {
 /// are one, as two `None`s of an `Option` of a value of any shape are,
 /// whose `Some`s `===` compares, as `==` can't, which makes `"1"` of `1`
 /// (ADR 0612, amended). Each is read once, in order.
-pub(crate) fn nullish_equal(a: Expr, b: Expr) -> Expr {
+pub fn nullish_equal(a: Expr, b: Expr) -> Expr {
     let either = |x: Expr| Expr::bin(Op::Coalesce, x, Expr::null());
     Expr::bin(Op::Eq, either(a), either(b))
 }
@@ -306,7 +306,7 @@ fn nullish_operand(e: &Expr) -> Option<&Expr> {
 /// `let list = [];` that nothing sets again, only changes in place, is
 /// `const list = [];`, as JS writes it (ADR 0278). A variable a `&mut`'s
 /// handle sets is set.
-pub(crate) fn constants(body: &mut Vec<Stmt>) {
+pub fn constants(body: &mut Vec<Stmt>) {
     let writes = Writes::of(body);
     each_block_mut(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
@@ -638,7 +638,7 @@ pub fn declared_variables(function: &Function) -> Vec<Name> {
 /// variable it declares a variable of its own, its reads with it: of the
 /// tree it's a clone of, none (ADR 1150, 4).
 pub fn rebound(stmts: &mut [Stmt]) {
-    let mut fresh: rust_js_program::collections::IndexMap<Name, Name> = Default::default();
+    let mut fresh: crate::collections::IndexMap<Name, Name> = Default::default();
     each_name(stmts, true, &mut |name| {
         if !fresh.contains_key(name) {
             fresh.insert(name.clone(), name.rebound());

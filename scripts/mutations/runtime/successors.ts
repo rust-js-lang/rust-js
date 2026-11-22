@@ -1,11 +1,11 @@
-// Mutations of src/runtime/successors.js (ADR 0093).
+// Mutations of crates/rust-js-program/src/runtime/successors.js (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "successors-behind",
     breaks: "`successors` finds the next item after it gives this one, calling its closure once less",
-    file: "src/runtime/successors.js",
+    file: "crates/rust-js-program/src/runtime/successors.js",
     find: "  it.next = () => {\n    if (next == null) return { done: true, value: undefined };\n    const item = boxed ? $someValue(next) : next;\n    next = successor(item);\n    return { done: false, value: item };\n  };",
     replace: "  let pending;\n  it.next = () => {\n    if (pending !== undefined) {\n      next = successor(pending);\n      pending = undefined;\n    }\n    if (next == null) return { done: true, value: undefined };\n    const item = boxed ? $someValue(next) : next;\n    pending = item;\n    return { done: false, value: item };\n  };",
     tests: ["test/corpus.test.ts","-t","iterator_sources"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "successors-held-not-dropped",
     breaks: "`successors` closed early never drops the item it holds",
-    file: "src/runtime/successors.js",
+    file: "crates/rust-js-program/src/runtime/successors.js",
     find: "      drop?.(held);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^successors_drops.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "successors-hint-unknown",
     breaks: "a `successors`' hint is none known, so an explicit `Take` of it hints `(0, Some(n))` where std's is `(1, Some(n))` (#1357's P0)",
-    file: "src/runtime/successors.js",
+    file: "crates/rust-js-program/src/runtime/successors.js",
     find: "  it.sizeHint = () => (next == null ? [0, 0] : [1, undefined]);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^source_hint_where_an_adapter_holds_it.rs$"],

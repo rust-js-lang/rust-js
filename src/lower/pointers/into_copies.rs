@@ -17,7 +17,7 @@ use super::super::refusal::{Refused, refuse};
 use super::super::std_types::text::TextOp;
 use super::super::{FnCx, R};
 use super::{COPIED, PointerOp};
-use crate::js::Expr;
+use rust_js_program::js::Expr;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Each reference a call gives that's a copy in JS, its place not
@@ -248,7 +248,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let sliced = Expr::builtin(items, "slice", range);
         Expr {
-            facts: crate::js::Facts::of(crate::js::Known::Sliced),
+            facts: rust_js_program::js::Facts::of(rust_js_program::js::Known::Sliced),
             ..sliced
         }
     }

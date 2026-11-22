@@ -205,15 +205,15 @@ export const mutations: Mutation[] = [
     breaks:
       "`map_err(f)` of a `fmt::Result` gives the error unmapped, not `f`'s",
     file: "src/lower/display.rs",
-    find: "                let mapped = crate::js::result::err(self.applied(f, result));\n",
-    replace: "                let mapped = crate::js::result::err(result);\n",
+    find: "                let mapped = rust_js_program::js::result::err(self.applied(f, result));\n",
+    replace: "                let mapped = rust_js_program::js::result::err(result);\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_result_map_err.rs$"],
   },
   {
     name: "fmt-result-map-err-kept-ok",
     breaks: "`map(f)` of a `fmt::Result` that's an `Err` is `Ok(f(()))`",
     file: "src/lower/display.rs",
-    find: "            FmtResultAnswer::Map => Expr::cond(ok, constant, crate::js::result::err(result)),\n",
+    find: "            FmtResultAnswer::Map => Expr::cond(ok, constant, rust_js_program::js::result::err(result)),\n",
     replace: "            FmtResultAnswer::Map => constant,\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_result_map_err.rs$"],
   },
@@ -222,9 +222,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`map(Ok)` of a `fmt::Result` calls `Ok` with nothing, written as an arrow called where it's made",
     file: "src/lower/display.rs",
-    find: "                crate::js::result::ok(crate::lower::calls::apply(f, vec![Expr::js_undefined()]))\n",
+    find: "                rust_js_program::js::result::ok(crate::lower::calls::apply(f, vec![Expr::js_undefined()]))\n",
     replace:
-      "                crate::js::result::ok(crate::lower::calls::apply(f, Vec::new()))\n",
+      "                rust_js_program::js::result::ok(crate::lower::calls::apply(f, Vec::new()))\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_result_map_err.rs$"],
     snapshots: true,
   },

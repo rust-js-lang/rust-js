@@ -18,9 +18,9 @@ use rustc_middle::ty::{self, Mutability, Ty, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::recognition::{IterMethod, Parted, StdItem, is_std_def, std_item};
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call of an `Iterator`'s or an `IntoIterator`'s method, of a std

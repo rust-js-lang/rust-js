@@ -4,9 +4,9 @@
 //! build read.
 
 use super::{absolute, in_source, js_path, located};
-use crate::paths::{parent_dir, specifier_file};
 use crate::{program, to_oxc};
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::paths::{parent_dir, specifier_file};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 

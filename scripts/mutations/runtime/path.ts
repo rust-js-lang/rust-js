@@ -1,11 +1,11 @@
-// Mutations of src/runtime/path.js (ADR 0401).
+// Mutations of crates/rust-js-program/src/runtime/path.js (ADR 0401).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "path-parts-keep-dots",
     breaks: "a path's `.` in its middle is a component: `a/./b` isn't `a/b`",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: '  return text === "" || text === "." ? undefined : text;\n',
     replace: '  return text === "" ? undefined : text;\n',
     tests: ["test/corpus.test.ts", "-t", "^path_compare.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-parts-no-cur-dir",
     breaks: "a path's leading `.` is no component: `./a` is `a`",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: '  return c.path === "." || c.path.startsWith("./");\n',
     replace: "  return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^path_compare.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-parts-no-root",
     breaks: "an absolute path's root is no component: `/a` is `a`",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: '  return { path, root: path.startsWith("/"), front: 1, back: 2, at: 0 };\n',
     replace: "  return { path, root: false, front: 1, back: 2, at: 0 };\n",
     tests: ["test/corpus.test.ts", "-t", "^path_compare.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-cmp-as-text",
     breaks: "paths order their components as text, `./here` before `/z`, where Rust puts the root first",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: "    const order = rank(x[i]) - rank(y[i]) || $cmp(x[i], y[i]);\n",
     replace: "    const order = $cmp(x[i], y[i]);\n",
     tests: ["test/corpus.test.ts", "-t", "^path_keys.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-cmp-shorter-after",
     breaks: "a path is after one that goes on from it, `a/b` before `a`",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: "  return Math.sign(x.length - y.length);\n",
     replace: "  return Math.sign(y.length - x.length);\n",
     tests: ["test/corpus.test.ts", "-t", "^path_compare.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-map-keyed-by-text",
     breaks: "a map of paths finds one by its text: `a//b` doesn't find `a/b`",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: "class $PathMap extends $KeyMap {\n  static way = { find: \"parts\", parts: $pathKey };\n  keyOf(path) {\n    return $pathKey(path);\n",
     replace: "class $PathMap extends $KeyMap {\n  static way = { find: \"parts\", parts: $pathKey };\n  keyOf(path) {\n    return path;\n",
     tests: ["test/corpus.test.ts", "-t", "^path_keys.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-set-keyed-by-text",
     breaks: "a set of paths holds `a/b` and `a//b` both",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: "class $PathSet extends $KeySet {\n  static way = { find: \"parts\", parts: $pathKey };\n  keyOf(path) {\n    return $pathKey(path);\n",
     replace: "class $PathSet extends $KeySet {\n  static way = { find: \"parts\", parts: $pathKey };\n  keyOf(path) {\n    return path;\n",
     tests: ["test/corpus.test.ts", "-t", "^path_keys.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-back-into-root",
     breaks: "going over a path from its back reads its root's separator as one between components: `/a`'s parent is empty",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: "  return at >= start ? [c.path.slice(at + 1), c.path.length - at] : [c.path.slice(start), c.path.length - start];\n",
     replace: "  return at >= 0 ? [c.path.slice(at + 1), c.path.length - at] : [c.path.slice(start), c.path.length - start];\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-parent-of-root",
     breaks: "the root's parent is an empty path, where it has none",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: '  return last === undefined || last === "/" ? undefined : $componentsPath(c);\n',
     replace: "  return last === undefined ? undefined : $componentsPath(c);\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-parent-untrimmed",
     breaks: "a parent keeps the separators and `.`s before its last component: `a/./b`'s is `a/.`",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: "  while (d.back === 2 && d.path.length > $beforeBody(d)) {\n",
     replace: "  while (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-hidden-file-extension",
     breaks: "`.bashrc`'s extension is `bashrc`, its stem empty",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: "  if (at === 0) return [name, undefined];\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-join-absolute-appended",
     breaks: "joining an absolute path appends it, where it replaces what it's joined to",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: '  if (path.startsWith("/")) return path;\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-join-doubled-separator",
     breaks: "joining to a path that ends in a separator adds another",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: '  return base !== "" && !base.endsWith("/") ? `${base}/${path}` : base + path;\n',
     replace: '  return base !== "" ? `${base}/${path}` : base + path;\n',
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-empty-extension-dot",
     breaks: "setting an empty extension leaves a `.`",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: '  return [extension === "" ? kept : `${kept}.${extension}`, true];\n',
     replace: "  return [`${kept}.${extension}`, true];\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-extension-separator-unchecked",
     breaks: "an extension with a separator in it is set, where std's panics",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: '  if (extension.includes("/")) {\n',
     replace: "  if (false) {\n",
     tests: ["test/runtime-package.test.ts", "-t", "separator"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-starts-with-text",
     breaks: "`starts_with` compares text, `/usr/lib` starting with `/usr/li`",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: "    if (part !== want) return undefined;\n",
     replace: "    if (!part?.startsWith(want)) return undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-ends-with-from-front",
     breaks: "`ends_with` compares from the front",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: "  return $componentsAfter($components(path), $components(child), $nextComponentBack) !== undefined;\n",
     replace: "  return $componentsAfter($components(path), $components(child), $nextComponent) !== undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-ancestors-without-itself",
     breaks: "a path's `ancestors()` start at its parent, where they start at it",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: "  for (let p = path; p !== undefined; p = $pathParent(p)) all.push(p);\n",
     replace: "  for (let p = $pathParent(path); p !== undefined; p = $pathParent(p)) all.push(p);\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-rest-untrimmed-front",
     breaks: "what `strip_prefix` leaves keeps the `.`s and separators before it: `a/./b`'s after `a` is `./b`",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: "  while (d.front === 2 && d.path.length > 0) {\n",
     replace: "  while (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "component-root-a-name",
     breaks: "a path's root is a `Normal` component, not `RootDir`",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: "part === \"/\" ? \"RootDir\" : part",
     replace: "part === \"//\" ? \"RootDir\" : part",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "component-text-of-parent",
     breaks: "`ParentDir`'s text is `.`, not `..`",
-    file: "src/runtime/path.js",
+    file: "crates/rust-js-program/src/runtime/path.js",
     find: "return component === \"RootDir\" ? \"/\" : component === \"CurDir\" ? \".\" : \"..\";",
     replace: "return component === \"RootDir\" ? \"/\" : \".\";",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],

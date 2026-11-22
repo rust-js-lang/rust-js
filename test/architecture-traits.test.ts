@@ -113,9 +113,9 @@ test("$readerDefaults is given std's own readers and the crate's alone", () => {
   expect(written.length).toBeGreaterThan(0);
   expect(written.filter(call => !/: (chainRead\(|takeRead\(|\{)$/.test(call))).toEqual([]);
   // And the runtime calls it nowhere but where it's made.
-  const runtime = files("src/runtime").filter(file => file.endsWith(".js"));
-  expect(runtime.filter(file => /\$readerDefaults\(/.test(read(file)))).toEqual(["src/runtime/readers.js"]);
-  expect(read("src/runtime/readers.js").match(/\$readerDefaults\(/g)?.length).toBe(1);
+  const runtime = files("crates/rust-js-program/src/runtime").filter(file => file.endsWith(".js"));
+  expect(runtime.filter(file => /\$readerDefaults\(/.test(read(file)))).toEqual(["crates/rust-js-program/src/runtime/readers.js"]);
+  expect(read("crates/rust-js-program/src/runtime/readers.js").match(/\$readerDefaults\(/g)?.length).toBe(1);
 });
 
 // A trait's arguments of a type, its `Self` and each parameter, are

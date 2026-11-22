@@ -206,7 +206,7 @@ pub(super) fn taken_into(
     (module, lowered): (LocalModId, &crate::program::LoweredModule),
     (of, fns): (&[&IndexMap<DefId, DefId>], &IndexMap<DefId, super::super::FnInfo>),
     sources: &super::super::sources::CapturedSources,
-) -> Vec<(crate::js::Span, crate::js::Span)> {
+) -> Vec<(rust_js_program::js::Span, rust_js_program::js::Span)> {
     let mut taken: Vec<_> = (of.iter().flat_map(|map| map.iter()))
         .filter(|&(method, _)| fns.get(method).is_some_and(|f| f.module == module))
         .filter_map(|(&method, target)| {
@@ -214,7 +214,7 @@ pub(super) fn taken_into(
             let (mine, theirs) = (&fns[&method], fns.get(target)?);
             let printed = match theirs.module == module {
                 true => lowered.items.iter().find_map(|item| match item {
-                    crate::js::Item::Function(f) if f.name.is(&theirs.name) => Some(f.span),
+                    rust_js_program::js::Item::Function(f) if f.name.is(&theirs.name) => Some(f.span),
                     _ => None,
                 })?,
                 false => {

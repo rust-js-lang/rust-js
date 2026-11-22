@@ -90,7 +90,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
         let made = made_before(crossed, self.crate_called(instance.def_id(), values));
         let made = self.as_js_iterator(made, into_ty, span)?;
-        let make = vec![crate::js::StmtKind::Return(Some(made)).at(self.js_span(span))];
+        let make = vec![rust_js_program::js::StmtKind::Return(Some(made)).at(self.js_span(span))];
         Ok(Some(Expr::call_helper(
             "$ownIntoIter",
             vec![Expr::arrow(Vec::new(), make)],

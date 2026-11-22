@@ -751,7 +751,7 @@ pub(in crate::lower) fn poisoned_and_released(drop: &Stmt) -> Option<(Stmt, Stmt
 fn asks_unwinding(stmts: &[Stmt]) -> bool {
     let mut asks = false;
     js::visit_stmt_names(stmts, &mut |name| {
-        asks |= name.helper().is_some_and(crate::runtime::asks_unwinding)
+        asks |= name.helper().is_some_and(rust_js_program::runtime::asks_unwinding)
     });
     asks
 }

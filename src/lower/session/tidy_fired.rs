@@ -12,7 +12,7 @@ use std::collections::BTreeMap;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::js::Stmt;
+use rust_js_program::js::Stmt;
 
 /// Whether this compile records which passes fired.
 static RECORDS: AtomicBool = AtomicBool::new(false);

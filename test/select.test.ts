@@ -35,7 +35,7 @@ const map: TestMap = {
   functions: [
     { file: "src/a.rs", spans: [[10, 20]] },
     { file: "src/a.rs", spans: [[30, 40]] },
-    { file: "src/runtime.rs", spans: [[1, 9]] },
+    { file: "crates/rust-js-program/src/runtime.rs", spans: [[1, 9]] },
   ],
   units: {
     "test/one.test.ts": bits(0),
@@ -50,7 +50,7 @@ const map: TestMap = {
     "test/iterator-forms.test.ts test/corpus/x.rs": bits(0),
     "test/iterator-forms.test.ts test/corpus/y.rs": bits(2),
   },
-  includes: { "src/lower/helper.txt": [{ file: "src/runtime.rs", line: 5 }] },
+  includes: { "src/lower/helper.txt": [{ file: "crates/rust-js-program/src/runtime.rs", line: 5 }] },
   corpusReaders: ["test/two.test.ts"],
   noCompiler: ["test/tool.test.ts"],
 };
@@ -96,7 +96,8 @@ test("a change the map can't say of runs everything, and says whose change it wa
   // counted none of its functions, as one made before it counted the
   // crates; and of one that did, by its functions.
   const program = "crates/rust-js-program/src/js.rs";
-  const uncounted = select([{ file: program, hunks: [[12, 1]] }], context);
+  const binaryAlone = { ...map, functions: map.functions.filter((f) => f.file.startsWith("src/")) };
+  const uncounted = select([{ file: program, hunks: [[12, 1]] }], { ...context, map: binaryAlone });
   expect(uncounted.all).toBe(true);
   expect(uncounted.why).toContain("counted no function of");
   // a.rs's second function, lines 30-40, as the crate's, lines 10-20.
@@ -143,7 +144,7 @@ test("a test file runs itself; the corpus's runs every case; a case runs itself 
 });
 
 test("std's package or the runtime runs its package tests, every case, and every file that compiles", () => {
-  for (const file of ["std/lib.rs", "src/runtime/pad.js"]) {
+  for (const file of ["std/lib.rs", "crates/rust-js-program/src/runtime/pad.js"]) {
     expect(picked(of(file))).toEqual({
       files: ["test/architecture.test.ts", "test/one.test.ts", "test/std-package.test.ts", "test/two.test.ts"],
       cases,
@@ -469,7 +470,7 @@ test("a test the night failed that no push's selection ran is a selector's miss"
 // A push's check runs what its own change can affect (ADR 1101, amended):
 // others' commits since the map's were checked by their pushes and by CI,
 // whose check keeps the full rule. m1-lisa's test-only push selected all,
-// "src/js/writes.rs's change at line 89 is outside any function's counted
+// "crates/rust-js-program/src/js/writes.rs's change at line 89 is outside any function's counted
 // code (others' since the map's commit)": an item of theirs. Their function
 // changes still count where this change touches the compiler's code, as a
 // test their change made reach one of its functions runs.

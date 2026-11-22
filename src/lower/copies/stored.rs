@@ -541,7 +541,7 @@ fn ty_args<'tcx>(ty: Ty<'tcx>) -> ty::GenericArgsRef<'tcx> {
     }
 }
 
-use crate::js;
+use rust_js_program::js;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The static a constant points to the start of: `&LOG`, a promoted

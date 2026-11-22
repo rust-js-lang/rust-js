@@ -8,8 +8,8 @@ use super::super::FnInfo;
 use super::super::bindings::Export;
 use super::super::library::Foreign;
 use super::super::representation::{NonePlace, none_form};
-use crate::js;
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 

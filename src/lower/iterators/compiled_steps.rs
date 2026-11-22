@@ -173,7 +173,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let made_iterator = self.unspelled("iterator");
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let (next, _) = self.user_next(ty, iterator, "next", span)?;
-        let mut props = vec![crate::js::Prop::Field("next".into(), next)];
+        let mut props = vec![rust_js_program::js::Prop::Field("next".into(), next)];
         let hint = match self.compiled_step(ty, iterator, "size_hint") {
             true => Some(self.user_next(ty, iterator, "size_hint", span)?.0),
             // A peekable's, of what it steps by its dictionary where it's
@@ -200,18 +200,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             false => None,
         };
-        props.extend(hint.map(|hint| crate::js::Prop::Field("hint".into(), hint)));
+        props.extend(hint.map(|hint| rust_js_program::js::Prop::Field("hint".into(), hint)));
         // Its `nth`, the compiled impl's, which passes it on as std's does
         // (#182).
         if self.compiled_step(ty, iterator, "nth") {
             let (nth, _) = self.user_method(ty, iterator, "nth", &["n"], span)?;
-            props.push(crate::js::Prop::Field("nth".into(), nth));
+            props.push(rust_js_program::js::Prop::Field("nth".into(), nth));
         }
         // Its `advance_by`, the compiled impl's, a `Take`'s, which a chain's
         // `nth` asks (ADR 0913).
         if self.compiled_step(ty, iterator, "advance_by") {
             let (advance, _) = self.user_method(ty, iterator, "advance_by", &["n"], span)?;
-            props.push(crate::js::Prop::Field("advance".into(), advance));
+            props.push(rust_js_program::js::Prop::Field("advance".into(), advance));
         }
         // What of these std's compiled ones take whole, as Rust's move it.
         let mut takes = Vec::new();
@@ -219,7 +219,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // it doesn't give, its source's own `last` or `fold` that (#522).
         if self.compiled_step(ty, iterator, "last") {
             let (last, _) = self.user_next(ty, iterator, "last", span)?;
-            props.push(crate::js::Prop::Field("last".into(), last));
+            props.push(rust_js_program::js::Prop::Field("last".into(), last));
             takes.push("last");
         }
         // Its fold, std's own compiled one where it has one, `mapIterator_fold`
@@ -227,24 +227,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (#264, #297, ADR 0912).
         let compiled_fold = self.compiled_fold(ty, (iterator, "fold"), span)?;
         if let Some(fold) = compiled_fold {
-            props.push(crate::js::Prop::Field("fold".into(), fold));
+            props.push(rust_js_program::js::Prop::Field("fold".into(), fold));
             takes.push("fold");
         }
         // And its `try_fold`, std's compiled one, in the JS iterator's
         // terms (ADR 0913).
         if let Some(try_fold) = self.compiled_try_fold(ty, (iterator, "try_fold"), span)? {
-            props.push(crate::js::Prop::Field("tryFold".into(), try_fold));
+            props.push(rust_js_program::js::Prop::Field("tryFold".into(), try_fold));
         }
         // Its `count`, std's compiled one, a peekable's what it peeked at
         // then its source's own, a `Take`'s advancing its source (ADR 0913).
         if self.compiled_step(ty, iterator, "count") {
             let (count, _) = self.user_next(ty, iterator, "count", span)?;
-            props.push(crate::js::Prop::Field("count".into(), count));
+            props.push(rust_js_program::js::Prop::Field("count".into(), count));
             takes.push("count");
         }
         if !takes.is_empty() {
             let takes = takes.into_iter().map(Expr::str).collect();
-            props.push(crate::js::Prop::Field("takes".into(), Expr::array(takes)));
+            props.push(rust_js_program::js::Prop::Field("takes".into(), Expr::array(takes)));
         }
         // Its `advance_by`, std's: a `Rev`'s its source's `advance_back_by`,
         // a `Vec`'s, which drops what it passes as one slice (#286).
@@ -276,7 +276,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![it.into(), m.into(), drop.into()],
                 vec![StmtKind::Return(Some(Expr::call_helper(helper, args))).at(js::Span::NONE)],
             );
-            props.push(crate::js::Prop::Field("advanceBy".into(), advance));
+            props.push(rust_js_program::js::Prop::Field("advanceBy".into(), advance));
         }
         // Of a kind dropped by closing, `Rev`'s, which an adapter over it
         // closes as it's closed: closing it drops what it holds, each field
@@ -300,7 +300,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect();
             let body = self.drop_each(fields, span)?;
             if !body.is_empty() {
-                props.push(crate::js::Prop::Field(
+                props.push(rust_js_program::js::Prop::Field(
                     "close".into(),
                     Expr::arrow(vec![made_iterator.clone().into()], body),
                 ));

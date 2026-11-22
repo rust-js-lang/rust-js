@@ -17,15 +17,15 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /** The binary cargo said it built, of its `--message-format=json` output:
- * rust-js's, or, `unit`, its unit tests' (`cargo test --no-run`); and
+ * rust-js's, or, `unit`, the unit tests' of `target` (`cargo test --no-run`); and
  * whether it compiled the crate again for it, not `fresh` as cargo says
  * of one it left as it was. */
-export function builtBinary(stdout: string, unit: boolean): { binary: string; rebuilt: boolean } | undefined {
+export function builtBinary(stdout: string, unit: boolean, target = "rust-js"): { binary: string; rebuilt: boolean } | undefined {
   for (const line of stdout.split("\n")) {
     if (!line.startsWith("{")) continue;
     const message = JSON.parse(line);
     if (message.reason !== "compiler-artifact" || typeof message.executable !== "string") continue;
-    if (message.target?.name !== "rust-js" || (message.profile?.test === true) !== unit) continue;
+    if (message.target?.name !== target || (message.profile?.test === true) !== unit) continue;
     return { binary: message.executable, rebuilt: message.fresh === false };
   }
   return undefined;

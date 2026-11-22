@@ -38,7 +38,7 @@ the iterator matrix (ADR 1088) found more (#646, #649, #650, #653).
 ## Decision
 
 **One runtime combinator, `$forward(adapter, source, steps, each)`
-(`src/runtime/forward.js`), is the one place a step is given an adapter.**
+(`crates/rust-js-program/src/runtime/forward.js`), is the one place a step is given an adapter.**
 Each adapter declares the steps std specializes for it, as one object:
 
 - a string names `source`'s step it passes on, `fold: "rfold"` of a

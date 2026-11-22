@@ -6,10 +6,10 @@
 //! its variant's name, as std's enums are; shown, `disabled backtrace` or
 //! `<disabled>`, or the frames.
 
-use crate::js::Expr;
 use crate::lower::FnCx;
 use crate::lower::calls::Call;
 use crate::lower::recognition::{MethodOf, Std, StdPath, std_inherent_method};
+use rust_js_program::js::Expr;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 

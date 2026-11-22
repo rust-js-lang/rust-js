@@ -4,7 +4,7 @@
 
 use super::recognition::Std;
 use super::{Expr, FnCx};
-use crate::js;
+use rust_js_program::js;
 
 /// One of memchr's searches: the first or last index of one of its needles,
 /// or each, from either end.

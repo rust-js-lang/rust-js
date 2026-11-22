@@ -7,14 +7,14 @@
 use crate::lower::temporary_names::Role;
 use rust_js_program::collections::IndexSet;
 
-use crate::js;
-use crate::js::result;
-use crate::js::{Expr, ExprKind, Op, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::{Std, TrimFixBy, trait_method};
 use crate::lower::representation::Num;
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
+use rust_js_program::js;
+use rust_js_program::js::result;
+use rust_js_program::js::{Expr, ExprKind, Op, Stmt, StmtKind};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -461,7 +461,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let param = js::Name::declared("letter".to_string());
                 let letter = Expr::arrow(
                     vec![param.clone().into()],
-                    vec![StmtKind::Return(Some(method(Expr::var(param), case, Vec::new()))).at(crate::js::Span::NONE)],
+                    vec![
+                        StmtKind::Return(Some(method(Expr::var(param), case, Vec::new())))
+                            .at(rust_js_program::js::Span::NONE),
+                    ],
                 );
                 method(arg(), "replace", vec![Expr::regex(letters), letter])
             }
@@ -1305,7 +1308,7 @@ fn append_of<'s>(stmt: &'s Stmt, text: &IndexSet<js::Name>) -> Option<(&'s js::N
 /// mapping's or a text escape's (`Known::Chars`, ADR 0971).
 fn chars(text: Expr) -> Expr {
     Expr {
-        facts: crate::js::Facts::of(crate::js::Known::Chars),
+        facts: rust_js_program::js::Facts::of(rust_js_program::js::Known::Chars),
         ..Expr::builtin(Expr::js_global("Array"), "from", vec![text])
     }
 }

@@ -398,7 +398,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let parts = global.as_deref().and_then(|path| {
             let first = bindings::first_name(path);
             let steps = bindings::steps(&path[first.len()..]).ok()?;
-            crate::names::is_identifier(first).then(|| {
+            rust_js_program::names::is_identifier(first).then(|| {
                 std::iter::once(bindings::Step::Named(first))
                     .chain(steps)
                     .collect::<Vec<_>>()

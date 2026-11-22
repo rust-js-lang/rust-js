@@ -1,11 +1,11 @@
-// Mutations of src/runtime/collect_results.js (ADR 0093).
+// Mutations of crates/rust-js-program/src/runtime/collect_results.js (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     "name": "collect-results-not-into",
     "breaks": "`collect()` into a `Result` of a map gives `Ok` of the array of its entries",
-    "file": "src/runtime/collect_results.js",
+    "file": "crates/rust-js-program/src/runtime/collect_results.js",
     "find": "  if (failed === undefined) return { TAG: \"Ok\", _0: into ? into(values) : values };\n",
     "replace": "  if (failed === undefined) return { TAG: \"Ok\", _0: values };\n",
     "tests": [
@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-results-values-undropped",
     breaks: "a `collect` into a `Result` that stops at an `Err` drops none of the values it collected",
-    file: "src/runtime/collect_results.js",
+    file: "crates/rust-js-program/src/runtime/collect_results.js",
     find: "  if (drop) $dropItems(values, drop);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^drops_of_consumed_iterators.rs$"],
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
   {
     name: "collect-results-unwinds-nothing",
     breaks: "a `collect` into a `Result` a panic stops drops neither what it collected nor what's left (#423)",
-    file: "src/runtime/collect_results.js",
+    file: "crates/rust-js-program/src/runtime/collect_results.js",
     find: "  }, it, values, drop, restFirst);",
     replace: "  }, {}, values, undefined, restFirst);",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],

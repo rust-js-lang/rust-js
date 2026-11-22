@@ -4,7 +4,7 @@
 // collections` (ADR 1181), however it was written.
 import { expect, test } from "bun:test";
 import { binaryCrate, compilerCrates, type CompilerCrate } from "../scripts/compiler-crates";
-import { rustPathsRewritten } from "../scripts/move-paths";
+import { rewritten, rustPathsRewritten } from "../scripts/move-paths";
 
 const crates = compilerCrates();
 const binary = binaryCrate();
@@ -68,4 +68,18 @@ test("a crate's path to the binary's module is said, never written", () => {
   // Its own crate's module stays `crate::`.
   expect(text).toBe("use crate::collections::IndexMap;\nuse crate::lower::Body;\n");
   expect(problems).toEqual(["crates/rust-js-program/src/js.rs:2 names the binary's `lower` from rust-js-program, which no crate can: none depends on the binary"]);
+});
+
+test("a file that moved into the crate it named names it `crate::`", () => {
+  expect(rewrite("crates/rust-js-program/src/js.rs", "use rust_js_program::collections::IndexMap;\n/// [rust_js_program::js::Expr]\n").text).toBe(
+    "use crate::collections::IndexMap;\n/// [crate::js::Expr]\n",
+  );
+});
+
+test("a path is rewritten where it's written whole, not where it ends a longer one", () => {
+  // A pair of no file there is, so the script's own run leaves this alone.
+  const pairs: [string, string][] = [["lib/x.rs", "crates/k/lib/x.rs"]];
+  expect(rewritten('"lib/x.rs", `lib/x.rs`, crates/k/lib/x.rs, "../lib/x.rs", a/lib/x.rs, lib/x.rsx', pairs)).toBe(
+    '"crates/k/lib/x.rs", `crates/k/lib/x.rs`, crates/k/lib/x.rs, "../crates/k/lib/x.rs", a/lib/x.rs, lib/x.rsx',
+  );
 });

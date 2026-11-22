@@ -167,7 +167,7 @@ mod cargo_toml {
         let dir = if cargo {
             std::env::var_os("CARGO_MANIFEST_DIR").map(PathBuf::from)
         } else {
-            let input = crate::paths::absolute(input)?;
+            let input = rust_js_program::paths::absolute(input)?;
             input
                 .ancestors()
                 .skip(1)
@@ -176,7 +176,7 @@ mod cargo_toml {
         };
         let Some(dir) = dir else {
             return Ok(Settings {
-                dir: crate::paths::parent_dir(&crate::paths::absolute(input)?).to_path_buf(),
+                dir: rust_js_program::paths::parent_dir(&rust_js_program::paths::absolute(input)?).to_path_buf(),
                 ..Settings::default()
             });
         };

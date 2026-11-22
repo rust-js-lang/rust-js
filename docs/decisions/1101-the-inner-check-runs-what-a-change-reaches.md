@@ -261,7 +261,7 @@ Its rules, by the changed file's path:
 | Path | Runs |
 |---|---|
 | `src/**`, a file `include_str!` reads | the map: the tests and cases whose recorded functions it touches; `all` where it's no function's code |
-| `std/**`, `src/runtime/**` | its package tests, every case, every file the map saw compile (not those that ran no compiler) |
+| `std/**`, `crates/rust-js-program/src/runtime/**` | its package tests, every case, every file the map saw compile (not those that ran no compiler) |
 | `test/<x>.test.ts` | itself; the corpus's file, every case |
 | `test/corpus/<case>.*` | the case, the map's corpus readers and the baselines' owners |
 | the workflows, the packages' manifests and lockfile, the toolchain, Bun's config, the selector and the map | everything |
@@ -499,7 +499,7 @@ Proof: `test/ci-spend.test.ts` and the `ci-spend-*` mutations;
 
 ### Amended: a push's check is its own change's, never others' `all` (2026-11-16)
 
-m1-lisa's test-only push selected everything: "src/js/writes.rs's change
+m1-lisa's test-only push selected everything: "crates/rust-js-program/src/js/writes.rs's change
 at line 89 is outside any function's counted code (others' since the map's
 commit)". The first check of a push took the whole diff from the map's
 commit, so any other agent's item, type or new file since the map ran
@@ -670,7 +670,7 @@ hubs' region coverage is to narrow.
 
 ### Amended: a name no item declared, added to a `use`, is no change of its own (2026-11-17)
 
-4ba38fa64 selected everything for src/js.rs:43, `imports::{Import,
+4ba38fa64 selected everything for crates/rust-js-program/src/js.rs:43, `imports::{Import,
 ImportFrom, Package, Reexport}` given `ImportNames`, a type the same change
 declared. A `use` stays everything where it may shadow a glob's name, which
 only a name some item declares can: so a hunk within a `use` item that

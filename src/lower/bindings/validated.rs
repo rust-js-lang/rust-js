@@ -47,7 +47,7 @@ pub(in crate::lower) fn validate(tcx: TyCtxt<'_>) -> bool {
         if tcx.def_kind(def) == DefKind::Enum && numbered(tcx, tcx.adt_def(def)) {
             for variant in tcx.adt_def(def).variants() {
                 if let Some(given) = given_name(tcx, variant.def_id)
-                    && !crate::names::is_identifier(&given)
+                    && !rust_js_program::names::is_identifier(&given)
                 {
                     let message = format!(
                         "rust-js: `{}`'s `#[rust_js::name]` names its module's `const` of its number, as a `#[repr(..)]` enum's variant is one, so it's a JS name: `{given}` isn't one",

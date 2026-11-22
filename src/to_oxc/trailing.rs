@@ -102,12 +102,12 @@ pub(super) struct ParamStarts {
     names: IndexMap<u32, u32>,
 }
 
-pub(super) fn param_starts(module: &crate::js::Module) -> ParamStarts {
+pub(super) fn param_starts(module: &rust_js_program::js::Module) -> ParamStarts {
     let functions = || {
         (module.items.iter()).flat_map(|item| match item {
-            crate::js::Item::Function(f) => std::slice::from_ref(f),
-            crate::js::Item::Namespace(namespace) => &namespace.methods[..],
-            crate::js::Item::Const(_) | crate::js::Item::Statements(_) => &[],
+            rust_js_program::js::Item::Function(f) => std::slice::from_ref(f),
+            rust_js_program::js::Item::Namespace(namespace) => &namespace.methods[..],
+            rust_js_program::js::Item::Const(_) | rust_js_program::js::Item::Statements(_) => &[],
         })
     };
     let listed = (module.reexports.iter())

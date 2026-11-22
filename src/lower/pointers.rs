@@ -21,7 +21,7 @@ use super::recognition::TypeFact;
 use super::refusal::{Refused, refuse};
 use super::representation::Num;
 use super::{FnCx, R};
-use crate::js::{self, Expr, Op, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 
 mod casts;
 mod catalog;

@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "function-named-a-kept-word",
     breaks: "a function stored as `update.default` is named `function default()`, a `SyntaxError` (ADR 0972)",
     file: "src/prepare/declared.rs",
-    find: "        && !crate::names::kept_word(property)\n",
+    find: "        && !rust_js_program::names::kept_word(property)\n",
     replace: "",
     tests: ["test/js-functions.test.ts", "-t", "stored as a property is named"]
   },
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "function-named-no-name",
     breaks: "a function stored as `on[\"data-on\"]` is named `function data-on()`, a `SyntaxError` (ADR 0972)",
     file: "src/prepare/declared.rs",
-    find: "        && crate::names::is_identifier(property)\n",
+    find: "        && rust_js_program::names::is_identifier(property)\n",
     replace: "",
     tests: ["test/js-functions.test.ts", "-t", "stored as a property is named"]
   },

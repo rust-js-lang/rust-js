@@ -1,11 +1,11 @@
-// Mutations of src/runtime/unwind.js (ADRs 0660, 0692, 0710).
+// Mutations of crates/rust-js-program/src/runtime/unwind.js (ADRs 0660, 0692, 0710).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "panic-error-lost",
     breaks: "a thrown `Error` of JS's own constructor is a panic's message alone, so a downcast to `&JsError` finds none and its `stack` is gone",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "impl: e[$stringPayload] === true ? $panicString : $panicMessage, error: e };\n",
     replace: "impl: e[$stringPayload] === true ? $panicString : $panicMessage };\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "resumed-panic-made-again",
     breaks: "`resume_unwind` of a thrown `Error`'s payload throws a new `Error` of its message, not the same one",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "    (payload.impl === $panicMessage || payload.impl === $panicString) &&\n",
     replace: "    false &&\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "resumed-panic-message-unchanged",
     breaks: "`resume_unwind` of a panic's payload whose message was changed through `downcast_mut` throws the `Error` of its old message",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "    payload.value === payload.error.message &&\n",
     replace: "    true &&\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_message_changed.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "panic-any-error",
     breaks: "a `RangeError` JS threw is a panic, its payload its message, not the `&JsError` it is",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  return e instanceof $Unwinding || (e instanceof Error && e.constructor === Error);\n",
     replace: "  return e instanceof $Unwinding || e instanceof Error;\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "js-throw-a-message",
     breaks: "what JS threw unwinds as a panic's message, so a downcast to `&JsError` finds none",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  return { value: e, impl: $jsThrown, error: e };\n",
     replace: "  return { value: String(e), impl: $panicMessage };\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "resumed-js-throw-wrapped",
     breaks: "`resume_unwind` of what JS threw throws an `Error` of its text, not what was thrown",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  if (id === \"&js::JsError\") {\n    return payload.value;\n",
     replace: "  if (id === \"&js::JsError\") {\n    return new Error(String(payload.value));\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "resumed-text-not-a-panic",
     breaks: "`resume_unwind` of a panic's message throws a `Box<dyn Any>`, not the panic",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "    return new Error(payload.value);\n",
     replace: "    return new $Unwinding(payload);\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "resume_unwind throws what unwound"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "resumed-payload-lost",
     breaks: "a payload resumed is caught as a panic of `Box<dyn Any>`, so its downcast to `i32` fails",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  if (e instanceof $Unwinding) {\n    return e.payload;\n",
     replace: "  if (false) {\n    return e.payload;\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "resume_unwind throws what unwound"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "caught-unwound-raw",
     breaks: "`catch_unwind`'s `Err` holds what was thrown, not its payload",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "    return { TAG: \"Err\", _0: $unwound(e) };\n",
     replace: "    return { TAG: \"Err\", _0: e };\n",
     tests: ["test/corpus.test.ts", "-t", "catch_unwind_payloads"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "panic-message-not-a-str",
     breaks: "a panic's message isn't a `&str`, so `downcast_ref::<&str>()` finds none",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "const $panicMessage = { typeId: () => \"&str\" };\n",
     replace: "const $panicMessage = { typeId: () => \"str\" };\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "js-throw-error-lost",
     breaks: "what JS threw isn't its payload's `error`, so a downcast to `&JsError` of it passed on finds none",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  return { value: e, impl: $jsThrown, error: e };\n",
     replace: "  return { value: e, impl: $jsThrown };\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwinding-error-unset",
     breaks: "a typed payload's `error` isn't the `$Unwinding` it was thrown in, so its downcast to `&JsError` finds none",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "    payload.error = this;\n",
     replace: "",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "resumed-unwinding-made-again",
     breaks: "`resume_unwind` of a typed payload throws a new `$Unwinding`, not the one it was thrown in",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  if (payload.error instanceof $Unwinding) {\n",
     replace: "  if (false) {\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "abort-cleanup-throws-on",
     breaks: "a drop that panics as a panic unwinds replaces that panic, which `catch_unwind` catches, where Rust aborts (#847)",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "    throw $abort(second);\n",
     replace: "    throw second;\n",
     tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_locals.rs$"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "abort-exit-unasked",
     breaks: "an abort where the host has a process throws, not ends it with 134, as Rust's SIGABRT does (#847)",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  $abortExit(134);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_field.rs$"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "abort-line-unwritten",
     breaks: "an abort writes nothing to stderr, where std writes `thread caused non-unwinding panic. aborting.` (#847)",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "      $eprint($abortSaid);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_vec.rs$"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "abort-caught-by-catch-unwind",
     breaks: "where `exit` doesn't end the process, as in a browser, `catch_unwind` catches an abort as a panic (#847)",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  return e instanceof $Abort || e instanceof $InternalError || e instanceof $Unsupported;\n",
     replace: "  return e instanceof $InternalError || e instanceof $Unsupported;\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a cleanup that throws aborts"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "abort-cleanup-runs-after",
     breaks: "once aborted where `exit` doesn't end the process, cleanups run on as what's thrown unwinds (#847)",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  if (!$live()) return;\n",
     replace: "",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a cleanup that throws aborts"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "catch-unwind-catches-internal-error",
     breaks: "a `catch_unwind` takes rust-js's own internal error for a panic and gives it back as an `Err`, so a compiler's bug is swallowed as a program's (#870)",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  return e instanceof $Abort || e instanceof $InternalError || e instanceof $Unsupported;\n",
     replace: "  return e instanceof $Abort || e instanceof $Unsupported;\n",
     tests: ["test/runtime-package.test.ts", "-t", "lifecycle's impossible move"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "cleanup-aborts-on-internal-error",
     breaks: "rust-js's own internal error thrown as a panic unwinds is taken for a drop's panic and aborts, where it's the runtime's bug (#870)",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "    if (second instanceof $InternalError || second instanceof $Unsupported) throw second;\n",
     replace: "",
     tests: ["test/runtime-package.test.ts", "-t", "lifecycle's impossible move"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "overflow-caught-by-catch-unwind",
     breaks: "`catch_unwind` takes a stack overflow for a panic, its program going on, where Rust aborts (#1193)",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  if ($isStackOverflow(e)) throw $overflowed(e);\n}\n\n// Whether `e`, thrown, ends the program",
     replace: "}\n\n// Whether `e`, thrown, ends the program",
     tests: ["test/corpus.test.ts", "-t", "^stack_overflow_caught_aborts.rs$"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "overflow-never-told",
     breaks: "a stack overflow is never told from another throw, so it unwinds as a panic, its drops run (#1193)",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  if (!(e instanceof RangeError || e?.name === \"InternalError\")) return false;\n",
     replace: "  return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^stack_overflow_(uncaught_)?aborts.rs$"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
   {
     name: "unsupported-caught-by-catch-unwind",
     breaks: "`catch_unwind` takes what rust-js doesn't support for a panic, the program going on past it (#1193)",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  return e instanceof $Abort || e instanceof $InternalError || e instanceof $Unsupported;\n",
     replace: "  return e instanceof $Abort || e instanceof $InternalError;\n",
     tests: ["test/vec-capacity.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
   {
     name: "abort-said-twice",
     breaks: "an abort a guard further out ends again says its line again (#1193)",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  // One abort's: another as it unwinds only ends it.\n  if ($aborted) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^stack_overflow_aborts.rs$"],
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
   {
     name: "panicking-never",
     breaks: "`thread::panicking()` is `false` in a drop a panic runs (#1285)",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  $cleanupDepth++;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^one_thread_sync.rs$"],
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
   {
     name: "write-error-drops-unwinding",
     breaks: "a write's `Err` thrown through a scope that drops runs its drops as a panic's cleanup, `thread::panicking()` true in them and their panic an abort (#1566)",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  if (e instanceof $WriteError) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^write_error_drops_as_a_return.rs$"],
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
   {
     name: "cannot-unwind-goes-on",
     breaks: "`$cannotUnwind` gives back the panic, which unwinds on, where Rust aborts (#1582)",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  return $abort(e, undefined, \"panic in a function that cannot unwind\");\n",
     replace: "  return e;\n",
     tests: ["test/corpus.test.ts","-t","^panic_out_of_an_extern_c_function_aborts.rs$"],
@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
   {
     name: "overflow-catcher-left-open",
     breaks: "a catcher stays open once it returns, so an overflow in what the program does with its `Result` unwinds as if caught, where Rust's aborts",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  } finally {\n    $overflowCatchers--;\n  }\n",
     replace: "  } finally {\n  }\n",
     tests: ["test/stack-overflow.test.ts", "-t", "can't take aborts"],
@@ -229,7 +229,7 @@ export const mutations: Mutation[] = [
   {
     name: "overflow-not-taken-by-catch-unwind",
     breaks: "inside a catcher, a `catch_unwind` doesn't take the overflow as a panic, so upstream's catch-and-rethrow, the port's `catch_unwind`, is skipped",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  if (e instanceof RangeError || e?.name === \"InternalError\") {\n    if ($overflowCatchers > 0) return;\n",
     replace: "  if (e instanceof RangeError || e?.name === \"InternalError\") {\n",
     tests: ["test/stack-overflow.test.ts", "-t", "catch_unwind takes"],
@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
   {
     name: "overflow-drops-skipped-in-catcher",
     breaks: "inside a catcher, a scope's drops don't run as an overflow unwinds, so a drop the program sees is lost",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  if (!$aborted && ($suspect === undefined || $overflowCatchers > 0)) return true;\n",
     replace: "  if (!$aborted && $suspect === undefined) return true;\n",
     tests: ["test/stack-overflow.test.ts", "-t", "unwinds as a panic does"],
@@ -245,7 +245,7 @@ export const mutations: Mutation[] = [
   {
     name: "overflow-drop-overflow-a-panics-abort",
     breaks: "a drop that overflows as an overflow a catcher catches unwinds aborts as a panic's second throw does, `thread caused non-unwinding panic`, not with the overflow's lines",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "    if ($overflowCatchers > 0 && $isStackOverflow(second)) throw $overflowed(second);\n",
     replace: "",
     tests: ["test/stack-overflow.test.ts", "-t", "can't take aborts"],
@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwound-no-string",
     breaks: "a `String` panic's payload, caught, downcasts as a `&str`",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "impl: e[$stringPayload] === true ? $panicString : $panicMessage,",
     replace: "impl: $panicMessage,",
     tests: ["test/corpus.test.ts", "-t", "^panic_payload_kinds\\.rs$"],
@@ -261,7 +261,7 @@ export const mutations: Mutation[] = [
   {
     name: "resumed-string-a-str",
     breaks: "a `String` payload resumed is thrown as a `&str` panic",
-    file: "src/runtime/unwind.js",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "    return $stringPanic(payload.value);\n",
     replace: "    return new Error(payload.value);\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_payload_kinds\\.rs$"],

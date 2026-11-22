@@ -2,12 +2,12 @@
 //! and so is `a..=b`; `a..` is `{ start: a }`. Iterated, a range is its
 //! items: an array, or for `a..`, which never ends, a JS iterator.
 
-use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use crate::lower::display::{Pretty, join};
 use crate::lower::recognition::{IterMethod, trait_method};
 use crate::lower::representation::Num;
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 

@@ -294,7 +294,7 @@ pub(super) fn module<'tcx>(
 /// `delete`, which no declaration may be named, exported by its alias
 /// (#338).
 fn by_own_name(fns: &IndexMap<DefId, super::FnInfo>, item: DefId, export: &str) -> bool {
-    fns.get(&item).and_then(|info| info.export.as_deref()) == Some(export) && !crate::names::kept_word(export)
+    fns.get(&item).and_then(|info| info.export.as_deref()) == Some(export) && !rust_js_program::names::kept_word(export)
 }
 
 /// Whether the declarations of `did`'s module declare it, a struct, an
@@ -369,7 +369,7 @@ pub(super) fn param_word(name: &str) -> String {
     match chars.next() {
         Some(first) => {
             let word: String = first.to_lowercase().chain(chars).collect();
-            if crate::names::kept_word(&word) {
+            if rust_js_program::names::kept_word(&word) {
                 format!("{word}$")
             } else {
                 word

@@ -61,7 +61,7 @@ an unsized `I`, the `default` of `DoubleEndedIteratorRefSpec`, steps by
 `next_back`, 4 then 5; of a `skip()`, the item it skips was dropped inside
 the fold, where native drops it at the next `next()` (#1991).
 
-- What a `&mut I` passes on is data, `$passedOn` in src/runtime/lent.js:
+- What a `&mut I` passes on is data, `$passedOn` in crates/rust-js-program/src/runtime/lent.js:
   `lent`, of a sized `I`, its `next`, `size_hint`, `advance_by`, `nth`,
   `try_fold`, `next_back`, `advance_back_by`, `nth_back`, `try_rfold` and
   `len`, its `fold` and `rfold` by `I`'s `try_fold` and `try_rfold`; and
@@ -151,7 +151,7 @@ pass on to the iterator they hold was decided in four places:
 - `OwnStep::through_a_mut_ref`: `nth` and `nth_back`;
 - the `&mut I` extension dictionary: its `rfold` by `try_rfold`;
 - `BOX_PASSES_ON`: what a `Box<I>` passes on;
-- src/runtime/lent.js's `$passedOn`.
+- crates/rust-js-program/src/runtime/lent.js's `$passedOn`.
 
 Each could drift from the others, and test/passed-on.test.ts held only the
 last two to std's source.
@@ -172,7 +172,7 @@ iterator and a sized one's are alike at run time.
 
 At run time, whether an iterator has its own method, rather than
 `$Steps.prototype`'s default over `next`, is asked in one place:
-`$ownMethod(it, step)` in src/runtime/steps.js. Before, 13 readings in
+`$ownMethod(it, step)` in crates/rust-js-program/src/runtime/steps.js. Before, 13 readings in
 seven files each called `Object.hasOwn` on a step's name, and
 test/architecture.test.ts now refuses that form. It's a different fact
 from `$ownStep`'s flag (#870), which says a step drops what it passes

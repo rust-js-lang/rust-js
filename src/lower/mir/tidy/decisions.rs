@@ -10,8 +10,8 @@
 use rust_js_program::collections::{IndexMap, IndexSet};
 use std::cmp::Ordering;
 
-use crate::js::{self, Expr, ExprKind, Name, Op, Stmt, StmtKind, UnaryOp};
 use crate::lower::mir::hints::{Constant, Guard, Switch};
+use rust_js_program::js::{self, Expr, ExprKind, Name, Op, Stmt, StmtKind, UnaryOp};
 
 use super::{ends, first_written, made_where, names_break};
 

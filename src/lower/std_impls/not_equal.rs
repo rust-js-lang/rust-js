@@ -2,10 +2,10 @@
 //! an impl's own `ne`, a type parameter's dictionary's, or std's that asks
 //! its parts' `!=`.
 
-use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R, Shape};
 use rust_js_program::collections::IndexSet;
+use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;

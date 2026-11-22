@@ -6,7 +6,7 @@
 
 use super::super::FnCx;
 use super::super::recognition::{StdItem, is_std_def};
-use crate::js::{self, Expr};
+use rust_js_program::js::{self, Expr};
 use rustc_abi::VariantIdx;
 use rustc_ast::Mutability;
 use rustc_middle::ty::{self, Ty};

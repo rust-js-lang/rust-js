@@ -76,8 +76,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment after a literal written on one line, `Short { env: None, n: 1 } // made on one line`, is taken for a left-out field's and moved off its statement's line (ADR 0280, amended, 2026-11-03)",
     file: "src/to_oxc/closing.rs",
-    find: "        key.is_some_and(|key| crate::names::is_identifier(",
-    replace: "        true || key.is_some_and(|key| crate::names::is_identifier(",
+    find: "        key.is_some_and(|key| rust_js_program::names::is_identifier(",
+    replace: "        true || key.is_some_and(|key| rust_js_program::names::is_identifier(",
     tests: commentFields,
   },
   {

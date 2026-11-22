@@ -481,6 +481,10 @@ pub(in crate::lower) fn plain_struct<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> O
 
 /// That `subject` is a keyed enum's variant `key` tells, `'getter' in
 /// node`: its key is there whatever it holds (#504).
-pub(in crate::lower) fn keyed_test(subject: crate::js::Expr, key: &str) -> crate::js::Expr {
-    crate::js::Expr::bin(crate::js::Op::In, crate::js::Expr::str(key), subject)
+pub(in crate::lower) fn keyed_test(subject: rust_js_program::js::Expr, key: &str) -> rust_js_program::js::Expr {
+    rust_js_program::js::Expr::bin(
+        rust_js_program::js::Op::In,
+        rust_js_program::js::Expr::str(key),
+        subject,
+    )
 }

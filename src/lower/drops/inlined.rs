@@ -1,7 +1,7 @@
 //! A `Drop` impl's body where it's dropped (ADRs 0589, 0608).
 
-use crate::js::{self, Expr, ExprKind, Item, Pattern, Prop, Stmt, StmtKind};
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js::{self, Expr, ExprKind, Item, Pattern, Prop, Stmt, StmtKind};
 
 /// Of `items`, a module's, each function `drops` names, a `Drop` impl's
 /// `drop`, which isn't exported and that no other module calls: where each
@@ -592,7 +592,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &js::Name) -> Vec<
             ExprKind::Var(v) if !written.contains(key) && kept.contains(v) => Some(v.clone()),
             _ => None,
         };
-        if (fields.iter()).any(|field| read_as(field).is_none() && !crate::names::is_identifier(&field.0)) {
+        if (fields.iter()).any(|field| read_as(field).is_none() && !rust_js_program::names::is_identifier(&field.0)) {
             return Vec::new();
         }
         // Each field's own, of its key, a variable of its own, spelled by

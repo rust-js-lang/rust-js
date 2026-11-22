@@ -1,11 +1,11 @@
-// Mutations of src/runtime/lazy_zip.js (ADR 0465).
+// Mutations of crates/rust-js-program/src/runtime/lazy_zip.js (ADR 0465).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "zip-by-index-steps-a",
     breaks: "`$trustedZip` steps `a` before asking whether `b` has an item left, as the general zip does: the closure runs once more (ADR 0973)",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "      if (b.len() === 0) return { done: true, value: undefined };\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_by_index.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-pulled-undropped",
     breaks: "an item `zip` steps where the other side's run out isn't dropped",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "    if (other.done) {\n      dropA?.(item.value);\n",
     replace: "    if (other.done) {\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-other-unclosed",
     breaks: "`zip`'s other side isn't closed with it, so what it hasn't given isn't dropped",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "  const close = () => $closeEach(left, right);\n",
     replace: "  const close = () => $closeEach(left);\n",
     tests: ["test/corpus.test.ts", "-t", "^(adapter_drops|zip_sides_dropped_with_it).rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-back-untrimmed",
     breaks: "`rev()` of a zip pairs the longer one's last items, not those the shorter has",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "    for (let n = aLen - bLen; n > 0; n--) {\n",
     replace: "    for (let n = 0; n > 0; n--) {\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_from_back.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-closed-at-end",
     breaks: "a `zip` closes both sides at its first end, so a side that gives more after a `None` isn't stepped on",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "    const item = left.next();\n    if (item.done) return item;\n",
     replace: "    const item = left.next();\n    if (item.done) {\n      close();\n      return item;\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^(restarting_iterators|zip_sides_dropped_with_it).rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-sides-unheld",
     breaks: "a `zip`'s sides aren't held, so one that ends at a `None` of its own, a `take_while`'s, a `scan`'s, drops what it has left there, before the other side's item and what the other has left, where std's `Zip` drops both as it's dropped",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "  left.hold?.();\n  right.hold?.();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_sides_dropped_with_it.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "lazy-zip-unhinted",
     breaks: "a zip given to generic code hints `(0, None)`, not its sides', `(2, Some(2))` of two arrays' (#400)",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "  zipped.sizeHint = () => $zipHint($sizeHint(left), $sizeHint(right));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-hint-most-high",
     breaks: "a zip's upper bound is the larger of its sides', `(2, Some(5))` (#400)",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: ": Math.min(aHigh, bHigh);",
     replace: ": Math.max(aHigh, bHigh);",
     tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-hint-endless-side-unbounded",
     breaks: "a zip of an endless side, `(0..).zip(w)`, has no upper bound, `(2, None)`, not the other side's (#400)",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "const high = aHigh === undefined ? bHigh :",
     replace: "const high = aHigh === undefined ? undefined :",
     tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-hint-most-low",
     breaks: "a zip's lower bound is the larger of its sides', `(5, Some(2))` (#400)",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "  return [Math.min(aLow, bLow), high];\n",
     replace: "  return [Math.max(aLow, bLow), high];\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-panicking-side-leaks-a",
     breaks: "a zip whose second side's `next` panics never drops the item it took from its first side, as std's `Zip::next` drops it as it unwinds (#695)",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "      () => dropA?.(item.value),\n",
     replace: "      () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_second_side_panics.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-close-stops-at-a-panic",
     breaks: "closing a zip stops where its first side's drop panics, so its second is never dropped (#743)",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "  const close = () => $closeEach(left, right);\n",
     replace: "  const close = () => {\n    left.return?.();\n    right.return?.();\n  };\n",
     tests: ["test/corpus.test.ts", "-t", "^parts_close_past_a_panic.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-ends-trim-keeps-a",
     breaks: "what a zip's back trims of its first side isn't dropped (#740)",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "      if (!x.done) dropA?.(x.value);\n    }\n",
     replace: "    }\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-ends-back-throw-keeps-a",
     breaks: "where a zip's second side's back step throws, its first side's item isn't dropped (#740)",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "      () => x.done || dropA?.(x.value),\n",
     replace: "      () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "zip-ends-len-longer",
     breaks: "a zip's length is the longer side's (#740)",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "  zipped.len ??= () => Math.min(left.len(), right.len());\n",
     replace: "  zipped.len ??= () => Math.max(left.len(), right.len());\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
     name: "zip-ends-folds-past-the-shorter",
     breaks:
       "a zip std folds by `SpecFold`'s `TrustedLen` impl folds as its `next` steps, its first side once more, so its extra item is dropped inside the fold, before its result, which Rust leaks where that drop panics (#812)",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "        next: () => (pairs-- > 0 ? zipped.next() : { done: true, value: undefined }),\n",
     replace: "        next: () => zipped.next(),\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_droppers_from_its_back.rs$"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
     name: "zip-back-len-asked-per-trim",
     breaks:
       "a zip stepped from its back asks each side's length in each trimming loop, the crate's own `size_hint` twice a step where std's `next_back` asks it once (#824)",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "    for (let n = bLen - aLen; n > 0; n--) {\n",
     replace: "    for (let n = right.len() - left.len(); n > 0; n--) {\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_own_from_its_back_asks_each_len_once.rs$"],
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     name: "lazy-zip-len-of-its-sides-lens",
     breaks:
       "a zip's `len` asks each side's `len`, the crate's own where it writes one, where std's `Zip` writes no `len`, its hint's, of its sides' `size_hint`s (#2193)",
-    file: "src/runtime/lazy_zip.js",
+    file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "  zipped.len = () => zipped.sizeHint()[0];\n  return zipped;\n",
     replace: "  return zipped;\n",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],

@@ -283,10 +283,10 @@ impl<'tcx> FnPointers<'tcx> {
     /// Read apart from its holder, `const { f } = s;`, it's called as it
     /// was (ADR 0610, amended, #533). Not one of an object JS made, its own
     /// method, which may read it.
-    pub(in crate::lower) fn call_facts(&self, holder: Holder) -> crate::js::Facts {
+    pub(in crate::lower) fn call_facts(&self, holder: Holder) -> rust_js_program::js::Facts {
         match matches!(holder, Holder::Field(field) if self.own_fields.get(&field) == Some(&true)) {
-            true => crate::js::Facts::of(crate::js::Known::ThisUnread),
-            false => crate::js::Facts::NONE,
+            true => rust_js_program::js::Facts::of(rust_js_program::js::Known::ThisUnread),
+            false => rust_js_program::js::Facts::NONE,
         }
     }
 

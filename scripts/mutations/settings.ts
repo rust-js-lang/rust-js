@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "settings-no-manifest-no-dir",
     breaks: "a file compiled alone with no Cargo.toml above it has no directory, and TypeScript is run nowhere: `node` can't be run",
     file: "src/settings.rs",
-    find: "            return Ok(Settings {\n                dir: crate::paths::parent_dir(&crate::paths::absolute(input)?).to_path_buf(),\n                ..Settings::default()\n            });",
+    find: "            return Ok(Settings {\n                dir: rust_js_program::paths::parent_dir(&rust_js_program::paths::absolute(input)?).to_path_buf(),\n                ..Settings::default()\n            });",
     replace: "            return Ok(Settings::default());",
     tests: ["test/declarations.test.ts", "-t", "no Cargo.toml above it has its declarations"],
   },

@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     name: "object-key-unquoted",
     breaks: "an object's key that isn't a JS name, `data-marked`, is written bare, `{ data-marked: \"yes\" }`, which doesn't parse",
     file: "src/to_oxc/expressions.rs",
-    find: "                let key = if computed || !crate::names::is_identifier(name) {",
+    find: "                let key = if computed || !rust_js_program::names::is_identifier(name) {",
     replace: "                let key = if computed {",
     tests: ["test/react.test.ts", "test/jsx-types.test.ts", "-t", "JSX components clone some of their children|React's and React DOM's APIs are hand-written React, and they run"],
   },

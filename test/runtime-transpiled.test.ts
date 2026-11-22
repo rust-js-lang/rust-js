@@ -90,7 +90,7 @@ test("the runtime's helpers answer the same through Babel's loose transforms", a
 // a string as one item, a set as none. A string's chars are
 // `Array.from(s)`, a set's or a map's items `Array.from(m)`.
 test("the runtime spreads only what's evidently an array", () => {
-  const dir = join(root, "src", "runtime");
+  const dir = join(root, "crates", "rust-js-program", "src", "runtime");
   const found: string[] = [];
   for (const file of readdirSync(dir).filter((f) => f.endsWith(".js"))) {
     const source = readFileSync(join(dir, file), "utf8");

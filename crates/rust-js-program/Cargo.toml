@@ -10,3 +10,9 @@ publish = false
 [dependencies]
 indexmap.workspace = true
 rustc-hash.workspace = true
+
+[features]
+# What a test makes and a compile never does, a `Name` or a `Pattern` of a
+# word alone (#2034): the crate's own tests', and its dependents' through
+# their dev-dependency on it, never a compile's.
+testing = []

@@ -509,7 +509,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         if let Some((from, export)) = foreign.import_key(through.function, through.scope)
             && export != "default"
         {
-            let export = (from, crate::js::NAMESPACE.to_string());
+            let export = (from, rust_js_program::js::NAMESPACE.to_string());
             uses.bound_to.entry(export.clone()).or_default();
             uses.imported.entry(export.clone()).or_default();
             uses.named.insert(export, through.namespace.clone());
@@ -533,7 +533,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             .map(|item| item.from.clone())
             .next()
         {
-            let export = (from, crate::js::NAMESPACE.to_string());
+            let export = (from, rust_js_program::js::NAMESPACE.to_string());
             uses.bound_to.entry(export.clone()).or_default();
             uses.imported.entry(export.clone()).or_default();
             uses.named.insert(export, tcx.item_name(adt).to_string());
@@ -1145,9 +1145,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
                         .filter(|other| other.module == info.module && other.owner.as_ref() == Some(owner))
                         .map(|other| other.name.clone())
                         .collect();
-                    crate::names::fresh_apart(&mut names, &base)
+                    rust_js_program::names::fresh_apart(&mut names, &base)
                 }
-                None => crate::names::fresh_in(taken.entry(info.module).or_default(), &base),
+                None => rust_js_program::names::fresh_in(taken.entry(info.module).or_default(), &base),
             }
         };
         JsGiven::of_crate(

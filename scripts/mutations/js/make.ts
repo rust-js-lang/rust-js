@@ -1,11 +1,11 @@
-// Mutations of src/js/make.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/js/make.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "some-where-a-plain-test",
     breaks: "a `Some` made where a test holds is a plain test, `t ? v : undefined`, which no pass knows is there, so `if let Some(o) = js::object_of(v)` is `const o = t ? v : undefined; if (o != null)`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "                kind: ExprKind::SomeWhere(test, value),\n",
     replace: "                kind: ExprKind::Cond(test, value, Box::new(Expr::js_undefined())),\n",
     tests: ["test/corpus.test.ts", "-t", "^any_mapped_to_a_nullable_parameter.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "some-where-not-there",
     breaks: "a `SomeWhere`'s value isn't known there, so `tested_option` doesn't fold its test",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            ExprKind::SomeWhere(test, value) => Some((test, value, true)),\n",
     replace: "            ExprKind::SomeWhere(test, value) => Some((test, value, false)),\n",
     tests: ["test/corpus.test.ts", "-t", "^tested_options.rs$"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "some-where-not-conditional",
     breaks: "a `SomeWhere` isn't taken for the conditional it prints, so a chain of arms isn't split, `x = main ? f : undefined`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            ExprKind::SomeWhere(a, b) => Some((a, b, UNDEFINED.with(|undefined| *undefined))),\n",
     replace: "            ExprKind::SomeWhere(_, _) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_arm_of_a_std_call.rs$"],
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
   {
     name: "typeof-boolean-and-kept",
     breaks: "React's isRecoverableError is `!!(typeof kind === \"boolean\" && kind)`, not `error[REACT_RECOVERABLE_TYPE] === true` (rd444)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            if super::same_path(x, y) {\n                return Expr::bin(Op::Eq, (**x).clone(), Expr::bool(truth));\n",
     replace: "            if super::same_path(x, y) && false {\n                return Expr::bin(Op::Eq, (**x).clone(), Expr::bool(truth));\n",
     tests: ["test/js-any-values.test.ts", "-t", "that's true is === true"],
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
   {
     name: "typeof-boolean-not-flipped",
     breaks: "`Kind::Bool(false)`'s `typeof x === \"boolean\" && !x` is `x === true`, wrong of every value",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "                ExprKind::Unary(UnaryOp::Not, y) => (&**y, false),\n",
     replace: "                ExprKind::Unary(UnaryOp::Not, y) => (&**y, true),\n",
     tests: ["test/js-any-values.test.ts", "-t", "that's true is === true"],
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   {
     name: "presence-of-a-made-option",
     breaks: "`kind.object().is_some()` is `!!(t ? value : undefined)`, not the test it's made by (ADR 0910)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "        if let ExprKind::SomeWhere(test, _) = &option.kind {\n",
     replace: "        if let ExprKind::SomeWhere(test, _) = &option.kind\n            && false\n        {\n",
     tests: ["test/js-object-kinds.test.ts", "-t", "one weak key"],
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-call-any-fallback",
     breaks: "`o != null ? o.m(x) : false` is `o?.m(x)`, nothing where it should be `false`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Call(callee, args) = &then.kind\n",
     replace: "            && let ExprKind::Call(callee, args) = &then.kind\n",
     tests: ["test/lowering-optional-chains.test.ts", "-t", "an option's method call ends"],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-call-ternary",
     breaks: "a method of what's in an option is `o != null ? o.m(x) : undefined`, where a person writes `o?.m(x)`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            && let ExprKind::Call(callee, args) = &then.kind\n",
     replace: "            && false\n            && let ExprKind::Call(callee, args) = &then.kind\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "names a dyn Fn only as a type argument"],
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-call-of-any-object",
     breaks: "a Rust type's method, `Node.add(o, x)`, is `Node?.add(o, x)`, as if `Node` were the option",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            && let ExprKind::Member(object, property) = &callee.kind\n            && same_path(tested, object)\n",
     replace: "            && let ExprKind::Member(object, property) = &callee.kind\n",
     tests: ["test/lowering-optional-chains.test.ts", "-t", "an option's method call ends"],
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
   {
     name: "index-of-one-item-array-kept",
     breaks: "`[x][0]` is written as it is, not `x`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            && let Some(item) = usize::try_from(k).ok().and_then(|k| items.get(k))\n",
     replace: "            && let Some(item) = usize::try_from(k).ok().and_then(|k| items.get(k))\n            && false\n",
     tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-chain-not-made",
     breaks: "a field of what's there, or nothing, is `named != null ? named.name : undefined`, not `named?.name`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            && let ExprKind::Member(object, property) = &then.kind\n            && same_path(tested, object)\n",
     replace: "            && let ExprKind::Member(object, property) = &then.kind\n            && same_path(tested, object)\n            && false\n",
     tests: ["test/compiler.test.ts", "test/lowering-branches.test.ts", "test/lowering-optional-chains.test.ts", "-t", "optional chain"],
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-chain-of-another",
     breaks: "`flag != null ? named.name : undefined` is `named?.name`, a name where `flag` is nothing",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            && let ExprKind::Member(object, property) = &then.kind\n            && same_path(tested, object)\n",
     replace: "            && let ExprKind::Member(object, property) = &then.kind\n            && (same_path(tested, object) || true)\n",
     tests: ["test/compiler.test.ts", "-t", "combinators.report matches"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-chain-any-fallback",
     breaks: "`named != null ? named.label : \"none\"` is `named?.label`, nothing where it should be \"none\"",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Member(object, property) = &then.kind\n",
     replace: "            && let ExprKind::Member(object, property) = &then.kind\n",
     tests: ["test/compiler.test.ts", "-t", "combinators.report matches"],
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
   {
     name: "is-array-tested-for-null",
     breaks: "`value != null && Array.isArray(value)` says what `Array.isArray(value)` does",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            && is_array == \"isArray\"\n",
     replace: "            && is_array == \"isArrayNot\"\n",
     tests: ["test/lowering-matches.test.ts", "-t", "matches! of a kind's literal"],
@@ -121,7 +121,7 @@ export const mutations: Mutation[] = [
   {
     name: "handle-value-kept",
     breaks: "a handle's `value` is read through the handle, `{ get value() { .. } }.value`, where it's the field itself",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            if let ExprKind::Handle(place, _) = object.kind {\n",
     replace: "            if false && let ExprKind::Handle(place, _) = object.kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^box_uninit.rs$"],
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
   {
     name: "text-joined-twice",
     breaks: "a number made text and joined to text stays `\"\" + n + \"px\"`, not `n + \"px\"`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            && matches!(rhs.kind, ExprKind::Str(_) | ExprKind::Template(..))\n",
     replace: "            && false\n",
     tests: ["test/bindings-any-values.test.ts", "-t", "as react.dev's Console does"],
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-not-de-morgan",
     breaks: "`!(a && b)` of `bool`s stays, not `!a || !b`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "                Expr::bin(flipped, a.negated_test(), b.negated_test()).or_at(self.span)\n",
     replace: "                Expr::unary(UnaryOp::Not, Expr::bin(op, *a, *b))\n",
     tests: ["test/lowering-branches.test.ts", "-t", "branches from MIR read"],
@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
   {
     "name": "text-joined-to-text",
     "breaks": "`\"#\" + (\"\" + id)` keeps its `\"\" +`",
-    "file": "src/js/make.rs",
+    "file": "crates/rust-js-program/src/js/make.rs",
     "find": "            && is_text(&lhs)\n",
     "replace": "            && false\n",
     "tests": [
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
   {
     name: "not-of-literal-unfolded",
     breaks: "`!false` isn't `true`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            return Expr::bool(!b);\n",
     replace: "            return Expr::new(ExprKind::Unary(UnaryOp::Not, Box::new(arg)));\n",
     snapshots: true,
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
   {
     name: "number-comparison-unfolded",
     breaks: "a comparison of two numbers written out, `0 < 0`, isn't its answer",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "                Op::Lt => Some(a < b),\n",
     replace: "                Op::Lt => None,\n",
     snapshots: true,
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
   {
     name: "zero-or-kept",
     breaks: "`0 || x`, an `Equal` part of an ordering before the next, isn't `x`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "        if op == Op::Or && matches!(lhs.kind, ExprKind::Num(n) if n == 0.0) {\n",
     replace: "        if false && op == Op::Or && matches!(lhs.kind, ExprKind::Num(n) if n == 0.0) {\n",
     snapshots: true,
@@ -185,7 +185,7 @@ export const mutations: Mutation[] = [
   {
     name: "boolean-literal-logic-unfolded",
     breaks: "`true && x` and `false || x` aren't `x`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "                (Op::And, true) | (Op::Or, false) => rhs,\n",
     replace: "                (Op::And, true) | (Op::Or, false) => Expr::new(ExprKind::Binary(op, Box::new(lhs), Box::new(rhs))),\n",
     snapshots: true,
@@ -194,7 +194,7 @@ export const mutations: Mutation[] = [
   {
     name: "literal-condition-unfolded",
     breaks: "`true ? a : b` isn't `a`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            return if b { then } else { els };\n",
     replace: "            return Expr::new(ExprKind::Cond(Box::new(test), Box::new(then), Box::new(els)));\n",
     snapshots: true,
@@ -204,7 +204,7 @@ export const mutations: Mutation[] = [
     name: "member-of-made-object-kept",
     breaks:
       "a field of an object made here whose other fields do nothing stays, a `dyn` field's pair's `{ value: f.inner, impl: f.impl }.impl`, a `try_borrow`'s `{ TAG: \"Ok\", _0: state }.TAG` (#687)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "                .all(|p| matches!(p, Prop::Field(name, value) if *name == property || !value.has_effects()))\n",
     replace: "                .all(|p| matches!(p, Prop::Field(_, value) if value.is_constant()))\n",
     tests: ["test/corpus.test.ts", "-t", "^(unsized_struct_dyn|flattened_state_tried).rs$"],
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
   {
     name: "string-comparison-unfolded",
     breaks: "a test of a variant made here, `\"Ok\" === \"Ok\"`, is written, not its answer",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "                Op::Eq | Op::LooseEq | Op::NoneEq(_) => return Expr::bool(a == b),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
@@ -222,7 +222,7 @@ export const mutations: Mutation[] = [
   {
     name: "some-mut-value-unfolded",
     breaks: "what an `Option`'s box holds, read through a `&mut` made there, is `$someMut({ get value() .. }).value`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "                && callee.helper_name() == Some(\"$someMut\")\n",
     replace: "                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
@@ -231,7 +231,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-index-spelled-out",
     breaks: "`a != null ? a[k] : undefined` stays, not `a?.[k]`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            && let ExprKind::Index(object, key) = &then.kind\n",
     replace: "            && let ExprKind::Index(object, key) = &then.kind\n            && false\n",
     tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
     name: "negated-loose-evaluation-lost",
     breaks:
       "`!js::loose_equals(m, 1.0)`'s `m != 1` forgets that `==` of any value may run a `valueOf`, and nothing reading it, it goes, so a throw of it is never caught (#462)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "                facts: arg.facts.of_evaluation(),\n",
     replace: "                facts: Facts::NONE,\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a caught value nothing reads that may throw"],
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
   {
     name: "none-test-unfolded",
     breaks: "`undefined == null` is `true` where it's made",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "                Op::LooseEq | Op::NoneEq(_) => return Expr::bool(true),\n                Op::LooseNe | Op::NoneNe(_) => return Expr::bool(false),\n",
     replace: "",
     snapshots: true,
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
   {
     name: "compared-and-bool-unfolded",
     breaks: "`a != null && false` is `false` where the test does nothing",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "                (Op::And, true) | (Op::Or, false) => return lhs,\n                _ if !lhs.has_effects() => return rhs,\n",
     replace: "",
     snapshots: true,
@@ -266,7 +266,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-again-unasked",
     breaks: "a nullable place's `made ?? null` isn't asked again once `made` is known never `undefined`, a guard's field read as its variable: `internals.T = prevTransition ?? null` (ADR 0841, amended)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            && let Some(stored) = null_for_none(made, given)\n",
     replace: "            && let Some(stored) = null_for_none(made, given).filter(|_| false)\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-again-of-undefined",
     breaks: "a `made ?? null` is `made` whatever it may be, `internals.T = prev`, which stores `undefined` (ADR 0841, amended)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            && let Some(stored) = null_for_none(made, given)\n",
     replace: "            && let Some(stored) = Some((**made).clone())\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
@@ -282,7 +282,7 @@ export const mutations: Mutation[] = [
   {
     name: "falsy-constant-false-truthy",
     breaks: "`x ?? false` isn't read as `x` in a test, `while (flags[i] ?? false)`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            ExprKind::Bool(b) => !b,\n",
     replace: "            ExprKind::Bool(b) => *b,\n",
     tests: ["test/corpus.test.ts", "-t", "option_bool_tested"],
@@ -291,7 +291,7 @@ export const mutations: Mutation[] = [
   {
     name: "item-not-fixed",
     breaks: "one of the program's functions isn't the same wherever it's read, so a guard's scope returns it inside its `try`, not after the `finally`",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "        self.is_constant() || self.facts.has(Known::Item)\n",
     replace: "        self.is_constant()\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_guard_returned.rs$"],
@@ -300,7 +300,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-cell-value-unread",
     breaks: "a field's kept cell's `value` is read through it, `$weakDrop($fieldCell(node, \"parent\").value)`, not as the property, `node.parent` (ADR 0863, amended)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "                && callee.helper_name() == Some(\"$fieldCell\")\n",
     replace: "                && callee.helper_name() == Some(\"$fieldCell \")\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_dyn_listeners.rs$"],
@@ -309,7 +309,7 @@ export const mutations: Mutation[] = [
   {
     name: "option-presence-by-truth",
     breaks: "an `Option` is tested by its truth, `if (!retryQueue)`, where its one form is `retryQueue == null` (ADR 0298, amended by the user)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "        Expr::bin(op, option, Expr::null())\n",
     replace: "        let not = Expr::unary(UnaryOp::Not, option);\n        if set { Expr::unary(UnaryOp::Not, not) } else { not }\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "an Option of a value of any shape is tested against null, of an object too"],
@@ -317,7 +317,7 @@ export const mutations: Mutation[] = [
   {
     name: "typeof-then-present-kept",
     breaks: "SchedulerMock's `typeof task.callback === \"function\"` is followed by `&& task.callback != null`, a test it decides (ADR 0298, amended)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            && typed_present(&lhs, tested)\n",
     replace: "            && false\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "typeof test says"],
@@ -326,7 +326,7 @@ export const mutations: Mutation[] = [
   {
     name: "typeof-object-implies-present",
     breaks: "`typeof p === \"object\" && p != null` drops its null test, and `null`, whose `typeof` is `\"object\"`, passes (ADR 0298, amended)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "                && matches!(&kind.kind, ExprKind::Str(s) if s != \"object\" && s != \"undefined\")\n",
     replace: "                && matches!(&kind.kind, ExprKind::Str(_))\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "typeof test says"],
@@ -334,7 +334,7 @@ export const mutations: Mutation[] = [
   {
     name: "receiver-iteration-collected-as-call",
     breaks: "`Expr::collected` of a set's own iteration keeps the call, `Array.from(set.values())` (bw8)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            ExprKind::Call(callee, args) if it.facts.has(Known::ReceiverIterated) && args.is_empty() => {\n",
     replace: "            ExprKind::Call(callee, args) if false && it.facts.has(Known::ReceiverIterated) && args.is_empty() => {\n",
     tests: ["test/js-collections.test.ts", "-t", "own iteration collected"],
@@ -342,7 +342,7 @@ export const mutations: Mutation[] = [
   {
     name: "known-text-unread",
     breaks: "a `String` written to isn't known text, so `s += &js::concat_text(n)` keeps its `\"\" +`, `s += \"\" + n` (ADR 0639, amended)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "    e.facts.has(Known::Text)\n        || matches!(",
     replace: "    false\n        || matches!(",
     tests: ["test/bindings-any-values.test.ts", "-t", "any value is read as JS reads it"],
@@ -350,7 +350,7 @@ export const mutations: Mutation[] = [
   {
     name: "null-apart-unfolded",
     breaks: "`x !== undefined && x == null`, an `Option` of an `Option`'s `Some(None)` test, stays two tests, not `x === null` (ADR 1017, amended)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "    let inner = null_test(rhs, present)?;\n",
     replace: "    let inner = null_test(rhs, present).filter(|_| false)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
@@ -359,7 +359,7 @@ export const mutations: Mutation[] = [
   {
     name: "null-apart-of-two-places",
     breaks: "`a !== undefined && b == null` of two places is `b === null`, which drops `a`'s test: a wrong answer",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "    if !same_path(x, inner) {\n",
     replace: "    if false {\n",
     tests: ["test/lowering-nested-options.test.ts"],
@@ -367,7 +367,7 @@ export const mutations: Mutation[] = [
   {
     name: "namespace-read-unnamed",
     breaks: "a function read through its module's namespace, `Plugin.extractEvents`, is no name a forwarding arrow passes on to, so `(n) => Plugin.f(n)` stays an arrow where `f` would be (rd114, ADR 1018)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "                self.facts.has(Known::Item) && matches!(&of.kind, ExprKind::Var(_) | ExprKind::Symbol(_))\n",
     replace: "                false\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "a once-callback that passes its call on"],
@@ -375,7 +375,7 @@ export const mutations: Mutation[] = [
   {
     name: "integers-negated-by-not",
     breaks: "a range test of integers negated is `!(n < 0n) && !(n > 255n)`, not its converse, `n >= 0n && n <= 255n` (#366)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "if self.facts.has(Known::NeverNaN) => {",
     replace: "if false && self.facts.has(Known::NeverNaN) => {",
     tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
@@ -384,7 +384,7 @@ export const mutations: Mutation[] = [
   {
     name: "null-said-twice",
     breaks: "`x !== undefined && x != null` stays both tests, not `x != null`, which says the first",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "        return Some(rhs.clone());\n",
     replace: "        return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_tests.rs$"],
@@ -394,7 +394,7 @@ export const mutations: Mutation[] = [
     name: "text-joined-number-stringed",
     breaks:
       "a whole number's text joined to text is `prefix + String(id)`, where upstream's is `prefix + id` (rd537)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            && let ExprKind::Stringed(number) = &mut part.kind\n",
     replace: "            && let ExprKind::Stringed(number) = &mut part.kind\n            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^whole_counters.rs$"],
@@ -404,7 +404,7 @@ export const mutations: Mutation[] = [
     name: "unbound-variable-sequenced",
     breaks:
       "a variable read unbound is printed `(0, onError)(2)`, where a variable's call gives no `this` already, `onError(2)` (rd579)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "                ExprKind::Member(..) | ExprKind::OptionalMember(..) | ExprKind::Index(..)\n",
     replace: "                _\n",
     tests: [
@@ -417,7 +417,7 @@ export const mutations: Mutation[] = [
     name: "unbound-eval-direct",
     breaks:
       "`(0, eval)(code)` is printed `eval(code)`, a direct eval, which reads the caller's variables (rd579's variable rule)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            && !matches!(&f.kind, ExprKind::Var(name) if name.is(\"eval\"))\n",
     replace: "",
     tests: ["test/js-any-values.test.ts", "-t", "eval is the global eval, called indirectly"],
@@ -425,7 +425,7 @@ export const mutations: Mutation[] = [
   {
     name: "negated-sequence-whole",
     breaks: "a sequence's negation negates the whole, `!((s), true)`, not its value, `(s, false)` (#523)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            ExprKind::Sequence(mut items) => {\n",
     replace: "            ExprKind::Sequence(mut items) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^condition_block_sequence.rs$"],
@@ -435,7 +435,7 @@ export const mutations: Mutation[] = [
     name: "own-method-call-of-variable",
     breaks:
       "a method held in a variable before an argument's statements, `handleEvent.call(listener, sum)`, is called alone, `handleEvent(sum)`, its `this` none (rd334)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "        let (ExprKind::Member(of, _) | ExprKind::Index(of, _)) = &method.kind else {\n            return None;\n        };\n        match (&of.kind, args.first().map(|this| &this.kind)) {\n            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == \"call\" && value == this => Some(value),\n",
     replace: "        match (&method.kind, args.first().map(|this| &this.kind)) {\n            (_, Some(ExprKind::Var(this))) if name == \"call\" => Some(this),\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "function::call of js::method whose this is its value"],
@@ -444,7 +444,7 @@ export const mutations: Mutation[] = [
     name: "own-method-call-other-this",
     breaks:
       "a method read of a variable before it's set again, `element$.focus.call(element)`, is called of the one read, its `this` the old value (rd334)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == \"call\" && value == this => Some(value),\n",
     replace: "            (ExprKind::Var(value), Some(ExprKind::Var(_))) if name == \"call\" => Some(value),\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "function::call of js::method whose this is its value"],
@@ -453,7 +453,7 @@ export const mutations: Mutation[] = [
     name: "own-keyed-method-of-a-binding",
     breaks:
       "a binding's method called through `function::call(js::method((element, HTMLElement::focus)), Some(&element), ..)` reads its `let` in place, `elements.first.focus(options)`, where its own call `element.focus(options)` keeps the program's `const` (rd226b)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            .filter(|_| method.facts.has(Known::KeyedMethod))\n",
     replace: "            .filter(|_| !method.facts.has(Known::OwnMethodCall))\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
@@ -462,7 +462,7 @@ export const mutations: Mutation[] = [
     name: "own-method-called-again",
     breaks:
       "a keyed method's call written in place, `props.fill.call(props)` of a member named `call`, is written as a method's call again, `props.fill()`, its `this` and argument lost (rd226b)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "        self.facts = self.facts.without(Known::OwnMethodCall);\n",
     replace: "",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
@@ -470,7 +470,7 @@ export const mutations: Mutation[] = [
   {
     name: "presence-says-none-is-undefined",
     breaks: "every `Option`'s presence test says its `None` is `undefined`, `x !== undefined`, so a `None` a `.d.ts` admits as `null`, given by JS, is read as a `Some` (#822)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "        let op = match (given, set) {\n",
     replace: "        let op = match (Some(super::OnlyNone::Undefined), set) {\n",
     tests: ["test/declarations-conformance.test.ts"],
@@ -478,7 +478,7 @@ export const mutations: Mutation[] = [
   {
     name: "literal-array-unknown",
     breaks: "a constant's array of literals isn't known so, and each walk of a body's lowering enters its every item again (#1096)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "        if literal {\n",
     replace: "        if false {\n",
     unitTests: "js::tests::a_constants_array_of_literals_is_known_literal",
@@ -486,7 +486,7 @@ export const mutations: Mutation[] = [
   {
     name: "literal-array-of-any",
     breaks: "an array holding a variable is known as a constant's literals, so a walk misses the variable it reads (#1096)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "        if literal {\n",
     replace: "        if true {\n",
     unitTests: "js::tests::a_constants_array_of_literals_is_known_literal",
@@ -494,7 +494,7 @@ export const mutations: Mutation[] = [
   {
     name: "global-unmarked",
     breaks: "a global's read, `Array` of `Array.from(..)`, is made a name that isn't the global's, a read nothing declares: the program refused (#1681)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "        Expr::var(Name::global(name))\n",
     replace: "        Expr::var(Name::declared(name.to_string()))\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_functions_dropped.rs$"],
@@ -502,7 +502,7 @@ export const mutations: Mutation[] = [
   {
     name: "strict-presence-of-the-other-none",
     breaks: "a test of being set of an `Option` whose `None` is only `undefined`, `window.event`, is made of `null`'s, `x !== null`, true of its `None`, so an event that's none is taken for one and its `type` read of `undefined` throws (a wrong answer, ADR 0298, amended; #2112 C S5)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            (Some(none), true) => Op::NoneNe(none),\n",
     replace: "            (Some(_), true) => Op::NoneNe(super::OnlyNone::Null),\n",
     tests: ["test/lowering-option-truth.test.ts", "test/lowering-bindings.test.ts"],
@@ -510,7 +510,7 @@ export const mutations: Mutation[] = [
   {
     name: "nullish-not-of-undefined",
     breaks: "`undefined` isn't nullish: `x || undefined`, a filter by truth's fallen to, is never `x || y`, and `None == undefined` isn't folded (#2182)",
-    file: "src/js/make.rs",
+    file: "crates/rust-js-program/src/js/make.rs",
     find: "            ExprKind::Undefined | ExprKind::GivenUndefined | ExprKind::Null\n        )\n    }\n\n    /// Literals",
     replace: "            ExprKind::GivenUndefined | ExprKind::Null\n        )\n    }\n\n    /// Literals",
     tests: ["test/lowering-options.test.ts", "-t", "a filter by truth then a fallback is JS's"],

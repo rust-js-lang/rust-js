@@ -4,12 +4,12 @@
 //! names them by.
 
 use super::Pass;
-use crate::js;
 use crate::lower::analysis::renamed_in;
 use crate::lower::reexports::Through;
 use crate::lower::{FnInfo, module_symbol};
 use crate::program::ImportRequest;
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalModId};
 use std::collections::BTreeMap;

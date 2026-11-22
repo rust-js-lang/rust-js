@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "forwarding-fields-of-no-identifier",
     breaks: "a field named `check-dirty` is a destructuring's key unquoted, `const { check-dirty: checkDirty }`, no JS (#533)",
     file: "src/prepare/forwarding.rs",
-    find: "            || !crate::names::is_identifier(field)\n",
+    find: "            || !rust_js_program::names::is_identifier(field)\n",
     replace: "",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a thread-local's field"],
   },
@@ -138,8 +138,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a member named as the module's own function is taken apart, so `createContainer()` calls the member, and the module declares the name twice (#561)",
     file: "src/prepare/forwarding.rs",
-    find: "                .any(|m| !crate::names::is_identifier(m) || names.contains(m))\n",
-    replace: "                .any(|m| !crate::names::is_identifier(m))\n",
+    find: "                .any(|m| !rust_js_program::names::is_identifier(m) || names.contains(m))\n",
+    replace: "                .any(|m| !rust_js_program::names::is_identifier(m))\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
   },
   {

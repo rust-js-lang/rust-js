@@ -1,7 +1,7 @@
 //! Capture normalized frontend files and translate spans into an owned arena.
 
-use crate::js;
 use crate::program::{Comment, Source, Sources};
+use rust_js_program::js;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 use rustc_span::def_id::LocalDefId;

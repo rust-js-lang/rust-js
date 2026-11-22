@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a numbered enum's variant named `\"un-terminated\"`, which can't name a `const`, is written `const un-terminated = 0;`, JS that doesn't parse, where it's refused",
     file: "src/lower/bindings/validated.rs",
-    find: "                    && !crate::names::is_identifier(&given)\n",
+    find: "                    && !rust_js_program::names::is_identifier(&given)\n",
     replace: "                    && given.is_empty()\n",
     tests: [
       "test/lowering-repr-enums.test.ts",

@@ -50,16 +50,21 @@ top-level module is of, for the tests and the scripts alike.
 | Crate | Holds | Depends on |
 | --- | --- | --- |
 | `rust-js` (`src/`) | the driver and the front end, and, until #2297 moves them, the rest of owned output and printing | every crate below |
-| `rust-js-program` (`crates/rust-js-program/`) | owned output: so far `collections.rs`, `lines.rs`, `decisions.rs` | none of the compiler's |
+| `rust-js-program` (`crates/rust-js-program/`) | owned output: so far `collections.rs`, `lines.rs`, `decisions.rs`, `js.rs` with `js/`, `names.rs`, `paths.rs`, `runtime.rs` with the runtime's helpers, `runtime/*.js` | none of the compiler's |
 
 A module moves to a crate with `bun scripts/move-paths.ts <from> <to> ..`,
 which rewrites each path to it, a file's in the scripts, tests and docs and
 a Rust path through its old crate's root, `crate::collections::IndexMap`
 as `rust_js_program::collections::IndexMap`; `--widen` makes `pub` what
 another crate names, as rustc says it, so a crate's public items are what
-its dependents use and no more. Run it with no pairs on a branch after a
-move lands. A crate builds for WASI on its own (check:fast's "the crates
-for WASI").
+its dependents use and no more; and the Rust of each mutation's `find`
+and `replace`, so a mutation of a file that names a moved module still
+applies. Run it with no pairs on a branch after a move lands. A crate
+builds for WASI on its own (check:fast's "the crates for WASI"). A crate's
+test-only conveniences, a `Name` of a word alone, are its `testing`
+feature, which the binary's tests enable as a dev-dependency and resolver
+3 keeps out of a normal build. A unit-tested mutation runs its file's
+crate's unit tests (`cargo test -p rust-js-program --lib`).
 
 | Responsibility | Code |
 | --- | --- |
@@ -67,14 +72,14 @@ for WASI").
 | `rust-js clippy`'s lints, clippy's crates registered as rustc's (ADR 0888) | `src/clippy.rs` |
 | JSX syntax expansion and provenance; which components' props a glob or a prelude names are built by their companion, rustc's names verifying the syntax pass's prediction, and a replayed compile's held diagnostics (ADR 0213, amended) | `src/jsx_syntax.rs`, `src/jsx_syntax/`, `jsx_syntax/resolved.rs` |
 | Rust analysis and lowering | `src/lower.rs`, `src/lower/` (detailed below) |
-| Owned JS tree, source arena and comments | `src/js.rs`, `src/js/`, `src/program.rs`, `src/comments.rs` |
-| Reachability, linking and names | `src/reachability.rs`, `src/link.rs`, `src/names.rs` |
+| Owned JS tree, source arena and comments | `crates/rust-js-program/src/js.rs`, `crates/rust-js-program/src/js/`, `src/program.rs`, `src/comments.rs` |
+| Reachability, linking and names | `src/reachability.rs`, `src/link.rs`, `crates/rust-js-program/src/names.rs` |
 | The compiler's maps and sets, each walked in the order its entries were put in, never a hasher's (ADR 1098); a session's answers that never change, each kept as first found, `OnceMap` (ADR 1100) | `crates/rust-js-program/src/collections.rs` |
 | Readability and printing | `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/to_oxc/`, `src/format.rs`, `src/format/jsx_shape.rs` (each JSX element's children as React is given them, which a layout keeps, #1807), `vendor/oxc_formatter` (oxc's formatter, with JSX text's edge space beside a child never where a line breaks, #1807), `src/typescript.rs`, `src/prettier.rs`, `src/node_session.rs` (the Node session each of the last two runs, its JSON read whole as UTF-8, ADR 1079); `typescript/` owns the TypeScript declaration model, reading/printing and engine-classified standard-library selection (#1903) |
-| Library contracts, configuration, hooks and path utilities; a crate's npm package, what its entry re-exports (ADR 1008) and the subpaths its `exports` resolves (ADR 0770) | `src/library.rs`, `src/library/dependencies.rs` (the libraries a crate is compiled against, read and checked before it, and `@rust-js/std`'s), `src/settings.rs`, `src/hooks.rs`, `src/paths.rs`, `src/packages.rs` |
+| Library contracts, configuration, hooks and path utilities; a crate's npm package, what its entry re-exports (ADR 1008) and the subpaths its `exports` resolves (ADR 0770) | `src/library.rs`, `src/library/dependencies.rs` (the libraries a crate is compiled against, read and checked before it, and `@rust-js/std`'s), `src/settings.rs`, `src/hooks.rs`, `crates/rust-js-program/src/paths.rs`, `src/packages.rs` |
 | Artifact planning, manifest and publication; the program's own files lowering reads, `LocalJs` | `src/output.rs`, `src/output/`, `src/manifest.rs`, `src/publish.rs` |
 | The class names a CSS Module exports, the one thing read of a stylesheet, by Lightning CSS (ADR 1133) | `src/css_modules.rs` |
-| Runtime helper catalog and implementations | `src/runtime.rs`, `src/runtime/`; generated package in `runtime/` |
+| Runtime helper catalog and implementations | `crates/rust-js-program/src/runtime.rs`, `crates/rust-js-program/src/runtime/`; generated package in `runtime/` |
 | Test child outcomes, own-kill provenance, queued-exit drain and observed-overrun diagnostics | `test/child.ts`; `scripts/checkFast.ts` labels the owner's diagnostic with its job |
 | Source-owner controls, workspace lifetime and actual-load proof; filesystem copying, aliases and disk-floor checks | `scripts/source-mutations.ts`; `scripts/source-workspace.ts` is the one filesystem owner, executed on a worker under the existing runner slots |
 | Compiled standard-library bodies | `std/lib.rs`, generated `std/*.js` and `std/manifest.json` |
@@ -219,7 +224,7 @@ binary uses rustc.
 | --- | --- | --- |
 | Driver | `main.rs`, `command.rs`, `cargo.rs`, `clippy.rs`, `std_sysroot.rs`, `worker.rs` (the tests' harness's compiles, a case's builds in one rustc session, [ADR 1182](decisions/1182-a-cases-builds-compile-in-one-rustc-session.md)) | Every layer |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | Front end and earlier-use owned data/utilities; no linking, preparation or publication |
-| Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `output/`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs`, `packages.rs`, `css_modules.rs`; the crate `rust-js-program` | Owned output; no rustc |
+| Owned output | `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `prepare.rs`, `prepare/`, `output.rs`, `output/`, `publish.rs`, `manifest.rs`, `library.rs`, `settings.rs`, `hooks.rs`, `packages.rs`, `css_modules.rs`; the crate `rust-js-program` | Owned output; no rustc |
 | Printing | `to_oxc.rs`, `to_oxc/`, `format.rs`, `format/`, `typescript.rs`, `prettier.rs`, `node_session.rs` | Printing and owned output; no rustc |
 
 The named orchestration exceptions are `output.rs`, which invokes the printing
@@ -449,7 +454,7 @@ area's sweep phrases it as one.
 | Which parameters what a function returns alone owns: each moved into a field of the struct its returned `Rc` points at, that nothing reads but to call through it; and which of them are quiet, no body naming such a field among what it may run before it returns (`may_run`); a library's by its contract (ADR 0317, amended) | `analysis/owned_by_return.rs`; `library.rs` | `OwnedByReturn`, `owns`, `of`, `find_quiet`, `quiet`, `quiet_of`; `owned_by_return`, `quiet_by_return`; `new` | | 1 |
 | Which private struct is a function's scope, its one value made by each call of it, held by nothing but its methods and that function's closures, whose methods are then functions declared in it, closing over the value (ADR 1043); each lowered there, a body inside the function's, and its calls, its `self` left out | `analysis/scopes.rs`; `mir/scopes.rs`; `mir/calls.rs` | `Scopes`, `of_function`, `of_method`, `retain`; `declare_scope_functions`; `scope_called`; `new` | | 5: `scope_called` (an argument's emitted kind matched) |
 | Which `Rc`s are counted, by the type each points at and what may be it (ADR 0852), an `Rc<dyn Fn>` compared by identity where one may be made of a function made apart (ADR 0959) | `analysis/rc_counts.rs` | `counted_rcs`, `counts`, `may_be`, `head`; `any`, `reads_fn_identity`, `may_be_counted_class`, `own_function`, `own_function_given`, `copied_apart`, `shared_before_apart` | | 3: `counted_rcs` (the `Rc`s counted, by the type each points at) |
-| How a counted `Rc` is held, read, made and counted: a box, a `dyn`'s pair (ADR 0520), a `#[rust_js::class]`'s instance with its counts hidden beside it, or, of a type parameter a counted class may be, either, told apart as it runs (#1228); its runtime, src/runtime/rc.js | `std_types/rc.rs` | `RcForm`, `rc_form`, `counted_pointee`, `rc_count`, `new_counted_rc`, `counted_as_instance`; `counted_rc`, `counted_weak`, `uncounted_weak` | | 3: `counted_rc`, `counted_weak`, `rc_form`, `uncounted_weak` (the crate's counted `Rc`s) |
+| How a counted `Rc` is held, read, made and counted: a box, a `dyn`'s pair (ADR 0520), a `#[rust_js::class]`'s instance with its counts hidden beside it, or, of a type parameter a counted class may be, either, told apart as it runs (#1228); its runtime, crates/rust-js-program/src/runtime/rc.js | `std_types/rc.rs` | `RcForm`, `rc_form`, `counted_pointee`, `rc_count`, `new_counted_rc`, `counted_as_instance`; `counted_rc`, `counted_weak`, `uncounted_weak` | | 3: `counted_rc`, `counted_weak`, `rc_form`, `uncounted_weak` (the crate's counted `Rc`s) |
 | Which library functions and impls the crate compiles itself: given more than they take, its lowering asks for what their library's JS hasn't, or their library's contract says they leave out copies of what the crate changes in place (`Library.elided`, #2112's change D), or the impl of a trait's method whose own `where` asks of a caller's parameter what no contract says (`where_unsaid`), or a writer given more options than its library's JS takes (#1026), or one whose JS may merge what the crate compares, listed by its library's contract (#1052), or what may fail that it writes or formats through where its export never fails (#1392); their bodies and modules; which of a library's are the crate's own, which its JS doesn't export that the crate compiles, and which are called through their exported dictionary (ADR 0914, amended) | `instances.rs`, `instances/needed.rs`, `instances/failing.rs`; `library.rs`, `library/compiled_here.rs`, `library/elided.rs`; `traits/impls.rs` | `Instances`, `needed`, `fails_given`, `asked`, `Copying`, `instance_bodies`; `is_instance`, `elided`, `elided_through_calls`, `compiles`, `compiled`, `writes_more`, `merges_identities`, `merged_here`, `merging`, `through_dictionary`, `exported_names`; `dictionary_entry`; `consumer_compiles`, `contains`, `copies`, `holds_param`, `instances_of`, `module`, `seen_whole`, `compiled_here`, `copy_reaches`, `is_state` | | 1 |
 | How generic code calls what it's given: each closure rustc infers `Fn` or `FnMut` a call by value, `FnOnce`'s `call_once`, may call, refused where it's made unless its body is its `call_once`'s; each type parameter whose value such a call calls, where a boxed `Fn` given is given as one whose call drops it; and a boxed `Fn` called so where it's held in what's given, refused (#2031, #2033, #2050) | `analysis/closures/called.rs`; `instances.rs`; `analysis/closures.rs` | `called`; `on_the_way`, `givings`, `held_of`; `called_by_value`, `param_called_once`, `held_fn_dyn` | | 1 |
 | What the crate decided of each closure it makes: whether a clone of it is itself (`clone_shares`) or it's cloned apart, `$cloning(f, clone)`, and whether a type parameter's function may be; whether it carries its own drop, `$dropping`'s, is handed to JS alone, or is called, moved or returned once, its body its `call_once`'s; whether it writes what it took; and whether any `dyn Fn` drops what it holds, a library's by its contract (ADRs 0484, 0521, 0522, 0525, 0626, 0873, 1020; #995, #1881) | `analysis/closures.rs` | `ClosureFacts`, `clone_is_itself`, `clones_apart`, `functions_clone_apart`, `carries_its_drop`, `handed_to_js`, `called_once`, `moved_once`, `returned_once`, `clone_shares`, `writes_what_it_took`, `any`, `drops`, `fn_dyn_args` | | 1 |
@@ -459,13 +464,13 @@ area's sweep phrases it as one.
 | Where each thread-local is made (ADR 1006, amended): as its module loads unless that would show, what its initializer runs, all `may_run` finds, printing, panicking, reading state what may run after the load writes or writing state it touches (#554), what a `with` lends told apart by its struct's fields (#616), or its module's load can't make it first, one predicate; a private one of those made where it's first used, a read of it its call (ADR 0037, amended), a `pub` one refused | `analysis/lazy_locals.rs`; `pipeline/load_cycles.rs`; `items.rs` | `lazy_locals`, `LazyLocals`; `made_in_cycles`, `out_of_order`; `made_where_used`, `item_read` | | 4: `item_read` (`Known::LocalRead`) |
 | Map/set operations and discarded results | `std_types/map.rs` | `map_values`, `discarded_calls` | | 5: `discarded_calls`, `map_values` (an emitted `$add`, `$insert` or `$remove` statement rewritten, as tidy) |
 | A map's entry as tidy leaves it: its value put in where it's missing, then used | `std_types/map_entries.rs` | `inserted_entries`, `counted_entries` | | 5: `counted_entries`, `inserted_entries` (a tidied body's statements read) |
-| Whether a B-tree is std's own nodes, where its keys' order can be seen or isn't total, and what its calls are given, its range and `extract_if` (#926, ADR 0404); the nodes themselves are src/runtime/ord_tree.js, std's `node.rs` and the rest ported | `std_types/btree.rs` | `tree_of_nodes`, `tree_range_values` | | 2 |
+| Whether a B-tree is std's own nodes, where its keys' order can be seen or isn't total, and what its calls are given, its range and `extract_if` (#926, ADR 0404); the nodes themselves are crates/rust-js-program/src/runtime/ord_tree.js, std's `node.rs` and the rest ported | `std_types/btree.rs` | `tree_of_nodes`, `tree_range_values` | | 2 |
 | A binding's keyed read of what may look like `None`, its `Some(None)` told from a missing key, a `Map`'s `get` by `has` and a `Dict`'s by its own key (ADRs 0225, 0884); of a collection that holds its value's `None` as `null`, `#[rust_js::nullable(V)]` of its type, each write `null` and its read held where it's made JS's read itself (ADR 0884, amended) | `binding_calls.rs`; `bindings.rs`; `bindings/nullable.rs` | `gives_boxed_option`, `held_read`; `reads_a_key`; `nullable_values`, `takes_nullable`, `takes_nullable_entries`, `reads_a_nullable_value`, `reject_nullable_held` | | 5: `held_read` (an emitted `$someGet` matched) |
 | What `#[rust_js::nullable]` and its kin say: a field's `None` `null` (ADR 0196), of an `Option`, a cell's (ADRs 0772, 0863) or a type parameter's, its items' (ADR 0586), absent until set (`optional`, ADR 0810) or a present slot (`present`, ADR 1161); a function's result's (ADR 0578) and a binding's `undefined` alone (`none_undefined`, ADR 0298); a thread-local's, its cell's or its `Option`'s (ADRs 0586, 1078), each refused where it can't be; a closure's tuple item a nullable parameter names; `js::null()` itself (ADR 0935); a collection's `None` held as `null`; a nested field's `T` that may look like `None`, refused | `bindings/nullable.rs` | `is_nullable`, `is_optional`, `is_present`, `nullable_option`, `of_type_parameter`, `nullable_items`, `nullable_tuple_item`, `nullable_result`, `none_undefined_result`, `nullable_local`, `nullable_local_cell`, `nullable_local_option`, `nullable_const_refused`, `null_result`, `is_js_null`, `holds_none_as_null` | | 1 |
 | What a flattened field's type is to its parent's object: a class's flattened state, a `RefCell` of a discriminated union, its tag and keys (rd380, ADR 1044); an enum told by its keys or an untagged one of records (#504, #1818); a plain struct whose fields are its parent's; whether a value may be the parent's object read whole (#1820); and of a flattened reference, whether its parent's copy could be told from what it refers to (#1819, #1822) | `bindings/flattened.rs` | `is_flattened_state_field`, `flattened_state`, `tell`, `keyed`, `enum_of_keys`, `untagged_records`, `is_projected`, `plain_struct`, `copy_seen`, `copy_seen_in_crate` | | 3: `copy_seen_in_crate` (the crate's copied types) |
 | Cells and plain module statics | `std_types/cell.rs`; `std_types/cell/variables.rs` | `cell_call`; `plain_statics`, `nullable_made`, `crate_imported_variables`, `imported_variables_through`; `guards_value_cell`, `is_box` | | 5: `cell_call` (a cell's emitted handle form read) |
 | How a JS object is written over in place by a clone of another, as std's own `clone_from` of its type does, its order of clones and drops seen (#919, #922): a type whose `Clone` dictionary only a caller gives, and each side of a `Result`'s `clone_from` written in place | `std_types/clone_from.rs` | `clone_into`, `clone_given`, `result_sides` | | 1 |
-| Which of std's byte sources a type is, `&[u8]` or a `Cursor`, the methods its runtime dictionary holds (`$sliceReader`, `$cursorReader`, src/runtime/readers.js) and whether they write the box they're given it in (#1329), and which of std's io calls a recognizer answers; the sources' and the forwarding impls' dictionaries; what `io::Read`, `BufRead` and `Seek` provide is std's own body, `@rust-js/std`'s `io.js` (#1156, ADR 0425 amended) | `recognition/io.rs`; `std_types/io.rs`; `traits/dictionaries.rs` | `byte_source`, `writes_its_box`, `io_op`, `in_io_dictionary`, `of_io_reading`; `io_call`; `byte_source_dictionary` | | 1 |
+| Which of std's byte sources a type is, `&[u8]` or a `Cursor`, the methods its runtime dictionary holds (`$sliceReader`, `$cursorReader`, crates/rust-js-program/src/runtime/readers.js) and whether they write the box they're given it in (#1329), and which of std's io calls a recognizer answers; the sources' and the forwarding impls' dictionaries; what `io::Read`, `BufRead` and `Seek` provide is std's own body, `@rust-js/std`'s `io.js` (#1156, ADR 0425 amended) | `recognition/io.rs`; `std_types/io.rs`; `traits/dictionaries.rs` | `byte_source`, `writes_its_box`, `io_op`, `in_io_dictionary`, `of_io_reading`; `io_call`; `byte_source_dictionary` | | 1 |
 | Which of std's readers and files is a type or call: a `File`, an fs type, a `BufReader`, a reader of others std compiles and its sources, a file call that may fail, `read_to_string`, an empty `String`; does the crate's own reader see std's reads? (#1156, #1397) | `recognition/io.rs` | `fs_type`, `is_file`, `is_buf_reader`, `is_std_reader`, `is_std_reader_impl`, `std_reader_sources`, `of_files`, `reads_to_string`, `makes_empty_string`, `reads_through_own_reader`, `is_file_handle` | | 1 |
 | Which thread-locals and `static mut`s are their module's variables, exported ones `export let`, what other modules read of them, and which of their writes are refused (ADRs 0270, 0096, amended); which of a library's the crate borrows quietly (ADR 0863, amended) | `analysis/plain_locals.rs`; `std_types/cell/variables.rs` | `plain_thread_locals`, `quiet_library_keys`, `module_statics`, `outside_writes`, `holds_a_value`, `refuse_boxed_export`; `imported_variables` | | 5: `imported_variables` (an emitted `$withBorrow` or held member matched) |
 | A field that's the property its cell holds, a `Cell`'s, a struct's `RefCell`'s by its declaration, a `OnceCell`'s; and the one cell of a `RefCell` field lent or checked, `$fieldCell` (ADR 0863, amended); and one held in a place of its own, read as what's in it and made as a place, as `placed_field` answers (#2255) | `representation.rs` | `property_cell`, `held`, `holding`, `uncounted`; `struct_field_def` | | 5: `uncounted` (an emitted `$fieldCell` matched, `Known::NullStored`) |
@@ -789,7 +794,7 @@ the architecture test holds dispatcher sizes.
 
 ## Owned output and source origins
 
-`src/js.rs` defines a compiler-owned AST independent of rustc and oxc.
+`crates/rust-js-program/src/js.rs` defines a compiler-owned AST independent of rustc and oxc.
 `src/program.rs` carries modules, symbolic imports, declarations and a source
 arena. `src/lower/sources.rs` converts source information to owned text and
 spans, retaining origins across files and copied bodies. JSX expansion and
@@ -849,19 +854,19 @@ regenerates the committed JS and manifest in `std/`; other compilations use
 that built-in manifest and import the package. Hand-modeled std operations
 remain in their domain modules until migrated.
 
-`src/runtime.rs` owns helper names, dependencies and implementations in
-`src/runtime/`; `bun run std` generates `@rust-js/std`'s `std/runtime.js` of
+`crates/rust-js-program/src/runtime.rs` owns helper names, dependencies and implementations in
+`crates/rust-js-program/src/runtime/`; `bun run std` generates `@rust-js/std`'s `std/runtime.js` of
 them, beside std's bodies and the package's one entry, `std/index.js`,
 which the JS imports both through (#1095). Lowering requests
 helpers through `Expr::helper`. Linking collects helper dependencies, and
 artifact planning selects imports from the prepared tree's actual reads.
 The printer receives those imports; it does not infer them from text.
 
-The runtime's iterators are `$Steps` (`src/runtime/steps.js`), whose
+The runtime's iterators are `$Steps` (`crates/rust-js-program/src/runtime/steps.js`), whose
 methods are std's defaults of each step. What an adapter passes on of its
 source's steps, `fold`, `try_fold`, `rfold`, `try_rfold`, `nth`,
 `nth_back`, `last`, `count`, `advance_by` and `advance_back_by`, and what
-it specializes, is given by `$forward` (`src/runtime/forward.js`) alone,
+it specializes, is given by `$forward` (`crates/rust-js-program/src/runtime/forward.js`) alone,
 which passes on every argument a step takes, an item's drop and an
 accumulator's `unwind` ([ADR 1089](decisions/1089-an-iterators-steps-are-passed-on-by-one-combinator.md));
 `test/architecture.test.ts` rejects a step assigned anywhere else. Which

@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "pattern-key-unquoted",
     breaks: "a destructured field that isn't a JS name is bare, `{ data-platform: dataPlatform }`, which JS can't parse",
     file: "src/to_oxc/statements.rs",
-    find: "                    let key = if crate::names::is_identifier(field) {",
-    replace: "                    let key = if true || crate::names::is_identifier(field) {",
+    find: "                    let key = if rust_js_program::names::is_identifier(field) {",
+    replace: "                    let key = if true || rust_js_program::names::is_identifier(field) {",
     tests: ["test/jsx-props.test.ts", "-t", "hyphenated name is quoted"],
   },
   {

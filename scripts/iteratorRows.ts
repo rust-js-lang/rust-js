@@ -34,7 +34,7 @@ const root = join(import.meta.dir, "..");
  * lowering's iterator value and its marks (ADR 1092's owners): files, and
  * the functions whose body a hunk is in. */
 const shared = {
-  files: ["src/runtime/forward.js", "src/runtime/closing.js", "src/lower/iterators/value.rs"],
+  files: ["crates/rust-js-program/src/runtime/forward.js", "crates/rust-js-program/src/runtime/closing.js", "src/lower/iterators/value.rs"],
   functions: ["$consume", "$consumed", "$closing", "$closed", "$forward", "$given", "$givenDrop", "$knowing", "$held", "$iterator"],
 };
 
@@ -117,7 +117,7 @@ export function budgetOf(table: Picking, parts: number): number {
 }
 
 /** What names nothing of its own: the helpers' module, generated of
- * src/runtime, and the tests and scripts, which run as they are. */
+ * crates/rust-js-program/src/runtime, and the tests and scripts, which run as they are. */
 const unnamed = (file: string) => file === "std/runtime.js" || file.startsWith("test/") || file.startsWith("scripts/");
 
 const keywords = new Set(

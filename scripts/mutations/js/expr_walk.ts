@@ -1,11 +1,11 @@
-// Mutations of src/js/expr_walk.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/js/expr_walk.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "spread-of-an-iterator-does-nothing",
     breaks: "a collect nothing reads, `[...value, ...value$1]` of an `inspect`, is never made, its spread taken for one that does nothing (#1035)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "            ExprKind::Spread(a) => !matches!(a.kind, ExprKind::Array(..)) || a.has_effects(),\n",
     replace: "            ExprKind::Spread(a) => a.has_effects(),\n",
     tests: ["test/corpus.test.ts", "-t", "^field_rewrite_singles.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "assigned-field-setter-first",
     breaks:
       "a JS object's field set to a getter's function's call spills the getter, `const createTask = console.createTask; this$.task = createTask(name)`, as if the field's setter ran before the value (rd633)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "            ExprKind::Member(object, _) => object.has_effects(),\n            ExprKind::Index(object, index) => object.has_effects() || index.has_effects(),\n            _ => self.has_effects(),\n",
     replace: "            _ => self.has_effects(),\n",
     tests: ["test/js-globals.test.ts", "-t", "reads the getter where it's called"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     name: "assigned-field-object-unread",
     breaks:
       "a value moved past a target whose object does something, `first(ps).x = value(..)`, which then calls `first` before the value, as if the object's evaluation did nothing (#393, rd633)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "            ExprKind::Member(object, _) => object.has_effects(),\n            ExprKind::Index(object, index) => object.has_effects() || index.has_effects(),\n            _ => self.has_effects(),\n",
     replace: "            ExprKind::Member(..) | ExprKind::Index(..) => false,\n            _ => self.has_effects(),\n",
     tests: ["test/corpus.test.ts", "-t", "^assignment_order.rs$"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "closure-reads-unseen",
     breaks: "a helper only a closure calls isn't imported, and the module throws when the closure runs",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "                params\n                    .iter()\n                    .flat_map(Pattern::defaults)\n                    .for_each(|d| d.visit_names(read));\n                visit_stmt_names(body, read);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "char_from_code"],
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
   {
     name: "closure-blocks-substitution",
     breaks: "a closure called in place, with closures in it, is named and called: `const value = () => ..; ok ? value() : undefined`",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "                    !replaced\n                } =>\n",
     replace: "                    false && !replaced\n                } =>\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_block_given_to_a_call.rs$"],
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
   {
     name: "closure-reading-replaced-kept",
     breaks: "a closure reading a parameter replaced is kept as it is, reading a variable that isn't there",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "                    !replaced\n                } =>\n",
     replace: "                    replaced || !replaced\n                } =>\n",
     tests: ["test/lowering-nullable-combinators.test.ts", "-t", "closure reads its argument"],
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
   {
     name: "truthy-test-kept",
     breaks: "`if js::truthy(value)` is `if (!!value)`, not `if (value)`",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "                value.tested()\n",
     replace: "                self.clone()\n",
     tests: ["test/bindings.test.ts", "-t", "skips what's falsy is given test && value"],
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
   {
     name: "test-parts-kept",
     breaks: "`if (a && !!text)`, not `if (a && text)`: a part of an `&&` a test reads is kept as it is, not read as a test",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "                        _ => out.push(e.tested()),\n",
     replace: "                        _ => out.push(e.clone()),\n",
     tests: ["test/lowering-options.test.ts", "-t", "a filter by truth then a fallback is JS"],
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
   {
     name: "reads-same-index-variable",
     breaks: "`files[name]` is spilled, read twice",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: " && (index.is_constant() || index.reads_same()),",
     replace: " && index.is_constant(),",
     tests: ["test/corpus.test.ts", "-t", "^(compound_assignment_order|nested_element_writes).rs$"],
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
   {
     "name": "tested-null-check-kept",
     "breaks": "a test of `x != null && x` keeps its null check, which `x`'s truth says",
-    "file": "src/js/expr_walk.rs",
+    "file": "crates/rust-js-program/src/js/expr_walk.rs",
     "find": "same_path(next, x))",
     "replace": "same_path(next, x) && false)",
     "tests": ["test/snapshots.test.ts", "-t", "options: the generated JS is its snapshot"],
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
   {
     "name": "wrap-call-an-effect",
     "breaks": "a number wrapped to its width, `BigInt.asIntN(64, n)`, is something done, held first, `const value = \u2026; m.cents = value;`",
-    "file": "src/js/expr_walk.rs",
+    "file": "crates/rust-js-program/src/js/expr_walk.rs",
     "find": "                        \"BigInt\" => matches!(name.as_str(), \"asIntN\" | \"asUintN\"),\n",
     "replace": "                        \"BigInt\" => false,\n",
     "tests": ["test/corpus.test.ts", "-t", "^(stock_orders|byte_constants_large).rs$"],
@@ -100,7 +100,7 @@ export const mutations: Mutation[] = [
   {
     "name": "math-call-does",
     "breaks": "`Math`'s functions count as doing something: a stage of `Math.imul(x, x)` keeps its chain lazy, and a range's end of `Math.max` is a `{ end }` made first",
-    "file": "src/js/expr_walk.rs",
+    "file": "crates/rust-js-program/src/js/expr_walk.rs",
     "find": "                        \"Math\" => name != \"random\",\n",
     "replace": "                        \"Math\" => false,\n",
     "tests": ["test/lowering-iterators.test.ts", "test/lowering-numbers.test.ts", "-t", "a lazy chain from MIR spread once|a slice to a computed end"]
@@ -108,7 +108,7 @@ export const mutations: Mutation[] = [
   {
     "name": "math-random-pure",
     "breaks": "`Math.random()` does nothing, so a stage of it runs where its chain is made",
-    "file": "src/js/expr_walk.rs",
+    "file": "crates/rust-js-program/src/js/expr_walk.rs",
     "find": "                        \"Math\" => name != \"random\",\n",
     "replace": "                        \"Math\" => true,\n",
     "tests": ["test/lowering-iterators.test.ts", "-t", "a lazy chain from MIR spread once"]
@@ -116,7 +116,7 @@ export const mutations: Mutation[] = [
   {
     name: "js-substitute-shadowed",
     breaks: "a name a callback binds itself is replaced in its body too, and `{:?}` of an `Option` of an `Option` prints the outer value where the inner is",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "with(n).filter(|_| !names.contains(&n.word()))?",
     replace: "with(n)?",
     unitTests: "js::expr_walk::tests::a_callback_keeps_a_name_it_binds_from_a_substitution",
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
   {
     name: "js-substitute-names-by-word",
     breaks: "a substitution by `Name` replaces each variable spelled as the one it names, another variable of its word too",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "        self.replace(with, false)\n",
     replace: "        self.replace(&|name| { let mut hit = None; self.visit_names(&mut |v| if hit.is_none() && v.is(name.word()) { hit = with(v) }); hit }, false)\n",
     unitTests: "js::expr_walk::tests::a_substitution_by_name_replaces_that_variable_alone",
@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
   {
     name: "symbol-key-has-effects",
     breaks: "a guarded arm's dead read of a registered symbol's key is kept, `Symbol.keyFor(ty);`",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "                        \"Symbol\" => matches!(name.as_str(), \"for\" | \"keyFor\"),\n",
     replace: "",
     tests: ["test/lowering-symbols.test.ts", "-t", "a guarded arm of a registered symbol reads no key it doesn't use"],
@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
   {
     name: "delete-has-no-effects",
     breaks: "`delete o.p` does nothing, as what it's of reads, so a pass may drop or move it",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "            ExprKind::Unary(op, a) => op.writes() || a.has_effects(),\n",
     replace: "            ExprKind::Unary(_, a) => a.has_effects(),\n",
     tests: ["test/js-object.test.ts", "-t", "delete is JS's operator"],
@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
   {
     name: "js-is-array-has-effects",
     breaks: "`Array.isArray(v)` is taken to do something, so no later test of it is decided (ADR 0743)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "                        \"Array\" => name == \"isArray\",\n",
     replace: "",
     tests: ["test/lowering-switches.test.ts", "-t", "a part of a chain an earlier test decides is left out"],
@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
   {
     name: "getter-read-has-no-effects",
     breaks: "a read a getter may answer counts as doing nothing, so it's read past a binding's method lookup",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "        // A read a getter may answer, which may do anything (ADRs 0672, 0750).\n        if self.facts.has(Known::Getter) {\n            return true;\n        }\n",
     replace: "",
     tests: ["test/lowering-moves.test.ts", "-t", "a getter's read given to a binding's method runs before its lookup"],
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
   {
     name: "getter-read-reads-same",
     breaks: "a read a getter may answer counts as the same value however often it's read, so it's written twice",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "        // (ADR 0672).\n        if self.facts.has(Known::Getter) {\n            return false;\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^field_of_a_struct_js_made_captured.rs$"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "tested-coalesce-kept",
     breaks: "a test of `x ?? false` keeps its fallback, `if (d[k] ?? false)`, which reads as `x`",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "            ExprKind::Binary(Op::Coalesce, x, fallback) if fallback.is_falsy_constant() => x.tested(),\n",
     replace: "            ExprKind::Binary(Op::Coalesce, x, fallback) if false && fallback.is_falsy_constant() => x.tested(),\n",
     tests: ["test/corpus.test.ts", "-t", "option_bool_tested"],
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
   {
     name: "lazy-read-has-effects",
     breaks: "a lazy thread-local's read is taken to do something, written to a `const` before what's read after it",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "        if self.facts.has(Known::LocalRead) {\n            return false;\n        }\n",
     replace: "",
     snapshots: true,
@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
   {
     name: "lazy-read-reads-other",
     breaks: "a lazy thread-local's read is taken to read another value each time, written to a `const` where it's read",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "        if self.facts.has(Known::LocalRead) {\n            return true;\n        }\n",
     replace: "",
     snapshots: true,
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
   {
     name: "held-branch-run",
     breaks: "a conditional's branch is taken to run, so clz32's `clz32Fallback` moves what it reads before it",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "                a.visit_held_names(read);\n                b.visit_held_names(read);\n            }\n            ExprKind::SomeWhere(test, a) => {\n",
     replace: "                a.visit_names(&mut |v| read(v, false));\n                b.visit_names(&mut |v| read(v, false));\n            }\n            ExprKind::SomeWhere(test, a) => {\n",
     tests: ["test/modules.test.ts", "-t", "a function an initializer only holds"],
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
   {
     name: "held-array-item-run",
     breaks: "an array's item is taken to run, so `[pick]` moves `SCALE`, what the function `pick` holds reads, before it",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "            ExprKind::Array(items, ..) => items.iter().for_each(|item| item.visit_held_names(read)),\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "a function an initializer only holds"],
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
   {
     name: "spread-reads-only-vars",
     breaks: "a spread of a variable reads only variables, so an unread `[...it]`, a collect of a chain in a loop, is taken away and its `inspect` never runs (#273)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "            ExprKind::Spread(a) => matches!(a.kind, ExprKind::Array(..)) && a.reads_only_vars(),\n",
     replace: "            ExprKind::Spread(a) => a.reads_only_vars(),\n",
     tests: ["test/corpus.test.ts", "-t", "^unread_collected_chain.rs$"],
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
   {
     name: "reads-by-name-alone",
     breaks: "a call is judged to only read by its method's name alone: the crate's own `at`, `P.at(p)`, which prints, runs for every item before the next stage",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "                if self.facts.has(Known::Read)\n                    && let ExprKind::Member(of, name) = &callee.kind\n",
     replace: "                if let ExprKind::Member(of, name) = &callee.kind\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "named as a slice's reader"],
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
   {
     name: "read-call-effectful",
     breaks: "a `str`'s `includes` of Rust's types is taken to do something, so a guard's scope round a loop that only reads is a `try`/`finally`",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "                of.has_effects() || args.iter().any(Expr::has_effects)\n            }\n            ExprKind::Call(..) | ExprKind::OptionalCall(..) | ExprKind::New(..) => true,\n",
     replace: "                let _ = (of, args);\n                true\n            }\n            ExprKind::Call(..) | ExprKind::OptionalCall(..) | ExprKind::New(..) => true,\n",
     tests: ["test/lowering-written-loops.test.ts", "-t", "a guarded loop that only reads is no try"],
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
   {
     name: "template-may-throw-whole",
     breaks: "a template is taken to throw where it calls anything, though each call in it can't, so a print of one stays in a `try`",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "            ExprKind::Template(_, items, _) | ExprKind::Array(items, ..) if !self.facts.has(Known::Getter) => {\n",
     replace: "            ExprKind::Template(_, items, _) | ExprKind::Array(items, ..) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_refcell_dyn_shared.rs$"],
@@ -249,7 +249,7 @@ export const mutations: Mutation[] = [
   {
     name: "js-made-field-read-throws",
     breaks: "a read of a field of a struct JS made may throw, so describeNativeComponentFrame's guard is a catch of its drop around each call, not one try/finally (rd228)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "            ExprKind::Member(object, _) if self.facts.has(Known::NeverThrows) => object.may_throw(),\n",
     replace: "",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "field read of what JS made"],
@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
     name: "reads-only-vars-of-js-operators",
     breaks:
       "`\"default\" in m`, which JS may answer, reads only variables, so prepare drops an unread `const _present = \"default\" in m;` and `unread(undefined)` throws nothing where Rust panics (#462, P0)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "        // What JS may answer, `key in value` a proxy's trap, which may do\n        // anything (`Known::Getter`, #462).\n        if self.facts.has(Known::Getter) {\n            return false;\n        }\n",
     replace: "",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a caught value nothing reads that may throw"],
@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
     name: "option-text-truth-unread",
     breaks:
       "an `Option` of text kept where it isn't empty, `code.filter(|c| !c.is_empty())`, is `code != null && code !== \"\" ? code : null`, not `code || null` (rd732)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "                if let Some(x) = text.text_truth()\n",
     replace: "                if let Some(x) = text.text_truth().filter(|_| false)\n",
     tests: ["test/lowering-options.test.ts", "-t", "nullable field's None is null"],
@@ -276,7 +276,7 @@ export const mutations: Mutation[] = [
     name: "runs-nothing-call-runs-given",
     breaks:
       "a binding's call that runs nothing, `ReactFlightClient({ .., checkEvalAvailabilityOnceDev })`, is taken as running what it's given as its module loads, so it's made after what that reads, not where its Rust has it (#604)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "            ExprKind::Call(callee, args) if self.facts.has(crate::js::Known::RunsNothing) => {\n",
     replace: "            ExprKind::Call(callee, args) if self.facts.has(crate::js::Known::RunsNothing) && false => {\n",
     tests: ["test/lowering-constants.test.ts", "-t", "a binding that runs nothing makes"],
@@ -284,7 +284,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-read-effectful",
     breaks: "an array's copy, `a.slice()`, given to `mem::forget` is kept as a statement that does nothing (#1535)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "    \"slice\",\n];\n",
     replace: "];\n",
     tests: ["test/corpus.test.ts", "-t", "^array_vec_raw.rs$"],
@@ -293,7 +293,7 @@ export const mutations: Mutation[] = [
   {
     name: "any-call-taken-for-js-own",
     breaks: "any call is taken for one of JS's own, which only reads, the crate's `Grid.map(g)` too, so tidy hoists a read written after it ahead of it (#1663, #1674)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "                    _ => part.is_js_own_call(),\n",
     replace: "                    _ => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_method_named_as_a_js_one_runs_where_called.rs$"],
@@ -301,7 +301,7 @@ export const mutations: Mutation[] = [
   {
     name: "built-in-fact-unread",
     breaks: "a call lowering built as JS's own (`Known::BuiltIn`), `parts.join(\", \")`, is taken to run the program's code, so what's after it is held apart (#1674)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "        self.facts.has(Known::BuiltIn) || self.facts.has(Known::Read) || global\n",
     replace: "        self.facts.has(Known::Read) || global\n",
     tests: ["test/corpus.test.ts", "-t", "^(refcell_variant_field_twice|try_lock|fn_items_as_values|destructuring_assignment|untagged_displayed_in_place|bit_width|btree_compare|byte_constants_large|adapter_of_a_borrowed_iterator_where_addresses_are_asked|runtime_long_writes|range_size_hint|refcell_variant_replaced_held|class_trait_field_borrows|option_map_drops|binary_heap_keeps_its_vecs_capacity|rc_counted_per_type|one_thread_sync|ref_cell_guards_mapped|asked_length_overflow).rs$"],
@@ -310,7 +310,7 @@ export const mutations: Mutation[] = [
   {
     name: "shown-taken-to-run-only-what-its-given",
     breaks: "`$shown(v)` is taken to run only what it's given, never `v`'s `toString`, so a format's later argument is moved past it (#1676)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "        !self.calls_only(&|helper| !crate::runtime::runs_given_values(helper))\n",
     replace: "        !self.calls_only(&|_| true)\n",
     tests: ["test/effects.test.ts", "-t", "toString runs after every argument"],
@@ -318,7 +318,7 @@ export const mutations: Mutation[] = [
   {
     name: "unread-item-read-kept",
     breaks: "a value nothing reads keeps its item read, `nodes.splice(i, 1)[0];`, where a person writes `nodes.splice(i, 1);`",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "            ExprKind::Index(object, index) if !index.has_effects() => object.read_alone(),\n",
     replace: "",
     tests: ["test/borrow-forms.test.ts", "-t", "checked where they're called"],
@@ -327,7 +327,7 @@ export const mutations: Mutation[] = [
     name: "reads-alike-twice-of-any-field",
     breaks:
       "`r.snap.map_or(0.0, |s| s.threshold)` of a struct an exported function is given reads `r.snap` twice, `r.snap != null ? r.snap.threshold : 0`, a getter answering the second read anew (#1908)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "            (ExprKind::Member(..) | ExprKind::OptionalMember(..), ExprKind::Var(_)) => root.facts.has(Known::Item),\n",
     replace: "            (ExprKind::Member(..) | ExprKind::OptionalMember(..), ExprKind::Var(_)) => true,\n",
     tests: ["test/getter-reads.test.ts", "-t", "js_given_options"],
@@ -336,7 +336,7 @@ export const mutations: Mutation[] = [
     name: "reads-alike-twice-not-of-items",
     breaks:
       "a thread-local's `Option`, its module variable's cell, `current.value`, is held in a `const option` first, where no getter can answer it (#1908)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "            (ExprKind::Member(..) | ExprKind::OptionalMember(..), ExprKind::Var(_)) => root.facts.has(Known::Item),\n",
     replace: "            (ExprKind::Member(..) | ExprKind::OptionalMember(..), ExprKind::Var(_)) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_cell_reentrant.rs$"],
@@ -345,7 +345,7 @@ export const mutations: Mutation[] = [
   {
     name: "converted-has-effects",
     breaks: "a Rust number's conversion, `Number(BigInt.asUintN(8, value))`, is taken to run code, so what's made of it is held first, `const value$2 = ..; SLOTS[i] = value$2;` (#1468)",
-    file: "src/js/expr_walk.rs",
+    file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "            ExprKind::Converted(_, a) => a.has_effects(),\n",
     replace: "            ExprKind::Converted(_, _) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^static_mut\\.rs$"],

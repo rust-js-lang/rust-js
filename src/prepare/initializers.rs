@@ -2,7 +2,7 @@
 //! thread-local's initializer of statements: the module's own statements,
 //! as JS writes a module's top (ADRs 0601 and 0870).
 
-use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
 /// A module's `const` a closure called where it's made makes, a
 /// thread-local's an `if` gives, not exported: `let name;` and the

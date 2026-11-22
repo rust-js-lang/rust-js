@@ -7,8 +7,8 @@
 use super::recognition::Catching;
 
 use super::{FnCx, R};
-use crate::js;
-use crate::js::{Expr, Known, StmtKind};
+use rust_js_program::js;
+use rust_js_program::js::{Expr, Known, StmtKind};
 
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;

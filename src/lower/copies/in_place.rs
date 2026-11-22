@@ -4,8 +4,8 @@
 
 use super::super::refusal::{Refused, refuse};
 use super::super::{FnCx, R};
-use crate::js;
-use crate::js::Expr;
+use rust_js_program::js;
+use rust_js_program::js::Expr;
 use rustc_middle::ty::Ty;
 use rustc_span::Span;
 

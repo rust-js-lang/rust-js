@@ -367,7 +367,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/ordering.rs",
     find: "            Some(_) => Expr::bin(Op::Le, a, b),\n",
     replace:
-      "            Some(_) => Expr::unary(crate::js::UnaryOp::Not, Expr::bin(Op::Gt, a, b)),\n",
+      "            Some(_) => Expr::unary(rust_js_program::js::UnaryOp::Not, Expr::bin(Op::Gt, a, b)),\n",
     tests: ["test/corpus.test.ts", "-t", "slice_methods"],
   },
   {

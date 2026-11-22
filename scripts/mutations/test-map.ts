@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "selector-use-new-name-runs-all",
-    breaks: "a name no item declared, added to a `use`, selects everything, as 4ba38fa64's `ImportNames` in src/js.rs's `pub use` did",
+    breaks: "a name no item declared, added to a `use`, selects everything, as 4ba38fa64's `ImportNames` in crates/rust-js-program/src/js.rs's `pub use` did",
     file: "scripts/testMap.ts",
     find: "      if (holding(file, from).length === 0 && newNamesUsed(file, from, count, added, removed)) continue;\n",
     replace: "",

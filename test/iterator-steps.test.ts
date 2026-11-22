@@ -624,7 +624,7 @@ test("each Where of the in-place forms is answered by owners of class 1 or 2", (
   expect([...whereAsks.keys()].sort()).toEqual(Object.keys(whereRuns).sort());
 });
 
-// Every iterator the runtime makes, each top-level function of src/runtime
+// Every iterator the runtime makes, each top-level function of crates/rust-js-program/src/runtime
 // that makes a `$Steps`, is a form above, held to std's catalog, or is
 // listed here with why it isn't: the net missed `$cycleOf`, which wrote
 // neither `try_fold` nor `advance_by`, as it wasn't one (#2192).
@@ -655,7 +655,7 @@ const notForms: Record<string, string> = {
 };
 
 test("every iterator the runtime makes is a form above or says why not", () => {
-  const dir = join(import.meta.dir, "../src/runtime");
+  const dir = join(import.meta.dir, "../crates/rust-js-program/src/runtime");
   const makers = new Set<string>();
   for (const file of readdirSync(dir).filter((f) => f.endsWith(".js"))) {
     // Each top-level function, to the next top-level declaration.

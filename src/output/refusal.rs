@@ -4,7 +4,7 @@
 
 use std::path::Path;
 
-use crate::js;
+use rust_js_program::js;
 
 /// Why `module`, prepared with `passes` from `lowered`, as it was lowered,
 /// isn't printed to `js_path`; none where it checks.
@@ -32,7 +32,7 @@ pub(super) fn refusal(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::js::{Expr, Item, Module, StmtKind};
+    use rust_js_program::js::{Expr, Item, Module, StmtKind};
 
     // A read nothing declares nor made a global, `console` as a local's
     // read, is refused, naming the module, the read and what broke it: the

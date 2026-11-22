@@ -2,7 +2,7 @@
 //! is the value, kept for good.
 
 use super::FnCx;
-use crate::js::{self, Expr};
+use rust_js_program::js::{self, Expr};
 
 use rustc_middle::ty;
 

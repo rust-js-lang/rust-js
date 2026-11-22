@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [
     breaks:
       'a parameter\'s `#[rust_js::name = "my-name"]`, no JS name, is written as it is, a syntax error',
     file: "src/lower/analysis/validation.rs",
-    find: "    if !crate::names::is_identifier(given.as_str()) || crate::names::kept_word(given.as_str()) {\n",
+    find: "    if !rust_js_program::names::is_identifier(given.as_str()) || rust_js_program::names::kept_word(given.as_str()) {\n",
     replace: "    if false {\n",
     tests: [
       "test/bindings.test.ts",

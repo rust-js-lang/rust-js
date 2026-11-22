@@ -9,9 +9,9 @@ pub(in crate::lower) use in_place::InPlaceWriter;
 
 use super::recognition::StdItem;
 use super::{FnCx, Shape};
-use crate::js;
-use crate::js::{Expr, Op, Prop};
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js;
+use rust_js_program::js::{Expr, Op, Prop};
 use rustc_abi::VariantIdx;
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;

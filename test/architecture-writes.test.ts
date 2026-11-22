@@ -66,7 +66,7 @@ test("whether a tree sets a variable is js::Writes' alone", () => {
     // The consecutive `name = value;`s hoisted before a `try` with it.
     "src/prepare/catches.rs: .take_while(|s| {",
     // The first statement of a `catch` that sets the variable afresh.
-    "src/js/applied/tried.rs: let first_set = caught.iter().position(|s| {",
+    "crates/rust-js-program/src/js/applied/tried.rs: let first_set = caught.iter().position(|s| {",
     // Each mention of a temporary in a `switch` a case's assignment of it.
     "src/lower/mir/tidy/switches.rs: .filter(",
     // The first mention of a variable in a `try`, its assignment.
@@ -76,7 +76,7 @@ test("whether a tree sets a variable is js::Writes' alone", () => {
   ];
   const searching = /(\.any\(|\.filter\(|\.position\(|\.find\(|\.take_while\(|\|=)[^;]{0,160}?StmtKind::Assign\([^;]{0,200}?ExprKind::Var\(\w+\)\s*if\s+(?:\*?\w+\s*==|\w+\.is\()/g;
   const found = compilerRustFiles()
-    .filter((file) => file.endsWith(".rs") && file !== "src/js/writes.rs")
+    .filter((file) => file.endsWith(".rs") && file !== "crates/rust-js-program/src/js/writes.rs")
     .flatMap((file) => {
       const text = read(file);
       return [...text.matchAll(searching)].map((m) => `${file}: ${text.split("\n")[text.slice(0, m.index).split("\n").length - 1].trim()}`);
@@ -100,7 +100,7 @@ test("which places a tree writes is js::Writes' alone", () => {
   ];
   const matching = /StmtKind::Assign\((\w+), _\) \| StmtKind::Compound\(_, \1, _\)/g;
   const found = compilerRustFiles()
-    .filter((file) => file.endsWith(".rs") && file !== "src/js/writes.rs")
+    .filter((file) => file.endsWith(".rs") && file !== "crates/rust-js-program/src/js/writes.rs")
     .flatMap((file) => {
       const text = read(file);
       return [...text.matchAll(matching)].map((m) => `${file}: ${text.split("\n")[text.slice(0, m.index).split("\n").length - 1].trim()}`);

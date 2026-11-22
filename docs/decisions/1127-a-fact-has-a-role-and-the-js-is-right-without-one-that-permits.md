@@ -65,7 +65,7 @@ runs as native Rust does.**
 | `Warns` | Evaluating it may do what its kind doesn't say | takes it for a plain read or write | never |
 | `Form` | What the JS is, a form the lowering chose | reads another form's JS | never |
 
-- **`Known` is one list**, `knowns!` in `src/js/known.rs`: the enum and
+- **`Known` is one list**, `knowns!` in `crates/rust-js-program/src/js/known.rs`: the enum and
   `Known::ALL` of the same lines, so none is left out. `rust-js --knowns`
   lists each with its role.
 - **Forgetting is `Facts`' alone.** `--without-known <fact>`, any number,

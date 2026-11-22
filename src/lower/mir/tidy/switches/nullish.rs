@@ -1,8 +1,8 @@
 //! A `switch` of an `Option`'s value, which takes `None` where no case
 //! is `null`'s: the `default`, or past the `switch` (ADR 0629, amended).
 
-use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 use crate::lower::mir::hints::Switch;
+use rust_js_program::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
 use super::does_nothing;
 

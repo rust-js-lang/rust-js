@@ -324,7 +324,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 // Made of the values in the fields' order, as the struct
                 // holds them: `([start, end]) => ({ start, end })`.
-                let locals: Vec<crate::js::Name> = names.iter().map(|name| self.fresh(Base::Named(name))).collect();
+                let locals: Vec<rust_js_program::js::Name> =
+                    names.iter().map(|name| self.fresh(Base::Named(name))).collect();
                 let made = match held {
                     Held::Fields => Expr::object(
                         (names.iter().zip(&locals))

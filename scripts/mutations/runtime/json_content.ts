@@ -1,11 +1,11 @@
-// Mutations of src/runtime/json_content.js (ADR 0093).
+// Mutations of crates/rust-js-program/src/runtime/json_content.js (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "json-content-map-left-over-kept",
     breaks: "a buffered map with entries left over, `{\"c\":{\"a\":1,\"b\":2},\"t\":\"F\"}` of a visitor that reads one, is read, where serde says `invalid length 2, expected 1 element in map`",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    if (this.count < length) {\n      const count = this.count;\n      throw $jsonError(`invalid length ${length}, expected ${count} element${count === 1 ? \"\" : \"s\"} in map`);\n",
     replace: "    if (false) {\n      const count = this.count;\n      throw $jsonError(`invalid length ${length}, expected ${count} element${count === 1 ? \"\" : \"s\"} in map`);\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-seq-comma-unnamed",
     breaks: "a list's items with no comma between are `trailing characters`, where serde_json says ``expected `,` or `]` ``",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    if (peek !== 44) throw reader.peekError(\"expected `,` or `]`\");\n",
     replace: "    if (peek !== 44) throw reader.peekError(\"trailing characters\");\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-seq-trailing-comma-read-on",
     breaks: "a comma before `]` is read on, where serde_json says `trailing comma`",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    if (c === 93) throw reader.peekError(\"trailing comma\");\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-seq-every-item-first",
     breaks: "each of a list's items is read as its first, so no comma is asked between them",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "      this.first = false;\n      return true;\n",
     replace: "      return true;\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-element-length-counts-past",
     breaks: "a list too short for a tuple says one more item than it had",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    throw $jsonError(`invalid length ${i}, expected ${expected}`);\n",
     replace: "    throw $jsonError(`invalid length ${i + 1}, expected ${expected}`);\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-content-seq-left-over-kept",
     breaks: "a buffered list with items over is read, where serde says `invalid length`",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    const length = this.items.length;\n    if (this.count < length) {\n",
     replace: "    const length = this.items.length;\n    if (false) {\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-map-first-key-unchecked",
     breaks: "a map's first key isn't asked to be a string, where serde_json says `key must be a string`",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "      if (peek === 34) return true;\n      throw reader.peekError(\"key must be a string\");\n",
     replace: "      return true;\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-map-trailing-comma-unnamed-in-access",
     breaks: "a comma before `}` is `key must be a string`, where serde_json says `trailing comma`",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "      c === 125 ? \"trailing comma\" : c === -1",
     replace: "      c === 125 ? \"key must be a string\" : c === -1",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-map-comma-unasked",
     breaks: "a map's entries with no comma between are read, where serde_json says ``expected `,` or `}` ``",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    if (peek !== 44) throw reader.peekError(\"expected `,` or `}`\");\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-key-number-unchecked",
     breaks: "a number key that isn't one is read as a number, where serde_json says it expected a number in quotes",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    if (!(c === 45 || (c >= 48 && c <= 57))) throw reader.error(\"invalid value: expected key to be a number in quotes\");\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-key-number-unclosed",
     breaks: "a number key with more after it is read, where serde_json says ``expected `\"` ``",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    if (reader.peek() !== 34) throw reader.peekError('expected `\"`');\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-key-bool-unquoted",
     breaks: "a `true` key's closing quote isn't read, so what follows it is",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "        reader.parseIdent('rue\"');\n",
     replace: "        reader.parseIdent('rue');\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-content-enum-many-keys",
     breaks: "a buffered enum's map of two keys is read as its first, where serde says it expected a map with a single key",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "      if (value.length !== 1) throw $jsonError(\"invalid value: map, expected map with a single key\");\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-content-variant-index-ignored",
     breaks: "a variant named by its index is the first variant, whatever the index",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    if (value.value < variants.length) return $jsonName(variants[Number(value.value)]);\n",
     replace: "    if (value.value < variants.length) return $jsonName(variants[0]);\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-unit-variant-a-newtype",
     breaks: "a unit variant's name alone is read as a newtype variant, where serde_json says it expected one",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    if (this.isUnit) throw $jsonError(\"invalid type: unit variant, expected newtype variant\");\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-unit-variant-a-tuple",
     breaks: "a unit variant's name alone is read as a tuple variant, where serde_json says it expected one",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    if (this.isUnit) throw $jsonError(\"invalid type: unit variant, expected tuple variant\");\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-content-variant-any-shape",
     breaks: "a buffered variant is read whatever it holds, where serde asks a tuple variant's for a list",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    if (types && !types.includes(this.held.type)) {\n",
     replace: "    if (false) {\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-content-owned-by-reference",
     breaks: "an internally tagged enum's string, its content's whole, is given by reference, `visit_str`, where serde gives it whole, `visit_string` (#1546)",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    return this.data.borrowed ? \"borrowed\" : this.owned ? \"owned\" : \"transient\";\n",
     replace: "    return this.data.borrowed ? \"borrowed\" : \"transient\";\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-content-reference-owned",
     breaks: "an untagged enum's string, read by reference, is given whole, `visit_string`, where serde gives it by reference, `visit_str` (#1546)",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    return this.data.borrowed ? \"borrowed\" : this.owned ? \"owned\" : \"transient\";\n",
     replace: "    return this.data.borrowed ? \"borrowed\" : \"owned\";\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-content-any-kind-lost",
     breaks: "`deserialize_any` of content gives a string no kind, so one borrowed from the text goes to `visit_str` (#1546)",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    if (visit) return visit(value, type === \"str\" ? this.stringKind() : undefined);\n",
     replace: "    if (visit) return visit(value);\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a string is given to a visitor as serde_json gives it"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "content-option-unit-as-none",
     breaks: "a hand-written visitor's `deserialize_option` of serde's buffered content gives a unit to its `visit_none`, where serde's `ContentDeserializer` gives it to `visit_unit`, an untagged enum's `{\"a\": null}` read where native fails (#1597)",
-    file: "src/runtime/json_content.js",
+    file: "crates/rust-js-program/src/runtime/json_content.js",
     find: "    if (visitor.unit) return visitor.unit();\n    throw this.invalid(expected);\n",
     replace: "    return visitor.none();\n",
     tests: ["test/serde-protocol.test.ts", "-t", "a visitor's deserialize_option is each reader's own"],

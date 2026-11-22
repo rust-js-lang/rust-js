@@ -6,10 +6,10 @@
 use super::bindings::{self, field_key};
 use super::recognition::StdItem;
 use super::{FnCx, R, Shape};
-use crate::js;
-use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::temporary_names::Role;
 use rust_js_program::collections::IndexSet;
+use rust_js_program::js;
+use rust_js_program::js::{Expr, Op, Prop, Stmt, StmtKind};
 use rustc_abi::VariantIdx;
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;

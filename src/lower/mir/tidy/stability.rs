@@ -1,6 +1,6 @@
 //! Stability of expression reads across calls, consumed by tidy movement.
-use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 use rust_js_program::collections::IndexSet;
+use rust_js_program::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 
 /// Whether `e` is a read of plain Rust data, which nothing changes: a field
 /// however deep of a variable of plain data, or one of a plain variable's
@@ -79,7 +79,7 @@ pub(super) fn read_past_calls(e: &Expr, set: &IndexSet<js::Name>, plain: &IndexS
         ExprKind::Template(_, values, _) => values.iter().all(past),
         ExprKind::Stringed(a) | ExprKind::Converted(_, a) | ExprKind::Unary(_, a) => past(a),
         ExprKind::Binary(_, a, b) => past(a) && past(b),
-        ExprKind::Call(callee, args) if callee.helper_name().is_some_and(crate::runtime::is_pure) => {
+        ExprKind::Call(callee, args) if callee.helper_name().is_some_and(rust_js_program::runtime::is_pure) => {
             args.iter().all(past)
         }
         // A function called at once, `((value) => ..)(value$1)`: its body,

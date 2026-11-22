@@ -821,7 +821,7 @@ fn names_a_variable(
     default: &str,
     what: &str,
 ) -> bool {
-    if !crate::names::is_identifier(given.as_str()) || crate::names::kept_word(given.as_str()) {
+    if !rust_js_program::names::is_identifier(given.as_str()) || rust_js_program::names::kept_word(given.as_str()) {
         tcx.dcx().span_err(
             attr.span(),
             format!("rust-js: {what} JS name is a name JS lets a variable have, not `{given}`"),

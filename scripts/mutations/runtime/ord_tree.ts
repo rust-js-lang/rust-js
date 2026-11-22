@@ -1,8 +1,8 @@
-// Mutations of src/runtime/ord_tree.js, std's B-tree node for node (#926,
+// Mutations of crates/rust-js-program/src/runtime/ord_tree.js, std's B-tree node for node (#926,
 // ADR 0404).
 import type { Mutation } from "../../mutations";
 
-const file = "src/runtime/ord_tree.js";
+const file = "crates/rust-js-program/src/runtime/ord_tree.js";
 const seen = ["test/corpus.test.ts", "-t", "^btree_nodes_seen.rs$"];
 const unwinds = ["test/corpus.test.ts", "-t", "^btree_nodes_unwinds.rs$"];
 const both = ["test/corpus.test.ts", "-t", "^btree_nodes_seen.rs$|^btree_nodes_unwinds.rs$"];
@@ -227,7 +227,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-algebra-tipping-halved",
     breaks: "a B-tree set's `intersection`, `difference` and `is_subset` search the larger for the smaller's items past std's tipping size, 8 for 16, asking other items `cmp` (#943)",
-    file: "src/runtime/ord_tree.js",
+    file: "crates/rust-js-program/src/runtime/ord_tree.js",
     find: "const $SET_TIPPING = 16; // ITER_PERFORMANCE_TIPPING_SIZE_DIFF\n",
     replace: "const $SET_TIPPING = 8; // ITER_PERFORMANCE_TIPPING_SIZE_DIFF\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_set_algebra_seen.rs$"],
@@ -235,7 +235,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-merge-keeps-the-less",
     breaks: "a B-tree set's `union` holds back the lesser of two heads, not the greater, asking `cmp` of other pairs (#943)",
-    file: "src/runtime/ord_tree.js",
+    file: "crates/rust-js-program/src/runtime/ord_tree.js",
     find: '        if (order < 0) [peeked, bn] = [{ side: "b", step: bn }, undefined];\n',
     replace: '        if (order > 0) [peeked, bn] = [{ side: "b", step: bn }, undefined];\n',
     tests: ["test/corpus.test.ts", "-t", "^btree_set_algebra_seen.rs$"],
@@ -243,7 +243,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-subset-walk-asked-the-other-way",
     breaks: "a B-tree set's `is_subset` walk asks `self1.cmp(other1)`, where std asks `other1.cmp(self1)` (#943)",
-    file: "src/runtime/ord_tree.js",
+    file: "crates/rust-js-program/src/runtime/ord_tree.js",
     find: "      const order = cmp(ys[at++], xs[i]);\n      if (order < 0) continue;\n      if (order > 0) return false;\n",
     replace: "      const order = -cmp(xs[i], ys[at++]);\n      if (order < 0) continue;\n      if (order > 0) return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_set_algebra_seen.rs$"],
@@ -251,7 +251,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-difference-stitch-steps-both",
     breaks: "a B-tree set's `difference` stitched steps the other walk only past an equal item, asking the same pairs again (#943)",
-    file: "src/runtime/ord_tree.js",
+    file: "crates/rust-js-program/src/runtime/ord_tree.js",
     find: "          if (xn === undefined) return undefined;\n        }\n        y.next();\n",
     replace: "          if (xn === undefined) return undefined;\n          y.next();\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_set_algebra_seen.rs$"],
@@ -259,7 +259,7 @@ export const mutations: Mutation[] = [
   {
     name: "tree-of-sorted-keeps-all",
     breaks: "a B-tree set an operator makes keeps each of its items, asking no `!=` of each two, as std's `DedupSortedIter` asks (#961)",
-    file: "src/runtime/ord_tree.js",
+    file: "crates/rust-js-program/src/runtime/ord_tree.js",
     find: "  tree.items.pushSorted($sortedSteps(items, true), TOrd.PartialOrd().PartialEq().ne);\n",
     replace: "  tree.items.pushSorted($sortedSteps(items, true), () => true);\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_set_operators_seen.rs$"],
@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
   {
     name: "sorted-steps-pulled-at-once",
     breaks: "a bulk build of a set's operator pulls its items all at once, so the merge's `cmp` calls come before the build's `!=` calls, where std's interleave (#961)",
-    file: "src/runtime/ord_tree.js",
+    file: "crates/rust-js-program/src/runtime/ord_tree.js",
     find: "  tree.items.pushSorted($sortedSteps(items, true), TOrd.PartialOrd().PartialEq().ne);\n",
     replace: "  tree.items.pushSorted(Array.from(items, (item) => [item, item]), TOrd.PartialOrd().PartialEq().ne);\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_set_operators_seen.rs$"],

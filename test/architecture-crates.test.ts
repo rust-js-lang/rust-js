@@ -77,3 +77,17 @@ test("which crate a file and a module are of is the layout's answer", () => {
   const modules = compilerCrates().flatMap((crate) => topModules(crate));
   expect(modules.length).toBe(new Set(modules).size);
 });
+
+// What a test makes and a compile never does, the `testing` feature of a
+// crate (a `Name` of a word alone, #2034), is the tests' alone: a normal
+// build of the binary, the compiler a user runs, has none of it.
+test("a crate's `testing` feature never reaches a normal build", () => {
+  const tree = Bun.spawnSync(["cargo", "tree", "--locked", "--offline", "-p", "rust-js", "-e", "normal,features", "--prefix", "none"], { cwd: root });
+  expect(tree.exitCode).toBe(0);
+  const lines = tree.stdout.toString().split("\n");
+  expect(lines.some((line) => line.startsWith("rust-js-program"))).toBe(true);
+  expect(lines.filter((line) => /feature "testing"/.test(line))).toEqual([]);
+  // And the tests' build has it, so the guard is real.
+  const dev = Bun.spawnSync(["cargo", "tree", "--locked", "--offline", "-p", "rust-js", "-e", "dev,features", "--prefix", "none"], { cwd: root });
+  expect(dev.stdout.toString()).toMatch(/rust-js-program feature "testing"/);
+});

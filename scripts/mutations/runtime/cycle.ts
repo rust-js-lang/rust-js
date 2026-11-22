@@ -1,11 +1,11 @@
-// Mutations of src/runtime/cycle.js (ADR 0181).
+// Mutations of crates/rust-js-program/src/runtime/cycle.js (ADR 0181).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "cycle-js-iterator",
     breaks: "a `cycle()` of the crate's iterator is JS's iterator, whose `take` is done with it once its clone throws, a panic, so neither what it keeps nor what it steps is dropped as the panic unwinds (#708)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "  const cycled = new $Steps(\n",
     replace: "  const cycled = ((next, close) => Iterator.from({ next, return: () => (close(), { done: true }) }))(\n",
     tests: ["test/corpus.test.ts", "-t", "^hint_kept_through_rev_take_and_cycle.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-of-none-gives-one",
     breaks: "`cycle()` of an iterator with nothing left gives an item, where Rust's gives none",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "    if (items.length === 0) return { done: true, value: undefined };\n",
     replace: "    if (items.length === 0) return { done: false, value: undefined };\n",
     tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-restart-drop-first",
     breaks: "`Cycle` drops the iterator it replaces before it clones the next, not after",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "    const fresh = clone(cycled.orig);\n    fresh.hold?.();\n    $unwinds(\n      () => drop?.(cycled.iter),\n",
     replace: "    drop?.(cycled.iter);\n    const fresh = clone(cycled.orig);\n    fresh.hold?.();\n    $unwinds(\n      () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^(cycled_iterators|cloned_apart_map_drops_its_closure).rs$"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-close-order",
     breaks: "a closed `Cycle` drops what it steps before the clone it keeps, not after",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "          () => drop?.(cycled.orig),\n          () => drop?.(cycled.iter),\n",
     replace: "          () => drop?.(cycled.iter),\n          () => drop?.(cycled.orig),\n",
     tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-clone-restarts",
     breaks: "a held `Cycle`'s clone steps from what it started with, not where it is",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "$unwinds(() => clone(cycled.iter), drop",
     replace: "$unwinds(() => clone(cycled.orig), drop",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-hint-of-empty-unknown",
     breaks: "an empty `Cycle`'s size hint isn't `(0, Some(0))`",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "    if (low === 0 && high === 0) return [0, 0];\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-close-stops-at-a-panic",
     breaks: "a closed `Cycle` whose kept clone's drop panics never drops what it steps, where its drop glue goes on (#883)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "        $inTurn(\n          () => drop?.(cycled.orig),\n          () => drop?.(cycled.iter),\n        ),\n",
     replace: "        (drop?.(cycled.orig), drop?.(cycled.iter)),\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_drops_both_as_one_panics.rs$"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-hint-of-its-source-unasked",
     breaks: "a `cycle()` asks its source's hint without its step, so of a range's, which only its `next` knows, it's `(0, None)` where std's is `(usize::MAX, None)` or `(0, Some(0))` (#1179)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "    const [low, high] = $sizeHint(cycled.orig, { next });\n",
     replace: "    const [low, high] = $sizeHint(cycled.orig);\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_size_hint.rs$"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-of-items-hintless",
     breaks: "a `cycle()` of an array's items carries no hint, so its `size_hint()` is `(0, None)` (#1179)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "  cycled.sizeHint = () => (items.length === 0 ? [0, 0] : [4294967295, undefined]);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(cycle_size_hint|cycle_taken_grows_as_std).rs$"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-of-unwinding-clone-keeps-given",
     breaks: "where `cycle()`'s clone of what it's given panics, what it was given is never dropped, where `Cycle::new` drops it as it unwinds (#1585)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "  const orig = $unwinds(() => clone(iterator), drop && (() => drop(iterator)));\n",
     replace: "  const orig = clone(iterator);\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_clone_or_drop_panics_drops_what_it_holds.rs$"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-replaced-drop-unwinding-keeps-old",
     breaks: "where the drop of what a `Cycle` steps panics as it's replaced, the dropped one stays, dropped again as the panic unwinds, the fresh clone never (#1585)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "      () => {\n        cycled.iter = fresh;\n      },\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cloned_apart_map_drops_its_closure.rs$"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-clone-unwinding-keeps-orig-clone",
     breaks: "where a held `Cycle`'s clone of what it steps panics, the clone of what it started with is never dropped (#1585)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "    const iter = $unwinds(() => clone(cycled.iter), drop && (() => drop(orig)));\n",
     replace: "    const iter = clone(cycled.iter);\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_clone_or_drop_panics_drops_what_it_holds.rs$"],
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-of-items-js-own-iterator",
     breaks: "`$cycle` is JS's own iterator, not a `$Steps`, so its `take(n)` is JS's own, which knows no hint, and a `Vec` collected from it grows by doubling, 8 where std's is 7 (#1635)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "  cycled.sizeHint = () => (items.length === 0 ? [0, 0] : [4294967295, undefined]);\n  return cycled;\n}",
     replace: "  cycled.sizeHint = () => (items.length === 0 ? [0, 0] : [4294967295, undefined]);\n  return Iterator.from({ next: cycled.next });\n}",
     tests: ["test/corpus.test.ts", "-t", "^cycle_taken_grows_as_std.rs$"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     name: "cycle-fresh-unheld",
     breaks:
       "what a `Cycle` steps after it restarts isn't held, so it's dropped as it ends, before the clone that replaces it, where `self.iter = self.orig.clone()` clones first (#2160)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "    fresh.hold?.();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cloned_apart_map_drops_its_closure.rs$"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     name: "cycle-first-unheld",
     breaks:
       "what a `Cycle` a temporary steps first isn't held, so a `cycle().take(5)` drops it as it ends, before the clone that replaces it (#2160)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "function $cycleFrom(orig, iter, clone, next, boxed, drop) {\n  iter.hold?.();\n",
     replace: "function $cycleFrom(orig, iter, clone, next, boxed, drop) {\n",
     tests: ["test/corpus.test.ts", "-t", "^cloned_apart_map_drops_its_closure.rs$"],
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-try-fold-by-next",
     breaks: "a `cycle()` folds what it steps by `next`, never its own `try_fold`, so a `skip` inside asks the crate's `nth(n)`, not `nth(n - 1)`, where std's `Cycle::try_fold` asks `Skip::try_fold` (#2192)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "  $forward(cycled, iter, { tryFold, advanceBy });\n",
     replace: "  $forward(cycled, iter, { advanceBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_folds_through_what_it_steps.rs$"],
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-advance-by-by-next",
     breaks: "a `cycle()` passes over what it steps by its `try_fold`, never its own `advance_by`, so its `nth` asks a `skip` inside its `try_fold`, the crate's `nth(0)`, where std's `Cycle::advance_by` asks `Skip::advance_by`, which asks none (#2192)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "  $forward(cycled, iter, { tryFold, advanceBy });\n",
     replace: "  $forward(cycled, iter, { tryFold });\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_folds_through_what_it_steps.rs$"],
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-try-fold-of-empty-endless",
     breaks: "a `cycle()` of what gives nothing, folded, never ends, where std's `Cycle::try_fold` stops once a fresh clone gives nothing (#2192)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "    if (broke(acc) || empty) return acc;\n",
     replace: "    if (broke(acc)) return acc;\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_folds_through_what_it_steps.rs$"],
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-try-fold-what-is-left-unfolded",
     breaks: "a `cycle()` folded mid-round starts from a fresh clone, never folding what's left of the one it steps, as std's `Cycle::try_fold` does first (#2192)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "    let acc = folded(init, f, broke, unwind);\n",
     replace: "    let acc = init;\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_folds_through_what_it_steps.rs$"],
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-try-fold-clone-unwinding-acc-first",
     breaks: "where a clone a `cycle()`'s fold makes panics, the accumulator drops before what drops with its closure, where `Cycle::try_fold`'s frame drops its parameters `f` then `acc` (#2192)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "    for (;;) {\n      $stepHolding(replace, acc, unwind, ends);\n",
     replace: "    for (;;) {\n      $stepHolding(replace, acc, unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^cycle_folds_through_what_it_steps.rs$"],
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
   {
     name: "cycle-advance-by-of-empty-endless",
     breaks: "a `cycle()` of what gives nothing, passed over by `nth`, never ends, where std's `Cycle::advance_by` stops once a fresh clone passes over nothing (#2192)",
-    file: "src/runtime/cycle.js",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "      if (short === left) return short;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cycle_folds_through_what_it_steps.rs$"],

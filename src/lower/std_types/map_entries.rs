@@ -3,7 +3,7 @@
 //! m.set(k, []); } m.get(k).push(v);` (ADR 0059, amended). Split from
 //! map.rs by concept, as a file is at most 1500 lines.
 
-use crate::js::{self, Expr, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, Stmt, StmtKind};
 
 /// `$orInsertWith(m, k, () => []).push(v)`, `m.entry(k).or_default().push(v)`,
 /// the value there or put in that's the first its statement does: `if

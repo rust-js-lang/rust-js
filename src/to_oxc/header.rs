@@ -20,7 +20,7 @@ use oxc_ast::ast::{
 use oxc_span::{GetSpan, SPAN};
 
 use super::{Cx, span};
-use crate::js::{self, Module};
+use rust_js_program::js::{self, Module};
 
 /// What's above a module's code: its header, the module's own `//!`s,
 /// `docs`, and its directives, then a blank line, but where the Rust has
@@ -311,7 +311,10 @@ pub(super) fn entries<'a>(module: &'a Module) -> Vec<Entry<'a>> {
     // package: with what else it imports of it, std's compiled items, one
     // statement, `import { $unwrap, peekableIterator_next } from
     // "@rust-js/std"` (#1095).
-    let helpers_from = module.helpers_from.as_deref().unwrap_or(crate::runtime::PACKAGE);
+    let helpers_from = module
+        .helpers_from
+        .as_deref()
+        .unwrap_or(rust_js_program::runtime::PACKAGE);
     let helpers: Vec<(&str, &str)> = module.helpers.iter().map(|&helper| (helper, helper)).collect();
     let mut helpers = Some(helpers).filter(|helpers| !helpers.is_empty());
     if let Some(given) = helpers.as_ref()

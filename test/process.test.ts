@@ -26,8 +26,8 @@ test("each of std's functions that work in Node only is a helper of process.js o
     ...[...read("src/lower/std_types/process.rs").matchAll(/ProcessOp::(\w+) => "(\$\w+)"/g)].map(([, op, helper]): [string, string] => [`Process ${op}`, helper]),
     ...[...read("src/lower/std_types/fs.rs").matchAll(/FsOp::(\w+) => "(\$\w+)"/g)].map(([, op, helper]): [string, string] => [`Fs ${op}`, helper]),
   ]);
-  const process = read("src/runtime/process.js");
-  const fs = read("src/runtime/fs.js");
+  const process = read("crates/rust-js-program/src/runtime/process.js");
+  const fs = read("crates/rust-js-program/src/runtime/fs.js");
   const functions = [...process.matchAll(/^function (\$\w+)\(/gm)].map(([, name]) => name);
   expect(catalog.filter(({ of }) => of === "Fs").length).toBeGreaterThan(1);
   for (const { path, of, op } of catalog) {
@@ -45,8 +45,8 @@ test("each of std's functions that work in Node only is a helper of process.js o
   const processHelpers = catalog.filter(({ of }) => of === "Process").map(({ op }) => helpers.get(`Process ${op}`));
   expect(functions.filter((name) => !gates.includes(name)).sort()).toEqual(processHelpers.sort() as string[]);
   // Only it, and printing, which writes to `console` where there's none, read Node's process.
-  const runtimeFiles = readdirSync(join(root, "src/runtime"))
-    .filter((file) => file.endsWith(".js") && read(`src/runtime/${file}`).includes("globalThis.process"));
+  const runtimeFiles = readdirSync(join(root, "crates/rust-js-program/src/runtime"))
+    .filter((file) => file.endsWith(".js") && read(`crates/rust-js-program/src/runtime/${file}`).includes("globalThis.process"));
   expect(runtimeFiles.sort()).toEqual(["print.js", "process.js"]);
 });
 

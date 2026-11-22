@@ -16,8 +16,8 @@ pub(super) use self::{
 };
 
 use super::*;
-use crate::js::Name;
-use crate::js::result;
+use rust_js_program::js::Name;
+use rust_js_program::js::result;
 
 /// A loop's body that ends `if (c) { a; continue l; } break;`, `l` the loop
 /// or none, or any jump, or, where `nested`, an `if` that's of this shape

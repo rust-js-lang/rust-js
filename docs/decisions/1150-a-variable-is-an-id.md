@@ -21,7 +21,7 @@ that's not its spelling.
 
 ## Decision
 
-A name is `js::Name` (`src/js/name.rs`), the one type a read and a
+A name is `js::Name` (`crates/rust-js-program/src/js/name.rs`), the one type a read and a
 declaration have, and its identity is its own: an id of its item's names,
 of a global, or of a label, with its word, spelled once by preparation.
 It's reached in eight steps, each byte-identical:

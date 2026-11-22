@@ -5,8 +5,8 @@
 
 use super::super::FnCx;
 use super::super::bindings;
-use crate::js;
-use crate::js::{Expr, Op, UnaryOp};
+use rust_js_program::js;
+use rust_js_program::js::{Expr, Op, UnaryOp};
 use rustc_abi::VariantIdx;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty;

@@ -2,7 +2,7 @@
 //! it names, the rest of its path, and what a default or namespace import
 //! is called, and what `require` reads of it.
 
-use crate::js::{self, Expr};
+use rust_js_program::js::{self, Expr};
 
 /// What a JS module exports under a name, `("node:path", "join")`, or
 /// `"default"` or `"*"` for its default export or the module itself.

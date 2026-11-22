@@ -22,10 +22,10 @@ use rustc_span::Span;
 
 use super::State;
 use super::local_facts::QuietCells;
-use crate::js::{self, Expr, Stmt, StmtKind};
 use crate::lower::analysis::mir_reads::drop_flow::{flowing, maybe_inits, quiet_drops};
 use crate::lower::drops::Drops;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{self, Expr, Stmt, StmtKind};
 
 /// How a drop drops what it drops, rustc's `DropStyle`: not at all, as
 /// it's never there; as it's always there; as its flag says; or part by

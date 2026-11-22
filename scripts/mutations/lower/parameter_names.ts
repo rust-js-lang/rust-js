@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a drop's guard inlined while it's a temporary, `_3`, is read by its number, `const 3 = ..`, which JS can't read, at every tidy stage before its names",
     file: "src/lower/parameter_names.rs",
-    find: "!n.starts_with('_') && crate::names::is_identifier(n) && ",
+    find: "!n.starts_with('_') && rust_js_program::names::is_identifier(n) && ",
     replace: "!n.starts_with('_') && ",
     tests: ["test/tidy-stages.test.ts", "-t", "^drop_guard_name_shared after"],
   },
@@ -15,8 +15,8 @@ export const mutations: Mutation[] = [
     name: "drop-guard-kept-word",
     breaks: "a value kept to be dropped, `_in`, is read as `in`, a word JS keeps, spelled `in$1` where its `_` stays (`parameter_names::unmarked`)",
     file: "src/lower/parameter_names.rs",
-    find: " && crate::names::js_ident(n) == *n)",
-    replace: ")",
+    find: " && rust_js_program::names::js_ident(n) == *n\n",
+    replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_kept_words.rs$"],
     snapshots: true
   },
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     breaks: "`_x` beside an `x` is `x` too, so one is `x$1`",
     file: "src/lower/parameter_names.rs",
     find: "    match taken() {",
-    replace: "    match crate::names::js_ident(unmarked) == unmarked {",
+    replace: "    match rust_js_program::names::js_ident(unmarked) == unmarked {",
     tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
   },
   {
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     breaks: "a fn pointer's `_sum` is declared `_sum`, where its JS name, as a function's is, is `sum` (ADR 0678)",
     file: "src/lower/parameter_names.rs",
     find: "        Some(unmarked) => unmarked.to_string(),\n",
-    replace: "        Some(_) => crate::names::js_ident(&named),\n",
+    replace: "        Some(_) => rust_js_program::names::js_ident(&named),\n",
     tests: ["test/declarations-function-types.test.ts"],
   },
 ];

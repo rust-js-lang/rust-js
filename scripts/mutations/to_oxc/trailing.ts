@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "param-trailing-comment-of-a-method-after-the-line",
     breaks: "a line comment after a class's constructor's last parameter on its line, React's Flight server's `keepDebugAlive, // DEV-only`, is the body's first line, as a type's methods' parameters were none a comment is after (rd554)",
     file: "src/to_oxc/trailing.rs",
-    find: "            crate::js::Item::Namespace(namespace) => &namespace.methods[..],\n",
-    replace: "            crate::js::Item::Namespace(_) => &[],\n",
+    find: "            rust_js_program::js::Item::Namespace(namespace) => &namespace.methods[..],\n",
+    replace: "            rust_js_program::js::Item::Namespace(_) => &[],\n",
     tests: ["test/class-constructors.test.ts", "-t", "a class's constructor that gives an Rc of it makes this"],
   },
   {

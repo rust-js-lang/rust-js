@@ -1,11 +1,11 @@
-// Mutations of src/runtime.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/runtime.rs (ADR 0093).
 import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "pure-helpers-act",
     breaks: "the runtime's helpers that only read, `$jsonIndex(v, \"a\")`, count as doing something, held apart from MIR",
-    file: "src/runtime.rs",
+    file: "crates/rust-js-program/src/runtime.rs",
     find: "    \"$jsonIndex\",\n",
     replace: "",
     tests: ["test/serde.test.ts","-t","a Value's reads"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-step-may-throw",
     breaks: "a range's step, which never throws, is taken for a call that may, and a loop with a drop in it is a `while (true)` of a `try`, not a `for`",
-    file: "src/runtime.rs",
+    file: "crates/rust-js-program/src/runtime.rs",
     find: "    \"$rangeNext\",\n    \"$rangeNextBack\",\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "drop_flag_loops"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "inclusive-range-step-may-throw",
     breaks: "an inclusive range's step, `$rangeInclusiveNext`, which never throws, is taken for a call that may, and a loop with a drop in it is a `while (true)` of a `try`, not a `for`",
-    file: "src/runtime.rs",
+    file: "crates/rust-js-program/src/runtime.rs",
     find: "    \"$rangeInclusiveNext\",\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "some-value-not-pure",
     breaks: "taking a level off a nested `Option`, `$someValue(o)`, which only reads, is taken to do something, and the `Option` formatted after one is a function called in place",
-    file: "src/runtime.rs",
+    file: "crates/rust-js-program/src/runtime.rs",
     find: "    \"$someValue\",\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iter_next_back.rs$"],
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
   {
     "name": "mut-get-impure",
     "breaks": "a handle on a map's value nothing reads is still made, `$mutGet(m, k);`",
-    "file": "src/runtime.rs",
+    "file": "crates/rust-js-program/src/runtime.rs",
     "find": "    \"$mutGet\",\n",
     "replace": "",
     "tests": ["test/lowering-collections.test.ts", "-t", "and_modify then or_insert"]
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   {
     name: "some-mut-impure",
     breaks: "`e.get_or_insert(None);` of an `Option<Option<T>>` leaves its unread `$someMut({ .. })` as a statement",
-    file: "src/runtime.rs",
+    file: "crates/rust-js-program/src/runtime.rs",
     find: "    \"$someMut\",\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     name: "apart-acts",
     breaks:
       "a cell's `replace(vec![by.len() as i32])` names its new value first, `const value$1 = [by.length];`, before `const old = $apart(value.value)`: `$apart`, which only copies what it's given, counted as doing something (#527)",
-    file: "src/runtime.rs",
+    file: "crates/rust-js-program/src/runtime.rs",
     find: "    \"$apart\",\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^in_place_cell_replaced.rs$"],
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     name: "some-not-pure",
     breaks:
       "`$some(x)`, which does nothing but box, is held in a variable of its own, `const value = $some($weakNone);`, not read where it's made (#841)",
-    file: "src/runtime.rs",
+    file: "crates/rust-js-program/src/runtime.rs",
     find: "    \"$some\",\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_of_none_like_payloads.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "drop-each-unpure",
     breaks: "`$dropEach(drop)`, which only makes a function, is taken to run something, so a dictionary that holds one, `$drop: $dropEach(dDrop_drop)`, can't be read where it's made and splits a cleanup's regions (#1578)",
-    file: "src/runtime.rs",
+    file: "crates/rust-js-program/src/runtime.rs",
     find: "    \"$dropEach\",\n",
     replace: "",
     tests: [

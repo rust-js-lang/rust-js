@@ -226,7 +226,7 @@ Rust's behaviour is kept.
 
 - **The class:** keys found by their own `cmp` whose comparisons can be seen
   (`order_seen`) or whose order may not be total (`order_total`, #936) are
-  `$ordTreeMap(cmp)` and `$ordTreeSet(cmp)`: `$OrdTree`, src/runtime/ord_tree.js,
+  `$ordTreeMap(cmp)` and `$ordTreeSet(cmp)`: `$OrdTree`, crates/rust-js-program/src/runtime/ord_tree.js,
   a port of alloc/src/collections/btree (rustc 1.99). Its nodes hold up to
   eleven entries (B = 6), each searched from its first, `cmp(given, held)`.
   The owner is `tree_of_nodes` (src/lower/std_types/map.rs). A quiet and

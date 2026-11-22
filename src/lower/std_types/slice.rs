@@ -6,11 +6,11 @@ use rustc_middle::ty;
 use rustc_middle::ty::consts::ConstExt as _;
 use rustc_span::Span;
 
-use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::recognition::{Std, TypeFact};
 use crate::lower::representation::Num;
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 
 /// The helper that does what `known` does to a view of part of a slice,
 /// given the slice and where the part starts and ends, `(v, start, end?)`,
@@ -595,7 +595,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let result = self.view_call("$getDisjointMut", list);
                 match unchecked {
-                    true => crate::js::result::held(result),
+                    true => rust_js_program::js::result::held(result),
                     false => result,
                 }
             }
@@ -724,8 +724,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let byte = Expr::arrow(
                     vec![made_b.clone().into()],
                     vec![
-                        crate::js::StmtKind::Return(Some(Expr::bin(Op::Lt, Expr::var(&made_b), Expr::int(128))))
-                            .at(crate::js::Span::NONE),
+                        rust_js_program::js::StmtKind::Return(Some(Expr::bin(
+                            Op::Lt,
+                            Expr::var(&made_b),
+                            Expr::int(128),
+                        )))
+                        .at(rust_js_program::js::Span::NONE),
                     ],
                 );
                 Expr::call(Expr::member(arg(), "every"), vec![byte])

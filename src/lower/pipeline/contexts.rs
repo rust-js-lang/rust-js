@@ -66,7 +66,7 @@ pub(super) fn fn_cx<'a, 'tcx>(
     (def_id, body, copy): (DefId, Option<&'a Body<'tcx>>, Option<usize>),
     (module, module_names): (LocalModId, &'a IndexSet<String>),
     names: IndexSet<String>,
-    scope_functions: IndexMap<DefId, crate::js::Name>,
+    scope_functions: IndexMap<DefId, rust_js_program::js::Name>,
 ) -> FnCx<'a, 'tcx> {
     let tcx = shared.tcx;
     FnCx {

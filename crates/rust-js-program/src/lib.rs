@@ -4,4 +4,8 @@
 
 pub mod collections;
 pub mod decisions;
+pub mod js;
 pub mod lines;
+pub mod names;
+pub mod paths;
+pub mod runtime;

@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     breaks:
       'a numbered enum is declared `"Empty" | ..`, its names, where its JS is its numbers',
     file: "src/lower/declarations/enums.rs",
-    find: "            crate::js::ExprKind::Num(n) => json!(n as i64),\n",
+    find: "            rust_js_program::js::ExprKind::Num(n) => json!(n as i64),\n",
     replace: "",
     tests: [
       "test/lowering-repr-enums.test.ts",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an untagged enum's `#[rust_js::null]` variant is declared its name's string, not `null`",
     file: "src/lower/declarations/enums.rs",
-    find: '                            Some(crate::js::ExprKind::Null) => keyword("null"),\n',
+    find: '                            Some(rust_js_program::js::ExprKind::Null) => keyword("null"),\n',
     replace: "",
     tests: [
       "test/declarations.test.ts",
@@ -89,9 +89,9 @@ export const mutations: Mutation[] = [
     name: "bool-tag-declared-string",
     breaks: 'a boolean tag is declared the string `"true"`',
     file: "src/lower/declarations/enums.rs",
-    find: "            crate::js::ExprKind::Bool(b) => json!(b),\n",
+    find: "            rust_js_program::js::ExprKind::Bool(b) => json!(b),\n",
     replace:
-      "            crate::js::ExprKind::Bool(b) => json!(b.to_string()),\n",
+      "            rust_js_program::js::ExprKind::Bool(b) => json!(b.to_string()),\n",
     tests: ["test/declarations.test.ts"],
   },
   {

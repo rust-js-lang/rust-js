@@ -389,9 +389,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's namespace a body names isn't imported, refused as a value (ADR 1037)",
     file: "src/lower/analysis.rs",
-    find: "            .next()\n        {\n            let export = (from, crate::js::NAMESPACE.to_string());\n",
+    find: "            .next()\n        {\n            let export = (from, rust_js_program::js::NAMESPACE.to_string());\n",
     replace:
-      "            .find(|_| false)\n        {\n            let export = (from, crate::js::NAMESPACE.to_string());\n",
+      "            .find(|_| false)\n        {\n            let export = (from, rust_js_program::js::NAMESPACE.to_string());\n",
     tests: [
       "test/namespaces.test.ts",
       "-t",

@@ -435,7 +435,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let evidence = self.evidence_args(def_id, args, span)?
             && !evidence.is_empty()
         {
-            let mut params: Vec<crate::js::Name> = (0..sig.inputs().len())
+            let mut params: Vec<rust_js_program::js::Name> = (0..sig.inputs().len())
                 .filter(|&i| i != at)
                 .map(|i| match own(i) {
                     Some(name) => self.fresh(Base::Named(&name)),
@@ -1129,7 +1129,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Value::Expr(self.thrown_residual(residual, (ty, output), span)?));
             }
             let convert = self.tried_conversion(ty, Some(output), span)?;
-            let converted = convert.map(|conversion| conversion.of(crate::js::result::held(residual.clone())));
+            let converted = convert.map(|conversion| conversion.of(js::result::held(residual.clone())));
             return Ok(Value::Expr(self.tried_returned(residual, ty, converted)));
         }
         // `x.into()` is the `From::from(x)` it calls, the crate's own (ADR 0052).

@@ -1,10 +1,10 @@
 //! Lower JSX bindings into the framework-independent JS tree.
 
 use super::{FnCx, R, Shape, camel_case, fn_def, js_ident};
-use crate::js;
-use crate::js::{Expr, Prop, Stmt, StmtKind};
 use crate::lower::temporary_names::{Base, Role};
 use rust_js_program::collections::IndexMap;
+use rust_js_program::js;
+use rust_js_program::js::{Expr, Prop, Stmt, StmtKind};
 
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::{self, ExprId, ExprKind};

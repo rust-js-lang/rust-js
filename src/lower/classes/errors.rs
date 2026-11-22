@@ -7,7 +7,7 @@
 //! property JS makes, which no `Object.keys` lists, where `this.message =`
 //! would make one it does. Every other field is set after, in Rust's order.
 
-use crate::js::{self, Expr, ExprKind, Prop, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, ExprKind, Prop, Stmt, StmtKind};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;

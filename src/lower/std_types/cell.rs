@@ -5,11 +5,11 @@ use crate::lower::representation::NoneForm;
 use crate::lower::temporary_names::{Base, Role};
 use rust_js_program::collections::{IndexMap, IndexSet};
 
-use crate::js::result;
-use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
 use crate::lower::recognition::{Std, StdItem};
 use crate::lower::{FnCx, R};
+use rust_js_program::js::result;
+use rust_js_program::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use rustc_middle::ty::{self, Ty};
 
 mod variables;
@@ -916,7 +916,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let given = crate::lower::calls::apply(f, vec![self.nullable_lent(key, &call)]);
                 match tried {
-                    true => crate::js::result::ok(given),
+                    true => rust_js_program::js::result::ok(given),
                     false => given,
                 }
             }

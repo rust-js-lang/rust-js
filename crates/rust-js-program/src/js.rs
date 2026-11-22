@@ -49,7 +49,7 @@ pub use self::{
     walk::*,
     writes::Writes,
 };
-use rust_js_program::collections::{IndexMap, IndexSet};
+use crate::collections::{IndexMap, IndexSet};
 
 use std::collections::BTreeSet;
 

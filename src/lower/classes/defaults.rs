@@ -1,7 +1,7 @@
 //! A trait of classes' defaults, each class's prototype's method beside
 //! its own (rd283, ADR 1035).
 
-use crate::js::{self, Expr, ExprKind, Pattern, Prop, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, ExprKind, Pattern, Prop, Stmt, StmtKind};
 
 /// Each default a class takes of a trait of classes, of its impl `imp`'s
 /// dictionary lowered, `body`, which returns its object: a function of

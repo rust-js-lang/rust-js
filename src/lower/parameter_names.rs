@@ -26,7 +26,7 @@ pub(super) fn written_parameter_name(name: &str) -> String {
     let named = camel_case(name);
     match unmarked(&named) {
         Some(unmarked) => unmarked.to_string(),
-        None => crate::names::js_ident(&named),
+        None => rust_js_program::names::js_ident(&named),
     }
 }
 
@@ -36,9 +36,9 @@ pub(super) fn written_parameter_name(name: &str) -> String {
 /// parameter's name, and of a guard's, read once it's inlined
 /// (`drops::inlined`).
 pub(in crate::lower) fn unmarked(named: &str) -> Option<&str> {
-    named
-        .strip_prefix('_')
-        .filter(|n| !n.starts_with('_') && crate::names::is_identifier(n) && crate::names::js_ident(n) == *n)
+    named.strip_prefix('_').filter(|n| {
+        !n.starts_with('_') && rust_js_program::names::is_identifier(n) && rust_js_program::names::js_ident(n) == *n
+    })
 }
 
 /// A parameter's name where it says none (ADR 0678): camelCase, without

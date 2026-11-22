@@ -146,6 +146,8 @@ test("a unit-tested mutation is a change's where the change touches its unit tes
   expect(names([{ file: "src/lower.rs", lines: [[8, 8]] }])).toEqual(["unit"]);
   expect(names([{ file: "src/lower/jumps.rs", lines: [[2, 2]] }])).toEqual([]);
   expect(names([{ file: "src/other.rs", lines: [[8, 8]] }, { file: "test/x.test.ts", lines: [[1, 1]] }])).toEqual([]);
+  // Another crate's, from its own root (ADR 1181).
+  expect([unitTestsModule("crates/rust-js-program/src/lib.rs"), unitTestsModule("crates/rust-js-program/src/js/name.rs")]).toEqual(["", "js::name"]);
   expect([unitTestsModule("src/main.rs"), unitTestsModule("src/lower/mod.rs"), unitTestsModule("src/lower/jumps.rs"), unitTestsModule("test/x.ts")]).toEqual([
     "",
     "lower",
@@ -337,7 +339,7 @@ test("a run of the scripts' mutations alone builds the compiler where none is gi
 test("a push type-checks the mutations of each file its change touches, and of each list it touches", () => {
   const of = (name: string, file: string) => ({ name, breaks: "", file, find: "", replace: "", tests: [] });
   const among = [
-    { path: "a.ts", mutations: [of("in-a", "src/a.rs"), of("in-a-helper", "src/runtime/a.js")] },
+    { path: "a.ts", mutations: [of("in-a", "src/a.rs"), of("in-a-helper", "crates/rust-js-program/src/runtime/a.js")] },
     { path: "b.ts", mutations: [of("in-b", "src/b.rs")] },
     { path: "push.ts", mutations: [of("in-push", "scripts/push.ts")] },
   ];

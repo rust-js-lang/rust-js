@@ -1,9 +1,9 @@
 //! `std::future`'s functions (ADRs 0029, 0571): a future is a JS promise, so
 //! `ready(v)`, a future already done, is `Promise.resolve(v)`.
 
-use crate::js::Expr;
 use crate::lower::FnCx;
 use crate::lower::recognition::{Std, StdItem, StdPath};
+use rust_js_program::js::Expr;
 use rustc_middle::ty::{self, Ty};
 
 /// What's asked of `std::future`.

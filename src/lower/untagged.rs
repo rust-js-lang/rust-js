@@ -8,7 +8,7 @@ use super::bindings;
 use super::declarations::{Written, written_types};
 use super::recognition::{Recognition, StdItem, deref_target, serde_impl, std_item};
 use super::representation::{Num, is_string_enum};
-use crate::js::{self, Expr, Op, UnaryOp};
+use rust_js_program::js::{self, Expr, Op, UnaryOp};
 use rustc_abi::VariantIdx;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{CtorKind, DefKind};

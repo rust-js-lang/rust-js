@@ -1,11 +1,11 @@
-// Mutations of src/runtime/io_error.js (ADR 0462).
+// Mutations of crates/rust-js-program/src/runtime/io_error.js (ADR 0462).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "io-error-display-kind",
     breaks: "`{}` of an `io::Error` made of a message shows its kind's words, not the message",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "  if (e.error !== undefined) return e.error.impl.Display().fmt(e.error.value, options);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_error_values.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-display-error-unpadded",
     breaks: "`{:>8}` of an `io::Error` holding an error doesn't give it the `Formatter`'s options, so it's unpadded (#1689)",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "  if (e.error !== undefined) return e.error.impl.Display().fmt(e.error.value, options);\n",
     replace: "  if (e.error !== undefined) return e.error.impl.Display().fmt(e.error.value);\n",
     tests: ["test/corpus.test.ts", "-t", "^std_error_messages_padded.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-display-message-unpadded",
     breaks: "`{:>30}` of an `io::Error` of std's message, `read_exact`'s, shows it unpadded, where std's `pad` pads it (#1689)",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "  if (e.message) return $formatted(e.message, options);\n",
     replace: "  if (e.message) return e.message;\n",
     tests: ["test/corpus.test.ts", "-t", "^std_error_messages_padded.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-display-message-as-kind",
     breaks: "`{}` of an `io::Error` of std's message shows its kind's words",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "  if (e.message) return $formatted(e.message, options);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_error_messages_padded.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-debug-custom-as-kind",
     breaks: "`{:?}` of an `io::Error` made of a message is `Kind(..)`",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "  if (e.error === undefined) return options?.alternate",
     replace: "  if (true) return options?.alternate",
     tests: ["test/corpus.test.ts", "-t", "^io_error_values.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-debug-never-pretty",
     breaks: "`{:#?}` of an `io::Error` is on one line",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "  return options?.alternate\n    ? $pretty(",
     replace: "  return false\n    ? $pretty(",
     tests: ["test/corpus.test.ts", "-t", "^io_error_values.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-source-itself",
     breaks: "an `io::Error`'s `source()` is the error it holds, not that one's source",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "    source: (e) => e.error?.impl.source(e.error.value),\n",
     replace: "    source: (e) => e.error,\n",
     tests: ["test/corpus.test.ts", "-t", "^io_error_values.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-result-debug-err-plain",
     breaks: "`{:?}` of an `io::Result<()>` that's an `Err` shows `Err(Error)`",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "  const error = $ioErrorDebug(result, options);\n",
     replace: "  const error = \"Error\";\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "os-error-shown-as-its-kind",
     breaks: "an error of the OS's shows its kind's words, `entity not found`, where std's shows its message and number, `No such file or directory (os error 2)` (#1156)",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "  if (e.code !== undefined) return `${e.message} (os error ${e.code})`;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fs_file.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-dyn-no-type-id",
     breaks: "an `io::Error` made a `dyn Error` has no `typeId`, so a downcast of it to an `io::Error` finds `None` where Rust finds it",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "    source: (e) => e.error?.impl.source(e.error.value),\n    typeId: () => type,\n",
     replace: "    source: (e) => e.error?.impl.source(e.error.value),\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_downcast.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-dyn-drops-nothing",
     breaks: "an `io::Error` boxed as a `dyn Error` drops nothing, so the error it holds is never dropped where Rust drops the box",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "    $drop: $ioErrorDrop,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-drop-empty",
     breaks: "an `io::Error`'s drop doesn't drop the error it holds",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "  e?.error?.impl.$drop?.(e.error.value);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_error_drops_what_it_holds.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-written-error-whole",
     breaks: "an `io::Error` holding an error, written into a writer under `{:>8}`, writes the error's text whole, not its `fmtInto`'s pieces (#1652)",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "  if (e.error !== undefined) return e.error.impl.Display().fmtInto(f, e.error.value, options);\n",
     replace: "  if (e.error !== undefined) return f.write(e.error.impl.Display().fmt(e.error.value));\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_and_dyn.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-written-os-whole",
     breaks: "an OS error written into a writer writes its message and number in one piece, where std's `write!` writes four (#1652)",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "    f.write(\" (os error \");\n    $writeInteger(f, e.code);\n    return f.write(\")\");\n",
     replace: "    return f.write(` (os error ${e.code})`);\n",
     tests: ["test/writer-sink.test.ts", "-t", "serde_json's error and an OS error"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-written-message-unpadded",
     breaks: "an `io::Error` of std's message written into a writer under a width writes no fill chars (#1652)",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "  if (e.message) return $writePadded(f, e.message, options);\n",
     replace: "  if (e.message) return f.write(e.message);\n",
     tests: ["test/writer-sink.test.ts", "-t", "serde_json's error and an OS error"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-debug-custom-error-whole",
     breaks: "an `io::Error` holding an error, in a `Box<dyn Error>` written by its `Debug` into a writer, writes that error's `Debug` as one `write_str`, where its own dictionary writes it a piece at a time (#2250)",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "  const error = (g, error) => $writeBy(g, error.impl.Debug(), error.value, options);\n",
     replace: "  const error = (g, error) => g.write(error.impl.Debug().fmt(error.value, options));\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_debug_written_piecewise.rs$"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-error-debug-os-message-unquoted",
     breaks: "an OS error in a `Box<dyn Error>` written by its `Debug` into a writer leaves out its message's quotes, which std's `write!(fmt, \"\\\"{}\\\"\", ..)` writes (#2250)",
-    file: "src/runtime/io_error.js",
+    file: "crates/rust-js-program/src/runtime/io_error.js",
     find: "      g.write('\"');\n      g.write(message);\n      g.write('\"');\n",
     replace: "      g.write(message);\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_debug_written_piecewise.rs$"],

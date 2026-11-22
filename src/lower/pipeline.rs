@@ -24,9 +24,9 @@ use super::analysis::{AnalyzedCrate, analyze_crate, nulled_params::NulledParams}
 use super::bindings::Export;
 use super::representation::{NonePlace, none_form};
 use super::{Body, CrateFacts, located, module_file};
-use crate::js::{self, Expr, Prop, StmtKind};
 use crate::program::{LoweredModule, Unlinked, UnlinkedModule};
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js::{self, Expr, Prop, StmtKind};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
@@ -424,7 +424,8 @@ pub fn lower_crate<'tcx>(
     let cache_of: IndexMap<DefId, String> = (dictionaries.iter())
         .map(|&id| {
             let info = &fns[&id];
-            let cache = crate::names::dictionary_cache(cache_names.entry(info.module).or_default(), &info.name);
+            let cache =
+                rust_js_program::names::dictionary_cache(cache_names.entry(info.module).or_default(), &info.name);
             (id, cache)
         })
         .collect();

@@ -4,15 +4,15 @@
 //! it wraps is, and its `Number` is `{ kind, value }`, a `"u"`nsigned,
 //! `"i"`nteger or `"f"`loat, as serde_json keeps one.
 
-use crate::js::{self, Expr, Op, Prop, StmtKind};
 use crate::lower::analysis::mir_reads::result_use::ResultUse;
 use crate::lower::display::Pretty;
 use crate::lower::recognition::{Json, JsonCall, JsonConversion, JsonMethod};
 use crate::lower::representation::Num;
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{self, Expr, Op, Prop, StmtKind};
 
-use crate::js::result;
+use rust_js_program::js::result;
 use rustc_middle::ty::Ty;
 use rustc_span::Span;
 

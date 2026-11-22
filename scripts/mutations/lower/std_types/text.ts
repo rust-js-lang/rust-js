@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/text.rs",
     find: "    let encoded = Expr::call(Expr::member(encoder, \"encode\"), vec![text]);\n    Expr::builtin(Expr::js_global(\"Array\"), \"from\", vec![encoded])\n}\n",
     replace:
-      "    let _ = encoder;\n    let c = crate::js::Name::declared(\"c\".to_string());\n    Expr::builtin(Expr::js_global(\"Array\"), \"from\", vec![text, Expr::arrow(vec![c.clone().into()], vec![crate::js::StmtKind::Return(Some(Expr::builtin(Expr::var(c), \"charCodeAt\", vec![Expr::int(0)]))).at(crate::js::Span::NONE)])])\n}\n",
+      "    let _ = encoder;\n    let c = rust_js_program::js::Name::declared(\"c\".to_string());\n    Expr::builtin(Expr::js_global(\"Array\"), \"from\", vec![text, Expr::arrow(vec![c.clone().into()], vec![rust_js_program::js::StmtKind::Return(Some(Expr::builtin(Expr::var(c), \"charCodeAt\", vec![Expr::int(0)]))).at(rust_js_program::js::Span::NONE)])])\n}\n",
     tests: ["test/corpus.test.ts", "-t", "^text_bytes_lent_and_owned.rs$"],
   },
   {

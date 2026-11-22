@@ -1,7 +1,7 @@
 //! A host's global asked twice in one `&&`: what an earlier test of it
 //! says, a later one needn't (ADR 0964).
 
-use crate::js::{Expr, ExprKind, Op, UnaryOp};
+use rust_js_program::js::{Expr, ExprKind, Op, UnaryOp};
 
 /// Of an `&&` chain, each `typeof p !== "undefined"` after a test of `p`'s
 /// `typeof`, `=== "function"`, `=== "object"`, any kind but `"undefined"`,

@@ -858,7 +858,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         items: Expr,
         (iterable, into): (Ty<'tcx>, Ty<'tcx>),
         span: Span,
-        out: &mut Vec<crate::js::Stmt>,
+        out: &mut Vec<rust_js_program::js::Stmt>,
     ) -> R<(Expr, Expr)> {
         let binding = crate::lower::iterators::binding_made(&items);
         if !self.extend_fills(into, (iterable, binding)) {
@@ -918,7 +918,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         items: Expr,
         (into, item): (Ty<'tcx>, Ty<'tcx>),
         span: Span,
-        out: &mut Vec<crate::js::Stmt>,
+        out: &mut Vec<rust_js_program::js::Stmt>,
     ) -> R<Expr> {
         if !self.krate.keeps_capacity || !self.recognition().grows_as_it_extends(into) {
             return Ok(items);
@@ -966,7 +966,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => self.known_fact_of(entry, TypeFact::Align),
         };
         match (self.room_value(entry), align) {
-            (Some(size), Some(align)) if !matches!(size.kind, crate::js::ExprKind::Undefined) => (size, align),
+            (Some(size), Some(align)) if !matches!(size.kind, rust_js_program::js::ExprKind::Undefined) => {
+                (size, align)
+            }
             _ => (Expr::int(0), Expr::int(1)),
         }
     }
@@ -1030,7 +1032,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         items: Expr,
         (into, item, (own, known_own), (lost, by_value)): (Ty<'tcx>, Ty<'tcx>, (bool, bool), (bool, bool)),
         span: Span,
-        out: &mut Vec<crate::js::Stmt>,
+        out: &mut Vec<rust_js_program::js::Stmt>,
     ) -> R<(Expr, Expr)> {
         let collection = match collection.reads_same() {
             true => collection,

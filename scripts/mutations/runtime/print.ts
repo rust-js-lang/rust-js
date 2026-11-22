@@ -1,11 +1,11 @@
-// Mutations of src/runtime/print.js (ADR 0392).
+// Mutations of crates/rust-js-program/src/runtime/print.js (ADR 0392).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "print-bytes-decoded-in-node",
     breaks: "bytes written to Node's stream are decoded and printed as text, a character split between writes lost",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "  if (stream?.write) stream.write(Uint8Array.from(bytes));\n  else ",
     replace: "  ",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-writer-text-unencoded",
     breaks: "a `Vec<u8>`'s `write!` adds the text's UTF-16 code units, not its UTF-8 bytes",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "  $extend(v, new TextEncoder().encode(text));\n",
     replace: "  $extend(v, Array.from(text, (c) => c.charCodeAt(0)));\n",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "io-write-all-error-refused",
     breaks: "std's `write_all` of a writer whose `write` fails panics, not giving its error",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "        throw written._0;\n",
     replace: "        throw new Error(\"a write that fails\");\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "vec-writer-spread-arguments",
     breaks: "a `Vec<u8>`'s `write_all` as a `dyn Write` spreads its bytes into one `push`, more than a JS call takes: `RangeError` (ADR 0919)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "writeAll: (w, bytes) => $extend(w.value, bytes),",
     replace: "writeAll: (w, bytes) => void w.value.push(...bytes),",
     tests: ["test/corpus.test.ts", "-t", "^runtime_long_writes.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-writer-unadvanced",
     breaks: "std's `Write for &mut [u8]` writes its bytes but doesn't re-point the slice past them, the next write over them (#1282)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "  w.value = $view(room, n);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_a_mut_slice.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "line-held-past-its-newline",
     breaks: "stdout's line is never written at its newline, only as `$printing` ends, so standard error written meanwhile comes first, and a print inside a later line follows it (#1490)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "  const end = $lineHeld.lastIndexOf(\"\\n\");\n  if (end < 0) return;\n",
     replace: "  const end = -1;\n  if (end < 0) return;\n",
     tests: ["test/runtime-print.test.ts", "-t", "stdout's line is written at its newline"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "line-left-unended-lost",
     breaks: "what's left unended of a line, a `print!`'s or a panic's part-way, is never written (#1490)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "      $print(rest);\n    }\n    // What was written ahead",
     replace: "    }\n    // What was written ahead",
     tests: ["test/corpus.test.ts", "-t", "^printed_while_a_line_is_formatted.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-never-the-line",
     breaks: "a writer that prints writes its text to a string of its own even as it formats into stdout's line, so its text comes after what it prints (#1490)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "  if ($printFrames.at(-1) !== $out) {\n",
     replace: "  if (true) {\n",
     tests: ["test/corpus.test.ts", "-t", "^printed_while_a_line_is_formatted.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "print-in-a-writer-unmarked",
     breaks: "what's printed as a writer formats inside a std value's `Debug` goes to the line at once, before the value's text, `vec [!D(1)!D(3), , ]` (#1521)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "  if ($captures.length > 0) $captures.at(-1).text += $marked(text);\n  else $toLine(text);\n",
     replace: "  $toLine(text);\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_writer_shown_in_std_values.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "marks-reach-the-line",
     breaks: "what's printed as a writer formats is left in the line as its mark, not put back in its place (#1521)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "  text = $unmarked(`${text}`);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^printing_writer_shown_in_std_values.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "unframed-print-held",
     breaks: "a print a writer makes where no line is formatted, a `format!`'s, is held for a line, and a line printed after comes first (#1521)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "  if ($printFrames.length === 0) {\n    $print(text);\n    return;\n  }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^printing_writer_shown_in_std_values.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "stopped-writers-text-lost",
     breaks: "what a writer a panic stopped had written and printed, in its capture, is lost, not kept in the line before what's printed after (#1521)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "    $closeAbove(depth);\n    $printFrames.pop();\n",
     replace: "    $captures.length = depth;\n    $printFrames.pop();\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_writer_stopped_part_way_where_caught.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "stopped-writers-text-folded-late",
     breaks: "what a writer whose panic its own writer caught had written comes after what that writer writes next, not before (#1521)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "    (more) => {\n      $closeAbove(depth);\n      capture.text += more;\n",
     replace: "    (more) => {\n      capture.text += more;\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_writer_stopped_part_way_where_caught.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "marks-forgeable",
     breaks: "a mark is a lone surrogate and a number alone, so a JS string holding one, given through interop, is taken for a print's mark (#1521)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "    const open = `\\uDC00${key.join(\"\")}`;\n",
     replace: "    const open = `\\uDC00`;\n",
     tests: ["test/runtime-print.test.ts", "-t", "a JS string's lone surrogates"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "padded-print-after-the-indent",
     breaks: "in `{:#?}`, a print a part's writer makes before its first write comes after the line's indent, `    !D(1),`, where std's `PadAdapter`, which it doesn't go through, writes the indent only with the part's text, `!    D(1),` (#1521)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "    if (at % 2 === 1) {\n      padded += part;\n      continue;\n    }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^printing_writer_shown_in_std_values.rs$"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "formatting-held-print-unwritten",
     breaks: "what a writer prints inside a `format!` made apart from the line is held when the `format!` ends, and the next line printed overtakes it: `format L1` then `<1>stepped 2` where Rust prints `<1>format L1` (#1534)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "    $printFrames.pop();\n    if ($printFrames.length === 0 && $lineHeld !== \"\") {\n      const rest = $lineHeld;\n      $lineHeld = \"\";\n      $print(rest);\n    }\n  }\n}\n// Bytes written",
     replace: "    $printFrames.pop();\n  }\n}\n// Bytes written",
     tests: ["test/corpus.test.ts", "-t", "^format_made_apart_prints_before_the_next_line.rs$"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "stderr-flushes-nothing-ahead",
     breaks: "a write to standard error made as a line is formatted writes none of stdout's line a writer's print ended, so it comes before it (#1490)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "function $write(text, error) {\n  if (error) $flushAhead();\n",
     replace: "function $write(text, error) {\n",
     tests: [
@@ -145,7 +145,7 @@ export const mutations: Mutation[] = [
   {
     name: "line-ahead-written-again",
     breaks: "the bytes of stdout's line written ahead of a write to standard error are written again when the writer's text reaches the line (#1490)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "    text = text.slice($lineAhead.length);\n",
     replace: "",
     tests: [
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-handle-reads-its-text",
     breaks: "a sink's handle reads the text written so far, so an append through it, `h.value += s`, writes that text again (#1637)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "    get value() {\n      return \"\";\n",
     replace: "    get value() {\n      return done();\n",
     tests: ["test/corpus.test.ts","-t","^held_formatter_prints.rs$"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-handle-unwritten",
     breaks: "what's appended through a sink's handle, a held `Formatter`'s write, is lost (#1637)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "    set value(more) {\n      write(more);\n",
     replace: "    set value(more) {\n",
     tests: ["test/corpus.test.ts","-t","^held_formatter_prints.rs$"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-armed-for-every-sink",
     breaks: "a sink armed for a writer shown into a writer stays armed once claimed, so a `format!` or `to_string()` the writer makes writes into the writer too (#1652)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "    $writerArmed = undefined;\n",
     replace: "",
     tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
   {
     name: "sink-armed-by-another-always-armed",
     breaks: "a sink armed with a text sink's is taken as a writer's, so a plain `{:?}` of an adapter of a dictionary without `fmtInto` throws (#1712)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "    return $sinkOf(into.write, () => \"\", into.writeChar, into.armed);\n",
     replace: "    return $sinkOf(into.write, () => \"\", into.writeChar, true);\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_std_adapters)\\.rs$"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
   {
     name: "line-ahead-kept-past-a-panic",
     breaks: "what was written ahead of a line a panic stopped is kept, so a print after the panic is \"written ahead of other text\" (#1761)",
-    file: "src/runtime/print.js",
+    file: "crates/rust-js-program/src/runtime/print.js",
     find: "    if ($printFrames.length === 0) $lineAhead = \"\";\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(writer_prints_a_line_then_panics)\\.rs$"],

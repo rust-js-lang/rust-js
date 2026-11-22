@@ -73,7 +73,7 @@ Two forms, one per order Rust drops in:
   its guard holds: `$madeEach(items, clone, drop)`, `Array.from`'s of
   `clone` but for that.
 
-Both are `src/runtime/made.js`'s, and each asks `$unwinds`, the
+Both are `crates/rust-js-program/src/runtime/made.js`'s, and each asks `$unwinds`, the
 runtime's one guard of what drops as a panic unwinds, whose
 `$dropsUnwinding` is the one place a drop's second panic aborts
 (`test/architecture-iterators.test.ts` holds it so). The runtime's own

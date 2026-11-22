@@ -1,14 +1,14 @@
 //! An `Option`'s or a `Result`'s method, and `bool::then` (ADRs 0030, 0062).
 
-use crate::js;
-use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
 use crate::lower::drops::Drops;
 use crate::lower::temporary_names::{Base, Role};
+use rust_js_program::js;
+use rust_js_program::js::{Expr, Op, Prop, Stmt, StmtKind};
 
-use crate::js::result;
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::result;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;

@@ -30,7 +30,7 @@ use rustc_middle::ty::{self, GenericArgsRef, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
 use rustc_span::{SourceFile, Span};
 
-use crate::js::{self, Expr, Prop, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, Prop, Stmt, StmtKind};
 
 mod aggregates;
 mod analysis;
@@ -100,7 +100,6 @@ mod unions;
 mod untagged;
 mod uses;
 
-use crate::names::{fresh_in, js_ident};
 pub use analysis::{
     bodies_of_build, collect_bodies, collect_initializers, collect_mir, collect_std_bodies, copied_bodies,
 };
@@ -116,6 +115,7 @@ pub(crate) use declarations::std_types::module as std_declarations;
 pub use declarations::validate_types;
 pub use instances::{Instances, instance_bodies};
 pub use pipeline::{Built, Lowered, lower_crate};
+use rust_js_program::names::{fresh_in, js_ident};
 /// Whether each `From` into an untagged enum is the variant of its
 /// argument, of a crate `--rustc` compiles, whose JS rust-js doesn't write
 /// (ADR 0214, amended).
@@ -229,7 +229,7 @@ fn module_path(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<String> {
         .collect();
     namesakes.sort_by_key(|&m| (in_block(m), m.to_local_def_id().local_def_index));
     match namesakes.iter().position(|&m| m == module) {
-        Some(at) if at > 0 => path.push(crate::names::given_apart(&name.to_string(), at)),
+        Some(at) if at > 0 => path.push(rust_js_program::names::given_apart(&name.to_string(), at)),
         _ => path.push(name.to_string()),
     }
     path
@@ -727,7 +727,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// out is `_` once it's known, as preparation names it.
     fn left_out(&mut self, keys: &[&str]) -> Vec<js::Name> {
         (keys.iter())
-            .map(|key| self.fresh(Base::Named(&format!("_{}", camel_case(&crate::names::js_ident(key))))))
+            .map(|key| {
+                self.fresh(Base::Named(&format!(
+                    "_{}",
+                    camel_case(&rust_js_program::names::js_ident(key))
+                )))
+            })
             .collect()
     }
 
@@ -1003,7 +1008,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let options = formatter.is_some() && self.takes_options(def_id);
             let made = move |cx: &mut Self| {
                 let evidence = cx.evidence_args_with(def_id, args, location, span)?;
-                let mut params: Vec<crate::js::Name> =
+                let mut params: Vec<rust_js_program::js::Name> =
                     (param_names.iter()).map(|name| cx.fresh(Base::Named(name))).collect();
                 if options {
                     params.push(cx.fresh(Role::Options));
@@ -1299,8 +1304,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 /// Translate a frontend module identity into an owned link symbol.
-fn module_symbol(module: LocalModId, export: &str) -> crate::js::Symbol {
-    crate::js::Symbol {
+fn module_symbol(module: LocalModId, export: &str) -> rust_js_program::js::Symbol {
+    rust_js_program::js::Symbol {
         module: module.to_def_id().index.as_u32(),
         export: export.to_owned(),
     }

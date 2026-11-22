@@ -546,11 +546,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && declared.len() == parts.len()
         {
             let pairs: Vec<(ty::Ty<'tcx>, ty::Ty<'tcx>)> = declared.iter().zip(parts.iter()).collect();
-            if let crate::js::ExprKind::Array(items, ..) = &mut value.kind
+            if let rust_js_program::js::ExprKind::Array(items, ..) = &mut value.kind
                 && items.len() == pairs.len()
                 && !items
                     .iter()
-                    .any(|item| matches!(item.kind, crate::js::ExprKind::Spread(_)))
+                    .any(|item| matches!(item.kind, rust_js_program::js::ExprKind::Spread(_)))
             {
                 for (item, &pair) in items.iter_mut().zip(&pairs) {
                     self.given_iterator(callee, item, pair, span, out)?;
@@ -564,7 +564,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut made = Vec::new();
                 self.given_iterator(callee, &mut part, pair, span, &mut made)?;
                 crossed.push((part != Expr::var(&name) || !made.is_empty()).then(|| {
-                    made.push(StmtKind::Return(Some(part)).at(crate::js::Span::NONE));
+                    made.push(StmtKind::Return(Some(part)).at(rust_js_program::js::Span::NONE));
                     Expr::arrow(vec![name.into()], made)
                 }));
             }

@@ -6,9 +6,9 @@
 //! value read in place knows its temporary is given (`held_name`). The
 //! base's since #2299 moved them from `mir`, which, and the rest, ask them.
 
-use crate::js::{self, Expr, Op, Stmt};
 use crate::lower::FnCx;
 use crate::lower::temporary_names::{Base, Role};
+use rust_js_program::js::{self, Expr, Op, Stmt};
 
 /// The name a value read in place knows its temporary is given (ADR 0569,
 /// #769): what a pending temporary was named by its call, `next` of

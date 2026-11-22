@@ -1,7 +1,7 @@
-// Mutations of src/runtime/sort_stable.js (ADR 0036, #925).
+// Mutations of crates/rust-js-program/src/runtime/sort_stable.js (ADR 0036, #925).
 import type { Mutation } from "../../mutations";
 
-const file = "src/runtime/sort_stable.js";
+const file = "crates/rust-js-program/src/runtime/sort_stable.js";
 const seen = ["test/corpus.test.ts", "-t", "^sort_stable_seen.rs$"];
 const unwinds = ["test/corpus.test.ts", "-t", "^sort_stable_unwinds.rs$"];
 

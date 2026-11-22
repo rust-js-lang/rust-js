@@ -1,11 +1,11 @@
-// Mutations of src/runtime/rc.js (ADR 0320).
+// Mutations of crates/rust-js-program/src/runtime/rc.js (ADR 0320).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "rc-clone-uncounted",
     breaks: "a clone of a counted `Rc` isn't counted",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "function $rcClone(rc) {\n  $countedBox(rc).strong++;\n",
     replace: "function $rcClone(rc) {\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-drop-never-last",
     breaks: "the last `Rc` doesn't drop what it points at",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "  if (--box.strong === 0) {\n",
     replace: "  if (--box.strong === -1) {\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counted_uses"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "upgrade-dangling",
     breaks: "a `Weak` upgrades after the last `Rc` is gone",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "  if (weak.strong === 0) return undefined;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "weak-count-dangling",
     breaks: "a `Weak`'s `weak_count()` counts with nothing strong left",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "  return weak.strong === 0 ? 0 : weak.weak;\n",
     replace: "  return weak.weak;\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "make-mut-shares",
     breaks: "`make_mut` of a shared `Rc` changes what the others point at",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "  const made = $countedLike(rc, clone ? clone(box.value) : box.value);\n",
     replace: "  const made = $countedLike(rc, box.value);\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counted_uses"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-unwrap-shared",
     breaks: "`try_unwrap` of a shared `Rc` takes its value",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "  if ($countedBox(rc).strong !== 1) return { TAG: \"Err\", _0: rc };\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "rc_counted_uses"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "new-cyclic-weak-kept",
     breaks: "`new_cyclic`'s own `Weak` is still counted after",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "  rc.weak--;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "rc_counted_uses"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "make-mut-drops-first",
     breaks: "`make_mut`'s clone sees one owner fewer than Rust's",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "  const made = $countedLike(rc, clone ? clone(box.value) : box.value);\n  $rcDrop(rc, drop);\n  return made;",
     replace: "  const value = box.value;\n  $rcDrop(rc, drop);\n  return $countedLike(rc, clone ? clone(value) : value);",
     tests: ["test/corpus.test.ts", "-t", "rc_clone_sees_owners"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwrap-or-clone-drops-first",
     breaks: "`unwrap_or_clone`'s clone sees one owner fewer than Rust's",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "  try {\n    return clone ? clone(box.value) : box.value;\n  } finally {\n    $rcDrop(rc, drop);\n  }",
     replace: "  const value = box.value;\n  $rcDrop(rc, drop);\n  return clone ? clone(value) : value;",
     tests: ["test/corpus.test.ts", "-t", "rc_clone_sees_owners"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwrap-or-clone-panic-kept",
     breaks: "an `unwrap_or_clone` whose clone panics keeps its `Rc` counted",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "  } finally {\n    $rcDrop(rc, drop);\n  }",
     replace: "  } finally {\n  }",
     tests: ["test/corpus.test.ts", "-t", "rc_clone_sees_owners"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-drop-dyn-value",
     breaks: "a counted `Rc<dyn T>`'s last drop gives its drop the value, not its pair",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "    const value = \"impl\" in box ? { value: box.value, impl: box.impl } : box.value;\n",
     replace: "    const value = box.value;\n",
     tests: ["test/corpus.test.ts", "-t", "^(dyn_any_counted_rc|rc_dyn_destructors).rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "rc-upcast-view-uncached",
     breaks: "two upcasts of one counted `Rc` are two boxes, so `Rc::ptr_eq` of them is false",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "  let view = rc.$views.get(key);\n",
     replace: "  let view = undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_dyn_upcast_counted.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "counted-box-not-hidden",
     breaks: "a class instance's counts are read off the instance itself, not the box hidden beside it: `undefined` counts (#1228)",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "  return rc[$countedKey] ?? rc;\n",
     replace: "  return rc;\n",
     tests: ["test/corpus.test.ts", "-t", "^class_rc_counted_(is_the_instance|given_back).rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "counted-value-always-held",
     breaks: "generic code given a class's counted `Rc` reads its `value`, which the instance has none of (#1228)",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "  return $countedKey in rc ? rc : rc.value;\n",
     replace: "  return rc.value;\n",
     tests: ["test/corpus.test.ts", "-t", "^class_rc_counted_given_back.rs$"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "upgrade-gives-the-box",
     breaks: "a class's `Weak` upgraded gives its hidden box, not the instance, whose methods it has none of (#1228)",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "  return box.value?.[$countedKey] === box ? box.value : box;\n",
     replace: "  return box;\n",
     tests: ["test/corpus.test.ts", "-t", "^class_rc_counted_is_the_instance.rs$"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "counted-anew-keeps-old-box",
     breaks: "an instance given back by `try_unwrap` and counted anew by `Rc::new` keeps its old box, a dead count, which an old `Weak` shares, as if one allocation (#1228)",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "    value: { value: instance, strong: 1, weak: 0 },\n",
     replace: "    value: instance[$countedKey] ?? { value: instance, strong: 1, weak: 0 },\n",
     tests: ["test/corpus.test.ts", "-t", "^class_rc_counted_given_back.rs$"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "new-cyclic-instance-unhidden",
     breaks: "`Rc::new_cyclic` of a class gives the instance with no box hidden beside it, which its `Weak`s count (#1228)",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "  Object.defineProperty(rc.value, $countedKey, { value: rc, writable: true, configurable: true });\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^class_rc_counted_given_back.rs$"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "counted-new-always-a-box",
     breaks: "generic code's `Rc::new` of a class's instance makes a box whatever its caller says, which its readers take for the instance (#1423)",
-    file: "src/runtime/rc.js",
+    file: "crates/rust-js-program/src/runtime/rc.js",
     find: "  return instance ? $countedInstance(value) : { value, strong: 1, weak: 0 };\n",
     replace: "  return { value, strong: 1, weak: 0 };\n",
     tests: ["test/corpus.test.ts", "-t", "^class_rc_made_by_generic_code.rs$"],

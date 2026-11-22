@@ -17,7 +17,7 @@ use super::recognition::Std;
 use super::refusal::{Refused, refuse};
 use super::representation::Num;
 use super::{FnCx, R};
-use crate::js::{self, Expr, Op, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 
 /// A plain value's layout: a number, a `bool` or a `char`, or its parts,
 /// each at its offset in it.

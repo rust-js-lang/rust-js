@@ -244,7 +244,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     exprs.push(match unboxed {
                         Some((unboxed, back)) => {
-                            let params: Vec<crate::js::Name> = (0..unboxed.len())
+                            let params: Vec<rust_js_program::js::Name> = (0..unboxed.len())
                                 .map(|at| self.fresh(Base::Numbered(Role::X, at)))
                                 .collect();
                             let given = (params.iter().zip(&unboxed))

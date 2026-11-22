@@ -197,9 +197,9 @@ pub(crate) fn js_class(
     tcx: TyCtxt<'_>,
     member: DefId,
     imports: &IndexMap<(String, String), String>,
-) -> crate::js::Class {
+) -> rust_js_program::js::Class {
     let adt = class_of(tcx, member);
-    crate::js::Class {
+    rust_js_program::js::Class {
         extends: (adt.and_then(|adt| superclass(tcx, adt))).map(|(_, base)| match base {
             BaseClass::Imported(export) => imports[&export].clone(),
             BaseClass::Global(name) => name,

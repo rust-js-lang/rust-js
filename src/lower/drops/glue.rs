@@ -10,7 +10,7 @@
 //! them panics (`unwind terminate`). Each part's own glue is the drop of
 //! its type (`drop_in`).
 
-use crate::js::Op;
+use rust_js_program::js::Op;
 use rustc_abi::VariantIdx;
 use rustc_middle::mir::{self, BasicBlock, Place, ProjectionElem, TerminatorKind, UnwindAction};
 

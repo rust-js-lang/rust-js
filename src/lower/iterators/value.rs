@@ -5,10 +5,10 @@
 //! closed, lent or a range's numbers is what its maker said, not what a
 //! helper's name looks like.
 
-use crate::js::{self, Expr, Known};
 use crate::lower::iterators::in_place_forms::InPlaceForm;
 use crate::lower::recognition::Wrapper;
 use crate::lower::std_types::range::RangeKind;
+use rust_js_program::js::{self, Expr, Known};
 
 /// What a JS iterator is made as, each its maker's.
 pub(in crate::lower) enum Form {
@@ -51,7 +51,7 @@ pub(in crate::lower) struct IterValue {
 
 /// How a `&mut I` lends its iterator, or a `Box<I>` holds it, std's
 /// wrapper of it (`Wrapper`, the one catalog of what each passes on, #2000):
-/// `$lent`'s kind (src/runtime/lent.js's `$passedOn`), given after the
+/// `$lent`'s kind (crates/rust-js-program/src/runtime/lent.js's `$passedOn`), given after the
 /// iterator. Of a sized `I`, `$lent(it)`, whose folds std's `&mut I` folds
 /// by `I`'s `try_fold` and `try_rfold`; of an unsized one, a `dyn`'s,
 /// `$lent(it, "lentUnsized")`, its folds std's defaults (#1991); of a

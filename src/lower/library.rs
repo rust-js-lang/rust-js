@@ -96,7 +96,7 @@ pub(super) fn shown_marks(
 /// crates.io's share (#1130).
 fn library_key(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> String {
     match super::recognition::std_crate(tcx, krate) {
-        Some(_) => crate::runtime::PACKAGE.to_string(),
+        Some(_) => rust_js_program::runtime::PACKAGE.to_string(),
         None => crate::library::key(tcx.crate_name(krate).as_str(), &crate_id(tcx, krate)),
     }
 }
@@ -391,7 +391,7 @@ pub(super) fn refuse_unsaid_locations(
 
 /// The name a module's item is exported by, its consumers' import of it:
 /// at a module's scope a name's word is its identity (ADR 1150).
-fn exported_as(name: &crate::js::Name) -> &str {
+fn exported_as(name: &rust_js_program::js::Name) -> &str {
     name.word() // word: an item's export name, what its consumers import
 }
 
@@ -401,9 +401,11 @@ pub(super) fn exported_names(modules: &[crate::program::UnlinkedModule]) -> Expo
         let mut export = |name: &str| exported.insert((module.path.clone(), name.to_string()));
         for item in &module.items {
             match item {
-                crate::js::Item::Function(function) if function.export => export(exported_as(&function.name)),
-                crate::js::Item::Const(constant) if constant.export => export(exported_as(&constant.name)),
-                crate::js::Item::Namespace(namespace) if namespace.export => export(exported_as(&namespace.name)),
+                rust_js_program::js::Item::Function(function) if function.export => export(exported_as(&function.name)),
+                rust_js_program::js::Item::Const(constant) if constant.export => export(exported_as(&constant.name)),
+                rust_js_program::js::Item::Namespace(namespace) if namespace.export => {
+                    export(exported_as(&namespace.name))
+                }
                 _ => false,
             };
         }

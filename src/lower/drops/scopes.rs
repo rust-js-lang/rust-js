@@ -64,7 +64,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The function being lowered is given a drop `index`, named `name`, of
     /// `ty`: its type parameter's (ADR 0098), or a std trait's associated
     /// type of one (ADR 0421).
-    pub(in crate::lower) fn give_drop_param(&mut self, index: u32, name: crate::js::Name, ty: Ty<'tcx>) {
+    pub(in crate::lower) fn give_drop_param(&mut self, index: u32, name: rust_js_program::js::Name, ty: Ty<'tcx>) {
         self.drop_state.types.give(ty);
         self.drop_state.param_drops.insert(ty, GivenDrop::own(index, name));
     }
@@ -102,7 +102,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its method's own type parameter or an associated type of one (ADRs
     /// 0163, 0421): what was given before, to put back. Keyed by its type,
     /// it hides only a drop of that type.
-    pub(in crate::lower) fn lend_drop_param(&mut self, name: crate::js::Name, ty: Ty<'tcx>) -> LentDrop<'tcx> {
+    pub(in crate::lower) fn lend_drop_param(
+        &mut self,
+        name: rust_js_program::js::Name,
+        ty: Ty<'tcx>,
+    ) -> LentDrop<'tcx> {
         let newly_given = self.drop_state.types.given.insert(ty);
         let before = self.drop_state.param_drops.insert(ty, GivenDrop::lent(name));
         LentDrop {
@@ -165,7 +169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The drops this function is given, as it takes them: by their type
     /// parameters' order.
-    pub(in crate::lower) fn given_drops(&self) -> Vec<crate::js::Name> {
+    pub(in crate::lower) fn given_drops(&self) -> Vec<rust_js_program::js::Name> {
         let mut given: Vec<&GivenDrop> = self.drop_state.param_drops.values().collect();
         given.sort_by_key(|given| (given.index.is_none(), given.index));
         given.into_iter().map(|given| given.name.clone()).collect()

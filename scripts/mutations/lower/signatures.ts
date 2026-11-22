@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a parameter named `new` is declared `new`, which TypeScript doesn't read, where the JS names it `new$`",
     file: "src/lower/signatures.rs",
-    find: "    crate::names::js_ident(&named)\n}\n",
+    find: "    rust_js_program::names::js_ident(&named)\n}\n",
     replace: "    named\n}\n",
     tests: ["test/declarations.test.ts", "-t", "as its JS does"],
   },

@@ -1,4 +1,4 @@
-// Mutations of src/runtime/writer_sink.js (ADR 1135, #1652).
+// Mutations of crates/rust-js-program/src/runtime/writer_sink.js (ADR 1135, #1652).
 import type { Mutation } from "../../mutations";
 
 const tests = ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"];
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-sink-char-as-str",
     breaks: "a writer's own `write_char` is passed over: each `char` std writes so is given to its `write_str`",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: "    writeChar: (c) => writeChar(w, c),\n",
     replace: "    writeChar: (c) => writeStr(w, c),\n",
     tests,
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-padding-centre-rounds-up",
     breaks: "`{:^6}` of an odd room puts the extra fill char before the text, where std puts it after",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: '  const before = align === "Left" ? 0 : align === "Center" ? Math.floor(count / 2) : count;\n',
     replace: '  const before = align === "Left" ? 0 : align === "Center" ? Math.ceil(count / 2) : count;\n',
     tests,
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-padded-precision-ignored",
     breaks: "`{:.2}` of a string written into a writer isn't cut to two `char`s",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: "  if (precision !== undefined && chars.length > precision) {\n",
     replace: "  if (false) {\n",
     tests,
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-padded-text-and-fill-as-one",
     breaks: "a padded string is written with its fill in one `write_str`, not each fill char a `write_char`",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: "  for (let i = 0; i < after; i++) f.writeChar(options.fill ?? \" \");\n}\n",
     replace: "  f.write((options.fill ?? \" \").repeat(after));\n}\n",
     tests,
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-integral-sign-as-str",
     breaks: "an integer's sign is given to the writer's `write_str`, not its `write_char`",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: "    if (sign !== undefined) f.writeChar(sign);\n",
     replace: "    if (sign !== undefined) f.write(sign);\n",
     tests,
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-integral-empty-prefix-skipped",
     breaks: "`{:#}` of an integer, whose prefix is `\"\"`, writes no empty `write_str`, where std calls it",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: "    if (options.alternate) f.write(prefix);\n",
     replace: "    if (options.alternate && prefix !== \"\") f.write(prefix);\n",
     tests,
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-integral-zeros-before-sign",
     breaks: "`{:05}` of a negative integer writes its zeros before its sign",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: "  if (zero) writePrefix();\n",
     replace: "  if (false) writePrefix();\n",
     tests,
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-integer-sign-kept-in-digits",
     breaks: "a negative integer's digits keep its `-`, written twice",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: '  return $writeIntegral(f, n >= 0, "", String(n < 0 ? -n : n), options);\n',
     replace: '  return $writeIntegral(f, n >= 0, "", String(n), options);\n',
     tests,
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-never-armed",
     breaks: "`$writingInto` arms no sink, so the writer it calls writes a string of its own (#1652)",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: "  $writerArmed = f;\n",
     replace: "",
     tests,
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-debug-hex-ignored",
     breaks: "an integer's `Debug` given a framed writer's `{:x?}` is written in decimal",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: '  if (options.debugHex === "x") return $writeIntegral(f, true, "0x", lower, options);\n',
     replace: "",
     tests,
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-char-never-padded",
     breaks: "a `char`'s `Display` given a framed writer's width is its `write_char`, unpadded",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: "  if (options.width === undefined && options.precision === undefined) return f.writeChar(c);\n",
     replace: "  return f.writeChar(c);\n",
     tests,
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-write-fmt-whole",
     breaks: "a writer's dictionary's `writeFmt`, std's, gives its `write_str` the text whole, one call, not each piece",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: "  return (w, args) => $writingInto($writerSink(w, writeStr, writeChar), args);\n",
     replace: "  return (w, args) => writeStr(w, args());\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_own_write_fmt.rs$"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "writing-into-takes-a-thiefs-text",
     breaks: "a writer armed that gives back its text, a writer it called claiming the sink in its place, passes, its text lost (#1735)",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: "  if (typeof given === \"string\" && given !== \"\") {\n",
     replace: "  if (false) {\n",
     tests: ["test/writer-sink.test.ts", "-t", "a writer armed that gives back its text"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "write-by-text-when-armed",
     breaks: "a value only its dictionary knows, written into an armed sink by a dictionary without `fmtInto`, is written as its text, where it's rust-js's bug, thrown (#1712)",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: "  if (!f.armed) return f.write(dictionary.fmt(value, options));\n",
     replace: "  return f.write(dictionary.fmt(value, options));\n",
     tests: ["test/writer-sink.test.ts", "-t", "writeBy writes by fmtInto"],
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
   {
     name: "write-by-armedness-first",
     breaks: "a value only its dictionary knows is written as its text into a sink no writer armed though its dictionary carries `fmtInto`, so a print its writer makes lands inside `{:#?}`'s indent (#1712)",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: "  if (dictionary.fmtInto !== undefined) return dictionary.fmtInto(f, value, options);\n  if (!f.armed) return f.write(dictionary.fmt(value, options));\n",
     replace: "  if (!f.armed) return f.write(dictionary.fmt(value, options));\n  if (dictionary.fmtInto !== undefined) return dictionary.fmtInto(f, value, options);\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_printing_in_a_generic)\\.rs$"],
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
   {
     name: "writer-sink-unarmed",
     breaks: "a writer's sink isn't armed, so a generic writer writes a value its dictionary knows as text where std writes its pieces (#1712)",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: "    armed: true,\n",
     replace: "    armed: false,\n",
     tests: ["test/writer-sink.test.ts", "-t", "writeBy writes by fmtInto"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   {
     name: "write-chars-as-one-str",
     breaks: "a case mapping's `Display`, `to_lowercase()`'s, is one `write_str`, where core writes each `char` by `write_char` (#1712)",
-    file: "src/runtime/writer_sink.js",
+    file: "crates/rust-js-program/src/runtime/writer_sink.js",
     find: "  for (const c of s) f.writeChar(c);\n",
     replace: "  f.write(s);\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_case_mapping)\\.rs$"],

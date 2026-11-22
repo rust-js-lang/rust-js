@@ -62,6 +62,15 @@ export function undone(cwd: string, remote: string, local: string, { now = Date.
     .filter(Boolean)
     .filter((file) => !fixedRowsOnly(file, git(cwd, ["show", `${remote}:${file}`]) ?? "", git(cwd, ["diff", "-U0", "--no-renames", remote, local, "--", file]) ?? "", fixes));
   const named = (commit: string) => messages.includes(commit.slice(0, 9));
+  // A file the push moves, as git finds a rename, held as where it went: a
+  // module moved to another of the compiler's crates (ADR 1181) undoes
+  // nothing of the commits that wrote it there, unless what it moved is the
+  // file as it was before one of them.
+  const moved = new Map(
+    (git(cwd, ["diff", "--name-status", "-M", remote, local]) ?? "")
+      .split("\n")
+      .flatMap((line) => (/^R\d*\t/.test(line) ? [line.split("\t").slice(1) as [string, string]] : [])),
+  );
   const found: Undone[] = [];
   // Each recent commit of the remote's of a file it changes whose whole
   // change applies to what's pushed again, and didn't to the remote.
@@ -83,14 +92,14 @@ export function undone(cwd: string, remote: string, local: string, { now = Date.
       const has = appliesTo(cwd, remote, `${patch}\n`, `${index}.has`, true);
       if (has && appliesTo(cwd, local, `${patch}\n`, `${index}.local`) && !appliesTo(cwd, remote, `${patch}\n`, `${index}.remote`)) {
         const files = (git(cwd, ["diff", "--name-only", "--no-renames", `${commit}^`, commit]) ?? "").split("\n").filter(Boolean);
-        for (const file of files) found.push({ file, commit, subject: words.join(" ") });
+        for (const file of files.filter((file) => !moved.has(file))) found.push({ file, commit, subject: words.join(" ") });
       }
     }
   } finally {
     rmSync(scratch, { recursive: true, force: true });
   }
   for (const file of changed) {
-    const pushed = blob(cwd, local, file);
+    const pushed = blob(cwd, local, moved.get(file) ?? file);
     const history = (git(cwd, ["log", `-n${recent}`, "--format=%H %ct %s", remote, "--", file]) ?? "").split("\n").filter(Boolean);
     // What a later commit of the remote's made the file, newest first: a
     // file as it was before a commit that a later one put back already,

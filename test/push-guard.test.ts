@@ -4,7 +4,7 @@
 // as 4163f3865 undid 12e759c57.
 import { expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import { fixedIssues, fixedRowsOnly, refusal, undone } from "../scripts/push-guard";
 import { fixture, root, run } from "./support";
@@ -35,6 +35,37 @@ test("a push that undoes a commit already on the remote is refused, but one that
   // `bun install` sets git to run the guard before a push.
   expect(JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts.prepare).toBe("git config core.hooksPath .githooks");
   expect(readFileSync(join(root, ".githooks", "pre-push"), "utf8")).toContain("scripts/push-guard.ts");
+});
+
+// A file moved, as a module to another of the compiler's crates (ADR
+// 1181), is held as where it went: a move of what another's commit wrote
+// undoes nothing of it, its paths rewritten as it moved (#2297 M2's push
+// was refused of a file another's commit had made, which it moved); a move
+// of the file as it was before that commit undoes it.
+test("a push that moves a file undoes nothing of its commits, but one that moves it as it was before one", () => {
+  const dir = fixture("push-guard-moves");
+  const git = (...args: string[]) => run(["git", "-c", "user.name=t", "-c", "user.email=t@t", ...args], undefined, { GIT_DIR: join(dir, ".git"), GIT_WORK_TREE: dir }).trim();
+  git("init", "-q", "-b", "main");
+  const body = (last: string) => Array.from({ length: 20 }, (_, i) => `line ${i}`).concat(last).join("\n") + "\n";
+  const commit = (message: string, files: Record<string, string | null>) => {
+    for (const [name, text] of Object.entries(files)) {
+      if (text === null) git("rm", "-q", name);
+      else {
+        mkdirSync(dirname(join(dir, name)), { recursive: true });
+        writeFileSync(join(dir, name), text);
+      }
+    }
+    git("add", "-A");
+    git("commit", "-q", "-m", message);
+    return git("rev-parse", "HEAD");
+  };
+  commit("base", { "src/box.rs": body("use crate::js;") });
+  const fixed = commit("the other's fix", { "src/box.rs": body("use crate::js; // fixed") });
+  const move = commit("the move", { "src/box.rs": null, "crates/box.rs": body("use rust_js_program::js; // fixed") });
+  expect(undone(dir, fixed, move)).toEqual([]);
+  git("checkout", "-q", fixed);
+  const stale = commit("a stale move", { "src/box.rs": null, "crates/box.rs": body("use crate::js;") });
+  expect(undone(dir, fixed, stale).map((u) => [u.file, u.commit])).toEqual([["src/box.rs", fixed]]);
 });
 
 // A tree older than the remote that edits each file the other commit did,

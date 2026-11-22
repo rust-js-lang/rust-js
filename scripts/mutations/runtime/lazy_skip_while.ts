@@ -1,11 +1,11 @@
-// Mutations of src/runtime/lazy_skip_while.js (ADR 0093).
+// Mutations of crates/rust-js-program/src/runtime/lazy_skip_while.js (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "skip-while-try-fold-by-next",
     breaks: "skip_while's tryFold is its first step, then its source's",
-    file: "src/runtime/lazy_skip_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_skip_while.js",
     find: "    return $lent(source).tryFold(folded, f, broke, unwind, ends);",
     replace: "    for (let step = source.next(); !step.done; step = source.next()) {\n      folded = f(folded, step.value);\n      if (broke(folded)) return folded;\n    }\n    return folded;",
     tests: ["test/runtime-package.test.ts", "-t", "the lazy adapters ask their source's own try_fold where std's do"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-while-next-by-next",
     breaks: "skip_while's next is its source's find",
-    file: "src/runtime/lazy_skip_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_skip_while.js",
     find: "      const found = $lent(source).tryFold(",
     replace: "      const found = new $Steps(() => source.next()).tryFold(",
     tests: ["test/runtime-package.test.ts", "-t", "the lazy adapters ask their source's own try_fold where std's do"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-while-fold-by-next",
     breaks: "a `skip_while`'s fold steps it by `next`, not std's first step then its source's own fold (#214)",
-    file: "src/runtime/lazy_skip_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_skip_while.js",
     find: "      return source.fold !== undefined ? source.fold(folded, f, unwind, ends) : source.reduce(f, folded);\n",
     replace: "      return $Steps.prototype.fold.call(skipped, folded, f, unwind);\n",
     tests: ["test/iterator-matrix.test.ts"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-while-fold-left-open",
     breaks: "`take(1).skip_while(..).count()` never drops what the `take`'s source has left, its fold's first step finding none (#242)",
-    file: "src/runtime/lazy_skip_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_skip_while.js",
     find: "          if (step.done) {\n            $closedAfter(ends, () => skipped.return());\n            return folded;\n          }\n",
     replace: "          if (step.done) {\n            return folded;\n          }\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-while-fold-unclosed",
     breaks: "a `skip_while` whose predicate panics inside a fold leaves what's left undropped (#423)",
-    file: "src/runtime/lazy_skip_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_skip_while.js",
     find: "    return $consumed(\n      skipped,\n      () => {",
     replace: "    return ((_, run) => run())(\n      skipped,\n      () => {",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-while-fold-unwind-lost",
     breaks: "a `skip_while` drops the `unwind` its fold is given (#423)",
-    file: "src/runtime/lazy_skip_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_skip_while.js",
     find: "source.fold(folded, f, unwind, ends) : source.reduce",
     replace: "source.fold(folded, f) : source.reduce",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-while-fold-ends-lost",
     breaks: "a `skip_while()`'s fold gives its source's fold nothing of what drops with `f` (#734)",
-    file: "src/runtime/lazy_skip_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_skip_while.js",
     find: "source.fold(folded, f, unwind, ends)",
     replace: "source.fold(folded, f, unwind)",
     tests: ["test/iterator-matrix.test.ts"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-while-fold-first-without-ends",
     breaks: "a `skip_while()`'s fold doesn't give its first step what drops with `f`, so a panic there drops the accumulator first (#768)",
-    file: "src/runtime/lazy_skip_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_skip_while.js",
     find: "          const step = first(folded, unwind, ends);\n          if (step.done) {\n",
     replace: "          const step = first(folded, unwind);\n          if (step.done) {\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-while-try-fold-first-without-ends",
     breaks: "a `skip_while()`'s `try_fold` doesn't give its first step what drops with `f`, so a panic there drops the accumulator first (#768)",
-    file: "src/runtime/lazy_skip_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_skip_while.js",
     find: "      const step = first(folded, unwind, ends);\n      if (step.done) return folded;\n",
     replace: "      const step = first(folded, unwind);\n      if (step.done) return folded;\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-while-hint-dropped",
     breaks: "a `skip_while()`'s hint is `(0, None)`, not its source's upper bound (#733)",
-    file: "src/runtime/lazy_skip_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_skip_while.js",
     find: "  skipped.sizeHint = () => $upperOnly(source);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-while-skipped-undropped",
     breaks: "a `skip_while` of items with a destructor leaves those it skips undropped",
-    file: "src/runtime/lazy_skip_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_skip_while.js",
     find: "$kept((y) => !skip(y), drop, x)",
     replace: "$kept((y) => !skip(y), undefined, x)",
     tests: ["test/corpus.test.ts", "-t", "drop_skipped_items"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-while-throw-keeps-item",
     breaks: "a `skip_while` whose predicate panics leaves the item it was asked of undropped (#423)",
-    file: "src/runtime/lazy_skip_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_skip_while.js",
     find: "$kept((y) => !skip(y), drop, x)",
     replace: "(skip(x) ? (drop?.(x), false) : true)",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],

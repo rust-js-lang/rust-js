@@ -1,7 +1,7 @@
 //! Tidy's loops: MIR's `loop`s, made `for` and `while` loops.
 
 use super::*;
-use crate::js::Name;
+use rust_js_program::js::Name;
 
 /// A `for` loop as MIR has it, `const iter = $iter(xs); while (true) {
 /// const t = $next(iter); if (t == null) { exit } const x = t; body }`, is

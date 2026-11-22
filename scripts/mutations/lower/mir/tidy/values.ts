@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     breaks:
       '`c.to_uppercase().collect::<String>()` from MIR is `Array.from(c.toUpperCase()).join("")`',
     file: "src/lower/mir/tidy/values.rs",
-    find: "        && chars.facts.has(crate::js::Known::Chars)\n",
+    find: "        && chars.facts.has(rust_js_program::js::Known::Chars)\n",
     replace: "        && false\n",
     tests: [
       "test/lowering-iterators.test.ts",

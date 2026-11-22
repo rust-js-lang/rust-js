@@ -198,7 +198,7 @@ metamorphic rewrites; `diagnostics.test.ts`'s three refusals; mutations
 functions rust-js didn't lower. **They're byte sources now
 (`ByteSource::Empty` and `ByteSource::Repeat`, `recognition/io.rs`), each
 with a runtime dictionary of what std's impls write
-(`src/runtime/readers.js`), approved by the coordinator for the user on
+(`crates/rust-js-program/src/runtime/readers.js`), approved by the coordinator for the user on
 2026-11-11.**
 
 - `$emptyReader` is `Empty`'s `Read`, `BufRead` and `Seek`. It reads
@@ -534,7 +534,7 @@ A `Take`'s `read_to_end` and `read_to_string`, and a `Chain`'s
 `read_to_string`, are std's provided methods, alloc's
 `default_read_to_end`. It reads through `BorrowedBuf` and `MaybeUninit`,
 which compiled std can't take as memory, so it's ported by hand,
-`$defaultReadToEnd` (src/runtime/readers.js), line for line in alloc's
+`$defaultReadToEnd` (crates/rust-js-program/src/runtime/readers.js), line for line in alloc's
 order, so a toolchain's diff is easy to follow:
 
 - the 32-byte `small_probe_read` where fewer are spare, and its exact-fit

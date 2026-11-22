@@ -3,9 +3,9 @@
 //! on Unix. A path is its text (ADR 0173); a `PathBuf` changed in place,
 //! `push` and the rest, is its text's edit, `StringEdit`'s.
 
-use crate::js::Expr;
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::Expr;
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
@@ -125,7 +125,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         parts: Expr,
         ty: rustc_middle::ty::Ty<'tcx>,
         span: Span,
-        out: &mut Vec<crate::js::Stmt>,
+        out: &mut Vec<rust_js_program::js::Stmt>,
     ) -> R<()> {
         let parts = self.iterable_items(parts, ty, span, out)?;
         let of = self.iterable_item(ty).peel_refs();
@@ -156,20 +156,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let joined = Expr::call(Expr::helper("$pathJoin"), vec![place.clone(), given]);
         let js_span = self.js_span(span);
-        let push = vec![crate::js::StmtKind::Assign(place.clone(), joined).at(js_span)];
+        let push = vec![rust_js_program::js::StmtKind::Assign(place.clone(), joined).at(js_span)];
         // Each part taken by value dropped as the closure ends, `move |p|
         // self.push(p.as_ref())`'s `p`, as its push unwinds too (#1640).
         let push = match self.std_drop_call(self.iterable_item(ty), Expr::var(&part), span)? {
             Some(drop) => crate::lower::drops::dropped_after(
                 push,
-                vec![crate::js::StmtKind::Expr(drop).at(js_span)],
+                vec![rust_js_program::js::StmtKind::Expr(drop).at(js_span)],
                 js_span,
                 &mut self.catch_names(),
             ),
             None => push,
         };
         out.push(
-            crate::js::StmtKind::Expr(crate::lower::std_types::text::extend_text(parts, &part, push))
+            rust_js_program::js::StmtKind::Expr(crate::lower::std_types::text::extend_text(parts, &part, push))
                 .at(self.js_span(span)),
         );
         Ok(())
@@ -197,14 +197,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Some(match op.helper() {
             Some(helper) => Expr::call(Expr::helper(helper), values.collect()),
             None if op == PathOp::New => values.next().expect("what it's given"),
-            None if op == PathOp::IntoString => crate::js::result::ok(values.next().expect("the text")),
+            None if op == PathOp::IntoString => rust_js_program::js::result::ok(values.next().expect("the text")),
             None => {
                 let rooted = Expr::call(
                     Expr::member(values.next().expect("the path"), "startsWith"),
                     vec![Expr::str("/")],
                 );
                 match op {
-                    PathOp::IsRelative => Expr::unary(crate::js::UnaryOp::Not, rooted),
+                    PathOp::IsRelative => Expr::unary(rust_js_program::js::UnaryOp::Not, rooted),
                     _ => rooted,
                 }
             }

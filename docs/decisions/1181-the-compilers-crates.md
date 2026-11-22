@@ -28,7 +28,7 @@ crate is a directory of `crates/`, named for its package:
 
 - `rust-js-program`: owned output, the program rust-js writes as data of
   its own (`js`, `program`, `comments`, `names`, `collections`, `lines`,
-  `reachability`, `link`, `prepare`, `runtime` with `src/runtime/*.js`,
+  `reachability`, `link`, `prepare`, `runtime` with `crates/rust-js-program/src/runtime/*.js`,
   `manifest`, `packages`, `paths`, `settings`, `decisions`, `library`,
   `css_modules`), depending on none of the compiler's crates;
 - `rust-js-emit`: printing (`to_oxc`, `format`, `typescript`, `prettier`,
@@ -109,3 +109,52 @@ the full WASI build, minutes of rustc's front end, stays CI's `wasm` job.
 - Each move is pushed alone, byte-identical in the corpus, std and the
   React port, with its file list announced first, so the others rebase
   onto it and run `bun scripts/move-paths.ts`.
+
+## Amendment: moves closed under their dependencies (M2, 2026-11-22)
+
+ioEJ's grouping, M2 `js`, `program`, `comments`, `names`, didn't build:
+a move must take every module its modules name. Measured of each module's
+`crate::` paths and its root's `super::` paths:
+
+| Module | Names |
+| --- | --- |
+| `js` | `names`, `runtime` |
+| `names` | `runtime` |
+| `runtime`, `paths`, `reachability` | none |
+| `program` | `js`, `library`, `runtime` |
+| `library` | `manifest`, `packages`, `paths`, `runtime` |
+| `manifest` | `library`, `paths` |
+| `packages` | `paths`, `program` |
+| `settings` | `paths` |
+| `comments`, `css_modules` | `program` |
+| `link` | `js`, `program`, `runtime` |
+| `prepare` | `js`, `names`, `runtime` |
+
+So the moves are M2 `runtime` (and `runtime/*.js`), `paths`, `names`,
+`js`; M3 `program`, `comments`, `library`, `manifest`, `packages`,
+`settings`, `css_modules`, `library` and `manifest` naming each other
+inside the one crate; M4 `reachability`, `link`, `prepare`; M5 printing,
+`rust-js-emit`. The lead approved it.
+
+M2 also settles what a crate move needs beyond paths:
+
+- **A test's conveniences across crates.** `From<&str> for Name` and
+  `Pattern`, a test's and never a compile's (#2034), were `#[cfg(test)]`,
+  which is the crate's own tests' alone; the binary's tests make them too.
+  They're `rust-js-program`'s `testing` feature, which the binary enables
+  as a dev-dependency; the workspace's resolver, 3, keeps a dev-dependency's
+  features out of a normal build, and `test/architecture-crates.test.ts`
+  holds that a normal build's feature tree has no `testing`.
+- **Unit-tested mutations of another crate.** A mutation's `unitTests`
+  filter runs its file's crate's tests, `cargo test --no-run -p
+  rust-js-program --lib` (`unitTarget`), and a build of many's unit tests
+  are one crate's.
+- **The mutations' own text.** `move-paths.ts` rewrites the Rust of each
+  mutation list's `find` and `replace`, so a mutation of a binary file that
+  names `crate::runtime::` still applies after the move.
+- **Paths written whole.** A path is rewritten only where it isn't the
+  end of a longer one, so a second run leaves `crates/rust-js-program/src/
+  js.rs` alone.
+- **A runtime helper's JS** stays where its module is: the binary's unit
+  tests that read `lent.js` and `std_iterator.js` include them from the
+  crate's directory.

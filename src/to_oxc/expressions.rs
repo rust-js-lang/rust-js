@@ -256,7 +256,7 @@ impl<'a> Cx<'a> {
                 Expression::new_conditional_expression(sp, self.expr(test), self.branch(then), self.branch(els), b)
             }
             ExprKind::SomeWhere(test, then) => {
-                let none = crate::js::Expr::js_undefined();
+                let none = rust_js_program::js::Expr::js_undefined();
                 Expression::new_conditional_expression(sp, self.expr(test), self.branch(then), self.branch(&none), b)
             }
             ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
@@ -550,7 +550,7 @@ impl<'a> Cx<'a> {
         let method = kind == PropertyKind::Init;
         let (key, computed) = match name {
             AccessorKey::Computed(key) => (PropertyKey::from(self.expr(key)), true),
-            AccessorKey::Named(name) if crate::names::is_identifier(name) => {
+            AccessorKey::Named(name) if rust_js_program::names::is_identifier(name) => {
                 (PropertyKey::new_static_identifier(SPAN, self.name(name), b), false)
             }
             AccessorKey::Named(name) => (PropertyKey::new_string_literal(SPAN, self.name(name), None, b), false),
@@ -633,7 +633,7 @@ impl<'a> Cx<'a> {
                 let computed = name == "__proto__";
                 // A key that isn't a JS name, like a CSS custom property's
                 // `--gap`, is quoted.
-                let key = if computed || !crate::names::is_identifier(name) {
+                let key = if computed || !rust_js_program::names::is_identifier(name) {
                     PropertyKey::new_string_literal(SPAN, self.name(name), None, b)
                 } else {
                     PropertyKey::new_static_identifier(SPAN, self.name(name), b)
@@ -1197,7 +1197,7 @@ pub(super) fn restore_sources<'a>(
 /// Whether `.property` can be written as it is: a JS name, or a path of
 /// them, `target.value`, which lowering writes as one.
 pub(super) fn member_name(property: &str) -> bool {
-    property.split('.').all(crate::names::is_identifier)
+    property.split('.').all(rust_js_program::names::is_identifier)
 }
 
 /// Where `code`, a module rust-js wrote, or its `declarations`, names another

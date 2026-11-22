@@ -12,7 +12,7 @@ use rustc_span::Span;
 use super::bindings::field_key;
 use super::refusal::{Refused, refuse};
 use super::{FnCx, R};
-use crate::js::{Expr, Prop};
+use rust_js_program::js::{Expr, Prop};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `ty`'s union definition and its arguments, if it's a union of a

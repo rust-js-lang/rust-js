@@ -55,9 +55,9 @@ test("every mutation applies to the compiler as it is, once", () => {
 // A mutation's unit tests are there: its filter names a `#[test]` of a
 // source file of its module, by its name, or the module of some.
 test("every mutation's unit tests are there", () => {
-  // The binary's: a mutation's unit tests are the binary's (`--bin
-  // rust-js`), and another crate's aren't run by one yet.
-  const sources = compilerRustFiles().filter((file) => unitTestsModule(file) !== undefined).map((file) => ({
+  // Each crate's: a mutation's unit tests are its file's crate's
+  // (`unitTarget`, ADR 1181).
+  const sources = compilerRustFiles().map((file) => ({
     module: unitTestsModule(file)!,
     tests: [...readFileSync(join(root, file), "utf8").matchAll(/#\[test\]\s*(?:#\[[^\]]*\]\s*)*fn (\w+)/g)].map((m) => m[1]),
   }));
@@ -412,7 +412,7 @@ test("--retire judges nothing below the disk's floor, and reruns each failure's 
   const source = readFileSync(join(root, "scripts/mutations.ts"), "utf8");
   const of = (name: string) => source.match(new RegExp(`\\nasync function ${name}\\([\\s\\S]*?\\n}\\n`))![0];
   // Before the controls and before each suite, and after it.
-  expect(of("retire").indexOf("belowFloor(freeBytes(root))")).toBeLessThan(of("retire").indexOf("build(undefined, 0, true)"));
+  expect(of("retire").indexOf("belowFloor(freeBytes(root))")).toBeLessThan(of("retire").indexOf("everyUnit(undefined"));
   const suite = of("suiteWith");
   const checkFast = suite.indexOf("scripts/checkFast.ts");
   expect(suite.indexOf("belowFloor(freeBytes(root))")).toBeLessThan(checkFast);
@@ -704,7 +704,7 @@ test("a readability owner's mutation is judged by its cases' snapshots, of the a
   const tracked = Bun.spawnSync(["git", "ls-files"], { cwd: root }).stdout.toString().split("\n");
   expect(readabilityOwners.filter((glob) => !tracked.some((file) => new Bun.Glob(glob).match(file)))).toEqual([]);
   expect(readabilityOwners.filter((glob) => !owners.some((module) => new Bun.Glob(glob).match(module)))).toEqual([]);
-  expect(["src/lower/mir/drops.rs", "src/lower/mir/tidy.rs", "src/js/applied.rs"].map(ofReadabilityOwner)).toEqual([false, true, false]);
+  expect(["src/lower/mir/drops.rs", "src/lower/mir/tidy.rs", "crates/rust-js-program/src/js/applied.rs"].map(ofReadabilityOwner)).toEqual([false, true, false]);
   // Its cases are judged by their snapshots alone, run neither natively nor
   // as JS, and found by the lines its `find` is.
   expect(testsEnv("/bin/mutant", fixture("alone"), "alone").RUST_JS_SNAPSHOTS).toBe("only");

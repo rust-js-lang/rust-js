@@ -6,14 +6,14 @@
 //! derived one's; one it looks at gives its `Result`, `$jsonTry(..)`, what
 //! was written before an error kept written (`result_use`, #1545).
 
-use crate::js::result;
-use crate::js::{Expr, StmtKind};
 use crate::lower::analysis::mir_reads::result_use::ResultUse;
 use crate::lower::recognition::{
     SerdeCompound, SerdeError, SerdeHint, SerdeNext, SerdeOp, SerdeScalar, VisitorMethod, visitor_methods,
 };
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::result;
+use rust_js_program::js::{Expr, StmtKind};
 use rustc_middle::ty;
 use rustc_span::Span;
 
@@ -30,7 +30,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         values: Vec<Expr>,
         used: ResultUse,
         span: Span,
-        out: &mut Vec<crate::js::Stmt>,
+        out: &mut Vec<rust_js_program::js::Stmt>,
     ) -> R<Expr> {
         let reads = matches!(
             op,
@@ -52,7 +52,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if steps.is_empty() {
             return Ok(result::ok(given));
         }
-        steps.push(StmtKind::Return(Some(given)).at(crate::js::Span::NONE));
+        steps.push(StmtKind::Return(Some(given)).at(rust_js_program::js::Span::NONE));
         // The writer too, which an error takes back to where it began, as a
         // `Value`'s builds the value it failed in apart and drops it.
         Ok(Expr::call_helper(
@@ -70,10 +70,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         args: ty::GenericArgsRef<'tcx>,
         mut values: Vec<Expr>,
         span: Span,
-        out: &mut Vec<crate::js::Stmt>,
+        out: &mut Vec<rust_js_program::js::Stmt>,
     ) -> R<Written> {
         let step = |json: &Expr, method: &str, given: Vec<Expr>| {
-            StmtKind::Expr(Expr::call(Expr::member(json.clone(), method), given)).at(crate::js::Span::NONE)
+            StmtKind::Expr(Expr::call(Expr::member(json.clone(), method), given)).at(rust_js_program::js::Span::NONE)
         };
         // The method's own type parameter, a value's `T`, after its trait's `Self`.
         let own = |at: usize| args.type_at(at);
@@ -185,7 +185,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = self.as_js_iterator(values.remove(0), items_ty, span)?;
                 let write = self.json_writer(self.iterable_item(items_ty), span)?;
                 let call = Expr::call(Expr::helper("$jsonCollectSeq"), vec![json, items, write]);
-                out.push(StmtKind::Expr(call).at(crate::js::Span::NONE));
+                out.push(StmtKind::Expr(call).at(rust_js_program::js::Span::NONE));
             }
             SerdeOp::CollectMap => {
                 let entries = self.as_js_iterator(values.remove(0), own(3), span)?;
@@ -193,11 +193,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let text = self.json_key(Expr::var(&key), own(1), span)?;
                 let key = Expr::arrow(
                     vec![key.into()],
-                    vec![StmtKind::Return(Some(text)).at(crate::js::Span::NONE)],
+                    vec![StmtKind::Return(Some(text)).at(rust_js_program::js::Span::NONE)],
                 );
                 let write = self.json_writer(own(2), span)?;
                 let call = Expr::call(Expr::helper("$jsonCollectMap"), vec![json, entries, key, write]);
-                out.push(StmtKind::Expr(call).at(crate::js::Span::NONE));
+                out.push(StmtKind::Expr(call).at(rust_js_program::js::Span::NONE));
             }
             SerdeOp::Element => {
                 out.push(step(&json, "element", Vec::new()));
@@ -253,14 +253,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty: ty::Ty<'tcx>,
         json: &Expr,
         span: Span,
-        out: &mut Vec<crate::js::Stmt>,
+        out: &mut Vec<rust_js_program::js::Stmt>,
     ) -> R<()> {
-        if let crate::js::ExprKind::Var(name) = &json.kind {
+        if let rust_js_program::js::ExprKind::Var(name) = &json.kind {
             let name = name.clone();
             return self.write_json(value, &name, ty.peel_refs(), span, out);
         }
         let writer = self.json_writer(ty, span)?;
-        out.push(StmtKind::Expr(Expr::call(writer, vec![value, json.clone()])).at(crate::js::Span::NONE));
+        out.push(StmtKind::Expr(Expr::call(writer, vec![value, json.clone()])).at(rust_js_program::js::Span::NONE));
         Ok(())
     }
 
@@ -274,7 +274,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         json: Expr,
         (visitor, visitor_ty): (Expr, ty::Ty<'tcx>),
         span: Span,
-        out: &mut Vec<crate::js::Stmt>,
+        out: &mut Vec<rust_js_program::js::Stmt>,
     ) -> R<Expr> {
         let Some(imp) = self.recognition().serde_visitor_impl(visitor_ty) else {
             return Err(self.unsupported(span, &format!("a `{visitor_ty}` visitor, not the crate's own")));
@@ -292,7 +292,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let call = Expr::call(self.fn_ref(def_id), vec![visitor.clone()]);
                     expected = Some(Expr::arrow(
                         Vec::new(),
-                        vec![StmtKind::Return(Some(call)).at(crate::js::Span::NONE)],
+                        vec![StmtKind::Return(Some(call)).at(rust_js_program::js::Span::NONE)],
                     ));
                     continue;
                 }
@@ -312,7 +312,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => continue,
             };
             // Each of the visitor and what it's given: nothing of a `null`.
-            let given: Vec<crate::js::Name> = match method {
+            let given: Vec<rust_js_program::js::Name> = match method {
                 VisitorMethod::Unit | VisitorMethod::None => Vec::new(),
                 _ => vec![self.fresh(Role::V)],
             };
@@ -321,8 +321,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect();
             let call = Expr::call(self.fn_ref(def_id), args);
             let params = given.into_iter().map(Into::into).collect();
-            let f = Expr::arrow(params, vec![StmtKind::Return(Some(call)).at(crate::js::Span::NONE)]);
-            props.push(crate::js::Prop::Field(key.into(), f));
+            let f = Expr::arrow(
+                params,
+                vec![StmtKind::Return(Some(call)).at(rust_js_program::js::Span::NONE)],
+            );
+            props.push(rust_js_program::js::Prop::Field(key.into(), f));
         }
         let expected = expected.expect("a `Visitor` writes its `expecting`");
         // A hint but `deserialize_any`'s errors of a kind it has no method for

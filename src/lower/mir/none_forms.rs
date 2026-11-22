@@ -256,8 +256,8 @@ impl<'tcx> FnCx<'_, 'tcx> {
 #[cfg(test)]
 mod tests {
     use super::NoneForms;
-    use crate::js;
     use rust_js_program::collections::{IndexMap, IndexSet};
+    use rust_js_program::js;
     use rustc_middle::mir::Local;
 
     // A local made `null`, which `mir_nones` says holds only `undefined`, as

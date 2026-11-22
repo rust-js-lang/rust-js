@@ -197,7 +197,7 @@ pub(in crate::lower) fn does(f: &Expr) -> bool {
     }
     match &f.kind {
         js::ExprKind::Arrow(_, body) => body_does(body, &mut Vec::new()),
-        js::ExprKind::Var(_) => !f.helper_name().is_some_and(crate::runtime::is_pure),
+        js::ExprKind::Var(_) => !f.helper_name().is_some_and(rust_js_program::runtime::is_pure),
         _ => true,
     }
 }

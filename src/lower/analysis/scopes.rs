@@ -124,13 +124,13 @@ impl<'tcx> Scopes<'tcx> {
         function: DefId,
         name_of: impl Fn(DefId) -> String,
         taken: &mut IndexSet<String>,
-    ) -> IndexMap<DefId, crate::js::Name> {
+    ) -> IndexMap<DefId, rust_js_program::js::Name> {
         (self.of_function(function))
             .flat_map(|scope| scope.methods.iter())
             .map(|&method| {
                 let word = name_of(method);
-                taken.insert(crate::names::js_ident(&word)); // word: a naming table's, lowering's, its scope's functions'
-                (method, crate::js::Name::program(word, 0).spelled_apart())
+                taken.insert(rust_js_program::names::js_ident(&word)); // word: a naming table's, lowering's, its scope's functions'
+                (method, rust_js_program::js::Name::program(word, 0).spelled_apart())
             })
             .collect()
     }

@@ -91,7 +91,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut writes = Vec::new();
             for part in [ok, err] {
                 let Some(write) = self.writing_fn(|cx, result| {
-                    cx.debug_sink_writes(crate::js::result::held(result), part, (options, pretty), span)
+                    cx.debug_sink_writes(rust_js_program::js::result::held(result), part, (options, pretty), span)
                 })?
                 else {
                     return Ok(None);

@@ -193,10 +193,15 @@ impl CrateFacts<'_, '_> {
     /// `word`: the module's at its top, else its body's, the item's own
     /// (`js::Name::item`), whichever lowering asks, its declaration's or a
     /// read's ("names are ids", ADR 1150).
-    pub(in crate::lower) fn item_name(&self, def_id: DefId, copy: Option<usize>, word: &str) -> crate::js::Name {
+    pub(in crate::lower) fn item_name(
+        &self,
+        def_id: DefId,
+        copy: Option<usize>,
+        word: &str,
+    ) -> rust_js_program::js::Name {
         match self.at_module_top(def_id) {
-            true => crate::js::Name::module(word),
-            false => crate::js::Name::item(word, def_id.index.as_u32(), copy),
+            true => rust_js_program::js::Name::module(word),
+            false => rust_js_program::js::Name::item(word, def_id.index.as_u32(), copy),
         }
     }
 

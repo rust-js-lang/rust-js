@@ -1,11 +1,11 @@
-// Mutations of src/runtime/range_len.js (ADR 0093).
+// Mutations of crates/rust-js-program/src/runtime/range_len.js (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "range-len-past-end",
     breaks: "a range's `len()` past its end is negative, not zero",
-    file: "src/runtime/range_len.js",
+    file: "crates/rust-js-program/src/runtime/range_len.js",
     find: "  return range.start < range.end ? range.end - range.start : 0;\n",
     replace: "  return range.end - range.start;\n",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_len.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-nth-start-unmoved",
     breaks: "a range's `nth(n)` leaves its start where it was, so its next `next()` gives a number again",
-    file: "src/runtime/range_len.js",
+    file: "crates/rust-js-program/src/runtime/range_len.js",
     find: "  if (at < range.end) {\n    range.start = big ? at + 1n : at + 1;\n",
     replace: "  if (at < range.end) {\n",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-nth-back-end-unmoved",
     breaks: "a reversed range's `nth(n)` leaves its end where it was, so its next `next()` gives the same numbers again",
-    file: "src/runtime/range_len.js",
+    file: "crates/rust-js-program/src/runtime/range_len.js",
     find: "  if (at >= range.start) {\n    range.end = at;\n",
     replace: "  if (at >= range.start) {\n",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-inclusive-nth-back-start-excluded",
     breaks: "a reversed `a..=b`'s `nth(n)` that lands on its start `a` gives none",
-    file: "src/runtime/range_len.js",
+    file: "crates/rust-js-program/src/runtime/range_len.js",
     find: "  return at >= range.start ? at : undefined;\n",
     replace: "  return at > range.start ? at : undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-inclusive-len-exclusive",
     breaks: "`(a..=b).count()` counts one fewer, as `a..b`'s",
-    file: "src/runtime/range_len.js",
+    file: "crates/rust-js-program/src/runtime/range_len.js",
     find: "  return range.start <= range.end ? range.end - range.start + 1 : 0;\n",
     replace: "  return range.start <= range.end ? range.end - range.start : 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-from-unhinted",
     breaks: "a zip of `n..`, `(0..).zip(w)`, hints `(0, Some(2))`, as `n..` hints nothing, not `usize::MAX` (#400)",
-    file: "src/runtime/range_len.js",
+    file: "crates/rust-js-program/src/runtime/range_len.js",
     find: "  if (next === $rangeFromNext || next?.from === true) return () => [4294967295, undefined];\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "size-hint-of-range-unknown",
     breaks: "a range given as an `Iterator`, `{ next: $rangeNext }`, hints `(0, None)`, so std's `Peekable` of one does, and its `len()` panics",
-    file: "src/runtime/range_len.js",
+    file: "crates/rust-js-program/src/runtime/range_len.js",
     find: "    next === $rangeNext || next === $rangeNextBack\n",
     replace: "    false\n",
     tests: ["test/corpus.test.ts", "-t", "^peekable_range_len.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "inclusive-range-hint-unknown",
     breaks: "an `a..=b` given as it is to std's `Skip` says nothing of how many it has left, so its `len` asserts and panics (ADR 0918)",
-    file: "src/runtime/range_len.js",
+    file: "crates/rust-js-program/src/runtime/range_len.js",
     find: "      : next === $rangeInclusiveNext || next === $rangeInclusiveNextBack\n",
     replace: "      : false\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^range_hints_given with std's iterator structs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-count-out-kept",
     breaks: "`count()` of a lent `a..b` leaves its start where it was, so it steps again (#414)",
-    file: "src/runtime/range_len.js",
+    file: "crates/rust-js-program/src/runtime/range_len.js",
     find: "  if (range.start < range.end) range.start = range.end;\n  return left;\n",
     replace: "  return left;\n",
     tests: ["test/corpus.test.ts", "-t", "^range_lent_used_up.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-inclusive-last-out-kept",
     breaks: "`last()` of a lent `a..=b` leaves its start where it was, so it steps again (#414)",
-    file: "src/runtime/range_len.js",
+    file: "crates/rust-js-program/src/runtime/range_len.js",
     find: "  const last = $rangeInclusiveLast(range);\n  if (range.start <= range.end) $rangeInclusiveExhausted(range, range.end, range.end);\n",
     replace: "  const last = $rangeInclusiveLast(range);\n",
     tests: ["test/corpus.test.ts", "-t", "^range_lent_used_up.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-inclusive-nth-past-end-clamped",
     breaks: "`nth(n)` past an inclusive range's end leaves its start one past its end, `6..=5`, where std's is the one after the number `n` on, `11..=5` (#414)",
-    file: "src/runtime/range_len.js",
+    file: "crates/rust-js-program/src/runtime/range_len.js",
     find: "  range.start = typeof at === \"bigint\" ? at + 1n : at + 1;\n  return at <= range.end ? at : undefined;\n",
     replace: "  if (at > range.end) {\n    range.start = typeof at === \"bigint\" ? range.end + 1n : range.end + 1;\n    return undefined;\n  }\n  range.start = typeof at === \"bigint\" ? at + 1n : at + 1;\n  return at;\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-inclusive-fold-by-next",
     breaks: "a fold of an inclusive range steps it by `next`, past its end, `4..=4`, where std's `try_fold` leaves it exhausted at its last (#414)",
-    file: "src/runtime/range_len.js",
+    file: "crates/rust-js-program/src/runtime/range_len.js",
     find: "  if (next === $rangeInclusiveNext) return $rangeInclusiveTryFold;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-hint-chars-unknown",
     breaks: "a `char` or BigInt range's `size_hint` given to generic code is `(0, None)`, not std's exact one (#421)",
-    file: "src/runtime/range_len.js",
+    file: "crates/rust-js-program/src/runtime/range_len.js",
     find: "    return $stepsLeft(range.start, range.end, inclusive);\n",
     replace: "    return [0, undefined];\n",
     tests: ["test/corpus.test.ts", "-t", "^range_hints_given.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "steps-left-through-surrogates",
     breaks: "a `char` range spanning the surrogates counts them, which no `char` is, `('\\u{D7FE}'..'\\u{E001}')` hinting 2051, not 3 (#421)",
-    file: "src/runtime/range_len.js",
+    file: "crates/rust-js-program/src/runtime/range_len.js",
     find: "    const left = b - a - (a <= 0xd7ff && b > 0xdfff ? 0x800 : 0);\n",
     replace: "    const left = b - a;\n",
     tests: ["test/corpus.test.ts", "-t", "^range_hints_given.rs$"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-advance-of-none",
     breaks: "a range given to generic code has no `advance_by` of its bounds, so a skip of it through a chain steps each number (#1240)",
-    file: "src/runtime/range_len.js",
+    file: "crates/rust-js-program/src/runtime/range_len.js",
     find: "  if (nth === undefined || hint === undefined) return undefined;\n  return (range, m) => {",
     replace: "  return undefined;\n  return (range, m) => {",
     tests: ["test/corpus.test.ts", "-t", "^range_advanced_by_its_bounds\\.rs$"],

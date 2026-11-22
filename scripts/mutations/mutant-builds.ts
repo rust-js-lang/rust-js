@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "mutant-build-unit-binary-mistaken",
     breaks: "a unit-tested mutant's tests run the compiler's binary, not its unit tests', which runs no test of it",
     file: "scripts/mutant-builds.ts",
-    find: "if (message.target?.name !== \"rust-js\" || (message.profile?.test === true) !== unit) continue;",
-    replace: "if (message.target?.name !== \"rust-js\") continue;",
+    find: "if (message.target?.name !== target || (message.profile?.test === true) !== unit) continue;",
+    replace: "if (message.target?.name !== target) continue;",
     tests,
   },
   {

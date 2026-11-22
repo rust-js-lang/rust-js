@@ -1,4 +1,4 @@
-// Mutations of src/js/storage.rs (ADR 0093), moved from make.rs's with
+// Mutations of crates/rust-js-program/src/js/storage.rs (ADR 0093), moved from make.rs's with
 // the code they mutate.
 import type { Mutation } from "../../mutations";
 
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
   {
     name: "some-where-stored-coalesced",
     breaks: "a `SomeWhere` stored where `None` is `null` is `(t ? v : undefined) ?? null`, not `t ? v : null`",
-    file: "src/js/storage.rs",
+    file: "crates/rust-js-program/src/js/storage.rs",
     find: "        ExprKind::SomeWhere(test, value) => Some(Expr {\n",
     replace: "        ExprKind::SomeWhere(test, value) if false => Some(Expr {\n",
     tests: ["test/corpus.test.ts", "-t", "^any_given_to_a_nullable_parameter.rs$"],
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
   {
     name: "nullable-null-unplaced",
     breaks: "a nullable field's `null` is where nothing is, so the source map maps `value: null`'s `null` to nothing, not the Rust's `None`",
-    file: "src/js/storage.rs",
+    file: "crates/rust-js-program/src/js/storage.rs",
     find: "        ExprKind::Undefined | ExprKind::GivenUndefined => Some(Expr::null().or_at(made.span)),\n",
     replace: "        ExprKind::Undefined | ExprKind::GivenUndefined => Some(Expr::null()),\n",
     tests: ["test/emission.test.ts", "-t", "a nullable field's null maps to the None it is"],
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "nulled-field-coalesced",
     breaks: "what MIR says is `null` or a value already is `?? null` given to a `#[rust_js::nullable]` field",
-    file: "src/js/storage.rs",
+    file: "crates/rust-js-program/src/js/storage.rs",
     find: "        _ if given == Undefined::Never || !made.may_be_undefined() => Some(made.clone()),\n",
     replace: "        _ if !made.may_be_undefined() => Some(made.clone()),\n",
     tests: ["test/corpus.test.ts", "-t", "^(refcell_clone_through_rc|weak_cycle_set_after).rs$"],
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
   {
     name: "null-for-none-uncoalesced",
     breaks: "what a nullable field is given that may be `undefined` is stored as it is, `undefined`, not `?? null`",
-    file: "src/js/storage.rs",
+    file: "crates/rust-js-program/src/js/storage.rs",
     find: "                None => Expr::bin(Op::Coalesce, made, Expr::null()),\n",
     replace: "                None => made,\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "where it's made and where it's written"],
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
   {
     name: "null-for-none-objects-coalesced",
     breaks: "what's never `undefined`, an object made where it's stored, is `?? null` to a nullable field, `context.Consumer = { .. } ?? null`",
-    file: "src/js/storage.rs",
+    file: "crates/rust-js-program/src/js/storage.rs",
     find: "        _ if given == Undefined::Never || !made.may_be_undefined() => Some(made.clone()),\n",
     replace: "        _ if given == Undefined::Never || made.is_constant() => Some(made.clone()),\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_items_set_to_a_some_by_index.rs$"],
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
   {
     name: "null-for-none-branches-coalesced",
     breaks: "a test whose branches are each stored as they are is `?? null` as a whole, `(n != null ? n + 1 : undefined) ?? null`",
-    file: "src/js/storage.rs",
+    file: "crates/rust-js-program/src/js/storage.rs",
     find: "        ExprKind::Cond(test, yes, no) => Some(Expr {\n",
     replace: "        ExprKind::Cond(test, yes, no) if false => Some(Expr {\n",
     tests: ["test/lowering-nullable-borrows.test.ts", "-t", "a nullable place's write of an if's Some and None"],
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-place-tag-left",
     breaks: "a whole write of a flattened state sets its variant's fields but not its tag, so it still reads as the variant it was (rd380)",
-    file: "src/js/storage.rs",
+    file: "crates/rust-js-program/src/js/storage.rs",
     find: "            out.extend(fields.into_iter().map(|(name, value)| set(name, value)));\n",
     replace: "            out.extend(fields.into_iter().skip(1).map(|(name, value)| set(name, value)));\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
   {
     name: "alike-none-written-undefined",
     breaks: "a nullable thread-local nothing reads apart set `None` holds `undefined`, `resolveFamily = undefined;`, where its initializer and upstream write `null` (#665)",
-    file: "src/js/storage.rs",
+    file: "crates/rust-js-program/src/js/storage.rs",
     find: "            (Storage::NullForNone, ExprKind::Undefined | ExprKind::GivenUndefined) => Expr::null().or_at(made.span),\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local nothing reads apart"],
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
   {
     name: "alike-test-branch-undefined",
     breaks: "a nullable thread-local nothing reads apart set a test's `None`, `handler.filter(|_| !debug)`, holds `undefined` in that branch, `.. ? handler : undefined`, where a nullable place's `None` is `null` (#665)",
-    file: "src/js/storage.rs",
+    file: "crates/rust-js-program/src/js/storage.rs",
     find: "                    Box::new(self.written_alike(*no)),\n",
     replace: "                    no,\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local nothing reads apart"],
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-place-fields-set-before-computed",
     breaks: "a flattened state's whole write sets its tag before a field that computes, `thrown(error)`, runs, so where it panics the chunk is rejected where Rust's keeps its state (#779)",
-    file: "src/js/storage.rs",
+    file: "crates/rust-js-program/src/js/storage.rs",
     find: "                    Prop::Field(name, value) if apart(value) => (name.as_str(), value.clone()),\n",
     replace: "                    Prop::Field(name, value) if true => (name.as_str(), value.clone()),\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_written_whole_after_its_fields.rs$"],
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-place-fields-of-other-places-held",
     breaks: "a flattened state's whole write holds a field that reads another place, `handler.value`, before its tag is set, where upstream sets it in place (#784)",
-    file: "src/js/storage.rs",
+    file: "crates/rust-js-program/src/js/storage.rs",
     find: "                ExprKind::Var(object) => !value.has_effects() && !value.mentions_name(object),\n",
     replace: "                ExprKind::Var(_) => value.is_constant() || value.reads_only_vars(),\n",
     snapshots: true,
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
   {
     name: "assigned-storage-rebinds",
     breaks: "a pair's setter of an object written in place, `Storage::Assigned`, sets the variable, `c = value`, so the caller's object stays as it was (#968)",
-    file: "src/js/storage.rs",
+    file: "crates/rust-js-program/src/js/storage.rs",
     find: "        if self == Storage::Assigned {\n",
     replace: "        if self == Storage::Assigned && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
   {
     name: "assigned-storage-a-binding",
     breaks: "a handle whose setter writes an object in place is taken to set its variable, so `const c` is `let c`",
-    file: "src/js/storage.rs",
+    file: "crates/rust-js-program/src/js/storage.rs",
     find: "            Storage::Assigned => false,\n",
     replace: "            Storage::Assigned => true,\n",
     tests: ["test/lowering-dyn-pairs.test.ts"],
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
   {
     name: "cleared-stale-keys-written-nowhere",
     breaks: "a flattened state's keys a variant lacks are never set `undefined`, whatever its storage says, so a library's object keeps an earlier variant's keys (#1067)",
-    file: "src/js/storage.rs",
+    file: "crates/rust-js-program/src/js/storage.rs",
     find: "            out.extend(cleared.into_iter().map(|key| set(key, Expr::js_undefined())));\n",
     replace: "            let _ = cleared;\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "variant lacks"],

@@ -7,10 +7,10 @@
 //! dictionary that's its module's `const`, refused there (ADR 0592).
 
 use super::Pass;
-use crate::js;
 use crate::lower::FnInfo;
 use crate::lower::bindings::Export;
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};

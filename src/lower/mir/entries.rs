@@ -281,7 +281,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_fmt_result(output) {
             return Ok(Expr::call(Expr::helper("$fmtError"), Vec::new()));
         }
-        let error = crate::js::result::held(residual);
+        let error = rust_js_program::js::result::held(residual);
         let error = match self.tried_conversion(tried, Some(output), span)? {
             Some(conversion) => conversion.of(error),
             None => error,
@@ -690,7 +690,11 @@ fn reached_by_a_call(place: &Expr) -> bool {
     match &place.kind {
         js::ExprKind::Member(object, _) => reached_by_a_call(object),
         js::ExprKind::Index(object, index) => reached_by_a_call(object) || index.has_effects(),
-        js::ExprKind::Call(callee, args) if callee.helper_name().is_some_and(crate::runtime::names_a_place) => {
+        js::ExprKind::Call(callee, args)
+            if callee
+                .helper_name()
+                .is_some_and(rust_js_program::runtime::names_a_place) =>
+        {
             args.iter().any(reached_by_a_call)
         }
         _ => place.has_effects(),

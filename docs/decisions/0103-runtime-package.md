@@ -40,7 +40,7 @@ Primitive_int.div(3, 0);
 compiler's version, released with it, as ReScript's is:
 
 - **Its module is the compiler's helpers, each exported:** `rust-js
-  --runtime-module` prints every helper of `src/runtime.rs`, in its order,
+  --runtime-module` prints every helper of `crates/rust-js-program/src/runtime.rs`, in its order,
   each top-level `$` name exported. `runtime/index.js` is that, committed,
   and a test checks it's what the compiler prints, and that no two helpers
   declare one name. One source: the compiler.

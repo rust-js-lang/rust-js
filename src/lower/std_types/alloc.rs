@@ -6,10 +6,10 @@
 //! `p` points to the first of, `len` long, and `v.set_len(n)` leaves what's
 //! past `n` where it was (ADR 0420).
 
-use crate::js::{Expr, Prop, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::{Std, StdPath, TypeFact};
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{Expr, Prop, Stmt, StmtKind};
 
 /// What's asked of the allocator, or of a `Layout`.
 #[derive(Clone, Copy, PartialEq, Debug)]

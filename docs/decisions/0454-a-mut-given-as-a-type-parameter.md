@@ -816,7 +816,7 @@ function`, where native Rust writes. The one form is now a fact of the
 catalogue's (`generic_facts.rs`), `Form::HeldBox`: a `&mut` of its type
 parameter whose caller's is a `&mut` to a `&mut` to an object, the box of
 a `Form::Box`. Given, it's `$heldCellOf(cell)`, as #1300 made it; given
-back, `form_back`, it's `$heldObjectOf(box)` (src/runtime/cell_of.js),
+back, `form_back`, it's `$heldObjectOf(box)` (crates/rust-js-program/src/runtime/cell_of.js),
 whose `value` is the object and whose write puts the object's cell in
 generic code's box, so `*keep(&mut by) = &mut other` makes `by` hold
 `other`. `form_of` doesn't ask it: its askers, a function value's

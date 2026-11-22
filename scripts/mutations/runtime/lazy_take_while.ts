@@ -1,11 +1,11 @@
-// Mutations of src/runtime/lazy_take_while.js (ADR 0093).
+// Mutations of crates/rust-js-program/src/runtime/lazy_take_while.js (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "take-while-try-fold-by-next",
     breaks: "take_while passes tryFold to its source",
-    file: "src/runtime/lazy_take_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_take_while.js",
     find: "  $forward(taking, source, { tryFold, fold });\n",
     replace: "  $forward(taking, source, { fold });\n",
     tests: ["test/corpus.test.ts", "-t", "^(skip_folded_by_consumers|step_by_compiled_source_nth).rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-while-try-fold-by-next",
     breaks: "map_while passes tryFold to its source",
-    file: "src/runtime/lazy_take_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_take_while.js",
     find: "  $forward(mapping, source, { tryFold, fold });\n",
     replace: "  $forward(mapping, source, { fold });\n",
     tests: ["test/iterator-matrix.test.ts"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-while-fold-by-next",
     breaks: "a `take_while`'s fold steps it by `next`, not std's `try_fold`, so a `step_by` inside asks the crate's own `nth(0)` first (#214)",
-    file: "src/runtime/lazy_take_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_take_while.js",
     find: "    const folded = $consumed(taking, () => taking.tryFold(init, f, () => false, unwind), ends);\n    $closedAfter(ends, () => taking.return());\n    return folded;\n  };\n",
     replace: "    return $Steps.prototype.fold.call(taking, init, f, unwind, ends);\n  };\n",
     tests: ["test/corpus.test.ts", "-t", "^(discarded_drop_leaks_the_accumulator|step_by_compiled_source_nth).rs$"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-while-fold-by-next",
     breaks: "a `map_while`'s fold steps it by `next`, not std's `try_fold` (#216)",
-    file: "src/runtime/lazy_take_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_take_while.js",
     find: "    const folded = $consumed(mapping, () => mapping.tryFold(init, g, () => false, unwind), ends);\n",
     replace: "    const folded = $Steps.prototype.fold.call(mapping, init, g, unwind, ends);\n",
     tests: ["test/runtime-package.test.ts", "-t", "the lazy adapters ask their source's own try_fold where std's do"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-while-fold-unguarded",
     breaks: "a `take_while` whose predicate panics inside a fold leaves the accumulator undropped (#423)",
-    file: "src/runtime/lazy_take_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_take_while.js",
     find: "      (a, x) => ($kept(keep, drop, x, undefined, a, unwind) ? f(a, x) : ((ended = true), a)),",
     replace: "      (a, x) => ($kept(keep, drop, x, undefined, a) ? f(a, x) : ((ended = true), a)),",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-while-fold-unclosed",
     breaks: "a `take_while` whose predicate panics inside a fold leaves what's left undropped (#423)",
-    file: "src/runtime/lazy_take_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_take_while.js",
     find: "    const folded = $consumed(taking, () => taking.tryFold(init, f, () => false, unwind), ends);",
     replace: "    const folded = taking.tryFold(init, f, () => false, unwind);",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-while-fold-unguarded",
     breaks: "a `map_while` whose closure panics inside a fold leaves the accumulator undropped (#423)",
-    file: "src/runtime/lazy_take_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_take_while.js",
     find: "        const value = unwind === undefined ? f(x) :",
     replace: "        const value = true ? f(x) :",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-while-fold-unclosed",
     breaks: "a `map_while` whose closure panics inside a fold leaves what's left undropped (#423)",
-    file: "src/runtime/lazy_take_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_take_while.js",
     find: "    const folded = $consumed(mapping, () => mapping.tryFold(init, g, () => false, unwind), ends);",
     replace: "    const folded = mapping.tryFold(init, g, () => false, unwind);",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "take-while-ended-hint-of-source",
     breaks: "a `take_while()` whose predicate failed gives its source's upper bound, not `(0, Some(0))` (#733)",
-    file: "src/runtime/lazy_take_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_take_while.js",
     find: "(ended ? [0, 0] : $upperOnly(source))",
     replace: "$upperOnly(source)",
     tests: ["test/runtime-package.test.ts", "-t", "lazyTakeWhile's hint is none once its predicate has failed"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-while-hint-dropped",
     breaks: "a `map_while()`'s hint is `(0, None)`, not its source's upper bound (#733)",
-    file: "src/runtime/lazy_take_while.js",
+    file: "crates/rust-js-program/src/runtime/lazy_take_while.js",
     find: "  mapping.sizeHint = () => $upperOnly(source);\n",
     replace: "",
     tests: ["test/iterator-matrix.test.ts"],

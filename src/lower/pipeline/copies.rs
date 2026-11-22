@@ -7,7 +7,7 @@ use rustc_span::def_id::{DefId, LocalModId};
 
 use super::super::analysis::JsGiven;
 use super::super::{FnInfo, LoweredFn};
-use crate::js::{self, Expr, ExprKind, Name};
+use rust_js_program::js::{self, Expr, ExprKind, Name};
 
 /// A function by where it's named: its module, its type's object of
 /// methods if it's a method, and its name.

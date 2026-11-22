@@ -2,7 +2,7 @@
 //! bb7;`, and its end another: that one given first, as a person gives a
 //! default (ADR 0364, amended).
 
-use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
 /// `bb7: { .. x = true; break bb7; .. x = false; }`, a block MIR made of a
 /// value, its last statement a constant it gives where nothing else does,

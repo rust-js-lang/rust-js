@@ -327,4 +327,4 @@ filed are listed with their issue.
    values read through a `Proxy` that logs gets and sets, compared on and
    off, would find the rest, as ADR 1087's read oracle does for
    preparation. Owners: `classes/`, `untagged/`, `field_keys.rs`,
-   `src/js/stmt_walk.rs`.
+   `crates/rust-js-program/src/js/stmt_walk.rs`.

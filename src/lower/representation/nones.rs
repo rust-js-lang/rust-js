@@ -8,8 +8,8 @@
 //! The type-level answer, whether a `Some` is boxed (ADR 0051), is
 //! `options.rs`'s.
 
-use crate::js;
 use crate::lower::bindings;
+use rust_js_program::js;
 use rustc_middle::ty::{FieldDef, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 

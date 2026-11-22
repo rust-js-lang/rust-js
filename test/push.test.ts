@@ -201,7 +201,7 @@ test("a push's fast phase runs first, push-guard's rule and the catalog's quick 
 // reached by both the change and them, and says why.
 test("a round past a rebase type-checks the mutants and checks the interaction only where the incoming commits can change them", () => {
   expect(mutantsAgain(undefined)).toBe(true);
-  expect(mutantsAgain(["docs/guide/README.md", "test/corpus/x.rs", "src/runtime/iter.js"])).toBe(false);
+  expect(mutantsAgain(["docs/guide/README.md", "test/corpus/x.rs", "crates/rust-js-program/src/runtime/iter.js"])).toBe(false);
   for (const file of ["src/lower/iterators.rs", "scripts/mutations/runtime/iter.ts", "Cargo.lock", "rust-toolchain.toml"]) expect([file, mutantsAgain(["docs/x.md", file])]).toEqual([file, true]);
   expect(sanitySkipped("none")).toBe("incoming reach nothing this change reaches");
   expect(sanitySkipped("none, map 57283d2aa 3 behind")).toBe("incoming reach nothing this change reaches");
@@ -213,11 +213,11 @@ test("a round past a rebase type-checks the mutants and checks the interaction o
 // commits it brought touch what they read: the catalog, a file a mutation
 // names, the compiler's sources, the owners' table or the tests (#2258).
 test("a round past a rebase runs the fast tests again only where the incoming commits touch what they read", () => {
-  const named = new Set(["src/runtime/iter.js", "tooling/cli.js"]);
+  const named = new Set(["crates/rust-js-program/src/runtime/iter.js", "tooling/cli.js"]);
   expect(fastAgain(undefined, named)).toBe(true);
   expect(fastAgain([], named)).toBe(false);
   expect(fastAgain(["docs/guide/README.md", "test/corpus/x.rs", "test/corpus/x.js", "TESTS.md"], named)).toBe(false);
-  for (const file of ["src/lower/iterators.rs", "src/runtime/iter.js", "tooling/cli.js", "scripts/mutations/runtime/iter.ts", "scripts/mutations.ts", "docs/architecture.md", "scripts/owners.ts", ...FAST_TESTS])
+  for (const file of ["src/lower/iterators.rs", "crates/rust-js-program/src/runtime/iter.js", "tooling/cli.js", "scripts/mutations/runtime/iter.ts", "scripts/mutations.ts", "docs/architecture.md", "scripts/owners.ts", ...FAST_TESTS])
     expect([file, fastAgain([file], named)]).toEqual([file, true]);
 });
 
@@ -226,7 +226,7 @@ test("a round past a rebase runs the fast tests again only where the incoming co
 // its crate, README and package.json are written by hand (#2259).
 test("a rebase's conflict in std/'s generated files is made again, one in what's written by hand stops", () => {
   for (const file of ["std/runtime.js", "std/iter.js", "std/iter.js.map", "std/manifest.json", "std/index.d.ts", "std/index.js"]) expect([file, stdGenerated(file)]).toEqual([file, true]);
-  for (const file of ["std/lib.rs", "std/README.md", "std/package.json", "src/runtime/flat_map.js", "std/sub/x.js"]) expect([file, stdGenerated(file)]).toEqual([file, false]);
+  for (const file of ["std/lib.rs", "std/README.md", "std/package.json", "crates/rust-js-program/src/runtime/flat_map.js", "std/sub/x.js"]) expect([file, stdGenerated(file)]).toEqual([file, false]);
   expect(remakeable(["std/runtime.js", "std/iter.js", "docs/readability.txt"])).toBe(true);
   expect(remakeable(["std/runtime.js", "std/lib.rs"])).toBe(false);
 });

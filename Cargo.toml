@@ -16,6 +16,10 @@ rustc_private = true
 # Cargo package in the checkout is its own: a binding crate, an example,
 # a vendored crate or the playground's build, each built where it is.
 [workspace]
+# A dev-dependency's features stay out of a normal build (resolver 3, as
+# edition 2024's): the binary's tests' `rust-js-program/testing` never
+# reaches the compiler a user runs.
+resolver = "3"
 members = ["crates/rust-js-program"]
 default-members = [".", "crates/rust-js-program"]
 exclude = ["builtins", "examples", "next", "node", "react", "react-native", "scripts", "test", "target", "tooling", "vendor", "wasm", "webapi"]
@@ -53,6 +57,10 @@ oxc_syntax = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.
 # against (#1512): pinned, its default features off, `css_modules.rs` its
 # one reader.
 lightningcss = { version = "=1.0.0-alpha.72", default-features = false }
+
+# The unit tests' conveniences of owned output's crate (its `testing`).
+[dev-dependencies]
+rust-js-program = { path = "crates/rust-js-program", features = ["testing"] }
 
 # A crate's settings, in its Cargo.toml (ADR 0117): read natively only. The
 # playground has none.

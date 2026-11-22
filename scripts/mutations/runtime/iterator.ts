@@ -1,11 +1,11 @@
-// Mutations of src/runtime/iterator.js (ADRs 0061, 0421).
+// Mutations of crates/rust-js-program/src/runtime/iterator.js (ADRs 0061, 0421).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "given-reader-a-step",
     breaks: "`$given` counts a dictionary's reader by index as a step not its own, so a held `skip` given to std's `step_by` is stepped one item at a time (ADR 0975)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "name === \"getUnchecked\" || ",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^range_steps_anywhere with"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-try-rfold-dropped",
     breaks: "a value given as it is, by a dictionary with a `try_rfold`, steps from its back by `next_back` where that `try_rfold` asks one `nth_back` (ADR 0930)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "        : (init, f, broke, unwind, ends) => tryRfold(iterator, init, f, broke, unwind, ends),\n",
     replace: "        : undefined,\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^held_back_folds_by_try_rfold with"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-js-iterator-wrapped",
     breaks: "a compiled `Peekable`'s source that is a JS iterator is stepped through a wrapper, so `chain(..).peekable().last()` drops each item as it passes it, not by each side's `last` (#276)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "    return value;\n  }\n  const it = $iterator(",
     replace: "  }\n  const it = $iterator(",
     tests: ["test/corpus.test.ts", "-t", "peekable_source_own_steps"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-of-forgotten",
     breaks: "a JS iterator of the crate's iterator doesn't say what it's of, which its drop drops",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "  it.of = iterator;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-back-forgotten",
     breaks: "a range or the crate's iterator given as a double-ended one has no `back()`",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "    it.back = () => step(nextBack(iterator));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-hint-ignored",
     breaks: "a JS iterator given the crate's `size_hint` doesn't answer `$sizeHint` with it",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "    it.sizeHint = () => hint(iterator);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-own-fold-unused",
     breaks: "the crate's iterator's own `fold` isn't called by what std routes through it",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "        : (init, f, unwind, ends) => fold(iterator, init, f, unwind, ends),\n",
     replace: "        : undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-own-nth-unused",
     breaks: "the crate's iterator's own `nth` isn't called by `skip`",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "    nth: nth && ((k) => step(nth(iterator, k))),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-fold-unpassed",
     breaks: "a value given as it is is stepped by `next`, not its dictionary's own `fold`",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "    iterator.sizeHint,\n    iterator.fold,\n",
     replace: "    iterator.sizeHint,\n    undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-own-rfold-unused",
     breaks: "the crate's own `rfold` is never called through what std routes through it (#220)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "        : (init, f, unwind, ends) => rfold(iterator, init, f, unwind, ends),\n",
     replace: "        : undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-own-nth-back-unused",
     breaks: "the crate's own `nth_back` is never called through what std routes through it (#220)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "    nthBack: nthBack && ((k) => step(nthBack(iterator, k))),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-back-own-unpassed",
     breaks: "a type parameter's iterator stepped from its back isn't given its `DoubleEndedIterator` dictionary's own `rfold` and `nth_back`, so a compiled `fuse()` steps the crate's by `next_back` (#224)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "    back?.rfold,\n    back?.nthBack,\n",
     replace: "    undefined,\n    undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
     name: "range-iterator-nth-stepped",
     breaks:
       "a range's JS iterator has no `nth` of its bounds, so a `rev()` of one made knowing its back has no `nth_back` of its own, and its `nth_back(4_000_000_000)` steps each number it passes, past the run's time, where std's `Rev::nth_back` is the range's `nth` (#231, #1109)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "  nth ??= $rangeNthOf(next);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_reversed_skipped_beside_its_back_stepped.rs$"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-steps-not-the-value",
     breaks: "std's struct given with `fold: $foldOf` is wrapped, losing its own `advance_by`, so a chain's `nth` steps each item of a reversed `Vec` back to front (ADR 0912)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: '        name === "getUnchecked" || name === "lent" || (lends && step === undefined) || $askedStep(step, boxed) === name,\n',
     replace: '        name === "getUnchecked" || name === "lent" || (lends && step === undefined) || (name === "next" && step === $next),\n',
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-hint-unknown",
     breaks: "a range a variable holds, given to generic code, says nothing of how many it has left, `(0, None)` where Rust's is exact (ADR 0918)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "  hint ??= $rangeHintOf(next);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_hints_given.rs$"],
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-clone-of-the-wrapper",
     breaks: "a clone of generic code's `copied()` of the crate's own iterator clones the JS iterator `$given` made of it, `(5, 0)` where Rust gives `(5, 3)` (#384)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "  if (it.given !== true) return clone(it);\n",
     replace: "  return clone(it);\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_clone_of_its_own.rs$"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-clone-unmarked",
     breaks: "a clone of a clone of generic code's `copied()` of the crate's own iterator clones the JS iterator the first clone made (#384)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "  again.given = true;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^copied_clone_of_its_own.rs$"],
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
   {
     name: "range-rfold-steps-past",
     breaks: "a held `Rev` of `k.by_ref()`, `1u8..=3`, folded leaves it `1..=0`, stepped past its start by `next_back`, where std's `try_rfold` leaves `1..=1 (exhausted)` (#414)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "  const rangeRfold = nextBack === undefined ? undefined : $rangeFoldOf(nextBack);\n",
     replace: "  const rangeRfold = undefined;\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^range_inclusive_exhausted with"],
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
   {
     name: "dictionary-fold-unwind-lost",
     breaks: "a fold through the crate's own `fold`, `$iterator`'s, gives it no `unwind`: a `map` of it whose `next` panics drops none of what it folded (#615)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "        : (init, f, unwind, ends) => fold(iterator, init, f, unwind, ends),\n",
     replace: "        : (init, f) => fold(iterator, init, f),\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_unwind_given_on.rs$"],
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
   {
     name: "dictionary-rfold-unwind-lost",
     breaks: "an `rfold` through a dictionary's, std's compiled `Map::rfold`, gives it no `unwind`: a stage's panic leaves the accumulator undropped (#423)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "        : (init, f, unwind, ends) => rfold(iterator, init, f, unwind, ends),\n",
     replace: "        : (init, f) => rfold(iterator, init, f),\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^panic_in_own_rfold_drops with"],
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
   {
     name: "dictionary-try-rfold-unwind-lost",
     breaks: "a `try_rfold` through a dictionary's gives it no `unwind`: a stage's panic leaves the accumulator undropped (#423)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "        : (init, f, broke, unwind, ends) => tryRfold(iterator, init, f, broke, unwind, ends),\n",
     replace: "        : (init, f, broke) => tryRfold(iterator, init, f, broke),\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_folds_unwind with"],
@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-own-count-unset",
     breaks: "a JS iterator of the crate's with its own `count` counts by stepping, never asking it (#505)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "    count: count && (() => count(iterator)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
@@ -183,7 +183,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-count-lost",
     breaks: "a value std's compiled `Fuse` steps is made a JS iterator without its dictionary's `count`, the crate's own (#505)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "    back?.tryRfold,\n    iterator.count,\n",
     replace: "    back?.tryRfold,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     name: "given-count-not-own",
     breaks:
       "a value of a type parameter whose dictionary's `count` is `$count` is made a JS iterator again, losing its own `tryFold`, so a generic `map(..).any(..)` of a `skip` asks `nth(n)` where Rust asks `nth(n - 1)` (#520)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: '  if (step === $count) return "count";\n',
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^skip_try_fold with"],
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-boxed-steps-not-own",
     breaks: "a value of a type parameter whose dictionary boxes its `Some`, `$nextSome`'s, is made a JS iterator whose `nth` asks the value's, which a JS array iterator has none of: generic `skip(1).last()` throws (#522)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: '        name === "getUnchecked" || name === "lent" || (lends && step === undefined) || $askedStep(step, boxed) === name,\n',
     replace: '        name === "getUnchecked" || name === "lent" || (lends && step === undefined) || $askedStep(step) === name,\n',
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_own_last with"],
@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
     name: "took-helper-trusted",
     breaks:
       "a dictionary's step that's std's helper, `$foldOf`, is taken to have taken the value whatever the value's own did: generic code's `sum()` of a `peekable()` of the crate's iterator with a `Drop` and no `fold` of its own never drops it (#621)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "  return name === undefined || it[$ownStep(name)] === true || it.$steps?.takes?.includes(name) === true;\n",
     replace: "  return true;\n",
     tests: ["test/corpus.test.ts", "-t", "^peekable_given_back_drops.rs$"],
@@ -218,7 +218,7 @@ export const mutations: Mutation[] = [
     name: "took-own-unasked",
     breaks:
       "a dictionary's step that's std's helper never took the value, though the value's own ran, the crate's `rfold`: generic code's `peekable().rev().fold(..)` of it drops it twice (#649)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "  return name === undefined || it[$ownStep(name)] === true || it.$steps?.takes?.includes(name) === true;\n",
     replace: "  return name === undefined || it.$steps?.takes?.includes(name) === true;\n",
     tests: ["test/corpus.test.ts", "-t", "^own_steps_a_type_parameter_may_reach.rs$"],
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-own-nth-back-unsaid",
     breaks: "the crate's iterator with its own `nth_back` doesn't say it's its own, so generic code's `rev().skip(n)` and `rev().step_by(n)` step it by `next_back`, never calling it (#649)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "  for (const [name, own] of Object.entries({ fold, nth, last, rfold, nthBack, count })) {\n",
     replace: "  for (const [name, own] of Object.entries({ fold, nth, last, rfold, count })) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_rev_nths_its_own_back.rs$"],
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-slicing-hidden",
     breaks: "a `Vec`'s `IntoIter` given generic code its length asks is made a JS iterator that hides its slice's steps, so its `nth` there drops each, stopping at a panic (#703)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "  if ($sliced(value) && value.lends === undefined) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
@@ -242,7 +242,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-slicing-unasked",
     breaks: "`$given` doesn't give a `Vec`'s value the slice's steps its dictionary says, so a struct's generic method's `nth` of it stops dropping at a panic (#703)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "  if (iterator.advanceBy === $advanceSlice) $slicing(value);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nth_passes_a_slice_or_each.rs$"],
@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
   {
     name: "iterator-rfold-ends-lost",
     breaks: "an iterator's own `rfold` entry, a dictionary's, is given nothing of what drops with `f`, so std's compiled `Rev::fold` drops its closure after (#734)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "        : (init, f, unwind, ends) => rfold(iterator, init, f, unwind, ends),\n",
     replace: "        : (init, f, unwind) => rfold(iterator, init, f, unwind),\n",
     tests: ["test/iterator-forms.test.ts", "-t", "consumer"],
@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-drop-of-the-wrapper",
     breaks: "`$givenDrop` drops the JS iterator `$given` made of the value, not the value, a `TypeError` (#766)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "    const value = it.given === true ? it.of : it;\n",
     replace: "    const value = it;\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^flatten_count_takes_each_inner_count with"],
@@ -266,7 +266,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-drop-hides-each",
     breaks: "the drop of a type parameter's value given as it is hides each item's own drop, `drop.each`, so a `Vec`'s `IntoIter` it was given drops nothing its `nth`, `skip` or `step_by` passes over (#718)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "  dropped.each = drop?.each;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_of_droppers_drops_what_it_passes.rs$"],
@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-range-advance-by-steps",
     breaks: "a generic `skip(4_000_000_000)` of a chain of `(0..u32::MAX).rev()` given as a range stepped by its back steps each number, `$iterator` giving it no `advance_by` of its bounds (#1240)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "    advanceBy: advance && ((m) => advance(iterator, m)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_advanced_by_its_bounds\\.rs$"],
@@ -282,7 +282,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-range-advance-back-by-steps",
     breaks: "a compiled `Rev`'s `advance_by` of a range given with its dictionaries steps each number back, `$iterator` giving it no `advance_back_by` of its bounds (#1240)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "    advanceBackBy: advanceBack && ((m) => advanceBack(iterator, m)),\n",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^range_advanced_by_its_bounds with std's iterator structs$"],
@@ -292,7 +292,7 @@ export const mutations: Mutation[] = [
     name: "given-back-advance-back-by-dropped",
     breaks:
       "a value given with a dictionary whose `advance_back_by` is std's compiled one is stepped back one at a time, so an `enumerate().rev()` counted drops its `Vec`'s items back to front where std drops them as one slice (#2125)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "    back?.advanceBackBy,\n",
     replace: "    undefined,\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^enumerate_advanced_from_its_back_by_its_source with std's iterator structs$"],
@@ -301,7 +301,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-clone-of-a-copy-whole",
     breaks: "`$givenClone` of a `$copiedGiven` clones the copy, not what it's made of (#2130)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "  if (it.cloneBy !== undefined) return it.cloneBy(clone);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^copied_hides_its_sources_own_nth_back.rs$"],
@@ -309,7 +309,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-lent-unapplied",
     breaks: "`$given` ignores its dictionary's `lent`, so a `Box` or a `&mut` of std's adapter given through a trait is stepped as the adapter itself, its own `fold` reaching the crate's (#2185, #2187)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "  for (const kind of iterator.lent ?? []) value = $lent(value, kind);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^wrapper_given_by_a_dictionary_steps_as_std_does.rs$"],
@@ -317,7 +317,7 @@ export const mutations: Mutation[] = [
   {
     name: "given-lent-absent-entry-own",
     breaks: "a dictionary that lends its value, whose entries passed on of the named `$jsIterator` are `undefined` where it has none, is read as one with steps of its own, so a `&mut` of a `skip` given through a trait is wrapped by `next` and asks the crate's `nth(1)`, where std's `&mut I` folds by `Skip::try_fold`'s `nth(0)` (#2190)",
-    file: "src/runtime/iterator.js",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
     find: "        name === \"getUnchecked\" || name === \"lent\" || (lends && step === undefined) || $askedStep(step, boxed) === name,\n",
     replace: "        name === \"getUnchecked\" || name === \"lent\" || $askedStep(step, boxed) === name,\n",
     tests: ["test/corpus.test.ts", "-t", "^wrapper_given_by_a_dictionary_steps_as_std_does.rs$"],

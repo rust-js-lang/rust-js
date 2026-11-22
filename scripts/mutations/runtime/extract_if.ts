@@ -1,11 +1,11 @@
-// Mutations of src/runtime/extract_if.js (ADR 0344).
+// Mutations of crates/rust-js-program/src/runtime/extract_if.js (ADR 0344).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "extract-if-end-kept",
     breaks: "`extract_if` runs past its range as it takes items out",
-    file: "src/runtime/extract_if.js",
+    file: "crates/rust-js-program/src/runtime/extract_if.js",
     find: "          end--;\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","extract_if"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "extract-if-unchecked",
     breaks: "`extract_if` past the end is made, and never panics",
-    file: "src/runtime/extract_if.js",
+    file: "crates/rust-js-program/src/runtime/extract_if.js",
     find: "  $checkRange(start, end, v.length, inclusive);\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","extract_if_past_len"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "extract-if-no-handle",
     breaks: "`extract_if`'s filter is given a number, not a handle on it",
-    file: "src/runtime/extract_if.js",
+    file: "crates/rust-js-program/src/runtime/extract_if.js",
     find: "        if (f(handle ? $mutAt(v, at) : v[at])) {",
     replace: "        if (f(v[at])) {",
     tests: ["test/corpus.test.ts","-t","extract_if"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-extract-taken-stale",
     breaks: "a map's `extract_if` of numbers or text gives the handle its filter was given, not the value it changed",
-    file: "src/runtime/extract_if.js",
+    file: "crates/rust-js-program/src/runtime/extract_if.js",
     find: "      const taken = handles ? value.value : value;",
     replace: "      const taken = value;",
     tests: ["test/corpus.test.ts","-t","extract_if"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-extract-kept",
     breaks: "a map's `extract_if` leaves what it gives in the map",
-    file: "src/runtime/extract_if.js",
+    file: "crates/rust-js-program/src/runtime/extract_if.js",
     find: "      $deleteHeld(m, key);\n      return { done: false, value: [key, taken] };",
     replace: "      return { done: false, value: [key, taken] };",
     tests: ["test/corpus.test.ts","-t","extract_if"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-extract-kept",
     breaks: "a set's `extract_if` leaves what it gives in the set",
-    file: "src/runtime/extract_if.js",
+    file: "crates/rust-js-program/src/runtime/extract_if.js",
     find: "        $deleteHeld(m, step.value);\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","extract_if"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "extract-if-tree-eager",
     breaks: "`extract_if` of a tree whose order can be seen takes a snapshot and deletes by search, where std's walks and removes where it is (#926)",
-    file: "src/runtime/extract_if.js",
+    file: "crates/rust-js-program/src/runtime/extract_if.js",
     find: "  if (tree?.extractIf !== undefined) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_seen.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-extract-if-closes-dropping-nothing",
     breaks: "a map's or a set's `extract_if` closed drops nothing it holds, its test or its range's bounds (#945)",
-    file: "src/runtime/extract_if.js",
+    file: "crates/rust-js-program/src/runtime/extract_if.js",
     find: "    const it = new $Steps(next, () => drop && $close(it, drop));\n",
     replace: "    const it = new $Steps(next);\n",
     tests: ["test/corpus.test.ts", "-t", "^extract_if_drops_what_it_holds.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "extract-if-deletes-by-search",
     breaks: "a hash map's `extract_if` takes out what it gives by a search, running its key's `hash`, where std's walk runs none (#1362)",
-    file: "src/runtime/extract_if.js",
+    file: "crates/rust-js-program/src/runtime/extract_if.js",
     find: "      $deleteHeld(m, key);\n      return { done: false, value: [key, taken] };\n",
     replace: "      m.delete(key);\n      return { done: false, value: [key, taken] };\n",
     tests: ["test/corpus.test.ts", "-t", "^map_entry_hashes_its_key_once.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "extract-if-set-deletes-by-search",
     breaks: "a hash set's `extract_if` takes out what it gives by a search, running its `hash`, where std's walk runs none (#1362)",
-    file: "src/runtime/extract_if.js",
+    file: "crates/rust-js-program/src/runtime/extract_if.js",
     find: "        $deleteHeld(m, step.value);\n",
     replace: "        m.delete(step.value);\n",
     tests: ["test/corpus.test.ts", "-t", "^map_entry_hashes_its_key_once.rs$"],

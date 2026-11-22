@@ -1,11 +1,11 @@
-// Mutations of src/runtime/key_class.js (#1346).
+// Mutations of crates/rust-js-program/src/runtime/key_class.js (#1346).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "key-class-hashed-part-unhashed",
     breaks: "a tuple with a part found by its own `Hash` and `Eq` is found by value, so two parts its `Eq` finds equal are two keys",
-    file: "src/runtime/key_class.js",
+    file: "crates/rust-js-program/src/runtime/key_class.js",
     find: '  if (finds.includes("hashed")) return "hashed";\n',
     replace: "",
     tests: ["test/runtime-package.test.ts", "-t", "key-class-ways"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "key-class-parts-part-by-value",
     breaks: "a tuple with a part kept under what `parts` keeps it, a path's or one holding a type equal only to itself, is found by its value",
-    file: "src/runtime/key_class.js",
+    file: "crates/rust-js-program/src/runtime/key_class.js",
     find: '  if (finds.includes("parts")) return "parts";\n',
     replace: "",
     tests: ["test/runtime-package.test.ts", "-t", "key-class-ways"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "key-class-own-order-std",
     breaks: "a B-tree keyed by a tuple with a part of its own `Ord` is std's `$btreeMap`, whose search isn't that `Ord`'s",
-    file: "src/runtime/key_class.js",
+    file: "crates/rust-js-program/src/runtime/key_class.js",
     find: '  if (orders.includes("own")) return "own";\n',
     replace: "",
     tests: ["test/runtime-package.test.ts", "-t", "key-class-ways"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "key-class-seen-order-unseen",
     breaks: "a B-tree keyed by a tuple with a part whose order can be seen isn't std's nodes",
-    file: "src/runtime/key_class.js",
+    file: "crates/rust-js-program/src/runtime/key_class.js",
     find: '  if (orders.includes("tree")) return "tree";\n',
     replace: "",
     tests: ["test/runtime-package.test.ts", "-t", "key-class-ways"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "key-class-cmp-first-part",
     breaks: "a tuple key's order is its first part's alone, so keys equal there are one key",
-    file: "src/runtime/key_class.js",
+    file: "crates/rust-js-program/src/runtime/key_class.js",
     find: "      if (order !== 0) return order;\n",
     replace: "      return order;\n",
     tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_a_tuple_of_a_type_parameter.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "array-key-way-its-first-items-alone",
     breaks: "an array key's items past the first have no way, so a `HashSet<[T; 3]>` throws on its first key (#1371)",
-    file: "src/runtime/key_class.js",
+    file: "crates/rust-js-program/src/runtime/key_class.js",
     find: "  return $composedKeyClass(set, sorted, [$keyWayOf(Item)], () => 0);\n",
     replace: "  return $composedKeyClass(set, sorted, [$keyWayOf(Item)], (i) => i);\n",
     tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_an_array_of_a_type_parameter.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "array-key-way-by-value",
     breaks: "an array key is found by value whatever its item's class, so arrays of items equal by their own `Eq` are two keys (#1371)",
-    file: "src/runtime/key_class.js",
+    file: "crates/rust-js-program/src/runtime/key_class.js",
     find: "  return $composedKeyClass(set, sorted, [$keyWayOf(Item)], () => 0);\n",
     replace: '  return $composedKeyClass(set, sorted, [sorted ? $keyWayOf(Item) : { find: "value" }], () => 0);\n',
     tests: ["test/runtime-package.test.ts", "-t", "key-class-ways"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "key-compared-by-its-classes-parts",
     breaks: "a key found by its own `Eq` is compared by the parts its class names, an array's one, so arrays equal in their first item alone are one key (#1371)",
-    file: "src/runtime/key_class.js",
+    file: "crates/rust-js-program/src/runtime/key_class.js",
     find: "      for (let i = 0; i < a.length; i++) {\n        const way = ways[index(i)];\n        if (!(",
     replace: "      for (let i = 0; i < ways.length; i++) {\n        const way = ways[index(i)];\n        if (!(",
     tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_an_array_of_a_type_parameter.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "key-class-fields-unread-by-eq",
     breaks: "a composed key class's `eq` compares the key, not its fields' reader's parts, so two equal named structs are two",
-    file: "src/runtime/key_class.js",
+    file: "crates/rust-js-program/src/runtime/key_class.js",
     find: "      const a = parts(x);\n      const b = parts(y);\n      for (let i = 0; i < a.length; i++) {\n        const way",
     replace: "      const a = x;\n      const b = y;\n      for (let i = 0; i < a.length; i++) {\n        const way",
     tests: ["test/corpus.test.ts", "-t", "^struct_keys_of_a_type_parameter.rs$"],

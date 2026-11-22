@@ -1466,7 +1466,7 @@ Written over, one object holds, in turn, places Rust keeps apart: an
 `Ok`'s `_0` at offset 1 and an `Err`'s `_0` at 2 of a `Result<u8, u16>`,
 one key. `$ptr` gave the handle it had made of the key, at the first
 offset; now a key at another offset is another place, a handle of its own,
-and a handle given no offset the one there is (src/runtime/pointers.js;
+and a handle given no offset the one there is (crates/rust-js-program/src/runtime/pointers.js;
 a runtime-package test, mutation key-one-handle-at-any-offset).
 
 Case "results change" (ADR 0262). Proved by the corpus case

@@ -308,7 +308,11 @@ mod tests {
     /// `x.TAG === "<tag>"`, or `!==`.
     fn tag(tag: &str, equal: bool) -> Expr {
         let op = if equal { Op::Eq } else { Op::Ne };
-        Expr::bin(op, Expr::member(Expr::var("x"), crate::js::TAG), Expr::str(tag))
+        Expr::bin(
+            op,
+            Expr::member(Expr::var("x"), rust_js_program::js::TAG),
+            Expr::str(tag),
+        )
     }
 
     /// Where `x.TAG === "A"` holds, a test of `x` against another text is

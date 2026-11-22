@@ -25,7 +25,7 @@ and 21 `to_uppercase` mappings differ, U+0277's among them.
 
 ## Decision
 
-**The runtime asks Rust's tables,** `src/runtime/unicode_tables.js`,
+**The runtime asks Rust's tables,** `crates/rust-js-program/src/runtime/unicode_tables.js`,
 which `bun scripts/unicode.ts` makes of the pinned toolchain's std:
 scripts/unicode/main.rs, built by the checkout's toolchain, asks std's
 own methods of every `char`, `is_alphabetic()`, `escape_debug()`,

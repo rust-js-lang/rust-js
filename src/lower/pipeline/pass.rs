@@ -1,8 +1,8 @@
 //! What one lowering pass of the crate gathers of each function it keeps,
 //! grouped for output.
 
-use crate::js;
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js;
 use rustc_span::def_id::{DefId, LocalModId};
 
 /// Retained functions and their dependencies, grouped for output.
@@ -20,7 +20,7 @@ pub(super) struct Pass {
     /// its impl (ADR 0592), that the crate's own code reaches; and the
     /// names of the `const`s each dictionary makes.
     pub(super) dictionary_consts: Vec<(LocalModId, DefId)>,
-    pub(super) dictionary_names: IndexSet<crate::js::Name>,
+    pub(super) dictionary_names: IndexSet<rust_js_program::js::Name>,
     /// What fills each item's hole, by its index.
     pub(super) holes: super::holes::Holes,
     /// Which items each module uses from another, and which JS imports.

@@ -5,8 +5,8 @@
 //! tests, `decisions` tries the arms in any order; of one that calls, this
 //! is what says an arm's test tells.
 
-use crate::js::{self, Expr, ExprKind, Op, UnaryOp};
 use crate::lower::mir::hints::Guard;
+use rust_js_program::js::{self, Expr, ExprKind, Op, UnaryOp};
 
 use super::{
     Arm, Set, all, alternatives, any, atom, factored, leaf_tests, pure, same_subject, simplified, within, written_order,

@@ -24,8 +24,8 @@ use super::recognition::{BuilderStep, ChannelError, DebugBuilder, FmtResultAnswe
 use super::recognition::{StdItem, WriteCall, opt_std_item, std_item};
 use super::representation::{self, Num};
 use super::{FnCx, R};
-use crate::js::result;
-use crate::js::{self, Expr, Op, Stmt, StmtKind};
+use rust_js_program::js::result;
+use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
@@ -239,12 +239,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             FmtResultAnswer::Unwrap | FmtResultAnswer::Expect | FmtResultAnswer::UnwrapOr => Expr::js_undefined(),
             FmtResultAnswer::Is(ok) => Expr::bool(ok),
             FmtResultAnswer::Ok => self.some(Expr::js_undefined()),
-            FmtResultAnswer::MapErr => crate::js::result::ok(Expr::js_undefined()),
+            FmtResultAnswer::MapErr => rust_js_program::js::result::ok(Expr::js_undefined()),
             // Its function given `()`, `undefined`, which one that takes
             // it as a value reads, `map(Ok)`'s.
             FmtResultAnswer::Map => {
                 let f = message.clone().expect("`map`'s function");
-                crate::js::result::ok(crate::lower::calls::apply(f, vec![Expr::js_undefined()]))
+                rust_js_program::js::result::ok(crate::lower::calls::apply(f, vec![Expr::js_undefined()]))
             }
             FmtResultAnswer::UnwrapErr => unreachable!("answered above"),
         };
@@ -268,11 +268,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match answer {
             FmtResultAnswer::Ok => Expr::cond(ok, self.some(Expr::js_undefined()), Expr::js_undefined()),
             FmtResultAnswer::UnwrapOr => Expr::js_undefined(),
-            FmtResultAnswer::Map => Expr::cond(ok, constant, crate::js::result::err(result)),
+            FmtResultAnswer::Map => Expr::cond(ok, constant, rust_js_program::js::result::err(result)),
             FmtResultAnswer::MapErr => {
                 let f = message.expect("`map_err`'s function");
-                let mapped = crate::js::result::err(self.applied(f, result));
-                Expr::cond(ok, crate::js::result::ok(Expr::js_undefined()), mapped)
+                let mapped = rust_js_program::js::result::err(self.applied(f, result));
+                Expr::cond(ok, rust_js_program::js::result::ok(Expr::js_undefined()), mapped)
             }
             FmtResultAnswer::Is(true) => ok,
             FmtResultAnswer::Is(false) => Expr::bin(Op::Ne, result, Expr::js_undefined()),

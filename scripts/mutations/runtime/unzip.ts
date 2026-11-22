@@ -1,11 +1,11 @@
-// Mutations of src/runtime/unzip.js (ADR 0093).
+// Mutations of crates/rust-js-program/src/runtime/unzip.js (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "unzip-swapped",
     breaks: "`unzip()` gives the second parts first",
-    file: "src/runtime/unzip.js",
+    file: "crates/rust-js-program/src/runtime/unzip.js",
     find: "    a.push(x);\n    b.push(y);\n",
     replace: "    a.push(y);\n    b.push(x);\n",
     tests: ["test/corpus.test.ts","-t","iterator_sources"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "unzip-steps",
     breaks: "`unzip` of the crate's iterator steps it by `next`, not by its own `fold`",
-    file: "src/runtime/unzip.js",
+    file: "crates/rust-js-program/src/runtime/unzip.js",
     find: "    () => (typeof pairs.fold === \"function\" ? pairs.fold(undefined, (_, pair) => put(pair)) : $eachOf(pairs, put)),\n",
     replace: "    () => $eachOf(pairs, put),\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "unzip-collected-leaked",
     breaks: "`unzip` whose source's step panics never drops what it unzipped, which std's `(A, B)` drops as it unwinds (#1150)",
-    file: "src/runtime/unzip.js",
+    file: "crates/rust-js-program/src/runtime/unzip.js",
     find: "    dropA && (() => $dropItems(a, dropA)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],

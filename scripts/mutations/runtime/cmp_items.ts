@@ -1,11 +1,11 @@
-// Mutations of src/runtime/cmp_items.js (ADR 0465).
+// Mutations of crates/rust-js-program/src/runtime/cmp_items.js (ADR 0465).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "iter-eq-lengths-unread",
     breaks: "`eq()` of two `Vec`s' iterators of unequal lengths compares their items, dropping them in pairs, where std's `SpecIterEq` gives `false` with none compared (ADR 0992)",
-    file: "src/runtime/cmp_items.js",
+    file: "crates/rust-js-program/src/runtime/cmp_items.js",
     find: "    if (lengths !== undefined && lengths[0] !== lengths[1]) return false;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^eq_of_unequal_lengths.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "iter-eq-pair-undropped",
     breaks: "`eq` of items with a destructor drops none of the other side's pairs",
-    file: "src/runtime/cmp_items.js",
+    file: "crates/rust-js-program/src/runtime/cmp_items.js",
     find: "        const dropQ = dropB && (() => dropB(q.value));\n",
     replace: "        const dropQ = undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "iter-eq-unclosed",
     breaks: "`eq` doesn't close what it compared once it ends, so what's left of either isn't dropped",
-    file: "src/runtime/cmp_items.js",
+    file: "crates/rust-js-program/src/runtime/cmp_items.js",
     find: "  return $endsAfter(() => $closeEach(y, x), () => {\n",
     replace: "  return $endsAfter(undefined, () => {\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "iter-eq-close-stops-at-a-panic",
     breaks: "`eq` stops closing where its second iterator's drop panics, so the first's rest is never dropped (#743)",
-    file: "src/runtime/cmp_items.js",
+    file: "crates/rust-js-program/src/runtime/cmp_items.js",
     find: "  return $endsAfter(() => $closeEach(y, x), () => {\n",
     replace: "  return $endsAfter(() => {\n    y.return?.();\n    x.return?.();\n  }, () => {\n",
     tests: ["test/corpus.test.ts", "-t", "^parts_close_past_a_panic.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "iter-eq-by-next",
     breaks: "eq steps its left side by tryFold",
-    file: "src/runtime/cmp_items.js",
+    file: "crates/rust-js-program/src/runtime/cmp_items.js",
     find: "    const stopped = $lent(x).tryFold(",
     replace: "    const stopped = new $Steps(() => x.next()).tryFold(",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "iter-eq-taken-leaked-at-a-step-panic",
     breaks:
       "`a.eq(b)` whose `b` step panics never drops the item it took of `a`, which std's closure drops as it unwinds (#1145)",
-    file: "src/runtime/cmp_items.js",
+    file: "crates/rust-js-program/src/runtime/cmp_items.js",
     find: "        const q = $unwinds(() => y.next(), dropA && (() => dropA(p)));\n",
     replace: "        const q = y.next();\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_comparisons_drop_as_std.rs$"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "eq-given-item-by-item",
     breaks: "generic code's `eq` of two `TrustedLen` sides compares them item by item, where std compares their lengths first (#1182)",
-    file: "src/runtime/cmp_items.js",
+    file: "crates/rust-js-program/src/runtime/cmp_items.js",
     find: "  if (!firstA || !firstB) return $iterEq(a, b, eq, dropA, dropB);\n",
     replace: "  return $iterEq(a, b, eq, dropA, dropB);\n",
     tests: ["test/crates.test.ts", "-t", "length_first_eq"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "iter-eq-pair-dropped-one-by-one",
     breaks: "an `eq`'s compared pair is dropped one drop after the other, so a panic in `b`'s item's drop loses `a`'s (#1609)",
-    file: "src/runtime/cmp_items.js",
+    file: "crates/rust-js-program/src/runtime/cmp_items.js",
     find: "        $inTurn(dropQ, dropP);\n",
     replace: "        dropQ?.();\n        dropP?.();\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_eq_drops_the_pair_though_one_panics.rs$"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "iter-eq-compared-unguarded",
     breaks: "an `eq` whose `PartialEq` panics drops neither item of the pair it compared (#1609)",
-    file: "src/runtime/cmp_items.js",
+    file: "crates/rust-js-program/src/runtime/cmp_items.js",
     find: "        same = $unwinds(() => (eq ? eq(p, q.value) : p === q.value), dropQ, dropP);\n",
     replace: "        same = eq ? eq(p, q.value) : p === q.value;\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_eq_drops_the_pair_though_one_panics.rs$"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "length-first-hint-unread",
     breaks: "generic code's `eq` counts a `TrustedLen` side its caller gives as `true` as empty, not by its hint, which std's `SpecIterEq` reads (#2159)",
-    file: "src/runtime/cmp_items.js",
+    file: "crates/rust-js-program/src/runtime/cmp_items.js",
     find: "  const [lower, upper] = $sizeHint(it);\n  if (lower !== upper)",
     replace: "  const [lower, upper] = [0, 0];\n  if (lower !== upper)",
     tests: ["test/crates.test.ts", "test/iterator-steps.test.ts", "-t", "length_first_eq|LengthFirst form"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "length-first-endless-counted",
     breaks: "an endless side generic code's `eq` is given is counted by its hint, which has no upper bound, so it throws where std compares it as no length (#2168)",
-    file: "src/runtime/cmp_items.js",
+    file: "crates/rust-js-program/src/runtime/cmp_items.js",
     find: "  if (first === \"endless\") return [it, undefined];\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_eq_of_an_endless_trusted_len.rs$"],

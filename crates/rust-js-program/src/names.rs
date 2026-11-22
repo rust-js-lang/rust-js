@@ -1,16 +1,16 @@
 //! JavaScript identifier policy shared by lowering and linking.
 
-use rust_js_program::collections::IndexSet;
+use crate::collections::IndexSet;
 
 /// Pick an unused name: `x`, then `x$1`, `x$2`, ... Rust identifiers can't
 /// contain `$`, so these never clash with a user's name.
-pub(crate) fn fresh_in(taken: &mut IndexSet<String>, base: &str) -> String {
+pub fn fresh_in(taken: &mut IndexSet<String>, base: &str) -> String {
     fresh_apart(taken, &js_ident(base))
 }
 
 /// `base`, or given apart from what `taken` has, `base$1`, as `fresh_in`
 /// names, of a name that's fine as it is: a property's, `new` too.
-pub(crate) fn fresh_apart(taken: &mut IndexSet<String>, base: &str) -> String {
+pub fn fresh_apart(taken: &mut IndexSet<String>, base: &str) -> String {
     // Of a name not spelled yet, `value#1`, its word, `value`, or given apart
     // from it: a temporary named after what it holds is of its word, never
     // `value#1$1`, which nothing would spell (#1681 change 3, M2).
@@ -30,14 +30,14 @@ pub(crate) fn fresh_apart(taken: &mut IndexSet<String>, base: &str) -> String {
 
 /// `base` given apart the `k`th time, `caption$2`: the one spelling of a
 /// name given apart, which `apart` takes apart.
-pub(crate) fn given_apart(base: &str, k: usize) -> String {
+pub fn given_apart(base: &str, k: usize) -> String {
     format!("{base}${k}")
 }
 
 /// A name given apart, `caption$2`: what it was given apart from, and how
 /// many times, `("caption", 2)`. Not a word JS keeps, `Error$`, nor a
 /// name never given apart.
-pub(crate) fn apart(name: &str) -> Option<(&str, usize)> {
+pub fn apart(name: &str) -> Option<(&str, usize)> {
     let (base, k) = name.rsplit_once('$')?;
     if base.is_empty() || k.is_empty() || !k.bytes().all(|b| b.is_ascii_digit()) {
         return None;
@@ -65,7 +65,7 @@ pub(crate) fn made_base(word: &str) -> Option<&str> {
 /// has, as the runtime's helpers are named. One a helper has, `$durationAdd`
 /// of a `Duration` of the crate's own, is given apart, `$durationAdd$1`: its
 /// module may import that helper too.
-pub(crate) fn dictionary_cache(taken: &mut IndexSet<String>, dictionary: &str) -> String {
+pub fn dictionary_cache(taken: &mut IndexSet<String>, dictionary: &str) -> String {
     loop {
         let cache = fresh_in(taken, &format!("${dictionary}"));
         if !crate::runtime::exports(&cache) {
@@ -189,18 +189,18 @@ const GLOBALS: &[&str] = &[
 
 /// Whether JS keeps `name` for itself, so a variable named so is named apart
 /// for good.
-pub(crate) fn kept_word(name: &str) -> bool {
+pub fn kept_word(name: &str) -> bool {
     KEPT.contains(&name)
 }
 
 /// Whether `name` is a JS name, which a key or a property may be as it is.
-pub(crate) fn is_identifier(name: &str) -> bool {
+pub fn is_identifier(name: &str) -> bool {
     name.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_' || c == '$')
         && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')
 }
 
 /// Rust names that mean something else in JS get a `$` suffix.
-pub(crate) fn js_ident(name: &str) -> String {
+pub fn js_ident(name: &str) -> String {
     if KEPT.contains(&name) || GLOBALS.contains(&name) {
         format!("{name}$")
     } else {

@@ -71,7 +71,7 @@ semver's file a shorter timeout.
 | `s.into_bytes()`, `into_boxed_bytes()`, `Vec::from(s)` | `Array.from(new TextEncoder().encode(s))`: owned |
 | `ptr::eq(s.as_bytes(), ..)`, `s.as_bytes().as_ptr()` compared or kept | rust-js's error: "a pointer into what JS may hold a copy of" |
 
-- **A long text's facts are kept by its text** (`src/runtime/byte_len.js`):
+- **A long text's facts are kept by its text** (`crates/rust-js-program/src/runtime/byte_len.js`):
   its length in bytes, whether it's all ASCII, the byte and unit each step
   of 64 bytes starts at, and its bytes, each made where it's first asked;
   of a part `&s[a..b]` that's long itself, where it is in its text, so a

@@ -10,9 +10,9 @@
 //! a `const` of its module, as the crate's own impls' are (#944).
 
 use super::{Dependencies, FnCx, R};
-use crate::js::{self, Expr, Stmt, StmtKind};
 use crate::lower::temporary_names::Base;
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js::{self, Expr, Stmt, StmtKind};
 use rustc_middle::ty::{Ty, TypeVisitableExt};
 use rustc_span::def_id::{DefId, LocalModId};
 
@@ -98,7 +98,7 @@ pub(super) struct WrittenBefore {
 
 impl WrittenBefore {
     /// Its `const`s' names, each a dictionary's.
-    pub(super) fn const_names(&self) -> impl Iterator<Item = crate::js::Name> + '_ {
+    pub(super) fn const_names(&self) -> impl Iterator<Item = rust_js_program::js::Name> + '_ {
         self.consts.iter().map(|c| c.name.clone())
     }
 }
@@ -446,7 +446,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(name.clone());
         }
         let name = self.fresh(Base::Named(base));
-        let params: Vec<crate::js::Name> = params.iter().map(|&p| self.fresh(p)).collect();
+        let params: Vec<rust_js_program::js::Name> = params.iter().map(|&p| self.fresh(p)).collect();
         self.recursive.0.push((kind, ty, name.clone()));
         let mut body = Vec::new();
         let value = make(self, params.iter().map(Expr::var).collect(), &mut body);

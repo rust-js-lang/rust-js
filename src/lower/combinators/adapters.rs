@@ -185,7 +185,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ok = self.variant_test(result.clone(), ty, adt, rustc_abi::VariantIdx::ZERO, false);
         let held = match self.is_write_result(ty) {
             true => Expr::js_undefined(),
-            false => crate::js::result::held(result),
+            false => rust_js_program::js::result::held(result),
         };
         Expr::cond(ok, Expr::array(vec![held]), Expr::array(Vec::new()))
     }
@@ -547,7 +547,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let (item, i) = (
                     self.fresh(crate::lower::Base::Named("item")),
-                    crate::js::Name::counter("i"),
+                    rust_js_program::js::Name::counter("i"),
                 );
                 let keep = Expr::bin(Op::Eq, Expr::bin(Op::Rem, Expr::var(&i), n), Expr::int(0));
                 let body = match self.item_drop_call(receiver_ty, Expr::var(&item), span)? {

@@ -52,7 +52,7 @@
 
 use super::copies::InPlaceWriter;
 use super::{FnCx, R};
-use crate::js::Expr;
+use rust_js_program::js::Expr;
 use rustc_middle::ty::{self, Mutability, Ty, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::{CRATE_DEF_ID, DefId};
@@ -145,13 +145,18 @@ impl Placed {
     /// part by part, `[{ value: a }, b]`, another `$inPlace(t, [1, 0])`.
     fn given(&self, value: Expr) -> Expr {
         let parts = match self {
-            Placed::Itself => return Expr::object(vec![crate::js::Prop::Field(crate::js::HELD.into(), value)]),
+            Placed::Itself => {
+                return Expr::object(vec![rust_js_program::js::Prop::Field(
+                    rust_js_program::js::HELD.into(),
+                    value,
+                )]);
+            }
             Placed::Parts(parts) => parts,
         };
         match value.kind {
-            crate::js::ExprKind::Array(items, ..)
+            rust_js_program::js::ExprKind::Array(items, ..)
                 if items.len() == parts.len()
-                    && !(items.iter()).any(|item| matches!(item.kind, crate::js::ExprKind::Spread(_))) =>
+                    && !(items.iter()).any(|item| matches!(item.kind, rust_js_program::js::ExprKind::Spread(_))) =>
             {
                 Expr::array(
                     (items.into_iter().zip(parts))
@@ -193,12 +198,12 @@ pub(in crate::lower) enum Arguments<'g, 'tcx> {
 /// crossing made (`crossing_into`): itself where there are none, else an
 /// arrow that runs them, then gives it, of a route that writes no
 /// statements of its own.
-pub(in crate::lower) fn made_before(made: Vec<crate::js::Stmt>, value: Expr) -> Expr {
+pub(in crate::lower) fn made_before(made: Vec<rust_js_program::js::Stmt>, value: Expr) -> Expr {
     if made.is_empty() {
         return value;
     }
     let mut body = made;
-    body.push(crate::js::StmtKind::Return(Some(value)).at(crate::js::Span::NONE));
+    body.push(rust_js_program::js::StmtKind::Return(Some(value)).at(rust_js_program::js::Span::NONE));
     Expr::call(Expr::arrow(Vec::new(), body), Vec::new())
 }
 
@@ -220,7 +225,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         values: &mut [Expr],
         arguments: Arguments<'_, 'tcx>,
         span: Span,
-        out: &mut Vec<crate::js::Stmt>,
+        out: &mut Vec<rust_js_program::js::Stmt>,
     ) -> R<()> {
         let sig = (self.tcx)
             .instantiate_bound_regions_with_erased(self.tcx.fn_sig(callee).instantiate_identity().skip_normalization());
@@ -260,7 +265,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let given = self.fused_fact(param.index)?;
             fused = Some(match fused {
-                Some(both) => Expr::bin(crate::js::Op::And, both, given),
+                Some(both) => Expr::bin(rust_js_program::js::Op::And, both, given),
                 None => given,
             });
         }
@@ -892,7 +897,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `mir_closure_call`'s), before its dictionaries (#1758).
         let options = formatter.is_some() && self.takes_options(def_id);
         let made = move |cx: &mut Self| -> super::R<Expr> {
-            let mut params: Vec<crate::js::Name> = (names.iter())
+            let mut params: Vec<rust_js_program::js::Name> = (names.iter())
                 .map(|name| cx.fresh(super::temporary_names::Base::Named(name)))
                 .collect();
             let mut given = (params.iter().zip(&inputs))
@@ -913,7 +918,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             Ok(Expr::arrow(
                 params.into_iter().map(Into::into).collect(),
-                vec![crate::js::StmtKind::Return(Some(called)).at(crate::js::Span::NONE)],
+                vec![rust_js_program::js::StmtKind::Return(Some(called)).at(rust_js_program::js::Span::NONE)],
             ))
         };
         self.reified_const((def_id, args), fn_def_ty, made)

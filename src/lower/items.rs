@@ -10,10 +10,10 @@ use super::representation::Num;
 use super::std_types::number::{NumOp, math};
 use super::std_types::text::TextOp;
 use super::{FnCx, R, camel_case};
-use crate::js;
-use crate::js::{Expr, ExprKind, Op, Pattern, StmtKind};
 use crate::lower::recognition::{StdItem, is_std_def};
 use crate::lower::temporary_names::{Base, Role};
+use rust_js_program::js;
+use rust_js_program::js::{Expr, ExprKind, Op, Pattern, StmtKind};
 
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -678,7 +678,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::IsSome => Expr::bin(Op::LooseNe, x, Expr::null()),
             Std::IsNone => Expr::bin(Op::LooseEq, x, Expr::null()),
             Std::OrderingTest(op) => self.ordering_test(op, x, input, span)?,
-            Std::ToBig => Expr::converted(crate::js::Conversion::BigInt, x),
+            Std::ToBig => Expr::converted(rust_js_program::js::Conversion::BigInt, x),
             // A `Vec` of a slice's or an array's items, and of text's
             // bytes, as their calls make them, `Into<Vec<u8>>`'s (#1284).
             Std::ToVec => self.vec_of_items(x, given, span)?,

@@ -1,11 +1,11 @@
-// Mutations of src/runtime/capacity.js (ADR 0419).
+// Mutations of crates/rust-js-program/src/runtime/capacity.js (ADR 0419).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "endless-once-unstepped",
     breaks: "a `collect()` of what isn't `TrustedLen` but has no end once it gives an item panics before it's stepped, so its first item's never made, and a `cycle()` with nothing panics too, where std steps it once first (#433, ADR 0940)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  const first = unwound(() => it.next());\n",
     replace: "  const first = endless ? { done: false } : unwound(() => it.next());\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_endless_once_stepped.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "endless-once-item-undropped",
     breaks: "the item a `collect()` of what has no end once stepped makes isn't dropped as it panics `capacity overflow` (#433, ADR 0940)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "      () => drop?.(first.value),\n",
     replace: "      undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^(collect_endless_once_stepped|collect_closes_what_its_hint_panics).rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "shrink-to-unshrunk",
     breaks: "`shrink_to_fit()` leaves its room",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  $capacities.set(v, Math.max(v.length, Math.min($capacity(v), min)));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-past-usize-max-items",
     breaks: "room for more than `usize::MAX` items of no size is no panic",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  if (count > 2 ** 32 - 1 || count * size > 2 ** 31 - 1) throw new Error(\"capacity overflow\");\n",
     replace: "  if (count * size > 2 ** 31 - 1) throw new Error(\"capacity overflow\");\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-past-usize-max-bytes",
     breaks: "room is checked against `usize::MAX` bytes, not `isize::MAX`",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  if (count > 2 ** 32 - 1 || count * size > 2 ** 31 - 1) throw new Error(\"capacity overflow\");\n",
     replace: "  if (count > 2 ** 32 - 1 || count * size > 2 ** 32 - 1) throw new Error(\"capacity overflow\");\n",
     tests: ["test/runtime-package.test.ts", "-t", "room past"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "text-room-of-units",
     breaks: "a `String`'s room counts its UTF-16 units as a byte each, where it may not fit",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  if (additional > 2 ** 31 - 1 - 3 * s.length) $roomFor($byteLen(s) + additional, 1);\n",
     replace: "  if (additional > 2 ** 31 - 1 - s.length) $roomFor($byteLen(s) + additional, 1);\n",
     tests: ["test/runtime-package.test.ts", "-t", "room past"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "text-room-unchecked",
     breaks: "`s.reserve(n)` of a `String` is no panic",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  if (additional > 2 ** 31 - 1 - 3 * s.length) $roomFor($byteLen(s) + additional, 1);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "table-room-of-wide-groups",
     breaks: "a hash table's groups are 16 control bytes, x86's, not wasm32's 8",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  const width = 8;\n",
     replace: "  const width = 16;\n",
     tests: ["test/runtime-package.test.ts", "-t", "ends where wasm32"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "table-room-of-small-tables",
     breaks: "a table of fewer than 15 entries has 16 buckets, not 4 of 3 or fewer",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "    buckets = count < 4 ? 4 : count < 8 ? 8 : 16;\n",
     replace: "    buckets = 16;\n",
     tests: ["test/runtime-package.test.ts", "-t", "ends where wasm32"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "table-room-of-full-buckets",
     breaks: "a table's buckets are as many as its entries, none of them 1/8 empty",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "    const adjusted = Math.floor((count * 8) / 7);\n",
     replace: "    const adjusted = count;\n",
     tests: ["test/runtime-package.test.ts", "-t", "ends where wasm32"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "table-room-unaligned",
     breaks: "a table's control bytes follow its entries unaligned",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  const ctrlOffset = Math.ceil((size * buckets) / ctrlAlign) * ctrlAlign;\n",
     replace: "  const ctrlOffset = size * buckets;\n",
     tests: ["test/runtime-package.test.ts", "-t", "ends where wasm32"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "table-room-of-many-units",
     breaks: "a table of more entries of no size than a `usize`'s eighth fits",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "    if (count * 8 > 2 ** 32 - 1) throw overflow();\n",
     replace: "",
     tests: ["test/runtime-package.test.ts", "-t", "ends where wasm32"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "table-room-of-its-alignment",
     breaks: "a table's room leaves out its alignment's padding past `isize::MAX`",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  if (ctrlOffset + buckets + width > 2 ** 31 - 1 - (ctrlAlign - 1)) throw overflow();\n",
     replace: "  if (ctrlOffset + buckets + width > 2 ** 31 - 1) throw overflow();\n",
     tests: ["test/runtime-package.test.ts", "-t", "ends where wasm32"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-for-hint-unclosed",
     breaks: "a `collect()` into a `Vec` whose source's `size_hint` panics as its room is asked never drops the source, where `from_iter` drops what it took as it unwinds (#660)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  const unwound = (asked, before) => $unwinds(asked, before, () => it.return?.());",
     replace: "  const unwound = (asked, before) => $unwinds(asked, before);",
     tests: ["test/corpus.test.ts", "-t", "^collect_closes_what_its_hint_panics.rs$"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-for-hint-asks-before-next",
     breaks: "a `collect()` into a `Vec` of what isn't `TrustedLen` asks its hint before it takes its first item, where std's `SpecFromIterNested` takes it by `next` first (#724)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  if (trusted) {\n    unwound(() => {\n",
     replace: "  if (true) {\n    unwound(() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_closes_what_its_hint_panics.rs$"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-for-hint-steps-none-again",
     breaks: "a `collect()` into a `Vec` of what gave no first item steps it again, where std's `from_iter` gives an empty `Vec` (#724)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "      if (first.done) return first;\n",
     replace: "      if (first.done) return it.next();\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_closes_what_its_hint_panics.rs$"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-for-hint-unasked-as-it-grows",
     breaks: "a `collect()` into a `Vec` of what isn't `TrustedLen` never asks its hint again as the `Vec` grows, where std's `extend_desugared` asks it each time it's full (#728)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "      if (length === capacity) {\n",
     replace: "      if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-for-hint-least-of-any-size",
     breaks: "a `Vec` a collect makes starts with room for 4 whatever its items' size, where std's `MIN_NON_ZERO_CAP` is 8 of 1 byte and 1 past 1024, so its hint is asked again at other lengths (#728)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  return size === 1 ? 8 : size <= 1024 ? 4 : 1;\n",
     replace: "  return 4;\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-for-hint-first-capacity-least",
     breaks: "a `Vec` a collect makes starts with room for its hint's lower bound and one more alone, not std's `MIN_NON_ZERO_CAP` where that's more, so it's full, and asks again, sooner (#728)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "        capacity = size === 0 ? Infinity : Math.max(least, Math.min(lower + 1, max));\n",
     replace: "        capacity = size === 0 ? Infinity : Math.min(lower + 1, max);\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-for-hint-zero-size-fills",
     breaks: "a `Vec` of items of no size a collect makes is full at 4, so its hint is asked again, where std's capacity of them is `usize::MAX` (#728)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "        capacity = size === 0 ? Infinity : Math.max(least, Math.min(lower + 1, max));\n",
     replace: "        capacity = Math.max(least, Math.min(lower + 1, max));\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-for-hint-grows-by-hint-alone",
     breaks: "a full `Vec` a collect fills grows to what its hint asks alone, not at least twice what it had, as std's `grow_amortized` does, so its hint is asked again sooner (#728)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "          capacity = Math.max(capacity * 2, required, least);\n",
     replace: "          capacity = Math.max(required, least);\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-for-hint-grown-item-undropped",
     breaks: "where the hint a collect asks as its `Vec` grows panics, the item just taken is never dropped, where std's `extend_desugared` drops it as it unwinds (#728)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "            $roomFor(capacity, size);\n          },\n          () => drop?.(step.value),\n",
     replace: "            $roomFor(capacity, size);\n          },\n          () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
   {
     name: "reserve-hint-unasked",
     breaks: "a collect into a `String` of the crate's iterator asks its hint not before it steps, as `Extend<char>` does (#733)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "      const [lower] = $sizeHint(it);\n      if (size === undefined) return;\n",
     replace: "      const lower = 0;\n      if (size === undefined) return;\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
   {
     name: "shunt-growth-unasked",
     breaks: "std's `Vec` of a `GenericShunt` doesn't ask its source's hint as it grows (a wrong answer, #848)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "    if (length !== capacity) return;\n    $sizeHint(it);\n",
     replace: "    if (length !== capacity) return;\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_results_asks_hint.rs$"],
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
   {
     name: "shunt-growth-not-doubled",
     breaks: "std's `Vec` of a `GenericShunt` grows by one, not twice what it had, so its hint is asked at each value past the first room (a wrong answer, #848)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "    capacity = Math.max(capacity * 2, length + 1, least);\n",
     replace: "    capacity = Math.max(length + 1, least);\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_results_asks_hint.rs$"],
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
   {
     name: "grown-hint-unasked",
     breaks: "a `Vec`'s `extend` doesn't ask its iterator's hint as it fills, as `extend_desugared` does (a wrong answer, #849)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "      if ((deque && first) || v.length === capacity) {\n",
     replace: "      if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_asks_hint_as_it_fills.rs$"],
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
   {
     name: "deque-first-hint-unasked",
     breaks: "a `VecDeque`'s `extend` doesn't ask its hint at its first item, as `spec_extend` does, only where it's full (a wrong answer, #849)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "      if ((deque && first) || v.length === capacity) {\n",
     replace: "      if (v.length === capacity) {\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_asks_hint_as_it_fills.rs$"],
@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
   {
     name: "reserve-not-amortized",
     breaks: "`reserve(n)` makes room for `n` more alone, not std's `grow_amortized`, twice what it had, so the next `extend` asks its hint too soon (a wrong answer, #849)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "Math.max(capacity * 2, v.length + additional, $leastCapacity(size))",
     replace: "Math.max(v.length + additional, $leastCapacity(size))",
     tests: ["test/corpus.test.ts", "-t", "^extend_asks_hint_as_it_fills.rs$"],
@@ -229,7 +229,7 @@ export const mutations: Mutation[] = [
   {
     name: "grew-without-doubling",
     breaks: "a `push` past a `Vec`'s capacity grows it by as many as it needs, not twice what it had (#1180)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  if (added > had - len) $capacities.set(v, size === 0 ? v.length : Math.max(had * 2, len + added, $leastCapacity(size)));\n",
     replace: "  if (added > had - len) $capacities.set(v, size === 0 ? v.length : Math.max(len + added, $leastCapacity(size)));\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
   {
     name: "grew-without-least",
     breaks: "a first `push` grows a `Vec` to one, not `MIN_NON_ZERO_CAP` (#1180)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  if (added > had - len) $capacities.set(v, size === 0 ? v.length : Math.max(had * 2, len + added, $leastCapacity(size)));\n",
     replace: "  if (added > had - len) $capacities.set(v, size === 0 ? v.length : Math.max(had * 2, len + added));\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
@@ -245,7 +245,7 @@ export const mutations: Mutation[] = [
   {
     name: "grown-vec-unkept",
     breaks: "a `collect()` of what isn't `TrustedLen` keeps its length as its capacity, not the one std's growth reached (#1180)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  if (capacity !== undefined && capacity !== Infinity) $capacities.set(v, capacity);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(vec_capacity_grown|cycle_size_hint).rs$"],
@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [
   {
     name: "capacity-of-no-size-kept",
     breaks: "`capacity()` of items of no size is what's kept, not `usize::MAX` (#1180)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  if (size === 0) return 2 ** 32 - 1;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
@@ -261,7 +261,7 @@ export const mutations: Mutation[] = [
   {
     name: "shunt-growth-unkept",
     breaks: "a `collect()` into a `Result` of a `Vec` keeps its length as its capacity, not the one the shunt's growth reached (#1180)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "    if (capacity > 0 && capacity !== Infinity) $capacities.set(values, capacity);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity_grown.rs$"],
@@ -269,7 +269,7 @@ export const mutations: Mutation[] = [
   {
     name: "unknown-capacity-its-length",
     breaks: "`capacity()` of a `Vec` whose growth wasn't kept gives its length, silently another number than std's (#1180)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  if (kept === $unknownCapacity) {\n",
     replace: "  if (false) {\n",
     tests: ["test/vec-capacity.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
   {
     name: "shrunk-unknown-stays",
     breaks: "`shrink_to_fit()` of a `Vec` whose capacity isn't known leaves it unknown, where std's is its length (#1180)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "    if (min <= v.length) $capacities.set(v, v.length);\n",
     replace: "",
     tests: ["test/vec-capacity.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
@@ -285,7 +285,7 @@ export const mutations: Mutation[] = [
   {
     name: "unknown-capacity-forgotten-by-push",
     breaks: "a `push` of a `Vec` whose capacity isn't known gives it std's growth of its length, a number, silently (#1180)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  if ($capacityUnknown(v)) return made;\n",
     replace: "",
     tests: ["test/vec-capacity.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],
@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
     name: "grown-by-lost-unasked",
     breaks:
       "a `Vec` generic code grew by a hint JS lost is unknown though it never asked it: one with room enough, or never given an item, throws at `capacity()` where std's is 100 or 1 (#1180's (3))",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "    if (unkept && asked) $untracked(v);\n",
     replace: "    if (unkept) $untracked(v);\n",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
@@ -303,7 +303,7 @@ export const mutations: Mutation[] = [
     name: "grown-by-lost-kept",
     breaks:
       "a `Vec` generic code grew by a hint JS lost keeps the capacity JS's hint grew it to: `chars().skip(5)`'s 64 where std's is 60, silently (#1180's (3))",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "    if (unkept && asked) $untracked(v);\n",
     replace: "",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
@@ -312,7 +312,7 @@ export const mutations: Mutation[] = [
     name: "grown-by-value-unasked",
     breaks:
       "a library's `pub` generic `extend` never asks whether what it's given knows its hint: of `chars().skip(5)`, a capacity of 64 where std's is 44, silently (#1251)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "            unkept ||= !known;\n",
     replace: "",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
@@ -321,7 +321,7 @@ export const mutations: Mutation[] = [
     name: "untracked-in-arrays-unmarked",
     breaks:
       "what a library that keeps no capacity gives back or is lent, where its consumer can't compile it, keeps its `Vec`s' capacities: their lengths, silently (#1180's (5))",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "    if (Array.isArray(v)) {\n      $untracked(v);\n",
     replace: "    if (Array.isArray(v)) {\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
@@ -330,7 +330,7 @@ export const mutations: Mutation[] = [
     name: "untracked-in-objects-unwalked",
     breaks:
       "a `Vec` a struct holds, given back by a library that keeps no capacity, where its consumer can't compile it, keeps its capacity: its length, 5 where std's is 8, silently (#1180's (5))",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "    } else if (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null) {\n",
     replace: "    } else if (false) {\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "keeps no capacity has its functions"],
@@ -338,7 +338,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-place-capacity-unscaled",
     breaks: "an in-place collect's capacity is its source's in the source's items, not its own: `[[u32; 2]]` of 3 collected into `u32`s says 3 where std's says 6 (#1259)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  $capacities.set(collected, Math.floor((capacity * sourceSize) / size));\n",
     replace: "  $capacities.set(collected, capacity);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collected_in_place_capacity.rs$"],
@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-place-source-unwalked",
     breaks: "generic code's in-place collect looks no further than the iterator it's given for its source `Vec`, so a `map()`'s isn't found and `capacity()` refuses it (#1259)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "    at = at.from?.[0] ?? at.iter;\n",
     replace: "    at = undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collected_in_place_capacity.rs$"],
@@ -354,7 +354,7 @@ export const mutations: Mutation[] = [
   {
     name: "grew-of-an-unsized-room-counted",
     breaks: "a push of items whose size wasn't given, #934's, grows by `MIN_NON_ZERO_CAP` of no size, a capacity std's isn't, which `capacity()` gives instead of refusing (#1260)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  if (size === undefined) return $grewUnsized(v, len, made);\n",
     replace: "",
     tests: ["test/vec-capacity.test.ts", "-t", "has no capacity its caller reads"],
@@ -362,7 +362,7 @@ export const mutations: Mutation[] = [
   {
     name: "reserve-of-an-unsized-room-counted",
     breaks: "a `reserve` of items whose size wasn't given, #934's, grows by `MIN_NON_ZERO_CAP` of no size, which `capacity()` gives instead of refusing (#1260)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "  if (size === undefined) return void $untracked(v);\n",
     replace: "",
     tests: ["test/vec-capacity.test.ts", "-t", "has no capacity its caller reads"],
@@ -370,7 +370,7 @@ export const mutations: Mutation[] = [
   {
     name: "grown-by-of-an-undefined-size-asks-its-hint",
     breaks: "an `extend` given its items' size as `undefined`, #934's, asks its hint as one of known capacity does, and of generic code's, whose hint may be the crate's own, refuses at run time, itertools' `LazyBuffer::prefill` (#1260)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "      if (size === undefined) {\n        if (!$capacityUnknown(v) && v.length >= $capacity(v)) $untracked(v);\n        first = false;\n        return step;\n      }\n",
     replace: "",
     tests: ["test/vec-capacity.test.ts", "-t", "an extend given its items' size as undefined"],
@@ -378,7 +378,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-for-counted-capacity-overflow",
     breaks: "an `Rc<[T]>` collected of a `TrustedLen` past what a `Layout` can be panics `capacity overflow`, a `Vec`'s, where std unwraps a `LayoutError` (#1694)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "        throw $stringPanic(\"called `Result::unwrap()` on an `Err` value: LayoutError\");\n",
     replace: "        throw $stringPanic(\"capacity overflow\");\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_room.rs$"],
@@ -386,7 +386,7 @@ export const mutations: Mutation[] = [
   {
     name: "room-for-counted-endless-unrefused",
     breaks: "an `Rc<[T]>` collected of a `TrustedLen` of no upper bound, `(0..)`'s, steps on where std panics `capacity overflow` (#1678)",
-    file: "src/runtime/capacity.js",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
     find: "      if (upper === undefined) throw new Error(\"capacity overflow\");\n      const max = 2 ** 31 - 1;\n      const bytes = upper * size;\n",
     replace: "      if (upper === undefined) return;\n      const max = 2 ** 31 - 1;\n      const bytes = upper * size;\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_room.rs$"],

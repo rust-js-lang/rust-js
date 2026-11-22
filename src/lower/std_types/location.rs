@@ -4,12 +4,12 @@
 //! `location`, before its evidence; `Location::caller()` is that, in its own
 //! body, or where it's written anywhere else, a closure in it too.
 
-use crate::js::{Expr, ExprKind, Prop};
 use crate::lower::calls::Call;
 use crate::lower::display::join;
 use crate::lower::recognition::{MethodOf, Std, StdPath, std_inherent_method};
 use crate::lower::{FnCx, R};
 use rust_js_program::collections::IndexSet;
+use rust_js_program::js::{Expr, ExprKind, Prop};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 use rustc_span::{RemapPathScopeComponents, Span};
@@ -121,11 +121,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// parts of it given a name, `((location) => ..)(at())`.
     pub(in crate::lower) fn location_shown(&mut self, value: Expr, debug: bool, span: Span) -> R<Expr> {
         if !value.reads_same() && !matches!(value.kind, ExprKind::Object(..)) {
-            let location = crate::js::Name::declared("location".to_string());
+            let location = rust_js_program::js::Name::declared("location".to_string());
             let shown = self.location_shown(Expr::var(&location), debug, span)?;
             let shown = Expr::arrow(
                 vec![location.into()],
-                vec![crate::js::StmtKind::Return(Some(shown)).at(crate::js::Span::NONE)],
+                vec![rust_js_program::js::StmtKind::Return(Some(shown)).at(rust_js_program::js::Span::NONE)],
             );
             return Ok(self.applied(shown, value));
         }

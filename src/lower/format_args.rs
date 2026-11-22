@@ -9,9 +9,9 @@ use crate::lower::temporary_names::Role;
 use super::format_spec::Spec;
 use super::recognition::StreamOp;
 use super::{FnCx, R, Std};
-use crate::js;
-use crate::js::StmtKind;
-use crate::js::{Expr, Stmt};
+use rust_js_program::js;
+use rust_js_program::js::StmtKind;
+use rust_js_program::js::{Expr, Stmt};
 
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, TyCtxt};
@@ -263,7 +263,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let stream = Expr::num(f64::from(u8::from(error)));
                 let written = Expr::call(Expr::helper("$printBytes"), vec![bytes, stream]);
                 match op {
-                    StreamOp::Written { .. } => crate::js::result::ok(written),
+                    StreamOp::Written { .. } => rust_js_program::js::result::ok(written),
                     _ => written,
                 }
             }

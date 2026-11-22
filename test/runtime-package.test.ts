@@ -129,7 +129,7 @@ test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf
   );
 });
 
-// Each helper is a file of its own, `src/runtime/<name>.js`, that the
+// Each helper is a file of its own, `crates/rust-js-program/src/runtime/<name>.js`, that the
 // compiler reads in: JS that parses as JS, and none left behind unread.
 // The package loads in a host with JavaScript's own built-ins and none of
 // the web's: a module that imports `$swap` runs where `TextDecoder`
@@ -214,9 +214,9 @@ test("@rust-js/std loads in a host with none of the web's APIs", () => {
 });
 
 test("each helper's file parses as JavaScript, and the compiler reads each", () => {
-  const dir = join(root, "src", "runtime");
+  const dir = join(root, "crates", "rust-js-program", "src", "runtime");
   const files = readdirSync(dir).filter((file) => file.endsWith(".js"));
-  const rust = readFileSync(join(root, "src", "runtime.rs"), "utf8");
+  const rust = readFileSync(join(root, "crates", "rust-js-program", "src", "runtime.rs"), "utf8");
   expect(files.length).toBeGreaterThan(150);
   for (const file of files) {
     expect(rust, file).toContain(`include_str!("runtime/${file}")`);

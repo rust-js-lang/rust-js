@@ -4,7 +4,7 @@
 //! through a minifier that renames the others, Closure's ADVANCED mode,
 //! where another script, the server's inline one, reads it by that name.
 
-use crate::js::Expr;
+use rust_js_program::js::Expr;
 
 /// A property a path reads, after the name it starts from.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -44,7 +44,7 @@ pub(in crate::lower) fn steps(rest: &str) -> Result<Vec<Step<'_>>, String> {
     while !rest.is_empty() {
         if let Some(after) = rest.strip_prefix('.') {
             let name = first_name(after);
-            if !crate::names::is_identifier(name) {
+            if !rust_js_program::names::is_identifier(name) {
                 return Err(format!(
                     "`.{name}` isn't a JS name's property: a key that isn't one is quoted, `['{name}']`"
                 ));
@@ -92,7 +92,7 @@ pub(in crate::lower) fn unbound(path: &str) -> Option<&str> {
 pub(in crate::lower) fn global_refused(path: &str) -> Option<String> {
     let path = unbound(path).unwrap_or(path);
     let first = first_name(path);
-    if !crate::names::is_identifier(first) {
+    if !rust_js_program::names::is_identifier(first) {
         return Some(format!("`{first}` isn't a JS name, which a global's path starts from"));
     }
     steps(&path[first.len()..]).err()

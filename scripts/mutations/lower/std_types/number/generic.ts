@@ -311,7 +311,7 @@ export const mutations: Mutation[] = [
     name: "in-place-way-a-bare-string",
     breaks: "a caller tells generic code a collect is in place as the string `\"inPlace\"`, which `$collectVec` doesn't take for in place: it's grown by `next`, its capacity room for its hint, not its source's buffer's (#1259)",
     file: "src/lower/std_types/number/generic.rs",
-    find: "                return Ok(Expr::object(vec![crate::js::Prop::Field(way.into(), size)]));\n",
+    find: "                return Ok(Expr::object(vec![rust_js_program::js::Prop::Field(way.into(), size)]));\n",
     replace: "                return Ok(Expr::str(way));\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collected_in_place_capacity.rs$"],
   },

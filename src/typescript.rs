@@ -18,7 +18,7 @@ fn named_printer() -> Result<Option<(PathBuf, PathBuf)>, String> {
     let Some(module) = std::env::var_os(PRINTER) else {
         return Ok(None);
     };
-    let module = crate::paths::absolute(Path::new(&module))?;
+    let module = rust_js_program::paths::absolute(Path::new(&module))?;
     let package = (module.ancestors().skip(1))
         .map(|dir| dir.join("package.json"))
         .find(|manifest| manifest.is_file())

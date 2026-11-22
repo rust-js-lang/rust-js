@@ -24,7 +24,7 @@ with 20 issues, among them #649, #705, #706, #710, #716, #719, #721, #722 and
 
 - **the runtime's adapters:** `$Steps`, `$iterator`, `$closing`, `$holding`,
   `$given`, `$slicing`, `$forward`, `$rev`, `$flattenEnds`, `$stepBy` and
-  about 30 more helpers in `src/runtime/`;
+  about 30 more helpers in `crates/rust-js-program/src/runtime/`;
 - **what generic code and std's compiled bodies are given:** the
   dictionaries (`iterator_dictionary`, `mut_ref_iterator_dictionary`), the
   compiled-call convention (`fold_entry`, `$stdIterator`, `$knowing`,
@@ -44,7 +44,7 @@ code differs is marked **Gap Gn**.
 
 ### 1. What a runtime iterator is
 
-An iterator rust-js makes is a `$Steps` (`src/runtime/steps.js`, ADR
+An iterator rust-js makes is a `$Steps` (`crates/rust-js-program/src/runtime/steps.js`, ADR
 0669), or std's compiled struct made one by `$stdIterator`
 (`std_iterator.js`, ADR 0561). JS's own iterators, an array's `values()`
 and a `Map`'s, are given as they are where nothing below asks more of them.
@@ -1192,7 +1192,7 @@ goes on. The points table found the frames that drifted (#843, #844, #845).
 
 `test/architecture-iterators.test.ts` ("a runtime helper drops what it holds
 as a panic unwinds by $unwinds alone") refuses a `try`, `catch` or `finally`
-in `src/runtime/` outside `$unwinds`, `$dropsUnwinding` and `$inTurnOf`,
+in `crates/rust-js-program/src/runtime/` outside `$unwinds`, `$dropsUnwinding` and `$inTurnOf`,
 but of 21 helpers it names, each with why: those that aren't an iterator's,
 whose unwinding #854's panic points will check. It also refuses a
 `StmtKind::Try` built by `lower/iterators/` or `lower/iterators/mir_steps/`. The
@@ -2122,7 +2122,7 @@ wasn't on it, so it wrote neither of std's `Cycle::try_fold` and
 `$cycleFrom` (made by `$cycleOf`), `$lazyScan`, `$lazyMapWhile`,
 `$filterDropping`, Inspect's `$mapEnds` and `$Steps.map`, and
 `$stepsAround` (`Box<dyn I>`), and each runs as std's does. A new test
-reads src/runtime itself: every top-level function that makes a `$Steps`
+reads crates/rust-js-program/src/runtime itself: every top-level function that makes a `$Steps`
 is either a form or in `notForms` with a reason. The sources (a range,
 `from_fn`, `repeat`, a string's or a slice's iterators, set algebra), the
 collect helpers, `$closing` (a drop wrapper the test above holds),

@@ -1,11 +1,11 @@
-// Mutations of src/runtime/skipping.js (ADR 0422).
+// Mutations of crates/rust-js-program/src/runtime/skipping.js (ADR 0422).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "skipping-nth-only-own",
     breaks: "a `skip` steps a source with a `try_fold` of its own by `next`, not by its `nth`, whose `advance_by` std folds, so a `take_while` of a reversed `Vec`'s `skip` drops back to front (#294)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "(skipping.iter.ownNth || $ownMethod(skipping.iter, \"tryFold\")))",
     replace: "(skipping.iter.ownNth))",
     tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-advance-by-stepped",
     breaks: "an explicit `skip`'s `advance_by` steps each item, not its source's of what it skips and more, so a chain's `nth` past a reversed `Vec`'s skip drops back to front (#287)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "    advanceBy,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-dropping-keeps-skipped",
     breaks: "`skip` of items with a destructor drops none it skips",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "        drop?.(step.value);\n      }\n      return skipping.iter.next();\n",
     replace: "      }\n      return skipping.iter.next();\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_drops_what_it_passes_first.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-dropping-unclosed",
     breaks: "closing a `skip` of items with a destructor doesn't close what it steps",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "    () => $closed(skipping.iter),\n",
     replace: "    () => {},\n",
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-length-its-source",
     breaks: "an explicit `skip`'s length is its source's, counting what it skips",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "  skipping.len = () => skipping.sizeHint()[0];\n",
     replace: "  skipping.len = () => skipping.iter.len();\n",
     tests: ["test/corpus.test.ts", "-t", "^(rev_in_place_through_adapters|skip_advanced_from_its_back_by_its_source).rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-nth-back-by-next",
     breaks: "a `skip`'s `nth_back` steps by `next_back`, not its source's own `nth_back` (#220)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "  $forwardBack(skipping, iter, { nthBack, tryRfold, rfold, advanceBackBy });\n",
     replace: "  $forwardBack(skipping, iter, { tryRfold, rfold, advanceBackBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-rfold-by-next",
     breaks: "a `skip`'s `rfold` steps by `next_back`, not its source's `try_rfold`, a `take`'s trimmed by the crate's `nth_back` (#220)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "  $forwardBack(skipping, iter, { nthBack, tryRfold, rfold, advanceBackBy });\n",
     replace: "  $forwardBack(skipping, iter, { nthBack, advanceBackBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-rfold-kept",
     breaks: "a `skip`'s `rfold`, which consumes it, isn't done with what it steps (#225)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "    const folded = $consumed(skipping, () => skipping.tryRfold(init, f, () => false, unwind), ends);\n    $closedAfter(ends, () => $closed(skipping.iter));\n",
     replace: "    const folded = $consumed(skipping, () => skipping.tryRfold(init, f, () => false, unwind), ends);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-next-each",
     breaks: "`rev().skip(n)` of a `Vec` drops the `n` one at a time from the back, not as its source's `nth` drops them, one slice (#234)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "      if (skipping.n > 0 && (skipping.iter.ownNth",
     replace: "      if (false && (skipping.iter.ownNth",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-nth-unasked",
     breaks: "`rev().skip(1).nth(2)` of a `Vec` drops what it passes one at a time from the back, not as `Skip::nth`'s `nth(n + k)` of its source, one slice (#234)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "    nth: iter.ownNth ? nth : undefined,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_skipped_in_place.rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-fold-by-next",
     breaks: "`rev().skip(2).fold(..)` of a `Vec` asks its source's `nth(2)`, one slice of both, where std's `Skip::fold` asks `nth(1)` and drops the one it gives after (#250)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "    fold: iter.nth !== undefined ? fold : undefined,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-try-fold-by-next",
     breaks: "`rev().skip(2).any(..)` of a `Vec` asks its source's `nth(2)`, one slice of both, where std's `Skip::try_fold` asks `nth(1)` and drops the one it gives after (#250)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "    tryFold: iter.nth !== undefined ? tryFold : undefined,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-count-by-fold",
     breaks: "`rev().take(3).skip(1).count()` of a `Vec` counts by its fold, one at a time from the back, not std's `Skip::count`, its source's `count` after `nth(n - 1)` (#261)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "    count: iter.ownNth || iter.ownCount ? count : undefined,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-nth-drop-unpassed",
     breaks: "`fuse().take(2).skip(1).nth(2)` of a `Vec` of destructors asks the take's `nth(3)` without the items' drop, so what the take's past-end `nth(1)` of its source gives back is never dropped (#492)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "return skipping.iter.nth(skip + k, dropItem);",
     replace: "return skipping.iter.nth(skip + k);",
     tests: ["test/corpus.test.ts", "-t", "^skip_of_short_take_drops.rs$"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-count-drop-unpassed",
     breaks: "`fuse().take(1).skip(3).count()` asks the take's `nth(2)` without the items' drop, so what its source's `nth(0)` gives back is never dropped (#492)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "const step = $consumed(skipping, () => passed(skipping.iter.nth(k - 1, dropItem), dropItem));",
     replace: "const step = $consumed(skipping, () => passed(skipping.iter.nth(k - 1), dropItem));",
     tests: ["test/corpus.test.ts", "-t", "^skip_of_short_take_drops.rs$"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-fold-drop-unpassed",
     breaks: "`fuse().take(1).skip(3).fold(..)` asks the take's `nth(2)` without the items' drop, so what its source's `nth(0)` gives back is never dropped (#492)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "$stepHolding(() => passed(skipping.iter.nth(k - 1, drop), drop), init, unwind, ends);",
     replace: "$stepHolding(() => passed(skipping.iter.nth(k - 1), drop), init, unwind, ends);",
     tests: ["test/corpus.test.ts", "-t", "^skip_of_short_take_drops.rs$"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-try-fold-drop-unpassed",
     breaks: "`fuse().take(1).skip(3).any(..)` asks the take's `nth(2)` without the items' drop, so what its source's `nth(0)` gives back is never dropped (#492)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "const step = skipped(k, init, unwind, ends);\n      if (step.done) return init;",
     replace: "const step = passed(skipping.iter.nth(k - 1), drop);\n      if (step.done) return init;",
     tests: ["test/corpus.test.ts", "-t", "^skip_of_short_take_drops.rs$"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-last-drop-unpassed",
     breaks: "`fuse().take(1).skip(3).last()` asks the take's `nth(2)` without the items' drop, so what its source's `nth(0)` gives back is never dropped (#492)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "const step = passed(skipping.iter.nth(k - 1, drop), drop);\n      return step.done",
     replace: "const step = passed(skipping.iter.nth(k - 1), drop);\n      return step.done",
     tests: ["test/corpus.test.ts", "-t", "^skip_of_short_take_drops.rs$"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-fold-unwind-lost",
     breaks: "a `skip`'s `fold` gives its source's no `unwind`, so `inspect(..).skip(1).fold(..)` whose stage panics never drops the accumulator (#423, #494)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "    const folded = skipping.iter.fold(init, f, unwind, ends);\n",
     replace: "    const folded = skipping.iter.fold(init, f, undefined, ends);\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-count-of-own-count-folded",
     breaks: "a `skip`'s `count` of the crate's iterator with its own `count`, of items with a destructor, folds it (#505)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "    count: iter.ownNth || iter.ownCount ? count : undefined,\n",
     replace: "    count: iter.ownNth ? count : undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
@@ -166,7 +166,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-first-step-init-undropped",
     breaks: "a `skip(n)`'s fold whose first step, its source's `nth(n - 1)`, panics never drops `init` (rd771)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "  const skipped = (k, init, unwind, ends) =>\n    $stepHolding(() => passed(skipping.iter.nth(k - 1, drop), drop), init, unwind, ends);\n",
     replace: "  const skipped = (k, init, unwind, ends) => passed(skipping.iter.nth(k - 1, drop), drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^nth_passed_drops_unwind.rs$"],
@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-fold-first-step-unclosed",
     breaks: "a `skip(n)`'s fold whose first step panics leaves what it steps unclosed, so the crate's iterator it took is never dropped (rd771)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "      const step = $consumed(skipping, () => skipped(k, init, unwind, ends), ends);\n      if (step.done) {\n        $closedAfter(ends, () => skipping.return());\n        return init;\n",
     replace: "      const step = skipped(k, init, unwind, ends);\n      if (step.done) {\n        $closedAfter(ends, () => skipping.return());\n        return init;\n",
     tests: ["test/corpus.test.ts", "-t", "^nth_passed_drops_unwind.rs$"],
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-passed-item-dropped-outside-its-step",
     breaks: "a `skip(1)`'s `fold` drops the item its `nth(0)` gives back after its step, so where that drop panics the accumulator, the consumer's closure and the rest of its source are never dropped (#844)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "    $stepHolding(() => passed(skipping.iter.nth(k - 1, drop), drop), init, unwind, ends);\n",
     replace: "    passed($stepHolding(() => skipping.iter.nth(k - 1, drop), init, unwind, ends), drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_passed_item_drop_unwinds.rs$"],
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-own-count-unsaid",
     breaks: "a `skip()` doesn't say its `count` is the crate's own, so a `skip()` of it counts by stepping, never calling it (#671)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "  $ownsAs(skipping, iter, \"count\");\n",
     replace: "",
     tests: ["test/iterator-steps.test.ts", "-t", "^each form marks its own the count and last std asks otherwise than its fold$"],
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-rfold-unclosed",
     breaks: "a `skip()` folded from its back whose fold's closure panics leaves what it holds undropped, a reversed `Vec`'s rest (#621)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "    const folded = $consumed(skipping, () => skipping.tryRfold(init, f, () => false, unwind), ends);\n",
     replace: "    const folded = skipping.tryRfold(init, f, () => false, unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_rfold_closes_as_it_unwinds.rs$"],
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-last-unclosed",
     breaks: "a `skip()`'s `last` whose source's `nth(n - 1)` panics leaves its source unclosed, where std's `last(self)` drops it as it unwinds (#735)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "    const source = $consumed(skipping, () => skipping.skipped());\n",
     replace: "    const source = skipping.skipped();\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_source_chained_or_skipped_asks_its_own_last_and_count.rs$"],
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-last-unforwarded",
     breaks: "a `skip()`'s `last` is std's default, its fold, not its source's `last` after what it skips, so the crate's own `last` behind it is never asked (#232, #735)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "    last: typeof iter.last === \"function\" ? last : undefined,\n",
     replace: "    last: undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_source_chained_or_skipped_asks_its_own_last_and_count.rs$"],
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-try-fold-of-own-nth-only",
     breaks: "a `skip()` of a source without its own `nth` is folded by `next`, so a panic in its `nth(n - 1)` drops the accumulator before what drops with `f` (#768)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "    tryFold: iter.nth !== undefined ? tryFold : undefined,\n",
     replace: "    tryFold: iter.ownNth ? tryFold : undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-first-step-without-ends",
     breaks: "a `skip()`'s `nth(n - 1)` that panics drops the accumulator before what drops with `f` (#768)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "  const skipped = (k, init, unwind, ends) =>\n    $stepHolding(() => passed(skipping.iter.nth(k - 1, drop), drop), init, unwind, ends);\n",
     replace: "  const skipped = (k, init, unwind, ends) =>\n    $stepHolding(() => passed(skipping.iter.nth(k - 1, drop), drop), init, unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-try-fold-ends-lost",
     breaks: "a `skip()`'s `try_fold` gives its source's nothing of what drops with `f` (#768)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "    return skipping.iter.tryFold(init, f, broke, unwind, ends);\n",
     replace: "    return skipping.iter.tryFold(init, f, broke, unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_while_first_step_unwinds.rs$"],
@@ -249,7 +249,7 @@ export const mutations: Mutation[] = [
     name: "skipping-nth-back-past-undropped",
     breaks:
       "a `skip`'s `nth_back` past its end lets what its source's `nth_back` finds go undropped, where std's drops it: `skip(2).rev().nth(5)` of a `Vec` of five never drops `D(3)` (#718)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "      if (!step.done) drop?.(step.value);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
     name: "skipping-rfold-only-of-own-try-rfold",
     breaks:
       "a `skip`'s `rfold` and `try_rfold` are std's only of a source with a `try_rfold` of its own, so one of the crate's own iterator steps its back, asking its length each step (#825)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "  $forwardBack(skipping, iter, { nthBack, tryRfold, rfold, advanceBackBy });\n",
     replace: "  $forwardBack(skipping, iter, { nthBack, tryRfold: iter.tryRfold !== undefined ? tryRfold : undefined, rfold, advanceBackBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_skip_take_and_filter_stepped_from_back.rs$"],
@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
   {
     name: "skip-advance-back-by-unforwarded",
     breaks: "a `skip(n)` advanced from its back steps its source by `next_back`, not its source's own `advance_back_by`, so a reversed `take`'s `count` of a `Vec`'s drops 5 then 4, where std's drops them as one slice, 4 then 5 (#2112)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "  $forwardBack(skipping, iter, { nthBack, tryRfold, rfold, advanceBackBy });\n",
     replace: "  $forwardBack(skipping, iter, { nthBack, tryRfold, rfold });\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_advanced_from_its_back_by_its_source.rs$"],
@@ -275,7 +275,7 @@ export const mutations: Mutation[] = [
   {
     name: "skipping-nth-back-only-of-its-sources",
     breaks: "a `skip`'s `nth_back` is std's only where its source writes one, so of a source that writes only `next_back` it steps its own `next_back`, asking its length each time where std's asks it once (#2141)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "  $forwardBack(skipping, iter, { nthBack, tryRfold, rfold, advanceBackBy });\n",
     replace: "  $forwardBack(skipping, iter, { nthBack: iter.nthBack !== undefined ? nthBack : undefined, tryRfold, rfold, advanceBackBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps_of_a_source_that_writes_none.rs$"],
@@ -284,7 +284,7 @@ export const mutations: Mutation[] = [
     name: "skipping-last-unowned",
     breaks:
       "`$skipping` doesn't mark its `last`, std's `Skip::last`, its source's `last` after `nth(n - 1)`, its own, so what passes a `last` on by its mark takes it by its fold (#2212)",
-    file: "src/runtime/skipping.js",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
     find: "  if (typeof iter.last === \"function\") $owns(skipping, \"last\");\n",
     replace: "",
     tests: ["test/iterator-steps.test.ts", "-t", "each form marks its own the count and last"],

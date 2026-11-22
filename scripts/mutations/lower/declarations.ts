@@ -82,8 +82,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a function type's parameter named after a type whose last word JS keeps is `function`, a `.d.ts` TypeScript can't parse (rd673)",
     file: "src/lower/declarations.rs",
-    find: "            if crate::names::kept_word(&word) {\n",
-    replace: "            if false && crate::names::kept_word(&word) {\n",
+    find: "            if rust_js_program::names::kept_word(&word) {\n",
+    replace: "            if false && rust_js_program::names::kept_word(&word) {\n",
     tests: ["test/declarations-function-types.test.ts", "-t", "apart from a word JS keeps"],
   },
   {
@@ -745,7 +745,7 @@ export const mutations: Mutation[] = [
     breaks:
       "the `.d.ts` of `pub fn delete()` is `export function delete(): number;`, a declaration no `.d.ts` may name (#338)",
     file: "src/lower/declarations.rs",
-    find: " == Some(export) && !crate::names::kept_word(export)\n",
+    find: " == Some(export) && !rust_js_program::names::kept_word(export)\n",
     replace: " == Some(export)\n",
     tests: [
       "test/lowering-module-variables.test.ts",

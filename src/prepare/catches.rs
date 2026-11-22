@@ -4,7 +4,7 @@
 
 use rust_js_program::collections::IndexSet;
 
-use crate::js::{self, Expr, ExprKind, Name, Pattern, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, ExprKind, Name, Pattern, Stmt, StmtKind};
 
 /// What a `catch` of an unwind names what it caught, where it reads the
 /// payload `$unwound` makes of it: `thrown`, a name not spelled yet, which

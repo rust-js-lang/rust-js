@@ -1,4 +1,4 @@
-// Mutations of src/runtime/fs.js (#1156).
+// Mutations of crates/rust-js-program/src/runtime/fs.js (#1156).
 import type { Mutation } from "../../mutations";
 
 const file = ["test/corpus.test.ts", "-t", "^fs_file.rs$"];
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
   {
     name: "os-error-number-negated",
     breaks: "an error of the OS's keeps Node's negated number, `os error -2`, where std's is the OS's, 2",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "  return new $IoError(kind, undefined, platform === \"darwin\" && darwin !== undefined ? darwin : message, -e.errno);",
     replace: "  return new $IoError(kind, undefined, platform === \"darwin\" && darwin !== undefined ? darwin : message, e.errno);",
     tests: file,
@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
   {
     name: "bad-descriptor-categorized",
     breaks: "`EBADF`, a write to a file opened to read, is `Other`, where std maps it to no kind, `Uncategorized`",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "  EBADF: [\"Uncategorized\", \"Bad file descriptor\"],",
     replace: "  EBADF: [\"Other\", \"Bad file descriptor\"],",
     tests: file,
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "seek-before-start-allowed",
     breaks: "a seek before a file's start moves it there, where `lseek` refuses it, `EINVAL`",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "      if (n < 0n || n > 0x7fffffffffffffffn) throw $osFailure(\"EINVAL\", 22);",
     replace: "      if (n > 0x7fffffffffffffffn) throw $osFailure(\"EINVAL\", 22);",
     tests: file,
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   {
     name: "append-unremembered",
     breaks: "a file opened to append writes at its position, not at its end, so a second open's write replaces the first's",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "    if (f.append) {\n",
     replace: "    if (false) {\n",
     tests: file,
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
   {
     name: "append-position-unmoved",
     breaks: "an appended write leaves the position where it was, not at the end, where `stream_position()` is then",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "      f.pos = BigInt(fs.fstatSync(f.fd).size);\n",
     replace: "",
     tests: file,
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "create-new-not-exclusive",
     breaks: "`create_new(true)` opens a file there already, where std's `O_EXCL` refuses it, `AlreadyExists`",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "  const creation = o.createNew ? O_CREAT | O_EXCL :",
     replace: "  const creation = o.createNew ? O_CREAT :",
     tests: file,
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "open-truncating-reader-allowed",
     breaks: "`read(true).truncate(true)` opens the file, where std refuses it before it opens anything",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "  if (!o.write && !o.append && creating) return $openInvalid(asked);",
     replace: "  if (false) return $openInvalid(asked);",
     tests: file,
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "read-position-unmoved",
     breaks: "a read leaves the file's position where it was, so the next reads the same bytes",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "  f.pos += BigInt(read);\n",
     replace: "",
     tests: file,
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "read-to-string-unchecked",
     breaks: "`fs::read_to_string` of bytes that aren't UTF-8 decodes them, where std's is `InvalidData`",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "  if ($utf8Check(read._0) !== undefined) return { TAG: \"Err\", _0: $invalidUtf8() };\n  return { TAG: \"Ok\", _0: $utf8Decode(read._0) };",
     replace: "  return { TAG: \"Ok\", _0: $utf8Decode(read._0) };",
     tests: file,
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "remove-file-error-unthrown",
     breaks: "`fs::remove_file` of a file that isn't there is `Ok`, its error Node's, never std's",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "  $fsThrow(() => fs.unlinkSync(path));",
     replace: "  try {\n    fs.unlinkSync(path);\n  } catch {}",
     tests: file,
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "os-error-of-unknown-number-words",
     breaks: "`from_raw_os_error` of a number the platform doesn't name reads the other platform's words, glibc's `Unknown error 9999` on macOS and macOS's `Unknown error: 9999` on Linux",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "darwin ? `Unknown error: ${code}` : `Unknown error ${code}`",
     replace: "darwin ? `Unknown error ${code}` : `Unknown error: ${code}`",
     tests: ["test/corpus.test.ts", "-t", "^io_error_from_raw_os_error.rs$"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "os-error-of-zero-words",
     breaks: "`from_raw_os_error(0)` reads an unknown number's words, not `strerror(0)`'s, `Undefined error: 0` on macOS and `Success` on Linux",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "code === 0 ? (darwin ? \"Undefined error: 0\" : \"Success\") : darwin",
     replace: "darwin",
     tests: ["test/corpus.test.ts", "-t", "^io_error_from_raw_os_error.rs$"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "os-error-of-named-number-unnamed",
     breaks: "`from_raw_os_error(2)` is taken for a number the platform doesn't name, `Uncategorized` and `Unknown error: 2`, not `NotFound` and `No such file or directory`",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "  if (name === undefined) {\n    const darwin",
     replace: "  if (true) {\n    const darwin",
     tests: ["test/corpus.test.ts", "-t", "^io_error_from_raw_os_error.rs$"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "opened-to-read-shown-written",
     breaks: "`{:?}` of a file opened to read shows `read: false, write: true` (#1397)",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "  return $fsTry(() => $opened(fs.openSync(path, fs.constants.O_RDONLY), path, true, false, false));\n",
     replace: "  return $fsTry(() => $opened(fs.openSync(path, fs.constants.O_RDONLY), path, false, true, false));\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_file_shared.rs$"],
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
   {
     name: "appended-shown-unwritten",
     breaks: "`{:?}` of a file opened to append shows `write: false`, where `O_ACCMODE` says it's written (#1397)",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "path, o.read, o.write || o.append, o.append));\n",
     replace: "path, o.read, o.write, o.append));\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_file_shared.rs$"],
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
   {
     name: "file-debug-fd-unpadded",
     breaks: "`{:5?}` of a `File` shows its descriptor unpadded, where `debug_struct` gives each field the width (#1397)",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "  const fd = $formatted($debugInt(String(f.fd), (f.fd >>> 0).toString(16), options), options, true);\n",
     replace: "  const fd = String(f.fd);\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_file_shared.rs$"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   {
     name: "file-type-of-a-dir-a-file",
     breaks: "a directory's `FileType` is a file's (#1397)",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "  if (stats.isDirectory()) return \"dir\";\n",
     replace: "  if (stats.isDirectory()) return \"file\";\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_dirs_and_metadata.rs$"],
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-len-past-off-t-other",
     breaks: "`set_len` past an `off_t` is an `Other` error, not std's `InvalidInput` of its conversion (#1397)",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "    throw new $IoError(\"InvalidInput\", { value: tried, impl: $parseErrorDyn(\"core::num::error::TryFromIntError\") });\n",
     replace: "    throw new $IoError(\"Other\", { value: tried, impl: $parseErrorDyn(\"core::num::error::TryFromIntError\") });\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_dirs_and_metadata.rs$"],
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
   {
     name: "create-dir-all-parent-unmade",
     breaks: "`create_dir_all` of a missing parent is the OS's `NotFound`, its parents never made (#1397)",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "      if (e?.code !== \"ENOENT\") {\n",
     replace: "      if (true) {\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_dirs_and_metadata.rs$"],
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
   {
     name: "create-dir-all-there-refused",
     breaks: "`create_dir_all` of a directory there already is `AlreadyExists`, where std's is `Ok` (#1397)",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "        if ($fromOs(e) && isDir(path)) return;\n        throw e;\n",
     replace: "        throw e;\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_dirs_and_metadata.rs$"],
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
   {
     name: "remove-dir-error-unseen",
     breaks: "`remove_dir` of a directory that holds one, or of none, is `Ok` (#1397)",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "  $fsThrow(() => fs.rmdirSync(path));\n",
     replace: "  try {\n    fs.rmdirSync(path);\n  } catch {}\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_dirs_and_metadata.rs$"],
@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
   {
     name: "canonicalize-resolved-not-real",
     breaks: "`fs::canonicalize` of a missing file is `Ok` of its absolute path, not the OS's error (#1420)",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "  return $fsTry(() => fs.realpathSync.native(path));\n",
     replace: "  return $fsTry(() => $process(\"\").getBuiltinModule(\"node:path\").resolve(path));\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_canonicalize_and_current_dir.rs$"],
@@ -183,7 +183,7 @@ export const mutations: Mutation[] = [
   {
     name: "append-truncate-in-old-words",
     breaks: "options that append and truncate fail with 1.99's words, \"creating or truncating a file requires write or append access\", where 1.100 says \"append and truncate cannot both be enabled\" (ADR 0109, amended)",
-    file: "src/runtime/fs.js",
+    file: "crates/rust-js-program/src/runtime/fs.js",
     find: "  if (o.append && o.truncate && !o.createNew) return $openInvalid(\"append and truncate cannot both be enabled\");\n",
     replace: "  if (o.append && o.truncate && !o.createNew) return $openInvalid(asked);\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_file.rs$"],

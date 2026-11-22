@@ -4,8 +4,8 @@
 //! jump, each label is one a jump names, no `if` is empty and none tests a
 //! constant. A check that fails names the first stage that broke it.
 
-use crate::js::validate::{self, Problem};
-use crate::js::{ExprKind, Stmt, StmtKind};
+use rust_js_program::js::validate::{self, Problem};
+use rust_js_program::js::{ExprKind, Stmt, StmtKind};
 
 /// A property of a body, and why a body doesn't have it.
 pub(super) struct Contract {
@@ -35,7 +35,7 @@ pub(super) const NOTHING_AFTER_A_JUMP: Contract = Contract {
     name: "nothing after a jump",
     broken: |body| {
         let mut found = None;
-        crate::js::each_list(body, &mut |stmts| {
+        rust_js_program::js::each_list(body, &mut |stmts| {
             if found.is_none()
                 && let Some(i) = stmts.iter().position(jumps)
                 && i + 1 < stmts.len()
@@ -53,9 +53,9 @@ pub(super) const LABELS_NAMED: Contract = Contract {
     name: "each label named",
     broken: |body| {
         let mut found = None;
-        crate::js::each_list(body, &mut |stmts| {
+        rust_js_program::js::each_list(body, &mut |stmts| {
             for stmt in stmts.iter() {
-                let written = |l: &crate::js::Name| !crate::lower::mir::is_block_label(l);
+                let written = |l: &rust_js_program::js::Name| !crate::lower::mir::is_block_label(l);
                 if found.is_none()
                     && !matches!(&stmt.kind, StmtKind::While { label: Some(l), .. }
                         | StmtKind::ForOf { label: Some(l), .. }
@@ -76,7 +76,7 @@ pub(super) const LABELS_NAMED: Contract = Contract {
                         body: inner,
                         ..
                     } = &stmt.kind
-                    && !crate::js::names_jump(inner, label)
+                    && !rust_js_program::js::names_jump(inner, label)
                 {
                     found = Some(format!("`{}` named by no jump", label.word()));
                 }
@@ -92,7 +92,7 @@ pub(super) const NO_EMPTY_IF: Contract = Contract {
     name: "no empty if",
     broken: |body| {
         let mut found = None;
-        crate::js::each_list(body, &mut |stmts| {
+        rust_js_program::js::each_list(body, &mut |stmts| {
             if found.is_none()
                 && stmts.iter().any(|stmt| {
                     matches!(&stmt.kind, StmtKind::If(_, then, other)
@@ -111,7 +111,7 @@ pub(super) const NO_CONSTANT_TEST: Contract = Contract {
     name: "no constant test",
     broken: |body| {
         let mut found = None;
-        crate::js::each_list(body, &mut |stmts| {
+        rust_js_program::js::each_list(body, &mut |stmts| {
             if found.is_none()
                 && let Some(value) = stmts.iter().find_map(|stmt| match &stmt.kind {
                     StmtKind::If(test, ..) => match test.kind {
@@ -183,7 +183,7 @@ pub(super) const UNWINDING_GUARDED: Contract = Contract {
     name: "what unwinds is guarded",
     broken: |body| {
         let mut found = None;
-        crate::js::each_list(body, &mut |stmts| {
+        rust_js_program::js::each_list(body, &mut |stmts| {
             let unguarded = stmts.iter().any(|stmt| match &stmt.kind {
                 StmtKind::Try(body, finally) => {
                     use crate::lower::drops::{catches_unwind, is_aborting, live_guarded, may_throw, unseen};
@@ -211,7 +211,7 @@ pub(super) const UNWINDING_GUARDED: Contract = Contract {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::js::{Expr, Span};
+    use rust_js_program::js::{Expr, Span};
 
     fn stmt(kind: StmtKind) -> Stmt {
         kind.at(Span::NONE)
@@ -243,7 +243,7 @@ mod tests {
         // thrown on through `$unwindsOn`, as a stack overflow aborts (#1193).
         let seen = || {
             let mut call = Expr::call(Expr::var("console.log"), vec![]);
-            call.facts = call.facts.with(crate::js::Known::NeverThrows);
+            call.facts = call.facts.with(rust_js_program::js::Known::NeverThrows);
             stmt(StmtKind::Expr(call))
         };
         let scope = |body| stmt(StmtKind::Try(body, vec![seen()]));

@@ -1,11 +1,11 @@
-// Mutations of src/runtime/partial_ord.js (ADR 0093).
+// Mutations of crates/rust-js-program/src/runtime/partial_ord.js (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "partial-ord-own-lt-replaced",
     breaks: "a `PartialOrd` dictionary's own `lt` is replaced by std's, so generic `<` never runs an impl's (#944)",
-    file: "src/runtime/partial_ord.js",
+    file: "crates/rust-js-program/src/runtime/partial_ord.js",
     find: "  dictionary.lt ??= (a, b) => partialCmp(a, b) < 0;\n",
     replace: "  dictionary.lt = (a, b) => partialCmp(a, b) < 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_compare_by_impls.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "partial-ord-le-strict",
     breaks: "std's `le` of a `PartialOrd` dictionary is its `<`, so a heap or generic `<=` of equal items says false (#944)",
-    file: "src/runtime/partial_ord.js",
+    file: "crates/rust-js-program/src/runtime/partial_ord.js",
     find: "  dictionary.le ??= (a, b) => partialCmp(a, b) <= 0;\n",
     replace: "  dictionary.le ??= (a, b) => partialCmp(a, b) < 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^(generic_compare_by_impls|heap_methods|max_min_clamp_as_std_compares)\\.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "partial-eq-own-ne-replaced",
     breaks: "a `PartialEq` dictionary's own `ne` is replaced by std's `!eq`, so generic `!=` never runs an impl's (#962)",
-    file: "src/runtime/partial_ord.js",
+    file: "crates/rust-js-program/src/runtime/partial_ord.js",
     find: "  dictionary.ne ??= (a, b) => !eq(a, b);\n",
     replace: "  dictionary.ne = (a, b) => !eq(a, b);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "partial-eq-ne-is-eq",
     breaks: "std's `ne` of a `PartialEq` dictionary is its `eq`, so generic `!=` of equal values says true (#962)",
-    file: "src/runtime/partial_ord.js",
+    file: "crates/rust-js-program/src/runtime/partial_ord.js",
     find: "  dictionary.ne ??= (a, b) => !eq(a, b);\n",
     replace: "  dictionary.ne ??= (a, b) => eq(a, b);\n",
     tests: ["test/corpus.test.ts", "-t", "^(own_ne_max_min_clamp|option_some_mut|rc_eq_generic_by_address_first)\\.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-max-is-min",
     breaks: "std's `max` of an `Ord` dictionary picks the lesser (#962)",
-    file: "src/runtime/partial_ord.js",
+    file: "crates/rust-js-program/src/runtime/partial_ord.js",
     find: "  dictionary.max ??= (a, b, drop) => $maxOf(a, b, partialOrd(), drop);\n",
     replace: "  dictionary.max ??= (a, b, drop) => $minOf(a, b, partialOrd(), drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-own-max-replaced",
     breaks: "an `Ord` dictionary's own `max` is replaced by std's (#962)",
-    file: "src/runtime/partial_ord.js",
+    file: "crates/rust-js-program/src/runtime/partial_ord.js",
     find: "  dictionary.max ??= (a, b, drop) => $maxOf(a, b, partialOrd(), drop);\n",
     replace: "  dictionary.max = (a, b, drop) => $maxOf(a, b, partialOrd(), drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "ord-clamp-drops-nothing",
     breaks: "std's `clamp` of an `Ord` dictionary is given no drop, so the bounds it doesn't give back are never dropped (#962)",
-    file: "src/runtime/partial_ord.js",
+    file: "crates/rust-js-program/src/runtime/partial_ord.js",
     find: "  dictionary.clamp ??= (x, min, max, drop) => $clampBy(x, min, max, partialOrd(), undefined, drop);\n",
     replace: "  dictionary.clamp ??= (x, min, max, drop) => $clampBy(x, min, max, partialOrd());\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "ints-clamp-std",
     breaks: "an integer's shared `clamp` is std's default, which panics without showing its bounds (#962)",
-    file: "src/runtime/partial_ord.js",
+    file: "crates/rust-js-program/src/runtime/partial_ord.js",
     find: "const $intsOrdered = /* @__PURE__ */ $ord({ PartialOrd: () => $partiallyOrdered, cmp: $cmp, clamp: $clamp });\n",
     replace: "const $intsOrdered = /* @__PURE__ */ $ord({ PartialOrd: () => $partiallyOrdered, cmp: $cmp });\n",
     tests: ["test/corpus.test.ts", "-t", "^own_ne_max_min_clamp.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "chars-clamp-unshown",
     breaks: "a `char`'s shared `clamp` panics without showing its bounds (#962)",
-    file: "src/runtime/partial_ord.js",
+    file: "crates/rust-js-program/src/runtime/partial_ord.js",
     find: "  clamp: (x, min, max) => $clampBy(x, min, max, $partiallyOrdered, (c) => $debugStr(c, \"'\")),\n",
     replace: "  clamp: (x, min, max) => $clampBy(x, min, max, $partiallyOrdered),\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "hold ne, max, min and clamp"],

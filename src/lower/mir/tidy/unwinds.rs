@@ -9,7 +9,7 @@
 
 use rust_js_program::collections::IndexSet;
 
-use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 
 /// `stmts`, each run of statements a value's drop ends, which a panic in
 /// any of them drops too, one `try { .. } finally { .. }`. The values

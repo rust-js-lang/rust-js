@@ -27,7 +27,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`window.$R-T` is taken, a subtraction where it's printed, not refused naming its quoted key",
     file: "src/lower/bindings/paths.rs",
-    find: "            if !crate::names::is_identifier(name) {\n",
+    find: "            if !rust_js_program::names::is_identifier(name) {\n",
     replace: "            if name.is_empty() {\n",
     tests,
   },

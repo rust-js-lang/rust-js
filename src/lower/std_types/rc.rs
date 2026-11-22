@@ -11,9 +11,9 @@ use rustc_middle::ty::{self, GenericArgsRef, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::recognition::{rc_pointee, weak_pointee};
 use crate::lower::{FnCx, R, Std};
+use rust_js_program::js::{Expr, Op, Prop, Stmt, StmtKind};
 
 /// How a counted `Rc` of a pointee is held (ADRs 0320, 0520, #1228).
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -234,7 +234,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Rc::new(value)` of a counted box: `{ value, strong: 1, weak: 0 }`.
     fn new_rc(value: Expr) -> Expr {
         Expr::object(vec![
-            Prop::Field(crate::js::HELD.into(), value),
+            Prop::Field(rust_js_program::js::HELD.into(), value),
             Prop::Field("strong".into(), Expr::int(1)),
             Prop::Field("weak".into(), Expr::int(0)),
         ])
@@ -245,7 +245,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// pair's own fields where it's made here, else `{ ...pair, .. }`.
     fn new_counted_pair(pair: Expr) -> Expr {
         let mut props = match pair.kind {
-            crate::js::ExprKind::Object(props, ..) => props,
+            rust_js_program::js::ExprKind::Object(props, ..) => props,
             _ => vec![Prop::Spread(pair)],
         };
         props.push(Prop::Field("strong".into(), Expr::int(1)));
@@ -561,7 +561,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// of: its instance, `value`, which a constructor sets on `this` (#1228).
 pub(in crate::lower) fn counted_instance_made(made: &Expr) -> Option<&Expr> {
     match &made.kind {
-        crate::js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$countedInstance") => {
+        rust_js_program::js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$countedInstance") => {
             match args.as_slice() {
                 [value] => Some(value),
                 _ => None,

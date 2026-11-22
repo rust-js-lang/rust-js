@@ -76,7 +76,7 @@ test("each push's lint job checks std/ is what its sources make, after the compi
 // alone, went red on `main` unseen (801d40c55, 336984bff).
 // Of a change to the iterators' code, the formatting code, the numbers' and the pointers', whose
 // jobs check.yml runs where its change is one (scripts/iteratorSlice.ts).
-const checkJobs = jobs({ all: true, changed: [], branch: ["src/runtime/steps.js", "src/runtime/pad.js", "src/runtime/div.js", "src/typescript.rs", "src/lower/analysis/awaits.rs", "src/lower/unions.rs", "src/lower/analysis/intervals/state.rs", "test/corpus/array_map.rs"], added: [], extra: [], cores: 4 });
+const checkJobs = jobs({ all: true, changed: [], branch: ["crates/rust-js-program/src/runtime/steps.js", "crates/rust-js-program/src/runtime/pad.js", "crates/rust-js-program/src/runtime/div.js", "src/typescript.rs", "src/lower/analysis/awaits.rs", "src/lower/unions.rs", "src/lower/analysis/intervals/state.rs", "test/corpus/array_map.rs"], added: [], extra: [], cores: 4 });
 const ranHere = checkJobs.jobs;
 
 // The readability passes' oracles run of a change to tidy, preparation or
@@ -132,7 +132,7 @@ test("the crate corpus runs where its paths say, of plain check:fast too", () =>
   const named = (scope: { all: boolean; changed: string[]; branch: string[] }) =>
     jobs({ ...scope, added: [], extra: [], cores: 12, picked: none }).jobs.some((job) => job.name === "the crate corpus");
   expect(named({ all: false, changed: ["src/lower/iterators/mir_steps/closing.rs"], branch: [] })).toBe(true);
-  expect(named({ all: false, changed: [], branch: ["src/runtime/byte_len.js"] })).toBe(true);
+  expect(named({ all: false, changed: [], branch: ["crates/rust-js-program/src/runtime/byte_len.js"] })).toBe(true);
   expect(named({ all: false, changed: ["scripts/crate-corpus/itertools.rs"], branch: [] })).toBe(true);
   expect(named({ all: false, changed: ["docs/guide/README.md", "test/ci.test.ts"], branch: [] })).toBe(false);
   expect(named({ all: true, changed: ["docs/guide/README.md"], branch: [] })).toBe(true);
@@ -1011,9 +1011,9 @@ test("a push's React gate runs again past a rebase only where the commits it bro
   // Its own change touches the compiler; a round before passed.
   expect(reactGate(["src/lower.rs"], undefined)).toBe("run");
   expect(reactGate(["src/lower.rs"], ["docs/guide/README.md", "test/corpus/x.rs"])).toBe("reused");
-  expect(reactGate(["src/lower.rs"], ["src/js.rs"])).toBe("run");
+  expect(reactGate(["src/lower.rs"], ["crates/rust-js-program/src/js.rs"])).toBe("run");
   // A change that doesn't touch the port runs none.
-  expect(reactGate(["docs/guide/README.md"], ["src/js.rs"])).toBe("none");
+  expect(reactGate(["docs/guide/README.md"], ["crates/rust-js-program/src/js.rs"])).toBe("none");
 });
 
 

@@ -1,10 +1,10 @@
 //! `?` of an `Option` or a `Result`, and the `From` that converts its
 //! error (ADRs 0052, 0141). A `Result`'s JS itself is `js::result`'s.
 
-use crate::js::result::{err, held, is};
-use crate::js::{self, Expr, Prop};
 use crate::lower::recognition::{StdItem, std_item};
 use crate::lower::{FnCx, R};
+use rust_js_program::js::result::{err, held, is};
+use rust_js_program::js::{self, Expr, Prop};
 use rustc_middle::ty::{self, Ty};
 
 /// How `?` makes an error the function's: a `From` of the crate's own,

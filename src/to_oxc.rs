@@ -76,7 +76,7 @@ use oxc_span::{SPAN, SourceType, Span};
 use oxc_syntax::number::NumberBase;
 use oxc_syntax::operator::{AssignmentOperator, BinaryOperator, LogicalOperator, UnaryOperator, UpdateOperator};
 
-use crate::js::{self, ExprKind, JsxTag, Module, Op, Prop, StmtKind, UnaryOp};
+use rust_js_program::js::{self, ExprKind, JsxTag, Module, Op, Prop, StmtKind, UnaryOp};
 
 pub struct Output {
     pub code: String,

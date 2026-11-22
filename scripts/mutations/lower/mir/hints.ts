@@ -618,7 +618,7 @@ export const mutations: Mutation[] = [
     name: "shadowing-label-one-with-its-outer",
     breaks: "a loop's label written inside a loop or a block of its word is taken for the outer's, so a `break 'a` of the inner leaves the outer, a loop that never ends (#1969)",
     file: "src/lower/mir/hints.rs",
-    find: "            k => crate::names::given_apart(&word, k),\n",
+    find: "            k => rust_js_program::names::given_apart(&word, k),\n",
     replace: "            _ => word,\n",
     tests: ["test/corpus.test.ts", "-t", "^label_shadowing_its_enclosing_label.rs$"],
   },

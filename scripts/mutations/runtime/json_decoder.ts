@@ -1,11 +1,11 @@
-// Mutations of src/runtime/json_decoder.js (ADR 0093).
+// Mutations of crates/rust-js-program/src/runtime/json_decoder.js (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "hinted-content-peeked",
     breaks: "a hand-written visitor's `deserialize_map` given buffered content, an untagged variant's, peeks it as text: `TypeError: this.parseWhitespace is not a function` (#236)",
-    file: "src/runtime/json_decoder.js",
+    file: "crates/rust-js-program/src/runtime/json_decoder.js",
     find: "    return this.deserializeAny(expected, visitor);\n  }\n\n",
     replace: "    return this.parseWhitespace(expected, visitor);\n  }\n\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-f32-integer-through-f64",
     breaks: "an integer in JSON read as an `f32` is rounded to an `f64` first, and then can be a tie it isn't",
-    file: "src/runtime/json_decoder.js",
+    file: "crates/rust-js-program/src/runtime/json_decoder.js",
     find: ": $bigToF32(BigInt(n.value))));",
     replace: ": Math.fround(Number(n.value))));",
     tests: ["test/serde.test.ts", "-t", "an f32 is written"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-int-of-a-float",
     breaks: "a float given for an integer type is read as a number, where serde says it expected an integer",
-    file: "src/runtime/json_decoder.js",
+    file: "crates/rust-js-program/src/runtime/json_decoder.js",
     find: "      if (n.kind === \"f\") throw $jsonError(`invalid type: floating point \\`${$jsonNumber(n.value)}\\`, expected ${name}`);\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-int-max-excluded",
     breaks: "an integer type's largest value is refused, `255` of a `u8`",
-    file: "src/runtime/json_decoder.js",
+    file: "crates/rust-js-program/src/runtime/json_decoder.js",
     find: "      if ((n.kind === \"u\" ? n.value > max : n.value < min) || (nonZero && n.value == 0)) {\n",
     replace: "      if ((n.kind === \"u\" ? n.value >= max : n.value < min) || (nonZero && n.value == 0)) {\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-int-min-excluded",
     breaks: "an integer type's smallest value is refused, `-128` of an `i8`",
-    file: "src/runtime/json_decoder.js",
+    file: "crates/rust-js-program/src/runtime/json_decoder.js",
     find: "      if ((n.kind === \"u\" ? n.value > max : n.value < min) || (nonZero && n.value == 0)) {\n",
     replace: "      if ((n.kind === \"u\" ? n.value > max : n.value <= min) || (nonZero && n.value == 0)) {\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-borrowed-str-of-escape",
     breaks: "a `&str` of a string with an escape is read, where serde_json can't borrow it",
-    file: "src/runtime/json_decoder.js",
+    file: "crates/rust-js-program/src/runtime/json_decoder.js",
     find: "      if (kind === \"borrowed\") return s;\n",
     replace: "      return s;\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-array-length-unsaid",
     breaks: "an array of the wrong length is refused in other words than serde's",
-    file: "src/runtime/json_decoder.js",
+    file: "crates/rust-js-program/src/runtime/json_decoder.js",
     find: "    const expected = length === 0 ? \"an empty array\" : `an array of length ${length}`;\n",
     replace: "    const expected = length === 0 ? \"an empty array\" : `an array of size ${length}`;\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-map-first-of-a-key-kept",
     breaks: "a map's key given twice keeps its first value, where serde's map keeps its last",
-    file: "src/runtime/json_decoder.js",
+    file: "crates/rust-js-program/src/runtime/json_decoder.js",
     find: "        entries.set(key, map.value(read));\n",
     replace: "        const value = map.value(read);\n        if (!entries.has(key)) entries.set(key, value);\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-field-twice-read",
     breaks: "a struct's field given twice is read twice, where serde says `duplicate field`",
-    file: "src/runtime/json_decoder.js",
+    file: "crates/rust-js-program/src/runtime/json_decoder.js",
     find: "      if (seen[i]) throw $jsonError(`duplicate field \\`${$jsonName(fields[i][0])}\\``);\n",
     replace: "",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-unknown-field-never-denied",
     breaks: "a field `deny_unknown_fields` refuses is read past",
-    file: "src/runtime/json_decoder.js",
+    file: "crates/rust-js-program/src/runtime/json_decoder.js",
     find: "      const i = $jsonField(key, fields, deny && !flatten);\n",
     replace: "      const i = $jsonField(key, fields, false);\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-missing-field-not-defaulted",
     breaks: "a field missing from a struct of `#[serde(default)]` is an error, where serde gives its default",
-    file: "src/runtime/json_decoder.js",
+    file: "crates/rust-js-program/src/runtime/json_decoder.js",
     find: "      if (!seen[i]) values[i] = missing ? missing(defaults) : read(new $JsonMissing($jsonName(names)));\n",
     replace: "      if (!seen[i]) values[i] = read(new $JsonMissing($jsonName(names)));\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "non-zero-zero-read",
     breaks: "serde's `NonZero` of an integer takes zero, which it refuses: `invalid value: integer `0`, expected a nonzero u32` (#1538)",
-    file: "src/runtime/json_decoder.js",
+    file: "crates/rust-js-program/src/runtime/json_decoder.js",
     find: " || (nonZero && n.value == 0)",
     replace: "",
     tests: ["test/serde-values.test.ts", "-t", "a NonZero is read as serde reads it"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "json-saturating-unclamped",
     breaks: "a `Saturating` read keeps what's past its type, where serde's visitor clamps it to the type's range (#1623)",
-    file: "src/runtime/json_decoder.js",
+    file: "crates/rust-js-program/src/runtime/json_decoder.js",
     find: "      const clamped = value < BigInt(min) ? min : value > BigInt(max) ? max : value;\n",
     replace: "      const clamped = value;\n",
     tests: ["test/serde-std.test.ts", "-t", "an i128, a u128 and a Saturating"],

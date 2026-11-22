@@ -20,10 +20,10 @@ impl Dependencies {
     pub fn load(paths: &[std::path::PathBuf], output: &Path, dir: &Path) -> Result<Self, String> {
         let mut result = Self::default();
         let mut needed: Vec<(String, String)> = Vec::new();
-        let output = crate::paths::absolute(output)?;
+        let output = rust_js_program::paths::absolute(output)?;
         let parent = output.parent().ok_or("output has no parent")?;
         for path in paths {
-            result.inputs.push(crate::paths::absolute(path)?);
+            result.inputs.push(rust_js_program::paths::absolute(path)?);
             let manifest = Manifest::read_from(path)?;
             result.inputs.extend(manifest.sources.iter().cloned());
             if manifest.compiler.as_ref() != Some(&Compiler::current()) {
@@ -85,7 +85,7 @@ impl Dependencies {
                     return Err("dependency module is not a fingerprinted artifact".into());
                 }
                 let subpath = package.and_then(|package| package.subpath_specifier(path));
-                Ok(subpath.unwrap_or_else(|| crate::paths::specifier(parent, &module.file)))
+                Ok(subpath.unwrap_or_else(|| rust_js_program::paths::specifier(parent, &module.file)))
             };
             // What its package's root re-exports, by the package's name,
             // where Node finds that package from the crate's JS (ADR 1008):
@@ -213,10 +213,10 @@ impl Dependencies {
                 library.version
             ));
         }
-        let (mut exports, Unread { items, .. }) = Exports::read(library, Some(crate::runtime::PACKAGE));
+        let (mut exports, Unread { items, .. }) = Exports::read(library, Some(rust_js_program::runtime::PACKAGE));
         for item in items {
             let imported = Imported {
-                from: crate::runtime::PACKAGE.to_string(),
+                from: rust_js_program::runtime::PACKAGE.to_string(),
                 export: item.exported_as(),
                 name: item.export,
                 member: item.member,
@@ -230,7 +230,8 @@ impl Dependencies {
         // Its items are std's, of `core`, `alloc` or `std`: by its package's
         // name, which no crate has, not theirs, which a program's may
         // (ADR 1054).
-        self.libraries.insert(crate::runtime::PACKAGE.to_string(), exports);
+        self.libraries
+            .insert(rust_js_program::runtime::PACKAGE.to_string(), exports);
         Ok(())
     }
 }

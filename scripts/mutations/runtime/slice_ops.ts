@@ -1,4 +1,4 @@
-// Mutations of src/runtime/slice_ops.js (ADR 0324).
+// Mutations of crates/rust-js-program/src/runtime/slice_ops.js (ADR 0324).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "is-sorted-by-steps-armed",
     breaks:
       "`$isSortedBy` of keys with a destructor steps `Iterator.from(items)`, which arms a `$Steps` to close at its end, so the source is dropped before the last key (#2027)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  const it = $steppedHeld(items);\n",
     replace: "  const it = Iterator.from(items);\n",
     tests: ["test/corpus.test.ts", "-t", "sorted_keys_dropped_before_their_source"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "fill-shares",
     breaks: "`fill` puts one object in each slot, which a change to one changes in all",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    v[i] = clone(x);\n",
     replace: "    v[i] = x;\n",
     tests: ["test/corpus.test.ts", "-t", "slice_methods"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "copy-from-slice-unchecked",
     breaks: "`copy_from_slice` of another length copies what it can, not std's panic",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  if (v.length !== src.length) {\n    throw $stringPanic(`copy_from_slice",
     replace: "  if (false) {\n    throw $stringPanic(`copy_from_slice",
     tests: ["test/corpus.test.ts", "-t", "copy_from_slice_panic"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-from-slice-shares",
     breaks: "`clone_from_slice` copies the objects, not clones of them",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    v[i] = clone ? clone(src[i]) : src[i];\n",
     replace: "    v[i] = src[i];\n",
     tests: ["test/corpus.test.ts", "-t", "slice_methods"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "partition-point-off",
     breaks: "`partition_point` stops one short",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  return base + (p(v[base]) ? 1 : 0);\n",
     replace: "  return base;\n",
     tests: ["test/corpus.test.ts", "-t", "slice_methods"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "chunks-exact-keeps-rest",
     breaks: "`chunks_exact` gives what's left as a chunk too",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  const whole = v.length - (v.length % n);\n",
     replace: "  const whole = v.length;\n",
     tests: ["test/corpus.test.ts", "-t", "slice_methods"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "rchunks-from-start",
     breaks: "`rchunks` cuts from the start",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  for (; end >= n; end -= n) chunks.push(cut(v, end - n, end));\n",
     replace: "  for (; end >= n; end -= n) chunks.push(cut(v, v.length - end, v.length - end + n));\n",
     tests: ["test/corpus.test.ts", "-t", "slice_methods"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-by-drops-last",
     breaks: "a slice's `split` drops the piece after the last match",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "      if (inclusive && start === end) finished = true;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(slice_methods|slice_views|slice_searches_ask_a_predicate_as_they_step).rs$"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "sort-cached-key-each-compare",
     breaks: "`sort_by_cached_key` calls the key at each comparison",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    keyed.sort((a, b) => cmp(a[0], b[0]) || a[1] - b[1]);\n",
     replace: "    keyed.sort((a, b) => cmp(f(a[2]), f(b[2])) || a[1] - b[1]);\n",
     tests: ["test/corpus.test.ts", "-t", "slice_methods"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "is-sorted-by-key-all-keys",
     breaks: "`is_sorted_by_key` keeps going past the first out of order",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    if (!(cmp(last, key) <= 0)) return false;\n",
     replace: "    if (!(cmp(last, key) <= 0)) last = undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "slice_methods"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "deque-swap-remove-front-as-back",
     breaks: "`swap_remove_front` takes the last item's place",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  if (front) {\n    v[i] = v[0];\n",
     replace: "  if (false) {\n    v[i] = v[0];\n",
     tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "retain-mut-keeps-all",
     breaks: "`retain_mut` keeps what `f` rejects",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    if (keep) v[kept++] = v[at];\n",
     replace: "    if (true) v[kept++] = v[at];\n",
     tests: ["test/corpus.test.ts", "-t", "^retain_mut_drops.rs$"],
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-from-slice-callback-skipped",
     breaks: "`clone_from_slice` ignores the items' own `clone_from`",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    if (cloneFrom) {\n      cloneFrom(v, i, src[i]);\n      continue;\n    }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "clone_from_slice_own"],
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
   {
     name: "push-mut-copy",
     breaks: "`*v.push_mut(10) += 5` writes a copy",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  return handle ? $mutAt(v, v.length - 1) : x;",
     replace: "  return x;",
     tests: ["test/corpus.test.ts", "-t", "vec_push_mut"],
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   {
     name: "insert-mut-at-end",
     breaks: "`insert_mut(i, x)`'s `&mut` is to the last item",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  $insertAt(v, i, x, drop);\n  return handle ? $mutAt(v, i) : x;",
     replace: "  $insertAt(v, i, x, drop);\n  return handle ? $mutAt(v, v.length - 1) : x;",
     tests: ["test/corpus.test.ts", "-t", "vec_push_mut"],
@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
   {
     name: "rsplit-keeps-separator",
     breaks: "`rsplit` keeps each separating item in the part after it",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "      const piece = cut(v, i + 1, end);\n",
     replace: "      const piece = cut(v, i, end);\n",
     tests: ["test/corpus.test.ts","-t","slice_views"],
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
   {
     name: "rsplit-last-part-dropped",
     breaks: "`rsplit` leaves out the part before the first separator",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "      end = inclusive ? i + 1 : i;\n      return step(piece);\n    }\n    if (!inclusive) return finish();\n",
     replace: "      end = inclusive ? i + 1 : i;\n      return step(piece);\n    }\n    if (!inclusive) return done;\n",
     tests: ["test/corpus.test.ts", "-t", "^(slice_methods|slice_views|slice_searches_ask_a_predicate_as_they_step).rs$"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   {
     name: "chunk-by-holds-split",
     breaks: "`chunk_by` splits where `p` holds, not where it doesn't",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    while (start + len < end && p(v[start + len - 1], v[start + len])) len++;\n",
     replace: "    while (start + len < end && !p(v[start + len - 1], v[start + len])) len++;\n",
     tests: ["test/corpus.test.ts","-t","slice_views"],
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-last-chunk-at-n",
     breaks: "`split_last_chunk::<N>()` splits after `N`, not before the last `N`",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  const at = last ? v.length - n : n;",
     replace: "  const at = n;",
     tests: ["test/corpus.test.ts","-t","slice_views"],
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-strip-eq-ignored",
     breaks: "a slice's `strip_prefix` compares by `===`, not the items' `==`",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  if (!$sliceStartsWith(v, p, end, eq)) return undefined;",
     replace: "  if (!$sliceStartsWith(v, p, end)) return undefined;",
     tests: ["test/corpus.test.ts","-t","slice_prefix_eq"],
@@ -166,7 +166,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-strip-circumfix-prefix-only",
     breaks: "a slice's `strip_circumfix` keeps the suffix",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  return rest === undefined ? undefined : $sliceStrip(rest, suffix, true, eq);",
     replace: "  return rest;",
     tests: ["test/corpus.test.ts","-t","slice_prefix_eq"],
@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
   {
     name: "as-rchunks-from-start",
     breaks: "`as_rchunks`'s chunks start at the start",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  const start = back ? rest : 0;\n  const chunks = Array.from(",
     replace: "  const start = 0;\n  const chunks = Array.from(",
     tests: ["test/corpus.test.ts","-t","slice_arrays"],
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-split-off-past-end",
     breaks: "`split_off(..n)` past the end takes what there is, not `None`",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  if (n > v.length) return [v, undefined];\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","slice_split_off"],
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-split-off-end-empty",
     breaks: "`split_off_first_mut()` of an empty slice makes a view past its end",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  if (v.length === 0) return [v, undefined];\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","slice_split_off"],
@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
   {
     name: "write-clone-message",
     breaks: "`write_clone_of_slice` of another length panics without its `assert_eq!`'s sides",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "failed: destination and source slices have different lengths\\n  left: ${v.length}\\n right: ${src.length}`,",
     replace: "failed: destination and source slices have different lengths`,",
     tests: ["test/corpus.test.ts","-t","slice_uninit_lengths"],
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
   {
     name: "deque-insert-vec-message",
     breaks: "`VecDeque::insert` past the end says `Vec`'s message",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  $insertAt(v, i, x, drop, \"index out of bounds\");\n",
     replace: "  $insertAt(v, i, x, drop);\n",
     tests: ["test/corpus.test.ts","-t","deque_insert_past_len"],
@@ -214,7 +214,7 @@ export const mutations: Mutation[] = [
   {
     name: "push-front-mut-last",
     breaks: "`push_front_mut` gives a `&mut` to the last item",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  v.unshift(x);\n  return handle ? $mutAt(v, 0) : x;",
     replace: "  v.unshift(x);\n  return handle ? $mutAt(v, -1) : x;",
     tests: ["test/corpus.test.ts","-t","deque_push_mut"],
@@ -222,7 +222,7 @@ export const mutations: Mutation[] = [
   {
     name: "retain-mut-drop-unrun",
     breaks: "`$retainMut` given a drop runs it on none it removes",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    else drop?.(v[at]);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^retain_mut_drops.rs$"],
@@ -230,7 +230,7 @@ export const mutations: Mutation[] = [
   {
     name: "fill-keeps-replaced",
     breaks: "`fill` drops none of the items it writes over",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "        v[i] = clone(x);\n        drop?.(old);\n",
     replace: "        v[i] = clone(x);\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
@@ -238,7 +238,7 @@ export const mutations: Mutation[] = [
   {
     name: "fill-unwinding-keeps-value",
     breaks: "`fill` whose clone, or drop of what it replaces, panics leaves the value it's given undropped (#898)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    },\n    () => drop?.(x),\n",
     replace: "    },\n    () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^resize_fill_repeat_unwind.rs$"],
@@ -246,7 +246,7 @@ export const mutations: Mutation[] = [
   {
     name: "fill-of-none-keeps-value",
     breaks: "`fill` of no items drops none of the value it's given",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    drop?.(x);\n    return;\n",
     replace: "    return;\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-from-slice-keeps-replaced",
     breaks: "`clone_from_slice` drops none of the items it replaces",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    v[i] = clone ? clone(src[i]) : src[i];\n    drop?.(old);\n",
     replace: "    v[i] = clone ? clone(src[i]) : src[i];\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
@@ -262,7 +262,7 @@ export const mutations: Mutation[] = [
   {
     name: "fill-with-replaced-not-dropped",
     breaks: "what `fill_with` replaces isn't dropped",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    v[i] = made;\n    drop?.(old);\n",
     replace: "    v[i] = made;\n",
     tests: ["test/corpus.test.ts", "-t", "^fill_with_drops.rs$"],
@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
   {
     name: "fill-with-dropped-before-made",
     breaks: "what `fill_with` replaces is dropped before the new one is made, not after",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    const made = f();\n    const old = v[i];\n    v[i] = made;\n    drop?.(old);\n",
     replace: "    drop?.(v[i]);\n    v[i] = f();\n",
     tests: ["test/corpus.test.ts", "-t", "^fill_with_drops.rs$"],
@@ -278,7 +278,7 @@ export const mutations: Mutation[] = [
   {
     name: "fill-with-written-after-the-drop",
     breaks: "`fill_with` writes what it made only once the drop of what it replaces returns, so a drop that panics leaves the old item, dropped again later (#1598)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    const old = v[i];\n    v[i] = made;\n    drop?.(old);\n",
     replace: "    drop?.(v[i]);\n    v[i] = made;\n",
     tests: ["test/corpus.test.ts", "-t", "^fill_with_writes_what_it_made_though_a_drop_panics.rs$"],
@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
   {
     name: "is-sorted-by-steps-all",
     breaks: "`is_sorted()` of an iterator steps every item, where std's stops at the first out of order",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "          sorted = false;\n          break;\n",
     replace: "          sorted = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^is_sorted_items.rs$"],
@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-repeat-room-unchecked",
     breaks: "a slice's `repeat(n)` past `isize::MAX` bytes is no panic",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  $roomFor(v.length * n, size);\n",
     replace: "",
     tests: ["test/runtime-package.test.ts", "-t", "room past"],
@@ -302,7 +302,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-items-spread-arguments",
     breaks: "`v.repeat(n)` spreads its items into one `push`, more than a JS call takes as arguments: `RangeError` (ADR 0919)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "$extend(out, i === 0 || copy === undefined ? first : first.map(copy));",
     replace: "out.push(...(i === 0 || copy === undefined ? first : first.map(copy)));",
     tests: ["test/corpus.test.ts", "-t", "^runtime_long_writes.rs$"],
@@ -310,7 +310,7 @@ export const mutations: Mutation[] = [
   {
     name: "is-sorted-by-ends-unrun",
     breaks: "`$isSortedBy` never runs what drops with its function (#763)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  const held = [\n    ends,\n",
     replace: "  const held = [\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_is_sorted_by.rs$"],
@@ -318,7 +318,7 @@ export const mutations: Mutation[] = [
   {
     name: "sorted-dropping-replaced-kept",
     breaks: "`is_sorted_by_key` never drops a key it replaces, which `*last = curr` drops (#776)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "        drop?.(replaced);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
@@ -326,7 +326,7 @@ export const mutations: Mutation[] = [
   {
     name: "sorted-dropping-curr-kept",
     breaks: "`is_sorted_by_key` doesn't drop the later of two keys out of order (#776)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "        if (!ordered) {\n          drop?.(item);\n",
     replace: "        if (!ordered) {\n",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
@@ -334,7 +334,7 @@ export const mutations: Mutation[] = [
   {
     name: "sorted-dropping-replaced-before-set",
     breaks: "`is_sorted_by_key` drops the key it replaces before `last` is the next one, so where that drop panics the next key is never dropped (#776)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "        const replaced = last;\n        last = item;\n        drop?.(replaced);\n",
     replace: "        drop?.(last);\n        last = item;\n",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
@@ -342,7 +342,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-sorted-by-key-undropped",
     breaks: "a slice's `is_sorted_by_key` drops none of its keys (#783)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "function $isSortedByKey(v, f, cmp, drop) {\n  if (drop !== undefined)\n",
     replace: "function $isSortedByKey(v, f, cmp, drop) {\n  if (false)\n",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
@@ -350,7 +350,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-into-vec-untruncated",
     breaks: "a `Vec`'s `clone_from` of a shorter one keeps what it has past its length (#919)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  $truncate(w, v.length, drop);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_clone_from_in_place.rs$"],
@@ -358,7 +358,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-into-vec-truncated-last",
     breaks: "a `Vec`'s `clone_from` drops what it has past the source's length after it writes over the rest, not first (#919)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  $truncate(w, v.length, drop);\n  $cloneFromSlice(w, v.slice(0, w.length), clone, cloneFrom, drop);\n",
     replace: "  $cloneFromSlice(w.slice(0, v.length), v.slice(0, Math.min(w.length, v.length)), clone, cloneFrom, drop);\n  $truncate(w, v.length, drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_clone_from_in_place.rs$"],
@@ -366,7 +366,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-into-vec-rest-shared",
     breaks: "a `Vec`'s `clone_from` pushes the source's own items past what it kept, not clones (#919)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "for (let i = w.length; i < v.length; i++) w.push(clone ? clone(v[i]) : v[i]);",
     replace: "for (let i = w.length; i < v.length; i++) w.push(v[i]);",
     tests: ["test/corpus.test.ts", "-t", "^vec_clone_from_in_place.rs$"],
@@ -374,7 +374,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-into-deque-uncleared",
     breaks: "a `VecDeque`'s `clone_from` keeps its old items before the clones (#922)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  $truncate(w, 0, drop);\n  for (const item of v)",
     replace: "  for (const item of v)",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
@@ -382,7 +382,7 @@ export const mutations: Mutation[] = [
   {
     name: "clone-into-list-rest-leaked",
     breaks: "a `LinkedList`'s `clone_from` pops what it doesn't keep without dropping it (#922)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    const last = w.pop();\n    drop?.(last);\n",
     replace: "    w.pop();\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
@@ -390,7 +390,7 @@ export const mutations: Mutation[] = [
   {
     name: "retain-deque-kept-copied",
     breaks: "a `VecDeque`'s `retain_mut` copies each it keeps forward, not swaps it, so what it doesn't keep is lost, never dropped (#909)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    [v[kept], v[at]] = [v[at], v[kept]];\n",
     replace: "    v[kept] = v[at];\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_deque_retain_swaps.rs$"],
@@ -398,7 +398,7 @@ export const mutations: Mutation[] = [
   {
     name: "retain-deque-untruncated",
     breaks: "a `VecDeque`'s `retain_mut` keeps what it doesn't keep at its end (#909)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  if (at !== kept) $truncate(v, kept, drop);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_deque_retain_swaps.rs$"],
@@ -406,7 +406,7 @@ export const mutations: Mutation[] = [
   {
     name: "is-sorted-by-unclosed",
     breaks: "`it.is_sorted_by(f)` of an iterator whose step panics leaves it unclosed, its source's items never dropped (#1141)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    () => it.return?.(),\n  ];\n",
     replace: "  ];\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
@@ -414,7 +414,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-part-unplaced",
     breaks: "a part of a slice, `&v[1..3]`, says nothing of where it is, so its `as_ptr()` and `ptr::eq` are another array's, `false` where Rust's are `true` (#1185)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  return $partPlaced(items.slice(start, end), items, from);\n",
     replace: "  return items.slice(start, end);\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
@@ -422,7 +422,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-part-of-a-part-at-its-start",
     breaks: "a part of a part is taken to start where the outer part does in the array, not past it",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "{ of: outer.of, start: outer.start + start }",
     replace: "{ of: outer.of, start: outer.start }",
     tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
@@ -430,7 +430,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-part-from-the-end-at-0",
     breaks: "a part taken from the end, `last_chunk()`'s, is taken to start at the array's first item",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  const from = start < 0 ? Math.max(items.length + start, 0) : Math.min(start, items.length);\n",
     replace: "  const from = start < 0 ? 0 : Math.min(start, items.length);\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
@@ -439,7 +439,7 @@ export const mutations: Mutation[] = [
     name: "deque-insert-past-end-leaks",
     breaks:
       "a `VecDeque`'s `insert` past its end never drops what it took as it panics (#1171)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  $insertAt(v, i, x, drop, \"index out of bounds\");\n",
     replace: "  $insertAt(v, i, x, undefined, \"index out of bounds\");\n",
     tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
@@ -447,7 +447,7 @@ export const mutations: Mutation[] = [
   {
     name: "part-of-a-byte-slice-unplaced",
     breaks: "a part of a mutable slice of another type's bytes, `bytes[2..]`, is placed as a part of an array, which its slice isn't, so a pointer into it throws (#1257)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  if (outer?.first !== undefined) part[$placeOfPart] = { first: $ptrAdd(outer.first, start) };\n  else part",
     replace: "  part",
     tests: ["test/corpus.test.ts", "-t", "^mutable_slice_of_another_types_bytes.rs$"],
@@ -455,7 +455,7 @@ export const mutations: Mutation[] = [
   {
     name: "repeat-clones-each-copy",
     breaks: "`repeat` clones each copy of its items, not only its first, where std copies the rest's bits",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  for (let i = 0; i < n; i++) $extend(out, i === 0 || copy === undefined ? first : first.map(copy));\n",
     replace: "  for (let i = 0; i < n; i++) $extend(out, clone === undefined ? v : v.map(clone));\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
@@ -463,7 +463,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-inclusive-of-nothing-one-piece",
     breaks: "a slice's `split_inclusive` of an empty slice gives one empty piece, where std's starts finished and gives none (#1501)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  let finished = inclusive && v.length === 0;\n",
     replace: "  let finished = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_searches_ask_a_predicate_as_they_step.rs$"],
@@ -471,7 +471,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-inclusive-back-asks-its-last",
     breaks: "a slice's `split_inclusive` stepped from its back asks its last item, which ends the piece it's in whatever it is (#1501)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    for (let i = (inclusive && end > start ? end - 1 : end) - 1; i >= start; i--) {\n",
     replace: "    for (let i = end - 1; i >= start; i--) {\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_searches_ask_a_predicate_as_they_step.rs$"],
@@ -479,7 +479,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-splitn-hint-uncounted",
     breaks: "a slice's `splitn(n, f)` hints its source's bounds, not at most what it has left to give (#1501)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    return count === Infinity ? [lower, upper] : [Math.min(count, lower), Math.min(count, upper)];\n",
     replace: "    return [lower, upper];\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_searches_ask_a_predicate_as_they_step.rs$"],
@@ -487,7 +487,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-split-hint-short",
     breaks: "a slice's `split(f)` hints at most its length, not one more, the empty pieces each item may end (#1501)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  const hint = () => (finished ? [0, 0] : [1, inclusive ? Math.max(1, end - start) : end - start + 1]);\n",
     replace: "  const hint = () => (finished ? [0, 0] : [1, end - start]);\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_searches_ask_a_predicate_as_they_step.rs$"],
@@ -495,7 +495,7 @@ export const mutations: Mutation[] = [
   {
     name: "chunk-by-back-asks-pairs-backwards",
     breaks: "a slice's `chunk_by` stepped from its back asks each two in a row the other way round (#1501)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    while (end - len > start && p(v[end - len - 1], v[end - len])) len++;\n",
     replace: "    while (end - len > start && p(v[end - len], v[end - len - 1])) len++;\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_searches_ask_a_predicate_as_they_step.rs$"],
@@ -503,7 +503,7 @@ export const mutations: Mutation[] = [
   {
     name: "chunk-by-hint-unknown",
     breaks: "a slice's `chunk_by` hints `(0, None)`, not std's `(1, Some(len))` (#1501)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  it.sizeHint = () => (start === end ? [0, 0] : [1, end - start]);\n",
     replace: "  it.sizeHint = () => [0, undefined];\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_searches_ask_a_predicate_as_they_step.rs$"],
@@ -511,7 +511,7 @@ export const mutations: Mutation[] = [
   {
     name: "is-sorted-by-closes-before-ends",
     breaks: "`is_sorted_by` closes its iterator before what drops with `f`, which std's `all` drops first, where two are out of order (#2029)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  const held = [\n    ends,\n    () => holding && ((holding = false), drop?.(last)),\n    () => it.return?.(),\n  ];\n",
     replace: "  const held = [\n    () => it.return?.(),\n    ends,\n    () => holding && ((holding = false), drop?.(last)),\n  ];\n",
     tests: ["test/corpus.test.ts", "-t", "^is_sorted_by_closes_its_source_after_its_closure.rs$"],
@@ -519,7 +519,7 @@ export const mutations: Mutation[] = [
   {
     name: "is-sorted-by-unwinding-drop-unaborted",
     breaks: "a drop that panics as `is_sorted`'s unwinding drops what it holds is followed by the drops after it, the iterator closed, where Rust aborts at once (#948)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "    $dropsUnwinding(held);\n",
     replace: "    $cleanup(() => $inTurn(...held));\n",
     tests: ["test/corpus.test.ts", "-t", "^is_sorted_last_drop_panics_during_its_unwind.rs$"],
@@ -527,7 +527,7 @@ export const mutations: Mutation[] = [
   {
     name: "is-sorted-by-curr-unwinding-drop-unaborted",
     breaks: "the item `f` was given, dropped as `f`'s panic unwinds, aborts no more where its drop panics too (#948)",
-    file: "src/runtime/slice_ops.js",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "          if (drop !== undefined) $cleanup(() => drop(item), error);\n",
     replace: "          drop?.(item);\n",
     tests: ["test/corpus.test.ts", "-t", "^is_sorted_drop_panics_during_its_unwind.rs$"],

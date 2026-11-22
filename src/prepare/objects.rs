@@ -2,7 +2,7 @@
 //! out, its literal (ADR 0666), and a spread of an object written out, its
 //! fields (ADR 0967, amended).
 
-use crate::js::{self, Expr, ExprKind, ObjectLayout, Prop};
+use rust_js_program::js::{self, Expr, ExprKind, ObjectLayout, Prop};
 
 /// `Object.fromEntries([["/index.html", code], ..])`, each key a string
 /// written out, is the object literal of them, `{ "/index.html": code }`:

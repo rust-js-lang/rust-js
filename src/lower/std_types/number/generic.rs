@@ -256,7 +256,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     crate::lower::recognition::in_place_source(self.tcx, self.typing_env, of)
             {
                 let size = self.type_fact_value(source, TypeFact::Size, span)?;
-                return Ok(Expr::object(vec![crate::js::Prop::Field(way.into(), size)]));
+                return Ok(Expr::object(vec![rust_js_program::js::Prop::Field(way.into(), size)]));
             }
             if !in_place {
                 return Ok(Expr::str(way));
@@ -461,7 +461,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for (held, fact) in held {
                 let value = self.type_fact_value(held, fact, span)?;
                 holds = Some(match holds {
-                    Some(both) => Expr::bin(crate::js::Op::And, both, value),
+                    Some(both) => Expr::bin(rust_js_program::js::Op::And, both, value),
                     None => value,
                 });
             }

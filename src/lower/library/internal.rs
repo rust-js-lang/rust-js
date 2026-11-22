@@ -8,11 +8,11 @@
 //! ones.
 
 use super::{FnInfo, escapes, reachable};
-use crate::js;
 use crate::lower::instances::{called, is_state, reads};
 use crate::lower::std_types::cell::is_box;
 use crate::program::LoweredModule;
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
@@ -118,8 +118,9 @@ pub(in crate::lower) fn internal_exports(
             _ => None,
         });
         let Some(exported) = exported else { continue };
-        let alias = (!exported)
-            .then(|| crate::names::fresh_in(&mut taken, &format!("{}{}", crate::library::INTERNAL, info.name)));
+        let alias = (!exported).then(|| {
+            rust_js_program::names::fresh_in(&mut taken, &format!("{}{}", crate::library::INTERNAL, info.name))
+        });
         if let Some(alias) = &alias {
             lowered.aliases.push((info.name.clone(), alias.clone()));
         }

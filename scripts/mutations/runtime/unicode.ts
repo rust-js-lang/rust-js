@@ -1,8 +1,8 @@
-// Mutations of src/runtime/unicode.js, what a `char` is as Rust's tables
+// Mutations of crates/rust-js-program/src/runtime/unicode.js, what a `char` is as Rust's tables
 // say (#1888, ADR 1163).
 import type { Mutation } from "../../mutations";
 
-const file = "src/runtime/unicode.js";
+const file = "crates/rust-js-program/src/runtime/unicode.js";
 const every = ["test/unicode.test.ts", "-t", "every char"];
 const answers = ["test/corpus.test.ts", "-t", "^unicode_answers_are_rusts.rs$"];
 

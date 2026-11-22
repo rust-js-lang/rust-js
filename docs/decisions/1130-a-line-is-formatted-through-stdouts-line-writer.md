@@ -119,7 +119,7 @@ item's text reached the line before the brackets and commas around it,
 And `$out` with no line formatted held a `format!`'s writer's prints for a
 line, so the `console.log` of the next line came first.
 
-The fix is in the runtime alone (src/runtime/print.js):
+The fix is in the runtime alone (crates/rust-js-program/src/runtime/print.js):
 
 - **In a line, a writer's sink is a capture.** `$sink()` opens one on a
   stack and `done()` closes it, giving back the writer's text. A print
@@ -358,7 +358,7 @@ such a writer is written through `$debugStruct` or `$debugTuple` too, each
 field as it's shown. Writers that don't write through a sink keep the
 assembled form, byte for byte.
 
-**The model, `src/runtime/debug_builders.js`, is core's `fmt/builders.rs`.**
+**The model, `crates/rust-js-program/src/runtime/debug_builders.js`, is core's `fmt/builders.rs`.**
 It keeps `has_fields` as a count. `{:#?}`'s `PadAdapter` is `$padded`, now
 given the adapter's state, so a field's name and its value of many lines are
 padded as one, and a print's mark at a line's start stays before the indent.

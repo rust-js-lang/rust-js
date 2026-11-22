@@ -5,9 +5,9 @@
 //! where every read in its item is of what it was before, as JS's scopes
 //! resolve them (ADR 0357): `const n` in a block beside another `n`.
 
-use crate::js::scopes;
-use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js::scopes;
+use rust_js_program::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 
 pub(super) fn module(module: &mut js::Module) {
     // Each item's locals first, then the imports of what's left: an import
@@ -72,14 +72,14 @@ pub(super) fn spelled(module: &mut js::Module) {
                 .map_or_else(|| name.made_base().expect("made"), String::as_str);
             let in_scope = tree.as_mut().and_then(|tree| {
                 let to = std::iter::once(base.to_string())
-                    .chain((1..).map(|k| crate::names::given_apart(base, k)))
-                    .filter(|to| !crate::names::kept_word(to))
+                    .chain((1..).map(|k| rust_js_program::names::given_apart(base, k)))
+                    .filter(|to| !rust_js_program::names::kept_word(to))
                     .take(64)
                     .find(|to| tree.renames(name.word(), to))?;
                 tree.rename(name.word(), &to);
                 Some(to)
             });
-            let to = in_scope.unwrap_or_else(|| crate::names::fresh_apart(&mut taken, base));
+            let to = in_scope.unwrap_or_else(|| rust_js_program::names::fresh_apart(&mut taken, base));
             taken.insert(to.clone());
             spelled.insert(name.into_word(), to);
         }
@@ -210,9 +210,9 @@ fn imports(module: &mut js::Module) {
         // Its base, or given apart from it less than it is, the first no
         // name of the module's is.
         let Some(base) = reclaimable(&local, &IndexSet::default()).and_then(|base| {
-            let given = crate::names::apart(&local).map_or(0, |(_, k)| k);
+            let given = rust_js_program::names::apart(&local).map_or(0, |(_, k)| k);
             std::iter::once(base.to_string())
-                .chain((1..given).map(|k| crate::names::given_apart(base, k)))
+                .chain((1..given).map(|k| rust_js_program::names::given_apart(base, k)))
                 .find(|to| !mentioned.contains(to))
         }) else {
             continue;
@@ -358,9 +358,10 @@ fn apart_by_variable(item: &mut js::Item) {
     // that isn't, `knownKeys` of two functions' own, is as plain as it gets.
     names_mut(item, false, &mut |name| match first.get(name.word()) {
         None => _ = first.insert(name.word().to_string(), name.clone()),
-        Some(kept) if kept == name || apart.contains_key(name) || crate::names::apart(name.word()).is_none() => {}
+        Some(kept)
+            if kept == name || apart.contains_key(name) || rust_js_program::names::apart(name.word()).is_none() => {}
         Some(_) => {
-            let to = crate::names::fresh_apart(&mut taken, name.word());
+            let to = rust_js_program::names::fresh_apart(&mut taken, name.word());
             apart.insert(name.clone(), to);
         }
     });
@@ -409,14 +410,14 @@ fn locals(item: &mut js::Item) {
     // `state` of `state$3`, it gives way, spelled apart from every name the
     // item has, then reclaims what's left after the program's (ADR 1150).
     let wanted: IndexSet<&str> = (programs.iter())
-        .filter_map(|word| crate::names::apart(word).map(|(base, _)| base))
+        .filter_map(|word| rust_js_program::names::apart(word).map(|(base, _)| base))
         .collect();
     let mut taken: IndexSet<String> = tree.names().map(str::to_owned).collect();
     for local in &declared {
         if programs.contains(local.word()) || !wanted.contains(local.word()) {
             continue;
         }
-        let aside = crate::names::fresh_in(&mut taken, local.word());
+        let aside = rust_js_program::names::fresh_in(&mut taken, local.word());
         if tree.renames(local.word(), &aside) {
             tree.rename(local.word(), &aside);
             renamed.insert(local.word().to_string(), aside);
@@ -442,7 +443,7 @@ fn locals(item: &mut js::Item) {
         };
         let suffix: usize = now[base.len() + 1..].parse().unwrap_or(0);
         let Some(to) = std::iter::once(base.to_string())
-            .chain((1..suffix).map(|i| crate::names::given_apart(base, i)))
+            .chain((1..suffix).map(|i| rust_js_program::names::given_apart(base, i)))
             .find(|to| tree.renames(&now, to))
         else {
             continue;
@@ -470,21 +471,24 @@ fn locals(item: &mut js::Item) {
 /// may be that name: one none of `mentioned` is, nor a word JS keeps.
 fn reclaimable<'a>(name: &'a str, mentioned: &IndexSet<String>) -> Option<&'a str> {
     // `label$1`, given apart, or `Error$`, named apart for good.
-    let given = crate::names::apart(name);
+    let given = rust_js_program::names::apart(name);
     let base = match given {
         Some((base, _)) => base,
         None => name.strip_suffix('$')?,
     };
     // A word JS keeps given apart, `arguments$$1` of `arguments$`, is its
     // own spelling where nothing else is so, never the word (ADR 1150).
-    if given.is_some() && base.strip_suffix('$').is_some_and(crate::names::kept_word) && !mentioned.contains(base) {
+    if given.is_some()
+        && base.strip_suffix('$').is_some_and(rust_js_program::names::kept_word)
+        && !mentioned.contains(base)
+    {
         return Some(base);
     }
     if base.is_empty() || base.contains('$') || mentioned.contains(base) {
         return None;
     }
     // A word JS keeps, `class`, is named apart for good.
-    if crate::names::kept_word(base) {
+    if rust_js_program::names::kept_word(base) {
         return None;
     }
     Some(base)
@@ -629,7 +633,7 @@ fn pattern_mut(pattern: &mut js::Pattern, f: &mut dyn FnMut(&mut Name)) {
 
 #[cfg(test)]
 mod tests {
-    use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
+    use rust_js_program::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
     // A name lowering made not spelled yet, `item#1`, is spelled by every
     // preparation, its passes all left out too, apart from each name its

@@ -5,7 +5,7 @@ export const mutations: Mutation[] = [
   {
     name: "knowing-try-rfold-uninstalled",
     breaks: "std's struct made knowing its compiled `try_rfold` doesn't take it: `rfind` steps it by `next_back` (ADR 0930)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "      tryRfold: tryRfold && ((init, f, broke, unwind, ends) => tryRfold(it, init, f, broke, unwind, ends)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^held_back_folds_by_try_rfold.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-nth-unhooked",
     breaks: "a fuse's compiled `nth` isn't its JS iterator's, so `nth` steps by `next`",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "    nth: steps.nth && ((k) => step(steps.nth(it, k))),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-last-not-own",
     breaks: "a fuse's compiled `last` isn't said to be its own, so generic code's `last` of it steps by `next`",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "  if (steps.last !== undefined) $owns(it, \"last\");\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_last_dropping.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-back-own-unknown",
     breaks: "a compiled `fuse()` isn't given its `rfold` and `nth_back` where they're asked (#224)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "      rfold:\n        rfold &&\n",
     replace: "      rfold:\n        false &&\n        rfold &&\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-close-unrun",
     breaks: "closing a compiled `Rev` drops nothing it holds",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "    if (steps.close !== undefined) $close(it, () => steps.close(it));\n",
     replace: "    if (steps.close !== undefined) $close(it, () => {});\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-takes-unmarked",
     breaks: "std's struct its compiled `fold` took isn't marked closed, so its close drops what it held again (ADR 0912)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "  const taking = (method, run) => (steps.takes?.includes(method) ? $takenBy(it, run, true) : run());\n",
     replace: "  const taking = (method, run) => run();\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-fold-unwind-lost",
     breaks: "a std struct's compiled fold is given no `unwind`, so a stage's panic inside it leaves the accumulator undropped (#424)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "    fold: steps.fold && ((init, f, unwind, ends) => taking(\"fold\", () => steps.fold(it, init, f, unwind, ends))),",
     replace: "    fold: steps.fold && ((init, f, unwind, ends) => taking(\"fold\", () => steps.fold(it, init, f, undefined, ends))),",
     tests: ["test/corpus.test.ts", "-t", "^panic_in_std_fold_drops.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-try-fold-unwind-lost",
     breaks: "std's compiled struct's `try_fold`, `TakeWhile`'s, which its `fold` is, gets no `unwind`: a stage's panic leaves the accumulator undropped (#423)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "    tryFold: steps.tryFold && ((init, f, broke, unwind, ends) => steps.tryFold(it, init, f, broke, unwind, ends)),\n",
     replace: "    tryFold: steps.tryFold && ((init, f, broke) => steps.tryFold(it, init, f, broke)),\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^panic_mid_fold_drops with"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-rfold-unwind-lost",
     breaks: "std's compiled struct's `rfold`, known where it's used, gets no `unwind`: a stage's panic leaves the accumulator undropped (#423)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "() => rfold(it, init, f, unwind, ends), true)",
     replace: "() => rfold(it, init, f, undefined, ends), true)",
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_folds_unwind with"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-try-rfold-unwind-lost",
     breaks: "std's compiled struct's `try_rfold`, known where it's used, gets no `unwind`: a stage's panic leaves the accumulator undropped (#423)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "      tryRfold: tryRfold && ((init, f, broke, unwind, ends) => tryRfold(it, init, f, broke, unwind, ends)),\n",
     replace: "      tryRfold: tryRfold && ((init, f, broke) => tryRfold(it, init, f, broke)),\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_folds_unwind with"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-last-not-taking",
     breaks: "std's compiled `Fuse::last` and `Peekable::last` leave their struct open, so its close drops what the crate's own `last` left a second time (#522)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "    last: steps.last && (() => step(taking(\"last\", () => steps.last(it)))),\n",
     replace: "    last: steps.last && (() => step(steps.last(it))),\n",
     tests: ["test/corpus.test.ts", "-t", "^last_takes_its_source.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-written-opened",
     breaks: "std's compiled struct written whole doesn't carry where the value written was, so a `Rev` closed before drops what it holds again (#537, #870)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "  it.$become = (value) => $stateFrom(Object.assign(it, of(value)), value);\n",
     replace: "  it.$become = (value) => Object.assign(it, of(value));\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet(_drops)?.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-taken-after-its-fold",
     breaks: "std's compiled struct is marked taken only where its compiled `fold` returns, so a generic caller's close after one that panicked drops the crate's iterator again (rd764)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "  const taking = (method, run) => (steps.takes?.includes(method) ? $takenBy(it, run, true) : run());",
     replace: "  const taking = (method, run) => {\n    const made = run();\n    if (steps.takes?.includes(method)) $takenBy(it, () => {}, true);\n    return made;\n  };",
     tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     name: "std-iterator-unrfolded",
     breaks:
       "std's compiled struct isn't taken once its compiled `rfold` ends: a `peekable()`'s `rev().fold(..)` whose closure panics drops its source and what it peeked at as std's `rfold` unwinds, then again as it's closed (#649)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "$takenBy(it, () => rfold(it, init, f, unwind, ends), true)",
     replace: "rfold(it, init, f, unwind, ends)",
     tests: ["test/corpus.test.ts", "-t", "^own_steps_a_type_parameter_may_reach.rs$"],
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-fold-ends-lost",
     breaks: "std's compiled struct's fold drops what drops with `f`, so its `F` is never dropped before what it has left (#710)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "steps.fold(it, init, f, unwind, ends))",
     replace: "steps.fold(it, init, f, unwind))",
     tests: ["test/iterator-forms.test.ts", "-t", "^fold_drops_moved_function_first with std"],
@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-try-fold-ends-lost",
     breaks: "std's compiled struct's `try_fold`, `SkipWhile`'s, gets nothing of what drops with `f`, so a panic in its first step drops the accumulator first (#768)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "steps.tryFold(it, init, f, broke, unwind, ends)),\n",
     replace: "steps.tryFold(it, init, f, broke, unwind)),\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^skip_while_first_step_unwinds with"],
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-nth-back-unmarked",
     breaks: "std's compiled struct's `nth_back`, a `fuse()`'s, isn't marked its own, so a `step_by(n)` over it from its back drops each item itself and never calls the crate's own `nth_back` (#834)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "    if (nthBack !== undefined) $owns(it, \"nthBack\");\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^step_by_folded_from_its_back_as_std.rs$"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-body-closes-itself-unchecked",
     breaks: "std's compiled body that takes its struct and drops it by its own `return()`, `Take`'s `fold`, is taken for another closing what that body holds: rust-js's internal error where Rust drops `self` (ADR 0912, #870)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "  const taking = (method, run) => (steps.takes?.includes(method) ? $takenBy(it, run, true) : run());\n",
     replace: "  const taking = (method, run) => (steps.takes?.includes(method) ? $takenBy(it, run) : run());\n",
     tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
     name: "std-struct-count-not-passed-on",
     breaks:
       "std's compiled `FlatMap` held, stepped from its back, then skipped, counts by `next`, not its compiled `count`, each inner iterator's own, which std's `Skip::count` asks of its source (#1048)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: '  if (steps.count !== undefined) $owns(it, "count");\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-clone-unknowing",
     breaks: "std's compiled struct made as another is, its `Clone`'s, isn't given what that one knows, so a `rev()` over a clone of a `map` its use gave a back throws `it.back is not a function` where Rust steps it (#1976)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "    it.knowing(back, len, rfold, nthBack, tryRfold, advanceBackBy);\n  }\n",
     replace: "  }\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_of_a_compiled_adapter_knowing_its_back.rs$"],
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-move-unknowing",
     breaks: "std's compiled struct moved apart, `$copy`'s, doesn't know what it knew: no back, no length (#1976)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "  it.$copy = () => $stateFrom($stdIterator(of(it), steps, it.$knows), it);\n",
     replace: "  it.$copy = () => $stateFrom($stdIterator(of(it), steps), it);\n",
     tests: ["test/runtime-package.test.ts", "-t", "know its back"],
@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-iterator-knows-the-last-use-only",
     breaks: "std's compiled struct keeps what its last use gave alone, so a clone of one given a back, then a length with no back, has no back (#1976)",
-    file: "src/runtime/std_iterator.js",
+    file: "crates/rust-js-program/src/runtime/std_iterator.js",
     find: "    it.$knows = [back, len, rfold, nthBack, tryRfold, advanceBackBy].map((given, at) => given ?? known[at]);\n",
     replace: "    it.$knows = [back, len, rfold, nthBack, tryRfold, advanceBackBy];\n",
     tests: ["test/runtime-package.test.ts", "-t", "know its back"],

@@ -166,8 +166,8 @@ pub(crate) fn unread_namespaces<'tcx>(
 /// nowhere else: JS's destructuring reads the same properties of the same
 /// value in the same order, once each, a getter's too. A value with fields
 /// left to drop, whose drops are statements, isn't one.
-pub(crate) fn taken_apart(fields: &[String], body: &[crate::js::Stmt]) -> Option<crate::js::Expr> {
-    use crate::js::{ExprKind, Prop, Stmt, StmtKind};
+pub(crate) fn taken_apart(fields: &[String], body: &[rust_js_program::js::Stmt]) -> Option<rust_js_program::js::Expr> {
+    use rust_js_program::js::{ExprKind, Prop, Stmt, StmtKind};
     let [
         Stmt {
             kind: StmtKind::Const(made, value),

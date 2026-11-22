@@ -2,10 +2,10 @@
 //! finds as Rust does, a primitive; one found by its value, a `$KeyMap`'s,
 //! and the parts `$key` finds it by; or one a B-tree finds by its `cmp`.
 
-use crate::js::{self, Expr, StmtKind};
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R};
 use rust_js_program::collections::IndexSet;
+use rust_js_program::js::{self, Expr, StmtKind};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;

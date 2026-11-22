@@ -13,8 +13,8 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 
 use super::{FnCx, fn_def};
-use crate::js::{self, Expr, Stmt, StmtKind};
 use crate::lower::recognition::StdItem;
+use rust_js_program::js::{self, Expr, Stmt, StmtKind};
 
 /// Where an arrow is given, which says whether it may be the function it
 /// passes on to, and what it must pass on to.

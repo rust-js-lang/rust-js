@@ -2,7 +2,7 @@
 //! whose `return`s leave the loop, and the labels the program wrote that
 //! nothing names now (the user's decision, 2026-10-28, wl4).
 
-use crate::js::{self, ExprKind, Stmt, StmtKind};
+use rust_js_program::js::{self, ExprKind, Stmt, StmtKind};
 
 /// Of `stmts`, each loop's: its `try`s' closures' jumps, then its label
 /// where nothing names it, as tidy keeps the program's to here.

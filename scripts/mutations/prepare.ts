@@ -559,8 +559,8 @@ export const mutations: Mutation[] = [
     name: "item-compound-unchecked",
     breaks: "an item's `v[i] = v[$at(v, i)] | lane` stays spelled out, not `v[$at(v, i)] |= lane` (ADR 0894, amended)",
     file: "src/prepare.rs",
-    find: "    helper.helper_name().is_some_and(crate::runtime::checks_an_index)\n",
-    replace: "    helper.helper_name().is_some_and(crate::runtime::checks_an_index) && false\n",
+    find: "        .is_some_and(rust_js_program::runtime::checks_an_index)\n",
+    replace: "        .is_some_and(rust_js_program::runtime::checks_an_index)\n        && false\n",
     tests: ["test/lowering-bits.test.ts", "-t", "an item.s bitwise assignment is its compound"],
   },
   {

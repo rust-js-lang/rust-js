@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
     name: "table-entry-layout-of-a-param-unread",
     breaks: "a hash table's entry layout its caller gives isn't read, so its room is checked by its count alone (#1437)",
     file: "src/lower/iterators/hint_asks.rs",
-    find: "            (Some(size), Some(align)) if !matches!(size.kind, crate::js::ExprKind::Undefined) => (size, align),\n",
+    find: "            (Some(size), Some(align)) if !matches!(size.kind, rust_js_program::js::ExprKind::Undefined) => {\n                (size, align)\n            }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^table_room_of_generic_entries.rs$"],
   },

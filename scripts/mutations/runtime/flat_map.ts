@@ -1,4 +1,4 @@
-// Mutations of src/runtime/flat_map.js (ADR 0510): a source and inner
+// Mutations of crates/rust-js-program/src/runtime/flat_map.js (ADR 0510): a source and inner
 // iterators that both hold what has a destructor, closed source first.
 import type { Mutation } from "../../mutations";
 
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-inner-closed-first",
     breaks: "`$flatMap` closes the inner iterator before its source, as JS's `flatMap` does, not as Rust drops a `FlatMap`",
-    file: "src/runtime/flat_map.js",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "      $inTurn(\n        () => {\n          ended = true;\n          dropSource();\n",
     replace: "      $inTurn(\n        () => inner?.return?.(),\n        () => {\n          ended = true;\n          dropSource();\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_drops.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-no-inners",
     breaks: "`$flatMap` gives `$lastDropping` no parts, so a flatten's `last` drops each item as the next comes, not each inner iterator's own `last` (#645)",
-    file: "src/runtime/flat_map.js",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "  flat.inners = () => {\n",
     replace: "  flat.unasked = () => {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_last_takes_each_inner_last.rs$"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-source-unfused",
     breaks: "`$flatMap` steps its source again once it's given `None`, where std's `Flatten` holds it fused",
-    file: "src/runtime/flat_map.js",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "        if (ended) return { done: true, value: undefined };\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_last_takes_each_inner_last.rs$"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-last-source-unfused",
     breaks: "a flatten's `last` folds its source again once it's given `None`, where std's `Flatten` holds it fused",
-    file: "src/runtime/flat_map.js",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "    const source = ended ? undefined : it;\n",
     replace: "    const source = it;\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_last_takes_each_inner_last.rs$"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-fold-by-next",
     breaks: "`$flatMap`'s fold steps its source by `next`, not by its own `fold`, so a flatten's `count` never calls the crate's own `fold`, as std's `FlattenCompat::fold` does",
-    file: "src/runtime/flat_map.js",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "  $forward(flat, it, { fold, tryFold, count, advanceBy, last: (drop, ends) => $flatLast(flat, drop, ends) });\n",
     replace: "  $forward(flat, it, { tryFold, count, advanceBy, last: (drop, ends) => $flatLast(flat, drop, ends) });\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_folds_reach_its_sources_own.rs$"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-inner-kept-as-source-drop-throws",
     breaks: "`$flatMap`'s inner iterator isn't dropped where its source's drop panics, where Rust's drop glue drops each field as it unwinds",
-    file: "src/runtime/flat_map.js",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "        () => {\n          const front = inner;\n          inner = undefined;\n          front?.return?.();\n        },\n",
     replace: "        () => {\n          inner = undefined;\n        },\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-own-unpassed",
     breaks: "a `flat_map`'s own function isn't given to its source's fold, so it drops after the source's rest (#710)",
-    file: "src/runtime/flat_map.js",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "      return typeof it.fold === \"function\" ? it.fold(folded, each, unwind, own) : $foldDropping(it, folded, each, unwind, own);\n",
     replace: "      return typeof it.fold === \"function\" ? it.fold(folded, each, unwind) : $foldDropping(it, folded, each, unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-count-by-next",
     breaks: "`$flatMap` has no `count` of its own, so `$count` steps each inner iterator by `next`, not by its own `count` as std's `FlattenCompat::count` does (#736)",
-    file: "src/runtime/flat_map.js",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "  $forward(flat, it, { fold, tryFold, count, advanceBy, last: (drop, ends) => $flatLast(flat, drop, ends) });\n",
     replace: "  $forward(flat, it, { fold, tryFold, advanceBy, last: (drop, ends) => $flatLast(flat, drop, ends) });\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-count-skips-front",
     breaks: "`$flatMap`'s `count` leaves out the inner iterator it's in, so what a `next()` before it left is never counted (#736)",
-    file: "src/runtime/flat_map.js",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "      counted = $count(front, drop);\n",
     replace: "      front.return?.();\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-count-not-passed-on",
     breaks: "`$flatMap` doesn't say its `count` is its own, so a `skip()` of it counts what's left by `next`, not by each inner iterator's own `count` as std's `Skip::count` asks of its source (#736)",
-    file: "src/runtime/flat_map.js",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "  $owns(flat, \"count\", \"last\");\n",
     replace: "  $owns(flat, \"last\");\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     name: "flat-map-last-stepped",
     breaks:
       "a flatten's `last` steps each item, not each inner iterator's own `last` by its source's fold, as std's `FlattenCompat::last` does, so the crate's own `last` is never asked (#2123)",
-    file: "src/runtime/flat_map.js",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "  $forward(flat, it, { fold, tryFold, count, advanceBy, last: (drop, ends) => $flatLast(flat, drop, ends) });\n",
     replace: "  $forward(flat, it, { fold, tryFold, count, advanceBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_steps_its_inners_as_std.rs$"],
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-function-dropped-after-its-inner",
     breaks: "`$flatMap` closed drops the function a holding gives it after its inner iterator, so a `flat_map` dropped part-stepped drops its function after the inner's items, where `FlatMap`'s drop glue drops its `Map` before its `frontiter` (#2241)",
-    file: "src/runtime/flat_map.js",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "        () => flat.functionDrop?.(),\n        () => {\n",
     replace: "        () => {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_holding_its_function_drops_it_after_its_source.rs$"],
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-function-dropped-where-its-source-ends",
     breaks: "`$flatMap` drops the function a holding gives it where its source ends inside `next`, so a `flat_map` stepped to its end drops its function there, of a `Vec`'s items too, where std's `Fuse` of a fused source keeps its `Map` until the flatten drops (#2241)",
-    file: "src/runtime/flat_map.js",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "    if (fusing === $unfused) flat.functionDrop?.();\n  };\n",
     replace: "    flat.functionDrop?.();\n  };\n",
     tests: ["test/iterator-steps.test.ts", "-t", "a flat_map's holding keeps its function until it's closed"],
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-fused-source-unheld",
     breaks: "a held `$flatMap` of a fused source doesn't hold it, so a `take` of a `Vec`'s items flattened drops what it didn't take as it's taken, where std's `Fuse` of a `FusedIterator` keeps it until the flatten drops (#2242)",
-    file: "src/runtime/flat_map.js",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "  if (fusing !== $unfused) {\n",
     replace: "  if (false) {\n",
     tests: ["test/iterator-steps.test.ts", "-t", "a held flatten keeps a fused source"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
   {
     name: "flat-map-unfused-function-kept",
     breaks: "`$flatMap` of a source that isn't fused keeps the function a holding gives it at the source's end, so a boxed crate iterator's `flat_map` stepped to its end drops its capture as the flatten drops, where std's `Fuse` drops its `Map` at its first `None` (#2242)",
-    file: "src/runtime/flat_map.js",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "    if (fusing === $unfused) flat.functionDrop?.();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_a_source_not_fused_drops_it_at_its_end.rs$"],

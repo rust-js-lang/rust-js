@@ -25,7 +25,7 @@
 //   src/**, crates/*/src/** the map: the tests and cases whose functions it
 //                          touches, the compiler's crates' (scripts/compiler-crates.ts);
 //                          everything of a crate the map counted none of (`counted`)
-//   std/**, src/runtime/** the runtime: its package tests, the whole corpus, every file the map saw compile
+//   std/**, crates/rust-js-program/src/runtime/** the runtime: its package tests, the whole corpus, every file the map saw compile
 //   test/<x>.test.ts       itself (the corpus's file: every case)
 //   test/corpus/<case>.*   the case, and the tests that read the corpus's files
 //   .github/**, package files, the selector, the map
@@ -145,7 +145,7 @@ export const readOnly = ["docs", "scripts", "test", "ports", "bench", "guide-sit
 
 /** The runtime's paths: std's package and the runtime's helpers, which a
  * compiled program runs, in any test that compiles one. */
-export const runtimePaths = ["std/**", "src/runtime/**"];
+export const runtimePaths = ["std/**", "crates/rust-js-program/src/runtime/**"];
 
 /** The runtime's own package tests. */
 const packageTest = /^test\/(std|runtime)-[^/]+\.test\.ts$/;

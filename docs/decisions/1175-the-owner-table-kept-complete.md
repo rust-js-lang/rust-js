@@ -84,7 +84,7 @@ matched as written, any run of spaces in it matching any run, with a word
 edge (no word character or `$` beside it) at an end that's a word
 character. It must match the code of no source outside the row's owners,
 and the code of at least one of the owners' sources. The sources are each
-`.rs` under `src/` and each `.js` under `src/runtime/`.
+`.rs` under `src/` and each `.js` under `crates/rust-js-program/src/runtime/`.
 
 **The runtime.** Its answers are rows by name (`$sliced`, …), owned by its
 `runtime/<file>.js`, and its type guesses that stand in for a mark are

@@ -4,8 +4,8 @@
 //! amended).
 
 use super::{Member, constructor_of, is_class, member};
-use crate::js;
 use rust_js_program::collections::IndexSet;
+use rust_js_program::js;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalModId};

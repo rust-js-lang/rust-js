@@ -5,7 +5,7 @@
 
 use super::body_queries::PatternValue;
 use super::{FnCx, R};
-use crate::js::{self, Expr, Stmt};
+use rust_js_program::js::{self, Expr, Stmt};
 use rustc_middle::ty;
 use rustc_span::Span;
 

@@ -12,7 +12,7 @@ use rustc_span::def_id::LocalDefId;
 use rustc_span::{Span, Symbol};
 
 use super::recognition;
-use crate::js::{self, Expr, StrPiece};
+use rust_js_program::js::{self, Expr, StrPiece};
 
 /// The JS of `text`, the value of the string literal written at `span`, as
 /// it's written there: `concat!`'s pieces where it's what `concat!` made of

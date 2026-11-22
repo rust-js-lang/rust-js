@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
     breaks:
       "std's crates are known by their crate's key, not `@rust-js/std`'s, so the facts of std's compiled bodies, a writer's write that may fail, are never found (#455, ADR 1054, #1130)",
     file: "src/lower/library.rs",
-    find: "        Some(_) => crate::runtime::PACKAGE.to_string(),\n",
+    find: "        Some(_) => rust_js_program::runtime::PACKAGE.to_string(),\n",
     replace: "        Some(_) => crate::library::key(tcx.crate_name(krate).as_str(), &crate_id(tcx, krate)),\n",
     tests: ["test/corpus.test.ts", "-t", "writer"],
   },

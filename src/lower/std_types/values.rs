@@ -1,7 +1,6 @@
 //! A std function's call, of its arguments' values (ADR 0364), each
 //! handed to its type's module.
 
-use crate::js::{Expr, Stmt};
 use crate::lower::calls::Call;
 use crate::lower::combinators::IterSource;
 use crate::lower::combinators::{Comb, StepOp};
@@ -17,6 +16,7 @@ use crate::lower::std_types::option::OptionPlaceOp;
 use crate::lower::std_types::slice::SliceOp;
 use crate::lower::std_types::text::TextOp;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{Expr, Stmt};
 use rustc_ast::Mutability;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -616,7 +616,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Range(op) => return self.range_call(op, values.collect(), tys, call.span, out),
             Std::Comb(comb) => {
                 let values: Vec<Expr> = values.collect();
-                let made = matches!(values[0].kind, crate::js::ExprKind::Call(..));
+                let made = matches!(values[0].kind, rust_js_program::js::ExprKind::Call(..));
                 let made = (made, call.found_index);
                 return self.comb_values(comb, (values, tys), made, generic_args, call.span, out);
             }

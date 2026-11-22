@@ -144,7 +144,7 @@ fn said_of_rust(settings: &Settings, written: &[PathBuf], maps: &mut Maps, text:
     let mut out = String::new();
     for line in text.lines() {
         let rust = place(line).and_then(|(file, line, col, rest)| {
-            let file = crate::paths::absolute(&settings.dir.join(file)).ok()?;
+            let file = rust_js_program::paths::absolute(&settings.dir.join(file)).ok()?;
             written.contains(&file).then_some(())?;
             let (path, line, col) = rust_of(settings, maps, &file, line, col)?;
             Some(format!("{path}:{line}:{col}: [{tool}] {rest}"))
@@ -190,9 +190,9 @@ fn rust_of(settings: &Settings, maps: &mut Maps, file: &Path, line: u32, col: u3
         })
         .as_ref()?;
     let (source, line, col) = map.original(line.checked_sub(1)?, col.checked_sub(1)?)?;
-    let rust = crate::paths::absolute(&file.parent()?.join(source)).ok()?;
+    let rust = rust_js_program::paths::absolute(&file.parent()?.join(source)).ok()?;
     let shown = rust
-        .strip_prefix(crate::paths::absolute(&settings.dir).ok()?)
+        .strip_prefix(rust_js_program::paths::absolute(&settings.dir).ok()?)
         .unwrap_or(&rust);
     Some((shown.display().to_string(), line + 1, col + 1))
 }

@@ -5,9 +5,9 @@
 
 use rust_js_program::collections::IndexSet;
 
-use crate::js::{self, Expr, ExprKind, Name, Op, Stmt, StmtKind, UnaryOp};
 use crate::lower::mir::hints::{Constant, Switch, SwitchArm, Written};
 use crate::lower::untagged::TypeofCase;
+use rust_js_program::js::{self, Expr, ExprKind, Name, Op, Stmt, StmtKind, UnaryOp};
 
 use super::bindings::declared;
 use super::loop_labels::{LOOP_LABEL, continued, held_subject, labeled_breaks, labels_in};

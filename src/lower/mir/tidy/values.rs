@@ -108,7 +108,7 @@ pub(super) fn array_values(e: &mut Expr) {
         && let ExprKind::Member(chars, join) = &callee.kind
         && join == "join"
         && matches!(&args[..], [Expr { kind: ExprKind::Str(sep), .. }] if sep.is_empty())
-        && chars.facts.has(crate::js::Known::Chars)
+        && chars.facts.has(rust_js_program::js::Known::Chars)
         && let ExprKind::Call(_, of) = &chars.kind
         && let [text] = &of[..]
     {

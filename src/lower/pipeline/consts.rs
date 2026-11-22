@@ -3,10 +3,10 @@
 //! written in; or its initializer, lowered as code where one JS value can
 //! be every use's (ADRs 0031, 0096).
 
-use crate::js::{self, Expr, Prop};
 use crate::lower::analysis::{LocalConsts, is_thread_local};
 use crate::lower::{Body, FnInfo, const_js, static_value};
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js::{self, Expr, Prop};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};

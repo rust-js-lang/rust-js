@@ -14,10 +14,10 @@
 //! path, name, type }` (#1397). An error of the OS's is std's `Os` error, its
 //! kind and message std's of its code.
 
-use crate::js::Expr;
 use crate::lower::calls::Call;
 use crate::lower::recognition::{Std, StdItem, StdPath};
 use crate::lower::{FnCx, R};
+use rust_js_program::js::Expr;
 use rustc_middle::ty;
 
 /// What's asked of std's files.
@@ -245,8 +245,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 match called {
                     Called::Method(method) => Expr::call(Expr::member(of, method), given.collect()),
                     Called::Field(field) => Expr::member(of, field),
-                    Called::Kind(kind) => Expr::bin(crate::js::Op::Eq, of, Expr::str(kind)),
-                    Called::OkOf(field) => crate::js::result::ok(Expr::member(of, field)),
+                    Called::Kind(kind) => Expr::bin(rust_js_program::js::Op::Eq, of, Expr::str(kind)),
+                    Called::OkOf(field) => rust_js_program::js::result::ok(Expr::member(of, field)),
                     Called::Helper(_) => unreachable!("called above"),
                 }
             }

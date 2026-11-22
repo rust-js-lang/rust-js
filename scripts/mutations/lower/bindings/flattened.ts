@@ -149,8 +149,8 @@ export const mutations: Mutation[] = [
     name: "keyed-test-by-value",
     breaks: "a keyed enum's variant is tested by its key's value, not its presence, which a `None` leaves `undefined` (#504)",
     file: "src/lower/bindings/flattened.rs",
-    find: "    crate::js::Expr::bin(crate::js::Op::In, crate::js::Expr::str(key), subject)\n",
-    replace: "    crate::js::Expr::bin(crate::js::Op::LooseNe, crate::js::Expr::member(subject, key), crate::js::Expr::null())\n",
+    find: "    rust_js_program::js::Expr::bin(\n        rust_js_program::js::Op::In,\n        rust_js_program::js::Expr::str(key),\n        subject,\n    )\n",
+    replace: "    rust_js_program::js::Expr::bin(\n        rust_js_program::js::Op::LooseNe,\n        rust_js_program::js::Expr::member(subject, key),\n        rust_js_program::js::Expr::null(),\n    )\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_enum.rs$"],
   },
   {

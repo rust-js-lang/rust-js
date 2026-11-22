@@ -6,8 +6,6 @@
 //! 0863). Each offset is rustc's layout of the instance, for wasm32, never
 //! a number written here.
 
-use crate::js;
-use crate::js::{Expr, Stmt, StmtKind};
 use crate::lower::pointers::checked_item;
 use crate::lower::pointers::{Offset, raw_pointee};
 use crate::lower::recognition::{Lend, StdItem, is_std_crate, is_vec_like_def};
@@ -15,6 +13,8 @@ use crate::lower::refusal::{Refused, refuse};
 use crate::lower::representation::property_of_cell;
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R, bindings};
+use rust_js_program::js;
+use rust_js_program::js::{Expr, Stmt, StmtKind};
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
@@ -693,7 +693,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             [one] => Expr::int(i128::from(of(*one))),
             [ok, err] if of(*ok) == of(*err) => Expr::int(i128::from(of(*ok))),
             [ok, err] => Expr::cond(
-                crate::js::result::is(held.clone(), true),
+                rust_js_program::js::result::is(held.clone(), true),
                 Expr::int(i128::from(of(*ok))),
                 Expr::int(i128::from(of(*err))),
             ),
@@ -858,7 +858,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of both variants at one offset, that offset, no test.
         let offset = match ok {
             Some(ok) => match (at(Lend::Ok)?, at(Lend::Err)?) {
-                (ok_at, err_at) if matches!((&ok_at.kind, &err_at.kind), (crate::js::ExprKind::Num(a), crate::js::ExprKind::Num(b)) if a == b) => {
+                (ok_at, err_at) if matches!((&ok_at.kind, &err_at.kind), (rust_js_program::js::ExprKind::Num(a), rust_js_program::js::ExprKind::Num(b)) if a == b) => {
                     ok_at
                 }
                 (ok_at, err_at) => Expr::cond(ok, ok_at, err_at),

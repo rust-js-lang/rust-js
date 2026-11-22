@@ -2,8 +2,8 @@
 //! case's, as a case's body is written after a `// Fallthrough` to it
 //! (ADR 0905, amended).
 
-use crate::js::{self, Name, Stmt, StmtKind};
 use crate::lower::mir::hints::Switch;
+use rust_js_program::js::{self, Name, Stmt, StmtKind};
 
 /// Of a block `outer: { ..; inner: { ..; switch (..) { .. } break outer; }
 /// rest }`, whose `rest` only `break inner` reaches, from one case alone,

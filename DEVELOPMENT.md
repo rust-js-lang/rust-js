@@ -726,12 +726,12 @@ checked:
   - If an incoming commit touches a file your change touches, or the code
     your change works with, or the rebase stopped on a conflict, run the
     whole check again. A generated file isn't such a file: where the only
-    overlap is one (`std/*.js`, made of `src/runtime/*` by `bun run std`),
+    overlap is one (`std/*.js`, made of `crates/rust-js-program/src/runtime/*` by `bun run std`),
     the sources behind it are disjoint and the rebase applied with no
     conflict, regenerate, then run your change's own cases, its changed
     mutations and `test/runtime-package.test.ts`, and push. For an iterator change, "the code it works with"
     means any of `src/lower/mir/iter`, `src/lower/iterators`,
-    `src/lower/analysis/back_stepped.rs`, `src/runtime`, `std/`,
+    `src/lower/analysis/back_stepped.rs`, `crates/rust-js-program/src/runtime`, `std/`,
     `test/corpus` or `test/known/iterator-matrix/`.
   - Otherwise, rebuild and regenerate (`cargo build`, `bun run std`),
     then run your change's own cases, its changed mutations, and the test
@@ -744,7 +744,7 @@ checked:
     binary or bundle built from a half-applied tree fails, or passes, for
     no reason of its own. That once sent several agents after a red `main`
     that wasn't.
-- **Commit what the change regenerates**: `std/` is committed, so a change to `src/runtime` or `std`'s sources commits
+- **Commit what the change regenerates**: `std/` is committed, so a change to `crates/rust-js-program/src/runtime` or `std`'s sources commits
   them regenerated. Reset neither to `main`'s copy to tidy a diff: the
   runtime-package test fails on `main` once the committed bundle lags the
   compiler, and every other agent's check fails with it.
@@ -1007,7 +1007,7 @@ the workflow's 2 machines; `--shards=4` splits it across four.
 - **A red run is the change's.** Fix it at once, on `main`, and say what
   broke, with the failing job's log.
 - **A runtime mutation runs beside `check:fast` in one checkout.** A
-  mutation of a runtime helper (`src/runtime/*.js`, its entries in
+  mutation of a runtime helper (`crates/rust-js-program/src/runtime/*.js`, its entries in
   `scripts/mutations/runtime/`) runs its tests with its mutant's runtime
   installed in their own target (`ownRuntime` in `scripts/mutations.ts`,
   `test/packages-of.ts`), and the checkout's `std/runtime.js` is never

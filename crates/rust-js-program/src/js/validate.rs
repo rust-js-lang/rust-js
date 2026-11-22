@@ -486,7 +486,11 @@ mod tests {
             unreachable!("a hole")
         };
         assert_eq!(of(vec![read(taken.clone())]), vec![Problem::Hole(at)]);
-        assert!(Problem::Hole(at).to_string().contains("src/js/validate.rs"));
+        assert!(
+            Problem::Hole(at)
+                .to_string()
+                .contains("crates/rust-js-program/src/js/validate.rs")
+        );
         assert_eq!(
             of(vec![read(Expr::hole(Hole::Asked))]),
             vec![Problem::Hole(Hole::Asked)]

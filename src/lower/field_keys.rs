@@ -3,7 +3,7 @@
 //! (ADR 1051). `bindings::field_key` says which; this reads it.
 
 use super::{FnCx, bindings};
-use crate::js::Expr;
+use rust_js_program::js::Expr;
 
 use rustc_middle::ty::Ty;
 use rustc_span::Span;

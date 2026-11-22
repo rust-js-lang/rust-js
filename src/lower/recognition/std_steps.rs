@@ -269,7 +269,7 @@ impl Wrapper {
         }
     }
 
-    /// `$lent`'s kind of it (src/runtime/lent.js's `$passedOn`): what a JS
+    /// `$lent`'s kind of it (crates/rust-js-program/src/runtime/lent.js's `$passedOn`): what a JS
     /// iterator stepped through it is lent as.
     pub(in crate::lower) fn lend_kind(self) -> &'static str {
         match self {
@@ -318,11 +318,11 @@ mod tests {
         })
     }
 
-    /// src/runtime/lent.js's `$passedOn` lists what the catalog says each
+    /// crates/rust-js-program/src/runtime/lent.js's `$passedOn` lists what the catalog says each
     /// wrapper passes on, own or by its `try_` fold, by `$forward`'s names.
     #[test]
     fn lent_passes_on_what_std_does() {
-        let lent = include_str!("../../runtime/lent.js");
+        let lent = include_str!("../../../crates/rust-js-program/src/runtime/lent.js");
         for wrapper in [
             Wrapper::MutRefSized,
             Wrapper::MutRefUnsized,
@@ -345,13 +345,13 @@ mod tests {
     }
 
     /// What a dictionary of `DoubleEndedIterator` carries beside its entry
-    /// is the catalog's, and src/runtime/std_iterator.js's `knowing` takes
+    /// is the catalog's, and crates/rust-js-program/src/runtime/std_iterator.js's `knowing` takes
     /// each, compiled, in that order, after its back and its length: the
     /// mirror of a JS signature, run on both sides (#2125).
     #[test]
     fn back_steps_are_the_catalogs_and_knowings() {
         assert_eq!(back_steps(), ["rfold", "nth_back", "try_rfold", "advance_back_by"]);
-        let runtime = include_str!("../../runtime/std_iterator.js");
+        let runtime = include_str!("../../../crates/rust-js-program/src/runtime/std_iterator.js");
         let params = (runtime.lines())
             .find_map(|line| line.trim().strip_prefix("it.knowing = ("))
             .and_then(|rest| rest.split_once(')'))

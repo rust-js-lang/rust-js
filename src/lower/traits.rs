@@ -25,7 +25,7 @@ use super::recognition::{
 };
 use super::representation::{Num, const_js, eval_const};
 use super::{FnCx, R, lower_first};
-use crate::js::{self, Expr, Op, Prop, StmtKind};
+use rust_js_program::js::{self, Expr, Op, Prop, StmtKind};
 use rustc_hir::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;

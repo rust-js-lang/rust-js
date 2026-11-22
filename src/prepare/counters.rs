@@ -7,9 +7,9 @@
 //! a loop of `i` with `j`.
 
 use super::reclaim::{mentions, names_mut};
-use crate::js::scopes;
-use crate::js::{self, Name};
 use rust_js_program::collections::IndexMap;
+use rust_js_program::js::scopes;
+use rust_js_program::js::{self, Name};
 
 /// Each item's counters spelled, outer before inner as its tree has them,
 /// once the program's names are reclaimed (`reclaim::module`), so a
@@ -55,7 +55,7 @@ pub(super) fn spelled(module: &mut js::Module) {
 fn counter_word(name: &Name, tree: &scopes::Tree) -> Option<String> {
     let base = name.made_base().expect("a counter is made");
     candidates(base)
-        .filter(|to| !crate::names::kept_word(to))
+        .filter(|to| !rust_js_program::names::kept_word(to))
         .take(64)
         .find(|to| !tree.shadows(name.word(), to) && tree.renames(name.word(), to))
 }
@@ -66,14 +66,14 @@ fn counter_word(name: &Name, tree: &scopes::Tree) -> Option<String> {
 fn counter_word_apart(name: &Name, taken: &rust_js_program::collections::IndexSet<String>) -> String {
     let base = name.made_base().expect("a counter is made");
     candidates(base)
-        .find(|to| !crate::names::kept_word(to) && !taken.contains(to))
+        .find(|to| !rust_js_program::names::kept_word(to) && !taken.contains(to))
         .expect("a word nothing has")
 }
 
 /// What a counter of `base` may be spelled, in order: of `i`, `i`, `j`, `k`,
 /// then `i$1`, `i$2`, ..; of another, `end`, `end$1`, .. (ADR 1042).
 fn candidates(base: &str) -> Box<dyn Iterator<Item = String> + '_> {
-    let apart = (1..).map(move |k| crate::names::given_apart(base, k));
+    let apart = (1..).map(move |k| rust_js_program::names::given_apart(base, k));
     match base {
         "i" => Box::new(["i", "j", "k"].into_iter().map(String::from).chain(apart)),
         _ => Box::new(std::iter::once(base.to_string()).chain(apart)),

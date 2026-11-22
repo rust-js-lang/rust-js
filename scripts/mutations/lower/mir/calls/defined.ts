@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "defined-of-any-name",
     breaks: "`js::is_defined(|| 1)` is a `typeof` of no global, not refused",
     file: "src/lower/mir/calls/defined.rs",
-    find: "            crate::names::is_identifier(first).then(|| {\n",
+    find: "            rust_js_program::names::is_identifier(first).then(|| {\n",
     replace: "            true.then(|| {\n",
     tests: [
       "test/lowering-bindings.test.ts",

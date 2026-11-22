@@ -110,7 +110,7 @@ pub(crate) struct Build {
     /// `--without-known <fact>`, any number: the crate compiled with these
     /// facts forgotten, no reader finding one, to see that the JS is right
     /// without each that only permits (ADR 1127).
-    pub without_known: Vec<crate::js::Known>,
+    pub without_known: Vec<rust_js_program::js::Known>,
     /// `--knowns-found <file>`: where to write which facts a reader found,
     /// a line each (ADR 1127).
     pub knowns_found: Option<PathBuf>,
@@ -290,7 +290,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     let label_census = valued(&mut ours, "--label-census", "a path")?.map(PathBuf::from);
     let mut without_known = Vec::new();
     while let Some(name) = valued(&mut ours, "--without-known", "a fact an expression may carry")? {
-        let Some(known) = crate::js::Known::named(&name) else {
+        let Some(known) = rust_js_program::js::Known::named(&name) else {
             return Err(format!(
                 "--without-known: no fact `{name}`; `rust-js --knowns` lists them"
             ));
@@ -466,7 +466,7 @@ impl Build {
     fn stage(&self, args: &mut Vec<String>) -> Result<Staged, String> {
         // Named after the JS it's beside, which no other build writes at
         // once: WASI, the playground's, has no process id to name it by.
-        let beside = crate::paths::parent_dir(&self.output);
+        let beside = rust_js_program::paths::parent_dir(&self.output);
         let name = self.output.file_name().unwrap_or_default().to_string_lossy();
         let dir = || beside.join(format!(".rust-js-{name}"));
         let mut staged = Staged {

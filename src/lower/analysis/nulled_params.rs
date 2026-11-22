@@ -90,7 +90,7 @@ pub(in crate::lower) struct NulledSeen {
     captured: IndexMap<DefId, IndexSet<usize>>,
     /// Of each closure lowered where it's made, the one `None` each capture
     /// its maker gives can be, by index, MIR's (`place_none`, #2112 C S5).
-    captured_nones: IndexMap<DefId, Vec<Option<crate::js::OnlyNone>>>,
+    captured_nones: IndexMap<DefId, Vec<Option<rust_js_program::js::OnlyNone>>>,
     /// Each closure a `#[rust_js::nullable]` thread-local's `with` lends
     /// what it holds, `null` or a value, its parameter so (`stored_in`).
     lent: IndexSet<DefId>,
@@ -451,13 +451,17 @@ impl NulledSeen {
     /// That the closure `closure`'s maker gives each capture, by index, the
     /// one `None` of `nones` it can be, as it's made where its body is
     /// lowered.
-    pub(in crate::lower) fn captures_nones(&mut self, closure: DefId, nones: Vec<Option<crate::js::OnlyNone>>) {
+    pub(in crate::lower) fn captures_nones(
+        &mut self,
+        closure: DefId,
+        nones: Vec<Option<rust_js_program::js::OnlyNone>>,
+    ) {
         self.captured_nones.insert(closure, nones);
     }
 
     /// The one `None` the closure `closure`'s capture `i` can be, as its
     /// maker gave it (`captures_nones`).
-    pub(in crate::lower) fn captured_none(&self, closure: DefId, i: usize) -> Option<crate::js::OnlyNone> {
+    pub(in crate::lower) fn captured_none(&self, closure: DefId, i: usize) -> Option<rust_js_program::js::OnlyNone> {
         self.captured_nones
             .get(&closure)
             .and_then(|nones| nones.get(i).copied().flatten())

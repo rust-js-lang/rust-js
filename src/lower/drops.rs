@@ -27,7 +27,7 @@ use super::recognition::{ChannelEnd, StdItem};
 use super::representation::variant_field;
 use super::traits::item_drop_key;
 use super::{FnCx, R, lower_first};
-use crate::js::{self, Expr, Stmt, StmtKind};
+use rust_js_program::js::{self, Expr, Stmt, StmtKind};
 
 mod facts;
 mod functions;
@@ -179,12 +179,12 @@ pub(super) type DefaultDrops<'tcx> = (IndexMap<Ty<'tcx>, GivenDrop>, IndexSet<ty
 #[derive(Clone, Debug)]
 pub(in crate::lower) struct GivenDrop {
     index: Option<u32>,
-    name: crate::js::Name,
+    name: rust_js_program::js::Name,
 }
 
 impl GivenDrop {
     /// One its function is given for its own slot `index`.
-    pub(in crate::lower) fn own(index: u32, name: crate::js::Name) -> GivenDrop {
+    pub(in crate::lower) fn own(index: u32, name: rust_js_program::js::Name) -> GivenDrop {
         GivenDrop {
             index: Some(index),
             name,
@@ -192,7 +192,7 @@ impl GivenDrop {
     }
 
     /// One given for a while, not its function's own slot.
-    pub(in crate::lower) fn lent(name: crate::js::Name) -> GivenDrop {
+    pub(in crate::lower) fn lent(name: rust_js_program::js::Name) -> GivenDrop {
         GivenDrop { index: None, name }
     }
 }

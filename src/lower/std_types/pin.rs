@@ -1,11 +1,11 @@
 //! `Pin` (ADR 0329): its pointer, as JS never moves a value, so what Rust
 //! promises of one is kept already.
 
-use crate::js::{Expr, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
 use crate::lower::copies::InPlaceWriter;
 use crate::lower::recognition::{PinTarget, Std};
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{Expr, Stmt, StmtKind};
 use rustc_middle::ty::{self, Ty};
 
 /// A `Pin`'s functions, and its `Deref` and `DerefMut`.

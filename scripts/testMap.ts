@@ -415,7 +415,7 @@ export function pathFunctions(): Map<string, string> {
 /** What `file`, a test's module, reads of the checkout as text, as far as
  * its source and the source of each module of the checkout's it imports
  * say (what it imports is its code, not text it reads): each path it names, `"scripts/crate-corpus.ts"`, `join(root, "src",
- * "runtime.rs")`, `${root}/std`, `"../src/js.rs"`, each a file or a
+ * "runtime.rs")`, `${root}/std`, `"../src/lower.rs"`, each a file or a
  * folder that's there, said from the checkout's root. A test of a file's
  * text, ci.test.ts's of `scripts/`, the architecture's of `src/`, fails
  * on a change it runs no code of: what it reads picks it. Bun binds a
@@ -567,7 +567,7 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
   // Names added to a `use`, `imports::{Import, ImportNames}` for
   // `imports::{Import}`, of what no item at the map's commit declared: a
   // name that didn't exist shadows none a glob gave, so it changes nothing
-  // but the code changed to use it (4ba38fa64's src/js.rs:43).
+  // but the code changed to use it (4ba38fa64's crates/rust-js-program/src/js.rs:43).
   const newNamesUsed = (file: string, from: number, count: number, added: string[], removed: string[] | undefined): boolean => {
     if (removed === undefined || count === 0 || removed.length !== added.length) return false;
     const text = sources.text(file);

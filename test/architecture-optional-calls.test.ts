@@ -4,7 +4,7 @@
 // optional call's arguments are reads that do nothing, a name or a member
 // read of one: in the runtime, each one written so, a call or anything
 // else named first, `const old = ..; drop?.(old)`; in the compiler, each
-// made by `Expr::optional_call` (src/js/optional_call.rs), the one maker, which writes
+// made by `Expr::optional_call` (crates/rust-js-program/src/js/optional_call.rs), the one maker, which writes
 // `f === undefined ? arg : f(arg)` of an argument that does something.
 import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
@@ -65,7 +65,7 @@ function split(args: string): string[] {
 
 test("each optional call of the runtime is given reads that do nothing", () => {
   const offending: string[] = [];
-  for (const file of files("src/runtime", ".js")) {
+  for (const file of files("crates/rust-js-program/src/runtime", ".js")) {
     // Its code, each line's comment blanked, so a comment's `?.(..)` isn't one.
     const code = read(file).replace(/\/\/.*$/gm, "");
     for (const { line, args } of optionalCalls(code)) {
@@ -79,8 +79,8 @@ test("each optional call of the runtime is given reads that do nothing", () => {
 
 test("the compiler makes an optional call by Expr::optional_call alone", () => {
   const makers = files("src", ".rs").filter(
-    (file) => file !== "src/js/optional_call.rs" && /ExprKind::OptionalCall\(\s*Box::new/.test(read(file)),
+    (file) => file !== "crates/rust-js-program/src/js/optional_call.rs" && /ExprKind::OptionalCall\(\s*Box::new/.test(read(file)),
   );
   expect(makers).toEqual([]);
-  expect(read("src/js/optional_call.rs")).toContain("pub fn optional_call(callee: Expr, args: Vec<Expr>) -> Expr {");
+  expect(read("crates/rust-js-program/src/js/optional_call.rs")).toContain("pub fn optional_call(callee: Expr, args: Vec<Expr>) -> Expr {");
 });

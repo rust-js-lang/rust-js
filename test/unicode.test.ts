@@ -1,5 +1,5 @@
 // Rust's Unicode tables, which the runtime asks in place of a JS engine's
-// (#1888, ADR 1163): src/runtime/unicode_tables.js is what
+// (#1888, ADR 1163): crates/rust-js-program/src/runtime/unicode_tables.js is what
 // scripts/unicode.ts makes of the pinned toolchain's std, so a toolchain
 // bump that moves Unicode fails here until they're made again; and the JS
 // answers as native Rust does of every `char` of every plane, each question,
@@ -17,7 +17,7 @@ import { buildCompiler, compiler, fixture, generatorOutput, nativeBinary, root, 
 beforeAll(buildCompiler, 600_000);
 
 test("unicode_tables.js is what scripts/unicode.ts makes of the toolchain's std", () => {
-  expect(generatorOutput("scripts/unicode.ts")).toBe(readFileSync(join(root, "src/runtime/unicode_tables.js"), "utf8"));
+  expect(generatorOutput("scripts/unicode.ts")).toBe(readFileSync(join(root, "crates/rust-js-program/src/runtime/unicode_tables.js"), "utf8"));
 }, underLoad(120_000));
 
 const everyChar = `fn mixed(hash: u32, text: &str) -> u32 {

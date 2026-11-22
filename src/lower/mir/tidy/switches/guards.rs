@@ -2,8 +2,8 @@
 //! as Rust goes on to the next arm (ADR 0905), and MIR's block of a guarded
 //! `|`, the arm's one test (rd136).
 
-use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind};
 use crate::lower::mir::hints::{Guard, Switch, SwitchArm};
+use rust_js_program::js::{self, Expr, ExprKind, Op, Stmt, StmtKind};
 
 use super::{Case, alike, test_at, within, written_at};
 

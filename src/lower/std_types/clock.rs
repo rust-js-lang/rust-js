@@ -2,8 +2,8 @@
 //! nanoseconds, a BigInt, as a `Duration` is its own (ADR 0188); a
 //! `SystemTimeError` is the `Duration` it holds. `now()` reads JS's clocks.
 
-use crate::js::{Expr, Op, Stmt};
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{Expr, Op, Stmt};
 
 /// A clock's method or operator.
 #[derive(Clone, Copy, PartialEq, Debug)]

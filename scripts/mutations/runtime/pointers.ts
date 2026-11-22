@@ -1,11 +1,11 @@
-// Mutations of src/runtime/pointers.js (ADR 0407).
+// Mutations of crates/rust-js-program/src/runtime/pointers.js (ADR 0407).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "array-byte-set-unsigned",
     breaks: "a byte written through a pointer into an array of signed integers is decoded unsigned, `[0i16; 2]` with bytes FF FF `[65535, 0]` where native Rust's is `[-1, 0]` (#1137)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  view.of[item] = view.decode(bytes);\n",
     replace: "  view.of[item] = $fromBytes(bytes, view.stride, true, false);\n",
     tests: ["test/corpus.test.ts", "-t", "^ptr_write_bytes.rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-fill-of-none",
     breaks: "`ptr::write_bytes(dst, byte, n)` writes nothing, so getrandom's zeroed buffer is its bytes as they were (#1133)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  for (let i = 0; i < count; i++) $byteSet(view, i, byte);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^ptr_write_bytes.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-item-stride-unread",
     breaks: "an array's item recorded with its size isn't placed by it, so an item of an array a tuple holds, reached through a reference, is its own allocation's (#1113)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "        : typeof item.stride === \"number\"\n",
     replace: "        : false\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_where_its_object_is_stored.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-root-kept-after-move",
     breaks: "a handle rooted where its object was, before a `swap` moved it, keeps that root, so its field's address is in the container it left, `4294963212` where native Rust's is `12` (#1113)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (pointer.root !== undefined && pointer.bytes === undefined && $rooted(pointer)) {\n",
     replace: "  if (pointer.root !== undefined && pointer.bytes === undefined) {\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_where_its_object_is_stored.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-record-unwritten",
     breaks: "`$stored` records nothing, so a field's address through a reference is its object's own allocation's (#1113)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    $items.set(value, { of: handle.of, at: handle.at, offset: handle.offset, stride, within });\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_where_its_object_is_stored.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-object-record-unchecked",
     breaks: "an item moved out of its `Vec` is still where its record says, its field's address in the buffer it left, `true` where native Rust's is `false` (#1113)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if ($slot(item.of, item.at) === object) return item;\n",
     replace: "  return item;\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_item_moved_in_its_vec.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "allocation-uses-unchecked",
     breaks: "an allocation's bytes written and then its slots read as a `String`'s, or the reverse, one type's memory read as another's (#1099)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  else if (used !== use) {\n",
     replace: "  else if (false) {\n",
     tests: ["test/runtime-pointers.test.ts", "-t", "allocation's bytes and its items"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "allocation-items-past-start",
     breaks: "a pointer 24 bytes into an allocation cast to `*mut String` is its first slot (#1099)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    if (view.at !== 0) {\n      throw $unsupported(\"rust-js does not support a pointer into an allocation's bytes as one to another type",
     replace: "    if (false) {\n      throw $unsupported(\"rust-js does not support a pointer into an allocation's bytes as one to another type",
     tests: ["test/runtime-pointers.test.ts", "-t", "allocation's bytes and its items"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "byte-slice-its-bytes",
     breaks: "`from_raw_parts` of a byte pointer cast to `*const u32` is its bytes, `[1, 0]` where native Rust's is `[1, 258]` (#1107)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    return Array.from({ length: count }, (_, i) => $byteView({ ...pointer, at: pointer.at + i * pointer.width }).value);\n",
     replace: "    return Array.from({ length: count }, (_, i) => $byteAt(pointer, i));\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_of_words_through_a_byte_pointer.rs$"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "signed-bytes-mut-unsigned",
     breaks: "`from_raw_parts_mut` of a `*mut i8` cast from `u8`s is a view of its unsigned slots (#1107)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: " && pointer.width === 1 && pointer.signed === false) {\n",
     replace: " && pointer.width === 1) {\n",
     tests: ["test/runtime-pointers.test.ts", "-t", "allocation's bytes and its items"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "tuple-field-at-index-times-stride",
     breaks: "a tuple's field's handle, an array's item in JS, is at its index times a size, `0 1 2` of a `(u8, u32, u16)` rustc lays out `4 0 6` (#1081)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (typeof offset === \"number\") return offset;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_tuple_field.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "tuple-field-an-item",
     breaks: "a tuple's field's handle, an array's item in JS, is laid out as one, its range's stride its field's size, `4100` of a `#[repr(C)]` tuple struct's field where native Rust says 4 (#1081)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: " && pointer.offset === undefined) || view);\n",
     replace: ") || view);\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_tuple_field.rs$"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "tuple-field-of-a-field-its-own-allocation",
     breaks: "`&raw const held.0.1` of a tuple struct's field that's a tuple struct is in the field's own allocation, apart from `&raw const held.0` (#1081)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "      typeof item.offset === \"number\"\n        ? $addr($ptr(item.of, item.at, item.offset), 0, true)\n",
     replace: "      false\n        ? 0\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_through_a_reference.rs$"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "tuple-field-pointer-stepped",
     breaks: "`(&raw const t.0).add(1)` of a tuple's field steps to the field at the next index, which rustc's layout may put anywhere, where it's refused (#1081)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: " || pointer.addr !== undefined || pointer.offset !== undefined) {\n",
     replace: " || pointer.addr !== undefined) {\n",
     tests: ["test/runtime-pointers.test.ts", "-t", "a tuple's field's pointer"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "tuple-field-pointers-distance",
     breaks: "`p.offset_from(q)` of two of a tuple's fields is their indices' difference, which rustc's layout may reorder, where it's refused (#1081)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: " || p.offset !== undefined || q.offset !== undefined) {\n",
     replace: ") {\n",
     tests: ["test/runtime-pointers.test.ts", "-t", "a tuple's field's pointer"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-of-an-item-its-objects-own-address",
     breaks: "`&raw const held.0.b` of a struct a tuple struct's field holds is at the struct's own base, not the item's, apart from `&raw const held.0` (#1019)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (offset !== undefined) {\n    // An array's item recorded with its size",
     replace: "  if (false) {\n    // An array's item recorded with its size",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_through_a_reference.rs$"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "reference-to-an-item-its-objects-own-address",
     breaks: "`transmute(&held.0)` of a struct a tuple struct's field holds is its own base, not the item's address (#1019)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (own !== undefined) return own.within ? $ptrTo(pointer) : $ptr(own.of, own.at, own.offset);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_struct_a_field_holds.rs$"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-to-written-whole",
     breaks: "`*p = v` of an object's pointer gives the handle another, leaving the object",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "      get value() {\n        return object;\n      },\n      set value(value) {\n        $assign(object, value);\n      },\n    };\n    $objects.set(object, handle);",
     replace: "      get value() {\n        return object;\n      },\n      set value(value) {\n        object = value;\n      },\n    };\n    $objects.set(object, handle);",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-add-from-start",
     breaks: "`p.add(n)` steps from the array's start",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  return $ptr(pointer.of, pointer.at + count);\n",
     replace: "  return $ptr(pointer.of, count);\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-replace-new",
     breaks: "`ptr::replace` gives the new value",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  const old = $ptrMoved(pointer);\n  pointer.value = value;\n  return old;\n",
     replace: "  pointer.value = value;\n  return value;\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-swap-one-way",
     breaks: "`ptr::swap` copies one way",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    y.value = held;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-shown-null",
     breaks: "a null pointer's address isn't 0, so it's shown `0x1`",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (pointer === null) return 0;\n  if (typeof pointer",
     replace: "  if (pointer === null) return 1;\n  if (typeof pointer",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
   {
     name: "offset-from-backwards",
     breaks: "`p.offset_from(q)` is how far `q` is past `p`",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  return p.at - q.at;\n",
     replace: "  return q.at - p.at;\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_offset_from.rs$"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
   {
     name: "bytes-view-forgotten",
     breaks: "a pointer cast to bytes and back isn't the pointer it was",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (view.opaque) return view.typed;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^allocator.rs$"],
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
   {
     name: "slot-spare-unread",
     breaks: "a pointer past a vector's length reads nothing, not what `set_len` left there",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  return key >= object.length ? $spares.get(object)?.[key] : object[key];\n",
     replace: "  return object[key];\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_set_len.rs$"],
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-len-spare-unkept",
     breaks: "`set_len` shortening a vector loses what was past it",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    for (let i = n; i < v.length; i++) spare[i] = v[i];\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_set_len.rs$"],
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-len-spare-unfilled",
     breaks: "`set_len` lengthening a vector over what it left has nothing there",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    if (i < n && !(i in v)) v[i] = item;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_set_len.rs$"],
@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-copy-within-past-length",
     breaks: "`ptr::copy` along one array from past its length copies nothing",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (src.of === dst.of && copy === undefined && Math.max(src.at, dst.at) + count <= src.of.length) {\n",
     replace: "  if (src.of === dst.of && copy === undefined) {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_set_len.rs$"],
@@ -229,7 +229,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-slice-past-length-unread",
     breaks: "`slice::from_raw_parts` past a vector's length has nothing of what `set_len` left there",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  return start === 0 && count === items.length ? items : $partPlaced($slots(items, start, count), items, start);\n",
     replace: "  return start === 0 && count === items.length ? items : $partPlaced(items.slice(start, start + count), items, start);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_set_len.rs$"],
@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-slice-mut-past-length-allowed",
     breaks: "a mutable slice over what `set_len` left reads nothing there, silently",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (start + count > items.length && $spares.has(items)) {\n",
     replace: "  if (false) {\n",
     tests: ["test/lowering.test.ts", "-t", "set_len left"],
@@ -245,7 +245,7 @@ export const mutations: Mutation[] = [
   {
     name: "address-bases-shared",
     breaks: "every allocation gets the same base, so two allocations' addresses are equal",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "      $nextBase = base + length;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [
   {
     name: "address-items-not-strided",
     breaks: "an item's address is its index, not its index times its size",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "return (pointer.at === 0 ? 0 : pointer.at * range.stride) + (pointer.within ?? 0);",
     replace: "return (pointer.at === 0 ? 0 : pointer.at) + (pointer.within ?? 0);",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
@@ -261,7 +261,7 @@ export const mutations: Mutation[] = [
   {
     name: "address-not-wrapped",
     breaks: "a pointer moved past wasm32's addresses isn't wrapped to 32 bits, so semver's rotation never comes back",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  addr >>>= 0;\n  if (pointer === null) return $ptrFrom(addr, size, zero);",
     replace: "  if (pointer === null) return $ptrFrom(addr, size, zero);",
     tests: ["test/corpus.test.ts", "-t", "^tagged_pointers.rs$"],
@@ -269,7 +269,7 @@ export const mutations: Mutation[] = [
   {
     name: "from-address-unexposed",
     breaks: "an integer made a pointer never finds the place that exposed it",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  const provenance = range?.of === undefined ? null : $ptrTo(range.of);\n  return (range && $placeAt(addr, range, size)) ?? $ptrNone(addr, provenance, size, zero);",
     replace: "  return $ptrNone(addr, null, size, zero);",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
   {
     name: "at-not-back-to-place",
     breaks: "a tagged pointer masked back to its place is a pointer with no place still",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    const place = $placeAt(addr, range, size);\n    if (place !== undefined) return place;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^tagged_pointers.rs$"],
@@ -285,7 +285,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-eq-no-place-by-identity",
     breaks: "two pointers with no place at one address aren't equal",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (p.addr !== undefined && q.addr !== undefined) return p.addr === q.addr;\n",
     replace: "  if (p.addr !== undefined && q.addr !== undefined) return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
@@ -293,7 +293,7 @@ export const mutations: Mutation[] = [
   {
     name: "bytes-read-one",
     breaks: "`read_unaligned` of a `u32` reads one byte",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  const bytes = Array.from({ length: width }, (_, i) => $byteAt(view, i));\n  return $fromBytes(bytes, width, true, signed);",
     replace: "  const bytes = Array.from({ length: 1 }, (_, i) => $byteAt(view, i));\n  return $fromBytes(bytes, 1, true, signed);",
     tests: ["test/corpus.test.ts", "-t", "^bytes_through_pointers.rs$"],
@@ -301,7 +301,7 @@ export const mutations: Mutation[] = [
   {
     name: "bytes-write-lost",
     breaks: "a byte written into a wider item's bytes isn't put back",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  view.of[item] = view.decode(bytes);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^bytes_through_pointers.rs$"],
@@ -309,7 +309,7 @@ export const mutations: Mutation[] = [
   {
     name: "bytes-step-by-one",
     breaks: "a retyped byte pointer steps by one byte, not its width",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    return $byteView({ ...pointer, at: pointer.at + count * pointer.width });",
     replace: "    return $byteView({ ...pointer, at: pointer.at + count });",
     tests: ["test/corpus.test.ts", "-t", "^bytes_through_pointers.rs$"],
@@ -317,7 +317,7 @@ export const mutations: Mutation[] = [
   {
     name: "plain-bytes-not-decoded",
     breaks: "a byte written into plain data's bytes isn't decoded back into it",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    view.plain.value = view.decode(bytes);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^bytes_through_pointers.rs$"],
@@ -325,7 +325,7 @@ export const mutations: Mutation[] = [
   {
     name: "zero-sized-read-refused",
     breaks: "a value of no size read through a pointer with no place is rust-js's error, where Rust reads it",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "      if (size === 0) return zero;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zero_sized_pointers.rs$"],
@@ -333,7 +333,7 @@ export const mutations: Mutation[] = [
   {
     name: "zero-sized-write-refused",
     breaks: "a value of no size written through a pointer with no place is rust-js's error, where Rust writes it",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "      if (size === 0) return;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zero_sized_pointers.rs$"],
@@ -341,7 +341,7 @@ export const mutations: Mutation[] = [
   {
     name: "empty-slice-fresh-address",
     breaks: "an empty slice made of a dangling pointer gets an address of its own, not the pointer's",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (count === 0 && pointer.addr !== undefined) return [$emptyAt(pointer.addr), 0];\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zero_sized_pointers.rs$"],
@@ -349,7 +349,7 @@ export const mutations: Mutation[] = [
   {
     name: "empty-array-equal-to-no-address",
     breaks: "an empty array not yet addressed is equal to no address, so `Vec::new().as_ptr() == NonNull::dangling().as_ptr()` is false",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (range === undefined) return Array.isArray(handle.of) && handle.of.length === 0 && $addr(handle, size) === addr;\n",
     replace: "  if (range === undefined) return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^zero_sized_pointers.rs$"],
@@ -357,7 +357,7 @@ export const mutations: Mutation[] = [
   {
     name: "empty-array-not-dangling",
     breaks: "an empty array gets a block of addresses of its own, not the dangling address Rust's `[]` is at",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (items && allocation.length === 0 && !$ranges.has(allocation)) $emptyAt(Math.max(stride, 1), allocation);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zero_sized_pointers.rs$"],
@@ -365,7 +365,7 @@ export const mutations: Mutation[] = [
   {
     name: "two-allocations-never-equal",
     breaks: "pointers into two allocations are never equal, two empty arrays at one dangling address among them",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "      return known(a) && known(b) && $addr(a, size) === $addr(b, size);\n",
     replace: "      return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^zero_sized_pointers.rs$"],
@@ -373,7 +373,7 @@ export const mutations: Mutation[] = [
   {
     name: "first-item-offset-by-stride",
     breaks: "an array's first item's offset is NaN where its stride isn't known yet",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "return (pointer.at === 0 ? 0 : pointer.at * range.stride) + (pointer.within ?? 0);",
     replace: "return pointer.at * range.stride + (pointer.within ?? 0);",
     tests: ["test/corpus.test.ts", "-t", "^zero_sized_pointers.rs$"],
@@ -381,7 +381,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-value-offset-unread",
     breaks: "a handle on a `{ value }` cell's value is at its start, not where `$storedValue` says, past its borrow flag, `0` where wasm32 gives `4` (#1114)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  const offset = pointer.at === \"value\" && $contents.has(pointer.of) ? $contents.get(pointer.of) : pointer.offset;\n",
     replace: "  const offset = pointer.offset;\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_what_a_cell_lends.rs$"],
@@ -389,7 +389,7 @@ export const mutations: Mutation[] = [
   {
     name: "stored-value-object-unrecorded",
     breaks: "`$storedValue` records no object of what a cell holds, so a lent array is its own allocation, `4096` where wasm32 gives `4` (#1114)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    $items.set(value, { of: cell, at: \"value\", offset, stride: undefined, within });\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^address_of_what_a_cell_lends.rs$"],
@@ -397,7 +397,7 @@ export const mutations: Mutation[] = [
   {
     name: "outer-at-its-object",
     breaks: "a pointer to what holds an object no slot is recorded as holding is at the object, not before it, `0` where wasm32 gives `4` (#1114)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    const addr = $addr($ptrTo(pointer.of), 0, true) - pointer.outer;\n",
     replace: "    const addr = $addr($ptrTo(pointer.of), 0, true);\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_option_payload.rs$"],
@@ -405,7 +405,7 @@ export const mutations: Mutation[] = [
   {
     name: "outer-placed-at-any-depth",
     breaks: "an object recorded `within` its slot is placed at the slot, as its outer handle is, so a pointer to an `Option`'s payload is the `Option`'s, `0` where wasm32 gives `4` (#1114)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    if (item !== undefined && (item.within ?? 0) === (pointer.outer ?? 0)) return $ptr(item.of, item.at, item.offset);\n",
     replace: "    if (item !== undefined) return $ptr(item.of, item.at, item.offset);\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_option_payload.rs$"],
@@ -413,7 +413,7 @@ export const mutations: Mutation[] = [
   {
     name: "within-unread",
     breaks: "where in its slot a recorded object is isn't added to its address, so an `Option`'s payload is at its tag, `0` where wasm32 gives `4` (#1114)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "      const addr = start + (item.within ?? 0) + offset;\n",
     replace: "      const addr = start + offset;\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_option_payload.rs$"],
@@ -421,7 +421,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-content-handle-the-slots",
     breaks: "a pointer to what a struct's `RefCell` field of a number lends, which holds it, is a handle on the field with no offset, refused where it runs, not past its borrow flag (#1114)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    if (content !== undefined) return $ptrIn(at.object, at.key, content.offset, content.within);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^address_of_what_a_cell_lends.rs$"],
@@ -429,7 +429,7 @@ export const mutations: Mutation[] = [
   {
     name: "item-of-a-recorded-array-its-own",
     breaks: "an item's handle on an array a cell holds is in the array's own allocation, not where the array's record says, `4112` where native Rust gives `12` (#1114, the net's `rc-refcell` of `address_of_a_tuple_field`)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "        : pointer.offset === undefined && Array.isArray(pointer.of) && typeof pointer.at === \"number\"\n",
     replace: "        : false\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_what_a_cell_lends.rs$"],
@@ -437,7 +437,7 @@ export const mutations: Mutation[] = [
   {
     name: "container-exposed-on-the-way",
     breaks: "an item's address asked exposes its container's slot too, at the same address, so the address found again, `n as *const T`, is the slot's, which isn't stepped along the array: refused where native Rust reads it (#1114, the net's `rc-refcell` of `pointer_addresses`)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "        ? $addr($ptr(item.of, item.at, item.offset), 0, true)\n",
     replace: "        ? $addr($ptr(item.of, item.at, item.offset), 0)\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_what_a_cell_lends.rs$"],
@@ -445,7 +445,7 @@ export const mutations: Mutation[] = [
   {
     name: "slot-of-its-object-apart",
     breaks: "an object's pointer and its slot's are two places where nothing recorded it there, so in a crate that asks no address a `dyn`'s pointer made thin isn't `==` the field's, `false` where native Rust gives `true` (#1019, the net's `field` of `dyn_pointers`)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    if (holds(a, b) || holds(b, a)) return true;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^pointers_into_a_cell_compared.rs$"],
@@ -453,7 +453,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-at-of-a-recorded-array-placeless",
     breaks: "`p.wrapping_byte_add(8)` of an item's pointer into an array a cell holds, which has no addresses of its own, is a pointer with no place, `false` where native Rust gives `true` (#1114, the net's `rc-refcell` of `pointer_addresses`)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (Array.isArray(allocation) && size > 0 && $itemOf(allocation) !== undefined) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_what_a_cell_lends.rs$"],
@@ -461,7 +461,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-eq-of-a-recorded-handle-unplaced",
     breaks: "a pointer with no place compared to an item's pointer into an array a cell holds, which has no addresses of its own, is unequal, `false` where native Rust gives `true` (#1114)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (range === undefined && $itemOf($allocationOf(handle)) !== undefined) return $addr(handle, size, true) === addr;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^address_of_what_a_cell_lends.rs$"],
@@ -469,7 +469,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-into-a-part-its-own",
     breaks: "a pointer into a part of a slice is one into the part's array, not the array it's of (#1185)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (part !== undefined) return $ptr(part.of, part.start + key, offset, root, at);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
@@ -477,7 +477,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-ptr-eq-lengths-unasked",
     breaks: "`ptr::eq` of two slices starting at one item and of different lengths is `true`, where Rust compares their lengths too",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "a !== null && b !== null && a.length === b.length && $ptrEq",
     replace: "a !== null && b !== null && $ptrEq",
     tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
@@ -485,7 +485,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-ptr-eq-of-a-handle",
     breaks: "a slice's pointer read out of where it's held, a handle on it, is compared as though it were the slice, never equal",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  [a, b] = [items(a), items(b)];\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_parts_by_address.rs$"],
@@ -494,7 +494,7 @@ export const mutations: Mutation[] = [
     name: "part-as-an-array-the-whole",
     breaks:
       "a pointer to an item partway through an array, as one to an array of the items from it, is the whole array's handle: `fst.as_ptr() as *const [T; N]` of a slice's part reads the array's first items (#1218)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    return $ptrTo($view(pointer.of, pointer.at, pointer.at + length));\n",
     replace: "    return $ptrTo(pointer.of);\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_to_part_of_an_array_as_an_array.rs$"],
@@ -502,7 +502,7 @@ export const mutations: Mutation[] = [
   {
     name: "signed-items-are-bytes",
     breaks: "an `i8` array's items are taken for its bytes, so `slice::from_raw_parts(a.as_ptr().cast::<u8>(), n)` of `[-21, ..]` is `[-21, ..]` where native Rust's is `[235, ..]` (#1253)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  return view.plain === undefined && view.stride === 1 && view.encode === undefined;\n",
     replace: "  return view.plain === undefined && view.stride === 1;\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_cast_to_the_other_sign.rs$"],
@@ -510,7 +510,7 @@ export const mutations: Mutation[] = [
   {
     name: "signed-byte-written-unmasked",
     breaks: "an `i8` written through a pointer into a `u8` array is the number of its sign, `-2` where native Rust's byte is `254` (#1253)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  const bytes = width === 1 ? [value & 0xff] : $toBytes(value, width, true);\n",
     replace: "  const bytes = width === 1 ? [value] : $toBytes(value, width, true);\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_cast_to_the_other_sign.rs$"],
@@ -518,7 +518,7 @@ export const mutations: Mutation[] = [
   {
     name: "offset-from-of-a-view-and-an-item",
     breaks: "`offset_from` of a pointer stepped in bytes and cast back, and the array's own pointer, counts bytes, `8` where native Rust's is `1` (#1254)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (p?.bytes !== undefined || q?.bytes !== undefined) {\n",
     replace: "  if (p?.bytes !== undefined && q?.bytes !== undefined) {\n",
     tests: ["test/corpus.test.ts", "-t", "^offset_from_of_a_pointer_stepped_in_bytes.rs$"],
@@ -526,7 +526,7 @@ export const mutations: Mutation[] = [
   {
     name: "byte-offset-of-an-item-unstrided",
     breaks: "an array item's place in its bytes is taken for its index, so `offset_from` of a pointer stepped in bytes and the array's own is past by the items' size (#1254)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  return stride === undefined ? undefined : { of: pointer.of, at: pointer.at * stride };\n",
     replace: "  return stride === undefined ? undefined : { of: pointer.of, at: pointer.at };\n",
     tests: ["test/corpus.test.ts", "-t", "^offset_from_of_a_pointer_stepped_in_bytes.rs$"],
@@ -534,7 +534,7 @@ export const mutations: Mutation[] = [
   {
     name: "byte-view-of-a-stored-array-unplaced",
     breaks: "a view of the bytes of an array stored in another object is placed in an allocation of the array's own, so `q as usize - p as usize` of a byte pointer 3 bytes into a tuple struct's array and its first item's is `4294963203` where native Rust's is `3` (#1262)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (pointer.bytes !== undefined && pointer.plain === undefined && $itemOf(pointer.of) !== undefined) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_byte_view_of_a_stored_array.rs$"],
@@ -542,7 +542,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-swap-each-unstepped",
     breaks: "`ptr::swap_nonoverlapping(a, b, n)` swaps the first items `n` times, not each of the `n`, so of an even `n` nothing changes (#1256)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    const [x, y] = i === 0 ? [a, b] : [$ptrAdd(a, i), $ptrAdd(b, i)];\n",
     replace: "    const [x, y] = [a, b];\n",
     tests: ["test/corpus.test.ts", "-t", "^items_swapped_nonoverlapping.rs$"],
@@ -550,7 +550,7 @@ export const mutations: Mutation[] = [
   {
     name: "mutable-slice-of-another-types-bytes-refused",
     breaks: "`slice::from_raw_parts_mut` of a `[u32; 2]`'s bytes as `u8`s is refused where it runs, where native Rust writes the words through it (#1257)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    // that item.\n    const target = [];\n    target[$placeOfPart] = { first: pointer };\n",
     replace: "    // that item.\n    throw $unsupported(\"a mutable slice of another type's bytes\");\n",
     tests: ["test/corpus.test.ts", "-t", "^mutable_slice_of_another_types_bytes.rs$"],
@@ -558,7 +558,7 @@ export const mutations: Mutation[] = [
   {
     name: "item-of-a-byte-slice-unplaced",
     breaks: "a pointer to an item of a mutable slice of another type's bytes is taken for one into an array, which it isn't, so `bytes[2..].as_mut_ptr()` throws (#1257)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (part?.first !== undefined) return $ptrAdd(part.first, key);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^mutable_slice_of_another_types_bytes.rs$"],
@@ -566,7 +566,7 @@ export const mutations: Mutation[] = [
   {
     name: "byte-array-read-written-to-its-copy",
     breaks: "a write into a `[u8; 2]` read through a pointer to a `u32`'s bytes, `(*p)[1] = 9`, is a write of its copy only, so the word is as it was (#1266)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "      bytes[i] = byte;\n      $byteSet(view, i, byte);\n",
     replace: "      bytes[i] = byte;\n",
     tests: ["test/corpus.test.ts", "-t", "^byte_array_written_through_another_types_bytes.rs$"],
@@ -574,7 +574,7 @@ export const mutations: Mutation[] = [
   {
     name: "byte-array-read-live",
     breaks: "a `[u8; 2]` read through a pointer to a `u32`'s bytes is those bytes as they are when each is read, not as they were, so `pairs.swap(0, 2)` writes the first pair's place with its new bytes (#1266)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    (i) => bytes[i],\n    (i, byte) => {\n      bytes[i] = byte;\n",
     replace: "    (i) => $byteAt(view, i),\n    (i, byte) => {\n      bytes[i] = byte;\n",
     tests: ["test/corpus.test.ts", "-t", "^mutable_slice_of_another_types_bytes.rs$"],
@@ -582,7 +582,7 @@ export const mutations: Mutation[] = [
   {
     name: "byte-array-read-unplaced",
     breaks: "a pointer into a `[u8; 4]` read through a pointer to `u32`s' bytes is to an allocation of its own, `item as usize - c.as_ptr() as usize` not native Rust's `6` (#1266)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  target[$placeOfPart] = { first: $ptrRetyped(view, 1, false) };\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^byte_array_written_through_another_types_bytes.rs$"],
@@ -590,7 +590,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-of-one-place-a-copy",
     breaks: "`slice::from_raw_parts_mut(&mut x as *mut u8, 1)` is a copy of `x`, so `s[0] = 9` leaves `x` as it was (#1280)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (count === 1 && !Array.isArray(pointer.of)) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^uninit_bytes_written_one_by_one.rs$"],
@@ -598,7 +598,7 @@ export const mutations: Mutation[] = [
   {
     name: "slice-of-one-place-unplaced",
     breaks: "a pointer into a mutable slice of one place throws where Rust's is the place's (#1280)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    // Not stepped, where it is (#1280).\n    if (pointer !== null && count === 0) return pointer;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^uninit_bytes_written_one_by_one.rs$"],
@@ -606,7 +606,7 @@ export const mutations: Mutation[] = [
   {
     name: "uninit-place-bytes-encoded",
     breaks: "a byte view of a `MaybeUninit<u64>` not yet written encodes its `undefined`, and throws \"Cannot convert undefined to a BigInt\" (#1279)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  return value === undefined ? new Array(view.stride).fill(0) : view.encode(value);\n",
     replace: "  return view.encode(value);\n",
     tests: ["test/corpus.test.ts", "-t", "^uninit_bytes_written_one_by_one.rs$"],
@@ -614,7 +614,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-swap-written-as-read",
     breaks: "`ptr::swap` of two `[u32; 2]`s of one array an item apart writes the first before reading the second, `[1, 1, 1, 3]` where Rust's is `[1, 0, 1, 3]` (#1349)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    const [held, other] = [$ptrMoved(x), $ptrMoved(y)];\n    x.value = other;\n    y.value = held;\n",
     replace: "    const held = $ptrMoved(x);\n    x.value = y.value;\n    y.value = held;\n",
     tests: ["test/corpus.test.ts", "-t", "^overlapping_moves_through_pointers.rs$"],
@@ -622,7 +622,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-moved-in-place",
     breaks: "what `ptr::swap` and `ptr::replace` read of an object JS holds as itself is the object, which their write changes: two arrays swapped are each the second (#1350)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  return pointer.bytes === undefined && pointer.at === undefined && pointer.of !== undefined ? $apart(value) : value;\n",
     replace: "  return value;\n",
     tests: ["test/corpus.test.ts", "-t", "^whole_values_moved_through_pointers.rs$"],
@@ -630,7 +630,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-replace-read-in-place",
     breaks: "`ptr::replace` of a `Vec` JS holds as itself returns the new value, as its write changes what it read (#1350)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  const old = $ptrMoved(pointer);\n",
     replace: "  const old = pointer.value;\n",
     tests: ["test/corpus.test.ts", "-t", "^whole_values_moved_through_pointers.rs$"],
@@ -638,7 +638,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-copy-one-read-in-place",
     breaks: "`ptr::copy` of one `[Tag; 2]`, not `Copy`, over one an item along writes its source as it reads it, `[0, 0, 0, 3, 4]` where Rust's is `[0, 0, 1, 3, 4]` (#1349)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    dst.value = copy === undefined ? $ptrMoved(src) : copy(src.value);\n",
     replace: "    dst.value = copy === undefined ? src.value : copy(src.value);\n",
     tests: ["test/corpus.test.ts", "-t", "^overlapping_moves_through_pointers.rs$"],
@@ -646,7 +646,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-copy-bytes-one-per-item",
     breaks: "`ptr::copy` of one `[u8; 4]` through a view of a byte array's bytes copies one byte of the four (#1349)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    const bytes = count * (src.bytes !== undefined ? src.width : dst.width);\n",
     replace: "    const bytes = count;\n",
     tests: ["test/corpus.test.ts", "-t", "^overlapping_moves_through_pointers.rs$"],
@@ -654,7 +654,7 @@ export const mutations: Mutation[] = [
   {
     name: "ptr-copy-of-whole-arrays-unrefused",
     breaks: "`ptr::copy` of two `[u32; 2]`s through a pointer to an array that's part of none, past its end, throws a `TypeError`, not rust-js's refusal (#1353)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if ([src, dst].some((p) => Array.isArray(p.of) && typeof p.at !== \"number\")) {\n",
     replace: "  if (false) {\n",
     tests: ["test/lowering-pointers.test.ts"],
@@ -662,7 +662,7 @@ export const mutations: Mutation[] = [
   {
     name: "raw-parts-slice-unplaced",
     breaks: "a slice made from raw parts is a copy that forgets where it is, so its `as_ptr() as usize` is a new allocation's address and httparse's count of what it parsed is billions (#1424)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "items : $partPlaced($slots(items, start, count), items, start);\n",
     replace: "items : $slots(items, start, count);\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_slice_made_of_pointers.rs$"],
@@ -670,7 +670,7 @@ export const mutations: Mutation[] = [
   {
     name: "address-ranges-paged",
     breaks: "every allocation whose address is asked takes 4096 bytes of addresses, so a million short-lived ones use wasm32's up (#1426)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  return Math.min(4096, Math.max(16, size & -size));\n",
     replace: "  return 4096;\n",
     tests: ["test/lowering.test.ts", "-t", "a million short-lived addresses run in a bounded heap"],
@@ -678,7 +678,7 @@ export const mutations: Mutation[] = [
   {
     name: "over-aligned-range-unaligned",
     breaks: "an over-aligned type's allocation is at 16 bytes, its address not a multiple of its alignment (#1426)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  return Math.min(4096, Math.max(16, size & -size));\n",
     replace: "  return 16;\n",
     tests: ["test/corpus.test.ts", "-t", "^addresses_of_short_lived_allocations.rs$"],
@@ -686,7 +686,7 @@ export const mutations: Mutation[] = [
   {
     name: "addresses-always-exposed",
     breaks: "a program that never makes an address a pointer keeps every allocation it asked one of, and runs out of heap (#1426)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    if ($exposing) {\n      let low = 0;",
     replace: "    if (true) {\n      let low = 0;",
     tests: ["test/lowering.test.ts", "-t", "a million short-lived addresses run in a bounded heap"],
@@ -694,7 +694,7 @@ export const mutations: Mutation[] = [
   {
     name: "late-exposure-unrefused",
     breaks: "an address asked before the module that makes pointers of them loaded is made a pointer to no place, not refused (#1426)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (range === undefined && $exposedLate) {\n",
     replace: "  if (false) {\n",
     tests: ["test/lowering.test.ts", "-t", "exposing began is refused"],
@@ -702,7 +702,7 @@ export const mutations: Mutation[] = [
   {
     name: "float-bytes-read-as-bits",
     breaks: "a float read through bytes is its bits as an integer, not the float (#1283)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "      if (this.signed === \"float\") return $floatFromBits($readInt(this, this.width, false), this.width);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_lent_slot.rs$"],
@@ -710,7 +710,7 @@ export const mutations: Mutation[] = [
   {
     name: "float-bytes-written-as-number",
     breaks: "a float written through bytes is written as an integer of its value, not its bits (#1283)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "      if (this.signed === \"float\") {\n        $writeInt(this, this.width, $floatToBits(value, this.width));\n        return;\n      }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_lent_slot.rs$"],
@@ -718,7 +718,7 @@ export const mutations: Mutation[] = [
   {
     name: "whole-arrays-copied-in-turn",
     breaks: "arrays copied through pointers to parts of one array are read as they're written, so a copy forward over itself copies what it already wrote (#1353)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    const read = $slots(from.of, from.at, items);\n",
     replace: "    const read = { slice: (a, b) => from.of.slice(from.at + a, from.at + b) };\n",
     tests: ["test/corpus.test.ts", "-t", "^arrays_copied_through_a_pointer_to_part_of_one.rs$"],
@@ -726,7 +726,7 @@ export const mutations: Mutation[] = [
   {
     name: "whole-arrays-uncopied",
     breaks: "arrays of `Copy` structs copied through pointers to parts of one array share the structs, so a write to one is a write to its copy (#1353)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "      const copied = copy === undefined ? array : copy(array);\n",
     replace: "      const copied = array;\n",
     tests: ["test/corpus.test.ts", "-t", "^arrays_copied_through_a_pointer_to_part_of_one.rs$"],
@@ -734,7 +734,7 @@ export const mutations: Mutation[] = [
   {
     name: "whole-pointer-stepped-by-items",
     breaks: "a pointer to part of an array as one to an array is stepped by one item, not by its array (#1353)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (whole !== undefined) return $ptrWhole($ptr(whole.of, whole.at + count * whole.width), whole.width);\n",
     replace: "  if (whole !== undefined) return $ptrWhole($ptr(whole.of, whole.at + count), whole.width);\n",
     tests: ["test/corpus.test.ts", "-t", "^arrays_copied_through_a_pointer_to_part_of_one.rs$"],
@@ -742,7 +742,7 @@ export const mutations: Mutation[] = [
   {
     name: "placeless-handle-at-zero",
     breaks: "a handle that reads a place it doesn't record, a `&mut` std lent from inside its storage, is given an address of its own, made up, where it's refused (#1474)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (pointer.of === undefined && Object.getOwnPropertyDescriptor(pointer, \"value\")?.get !== undefined) {\n",
     replace: "  if (false) {\n",
     tests: ["test/runtime-pointers.test.ts", "-t", "handle on no place it records"],
@@ -750,7 +750,7 @@ export const mutations: Mutation[] = [
   {
     name: "handle-of-a-handle-own-place",
     breaks: "a pointer to a place handle's `value` is a place of the handle object's own, its address made up, 64 where native's is 0 (#1479)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    return object;\n  }\n",
     replace: "  }\n",
     tests: ["test/runtime-pointers.test.ts", "-t", "a pointer to a place handle's value is that handle"],
@@ -758,7 +758,7 @@ export const mutations: Mutation[] = [
   {
     name: "key-one-handle-at-any-offset",
     breaks: "a key's handle at one offset is given for the key at another, the `Err`'s `_0` at the `Ok`'s offset once the `Result` is written over (#1484)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (handle !== undefined && typeof offset === \"number\" && typeof handle.offset === \"number\" && handle.offset !== offset) {\n",
     replace: "  if (false) {\n",
     tests: ["test/runtime-pointers.test.ts", "-t", "a key at another offset is another place's handle"],
@@ -766,7 +766,7 @@ export const mutations: Mutation[] = [
   {
     name: "lent-from-records-nothing",
     breaks: "`$lentFrom` records nothing, so a lent object's address is an allocation of its own (#1475)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    $items.set(value, { of: receiver, at: key, offset, stride: undefined, within });\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","^address_of_an_object_std_lends_from_its_storage.rs$"],
@@ -774,7 +774,7 @@ export const mutations: Mutation[] = [
   {
     name: "address-through-a-pair-made-up",
     breaks: "a handle on a `&mut dyn`'s pair's `value`, an accessor on no place, has the pair's address, made up (#1519)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    pointer.at === \"value\" &&\n",
     replace: "    false &&\n",
     tests: ["test/runtime-pointers.test.ts", "-t", "the address through a handle on no place it records is refused"],
@@ -782,7 +782,7 @@ export const mutations: Mutation[] = [
   {
     name: "pair-place-unread",
     breaks: "a pointer through a `&mut dyn`'s pair made with its place's handle is a handle on the pair's own `value` (#1519)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  if (key === \"value\" && !offset && root === undefined && object !== null && typeof object === \"object\" && object.$place !== undefined) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts","-t","^address_of_a_field_given_to_generic_code.rs$"],
@@ -790,7 +790,7 @@ export const mutations: Mutation[] = [
   {
     name: "offset-handle-not-a-place",
     breaks: "a key's handle at another offset isn't taken as a place, so a pointer through it is refused (#1502)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  return made === handle || made?.others?.get(handle.offset) === handle;\n",
     replace: "  return made === handle;\n",
     tests: ["test/corpus.test.ts","-t","^address_of_what_option_as_mut_lends.rs$"],
@@ -798,7 +798,7 @@ export const mutations: Mutation[] = [
   {
     name: "releasing-unbounded",
     breaks: "every allocation an address is asked of waits for a cleanup, so a program that never yields keeps a record of each until the heap is used up (#1677)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "    if (align === 16 && $releasing < $releasingMost) {\n",
     replace: "    if (align === 16) {\n",
     tests: ["test/lowering.test.ts", "-t", "million short-lived addresses"],
@@ -806,7 +806,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-shown-options-unread",
     breaks: "a pointer's `{:p}` and `{:?}` read none of the `Formatter`'s options, so `{:20p}` of `0x1234` is `0x1234`, unpadded (#2282)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  return options === undefined ? text : $formatted(text, $ptrOptions(options, padTo), true);\n",
     replace: "  return text;\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_shown_by_options\\.rs$"],
@@ -814,7 +814,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-alternate-unpadded",
     breaks: "`{:#?}` and `{:#p}` of a pointer zero-pad it to nothing, so a `{:#?}` struct's pointer field of `0x8` is `0x8`, where std's is `0x00000008` (#2282)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  return options.alternate ? { ...options, zero: true, width: options.width ?? padTo } : options;\n",
     replace: "  return options;\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_shown_by_options\\.rs$"],
@@ -822,7 +822,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-alternate-width-unread",
     breaks: "`{:#20p}` of a pointer zero-pads it to `usize`'s width, not the 20 it asks (#2282)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "width: options.width ?? padTo }",
     replace: "width: padTo }",
     tests: ["test/corpus.test.ts", "-t", "^pointer_shown_by_options\\.rs$"],
@@ -830,7 +830,7 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-written-unprefixed",
     breaks: "a pointer written into a writer has no `0x`, its digits alone, where std's `pad_integral` writes its prefix (#2282)",
-    file: "src/runtime/pointers.js",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
     find: "  return $writeIntegral(f, true, \"0x\", digits, { ...$ptrOptions(options, padTo), alternate: true });\n",
     replace: "  return $writeIntegral(f, true, \"0x\", digits, { ...$ptrOptions(options, padTo) });\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_shown_by_options\\.rs$"],

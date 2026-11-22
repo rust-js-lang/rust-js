@@ -1,8 +1,8 @@
 //! Decode the binding language independently of call lowering.
 
 use super::declarations::{Written, written_types};
-use crate::js;
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js;
 use rustc_ast::LitKind;
 use rustc_hir::ExprKind;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -1085,7 +1085,7 @@ fn prototype_key_refused(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<String> {
     ))
 }
 
-/// What `$stdIterator` (`src/runtime/std_iterator.js`) gives std's struct
+/// What `$stdIterator` (`crates/rust-js-program/src/runtime/std_iterator.js`) gives std's struct
 /// as a JS iterator's own methods.
 const STEPS_METHODS: &[&str] = &[
     "next",

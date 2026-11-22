@@ -7,10 +7,10 @@
 //! `resume_unwind(payload)` is `throw $unwinding(payload)`. An
 //! `AssertUnwindSafe` is the value it holds (`Recognition::transparent`).
 
-use crate::js::{Expr, Known, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{Expr, Known, Stmt, StmtKind};
 
 /// What's asked of unwinding.
 #[derive(Clone, Copy, PartialEq, Debug)]

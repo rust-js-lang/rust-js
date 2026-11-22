@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 /// `export type { Kind, Size as Measure } from "./shapes.js";`.
 type TypeExport<'a> = (
     rustc_span::Span,
-    &'a Option<crate::js::ImportFrom>,
+    &'a Option<rust_js_program::js::ImportFrom>,
     Vec<&'a (String, String)>,
     rustc_span::def_id::DefId,
 );
@@ -56,8 +56,8 @@ pub(super) fn imports(
     }
     for (statement, reexport) in reexports {
         let from = match &reexport.from {
-            crate::js::ImportFrom::Module(path) => json!({ "module": path }),
-            crate::js::ImportFrom::Specifier(specifier) => json!({ "specifier": specifier }),
+            rust_js_program::js::ImportFrom::Module(path) => json!({ "module": path }),
+            rust_js_program::js::ImportFrom::Specifier(specifier) => json!({ "specifier": specifier }),
         };
         let mut declaration = json!({ "kind": "export", "names": reexport.named });
         declaration
@@ -80,8 +80,8 @@ pub(super) fn imports(
     }
     for (at, from, names, item) in grouped {
         let from = match from {
-            Some(crate::js::ImportFrom::Module(path)) => json!({ "module": path }),
-            Some(crate::js::ImportFrom::Specifier(specifier)) => json!({ "specifier": specifier }),
+            Some(rust_js_program::js::ImportFrom::Module(path)) => json!({ "module": path }),
+            Some(rust_js_program::js::ImportFrom::Specifier(specifier)) => json!({ "specifier": specifier }),
             None => json!({}),
         };
         let mut declaration = json!({ "kind": "export", "names": names, "typeOnly": true });

@@ -5,10 +5,10 @@
 //! them, `==`, `Hash`, `Clone`, is of the array; what std's bodies read
 //! memory by where it is for is here, its runtime helpers `c_str.js`'s.
 
-use crate::js::{self, Expr, Stmt};
 use crate::lower::calls::Call;
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
+use rust_js_program::js::{self, Expr, Stmt};
 
 /// What's asked of a `CStr` or a `CString`.
 #[derive(Clone, Copy, PartialEq, Debug)]

@@ -1,11 +1,11 @@
-// Mutations of src/runtime/closing.js (ADR 0422).
+// Mutations of crates/rust-js-program/src/runtime/closing.js (ADR 0422).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "closing-own-nth-unsaid",
     breaks: "a closed source of the crate's with its own `nth`, a `take`'s or an `enumerate`'s, doesn't say that `nth` is its own, so a `step_by` over it steps each item, not by the `nth` Rust asks (#261)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  $ownsAs(closing, it, \"nth\");\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(step_by_compiled_source_nth|own_nth_through_closed_sources|rev_made_knowing_its_back).rs$"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-drops-none",
     breaks: "a `take` of an iterator that owns items with a destructor drops none it hasn't given as it ends",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  const close = () => $close(closing, () => drop?.(it));\n",
     replace: "  const close = () => $close(closing, () => {});\n",
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-twice",
     breaks: "what's closed is dropped again, as the crate's own fold dropped it before it's closed",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  if (state !== \"open\") return;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(adapter_drops|own_fold_through_adapters).rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-back-hidden",
     breaks: "what `$closing` closes is stepped from its back by nothing, so `rev()` of an adapter of a source with a destructor fails",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  closing.back = () => it.back();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-own-fold-dropped-again",
     breaks: "what the crate's own fold took and dropped is dropped again as it's closed",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "      it.ownFold,\n      ends,\n",
     replace: "      false,\n      ends,\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_folds_reach_its_sources_own.rs$"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-fold-steps",
     breaks: "a closed iterator's fold steps it by `next`, not its source's own `fold`",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    fold,\n    count:",
     replace: "    count:",
     tests: ["test/corpus.test.ts", "-t", "^flatten_folds_reach_its_sources_own.rs$"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-nth-by-next",
     breaks: "a closing's nth is its iterator's",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    nth: own ? sliceNth : it.nth !== undefined ? (k, dropItem) => done(it.nth(k, dropItem))",
     replace: "    nth: own ? sliceNth : false ? (k, dropItem) => done(it.nth(k, dropItem))",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_from_back.rs$"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-length-unknown",
     breaks: "a closed iterator doesn't pass on its source's length, so `enumerate()` of items with a destructor stepped from its back throws, `iter.len is not a function` (#211)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  // stepped from its back counts by (#211).\n  if (it.len !== undefined) closing.len = () => it.len();\n",
     replace: "  // stepped from its back counts by (#211).\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_rev_drops.rs$"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-rfold-unpassed",
     breaks: "a source closed to drop it, stepped from its back by an adapter's `rfold`, doesn't pass the crate's own `rfold` on (#220)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    rfold: it.rfold !== undefined ? rfold : undefined,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_folds_reach_its_sources_own.rs$"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-own-rfold-dropped-again",
     breaks: "the crate's own `rfold`, which drops what it folds, is dropped again as it's closed (#220)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "unwound(() => it.rfold(init, f, unwind, ends), it.ownRfold, ends)",
     replace: "unwound(() => it.rfold(init, f, unwind, ends), false, ends)",
     tests: ["test/corpus.test.ts", "-t", "^flatten_folds_reach_its_sources_own.rs$"],
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-held-closed-when-done",
     breaks: "a held source closed to drop it drops what it holds as it's done, not where its owner drops it (#206)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    if (step.done && !closing.held) close();\n",
     replace: "    if (step.done) close();\n",
     tests: ["test/corpus.test.ts", "-t", "^fuse_holds_its_source_in_generic_code.rs$"],
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-slice-from-back",
     breaks: "a `Vec`'s `IntoIter` passed over from its back drops what it passes back to front, where std drops it as one slice, front to back (#234)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  if (each !== undefined) $dropItems(passed, each);\n",
     replace: "  if (each !== undefined) $dropItems(back ? passed.reverse() : passed, each);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-front-nth-unowned",
     breaks: "a `Vec`'s `IntoIter` doesn't say its `nth` drops what it passes, so a `chain` of it isn't asked its `nth` and drops a reversed side's back to front (#250)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    $owns(closing, \"nthBack\", \"nth\");\n",
     replace: "    $owns(closing, \"nthBack\");\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-fold-unclosed-on-throw",
     breaks: "a `for_each` or `fold` whose closure panics leaves what's left of an owning source undropped, its `$closing` never closed (#422)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "own ? () => $takenBy(closing, fold) : fold, ends, close);",
     replace: "own ? () => $takenBy(closing, fold) : fold, ends);",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
@@ -121,7 +121,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-fold-unwind-lost",
     breaks: "an owning source's `$closing` drops the `unwind` its fold is given, so the crate's own `next` that panics under `last` drops what's left before the kept item (#426)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "it.fold(init, f, unwind, ends) : $foldDropping(it, init, (a, x) => f(a, x), unwind, ends)",
     replace: "it.fold(init, f, undefined, ends) : $foldDropping(it, init, (a, x) => f(a, x), undefined, ends)",
     tests: ["test/corpus.test.ts", "-t", "^panic_in_own_next_drops.rs$"],
@@ -129,7 +129,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-own-fold-closed-again",
     breaks: "an iterator of the crate's whose own `fold` drops what it took as a stage's panic unwinds is closed again: what it hadn't stepped is dropped twice (#423)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  return $endsAfter(\n    () => {\n      it.$state = \"taken\";\n    },\n    () => run(),\n  );\n",
     replace: "  const ran = run();\n  it.$state = \"taken\";\n  return ran;\n",
     tests: ["test/corpus.test.ts", "-t", "^own_folds_unwind.rs$"],
@@ -137,7 +137,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-own-last-unforwarded",
     breaks: "what holds the crate's iterator with its own `last` doesn't say so, so a `skip`'s `last` of it folds it (#494)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    last: it.ownLast || intoIter ? last : undefined,\n",
     replace: "    last: intoIter ? last : undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^last_takes_its_source.rs$"],
@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-nth-drop-unpassed",
     breaks: "what holds the crate's iterator asks its `nth` without the items' drop, so std's default `nth` of it, by a `skip`'s `fold`, drops none it passes (#494)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: " ? (k, dropItem) => done(it.nth(k, dropItem)) :",
     replace: " ? (k) => done(it.nth(k)) :",
     tests: ["test/corpus.test.ts", "-t", "^impl_trait_hides_own_iterator.rs$"],
@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-own-count-unforwarded",
     breaks: "what holds the crate's iterator with its own `count` doesn't pass it on, so a `skip`'s `count` of one with a destructor steps it (#505)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    count: it.ownCount || intoIter ? count : undefined,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
   {
     name: "advance-slice-stops-at-a-panic",
     breaks: "a `Vec`'s slice passed over by `advance_by` or `advance_back_by` stops dropping at an item whose drop panics, and what's after it in the slice is never dropped (#670)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  if (each !== undefined) $dropItems(passed, each);\n",
     replace: "  if (each !== undefined) for (const item of passed) each(item);\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_take_count_drops_a_slice.rs$"],
@@ -172,7 +172,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-into-iter-last-folds",
     breaks: "a closed `Vec`'s `into_iter()`'s `last` folds it, dropping each before the next, not std's `IntoIter::last`, which takes its back and drops what's left, so a drop that panics drops the item that was to replace it and leaks the rest (#648)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  if (it.ownLast || intoIter) $owns(closing, \"last\");\n",
     replace: "  if (it.ownLast) $owns(closing, \"last\");\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_last_takes_its_back.rs$"],
@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-into-iter-last-unclosed",
     breaks: "a closed `Vec`'s `into_iter()`'s own `last` takes its back and never drops what it has left (#648)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "      const step = it.back();\n      $closedAfter(ends, close);\n",
     replace: "      const step = it.back();\n      ends?.();\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_last_takes_its_back.rs$"],
@@ -188,7 +188,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-own-nth-back-unsaid",
     breaks: "a closed source of the crate's with its own `nth_back` doesn't say it's its own, so a `rev().skip(n)` over it steps it by `next_back`, never calling it (#649)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  $ownsAs(closing, it, \"nthBack\");\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_rev_nths_its_own_back.rs$"],
@@ -196,7 +196,7 @@ export const mutations: Mutation[] = [
   {
     name: "slicing-unsaid",
     breaks: "a `Vec`'s `IntoIter` given generic code or stepped by `nth` isn't given its own `advance_by`, so a panicking drop among what it passes stops it, where std's slice drops the rest (#703)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  if (!$arrayIter(it) || $ownMethod(it, \"advanceBackBy\")) return it;\n",
     replace: "  return it;\n",
     tests: ["test/corpus.test.ts", "-t", "^(nth_passes_a_slice_or_each|nth_passed_drops_unwind).rs$"],
@@ -204,7 +204,7 @@ export const mutations: Mutation[] = [
   {
     name: "slicing-last-folds",
     breaks: "a `Vec`'s `IntoIter` given generic code or std's compiled `Fuse` or `Peekable` isn't given its own `last`, so it's folded, a drop that panics dropping the item that was to replace it, where std's `IntoIter::last` takes its back and drops what's left as one slice (#648)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  $owns(it, \"nth\", \"nthBack\", \"last\", \"count\");\n",
     replace: "  $owns(it, \"nth\", \"nthBack\", \"count\");\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^vec_last_takes_its_back"],
@@ -212,7 +212,7 @@ export const mutations: Mutation[] = [
   {
     name: "slicing-last-leaves-the-rest",
     breaks: "a `Vec`'s `IntoIter`'s own `last`, given its items' drop, takes its back and never drops what it has left (#648)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "      if (each !== undefined) it.advanceBy(it.len(), each);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^vec_last_takes_its_back"],
@@ -220,7 +220,7 @@ export const mutations: Mutation[] = [
   {
     name: "holding-moved-ignored",
     breaks: "an adapter's function a fold moves drops after what its source has left, a `take(2).map(f).sum()`'s after the `take`'s rest (#710)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  if (moved === undefined) return holding;\n",
     replace: "  return holding;\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
@@ -228,7 +228,7 @@ export const mutations: Mutation[] = [
   {
     name: "holding-before-after-swapped",
     breaks: "a `map`'s function, folded inside another's, drops before the outer one, and a `filter`'s after it, where std's `map_fold` drops what it's given first and `filter_fold` its own (#710)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    const both = moved === \"before\" ? () => $closedAfter(own, outer) : () => $closedAfter(outer, own);\n",
     replace: "    const both = moved === \"before\" ? () => $closedAfter(outer, own) : () => $closedAfter(own, outer);\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
@@ -236,7 +236,7 @@ export const mutations: Mutation[] = [
   {
     name: "holding-alone-as-after",
     breaks: "a `flat_map`'s function goes to its fold with what drops with its `f`, which drops it after its source has closed, where std's `Map` inside moves it alone into its source's fold (#710)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    if (moved === \"alone\") return by(outer, own);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
@@ -244,7 +244,7 @@ export const mutations: Mutation[] = [
   {
     name: "holding-rfold-of-its-back-missing",
     breaks: "a `map()` of a `Vec`'s items folded from its back, which has no `rfold` of its own, drops its closure as it's closed, after what's left, where std's `Map::rfold` moves it into its source's (#734)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    (holding.back === undefined\n",
     replace: "    (true\n",
     tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [
     name: "slicing-lent-unpassed",
     breaks:
       "`$slicing` of a lent `Vec`'s `IntoIter` gives what it lends its slice's steps but the lent value doesn't pass them on, so std's compiled `Rev::nth` of a `by_ref()` drops what it passes from the back one by one (#755)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    $forward(it, it.lends, { advanceBy: \"advanceBy\", advanceBackBy: \"advanceBackBy\", nth: \"nth\", nthBack: \"nthBack\" });\n",
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
@@ -262,7 +262,7 @@ export const mutations: Mutation[] = [
     name: "slicing-lent-ignored",
     breaks:
       "`$slicing` of a lent `Vec`'s `IntoIter` gives it nothing, as the lent value has no `items`, so a generic `nth_back` of a `by_ref()` drops what it passes one by one, not as one slice (#755)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  if (it.lends !== undefined) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
   {
     name: "holding-close-stops-at-source-throw",
     breaks: "a map's function that holds what drops is leaked where its source's drop panics, where `Map`'s drop glue drops `iter`, then `f` (#762)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  const holding = $closing(it, (it) => $inTurn(() => it.return(), own));\n",
     replace: "  const holding = $closing(it, (it) => {\n    it.return();\n    own();\n  });\n",
     tests: ["test/corpus.test.ts", "-t", "^parts_close_past_a_panic.rs$"],
@@ -278,7 +278,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-hint-dropped",
     breaks: "what's closed where it's dropped, a `Vec`'s of what drops, has no hint, so its `rev().filter()`'s is `(0, None)` (#733)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  closing.sizeHint = () => $sizeHint(it);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(size_hint_of_adapters|skip_advanced_from_its_back_by_its_source).rs$"],
@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
   {
     name: "close-while-taking-unchecked",
     breaks: "what its own consumer is taking is closed, dropped while that consumer holds it, which drops it again: no Rust program does this, so it's rust-js's internal error, not a second drop (#870)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  if (state === \"taking\") throw $lifecycleBug(state, \"closed\");\n",
     replace: "",
     tests: ["test/runtime-package.test.ts", "-t", "lifecycle's impossible move"],
@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
   {
     name: "taken-again-unchecked",
     breaks: "what its own consumer took, or what's closed, is taken again, a second consumer of what one dropped: rust-js's internal error, not a consumer of a dropped value (#870)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  if (state !== \"open\") throw $lifecycleBug(state, \"taking\");\n",
     replace: "",
     tests: ["test/runtime-package.test.ts", "-t", "lifecycle's impossible move"],
@@ -302,7 +302,7 @@ export const mutations: Mutation[] = [
   {
     name: "state-from-unset",
     breaks: "std's compiled struct moved out or written whole doesn't carry where it is: a `Rev` closed before drops what it holds again (#537, #870)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  target.$state = value.$state;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet(_drops)?.rs$"],
@@ -311,7 +311,7 @@ export const mutations: Mutation[] = [
   {
     name: "holding-function-dropped-twice",
     breaks: "a `map`'s function with a destructor, moved into the fold it asks of what it steps and dropped there, is dropped again as the `map` is closed (#710, #870)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  const own = $onceOf(drop);\n",
     replace: "  const own = drop;\n",
     tests: ["test/corpus.test.ts", "-t", "^(fold_drops_moved_function_first|consumer_closure_dropped_first).rs$"],
@@ -319,7 +319,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-slice-count-folds",
     breaks: "a `Vec`'s `IntoIter`'s `count` folds it, each item dropped as it's counted, where std's is its `len()`, then it dropped as one slice: a drop that panics drops the rest as it unwinds, past the next that panics, where Rust aborts there (a wrong answer, #862)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    count: it.ownCount || intoIter ? count : undefined,\n",
     replace: "    count: it.ownCount ? count : undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_count_second_panic_aborts.rs$"],
@@ -327,7 +327,7 @@ export const mutations: Mutation[] = [
   {
     name: "slicing-count-folds",
     breaks: "a `Vec`'s `IntoIter` given generic code isn't given std's `count`, so it's folded, each item dropped as it's counted, and a second panic drops one more before it aborts (a wrong answer, #862)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    count: (each = drop) => {\n      const n = it.len();\n",
     replace: "    uncounted: (each = drop) => {\n      const n = it.len();\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_count_second_panic_aborts.rs$"],
@@ -335,7 +335,7 @@ export const mutations: Mutation[] = [
   {
     name: "slicing-count-leaves-the-rest",
     breaks: "a `Vec`'s `IntoIter`'s own `count`, given its items' drop, counts them and never drops them (#862)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "      if (each !== undefined) it.advanceBy(n, each);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_count_second_panic_aborts.rs$"],
@@ -343,7 +343,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-steps-by-closing-next",
     breaks: "what generic code gives the crate's own `from_iter`, `$closing(Iterator.from(it), drop)`, is closed as it's stepped to its end, by the `next` JS's protocol gave it, though the `from_iter` holds it and drops it after its loop (#1239)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  const closing = new $Steps(() => done(it.ownNext !== undefined ? it.ownNext() : it.next()), close);\n",
     replace: "  const closing = new $Steps(() => done(it.next()), close);\n",
     tests: ["test/corpus.test.ts", "-t", "^from_iter_holds_what_generic_code_gives\\.rs$"],
@@ -351,7 +351,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-try-fold-by-next",
     breaks: "a `$closing`'s `tryFold` is `$Steps`' default by `next`, so a collect into an `Option` of a `skip(1)` generic code gives it steps `nth(1)` where std's `try_fold` asks `nth(0)` (#2051), and an in-place collect through a filter whose closure holds what drops drops what it collected where a rejected item's drop panics, where std leaks it (#2056)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    tryFold: it.tryFold !== undefined ? tryFold : undefined,\n",
     replace: "    tryFold: undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^(collected_in_place_past_a_capturing_filter_whose_rejected_drop_panics|generic_code_steps_adapters_as_std)\\.rs$"],
@@ -359,7 +359,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-into-iter-by-its-steps",
     breaks: "a closed iterator is taken for a `Vec`'s `IntoIter` by its having an `advanceBackBy` of its own, so a flatten's, std's `FlattenCompat`'s, counted in generic code after a `skip`, asks a `len()` it hasn't and throws `it.len is not a function` (#2154)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  const own = $sliced(it);\n",
     replace: "  const own = $ownMethod(it, \"advanceBackBy\");\n",
     tests: ["test/corpus.test.ts", "-t", "^count_of_a_flatten_skipped_from_its_back.rs$"],
@@ -367,7 +367,7 @@ export const mutations: Mutation[] = [
   {
     name: "slicing-unmarked",
     breaks: "a `Vec`'s `IntoIter` given its slice's steps by `$slicing` isn't marked one, so a JS iterator made of it for generic code that asks its length hides its slice's steps, and its `nth` there drops each, stopping at a panic (#703, #2154)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  it.dropItem = drop;\n  it[$slicedKey] = true;\n  return it;\n}\n",
     replace: "  it.dropItem = drop;\n  return it;\n}\n",
     tests: ["test/corpus.test.ts", "-t", "^(nth_passes_a_slice_or_each|generic_count_second_panic_aborts|count_of_a_flatten_skipped_from_its_back).rs$"],
@@ -375,7 +375,7 @@ export const mutations: Mutation[] = [
   {
     name: "holding-count-unmoved",
     breaks: "a holding adapter's own `count` and `last` aren't given its function to drop where what it steps folds its source, so a boxed source's `filter(..).count()` and `flat_map(..).last()` never drop a closure with a destructor, as std's `Filter::count` and `FlattenCompat::last` do (#2224)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    if (!$ownMethod(holding, step)) continue;\n",
     replace: "    continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^holding_adapter_counted_or_last_drops_its_function.rs$"],
@@ -383,7 +383,7 @@ export const mutations: Mutation[] = [
   {
     name: "closing-last-drops-the-consumers-drop",
     breaks: "a closed iterator's own `last` forwarded isn't given the items' `drop`, so a boxed source's `flat_map(..).last()` never drops the items it passes, as std's `FlattenCompat::last` does (#2224)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "    const step = unwound(() => it.last(drop, ends), true, ends);\n",
     replace: "    const step = unwound(() => it.last(undefined, ends), true, ends);\n",
     tests: ["test/corpus.test.ts", "-t", "^holding_adapter_counted_or_last_drops_its_function.rs$"],
@@ -391,7 +391,7 @@ export const mutations: Mutation[] = [
   {
     name: "holding-function-kept-from-the-flatten",
     breaks: "a `flat_map`'s holding doesn't give the flatten its function to drop, so dropped with an inner iterator part-stepped, its function drops after the inner's items, where `FlatMap`'s drop glue drops its `Map`, the source then `f`, before its `frontiter` and `backiter` (#2241)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  if (moved === \"alone\") it.functionDrop = own;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_holding_its_function_drops_it_after_its_source.rs$"],
@@ -399,7 +399,7 @@ export const mutations: Mutation[] = [
   {
     name: "holding-rfold-alone-kept",
     breaks: "a `flat_map`'s holding folded from its back keeps its function from its source's `rfold`, so it drops after the source, where `Map::rfold` moves it into the source's (#2241)",
-    file: "src/runtime/closing.js",
+    file: "crates/rust-js-program/src/runtime/closing.js",
     find: "  if (rfold !== undefined) holding.rfold = movingAlone(\"rfold\", rfold);\n",
     replace: "  if (rfold !== undefined) holding.rfold = moving((init, f, unwind, ends) => rfold(init, f, unwind, ends));\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_holding_its_function_drops_it_after_its_source.rs$"],

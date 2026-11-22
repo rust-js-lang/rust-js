@@ -1,11 +1,11 @@
-// Mutations of src/runtime/fmt_error.js (ADRs 0187, 0461).
+// Mutations of crates/rust-js-program/src/runtime/fmt_error.js (ADRs 0187, 0461).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "write-expect-err-of-ok-silent",
     breaks: "`unwrap_err()` and `expect_err(..)` of a write that didn't fail give `undefined`, not std's panic",
-    file: "src/runtime/fmt_error.js",
+    file: "crates/rust-js-program/src/runtime/fmt_error.js",
     find: '  if (result === undefined) throw $stringPanic(message + ": ()");\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fmt_result_unwrap_err"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "write-expect-err-message-unsuffixed",
     breaks: "`expect_err(msg)` of a write that didn't fail panics `msg`, not std's `msg: ()`",
-    file: "src/runtime/fmt_error.js",
+    file: "crates/rust-js-program/src/runtime/fmt_error.js",
     find: '  if (result === undefined) throw $stringPanic(message + ": ()");\n',
     replace: '  if (result === undefined) throw $stringPanic(message);\n',
     tests: ["test/corpus.test.ts", "-t", "^fmt_result_unwrap_err"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-result-err-ok",
     breaks: "a `fmt::Result` given where generic code has a `Result` is `Ok` though it failed",
-    file: "src/runtime/fmt_error.js",
+    file: "crates/rust-js-program/src/runtime/fmt_error.js",
     find: "    if (error instanceof $WriteError) return { TAG: \"Err\", _0: error };\n",
     replace: "    if (error instanceof $WriteError) return { TAG: \"Ok\" };\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-of-err-dropped",
     breaks: "a generic `Result`'s `Err` read as a `fmt::Result` is `undefined`, `Ok`",
-    file: "src/runtime/fmt_error.js",
+    file: "crates/rust-js-program/src/runtime/fmt_error.js",
     find: "  if (result.TAG === \"Ok\") return undefined;\n",
     replace: "  return undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "write-expect-io-plain",
     breaks: "`expect` of an `io::Result<()>` that's an `Err` panics with `: Error`, not its error's `{:?}`",
-    file: "src/runtime/fmt_error.js",
+    file: "crates/rust-js-program/src/runtime/fmt_error.js",
     find: "  throw $stringPanic(message + \": \" + (result instanceof $IoError ? $ioErrorDebug(result) : \"Error\"));\n",
     replace: "  throw $stringPanic(message + \": Error\");\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result_expect.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "write-caught-anything",
     breaks: "a function that gives a value's `Result` takes a panic for its `Err`",
-    file: "src/runtime/fmt_error.js",
+    file: "crates/rust-js-program/src/runtime/fmt_error.js",
     find: "function $writeCaught(error) {\n  if (error instanceof $WriteError) return error;\n  throw error;\n",
     replace: "function $writeCaught(error) {\n  return error;\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result_panic.rs$"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-error-of-generic-code-unmade",
     breaks: "`Err(fmt::Error)` made by generic code, whose `fmt::Error` is `undefined`, given back as a write's result reads as `Ok` (#1408)",
-    file: "src/runtime/fmt_error.js",
+    file: "crates/rust-js-program/src/runtime/fmt_error.js",
     find: "  return result._0 ?? new $FmtError();\n",
     replace: "  return result._0;\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_given_to_generic_code.rs$"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "fmt-text-or-partial-dropped",
     breaks: "a `write!` into a `String` through generic code loses what it wrote before a value that fails, `\"\"` where native Rust has `\"x1y\"` (#1696)",
-    file: "src/runtime/fmt_error.js",
+    file: "crates/rust-js-program/src/runtime/fmt_error.js",
     find: "    if (error instanceof $FmtError) written($fmtPartial(error));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_write_into_a_string_keeps_text_before_a_failure.rs$"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "panic-part-way-lines-dropped",
     breaks: "a writer that prints a line and then panics part-way through a `println!` loses the line it printed (#1761)",
-    file: "src/runtime/fmt_error.js",
+    file: "crates/rust-js-program/src/runtime/fmt_error.js",
     find: "  else if ($printFrames.at(-1) === $out && f !== \"\") {\n",
     replace: "  else if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_prints_a_line_then_panics)\\.rs$"],

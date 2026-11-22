@@ -1,11 +1,11 @@
-// Mutations of src/runtime/borrow.js (ADR 0328).
+// Mutations of crates/rust-js-program/src/runtime/borrow.js (ADR 0328).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "borrow-unchecked",
     breaks: "a `borrow()` while a `borrow_mut()` lives runs on",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  if (cell.borrows < 0) $alreadyMutablyBorrowed();\n",
     replace: "",
     tests: ["test/borrow-forms.test.ts", "-t", "a guard held while a Drop runs is counted"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "borrow-mut-beside-shared",
     breaks: "a `borrow_mut()` while a `borrow()` lives runs on",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  if (cell.borrows) {\n    // What the call",
     replace: "  if (cell.borrows < 0) {\n    // What the call",
     tests: ["test/borrow-forms.test.ts", "-t", "a guard held while a Drop runs is counted"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "unborrow-keeps",
     breaks: "a guard dropped leaves its cell borrowed",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  $setBorrows(cell, cell.borrows > 0 ? cell.borrows - 1 : 0);",
     replace: "  $setBorrows(cell, cell.borrows);",
     tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "borrows-enumerable",
     breaks: "`==` of two `RefCell`s compares their borrow counts",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "{ value: borrows, writable: true, configurable: true }",
     replace: "{ value: borrows, writable: true, configurable: true, enumerable: true }",
     tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-borrow-always-ok",
     breaks: "`try_borrow_mut()` while borrowed is `Ok`",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  if (mutable ? cell.borrows : cell.borrows < 0) {\n    return { TAG: \"Err\"",
     replace: "  if (false) {\n    return { TAG: \"Err\"",
     tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "with-borrow-mut-unheld",
     breaks: "`with_borrow_mut`'s closure runs with its cell free to borrow",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  $borrowMut(cell, true);\n  try {\n    return f(boxed ? cell : cell.value);",
     replace: "  $borrowMut(cell);\n  try {\n    return f(boxed ? cell : cell.value);",
     tests: ["test/corpus.test.ts", "-t", "thread_local_borrow_inside"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "with-borrow-unheld",
     breaks: "a `RefCell`'s value's `clone` runs with the cell free to borrow mutably",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  $borrow(cell, true);\n  try {\n    return f(itself ? cell : cell.value);",
     replace: "  $borrow(cell);\n  try {\n    return f(itself ? cell : cell.value);",
     tests: ["test/corpus.test.ts", "-t", "refcell_held_while_asked"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "show-borrowed-ignored",
     breaks: "`{:?}` of a mutably borrowed `RefCell` panics, where it's `<borrowed>`",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  return cell.borrows < 0 ? \"<borrowed>\" : $withBorrow(cell, show, itself);",
     replace: "  return $withBorrow(cell, show, itself);",
     tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "ref-cell-swap-unheld",
     breaks: "a `RefCell` swapped with itself runs on",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  $borrowMut(a, true);\n  try {\n",
     replace: "  $borrowMut(a);\n  try {\n",
     tests: ["test/corpus.test.ts", "-t", "refcell_swap_itself"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "lock-relock",
     breaks: "a `Mutex` locked while held runs on, where Rust deadlocks",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  if (mutable ? cell.borrows : cell.borrows < 0) $deadlock();\n",
     replace: "  if (!mutable && cell.borrows < 0) $deadlock();\n",
     tests: ["test/runtime-package.test.ts", "-t", "locked again"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "lock-read-under-write",
     breaks: "an `RwLock` read while written runs on, where Rust deadlocks",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  if (mutable ? cell.borrows : cell.borrows < 0) $deadlock();\n",
     replace: "  if (mutable && cell.borrows) $deadlock();\n",
     tests: ["test/runtime-package.test.ts", "-t", "locked again"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "with-borrow-mut-unwind-held",
     breaks: "a panic in `with_borrow_mut`'s closure leaves its cell borrowed as it unwinds",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "    return f(boxed ? cell : cell.value);\n  } finally {\n    $unborrow(cell);\n  }",
     replace: "    return f(boxed ? cell : cell.value);\n  } finally {\n  }",
     tests: ["test/corpus.test.ts", "-t", "refcell_unwind_releases"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-lock-never-blocks",
     breaks: "`try_lock()` while the thread holds it is `Ok`",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  if (mutable ? cell.borrows : cell.borrows < 0) return { TAG: \"Err\", _0: \"WouldBlock\" };\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","try_lock"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-read-blocks-reads",
     breaks: "`try_read()` beside a read is `Err`",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  if (mutable ? cell.borrows : cell.borrows < 0) return { TAG: \"Err\", _0: \"WouldBlock\" };",
     replace: "  if (cell.borrows) return { TAG: \"Err\", _0: \"WouldBlock\" };",
     tests: ["test/corpus.test.ts","-t","try_lock"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-lock-not-held",
     breaks: "`try_lock()`'s guard isn't counted while it's held",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  const locked = $locked(cell, mutable);\n",
     replace: "  const locked = $locked(cell, mutable);\n  $unborrow(cell);\n",
     tests: ["test/corpus.test.ts","-t","try_lock"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-cell-impl-unset",
     breaks: "`$dynCell` gives the cell no `impl`",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  Object.defineProperty(cell, \"impl\", { value: both, writable: true, configurable: true });\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-cell-impl-replaced",
     breaks: "a cell made a `dyn` of a second trait loses the first's methods",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "held === undefined || held === impl ? impl : { ...held, ...impl }",
     replace: "impl",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "dyn-cell-impl-enumerable",
     breaks: "a cell made a `dyn` isn't equal to a cell of its value: `==` compares its `impl`",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "{ value: both, writable: true, configurable: true }",
     replace: "{ value: both, writable: true, configurable: true, enumerable: true }",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "show-locked-unlocked",
     breaks: "`{:?}` of a `Mutex` its thread holds shows what it holds, where std's says it's locked",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  const locked = exclusive ? cell.borrows : cell.borrows < 0;\n",
     replace: "  const locked = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_debug.rs$"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "show-locked-unquoted",
     breaks: "`{:?}` of a locked `Mutex` shows `<locked>` bare, where std's quotes it",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  if (locked) return exclusive ? '\"<locked>\"' : \"<locked>\";",
     replace: "  if (locked) return \"<locked>\";",
     tests: ["test/corpus.test.ts", "-t", "^lock_debug.rs$"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "with-borrow-gives-value",
     breaks: "what a `RefCell` of an object is given to clone, compare or show is its `value`, `undefined` (ADR 0863)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "    return f(itself ? cell : cell.value);\n",
     replace: "    return f(cell.value);\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "swap-of-objects-swaps-values",
     breaks: "two `RefCell`s of objects swap their `value`s, which they haven't, and keep what they held (ADR 0863)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  if (itself) {\n    $assign(b, $take(a, b));\n  } else {",
     replace: "  if (false) {\n    $assign(b, $take(a, b));\n  } else {",
     tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
   {
     name: "replace-with-sets-value",
     breaks: "a `RefCell` of an object's `replace_with` sets a `value` it hasn't, and gives back the object it changed (ADR 0863)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  if (itself) return $take(cell, next);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-cell-null-undefined",
     breaks: "a nullable field's cell writes its `None` `undefined`, where JS's object's field is `null` (ADR 0863, amended)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "        object[key] = nullable ? (value ?? null) : value;\n",
     replace: "        object[key] = value;\n",
     tests: ["test/lowering-field-cells.test.ts", "-t", "lent is its one cell"],
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-cell-made-each-time",
     breaks: "a field's cell is made anew each time it's asked, so a borrow counted on one is never seen by the next (ADR 0863, amended)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "    cells.set(key, cell);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^refcell_field_lent_held.rs$"],
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
     name: "nullable-cell-stores-undefined",
     breaks:
       "a nullable thread-local's cell stores what it's written, `undefined` too, where its reads are tested `=== null` (#541)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "      value = given ?? null;\n",
     replace: "      value = given;\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
@@ -214,7 +214,7 @@ export const mutations: Mutation[] = [
   {
     name: "mapped-guard-never-released",
     breaks: "a mapped guard's drop releases nothing of the cell it was made of, which stays borrowed (#1275)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "    if (--ticket.holders.left === 0) $unborrow(ticket.cell);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_guards_mapped.rs$"],
@@ -222,7 +222,7 @@ export const mutations: Mutation[] = [
   {
     name: "split-guard-released-at-first-half",
     breaks: "`map_split`'s halves release the cell as the first drops, where std's holds it till the second (#1275)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  ticket.holders.left += 1;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_guards_mapped.rs$"],
@@ -230,7 +230,7 @@ export const mutations: Mutation[] = [
   {
     name: "two-cells-one-object-unrefused",
     breaks: "two cells' guards mapped to one object are each given a ticket, the first's drop releasing either cell (#1275)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  else if (tickets[0].cell === ticket.cell) tickets.push(ticket);\n",
     replace: "  else if (true) tickets.push(ticket);\n",
     tests: ["test/lowering-guard-maps.test.ts"],
@@ -238,7 +238,7 @@ export const mutations: Mutation[] = [
   {
     name: "guard-of-a-cell-unrefused",
     breaks: "a guard mapped to a cell is made, whose own guards' release would meet its own (#1275)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  if (form === \"cell\") {\n",
     replace: "  if (false) {\n",
     tests: ["test/lowering-guard-maps.test.ts"],
@@ -246,7 +246,7 @@ export const mutations: Mutation[] = [
   {
     name: "panicking-map-keeps-its-guard",
     breaks: "a map whose function panics keeps the guard it was given, the cell borrowed after the panic (#1275)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "function $guardMap(guard, made, form) {\n  const part = $unwinds(made, () => $unborrow(guard));\n",
     replace: "function $guardMap(guard, made, form) {\n  const part = made();\n",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_guards_mapped.rs$"],
@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
   {
     name: "lock-taken-unwinding-poisons",
     breaks: "a guard taken in a drop a panic runs poisons its lock as it's dropped, where std's records that a panic unwound as it was taken (#1438)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "    if ($panicking()) {\n      $lockedUnwinding.add(cell);\n    } else {\n",
     replace: "    if (false) {\n    } else {\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
@@ -262,7 +262,7 @@ export const mutations: Mutation[] = [
   {
     name: "lock-unwinding-unpoisoned",
     breaks: "a lock's guard dropped as a panic unwinds poisons nothing (#1438)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "    $poisonedLocks.add(cell);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
   {
     name: "poisoned-lock-ok",
     breaks: "a poisoned lock's `lock()` is `Ok` (#1438)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  return $poisonedLocks.has(cell) ? { TAG: \"Err\", _0: { data: guard } } : { TAG: \"Ok\", _0: guard };\n",
     replace: "  return { TAG: \"Ok\", _0: guard };\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
@@ -278,7 +278,7 @@ export const mutations: Mutation[] = [
   {
     name: "poisoned-unwrap-passes",
     breaks: "`lock().unwrap()` of a poisoned lock is its guard, where Rust's panics (#1438)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  if (!$poisonedLocks.has(cell)) return cell;\n",
     replace: "  return cell;\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
   {
     name: "poisoned-unwrap-keeps-guard",
     breaks: "`lock().unwrap()` of a poisoned lock panics holding its guard, so the lock is held for good (#1438)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  if (held) $unlock(cell);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
   {
     name: "poisoned-value-ok",
     breaks: "a poisoned lock's `into_inner()` is `Ok` (#1438)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  return $poisonedLocks.has(cell) ? { TAG: \"Err\", _0: { data: cell.value } } : { TAG: \"Ok\", _0: cell.value };\n",
     replace: "  return { TAG: \"Ok\", _0: cell.value };\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
@@ -302,7 +302,7 @@ export const mutations: Mutation[] = [
   {
     name: "poison-uncleared",
     breaks: "`clear_poison()` leaves the lock poisoned (#1438)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  $poisonedLocks.delete(cell);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
@@ -310,7 +310,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-lock-poisoned-ok",
     breaks: "a poisoned lock's `try_lock()` is `Ok` (#1438)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  return locked.TAG === \"Ok\" ? locked : { TAG: \"Err\", _0: { TAG: \"Poisoned\", _0: locked._0 } };\n",
     replace: "  return { TAG: \"Ok\", _0: locked._0.data ?? locked._0 };\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
@@ -318,7 +318,7 @@ export const mutations: Mutation[] = [
   {
     name: "show-locked-unpoisoned",
     breaks: "a poisoned lock's `{:?}` says `poisoned: false` (#1438)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "function $lockPoisoned(cell) {\n  return $poisonedLocks.has(cell);",
     replace: "function $lockPoisoned(cell) {\n  return false;",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
@@ -326,7 +326,7 @@ export const mutations: Mutation[] = [
   {
     name: "poison-marks-nothing",
     breaks: "a lock's guard's scope's `catch` marks no poison as a panic unwinds through it (#1438)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  if (!$lockedUnwinding.has(cell)) $poisonedLocks.add(cell);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
@@ -334,7 +334,7 @@ export const mutations: Mutation[] = [
   {
     name: "locked-unwinding-kept",
     breaks: "a lock once taken as a panic unwound stays so, and a later guard of it taken outside one poisons nothing as a panic unwinds through it (#1438)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "    } else {\n      $lockedUnwinding.delete(cell);\n    }\n",
     replace: "    }\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
@@ -342,7 +342,7 @@ export const mutations: Mutation[] = [
   {
     name: "borrow-mut-given-undropped",
     breaks: "`$borrowMut` of a borrowed cell throws without dropping what its call was given (#1587)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "    if (dropGiven !== undefined) $cleanup(dropGiven, error);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_replaced_while_borrowed_drops_what_it_was_given.rs$"],
@@ -350,7 +350,7 @@ export const mutations: Mutation[] = [
   {
     name: "borrow-mut-given-dropped-before-the-panic",
     breaks: "what a borrowed `RefCell`'s `replace` was given is dropped before its panic, `thread::panicking()` false in its `drop`, not as the panic unwinds (#1587)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "    if (dropGiven !== undefined) $cleanup(dropGiven, error);\n",
     replace: "    if (dropGiven !== undefined) dropGiven();\n",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_replaced_while_borrowed_drops_what_it_was_given.rs$"],
@@ -358,7 +358,7 @@ export const mutations: Mutation[] = [
   {
     name: "locked-data-panic-unpoisoned",
     breaks: "a panic out of a `Mutex`'s data's `Debug` leaves it unpoisoned, where the guard std's `Debug` holds poisons it as it drops (#1631)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "    if (exclusive && !(error instanceof $WriteError)) $cleanup(() => $poison(cell), error);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_cells_stopped_part_way.rs$"],
@@ -366,7 +366,7 @@ export const mutations: Mutation[] = [
   {
     name: "locked-data-err-poisons",
     breaks: "a `Mutex`'s data's `Debug` that returns `Err` poisons it, where only a panic does (#1631)",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "    if (exclusive && !(error instanceof $WriteError)) $cleanup(() => $poison(cell), error);\n",
     replace: "    if (exclusive) $cleanup(() => $poison(cell), undefined);\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_cells_stopped_part_way.rs$"],
@@ -374,7 +374,7 @@ export const mutations: Mutation[] = [
   {
     name: "write-borrowed-reads-while-borrowed",
     breaks: "a mutably borrowed `RefCell`'s `{:?}` into a writer reads what it holds, where std writes `<borrowed>`",
-    file: "src/runtime/borrow.js",
+    file: "crates/rust-js-program/src/runtime/borrow.js",
     find: "  if (cell.borrows < 0) return f.write(\"<borrowed>\");\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],

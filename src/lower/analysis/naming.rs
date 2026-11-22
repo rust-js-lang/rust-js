@@ -1115,7 +1115,7 @@ pub(super) fn name_items(
                 let owner = owners.entry((module, ty)).or_insert_with(|| fresh_in(names, &named));
                 // A property, so a name JS reserves for variables, like `new`, is fine.
                 let names = methods.entry((module, ty)).or_default();
-                let name = crate::names::fresh_apart(names, &js_name);
+                let name = rust_js_program::names::fresh_apart(names, &js_name);
                 (name, Some(owner.clone()))
             }
             None if named_expressions.contains(&def_id) => (js_name, None),

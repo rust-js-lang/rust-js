@@ -20,7 +20,7 @@ module APIs rather than introducing a plugin framework or a second Rust IR.
   compiler invariant violation, never valid generated JavaScript. The resolver
   lives in `src/link.rs` and accepts only owned modules, symbols, import candidates
   and reserved names. Lowering translates rustc module identities into symbols
-  before this boundary. `src/names.rs` owns the shared identifier and collision
+  before this boundary. `crates/rust-js-program/src/names.rs` owns the shared identifier and collision
   policy. Neither linking nor name allocation depends on rustc or lowering.
   `lower/pipeline.rs` returns owned `Unlinked` modules with explicit import
   requests, reserved names and requested runtime helpers. The driver invokes

@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use rustc_middle::mir::{BasicBlock, Body};
 
-use crate::js::{Name, Stmt, StmtKind};
+use rust_js_program::js::{Name, Stmt, StmtKind};
 
 /// Whether this compile records the labels left.
 static RECORDS: AtomicBool = AtomicBool::new(false);
@@ -208,7 +208,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::walk;
-    use crate::js::{Case, Expr, Span, Stmt, StmtKind};
+    use rust_js_program::js::{Case, Expr, Span, Stmt, StmtKind};
 
     fn stmt(kind: StmtKind) -> Stmt {
         kind.at(Span::NONE)
@@ -228,10 +228,10 @@ mod tests {
     #[test]
     fn each_compiler_label_kept_and_how_far_its_jumps_reach() {
         let left_from_loop = stmt(StmtKind::Labeled(
-            crate::js::Name::block_label("bb3".to_string()),
+            rust_js_program::js::Name::block_label("bb3".to_string()),
             vec![while_true(vec![stmt(StmtKind::If(
                 Expr::var("c"),
-                vec![stmt(StmtKind::Break(Some(crate::js::Name::block_label(
+                vec![stmt(StmtKind::Break(Some(rust_js_program::js::Name::block_label(
                     "bb3".to_string(),
                 ))))],
                 None,
@@ -241,7 +241,7 @@ mod tests {
             discriminant: Expr::var("x"),
             cases: vec![Case {
                 values: vec![Expr::int(1)],
-                body: vec![stmt(StmtKind::Break(Some(crate::js::Name::block_label(
+                body: vec![stmt(StmtKind::Break(Some(rust_js_program::js::Name::block_label(
                     "bb7".to_string(),
                 ))))],
                 falls: false,
@@ -249,7 +249,7 @@ mod tests {
             default: None,
         });
         let left_from_switch = stmt(StmtKind::While {
-            label: Some(crate::js::Name::block_label("bb7".to_string())),
+            label: Some(rust_js_program::js::Name::block_label("bb7".to_string())),
             cond: Expr::bool(true),
             body: vec![switch],
         });

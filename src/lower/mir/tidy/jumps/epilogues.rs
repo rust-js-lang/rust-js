@@ -123,7 +123,7 @@ pub(super) fn copied_tail(tail: &[Stmt]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::js::{Expr, Known, Name, Span};
+    use rust_js_program::js::{Expr, Known, Name, Span};
 
     fn stmt(kind: StmtKind) -> Stmt {
         kind.at(Span::NONE)

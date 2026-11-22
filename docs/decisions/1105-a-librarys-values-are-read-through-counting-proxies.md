@@ -71,8 +71,8 @@ library gives it read through a counting `Proxy`**
   sample, one case in 64 by a hash of its name and each listed one, in
   `check:fast` where its change is the object model's owners
   (`classes/`, `untagged/`, `field_keys.rs`, `bindings.rs`,
-  `representation.rs`, `analysis/fn_pointers.rs`, `src/js/stmt_walk.rs`,
-  `src/js/expr_walk.rs`), the readability passes, or the net itself.
+  `representation.rs`, `analysis/fn_pointers.rs`, `crates/rust-js-program/src/js/stmt_walk.rs`,
+  `crates/rust-js-program/src/js/expr_walk.rs`), the readability passes, or the net itself.
 
 ## Its first run
 

@@ -3,8 +3,8 @@
 //! where each path ends, and what the structure needed to reach it, a
 //! labeled block or a `break`, goes. A closure's body is tidied as its own.
 
-use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp, breaks, ends, names_break};
 use rust_js_program::collections::{IndexMap, IndexSet};
+use rust_js_program::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp, breaks, ends, names_break};
 
 use crate::lower::iterators::{self, eager_chains, eager_spreads, iterated};
 
@@ -141,7 +141,7 @@ pub(super) struct Hints<'h> {
     /// The function's parameters, which the `finish` stage takes apart.
     pub(super) params: &'h std::cell::RefCell<Vec<js::Pattern>>,
     /// The names MIR suggests of its temporaries, for `finish` to give.
-    pub(super) suggested: &'h IndexMap<crate::js::Name, Vec<String>>,
+    pub(super) suggested: &'h IndexMap<rust_js_program::js::Name, Vec<String>>,
     /// The locals the program names, and its `String`s, by name.
     pub(super) named: &'h Named,
     /// Its stages run again (`Again`).
@@ -189,11 +189,11 @@ fn run_stage(body: &mut Vec<Stmt>, hints: &Hints, stage: &stages::Stage, name: &
             return true;
         }
     }
-    if crate::js::validate::stages_checked() {
+    if rust_js_program::js::validate::stages_checked() {
         for contract in contracts::ALWAYS.iter().chain(stage.ensures) {
             // Of every fact said, one `--without-known` forgets too: what's
             // tried without it is the passes, not their check (ADR 1127).
-            if let Some(why) = crate::js::remembering(|| (contract.broken)(body)) {
+            if let Some(why) = rust_js_program::js::remembering(|| (contract.broken)(body)) {
                 panic!("tidy's `{name}` stage broke \"{}\": {why}", contract.name);
             }
         }
@@ -518,8 +518,8 @@ mod tests {
         MoveFacts, decided_tests, inlined, is_temporary, paired_temporaries, settle_jumps, shared_tails,
         spread_spreads, turned, user_name,
     };
-    use crate::js::{self, Expr, ExprKind, Op, Prop, Stmt, StmtKind, UnaryOp};
     use crate::lower::temporary_names::{spelled_as_temporary, temporary};
+    use rust_js_program::js::{self, Expr, ExprKind, Op, Prop, Stmt, StmtKind, UnaryOp};
 
     fn call(f: &str) -> js::Stmt {
         StmtKind::Expr(Expr::call(Expr::var(f), Vec::new())).at(js::Span::NONE)
@@ -739,12 +739,12 @@ mod tests {
         use super::decisions::default_values;
         let none = js::Span::NONE;
         let set = |v: Expr| StmtKind::Assign(Expr::var("n"), v).at(none);
-        let leave = || StmtKind::Break(Some(crate::js::Name::block_label("bb7".to_string()))).at(none);
+        let leave = || StmtKind::Break(Some(rust_js_program::js::Name::block_label("bb7".to_string()))).at(none);
         let branch =
             |test: &str, v: f64| StmtKind::If(Expr::var(test), vec![set(Expr::num(v)), leave()], None).at(none);
         let block = |mut body: Vec<Stmt>| {
             body.push(set(Expr::var("v")));
-            vec![StmtKind::Labeled(crate::js::Name::block_label("bb7".to_string()), body).at(none)]
+            vec![StmtKind::Labeled(rust_js_program::js::Name::block_label("bb7".to_string()), body).at(none)]
         };
         let mut copied = block(vec![branch("a", 1.0)]);
         default_values(&mut copied);
@@ -1173,7 +1173,7 @@ mod tests {
     #[test]
     fn a_temporary_is_known_by_its_name_and_a_users_never_is() {
         assert!(is_temporary(&js::Name::temporary(temporary(5))));
-        assert!(is_temporary(&js::Name::temporary(crate::names::given_apart(
+        assert!(is_temporary(&js::Name::temporary(rust_js_program::names::given_apart(
             &temporary(5),
             1
         ))));

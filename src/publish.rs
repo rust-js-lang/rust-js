@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use crate::paths::parent_dir;
+use rust_js_program::paths::parent_dir;
 
 pub(crate) struct Artifact {
     pub(crate) path: PathBuf,

@@ -1,11 +1,11 @@
-// Mutations of src/runtime/byte_len.js (ADR 0093).
+// Mutations of crates/rust-js-program/src/runtime/byte_len.js (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "byte-len-units",
     breaks: "a string's `len()` is its UTF-16 units, as JS counts, not its UTF-8 bytes",
-    file: "src/runtime/byte_len.js",
+    file: "crates/rust-js-program/src/runtime/byte_len.js",
     find: "  return bytes;\n}",
     replace: "  return s.length;\n}",
     tests: ["test/corpus.test.ts", "-t", "string_bytes"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "byte-len-pair-three",
     breaks: "a character outside the BMP, two UTF-16 units, is counted as two 3-byte ones, not 4 bytes",
-    file: "src/runtime/byte_len.js",
+    file: "crates/rust-js-program/src/runtime/byte_len.js",
     find: "      bytes += 4;\n      i++;",
     replace: "      bytes += 3;",
     tests: ["test/corpus.test.ts", "-t", "string_bytes"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "text-facts-kept-without-cap",
     breaks: "every long text's facts are kept, never forgotten: a program reading many texts holds each one's bytes for good",
-    file: "src/runtime/byte_len.js",
+    file: "crates/rust-js-program/src/runtime/byte_len.js",
     find: "  if ($textFactsKept.size > $textKept) $textFactsKept.delete($textFactsKept.keys().next().value);\n",
     replace: "",
     tests: ["test/runtime-package.test.ts", "-t", "kept facts"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "text-facts-asked-not-kept-longer",
     breaks: "a long text's facts asked again aren't kept longer: the one asked first is forgotten first, though it's asked each step",
-    file: "src/runtime/byte_len.js",
+    file: "crates/rust-js-program/src/runtime/byte_len.js",
     find: "    $textFactsKept.delete(s);\n    $textFactsKept.set(s, facts);\n",
     replace: "",
     tests: ["test/runtime-package.test.ts", "-t", "kept facts"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "text-facts-always-ascii",
     breaks: "every long text is taken to be ASCII, so `&s[i..]` of one that isn't cuts it at the unit `i`, not the byte",
-    file: "src/runtime/byte_len.js",
+    file: "crates/rust-js-program/src/runtime/byte_len.js",
     find: "  return $textKeep(s, { bytes, ascii: bytes === s.length,",
     replace: "  return $textKeep(s, { bytes, ascii: true,",
     tests: ["test/corpus.test.ts", "-t", "^long_text_read_byte_by_byte.rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "text-part-where-in-its-text-lost",
     breaks: "a part of a part, `&rest[n..]` of `&s[m..]`, is taken to start where the first part does in the text, not past it, so its characters are found at the wrong bytes",
-    file: "src/runtime/byte_len.js",
+    file: "crates/rust-js-program/src/runtime/byte_len.js",
     find: "rootByte: of.rootByte + byte, rootUnit: of.rootUnit + unit",
     replace: "rootByte: byte, rootUnit: unit",
     tests: ["test/runtime-package.test.ts", "-t", "kept facts"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf8-bytes-unfrozen",
     breaks: "a text's lent bytes can be written, and a write is seen by every reader of the same text's bytes",
-    file: "src/runtime/byte_len.js",
+    file: "crates/rust-js-program/src/runtime/byte_len.js",
     find: "  return (facts.utf8 ??= Object.freeze(Array.from(new TextEncoder().encode(s))));\n",
     replace: "  return (facts.utf8 ??= Array.from(new TextEncoder().encode(s)));\n",
     tests: ["test/runtime-package.test.ts", "-t", "kept facts"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf8-bytes-encoded-each-time",
     breaks: "a long text's bytes are encoded each time they're asked, so a parser's `as_bytes()` each step is quadratic (#1184)",
-    file: "src/runtime/byte_len.js",
+    file: "crates/rust-js-program/src/runtime/byte_len.js",
     find: "  return (facts.utf8 ??= Object.freeze(",
     replace: "  return (facts.utf8 = Object.freeze(",
     tests: ["test/runtime-package.test.ts", "-t", "kept facts"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "text-stops-a-unit-late",
     breaks: "each step of a long text's bytes is taken to start a unit past where it does, so `&s[i..]` of a text that isn't ASCII cuts a unit late",
-    file: "src/runtime/byte_len.js",
+    file: "crates/rust-js-program/src/runtime/byte_len.js",
     find: "      stops[2 * next + 1] = unit;\n",
     replace: "      stops[2 * next + 1] = unit + 1;\n",
     tests: ["test/runtime-package.test.ts", "-t", "kept facts"],
