@@ -54,7 +54,10 @@ export function keepRun(key: string, build: string, run: Run, store = nativeOutc
   if (!mayKeep(store)) return;
   const dir = join(store, key.slice(0, 32), build.split("/").at(-1)!);
   if (existsSync(join(dir, "run.json"))) return;
-  const making = `${dir}.${process.pid}`;
+  // Made where a reader skips it, a name beginning with a dot (`keptRun`):
+  // `<build>.<pid>` was listed as a build, and its `run.json` read half
+  // written, "Unexpected EOF", by another part of the corpus (#2299's push).
+  const making = join(store, key.slice(0, 32), `.${build.split("/").at(-1)!}.${process.pid}`);
   rmSync(making, { recursive: true, force: true });
   mkdirSync(making, { recursive: true });
   writeFileSync(join(making, "inputs.json"), readFileSync(join(build, "inputs.json")));

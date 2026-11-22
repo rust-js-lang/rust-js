@@ -3,7 +3,7 @@
 // has changed, and not of a case whose run reads the world, nor afresh.
 
 import { afterEach, beforeAll, expect, test } from "bun:test";
-import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { cases, corpus, directives } from "./corpus-cases";
@@ -12,7 +12,7 @@ import { keepRun, keptRun, recheck } from "./native-outcomes";
 import { nativeRunKey, runNative, type Run } from "./programs";
 import { record, verified } from "./verified-runs";
 import { nativeCratesOutput } from "./crates";
-import { buildCompiler, fixture, nativeCratesKey, nativeKey } from "./support";
+import { buildCompiler, fixture, nativeCratesKey, nativeKey, root } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -190,4 +190,20 @@ test("every corpus case whose run reads the world says it's nondeterministic", (
     return apis.some((api) => api.test(code)) && typeof want === "object" && want.nondeterministic === undefined;
   });
   expect(unmarked).toEqual([]);
+});
+
+// A run still being kept is made where a reader skips it, a name that
+// begins with a dot: one named `<build>.<pid>` was listed as a build, and
+// its `run.json` read half written by another part of the corpus,
+// "Unexpected EOF" (#2299's push). Half of one there, none is read.
+test("a run still being kept is never read half written", () => {
+  const store = fixture("native-outcomes-making");
+  rmSync(store, { recursive: true, force: true });
+  const making = join(store, "a".repeat(32), ".build.12345");
+  mkdirSync(making, { recursive: true });
+  writeFileSync(join(making, "inputs.json"), "{}");
+  writeFileSync(join(making, "run.json"), '{"stdout": "half');
+  expect(keptRun("a".repeat(32), store)).toBeUndefined();
+  const source = readFileSync(join(root, "test", "native-outcomes.ts"), "utf8");
+  expect(source).toContain("const making = join(store, key.slice(0, 32), `.${build.split(\"/\").at(-1)!}.${process.pid}`);");
 });
