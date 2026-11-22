@@ -132,6 +132,8 @@ pub(in crate::lower) enum Role {
     Spread,
     Start,
     State,
+    /// The status a `main`'s value reports, `Termination::report`'s (#2292).
+    Status,
     Step,
     Struct,
     T,
@@ -281,6 +283,7 @@ impl Role {
             Role::Spread => "spread",
             Role::Start => "start",
             Role::State => "state",
+            Role::Status => "status",
             Role::Step => "step",
             Role::Struct => "struct",
             Role::T => "t",

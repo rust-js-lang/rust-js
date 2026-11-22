@@ -22,6 +22,7 @@
 //! | `catch_unwind`, `resume_unwind` | a `try`, `$catchUnwind(f)`; `throw $unwinding(payload)` | `unwind` |
 //! | `TypeId`, `dyn Any` | its type's key, a string; `{ value, impl }` | `any` |
 //! | `env::args`, `process::exit`: Node's process | its helper, `$args()` | `process` |
+//! | `Termination::report` of std's types, an `ExitCode`: the status a `main` gives | its number, or `Error: {err:?}` and `1` | `process` |
 //! | `File`, `OpenOptions`, `fs::read`: Node's fs | `{ fd, pos }`; its helper, `$fileOpen(path)` | `fs` |
 //! | `Path`, `PathBuf` | its text; its methods `path.js`'s | `path` |
 //! | `panic::Location`, `#[track_caller]` | `{ file, line, column }` | `location` |

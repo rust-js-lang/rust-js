@@ -477,6 +477,27 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.is_std_type(ty, StdItem::Result)
     }
 
+    /// Whether std writes `ty`'s `Termination::report`, which gives what a
+    /// `main` of it ends the process with (#2292): an `ExitCode`'s, `()`'s,
+    /// `!`'s, and a `Result`'s whose `Ok` std reports too. Another's, a
+    /// crate's own impl's, is its method, called as any is.
+    pub(in crate::lower) fn reported_by_std(&self, ty: Ty<'tcx>) -> bool {
+        match ty.kind() {
+            ty::Tuple(parts) => parts.is_empty(),
+            ty::Never => true,
+            ty::Adt(_, args) if self.is_result(ty) => self.reported_by_std(args.type_at(0)),
+            _ => self.is_std_type(ty, StdItem::ExitCode),
+        }
+    }
+
+    /// `x.report()` of `ty`, a `trait_`'s method, where std writes it
+    /// (`reported_by_std`): the status a `main` of it ends with (#2292).
+    /// A crate's own impl's is its method, called as any is.
+    pub(super) fn std_report(&self, trait_: DefId, ty: Ty<'tcx>) -> Option<Std> {
+        (self.tcx.is_lang_item(trait_, LangItem::Termination) && self.reported_by_std(ty))
+            .then_some(Std::Process(ProcessOp::Report))
+    }
+
     /// `env::args()`'s, an array of the process's arguments, which knows
     /// its length (ADR 0391).
     pub(in crate::lower) fn is_process_items(&self, ty: Ty<'tcx>) -> bool {
@@ -681,6 +702,12 @@ pub(crate) fn is_non_zero(id: DefId) -> bool {
 /// std's `Duration`, which is its nanoseconds (ADR 0188).
 pub(crate) fn is_duration(id: DefId) -> bool {
     ty::tls::with_opt(|tcx| tcx.is_some_and(|tcx| tcx.is_diagnostic_item(Symbol::intern("Duration"), id)))
+}
+
+/// std's `process::ExitCode`, what a `main` may give, which is its `u8`
+/// as wasm32's std keeps it, `SUCCESS` `0` and `FAILURE` `1` (#2292).
+pub(crate) fn is_exit_code(id: DefId) -> bool {
+    ty::tls::with_opt(|tcx| tcx.is_some_and(|tcx| is_std_def(tcx, id, StdItem::ExitCode)))
 }
 
 /// A `Duration` type (ADR 0188).

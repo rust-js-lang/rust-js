@@ -543,7 +543,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.unwind_call(known, call, &mut values, out)? {
             return Ok(js);
         }
-        if let Some(js) = self.process_call(known, &mut values) {
+        if let Some(js) = self.process_call(known, call, &mut values, out)? {
             return Ok(js);
         }
         if let Some(js) = self.fs_call(known, call, &mut values)? {

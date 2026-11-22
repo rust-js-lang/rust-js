@@ -579,6 +579,8 @@ impl Num {
             ty::Adt(adt, args) if super::recognition::is_non_zero(adt.did()) => return Num::of(args.type_at(0)),
             // A `Duration` is its nanoseconds (ADR 0188).
             ty::Adt(adt, _) if super::recognition::is_duration(adt.did()) => Num::U128,
+            // An `ExitCode` is its `u8`, as wasm32's std keeps it (#2292).
+            ty::Adt(adt, _) if super::recognition::is_exit_code(adt.did()) => Num::U8,
             // So is a clock's time, since a time before it, and a
             // `SystemTimeError` the `Duration` it holds (ADR 0447).
             ty::Adt(adt, _) => match super::recognition::clock_type(adt.did())? {

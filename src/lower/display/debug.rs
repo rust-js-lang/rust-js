@@ -29,6 +29,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `debug_string_with`'s text, which may leave the value unread, a
     /// `()`'s `"()"` or a `Weak`'s `"(Weak)"`.
     fn debug_shown(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
+        // An `ExitCode`'s, which each platform's std writes its own way,
+        // `ExitCode(unix_exit_status(3))` of a unix's: no JS can say which
+        // (#2292; ADR 0262's last case).
+        if self.recognition().is_std_type(ty.peel_refs(), StdItem::ExitCode) {
+            let why = "each platform's std writes its own, `ExitCode(unix_exit_status(3))` of a unix's, and JS has no platform to be";
+            return Err(crate::lower::refusal::refuse(
+                self.tcx,
+                span,
+                crate::lower::refusal::Refused::Because("`{:?}` of an `ExitCode`", why),
+            ));
+        }
         let made_tuple = self.unspelled("tuple");
         let (value, ty) = self.shown_through(value, ty, Std::FmtDebug);
         // A part whose writer may stop part-way, by an `Err`, or by a panic

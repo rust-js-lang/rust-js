@@ -487,4 +487,12 @@ export const mutations: Mutation[] = [
     replace: "        && std_path_under(tcx, adt.did(), StdPath::CharMod) || std_path_under(tcx, adt.did(), StdPath::StrMod))\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_text_patterns.rs$"],
   },
+  {
+    name: "reported-by-std-result-unknown",
+    breaks: "a `Result`'s `report()` isn't std's to rust-js, so it's refused, where std writes it: `Error: {err:?}` of an `Err`, then `1` (#2292)",
+    file: "src/lower/recognition/types.rs",
+    find: "            ty::Adt(_, args) if self.is_result(ty) => self.reported_by_std(args.type_at(0)),\n",
+    replace: "            ty::Adt(_, _) if self.is_result(ty) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "process_termination_reports"],
+  },
 ];

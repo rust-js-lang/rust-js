@@ -713,6 +713,8 @@ pub(crate) enum StdItem {
     Cell,
     ControlFlow,
     Debug,
+    /// `process::ExitCode`, what a `main` may give: its `u8` (#2292).
+    ExitCode,
     Default,
     Display,
     Eq,
@@ -825,6 +827,7 @@ impl StdItem {
             StdItem::BuildHasherDefault => Symbol::intern("BuildHasherDefault"),
             StdItem::Bound => Symbol::intern("Bound"),
             StdItem::RandomState => Symbol::intern("RandomState"),
+            StdItem::ExitCode => Symbol::intern("ExitCode"),
             StdItem::Ord => sym::Ord,
             StdItem::Rc => sym::Rc,
             StdItem::RefCell => Symbol::intern("RefCell"),
@@ -916,6 +919,12 @@ pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
             tcx.def_kind(id) == DefKind::Enum
                 && tcx.item_name(id).as_str() == "Bound"
                 && of_std_crate(tcx, id, StdCrate::Core)
+        }
+        // `std`'s `process::ExitCode`, by its crate and name.
+        StdItem::ExitCode => {
+            tcx.def_kind(id) == DefKind::Struct
+                && tcx.item_name(id).as_str() == "ExitCode"
+                && of_std_crate(tcx, id, StdCrate::Std)
         }
         // `std`'s `hash::RandomState`, by its crate and name.
         StdItem::RandomState => {

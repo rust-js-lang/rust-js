@@ -872,6 +872,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         tcx.is_diagnostic_item(Symbol::intern("ToOwned"), trait_)
             .then(|| to_owned_of(ty))
+            .or_else(|| self.std_report(trait_, ty))
     }
 
     /// A range's own iterator method: a range is an iterator already, and

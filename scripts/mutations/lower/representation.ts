@@ -606,4 +606,12 @@ export const mutations: Mutation[] = [
     replace: "                            Some(adt) if !adt.is_local() => js::StaleKeys::Kept,\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "variant lacks"],
   },
+  {
+    name: "exit-code-not-a-number",
+    breaks: "an `ExitCode` isn't its `u8`, so its constants and `==` aren't a number's, where wasm32's std keeps one (#2292)",
+    file: "src/lower/representation.rs",
+    find: "            ty::Adt(adt, _) if super::recognition::is_exit_code(adt.did()) => Num::U8,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "process_termination_reports"],
+  },
 ];

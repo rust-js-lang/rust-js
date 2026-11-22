@@ -1277,3 +1277,41 @@ In a browser, which has no process, it panics:
 ```
 
 `std::process::abort` is refused.
+
+### A status: `ExitCode` and `Termination`
+
+An `ExitCode` is its `u8`, as wasm32's std keeps it: `ExitCode::SUCCESS`
+is `0`, `ExitCode::FAILURE` `1`, and `ExitCode::from(n)` is `n`.
+`Termination::report` of the types std writes it for gives the status a
+`main` of each ends with: an `ExitCode`'s own, `()`'s `0`, and a
+`Result`'s, of an `Ok` its value's, of an `Err` `1`, after
+`Error: {err:?}` is written to stderr, as std's impl writes it (#2292):
+
+```rust
+use std::process::{ExitCode, Termination};
+
+pub fn parsed_status(parsed: Result<u8, String>) -> ExitCode {
+    parsed.map(ExitCode::from).report()
+}
+```
+
+```js
+import { $debugStr } from "@rust-js/std";
+
+export function parsedStatus(parsed) {
+  const result = parsed.TAG === "Ok" ? { TAG: "Ok", _0: parsed._0 } : parsed;
+  let status;
+  if (result.TAG === "Ok") {
+    status = result._0;
+  } else {
+    console.error(`Error: ${$debugStr(result._0)}`);
+    status = 1;
+  }
+  return status;
+}
+```
+
+A crate's own `impl Termination` is its method, called as any is.
+`{:?}` of an `ExitCode` is refused: each platform's std writes its own
+text, `ExitCode(unix_exit_status(3))` of a unix's, and JS has no platform
+to be.

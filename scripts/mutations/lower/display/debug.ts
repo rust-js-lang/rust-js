@@ -431,9 +431,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`{:?}` of a `Vec<&mut i32>` shows each cell, not what it points at",
     file: "src/lower/display/debug.rs",
-    find: "pretty: &Pretty) -> R<Expr> {\n        let made_tuple = self.unspelled(\"tuple\");\n        let (value, ty) = self.shown_through(value, ty, Std::FmtDebug);",
+    find: "        let made_tuple = self.unspelled(\"tuple\");\n        let (value, ty) = self.shown_through(value, ty, Std::FmtDebug);",
     replace:
-      "pretty: &Pretty) -> R<Expr> {\n        let made_tuple = self.unspelled(\"tuple\");\n        let (value, ty) = (value, ty.peel_refs());",
+      "        let made_tuple = self.unspelled(\"tuple\");\n        let (value, ty) = (value, ty.peel_refs());",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
   },
   {
@@ -674,5 +674,13 @@ export const mutations: Mutation[] = [
     find: "                let boxed = Expr::bool(self.boxed_payload(item));\n",
     replace: "                let boxed = Expr::bool(false);\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_of_once_and_successors.rs$"],
+  },
+  {
+    name: "exit-code-debug-a-number",
+    breaks: "`{:?}` of an `ExitCode` is its number, `3`, where each platform's std writes its own text, `ExitCode(unix_exit_status(3))` of a unix's (#2292)",
+    file: "src/lower/display/debug.rs",
+    find: "        if self.recognition().is_std_type(ty.peel_refs(), StdItem::ExitCode) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "exit_code_debug_refused"],
   },
 ];
