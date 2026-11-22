@@ -635,14 +635,24 @@ export function changedSince(since?: string): string[] {
 }
 
 /** What of each table the change names, the working tree's since it left
- * `main`, in `parts` (scripts/iteratorRows.ts): the rows `run rows` runs,
- * and check:fast's pool expects that job to take the time of (#1364). */
+ * `main`, or since `RUST_JS_ROWS_BASE`, a push's: CI's nets-iterators
+ * runs the rows each push to `main` names since the commit it moved `main`
+ * from, so a push whose narrower pick left a row out runs it before the
+ * nightly does (#2340, Tu's decision). In `parts` (scripts/iteratorRows.ts):
+ * the rows `run rows` runs, and check:fast's pool expects that job to take
+ * the time of (#1364). */
 export function changePicks(parts: number): Picked[] {
   const git = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
-  const base = git(["merge-base", "HEAD", "origin/main"])[0];
+  const base = changeBase();
   if (base === undefined) return [];
   const files = [...git(["diff", "--name-only", base]), ...git(["ls-files", "--others", "--exclude-standard"])].filter((file) => touchesIterators([file]));
   return pick(base, undefined, files, parts);
+}
+
+/** Where the change starts: `RUST_JS_ROWS_BASE`, a push's, or where the
+ * branch left `main`. */
+export function changeBase(env: Record<string, string | undefined> = process.env): string | undefined {
+  return env.RUST_JS_ROWS_BASE || Bun.spawnSync(["git", "merge-base", "HEAD", "origin/main"], { cwd: root }).stdout.toString().trim() || undefined;
 }
 
 function changeRows(parts: number): Run[] {

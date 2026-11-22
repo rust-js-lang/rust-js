@@ -25,6 +25,7 @@
 //   bun scripts/iteratorRows.ts [base [head]]   what the change picks, and why
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { compilerRustFiles } from "./compiler-crates";
 import { adapterCalls, allCases, conformanceCases, pairs, type Case, type Table } from "../test/iterator-matrix";
 
 const root = join(import.meta.dir, "..");
@@ -157,6 +158,26 @@ function names(identifier: string[], name: string[], first = false): boolean {
 /** Whether `line` is a comment's, which names no rows. */
 const comment = (line: string) => /^\s*(\/\/|\/\*|\*)/.test(line);
 
+/** `line` with each method call left nameless, `.(`, of an adapter's or a
+ * consumer's name itself, `steps`, `.map(` or `.any(`, or of one `defined`
+ * hasn't, `.skip_binder::<T>(`: of the compiler's Rust, a call of std's or
+ * rustc's method, or of its own named as std's, `any(&self)`, on its own
+ * values, which names no row of the iterators'; where a method it defines
+ * of another name, `.lower_map(`, still names them (#2340). */
+export function withoutForeignCalls(line: string, defined: Set<string>, steps: Set<string> = new Set()): string {
+  return line.replace(/\.\s*([A-Za-z_][A-Za-z0-9_]*)(\s*(?:::\s*<[^>]*>\s*)?\()/g, (call, name, rest) =>
+    defined.has(name) && !steps.has(name) ? call : `.${rest}`,
+  );
+}
+
+let functions: Set<string> | undefined;
+/** The names of the functions the compiler's crates define, `fn x`, read
+ * once a process. */
+export function compilerFunctions(): Set<string> {
+  functions ??= new Set(compilerRustFiles().flatMap((file) => [...readFileSync(join(import.meta.dir, "..", file), "utf8").matchAll(/\bfn\s+([A-Za-z_][A-Za-z0-9_]*)/g)].map((m) => m[1]!)));
+  return functions;
+}
+
 function identifiers(line: string): string[] {
   if (comment(line)) return [];
   return [...line.matchAll(/\$?[A-Za-z_][A-Za-z0-9_$]*/g)].map((m) => m[0]).filter((id) => !keywords.has(id));
@@ -267,8 +288,13 @@ const escaped = (name: string) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  * rows of `filter`, `map` and `flatten`, 1,768 s of its push, where #823's
  * removed rule (766055774) said `iterator_item` and `is_some_and`, which
  * nothing put back. */
-export function named(hunk: Hunk, adapters: Set<string>, consumers: Set<string>, saidInFile: Set<string> = new Set()) {
-  const lines = [...hunk.added, ...hunk.removed];
+export function named(hunk: Hunk, adapters: Set<string>, consumers: Set<string>, saidInFile: Set<string> = new Set(), defined: Set<string> = compilerFunctions()) {
+  // Of the compiler's Rust, a method it calls of an adapter's or a
+  // consumer's name, std's `.map(` or `.any(` or one of its own named alike,
+  // `any(&self)`, or of a name it doesn't define, rustc's `.skip_binder()`:
+  // the compiler's own work, no row's (#2340, Tu's decision).
+  const own = (line: string) => (hunk.file.endsWith(".rs") ? withoutForeignCalls(line, defined, new Set([...adapters, ...consumers])) : line);
+  const lines = [...hunk.added, ...hunk.removed].map(own);
   const ids = [...lines, hunk.head, hunk.arm ?? ""].flatMap(identifiers);
   // A consumer's name, of what's called or named by path, and of the name
   // of the function and the arm the hunk is in, never a variable's or a

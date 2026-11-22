@@ -5,7 +5,7 @@
 
 import { expect, test } from "bun:test";
 
-import { budgetOf, enclosingArm, entriesOf, entryAdapters, named, naming, outsideFunctions, pattern, pickedOf, pickedPerBatch, reached, rowsPerPart, type Hunk } from "../scripts/iteratorRows";
+import { budgetOf, withoutForeignCalls, enclosingArm, entriesOf, entryAdapters, named, naming, outsideFunctions, pattern, pickedOf, pickedPerBatch, reached, rowsPerPart, type Hunk } from "../scripts/iteratorRows";
 import { tableOf } from "./matrix-tables";
 import { adapterCalls } from "./iterator-matrix";
 
@@ -238,4 +238,36 @@ test("a change's rows run in programs of the rows' owner's size, the tables' sli
     expect(of.batches(cases)[0].length).toBe(60);
   }
   expect(pickedPerBatch).toBeGreaterThan(60);
+});
+
+// A method the compiler's Rust calls that it doesn't define, std's `.map(`
+// or `.filter_map(`, rustc's `.skip_binder()`, is the compiler's own work and
+// names no row (#2340, Tu's decision): #2331's hunk of `assoc_iterator_as_it_is`
+// ran each row of `filter`, `filter_map`, `flatten`, `map` and `skip` for
+// `.skip_binder().iter().filter_map(..).any(..)`. One it defines still names
+// them, and so does any other spelling, a path, a helper or a string.
+test("a method the compiler's Rust calls and doesn't define names no row; one it defines does", () => {
+  const rust = "crates/rust-js-lower/src/iterators.rs";
+  const defined = new Set(["lower_map", "stepped_by"]);
+  const of = (line: string) => named(hunk([line], [], "", rust), adapters, consumers, new Set(), defined);
+  expect(of("        && (tcx.item_bounds(item).skip_binder().iter()).filter_map(|b| b.as_trait_clause()).any(|p| ok(p))")).toMatchObject({ adapters: [], consumers: [] });
+  expect(of("    items.iter().map(|x| x.len()).count()")).toMatchObject({ adapters: [], consumers: [] });
+  expect(of("    let ty = sig.skip_binder::<Ty>(x);").adapters).toEqual([]);
+  expect(of("    self.lower_map(it)").adapters).toEqual(["map"]);
+  expect(of("    Some(IterMethod::StepBy) => self.stepped_by(it),").adapters).toEqual(["step_by"]);
+  expect(of('    let name = "map";').adapters).toEqual(["map"]);
+  // The runtime's JS, not the compiler's Rust, as it is.
+  expect(named(hunk(["  return it.map((x) => x);"]), adapters, consumers, new Set(), defined).adapters).toEqual(["map"]);
+  expect(withoutForeignCalls("a.map(f).lower_map(g)", defined)).toBe("a.(f).lower_map(g)");
+  // A method of the compiler's own named as a consumer is, `any(&self)`: none.
+  expect(named(hunk(["    if facts.any() {"], [], "", rust), adapters, consumers, new Set(), new Set(["any"])).consumers).toEqual([]);
+});
+
+// CI's nets-iterators runs the rows each push to `main` names, since the
+// commit it moved `main` from, `RUST_JS_ROWS_BASE` (#2340, Tu's decision):
+// the picks of the push's range, not of a branch's merge base, which on
+// `main` itself is the commit checked out and names nothing.
+test("the rows the change names are of the range a given base starts, a push's", async () => {
+  const { changeBase } = await import("../scripts/iteratorSlice");
+  expect(changeBase({ RUST_JS_ROWS_BASE: "ded89d248" })).toBe("ded89d248");
 });

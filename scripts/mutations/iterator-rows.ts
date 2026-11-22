@@ -5,6 +5,30 @@
 import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
+    name: "foreign-method-names-rows",
+    breaks: "a method the compiler's Rust calls and doesn't define, std's `.map(` or rustc's `.skip_binder()`, names the rows of an adapter, so a lowering change runs each row of `map` and `skip` (#2340)",
+    file: "scripts/iteratorRows.ts",
+    find: "    defined.has(name) && !steps.has(name) ? call : `.${rest}`,",
+    replace: "    call,",
+    tests: ["test/iterator-rows.test.ts", "-t", "a method the compiler's Rust calls and doesn't define names no row"],
+  },
+  {
+    name: "own-method-names-no-row",
+    breaks: "a method the compiler defines, `.lower_map(`, names no row, so a change to how it lowers `map` runs none of its rows (#2340)",
+    file: "scripts/iteratorRows.ts",
+    find: "    defined.has(name) && !steps.has(name) ? call : `.${rest}`,",
+    replace: "    false ? call : `.${rest}`,",
+    tests: ["test/iterator-rows.test.ts", "-t", "a method the compiler's Rust calls and doesn't define names no row"],
+  },
+  {
+    name: "own-method-named-as-a-step-names-it",
+    breaks: "a method of the compiler's own named as a consumer is, `any(&self)`, names the consumer `any`, whose every row a change of its call runs (#2340)",
+    file: "scripts/iteratorRows.ts",
+    find: "    defined.has(name) && !steps.has(name) ? call : `.${rest}`,",
+    replace: "    defined.has(name) ? call : `.${rest}`,",
+    tests: ["test/iterator-rows.test.ts", "-t", "a method the compiler's Rust calls and doesn't define names no row"],
+  },
+  {
     name: "list-entries-unreached",
     breaks: "the rows of what a change names are its names' alone, not of what reaches them: an entry `map` added to `HELD_FLIPPED` runs none of `chain.flatten`'s rows, whose per-item `map` their ids don't name (#1780)",
     file: "scripts/iteratorRows.ts",

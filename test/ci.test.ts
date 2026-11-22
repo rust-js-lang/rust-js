@@ -848,7 +848,7 @@ test("the WASM build takes rustc's crates as built where the cache holds the sam
 // names each (dev-loop change 3).
 test("the short nets are the steps of the jobs of nets, each where its change runs it, each failure named", () => {
   const listed = nets();
-  expect(listed.map((net) => net.id)).toEqual(["iterators", "conformance", "paths", "copies", "consumers", "twins", "format", "numbers", "memory", "intervals", "declarations", "async", "std", "metamorphic", "crates", "port"]);
+  expect(listed.map((net) => net.id)).toEqual(["iterators", "conformance", "paths", "rows", "copies", "consumers", "twins", "format", "numbers", "memory", "intervals", "declarations", "async", "std", "metamorphic", "crates", "port"]);
   type Step = { id?: string; if?: string; background?: boolean; "wait-all"?: null };
   const workflow = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { if?: string; steps: Step[] }> };
   expect(Object.keys(workflow.jobs).filter((name) => name.startsWith("nets"))).toEqual([...NET_JOBS]);

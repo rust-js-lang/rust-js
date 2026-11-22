@@ -4,6 +4,14 @@
 import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
+    name: "push-rows-base-unread",
+    breaks: "CI's rows of a push are a branch's merge base's, which on `main` is the commit checked out, so they name nothing and a row a narrower local pick left out waits for the nightly (#2340)",
+    file: "scripts/iteratorSlice.ts",
+    find: "  return env.RUST_JS_ROWS_BASE || Bun.spawnSync(",
+    replace: "  return Bun.spawnSync(",
+    tests: ["test/iterator-rows.test.ts", "-t", "the rows the change names are of the range a given base starts"],
+  },
+  {
     name: "wasm-input-directory-a-file",
     breaks: "a directory wasm/prebuilt.sh lists, `src`, matches only a file of its name, so a change to the compiler skips the WASM build",
     file: "scripts/iteratorSlice.ts",
