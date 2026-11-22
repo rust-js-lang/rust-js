@@ -22,7 +22,8 @@ crates/rust-js-lower/src/analysis/prints.rs	2
 crates/rust-js-lower/src/analysis/rc_counts.rs	2
 crates/rust-js-lower/src/analysis/read_bounds.rs	8
 crates/rust-js-lower/src/analysis/stored_places.rs	1
-crates/rust-js-lower/src/analysis/type_facts.rs	12
+crates/rust-js-lower/src/analysis/type_facts.rs	5
+crates/rust-js-lower/src/analysis/type_facts/calls.rs	6
 crates/rust-js-lower/src/analysis/type_facts/carried.rs	1
 crates/rust-js-lower/src/analysis/type_facts/collects.rs	1
 crates/rust-js-lower/src/analysis/type_facts/relay.rs	1
