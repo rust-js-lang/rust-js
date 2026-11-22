@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { cases, corpus, directives } from "./corpus-cases";
 import { nativeOutcomes } from "./kept";
 import { keepRun, keptRun, recheck } from "./native-outcomes";
-import { nativeRunKey, runNative, type Run } from "./programs";
+import { nativeLimitKey, nativeRunKey, runNative, type Run } from "./programs";
 import { record, verified } from "./verified-runs";
 import { nativeCratesOutput } from "./crates";
 import { buildCompiler, fixture, nativeCratesKey, nativeKey, root } from "./support";
@@ -130,6 +130,13 @@ test("a chain of crates' native run is kept, but where a crate reads the world",
   rmSync(join(nativeOutcomes, nativeCratesKey(ofMarked, markedMain, flags).slice(0, 32)), { recursive: true, force: true });
   expect(nativeCratesOutput(ofMarked, markedMain, flags)()).toBe("1\n");
   expect(keptRun(nativeCratesKey(ofMarked, markedMain, flags))).toBeUndefined();
+});
+
+// macOS's share is of what's free as a test starts, which moves with the
+// load: its bytes in the key lost every kept run beside a busy check (#2340).
+test("a native run's key says the memory it's given by its kind, never by what's free", () => {
+  expect(nativeLimitKey("darwin")).toBe("share");
+  expect(nativeLimitKey("linux")).toMatch(/^data \d+ KiB$/);
 });
 
 test("a run stopped by its time or memory isn't kept", () => {

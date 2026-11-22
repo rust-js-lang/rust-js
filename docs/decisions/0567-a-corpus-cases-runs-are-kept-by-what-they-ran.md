@@ -135,7 +135,11 @@ dep-info says it read, by its digest, and each variable an `env!` or an
   nothing. A few MB a job, 3 MB of outcomes for a corpus part of 324 cases.
 - **The run's key holds the memory it's given**, `nativeCommand`'s share
   on macOS, its `ulimit` on Linux: a run that ends within 2 GB may be
-  stopped within 200 MB. A reducer's variant is run afresh, its check held
+  stopped within 200 MB. On macOS the key holds that it's the share, not
+  its bytes (`nativeLimitKey`, #2340). The share is of what's free as a test
+  starts, so its bytes moved with the load, and a run kept beside one busy
+  check was never found beside the next. A run stopped past its share is
+  never kept, so a kept one ended within what it was given. A reducer's variant is run afresh, its check held
   to a share of memory as a whole process (#1306), and a loud rewrite of a
   case marked `nondeterministic` isn't made: its events count what each
   run is given, the calls `env::vars().find(..)` makes before `PATH`, of an

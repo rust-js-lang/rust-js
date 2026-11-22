@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "  { fresh = false, located = false }: { of?: string; fresh?: boolean; located?: boolean } = {}, of = file,",
     tests: ["test/native-outcomes.test.ts", "-t", "reads the world isn't kept"],
   },
+  {
+    name: "native-outcome-keyed-by-free-memory",
+    breaks: "a native run on macOS is keyed by its share's bytes, the share of what's free as a test starts, so a run kept beside one busy check is never found beside the next (#2340)",
+    file: "test/programs.ts",
+    find: '  return platform === "linux" ? `data ${nativeDataKiB} KiB` : platform === "darwin" ? "share" : "none";\n',
+    replace: '  return platform === "linux" ? `data ${nativeDataKiB} KiB` : platform === "darwin" ? `share ${nativeShare()} bytes` : "none";\n',
+    tests: ["test/native-outcomes.test.ts", "-t", "says the memory it's given by its kind"],
+  },
 ];

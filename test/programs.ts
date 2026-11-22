@@ -201,13 +201,22 @@ function runNativeLocated(file: string, dir: string, edition: string, rustc: str
 }
 
 /** The key a native run of `file` is kept by: its build's (`nativeKey`),
- * and the memory it's given (`nativeCommand`), as a run that ends within 2
- * GB may be stopped within 200 MB, the reducer's (#1306). */
+ * and the memory it's given (`nativeLimitKey`). */
 export function nativeRunKey(file: string, edition = "2024", rustc: string[] = []): string {
   const source = nativeSource(file);
   const build = nativeKey(source, contentDirectory(source), [...nativeFlags(edition), ...rustc]);
-  const limit = process.platform === "linux" ? `data ${nativeDataKiB} KiB` : process.platform === "darwin" ? `share ${nativeShare()} bytes` : "none";
-  return createHash("sha256").update(`${build}\0${limit}`).digest("hex");
+  return createHash("sha256").update(`${build}\0${nativeLimitKey()}`).digest("hex");
+}
+
+/** What a native run's key says of the memory it's given (`nativeCommand`):
+ * Linux's `ulimit`, a fixed size; macOS's watchdog's share, which is the
+ * share of what's free as a test starts (`testShareBytes`). That share
+ * moved with the load, so a run kept beside one check was never found
+ * beside the next (#2340): the key says it's the share, not its bytes. A
+ * run stopped past it is never kept (`keepRun`), and a reducer's variant,
+ * which is given less, is run afresh (#1306). */
+export function nativeLimitKey(platform: NodeJS.Platform = process.platform): string {
+  return platform === "linux" ? `data ${nativeDataKiB} KiB` : platform === "darwin" ? "share" : "none";
 }
 
 /** Whether a native run of the case `file`, or of a program made of it, is
