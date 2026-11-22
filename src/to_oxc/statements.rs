@@ -52,7 +52,9 @@ impl<'a> Cx<'a> {
                     BindingPattern::new_binding_identifier(at, self.name(name.word()), b),
                     None,
                 ),
-                pattern => (self.pattern(pattern), None),
+                // Taken apart, `[a, b]`, where its source is, as a name is,
+                // so a comment after it on its line follows it (#1717).
+                pattern => (self.pattern_at(pattern, at), None),
             };
             FormalParameter::new(
                 SPAN,
@@ -841,16 +843,22 @@ impl<'a> Cx<'a> {
     }
 
     fn pattern(&self, pattern: &js::Pattern) -> BindingPattern<'a> {
+        self.pattern_at(pattern, SPAN)
+    }
+
+    /// `pattern`, itself mapped to `at`, where it's written: a function's
+    /// parameter's span; what's in it to none.
+    fn pattern_at(&self, pattern: &js::Pattern, at: Span) -> BindingPattern<'a> {
         let b = &self.b;
         let name = |name: &str| BindingPattern::new_binding_identifier(SPAN, self.name(name), b);
         match pattern {
-            js::Pattern::Name(n) => name(n.word()),
+            js::Pattern::Name(n) => BindingPattern::new_binding_identifier(at, self.name(n.word()), b),
             js::Pattern::Rest(_) | js::Pattern::Defaulted(..) => {
                 unreachable!("a rest or a default is a function's parameter, `params`'")
             }
             js::Pattern::Array(items) => {
                 let items = items.iter().map(|item| item.as_ref().map(|item| self.pattern(item)));
-                BindingPattern::new_array_pattern(SPAN, ArenaVec::from_iter_in(items, b), None, b)
+                BindingPattern::new_array_pattern(at, ArenaVec::from_iter_in(items, b), None, b)
             }
             js::Pattern::Object(fields, rest) => {
                 let fields = fields.iter().map(|(field, var, default)| {
@@ -881,7 +889,7 @@ impl<'a> Cx<'a> {
                     .as_ref()
                     .map(|n| n.word())
                     .map(|rest| ArenaBox::new_in(BindingRestElement::new(SPAN, name(rest), b), b));
-                BindingPattern::new_object_pattern(SPAN, ArenaVec::from_iter_in(fields, b), rest, b)
+                BindingPattern::new_object_pattern(at, ArenaVec::from_iter_in(fields, b), rest, b)
             }
         }
     }

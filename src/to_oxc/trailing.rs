@@ -203,9 +203,11 @@ fn generics_end(generics: &str) -> Option<usize> {
 /// Where in its line of JS a comment inside an expression is (ADR 0630),
 /// from the column it's placed by.
 #[derive(Clone, Copy)]
-pub(super) enum Inside {
-    /// After the name, number or string that starts there, `37 /* "%" */`.
-    AfterCode,
+pub(super) enum Inside<'a> {
+    /// After the name, number or string that starts there, `37 /* "%" */`,
+    /// and past the closing brackets right after it that its source's
+    /// code closes before the comment, `u[0] /* the first */ = 3` (#1718).
+    AfterCode(&'a str),
     /// After the `=` there, before the value it gives, `NoMode = /* .. */
     /// 0b0000000` (ADR 0630, amended).
     AfterEquals,
@@ -220,7 +222,7 @@ pub(super) enum Inside {
 #[derive(Default)]
 pub(super) struct Placed<'a> {
     pub(super) after: IndexMap<u32, Vec<&'a str>>,
-    pub(super) inside: IndexMap<u32, Vec<(usize, Inside, &'a str)>>,
+    pub(super) inside: IndexMap<u32, Vec<(usize, Inside<'a>, &'a str)>>,
     pub(super) ends: IndexMap<u32, Vec<(usize, &'a str)>>,
 }
 
@@ -231,7 +233,7 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
     let mut after: IndexMap<u32, Vec<&str>> = IndexMap::default();
     // One inside an expression, after the JS of the code right before it,
     // or of an `=` it's after, its line's and column's (ADR 0630).
-    let mut inside: IndexMap<u32, Vec<(usize, Inside, &str)>> = IndexMap::default();
+    let mut inside: IndexMap<u32, Vec<(usize, Inside<'_>, &str)>> = IndexMap::default();
     // A line comment after code of its line that JS has before the code of
     // a line after it, `? "…" // ellipsis` of a conditional on one line:
     // after the code right before it, the rest of the JS's line on the next
@@ -261,19 +263,20 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                 Some((line, found + 1))
             })
         };
-        // One after a parameter: after its name, `start // DEV-only`, the
-        // rest of the line, `) {`, on the next, as the list's next
-        // parameter is (ADR 0708, amended); and after a re-export's last
-        // name, before its list's `}` (rd338).
+        // One after a parameter: after its name, `start // DEV-only`, or
+        // its pattern, `[a, b] // the pair` (#1717), the rest of the line,
+        // `, c) {` or `) {`, on the next, as the list's next parameter is
+        // (ADR 0708, amended); and after a re-export's last name, before
+        // its list's `}` (rd338).
         if let Some((line, column)) = comment.after_param
             && let Some(found) = (map.get_tokens())
                 .filter(|t| t.get_src_line() == line && t.get_src_col() == column)
                 .find_map(|t| {
                     let text = generated_lines.get(t.get_dst_line() as usize)?;
-                    let end = word_end(text, MapCol(t.get_dst_col()).byte_in(text))?;
+                    let end = param_end(text, MapCol(t.get_dst_col()).byte_in(text))?;
                     text[end..]
                         .trim_start()
-                        .starts_with([')', '}'])
+                        .starts_with([')', '}', ','])
                         .then_some((t.get_dst_line(), end))
                 })
         {
@@ -476,7 +479,7 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                 inside
                     .entry(line)
                     .or_default()
-                    .push((at, Inside::AfterCode, &comment.text))
+                    .push((at, Inside::AfterCode(&comment.closes), &comment.text))
             }
             (None, _)
                 if comment.inside
@@ -615,6 +618,55 @@ fn word_end(line: &str, start: usize) -> Option<usize> {
     (end > 0).then_some(start + end)
 }
 
+/// Past `end` of `line`, the closing brackets the source's code closes
+/// there, `closes`, nearest the comment first, as `Trailing::closes` has
+/// them: each the JS has next, after spaces, `]` of `u[0]`; where the JS
+/// has another, it stops there.
+fn closed_past(line: &str, mut end: usize, closes: &str) -> usize {
+    for bracket in closes.chars().rev() {
+        let rest = &line[end..];
+        let spaces = rest.len() - rest.trim_start().len();
+        match rest[spaces..].starts_with(bracket) {
+            true => end += spaces + bracket.len_utf8(),
+            false => break,
+        }
+    }
+    end
+}
+
+/// Where a parameter whose JS starts at `start` of `line` ends: a name's
+/// end, or a pattern's closing bracket, `[a, b]` of a tuple's, `{ x, y }`
+/// of a struct's, on its line (#1717).
+fn param_end(line: &str, start: usize) -> Option<usize> {
+    let rest = line.get(start..)?;
+    let close = match rest.chars().next()? {
+        '[' => ']',
+        '{' => '}',
+        _ => return word_end(line, start),
+    };
+    let open = rest.chars().next()?;
+    let (mut at, mut depth) = (0, 0usize);
+    while let Some(c) = rest[at..].chars().next() {
+        match c {
+            // A default's string, whole, whatever brackets it holds.
+            '"' | '\'' | '`' => {
+                at += literal_end(&rest[at..], c)?;
+                continue;
+            }
+            _ if c == open => depth += 1,
+            _ if c == close => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(start + at + 1);
+                }
+            }
+            _ => {}
+        }
+        at += c.len_utf8();
+    }
+    None
+}
+
 /// Where the number `text` starts with ends: its digits, `_`s and point,
 /// a decimal's exponent with its sign, a radix's prefix and a BigInt's `n`.
 fn number_end(text: &str) -> usize {
@@ -661,11 +713,14 @@ fn literal_end(text: &str, quote: char) -> Option<usize> {
 /// or after the `=` there, `NoMode = /* .. */ 0b0000000` (ADR 0630, amended).
 /// And where each is, in `line`'s bytes, and how wide, in the map's units:
 /// what the map's columns from there are moved by (`Laid::to`, #1668).
-pub(super) fn with_inside_comments(line: &str, comments: &[(usize, Inside, &str)]) -> (String, Vec<(usize, MapCol)>) {
+pub(super) fn with_inside_comments(
+    line: &str,
+    comments: &[(usize, Inside<'_>, &str)],
+) -> (String, Vec<(usize, MapCol)>) {
     let mut out = line.to_string();
     let mut at: Vec<(usize, &str, bool)> = (comments.iter())
         .filter_map(|&(column, inside, text)| match inside {
-            Inside::AfterCode => Some((word_end(line, column)?, text, false)),
+            Inside::AfterCode(closes) => Some((closed_past(line, word_end(line, column)?, closes), text, false)),
             Inside::AfterEquals => (line.get(column..)?.starts_with('=')).then_some((column + 1, text, false)),
             // Before what's there: the comment, then a space, `(/* c */
             // form`, `/* c */ .r(`, which the formatter writes `/* c */.r(`.

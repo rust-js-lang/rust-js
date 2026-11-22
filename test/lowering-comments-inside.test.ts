@@ -52,6 +52,20 @@ pub fn pending(payload: Option<&'static Unknown>) -> bool {
   expect(lib.pending({ _status: 0 } as never)).toBe(true);
 });
 
+// A block comment after an index place, `u[0] /* the first */ = 3;`: after
+// the brackets its code closes before it, as written, not inside them
+// after the index (#1718).
+test("a block comment after an index place is after its brackets", async () => {
+  const { js, lib } = await compiled("comment-after-an-index", `pub fn set() -> [u32; 2] {
+    let mut u = [1, 2];
+    u[0] /* the first */ = 3;
+    u
+}
+`);
+  expect(js).toContain("  u[0] /* the first */ = 3;\n");
+  expect(lib.set()).toEqual([3, 2]);
+});
+
 // React's isSameOriginFrame, `try { // Reading href can throw. return
 // typeof iframe.contentWindow.location.href === 'string'; } catch (err) {
 // return false; }`: its port's comment, first in the `catch_unwind`

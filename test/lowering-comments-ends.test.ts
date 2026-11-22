@@ -90,6 +90,35 @@ impl Info {
   expect(lib.first("ab" as never, 1 as never)).toBe(3);
 });
 
+// A parameter taken apart, `(a, b): (u32, u32), // the pair`: its JS is a
+// pattern, `[a, b]`, mapped where it's written as a name is, the comment
+// after it as after a name, the list's rest on the next line (#1717); its
+// pattern's brackets whole, of a struct's `{ x, y }` too, and of the last.
+test("a comment after a destructured parameter is after its pattern", async () => {
+  const { js, lib } = await compiled("comments-after-patterns", `pub struct P {
+    pub x: u32,
+    pub y: u32,
+}
+
+pub fn pairs(
+    (a, b): (u32, u32), // the pair
+    c: u32,
+) -> u32 {
+    a + b + c
+}
+
+pub fn point(
+    k: u32,
+    P { x, y }: P, // the point
+) -> u32 {
+    x + y + k
+}
+`);
+  expect(js).toContain("export function pairs(\n  [a, b], // the pair\n  c,\n) {\n");
+  expect(js).toContain("export function point(\n  k,\n  { x, y }, // the point\n) {\n");
+  expect([lib.pairs([1, 2] as never, 3 as never), lib.point(4 as never, { x: 1, y: 2 } as never)]).toEqual([6, 7]);
+});
+
 // React's encodeReply: `function encodeReply(value, options) /* We don't
 // use URLSearchParams yet but maybe */ {`. Its port's block comment after
 // the return type, before the body's `{`, was lost: no JS is of the type.

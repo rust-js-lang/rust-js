@@ -1074,6 +1074,7 @@ its line ended there where JS has the next line's code on it, `? "…" //
 ellipsis` of a conditional ([ADR
 0733](../../decisions/0733-a-line-comment-ends-the-line-of-its-code.md)),
 one inside an expression after the code right before it, `37 /* "%" */`,
+past the brackets that code closes, `u[0] /* the first */ = 3` (#1718),
 or right after an `=` before the value, as written, `export const NoMode =
 /*   */ 0b0000000;` of `pub const NO_MODE: u32 = /*   */ 0b0000000;`, a
 block comment on a line of its own between them, as rustfmt writes a
@@ -1497,7 +1498,8 @@ export function warn(message) {
 ```
 
 So is one after a struct literal's last field, before its `}`; and a
-line comment after a parameter on its line is after that parameter
+line comment after a parameter on its line is after that parameter, a
+destructured one's pattern too, `[a, b], // the pair` (#1717)
 ([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md), amended):
 
 ```rust

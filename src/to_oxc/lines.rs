@@ -95,7 +95,7 @@ pub(super) fn laid<'a>(
         let mut at = 0;
         let mut placed = vec![(0, out_line)];
         let inside_of = |from: usize, to: usize| {
-            let comments: Vec<(usize, Inside, &str)> = (inside.get(&i).into_iter().flatten())
+            let comments: Vec<(usize, Inside<'_>, &str)> = (inside.get(&i).into_iter().flatten())
                 .filter(|&&(column, ..)| column >= from && column < to)
                 .map(|&(column, inside, text)| (column - from, inside, text))
                 .collect();

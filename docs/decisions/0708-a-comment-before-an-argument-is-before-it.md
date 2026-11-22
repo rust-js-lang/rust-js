@@ -546,3 +546,22 @@ first code at or after the link's line** (rd63's rule), `Internals.d(..)
 Held by corpus `call_argument_comments_across_lines`, and the mutations
 `before-argument-never`, `given-to-call-own-block-only` and
 `before-link-own-line-only`.
+
+## Amendment: a comment after a destructured parameter (#1717, 2026-11-22)
+
+`(a, b): (u32, u32), // the pair` lost its comment: `function pairs([a, b],
+c)`. A parameter that's a name is mapped where it's written, which the
+comment's placement looks up (`trailing::after_param`), but one taken
+apart, `[a, b]` or `{ x, y }`, was mapped nowhere, so its comment had no JS
+to follow, and its JS starts with a bracket, no name to end. **A
+parameter's pattern is mapped where the parameter is written**, itself,
+not what's in it (`pattern_at`, to_oxc/statements.rs); **its JS ends at its
+pattern's closing bracket** (`param_end`, a default's string whole); and
+**a parameter followed by the list's `,`, not only its `)`, is placed
+after**, as the general placement already put a name, `[a, b], // the
+pair` then `c,` on the next line. Case
+([0262](0262-when-rust-and-js-disagree.md)): none, comments alone.
+
+Held by `test/lowering-comments-ends.test.ts`; mutations
+param-pattern-unmapped (`to_oxc/statements.rs`), param-pattern-end-a-word,
+middle-param-pattern-unplaced (`to_oxc/trailing.rs`).

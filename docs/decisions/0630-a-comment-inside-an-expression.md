@@ -347,3 +347,17 @@ at each: the column a byte (`utf16-map-column-a-byte`), the branch's
 operator, an argument's and a name's end, a piece's start, a comment's
 place and its width in the map.
 
+## Amendment: past the brackets its code closes (#1718, 2026-11-22)
+
+`u[0] /* the first */ = 3;` gave `u[0 /* the first */] = 3;`: a comment
+inside an expression goes after the JS of the nearest code before it whose
+JS is a name, a number or a string, `0`, and the `]` between them, no code
+the map places, was left behind. **It goes past the closing brackets its
+source's code closes before it** (`Trailing::closes`, which a line
+comment's placement already reads, rd605), each the JS has next, after
+spaces (`closed_past`): `u[0] /* the first */ = 3;`. Where the JS has
+another there, a helper's `)` of `$at(items, 0)`, it stops, as before.
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, comments alone.
+
+Held by `test/lowering-comments-inside.test.ts`; mutation
+inside-comment-closes-unread (`to_oxc/trailing.rs`).

@@ -459,4 +459,12 @@ export const mutations: Mutation[] = [
     replace: "            ClassBody::boxed(SPAN, ArenaVec::from_iter_in(fields.take(0).chain(elements), b), b),\n",
     tests: ["test/es-classes.test.ts", "-t", "whose struct says es is an ES class"],
   },
+  {
+    name: "param-pattern-unmapped",
+    breaks: "a destructured parameter's pattern, `[a, b]`, is mapped nowhere, so the comment after it on its line, `// the pair`, has no JS to follow and is the body's first line (#1717)",
+    file: "src/to_oxc/statements.rs",
+    find: "                pattern => (self.pattern_at(pattern, at), None),\n",
+    replace: "                pattern => (self.pattern(pattern), None),\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "after a destructured parameter"],
+  },
 ];
