@@ -950,7 +950,10 @@ do not rediscover them by parsing generated JS or guessing filenames.
 
 `crates/rust-js-emit/src/output.rs` prepares all artifacts and decides which old outputs are stale.
 `crates/rust-js-emit/src/publish.rs` stages bytes, preserves unchanged files, backs up replacements
-and removals, and publishes the manifest last. Ordinary I/O failures trigger
+and removals, and publishes the manifest last. The compiler's other files, the
+reports a flag asks for (std's catalogue and coverage among them), are written
+through its `publish_file`, so a file holding the same bytes keeps its time:
+build.rs tracks std/compiled-std.json by its time (#2317). Ordinary I/O failures trigger
 rollback; this is not crash-atomic publication. Cleanup requires the old file
 to retain its recorded fingerprint and protects current inputs and outputs.
 

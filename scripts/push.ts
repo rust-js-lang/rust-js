@@ -37,7 +37,9 @@
 //             difference: a change the port takes moves the pin in this push.
 //             It runs beside the round's check, started before it, its
 //             output in target/push-react.log: the phase is what's left of
-//             it once the check ends
+//             it once the check ends. It runs the round's own link of the
+//             compiler built (`portRegen`), which no build in the check
+//             takes from under it (#2317)
 //   files     `git diff origin/main` holds only the pushed commits' files
 //   push      `git push origin HEAD:main`, once `origin/main` is where the
 //             check saw it: where it moved meanwhile, the branch is rebased and
@@ -59,6 +61,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { isCompilerSource } from "./compiler-crates";
+import { ownCompiler } from "./own-compiler";
 import { selectionFile } from "./select";
 import { devTimes, ownsTimes } from "./devTimes";
 import { PORT_DOES_NOT_COMPILE, touchesPort } from "./iteratorSlice";
@@ -364,7 +367,10 @@ async function main() {
         const incoming = reactBase === undefined ? undefined : lines(git("diff", "--name-only", reactBase, base).out);
         const gate = reactGate(changed, incoming);
         if (gate === "reused") console.log("push: the React port as the round before: the rebase's commits touch none of what compiles it");
-        if (gate === "run") regen = beside(["bun", "scripts/react-in-rust.ts", "regen"], reactLog);
+        if (gate === "run") {
+          const { cmd, env } = portRegen(process.cwd());
+          regen = beside(cmd, reactLog, env);
+        }
         const code = changed.some((file) => /\.(rs|ts|tsx|js|jsx|mjs|cjs)$/.test(file));
         // CI's map of the nearest commit of `main` it recorded, where it's
         // nearer than the machine's (scripts/testMap.ts's `fetchMap`).
@@ -447,17 +453,27 @@ async function main() {
 /** Where the React regen beside a round's check writes what it prints. */
 const reactLog = "target/push-react.log";
 
+/** The React regen a round runs beside its check, of the round's own link
+ * of the compiler its build phase built (scripts/own-compiler.ts), which
+ * the regen runs as it's given, building none: the check's steps may build
+ * the checkout's meanwhile, and a relink took it from under the port's
+ * `cargo check` ("could not execute .. No such file", #2317). */
+export function portRegen(root: string): { cmd: string[]; env: Record<string, string> } {
+  return { cmd: ["bun", "scripts/react-in-rust.ts", "regen"], env: { RUST_JS_COMPILER: ownCompiler(root, "push") } };
+}
+
 /** A command run beside another, what it prints written to `log`: its
- * exit code once it ends, a way to stop it, and its process group's id.
- * It runs in a group of its own, which `stop` ends whole: killing only the
- * direct child left what it started, the React regen's node, cargo and
- * rust-js, running hours past a failed push. A signal that ends the push
+ * exit code once it ends, a way to stop it, and its process group's id;
+ * `env`, what its environment adds to this one's. It runs in a group of its
+ * own, which `stop` ends whole: killing only the direct child left what
+ * it started, the React regen's node, cargo and rust-js, running hours
+ * past a failed push. A signal that ends the push
  * ends the group first, as the group no longer shares the terminal's. */
 export type Beside = { done: Promise<number>; stop: () => void; group: number };
-export function beside(cmd: string[], log: string): Beside {
+export function beside(cmd: string[], log: string, env: Record<string, string> = {}): Beside {
   mkdirSync("target", { recursive: true });
   const out = openSync(log, "w");
-  const child = spawn(cmd[0]!, cmd.slice(1), { stdio: ["ignore", out, out], detached: true });
+  const child = spawn(cmd[0]!, cmd.slice(1), { stdio: ["ignore", out, out], detached: true, env: { ...process.env, ...env } });
   closeSync(out);
   const group = child.pid!;
   let ended = false;

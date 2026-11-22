@@ -4,9 +4,9 @@
 // set; any other stops the push.
 import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { againEnv, appendedBoth, beside, FAST_TESTS, fastAgain, givenBefore, givenRound, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
+import { againEnv, appendedBoth, beside, FAST_TESTS, fastAgain, givenBefore, givenRound, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, portRegen, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
 import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
@@ -172,6 +172,55 @@ test("what runs beside a round's check, stopped, leaves nothing it started runni
   await it.done;
   for (let i = 0; i < 250 && running().length > 0; i++) await Bun.sleep(20);
   expect(running()).toEqual([]);
+});
+
+// The React regen beside a round's check runs the round's own link of the
+// compiler built, which it's given, so it builds none: a build in the
+// check relinked the checkout's as the port's `cargo check` ran it, and
+// the push failed, "could not execute .. rust-js (No such file)"
+// (#2317). A relink is the old file removed and a new one written: here
+// mid-run, and what runs beside still runs the build the round made.
+test("a round's React regen runs the round's own compiler, which a relink mid-port leaves", async () => {
+  const dir = fixture("push-own-compiler");
+  const built = (n: number) => {
+    const compiler = join(dir, "target", "debug", "rust-js");
+    mkdirSync(join(dir, "target", "debug"), { recursive: true });
+    rmSync(compiler, { force: true });
+    writeFileSync(compiler, `#!/bin/sh\necho build ${n}\n`);
+    chmodSync(compiler, 0o755);
+  };
+  built(1);
+  const { cmd, env } = portRegen(dir);
+  expect(cmd).toEqual(["bun", "scripts/react-in-rust.ts", "regen"]);
+  expect(env.RUST_JS_COMPILER).not.toBe(join(dir, "target", "debug", "rust-js"));
+  const started = join(dir, "started");
+  const log = join(dir, "regen.log");
+  const it = beside(["sh", "-c", `touch "${started}"; sleep 0.3; "$RUST_JS_COMPILER"`], log, env);
+  for (let i = 0; i < 250 && !existsSync(started); i++) await Bun.sleep(20);
+  built(2);
+  expect(await it.done).toBe(0);
+  expect(readFileSync(log, "utf8")).toBe("build 1\n");
+  // The next round's is of the build it made.
+  expect(spawnSync(portRegen(dir).env.RUST_JS_COMPILER!).stdout.toString()).toBe("build 2\n");
+});
+
+// A run's own compiler is own-compiler.ts's alone: check:fast's, a push
+// round's and the mutation runner's are its links, and no other script
+// links the checkout's build by hand. A run gone without exiting leaves its
+// folder, which the next run of its kind removes.
+test("a run's own compiler is own-compiler.ts's, and a dead run's folder goes", () => {
+  const linking = readdirSync(join(root, "scripts"))
+    .filter((file) => file.endsWith(".ts") && readFileSync(join(root, "scripts", file), "utf8").match(/linkSync\(join\(root, "target", "debug", "rust-js"\)/))
+    .sort();
+  expect(linking).toEqual(["own-compiler.ts"]);
+  for (const file of ["checkFast.ts", "push.ts", "mutations.ts"]) expect(readFileSync(join(root, "scripts", file), "utf8")).toContain('from "./own-compiler"');
+  const dir = fixture("push-own-folder");
+  const dead = join(dir, "target", "push", "999999999");
+  mkdirSync(dead, { recursive: true });
+  mkdirSync(join(dir, "target", "debug"), { recursive: true });
+  writeFileSync(join(dir, "target", "debug", "rust-js"), "");
+  expect(portRegen(dir).env.RUST_JS_COMPILER).toBe(join(dir, "target", "push", String(process.pid), "rust-js"));
+  expect(existsSync(dead)).toBe(false);
 });
 
 // What would refuse a push minutes in, or at its end, refuses it first, in

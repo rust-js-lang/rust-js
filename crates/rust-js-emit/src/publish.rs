@@ -1,6 +1,6 @@
 //! Publish a complete artifact plan. No frontend, lowering or printing APIs.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use rust_js_program::paths::parent_dir;
 
@@ -8,6 +8,22 @@ pub(crate) struct Artifact {
     pub(crate) path: PathBuf,
     /// JS, a map, a manifest, or a library's metadata (ADR 0100).
     pub(crate) bytes: Vec<u8>,
+}
+
+/// `bytes` as the whole of `path`, one artifact published alone, as a plan
+/// publishes each: a file that holds them already is left as it is, its
+/// time too. The compiler's reports written beside a compile, std's
+/// catalogue and coverage, are written so: build.rs tracks the catalogue
+/// by its time, and writing it again with the same bytes relinked the
+/// compiler in the next `cargo build`, as a push's React port ran it (#2317).
+pub fn publish_file(path: &Path, bytes: Vec<u8>) -> Result<(), String> {
+    publish(
+        &[Artifact {
+            path: path.to_path_buf(),
+            bytes,
+        }],
+        &[],
+    )
 }
 
 /// Write `artifacts` and remove what of `stale` is still as an older build

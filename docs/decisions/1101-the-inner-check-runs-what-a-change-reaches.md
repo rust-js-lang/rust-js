@@ -989,3 +989,25 @@ the push's line, `[items: <its outcome>, missed <n>]`, `missed` each test
 that failed in the run the layer's would have left out (`shadowMissed`).
 The switch comes after some 30 pushes across the machines with none
 missed, read from the machines' logs.
+
+## Amended: a round's React port runs the round's own compiler (#2317, 2026-11-22)
+
+A push's React regen ran `target/debug/rust-js` beside the check. Something
+in the round relinked that file while the port's `cargo check` was running
+it, and the push failed with "could not execute target/debug/rust-js (No such file)" after
+its whole check had passed. The relink came from the std phase:
+`std-fresh.ts` wrote std/compiled-std.json again with the same bytes, and
+build.rs tracks that file by its time, so the next `cargo build`, the
+regen's or check:fast's, rebuilt the compiler. The environment wasn't the
+cause.
+
+Two changes fix it. First, the compiler writes its reports through
+emit's `publish_file`, which leaves a file holding the same bytes as it
+is, so nothing in a round makes a build relink. Second, the regen gets the
+round's own link of the compiler its build phase built (`portRegen`), so
+even a relink can't reach it. scripts/own-compiler.ts is the one owner of a
+run's own compiler. check:fast's jobs, a push round's regen and the mutation
+runner's checkout build are links it makes in `target/<kind>/<pid>/`. A run
+gone without exiting leaves its folder, which the next run of that kind
+removes. test/push.test.ts holds this: a relink during a regen leaves the
+regen's compiler as it was, and no other script links the checkout's build.

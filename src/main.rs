@@ -343,12 +343,16 @@ impl Callbacks for RustJs {
         tcx.ensure_ok().analysis(());
         phase_times::mark("rustc: type check, MIR and borrow check");
         if let Some(path) = &self.std_coverage
-            && let Err(error) = std::fs::write(path, lower::std_coverage::report(tcx, &self.dependencies))
+            && let Err(error) = rust_js_emit::publish::publish_file(
+                path,
+                lower::std_coverage::report(tcx, &self.dependencies).into_bytes(),
+            )
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
         if let Some(path) = &self.std_catalogue
-            && let Err(error) = std::fs::write(path, lower::compiled_std_catalogue(tcx))
+            && let Err(error) =
+                rust_js_emit::publish::publish_file(path, lower::compiled_std_catalogue(tcx).into_bytes())
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
@@ -442,19 +446,21 @@ impl RustJs {
         // Which std functions a recogniser took, of the crate's analysis and
         // every body's lowering, where it's asked (ADR 1128).
         if let Some(path) = &self.recognizers_found
-            && let Err(error) = std::fs::write(path, lower::session::recognized(tcx))
+            && let Err(error) = rust_js_emit::publish::publish_file(path, lower::session::recognized(tcx).into_bytes())
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
         // Each check THIR's ranges leave out that MIR doesn't prove (#1672).
         if let Some(path) = &self.intervals_shadow
-            && let Err(error) = std::fs::write(path, lower::session::intervals_shadow(tcx))
+            && let Err(error) =
+                rust_js_emit::publish::publish_file(path, lower::session::intervals_shadow(tcx).into_bytes())
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
         // Each `Drop` compared with rustc's elaboration (#2112's change D).
         if let Some(path) = &self.drops_shadow
-            && let Err(error) = std::fs::write(path, lower::session::drops_shadow(tcx))
+            && let Err(error) =
+                rust_js_emit::publish::publish_file(path, lower::session::drops_shadow(tcx).into_bytes())
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
@@ -564,7 +570,7 @@ fn run() -> ExitCode {
         cargo::Invocation::Clippy(flags, lints, value) => return linted(clippy::args(flags, lints), value),
         // Why rust-js refused a crate of crates.io's, beside its metadata.
         cargo::Invocation::Refused(exit, note, why) => {
-            if let Err(error) = std::fs::write(&note, why) {
+            if let Err(error) = rust_js_emit::publish::publish_file(&note, why.into_bytes()) {
                 eprintln!("rust-js: cannot write {}: {error}", note.display());
             }
             return exit;
@@ -941,7 +947,8 @@ fn finish_build(prepared: Prepared, exit: ExitCode) -> Result<ExitCode, String> 
             .iter()
             .map(|name| format!("{name}\n"))
             .collect();
-        std::fs::write(file, replayed).map_err(|error| format!("{}: {error}", file.display()))?;
+        rust_js_emit::publish::publish_file(file, replayed.into_bytes())
+            .map_err(|error| format!("{}: {error}", file.display()))?;
     }
     // Once rustc has written the metadata: if it couldn't, nothing is published.
     if let Some((linked, sources)) = callbacks.lowered.take()
@@ -1004,17 +1011,20 @@ fn finish_build(prepared: Prepared, exit: ExitCode) -> Result<ExitCode, String> 
                 .iter()
                 .map(|name| format!("{name}\n"))
                 .collect();
-            std::fs::write(path, found)
+            rust_js_emit::publish::publish_file(path, found.into_bytes())
                 .map_err(|error| format!("can't write the facts found to {}: {error}", path.display()))?;
         }
         // Which of tidy's passes changed a body, and how many (#1461).
         if let Some(path) = &tidy_fired {
-            std::fs::write(path, lower::session::tidy_fired(&lower::pipeline::tidy_pass_names()))
-                .map_err(|error| format!("can't write the tidy passes fired to {}: {error}", path.display()))?;
+            rust_js_emit::publish::publish_file(
+                path,
+                lower::session::tidy_fired(&lower::pipeline::tidy_pass_names()).into_bytes(),
+            )
+            .map_err(|error| format!("can't write the tidy passes fired to {}: {error}", path.display()))?;
         }
         // Each compiler-made label kept, by its shape (#1461).
         if let Some(path) = &label_census {
-            std::fs::write(path, lower::session::label_census())
+            rust_js_emit::publish::publish_file(path, lower::session::label_census().into_bytes())
                 .map_err(|error| format!("can't write the label census to {}: {error}", path.display()))?;
         }
     }

@@ -282,4 +282,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/push.test.ts", "-t", "counts the time and phases"],
   },
+  {
+    name: "push-port-runs-checkout-compiler",
+    breaks: "a round's React regen runs the checkout's debug compiler, which a build in the check relinks under the port's `cargo check` (#2317)",
+    file: "scripts/push.ts",
+    find: '  return { cmd: ["bun", "scripts/react-in-rust.ts", "regen"], env: { RUST_JS_COMPILER: ownCompiler(root, "push") } };\n',
+    replace: '  return { cmd: ["bun", "scripts/react-in-rust.ts", "regen"], env: {} };\n',
+    tests: ["test/push.test.ts", "-t", "the round's own compiler"],
+  },
 ];

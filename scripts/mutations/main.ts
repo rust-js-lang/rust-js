@@ -236,4 +236,12 @@ export const mutations: Mutation[] = [
     replace: "    match exit == ExitCode::SUCCESS && false && jsx_syntax::resolved::replay() {\n",
     tests: ["test/jsx-props-resolved.test.ts", "-t", "a glob imports"],
   },
+  {
+    name: "std-catalogue-rewritten",
+    breaks: "the catalogue built again, the same, is written again, and build.rs, which tracks it by its time, relinks the compiler in the next build, under a push's React port (#2317)",
+    file: "src/main.rs",
+    find: "            && let Err(error) =\n                rust_js_emit::publish::publish_file(path, lower::compiled_std_catalogue(tcx).into_bytes())\n",
+    replace: "            && let Err(error) = std::fs::write(path, lower::compiled_std_catalogue(tcx))\n",
+    tests: ["test/compiled-std.test.ts", "-t", "left as it is"],
+  },
 ];

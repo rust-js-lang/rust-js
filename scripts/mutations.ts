@@ -30,6 +30,7 @@ import { casesReaching, ensureMap, noMap } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
 import { mutantsLock } from "./disk";
+import { ownCompiler } from "./own-compiler";
 import { acquire, holdLease, ownShare } from "./leases";
 import { makeSourceWorkspace, sourceMutation } from "./source-mutations";
 import { latentSurvivors, type Results } from "./latent-survivors";
@@ -2085,7 +2086,9 @@ async function main() {
   if (buildsItself) snapshotCrate(join(work, "snapshot"));
   if (retiring !== undefined) return retire(chosen);
   phaseEnded("setup");
-  const unmutated = buildsItself ? await build() : given;
+  // The checkout's own build, where it's the one, is the run's own link of
+  // it (scripts/own-compiler.ts): the agent's next edit builds it again.
+  const unmutated = buildsItself ? await build() : process.env.RUST_JS_COMPILER === undefined ? ownCompiler(root, "mutations") : given;
   if (typeof unmutated !== "string") throw new Error(`the compiler as it is ${unmutated.problem}`);
   phaseEnded("the compiler as it is");
   // And they use the compiler they're given: with one that compiles

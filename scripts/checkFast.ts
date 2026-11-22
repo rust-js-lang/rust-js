@@ -18,7 +18,7 @@
 // check.yml, each command its jobs run one of `jobs`' or one `leftToCi`
 // names, and each test file its suite runs one a job here runs (#732).
 import { createHash } from "node:crypto";
-import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { compilerCrates, isCompilerSource } from "./compiler-crates";
@@ -28,6 +28,7 @@ import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touches
 import { OWNER_PAGE, ownerTable, sourceLine } from "./owners";
 import { outcome, readOnly, recordSanity, selectChange, selectionFile, shadowMissed, suiteFiles } from "./select";
 import { browsers, caseParts, compilerBuilds, machine, memoryBudget, nightly, peakGB, pooledParts } from "./shard";
+import { ownCompiler, ownFolder } from "./own-compiler";
 import { said, strays } from "./strays";
 import { type CheckLogRun, checkLogRun } from "./checkLogs";
 import { expected, jobTimesStore, readJobTimes, recordJobTimes } from "./jobTimes";
@@ -902,28 +903,11 @@ if (import.meta.main) {
   if (prepared.prune.code !== 0) process.exit(1);
   console.log(timed("pruning what tests keep", prepared.prune.seconds));
 
-  // The jobs' compiler is the run's own hard link of the one just built.
-  // A `cargo build` in the checkout while the run runs, of the agent's next
-  // edit, replaces `target/debug/rust-js`. It's gone for part of that, 899
-  // of 88,241 looks during one build here, and a test that spawns it then
-  // fails at once (ENOENT in 0.1 ms): diagnostics' "a RefCell of a dyn
-  // upcast" failed in 0.91 ms (#761). The link is the run's build however
-  // the checkout's changes, and goes with the run.
-  // Those of runs that ended without exiting, whose process is gone, go too.
-  const runs = join(root, "target", "check-fast");
-  mkdirSync(runs, { recursive: true });
-  for (const pid of readdirSync(runs)) {
-    try {
-      process.kill(Number(pid), 0);
-    } catch {
-      rmSync(join(runs, pid), { recursive: true, force: true });
-    }
-  }
-  const own = join(runs, String(process.pid));
-  mkdirSync(own, { recursive: true });
-  const compiler = given ?? join(own, "rust-js");
-  if (given === undefined) linkSync(join(root, "target", "debug", "rust-js"), compiler);
-  process.on("exit", () => rmSync(own, { recursive: true, force: true }));
+  // The jobs' compiler is the run's own link of the one just built
+  // (scripts/own-compiler.ts): the run's build however the checkout's
+  // changes, and gone with the run.
+  const own = ownFolder(root, "check-fast");
+  const compiler = given ?? ownCompiler(root, "check-fast");
   // The apps' Cargo targets' seed, the binding crates checked once for the
   // run by the first test to ask, and gone with it (test/support.ts'
   // `seeded`, #1005).
