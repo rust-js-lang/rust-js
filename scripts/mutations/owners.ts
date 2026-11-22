@@ -158,4 +158,12 @@ export const mutations: Mutation[] = [
     replace: 'if (source === null && sourceCell !== "") {',
     tests: of("a row is five cells"),
   },
+  {
+    name: "owner-found-anywhere",
+    breaks: "an owner a row names is found whatever its path, so a row naming a module that's gone, `gone.rs`, passes the table's check (#2316)",
+    file,
+    find: "  return files.some((file) => ofOwnerPath(base, file));\n",
+    replace: "  return files.length > 0 || base === \"\";\n",
+    tests: of("an owner is its module, its submodules and its folder"),
+  },
 ];

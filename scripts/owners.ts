@@ -125,13 +125,22 @@ export function ownerPath(owner: string, files: readonly string[]): string {
  * module and its submodules, `src/lower/iterators/`, or what a folder
  * holds. */
 export function ofOwner(owner: string, file: string, files: readonly string[]): boolean {
-  const base = ownerPath(owner, files);
+  return ofOwnerPath(ownerPath(owner, files), file);
+}
+
+/** Whether `file` is of the owner whose path is `base` (`ofOwner`). */
+function ofOwnerPath(base: string, file: string): boolean {
   if (file === base || (base.endsWith("/") && file.startsWith(base))) return true;
   return base.endsWith(".rs") && file.startsWith(`${base.slice(0, -3)}/`);
 }
 
-/** Whether `owner` names a module there is. */
-export const ownerFound = (owner: string, files: readonly string[]) => files.some((file) => ofOwner(owner, file, files));
+/** Whether `owner` names a module there is: its path found once, not once
+ * a file, each of which scanned every file, six seconds of the owners test
+ * (#2316). */
+export const ownerFound = (owner: string, files: readonly string[]) => {
+  const base = ownerPath(owner, files);
+  return files.some((file) => ofOwnerPath(base, file));
+};
 
 /** Rust source with its comments, string literals and char literals
  * blanked, each line where it was, and its `#[cfg(test)]` modules cut. */
