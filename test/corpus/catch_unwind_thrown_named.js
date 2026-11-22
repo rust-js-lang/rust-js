@@ -7,7 +7,7 @@ import {
   $cleanup,
   $debugStr,
   $live,
-  $panicMessage,
+  $stringPanic,
   $unwinding,
   $unwound,
 } from "@rust-js/std";
@@ -21,16 +21,13 @@ function messageOf(payload) {
   if (message != null) {
     return message;
   }
-  const message$1 =
-    payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
-      ? payload.value
-      : undefined;
+  const message$1 = payload.impl.typeId() === "alloc::string::String" ? payload.value : undefined;
   return message$1 ?? "?";
 }
 
 function fails(n) {
   if (n > 2) {
-    throw new Error(`big ${n}`);
+    throw $stringPanic(`big ${n}`);
   }
   return n;
 }

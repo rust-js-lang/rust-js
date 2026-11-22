@@ -46,7 +46,7 @@ function $fillWith(v, f, drop) {
 // each a copy.
 function $copyFromSlice(v, src, copy) {
   if (v.length !== src.length) {
-    throw new Error(`copy_from_slice: source slice length (${src.length}) does not match destination slice length (${v.length})`);
+    throw $stringPanic(`copy_from_slice: source slice length (${src.length}) does not match destination slice length (${v.length})`);
   }
   for (let i = 0; i < v.length; i++) v[i] = copy === undefined ? src[i] : copy(src[i]);
 }
@@ -57,7 +57,7 @@ function $copyFromSlice(v, src, copy) {
 // slots, panicking as its `assert_eq!` does.
 function $writeCloneOfSlice(v, src, clone) {
   if (v.length !== src.length) {
-    throw new Error(
+    throw $stringPanic(
       `assertion \`left == right\` failed: destination and source slices have different lengths\n  left: ${v.length}\n right: ${src.length}`,
     );
   }

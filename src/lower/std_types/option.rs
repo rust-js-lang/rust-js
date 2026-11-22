@@ -742,13 +742,21 @@ pub(in crate::lower) fn unwrap_tested(e: &Expr) -> Option<(Expr, &Expr, Expr)> {
     if callee.helper_name() != Some("$unwrap") {
         return None;
     }
-    let (option, message) = match args.as_slice() {
-        [option] => (option, Expr::str("called `Option::unwrap()` on a `None` value")),
-        [option, message] if matches!(message.kind, js::ExprKind::Str(_)) => (option, message.clone()),
+    // `unwrap()`'s payload is a `&str`, `panic("..")`'s; `expect(msg)`'s a
+    // `String`, std's `expect_failed` showing it (ADR 0660, amended).
+    let (option, message, payload) = match args.as_slice() {
+        [option] => (
+            option,
+            Expr::str("called `Option::unwrap()` on a `None` value"),
+            js::Payload::Str,
+        ),
+        [option, message] if matches!(message.kind, js::ExprKind::Str(_)) => {
+            (option, message.clone(), js::Payload::String)
+        }
         _ => return None,
     };
     let test = Expr::bin(Op::LooseEq, option.clone(), Expr::null());
-    Some((test, option, Expr::panic(message)))
+    Some((test, option, Expr::panic(message, payload)))
 }
 
 /// The field of the box of a `Some` that looks like `None` (ADR 0051),

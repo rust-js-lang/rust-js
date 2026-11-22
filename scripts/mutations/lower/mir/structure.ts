@@ -682,4 +682,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && shared.iter().all(|&b| does_nothing(b)) {\n",
     tests: ["test/lowering-or-patterns.test.ts", "-t", "meet at assignments alone"],
   },
+  {
+    name: "bounds-check-a-str",
+    breaks: "an index out of bounds' payload, a `String`, downcasts as a `&str`",
+    file: "src/lower/mir/structure.rs",
+    find: "AssertKind::BoundsCheck { .. } => js::Payload::String,",
+    replace: "AssertKind::BoundsCheck { .. } => js::Payload::Str,",
+    tests: ["test/corpus.test.ts", "-t", "^panic_payload_kinds\\.rs$"],
+  },
 ];

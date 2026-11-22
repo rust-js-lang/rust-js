@@ -10,7 +10,6 @@ import {
   $fmtPrintFailed,
   $fmtWritten,
   $out,
-  $panicMessage,
   $print,
   $printing,
   $sink,
@@ -221,10 +220,7 @@ function main() {
     }),
   );
   const message = $unwrapErr(failed);
-  const downcastRef =
-    message.impl.typeId() === "alloc::string::String" || message.impl === $panicMessage
-      ? message.value
-      : undefined;
+  const downcastRef = message.impl.typeId() === "alloc::string::String" ? message.value : undefined;
   $print(` ${downcastRef == null ? "None" : `Some(${$debugStr(downcastRef)})`}\n`);
 
   let out = "";

@@ -72,4 +72,12 @@ export const mutations: Mutation[] = [
       "a format argument written across lines",
     ],
   },
+  {
+    name: "formatted-arguments-literal",
+    breaks: "a panic of an `Arguments` made with arguments gives a `&str` payload",
+    file: "src/lower/mir/std_calls/fmt_parts.rs",
+    find: "                    Std::FmtNew => Some(false),\n",
+    replace: "                    Std::FmtNew => Some(true),\n",
+    tests: ["test/corpus.test.ts", "-t", "^panic_payload_kinds\\.rs$"],
+  },
 ];

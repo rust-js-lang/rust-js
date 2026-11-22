@@ -10,6 +10,7 @@ import {
   $range,
   $rev,
   $skipping,
+  $stringPanic,
 } from "@rust-js/std";
 
 export function entry() {
@@ -22,7 +23,7 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === boom) {
     boom = 0;
-    throw new Error(`drop ${d[0]}`);
+    throw $stringPanic(`drop ${d[0]}`);
   }
 }
 

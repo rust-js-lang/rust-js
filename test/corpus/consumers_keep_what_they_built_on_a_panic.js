@@ -17,6 +17,7 @@ import {
   $live,
   $next,
   $partition,
+  $stringPanic,
   $unwindsOn,
   $unzip,
 } from "@rust-js/std";
@@ -36,7 +37,7 @@ function dDrop_drop(d) {
 function stepsIterator_next(steps, IIterator, dropI, dropIItem) {
   steps.step = (steps.step + 1) >>> 0;
   if (steps.step === steps.n) {
-    throw new Error(`step ${steps.n}`);
+    throw $stringPanic(`step ${steps.n}`);
   }
   return IIterator.next(steps.items);
 }

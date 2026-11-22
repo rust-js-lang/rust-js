@@ -2625,9 +2625,11 @@ pub fn zeros<const N: usize>() -> [u8; N] {
 ```
 
 ```js
+import { $stringPanic } from "@rust-js/std";
+
 export function checked(n, location) {
   if (n === 0) {
-    throw new Error(`zero at ${location.file}:${location.line}:${location.column}`);
+    throw $stringPanic(`zero at ${location.file}:${location.line}:${location.column}`);
   }
   return n;
 }

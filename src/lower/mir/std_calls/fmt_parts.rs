@@ -115,39 +115,108 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         body: &rustc_middle::mir::Body<'tcx>,
         at: rustc_middle::mir::BasicBlock,
     ) -> Option<(bool, rustc_middle::mir::Local)> {
-        use rustc_middle::mir::{Operand, Rvalue, TerminatorKind};
-        let local_of = |operand: &Operand<'tcx>| operand.place().filter(|p| p.projection.is_empty()).map(|p| p.local);
-        let TerminatorKind::Call { args, .. } = &body.basic_blocks[at].terminator().kind else {
+        use rustc_middle::mir::Rvalue;
+        let lent = called_with(body, at)?;
+        let Err(Rvalue::Ref(_, _, made)) = the_one_write(body, lent)? else {
             return None;
         };
-        let lent = local_of(&args.first()?.node)?;
-        // The one write of `local`, a statement's or a call's (`the_write`),
-        // a shared borrow of it no write (#2211).
-        let assigned = |local: rustc_middle::mir::Local| {
-            crate::lower::body_queries::the_write(body, local, crate::lower::body_queries::Borrowed::Mutably).map(
-                |write| match write {
-                    crate::lower::body_queries::Write::Statement(rvalue) => Err(rvalue),
-                    crate::lower::body_queries::Write::Call(func, _) => Ok(func),
-                },
-            )
-        };
-        let Err(Rvalue::Ref(_, _, made)) = assigned(lent)? else {
-            return None;
-        };
-        if !made.projection.is_empty() || body.local_kind(made.local) == rustc_middle::mir::LocalKind::Arg {
+        if !made.projection.is_empty() {
             return None;
         }
-        match assigned(made.local)? {
+        Some((self.made_of_a_literal(body, made.local)?, made.local))
+    }
+
+    /// The payload of the `panic_fmt(args)` ending block `at`, as Rust's
+    /// panic handler makes it: a `&str` where `args.as_str()` is `Some`, of
+    /// an `Arguments` made of a literal alone, a `String` of one made with
+    /// arguments, as `arguments_made` tells `as_str()` (ADR 0660, amended);
+    /// `None` of one made elsewhere (#1091).
+    pub(in crate::lower) fn panic_fmt_payload(
+        &self,
+        body: &rustc_middle::mir::Body<'tcx>,
+        at: rustc_middle::mir::BasicBlock,
+    ) -> Option<js::Payload> {
+        Some(match self.made_of_a_literal(body, called_with(body, at)?)? {
+            true => js::Payload::Str,
+            false => js::Payload::String,
+        })
+    }
+
+    /// `panic_fmt(args)` ending block `at`, thrown with its payload's kind,
+    /// a `&str` where `args.as_str()` is `Some`, else a `String`, as Rust's
+    /// handler makes it (`panic_fmt_payload`); of an `Arguments` made in
+    /// another function, which nothing here says, refused, as `as_str()` is.
+    pub(super) fn panic_fmt_lowering<'c>(
+        &self,
+        body: &rustc_middle::mir::Body<'tcx>,
+        at: rustc_middle::mir::BasicBlock,
+        span: Span,
+    ) -> StdLowering<'c, 'a, 'tcx> {
+        match self.panic_fmt_payload(body, at) {
+            Some(payload) => lower(move |this, state, values, out| {
+                this.flush(state, out)?;
+                let message = values.next().expect("the panic's `Arguments`");
+                let message = this.value_expr(message, span)?;
+                out.push(StmtKind::Throw(Expr::panic(message, payload)).at(this.js_span(span)));
+                Ok(Value::Expr(Expr::js_undefined()))
+            }),
+            None => lower(move |this, _, _, _| {
+                Err(this.unsupported(
+                    span,
+                    "a panic of a `fmt::Arguments` made in another function: whether it was made with arguments, which makes its payload a `String`, not a `&str`, isn't known here (#1091)",
+                ))
+            }),
+        }
+    }
+
+    /// Whether the `Arguments` `made` holds was made of a literal alone,
+    /// `from_str("plain")`'s or a constant, or with arguments, `new(..)`'s,
+    /// by its one write in `body`; `None` of a parameter, or another write.
+    fn made_of_a_literal(&self, body: &rustc_middle::mir::Body<'tcx>, made: rustc_middle::mir::Local) -> Option<bool> {
+        use rustc_middle::mir::{Operand, Rvalue};
+        if body.local_kind(made) == rustc_middle::mir::LocalKind::Arg {
+            return None;
+        }
+        match the_one_write(body, made)? {
             Ok(func) => {
                 let (def_id, args) = func.const_fn_def()?;
                 match self.recognition().classify(def_id, args)? {
-                    Std::FmtStr => Some((true, made.local)),
-                    Std::FmtNew => Some((false, made.local)),
+                    Std::FmtStr => Some(true),
+                    Std::FmtNew => Some(false),
                     _ => None,
                 }
             }
-            Err(Rvalue::Use(Operand::Constant(_), _)) => Some((true, made.local)),
+            Err(Rvalue::Use(Operand::Constant(_), _)) => Some(true),
             Err(_) => None,
         }
     }
+}
+
+/// The local the call ending block `at` of `body` is given first, itself.
+fn called_with(
+    body: &rustc_middle::mir::Body<'_>,
+    at: rustc_middle::mir::BasicBlock,
+) -> Option<rustc_middle::mir::Local> {
+    let rustc_middle::mir::TerminatorKind::Call { args, .. } = &body.basic_blocks[at].terminator().kind else {
+        return None;
+    };
+    args.first()?
+        .node
+        .place()
+        .filter(|p| p.projection.is_empty())
+        .map(|p| p.local)
+}
+
+/// The one write of `local` in `body`, a statement's rvalue or a call's
+/// function (`the_write`), a shared borrow of it no write (#2211).
+fn the_one_write<'b, 'tcx>(
+    body: &'b rustc_middle::mir::Body<'tcx>,
+    local: rustc_middle::mir::Local,
+) -> Option<Result<&'b rustc_middle::mir::Operand<'tcx>, &'b rustc_middle::mir::Rvalue<'tcx>>> {
+    crate::lower::body_queries::the_write(body, local, crate::lower::body_queries::Borrowed::Mutably).map(|write| {
+        match write {
+            crate::lower::body_queries::Write::Statement(rvalue) => Err(rvalue),
+            crate::lower::body_queries::Write::Call(func, _) => Ok(func),
+        }
+    })
 }

@@ -24,6 +24,7 @@ import {
   $rangeNext,
   $sortedKeys,
   $splitAtMut,
+  $stringPanic,
   $unwinds,
   iterator_filter,
   iterator_map,
@@ -211,11 +212,11 @@ function main() {
   const [first, rest] = $splitAtMut(pairs, 1);
   const length = first.length;
   if (0 >= length) {
-    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
   }
   const value$3 = rest.length;
   if (0 >= value$3) {
-    throw new Error(`index out of bounds: the len is ${value$3} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${value$3} but the index is 0`);
   }
   swapIn($cellOf(first[0]), $cellOf(rest[0]));
   console.log(

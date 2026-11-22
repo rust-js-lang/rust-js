@@ -7,6 +7,7 @@ import {
   $index,
   $live,
   $reverseRange,
+  $stringPanic,
   $unwindsOn,
   $unwrap,
   $view,
@@ -169,7 +170,7 @@ function main() {
         pointDrop_drop(item);
       }
     }
-    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
   }
   part[0] = 0;
   try {

@@ -9,6 +9,7 @@ import {
   $intoIter,
   $lazyRange,
   $rangeInclusiveNext,
+  $stringPanic,
   iterator_map,
 } from "@rust-js/std";
 
@@ -22,7 +23,7 @@ function dDrop_drop(d) {
 
 function made(n) {
   if (n === 3) {
-    throw new Error(`at ${n}`);
+    throw $stringPanic(`at ${n}`);
   }
   return [n];
 }

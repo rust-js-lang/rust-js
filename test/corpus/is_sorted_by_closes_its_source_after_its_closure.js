@@ -7,6 +7,7 @@ import {
   $iterator,
   $lent,
   $live,
+  $stringPanic,
   $unwindsOn,
   iterator_take,
 } from "@rust-js/std";
@@ -23,7 +24,7 @@ const Counter = {
 
 function counterIterator_next(counter) {
   if (counter.panicsAt === counter.n) {
-    throw new Error(`step ${counter.n}`);
+    throw $stringPanic(`step ${counter.n}`);
   }
   function value() {
     counter.n = (counter.n + 1) >>> 0;
@@ -145,7 +146,7 @@ function main() {
     const iter = Counter.new(4);
     function f(a, b) {
       if (b === 3) {
-        throw new Error(`f at ${b}`);
+        throw $stringPanic(`f at ${b}`);
       }
       return a <= b;
     }

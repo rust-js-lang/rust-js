@@ -30,14 +30,14 @@ export function $bytes(text) {
 // own message, `failure`.
 export function $index(items, index, failure) {
   if (index < 0 || index >= items.length) {
-    throw new Error(failure ?? `index out of bounds: the len is ${items.length} but the index is ${index}`);
+    throw $stringPanic(failure ?? `index out of bounds: the len is ${items.length} but the index is ${index}`);
   }
   return items[index];
 }
 
 export function $at(items, index, failure) {
   if (index < 0 || index >= items.length) {
-    throw new Error(failure ?? `index out of bounds: the len is ${items.length} but the index is ${index}`);
+    throw $stringPanic(failure ?? `index out of bounds: the len is ${items.length} but the index is ${index}`);
   }
   return index;
 }
@@ -393,7 +393,7 @@ export function $eq(a, b, cells) {
     return false;
   }
   // A `RefCell` mutably borrowed can't be borrowed to compare (ADR 0328).
-  if (cells && (a.borrows < 0 || b.borrows < 0)) throw new Error("RefCell already mutably borrowed");
+  if (cells && (a.borrows < 0 || b.borrows < 0)) throw $stringPanic("RefCell already mutably borrowed");
   if (Array.isArray(a)) {
     return Array.isArray(b) && a.length === b.length && a.every((x, i) => $eq(x, b[i], true));
   }
@@ -427,7 +427,7 @@ export function $setEq(a, b) {
 export function $assertFailed(kind, left, right, message) {
   const op = kind === "Eq" ? "==" : kind === "Ne" ? "!=" : "matches";
   const why = message === undefined ? "" : ": " + message;
-  throw new Error("assertion `left " + op + " right` failed" + why + "\n  left: " + left + "\n right: " + right);
+  throw $stringPanic("assertion `left " + op + " right` failed" + why + "\n  left: " + left + "\n right: " + right);
 }
 
 // `#[should_panic]` (ADR 0026): the test passes only if it panics, and if
@@ -460,9 +460,11 @@ export function $testResult(result) {
   }
 }
 
-export function $unwrap(value, message = "called `Option::unwrap()` on a `None` value") {
+// `unwrap()`'s panic, its payload a `&str`, or `expect(message)`'s, its
+// payload a `String`, as std's `expect_failed` shows it (ADR 0660, amended).
+export function $unwrap(value, message) {
   if (value == null) {
-    throw new Error(message);
+    throw message === undefined ? new Error("called `Option::unwrap()` on a `None` value") : $stringPanic(message);
   }
   return value;
 }
@@ -1655,7 +1657,7 @@ export function $bufReader(R) {
       const position = R.streamPosition(inner(b));
       if (position.TAG === "Err") return position;
       if (position._0 < remainder) {
-        throw new Error("overflow when subtracting remaining buffer size from inner stream position");
+        throw $stringPanic("overflow when subtracting remaining buffer size from inner stream position");
       }
       return { TAG: "Ok", _0: position._0 - remainder };
     },
@@ -7424,7 +7426,7 @@ export function $bigMin(a, b) {
 // `$parseInt` reads a narrower integer, its value a BigInt.
 export function $parseBig(s, min, max, radix = 10) {
   if (radix < 2 || radix > 36) {
-    throw new Error("from_ascii_bytes_radix: radix must lie in the range `[2, 36]` - found " + radix);
+    throw $stringPanic("from_ascii_bytes_radix: radix must lie in the range `[2, 36]` - found " + radix);
   }
   const error = (message) => ({ TAG: "Err", _0: message });
   if (s === "") return error("cannot parse integer from empty string");
@@ -7646,7 +7648,7 @@ export function $rangeFromNext(range, lo, hi) {
   const n = range.start;
   if (typeof n === "string") {
     const next = $charStep(n, 1);
-    if (next === undefined) throw new Error("overflow in `Step::forward`");
+    if (next === undefined) throw $stringPanic("overflow in `Step::forward`");
     range.start = next;
   } else {
     range.start = n === hi ? lo : typeof n === "bigint" ? n + 1n : n + 1;
@@ -8395,7 +8397,7 @@ export function $pathSetFileName(buf, name) {
 // extension panics, as std's does.
 export function $pathSetExtension(buf, extension) {
   if (extension.includes("/")) {
-    throw new Error(`extension cannot contain path separators: ${$debugStr(extension)}`);
+    throw $stringPanic(`extension cannot contain path separators: ${$debugStr(extension)}`);
   }
   const c = $components(buf);
   const name = $nextComponentBack(c);
@@ -10077,7 +10079,7 @@ export function $fillWith(v, f, drop) {
 // each a copy.
 export function $copyFromSlice(v, src, copy) {
   if (v.length !== src.length) {
-    throw new Error(`copy_from_slice: source slice length (${src.length}) does not match destination slice length (${v.length})`);
+    throw $stringPanic(`copy_from_slice: source slice length (${src.length}) does not match destination slice length (${v.length})`);
   }
   for (let i = 0; i < v.length; i++) v[i] = copy === undefined ? src[i] : copy(src[i]);
 }
@@ -10088,7 +10090,7 @@ export function $copyFromSlice(v, src, copy) {
 // slots, panicking as its `assert_eq!` does.
 export function $writeCloneOfSlice(v, src, clone) {
   if (v.length !== src.length) {
-    throw new Error(
+    throw $stringPanic(
       `assertion \`left == right\` failed: destination and source slices have different lengths\n  left: ${v.length}\n right: ${src.length}`,
     );
   }
@@ -11376,10 +11378,10 @@ export function $decodeUtf16(units) {
 // $alreadyBorrowed();`, with no call where the cell is free (rd218, #1692).
 export const $alreadyBorrowedMessage = "RefCell already borrowed";
 export function $alreadyBorrowed() {
-  throw new Error($alreadyBorrowedMessage);
+  throw $stringPanic($alreadyBorrowedMessage);
 }
 export function $alreadyMutablyBorrowed() {
-  throw new Error("RefCell already mutably borrowed");
+  throw $stringPanic("RefCell already mutably borrowed");
 }
 
 export function $borrow(cell, hold) {
@@ -11393,7 +11395,7 @@ export function $borrowMut(cell, hold, dropGiven) {
     // What the call was given, a `replace`'s value, dropped as its panic
     // unwinds, as Rust's parameter is (#1587): a cleanup of that panic, so
     // `thread::panicking()` holds in its drop, and a panic there aborts.
-    const error = new Error($alreadyBorrowedMessage);
+    const error = $stringPanic($alreadyBorrowedMessage);
     if (dropGiven !== undefined) $cleanup(dropGiven, error);
     throw error;
   }
@@ -11666,7 +11668,7 @@ export function $lockHeld(cell, mutable) {
 export function $unpoisoned(cell, message = "called `Result::unwrap()` on an `Err` value", held = false) {
   if (!$poisonedLocks.has(cell)) return cell;
   if (held) $unlock(cell);
-  throw new Error(`${message}: PoisonError { .. }`);
+  throw $stringPanic(`${message}: PoisonError { .. }`);
 }
 
 // A `Mutex`'s or an `RwLock`'s `into_inner()` and `get_mut()`: `Ok` of
@@ -11913,7 +11915,7 @@ export function $getOrInit(cell, f) {
 // it's past either. Bounds the wrong way round panic as std's integers do,
 // each shown as `{:?}` shows it, which is its digits.
 export function $clamp(x, min, max) {
-  if (!(min <= max)) throw new Error("min > max. min = " + min + ", max = " + max);
+  if (!(min <= max)) throw $stringPanic("min > max. min = " + min + ", max = " + max);
   return x < min ? min : x > max ? max : x;
 }
 
@@ -11929,7 +11931,7 @@ export function $clampBy(x, min, max, ord, show, drop) {
   const at = $unwinds(
     () => {
       if (!ord.le(min, max)) {
-        throw new Error(show ? `min > max. min = ${show(min)}, max = ${show(max)}` : "assertion failed: min <= max");
+        throw show ? $stringPanic(`min > max. min = ${show(min)}, max = ${show(max)}`) : new Error("assertion failed: min <= max");
       }
       return ord.lt(x, min) ? 1 : ord.gt(x, max) ? 2 : 0;
     },
@@ -11971,7 +11973,7 @@ export function $keptOf(a, b, ord, drop, max) {
 // `debug`, as `{:?}` shows an `f64` or an `f32`.
 export function $clampFloat(x, min, max, debug) {
   if (!(min <= max)) {
-    throw new Error("min > max, or either was NaN. min = " + debug(min) + ", max = " + debug(max));
+    throw $stringPanic("min > max, or either was NaN. min = " + debug(min) + ", max = " + debug(max));
   }
   return x < min ? min : x > max ? max : x;
 }
@@ -12725,7 +12727,7 @@ export function $sortUnstable(v, isLess, kind) {
 // (`handle`).
 export function $selectNthUnstable(v, index, isLess, kind, handle = false) {
   const len = v.length;
-  if (index >= len) throw new Error(`partition_at_index index ${index} greater than length of slice ${len}`);
+  if (index >= len) throw $stringPanic(`partition_at_index index ${index} greater than length of slice ${len}`);
   if (index === len - 1) $swapItems(v, $extremeIndex(v, 0, len, isLess, true), index);
   else if (index === 0) $swapItems(v, $extremeIndex(v, 0, len, isLess, false), index);
   else $selectLoop(v, 0, len, index, isLess, kind);
@@ -13598,10 +13600,10 @@ export function $getDisjointMut(v, indices, handle = false, inclusive = false) {
 // checks `b` against the length, not `b + 1` (#1935).
 export function $sliceIndexFail(start, end, length, inclusive) {
   if (inclusive && end > length) end -= 1;
-  if (start > length) throw new Error(`range start index ${start} out of range for slice of length ${length}`);
-  if (end > length) throw new Error(`range end index ${end} out of range for slice of length ${length}`);
-  if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
-  throw new Error(`range end index ${end} out of range for slice of length ${length}`);
+  if (start > length) throw $stringPanic(`range start index ${start} out of range for slice of length ${length}`);
+  if (end > length) throw $stringPanic(`range end index ${end} out of range for slice of length ${length}`);
+  if (start > end) throw $stringPanic(`slice index starts at ${start} but ends at ${end}`);
+  throw $stringPanic(`range end index ${end} out of range for slice of length ${length}`);
 }
 
 // std's `slice::range`, which `drain`, `splice`, `copy_within` and
@@ -13626,7 +13628,7 @@ export function $exactLen(hint) {
   const [lower, upper] = hint;
   if (upper !== lower) {
     const shown = upper === undefined ? "None" : `Some(${upper})`;
-    throw new Error(`assertion \`left == right\` failed\n  left: ${shown}\n right: Some(${lower})`);
+    throw $stringPanic(`assertion \`left == right\` failed\n  left: ${shown}\n right: Some(${lower})`);
   }
   return lower;
 }
@@ -15114,7 +15116,7 @@ export function $realloc(pointer, layout, size) {
 
 // `handle_alloc_error(layout)`: the program's end, as Rust says it.
 export function $allocError(layout) {
-  throw new Error(`memory allocation of ${layout.size} bytes failed`);
+  throw $stringPanic(`memory allocation of ${layout.size} bytes failed`);
 }
 
 // `Layout::from_size_align(size, align)`: `Err` where `align` isn't a power
@@ -15374,7 +15376,7 @@ export function $roomForCounted(it, size, align) {
       const bytes = upper * size;
       const counts = Math.ceil(8 / align) * align;
       if (bytes > max - (align - 1) || counts + bytes > max - (Math.max(4, align) - 1)) {
-        throw new Error("called `Result::unwrap()` on an `Err` value: LayoutError");
+        throw $stringPanic("called `Result::unwrap()` on an `Err` value: LayoutError");
       }
     },
     () => it.return?.(),
@@ -18238,15 +18240,15 @@ export function $jsonIndexMut(cell, key) {
   if (typeof key === "string") {
     if (cell.value === "Null") cell.value = { TAG: "Object", _0: new Map() };
     const value = cell.value;
-    if (value.TAG !== "Object") throw new Error(`cannot access key ${$debugStr(key)} in JSON ${kind(value)}`);
+    if (value.TAG !== "Object") throw $stringPanic(`cannot access key ${$debugStr(key)} in JSON ${kind(value)}`);
     const entries = value._0;
     if (!entries.has(key)) entries.set(key, "Null");
     return { get value() { return entries.get(key); }, set value(next) { entries.set(key, next); } };
   }
   const value = cell.value;
-  if (value.TAG !== "Array") throw new Error(`cannot access index ${key} of JSON ${kind(value)}`);
+  if (value.TAG !== "Array") throw $stringPanic(`cannot access index ${key} of JSON ${kind(value)}`);
   const items = value._0;
-  if (key >= items.length) throw new Error(`cannot access index ${key} of JSON array of length ${items.length}`);
+  if (key >= items.length) throw $stringPanic(`cannot access index ${key} of JSON array of length ${items.length}`);
   return { get value() { return items[key]; }, set value(next) { items[key] = next; } };
 }
 // A JSON Pointer's tokens, as serde_json's `pointer` splits it: none of `""`,
@@ -18638,7 +18640,7 @@ export function $drain(items, start, end = items.length, inclusive) {
 }
 
 export function $splitOff(items, at) {
-  if (at > items.length) throw new Error(`\`at\` split index (is ${at}) should be <= len (is ${items.length})`);
+  if (at > items.length) throw $stringPanic(`\`at\` split index (is ${at}) should be <= len (is ${items.length})`);
   return items.splice(at);
 }
 
@@ -18819,7 +18821,7 @@ export function $restStr(it) {
 // dropped by `drop`, where it has a destructor, as `$unwrapOk`'s (#1505).
 export function $unwrapErr(result, message = "called `Result::unwrap_err()` on an `Ok` value", debug = $debug, drop) {
   if (result.TAG === "Ok") {
-    const panic = new Error(message + ": " + debug(result._0));
+    const panic = $stringPanic(message + ": " + debug(result._0));
     if (drop !== undefined) $dropsUnwinding([() => drop(result._0)]);
     throw panic;
   }
@@ -19121,7 +19123,7 @@ export function $heapExtend(heap, items, ord) {
 // an invalid digit, though 260 is too large.
 export function $parseInt(s, min, max, radix = 10) {
   if (radix < 2 || radix > 36) {
-    throw new Error("from_ascii_bytes_radix: radix must lie in the range `[2, 36]` - found " + radix);
+    throw $stringPanic("from_ascii_bytes_radix: radix must lie in the range `[2, 36]` - found " + radix);
   }
   const error = (message) => ({ TAG: "Err", _0: message });
   if (s === "") return error("cannot parse integer from empty string");
@@ -19381,7 +19383,7 @@ export function $encodeUtf8(c, buf) {
   const bytes = new TextEncoder().encode(c);
   if (bytes.length > buf.length) {
     const code = c.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
-    throw new Error(`encode_utf8: need ${bytes.length} bytes to encode U+${code} but buffer has just ${buf.length}`);
+    throw $stringPanic(`encode_utf8: need ${bytes.length} bytes to encode U+${code} but buffer has just ${buf.length}`);
   }
   bytes.forEach((b, i) => (buf[i] = b));
   return $utf8Mut(buf, bytes.length);
@@ -19392,7 +19394,7 @@ export function $encodeUtf8(c, buf) {
 export function $encodeCharUtf16(c, buf) {
   if (c.length > buf.length) {
     const code = c.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
-    throw new Error(`encode_utf16: need ${c.length} bytes to encode U+${code} but buffer has just ${buf.length}`);
+    throw $stringPanic(`encode_utf16: need ${c.length} bytes to encode U+${code} but buffer has just ${buf.length}`);
   }
   for (let i = 0; i < c.length; i++) buf[i] = c.charCodeAt(i);
   return $view(buf, 0, c.length);
@@ -20249,7 +20251,7 @@ export function $fmtOrPanic(write, message) {
   try {
     return write();
   } catch (error) {
-    if (error instanceof $FmtError) throw new Error(message);
+    if (error instanceof $FmtError) throw $stringPanic(message);
     throw error;
   }
 }
@@ -20259,18 +20261,20 @@ export function $fmtPrintFailed(error, text, stderr) {
   // In a line formatted through stdout's, after what's written there (#1490).
   if (!stderr && $printFrames.length > 0) $out(text + error.written);
   else $write(text + error.written, stderr);
+  // std's `write_fmt` writes it `panic!("..")`, a literal: a `&str`, where
+  // `format!`'s `expect` makes a `String` (ADR 0660, amended).
   throw new Error("a formatting trait implementation returned an error when the underlying stream did not");
 }
 // `unwrap()` and `expect(..)` of one: `()`, or std's panic, of the error's
 // `{:?}`.
 export function $writeExpect(result, message) {
   if (result === undefined) return;
-  throw new Error(message + ": " + (result instanceof $IoError ? $ioErrorDebug(result) : "Error"));
+  throw $stringPanic(message + ": " + (result instanceof $IoError ? $ioErrorDebug(result) : "Error"));
 }
 // `unwrap_err()` and `expect_err(..)` of one: its error, or std's panic, of
 // `Ok`'s `()`.
 export function $writeExpectErr(result, message) {
-  if (result === undefined) throw new Error(message + ": ()");
+  if (result === undefined) throw $stringPanic(message + ": ()");
   return result;
 }
 // What a write to a `String` had written before it failed, taken from the
@@ -20641,16 +20645,16 @@ export function $dropItems(items, drop) {
 // `u64::MAX` seconds and 999,999,999 nanoseconds, and past it, std panics.
 export function $durationNew(secs, nanos) {
   const duration = secs * 1000000000n + BigInt(nanos);
-  if (duration > 18446744073709551615999999999n) throw new Error("overflow in Duration::new");
+  if (duration > 18446744073709551615999999999n) throw $stringPanic("overflow in Duration::new");
   return duration;
 }
 export function $durationAdd(a, b) {
   const sum = a + b;
-  if (sum > 18446744073709551615999999999n) throw new Error("overflow when adding durations");
+  if (sum > 18446744073709551615999999999n) throw $stringPanic("overflow when adding durations");
   return sum;
 }
 export function $durationSub(a, b) {
-  if (a < b) throw new Error("overflow when subtracting durations");
+  if (a < b) throw $stringPanic("overflow when subtracting durations");
   return a - b;
 }
 // `checked_add`'s: `None` past `MAX`.
@@ -20798,11 +20802,11 @@ export function $strSlice(s, start, end, inclusive) {
   // itself, then `a`'s boundary, and says `b` (#1935).
   const past = inclusive && end > length;
   if (past) end -= 1;
-  if (start > length) throw new Error(`start byte index ${start} is out of bounds for string of length ${length}`);
-  if (end > length) throw new Error(`end byte index ${end} is out of bounds for string of length ${length}`);
-  if (start > end) throw new Error(`byte range starts at ${start} but ends at ${end}`);
+  if (start > length) throw $stringPanic(`start byte index ${start} is out of bounds for string of length ${length}`);
+  if (end > length) throw $stringPanic(`end byte index ${end} is out of bounds for string of length ${length}`);
+  if (start > end) throw $stringPanic(`byte range starts at ${start} but ends at ${end}`);
   const from = $unitAt(s, start, "start");
-  if (past) throw new Error(`end byte index ${end} is out of bounds for string of length ${length}`);
+  if (past) throw $stringPanic(`end byte index ${end} is out of bounds for string of length ${length}`);
   const part = s.slice(from, $unitAt(s, end, "end"));
   // A long part's facts are of where it is in `s` (#1184).
   if (part.length >= $textLong) $textPart(part, s, start, from, end - start);
@@ -20817,7 +20821,7 @@ export function $unitAt(s, at, which) {
   let from = at - 1;
   while ($charBoundary(s, from) === undefined) from--;
   const c = String.fromCodePoint(s.codePointAt($charBoundary(s, from)));
-  throw new Error(`${which} byte index ${at} is not a char boundary; it is inside ${$debugStr(c, "'")} (bytes ${from}..${from + $byteLen(c)} of string)`);
+  throw $stringPanic(`${which} byte index ${at} is not a char boundary; it is inside ${$debugStr(c, "'")} (bytes ${from}..${from + $byteLen(c)} of string)`);
 }
 
 export function $find(s, pattern) {
@@ -20948,7 +20952,9 @@ export function $extend(v, items, byFold = false) {
 export function $insertAt(v, index, item, drop, message) {
   if (index > v.length) {
     drop?.(item);
-    throw new Error(message ?? `insertion index (is ${index}) should be <= len (is ${v.length})`);
+    // `Vec`'s, formatted, a `String`; a `VecDeque`'s `message`, its
+    // `assert!`'s literal, a `&str` (ADR 0660, amended).
+    throw message === undefined ? $stringPanic(`insertion index (is ${index}) should be <= len (is ${v.length})`) : new Error(message);
   }
   v.splice(index, 0, item);
 }
@@ -20956,7 +20962,7 @@ export function $insertAt(v, index, item, drop, message) {
 // `Vec::remove(index)` past its end: std's panic, its message as std's.
 // The removal itself is JS's `splice` where it's called (#1692).
 export function $removeOutOfBounds(v, index) {
-  throw new Error(`removal index (is ${index}) should be < len (is ${v.length})`);
+  throw $stringPanic(`removal index (is ${index}) should be < len (is ${v.length})`);
 }
 
 // `v.swap(a, b)`: out of bounds, a slice's message of the first index std
@@ -20965,7 +20971,7 @@ export function $swap(v, a, b, deque = false) {
   if (deque && a >= v.length) throw new Error("assertion failed: i < self.len()");
   if (deque && b >= v.length) throw new Error("assertion failed: j < self.len()");
   if (a >= v.length || b >= v.length) {
-    throw new Error(`index out of bounds: the len is ${v.length} but the index is ${a >= v.length ? a : b}`);
+    throw $stringPanic(`index out of bounds: the len is ${v.length} but the index is ${a >= v.length ? a : b}`);
   }
   [v[a], v[b]] = [v[b], v[a]];
 }
@@ -21056,7 +21062,7 @@ export function $dedupBy(v, same, drop, cells = false) {
 
 export function $swapRemove(v, index) {
   if (index >= v.length) {
-    throw new Error(`swap_remove index (is ${index}) should be < len (is ${v.length})`);
+    throw $stringPanic(`swap_remove index (is ${index}) should be < len (is ${v.length})`);
   }
   const item = v[index];
   v[index] = v[v.length - 1];
@@ -21261,7 +21267,7 @@ export function $splicing(items, start, end, replacement, dropItem, inclusive) {
 
 export function $windows(v, size) {
   if (size === 0) {
-    throw new Error("window size must be non-zero");
+    throw $stringPanic("window size must be non-zero");
   }
   const parts = Array.from({ length: Math.max(0, v.length - size + 1) }, (_, i) => $part(v, i, i + size));
   // What std's `Debug` of what's left shows, `Windows { v, size }` (#2252).
@@ -22641,9 +22647,24 @@ export function $isPanic(e) {
   return e instanceof $Unwinding || (e instanceof Error && e.constructor === Error);
 }
 
-// A panic's message as a `dyn Any`'s `Any`: a `&str`, which a downcast to a
-// `String` finds too, as JS doesn't keep which a panic's was.
+// A panic's message as a `dyn Any`'s `Any`: a `&'static str`, of a plain
+// `new Error(..)`, `panic!("plain")`'s, and what JS throws; or a `String`, of
+// one `$stringPanic` made, `panic!("n = {n}")`'s, as Rust's payload is a `&str`
+// exactly where its `fmt::Arguments::as_str()` is `Some` (ADR 0660, amended).
 export const $panicMessage = { typeId: () => "&str" };
+export const $panicString = { typeId: () => "alloc::string::String" };
+
+// What marks a panic's `Error` as one whose payload is a `String`: not
+// enumerable, so its host shows it as any `Error`.
+export const $stringPayload = Symbol("a panic whose payload is a String");
+
+// A panic whose payload is a `String`, thrown: `throw $stringPanic(..)`, an
+// `Error` of JS's own constructor, marked (ADR 0660, amended).
+export function $stringPanic(message) {
+  const error = new Error(message);
+  Object.defineProperty(error, $stringPayload, { value: true });
+  return error;
+}
 
 // What JS threw, as a `dyn Any`'s `Any`: a `&'static JsError`.
 export const $jsThrown = { typeId: () => "&js::JsError" };
@@ -22668,27 +22689,35 @@ export function $unwound(e) {
     return e.payload;
   }
   if ($isPanic(e)) {
-    return { value: e.message, impl: $panicMessage, error: e };
+    return { value: e.message, impl: e[$stringPayload] === true ? $panicString : $panicMessage, error: e };
   }
   return { value: e, impl: $jsThrown, error: e };
 }
 
 // What's thrown to unwind with `payload`: the `$Unwinding` it was thrown
-// in, a panic's `Error`, its message as it was, or what JS threw, itself;
-// a panic of text, its `Error`; any other, in a `$Unwinding`.
+// in, a panic's `Error`, its message and its kind as they were, or what JS
+// threw, itself; a panic of text, its `Error`, a `String`'s `$stringPanic`;
+// any other, in a `$Unwinding`.
 export function $unwinding(payload) {
   if (payload.error instanceof $Unwinding) {
     return payload.error;
   }
-  if (payload.impl === $panicMessage && payload.value === payload.error.message) {
+  if (
+    (payload.impl === $panicMessage || payload.impl === $panicString) &&
+    payload.value === payload.error.message &&
+    (payload.impl === $panicString) === (payload.error[$stringPayload] === true)
+  ) {
     return payload.error;
   }
   const id = payload.impl.typeId();
   if (id === "&js::JsError") {
     return payload.value;
   }
-  if (id === "&str" || id === "alloc::string::String") {
+  if (id === "&str") {
     return new Error(payload.value);
+  }
+  if (id === "alloc::string::String") {
+    return $stringPanic(payload.value);
   }
   return new $Unwinding(payload);
 }
@@ -22952,7 +22981,7 @@ export function $settle(promise) {
 // panic unwinds, caught or not; a drop that panics then aborts (#1505).
 export function $unwrapOk(result, message = "called `Result::unwrap()` on an `Err` value", debug = $debug, drop) {
   if (result.TAG === "Err") {
-    const panic = new Error(message + ": " + debug(result._0));
+    const panic = $stringPanic(message + ": " + debug(result._0));
     if (drop !== undefined) $dropsUnwinding([() => drop(result._0)]);
     throw panic;
   }

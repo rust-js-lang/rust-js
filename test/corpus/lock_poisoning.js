@@ -18,10 +18,10 @@ import {
   $locked,
   $lockedValue,
   $next,
-  $panicMessage,
   $parseInt,
   $poison,
   $showLocked,
+  $stringPanic,
   $tryLock,
   $unborrow,
   $unlock,
@@ -40,7 +40,7 @@ const TABLE = {
 
 function message(payload) {
   const downcast =
-    payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
+    payload.impl.typeId() === "alloc::string::String"
       ? { TAG: "Ok", _0: payload.value }
       : { TAG: "Err", _0: payload };
   if (downcast.TAG === "Ok") {
@@ -85,7 +85,7 @@ function slot(table, i) {
     $cleanup(() => {
       $unlock(held);
     });
-    throw new Error(`index out of bounds: the len is 2 but the index is ${i}`);
+    throw $stringPanic(`index out of bounds: the len is 2 but the index is ${i}`);
   }
   const result = held.value[i];
   $unlock(held);

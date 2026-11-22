@@ -17,6 +17,7 @@ import {
   $next,
   $roomForHint,
   $stepsOf,
+  $stringPanic,
   $traitImpl,
   iterator_map,
 } from "@rust-js/std";
@@ -49,7 +50,7 @@ function heldAll(
         $cleanup(() => {
           dropHItem?.(i);
         });
-        throw new Error(`at ${n}`);
+        throw $stringPanic(`at ${n}`);
       }
       return {
         _it: $held(HItemIntoIterator.intoIter(i)),

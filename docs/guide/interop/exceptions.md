@@ -44,7 +44,7 @@ pub fn fail(message: &str) -> ! {
 ```
 
 ```js
-import { $debugParseError, $div, $index, $parseInt, $unwrapOk } from "@rust-js/std";
+import { $debugParseError, $div, $index, $parseInt, $stringPanic, $unwrapOk } from "@rust-js/std";
 
 export function third(items) {
   return $index(items, 2);
@@ -61,20 +61,27 @@ export function ratio(a, b) {
 }
 
 export function fail(message) {
-  throw new Error(message);
+  throw $stringPanic(message);
 }
 ```
 
-Each throws a plain `Error` whose `message` is Rust's panic message:
+Each throws a plain `Error` whose `message` is Rust's panic message. Rust's
+payload is a `&'static str` where the message is a literal alone,
+`panic!("failed")`'s, `unwrap()`'s or an `assert!`'s, and a `String`
+otherwise, `panic!("{message}")`'s, `expect`'s or an index out of bounds',
+which `downcast_ref::<&str>()` and `downcast_ref::<String>()` tell apart.
+So JS keeps it too: a `&str` panic is `new Error(message)`, and a `String`
+one is `$stringPanic(message)`, the same plain `Error`, marked ([ADR
+0660](../../decisions/0660-catch-unwind-catches-what-js-throws.md), amended):
 
-| Rust | `error.message` |
-|---|---|
-| `panic!("{message}")` | the message |
-| `items[2]` of one item | `index out of bounds: the len is 1 but the index is 2` |
-| `.expect("a port number")` of an `Err` | `a port number: ParseIntError { kind: InvalidDigit }`, the error's `{:?}` |
-| `.unwrap()` of an `Err` | ``called `Result::unwrap()` on an `Err` value: NotANumber("x")`` |
-| `.unwrap()` of `None` | ``called `Option::unwrap()` on a `None` value`` |
-| `a / b` of `b == 0` | `attempt to divide by zero` |
+| Rust | `error.message` | payload |
+|---|---|---|
+| `panic!("{message}")` | the message | `String` |
+| `items[2]` of one item | `index out of bounds: the len is 1 but the index is 2` | `String` |
+| `.expect("a port number")` of an `Err` | `a port number: ParseIntError { kind: InvalidDigit }`, the error's `{:?}` | `String` |
+| `.unwrap()` of an `Err` | ``called `Result::unwrap()` on an `Err` value: NotANumber("x")`` | `String` |
+| `.unwrap()` of `None` | ``called `Option::unwrap()` on a `None` value`` | `&str` |
+| `a / b` of `b == 0` | `attempt to divide by zero` | `&str` |
 
 ## `Result` and `?`
 
@@ -515,7 +522,7 @@ pub fn check(items: &[u32], expected: u32) {
 ```
 
 ```js
-import { $assertFailed } from "@rust-js/std";
+import { $assertFailed, $stringPanic } from "@rust-js/std";
 
 export function pick(n) {
   switch (n % 3) {
@@ -532,7 +539,7 @@ export function pick(n) {
 
 export function check(items, expected) {
   if (items.length >= 10) {
-    throw new Error(`too many items: ${items.length}`);
+    throw $stringPanic(`too many items: ${items.length}`);
   }
   const value = items.reduce((a, b) => (a + b) >>> 0, 0);
   const value$1 = expected;
@@ -671,7 +678,7 @@ pub fn text(value: &Unknown) -> String {
 ```
 
 ```js
-import { $catchable, $index, $panicMessage, $unwound } from "@rust-js/std";
+import { $catchable, $index, $unwound } from "@rust-js/std";
 
 export function url(value) {
   try {
@@ -690,10 +697,7 @@ export function item(items, at) {
   } catch (thrown) {
     $catchable(thrown);
     const payload = $unwound(thrown);
-    const message =
-      payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
-        ? payload.value
-        : undefined;
+    const message = payload.impl.typeId() === "alloc::string::String" ? payload.value : undefined;
     if (message != null) {
       return message;
     }

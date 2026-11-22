@@ -10,7 +10,6 @@ import {
   $debugStr,
   $extendText,
   $next,
-  $panicMessage,
   $reserveHint,
   $unwound,
   iterator_map,
@@ -29,8 +28,7 @@ function check(name, f) {
     $catchable(thrown);
     const e = $unwound(thrown);
     const copied = e.impl.typeId() === "&str" ? e.value : undefined;
-    const fallback =
-      e.impl.typeId() === "alloc::string::String" || e.impl === $panicMessage ? e.value : undefined;
+    const fallback = e.impl.typeId() === "alloc::string::String" ? e.value : undefined;
     const value = copied ?? fallback;
     console.log(`${name}: panicked ${value == null ? "None" : `Some(${$debugStr(value)})`}`);
   }

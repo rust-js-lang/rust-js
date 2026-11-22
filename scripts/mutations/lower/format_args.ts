@@ -200,4 +200,12 @@ export const mutations: Mutation[] = [
       "reads twice is held first, not given to a function called in place",
     ],
   },
+  {
+    name: "panic-display-a-str",
+    breaks: "`panic_display`'s payload, a `String`, downcasts as a `&str`",
+    file: "src/lower/format_args.rs",
+    find: "out.push(StmtKind::Throw(Expr::panic(shown, js::Payload::String)).at(js_span));",
+    replace: "out.push(StmtKind::Throw(Expr::panic(shown, js::Payload::Str)).at(js_span));",
+    tests: ["test/corpus.test.ts", "-t", "^panic_payload_kinds\\.rs$"],
+  },
 ];

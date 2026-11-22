@@ -10,6 +10,7 @@ import {
   $extendMap,
   $insert,
   $sortedEntries,
+  $stringPanic,
 } from "@rust-js/std";
 
 export function entry() {
@@ -21,7 +22,7 @@ let BOOM = 0;
 function boom(n, what) {
   if (BOOM === n) {
     BOOM = 0;
-    throw new Error(`${what} ${n}`);
+    throw $stringPanic(`${what} ${n}`);
   }
 }
 

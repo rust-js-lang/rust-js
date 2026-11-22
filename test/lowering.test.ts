@@ -425,7 +425,7 @@ pub fn start(current: u32, scope: impl FnOnce()) {
     CURRENT.set(current);
     let _finish = Finish { previous, current };
     if let Err(error) = catch_unwind(AssertUnwindSafe(scope)) {
-        println!("caught {:?}", error.downcast_ref::<String>());
+        println!("caught {:?}", error.downcast_ref::<&str>());
     }
 }
 

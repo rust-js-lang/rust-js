@@ -11,6 +11,7 @@ import {
   $live,
   $next,
   $peek,
+  $stringPanic,
   $unwindsOn,
   iterator_map,
   iterator_peekable,
@@ -28,14 +29,14 @@ function quietDrop_drop(quiet) {
 
 function loudDrop_drop(loud) {
   if (bomb === loud[0]) {
-    throw new Error(`loud ${loud[0]} panics`);
+    throw $stringPanic(`loud ${loud[0]} panics`);
   }
   console.log(`loud ${loud[0]}`);
 }
 
 function work(n) {
   if (n > 100) {
-    throw new Error(`too big: ${n}`);
+    throw $stringPanic(`too big: ${n}`);
   }
   return n + 1;
 }

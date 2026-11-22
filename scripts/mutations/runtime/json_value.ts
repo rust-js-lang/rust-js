@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "json-index-mut-past-end-unchecked",
     breaks: "`value[i] = ..` past an array's end grows it, where serde_json panics, `cannot access index 2 of JSON array of length 2` (#1624)",
     file: "src/runtime/json_value.js",
-    find: "  if (key >= items.length) throw new Error(`cannot access index ${key} of JSON array of length ${items.length}`);\n",
+    find: "  if (key >= items.length) throw $stringPanic(`cannot access index ${key} of JSON array of length ${items.length}`);\n",
     replace: "",
     tests: ["test/serde-values.test.ts", "-t", "IndexMut is serde_json"],
   },

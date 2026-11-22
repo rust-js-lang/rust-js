@@ -483,6 +483,9 @@ const PURE: &[&str] = &[
     // A copy apart of what it's given, a box's or a moved out value's (ADR
     // 0074, #527).
     "$apart",
+    // A panic's `Error` whose payload is a `String`, made, not thrown (ADR
+    // 0660, amended).
+    "$stringPanic",
 ];
 
 /// The helpers that change what they're given but never throw: a range's

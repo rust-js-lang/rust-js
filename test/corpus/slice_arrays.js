@@ -6,6 +6,7 @@ import {
   $at,
   $flatView,
   $print,
+  $stringPanic,
   $swap,
   $view,
   $windows,
@@ -44,7 +45,7 @@ function main() {
   const [chunks$2, rest$2] = $asChunksMut(w, 3);
   const length = chunks$2.length;
   if (0 >= length) {
-    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
   }
   chunks$2[0][2] = 0;
   chunks$2[$at(chunks$2, 1)] = [9, 9, 9];

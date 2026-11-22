@@ -10,6 +10,7 @@ import {
   $some,
   $someValue,
   $sortedEntries,
+  $stringPanic,
   $take,
   $unwindsOn,
 } from "@rust-js/std";
@@ -113,7 +114,7 @@ function element(v) {
   const length = v.length;
   if (0 >= length) {
     noisyDrop_drop(noisy);
-    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
   }
   noisyDrop_drop(v[0]);
   v[0] = noisy;

@@ -12,6 +12,7 @@ import {
   $iter,
   $lazyRange,
   $live,
+  $stringPanic,
   $unwindsOn,
   $vecCollectWay,
 } from "@rust-js/std";
@@ -125,7 +126,7 @@ function main() {
     for (const item of reqFromIteratorD_fromIter(
       $lazyRange(1, 4).map((n) => {
         if (n === 3) {
-          throw new Error(`at ${n}`);
+          throw $stringPanic(`at ${n}`);
         } else {
           return [n];
         }

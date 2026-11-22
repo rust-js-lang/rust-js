@@ -14,6 +14,7 @@ import {
   $insert,
   $sortedEntries,
   $sortedKeys,
+  $stringPanic,
 } from "@rust-js/std";
 
 export function entry() {
@@ -27,7 +28,7 @@ function once(what) {
   const old = panicked;
   panicked = true;
   if (!old) {
-    throw new Error(what);
+    throw $stringPanic(what);
   }
 }
 

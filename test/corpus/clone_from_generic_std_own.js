@@ -12,6 +12,7 @@ import {
   $live,
   $madeEach,
   $ptr,
+  $stringPanic,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -38,7 +39,7 @@ function dClone_clone(d) {
   console.log(`clone ${d[0]}`);
   if (boom === d[0]) {
     boom = 0;
-    throw new Error(`clone ${d[0]}`);
+    throw $stringPanic(`clone ${d[0]}`);
   }
   return [d[0]];
 }

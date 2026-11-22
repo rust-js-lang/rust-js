@@ -8,6 +8,7 @@ import {
   $droppingIterator,
   $iter,
   $next,
+  $stringPanic,
 } from "@rust-js/std";
 
 export function entry() {
@@ -17,7 +18,7 @@ export function entry() {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
   if (loud[0] === 2) {
-    throw new Error(`boom ${loud[0]}`);
+    throw $stringPanic(`boom ${loud[0]}`);
   }
 }
 

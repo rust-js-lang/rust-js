@@ -12,6 +12,7 @@ import {
   $nth,
   $position,
   $rangeNext,
+  $stringPanic,
   fuseClone,
   iterator_cycle,
   iterator_fuse,
@@ -35,7 +36,7 @@ function countClone_clone(count) {
   const n = (clones + 1) >>> 0;
   clones = n;
   if (n === panicCloneAt) {
-    throw new Error(`clone ${n}`);
+    throw $stringPanic(`clone ${n}`);
   }
   return [count[0]];
 }

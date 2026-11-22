@@ -126,19 +126,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^dyn_any_counted_rc.rs$"],
   },
   {
-    name: "panic-message-not-a-string",
-    breaks:
-      "a panic's message isn't a `String`, so `downcast::<String>()` of a formatted panic's payload fails",
-    file: "src/lower/std_types/any.rs",
-    find: "        let is = match self.is_lang_adt(of, rustc_hir::attrs::lang_items::LangItem::String) {\n",
-    replace: "        let is = match false {\n",
-    tests: [
-      "test/lowering-unwinds.test.ts",
-      "-t",
-      "a payload is a panic's message",
-    ],
-  },
-  {
     name: "thrown-of-any-send-unseen",
     breaks:
       "a downcast of an unwind's payload to `&JsError` tests its type, so its `catch` isn't of what was thrown",

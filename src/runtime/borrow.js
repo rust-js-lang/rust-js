@@ -10,10 +10,10 @@
 // $alreadyBorrowed();`, with no call where the cell is free (rd218, #1692).
 const $alreadyBorrowedMessage = "RefCell already borrowed";
 function $alreadyBorrowed() {
-  throw new Error($alreadyBorrowedMessage);
+  throw $stringPanic($alreadyBorrowedMessage);
 }
 function $alreadyMutablyBorrowed() {
-  throw new Error("RefCell already mutably borrowed");
+  throw $stringPanic("RefCell already mutably borrowed");
 }
 
 function $borrow(cell, hold) {
@@ -27,7 +27,7 @@ function $borrowMut(cell, hold, dropGiven) {
     // What the call was given, a `replace`'s value, dropped as its panic
     // unwinds, as Rust's parameter is (#1587): a cleanup of that panic, so
     // `thread::panicking()` holds in its drop, and a panic there aborts.
-    const error = new Error($alreadyBorrowedMessage);
+    const error = $stringPanic($alreadyBorrowedMessage);
     if (dropGiven !== undefined) $cleanup(dropGiven, error);
     throw error;
   }
@@ -300,7 +300,7 @@ function $lockHeld(cell, mutable) {
 function $unpoisoned(cell, message = "called `Result::unwrap()` on an `Err` value", held = false) {
   if (!$poisonedLocks.has(cell)) return cell;
   if (held) $unlock(cell);
-  throw new Error(`${message}: PoisonError { .. }`);
+  throw $stringPanic(`${message}: PoisonError { .. }`);
 }
 
 // A `Mutex`'s or an `RwLock`'s `into_inner()` and `get_mut()`: `Ok` of

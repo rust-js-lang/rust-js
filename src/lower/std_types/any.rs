@@ -77,19 +77,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.type_id_of(pair.clone(), self.pointee_of(any), span, out)?,
             self.type_fact_value(of, TypeFact::Id, span)?,
         );
-        // A panic's message, a `&str`, is a `String` too: JS doesn't keep
-        // which a panic's payload was (ADR 0660).
-        let is = match self.is_lang_adt(of, rustc_hir::attrs::lang_items::LangItem::String) {
-            true => {
-                let message = Expr::bin(
-                    Op::Eq,
-                    Expr::member(pair.clone(), js::DICTIONARY),
-                    Expr::helper("$panicMessage"),
-                );
-                Expr::bin(Op::Or, is, message)
-            }
-            false => is,
-        };
         let inside = Expr::held(pair.clone());
         // Of an unwind's payload, what was thrown, always (ADR 0710).
         if op != AnyOp::DowncastMut && self.finds_thrown(self.pointee_of(any), of) {

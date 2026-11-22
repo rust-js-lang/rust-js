@@ -25,6 +25,7 @@ import {
   $setReplace,
   $sortedEntries,
   $sortedKeys,
+  $stringPanic,
   $treeAppend,
   $treeFromSorted,
   $treeRange,
@@ -91,7 +92,7 @@ function keyOrd_cmp(key, other) {
   if (at > 0) {
     panicAt = at - 1;
     if (at === 1) {
-      throw new Error(`cmp ${key.id} ${other.id}`);
+      throw $stringPanic(`cmp ${key.id} ${other.id}`);
     }
   }
   return $cmp(key.k, other.k);

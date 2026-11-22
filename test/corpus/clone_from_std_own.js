@@ -17,6 +17,7 @@ import {
   $mapFrom,
   $partialEq,
   $partialOrd,
+  $stringPanic,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -48,7 +49,7 @@ function dClone_clone(d) {
   console.log(`clone ${d[0]}`);
   if (boom === d[0]) {
     boom = 0;
-    throw new Error(`clone ${d[0]}`);
+    throw $stringPanic(`clone ${d[0]}`);
   }
   return [d[0]];
 }
@@ -65,7 +66,7 @@ export const pClone = { clone: pClone_clone };
 function pClone_clone(p) {
   if (boom === p[0]) {
     boom = 0;
-    throw new Error(`clone ${p[0]}`);
+    throw $stringPanic(`clone ${p[0]}`);
   }
   return [p[0]];
 }

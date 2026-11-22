@@ -8,8 +8,8 @@ import {
   $iter,
   $iterator,
   $next,
-  $panicMessage,
   $some,
+  $stringPanic,
 } from "@rust-js/std";
 
 export function entry() {
@@ -37,7 +37,7 @@ export const squaresIndexUsize = { index: squaresIndexUsize_index };
 function squaresIndexUsize_index(squares, i) {
   const TABLE = [0, 1, 4, 9, 16];
   if (i >= 5) {
-    throw new Error(`index out of bounds: the len is 5 but the index is ${i}`);
+    throw $stringPanic(`index out of bounds: the len is 5 but the index is ${i}`);
   }
   return TABLE[i];
 }
@@ -101,9 +101,7 @@ function main() {
   const arg$2 = first(undefined, squaresIndexUsize);
   console.log(`[${got.join(", ")}] ${arg$2}`);
   const message = (caught) =>
-    caught.impl.typeId() === "alloc::string::String" || caught.impl === $panicMessage
-      ? caught.value
-      : undefined;
+    caught.impl.typeId() === "alloc::string::String" ? caught.value : undefined;
   let outOfBounds = $catchUnwind(() => {
     const vecIndex = index;
     return $iterator(

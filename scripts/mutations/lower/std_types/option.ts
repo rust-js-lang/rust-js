@@ -406,8 +406,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `expect` whose message is a variable's is its test too, the message read after the drops, which changed it: `changed` where Rust's is `no impl`",
     file: "src/lower/std_types/option.rs",
-    find: "        [option, message] if matches!(message.kind, js::ExprKind::Str(_)) => (option, message.clone()),",
-    replace: "        [option, message] => (option, message.clone()),",
+    find: "        [option, message] if matches!(message.kind, js::ExprKind::Str(_)) => {\n",
+    replace: "        [option, message] => {\n",
     tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
   },
   {
@@ -615,5 +615,13 @@ export const mutations: Mutation[] = [
     replace: "                    || false,\n",
     tests: ["test/corpus.test.ts", "-t", "^option_text_given_on_as_it_is\\.rs$"],
     snapshots: true,
+  },
+  {
+    name: "expect-a-str",
+    breaks: "`expect`'s payload, a `String`, downcasts as a `&str`",
+    file: "src/lower/std_types/option.rs",
+    find: "            (option, message.clone(), js::Payload::String)\n",
+    replace: "            (option, message.clone(), js::Payload::Str)\n",
+    tests: ["test/corpus.test.ts", "-t", "^panic_payload_kinds\\.rs$"],
   },
 ];

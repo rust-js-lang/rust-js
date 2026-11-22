@@ -6,9 +6,9 @@ import {
   $dispose,
   $dropping,
   $live,
-  $panicMessage,
   $some,
   $someValue,
+  $stringPanic,
   $unwindsOn,
   $unwound,
   $unwrap,
@@ -43,7 +43,7 @@ function expected(task) {
     $cleanup(() => {
       $dispose(task);
     });
-    throw new Error("no impl given");
+    throw $stringPanic("no impl given");
   }
   enqueueTaskImpl(task);
 }
@@ -151,9 +151,7 @@ function caught(name, f) {
     $catchable(thrown);
     const payload = $unwound(thrown);
     const message =
-      (payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
-        ? payload.value
-        : undefined) ??
+      (payload.impl.typeId() === "alloc::string::String" ? payload.value : undefined) ??
       (payload.impl.typeId() === "&str" ? payload.value : undefined) ??
       "?";
     console.log(`${name}: ${message}`);

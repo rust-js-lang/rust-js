@@ -21,7 +21,6 @@ import {
   $lazyTakeWhile,
   $live,
   $openOptions,
-  $panicMessage,
   $replace,
   $strSlice,
   $trimStart,
@@ -228,8 +227,7 @@ function run() {
                             } else {
                               const payload = catchUnwind._0;
                               message =
-                                (payload.impl.typeId() === "alloc::string::String" ||
-                                payload.impl === $panicMessage
+                                (payload.impl.typeId() === "alloc::string::String"
                                   ? payload.value
                                   : undefined) ?? "";
                             }

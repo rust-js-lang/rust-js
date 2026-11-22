@@ -272,7 +272,7 @@ pub fn fails(n: u32) {
   expect(js).toContain('s += "w " + `${n}`;');
   expect(js).toContain('s += " l " + `${n}\\n`;');
   expect(js).toContain('return "(" + `${point[0]}, ${point[1]}` + ")";');
-  expect(js).toContain('throw new Error("bad " + `${n}`);');
+  expect(js).toContain('throw $stringPanic("bad " + `${n}`);');
   const lib = await import(join(dir, "lib.js"));
   expect(lib.formatProdErrorMessage(31, "https://react.dev/errors/31")).toBe(
     "Minified React error #31; visit https://react.dev/errors/31 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.",

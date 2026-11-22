@@ -11,6 +11,7 @@ import {
   $print,
   $rem,
   $reserveHint,
+  $stringPanic,
   iterator_map,
 } from "@rust-js/std";
 
@@ -66,7 +67,7 @@ function panickyIterator_next(panicky) {
 }
 function panickyIterator_sizeHint(panicky) {
   if (panicky.asked === 1) {
-    throw new Error(`hint panics at ${panicky.n}`);
+    throw $stringPanic(`hint panics at ${panicky.n}`);
   }
   return [0, undefined];
 }
@@ -76,7 +77,7 @@ function panicLaterIterator_next(panicLater) {
 }
 function panicLaterIterator_sizeHint(panicLater) {
   if (panicLater.inner.n < 5) {
-    throw new Error(`hint panics at ${panicLater.inner.n}`);
+    throw $stringPanic(`hint panics at ${panicLater.inner.n}`);
   }
   return [0, undefined];
 }

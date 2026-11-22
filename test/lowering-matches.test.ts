@@ -108,7 +108,7 @@ pub fn first_id(items: &[Title]) -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).not.toMatch(/\bbb\d+:/);
-  expect(js).toContain("    throw new Error(`${kind} is missing a title`);\n  }\n");
+  expect(js).toContain("    throw $stringPanic(`${kind} is missing a title`);\n  }\n");
   expect(js).toContain('  const hash = path.split("#")[1] ?? "";\n');
   expect(js).toContain("  const first = items[0];\n");
   {

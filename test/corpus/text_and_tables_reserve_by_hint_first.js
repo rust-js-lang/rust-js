@@ -10,7 +10,6 @@ import {
   $iter,
   $lazyRange,
   $next,
-  $panicMessage,
   $repeating,
   $reserveHint,
   $unwound,
@@ -27,8 +26,7 @@ function check(name, f) {
   } catch (thrown) {
     $catchable(thrown);
     const e = $unwound(thrown);
-    const map =
-      e.impl.typeId() === "alloc::string::String" || e.impl === $panicMessage ? e.value : undefined;
+    const map = e.impl.typeId() === "alloc::string::String" ? e.value : undefined;
     const fallback = e.impl.typeId() === "&str" ? e.value : undefined;
     const value = map ?? fallback;
     console.log(`${name}: panicked ${value == null ? "None" : `Some(${$debugStr(value)})`}`);

@@ -303,8 +303,8 @@ pub fn rethrown(value: Option<&Unknown>) -> String {
   try {
     switch (n) {`);
   expect([lib.spelled(1), lib.spelled(2), lib.spelled(3)]).toEqual(["one", "two", ""]);
-  expect([lib.asStr(5), lib.asStr(1), lib.asStr(2)]).toEqual(["5", "str one", "str two: 2"]);
-  expect([lib.asString(5), lib.asString(1), lib.asString(2)]).toEqual(["5", "String one", "String two: 2"]);
+  expect([lib.asStr(5), lib.asStr(1), lib.asStr(2)]).toEqual(["5", "str one", "not a str"]);
+  expect([lib.asString(5), lib.asString(1), lib.asString(2)]).toEqual(["5", "not a String", "String two: 2"]);
   const g = globalThis as Record<string, unknown>;
   g.risky = (n: number) => {
     if (n < 0) throw new RangeError("negative");
@@ -329,11 +329,11 @@ pub fn rethrown(value: Option<&Unknown>) -> String {
 });
 
 // A thrown `Error` of JS's own constructor, a panic's form, is a panic and
-// what JS threw both (ADR 0692): its payload downcasts as its message, a
-// `&str` and a `String`, and as the `&JsError` it is, whose `stack` React's
-// `catch (sample) { .. sample.stack .. }` reads; `resume_unwind` of it
-// throws the same `Error` again. A panic's JS stays `throw new Error(..)`.
-test("a thrown Error answers both downcasts", async () => {
+// what JS threw both (ADR 0692): its payload a `&str` of its message (ADR
+// 0660, amended), and the `&JsError` it is, whose `stack` React's `catch
+// (sample) { .. sample.stack .. }` reads; `resume_unwind` of it throws the
+// same `Error` again. A formatted panic is `throw $stringPanic(..)`.
+test("a thrown Error answers as a `&str` and as the `&JsError` it is", async () => {
   const { js, dir } = compiled("unwind-error-both", `use js::JsError;
 use std::panic::{catch_unwind, resume_unwind};
 
@@ -375,14 +375,14 @@ pub fn rethrown() -> u32 {
     }
 }
 `);
-  expect(js).toContain('throw new Error(`big ${n}`);');
+  expect(js).toContain("throw $stringPanic(`big ${n}`);");
   const lib = await import(join(dir, "lib.js"));
   const g = globalThis as Record<string, unknown>;
   const thrown = new Error("no props");
   g.render = () => {
     throw thrown;
   };
-  expect(lib.sampleStack()).toBe("no props|no props|no props|true");
+  expect(lib.sampleStack()).toBe("no props||no props|true");
   expect([lib.isError(1), lib.isError(2)]).toEqual([false, true]);
   expect([lib.boxed(1), lib.boxed(3)]).toEqual(["1", "big 3"]);
   let caught: unknown;
@@ -797,7 +797,7 @@ pub fn named() -> u32 {
     match catch_unwind(render) {
         Ok(n) => n,
         Err(payload) => {
-            if payload.downcast_ref::<String>().is_some_and(|m| m == "skip") {
+            if payload.downcast_ref::<&str>().is_some_and(|m| *m == "skip") {
                 return 0;
             }
             resume_unwind(payload)

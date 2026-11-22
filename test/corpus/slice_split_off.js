@@ -10,6 +10,7 @@ import {
   $sliceSplitOffEnd,
   $sliceSplitOffEndMut,
   $sliceSplitOffMut,
+  $stringPanic,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -112,7 +113,7 @@ function main() {
   }
   const length = all.length;
   if (0 >= length) {
-    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
   }
   all[0] += "?";
   $print(`[${names.map((item) => $debugStr(item)).join(", ")}]\n`);

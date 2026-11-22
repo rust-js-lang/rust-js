@@ -3,7 +3,7 @@
 // dropped by `drop`, where it has a destructor, as `$unwrapOk`'s (#1505).
 function $unwrapErr(result, message = "called `Result::unwrap_err()` on an `Ok` value", debug = $debug, drop) {
   if (result.TAG === "Ok") {
-    const panic = new Error(message + ": " + debug(result._0));
+    const panic = $stringPanic(message + ": " + debug(result._0));
     if (drop !== undefined) $dropsUnwinding([() => drop(result._0)]);
     throw panic;
   }

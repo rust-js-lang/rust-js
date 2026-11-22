@@ -12,6 +12,7 @@ import {
   $ptrTo,
   $ptrWhole,
   $splitAtMut,
+  $stringPanic,
 } from "@rust-js/std";
 
 export function entry() {
@@ -213,11 +214,11 @@ function main() {
   const [first, rest] = $splitAtMut(vs, 1);
   const length = first.length;
   if (0 >= length) {
-    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
   }
   const value = rest.length;
   if (0 >= value) {
-    throw new Error(`index out of bounds: the len is ${value} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${value} but the index is 0`);
   }
   swapVecs(first[0], rest[0]);
   console.log(`swapped by hand [${vs.map((item) => `[${item.join(", ")}]`).join(", ")}]`);

@@ -23,8 +23,8 @@ export const mutations: Mutation[] = [
     name: "copy-from-slice-unchecked",
     breaks: "`copy_from_slice` of another length copies what it can, not std's panic",
     file: "src/runtime/slice_ops.js",
-    find: "  if (v.length !== src.length) {\n    throw new Error(`copy_from_slice",
-    replace: "  if (false) {\n    throw new Error(`copy_from_slice",
+    find: "  if (v.length !== src.length) {\n    throw $stringPanic(`copy_from_slice",
+    replace: "  if (false) {\n    throw $stringPanic(`copy_from_slice",
     tests: ["test/corpus.test.ts", "-t", "copy_from_slice_panic"],
   },
   {

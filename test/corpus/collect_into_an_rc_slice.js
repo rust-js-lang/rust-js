@@ -10,6 +10,7 @@ import {
   $lazyRange,
   $rcClone,
   $rcDrop,
+  $stringPanic,
   $vecCollectWay,
 } from "@rust-js/std";
 
@@ -59,7 +60,7 @@ function main() {
   if (1 >= value.length) {
     $rcDrop(other);
     $rcDrop(words);
-    throw new Error(`index out of bounds: the len is ${value.length} but the index is 1`);
+    throw $stringPanic(`index out of bounds: the len is ${value.length} but the index is 1`);
   }
   try {
     try {
@@ -76,7 +77,7 @@ function main() {
               .filter((i) => i % 7 !== 0)
               .map((i) => {
                 if (i === 3) {
-                  throw new Error(`at ${i}`);
+                  throw $stringPanic(`at ${i}`);
                 }
                 return [i];
               }),

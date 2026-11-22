@@ -16,6 +16,7 @@ import {
   $rem,
   $roomFor,
   $sortStable,
+  $stringPanic,
 } from "@rust-js/std";
 
 export function entry() {
@@ -30,7 +31,7 @@ function compared() {
   const n = BigInt.asUintN(64, calls + 1n);
   calls = n;
   if (n === boom) {
-    throw new Error(`comparison ${n}`);
+    throw $stringPanic(`comparison ${n}`);
   }
 }
 

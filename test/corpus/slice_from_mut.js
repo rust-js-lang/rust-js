@@ -7,6 +7,7 @@ import {
   $mutItems,
   $oneItemOf,
   $splitEndMut,
+  $stringPanic,
   $unwrap,
 } from "@rust-js/std";
 
@@ -24,7 +25,7 @@ function bump(s) {
 function append(s, text) {
   const length = s.length;
   if (0 >= length) {
-    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
   }
   s[0] += text;
 }
@@ -32,7 +33,7 @@ function append(s, text) {
 function swapIn(s, new$) {
   const length = s.length;
   if (0 >= length) {
-    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
   }
   const old = s[0];
   s[0] = new$;
@@ -80,7 +81,7 @@ function main() {
   });
   const length = value.length;
   if (0 >= length) {
-    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
   }
   value[0] += "d";
   console.log(`${t}`);

@@ -11,6 +11,7 @@ import {
   $jsIterator,
   $next,
   $stepsOf,
+  $stringPanic,
   iterator_map,
 } from "@rust-js/std";
 
@@ -99,7 +100,7 @@ function refusedFromIteratorU32_fromIter(items, dropI, dropIIntoIter) {
   }
   if (n === 1) {
     try {
-      throw new Error(`refused ${n == null ? "None" : `Some(${n})`}`);
+      throw $stringPanic(`refused ${n == null ? "None" : `Some(${n})`}`);
     } catch (error) {
       $cleanup(() => {
         dropIIntoIter?.(it);

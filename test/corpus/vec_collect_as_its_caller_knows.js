@@ -29,6 +29,7 @@ import {
   $repeating,
   $rev,
   $stepsOf,
+  $stringPanic,
   $unwindsOn,
   $vecCollectWay,
   $zipEnds,
@@ -107,7 +108,7 @@ function kept(it, JInPlace, dropJ) {
       $stepsOf(it),
       (l) => {
         if (l[0] === 3) {
-          throw new Error(`at ${l[0]}`);
+          throw $stringPanic(`at ${l[0]}`);
         }
         return true;
       },
@@ -230,7 +231,7 @@ function main() {
         { start: 1, end: 5 },
         (n) => {
           if (n >= 3) {
-            throw new Error(`at ${n}`);
+            throw $stringPanic(`at ${n}`);
           }
           return [n];
         },
@@ -268,7 +269,7 @@ function main() {
           count = (count + 1) | 0;
           console.log(`made ${count}`);
           if (count >= 3) {
-            throw new Error(`at ${count}`);
+            throw $stringPanic(`at ${count}`);
           }
           return [(a + b) >>> 0];
         },
@@ -308,7 +309,7 @@ function main() {
         ([l, n]) => {
           try {
             if (l[0] >= 3) {
-              throw new Error(`at ${l[0]}`);
+              throw $stringPanic(`at ${l[0]}`);
             }
             return [[(l[0] * 10) >>> 0], n];
           } catch (error) {
@@ -353,7 +354,7 @@ function main() {
       $mapEnds($closing($iter(source), $dropEach(loudDrop_drop)), (l) => {
         try {
           if (l[0] >= 3) {
-            throw new Error(`at ${l[0]}`);
+            throw $stringPanic(`at ${l[0]}`);
           }
           return [(l[0] * 10) >>> 0];
         } catch (error) {

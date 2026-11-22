@@ -183,7 +183,7 @@ function $roomForCounted(it, size, align) {
       const bytes = upper * size;
       const counts = Math.ceil(8 / align) * align;
       if (bytes > max - (align - 1) || counts + bytes > max - (Math.max(4, align) - 1)) {
-        throw new Error("called `Result::unwrap()` on an `Err` value: LayoutError");
+        throw $stringPanic("called `Result::unwrap()` on an `Err` value: LayoutError");
       }
     },
     () => it.return?.(),

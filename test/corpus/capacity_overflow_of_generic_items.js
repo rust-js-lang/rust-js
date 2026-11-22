@@ -2,7 +2,6 @@
 
 import {
   $catchable,
-  $panicMessage,
   $repeat,
   $repeatItems,
   $resize,
@@ -26,7 +25,7 @@ function message(payload) {
   }
   payload = downcast._0;
   const value =
-    payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
+    payload.impl.typeId() === "alloc::string::String"
       ? { TAG: "Ok", _0: payload.value }
       : { TAG: "Err", _0: payload };
   if (value.TAG === "Ok") {

@@ -3,7 +3,7 @@
 // `debug`, as `{:?}` shows an `f64` or an `f32`.
 function $clampFloat(x, min, max, debug) {
   if (!(min <= max)) {
-    throw new Error("min > max, or either was NaN. min = " + debug(min) + ", max = " + debug(max));
+    throw $stringPanic("min > max, or either was NaN. min = " + debug(min) + ", max = " + debug(max));
   }
   return x < min ? min : x > max ? max : x;
 }

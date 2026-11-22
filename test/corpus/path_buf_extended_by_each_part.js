@@ -11,6 +11,7 @@ import {
   $iterator,
   $pathComponents,
   $pathJoin,
+  $stringPanic,
 } from "@rust-js/std";
 
 export function entry() {
@@ -82,7 +83,7 @@ function main() {
     $extendText(
       ["first", "second", "third"].values().map((s) => {
         if (s === "third") {
-          throw new Error(`stopped at ${s}`);
+          throw $stringPanic(`stopped at ${s}`);
         }
         return s;
       }),

@@ -333,11 +333,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => join(vec![Expr::str("internal error: entered unreachable code: "), shown]),
                     false => shown,
                 };
-                out.push(StmtKind::Throw(Expr::panic(shown)).at(js_span));
+                // `panic_display`'s payload is a `String`, made of its
+                // argument shown (ADR 0660, amended).
+                out.push(StmtKind::Throw(Expr::panic(shown, js::Payload::String)).at(js_span));
                 Expr::js_undefined()
             }
-            Std::Panic | Std::PanicFmt => {
-                out.push(StmtKind::Throw(Expr::panic(arg())).at(js_span));
+            // `core::panicking::panic(text)`'s is a `&'static str`.
+            Std::Panic => {
+                out.push(StmtKind::Throw(Expr::panic(arg(), js::Payload::Str)).at(js_span));
                 Expr::js_undefined()
             }
             // A `&str` or a `String` is the panic's message, as Rust's hook
@@ -349,7 +352,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !text {
                     return Err(self.unsupported(span, "a panic whose payload isn't text"));
                 }
-                out.push(StmtKind::Throw(Expr::panic(arg())).at(js_span));
+                let payload = match self.is_lang_adt(payload, LangItem::String) {
+                    true => js::Payload::String,
+                    false => js::Payload::Str,
+                };
+                out.push(StmtKind::Throw(Expr::panic(arg(), payload)).at(js_span));
                 Expr::js_undefined()
             }
             // A whole line is `console.log`'s, which ends it; text that may

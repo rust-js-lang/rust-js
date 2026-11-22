@@ -7,6 +7,7 @@ import {
   $heldObjectOf,
   $index,
   $mutWriter,
+  $stringPanic,
   $vecWriter,
 } from "@rust-js/std";
 
@@ -47,7 +48,7 @@ function longest(r, TDefault) {
 function firstLen(f, rows) {
   const length = rows.length;
   if (0 >= length) {
-    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
   }
   return f(rows[0]).length;
 }

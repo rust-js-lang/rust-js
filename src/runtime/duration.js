@@ -2,16 +2,16 @@
 // `u64::MAX` seconds and 999,999,999 nanoseconds, and past it, std panics.
 function $durationNew(secs, nanos) {
   const duration = secs * 1000000000n + BigInt(nanos);
-  if (duration > 18446744073709551615999999999n) throw new Error("overflow in Duration::new");
+  if (duration > 18446744073709551615999999999n) throw $stringPanic("overflow in Duration::new");
   return duration;
 }
 function $durationAdd(a, b) {
   const sum = a + b;
-  if (sum > 18446744073709551615999999999n) throw new Error("overflow when adding durations");
+  if (sum > 18446744073709551615999999999n) throw $stringPanic("overflow when adding durations");
   return sum;
 }
 function $durationSub(a, b) {
-  if (a < b) throw new Error("overflow when subtracting durations");
+  if (a < b) throw $stringPanic("overflow when subtracting durations");
   return a - b;
 }
 // `checked_add`'s: `None` past `MAX`.

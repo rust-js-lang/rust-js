@@ -5,6 +5,17 @@
 
 use crate::js::*;
 
+/// A panic's payload, as Rust's panic handler makes it: a `&'static str`
+/// exactly where its `fmt::Arguments::as_str()` is `Some`, `panic!("plain")`'s,
+/// `unwrap()`'s or an `assert!`'s, and a `String` otherwise, `panic!("n =
+/// {n}")`'s, `expect`'s or an index out of bounds' (ADR 0660, amended):
+/// which `downcast_ref::<&str>()` and `::<String>()` find.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Payload {
+    Str,
+    String,
+}
+
 impl Expr {
     /// `$try(() => call)`: a JS call whose throw is an `Err`, its `Result`
     /// (ADR 0035).
@@ -36,21 +47,29 @@ impl Expr {
         }
     }
 
-    /// `new Error(message)`: a panic, of Rust's or a port's (ADR 0012), the
-    /// one way rust-js makes one; `new Error()` of an empty message,
-    /// `panic!("")`'s, as `message` is `""` either way (ADR 0706).
-    pub fn panic(message: Expr) -> Expr {
+    /// A panic, of Rust's or a port's (ADR 0012), the one way rust-js makes
+    /// one, of its payload's kind (ADR 0660, amended): `new Error(message)`
+    /// of a `&str`'s, `panic!("plain")`'s, as JS's own; `$stringPanic(message)`
+    /// of a `String`'s, `panic!("n = {n}")`'s, the rarer in programs and
+    /// ports alike, which `$unwound` reads as a `String`. Of an empty
+    /// message, `panic!("")`'s, no argument, as `message` is `""` either way
+    /// (ADR 0706).
+    pub fn panic(message: Expr, payload: Payload) -> Expr {
         let args = match &message.kind {
             ExprKind::Str(text) if text.is_empty() => Vec::new(),
             _ => vec![message],
         };
-        Expr::new_(Expr::global("Error"), args)
+        match payload {
+            Payload::Str => Expr::new_(Expr::global("Error"), args),
+            Payload::String => Expr::call_helper("$stringPanic", args),
+        }
     }
 
-    /// Of `new Error(..)`, a panic: what it's made of.
+    /// Of a panic `Expr::panic` made, what its message is made of.
     pub fn panic_message(&self) -> Option<&[Expr]> {
         match &self.kind {
             ExprKind::New(class, args) if matches!(&class.kind, ExprKind::Var(name) if name.is("Error")) => Some(args),
+            ExprKind::Call(callee, args) if callee.helper_name() == Some("$stringPanic") => Some(args),
             _ => None,
         }
     }

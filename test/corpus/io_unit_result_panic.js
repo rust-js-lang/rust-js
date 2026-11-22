@@ -6,6 +6,7 @@ import {
   $ioErrorDisplay,
   $ioThrow,
   $stringError,
+  $stringPanic,
   $writeCaught,
 } from "@rust-js/std";
 
@@ -23,7 +24,7 @@ function risky(n) {
   try {
     check(n);
     if (n === 2) {
-      throw new Error(`boom at ${n}`);
+      throw $stringPanic(`boom at ${n}`);
     }
     return { TAG: "Ok", _0: n };
   } catch (error) {

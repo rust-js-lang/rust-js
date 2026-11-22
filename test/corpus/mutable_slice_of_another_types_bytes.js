@@ -14,6 +14,7 @@ import {
   $ptrSliceMut,
   $sortUnstable,
   $splitAtMut,
+  $stringPanic,
   $swap,
   $toBytes,
   $view,
@@ -114,7 +115,7 @@ function main() {
   );
   const length = pairs.length;
   if (0 >= length) {
-    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
   }
   pairs[0][1] = 9;
   const kept = $index(pairs, 1).slice();
@@ -122,7 +123,7 @@ function main() {
   pairs[$at(pairs, 2)] = [6, 6];
   const value$1 = pairs.length;
   if (3 >= value$1) {
-    throw new Error(`index out of bounds: the len is ${value$1} but the index is 3`);
+    throw $stringPanic(`index out of bounds: the len is ${value$1} but the index is 3`);
   }
   const last = pairs[3];
   last[0] = 1;

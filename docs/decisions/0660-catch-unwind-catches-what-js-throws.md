@@ -729,3 +729,56 @@ mutations `closing-slice-count-folds`, `slicing-count-folds`,
 `slicing-count-leaves-the-rest` (`runtime/closing.ts`),
 `collect-unwound-as-glue` (`runtime/fold_of.ts`) and `slice-count-folded`
 (`lower/mir/iter.ts`).
+
+## Amendment: a panic's payload is a `&str` or a `String`, as Rust's handler makes it (#2270, the user's decision, 2026-11-22)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Results change.
+Rust's panic handler gives a `&'static str` payload exactly where the
+panic's `fmt::Arguments::as_str()` is `Some`, and a `String` otherwise. So
+`downcast_ref::<String>()` is `None` of `panic!("plain")`, and
+`downcast_ref::<&str>()` is `None` of `panic!("n = {n}")`. rust-js kept no
+kind: every panic's payload was `$panicMessage`, and a downcast to
+`String` accepted it too, so both answered `Some`. #1212's audit found it.
+
+- **Each panic says its kind** (`js::Payload`, given to `Expr::panic`, the
+  one maker of a panic):
+  - `core::panicking::panic`, an overflow, a division by zero and the other
+    `panic_const` checks give `&str`.
+  - `panic_fmt(args)` gives `&str` where `args` was made of a literal
+    alone and `String` where it was made with arguments. The answer comes
+    from `as_str()`'s owner, `arguments_made`'s rule, now
+    `made_of_a_literal`. Of an `Arguments` made in another function it is
+    refused, as `as_str()` is (#1091).
+  - `panic_display`, an index out of bounds, `expect` and a `RefCell`
+    borrowed twice give `String`. `unwrap()` and `unreachable!()` give
+    `&str`. `begin_panic` follows its payload's type.
+  - Each of the runtime's own panics follows the std function it stands
+    for, read from std's source: an index, a slice's or a string's range,
+    `assert_eq!`, `Result::unwrap` and `expect`, a `Duration`'s overflow and
+    a map's or JSON value's index give `String`. `capacity overflow`, `mid >
+    len`, an `assert!` of a literal message and `iterator is infinite` give
+    `&str`.
+- **A `&str` panic is `new Error(message)`, as before and as JS's own; a
+  `String` one is `$stringPanic(message)`**, the same plain `Error` with a
+  mark that isn't enumerable, so hosts show it as any `Error` and
+  `$isPanic` is unchanged. The marked kind is the rarer one in programs and
+  in the port. The corpus has some 257 `String` panics to 478 `&str` ones,
+  and the React port's generated JS about 248 to 301. So the fewest lines
+  move away from what upstream writes. The name says what differs, the
+  payload's kind: `expect("lit")` isn't formatted, yet it is a `String`
+  panic. `$unwound` reads the mark as `$panicString`, a `String`'s `Any`,
+  and `$unwinding` throws a `String` payload as `$stringPanic` again, so
+  `resume_unwind` keeps the kind. The `String` downcast's arm that accepted
+  `$panicMessage` is gone. What JS throws is still a `&str` of its message:
+  the boundary stays as it was.
+- **Held by** the corpus case `panic_payload_kinds`, 24 shapes against
+  native, and by the metamorphic net's `payload-kind` rewrite. That rewrite
+  runs `main` in a `catch_unwind`, prints the payload's two downcasts, and
+  resumes, for every corpus case whose native run panics: 165 of 2,727.
+  Its first run found two of the runtime's panics marked `String` that
+  std writes as literals: a `VecDeque`'s insert past its length, an
+  `assert!` with a literal message, and `print!`'s formatting failure,
+  `write_fmt`'s `panic!("..")`. Both are fixed.
+- **Moved:** 176 corpus snapshots (223 `throw $stringPanic(..)` lines, and
+  imports). In the React port, 63 files: 135 throws, two of them rewrapped
+  by prettier onto three lines, and their imports; 160 lines out, 224 in.

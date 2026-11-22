@@ -379,8 +379,8 @@ export const mutations: Mutation[] = [
     name: "room-for-counted-capacity-overflow",
     breaks: "an `Rc<[T]>` collected of a `TrustedLen` past what a `Layout` can be panics `capacity overflow`, a `Vec`'s, where std unwraps a `LayoutError` (#1694)",
     file: "src/runtime/capacity.js",
-    find: "        throw new Error(\"called `Result::unwrap()` on an `Err` value: LayoutError\");\n",
-    replace: "        throw new Error(\"capacity overflow\");\n",
+    find: "        throw $stringPanic(\"called `Result::unwrap()` on an `Err` value: LayoutError\");\n",
+    replace: "        throw $stringPanic(\"capacity overflow\");\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_room.rs$"],
   },
   {

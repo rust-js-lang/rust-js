@@ -22,6 +22,7 @@ import {
   $setReplace,
   $sortedEntries,
   $sortedKeys,
+  $stringPanic,
   $treeAppend,
   $treeEnd,
 } from "@rust-js/std";
@@ -88,7 +89,7 @@ function shownOrd_cmp(shown, other) {
 function valDrop_drop(val) {
   console.log(`drop value ${val[0]}`);
   if (val[1]) {
-    throw new Error(`value ${val[0]}`);
+    throw $stringPanic(`value ${val[0]}`);
   }
 }
 

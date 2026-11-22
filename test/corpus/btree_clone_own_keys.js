@@ -20,6 +20,7 @@ import {
   $partialOrd,
   $sortedEntries,
   $sortedKeys,
+  $stringPanic,
 } from "@rust-js/std";
 
 export function entry() {
@@ -39,7 +40,7 @@ function dDebug_fmt(d) {
 function boom(n, what) {
   if (BOOM === n) {
     BOOM = 0;
-    throw new Error(`${what} ${n}`);
+    throw $stringPanic(`${what} ${n}`);
   }
 }
 

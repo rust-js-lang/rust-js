@@ -9,6 +9,7 @@ import {
   $intoIter,
   $iter,
   $live,
+  $stringPanic,
   $unwindsOn,
   $vecCollectWay,
 } from "@rust-js/std";
@@ -56,7 +57,7 @@ function gather(v, stop, TFromIteratorD) {
     $closing($iter(v), $dropEach(dDrop_drop)).map((d) => {
       try {
         if (d[0] === stop) {
-          throw new Error(`at ${stop}`);
+          throw $stringPanic(`at ${stop}`);
         }
         return [(d[0] * 10) | 0];
       } catch (error) {

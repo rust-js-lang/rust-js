@@ -738,6 +738,7 @@ import {
   $debugStr,
   $div,
   $parseInt,
+  $stringPanic,
   $stripPrefix,
   $unwrapOk,
 } from "@rust-js/std";
@@ -809,7 +810,7 @@ export function mustPort(line) {
 
 export function ratio(a, b) {
   if (b === 0) {
-    throw new Error(`ratio of ${a} to nothing`);
+    throw $stringPanic(`ratio of ${a} to nothing`);
   }
   return $div(a, b) >>> 0;
 }

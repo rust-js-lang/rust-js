@@ -8,6 +8,7 @@ import {
   $entriesShown,
   $iter,
   $next,
+  $stringPanic,
   iterator_chain,
 } from "@rust-js/std";
 
@@ -30,7 +31,7 @@ function countedDebug_fmt(counted) {
 function stepsIterator_next(steps) {
   steps[0] = (steps[0] + 1) >>> 0;
   if (steps[0] >= 3) {
-    throw new Error(`step ${steps[0]}`);
+    throw $stringPanic(`step ${steps[0]}`);
   }
   return [steps[0]];
 }
@@ -69,7 +70,7 @@ function touchyDrop_drop(touchy) {
 export const touchyDebug = { fmt: touchyDebug_fmt, $drop: touchyDrop_drop };
 function touchyDebug_fmt(touchy) {
   if (touchy[0] === 2) {
-    throw new Error(`touchy ${touchy[0]}`);
+    throw $stringPanic(`touchy ${touchy[0]}`);
   }
   return `T${touchy[0]}`;
 }

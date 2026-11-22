@@ -10,9 +10,24 @@ function $isPanic(e) {
   return e instanceof $Unwinding || (e instanceof Error && e.constructor === Error);
 }
 
-// A panic's message as a `dyn Any`'s `Any`: a `&str`, which a downcast to a
-// `String` finds too, as JS doesn't keep which a panic's was.
+// A panic's message as a `dyn Any`'s `Any`: a `&'static str`, of a plain
+// `new Error(..)`, `panic!("plain")`'s, and what JS throws; or a `String`, of
+// one `$stringPanic` made, `panic!("n = {n}")`'s, as Rust's payload is a `&str`
+// exactly where its `fmt::Arguments::as_str()` is `Some` (ADR 0660, amended).
 const $panicMessage = { typeId: () => "&str" };
+const $panicString = { typeId: () => "alloc::string::String" };
+
+// What marks a panic's `Error` as one whose payload is a `String`: not
+// enumerable, so its host shows it as any `Error`.
+const $stringPayload = Symbol("a panic whose payload is a String");
+
+// A panic whose payload is a `String`, thrown: `throw $stringPanic(..)`, an
+// `Error` of JS's own constructor, marked (ADR 0660, amended).
+function $stringPanic(message) {
+  const error = new Error(message);
+  Object.defineProperty(error, $stringPayload, { value: true });
+  return error;
+}
 
 // What JS threw, as a `dyn Any`'s `Any`: a `&'static JsError`.
 const $jsThrown = { typeId: () => "&js::JsError" };
@@ -37,27 +52,35 @@ function $unwound(e) {
     return e.payload;
   }
   if ($isPanic(e)) {
-    return { value: e.message, impl: $panicMessage, error: e };
+    return { value: e.message, impl: e[$stringPayload] === true ? $panicString : $panicMessage, error: e };
   }
   return { value: e, impl: $jsThrown, error: e };
 }
 
 // What's thrown to unwind with `payload`: the `$Unwinding` it was thrown
-// in, a panic's `Error`, its message as it was, or what JS threw, itself;
-// a panic of text, its `Error`; any other, in a `$Unwinding`.
+// in, a panic's `Error`, its message and its kind as they were, or what JS
+// threw, itself; a panic of text, its `Error`, a `String`'s `$stringPanic`;
+// any other, in a `$Unwinding`.
 function $unwinding(payload) {
   if (payload.error instanceof $Unwinding) {
     return payload.error;
   }
-  if (payload.impl === $panicMessage && payload.value === payload.error.message) {
+  if (
+    (payload.impl === $panicMessage || payload.impl === $panicString) &&
+    payload.value === payload.error.message &&
+    (payload.impl === $panicString) === (payload.error[$stringPayload] === true)
+  ) {
     return payload.error;
   }
   const id = payload.impl.typeId();
   if (id === "&js::JsError") {
     return payload.value;
   }
-  if (id === "&str" || id === "alloc::string::String") {
+  if (id === "&str") {
     return new Error(payload.value);
+  }
+  if (id === "alloc::string::String") {
+    return $stringPanic(payload.value);
   }
   return new $Unwinding(payload);
 }

@@ -23,6 +23,7 @@ import {
   $rcDrop,
   $rev,
   $roomForCounted,
+  $stringPanic,
   $tryOf,
   $unwindsOn,
   $vecCollectWay,
@@ -48,7 +49,7 @@ let panicAt = 0;
 function step() {
   steps = (steps + 1) >>> 0;
   if (steps === panicAt) {
-    throw new Error(`step ${steps}`);
+    throw $stringPanic(`step ${steps}`);
   }
 }
 

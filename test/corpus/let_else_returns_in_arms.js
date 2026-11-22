@@ -8,6 +8,7 @@ import {
   $drain,
   $index,
   $roomFor,
+  $stringPanic,
   $unwinding,
   $unwound,
 } from "@rust-js/std";
@@ -18,7 +19,7 @@ export function entry() {
 
 function render(n) {
   if (n < 2) {
-    throw new Error(`small ${n}`);
+    throw $stringPanic(`small ${n}`);
   }
   return n;
 }
@@ -94,7 +95,7 @@ function flushCompletedQueues(request, out) {
       }
       out.push(preamble);
       if (root.value > 100) {
-        throw new Error(`big root ${root.value}`);
+        throw $stringPanic(`big root ${root.value}`);
       }
       request.root = undefined;
     }

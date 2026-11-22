@@ -6,8 +6,8 @@ import {
   $debugParseError,
   $div,
   $index,
-  $panicMessage,
   $parseInt,
+  $stringPanic,
   $unwinding,
   $unwound,
   $unwrap,
@@ -24,10 +24,7 @@ function text(payload) {
   if (s != null) {
     return s;
   }
-  const s$1 =
-    payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
-      ? payload.value
-      : undefined;
+  const s$1 = payload.impl.typeId() === "alloc::string::String" ? payload.value : undefined;
   if (s$1 != null) {
     return s$1;
   }
@@ -72,7 +69,7 @@ function main() {
   caught(
     "formatted",
     $catchUnwind(() => {
-      throw new Error(`too big: ${n}`);
+      throw $stringPanic(`too big: ${n}`);
     }),
     debug,
   );
@@ -152,7 +149,7 @@ function main() {
     $catchable(thrown);
     const payload = $unwound(thrown);
     const downcast =
-      payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
+      payload.impl.typeId() === "alloc::string::String"
         ? { TAG: "Ok", _0: payload.value }
         : { TAG: "Err", _0: payload };
     if (downcast.TAG === "Ok") {

@@ -276,6 +276,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ))
                 }),
             },
+            // `panic!("..")`'s, of its payload's kind (ADR 0660, amended).
+            Std::PanicFmt => this.panic_fmt_lowering(_state.body, _state.at, span),
             Std::FmtNew => lower(move |this, state, values, out| {
                 Ok(Value::Expr({
                     let template = values.next().expect("a template");

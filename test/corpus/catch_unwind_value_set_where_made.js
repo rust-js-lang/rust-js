@@ -6,7 +6,7 @@ import {
   $catchUnwind,
   $catchable,
   $debugStr,
-  $panicMessage,
+  $stringPanic,
   $unborrow,
 } from "@rust-js/std";
 
@@ -22,10 +22,7 @@ function messageOf(payload) {
   if (message != null) {
     return message;
   }
-  const message$1 =
-    payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
-      ? payload.value
-      : undefined;
+  const message$1 = payload.impl.typeId() === "alloc::string::String" ? payload.value : undefined;
   return message$1 ?? "?";
 }
 
@@ -36,7 +33,7 @@ function note(n) {
 function throwException(n) {
   note(1);
   if (n === 0) {
-    throw new Error(`thrown ${n}`);
+    throw $stringPanic(`thrown ${n}`);
   }
   return n > 5;
 }
@@ -44,7 +41,7 @@ function throwException(n) {
 function panicOnRootError(n) {
   note(2);
   if (n === 9) {
-    throw new Error(`root ${n}`);
+    throw $stringPanic(`root ${n}`);
   }
 }
 
@@ -84,7 +81,7 @@ function fallback(n) {
   try {
     value = (n * 3) >>> 0;
     if (n > 2) {
-      throw new Error(`big ${n}`);
+      throw $stringPanic(`big ${n}`);
     }
   } catch (error) {
     $catchable(error);
@@ -103,7 +100,7 @@ function kept(n) {
   try {
     const found = (n + 1) >>> 0;
     if (n > 2) {
-      throw new Error(`big ${n}`);
+      throw $stringPanic(`big ${n}`);
     }
     done = found;
   } catch (error) {
@@ -122,7 +119,7 @@ function keptAfter(n) {
   try {
     const found = (n + 1) >>> 0;
     if (n > 2) {
-      throw new Error(`big ${n}`);
+      throw $stringPanic(`big ${n}`);
     }
     done = found;
   } catch (error) {
@@ -138,7 +135,7 @@ function returned(n) {
   try {
     const found = (n + 1) >>> 0;
     if (n > 2) {
-      throw new Error(`big ${n}`);
+      throw $stringPanic(`big ${n}`);
     }
     done = found;
     return done;
@@ -154,7 +151,7 @@ function readThenSet(n) {
   try {
     const found = (n + 1) >>> 0;
     if (n > 2) {
-      throw new Error(`big ${n}`);
+      throw $stringPanic(`big ${n}`);
     }
     done = found;
   } catch (error) {
@@ -176,7 +173,7 @@ function inLoop(n) {
     try {
       const found = (i * 3) >>> 0;
       if (i === 2) {
-        throw new Error(`two ${i}`);
+        throw $stringPanic(`two ${i}`);
       }
       done = found;
     } catch (error) {

@@ -18,6 +18,7 @@ import {
   $splitAtMut,
   $splitChunkMut,
   $splitEndMut,
+  $stringPanic,
   $swap,
   $view,
   $viewGet,
@@ -197,7 +198,7 @@ function main() {
   const value$2 = $index(tail$1, 1).x;
   const length = head$1.length;
   if (0 >= length) {
-    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
   }
   head$1[0].x = value$2;
   tail$1[0] = { x: 0 };

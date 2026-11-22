@@ -38,6 +38,7 @@ import {
   $sortStable,
   $splitWhitespace,
   $storedKey,
+  $stringPanic,
   $unwrap,
 } from "@rust-js/std";
 
@@ -105,7 +106,7 @@ const tupleOrd = $ord({
 export const fragileHash = { hash: fragileHash_hash, hashSlice: $hashSlice(fragileHash_hash) };
 function fragileHash_hash(fragile, state, HHasher) {
   if (panicAt === fragile[0]) {
-    throw new Error(`hash of ${fragile[0]}`);
+    throw $stringPanic(`hash of ${fragile[0]}`);
   }
   HHasher.writeU32(state, fragile[0]);
 }

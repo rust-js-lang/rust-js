@@ -159,7 +159,8 @@ test("@rust-js/std is tree-shakable, a helper bundled alone", async () => {
   const dir = outsideFixture("std-tree-shaking-helper");
   writeFileSync(join(dir, "entry.js"), `import { $unwrap } from "@rust-js/std";\nglobalThis.unwrap = $unwrap;\n`);
   const { code, declared } = await bundled(dir, "entry.js");
-  expect(declared).toEqual(["$unwrap"]);
+  // And what its `expect`'s panic is made by, a `String`'s (ADR 0660, amended).
+  expect(declared.sort()).toEqual(["$stringPanic", "$stringPayload", "$unwrap"]);
   expect(code.length).toBeLessThan(1000);
 });
 

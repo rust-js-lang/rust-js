@@ -15,6 +15,7 @@ import {
   $rev,
   $skipping,
   $stepBy,
+  $stringPanic,
   $tryFoldOk,
 } from "@rust-js/std";
 
@@ -28,7 +29,7 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === boom) {
     boom = 0;
-    throw new Error(`drop ${d[0]}`);
+    throw $stringPanic(`drop ${d[0]}`);
   }
 }
 

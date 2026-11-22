@@ -3275,10 +3275,12 @@ pub fn bind_to_console(method_name: &str, args: &[Option<&'static Unknown>]) -> 
 ```
 
 ```js
+import { $stringPanic } from "@rust-js/std";
+
 export function bindToConsole(methodName, args) {
   const method = console[methodName];
   if (typeof method !== "function") {
-    throw new Error(`console.${methodName} is no function`);
+    throw $stringPanic(`console.${methodName} is no function`);
   }
   return method.bind(console, ...args);
 }

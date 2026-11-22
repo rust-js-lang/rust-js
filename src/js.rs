@@ -26,6 +26,7 @@ mod stmt_facts;
 mod stmt_walk;
 pub use stmt_facts::StmtFacts;
 mod storage;
+pub use make::Payload;
 pub use storage::{StaleKeys, Undefined};
 mod template;
 mod through_box;

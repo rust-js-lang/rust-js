@@ -6,7 +6,6 @@ import {
   $collectsInPlace,
   $iterator,
   $lazyRange,
-  $panicMessage,
   $rangeFromStep,
   $rangeNext,
   $roomFor,
@@ -29,8 +28,7 @@ function said(made) {
     const e = $unwound(thrown);
     // Either payload's text, by no branch of which it is (the
     // guide's difference 11).
-    const text =
-      e.impl.typeId() === "alloc::string::String" || e.impl === $panicMessage ? e.value : undefined;
+    const text = e.impl.typeId() === "alloc::string::String" ? e.value : undefined;
     const fallback = e.impl.typeId() === "&str" ? e.value : undefined;
     return text ?? fallback ?? "?";
   }

@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "slice-index-fail-end-first",
     breaks: "`&v[a..b]` past the end says its end is out of range, not its start",
     file: "src/runtime/slice_index_fail.js",
-    find: "  if (start > length) throw new Error(`range start index ${start} out of range for slice of length ${length}`);\n  if (end > length) throw new Error(`range end index ${end} out of range for slice of length ${length}`);\n",
-    replace: "  if (end > length) throw new Error(`range end index ${end} out of range for slice of length ${length}`);\n  if (start > length) throw new Error(`range start index ${start} out of range for slice of length ${length}`);\n",
+    find: "  if (start > length) throw $stringPanic(`range start index ${start} out of range for slice of length ${length}`);\n  if (end > length) throw $stringPanic(`range end index ${end} out of range for slice of length ${length}`);\n",
+    replace: "  if (end > length) throw $stringPanic(`range end index ${end} out of range for slice of length ${length}`);\n  if (start > length) throw $stringPanic(`range start index ${start} out of range for slice of length ${length}`);\n",
     tests: ["test/corpus.test.ts","-t","slice_start_past_len"],
   },
   {

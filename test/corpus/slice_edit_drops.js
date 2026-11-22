@@ -14,6 +14,7 @@ import {
   $resize,
   $splitAtMut,
   $splitEndMut,
+  $stringPanic,
   $take,
   $unwindsOn,
 } from "@rust-js/std";
@@ -216,14 +217,14 @@ function lend() {
     for (const item of d) {
       loudDrop_drop(item);
     }
-    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
   }
   const value = b.length;
   if (0 >= value) {
     for (const item of d) {
       loudDrop_drop(item);
     }
-    throw new Error(`index out of bounds: the len is ${value} but the index is 0`);
+    throw $stringPanic(`index out of bounds: the len is ${value} but the index is 0`);
   }
   try {
     $exchange(a[0], b[0]);

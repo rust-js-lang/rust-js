@@ -5,7 +5,7 @@
 // panic unwinds, caught or not; a drop that panics then aborts (#1505).
 function $unwrapOk(result, message = "called `Result::unwrap()` on an `Err` value", debug = $debug, drop) {
   if (result.TAG === "Err") {
-    const panic = new Error(message + ": " + debug(result._0));
+    const panic = $stringPanic(message + ": " + debug(result._0));
     if (drop !== undefined) $dropsUnwinding([() => drop(result._0)]);
     throw panic;
   }

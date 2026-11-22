@@ -669,7 +669,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let [a, b] = <[Swapped; 2]>::try_from(sides).ok().expect("a swap's two cells");
                 if let (Some(a), Some(b)) = (a.object(), b.object()) {
                     let itself = Expr::bin(Op::Eq, a, b);
-                    let panic = StmtKind::Throw(Expr::panic(Expr::str("RefCell already borrowed"))).at(js_span);
+                    // std's `panic_already_borrowed` writes it `panic!("{}", err)`:
+                    // a `String` (ADR 0660, amended).
+                    let panic =
+                        StmtKind::Throw(Expr::panic(Expr::str("RefCell already borrowed"), js::Payload::String))
+                            .at(js_span);
                     out.push(StmtKind::If(itself, vec![panic], None).at(js_span));
                 }
                 let read = |cx: &Self, side: &Swapped| match side {

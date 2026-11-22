@@ -7,6 +7,7 @@ import {
   $debugStr,
   $lazyRange,
   $roomFor,
+  $stringPanic,
 } from "@rust-js/std";
 
 export function entry() {
@@ -43,7 +44,7 @@ function main() {
     const v = $collectDropping(
       $lazyRange(0, 4).map((i) => {
         if (i === 2) {
-          throw new Error(`at ${i}`);
+          throw $stringPanic(`at ${i}`);
         } else {
           return [i];
         }
@@ -61,7 +62,7 @@ function main() {
     const v = $collectDropping(
       $lazyRange(0, 5).map((i) => {
         if (i === 3) {
-          throw new Error(`at ${i}`);
+          throw $stringPanic(`at ${i}`);
         } else {
           return [(10 + i) >>> 0];
         }

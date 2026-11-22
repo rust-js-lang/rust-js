@@ -6,6 +6,7 @@ import {
   $copyFromSlice,
   $debugStr,
   $live,
+  $stringPanic,
   $unwindsOn,
   $writeCloneOfSlice,
 } from "@rust-js/std";
@@ -54,7 +55,7 @@ function main() {
     for (const item of src) {
       noisyDrop_drop(item);
     }
-    throw new Error(`index out of bounds: the len is ${length} but the index is 1`);
+    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 1`);
   }
   console.log(`${cloned[1][0]}`);
   try {

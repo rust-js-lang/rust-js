@@ -2,7 +2,7 @@
 // it's past either. Bounds the wrong way round panic as std's integers do,
 // each shown as `{:?}` shows it, which is its digits.
 function $clamp(x, min, max) {
-  if (!(min <= max)) throw new Error("min > max. min = " + min + ", max = " + max);
+  if (!(min <= max)) throw $stringPanic("min > max. min = " + min + ", max = " + max);
   return x < min ? min : x > max ? max : x;
 }
 
@@ -18,7 +18,7 @@ function $clampBy(x, min, max, ord, show, drop) {
   const at = $unwinds(
     () => {
       if (!ord.le(min, max)) {
-        throw new Error(show ? `min > max. min = ${show(min)}, max = ${show(max)}` : "assertion failed: min <= max");
+        throw show ? $stringPanic(`min > max. min = ${show(min)}, max = ${show(max)}`) : new Error("assertion failed: min <= max");
       }
       return ord.lt(x, min) ? 1 : ord.gt(x, max) ? 2 : 0;
     },

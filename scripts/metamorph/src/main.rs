@@ -6,6 +6,10 @@
 //!   metamorph <rewrite> <case.rs> [<limit>]   # the rewrite on stdout; exit 2 where it changes nothing
 //!
 //! - `outline`: `main`'s body moved into a function `main` calls.
+//! - `payload-kind`: `main` run in a `catch_unwind`, a panic's payload said
+//!   by its kind, `~payload String true &str false`, and resumed: whether
+//!   it's a `String` or a `&'static str`, as Rust's panic handler made it
+//!   (#2270, ADR 0660 amended).
 //! - `boxed`: each `let x = e;` whose `x` is bound once in its function made
 //!   `let x = Box::new(e);`, each use of `x` read through it, `(*x)`.
 //! - `option`, `rc-refcell` and `field`: the same, `Some(e)`,
@@ -97,7 +101,7 @@ use syn::{Block, FnArg, Item, Pat, Stmt, Type};
 
 use wrap::Wrap;
 
-const REWRITES: &str = "outline|boxed|option|rc-refcell|field|dyn-ref|impl-ref|impl-owned|generic|closure-fn|library|array|tuple|for-each|for-loop|if-let|method-fn|fn-method|default-copy|tuple-struct|loud|opaque|dyn-fn|generic-instances|fact-<fact>|emi-probe|emi-prune|emi-insert";
+const REWRITES: &str = "outline|payload-kind|boxed|option|rc-refcell|field|dyn-ref|impl-ref|impl-owned|generic|closure-fn|library|array|tuple|for-each|for-loop|if-let|method-fn|fn-method|default-copy|tuple-struct|loud|opaque|dyn-fn|generic-instances|fact-<fact>|emi-probe|emi-prune|emi-insert";
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -139,6 +143,7 @@ fn main() {
     }
     let changed = match rewrite {
         "outline" => outline(&mut ast),
+        "payload-kind" => payload_kind(&mut ast),
         "boxed" => wrap::wrap(&mut ast, Wrap::Boxed, &mut budget),
         "option" => wrap::wrap(&mut ast, Wrap::Option, &mut budget),
         "rc-refcell" => wrap::wrap(&mut ast, Wrap::RcRefCell, &mut budget),
@@ -195,6 +200,37 @@ fn outline(ast: &mut syn::File) -> bool {
     };
     let body = std::mem::replace(&mut *main.block, syn::parse_quote!({ metamorph_main() }));
     ast.items.push(syn::parse_quote!(fn metamorph_main() #body));
+    true
+}
+
+/// `main` renamed and run in a `catch_unwind`, a panic's payload said by its
+/// kind, `downcast`'s two answers, then resumed, so the run ends as it did:
+/// whether it's a `String` or a `&'static str` is said where the case's own
+/// output never asks (#2270).
+fn payload_kind(ast: &mut syn::File) -> bool {
+    let Some(at) = ast
+        .items
+        .iter()
+        .position(|item| matches!(item, Item::Fn(f) if f.sig.ident == "main" && f.sig.inputs.is_empty()))
+    else {
+        return false;
+    };
+    let Item::Fn(main) = &mut ast.items[at] else {
+        unreachable!()
+    };
+    let output = main.sig.output.clone();
+    main.sig.ident = syn::parse_quote!(metamorph_payload_main);
+    ast.items.push(syn::parse_quote!(
+        fn main() #output {
+            match ::std::panic::catch_unwind(metamorph_payload_main) {
+                Ok(value) => value,
+                Err(payload) => {
+                    println!("~payload String {} &str {}", payload.is::<String>(), payload.is::<&str>());
+                    ::std::panic::resume_unwind(payload)
+                }
+            }
+        }
+    ));
     true
 }
 

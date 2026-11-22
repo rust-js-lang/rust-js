@@ -5,7 +5,6 @@ import {
   $extend,
   $grownBy,
   $iterator,
-  $panicMessage,
   $rangeFromStep,
   $unwound,
   iterator_map,
@@ -28,9 +27,7 @@ function countedIterator_sizeHint(counted) {
 function message(payload) {
   return (
     (payload.impl.typeId() === "&str" ? payload.value : undefined) ??
-    (payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
-      ? payload.value
-      : undefined) ??
+    (payload.impl.typeId() === "alloc::string::String" ? payload.value : undefined) ??
     "another payload"
   );
 }

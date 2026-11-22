@@ -364,7 +364,7 @@ pub fn decorate(lines: &[D], inline: &[D]) -> u32 {
   for (let i = 0; i < inline.length; i++) {
     const decorator = inline[i];
     if (starts.has(decorator.line)) {
-      throw new Error(\`already at \${decorator.line}\`);
+      throw $stringPanic(\`already at \${decorator.line}\`);
     }
     starts.set(decorator.line, decorator.className);
   }

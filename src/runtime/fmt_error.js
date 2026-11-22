@@ -87,7 +87,7 @@ function $fmtOrPanic(write, message) {
   try {
     return write();
   } catch (error) {
-    if (error instanceof $FmtError) throw new Error(message);
+    if (error instanceof $FmtError) throw $stringPanic(message);
     throw error;
   }
 }
@@ -97,18 +97,20 @@ function $fmtPrintFailed(error, text, stderr) {
   // In a line formatted through stdout's, after what's written there (#1490).
   if (!stderr && $printFrames.length > 0) $out(text + error.written);
   else $write(text + error.written, stderr);
+  // std's `write_fmt` writes it `panic!("..")`, a literal: a `&str`, where
+  // `format!`'s `expect` makes a `String` (ADR 0660, amended).
   throw new Error("a formatting trait implementation returned an error when the underlying stream did not");
 }
 // `unwrap()` and `expect(..)` of one: `()`, or std's panic, of the error's
 // `{:?}`.
 function $writeExpect(result, message) {
   if (result === undefined) return;
-  throw new Error(message + ": " + (result instanceof $IoError ? $ioErrorDebug(result) : "Error"));
+  throw $stringPanic(message + ": " + (result instanceof $IoError ? $ioErrorDebug(result) : "Error"));
 }
 // `unwrap_err()` and `expect_err(..)` of one: its error, or std's panic, of
 // `Ok`'s `()`.
 function $writeExpectErr(result, message) {
-  if (result === undefined) throw new Error(message + ": ()");
+  if (result === undefined) throw $stringPanic(message + ": ()");
   return result;
 }
 // What a write to a `String` had written before it failed, taken from the

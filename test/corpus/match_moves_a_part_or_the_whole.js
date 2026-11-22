@@ -16,6 +16,7 @@ import {
   $lent,
   $next,
   $roomForHint,
+  $stringPanic,
   $traitImpl,
   iterator_map,
   mapIterator___iteratorGetUnchecked,
@@ -624,7 +625,7 @@ function wrapperBoom(IIterator, dropI, dropIItem) {
               dropIItem?.(item);
             });
           });
-          throw new Error(`boom at ${at}`);
+          throw $stringPanic(`boom at ${at}`);
         }
         result = back.length;
         try {

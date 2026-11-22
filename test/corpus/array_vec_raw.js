@@ -16,6 +16,7 @@ import {
   $ptrSliceMut,
   $ptrTyped,
   $ptrWhole,
+  $stringPanic,
   $traitImpl,
 } from "@rust-js/std";
 
@@ -186,7 +187,7 @@ function main() {
   const mutSlice = Stack.asMutSlice(words, 4);
   const length = mutSlice.length;
   if (1 >= length) {
-    throw new Error(`index out of bounds: the len is ${length} but the index is 1`);
+    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 1`);
   }
   mutSlice[1] += "!";
   console.log(

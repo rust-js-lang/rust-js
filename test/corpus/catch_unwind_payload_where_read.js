@@ -6,7 +6,7 @@ import {
   $catchable,
   $cleanup,
   $debugStr,
-  $panicMessage,
+  $stringPanic,
   $unwinding,
   $unwound,
 } from "@rust-js/std";
@@ -20,10 +20,7 @@ function messageOf(payload) {
   if (message != null) {
     return message;
   }
-  const message$1 =
-    payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
-      ? payload.value
-      : undefined;
+  const message$1 = payload.impl.typeId() === "alloc::string::String" ? payload.value : undefined;
   if (message$1 != null) {
     return message$1;
   }
@@ -32,10 +29,7 @@ function messageOf(payload) {
 }
 
 function change(payload) {
-  const message =
-    payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
-      ? payload
-      : undefined;
+  const message = payload.impl.typeId() === "alloc::string::String" ? payload : undefined;
   if (message != null) {
     message.value += "!";
   }
@@ -43,7 +37,7 @@ function change(payload) {
 
 function fails(n) {
   if (n > 2) {
-    throw new Error(`big ${n}`);
+    throw $stringPanic(`big ${n}`);
   }
   return n;
 }
@@ -80,8 +74,7 @@ function moved(n) {
   } catch (thrown) {
     $catchable(thrown);
     const e = $unwound(thrown);
-    const message =
-      e.impl.typeId() === "alloc::string::String" || e.impl === $panicMessage ? e : undefined;
+    const message = e.impl.typeId() === "alloc::string::String" ? e : undefined;
     if (message != null) {
       message.value += "?";
     }

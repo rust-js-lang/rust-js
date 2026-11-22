@@ -26,7 +26,7 @@ function $sortUnstable(v, isLess, kind) {
 // (`handle`).
 function $selectNthUnstable(v, index, isLess, kind, handle = false) {
   const len = v.length;
-  if (index >= len) throw new Error(`partition_at_index index ${index} greater than length of slice ${len}`);
+  if (index >= len) throw $stringPanic(`partition_at_index index ${index} greater than length of slice ${len}`);
   if (index === len - 1) $swapItems(v, $extremeIndex(v, 0, len, isLess, true), index);
   else if (index === 0) $swapItems(v, $extremeIndex(v, 0, len, isLess, false), index);
   else $selectLoop(v, 0, len, index, isLess, kind);

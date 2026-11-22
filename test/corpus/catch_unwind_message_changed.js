@@ -4,7 +4,7 @@ import {
   $catchUnwind,
   $catchable,
   $debugStr,
-  $panicMessage,
+  $stringPanic,
   $unwinding,
   $unwound,
 } from "@rust-js/std";
@@ -15,7 +15,7 @@ export function entry() {
 
 function fails(n) {
   if (n > 2) {
-    throw new Error(`too big: ${n}`);
+    throw $stringPanic(`too big: ${n}`);
   }
   return n;
 }
@@ -27,10 +27,7 @@ function main() {
     } catch (thrown) {
       $catchable(thrown);
       const payload = $unwound(thrown);
-      const message =
-        payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
-          ? payload
-          : undefined;
+      const message = payload.impl.typeId() === "alloc::string::String" ? payload : undefined;
       if (message != null) {
         message.value += ", resumed";
       }
@@ -40,7 +37,7 @@ function main() {
   const payload = again.TAG === "Err" ? again._0 : undefined;
   function then(payload) {
     const result =
-      payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
+      payload.impl.typeId() === "alloc::string::String"
         ? { TAG: "Ok", _0: payload.value }
         : { TAG: "Err", _0: payload };
     return result.TAG === "Ok" ? result._0 : undefined;
@@ -58,7 +55,7 @@ function main() {
   const payload$1 = kept.TAG === "Err" ? kept._0 : undefined;
   function then$1(payload) {
     const result =
-      payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
+      payload.impl.typeId() === "alloc::string::String"
         ? { TAG: "Ok", _0: payload.value }
         : { TAG: "Err", _0: payload };
     return result.TAG === "Ok" ? result._0 : undefined;

@@ -20,6 +20,7 @@ import {
   $rangeNextBack,
   $sortedEntries,
   $sortedKeys,
+  $stringPanic,
   $treeFromSorted,
 } from "@rust-js/std";
 
@@ -57,7 +58,7 @@ function loudClone_clone(loud) {
   clones = (clones + 1) >>> 0;
   const n = clones;
   if (n === at) {
-    throw new Error(`clone ${loud[0]}`);
+    throw $stringPanic(`clone ${loud[0]}`);
   }
   return [loud[0]];
 }

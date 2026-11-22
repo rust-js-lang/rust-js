@@ -8,6 +8,7 @@ import {
   $div,
   $index,
   $strSlice,
+  $stringPanic,
   $unborrow,
   $unwrap,
 } from "@rust-js/std";
@@ -18,7 +19,7 @@ export function entry() {
 
 function check(n) {
   if (n > 2) {
-    throw new Error(`big ${n}`);
+    throw $stringPanic(`big ${n}`);
   }
   return n + 1;
 }

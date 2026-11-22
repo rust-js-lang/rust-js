@@ -13,6 +13,7 @@ import {
   $holding,
   $iter,
   $next,
+  $stringPanic,
   filterClone_clone,
   iterator_filter,
   iterator_map,
@@ -37,7 +38,7 @@ function loudClone_clone(loud) {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
   if (loud[0] === panicDropOf) {
-    throw new Error(`drop ${loud[0]}`);
+    throw $stringPanic(`drop ${loud[0]}`);
   }
 }
 

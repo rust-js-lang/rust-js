@@ -7,9 +7,9 @@ import {
   $debugStr,
   $lines,
   $live,
-  $panicMessage,
   $parseInt,
   $strSlice,
+  $stringPanic,
   $toUppercase,
   $trimMatches,
   $unwindsOn,
@@ -134,12 +134,11 @@ function hoisted(n) {
 /** A `?` in what follows returns from the `catch`. */
 function parsed(text) {
   try {
-    throw new Error(text);
+    throw $stringPanic(text);
   } catch (thrown) {
     $catchable(thrown);
     const x = $unwound(thrown);
-    const message =
-      x.impl.typeId() === "alloc::string::String" || x.impl === $panicMessage ? x.value : undefined;
+    const message = x.impl.typeId() === "alloc::string::String" ? x.value : undefined;
     if (message != null) {
       const result = $parseInt(message, 0, 4294967295);
       const n = result.TAG === "Ok" ? result._0 : undefined;
@@ -233,7 +232,7 @@ function tail() {
  */
 function fake(n) {
   if (n > 1) {
-    throw new Error(`fake ${n}`);
+    throw $stringPanic(`fake ${n}`);
   }
   return n;
 }
@@ -245,10 +244,7 @@ function maybe(n) {
   } catch (thrown) {
     $catchable(thrown);
     const x = $unwound(thrown);
-    seen =
-      (x.impl.typeId() === "alloc::string::String" || x.impl === $panicMessage
-        ? x.value
-        : undefined) ?? "";
+    seen = (x.impl.typeId() === "alloc::string::String" ? x.value : undefined) ?? "";
   }
   console.log(`maybe ${n}`);
   return seen;

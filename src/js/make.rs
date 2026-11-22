@@ -5,6 +5,7 @@ use super::storage::null_for_none;
 use super::*;
 
 mod unwinding;
+pub use unwinding::Payload;
 
 impl Expr {
     pub(super) fn new(kind: ExprKind) -> Expr {

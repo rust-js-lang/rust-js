@@ -1720,6 +1720,8 @@ pub fn http_status(code: u16) -> String {
 ```
 
 ```js
+import { $stringPanic } from "@rust-js/std";
+
 export function dayName(day) {
   switch (day) {
     case 0:
@@ -1742,7 +1744,7 @@ export function weekend(day) {
     return true;
   }
   if (day < 1 || day > 5) {
-    throw new Error(`no day ${day}`);
+    throw $stringPanic(`no day ${day}`);
   }
   return false;
 }

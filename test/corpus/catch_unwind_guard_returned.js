@@ -6,7 +6,7 @@ import {
   $cleanup,
   $debugStr,
   $live,
-  $panicMessage,
+  $stringPanic,
   $unwound,
 } from "@rust-js/std";
 
@@ -31,7 +31,7 @@ function chosen(picked) {
 
 function scope(n) {
   if (n === 4) {
-    throw new Error(`scope ${n}`);
+    throw $stringPanic(`scope ${n}`);
   }
   return n;
 }
@@ -60,11 +60,7 @@ function gesture(n, onFinish) {
     $catchable(thrown);
     const error = $unwound(thrown);
     try {
-      report(
-        error.impl.typeId() === "alloc::string::String" || error.impl === $panicMessage
-          ? error.value
-          : undefined,
-      );
+      report(error.impl.typeId() === "alloc::string::String" ? error.value : undefined);
     } catch (error) {
       $cleanup(() => {
         console.log(`restored ${previous} (was ${depth})`);
@@ -117,11 +113,7 @@ function gestureRestored(n, onFinish) {
   } catch (thrown) {
     $catchable(thrown);
     const error = $unwound(thrown);
-    report(
-      error.impl.typeId() === "alloc::string::String" || error.impl === $panicMessage
-        ? error.value
-        : undefined,
-    );
+    report(error.impl.typeId() === "alloc::string::String" ? error.value : undefined);
   } finally {
     if ($live()) {
       console.log(`restored ${previous}`);

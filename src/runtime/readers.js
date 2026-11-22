@@ -422,7 +422,7 @@ function $bufReader(R) {
       const position = R.streamPosition(inner(b));
       if (position.TAG === "Err") return position;
       if (position._0 < remainder) {
-        throw new Error("overflow when subtracting remaining buffer size from inner stream position");
+        throw $stringPanic("overflow when subtracting remaining buffer size from inner stream position");
       }
       return { TAG: "Ok", _0: position._0 - remainder };
     },

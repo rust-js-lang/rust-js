@@ -8,6 +8,7 @@ import {
   $dispose,
   $dropping,
   $index,
+  $stringPanic,
 } from "@rust-js/std";
 
 export function entry() {
@@ -39,7 +40,7 @@ function enqueueTask(task, host) {
       if (host === "node") {
         enqueueTaskImpl = (box) => box.call();
       } else if (host !== "none") {
-        throw new Error(`no timers in ${host}`);
+        throw $stringPanic(`no timers in ${host}`);
       }
     } catch (_err) {
       $catchable(_err);
@@ -50,7 +51,7 @@ function enqueueTask(task, host) {
           $cleanup(() => {
             $dispose(callback);
           });
-          throw new Error(`no port for post ${posted$1}`);
+          throw $stringPanic(`no port for post ${posted$1}`);
         }
         (() => {
           callback();

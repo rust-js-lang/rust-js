@@ -14,7 +14,7 @@ function $realloc(pointer, layout, size) {
 
 // `handle_alloc_error(layout)`: the program's end, as Rust says it.
 function $allocError(layout) {
-  throw new Error(`memory allocation of ${layout.size} bytes failed`);
+  throw $stringPanic(`memory allocation of ${layout.size} bytes failed`);
 }
 
 // `Layout::from_size_align(size, align)`: `Err` where `align` isn't a power

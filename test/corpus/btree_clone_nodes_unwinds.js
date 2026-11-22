@@ -21,6 +21,7 @@ import {
   $sortedEntries,
   $sortedKeys,
   $stepBy,
+  $stringPanic,
   $treeFromSorted,
 } from "@rust-js/std";
 
@@ -42,7 +43,7 @@ function log(what) {
 function cloned() {
   clones = (clones + 1) >>> 0;
   if (clones === panicAt) {
-    throw new Error(`clone ${clones}`);
+    throw $stringPanic(`clone ${clones}`);
   }
 }
 

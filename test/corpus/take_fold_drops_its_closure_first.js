@@ -5,6 +5,7 @@ import {
   $cleanup,
   $consume,
   $live,
+  $stringPanic,
   iterator_fuse,
   iterator_skip,
 } from "@rust-js/std";
@@ -22,7 +23,7 @@ function countIterator_next(count) {
 }
 
 function countIterator_nth(count, n) {
-  throw new Error(`nth ${n}`);
+  throw $stringPanic(`nth ${n}`);
 }
 
 function loudDrop_drop(loud) {

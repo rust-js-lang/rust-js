@@ -13,7 +13,6 @@ import {
   $extend,
   $extractIf,
   $mutItems,
-  $panicMessage,
   $replaceRange,
   $reverseRange,
   $slice,
@@ -40,10 +39,7 @@ function message(payload) {
   if (s != null) {
     return s;
   }
-  const s$1 =
-    payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
-      ? payload.value
-      : undefined;
+  const s$1 = payload.impl.typeId() === "alloc::string::String" ? payload.value : undefined;
   if (s$1 != null) {
     return s$1;
   }

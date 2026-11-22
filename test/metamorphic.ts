@@ -50,6 +50,9 @@ export const rewrites = [
   // iterator the case makes called in generic code, given another instance.
   "generic-instances",
   "fact-addresses", "fact-slices", "fact-stored", "fact-capacity", "fact-fn-identity", "fact-chars", "fact-write-fails", "fact-rc-counts", "fact-clones",
+  // A panic's payload kind (#2270): `main` in a `catch_unwind`, whether the
+  // payload is a `String` or a `&str` said, of a case whose run panics.
+  "payload-kind",
 ] as const;
 export type Rewrite = (typeof rewrites)[number];
 
@@ -91,6 +94,8 @@ export function rewritten(rewrite: Rewrite, file: string, edition: string, limit
   // that keep each place's cost (`//@ instances-keep-cost`, #1109).
   const want = existsSync(file) ? directives(readFileSync(file, "utf8")) : undefined;
   if (typeof want === "object" && want.instancesKeepCost !== undefined) env.METAMORPH_KEEP_COST = "1";
+  // Of a case whose native run ends in a panic alone: another's says nothing.
+  if (rewrite === "payload-kind" && !panicsNatively(file, edition)) return undefined;
   if (rewrite === "emi-prune") {
     const hits = reached(file, edition);
     if (hits === undefined) return undefined;
@@ -123,6 +128,19 @@ export function rewritten(rewrite: Rewrite, file: string, edition: string, limit
  * by every part of a parallel run probing the same case, the harness's own
  * test in each of them, one part's build written over while another ran
  * it, and that test failed about once in twelve parts. */
+/** Whether the case `file`'s native run ends in a panic, of its kept run. */
+function panicsNatively(file: string, edition: string): boolean {
+  const probes = join(target, "metamorph-payload");
+  mkdirSync(probes, { recursive: true });
+  const dir = mkdtempSync(join(probes, "case-"));
+  try {
+    const ran = runNative(file, dir, edition);
+    return typeof ran !== "string" && typeof ran.outcome !== "string" && "panic" in ran.outcome;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 function reached(file: string, edition: string): number[] | undefined {
   const probe = runSync([rewriter, "emi-probe", file], root, 60_000, { METAMORPH_EDITION: edition });
   if (probe.code !== 0) return undefined;

@@ -6,7 +6,6 @@ import {
   $catchable,
   $debugStr,
   $index,
-  $panicMessage,
   $print,
   $unwound,
   $utf8Bytes,
@@ -97,9 +96,7 @@ function main() {
     $catchable(thrown);
     const payload = $unwound(thrown);
     const downcastRef =
-      payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
-        ? payload.value
-        : undefined;
+      payload.impl.typeId() === "alloc::string::String" ? payload.value : undefined;
     $print(`panicked: ${downcastRef == null ? "None" : `Some(${$debugStr(downcastRef)})`}\n`);
   }
   $print(`${firstDiff("hello there", "hello world")} ${firstDiff("ab", "ab")}\n`);

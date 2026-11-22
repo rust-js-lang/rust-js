@@ -17,6 +17,7 @@ import {
   $print,
   $printing,
   $sink,
+  $stringPanic,
   $writeBy,
   $writeExpect,
   $writeInteger,
@@ -1248,7 +1249,7 @@ function metamorphLoud(what) {
     $out(`~loud ${n} ${said}\n`);
   }
   if (n === METAMORPH_PANIC_AT && !$panicking()) {
-    throw new Error(`~loud panic at ${n}`);
+    throw $stringPanic(`~loud panic at ${n}`);
   }
 }
 //# sourceMappingURL=case.js.map

@@ -10,10 +10,10 @@ import {
   $iterator,
   $live,
   $mapEnds,
-  $panicMessage,
   $rangeNext,
   $rangeNextBack,
   $splicing,
+  $stringPanic,
   $unwindsOn,
   $unwound,
 } from "@rust-js/std";
@@ -27,10 +27,7 @@ function message(payload) {
   if (s != null) {
     return s;
   }
-  const s$1 =
-    payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
-      ? payload.value
-      : undefined;
+  const s$1 = payload.impl.typeId() === "alloc::string::String" ? payload.value : undefined;
   if (s$1 != null) {
     return s$1;
   }
@@ -57,7 +54,7 @@ function loudDrop_drop(loud) {
 
 function loudOrPanic(i) {
   if (i === 1) {
-    throw new Error(`made ${i}`);
+    throw $stringPanic(`made ${i}`);
   }
   return [(10 + i) >>> 0];
 }

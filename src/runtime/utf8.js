@@ -66,7 +66,7 @@ function $encodeUtf8(c, buf) {
   const bytes = new TextEncoder().encode(c);
   if (bytes.length > buf.length) {
     const code = c.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
-    throw new Error(`encode_utf8: need ${bytes.length} bytes to encode U+${code} but buffer has just ${buf.length}`);
+    throw $stringPanic(`encode_utf8: need ${bytes.length} bytes to encode U+${code} but buffer has just ${buf.length}`);
   }
   bytes.forEach((b, i) => (buf[i] = b));
   return $utf8Mut(buf, bytes.length);
@@ -77,7 +77,7 @@ function $encodeUtf8(c, buf) {
 function $encodeCharUtf16(c, buf) {
   if (c.length > buf.length) {
     const code = c.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
-    throw new Error(`encode_utf16: need ${c.length} bytes to encode U+${code} but buffer has just ${buf.length}`);
+    throw $stringPanic(`encode_utf16: need ${c.length} bytes to encode U+${code} but buffer has just ${buf.length}`);
   }
   for (let i = 0; i < c.length; i++) buf[i] = c.charCodeAt(i);
   return $view(buf, 0, c.length);

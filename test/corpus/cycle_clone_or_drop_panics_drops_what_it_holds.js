@@ -7,6 +7,7 @@ import {
   $held,
   $next,
   $roomForHint,
+  $stringPanic,
   cycleClone_clone,
   iterator_cycle,
   iterator_take,
@@ -33,7 +34,7 @@ function stepsClone_clone(steps) {
   const n = (clones + 1) >>> 0;
   clones = n;
   if (n === panicCloneAt) {
-    throw new Error(`clone ${n}`);
+    throw $stringPanic(`clone ${n}`);
   }
   console.log(`clone ${steps.id} as ${(((steps.id * 10) >>> 0) + n) >>> 0}`);
   return {
@@ -45,7 +46,7 @@ function stepsClone_clone(steps) {
 function stepsDrop_drop(steps) {
   console.log(`drop Steps ${steps.id}`);
   if (steps.id === panicDropOf) {
-    throw new Error(`drop ${steps.id}`);
+    throw $stringPanic(`drop ${steps.id}`);
   }
 }
 

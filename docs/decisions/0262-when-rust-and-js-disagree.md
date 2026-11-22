@@ -551,6 +551,12 @@ react.dev's TopNav passes the same closure instead.
   catch. Whether rust-js should run a binary's `main` as Rust's runtime
   does, exiting with 101, is a product question for the user (#2269)
   (`semantics.md`, 10).
+- **A panic is an `Error` JS catches, and `catch_unwind` catches what JS
+  throws**, the first case's: native Rust has no JS to throw, so no native
+  run differs. A panic's payload is a `&str` or a `String` as Rust's
+  handler makes it (ADR 0660, amended, #2270), and what JS throws unwinds
+  as a panic of its message, a `&str`, and as the `&JsError` it is (ADR
+  0692) (`semantics.md`, 11).
 - **A future starts when it's made**, decided by the user (2026-11-08,
   #965): kept where nothing can tell, refused where results change, a
   future given to a binding the JS boundary's running promise (this

@@ -2263,9 +2263,8 @@ React and JSX are [their own pages](README.md#react).
     which Node and Bun end with exit code 1, where a native binary's
     uncaught panic exits with 101.
 11. A panic is an `Error`, which JS catches, and `catch_unwind` catches what
-    JS throws; a panic's message downcasts as a `&str` and a `String`
-    (being fixed, #2270), and every payload, a typed one's too, as the
-    `&JsError` thrown.
+    JS throws, its payload a `&str` of its message; every payload, a typed
+    one's too, downcasts as the `&JsError` thrown.
 12. A value with a destructor that JS holds is never dropped, a function
     handed to a binding too, even where JS gives it back to Rust (ADR
     0873) (ADR 0262's exception, the user's decision, #1212).

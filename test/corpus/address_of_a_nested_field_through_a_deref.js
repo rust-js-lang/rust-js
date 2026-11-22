@@ -8,6 +8,7 @@ import {
   $stored,
   $storedItems,
   $storedValue,
+  $stringPanic,
   $unborrow,
 } from "@rust-js/std";
 
@@ -87,7 +88,7 @@ function main() {
       continue;
     }
     $unborrow(borrow);
-    throw new Error(`index out of bounds: the len is 3 but the index is ${i}`);
+    throw $stringPanic(`index out of bounds: the len is 3 but the index is ${i}`);
   }
   try {
     console.log(`ref [${seen.join(", ")}]`);

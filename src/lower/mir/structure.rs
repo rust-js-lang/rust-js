@@ -333,7 +333,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// unreachable code's or `hint::unreachable_unchecked()`'s: Rust's is
     /// undefined, so JS's, a throw, which says where it went wrong.
     fn unreachable_code(&self, span: Span) -> Stmt {
-        StmtKind::Throw(Expr::panic(Expr::str("internal error: entered unreachable code"))).at(self.js_span(span))
+        StmtKind::Throw(Expr::panic(
+            Expr::str("internal error: entered unreachable code"),
+            js::Payload::Str,
+        ))
+        .at(self.js_span(span))
     }
 
     /// Where a block goes.
@@ -548,7 +552,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // The panic drops what's there as it unwinds, then is thrown.
                 let unwound = self.mir_unwind(state, *unwind)?;
                 let mut panic = crate::lower::drops::cleanup(unwound, None, js_span);
-                panic.push(StmtKind::Throw(Expr::panic(message)).at(js_span));
+                // An index out of bounds' payload is a `String`, std's
+                // `panic_bounds_check` formatting it; an overflow's or a
+                // division by zero's a `&str`, `panic_const`'s (ADR 0660,
+                // amended).
+                let payload = match &**msg {
+                    AssertKind::BoundsCheck { .. } => js::Payload::String,
+                    _ => js::Payload::Str,
+                };
+                panic.push(StmtKind::Throw(Expr::panic(message, payload)).at(js_span));
                 out.push(StmtKind::If(failed, panic, None).at(js_span));
                 out.extend(self.mir_branch(state, block, *target)?);
             }

@@ -155,15 +155,15 @@ function $jsonIndexMut(cell, key) {
   if (typeof key === "string") {
     if (cell.value === "Null") cell.value = { TAG: "Object", _0: new Map() };
     const value = cell.value;
-    if (value.TAG !== "Object") throw new Error(`cannot access key ${$debugStr(key)} in JSON ${kind(value)}`);
+    if (value.TAG !== "Object") throw $stringPanic(`cannot access key ${$debugStr(key)} in JSON ${kind(value)}`);
     const entries = value._0;
     if (!entries.has(key)) entries.set(key, "Null");
     return { get value() { return entries.get(key); }, set value(next) { entries.set(key, next); } };
   }
   const value = cell.value;
-  if (value.TAG !== "Array") throw new Error(`cannot access index ${key} of JSON ${kind(value)}`);
+  if (value.TAG !== "Array") throw $stringPanic(`cannot access index ${key} of JSON ${kind(value)}`);
   const items = value._0;
-  if (key >= items.length) throw new Error(`cannot access index ${key} of JSON array of length ${items.length}`);
+  if (key >= items.length) throw $stringPanic(`cannot access index ${key} of JSON array of length ${items.length}`);
   return { get value() { return items[key]; }, set value(next) { items[key] = next; } };
 }
 // A JSON Pointer's tokens, as serde_json's `pointer` splits it: none of `""`,
