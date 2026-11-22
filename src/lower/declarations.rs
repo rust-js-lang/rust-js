@@ -64,7 +64,7 @@ pub(super) fn module<'tcx>(
     module: LocalModId,
     (default_export, default_declared): (Option<DefId>, bool),
     files: &IndexMap<LocalModId, Vec<String>>,
-    (reexports, forwarded): (&[Reexport], &IndexMap<DefId, DefId>),
+    (reexports, forwarded): (&[(rustc_span::Span, Reexport)], &IndexMap<DefId, DefId>),
     aliases: &[(DefId, (String, String))],
     (ref_cells, counted, null_fields, flattened): (
         &super::drops::RefCells<'tcx>,
@@ -272,7 +272,7 @@ pub(super) fn module<'tcx>(
         return None;
     }
     let imported = (&out.imports, &out.library_imports, &out.module_imports);
-    let mut declarations = imports::imports(tcx, imported, (reexports, &types));
+    let mut declarations = imports::imports(tcx, imported, (module, reexports, &types));
     declarations.splice(0..0, imports::namespaces(&out.namespaces));
     declarations.extend(items);
     // `export { greetAll as unstable_greet };`, its `pub use` of its own

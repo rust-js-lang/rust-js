@@ -727,11 +727,31 @@ isClientReference, .. }`, which it doesn't describe, and is its own
 `export type`'s now. Case
 ([0262](0262-when-rust-and-js-disagree.md)): none, comments alone.
 
-Not yet: a value re-export's doc comment in the declarations, which the
-JS has, `program::Reexport` holding no `use` item to read it of.
+A value re-export's doc comment is its declaration's too, `export {
+width } from` in the `.d.ts` as in the JS (#1880, below).
 
 Held by `test/reexport-docs.test.ts`; mutations type-reexport-printed-where-written
 (`pipeline.rs`), type-reexport-value-of-a-constructor (`reexports.rs`),
 type-reexport-undocumented, mixed-reexport-doc-on-its-type
 (`declarations/imports.rs`).
 
+## Amendment: a value re-export's declaration keeps its doc comment (#1880, 2026-11-22)
+
+A doc comment on a `pub use` of a value, `/// The width of a part. pub
+use parts::width;`, is its JS statement's JSDoc, `export { width } from`,
+and its declaration in the `.d.ts` had none: `program::Reexport` holds no
+`use` item, no rustc type crossing to the printer. **Each re-export the
+declarations write carries the statement it's first written by**
+(`reexports::assembled`'s span, a run of statements joined only where
+nothing but attributes is between them, so no other comment), **and the
+`use` item written there** (`reexports::use_written_at`, of
+`statement_of`'s spans) **documents it** as a type re-export is
+documented (`comments::documented_at`): its `//` comments, then its doc
+comment as JSDoc. A re-export that isn't a `use`'s, a binding's held
+through another module, has none. Of a `pub use` of a type and a value,
+the value's statement has it and the type's `export type` doesn't, as in
+the JS. Case ([0262](0262-when-rust-and-js-disagree.md)): none, comments
+alone.
+
+Held by `test/reexport-docs.test.ts`; mutations value-reexport-undocumented
+(`declarations/imports.rs`), use-written-at-whole-span (`reexports.rs`).

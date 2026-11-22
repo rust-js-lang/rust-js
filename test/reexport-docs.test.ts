@@ -70,6 +70,35 @@ pub fn cn(parts: &[&str]) -> String {
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain('\nexport type { Size as Measure } from "./parts.js";');
   expect(declarations).not.toContain("*/\nexport type { Size as Measure }");
+  expect(declarations).toContain('/** What a kit gives of its parts: a size, and its width. */\nexport { width } from "./parts.js";');
+});
+
+// A `pub use` of a value alone: its comments, `//` and its doc comment,
+// are its declaration's in the .d.ts as its statement's in the JS (#1880).
+test("a doc comment on a pub use of a value is its declaration's too", () => {
+  const dir = fixture("reexport-docs-value");
+  writeFileSync(join(dir, "lib.rs"), `pub mod parts {
+    pub fn width(x: u32) -> u32 {
+        x
+    }
+
+    pub fn height(x: u32) -> u32 {
+        x
+    }
+}
+
+// Kept as a kit names it.
+/// The width of a part.
+pub use parts::width;
+
+pub use parts::height;
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const documented = '// Kept as a kit names it.\n/** The width of a part. */\nexport { width } from "./parts.js";\n';
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain(documented);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain(documented);
+  expect(declarations).toContain('*/\nexport { width } from "./parts.js";\n\nexport { height } from "./parts.js";');
 });
 
 // A tuple struct and a unit struct are types alone too, their constructors

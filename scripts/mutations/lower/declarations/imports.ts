@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a module's `pub use` isn't in its `.d.ts`, and TypeScript that imports it finds nothing",
     file: "src/lower/declarations/imports.rs",
-    find: "    for reexport in reexports {",
-    replace: "    for reexport in reexports.iter().take(0) {",
+    find: "    for (statement, reexport) in reexports {",
+    replace: "    for (statement, reexport) in reexports.into_iter().take(0) {",
     tests: ["test/declarations.test.ts", "-t", "re-export what a module"],
   },
   {
@@ -84,5 +84,13 @@ export const mutations: Mutation[] = [
     find: "            false => declaration,\n",
     replace: "            false => super::comments::documented(declaration, tcx, item),\n",
     tests: ["test/reexport-docs.test.ts", "-t", "a type and a value"],
+  },
+  {
+    name: "value-reexport-undocumented",
+    breaks: "a `pub use` of a value's declaration, `export { width } from` in the .d.ts, has none of its comments, where its JS statement has its `//` comments and its doc comment (#1880)",
+    file: "src/lower/declarations/imports.rs",
+    find: "            Some(item) => super::comments::documented_at(declaration, tcx, item, Some(*statement)),\n",
+    replace: "            Some(_) => declaration,\n",
+    tests: ["test/reexport-docs.test.ts", "-t", "(a value is its declaration's too|a type and a value)"],
   },
 ];

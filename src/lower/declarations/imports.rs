@@ -38,7 +38,11 @@ pub(super) fn imports(
         &ModuleImports<String>,
         &ModuleImports<Vec<String>>,
     ),
-    (reexports, types): (&[crate::program::Reexport], &[crate::lower::reexports::TypeReexport]),
+    (module, reexports, types): (
+        rustc_span::def_id::LocalModId,
+        &[(rustc_span::Span, crate::program::Reexport)],
+        &[crate::lower::reexports::TypeReexport],
+    ),
 ) -> Vec<Value> {
     let mut declarations = Vec::new();
     for (from, names, default) in of_modules(packages) {
@@ -50,7 +54,7 @@ pub(super) fn imports(
     for (path, names, default) in of_modules(modules) {
         declarations.extend(type_imports(json!({ "module": path }), names, default));
     }
-    for reexport in reexports {
+    for (statement, reexport) in reexports {
         let from = match &reexport.from {
             crate::js::ImportFrom::Module(path) => json!({ "module": path }),
             crate::js::ImportFrom::Specifier(specifier) => json!({ "specifier": specifier }),
@@ -60,7 +64,12 @@ pub(super) fn imports(
             .as_object_mut()
             .expect("an object")
             .extend(from.as_object().expect("an object").clone());
-        declarations.push(declaration);
+        // Its `use`'s doc comment and the comments before it, as its JS
+        // statement has them (#1880).
+        declarations.push(match crate::lower::reexports::use_written_at(tcx, module, *statement) {
+            Some(item) => super::comments::documented_at(declaration, tcx, item, Some(*statement)),
+            None => declaration,
+        });
     }
     let mut grouped: Vec<TypeExport<'_>> = Vec::new();
     for (at, from, named, item) in types {

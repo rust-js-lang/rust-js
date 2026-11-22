@@ -131,7 +131,7 @@ fn in_place<'tcx>(
 /// it needn't import.
 pub(super) struct InPlace {
     pub(super) reexports: Vec<Reexport>,
-    pub(super) declared: Vec<Reexport>,
+    pub(super) declared: Vec<(rustc_span::Span, Reexport)>,
     pub(super) reads: IndexSet<String>,
 }
 
@@ -162,7 +162,10 @@ pub(super) fn reexported<'tcx>(
     let named = super::super::reexports::forwarded_functions(tcx, module, &confirmed, (fns, foreign), paths, sources);
     InPlace {
         declared: super::super::reexports::assembled(found.clone(), sources, foreign),
-        reexports: super::super::reexports::assembled(found.into_iter().chain(named).collect(), sources, foreign),
+        reexports: (super::super::reexports::assembled(found.into_iter().chain(named).collect(), sources, foreign))
+            .into_iter()
+            .map(|(_, reexport)| reexport)
+            .collect(),
         reads,
     }
 }

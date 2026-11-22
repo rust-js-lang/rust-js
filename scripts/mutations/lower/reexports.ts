@@ -540,4 +540,12 @@ export const mutations: Mutation[] = [
     replace: "    let exported = |_: DefId| true;\n",
     tests: ["test/throwing-calls.test.ts", "-t", "crate-private namespace's method"],
   },
+  {
+    name: "use-written-at-whole-span",
+    breaks: "the `use` item a tree's value re-export is written by is found by its statement's whole span, where each leaf's statement ends at its own leaf, so `pub use parts::{Size as Measure, width};`'s `width` declaration loses its doc comment (#1880)",
+    file: "src/lower/reexports.rs",
+    find: "        .find(|&(_, (at, _))| at.lo() == statement.lo())\n",
+    replace: "        .find(|&(_, (at, _))| at == statement)\n",
+    tests: ["test/reexport-docs.test.ts", "-t", "a type and a value"],
+  },
 ];

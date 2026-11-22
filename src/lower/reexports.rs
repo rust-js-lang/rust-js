@@ -377,6 +377,16 @@ pub(super) fn is_of_types_alone(tcx: TyCtxt<'_>, item: DefId) -> bool {
     (statements_of_types(tcx, module).into_iter()).any(|(id, (_, all))| all && id.owner_id.to_def_id() == item)
 }
 
+/// The `use` item written at `statement`, one of `module`'s `pub use`
+/// statements from its `pub` (`statement_of`), which each leaf of a tree
+/// starts at: a value re-export's declaration's doc comment is its, as
+/// its JS has it (#1880).
+pub(super) fn use_written_at(tcx: TyCtxt<'_>, module: LocalModId, statement: rustc_span::Span) -> Option<DefId> {
+    (statements_of_types(tcx, module).into_iter())
+        .find(|&(_, (at, _))| at.lo() == statement.lo())
+        .map(|(id, _)| id.owner_id.to_def_id())
+}
+
 /// Each of `module`'s `use` statements, where it's written and whether
 /// each of its names is a type alone (`type_alone`).
 fn statements_of_types(tcx: TyCtxt<'_>, module: LocalModId) -> IndexMap<rustc_hir::ItemId, (rustc_span::Span, bool)> {
@@ -421,11 +431,13 @@ fn statement_of(leaf: &super::uses::UseLeaf<'_>) -> rustc_span::Span {
 /// (`reexports`, `forwarded_functions`): in the order they're written, a
 /// statement's names from one module one statement, in their order, and a
 /// run of them from one module, nothing but attributes between, one too.
+/// Each with the statement it's first written by, whose comments are
+/// before it, its declaration's too (`use_written_at`, #1880).
 pub(super) fn assembled(
     mut found: Vec<Named>,
     sources: &super::sources::CapturedSources,
     foreign: &super::library::Foreign<'_, '_>,
-) -> Vec<Reexport> {
+) -> Vec<(rustc_span::Span, Reexport)> {
     // In the order they're written; a statement's names from one module
     // one `export { .. } from` of it, in their order.
     found.sort_by_key(|((at, _), ..)| at.lo());
@@ -480,10 +492,10 @@ pub(super) fn assembled(
     // A run of them from one module, nothing but their attributes between,
     // no comment or blank line, one statement, as a person lists a module's
     // names once.
-    let mut merged: Vec<Reexport> = Vec::new();
-    for (_, reexport) in reexports {
+    let mut merged: Vec<(rustc_span::Span, Reexport)> = Vec::new();
+    for (statement, reexport) in reexports {
         match merged.last_mut() {
-            Some(last)
+            Some((_, last))
                 if last.from == reexport.from
                     && !namespace(last)
                     && !namespace(&reexport)
@@ -501,7 +513,7 @@ pub(super) fn assembled(
                 last.at.hi = reexport.span.hi;
                 last.glob &= reexport.glob;
             }
-            _ => merged.push(reexport),
+            _ => merged.push((statement, reexport)),
         }
     }
     merged
