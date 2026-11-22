@@ -2,6 +2,7 @@
 //! joins (ADR 1137): each local's interval, the comparisons `bool`s hold,
 //! copies, lengths, the relations `x < y`, each slice's least.
 
+use super::shared::{SharedMap, SharedSet};
 use super::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -57,7 +58,7 @@ pub(super) enum Value {
 
 /// What a relation's greater side is: a slice's length, by the local the
 /// slice is (`Len`), or an integer local.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub(super) enum Term {
     Len(Local),
     Int(Local),
@@ -74,83 +75,83 @@ pub(super) enum Term {
 /// `is_empty()`.
 #[derive(Clone, PartialEq)]
 pub(super) struct State {
-    pub(super) intervals: IndexVec<Local, Option<Interval>>,
-    pub(super) comparisons: IndexMap<Local, Comparison>,
-    pub(super) copies: IndexMap<Local, Local>,
-    pub(super) lens: IndexMap<Local, Local>,
-    pub(super) below: IndexSet<(Local, Term, bool)>,
+    pub(super) intervals: LocalIntervals,
+    pub(super) comparisons: SharedMap<Local, Comparison>,
+    pub(super) copies: SharedMap<Local, Local>,
+    pub(super) lens: SharedMap<Local, Local>,
+    pub(super) below: SharedSet<(Local, Term, bool)>,
     /// `x` below a slice's length wherever the slice holds more than `c`
     /// items, `(x, slice, c)`: where a path that knew `x` below it joins
     /// one that knew `x` at most `c`, `best = 0` before a loop and
     /// `best = index` in it (#1814).
-    pub(super) below_past: IndexSet<(Local, Local, i128)>,
-    pub(super) least: IndexMap<Local, i128>,
+    pub(super) below_past: SharedSet<(Local, Local, i128)>,
+    pub(super) least: SharedMap<Local, i128>,
     /// Each `str::split` or `rsplit` a local holds as it was made, nothing
     /// having stepped it: what it gives collected is never empty (#1860).
-    pub(super) splits: IndexSet<Local>,
-    pub(super) empties: IndexMap<Local, Local>,
+    pub(super) splits: SharedSet<Local>,
+    pub(super) empties: SharedMap<Local, Local>,
     /// A `for` loop's range of integers, by the local holding it, a `&mut`
     /// of it, or the `Option` its `next()` gave.
-    pub(super) ranges: IndexMap<Local, Ranged>,
+    pub(super) ranges: SharedMap<Local, Ranged>,
     /// `t = x + c` of a constant at least one, by `t`: what `x` is, `c`,
     /// and whether it never wraps. `x + c` again is `t`, wrapped or not,
     /// `i += 1` past `i + 1 < n`; and of one that never wraps, `t < y`
     /// is `x < y` too, `items[i + 1]` under `i + 1 < len`.
-    pub(super) sums: IndexMap<Local, (Local, i128, bool)>,
+    pub(super) sums: SharedMap<Local, (Local, i128, bool)>,
     /// A slice's `get(index)`, by the `Option` it gave or its discriminant:
     /// the index, and the most an index below the slice's length is, which
     /// its `Some` knows it is.
-    pub(super) gets: IndexMap<Local, (Local, i128)>,
+    pub(super) gets: SharedMap<Local, (Local, i128)>,
     /// A slice iterator's `position()` or `rposition()`, by the `Option` it
     /// gave, or the `ControlFlow` a `?` of it branched to: the slice it
     /// stepped, whose length the index is below, and the variant that holds
     /// it, `Some`'s or `Continue`'s (#1945).
-    pub(super) positions: IndexMap<Local, (Local, u32)>,
+    pub(super) positions: SharedMap<Local, (Local, u32)>,
     /// Each slice iterator, `s.iter()`, a `&mut` lent of one or a move of
     /// it: the slice it steps, which a `position()` of it is an index of
     /// (#1945). What the walk steps itself is `ranges`'.
-    pub(super) iterates: IndexMap<Local, Local>,
+    pub(super) iterates: SharedMap<Local, Local>,
     /// Each local holding a `Vec`, or a reference to one, a `push` made
     /// hold an item at least, nothing lending it `&mut` since (#1700).
-    pub(super) pushed: IndexSet<Local>,
+    pub(super) pushed: SharedSet<Local>,
     /// Each `&mut` of a `Vec` whole, `&mut _1` or `&mut (*_1)`, by the
     /// local it's held in: what it lends, a `push` of it makes pushed.
-    pub(super) lending: IndexMap<Local, Local>,
+    pub(super) lending: SharedMap<Local, Local>,
     /// Each integer local lent `&mut` where the walk forgets it
     /// (`lent_where_borrowed`), until it's assigned again: what the borrow
     /// lends may have become a raw pointer that writes it after, as a read
     /// through it leaves the pointer able to, so no test of it, nor any
     /// relation, tells what it is (#1782).
-    pub(super) lent_away: IndexSet<Local>,
+    pub(super) lent_away: SharedSet<Local>,
     /// Each `Vec` given `&mut` to code that may keep a raw pointer to it
     /// (`called_on_mut`), until it's assigned again: a call that may write,
     /// a drop that runs code or a write through a raw pointer may change
     /// its length, as a cell's, so a test of it holds only until one
     /// (#1966).
-    pub(super) escaped: IndexSet<Local>,
+    pub(super) escaped: SharedSet<Local>,
     /// Each held guard's cell, by the guard, from its `borrow_mut()` to
     /// its drop: no code but through the guard changes it (`guards`,
     /// #1815).
-    pub(super) guarded: IndexMap<Local, Local>,
+    pub(super) guarded: SharedMap<Local, Local>,
     /// Each map and key, by their roots, the map holds the key of (`keys`).
-    pub(super) keys: IndexSet<(Local, Local)>,
+    pub(super) keys: SharedSet<(Local, Local)>,
     /// Each `bool` a `contains_key` gave, by the map and the key it asks.
-    pub(super) has_keys: IndexMap<Local, (Local, Local)>,
+    pub(super) has_keys: SharedMap<Local, (Local, Local)>,
     /// Each two slices as long as each other, the lesser local first
     /// (`tables`): `vec![0.0; terraces.len()]` and `terraces`.
-    pub(super) equal_lens: IndexSet<(Local, Local)>,
+    pub(super) equal_lens: SharedSet<(Local, Local)>,
     /// Each table of rows, by the row each of its rows is as long as.
-    pub(super) rows: IndexMap<Local, Local>,
+    pub(super) rows: SharedMap<Local, Local>,
     /// Each half of what's never negative, `h = n >> 1` or `n / 2`, by `h`:
     /// `n`, a slice's length or an integer, of which twice what's at most
     /// `h` is at most it, `left = (index + 1) * 2 - 1` below a heap's
     /// length under `index < length >> 1` (ADR 1168, #1948). The one scaled
     /// form the relations know.
-    pub(super) halves: IndexMap<Local, Term>,
+    pub(super) halves: SharedMap<Local, Term>,
     /// Each twice what's below a half of `n`, by the product, `b = 2 *
     /// index` under `index < n >> 1`: at most `n - 2`, so `b + 1` is below
     /// `n`, a heap's `2 * index + 1` (`halves`, ADR 1168).
-    pub(super) doubled: IndexMap<Local, Term>,
+    pub(super) doubled: SharedMap<Local, Term>,
 }
 
 /// A range of integers `next()` alone steps (`stepped_ranges`): what its
@@ -197,19 +198,57 @@ pub(super) enum Held {
     Next,
 }
 
+/// Each integer local's interval, by the local, of those that have one: a
+/// block's state each, every local's slot held where none is known, was
+/// 48 bytes a local, 430 KB a block of a function of 3,000 calls, and 5.35
+/// GB in all (#2310). Read as the slots were, `intervals[x]`, none where
+/// it has none; walked in the locals' order, as theirs were; and shared by
+/// the states that hold it, as `shared`'s maps are.
+#[derive(Clone, PartialEq, Default)]
+pub(super) struct LocalIntervals(imbl::OrdMap<Local, Option<Interval>>);
+
+impl LocalIntervals {
+    /// `local`'s interval, `interval`; none forgets it.
+    pub(super) fn set(&mut self, local: Local, interval: Option<Interval>) {
+        match interval {
+            Some(_) => _ = self.0.insert(local, interval),
+            None => _ = self.0.remove(&local),
+        }
+    }
+
+    /// Each local that has an interval, with it, in the locals' order.
+    pub(super) fn known(&self) -> impl Iterator<Item = (Local, Interval)> + '_ {
+        self.0
+            .iter()
+            .filter_map(|(&local, interval)| Some((local, (*interval)?)))
+    }
+
+    /// What both know of each local, each pair's join.
+    fn join(&self, other: &LocalIntervals) -> LocalIntervals {
+        LocalIntervals(
+            (self.known())
+                .filter_map(|(local, a)| Some((local, Some(a.join(other[local]?)))))
+                .collect(),
+        )
+    }
+}
+
+impl std::ops::Index<Local> for LocalIntervals {
+    type Output = Option<Interval>;
+
+    fn index(&self, local: Local) -> &Option<Interval> {
+        self.0.get(&local).unwrap_or(&None)
+    }
+}
+
 impl State {
     pub(super) fn join(&self, other: &State) -> State {
-        let intervals = (self.intervals.iter().zip(other.intervals.iter()))
-            .map(|(a, b)| match (a, b) {
-                (Some(a), Some(b)) => Some(a.join(*b)),
-                _ => None,
-            })
-            .collect();
+        let intervals = self.intervals.join(&other.intervals);
         let comparisons = (self.comparisons.iter())
             .filter(|&(local, comparison)| other.comparisons.get(local) == Some(comparison))
             .map(|(&local, &comparison)| (local, comparison))
             .collect();
-        let both = |a: &IndexMap<Local, Local>, b: &IndexMap<Local, Local>| -> IndexMap<Local, Local> {
+        let both = |a: &SharedMap<Local, Local>, b: &SharedMap<Local, Local>| -> SharedMap<Local, Local> {
             (a.iter())
                 .filter(|&(k, v)| b.get(k) == Some(v))
                 .map(|(&k, &v)| (k, v))
@@ -290,8 +329,8 @@ impl State {
     /// both, strictly where both are strict; or in one, and of the other's
     /// intervals, `i = 0` at most a length before a loop, `i < len` past
     /// its back edge, at a loop's head `i <= len`.
-    pub(super) fn below_joined(&self, other: &State) -> IndexSet<(Local, Term, bool)> {
-        let mut joined = IndexSet::default();
+    pub(super) fn below_joined(&self, other: &State) -> SharedSet<(Local, Term, bool)> {
+        let mut joined = SharedSet::default();
         for (one, two) in [(self, other), (other, self)] {
             for &(x, y, strict) in &one.below {
                 let there = match (two.below.contains(&(x, y, true)), two.below.contains(&(x, y, false))) {
@@ -310,7 +349,7 @@ impl State {
     /// Each guarded relation `below_past` keeps at a join: `x` strictly
     /// below a slice's length on one way and at most `c` on the other, or
     /// guarded so on one way and so or below on the other, the larger `c`.
-    pub(super) fn below_past_joined(&self, other: &State) -> IndexSet<(Local, Local, i128)> {
+    pub(super) fn below_past_joined(&self, other: &State) -> SharedSet<(Local, Local, i128)> {
         let mut joined: IndexMap<(Local, Local), i128> = IndexMap::default();
         let mut keep = |x: Local, slice: Local, c: i128| {
             let at = joined.entry((x, slice)).or_insert(c);
@@ -375,35 +414,34 @@ impl State {
     pub(super) fn forget(&mut self, local: Local) {
         self.lent_away.shift_remove(&local);
         self.escaped.shift_remove(&local);
-        self.intervals[local] = None;
+        self.intervals.set(local, None);
         self.comparisons.shift_remove(&local);
         self.comparisons
             .retain(|_, c| c.a != Value::Local(local) && c.b != Value::Local(local));
-        self.copies.retain(|&copy, &mut of| copy != local && of != local);
-        self.lens.retain(|&holder, &mut of| holder != local && of != local);
+        self.copies.retain(|&copy, &of| copy != local && of != local);
+        self.lens.retain(|&holder, &of| holder != local && of != local);
         self.below
             .retain(|&(x, y, _)| x != local && y != Term::Len(local) && y != Term::Int(local));
         self.below_past.retain(|&(x, slice, _)| x != local && slice != local);
         self.least.shift_remove(&local);
         self.splits.shift_remove(&local);
-        self.empties.retain(|&holder, &mut of| holder != local && of != local);
+        self.empties.retain(|&holder, &of| holder != local && of != local);
         self.ranges.shift_remove(&local);
         self.ranges.retain(|_, ranged| !ranged.end.of(local));
-        self.sums.retain(|&sum, &mut (of, _, _)| sum != local && of != local);
-        self.gets
-            .retain(|&gave, &mut (index, _)| gave != local && index != local);
+        self.sums.retain(|&sum, &(of, _, _)| sum != local && of != local);
+        self.gets.retain(|&gave, &(index, _)| gave != local && index != local);
         self.positions
-            .retain(|&gave, &mut (slice, _)| gave != local && slice != local);
-        self.guarded.retain(|&guard, &mut cell| guard != local && cell != local);
+            .retain(|&gave, &(slice, _)| gave != local && slice != local);
+        self.guarded.retain(|&guard, &cell| guard != local && cell != local);
         self.keys.retain(|&(map, key)| map != local && key != local);
         self.has_keys
-            .retain(|&gave, &mut (map, key)| gave != local && map != local && key != local);
+            .retain(|&gave, &(map, key)| gave != local && map != local && key != local);
         self.equal_lens.retain(|&(a, b)| a != local && b != local);
-        self.rows.retain(|&table, &mut row| table != local && row != local);
+        self.rows.retain(|&table, &row| table != local && row != local);
         self.halves
-            .retain(|&half, &mut of| half != local && of != Term::Len(local) && of != Term::Int(local));
+            .retain(|&half, &of| half != local && of != Term::Len(local) && of != Term::Int(local));
         self.doubled
-            .retain(|&twice, &mut of| twice != local && of != Term::Len(local) && of != Term::Int(local));
+            .retain(|&twice, &of| twice != local && of != Term::Len(local) && of != Term::Int(local));
     }
 
     /// Whether a held guard guards `cell`.
@@ -437,7 +475,7 @@ impl State {
             .map(|(&copy, _)| copy)
             .collect();
         for l in [local, root].into_iter().chain(copies) {
-            self.intervals[l] = Some(interval);
+            self.intervals.set(l, Some(interval));
         }
     }
 

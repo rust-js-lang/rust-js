@@ -37,7 +37,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                     // At most what an allocation holds of its items.
                     let receiver = args.first().map(|arg| arg.node.ty(&*self.body, self.tcx));
                     if let Some(most) = receiver.and_then(|ty| self.length_of_collection(ty)) {
-                        after.intervals[local] = Some(most);
+                        after.intervals.set(local, Some(most));
                     }
                 }
                 Some(SliceLength::IsEmpty) => {
@@ -105,10 +105,13 @@ impl<'tcx> Walk<'_, 'tcx> {
                 Some(SliceLength::Len) if state.pushed.contains(&given) => {
                     let receiver = args.first().map(|arg| arg.node.ty(&*self.body, self.tcx));
                     if let Some(most) = receiver.and_then(|ty| self.length_of_collection(ty)) {
-                        after.intervals[local] = Some(Interval {
-                            lo: most.lo.max(1),
-                            ..most
-                        });
+                        after.intervals.set(
+                            local,
+                            Some(Interval {
+                                lo: most.lo.max(1),
+                                ..most
+                            }),
+                        );
                     }
                 }
                 _ => {}
@@ -118,7 +121,7 @@ impl<'tcx> Walk<'_, 'tcx> {
         if let Some((callee, callee_args)) = func.const_fn_def()
             && integer_from_bool(self.tcx, callee, callee_args)
         {
-            after.intervals[local] = Some(Interval { lo: 0, hi: 1 });
+            after.intervals.set(local, Some(Interval { lo: 0, hi: 1 }));
         }
         // An integer's `min` or `max`: between its operands, and
         // below what the one, or both, are below, a length held
@@ -128,16 +131,19 @@ impl<'tcx> Walk<'_, 'tcx> {
             && let [a, b] = args
             && let (Some(ia), Some(ib)) = (self.operand(&a.node, state), self.operand(&b.node, state))
         {
-            after.intervals[local] = Some(match max {
-                false => Interval {
-                    lo: ia.lo.min(ib.lo),
-                    hi: ia.hi.min(ib.hi),
-                },
-                true => Interval {
-                    lo: ia.lo.max(ib.lo),
-                    hi: ia.hi.max(ib.hi),
-                },
-            });
+            after.intervals.set(
+                local,
+                Some(match max {
+                    false => Interval {
+                        lo: ia.lo.min(ib.lo),
+                        hi: ia.hi.min(ib.hi),
+                    },
+                    true => Interval {
+                        lo: ia.lo.max(ib.lo),
+                        hi: ia.hi.max(ib.hi),
+                    },
+                }),
+            );
             let relations = |o: &Operand<'tcx>| -> IndexSet<(Term, bool)> {
                 let Some(x) = o.place().and_then(|p| p.as_local()).filter(|x| !self.lent.contains(x)) else {
                     return IndexSet::default();
@@ -277,10 +283,13 @@ impl<'tcx> Walk<'_, 'tcx> {
             let js_string = reads_string_length(self.tcx, callee)
                 || (callee_args.types().next()).is_some_and(|of| counts_utf16_units(self.tcx, callee, of));
             if js_string {
-                after.intervals[local] = Some(Interval {
-                    lo: 0,
-                    hi: STRING_LENGTH_MOST,
-                });
+                after.intervals.set(
+                    local,
+                    Some(Interval {
+                        lo: 0,
+                        hi: STRING_LENGTH_MOST,
+                    }),
+                );
                 // Of text, a length of it: its UTF-16 units, at most its
                 // bytes, so what's below it is below them, `i` of `while
                 // i + 1 < js::string::length(format)` round the loop.
@@ -290,7 +299,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                     after.lens.insert(local, of);
                 }
             } else if text_length(self.tcx, callee) {
-                after.intervals[local] = self.length(self.tcx.types.str_);
+                after.intervals.set(local, self.length(self.tcx.types.str_));
             }
         }
         // A range's `into_iter()`, itself, and its `next()`, what

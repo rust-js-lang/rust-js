@@ -11,7 +11,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Vec` the query says grows, a `push`'s, is forgotten whole, so `n < len` past `let n = v.len(); v.push(7)` is lost and `v[n]` checked again",
     file,
-    find: "                self.lens.retain(|_, &mut of| of != local);\n",
+    find: "                self.lens.retain(|_, &of| of != local);\n",
     replace: "                self.forget(local);\n",
     tests: proofs,
   },

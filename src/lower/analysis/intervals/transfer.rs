@@ -80,8 +80,8 @@ impl State {
         match written {
             Written::Whole => self.forget(local),
             Written::Grows => {
-                self.lens.retain(|_, &mut of| of != local);
-                self.empties.retain(|_, &mut of| of != local);
+                self.lens.retain(|_, &of| of != local);
+                self.empties.retain(|_, &of| of != local);
                 self.equal_lens.retain(|&(a, b)| a != local && b != local);
                 self.rows.retain(|&table, _| table != local);
             }

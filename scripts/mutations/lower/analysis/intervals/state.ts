@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     breaks: "a join keeps no guarded relation, so `candidates[best]` of a `best` 0 before a loop and an `enumerate()` index in it keeps its check",
     file: "src/lower/analysis/intervals/state.rs",
     find: "            below_past: self.below_past_joined(other),\n",
-    replace: "            below_past: IndexSet::default(),\n",
+    replace: "            below_past: Default::default(),\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "0 before it"],
   },
   {

@@ -48,6 +48,7 @@ mod proved;
 mod pushed;
 mod ranges;
 mod session;
+mod shared;
 mod state;
 mod tables;
 
@@ -346,50 +347,50 @@ impl<'tcx> Walk<'_, 'tcx> {
         let blocks = self.body.basic_blocks.len();
         let mut entry: IndexVec<BasicBlock, Option<State>> = IndexVec::from_elem_n(None, blocks);
         let mut visits: IndexVec<BasicBlock, u32> = IndexVec::from_elem_n(0, blocks);
-        let mut intervals: IndexVec<Local, Option<Interval>> = IndexVec::from_elem_n(None, self.body.local_decls.len());
+        let mut intervals = state::LocalIntervals::default();
         for (at, &interval) in self.from_callers.intervals.iter().enumerate() {
             let param = Local::from_usize(at + 1);
             if at < self.body.arg_count && !self.lent.contains(&param) {
-                intervals[param] = interval;
+                intervals.set(param, interval);
             }
         }
         // Of a closure's, each capture given what it was made with (#1701).
         for &(field, local) in &self.captured {
             if !self.lent.contains(&local) {
-                intervals[local] = self.from_callers.captures.get(field).copied().flatten();
+                intervals.set(local, self.from_callers.captures.get(field).copied().flatten());
             }
         }
         let param =
             |at: usize| Some(Local::from_usize(at + 1)).filter(|p| at < self.body.arg_count && !self.lent.contains(p));
-        let below: IndexSet<(Local, Term, bool)> = (self.from_callers.below.iter())
+        let below: shared::SharedSet<(Local, Term, bool)> = (self.from_callers.below.iter())
             .filter_map(|&(index, of, strict)| Some((param(index)?, Term::Len(param(of)?), strict)))
             .collect();
         entry[mir::START_BLOCK] = Some(State {
             intervals,
-            comparisons: IndexMap::default(),
-            copies: IndexMap::default(),
-            lens: IndexMap::default(),
+            comparisons: Default::default(),
+            copies: Default::default(),
+            lens: Default::default(),
             below,
-            below_past: IndexSet::default(),
-            least: IndexMap::default(),
-            splits: IndexSet::default(),
-            empties: IndexMap::default(),
-            ranges: IndexMap::default(),
-            sums: IndexMap::default(),
-            gets: IndexMap::default(),
-            positions: IndexMap::default(),
-            iterates: IndexMap::default(),
-            pushed: IndexSet::default(),
-            lending: IndexMap::default(),
-            lent_away: IndexSet::default(),
-            escaped: IndexSet::default(),
-            guarded: IndexMap::default(),
-            keys: IndexSet::default(),
-            has_keys: IndexMap::default(),
-            equal_lens: IndexSet::default(),
-            rows: IndexMap::default(),
-            halves: IndexMap::default(),
-            doubled: IndexMap::default(),
+            below_past: Default::default(),
+            least: Default::default(),
+            splits: Default::default(),
+            empties: Default::default(),
+            ranges: Default::default(),
+            sums: Default::default(),
+            gets: Default::default(),
+            positions: Default::default(),
+            iterates: Default::default(),
+            pushed: Default::default(),
+            lending: Default::default(),
+            lent_away: Default::default(),
+            escaped: Default::default(),
+            guarded: Default::default(),
+            keys: Default::default(),
+            has_keys: Default::default(),
+            equal_lens: Default::default(),
+            rows: Default::default(),
+            halves: Default::default(),
+            doubled: Default::default(),
         });
         // Each block waiting, once, by its place in reverse postorder: what
         // flows into a block is visited before it, so each is visited
@@ -507,8 +508,9 @@ impl<'tcx> Walk<'_, 'tcx> {
     /// Each bound of `joined` that moved from `old`, to the next of
     /// `thresholds` past it, or its type's.
     fn widen(&self, old: &State, joined: &mut State, thresholds: &[i128]) {
-        for (local, interval) in joined.intervals.iter_enumerated_mut() {
-            let (Some(now), Some(was)) = (interval.as_mut(), old.intervals[local]) else {
+        let known: Vec<(Local, Interval)> = joined.intervals.known().collect();
+        for (local, mut now) in known {
+            let Some(was) = old.intervals[local] else {
                 continue;
             };
             let Some(range) = self.range(self.body.local_decls[local].ty) else {
@@ -523,6 +525,9 @@ impl<'tcx> Walk<'_, 'tcx> {
                 now.hi = (thresholds.iter().copied())
                     .find(|&t| now.hi <= t && t <= range.hi)
                     .unwrap_or(range.hi);
+            }
+            if joined.intervals[local] != Some(now) {
+                joined.intervals.set(local, Some(now));
             }
         }
     }
@@ -845,7 +850,9 @@ impl<'tcx> Walk<'_, 'tcx> {
         // `i + 1 < n`.
         let interval = again.and_then(|t| state.intervals[t]).or(interval);
         state.forget(local);
-        state.intervals[local] = interval.or(range).filter(|_| range.is_some());
+        state
+            .intervals
+            .set(local, interval.or(range).filter(|_| range.is_some()));
         if let Some(c) = comparison {
             state.comparisons.insert(local, c);
         }
@@ -1029,7 +1036,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                     if let Some(slice) = emptied
                         && value == 0
                     {
-                        let least = narrowed.least.entry(slice).or_insert(0);
+                        let least = narrowed.least.or_insert(slice, 0);
                         *least = (*least).max(1);
                     }
                     if let Some((index, most)) = gotten
@@ -1049,10 +1056,10 @@ impl<'tcx> Walk<'_, 'tcx> {
                     if let Some(l) = integer
                         && let Ok(v) = i128::try_from(value)
                     {
-                        narrowed.intervals[l] = Some(Interval { lo: v, hi: v });
+                        narrowed.intervals.set(l, Some(Interval { lo: v, hi: v }));
                         // Of a slice's length, `match list.len() { 1 => .. }`.
                         if let Some(slice) = narrowed.length_of(l) {
-                            let least = narrowed.least.entry(slice).or_insert(0);
+                            let least = narrowed.least.or_insert(slice, 0);
                             *least = (*least).max(v);
                         }
                     }
@@ -1075,9 +1082,9 @@ impl<'tcx> Walk<'_, 'tcx> {
                     while known.lo < known.hi && listed(known.hi) {
                         known.hi -= 1;
                     }
-                    otherwise.intervals[l] = Some(known);
+                    otherwise.intervals.set(l, Some(known));
                     if let Some(slice) = otherwise.length_of(l) {
-                        let least = otherwise.least.entry(slice).or_insert(0);
+                        let least = otherwise.least.or_insert(slice, 0);
                         *least = (*least).max(known.lo);
                     }
                 }
@@ -1236,7 +1243,7 @@ impl<'tcx> Walk<'_, 'tcx> {
         if let Some((Value::Constant(c), Value::Local(holder), strict)) = related
             && let Some(slice) = state.length_of(holder)
         {
-            let least = state.least.entry(slice).or_insert(0);
+            let least = state.least.or_insert(slice, 0);
             *least = (*least).max(c + i128::from(strict));
         }
         let (Some(a), Some(b)) = (get(c.a, state), get(c.b, state)) else {
@@ -1311,7 +1318,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                 // A length narrowed, `length == 1` of `let length =
                 // keys.len()`: its slice at least so long.
                 if let Some(slice) = state.length_of(l) {
-                    let least = state.least.entry(slice).or_insert(0);
+                    let least = state.least.or_insert(slice, 0);
                     *least = (*least).max(narrowed.lo);
                 }
             }

@@ -93,8 +93,8 @@ impl State {
         self.below.retain(|&(_, y, _)| y != Term::Len(cell));
         self.below_past.retain(|&(_, slice, _)| slice != cell);
         self.keys.retain(|&(map, _)| map != cell);
-        self.has_keys.retain(|_, &mut (map, _)| map != cell);
+        self.has_keys.retain(|_, &(map, _)| map != cell);
         self.equal_lens.retain(|&(a, b)| a != cell && b != cell);
-        self.rows.retain(|&table, &mut row| table != cell && row != cell);
+        self.rows.retain(|&table, &row| table != cell && row != cell);
     }
 }

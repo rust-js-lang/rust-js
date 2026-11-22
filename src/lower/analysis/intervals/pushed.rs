@@ -65,6 +65,6 @@ impl State {
     /// `local` written: neither pushed, nor lending, nor lent.
     pub(super) fn unpush(&mut self, local: Local) {
         self.pushed.shift_remove(&local);
-        self.lending.retain(|&lend, &mut of| lend != local && of != local);
+        self.lending.retain(|&lend, &of| lend != local && of != local);
     }
 }

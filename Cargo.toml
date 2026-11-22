@@ -57,6 +57,7 @@ oxc_syntax = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.
 # against (#1512): pinned, its default features off, `css_modules.rs` its
 # one reader.
 lightningcss = { version = "=1.0.0-alpha.72", default-features = false }
+imbl = { version = "7.0.2", default-features = false }
 
 # The unit tests' conveniences of owned output's crate (its `testing`).
 [dev-dependencies]

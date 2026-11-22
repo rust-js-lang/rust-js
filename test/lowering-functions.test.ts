@@ -795,19 +795,31 @@ pub fn twice(p: &mut P) -> P {
 });
 
 // A long function, each call a block of its MIR: lowered block by block,
-// as deep as it's long, on a stack grown as rustc grows its own.
+// as deep as it's long, on a stack grown as rustc grows its own. And in
+// memory about as large as it's long: the MIR intervals' walk kept a whole
+// state at each block, as large as the facts so far, 3,000 statements
+// taking 5.35 GB and 1,500 1.47 GB; its states share what they hold, 0.29
+// and 0.20 GB (#2310).
 test("a long function is lowered block by block", async () => {
-  const dir = fixture("long-function");
-  const pushes = Array.from({ length: 3000 }, (_, i) => `    v.push(n + ${i});`).join("\n");
-  writeFileSync(join(dir, "lib.rs"), `pub fn long(n: u32) -> Vec<u32> {\n    let mut v = Vec::new();\n${pushes}\n    v\n}\n`);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const lib = await import(join(dir, "mir.js"));
+  const peaks = [1500, 3000].map((length) => {
+    const dir = fixture(`long-function-${length}`);
+    const pushes = Array.from({ length }, (_, i) => `    v.push(n + ${i});`).join("\n");
+    writeFileSync(join(dir, "lib.rs"), `pub fn long(n: u32) -> Vec<u32> {\n    let mut v = Vec::new();\n${pushes}\n    v\n}\n`);
+    const p = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], { stdout: "ignore", stderr: "pipe" });
+    expect(p.exitCode, p.stderr.toString()).toBe(0);
+    return { dir, maxRSS: p.resourceUsage.maxRSS };
+  });
+  const lib = await import(join(peaks[1].dir, "mir.js"));
   const items = lib.long(1);
   expect([items.length, items[0], items[2999]]).toEqual([3000, 1, 3000]);
+  // Twice as long, well under twice the memory, where quadratic was 3.6
+  // times; and under 1 GB.
+  expect(peaks[1].maxRSS / peaks[0].maxRSS).toBeLessThan(2);
+  expect(peaks[1].maxRSS).toBeLessThan(2 ** 30);
   // A compile of 3,000 statements, 3 s alone on the M3 Max (54 billion
   // instructions): past 5 s beside check:fast's other jobs, and 9 to 30 s
-  // beside the CI test job's other files.
-}, underLoad(60_000));
+  // beside the CI test job's other files; and one of 1,500.
+}, underLoad(90_000));
 
 test("a closure's last `_` parameters are left out", async () => {
   const dir = fixture("mir-closure-wild-params");

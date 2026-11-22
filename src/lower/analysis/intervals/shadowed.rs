@@ -181,17 +181,14 @@ impl<'tcx> Walk<'_, 'tcx> {
         transfer::forget_stale(effects.stale_unguarded(location), assigned, &mut unguarded);
         let what = self.what(location);
         let mut differ = Vec::new();
-        for (l, known) in before.intervals.iter_enumerated() {
-            let Some(known) = known else {
-                continue;
-            };
+        for (l, known) in before.intervals.known() {
             if Some(l) == assigned {
                 continue;
             }
             let kept =
                 (afters.iter()).all(|after| after.intervals[l].is_some_and(|i| known.lo <= i.lo && i.hi <= known.hi));
-            let query = by_query.intervals[l] == Some(*known);
-            let guard = query && unguarded.intervals[l] != Some(*known);
+            let query = by_query.intervals[l] == Some(known);
+            let guard = query && unguarded.intervals[l] != Some(known);
             differ.push((kept, query, guard, format!("interval {l:?} {known:?}"), vec![l]));
         }
         // A slice's least kept where it's as much or more after.
