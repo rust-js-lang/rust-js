@@ -122,3 +122,56 @@ helper that raises a panic takes where it's raised, `raisedAt`, the
 caller's line, the lowering's location of the MIR statement or call it
 makes it in, `caller_location`'s, or a site of std's own, `$stdSites`
 (ADR 1184).
+
+## Amendment: a function made a value is given the location of the shim it's called through (2026-11-23, #2335)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept.
+
+rustc calls a `#[track_caller]` function made a value through a shim, and
+the shim's location is the one it's given. Measured natively:
+- through `FnMut::call_mut` (`iter.map(Option::unwrap)`, an `F: FnMut`): `core/src/ops/function.rs:166:5`;
+- through `FnOnce::call_once` (`Option::map`, `F: FnOnce`, `Box<dyn FnOnce>`): `250:5`;
+- through `Fn::call` (`F: Fn`, `&dyn Fn`): `79:5`;
+- as a `fn` pointer: the function's own definition, `core/src/option.rs:1013:5` of `Option::unwrap`.
+
+The JS gave a std function the line of the call it was given to, and the
+crate's own its definition's whatever the shim.
+
+**Each function made a value is told how it's called (`mir/shims.rs`'s
+`through`), from every use of it in the body:**
+- a call's argument, by its parameter's bounds, the most they name of `Fn`, `FnMut` and `FnOnce` (`generic_facts.rs`' `called_through`; `F: Fn`'s supertraits make `Fn` the most);
+- a cast to a `fn` pointer;
+- a `dyn` of one of them;
+- a local it's put in, by each use of the local, `let f = Option::unwrap; v.map(f)`.
+
+It's then given its shim's location: the trait's method, or its own
+definition for a pointer. The crate's own function gets it as its location
+argument (`value_location`), and std's helper as where its panic was raised
+(`raised_at`). A location in std's own files is written as the shipped std
+names them, `$stdSites.source + "/library/core/src/ops/function.rs:166:5"`.
+`$stdSites.source` is the toolchain's `/rustc/<commit>`, written by
+`bun run std`, so the JS is the same on every machine (`location_as_shipped`;
+#2343's lesson: this compile reads std from where this machine keeps it).
+
+**Undecided, and kept as before until Tu decides (refuse in binaries, or a
+documented exception):**
+- the uses disagree;
+- a use is none of the above: stored in a struct or captured;
+- a `&dyn Fn` of a borrow MIR makes a promoted constant, whose cast is in the body that holds it.
+
+Each such corpus case carries `located-otherwise: #2335`.
+`std_function_value_as_a_dyn_panic.rs` is one.
+
+**Found on the way: a wrong answer, fixed.** A function value's call was
+given the facts of the MIR call it's an argument of. In
+`Option::map(nested, Option::unwrap)`, `nested` is present, so the
+`unwrap` checked nothing and gave `undefined`, and a `fn` pointer to it gave
+`undefined` for `None`. Such a call is now made apart (`called_apart`), with
+no facts of the call around it.
+
+Held by corpus cases: `std_function_value_panic.rs`, `_once.rs`,
+`_fn.rs`, `std_function_pointer_panic.rs` and
+`std_function_value_in_a_local_panic.rs`, each against native's location.
+`own_track_caller_value_panic.rs` waits on #2350, the crate's own
+`#[track_caller]` function naming its own line.

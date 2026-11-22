@@ -81,6 +81,15 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         state: &State<'_, 'tcx>,
         nulled: &'n [bool],
     ) -> rust_js_lower::calls::Given<'n> {
+        // Of a call made apart from MIR's, none: `Option::map(nested,
+        // Option::unwrap)`'s `nested`, present, is no fact of the `unwrap`
+        // its arrow calls, which it took to be given a `Some` (#2335).
+        if self.called_apart() {
+            return rust_js_lower::calls::Given {
+                nulled,
+                ..Default::default()
+            };
+        }
         let cells = state.facts.quiet_cells();
         rust_js_lower::calls::Given {
             nulled,

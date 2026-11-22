@@ -870,6 +870,37 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         (ty, span): (Ty<'tcx>, Span),
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        let Some(shim) = self.shim_location(state, def_id, span) else {
+            return self.fn_value_in_generic_forms_at(state, (def_id, args), (ty, span), out);
+        };
+        // Its call given the shim's location: an argument of the crate's, and
+        // a helper's where its panic was raised, std's `$unwrap`'s.
+        let before = self.set_value_location(Some(shim.clone()));
+        let made = Expr::raised_at(shim, || {
+            self.fn_value_in_generic_forms_at(state, (def_id, args), (ty, span), out)
+        });
+        self.set_value_location(before);
+        made
+    }
+
+    /// Where a function made a value at `span` that tracks its caller is
+    /// called from: the shim it's called through's location (#2335), where
+    /// the body says how it's called.
+    fn shim_location(&self, state: &State<'_, 'tcx>, def_id: rustc_span::def_id::DefId, span: Span) -> Option<Expr> {
+        if !rust_js_lower::recognition::tracks_caller(self.tcx, def_id) {
+            return None;
+        }
+        let shim = crate::shims::through(self.tcx, state.body, def_id, span)?.shim(self.tcx, def_id)?;
+        Some(self.location_as_shipped(self.tcx.def_span(shim)))
+    }
+
+    fn fn_value_in_generic_forms_at(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (def_id, args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        (ty, span): (Ty<'tcx>, Span),
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         match self.fn_item_value(def_id, args, ty, span, out)? {
             Some(f) => Ok(f),
             // Of rest arguments, given where JS alone reads it: its
@@ -891,6 +922,24 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// adapting its JS function, a library's the arrow of its call in its
     /// callers' forms (#1324).
     fn fn_value_in_callers_forms(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (def_id, args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        (ty, span): (Ty<'tcx>, Span),
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let Some(shim) = self.shim_location(state, def_id, span) else {
+            return self.fn_value_in_callers_forms_at(state, (def_id, args), (ty, span), out);
+        };
+        let before = self.set_value_location(Some(shim.clone()));
+        let made = Expr::raised_at(shim, || {
+            self.fn_value_in_callers_forms_at(state, (def_id, args), (ty, span), out)
+        });
+        self.set_value_location(before);
+        made
+    }
+
+    fn fn_value_in_callers_forms_at(
         &mut self,
         state: &mut State<'_, 'tcx>,
         (def_id, args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),

@@ -269,14 +269,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
   },
   {
-    name: "tracked-value-called-where-used",
-    breaks: "a tracked function as a value is called where it's used, not where it's defined, as rustc's shim calls it",
-    file: "crates/rust-js-lower/src/lib.rs",
-    find: "            let location = self.location_at(self.tcx.def_span(def_id));\n",
-    replace: "            let location = self.location_at(span);\n",
-    tests: ["test/corpus.test.ts", "-t", "^track_caller.rs$"],
-  },
-  {
     name: "mut-method-value-unboxed",
     breaks: "a trait's `&mut self` method as a value is given what it's called with, not a box of it",
     file: "crates/rust-js-lower/src/lib.rs",
@@ -294,14 +286,6 @@ export const mutations: Mutation[] = [
     // The call's arrow gives the cell on as it is too (#476): only the JS
     // differs, the arrow for the method itself.
     snapshots: true,
-  },
-  {
-    name: "pointer-shim-given-location",
-    breaks: "a tracked function as a value taken inside another that tracks its caller is given that one's location, not its own definition's",
-    file: "crates/rust-js-lower/src/lib.rs",
-    find: "            let location = self.location_at(self.tcx.def_span(def_id));\n            // Generic code's own forms",
-    replace: "            let location = self.caller_location(self.tcx.def_span(def_id));\n            // Generic code's own forms",
-    tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
   },
   {
     name: "local-const-not-from-mir",

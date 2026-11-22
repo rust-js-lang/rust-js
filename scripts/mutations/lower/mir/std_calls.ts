@@ -1,7 +1,16 @@
 // Mutations of crates/rust-js-mir/src/std_calls.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
-export const mutations: Mutation[] = [  {
+export const mutations: Mutation[] = [
+  {
+    name: "value-call-given-its-argument-facts",
+    breaks: "a function value's call is given the facts of the MIR call it's an argument of, `Option::map(nested, Option::unwrap)`'s `nested` present, so the `unwrap` checks nothing and gives `undefined` (#2335)",
+    file: "crates/rust-js-mir/src/std_calls.rs",
+    find: "        if self.called_apart() {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_function_value_panic_once.rs$"],
+  },
+  {
     name: "string-write-through-a-call-uncaught",
     breaks: "`write!(*t.as_mut().unwrap(), ..)` of what fails throws past its `fmt::Result`, the place reached through a call not held (#1011)",
     file: "crates/rust-js-mir/src/std_calls.rs",

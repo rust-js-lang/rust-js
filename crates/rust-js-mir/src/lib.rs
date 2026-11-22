@@ -77,6 +77,7 @@ mod partly_written;
 mod patterns;
 mod places;
 mod positions;
+mod shims;
 // A body's MIR as it's taken, the base's (`analysis::prepared`, #2299).
 use rust_js_lower::analysis::Mir;
 use rust_js_lower::analysis::mir_reads::presence::{ArgProof, Presence};

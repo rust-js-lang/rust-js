@@ -81,7 +81,10 @@ export function stdSites(raised: string, root: string): string {
   if (commit === undefined) throw new Error(`rustc -vV names no commit:\n${version}`);
   const placed = (sites: unknown): unknown =>
     Array.isArray(sites) ? sites.map((site) => `/rustc/${commit}/${site}`) : Object.fromEntries(Object.entries(sites as object).map(([tag, each]) => [tag, placed(each)]));
-  const text = JSON.stringify(placed(JSON.parse(raised)), null, 2);
+  // And the root itself, `source`, which a std location the compiler
+  // writes in a program's JS is joined to: a shim's of std's, or a std
+  // function's own made a `fn` pointer (#2335).
+  const text = JSON.stringify({ source: `/rustc/${commit}`, ...(placed(JSON.parse(raised)) as object) }, null, 2);
   return `// Where std raises each panic std's hook names its own line of, \`file:line:column\`
 // under the toolchain's \`/rustc/<commit>/\`, as its shipped std names its
 // files, each a constant of the toolchain, whatever calls it; of a site that

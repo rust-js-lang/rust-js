@@ -9,7 +9,7 @@ use crate::calls::Call;
 use crate::recognition::{MethodOf, Std, StdPath, std_inherent_method};
 use crate::{FnCx, R};
 use rust_js_program::collections::IndexSet;
-use rust_js_program::js::{Expr, ExprKind};
+use rust_js_program::js::{Expr, ExprKind, Op};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 use rustc_span::{RemapPathScopeComponents, Span};
@@ -84,14 +84,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is: in the body of a function that tracks its caller, the one it was
     /// given; anywhere else, `span`'s own (`location_at`).
     pub fn caller_location(&self, span: Span) -> Expr {
-        self.given_location().unwrap_or_else(|| self.location_at(span))
+        (self.value_location())
+            .or_else(|| self.given_location())
+            .unwrap_or_else(|| self.location_at(span))
+    }
+
+    /// Where `span` is, as `location_at` says it, but of std's own files,
+    /// `core`'s or `alloc`'s, which this compile reads from the toolchain's
+    /// `rust-src` where this machine keeps it: by the name the shipped std
+    /// gives them, `/rustc/<commit>/library/..`, as native code's location of
+    /// one is, the toolchain's root the runtime's `$stdSites.source`, and so
+    /// the same JS on every machine (#2335, #2343). A shim of std's,
+    /// `FnMut::call_mut`'s, or a function of std's own, made a `fn` pointer.
+    pub fn location_as_shipped(&self, span: Span) -> Expr {
+        let topmost = span.ctxt().outer_expn().expansion_cause().unwrap_or(span);
+        let at = self.tcx.sess.source_map().lookup_char_pos(topmost.lo());
+        let std = crate::recognition::std_crate(self.tcx, at.file.cnum).is_some();
+        let shown = self.location_at(span);
+        let (true, ExprKind::Str(text)) = (std, &shown.kind) else {
+            return shown;
+        };
+        let Some(from) = text.find("/library/") else {
+            return shown;
+        };
+        Expr::bin(
+            Op::Add,
+            Expr::member(Expr::helper("$stdSites"), "source"),
+            Expr::str(&text[from..]),
+        )
     }
 
     /// Where `span` is, as rustc places a call, at the outermost macro's
     /// call, its file as rustc names it: a call's, or a definition's, which
     /// a shim of a function that takes its caller's location gives it, a
     /// function pointer's or a dictionary's entry's, as rustc's does.
-    pub(crate) fn location_at(&self, span: Span) -> Expr {
+    pub fn location_at(&self, span: Span) -> Expr {
         let topmost = span.ctxt().outer_expn().expansion_cause().unwrap_or(span);
         let at = self.tcx.sess.source_map().lookup_char_pos(topmost.lo());
         let file = at

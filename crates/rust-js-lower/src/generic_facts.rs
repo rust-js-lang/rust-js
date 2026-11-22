@@ -41,6 +41,7 @@
 //! | whether every caller's `Some` of it is unboxed (ADR 0051, amended) | Instances | `crates/rust-js-lower/src/analysis/mutation.rs unboxed_params` |
 //! | what JS gives a function JS calls (ADR 0051, amended) | Instances | `crates/rust-js-lower/src/instances.rs given_calls_of` |
 //! | whether a closure, or a boxed `Fn`, given for it is called by value, `FnOnce`'s `call_once`, or by `&`, through every generic caller, an impl's own parameter matched in its type (#2031, #2050) | Instances | `crates/rust-js-lower/src/instances.rs on_the_way` |
+//! | which `Fn` trait a function value given for it is called through, the most its bounds name of `Fn`, `FnMut` and `FnOnce`, whose shim's location a `#[track_caller]` function made a value is given (#2335) | Given | `crates/rust-js-lower/src/generic_facts.rs called_through` |
 //! | what std decides by its type, `eq` of `TrustedLen`s, a zip's fold (ADR 1014) | Instances | `crates/rust-js-lower/src/analysis/callers_decide.rs refuse_what_callers_decide` |
 //! | whether it's shown with a `Formatter`'s options, pretty or in hex, so each caller's type it's given has a writer that takes them (#1331) | Instances | `crates/rust-js-lower/src/analysis/shown_params.rs shown_params` |
 //! | whether an iterator built of type parameters a `Vec` is collected of is `TrustedLen`, which std's room and its fold of it ask, its parts' facts and its items' `ConstSize` (#1614) | Given | `crates/rust-js-lower/src/generic_facts.rs trusted_len_asked` |
@@ -56,6 +57,27 @@ use rust_js_program::js::Expr;
 use rustc_middle::ty::{self, Mutability, Ty, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::{CRATE_DEF_ID, DefId};
+
+/// Which `Fn` trait the argument `at` of a call of `callee` is called
+/// through: the most its parameter's bounds name of `Fn`, `FnMut` and
+/// `FnOnce`, `Iterator::map`'s `F: FnMut` `FnMut`'s. Its shim's location
+/// is the one a `#[track_caller]` function made a value is given (#2335).
+/// None where the parameter isn't a type parameter, or names none of them.
+pub fn called_through(tcx: ty::TyCtxt<'_>, callee: DefId, at: usize) -> Option<ty::ClosureKind> {
+    let sig = tcx.instantiate_bound_regions_with_erased(tcx.fn_sig(callee).instantiate_identity().skip_normalization());
+    let param = *sig.inputs().get(at)?;
+    if !matches!(param.kind(), ty::Param(_)) {
+        return None;
+    }
+    let kinds: Vec<ty::ClosureKind> = (tcx.param_env(callee).caller_bounds())
+        .filter_map(|clause| clause.as_trait_clause())
+        .filter(|clause| tcx.instantiate_bound_regions_with_erased(clause.self_ty()) == param)
+        .filter_map(|clause| tcx.fn_trait_kind_from_def_id(clause.def_id()))
+        .collect();
+    [ty::ClosureKind::Fn, ty::ClosureKind::FnMut, ty::ClosureKind::FnOnce]
+        .into_iter()
+        .find(|kind| kinds.contains(kind))
+}
 
 /// Where a value crosses into generic code or back: the generic function,
 /// whose bounds say what its type parameters are, a type of its signature

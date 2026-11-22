@@ -13,6 +13,7 @@ import {
   $readerDefaults,
   $repeatReader,
   $sliceReader,
+  $stdSites,
   $takeReadBuf,
   $unwrapErr,
   $unwrapOk,
@@ -378,14 +379,19 @@ function main() {
   const next = bytesIterator_next(it, $sliceReader);
   const map =
     next != null
-      ? $unwrapOk(next, "test/corpus/io_read_chain_take_bytes.rs:120:42", undefined, $ioErrorDebug)
+      ? $unwrapOk(
+          next,
+          $stdSites.source + "/library/core/src/ops/function.rs:250:5",
+          undefined,
+          $ioErrorDebug,
+        )
       : undefined;
   const next$1 = bytesIterator_next(it, $sliceReader);
   const value$10 =
     next$1 != null
       ? $unwrapOk(
           next$1,
-          "test/corpus/io_read_chain_take_bytes.rs:120:73",
+          $stdSites.source + "/library/core/src/ops/function.rs:250:5",
           undefined,
           $ioErrorDebug,
         )

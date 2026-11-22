@@ -1,6 +1,7 @@
 //@ run-fail: called `Option::unwrap()` on a `None` value
-//@ located-otherwise: #2335 a `#[track_caller]` std function given as a value, `.map(Option::unwrap)`, names its caller's line, where native names the `Fn` trait's shim
-// `Option::unwrap` as a value panics as its call does, at the item that's `None`.
+// `Option::unwrap` as a value panics as its call does, at the item that's `None`:
+// where `Iterator::map` calls it, through `FnMut::call_mut`, that shim's line, as
+// native Rust's (#2335).
 fn main() {
     let seen: Vec<i32> = vec![Some(1), None, Some(3)]
         .into_iter()

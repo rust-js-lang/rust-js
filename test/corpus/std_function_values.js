@@ -11,6 +11,7 @@ import {
   $displayF64,
   $f64Max,
   $parseInt,
+  $stdSites,
   $unwrap,
 } from "@rust-js/std";
 
@@ -35,7 +36,7 @@ function main() {
   const names = ["a", "b"].slice();
   const into = ["c"].slice();
   const present = [1, 2].map((option) =>
-    $unwrap(option, "test/corpus/std_function_values.rs:21:64"),
+    $unwrap(option, $stdSites.source + "/library/core/src/ops/function.rs:166:5"),
   );
   const parsed = [
     { TAG: "Ok", _0: 3 },

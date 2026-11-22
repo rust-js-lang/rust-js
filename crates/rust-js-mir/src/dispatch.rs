@@ -517,6 +517,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         // never a place, so a box it's given is given on as it is (ADR 0099,
         // amended, #1109).
         let mut body = Vec::new();
+        let apart = self.set_called_apart(true);
         let (value, copy_backs) = self.in_fresh_evaluation(state, |cx, state| {
             let called = cx.mir_call_values(
                 state,
@@ -530,6 +531,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             let flushed = cx.flush(state, &mut body);
             value.and_then(|value| flushed.map(|()| value))
         });
+        self.set_called_apart(apart);
         let value = value?;
         assert!(
             copy_backs.is_empty(),

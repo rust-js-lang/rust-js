@@ -326,7 +326,7 @@ const NODE_ONLY: &[(StdPath, NodeOnly)] = &[
 /// Whether `def_id`, a function, is given its caller's location: its own
 /// `#[track_caller]`, or its trait's declaration's, which rustc's
 /// `codegen_fn_attrs` says of both (ADR 0427).
-pub(crate) fn tracks_caller(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn tracks_caller(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     matches!(tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)
         && tcx
             .codegen_fn_attrs(def_id)

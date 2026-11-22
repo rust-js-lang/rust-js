@@ -1,0 +1,6 @@
+#2335 P0: a `#[track_caller]` function made a value whose use isn't decided, held in a box, an option, an array, an `Rc<RefCell<_>>` or an owned `impl Fn`, names its caller's line where native names the shim it's called through; Tu's decision: refused in binaries
+plain std array std_function_value_in_a_local_panic.rs
+plain std boxed std_function_value_in_a_local_panic.rs
+plain std option std_function_value_in_a_local_panic.rs
+plain std rc-refcell std_function_value_in_a_local_panic.rs
+plain std impl-owned std_function_value_panic_fn.rs

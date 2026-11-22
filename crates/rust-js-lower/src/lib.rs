@@ -575,6 +575,12 @@ pub struct Given<'tcx> {
     /// Of a function that tracks its caller (ADR 0427): the location it's
     /// given, and the function, whose own body reads it.
     caller_location: Option<(DefId, Expr)>,
+    /// Of a function made a value that tracks its caller: the location its
+    /// call is given, that of the shim it's called through (#2335).
+    value_location: Option<Expr>,
+    /// Whether the call being lowered is made apart from MIR's, a function
+    /// value's arrow's: no fact of the MIR call it's an argument of is its.
+    called_apart: bool,
 }
 
 /// What walks of types found, kept so a type met again, along another path
@@ -1003,9 +1009,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // written so (rd114, ADR 1018).
             let copy = self.called_copy((def_id, args), span)?;
             let callee = self.named_fn_ref(def_id, copy, span);
-            // One given its caller's location is called where it's defined,
-            // as rustc's shim of it calls it (ADR 0427).
-            let location = self.location_at(self.tcx.def_span(def_id));
+            // One given its caller's location is called as the shim it's
+            // called through gives it, a `Fn` trait's call (#2335), or, a
+            // `fn` pointer's, where it's defined (ADR 0427).
+            let location = self
+                .value_location()
+                .unwrap_or_else(|| self.location_at(self.tcx.def_span(def_id)));
             // Generic code's own forms, a `&mut T`'s box and a raw pointer's
             // handle, as generic code that calls it as an `F` gives them, not
             // its callers' (#975, ADR 1114): a `fn` pointer of an instance

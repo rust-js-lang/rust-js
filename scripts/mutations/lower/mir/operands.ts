@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "value-raised-where-its-call-is",
+    breaks: "a `#[track_caller]` std function made a value raises its panic where the call it's given to is, not at the shim it's called through, `.map(Option::unwrap)` at `.map`'s line (#2335)",
+    file: "crates/rust-js-mir/src/operands.rs",
+    find: "        let made = Expr::raised_at(shim, || {\n            self.fn_value_in_generic_forms_at(state, (def_id, args), (ty, span), out)\n        });\n",
+    replace: "        let made = self.fn_value_in_generic_forms_at(state, (def_id, args), (ty, span), out);\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_function_value_panic.rs$"],
+  },
+  {
     name: "std-zero-sized-not-held",
     breaks: "an `iter::Empty` constant a consumer compiles of a library's body is `[]`, not held as `iter::empty()`'s value is, `$iter([])`, and stepping it behind a `Box<dyn Iterator>` throws (#1420)",
     file: "crates/rust-js-mir/src/operands.rs",

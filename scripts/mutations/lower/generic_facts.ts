@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "fn-bound-least-taken",
+    breaks: "of a parameter's `Fn` bounds, `F: Fn`'s with its supertraits, the least is taken, `FnOnce`, so a function value it calls through `Fn::call` names `call_once`'s line (#2335)",
+    file: "crates/rust-js-lower/src/generic_facts.rs",
+    find: "    [ty::ClosureKind::Fn, ty::ClosureKind::FnMut, ty::ClosureKind::FnOnce]\n",
+    replace: "    [ty::ClosureKind::FnOnce, ty::ClosureKind::FnMut, ty::ClosureKind::Fn]\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_function_value_panic_fn.rs$"],
+  },
+  {
     name: "placed-form-unasked",
     breaks:
       "a fieldless enum's iterator given by value to generic code is given bare, so std's `take` steps the string and its own `&mut self` step throws, \"Cannot create property 'value' on string\" (#2255)",

@@ -21,6 +21,7 @@ import {
   $readerDefaults,
   $roomFor,
   $roomForHint,
+  $stdSites,
   $stringError,
   $takeReadBuf,
   $unwrapOk,
@@ -328,7 +329,7 @@ function main() {
       ).map((result) =>
         $unwrapOk(
           result,
-          "test/corpus/read_of_a_crates_own_reader.rs:195:6",
+          $stdSites.source + "/library/core/src/ops/function.rs:166:5",
           undefined,
           $ioErrorDebug,
         ),

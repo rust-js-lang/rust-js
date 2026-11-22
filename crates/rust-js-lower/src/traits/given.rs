@@ -514,6 +514,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (*owner == self.frame.owner).then(|| location.clone())
     }
 
+    /// Of a function made a value that tracks its caller, the location its
+    /// call is given, the shim's it's called through (#2335).
+    pub(crate) fn value_location(&self) -> Option<Expr> {
+        self.given.value_location.clone()
+    }
+
+    /// While a function made a value is lowered, the location its call is
+    /// given, or none; what it was before, back.
+    pub fn set_value_location(&mut self, at: Option<Expr>) -> Option<Expr> {
+        std::mem::replace(&mut self.given.value_location, at)
+    }
+
+    /// Whether the call being lowered is made apart from MIR's, a function
+    /// value's arrow's, `.map(Option::unwrap)`'s: no fact of the MIR call
+    /// it's an argument of is its (#2335).
+    pub fn called_apart(&self) -> bool {
+        self.given.called_apart
+    }
+
+    /// While a call apart from MIR's is lowered, so; what it was, back.
+    pub fn set_called_apart(&mut self, apart: bool) -> bool {
+        std::mem::replace(&mut self.given.called_apart, apart)
+    }
+
     /// Whether an impl's dictionary takes any of `evidence_params`': a const
     /// parameter's value, a bound's dictionary, a type's fact or a drop; not
     /// a caller's location, which only a `#[track_caller]` function takes. One
