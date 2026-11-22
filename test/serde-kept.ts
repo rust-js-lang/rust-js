@@ -8,24 +8,54 @@ import { createHash } from "node:crypto";
 import { constants, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 
-/** Each file of `path`, a file or a directory's, read whole, into `hash`. */
+/** The files of `path` a compile reads: itself, a file's, or a directory's
+ * own files, as rustc's `-L dependency=` search reads it, none of its
+ * subdirectories. Under Cargo 1.100 the directory is a build step's
+ * `build/<package>/<hash>/out`, where proc-macro2's build script writes and
+ * removes probe files, `out/probe`, while another run's Cargo builds: a
+ * walk of it found one gone between listing it and reading it (#2311).
+ * Listed by each entry's type, with no stat to race. */
+function read(path: string): string[] {
+  if (!statSync(path).isDirectory()) return [path];
+  return (readdirSync(path, { withFileTypes: true }))
+    .filter((entry) => entry.isFile())
+    .map((entry) => join(path, entry.name))
+    .sort();
+}
+
+/** Whether `error` is of a file gone since it was listed. */
+const gone = (error: unknown) => (error as NodeJS.ErrnoException).code === "ENOENT";
+
+/** Each file of `path` a compile reads (`read`), whole, into `hash`, under
+ * `as`. A directory's file gone since it was listed, an artifact Cargo let
+ * go, which no flag names, is left out. */
 function hashed(hash: ReturnType<typeof createHash>, path: string, as: string) {
-  if (statSync(path).isDirectory()) {
-    for (const entry of readdirSync(path).sort()) hashed(hash, join(path, entry), `${as}/${entry}`);
-  } else {
-    hash.update(`${as}\0`).update(readFileSync(path)).update("\0");
+  for (const file of read(path)) {
+    let text: Buffer;
+    try {
+      text = readFileSync(file);
+    } catch (error) {
+      if (file !== path && gone(error)) continue;
+      throw error;
+    }
+    hash.update(`${as}/${basename(file)}\0`).update(text).update("\0");
   }
 }
 
-/** `from`, a file or a directory, copied to `to`, each file a clone where
- * the disk can. */
-function copied(from: string, to: string) {
-  if (statSync(from).isDirectory()) {
-    mkdirSync(to, { recursive: true });
-    for (const entry of readdirSync(from)) copied(join(from, entry), join(to, entry));
-  } else {
-    mkdirSync(dirname(to), { recursive: true });
-    copyFileSync(from, to, constants.COPYFILE_FICLONE);
+/** Each file of `from` a compile reads (`read`) copied to `to`, a file's to
+ * `to` itself, each a clone where the disk can: by `copy`, which a test
+ * gives to take a file away as it's copied. A directory's file gone since
+ * it was listed is left out, as `hashed` leaves it. */
+export function copied(from: string, to: string, copy = (a: string, b: string) => copyFileSync(a, b, constants.COPYFILE_FICLONE)) {
+  const files = read(from);
+  mkdirSync(files.length === 1 && files[0] === from ? dirname(to) : to, { recursive: true });
+  for (const file of files) {
+    try {
+      copy(file, file === from ? to : join(to, basename(file)));
+    } catch (error) {
+      if (file !== from && gone(error)) continue;
+      throw error;
+    }
   }
 }
 

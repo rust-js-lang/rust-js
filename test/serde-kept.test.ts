@@ -3,11 +3,11 @@
 // whole, and a rebuild of what Cargo built, its files written anew, takes
 // none from under them.
 import { expect, test } from "bun:test";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { fixture, root } from "./support";
-import { keptSerdeFlags } from "./serde-kept";
+import { copied, keptSerdeFlags } from "./serde-kept";
 
 test("two runs setting serde up at once each compile against a whole snapshot, which a rebuild after takes nothing from", async () => {
   const dir = fixture("serde-kept");
@@ -48,7 +48,33 @@ console.log(JSON.stringify(keptSerdeFlags(${JSON.stringify(flags)}, ${JSON.strin
   const keptDeps = kept[3].slice("dependency=".length);
   expect(readFileSync(keptSerde, "utf8")).toBe("serde's metadata ".repeat(20_000));
   expect(readFileSync(join(keptDeps, "libserde_core-2.rmeta"), "utf8")).toBe("serde_core's");
-  expect(readFileSync(join(keptDeps, "out", "private.rs"), "utf8")).toBe("a build script's");
+  // Not a subdirectory's, which rustc's search never reads: a build
+  // script's scratch, written and removed while another run builds (#2311).
+  expect(existsSync(join(keptDeps, "out"))).toBe(false);
   // No half-made snapshot left.
   expect(existsSync(store) && require("node:fs").readdirSync(store).some((name: string) => name.includes(".making-"))).toBe(false);
+});
+
+// A directory's file gone between listing it and copying it, as
+// proc-macro2's probe files go while another run's Cargo builds, is left
+// out, not an ENOENT that fails the run's setup (#2311); a file a flag
+// names, gone, still fails it.
+test("a file Cargo takes away while serde's build is copied is left out", () => {
+  const dir = fixture("serde-kept-gone");
+  const deps = join(dir, "deps");
+  mkdirSync(deps, { recursive: true });
+  for (const name of ["liba-1.rmeta", "libb-2.rmeta", "libc-3.rmeta"]) writeFileSync(join(deps, name), name);
+  const to = join(dir, "copy");
+  const seen: string[] = [];
+  copied(deps, to, (from, into) => {
+    seen.push(from);
+    // As the first is copied, Cargo removes the second.
+    if (seen.length === 1) rmSync(join(deps, "libb-2.rmeta"));
+    copyFileSync(from, into);
+  });
+  expect(seen.length).toBe(3);
+  expect(require("node:fs").readdirSync(to).sort()).toEqual(["liba-1.rmeta", "libc-3.rmeta"]);
+  const file = join(dir, "libserde-1.rmeta");
+  writeFileSync(file, "serde's");
+  expect(() => copied(file, join(dir, "kept.rmeta"), (from, into) => (rmSync(from), copyFileSync(from, into)))).toThrow("ENOENT");
 });
