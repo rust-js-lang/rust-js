@@ -51,7 +51,7 @@ top-level module is of, for the tests and the scripts alike.
 
 | Crate | Holds | Depends on |
 | --- | --- | --- |
-| `rust-js` (`src/`) | the driver: `main.rs`, the compile; `command.rs`, `cargo.rs` and `clippy.rs`, its commands; `source_format.rs` with `source_format/`, `rust-js fmt`, a command as `clippy` is; `std_sysroot.rs`, the `--sysroot` it hands rustc for std's bodies; `phase_times.rs`, its own phases' times (#2296); `worker.rs`, the tests' harness's compiles in one session; and the session's driver side, `pipeline.rs` with `pipeline/`, which starts each session with MIR's hooks and links its modules | every crate below |
+| `rust-js` (`src/`) | the driver: `main.rs`, the compile; `command.rs`, `cargo.rs` and `clippy.rs`, its commands; `source_format.rs` with `source_format/`, `rust-js fmt`, a command as `clippy` is; `std_sysroot.rs`, the `--sysroot` it hands rustc for std's bodies; `phase_times.rs`, its own phases' times (#2296); `worker.rs`, the tests' harness's compiles in one session; and the front end's pipeline, `pipeline.rs` with `pipeline/`, of the front end's layer in the binary's crate, which starts each session with MIR's hooks and links its modules | every crate below |
 | `rust-js-jsx` (`crates/rust-js-jsx/`) | JSX, the compiler's own syntax: `jsx!`'s expansion into typed React bindings before name resolution, its resolution's check, and its layout for `rust-js fmt`; rustc's AST | `rust-js-program` |
 | `rust-js-lower` (`crates/rust-js-lower/`) | the lowering's base: `FnCx`, the analyses, recognition, representation and the session; rustc's THIR and MIR | `rust-js-program` |
 | `rust-js-mir` (`crates/rust-js-mir/`) | MIR's lowering, `MirCx`'s methods, which the base asks only through `MirHooks` | `rust-js-lower`, `rust-js-program` |
@@ -156,7 +156,7 @@ analysis (including borrow checking and lints) to succeed before lowering.
 Capturing a body is not permission to emit it.
 
 Which adapters each body makes in place (`body_queries/in_place.rs`) is
-decided in two stages. The ground, in `lower/pipeline.rs`, after the crate's
+decided in two stages. The ground, in `src/pipeline.rs`, after the crate's
 ground (`analysis/ground.rs`: its libraries, trait impls, cloned types and
 capacity facts) gives its `Recognition`, and before the analysis lends the
 bodies out: a collect's hint the program can see decides it too (#1327).
@@ -182,7 +182,7 @@ rustc + JSX expansion -> captured THIR, MIR and body facts
 rustc analysis succeeds
     |
     v
-lower/pipeline.rs: crate ground -> in-place adapters decided -> analyze crate
+src/pipeline.rs: crate ground -> in-place adapters decided -> analyze crate
     |              -> lower bodies -> assemble retained modules
     |                 MIR -> JS AST -> body tidy
     v
@@ -240,12 +240,14 @@ adapters, `output/local_js.rs`, which asks `to_oxc.rs` what a JS file of the
 program's own loads, and `hooks.rs`, which invokes `format.rs`. Only printing adapters use
 oxc. `output.rs` also writes manifest JSON and each test file's registrations
 of its tests, by the runner's `test` (ADR 1076).
-The architecture test checks top-level dependency cycles; it treats the parts
-of `lower/` as one module, not as individually cycle-checked units.
+The architecture test checks top-level dependency cycles; it treats each of
+the front end's crates, `rust-js-lower`, `rust-js-mir` and `rust-js-jsx`, as
+one module of the layer rules, not its parts as individually cycle-checked
+units.
 
 ## Inside the front end
 
-Paths in this section are relative to the lowering's root as it was before #2299's cut, `crates/rust-js-lower/src/`, unless stated otherwise: `mir.rs` and `mir/…` are MIR's lowering's crate, `crates/rust-js-mir/src/` (`lib.rs` and its modules), and `pipeline.rs` and `pipeline/…` the binary's `src/pipeline.rs` and `src/pipeline/` (`scripts/owners.ts`' `ownerPath`).
+Paths in this section are relative to the base crate's root, `crates/rust-js-lower/src/`, unless stated otherwise: `mir.rs` and `mir/…` are MIR's lowering's crate, `crates/rust-js-mir/src/` (`lib.rs` and its modules), and `pipeline.rs` and `pipeline/…` the binary's `src/pipeline.rs` and `src/pipeline/` (`scripts/owners.ts`' `ownerPath`).
 
 State has three scopes: crate facts shared across functions; `FnCx` for a
 function's context; and `mir::State` for one body's temporaries, labels,
@@ -383,8 +385,9 @@ to these rules, and `bun scripts/owners.ts` reports where it stands.
   one (#2200); `bun scripts/owners.ts` and check:fast say the count of each.
 - **Owners.** An owner is a path from `src/` where it starts so; else a
   module of the front end, `iterators.rs`, which is `crates/rust-js-lower/src/iterators.rs`
-  and its submodules, or a folder, `drops/`; else one at `src/`'s root,
-  `names.rs`, `runtime.rs`, or the runtime's, `runtime/steps.js`. Each
+  and its submodules, or a folder, `drops/`; else one at the root of the
+  crate whose top-level module it is, `names.rs` and `runtime.rs` of
+  `rust-js-program`, or the runtime's, `runtime/steps.js` (`ownerPath`). Each
   API is defined in the sources. A `|` in a cell is written `\|`.
 
 A row written before #2162 keeps its concept as its question until its
@@ -895,7 +898,7 @@ run in turn is `$inTurn`'s; std's default fold is `$foldBy`'s, after the
 value's own step; a drop that throws while one unwinds is
 `$dropsUnwinding`'s, which aborts through `$cleanup` (ADR 1092's #817
 amendment, ADR 0660's #847 one). What the lowering runs as a panic
-unwinds is guarded by `lower/drops/parts.rs` alone: `cleanup`, the one
+unwinds is guarded by `crates/rust-js-lower/src/drops/parts.rs` alone: `cleanup`, the one
 writer of `$cleanup`, and `dropped_after`, of a drop after a body that runs
 as it unwinds too, which is a `finally` only of what can't throw; tidy's
 scope merges ask `finally_holds`, and its last pass, "guarded cleanups",

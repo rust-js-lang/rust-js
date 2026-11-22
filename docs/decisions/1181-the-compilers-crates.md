@@ -3,7 +3,11 @@
 Status: Accepted (2026-11-22, Tu's decision to split the compiler into
 crates, #2294; its step 2, #2297, the lead's design). Its first move, M1,
 lays the workspace and moves `collections`, `lines` and `decisions`; the
-rest of owned output and printing follow, one move each.
+rest of owned output and printing follow, one move each. Amended
+(2026-11-22): the front end is crates too, the lowering's two (#2299)
+and JSX's (#2294), rustc's as the binary is, and the binary is the
+driver and the pipeline; where the Decision and Consequences below say
+otherwise, the amendments at the end hold.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none. This is how the
 compiler's code is laid out, not anything the JS does: every move writes
@@ -35,8 +39,9 @@ crate is a directory of `crates/`, named for its package:
   `node_session`, `output` with `local_js`, `publish`, `hooks`), depending
   on `rust-js-program` alone.
 
-The front end depends on `rust-js-program` only; the driver on both.
-#2299 cuts `crates/rust-js-lower/src/` into crates of its own by the same rules.
+The front end depends on `rust-js-program` only; the driver on both
+(amended below: the front end's crates, and their graph).
+#2299 cuts `src/lower/` into crates of its own by the same rules.
 
 **One list.** The root `Cargo.toml`'s `[workspace] members` lists the
 crates, and `default-members` all of them, so a plain `cargo build`, `test`
@@ -78,7 +83,8 @@ refuses what the layer rules forbade: owned output can't name the front
 end, as it doesn't depend on the binary. `test/architecture-crates.test.ts`
 holds each crate's dependencies on the others to the table above, that no
 crate but the binary uses rustc (no `rustc_*`, `#![feature]` or `extern
-crate`; `.cargo/config.toml`'s `RUSTC_BOOTSTRAP` names the binary alone),
+crate`; `.cargo/config.toml`'s `RUSTC_BOOTSTRAP` names the binary alone;
+amended below: and the front end's crates),
 and that every Cargo package of the checkout is a member, excluded or its
 own workspace. The module rules of `test/architecture.test.ts` stay for
 what's still in one crate, and read another crate's path by its name.
@@ -86,13 +92,14 @@ what's still in one crate, and read another crate's path by its name.
 **WASI at every move.** The playground's compiler, `wasm/Cargo.toml`,
 depends on the crates by path, as the binary does. check:fast and CI's
 lint job build every crate but the binary for `wasm32-wasip1` (`cargo
-check --target wasm32-wasip1 --workspace --exclude rust-js`), seconds;
+check --target wasm32-wasip1 --workspace --exclude rust-js`, amended below:
+and the front end's crates), seconds;
 the full WASI build, minutes of rustc's front end, stays CI's `wasm` job.
 
 ## Consequences
 
 - A crate other than the binary builds and tests without rustc, on any
-  target.
+  target (amended below: but the front end's, rustc's as the binary is).
 - The test map counts every crate's functions: its counting build runs
   rustc through `scripts/counting-rustc.sh`, its `RUSTC_WRAPPER`, which
   instruments a compile whose `--crate-name` is one of the compiler's
@@ -208,7 +215,7 @@ possible is building and testing owned output and printing without rustc.
 
 ## Amendment: MIR's lowering's methods on a newtype of its own (#2299, 2026-11-22)
 
-`crates/rust-js-lower/src/` cuts into a base crate, which holds `FnCx`, the lowering's
+`src/lower/` cuts into a base crate, which holds `FnCx`, the lowering's
 context, and a crate of MIR's lowering, `mir`, which writes 565 methods
 on it: 232 private, 269 `pub(super)`, 59 `pub(in mir)`. A crate can't
 give a type of another inherent methods. #2299's plan wrote each `mir`
@@ -240,7 +247,7 @@ four signatures twice and a `use`, of 565 at scale. The JS is the same.
 
 ## Amendment: what crosses the lowering's crate lines is `pub` (#2299's commit 8, 2026-11-22)
 
-Each item of `crates/rust-js-lower/src/` another of its crates will name, `mir`'s of the
+Each item of `src/lower/` another of its crates will name, `mir`'s of the
 base, the driver's of the base and of `mir`, is `pub` a commit before the
 cut, which a single crate compiles whatever their visibility, so the cut
 moves files and rewrites paths alone:
@@ -284,8 +291,8 @@ moves files and rewrites paths alone:
 - **`rust-js-mir`**, MIR's lowering: `src/lower/mir.rs` and `mir/`, its
   methods `MirCx`'s (commit 7); it depends on the base, which asks it only
   through `MirHooks` (commit 5), and on `rust-js-program`.
-- **The pipeline** is the binary's, the driver's side, `src/pipeline.rs`
-  and `src/pipeline/`: it names both crates, starts each session with
+- **The pipeline** is in the binary's crate and of the front end's layer,
+  `src/pipeline.rs` and `src/pipeline/`, as the layer rules read it: it names both crates, starts each session with
   MIR's hooks, and is what main.rs and worker.rs ask besides the base's
   facade, `rust_js_lower::…`.
 
@@ -331,7 +338,8 @@ callbacks, main.rs's, and `rust-js fmt`. Like `lower` before, it counts as
 one module of the layer rules, and its mutation lists stay in
 `scripts/mutations/jsx_syntax/`.
 
-What's left in `src/` is the driver, each module there for that reason:
+What's left in `src/` is the driver, each module there for that reason,
+and the pipeline, the front end's part the binary's crate holds:
 
 - `main.rs`, the compile, and its commands: `command.rs`, `cargo.rs`,
   `clippy.rs`, and `source_format.rs` with `source_format/`, `rust-js fmt`,
@@ -342,11 +350,11 @@ What's left in `src/` is the driver, each module there for that reason:
   main.rs and worker.rs mark them.
 - `worker.rs`: the tests' harness's compiles, a case's builds in one rustc
   session (ADR 1182).
-- `pipeline.rs` and `pipeline/`: the session's driver side, by the cut's
-  design above. It starts each session with MIR's hooks and links its
-  modules.
+- `pipeline.rs` and `pipeline/`: of the front end's layer (the layer rules'
+  and docs/architecture.md's), in the binary's crate by the cut's design
+  above. It starts each session with MIR's hooks and links its modules.
 
 #2294's first criterion named the driver as "main, command, cargo,
 clippy, the pipeline's entry". That was a sketch, and this list is the
-driver. Each of the modules above is used by the driver alone, and none
-is a phase of the compile's own.
+driver and the pipeline. Each of the driver's modules above is used by
+the driver alone, and none is a phase of the compile's own.

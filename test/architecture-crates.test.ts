@@ -39,10 +39,11 @@ test("each crate depends only on the compiler's crates its layer may", () => {
   for (const crate of members) expect(theirs[crate.package], crate.package).toEqual({ path: crate.dir });
 });
 
-// A crate of the workspace has no rustc in it: it builds and tests on any
-// target, the playground's WASI too, with no `rustc_private`, which
-// `.cargo/config.toml` lets only the binary have. rustc-hash, a crate of
-// its own that rustc's crates use too, is the compiler's maps' hasher.
+// Owned output's and printing's crates have no rustc in them: each builds
+// and tests on any target, the playground's WASI too, with no
+// `rustc_private`, which `.cargo/config.toml` lets only the binary and the
+// front end's crates have. rustc-hash, a crate of its own that rustc's
+// crates use too, is the compiler's maps' hasher.
 // The lowering's two crates are rustc's as the binary is (#2299): they read
 // its THIR and MIR; and JSX's, which expands rustc's AST (#2294).
 const rustcs = new Set(["rust-js-lower", "rust-js-mir", "rust-js-jsx"]);
@@ -115,7 +116,7 @@ test("a crate's `testing` feature never reaches a normal build", () => {
 // The front end builds owned output and never prints it: of the compiler's
 // crates it names owned output's and the lowering's own, the base's and
 // MIR's (#2297, #2299), printing's crate the driver's to call.
-test("the front end names no crate but owned output's", () => {
+test("the front end names no crate but owned output's and the lowering's own", () => {
   const front = compilerRustFiles().filter(
     (file) =>
       file.startsWith("crates/rust-js-lower/src/") ||
