@@ -12,7 +12,7 @@
 
 import { readFileSync } from "node:fs";
 
-type CompileLine = { input: string | null; library: boolean; phases: [string, number][] };
+type CompileLine = { input: string | null; library: boolean; phases: [string, number][]; forced?: string[] };
 type CaseLine = { case: string; total: number; steps: [string, number][] };
 
 /** Each step's times, by step, in the order they're first met. */
@@ -68,6 +68,12 @@ export function report(text: string): string {
     if (harness !== undefined) phases.set("process start and exit", [sum(harness) - inside]);
     out.push(table(`${step}: its phases`, phases, sum(harness ?? [inside])), "");
   }
+  // rustc's walks of every crate a compile's lowering forced,
+  // `visible_parent_map`'s where it printed a type or a path (#2314).
+  const forced = new Map<string, number>();
+  for (const c of compiles) for (const query of c.forced ?? []) forced.set(query, (forced.get(query) ?? 0) + 1);
+  const walks = [...forced].map(([query, n]) => `${query} by ${n} of ${compiles.length} compiles`);
+  out.push(`rustc's walks of every crate lowering forced: ${walks.length > 0 ? walks.join(", ") : "none"}`, "");
   const slowest = [...cases].sort((a, b) => b.total - a.total).slice(0, 10);
   out.push("| slowest case | total ms | its steps, ms |", "|---|---:|---|");
   for (const c of slowest) {

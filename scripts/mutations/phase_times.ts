@@ -12,4 +12,12 @@ export const mutations: Mutation[] = [
     replace: "        _ = phase;\n",
     tests: tested,
   },
+  {
+    name: "phase-times-walk-unsaid",
+    breaks: "a timed compile whose lowering walked every crate's modules says it walked none, and a type printed on a hot path goes unseen (#2314)",
+    file: "src/phase_times.rs",
+    find: "        forced.push(query);\n",
+    replace: "        _ = query;\n",
+    tests: ["test/phase-times.test.ts", "-t", "a lowering forces no walk"],
+  },
 ];

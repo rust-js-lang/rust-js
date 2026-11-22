@@ -57,6 +57,9 @@ pub(crate) struct Caches {
     /// Each of std's modules a recognizer asks what's under, of each of std's
     /// crates that has it (#1681).
     pub std_module_ids: OnceCell<Rc<crate::lower::recognition::StdModules>>,
+    /// Each of std's items' visible parent, of std's crates' modules alone
+    /// (`std_paths::std_visible_parents`, #2314).
+    pub std_visible_parents: OnceCell<Rc<rustc_hash::FxHashMap<rustc_span::def_id::DefId, rustc_span::def_id::DefId>>>,
     /// std's catalog of compiled bodies, each row resolved (#1681).
     pub rows: OnceCell<Rc<crate::lower::recognition::Rows>>,
     /// That this session builds std's structs as their meaning (ADR 0932).
@@ -259,6 +262,7 @@ fn start_keyed(gcx: usize, flags: Flags, hooks: &'static dyn MirHooks) -> Sessio
             only_called: OnceCell::new(),
             std_path_ids: OnceCell::new(),
             std_module_ids: OnceCell::new(),
+            std_visible_parents: OnceCell::new(),
             rows: OnceCell::new(),
             meaning: Cell::new(flags.meaning),
             every_outside_struct: Cell::new(flags.every_outside_struct),

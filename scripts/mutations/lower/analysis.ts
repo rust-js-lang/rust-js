@@ -525,4 +525,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = bodies;\n",
     tests: ["test/corpus.test.ts", "-t", "^map_held_then_enumerated_from_its_back.rs$"],
   },
+  {
+    name: "mutated-types-printed-unforgotten",
+    breaks: "every type written in place is printed, to compare with what the session forgets though it forgets none, which walks every crate's modules, 37 ms of each of the React port's compiles (#2314)",
+    file: "src/lower/analysis.rs",
+    find: "            .filter(|ty| forgotten.is_empty() || !forgotten.contains(&ty.to_string()))\n",
+    replace: "            .filter(|ty| !forgotten.contains(&ty.to_string()))\n",
+    tests: ["test/phase-times.test.ts", "-t", "a lowering forces no walk"],
+  },
 ];

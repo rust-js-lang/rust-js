@@ -411,6 +411,14 @@ impl RustJs {
         (bodies, initializers): (&mut Vec<lower::Body<'tcx>>, &mut Vec<lower::Body<'tcx>>),
         serde_attrs: &lower::SerdeAttributes,
     ) {
+        // rustc's walk of every crate's modules, which printing a type or a
+        // path forces, a warning's too: none of the React port's lowerings
+        // asks it (#2314), and a timed compile says where one did.
+        let walked = || {
+            rustc_middle::query::QueryCache::lookup(&tcx.query_system.query_vtables.visible_parent_map.cache, &())
+                .is_some()
+        };
+        let walked_before = walked();
         let mut instances = lower::Instances::default();
         let mut made_where_used = IndexSet::default();
         let lowered = loop {
@@ -463,6 +471,9 @@ impl RustJs {
                 rust_js_emit::publish::publish_file(path, lower::session::drops_shadow(tcx).into_bytes())
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
+        }
+        if !walked_before && walked() {
+            phase_times::forced("visible_parent_map");
         }
         phase_times::mark("lowering");
         if let Some(unlinked) = lowered

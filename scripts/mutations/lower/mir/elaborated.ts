@@ -149,4 +149,12 @@ export const mutations: Mutation[] = [
     replace: "            (true, false) => Verdict::Disagree,\n",
     tests: ["test/drops-shadow.test.ts", "-t", "drops of one place written alike are compared part by part"],
   },
+  {
+    name: "drops-shadow-path-printed-always",
+    breaks: "each body's drops compared with rustc's elaboration print the function's path though nothing is said, which walks every crate's modules (#2314)",
+    file: "src/lower/mir/elaborated.rs",
+    find: "        let function = || path.get_or_init(|| self.tcx.def_path_str(function)).as_str();\n",
+    replace: "        let function = || path.get_or_init(|| self.tcx.def_path_str(function)).as_str();\n        function();\n",
+    tests: ["test/phase-times.test.ts", "-t", "a lowering forces no walk"],
+  },
 ];

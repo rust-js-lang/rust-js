@@ -107,3 +107,34 @@ std's beside it.
   `registry::by_path` by the first crate of std's name has none: rustc
   loads std's crates, injected, before any crate a program names, so
   the first `core` is std's.
+
+## Amended: std's path of an item is std's own visible parent (#2314, 2026-11-22)
+
+`std_path_parent`, the module std's path writes an item in, asked rustc's
+`visible_parent_map`. That query does a breadth-first walk of every
+crate's public modules. It cost 37 ms in each of the React port's
+compiles, and its answer for a std item depended on the program's crate
+graph: a dependency that re-exported a std item nearer its root than std
+does became that item's parent. `std_visible_parents` now does the same
+walk, public children only, each child's first parent kept, but starts
+only from std's crates (this ADR's `std_crate`). rustc's also ranks a
+parent that re-exports a child as `_`, or a `#[doc(hidden)]` one, after
+any other. That ranking is left out: with it taken away, every one of the
+corpus's 2,897 cases is the same, its snapshot too, so no output can show
+it. The parent std writes an item in, rather than the module it's defined
+in, does show: `core::iter::Take`, defined in `core::iter::adapters::take`,
+is std's `iter::Take` (mutation `std-path-parent-defined-in`, caught by
+drop_order_through_take_adapters' snapshot). An item that isn't std's, and a std crate's root, have
+no std parent. A temporary shadow check compared both answers and found no
+difference, in recognitions and in std items' parents: 11.68M calls in the
+corpus, 5.58M in the React port and 7.38M in the crate corpus.
+
+The walk is still forced wherever a type or a path is printed, so a
+lowering prints only where it says something. The session's forgotten
+types (#1665) are printed only when some type is forgotten, and a drop
+compared with rustc's elaboration prints its function's path only in a
+verdict it states. A timed compile (`RUST_JS_PHASE_TIMES`) lists each such
+walk its lowering forced, and test/phase-times.test.ts holds a lowering of
+std's iterators, adapters and strings to none. The React port's compiles
+force none, 30.8 CPU s before and 30.0 after. 78 corpus cases still
+print in lowering, through other callers (#2321).

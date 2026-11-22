@@ -740,12 +740,54 @@ fn std_modules(tcx: TyCtxt<'_>) -> std::rc::Rc<StdModules> {
 
 /// The module std's path of `id` writes it in: its visible parent, as
 /// rustc prints its path, `std::fmt` of `core::fmt::Arguments`, or where
-/// it's none, the module it's in.
+/// it's none, the module it's in; none of an item not std's, which has no
+/// std path, nor of a std crate's root.
 pub(super) fn std_path_parent(tcx: TyCtxt<'_>, id: DefId) -> Option<DefId> {
-    tcx.visible_parent_map(())
+    if !super::is_std_crate(tcx, id) || id.is_crate_root() {
+        return None;
+    }
+    std_visible_parents(tcx)
         .get(&id)
         .copied()
         .or_else(|| tcx.opt_parent(id))
+}
+
+/// Each of std's items' visible parent: the module std shows it in, the
+/// first that does of a walk of std's crates' public modules, breadth first
+/// from each crate root it starts at, as rustc's `visible_parent_map` walks.
+/// rustc's walks every crate's modules, the first time anything asks, 37 ms
+/// of each of the React port's compiles (4.1% of its compiler's time,
+/// #2314), where a recognizer asks only of std's items, and std's path is
+/// std's whatever else the program's crates re-export. rustc's also puts
+/// a parent that re-exports a child as `_`, or is or re-exports by a
+/// `#[doc(hidden)]` item, after any other: none of what std's recognizers
+/// ask is told apart by it, in the corpus's 2,897 cases with their
+/// snapshots, so it's not kept. Once a session.
+fn std_visible_parents(tcx: TyCtxt<'_>) -> std::rc::Rc<rustc_hash::FxHashMap<DefId, DefId>> {
+    (crate::lower::session::caches(tcx).std_visible_parents)
+        .get_or_init(|| {
+            let mut parents: rustc_hash::FxHashMap<DefId, DefId> = Default::default();
+            let mut queue: std::collections::VecDeque<DefId> = (tcx.crates(()).iter())
+                .filter(|&&krate| !tcx.missing_extern_crate_item(krate) && super::std_crate(tcx, krate).is_some())
+                .map(|krate| krate.as_def_id())
+                .collect();
+            while let Some(module) = queue.pop_front() {
+                for child in tcx.module_children(module) {
+                    let Some(id) = child.res.opt_def_id().filter(|_| child.vis.is_public()) else {
+                        continue;
+                    };
+                    if parents.contains_key(&id) {
+                        continue;
+                    }
+                    parents.insert(id, module);
+                    if child.res.module_like_def_id().is_some() {
+                        queue.push_back(id);
+                    }
+                }
+            }
+            std::rc::Rc::new(parents)
+        })
+        .clone()
 }
 
 /// Whether `id` is `module`, one of `STD_MODULES`, in any of std's crates.

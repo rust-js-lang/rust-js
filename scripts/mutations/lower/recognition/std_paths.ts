@@ -77,4 +77,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_methods.rs$"],
   },
+  {
+    name: "std-path-parent-defined-in",
+    breaks: "std's path of an item is the module it's defined in, not the one std writes it in, so `core::iter::Take`, defined in `core::iter::adapters::take`, isn't std's `iter::Take` and drops nothing it steps (#2314)",
+    file: "src/lower/recognition/std_paths.rs",
+    find: "    std_visible_parents(tcx)\n        .get(&id)\n        .copied()\n        .or_else(|| tcx.opt_parent(id))\n",
+    replace: "    tcx.opt_parent(id)\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_order_through_take_adapters.rs$"],
+    snapshots: true,
+  },
 ];

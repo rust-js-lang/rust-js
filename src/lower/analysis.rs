@@ -1100,11 +1100,13 @@ pub fn analyze_crate<'a, 'tcx>(
     given_parameters(tcx, &calls, &only_called);
     let mutated = mutated_types(tcx, all_bodies);
     // Less what the session forgets of it, to see that a write in place
-    // refuses where its copies are left out (#1665).
+    // refuses where its copies are left out (#1665): each type printed only
+    // where one is forgotten, as printing one walks every crate's modules
+    // (`visible_parent_map`, 37 ms of each of the React port's compiles, #2314).
     let forgotten = &crate::lower::session::caches(tcx).without_mutated;
     let mutated = Mutated {
         types: (mutated.into_iter())
-            .filter(|ty| !forgotten.contains(&ty.to_string()))
+            .filter(|ty| forgotten.is_empty() || !forgotten.contains(&ty.to_string()))
             .collect(),
         params_only_read: params_only_read(tcx, all_bodies),
     };

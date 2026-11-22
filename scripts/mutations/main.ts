@@ -244,4 +244,12 @@ export const mutations: Mutation[] = [
     replace: "            && let Err(error) = std::fs::write(path, lower::compiled_std_catalogue(tcx))\n",
     tests: ["test/compiled-std.test.ts", "-t", "left as it is"],
   },
+  {
+    name: "lowering-walk-counted-of-warnings",
+    breaks: "a walk of every crate's modules that rustc's warnings made first is said to be the lowering's (#2314)",
+    file: "src/main.rs",
+    find: "        if !walked_before && walked() {\n",
+    replace: "        if walked() {\n",
+    tests: ["test/phase-times.test.ts", "-t", "a lowering forces no walk"],
+  },
 ];

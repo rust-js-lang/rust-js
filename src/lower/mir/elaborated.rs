@@ -22,6 +22,7 @@ use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_mir_dataflow::move_paths::{LookupResult, MovePathIndex};
 use rustc_span::Span;
+use rustc_span::def_id::DefId;
 
 /// When a drop drops a part of what it drops: never, always, or as a flag
 /// says.
@@ -377,7 +378,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         if sites.is_empty() {
             return;
         }
-        let function = tcx.def_path_str(body.source.def_id());
+        let function = body.source.def_id();
         let source_map = tcx.sess.source_map();
         let site_of = |block: BasicBlock| {
             let info = body.basic_blocks[block].terminator().source_info;
@@ -395,7 +396,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                     .iter()
                     .map(|&(block, _)| (Verdict::Unmatched, block, why.to_string())),
             );
-            self.say_shadowed(&function, &out, &site_of, source_map);
+            self.say_shadowed(function, &out, &site_of, source_map);
             return;
         };
         let theirs = theirs(tcx, elaborated, &js_drops);
@@ -554,24 +555,29 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 }
             });
         }
-        self.say_shadowed(&function, &out, &site_of, source_map);
+        self.say_shadowed(function, &out, &site_of, source_map);
     }
 
     /// Each of `function`'s verdicts said: a disagreement on the normal
     /// path refused, as the JS would drop otherwise than Rust does; a
     /// cleanup's apart, as rust-js's body has no unwinding of what can't
     /// throw (ADR 0301), whose cleanups rustc's reaches. And each a line
-    /// where the session records them (`--drops-shadow`).
+    /// where the session records them (`--drops-shadow`). The function's
+    /// path is printed only where one is said: printing a path walks every
+    /// crate's modules, 37 ms of a compile (#2314).
     fn say_shadowed(
         &self,
-        function: &str,
+        function: DefId,
         verdicts: &[(Verdict, BasicBlock, String)],
         site_of: &dyn Fn(BasicBlock) -> SiteKey,
         source_map: &rustc_span::source_map::SourceMap,
     ) {
+        let path = std::cell::OnceCell::new();
+        let function = || path.get_or_init(|| self.tcx.def_path_str(function)).as_str();
         for (verdict, block, detail) in verdicts {
             let (span, _, cleanup) = site_of(*block);
             if *verdict == Verdict::Disagree && !cleanup {
+                let function = function();
                 crate::lower::refusal::error(
                     self.tcx,
                     span,
@@ -591,7 +597,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 let (span, _, cleanup) = site_of(*block);
                 let at = source_map.span_to_diagnostic_string(span);
                 let path = if cleanup { "cleanup" } else { "normal" };
-                format!("{}\t{path}\t{function}\t{at}\t{detail}", verdict.word())
+                format!("{}\t{path}\t{}\t{at}\t{detail}", verdict.word(), function())
             }));
     }
 
