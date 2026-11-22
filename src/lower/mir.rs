@@ -30,6 +30,7 @@ mod entries;
 mod fields_read;
 mod given_arguments;
 mod hints;
+pub(in crate::lower) mod hooks;
 mod iter;
 mod jsx_props;
 mod keyed_writes;
@@ -61,7 +62,6 @@ mod tidy;
 mod tried_ints;
 mod vec_growth;
 pub(super) use tidy::pass_names as tidy_pass_names;
-pub(in crate::lower) use tidy::settle_unthrown_catches;
 mod writer;
 
 use self::dispatch::Forms;

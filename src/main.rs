@@ -343,7 +343,7 @@ impl Callbacks for RustJs {
         };
         // The lowering session, its caches its own, dropped as it ends (ADR
         // 1111).
-        let _session = lower::session::start(tcx, self.session_flags());
+        let _session = lower::start_session(tcx, self.session_flags());
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
         let mut bodies = lower::collect_bodies(tcx, self.library_filter());
         // `@rust-js/std`'s: std's own, from the MIR of a `core` built to

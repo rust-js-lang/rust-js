@@ -66,6 +66,7 @@ pub(crate) mod liveness;
 mod load_order;
 mod loops;
 mod mir;
+mod mir_hooks;
 mod mut_refs;
 mod named_constants;
 mod noted;
@@ -120,6 +121,14 @@ use rust_js_program::names::{fresh_in, js_ident};
 /// argument, of a crate `--rustc` compiles, whose JS rust-js doesn't write
 /// (ADR 0214, amended).
 pub use untagged::binding_froms_give_their_variants;
+
+/// A lowering session of `tcx` begun, its flags `flags`, until the guard
+/// it gives is dropped (`session::start`), given MIR's lowering's hooks,
+/// which the base asks of it (`mir_hooks`, #2299): the driver's, which
+/// names both.
+pub(crate) fn start_session(tcx: TyCtxt<'_>, flags: session::Flags) -> session::Session {
+    session::start(tcx, flags, &mir::hooks::Hooks)
+}
 
 /// Each of tidy's passes, `stage/pass`, in the order they run (ADR 0659).
 pub fn tidy_pass_names() -> Vec<String> {
@@ -848,7 +857,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // type it's given, or one holding a pointer, semver's `HEAD`
             // (ADR 0562): its MIR, given these, as code, where its module
             // has no constant of it (ADR 0127), above.
-            _ if def_id.is_local() => self.crate_const_as_code(def_id, args),
+            _ if def_id.is_local() => self.mir_hooks().crate_const_as_code(self, def_id, args),
             _ => Err(self.unsupported(span, "this constant")),
         }
     }

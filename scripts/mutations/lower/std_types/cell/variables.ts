@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's thread-local read as its `export let`, `previous = current`, keeps the `try` its `$withBorrow(..)` had, `catch (error) { dropA0?.(arg0); throw error; }` (#408)",
     file: "src/lower/std_types/cell/variables.rs",
-    find: "            crate::lower::mir::settle_unthrown_catches(&mut function.body);\n",
+    find: "            crate::lower::session::hooks().settle_unthrown_catches(&mut function.body);\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "settles its cleanup"],
   },

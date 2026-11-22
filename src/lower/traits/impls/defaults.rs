@@ -217,7 +217,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|word| word.map(|word| cx.fresh(Base::Named(word))))
                 .collect();
             let signature = match class_default.as_ref().or(body.mir.as_ref()) {
-                Some(mir) => cx.mir_signature(body, mir, &mut rest)?,
+                Some(mir) => cx.mir_hooks().mir_signature(cx, body, mir, &mut rest)?,
                 None => return Err(cx.unsupported(span, "this default, without its MIR")),
             };
             Ok((signature, cx.used_drops(), given_names))

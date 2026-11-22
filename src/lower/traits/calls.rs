@@ -378,7 +378,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // From its MIR (ADR 0364), its value given back.
         let mut stmts = Vec::new();
         let (_, hoisted) = self.lowered_in(body, id, nested, |cx| match &body.mir {
-            Some(mir) => cx.mir_signature(body, mir, &mut stmts),
+            Some(mir) => cx.mir_hooks().mir_signature(cx, body, mir, &mut stmts),
             None => Err(cx.unsupported(span, "this constant, without its MIR")),
         })?;
         stmts.splice(0..0, hoisted);

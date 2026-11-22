@@ -18,6 +18,8 @@ use rustc_span::def_id::DefId;
 
 use rust_js_program::collections::{IndexSet, OnceMap};
 
+use crate::lower::mir_hooks::MirHooks;
+
 // The compile's reports, which `mir` records into as it lowers: the labels
 // each body keeps (`--label-census`) and the tidy passes that fired
 // (`--tidy-fired`), the session's since #2299 moved them from `mir`.
@@ -29,6 +31,9 @@ pub(crate) struct Caches {
     /// The session's, by its rustc session's address: a read with another
     /// `tcx` is a bug, which `caches` says.
     gcx: usize,
+    /// MIR's lowering, as the base asks it, which the driver gives the
+    /// session (`MirHooks`, #2299).
+    pub(in crate::lower) hooks: &'static dyn MirHooks,
     /// `std_path`'s answers, each of std's items printed once.
     pub std_paths: OnceMap<DefId, &'static str>,
     /// Each impl's dictionary's name, and its type's and trait's words
@@ -229,12 +234,12 @@ impl Drop for Session {
 /// `flags`, until the guard it gives is dropped. One at a time: a session
 /// started inside another is a bug, which it says.
 #[must_use = "the session ends when its guard is dropped"]
-pub(crate) fn start(tcx: TyCtxt<'_>, flags: Flags) -> Session {
-    start_keyed(gcx_of(tcx), flags)
+pub(in crate::lower) fn start(tcx: TyCtxt<'_>, flags: Flags, hooks: &'static dyn MirHooks) -> Session {
+    start_keyed(gcx_of(tcx), flags, hooks)
 }
 
 /// `start`, of the session whose rustc session is at `gcx`.
-fn start_keyed(gcx: usize, flags: Flags) -> Session {
+fn start_keyed(gcx: usize, flags: Flags, hooks: &'static dyn MirHooks) -> Session {
     SESSION.with(|slot| {
         let mut slot = slot.borrow_mut();
         assert!(
@@ -243,6 +248,7 @@ fn start_keyed(gcx: usize, flags: Flags) -> Session {
         );
         *slot = Some(Rc::new(Caches {
             gcx,
+            hooks,
             std_paths: OnceMap::default(),
             impl_names: OnceMap::default(),
             impl_short_names: OnceMap::default(),
@@ -278,6 +284,17 @@ pub(crate) fn caches(tcx: TyCtxt<'_>) -> Rc<Caches> {
     caches_keyed(gcx_of(tcx))
 }
 
+/// The hooks of the session running (`Caches::hooks`), asked where no `tcx`
+/// is at hand: one for every session of a compile, the driver's, so no
+/// session's ids are in them to check `tcx` against, as `caches` does.
+/// Asked outside a session, it's a bug, which it says.
+pub(in crate::lower) fn hooks() -> &'static dyn MirHooks {
+    let caches = SESSION.with(|slot| slot.borrow().clone());
+    caches
+        .expect("rust-js: MIR's hooks asked outside a lowering session (lower::start_session)")
+        .hooks
+}
+
 /// `caches`, of the session whose rustc session is at `gcx`.
 fn caches_keyed(gcx: usize) -> Rc<Caches> {
     let caches = SESSION.with(|slot| slot.borrow().clone());
@@ -292,7 +309,40 @@ fn caches_keyed(gcx: usize) -> Rc<Caches> {
 #[cfg(test)]
 mod tests {
     use super::{Flags, caches_keyed, start_keyed};
+    use crate::lower::analysis::Mir;
+    use crate::lower::mir_hooks::MirHooks;
+    use crate::lower::{Body, FnCx, R};
+    use rust_js_program::js::{self, Expr, Stmt};
+    use rustc_middle::ty;
     use rustc_span::def_id::{CrateNum, DefId, DefIndex};
+
+    /// No MIR lowering: a session's caches asked, never its hooks.
+    struct NoHooks;
+
+    impl MirHooks for NoHooks {
+        fn mir_signature<'a, 'tcx>(
+            &self,
+            _: &mut FnCx<'a, 'tcx>,
+            _: &Body<'tcx>,
+            _: &Mir<'tcx>,
+            _: &mut Vec<Stmt>,
+        ) -> R<(Vec<js::Pattern>, bool)> {
+            unreachable!("a session's test lowers nothing")
+        }
+
+        fn crate_const_as_code<'a, 'tcx>(
+            &self,
+            _: &mut FnCx<'a, 'tcx>,
+            _: DefId,
+            _: ty::GenericArgsRef<'tcx>,
+        ) -> R<Expr> {
+            unreachable!("a session's test lowers nothing")
+        }
+
+        fn settle_unthrown_catches(&self, _: &mut Vec<Stmt>) {
+            unreachable!("a session's test lowers nothing")
+        }
+    }
 
     fn item(n: u32) -> DefId {
         DefId {
@@ -312,12 +362,13 @@ mod tests {
                 meaning: true,
                 ..Flags::default()
             },
+            &NoHooks,
         );
         caches_keyed(1).std_paths.keep(item(7), "std::first::Item");
         assert_eq!(caches_keyed(1).std_paths.get(&item(7)), Some("std::first::Item"));
         assert!(caches_keyed(1).meaning.get());
         drop(first);
-        let second = start_keyed(2, Flags::default());
+        let second = start_keyed(2, Flags::default(), &NoHooks);
         assert_eq!(caches_keyed(2).std_paths.get(&item(7)), None);
         assert!(!caches_keyed(2).meaning.get());
         drop(second);
@@ -326,21 +377,21 @@ mod tests {
     #[test]
     #[should_panic(expected = "asked outside a lowering session")]
     fn a_cache_asked_after_its_session_ends_is_a_bug() {
-        drop(start_keyed(3, Flags::default()));
+        drop(start_keyed(3, Flags::default(), &NoHooks));
         caches_keyed(3);
     }
 
     #[test]
     #[should_panic(expected = "asked with another session's tcx")]
     fn a_cache_asked_with_another_sessions_tcx_is_a_bug() {
-        let _session = start_keyed(4, Flags::default());
+        let _session = start_keyed(4, Flags::default(), &NoHooks);
         caches_keyed(5);
     }
 
     #[test]
     #[should_panic(expected = "started inside another")]
     fn a_session_started_inside_another_is_a_bug() {
-        let _outer = start_keyed(6, Flags::default());
-        let _inner = start_keyed(7, Flags::default());
+        let _outer = start_keyed(6, Flags::default(), &NoHooks);
+        let _inner = start_keyed(7, Flags::default(), &NoHooks);
     }
 }

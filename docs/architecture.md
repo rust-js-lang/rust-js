@@ -776,6 +776,7 @@ area's sweep phrases it as one.
 | Which static does a constant point to the start of? | `mir/operands.rs` | `const_static` | | 1 |
 | Is a range a variable no step can leave exhausted? (#418) | `noted.rs` | `never_exhausted` | | 1: `never_exhausted` (a MIR local's `Name`, its identity, not its spelling) |
 | What MIR's lowering notes and holds of a body's variables, kept with them where a body inside it is lowered: which locals are alike and plain, the `const`s it holds a value in and the name a held value knows (#2299 moved them to the base, which asks them) | `noted.rs`; `noted/made.rs`; `held.rs` | `alike_local`, `plain_local`, `plain_type`, `Found`, `Made`; `spill_subject`, `held_in_place`, `place_where_made`, `held_name`, `held_names`, `module_name` | | 1 |
+| What the base asks of MIR's lowering that only MIR's lowering can do, as the base can't name `mir` (#2299): a trait method's default's parameters, a crate constant as code, tidy's settling of a placed `try`; given by the driver to each session (`lower::start_session`), kept beside its caches | `mir_hooks.rs`; `mir/hooks.rs` | `MirHooks`, `mir_hooks`, `Hooks`, `session::hooks` | | 1 |
 | What body does a closure's `call_once` run, itself taken by value? (ADR 1020) | `analysis/prepared.rs` | `called_once` | | 1 |
 
 **Calls.** `mir/dispatch.rs::mir_call` handles special calls and sends evaluated
