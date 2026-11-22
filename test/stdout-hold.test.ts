@@ -112,3 +112,23 @@ said;`,
   expect(lines).toEqual(["partial lib", "tail"]);
   expect(refused).toBe("rust-js: stdout holds a line left unended, and on this host a console.log of values can't follow it but apart, so a line printed now would come out before it");
 });
+
+// Which write each host's stdout and stderr go by, of a host given, not
+// found by timing: Bun's the descriptor's, `fs.writeSync`, Node's its
+// stream's (#2347). A pipe's reorder on Bun shows on a Mac and not on a
+// Linux runner, where the test above couldn't tell either write from the
+// other; this tells them apart on every machine.
+test("Bun's stdout and stderr are written by the descriptor, Node's by the stream, the host given", () => {
+  const runtime = readFileSync(helpersModule, "utf8").replace(/^export /gm, "");
+  const run = (bun: boolean) => {
+    const writes: string[] = [];
+    const stream = (fd: number) => ({ write: (chunk: string) => writes.push(`stream ${fd} ${chunk}`) });
+    const fs = { writeSync: (fd: number, bytes: Uint8Array) => (writes.push(`descriptor ${fd} ${new TextDecoder().decode(bytes)}`), bytes.length) };
+    const process = { stdout: stream(1), stderr: stream(2), getBuiltinModule: (name: string) => (name === "node:fs" ? fs : undefined), once: () => {} };
+    const context = { process, console: { log: () => {}, error: () => {} }, queueMicrotask: () => {}, TextDecoder, TextEncoder, Atomics, SharedArrayBuffer, Int32Array, ...(bun ? { Bun: {} } : {}) };
+    runInNewContext(`${runtime}\n$print("out\\n");\n$eprint("err\\n");`, context);
+    return writes;
+  };
+  expect(run(true)).toEqual(["descriptor 1 out\n", "descriptor 2 err\n"]);
+  expect(run(false)).toEqual(["stream 1 out\n", "stream 2 err\n"]);
+});

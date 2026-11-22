@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/print.js",
     find: "  const fs = globalThis.Bun === undefined ? undefined : globalThis.process.getBuiltinModule(\"node:fs\");\n",
     replace: "  const fs = undefined;\n",
-    tests: ["test/stdout-hold.test.ts", "-t", "on Node and Bun through a pipe"],
+    tests: ["test/stdout-hold.test.ts", "-t", "on Node and Bun through a pipe|the host given"],
   },
   {
     name: "stderr-written-by-its-stream",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/print.js",
     find: "    if (error) $hostWrite(2, text);\n",
     replace: "    if (error) globalThis.process.stderr.write(text);\n",
-    tests: ["test/stdout-hold.test.ts", "-t", "on Node and Bun through a pipe"],
+    tests: ["test/stdout-hold.test.ts", "-t", "on Node and Bun through a pipe|the host given"],
   },
   {
     name: "blocked-write-tried-at-once",
