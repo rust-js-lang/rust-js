@@ -274,4 +274,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/push.test.ts", "-t", "carries on from its round"],
   },
+  {
+    name: "push-again-parent-time-dropped",
+    breaks: "push run again from the rebased tree is given no time of the push before it, so the machine's line of the push counts only the run again's part (0851a9307: 740 s said of some 2,100 s)",
+    file: "scripts/push.ts",
+    find: "  if (before) again.RUST_JS_PUSH_BEFORE = JSON.stringify(before);\n",
+    replace: "",
+    tests: ["test/push.test.ts", "-t", "counts the time and phases"],
+  },
 ];

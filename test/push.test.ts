@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { againEnv, appendedBoth, beside, FAST_TESTS, fastAgain, givenRound, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
+import { againEnv, appendedBoth, beside, FAST_TESTS, fastAgain, givenBefore, givenRound, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
 import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
@@ -417,4 +417,16 @@ test("push run again carries on from its round only where the round is its own",
   const taken = source.indexOf("({ checked, base: checkedBase, react: reactBase } = given);");
   expect(taken).toBeGreaterThan(source.indexOf('      const remade = rebase();\n      phase("rebase");\n'));
   expect(taken).toBeLessThan(source.indexOf("const since = checkedBase"));
+});
+
+// Push run again writes the one line of the push, its parent's time and
+// phases in it: 0851a9307's said 740 s of some 2,100 s, the parent's two
+// checks on no line.
+test("push run again counts the time and phases of the push before it", () => {
+  const before = { seconds: 612.4, phases: [["rebase", 3], ["check", 595]] as [string, number][] };
+  expect(givenBefore(againEnv({ RUST_JS_TIMED_BY: "push" }, undefined, before))).toEqual(before);
+  expect(givenBefore(againEnv({ RUST_JS_PUSH_BEFORE: JSON.stringify(before) }))).toEqual({ seconds: 0, phases: [] });
+  expect(givenBefore({ RUST_JS_PUSH_BEFORE: "torn" })).toEqual({ seconds: 0, phases: [] });
+  const source = readFileSync(join(root, "scripts/push.ts"), "utf8");
+  expect(source).toContain("started: started - before.seconds * 1000, phases: [...before.phases, ...timed]");
 });

@@ -160,13 +160,29 @@ export type Round = { checked: string; base: string; react?: string };
  * one written (`ownsTimes`); and the round it passed, where it did, so
  * the run again checks only what the rebase brought, as a round past a
  * rebase does, not everything again (#2286). */
-export function againEnv(env: NodeJS.ProcessEnv, round?: Round): NodeJS.ProcessEnv {
+export function againEnv(env: NodeJS.ProcessEnv, round?: Round, before?: Before): NodeJS.ProcessEnv {
   const again = { ...env };
   delete again.RUST_JS_TIMED_BY;
   delete again.RUST_JS_TIMED_OTHERS;
   delete again.RUST_JS_PUSH_ROUND;
+  delete again.RUST_JS_PUSH_BEFORE;
   if (round) again.RUST_JS_PUSH_ROUND = [round.checked, round.base, round.react ?? ""].join(":");
+  if (before) again.RUST_JS_PUSH_BEFORE = JSON.stringify(before);
   return again;
+}
+
+/** What the push before push run again took, its seconds and its phases,
+ * which the run again's one line counts as its own: its parent writes
+ * none, and 0851a9307's said 740 s of a push that took some 2,100 s. */
+export type Before = { seconds: number; phases: [string, number][] };
+
+/** The time push run again was given (`againEnv`), or none. */
+export function givenBefore(env: NodeJS.ProcessEnv): Before {
+  try {
+    const given = JSON.parse(env.RUST_JS_PUSH_BEFORE ?? "") as Before;
+    if (Number.isFinite(given.seconds) && Array.isArray(given.phases)) return given;
+  } catch {}
+  return { seconds: 0, phases: [] };
 }
 
 /** The round push run again was given (`againEnv`), or none. */
@@ -244,10 +260,12 @@ async function main() {
   // its end, a failure's, and a signal's, which stops `spawnSync`'s child
   // and then runs here (m6-lily's push of b355dc824 wrote none).
   let written = !ownsTimes("push");
+  // The push before this one ran again, its time and phases this line's too.
+  const before = givenBefore(process.env);
   const writeLine = () => {
     if (written) return;
     written = true;
-    devTimes("push", { started, phases: timed, selection, ok, note });
+    devTimes("push", { started: started - before.seconds * 1000, phases: [...before.phases, ...timed], selection, ok, note });
   };
   // The round's React regen, where one runs beside its check.
   let regen: Beside | undefined;
@@ -294,7 +312,8 @@ async function main() {
         written = true;
         regen?.stop();
         const round = checked === "" ? undefined : { checked, base: checkedBase, react: reactBase };
-        const again = spawnSync(process.execPath, [process.argv[1]!, ...process.argv.slice(2)], { stdio: "inherit", env: againEnv(process.env, round) });
+        const took = { seconds: before.seconds + (performance.now() - started) / 1000, phases: [...before.phases, ...timed] };
+        const again = spawnSync(process.execPath, [process.argv[1]!, ...process.argv.slice(2)], { stdio: "inherit", env: againEnv(process.env, round, took) });
         process.exit(again.status ?? 1);
       }
       const base = git("rev-parse", "origin/main").out.trim();
