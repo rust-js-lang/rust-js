@@ -823,16 +823,8 @@ export const mutations: Mutation[] = [
     name: "into-iterator-dictionary-drops-nothing",
     breaks: "std's `IntoIterator` dictionary of a type known here carries no drops of its associated types, so std's compiled `Flatten` never drops an inner iterator it replaces (#1510)",
     file: "crates/rust-js-lower/src/traits/dictionaries.rs",
-    find: "        steps.extend(self.item_drops(tr, as_it_is, span)?);\n",
+    find: "        steps.extend(self.item_drops(tr, true, span)?);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^flatten_nth_drops_each_inner_it_runs_out.rs$|^flatten_nth_drops_each_inner_it_runs_out with"],
-  },
-  {
-    name: "into-iterator-as-it-is-dropped-as-made",
-    breaks: "std's `IntoIterator` dictionary that gives what it makes as it is drops it as a JS iterator made of it, its `of`, which the value itself hasn't (#1510)",
-    file: "crates/rust-js-lower/src/traits/dictionaries.rs",
-    find: "            let steps = self.made_steps(tr, (true, false), span)?;\n",
-    replace: "            let steps = self.made_steps(tr, (false, false), span)?;\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^flatten_nth_drops_each_inner_it_runs_out.rs$|^flatten_nth_drops_each_inner_it_runs_out with"],
   },
   {

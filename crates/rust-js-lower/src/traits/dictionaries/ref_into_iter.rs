@@ -91,7 +91,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         body.push(StmtKind::Return(Some(items)).at(js::Span::NONE));
         let f = Expr::arrow(vec![name.into()], body);
         let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];
-        props.extend(self.made_steps(tr, (itself, itself), span)?);
+        props.extend(self.made_steps(tr, itself, span)?);
         Ok(Expr::object(props))
     }
 }

@@ -326,3 +326,19 @@ and `into-iter-hidden-by-a-library-unseen` retargeted to the one walk;
 `into-iter-held-in-a-library-type-unseen` removed, as the walk asks no
 crate of a type it holds. #2336, `&mut` of an iterator given to a
 reference's bound, is a separate gap.
+
+## Amended: what a dictionary makes is dropped as itself, with no flag (2026-11-23)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. This changes no
+output, only the code. Since #2331, what every `IntoIterator` dictionary
+makes is its own value in generic code (`assoc_iterator_as_it_is` holds
+for std's `IntoIter`). An `IntoIterator` dictionary's drops,
+`$dropIntoIter`, therefore always drop that value itself: `item_drops`'
+JS-iterator case can't arise for `IntoIter`, and `Item` isn't an
+iterator. `made_steps` passed an `as_it_is` flag through to `item_drops`
+that no longer decided anything, so the flag is gone and every
+`IntoIterator` dictionary asks for the value's own drops. The mutation of
+that flag, `into-iterator-as-it-is-dropped-as-made` (#1510), survived on
+main (snapshots and native output alike unchanged) and is retired with it.
+`check:fast --all` compared every corpus snapshot of the change, as ADR
+0093's 2026-11-16 amendment asks.

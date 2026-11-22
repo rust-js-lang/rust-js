@@ -779,7 +779,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
             let into_iter = crate::recognition::trait_method(self.tcx, tr.def_id, "into_iter");
             let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), itself)];
-            props.extend(self.made_steps(tr, (false, false), span)?);
+            props.extend(self.made_steps(tr, false, span)?);
             return Ok(Expr::object(props));
         }
         // std's `IntoIterator` of a type known here, given where what it
@@ -798,7 +798,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![made_items.clone().into()],
                 vec![StmtKind::Return(Some(Expr::var(&made_items))).at(js::Span::NONE)],
             );
-            let steps = self.made_steps(tr, (true, false), span)?;
+            let steps = self.made_steps(tr, false, span)?;
             if self.recognition().iterates_as_itself(ty) {
                 let mut props = vec![Prop::Field(
                     bindings::trait_method_name(self.tcx, tr.def_id, "into_iter"),
@@ -1160,11 +1160,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// associated types' drops, `$dropIntoIter`, as every impl's dictionary
     /// has them (`item_drops`, ADR 0178): what generic code holding what it
     /// makes drops it by, std's `Flatten` replacing its inner one (#1510):
-    /// of the value itself, where it gives what it makes `as_it_is`. Where
-    /// what it makes is a `&mut I` as its caller has it, `held`, not the JS
+    /// of the value itself, as what every `IntoIterator` makes is its own
+    /// value in generic code (`assoc_iterator_as_it_is`, #2331). Where what
+    /// it makes is a `&mut I` as its caller has it, `held`, not the JS
     /// iterator a type parameter given one is (ADR 0061), stepped by `&mut
     /// I`'s own `Iterator`, `I`'s steps passed on (#2336).
-    fn made_steps(&mut self, tr: ty::TraitRef<'tcx>, (as_it_is, held): (bool, bool), span: Span) -> R<Vec<Prop>> {
+    fn made_steps(&mut self, tr: ty::TraitRef<'tcx>, held: bool, span: Span) -> R<Vec<Prop>> {
         let mut steps = Vec::new();
         for (name, bound) in item_bounds(self.tcx, tr.def_id, tr.args) {
             if is_std_def(self.tcx, bound.def_id, StdItem::Iterator) {
@@ -1184,7 +1185,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ));
             }
         }
-        steps.extend(self.item_drops(tr, as_it_is, span)?);
+        steps.extend(self.item_drops(tr, true, span)?);
         Ok(steps)
     }
 
