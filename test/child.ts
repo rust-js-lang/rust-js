@@ -200,11 +200,19 @@ export const footprintLimit = 5_000;
  * `footprint` answers in about 10 ms, but now and then hangs for minutes,
  * which stalled a check's or mutation run's watch of its parts with it:
  * stopped past `footprintLimit`, what it said by then is read, and each
- * pid it didn't answer for is measured by its `rss` (`treeBytes`). `tool`,
- * a test's stand-in for one that hangs. */
-export function footprints(pids: number[], tool: string[] = ["footprint"]): Map<number, number> {
+ * pid it didn't answer for is measured by its `rss` (`treeBytes`). */
+export function footprints(pids: number[]): Map<number, number> {
+  if (process.platform !== "darwin" || pids.length === 0) return new Map();
+  return askedOf(["footprint"], pids);
+}
+
+/** What `tool`, a `footprint` command, says each of `pids` holds, asked
+ * once in `footprintLimit`; none of a command that hung before in this
+ * process. Apart from `footprints`' platform, so a test's stand-in for one
+ * that hangs runs on every one, Linux's CI's too (#2329). */
+export function askedOf(tool: string[], pids: number[]): Map<number, number> {
   const held = new Map<number, number>();
-  if (process.platform !== "darwin" || pids.length === 0 || hung.has(tool.join(" "))) return held;
+  if (hung.has(tool.join(" "))) return held;
   const args = pids.flatMap((pid) => ["--pid", String(pid)]);
   const cmd = [...tool, ...args, "-f", "bytes", "--noCategories"];
   const p = Bun.spawnSync(cmd, { timeout: footprintLimit, killSignal: "SIGKILL" });
@@ -221,7 +229,7 @@ export function footprints(pids: number[], tool: string[] = ["footprint"]): Map<
   return held;
 }
 
-/** Each `footprint` command that hung in this process, `footprints`'
+/** Each `footprint` command that hung in this process, `askedOf`'s
  * `tool`'s words, never asked again. */
 const hung = new Set<string>();
 

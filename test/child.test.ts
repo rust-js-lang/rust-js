@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
-import { childWarnings, compileFailure, footprintLimit, footprints, processTree, run, runSync, treeBytes, type Exit } from "./child";
+import { askedOf, childWarnings, compileFailure, footprintLimit, footprints, processTree, run, runSync, treeBytes, type Exit } from "./child";
 import { execute, nativeCommand, nativeShare } from "./programs";
 import { underLoad } from "../scripts/timing";
 import { contentDirectory, fixture, nativeBinary, run as setUp } from "./support";
@@ -212,18 +212,19 @@ test("what a run holds counts what the memory compressor holds of it", async () 
 // A `footprint` that hangs, as macOS's now and then does for minutes, is
 // stopped past its limit, and what it didn't say is read of `rss`: it
 // stalled every part's watch with it, a check's and a mutation run's.
+// On every platform: the stand-in that hangs is asked as `footprint` is,
+// apart from `footprints`' darwin alone, so Linux's CI sees it too (#2329).
 test("a footprint that hangs is stopped past its limit", () => {
-  if (process.platform !== "darwin") return;
   const started = Date.now();
   const hangs = [process.execPath, "-e", "await Bun.sleep(600000)"];
-  expect(footprints([process.pid], hangs)).toEqual(new Map());
+  expect(askedOf(hangs, [process.pid])).toEqual(new Map());
   expect(Date.now() - started).toBeLessThan(footprintLimit + 5_000);
   // And not asked again in this process, where each job of a run waited its
   // limit out (#2329); another tool, the real one, still asked.
   const again = Date.now();
-  expect(footprints([process.pid], hangs)).toEqual(new Map());
+  expect(askedOf(hangs, [process.pid])).toEqual(new Map());
   expect(Date.now() - again).toBeLessThan(1_000);
-  expect(footprints([process.pid]).get(process.pid) ?? 0).toBeGreaterThan(0);
+  if (process.platform === "darwin") expect(footprints([process.pid]).get(process.pid) ?? 0).toBeGreaterThan(0);
 }, underLoad(30_000));
 
 // A run's command goes with the process that ran it: one SIGKILLed, by a
