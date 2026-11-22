@@ -71,7 +71,7 @@
     "architecture": "bun scripts/architecture-report.ts",
     "file-sizes": "bun scripts/file-sizes.ts",
     "matrix": "bun scripts/matrix.ts",
-    "std": "cargo build && bun scripts/std.ts"
+    "std": "cargo build && bun scripts/std.ts && cargo build"
   },
   "devDependencies": {
     "@babel/core": "7.29.7",
