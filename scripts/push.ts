@@ -125,6 +125,19 @@ export function mutantsAgain(incoming: string[] | undefined): boolean {
   return incoming.some((file) => (isCompilerSource(file) && file.endsWith(".rs")) || file.startsWith("scripts/mutations") || /^(?:Cargo\.(?:toml|lock)|rust-toolchain\.toml|build\.rs)$/.test(file));
 }
 
+/** Whether a push git refused was refused because `main` moved while it
+ * was pushed: the server's refusal of the ref, a lock or a fast-forward
+ * (`out`, git's words), and `origin/main` moved off `base` since. Then
+ * it's rebased and checked again, the round past a rebase's sanity pass,
+ * as a move seen before the push is; any other refusal, a hook's that
+ * met a move by chance among them, is refused. #2299's cut's first round
+ * passed its whole check, and main moved in the 152 s git's pre-push hook
+ * took: "cannot lock ref", the push given up, a whole check again (#2338). */
+export function movedWhilePushed(code: number, out: string, base: string, main: string): boolean {
+  const raced = /\[remote rejected\][^\n]*cannot lock ref|\[rejected\][^\n]*\((?:fetch first|non-fast-forward)\)/.test(out);
+  return code !== 0 && raced && main !== base;
+}
+
 /** Why a round past a rebase checks nothing, where the selector's
  * interaction of the change and the commits the rebase brought, `said`,
  * is none: no test both reach, so each test's outcome is the round
@@ -431,6 +444,10 @@ async function main() {
       }
       const pushed = git("push", "-q", "origin", "HEAD:main");
       git("fetch", "-q", "origin");
+      if (movedWhilePushed(pushed.code, pushed.out, base, git("rev-parse", "origin/main").out.trim())) {
+        console.log("push: main moved while this was pushed; rebasing and checking again");
+        continue;
+      }
       if (pushed.code !== 0 || git("rev-parse", "HEAD").out.trim() !== git("rev-parse", "origin/main").out.trim()) {
         throw new Refused(`the push didn't land:\n${pushed.out.trim()}`);
       }

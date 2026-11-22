@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { againEnv, appendedBoth, beside, FAST_TESTS, fastAgain, givenBefore, givenRound, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, portRegen, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
+import { movedWhilePushed, againEnv, appendedBoth, beside, FAST_TESTS, fastAgain, givenBefore, givenRound, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, portRegen, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
 import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
@@ -478,4 +478,22 @@ test("push run again counts the time and phases of the push before it", () => {
   expect(givenBefore({ RUST_JS_PUSH_BEFORE: "torn" })).toEqual({ seconds: 0, phases: [] });
   const source = readFileSync(join(root, "scripts/push.ts"), "utf8");
   expect(source).toContain("started: started - before.seconds * 1000, phases: [...before.phases, ...timed]");
+});
+
+// A push the server refused because `main` moved while it was pushed, in
+// git's pre-push hook's minutes, is rebased and checked again, as a move
+// seen before it is: its sanity pass, not a whole check (#2338). Both facts,
+// the server's refusal of the ref and `main` moved: a hook's refusal that
+// meets a move by chance is refused, as is a refusal with `main` where it was.
+test("a push refused as main moved under it is checked again; any other refusal is refused", () => {
+  const lock = "To github.com:o/r.git\n ! [remote rejected]     HEAD -> main (cannot lock ref 'refs/heads/main': is at 2cd281abf but expected 66a035ec4)\nerror: failed to push some refs";
+  const behind = "To github.com:o/r.git\n ! [rejected]        HEAD -> main (fetch first)\nerror: failed to push some refs";
+  const stale = " ! [rejected]        HEAD -> main (non-fast-forward)";
+  const hook = "push: the guard refused: a file no commit changes\nerror: failed to push some refs to 'github.com:o/r.git'";
+  expect(movedWhilePushed(1, lock, "66a035ec4", "2cd281abf")).toBe(true);
+  expect(movedWhilePushed(1, behind, "66a035ec4", "2cd281abf")).toBe(true);
+  expect(movedWhilePushed(1, stale, "66a035ec4", "2cd281abf")).toBe(true);
+  expect(movedWhilePushed(1, hook, "66a035ec4", "2cd281abf")).toBe(false);
+  expect(movedWhilePushed(1, lock, "66a035ec4", "66a035ec4")).toBe(false);
+  expect(movedWhilePushed(0, lock, "66a035ec4", "2cd281abf")).toBe(false);
 });

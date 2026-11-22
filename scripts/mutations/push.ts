@@ -3,6 +3,30 @@
 import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
+    name: "moved-push-given-up",
+    breaks: "a push the server refused as main moved under it is given up, a whole check again on the next push (#2338)",
+    file: "scripts/push.ts",
+    find: "  return code !== 0 && raced && main !== base;",
+    replace: "  return false;",
+    tests: ["test/push.test.ts", "-t", "a push refused as main moved under it"],
+  },
+  {
+    name: "hook-refusal-taken-for-a-move",
+    breaks: "a hook's refusal that meets a move by chance is checked again rather than refused (#2338)",
+    file: "scripts/push.ts",
+    find: "  return code !== 0 && raced && main !== base;",
+    replace: "  return code !== 0 && main !== base;",
+    tests: ["test/push.test.ts", "-t", "a push refused as main moved under it"],
+  },
+  {
+    name: "unmoved-refusal-checked-again",
+    breaks: "a refusal of the ref with main where it was is checked again, round after round (#2338)",
+    file: "scripts/push.ts",
+    find: "  return code !== 0 && raced && main !== base;",
+    replace: "  return code !== 0 && raced;",
+    tests: ["test/push.test.ts", "-t", "a push refused as main moved under it"],
+  },
+  {
     name: "push-sanity-whole",
     breaks: "a push's sanity pass past a rebase selects by the map's diff to the new tree, not the interaction of the change and the rebase's commits: it ran all and outlasted the check",
     file: "scripts/push.ts",
