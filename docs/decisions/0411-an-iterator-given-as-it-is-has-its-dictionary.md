@@ -313,3 +313,15 @@ that moved, and all are caught. The corpus's 5,598 compiles, as programs
 and as libraries, are byte-identical, and so is `@rust-js/std`.
 itertools' Crater went from 131 to 195 of 415 tests run as native, with
 none refused at "stepping `I`".
+
+## Amendment: one walk of what a caller reads (#2331)
+
+`holds_value_of` is now `holds_readably`. ADR 0552's `IntoIter` asks the
+same walk, each with what it seeks. The walk doesn't look inside std's
+adapter made a JS iterator, `Copied<I>` or `Zip<I, J>`, which its caller
+steps but never reads into. So an input `Copied<I>` alone no longer makes
+`I` given as it is, and `copied_given_to_generic_backs` takes no
+dictionary. Its caller's JS iterator already knows its back. A compiled
+std struct, a held `Map`, still counts, since it holds its source as it
+is. Corpus case `uncompiled_adapter_given_to_generic_code`; mutation
+`readable-walk-reads-into-adapters`.

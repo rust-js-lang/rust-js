@@ -154,10 +154,12 @@ fn reads_its_value(tcx: ty::TyCtxt<'_>, tr: DefId) -> bool {
 
 /// Whether `id` holds what `into` makes as an `IntoIterator`, its
 /// `IntoIter`, as it is: bounds it by a trait that reads its value,
-/// `<T as IntoIterator>::IntoIter: Clone`, or its signature holds it in a
-/// type of the crate's or a compiled std type, `Pair<I::IntoIter>` given
-/// back, whose struct holds it as it is (ADRs 0411, 0561); not in a std
-/// adapter, `Zip<I::IntoIter, J>`, a JS iterator of it. Then `into`, a type
+/// `<T as IntoIterator>::IntoIter: Clone`, or its signature holds it where
+/// its caller reads it as the type it is, `-> T::IntoIter`, `it:
+/// T::IntoIter`, `Option<T::IntoIter>`, `Pair<I::IntoIter>` given back
+/// (`holds_readably`, ADRs 0411, 0561, #2331); not in std's adapter,
+/// `Zip<I::IntoIter, J>`, a JS iterator of it; or its dictionary gives it, a
+/// reference's (ADR 0457), whose `IntoIter` is its own value. Then `into`, a type
 /// parameter or an associated type, is given as it is, with its
 /// `IntoIterator` dictionary, which makes its `IntoIter` as it is (ADR 0552).
 /// Of `id` alone: what an impl's sibling method holds, `Pair<A::IntoIter>`
@@ -171,6 +173,13 @@ pub(crate) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, in
     let into_iter = super::recognition::trait_method(tcx, into_iterator, "IntoIter");
     if matches!(*into.kind(), ty::Alias(_, ty::AliasTy { kind: ty::Projection { def_id }, .. }) if def_id != into_iter)
     {
+        return true;
+    }
+    // One a dictionary gives, a reference's, `for<'a> &'a mut C:
+    // IntoIterator` (ADR 0457): what its `into_iter` makes is its own value,
+    // as every dictionary's is (`assoc_iterator_as_it_is`), stepped by its
+    // `IntoIterIterator` entry (#2331).
+    if super::recognition::into_iter_by_dictionary(tcx, into_iterator, into) {
         return true;
     }
     // A type parameter another bound names, `impl Is<T>`'s: its caller's
@@ -201,36 +210,9 @@ pub(crate) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, in
             && (p.trait_ref.args.iter().skip(1))
                 .any(|arg| arg.walk().any(|part| part.as_type().is_some_and(is_its_iter)))
     });
-    let holds = |ty: Ty<'tcx>| {
-        ty.walk().any(|part| match part.as_type().map(|t| *t.kind()) {
-            // A type of `id`'s own crate, which a library's consumer asks
-            // as the library's own compile did, whose answer is the
-            // dictionaries its JS takes (#1025).
-            Some(ty::Adt(adt, args))
-                if adt.did().krate == id.krate || super::recognition::is_compiled_std_type(tcx, part.expect_ty()) =>
-            {
-                args.types()
-                    .any(|arg| arg.walk().any(|part| part.as_type().is_some_and(is_its_iter)))
-            }
-            _ => false,
-        })
-    };
-    // And what an `impl Trait` it gives hides, `Chain<I::IntoIter,
-    // J::IntoIter>` of an `impl Iterator`, which std's `chain` holds (ADR
-    // 0920).
-    let hidden = |ty: Ty<'tcx>| {
-        ty.walk().any(|part| match part.as_type().map(|t| *t.kind()) {
-            Some(ty::Alias(
-                _,
-                ty::AliasTy {
-                    kind: ty::Opaque { def_id },
-                    args,
-                    ..
-                },
-            )) if def_id.krate == id.krate => holds(tcx.type_of(def_id).instantiate(tcx, args).skip_normalization()),
-            _ => false,
-        })
-    };
+    // Where its caller reads it, `-> T::IntoIter`, `Option<T::IntoIter>`,
+    // `Pair<I::IntoIter>` (`holds_readably`, #2331).
+    let holds = |ty: Ty<'tcx>| holds_readably(tcx, id, ty, &is_its_iter, &mut Vec::new());
     // A function's signature; an impl's type and its trait's arguments,
     // `One<A::IntoIter>` of `impl<A: IntoIterator> FromT<A> for
     // One<A::IntoIter>`, whose dictionary then takes `A`'s, made for each
@@ -239,7 +221,7 @@ pub(crate) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, in
     let held = match tcx.def_kind(id) {
         rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn => {
             let sig = tcx.fn_sig(id).instantiate_identity().skip_binder();
-            sig.inputs_and_output.iter().any(|ty| holds(ty) || hidden(ty))
+            sig.inputs_and_output.iter().any(holds)
         }
         rustc_hir::def::DefKind::Impl { .. } => {
             let own = tcx.type_of(id).instantiate_identity().skip_normalization();
@@ -252,7 +234,7 @@ pub(crate) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, in
                         .collect::<Vec<_>>()
                 })
                 .unwrap_or_default();
-            std::iter::once(own).chain(of_trait).any(|ty| holds(ty) || hidden(ty))
+            std::iter::once(own).chain(of_trait).any(holds)
         }
         _ => false,
     };
@@ -310,8 +292,15 @@ pub(crate) fn projection_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, ty: Ty
 /// Iterator`, whose values only its impls' methods make, as they make them,
 /// a range a range, the crate's own iterator itself, so one value has one
 /// representation in generic code and concrete alike (ADR 0061, amended,
-/// #2328, #2330). `held_by_generic_code` asks it of an impl's.
+/// #2328, #2330). And std's `IntoIterator`'s `IntoIter`, which an impl's
+/// dictionary makes as its own value too, a range a range, stepped by its
+/// `IntoIterIterator` entry: one dictionary, which generic code that holds
+/// it as it is and generic code given it by a reference's bound both take
+/// (ADRs 0457, 0552, #2331). `held_by_generic_code` asks it of an impl's.
 pub(crate) fn assoc_iterator_as_it_is(tcx: ty::TyCtxt<'_>, item: DefId) -> bool {
+    if item == trait_method(tcx, std_item(tcx, StdItem::IntoIterator), "IntoIter") {
+        return true;
+    }
     !super::recognition::is_std_crate(tcx, item)
         && matches!(tcx.def_kind(item), rustc_hir::def::DefKind::AssocTy)
         // Not a method's `-> impl Iterator`, rustc's associated type of it,
@@ -382,9 +371,9 @@ fn given_as_it_is_of<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy)
     // `DoubleEndedIterator`, whose methods its JS iterator answers (ADRs
     // 0164, 0456).
     let read = of_param.iter().any(|&tr| reads_its_value(tcx, tr));
-    // A value of it, not its `Item`'s, `Vec<I::Item>`: what's in a
-    // projection isn't given back. What an `impl Trait` hides is (#1230).
-    let has = |ty: Ty<'tcx>| holds_value_of(tcx, id, ty, param, &mut Vec::new());
+    // A value of it its caller reads (`holds_readably`).
+    let itself = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Param(p) if p.index == param.index);
+    let has = |ty: Ty<'tcx>| holds_readably(tcx, id, ty, &itself, &mut Vec::new());
     // An impl's type, `Doubled<I>`, or an associated type's value it gives,
     // `type Output = Take<Skip<I>>` of itertools' `IteratorIndex`, which
     // its callers step as the type it names, std's struct holding their own
@@ -409,7 +398,6 @@ fn given_as_it_is_of<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy)
         && tcx.trait_impl_of_assoc(id).is_none()
         && {
             let sig = tcx.fn_sig(id).instantiate_identity().skip_binder();
-            let itself = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Param(p) if p.index == param.index);
             // A `&mut I` and another value of it, an `I` or a `&mut I`,
             // which its body may write there, `*it = next`, `mem::swap(a,
             // b)`: its caller's own, one representation, written in place
@@ -429,40 +417,61 @@ fn given_as_it_is_of<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy)
     held || signature || read
 }
 
-/// Whether `ty` holds a value of `id`'s type parameter `param`, not its
-/// `Item`'s, `Vec<I::Item>`: what's in a projection isn't given back. What an
-/// `impl Trait` of `id`'s crate hides is read as the type it is, `I` of `fn
-/// f<I: Iterator>(it: I) -> impl Iterator { it }`, whose caller reveals it
-/// as the value it gave (#1142): the one value, given as it is (#1230), as
-/// `into_iter_held_as_it_is` reads what one hides (ADR 0920). `seen`, the
-/// opaque types read, each once.
-fn holds_value_of<'tcx>(
+/// Whether `ty`, a type in `id`'s signature, holds a value `sought` takes
+/// where `id`'s caller reads it as the type it is: itself, or in what holds a
+/// value as it is, a tuple, an `Option`, a `Vec`, a type of the crate's or a
+/// compiled std struct (ADRs 0411, 0552, #2331). What an `impl Trait` of
+/// `id`'s crate hides is read as the type it is, `I` of `fn f<I: Iterator>(it:
+/// I) -> impl Iterator { it }`, whose caller reveals it as the value it gave
+/// (#1142, #1230, ADR 0920); `seen`, the opaque types read, each once. Not in
+/// a projection, `Vec<I::Item>`, whose value isn't given back, nor in std's
+/// adapter made a JS iterator, `Zip<I, J>`, which its caller steps and never
+/// reads as what it holds, but in std's own compile of it. The one walk, of
+/// a type parameter given as it is and of an `IntoIter` held as it is.
+fn holds_readably<'tcx>(
     tcx: ty::TyCtxt<'tcx>,
     id: DefId,
     ty: Ty<'tcx>,
-    param: ty::ParamTy,
+    sought: &dyn Fn(Ty<'tcx>) -> bool,
     seen: &mut Vec<DefId>,
 ) -> bool {
     let mut walk = ty.walk();
     while let Some(arg) = walk.next() {
-        match arg.as_type().map(|t| *t.kind()) {
-            Some(ty::Alias(
+        let Some(part) = arg.as_type() else { continue };
+        if sought(part) {
+            return true;
+        }
+        match *part.kind() {
+            ty::Alias(
                 _,
                 ty::AliasTy {
                     kind: ty::Opaque { def_id },
                     args,
                     ..
                 },
-            )) if def_id.krate == id.krate && !seen.contains(&def_id) => {
+            ) if def_id.krate == id.krate && !seen.contains(&def_id) => {
                 walk.skip_current_subtree();
                 seen.push(def_id);
                 let hidden = tcx.type_of(def_id).instantiate(tcx, args).skip_normalization();
-                if holds_value_of(tcx, id, hidden, param, seen) {
+                if holds_readably(tcx, id, hidden, sought, seen) {
                     return true;
                 }
             }
-            Some(ty::Alias(..)) => walk.skip_current_subtree(),
-            Some(ty::Param(p)) if p.index == param.index => return true,
+            ty::Alias(..) => walk.skip_current_subtree(),
+            // Not of `id`'s own crate, std's function's own adapter, `Map<I,
+            // F>` of core's `map`, which its struct holds as it is (ADR
+            // 0561): asked of `id`, as the opaque arm above asks, so its
+            // own compile, `@rust-js/std`'s, and each consumer's answer
+            // alike (#1025). `is_compiled_std_type` answers of the type in
+            // the build compiling, `compiled_for` this one, which the
+            // answer of a std function's signature mustn't hang on.
+            ty::Adt(adt, _)
+                if super::recognition::is_iter_adapter_def(tcx, adt.did())
+                    && !super::recognition::is_compiled_std_type(tcx, part)
+                    && adt.did().krate != id.krate =>
+            {
+                walk.skip_current_subtree()
+            }
             _ => {}
         }
     }

@@ -4,6 +4,7 @@ import {
   $collectDropping,
   $given,
   $iter,
+  $iterator,
   $jsIteratorSome,
   $next,
   $roomForHint,
@@ -34,9 +35,10 @@ function total(items) {
 function looped(items, IItemIntoIterator) {
   let sum = 0;
   for (const item of items) {
-    const iter = IItemIntoIterator.intoIter(item);
-    let x;
-    while ((x = IItemIntoIterator.IntoIterIterator().next(iter)) != null) {
+    for (const x of $iterator(
+      IItemIntoIterator.intoIter(item),
+      IItemIntoIterator.IntoIterIterator().next,
+    )) {
       sum = (sum + x) | 0;
     }
   }

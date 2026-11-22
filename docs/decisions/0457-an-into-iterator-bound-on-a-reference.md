@@ -5,6 +5,10 @@ Status: Accepted. Extends [0061](0061-generic-iterators.md),
 [0454](0454-a-mut-given-as-a-type-parameter.md).
 Amended by [0976](0976-an-into-iterator-parameter-is-held-as-it-is.md): a
 `U: IntoIterator` given a reference holds it as it is, never in a box.
+Amended by [0552](0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md)'s
+#2331 amendment: what the dictionary's `into_iter` makes is its type's own
+value, stepped by its `IntoIterIterator` entry, `for (const x of
+$iterator(C.intoIter(c), C.IntoIterIterator().next))`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the same items, and
 what's written through a `&mut` one is written to the collection.

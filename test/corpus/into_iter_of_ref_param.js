@@ -7,7 +7,9 @@ import {
   $cmp,
   $count,
   $debugStr,
+  $given,
   $iter,
+  $iterator,
   $mutEntries,
   $mutItems,
   $next,
@@ -19,11 +21,17 @@ export function entry() {
 }
 
 function total(c, CRefIntoIterator) {
-  return CRefIntoIterator.intoIter(c).reduce((a, b) => (a + b) >>> 0, 0);
+  return $given(CRefIntoIterator.intoIter(c), CRefIntoIterator.IntoIterIterator()).reduce(
+    (a, b) => (a + b) >>> 0,
+    0,
+  );
 }
 
 function doubleAll(c, CRefMutIntoIterator) {
-  for (const x of CRefMutIntoIterator.intoIter(c)) {
+  for (const x of $iterator(
+    CRefMutIntoIterator.intoIter(c),
+    CRefMutIntoIterator.IntoIterIterator().next,
+  )) {
     x.value = (x.value * 2) >>> 0;
   }
 }
@@ -35,7 +43,10 @@ function doubleThenTotal(c, CRefIntoIterator, CRefMutIntoIterator) {
 }
 
 function bumpValues(m, MRefMutIntoIterator) {
-  for (const [key, value] of MRefMutIntoIterator.intoIter(m)) {
+  for (const [key, value] of $iterator(
+    MRefMutIntoIterator.intoIter(m),
+    MRefMutIntoIterator.IntoIterIterator().next,
+  )) {
     value.value = (value.value + $byteLen(key)) >>> 0;
   }
 }

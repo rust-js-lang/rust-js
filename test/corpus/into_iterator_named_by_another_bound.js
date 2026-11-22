@@ -16,6 +16,7 @@ import {
   $intoIter,
   $iter,
   $iterEqGiven,
+  $iterator,
   $lent,
   $mutItems,
   $next,
@@ -71,12 +72,7 @@ function total(items, IIntoIterator, IsI) {
 
 function bump(items, IIntoIterator, IsI) {
   items = IsI.is(items);
-  const iter = IIntoIterator.intoIter(items);
-  while (true) {
-    const x = IIntoIterator.IntoIterIterator().next(iter);
-    if (x == null) {
-      return;
-    }
+  for (const x of $iterator(IIntoIterator.intoIter(items), IIntoIterator.IntoIterIterator().next)) {
     x.value = (x.value + 1) >>> 0;
   }
 }
@@ -84,11 +80,7 @@ function bump(items, IIntoIterator, IsI) {
 function count(items, IIntoIterator, IsI) {
   items = IsI.is(items);
   let n = 0;
-  const iter = IIntoIterator.intoIter(items);
-  while (true) {
-    if (IIntoIterator.IntoIterIterator().next(iter) == null) {
-      break;
-    }
+  for (const _ of $iterator(IIntoIterator.intoIter(items), IIntoIterator.IntoIterIterator().next)) {
     n = (n + 1) >>> 0;
   }
   return n;

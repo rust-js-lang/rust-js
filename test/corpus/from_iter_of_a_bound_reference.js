@@ -5,6 +5,7 @@ import {
   $debugStr,
   $foldToArray,
   $folded,
+  $given,
   $iter,
   $next,
   $reserveHint,
@@ -24,13 +25,28 @@ function refWordIntoIterator_intoIter(word) {
 }
 
 function letters(r, IRefIntoIterator) {
-  return $collectDropping($roomForHint(IRefIntoIterator.intoIter(r), 4, false));
+  const IntoIterIterator = IRefIntoIterator.IntoIterIterator();
+  return $collectDropping(
+    $roomForHint(
+      $given($given(IRefIntoIterator.intoIter(r), IntoIterIterator), IntoIterIterator),
+      4,
+      false,
+    ),
+  );
 }
 
 function sizes(r, IRefIntoIterator) {
+  const IntoIterIterator = IRefIntoIterator.IntoIterIterator();
   return [
-    $collectDropping($roomForHint(IRefIntoIterator.intoIter(r), 4, false)),
-    $foldToArray($reserveHint($folded(IRefIntoIterator.intoIter(r)), 1)).join(""),
+    $collectDropping(
+      $roomForHint($given(IRefIntoIterator.intoIter(r), IntoIterIterator), 4, false),
+    ),
+    $foldToArray(
+      $reserveHint(
+        $folded($given($given(IRefIntoIterator.intoIter(r), IntoIterIterator), IntoIterIterator)),
+        1,
+      ),
+    ).join(""),
   ];
 }
 

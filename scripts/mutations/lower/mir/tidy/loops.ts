@@ -182,6 +182,16 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "dictionary-entry-loop-kept",
+    breaks:
+      "a `for` stepped by a given dictionary's entry, `C.IntoIterIterator().next`, stays a `while (true)`, not `for (const x of $iterator(C.intoIter(c), C.IntoIterIterator().next))` (#2331)",
+    file: "crates/rust-js-mir/src/tidy/loops.rs",
+    find: "                    || (of.facts.has(js::Known::Evidence) && matches!(&of.kind, ExprKind::Call(_, args) if args.is_empty()))))\n",
+    replace: "                    || false))\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
+    snapshots: true,
+  },
+  {
     name: "dictionary-loop-boxed",
     breaks:
       "a `for` over an adapter's `I` of a generic item binds its `Some` still boxed",

@@ -5,6 +5,7 @@ import {
   $collectDropping,
   $given,
   $iter,
+  $iterator,
   $mutItems,
   $next,
   $rangeNext,
@@ -42,12 +43,7 @@ function total(i, IIntoIterator, IsI) {
 
 function bump(i, IIntoIterator, IsI) {
   i = IsI.is(i);
-  const iter = IIntoIterator.intoIter(i);
-  while (true) {
-    const x = IIntoIterator.IntoIterIterator().next(iter);
-    if (x == null) {
-      return;
-    }
+  for (const x of $iterator(IIntoIterator.intoIter(i), IIntoIterator.IntoIterIterator().next)) {
     x.value = (x.value + 1) >>> 0;
   }
 }

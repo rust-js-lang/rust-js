@@ -157,4 +157,3 @@ itertools tests/specializations.rs::zip_eq  #2326 rand's thread_rng panics: getr
 itertools tests/specializations.rs::zip_longest  #2326 rand's thread_rng panics: getrandom 0.1 has no backend under rust-js's wasm32 cfg (#1121)
 itertools tests/test_std.rs::k_smallest_range  #2326 rand's thread_rng panics: getrandom 0.1 has no backend under rust-js's wasm32 cfg (#1121)
 itertools tests/test_std.rs::k_smallest_relaxed_range  #2326 rand's thread_rng panics: getrandom 0.1 has no backend under rust-js's wasm32 cfg (#1121)
-itertools tests/test_std.rs::combinations  #2328 a TypeError: a consumer-compiled impl steps its `T::Combination` field, the library's `Tuple2Combination<I>`, as a JS iterator

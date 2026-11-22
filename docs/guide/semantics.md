@@ -941,10 +941,19 @@ What's refused is in [the limitations](limitations.md).
   `Take<Skip<I>>`, an impl's type or an impl's associated type, itertools'
   `type Output = Take<Skip<I>>`, is given as it is, with its `Iterator`
   dictionary, `iterator_skip(iter, n, IIterator)`, and so is an
-  `I::IntoIter` another bound names, `R: IteratorIndex<I::IntoIter>`
+  `I::IntoIter` another bound names, `R: IteratorIndex<I::IntoIter>`, or
+  the signature holds where its caller reads it, `fn it<T: IntoIterator>(t:
+  T) -> T::IntoIter`, an `Option` or a tuple of one, or one taken: `it(t,
+  TIntoIterator)`, `TIntoIterator.intoIter(t)`. One only std's adapter
+  holds, `Zip<T::IntoIter, J>` or a `Copied<I>` given, is a JS iterator. An
+  `IntoIterator` dictionary, the crate's impl's too, makes its `IntoIter` as
+  its own value, a range a range, stepped by its `IntoIterIterator` entry,
+  as generic code over a reference's `for<'a> &'a C: IntoIterator` steps
+  it: `for (const x of $iterator(C.intoIter(c),
+  C.IntoIterIterator().next))`
   ([0411](../decisions/0411-an-iterator-given-as-it-is-has-its-dictionary.md),
   [0552](../decisions/0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md),
-  #1412). An iterator of the crate's that JS holds as no object, a
+  #1412, #2331). An iterator of the crate's that JS holds as no object, a
   fieldless enum's string, is given generic code in a place of its own,
   `iterator_take({ value: "Red" }, 2, ..)`, as its own `&mut self` steps
   take a place, and a `&mut` of it as its caller's place; its

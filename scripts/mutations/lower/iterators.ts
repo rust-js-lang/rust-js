@@ -105,8 +105,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`all<I>(i) -> Vec<I::Item>`, which gives back only its items, takes its `I` as it is, with a dictionary",
     file: "crates/rust-js-lower/src/iterators.rs",
-    find: "            Some(ty::Alias(..)) => walk.skip_current_subtree(),\n            Some(ty::Param(p)) if p.index == param.index => return true,\n",
-    replace: "            Some(ty::Param(p)) if p.index == param.index => return true,\n",
+    find: "            ty::Alias(..) => walk.skip_current_subtree(),\n            // Not of `id`'s own crate, std's function's own adapter, `Map<I,\n",
+    replace: "            // Not of `id`'s own crate, std's function's own adapter, `Map<I,\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_types.rs$"],
     snapshots: true,
   },
@@ -254,16 +254,6 @@ export const mutations: Mutation[] = [
     tests: ["test/std-package.test.ts"],
   },
   {
-    name: "impl-trait-hides-held-into-iter",
-    breaks:
-      "an `impl Iterator` a function gives, hiding std's `Chain` of what it's given, isn't read as holding a `J::IntoIter`, so `J` is given as a JS iterator, `chain($iterator(countdown, next), tmp, drop)`, with dictionaries made in the function, not given as it is with its dictionary (ADR 0920)",
-    file: "crates/rust-js-lower/src/iterators.rs",
-    find: "            sig.inputs_and_output.iter().any(|ty| holds(ty) || hidden(ty))\n",
-    replace: "            sig.inputs_and_output.iter().any(|ty| holds(ty) || false && hidden(ty))\n",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^generic_chain_of_into.rs$"],
-  },
-  {
     name: "stepped-slices-length-kept",
     breaks:
       "a slice's iterator asked its length too, `it.len()`, is made the array's own `values()`, which has none, a TypeError (rd270)",
@@ -318,21 +308,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unread_map_of_a_held_iterator.rs$"],
   },
   {
-    name: "into-iter-held-in-a-library-type-unseen",
-    breaks:
-      "whether a function holds what an `IntoIterator` makes as it is asks of a type of the crate compiling, so a library's `both` returning its own `Both<I::IntoIter, J::IntoIter>` takes its dictionaries and its consumer gives none, `IIntoIterator.intoIter is not a function` (#1025)",
-    file: "crates/rust-js-lower/src/iterators.rs",
-    find: "                if adt.did().krate == id.krate || super::recognition::is_compiled_std_type(tcx, part.expect_ty()) =>\n",
-    replace: "                if adt.did().is_local() || super::recognition::is_compiled_std_type(tcx, part.expect_ty()) =>\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_into_iter_held_as_it_is"],
-  },
-  {
     name: "into-iter-hidden-by-a-library-unseen",
     breaks:
       "whether a function holds what an `IntoIterator` makes as it is, behind an `impl Iterator` it gives, asks of an opaque type of the crate compiling, so a library's `chained`'s consumer gives no dictionary its JS takes (#1025)",
     file: "crates/rust-js-lower/src/iterators.rs",
-    find: "            )) if def_id.krate == id.krate => holds(tcx.type_of(def_id).instantiate(tcx, args).skip_normalization()),\n",
-    replace: "            )) if def_id.is_local() => holds(tcx.type_of(def_id).instantiate(tcx, args).skip_normalization()),\n",
+    find: "            ) if def_id.krate == id.krate && !seen.contains(&def_id) => {\n",
+    replace: "            ) if def_id.is_local() && !seen.contains(&def_id) => {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_into_iter_held_as_it_is"],
   },
   {
@@ -366,8 +347,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a type parameter generic code gives back behind an `impl Iterator`, `fn hidden<I>(it: I) -> impl Iterator { it }`, is a JS iterator its caller makes, where the caller reveals the hidden type as the value it gave and wraps it again: the crate's own iterator yields nothing (#1230)",
     file: "crates/rust-js-lower/src/iterators.rs",
-    find: "            )) if def_id.krate == id.krate && !seen.contains(&def_id) => {\n",
-    replace: "            )) if false && def_id.krate == id.krate && !seen.contains(&def_id) => {\n",
+    find: "            ) if def_id.krate == id.krate && !seen.contains(&def_id) => {\n",
+    replace: "            ) if false && def_id.krate == id.krate && !seen.contains(&def_id) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_given_on_behind_impl_trait.rs$"],
   },
   {
@@ -504,5 +485,51 @@ export const mutations: Mutation[] = [
     find: "        && !tcx.is_impl_trait_in_trait(item)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_of_a_method_with_its_own_generics.rs$"],
+  },
+  {
+    name: "into-iter-in-a-signature-unread",
+    breaks:
+      "a function that gives back what an `IntoIterator` makes, `-> T::IntoIter`, `Option<T::IntoIter>`, or takes one, takes its `T` as a JS iterator, so concrete code reads a range given back as `undefined..undefined` (#2331)",
+    file: "crates/rust-js-lower/src/iterators.rs",
+    find: "    let holds = |ty: Ty<'tcx>| holds_readably(tcx, id, ty, &is_its_iter, &mut Vec::new());\n",
+    replace: "    let holds = |ty: Ty<'tcx>| holds_readably(tcx, id, ty, &|_| false, &mut Vec::new());\n",
+    tests: ["test/associated-iterator-matrix.test.ts"],
+  },
+  {
+    name: "readable-walk-reads-into-adapters",
+    breaks:
+      "what std's adapter made a JS iterator holds, `Copied<I>` given or `Zip<T::IntoIter, J>` given back, is taken as read by its caller, so its `I` is given as it is, with dictionaries no step needs (#2331)",
+    file: "crates/rust-js-lower/src/iterators.rs",
+    find: "                if super::recognition::is_iter_adapter_def(tcx, adt.did())\n",
+    replace: "                if false && super::recognition::is_iter_adapter_def(tcx, adt.did())\n",
+    tests: ["test/corpus.test.ts", "-t", "^uncompiled_adapter_given_to_generic_code.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "impl-into-iter-a-js-iterator",
+    breaks:
+      "an impl's `IntoIterator` dictionary makes a JS iterator of its `IntoIter`, `$iterator(bagIntoIterator_intoIter(bag), $rangeNext)`, which generic code holding it as it is gives back to concrete code that reads a range: `undefined..undefined` (#2331)",
+    file: "crates/rust-js-lower/src/iterators.rs",
+    find: "    if item == trait_method(tcx, std_item(tcx, StdItem::IntoIterator), \"IntoIter\") {\n        return true;\n    }\n",
+    replace: "",
+    tests: ["test/associated-iterator-matrix.test.ts"],
+  },
+  {
+    name: "dictionary-into-iter-a-js-iterator",
+    breaks:
+      "generic code given a reference's `IntoIterator` dictionary, `for<'a> &'a C: IntoIterator`, steps what its `into_iter` makes as a JS iterator, so the crate's impl's range is no iterator, a `TypeError` (#2331)",
+    file: "crates/rust-js-lower/src/iterators.rs",
+    find: "    if super::recognition::into_iter_by_dictionary(tcx, into_iterator, into) {\n        return true;\n    }\n",
+    replace: "",
+    tests: ["test/associated-iterator-matrix.test.ts"],
+  },
+  {
+    name: "readable-walk-skips-stds-own-adapters",
+    breaks:
+      "std's own compile of its adapter, `@rust-js/std`'s `Map<I, F>` made of a parameter, is skipped as a JS iterator, so its `I` loses its dictionary, and the package's manifest its `stepped` facts (#2331)",
+    file: "crates/rust-js-lower/src/iterators.rs",
+    find: "                    && adt.did().krate != id.krate =>\n",
+    replace: "                    && true =>\n",
+    tests: ["test/std-package.test.ts"],
   },
 ];

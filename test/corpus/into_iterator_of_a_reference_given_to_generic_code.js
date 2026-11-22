@@ -9,11 +9,13 @@ import {
   $extendMap,
   $foldToArray,
   $folded,
+  $given,
   $grownBy,
   $grownVec,
   $iter,
   $iterCmp,
   $iterEq,
+  $iterator,
   $keepCapacity,
   $lazyChain,
   $lazyZip,
@@ -38,36 +40,73 @@ function refWordIntoIterator_intoIter(word) {
 }
 
 function all(word, IRefIntoIterator) {
+  const IntoIterIterator = IRefIntoIterator.IntoIterIterator();
   const z = $grownVec(
-    $roomForHint($lazyZip($iter([1, 2, 3]), IRefIntoIterator.intoIter(word)), 8, false),
+    $roomForHint(
+      $lazyZip($iter([1, 2, 3]), $given(IRefIntoIterator.intoIter(word), IntoIterIterator)),
+      8,
+      false,
+    ),
     (grown) => $collectDropping(grown),
   );
   const c = $foldToArray(
-    $reserveHint($folded($lazyChain("x"[Symbol.iterator](), IRefIntoIterator.intoIter(word))), 1),
+    $reserveHint(
+      $folded(
+        $lazyChain(
+          "x"[Symbol.iterator](),
+          $given(IRefIntoIterator.intoIter(word), IntoIterIterator),
+        ),
+      ),
+      1,
+    ),
   ).join("");
   $print(`${c}\n`);
-  $print(`${$iterEq("abc"[Symbol.iterator](), IRefIntoIterator.intoIter(word))}\n`);
+  $print(
+    `${$iterEq("abc"[Symbol.iterator](), $given(IRefIntoIterator.intoIter(word), IntoIterIterator))}\n`,
+  );
   $print(
     `${
       ["Less", "Equal", "Greater"][
-        $iterCmp("abd"[Symbol.iterator](), IRefIntoIterator.intoIter(word), $cmp) + 1
+        $iterCmp(
+          "abd"[Symbol.iterator](),
+          $given(IRefIntoIterator.intoIter(word), IntoIterIterator),
+          $cmp,
+        ) + 1
       ]
     }\n`,
   );
-  $print(`${!$iterEq("abc"[Symbol.iterator](), IRefIntoIterator.intoIter(word))}\n`);
-  const partialCmp = $iterCmp("ab"[Symbol.iterator](), IRefIntoIterator.intoIter(word), $cmp);
+  $print(
+    `${!$iterEq("abc"[Symbol.iterator](), $given(IRefIntoIterator.intoIter(word), IntoIterIterator))}\n`,
+  );
+  const partialCmp = $iterCmp(
+    "ab"[Symbol.iterator](),
+    $given(IRefIntoIterator.intoIter(word), IntoIterIterator),
+    $cmp,
+  );
   $print(
     `${partialCmp == null ? "None" : `Some(${["Less", "Equal", "Greater"][partialCmp + 1]})`}\n`,
   );
-  $print(`${$iterCmp("abd"[Symbol.iterator](), IRefIntoIterator.intoIter(word), $cmp) < 0}\n`);
+  $print(
+    `${$iterCmp("abd"[Symbol.iterator](), $given(IRefIntoIterator.intoIter(word), IntoIterIterator), $cmp) < 0}\n`,
+  );
   const v = ["z"];
-  $extend(v, $grownBy(v, IRefIntoIterator.intoIter(word), 4, false, undefined, true));
+  $extend(
+    v,
+    $grownBy(
+      v,
+      $given(IRefIntoIterator.intoIter(word), IntoIterIterator),
+      4,
+      false,
+      undefined,
+      true,
+    ),
+  );
   $print(`[${v.map((item) => $debugStr(item, "'")).join(", ")}]\n`);
   const zz = $grownVec(
     $roomForHint(
       $lazyZip(
-        $lazyZip($iter([1, 2]), IRefIntoIterator.intoIter(word)),
-        IRefIntoIterator.intoIter(word),
+        $lazyZip($iter([1, 2]), $given(IRefIntoIterator.intoIter(word), IntoIterIterator)),
+        $given(IRefIntoIterator.intoIter(word), IntoIterIterator),
       ),
       12,
       false,
@@ -81,36 +120,59 @@ function all(word, IRefIntoIterator) {
 }
 
 function more(word, IRefIntoIterator) {
+  const IntoIterIterator = IRefIntoIterator.IntoIterIterator();
   const z = $grownVec(
-    $roomForHint($lazyZip([1, 2], IRefIntoIterator.intoIter(word)), 8, false),
+    $roomForHint(
+      $lazyZip([1, 2], $given(IRefIntoIterator.intoIter(word), IntoIterIterator)),
+      8,
+      false,
+    ),
     (grown) => $collectDropping(grown),
   );
   $print(`[${z.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}]\n`);
-  const s = $foldToArray($reserveHint($folded(IRefIntoIterator.intoIter(word)), 1)).join("");
+  const s = $foldToArray(
+    $reserveHint($folded($given(IRefIntoIterator.intoIter(word), IntoIterIterator)), 1),
+  ).join("");
   $print(`${s}\n`);
   const w = ["x", "y", "z"];
   $keepCapacity(w);
   const out = $grownVec(
-    $roomForHint($splicing(w, 1, 2, IRefIntoIterator.intoIter(word)), 4, false),
+    $roomForHint(
+      $splicing(w, 1, 2, $given(IRefIntoIterator.intoIter(word), IntoIterIterator)),
+      4,
+      false,
+    ),
     (grown) => $collectDropping(grown),
   );
   $print(
     `[${w.map((item) => $debugStr(item, "'")).join(", ")}] [${out.map((item) => $debugStr(item, "'")).join(", ")}]\n`,
   );
   const d = [];
-  $extend(d, $grownBy(d, IRefIntoIterator.intoIter(word), 4, true, undefined, true));
+  $extend(
+    d,
+    $grownBy(
+      d,
+      $given(IRefIntoIterator.intoIter(word), IntoIterIterator),
+      4,
+      true,
+      undefined,
+      true,
+    ),
+  );
   $print(`[${d.map((item) => $debugStr(item, "'")).join(", ")}]\n`);
   const b = new $BTreeSet();
-  $extendMap(b, IRefIntoIterator.intoIter(word), true);
+  $extendMap(b, $given(IRefIntoIterator.intoIter(word), IntoIterIterator), true);
   $print(
     `{${Array.from($sortedKeys(b, $cmp))
       .map((item) => $debugStr(item, "'"))
       .join(", ")}}\n`,
   );
   let t = ">";
-  t += Array.from(IRefIntoIterator.intoIter($reserveHint(word, 1, undefined, t))).join("");
+  t += Array.from(
+    $given(IRefIntoIterator.intoIter($reserveHint(word, 1, undefined, t)), IntoIterIterator),
+  ).join("");
   $print(`${t}\n`);
-  for (const c of IRefIntoIterator.intoIter(word)) {
+  for (const c of $iterator(IRefIntoIterator.intoIter(word), IntoIterIterator.next)) {
     $print(c);
   }
   $print("\n");

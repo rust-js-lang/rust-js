@@ -225,3 +225,104 @@ enum's or a unit struct's, which JS holds as no object, is refused by
 holds the impl's dictionary for the crate's iterator, a `Vec`, a direct
 call, and a method that holds nothing, against native Rust in both
 builds.
+
+## Amended: given back, taken, and made by a dictionary (#2331)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): results changed,
+so Rust's are kept.
+
+A generic function that gave `T::IntoIter` back to concrete code,
+`fn it<T: IntoIterator>(t: T) -> T::IntoIter`, took `T` as a JS iterator
+and gave back `$intoIter(t)`. Concrete code read that as the type it is,
+so `it(3..6)` printed `undefined..undefined` where Rust prints `3..6`.
+The same happened in an `Option`, a tuple, a `Vec` or a `Box` given back.
+An `IntoIter` taken as an input, `it: T::IntoIter`, was a `TypeError`:
+the caller gave its range object, and generic code stepped it as a JS
+iterator. Even where `T` was held as it is, the crate's own impl's
+dictionary was wrong. `impl IntoIterator for Bag { type IntoIter =
+Range<u32> }` made a JS iterator of its range, `$iterator(range,
+$rangeNext)`, because ADR 0457's code over a reference stepped the same
+dictionary's value with `for...of`. That was one value with two
+representations.
+
+**What a dictionary makes is its type's own value. A function holds its
+`IntoIter` as it is wherever its caller reads it as that type.**
+
+- **The signature.** `into_iter_held_as_it_is` asks one walk,
+  `holds_readably`. It answers whether a signature type holds a value
+  where its caller reads it as the type it is: itself, `-> T::IntoIter`
+  or `it: T::IntoIter`, or inside what holds a value as it is, such as a
+  tuple, an `Option`, a `Vec`, a `Box`, a type of the crate's or a
+  compiled std struct. It reads what an `impl Trait` of the crate hides.
+  It doesn't look inside a projection, or inside std's adapter made a JS
+  iterator (`is_iter_adapter_def` and not a compiled std type), such as
+  `Zip<T::IntoIter, J>`, which its caller steps but never reads into. The
+  exception is an adapter of the function's own crate, such as core's
+  `map` giving `Map<I, F>`, whose struct holds what it's given as it is.
+  That is asked of the function, as the walk asks of an `impl Trait`, so
+  `@rust-js/std`'s own compile and each consumer answer alike (#1025).
+  `is_compiled_std_type` answers for the build compiling (`compiled_for`),
+  and the answer for a std function's signature mustn't depend on that.
+  ADR 0411's type parameter asks the same walk with what it seeks: one
+  walk, no list of containers.
+- **The impl's dictionary.** `assoc_iterator_as_it_is` answers yes for
+  std's `IntoIter` too, so `held_by_generic_code` makes no JS iterator of
+  an impl's. `bagIntoIterator` is `{ intoIter: bagIntoIterator_intoIter,
+  IntoIterIterator: () => ({ next: $rangeNext }) }`, as #2330 made every
+  trait's associated iterator.
+- **What a dictionary gives.** An `IntoIter` generic code got from a
+  dictionary, a reference's `for<'a> &'a C: IntoIterator` (ADR 0457), is
+  held as it is too (`into_iter_by_dictionary` in
+  `into_iter_held_as_it_is`). It is stepped by the dictionary's
+  `IntoIterIterator` entry. Only `$intoIter(t)`, of a parameter given as
+  a JS iterator, still makes a JS iterator.
+- **The loop stays a `for...of`.** tidy's `step_of` turned a loop stepped
+  by `IIterator.next` into `for (const x of $iterator(iter, IIterator.next))`.
+  It now also takes a given dictionary's entry, `C.IntoIterIterator().next`.
+  That entry's call is marked `Known::Evidence` and takes no arguments; it
+  makes a dictionary and does nothing else, the same fact `given_entries`
+  relies on when it declares one at the top. Calling it once, where the
+  loop called it each turn, is the same. The `for...of` is made only where
+  no drop of the iterator follows the loop (tidy's existing rule). Where the
+  iterator has a drop, the loop stays a `while` with the drop written at
+  each exit.
+
+Eleven corpus cases' JS moves, in both builds, each run as native Rust
+does:
+- Functions that give back or take an `IntoIter` take a dictionary:
+  `generic_into_iter_values`, `option_slot_iterators`,
+  `option_insert_given_drops`.
+- Reference code steps through the entry, `$given(C.intoIter(c),
+  C.IntoIterIterator())`: `into_iter_of_ref_param`,
+  `into_iterator_of_a_reference_given_to_generic_code`,
+  `from_iter_of_a_bound_reference`, `mut_kept_by_what_a_call_gives_back`.
+- Earlier `while` loops over an entry become `for...of`:
+  `into_iter_of_items`, `into_iterator_named_by_another_bound`,
+  `mut_given_for_a_parameter_read_as_another`.
+- An input `Copied<I>` no longer makes `I` held as it is, so its
+  dictionaries are gone: `copied_given_to_generic_backs`.
+
+The itertools crater check runs 196 of 415 tests as native, one more than
+before: `test_std.rs::combinations`, #2328's, is taken off
+`scripts/crater-decided.txt`. Corpus case `uncompiled_adapter_given_to_generic_code` gives and takes
+std's adapters, `Copied`, `Filter`, `Rev`, `Zip`, `Chain`, around a
+parameter and an `IntoIter`. Before this, that program was refused at a
+generic `Copied`'s `next_back()`.
+
+Tested by the associated-iterator matrix. Its `into-iter` row is off
+`wrong`, and it has new rows: `into-iter-held` (an `Option`, a tuple, a
+`Vec` and a `Box` given back, and an input) and `into-iter-by-a-reference`
+(an impl on `&Bag` given back and stepped, and on `&mut Noisy` whose
+iterator drops on a `return` inside the loop). The pair
+`library_into_iter_given_back` covers a library's functions and impl
+with a consumer's own `&Mine`. Mutations: `into-iter-in-a-signature-unread`,
+`readable-walk-reads-into-adapters`, `impl-into-iter-a-js-iterator`,
+`dictionary-into-iter-a-js-iterator`, `dictionary-entry-loop-kept`,
+`readable-walk-skips-stds-own-adapters`;
+`given-as-it-is-projection`, `given-as-it-is-blind-to-what-impl-trait-hides`
+and `into-iter-hidden-by-a-library-unseen` retargeted to the one walk;
+`impl-trait-hides-held-into-iter` merged into
+`given-as-it-is-blind-to-what-impl-trait-hides`, as one walk reads both;
+`into-iter-held-in-a-library-type-unseen` removed, as the walk asks no
+crate of a type it holds. #2336, `&mut` of an iterator given to a
+reference's bound, is a separate gap.

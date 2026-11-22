@@ -446,16 +446,16 @@ has no `next`.
   `into_iter_held_as_it_is`). Another trait's associated value is only
   ever made by its impl's methods, as they make it, so it is always its
   type's own. A generic function that gives its `T::IntoIter` back to
-  concrete code still gives the JS iterator: #2331, a sibling wrong answer,
-  is taken next, in `into_iter_held_as_it_is` through the same answer.
+  concrete code holds it as it is, and an impl's dictionary makes its
+  `IntoIter` as its own value (ADR 0552's #2331 amendment).
 
 The premise is tested by `test/associated-iterator-matrix.test.ts`. Each
 shape of the type, a range, the crate's own iterator, std's JS iterator
 and std's compiled struct, is stepped in generic code, given back to
 concrete code that reads it as the impl's type, stepped and then given
 back, stepped from its back, and made by a `From<I>` bound. Each runs as
-a program and as a library against native Rust, and its `wrong` list holds
-`IntoIter`'s row under #2331. The pair `library_associated_iterator_flows_back`
+a program and as a library against native Rust; `IntoIter`'s rows
+pass since #2331. The pair `library_associated_iterator_flows_back`
 covers a library's trait and generic code with its consumer's own impl.
 Mutations: `assoc-iterator-a-js-iterator`,
 `projection-js-iterator-to-generic-code`,

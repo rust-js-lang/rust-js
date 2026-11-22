@@ -130,7 +130,14 @@ pub(super) fn step_of(callee: &Expr) -> Option<&'static str> {
         Some("$rangeFromNext") => Some("$rangeFromNext"),
         Some(_) => None,
         None => {
-            matches!(&callee.kind, ExprKind::Member(of, name) if name == "next" && matches!(of.kind, ExprKind::Var(_)))
+            // Or a given dictionary's entry's, `C.IntoIterIterator().next`,
+            // its call marked given (`Known::Evidence`), of no arguments,
+            // which makes a dictionary and does nothing else, as the top's
+            // `given_entries` takes it: called once where the loop called it
+            // each turn, the same (#2331).
+            matches!(&callee.kind, ExprKind::Member(of, name) if name == "next"
+                && (matches!(of.kind, ExprKind::Var(_))
+                    || (of.facts.has(js::Known::Evidence) && matches!(&of.kind, ExprKind::Call(_, args) if args.is_empty()))))
                 .then_some(DICTIONARY)
         }
     }
