@@ -438,8 +438,11 @@ pub(super) fn type_fact_params<'tcx>(
                 ..
             } in copies_of_default(tcx, default, identity)
             {
+                // Its slot's, or the layout of a type built of its
+                // parameters, a default's `size_of::<Self>()` in an impl
+                // over `Wrap<T>` (#2290).
                 for each in asked_of_caller(tcx, foreign, impl_env, (imp, args), (slot, fact)) {
-                    if matches!(each, Asked::Slot(..)) {
+                    if matches!(each, Asked::Slot(..) | Asked::Built(..)) {
                         changed |= ask((&mut asked, &mut built, &mut carried), imp, each);
                     }
                 }
@@ -501,7 +504,16 @@ pub(super) fn type_fact_params<'tcx>(
         for (at, &(caller, callee, args)) in calls.iter().enumerate() {
             let typing_env = ty::TypingEnv::non_body_analysis(tcx, caller);
             let no_built = Default::default();
+            // Not what a trait's default asks of its trait's parameters,
+            // `Self`'s `size_of`, where each impl's dictionary copies the
+            // default and gives it of its own (#2290): only of one compiled
+            // over `Self`, std's or a library's, as its own are asked.
+            let copied = tcx.trait_of_assoc(callee).is_some()
+                && !(crate::lower::recognition::is_compiled_std(tcx, callee)
+                    || collects::instance_over_self(tcx, foreign, callee));
+            let parents = tcx.generics_of(callee).parent_count as u32;
             let mut facts: Vec<(ty::Ty<'tcx>, TypeFact)> = (asked_by.get(&callee).into_iter().flatten())
+                .filter(|&&(index, _)| !(copied && index < parents))
                 .map(|&(index, fact)| {
                     let slot = crate::lower::traits::drop_slot(tcx, (foreign, &no_built), callee, index);
                     (slot, fact)

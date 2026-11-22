@@ -95,7 +95,8 @@ table](../../ROADMAP.md) lists the larger missing pieces.
   ([0145](../decisions/0145-type-facts.md)). Generic code asks them of a
   type built of its type parameters of its callers, as of a parameter:
   `size_of::<[T; 2]>()`, and `size_of::<Self>()` of an `impl<T> for
-  Wrap<T>` over `[T; 2]`, whose dictionary is made with it (#2287). It
+  Wrap<T>` over `[T; 2]`, whose dictionary is made with it (#2287), as
+  is a trait default's `size_of::<Self>()`, each impl's (#2290). It
   asks them of an associated type through its trait's dictionary, a
   library's trait's too, `size_of::<Self::Item>()` of rand_core's
   `BlockRngCore`: a library's

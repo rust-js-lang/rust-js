@@ -571,4 +571,21 @@ export const mutations: Mutation[] = [
     replace: "                && let Some(each @ Asked::Built(..)) = None::<Asked<'tcx>>\n",
     tests: ["test/corpus.test.ts", "-t", "^size_of_a_type_built_of_an_impls_parameters\\.rs$"],
   },
+  {
+    name: "default-self-built-unrelayed",
+    breaks: "a trait default's `size_of::<Self>()` in an impl over `Wrap<T>`, a type built of its parameters, isn't asked of the impl's makers, so the default's copy is refused as `size_of` of a type parameter (#2290)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                    if matches!(each, Asked::Slot(..) | Asked::Built(..)) {\n",
+    replace: "                    if matches!(each, Asked::Slot(..)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_of_self_in_a_traits_default\\.rs$"],
+  },
+  {
+    name: "copied-default-self-asked-of-callers",
+    breaks: "a trait default's ask of its trait's `Self`, which each impl's dictionary copies and gives of its own, is asked of every caller of the method too, so `through<S: Sz>` takes an `SSize` it never reads (#2290)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                .filter(|&&(index, _)| !(copied && index < parents))\n",
+    replace: "                .filter(|_| parents == parents || copied)\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_of_self_in_a_traits_default\\.rs$"],
+    snapshots: true,
+  },
 ];
