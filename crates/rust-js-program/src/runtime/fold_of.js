@@ -87,10 +87,11 @@ function $collectVec(it, size, how, drop) {
 // given, as std's `ToRcSlice` collects the type its caller knows: of a
 // `TrustedLen`, `trusted`, `from_iter_exact`'s, room asked as
 // `$roomForCounted` asks it, of items `size` bytes aligned to `align`,
+// its panic of no upper bound at `unbounded`, std's line of it,
 // then each item by `next`, a panic dropping what's left before what it
 // wrote; of another, a `Vec`'s, `$collectVec`'s by `how` (#1678, #1694).
-function $collectCounted(it, size, align, trusted, how, drop) {
-  if (trusted) return $collectDropping($roomForCounted(it, size, align), drop, true);
+function $collectCounted(it, size, align, trusted, how, unbounded, drop) {
+  if (trusted) return $collectDropping($roomForCounted(it, size, align, unbounded), drop, true);
   return $collectVec(it, size, how, drop);
 }
 

@@ -74,8 +74,8 @@ export function vectors() {
 export function integers(a, b) {
   const abs = Math.abs(a) | 0;
   const pow = $pow(a, 2);
-  const remEuclid = $remEuclid(a, 7, -2147483648);
-  const divEuclid = $divEuclid(a, 7, -2147483648);
+  const remEuclid = $remEuclid(a, 7, "examples/numbers.rs:69:11", -2147483648);
+  const divEuclid = $divEuclid(a, 7, "examples/numbers.rs:70:11", -2147483648);
   const checkedSub = $checked(b - 10, 0, 4294967295);
   const checkedAdd = $checked(a + 2147483647, -2147483648, 2147483647);
   const checkedMul = $checked(a * a, -2147483648, 2147483647);
@@ -84,7 +84,7 @@ export function integers(a, b) {
 }
 
 export function narrow(a, b) {
-  return `${($pow(a, 3) << 24) >> 24} ${$pow(b, 3) & 255} ${(Math.abs(a) << 24) >> 24} ${Math.clz32(a & 255) - 24} ${$countOnes(a & 255)} ${$trailingZeros(b, 8)} ${b !== 0 && (b & (b - 1)) === 0} ${$remEuclid(a, -3, -128)}`;
+  return `${($pow(a, 3) << 24) >> 24} ${$pow(b, 3) & 255} ${(Math.abs(a) << 24) >> 24} ${Math.clz32(a & 255) - 24} ${$countOnes(a & 255)} ${$trailingZeros(b, 8)} ${b !== 0 && (b & (b - 1)) === 0} ${$remEuclid(a, -3, "examples/numbers.rs:98:11", -128)}`;
 }
 
 export function floats(x) {
@@ -101,7 +101,7 @@ export function floats(x) {
 }
 
 export function gcd(a, b) {
-  return b === 0 ? a : gcd(b, $rem(a, b) >>> 0);
+  return b === 0 ? a : gcd(b, $rem(a, b, "examples/numbers.rs:121:35") >>> 0);
 }
 
 function cell2Debug_fmt(cell2) {
@@ -124,8 +124,8 @@ export function grids(n) {
   const t = Array.from({ length: n }, () => item$1.slice());
   for (const [i, row] of m.entries()) {
     for (const [j, v] of row.entries()) {
-      const items = $index(t, j);
-      items[$at(items, i)] = v;
+      const items = $index(t, j, "examples/numbers.rs:139:14");
+      items[$at(items, i, "examples/numbers.rs:139:17")] = v;
     }
   }
   // Each is its own copy: changing one leaves the others.
@@ -151,8 +151,8 @@ export function searches() {
 // Integers are never -0, which `%`, `/` and `*` can make in JS: `1 / x` tells.
 export function zeros(a) {
   const parts = [
-    $remEuclid(a, 7, -2147483648),
-    $divEuclid(a, -9, -2147483648),
+    $remEuclid(a, 7, "examples/numbers.rs:163:11", -2147483648),
+    $divEuclid(a, -9, "examples/numbers.rs:164:11", -2147483648),
     $checked(a * -3, -2147483648, 2147483647) ?? 1,
     Math.min(Math.max(a * -4, -2147483648), 2147483647) | 0,
     $checkedDiv(a, -8, -2147483648) ?? 1,
@@ -162,7 +162,7 @@ export function zeros(a) {
 
 export function panics(i) {
   const d = ((i | 0) - 1) | 0;
-  return $remEuclid([7, -2147483648][i % 2], d, -2147483648);
+  return $remEuclid([7, -2147483648][i % 2], d, "examples/numbers.rs:174:38", -2147483648);
 }
 
 export function report() {

@@ -26,11 +26,11 @@ function $sortUnstable(v, isLess, kind) {
 // (`handle`).
 function $selectNthUnstable(v, index, isLess, kind, handle = false) {
   const len = v.length;
-  if (index >= len) throw $stringPanic(`partition_at_index index ${index} greater than length of slice ${len}`);
+  if (index >= len) throw $stringPanic(`partition_at_index index ${index} greater than length of slice ${len}`, $stdSites.selectNth[0]);
   if (index === len - 1) $swapItems(v, $extremeIndex(v, 0, len, isLess, true), index);
   else if (index === 0) $swapItems(v, $extremeIndex(v, 0, len, isLess, false), index);
   else $selectLoop(v, 0, len, index, isLess, kind);
-  return [$view(v, 0, index), handle ? $mutAt(v, index) : v[index], $view(v, index + 1)];
+  return [$view(v, 0, undefined, index), handle ? $mutAt(v, index) : v[index], $view(v, index + 1)];
 }
 
 function $swapItems(v, a, b) {
@@ -461,6 +461,6 @@ function $bidirectionalMerge(src, from, len, dst, at, isLess) {
     else right++;
   }
   if (left !== leftEnd || right !== rightEnd) {
-    throw new Error("user-provided comparison function does not correctly implement a total order");
+    throw $panic("user-provided comparison function does not correctly implement a total order", $stdSites.sortTotalOrder[0]);
   }
 }

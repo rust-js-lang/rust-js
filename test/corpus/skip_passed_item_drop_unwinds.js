@@ -13,6 +13,7 @@ import {
   $iter,
   $lastDropping,
   $live,
+  $panic,
   $skipping,
   $tryFoldOk,
   $unwindsOn,
@@ -25,7 +26,7 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 1) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/skip_passed_item_drop_unwinds.rs:13:13");
   }
 }
 

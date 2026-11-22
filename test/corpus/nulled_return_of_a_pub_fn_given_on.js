@@ -36,7 +36,9 @@ function main() {
     id: 5,
     text: true,
   };
-  console.log(`${run(text)} ${run(lone)} ${run($unwrap(text.parent))}`);
+  console.log(
+    `${run(text)} ${run(lone)} ${run($unwrap(text.parent, "test/corpus/nulled_return_of_a_pub_fn_given_on.rs:51:77"))}`,
+  );
   const id = eventTarget(lone)?.id;
   console.log(`${id == null ? "None" : `Some(${id})`}`);
 }

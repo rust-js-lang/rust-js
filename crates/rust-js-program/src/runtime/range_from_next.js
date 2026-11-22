@@ -6,7 +6,7 @@ function $rangeFromNext(range, lo, hi) {
   const n = range.start;
   if (typeof n === "string") {
     const next = $charStep(n, 1);
-    if (next === undefined) throw $stringPanic("overflow in `Step::forward`");
+    if (next === undefined) throw $stringPanic("overflow in `Step::forward`", $stdSites.stepForward[0]);
     range.start = next;
   } else {
     range.start = n === hi ? lo : typeof n === "bigint" ? n + 1n : n + 1;

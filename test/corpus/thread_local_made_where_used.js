@@ -2,7 +2,7 @@
 
 import * as Limits from "./limits.js";
 import * as Start from "./start.js";
-import { $catchUnwind, $local } from "@rust-js/std";
+import { $catchUnwind, $local, $panic } from "@rust-js/std";
 
 export function entry() {
   main();
@@ -45,7 +45,7 @@ const FLAKY = $local(() => {
   const n = tries;
   console.log(`try ${n}`);
   if (n === 1) {
-    throw new Error("first try");
+    throw $panic("first try", "test/corpus/thread_local_made_where_used.rs:52:13");
   }
   return (((((n * 10) >>> 0) + Limits.limitPlusOne()) >>> 0) - 1) >>> 0;
 });

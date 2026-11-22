@@ -6,6 +6,7 @@ import {
   $dispose,
   $dropping,
   $live,
+  $panic,
   $some,
   $someValue,
   $stringPanic,
@@ -33,7 +34,10 @@ function enqueueTask(task) {
     $cleanup(() => {
       $dispose(task);
     });
-    throw new Error("called `Option::unwrap()` on a `None` value");
+    throw $panic(
+      "called `Option::unwrap()` on a `None` value",
+      "test/corpus/unwrap_dropping.rs:35:29",
+    );
   }
   enqueueTaskImpl(task);
 }
@@ -43,7 +47,7 @@ function expected(task) {
     $cleanup(() => {
       $dispose(task);
     });
-    throw $stringPanic("no impl given");
+    throw $stringPanic("no impl given", "test/corpus/unwrap_dropping.rs:39:29");
   }
   enqueueTaskImpl(task);
 }
@@ -53,7 +57,7 @@ function readFirst(task) {
   const value = enqueueTaskImpl;
   let tmp;
   try {
-    tmp = $unwrap(value, message);
+    tmp = $unwrap(value, "test/corpus/unwrap_dropping.rs:54:29", message);
     task$live = false;
   } catch (error) {
     $cleanup(() => {
@@ -87,7 +91,7 @@ function once(task) {
   let task$live = true;
   let tmp;
   try {
-    tmp = $unwrap(counted());
+    tmp = $unwrap(counted(), "test/corpus/unwrap_dropping.rs:65:15");
     task$live = false;
   } catch (error) {
     $cleanup(() => {
@@ -108,7 +112,7 @@ function once(task) {
 function nested(value) {
   const held = "nested";
   try {
-    return $someValue($unwrap(value));
+    return $someValue($unwrap(value, "test/corpus/unwrap_dropping.rs:73:11"));
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -138,7 +142,10 @@ let handleImpl;
 function handle(noisy) {
   if (handleImpl == null) {
     console.log(`drop ${noisy[0]}`);
-    throw new Error("called `Option::unwrap()` on a `None` value");
+    throw $panic(
+      "called `Option::unwrap()` on a `None` value",
+      "test/corpus/unwrap_dropping.rs:90:23",
+    );
   }
   handleImpl(noisy);
 }

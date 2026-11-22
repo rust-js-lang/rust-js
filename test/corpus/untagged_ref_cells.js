@@ -36,7 +36,9 @@ function main() {
     const state = create(dev);
     track(state, 1);
     const warned = !Array.isArray(state) && state.warned;
-    console.log(`${track(state, 2)} ${$displayF64($index(items(state), 1))} ${warned}`);
+    console.log(
+      `${track(state, 2)} ${$displayF64($index(items(state), 1, "test/corpus/untagged_ref_cells.rs:64:78"))} ${warned}`,
+    );
   }
   const shared = [1, 2.5];
   if (Array.isArray(shared)) {

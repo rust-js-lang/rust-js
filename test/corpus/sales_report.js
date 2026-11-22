@@ -67,8 +67,8 @@ function main() {
   items.sort($cmp);
   console.log(`[${items.map((item) => $debugStr(item)).join(", ")}]`);
   const units = all.map((s) => s.units);
-  const diffs = $windows(units, 2).map((w) =>
-    BigInt.asIntN(64, BigInt($index(w, 1)) - BigInt(w[0])),
+  const diffs = $windows(units, 2, "test/corpus/sales_report.rs:55:33").map((w) =>
+    BigInt.asIntN(64, BigInt($index(w, 1, "test/corpus/sales_report.rs:55:52")) - BigInt(w[0])),
   );
   console.log(`[${diffs.join(", ")}]`);
   const running = Array.from(
@@ -85,7 +85,9 @@ function main() {
   console.log(`[${pairs.map((item) => `(${item[0]}, ${$debugStr(item[1])})`).join(", ")}]`);
   const zipped = Array.from($lazyZip($iter(units), $cycle(items)).map(([u, i]) => String(u) + i));
   console.log(`[${zipped.map((item) => $debugStr(item)).join(", ")}]`);
-  const chunks = $chunks(units, 2).map((c) => c.reduce((a, b) => (a * b) >>> 0, 1));
+  const chunks = $chunks(units, 2, "test/corpus/sales_report.rs:73:34").map((c) =>
+    c.reduce((a, b) => (a * b) >>> 0, 1),
+  );
   console.log(`[${chunks.join(", ")}]`);
   const letters = Array.from(
     items
@@ -99,7 +101,12 @@ function main() {
   $dedup(regions);
   const arg = regions.includes("east");
   console.log(`[${regions.map((item) => $debugStr(item)).join(", ")}] ${arg}`);
-  const max = $unwrap($maxBy(all, (a, b) => $unwrap($partialCmp(a.price, b.price))));
+  const max = $unwrap(
+    $maxBy(all, (a, b) =>
+      $unwrap($partialCmp(a.price, b.price), "test/corpus/sales_report.rs:83:54"),
+    ),
+    "test/corpus/sales_report.rs:84:10",
+  );
   console.log(`${saleDebug_fmt(max)}`);
   console.log(`${all.some((s) => s.units > 6) && all.every((s) => s.price > 1)}`);
 }

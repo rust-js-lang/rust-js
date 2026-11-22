@@ -55,6 +55,7 @@ function main() {
       }
     }),
     "a refused write fails",
+    "test/corpus/fmt_result_unwrap_err.rs:37:44",
   );
   console.log(`Error an error occurred when formatting an argument [${buf}]`);
   $writeExpectErr(
@@ -67,28 +68,39 @@ function main() {
       }
     }),
     "called `Result::unwrap_err()` on an `Ok` value",
+    "test/corpus/fmt_result_unwrap_err.rs:39:40",
   );
   console.log(`[${buf}]`);
   let fine = $catchUnwind(() => {
     buf += fineDisplay_fmt(undefined);
-    return $writeExpectErr(undefined, "a fine write fails");
+    return $writeExpectErr(
+      undefined,
+      "a fine write fails",
+      "test/corpus/fmt_result_unwrap_err.rs:42:33",
+    );
   });
   function map() {}
   const result = fine.TAG === "Ok" ? { TAG: "Ok", _0: map(fine._0) } : fine;
   console.log(
     `${$unwrapErr(
       result.TAG === "Err" ? { TAG: "Err", _0: message(result._0) } : result,
+      "test/corpus/fmt_result_unwrap_err.rs:44:62",
     )} [${buf}]`,
   );
   fine = $catchUnwind(() => {
     buf += fineDisplay_fmt(undefined);
-    return $writeExpectErr(undefined, "called `Result::unwrap_err()` on an `Ok` value");
+    return $writeExpectErr(
+      undefined,
+      "called `Result::unwrap_err()` on an `Ok` value",
+      "test/corpus/fmt_result_unwrap_err.rs:45:80",
+    );
   });
   function map$1() {}
   const result$1 = fine.TAG === "Ok" ? { TAG: "Ok", _0: map$1(fine._0) } : fine;
   console.log(
     `${$unwrapErr(
       result$1.TAG === "Err" ? { TAG: "Err", _0: message(result$1._0) } : result$1,
+      "test/corpus/fmt_result_unwrap_err.rs:46:62",
     )} [${buf}]`,
   );
 }

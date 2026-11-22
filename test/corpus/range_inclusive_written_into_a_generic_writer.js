@@ -121,23 +121,39 @@ function main() {
     const w = { value: text };
     const value = $writeTry(() => show(w, range, $stringWriter, rangeInclusiveDebug));
     text = w.value;
-    $writeExpect(value, "called `Result::unwrap()` on an `Err` value");
+    $writeExpect(
+      value,
+      "called `Result::unwrap()` on an `Err` value",
+      "test/corpus/range_inclusive_written_into_a_generic_writer.rs:63:32",
+    );
     text += " ";
     const w$1 = { value: text };
     const value$1 = $writeTry(() => shownWide(w$1, range, $stringWriter, rangeInclusiveDebug));
     text = w$1.value;
-    $writeExpect(value$1, "called `Result::unwrap()` on an `Err` value");
+    $writeExpect(
+      value$1,
+      "called `Result::unwrap()` on an `Err` value",
+      "test/corpus/range_inclusive_written_into_a_generic_writer.rs:65:38",
+    );
     text += " ";
   }
   const w = { value: text };
   const value = $writeTry(() => show(w, letters, $stringWriter, rangeInclusiveDebug$1));
   text = w.value;
-  $writeExpect(value, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    value,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/range_inclusive_written_into_a_generic_writer.rs:68:31",
+  );
   text += " ";
   const w$1 = { value: text };
   const value$1 = $writeTry(() => show(w$1, half, $stringWriter, rangeInclusiveDebug$1));
   text = w$1.value;
-  $writeExpect(value$1, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    value$1,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/range_inclusive_written_into_a_generic_writer.rs:70:28",
+  );
   console.log(`${text}`);
 
   // Its eight writes, the last ` (exhausted)`: failing at the third, and
@@ -155,9 +171,17 @@ function main() {
   const result = $writeTry(() =>
     shownWide($cellOf(calls), letters, callsWrite, rangeInclusiveDebug$1),
   );
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/range_inclusive_written_into_a_generic_writer.rs:81:38",
+  );
   const result$1 = $writeTry(() => show($cellOf(calls), fresh, callsWrite, rangeInclusiveDebug));
-  $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$1,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/range_inclusive_written_into_a_generic_writer.rs:82:30",
+  );
   console.log(`[${calls.log.map((item) => $debugStr(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

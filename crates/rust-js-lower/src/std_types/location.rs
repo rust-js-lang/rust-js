@@ -1,15 +1,15 @@
-//! `#[track_caller]` and `panic::Location` (ADR 0427): a location is
-//! `{ file, line, column }`, where rustc's `span_as_caller_location` says a
-//! call is. A function that tracks its caller is given its caller's,
+//! `#[track_caller]` and `panic::Location` (ADR 0427, amended by #2292):
+//! a location is the text `file:line:column`, where rustc's
+//! `span_as_caller_location` says a call is, each panic's as each
+//! `Location::caller()`'s, read from its end by the runtime's `location.js`. A function that tracks its caller is given its caller's,
 //! `location`, before its evidence; `Location::caller()` is that, in its own
 //! body, or where it's written anywhere else, a closure in it too.
 
 use crate::calls::Call;
-use crate::display::join;
 use crate::recognition::{MethodOf, Std, StdPath, std_inherent_method};
 use crate::{FnCx, R};
 use rust_js_program::collections::IndexSet;
-use rust_js_program::js::{Expr, ExprKind, Prop};
+use rust_js_program::js::{Expr, ExprKind};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 use rustc_span::{RemapPathScopeComponents, Span};
@@ -40,11 +40,6 @@ pub(crate) fn location_op(tcx: TyCtxt<'_>, id: DefId) -> Option<LocationOp> {
     })
 }
 
-/// A location's parts, as its object has them, each with whether it's
-/// text, `file`, or a number, `line` and `column`: `{ file, line, column }`.
-/// The one list of what's made and what's declared (#560).
-pub(crate) const PARTS: [(&str, bool); 3] = [("file", true), ("line", false), ("column", false)];
-
 /// Whether `id` takes its caller's location, the crate's, which
 /// `caller_locations` says (ADR 0427), or a library's, as its manifest
 /// does: the one question its parameters, its calls and its declaration
@@ -68,12 +63,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Std::Location(op) = known else {
             return None;
         };
-        let mut part = |name: &str| Expr::member(values.next().expect("a location"), name);
+        let mut part =
+            |helper: &'static str| Expr::call(Expr::helper(helper), vec![values.next().expect("a location")]);
         Some(match op {
             LocationOp::Caller => self.caller_location(call.span),
-            LocationOp::File => part("file"),
-            LocationOp::Line => part("line"),
-            LocationOp::Column => part("column"),
+            LocationOp::File => part("$locationFile"),
+            LocationOp::Line => part("$locationLine"),
+            LocationOp::Column => part("$locationColumn"),
         })
     }
 
@@ -87,7 +83,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The location a call at `span` gives, or `Location::caller()` there
     /// is: in the body of a function that tracks its caller, the one it was
     /// given; anywhere else, `span`'s own (`location_at`).
-    pub(crate) fn caller_location(&self, span: Span) -> Expr {
+    pub fn caller_location(&self, span: Span) -> Expr {
         self.given_location().unwrap_or_else(|| self.location_at(span))
     }
 
@@ -104,59 +100,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .display(RemapPathScopeComponents::MACRO)
             .to_string_lossy()
             .into_owned();
-        let [(file_key, _), (line_key, _), (column_key, _)] = PARTS;
-        Expr::object(vec![
-            Prop::Field(file_key.into(), Expr::str(file)),
-            Prop::Field(line_key.into(), Expr::int(at.line as i128)),
-            Prop::Field(column_key.into(), Expr::int(at.col_display as i128 + 1)),
-        ])
+        Expr::str(format!("{file}:{}:{}", at.line, at.col_display + 1))
     }
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// `{}` of a `Location`, `file:line:column`, or `{:?}`, `Location {
-    /// file: "..", line: .., column: .. }`, as std shows it: of one written
-    /// where it's shown, `Location::caller()`'s, the text itself; of one
-    /// read again, its parts; of one made where it's shown, a call's, its
-    /// parts of it given a name, `((location) => ..)(at())`.
-    pub(crate) fn location_shown(&mut self, value: Expr, debug: bool, span: Span) -> R<Expr> {
-        if !value.reads_same() && !matches!(value.kind, ExprKind::Object(..)) {
-            let location = rust_js_program::js::Name::declared("location".to_string());
-            let shown = self.location_shown(Expr::var(&location), debug, span)?;
-            let shown = Expr::arrow(
-                vec![location.into()],
-                vec![rust_js_program::js::StmtKind::Return(Some(shown)).at(rust_js_program::js::Span::NONE)],
-            );
-            return Ok(self.applied(shown, value));
+    /// `{}` of a `Location`, `file:line:column`, its text itself, or `{:?}`,
+    /// `Location { file: "..", line: .., column: .. }`, as std shows it:
+    /// of one written where it's shown, `Location::caller()`'s, written so
+    /// as it compiles; of another, its text read by `$locationDebug`.
+    pub(crate) fn location_shown(&mut self, value: Expr, debug: bool, _span: Span) -> R<Expr> {
+        if !debug {
+            return Ok(value);
         }
-        let part = |name: &str| match &value.kind {
-            ExprKind::Object(props, ..) => props.iter().find_map(|prop| match prop {
-                Prop::Field(field, part) if field == name => Some(part.clone()),
-                _ => None,
-            }),
-            _ if value.reads_same() => Some(Expr::member(value.clone(), name)),
-            _ => None,
-        };
-        let (Some(file), Some(line), Some(column)) = (part("file"), part("line"), part("column")) else {
-            return Err(self.unsupported(span, "showing this `Location`"));
-        };
-        Ok(match debug {
-            false => join(vec![file, Expr::str(":"), line, Expr::str(":"), column]),
-            true => {
-                let file = match &file.kind {
-                    ExprKind::Str(text) => Expr::str(format!("{text:?}")),
-                    _ => Expr::call(Expr::helper("$debugStr"), vec![file]),
-                };
-                join(vec![
-                    Expr::str("Location { file: "),
-                    file,
-                    Expr::str(", line: "),
-                    line,
-                    Expr::str(", column: "),
-                    column,
-                    Expr::str(" }"),
-                ])
+        Ok(match &value.kind {
+            ExprKind::Str(text) => {
+                let column = text.rfind(':').expect("a location's column");
+                let line = text[..column].rfind(':').expect("a location's line");
+                let file = &text[..line];
+                Expr::str(format!(
+                    "Location {{ file: {file:?}, line: {}, column: {} }}",
+                    &text[line + 1..column],
+                    &text[column + 1..]
+                ))
             }
+            _ => Expr::call(Expr::helper("$locationDebug"), vec![value]),
         })
     }
 }

@@ -81,17 +81,18 @@ function shown(text, base) {
   let rest = $replace(text, base, "<base>");
   let at;
   while ((at = $find(rest, "fd: ")) != null) {
-    const after = $strSlice(rest, (at + 4) >>> 0);
+    const after = $strSlice(rest, (at + 4) >>> 0, "test/corpus/fs_file_shared.rs:36:26");
     const padding = ($byteLen(after) - $byteLen($trimStart(after))) >>> 0;
     const wide =
       (padding +
-        $lazyTakeWhile($strSlice(after, padding)[Symbol.iterator](), (c) =>
-          /^[0-9]$/.test(c),
+        $lazyTakeWhile(
+          $strSlice(after, padding, "test/corpus/fs_file_shared.rs:38:35")[Symbol.iterator](),
+          (c) => /^[0-9]$/.test(c),
         ).reduce((n) => n + 1, 0)) >>>
       0;
     const padded = padding > 0 ? ` of width ${wide}` : "";
-    out += `${$strSlice(rest, 0, (at + 4) >>> 0)}N${padded}`;
-    rest = $strSlice(rest, (((at + 4) >>> 0) + wide) >>> 0);
+    out += `${$strSlice(rest, 0, "test/corpus/fs_file_shared.rs:40:51", (at + 4) >>> 0)}N${padded}`;
+    rest = $strSlice(rest, (((at + 4) >>> 0) + wide) >>> 0, "test/corpus/fs_file_shared.rs:41:20");
   }
   return out + rest;
 }
@@ -105,7 +106,7 @@ function main() {
 
 function run() {
   const BufReaderBufRead = $bufReader($fileReader);
-  const base = $unwrap($args()[1], "the outcome's file");
+  const base = $unwrap($args()[1], "test/corpus/fs_file_shared.rs:53:40", "the outcome's file");
   const path = `${base}.shared.txt`;
 
   // Written through `&File`, as it is and through generic code.
@@ -218,7 +219,12 @@ function run() {
                             // `unwrap_err()` of a file opened: its panic shows the file.
                             const opened = $fileOpen(path);
                             const catchUnwind = $catchUnwind(() =>
-                              $unwrapErr(opened, undefined, $fileDebug),
+                              $unwrapErr(
+                                opened,
+                                "test/corpus/fs_file_shared.rs:100:65",
+                                undefined,
+                                $fileDebug,
+                              ),
                             );
                             let message;
                             if (catchUnwind.TAG === "Ok") {
@@ -234,6 +240,7 @@ function run() {
                             console.log(`${shown(message, base)}`);
                             const missing = $unwrapErr(
                               $fileOpen(`${base}.missing`),
+                              "test/corpus/fs_file_shared.rs:105:57",
                               undefined,
                               $fileDebug,
                             );

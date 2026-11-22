@@ -19,9 +19,11 @@ function counterIterator_fold(counter, init, f) {
   while ((x = counterIterator_next(counter)) != null) {
     const old = acc;
     acc = undefined;
-    acc = $some(f($someValue($unwrap(old)), x));
+    acc = $some(
+      f($someValue($unwrap(old, "test/corpus/fold_override_given_an_option_by_std.rs:24:37")), x),
+    );
   }
-  return $someValue($unwrap(acc));
+  return $someValue($unwrap(acc, "test/corpus/fold_override_given_an_option_by_std.rs:26:13"));
 }
 
 function main() {

@@ -169,12 +169,26 @@ function main() {
   const held = all;
   check(
     "repeat_n of a held count",
-    () => Array.from($roomForHint($repeatingN(1, $unwrap(held)), 1, true)).length,
+    () =>
+      Array.from(
+        $roomForHint(
+          $repeatingN(1, $unwrap(held, "test/corpus/collected_counts_ask_room.rs:102:49")),
+          1,
+          true,
+        ),
+      ).length,
     usizeDebug,
   );
   check(
     "repeat take of a held count",
-    () => Array.from($roomForHint($repeating(1).take($unwrap(held)), 1, true)).length,
+    () =>
+      Array.from(
+        $roomForHint(
+          $repeating(1).take($unwrap(held, "test/corpus/collected_counts_ask_room.rs:105:52")),
+          1,
+          true,
+        ),
+      ).length,
     usizeDebug,
   );
   check(
@@ -182,7 +196,11 @@ function main() {
     () =>
       $foldToArray(
         $roomForHint(
-          iterator_stepBy({ start: 0, end: all }, $unwrap(1), { next: $rangeNext }),
+          iterator_stepBy(
+            { start: 0, end: all },
+            $unwrap(1, "test/corpus/collected_counts_ask_room.rs:108:44"),
+            { next: $rangeNext },
+          ),
           4,
           true,
         ),
@@ -259,7 +277,14 @@ function main() {
   const fewHeld = few;
   check(
     "repeat_n of a held few",
-    () => Array.from($roomForHint($repeatingN(5, $unwrap(fewHeld)), 4, true)),
+    () =>
+      Array.from(
+        $roomForHint(
+          $repeatingN(5, $unwrap(fewHeld, "test/corpus/collected_counts_ask_room.rs:131:54")),
+          4,
+          true,
+        ),
+      ),
     vecDebug,
   );
   check(

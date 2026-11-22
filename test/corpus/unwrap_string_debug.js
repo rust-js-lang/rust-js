@@ -8,6 +8,6 @@ export function entry() {
 
 function main() {
   const r = { TAG: "Err", _0: 'bell \x07, tab \t, quote "' };
-  console.log(`${$unwrapOk(r)}`);
+  console.log(`${$unwrapOk(r, "test/corpus/unwrap_string_debug.rs:6:22")}`);
 }
 //# sourceMappingURL=case.js.map

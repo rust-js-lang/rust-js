@@ -153,6 +153,7 @@ macro_rules! walks {
                     | ExprKind::Unary(_, a)
                     | ExprKind::Await(a)
                     | ExprKind::Unbound(a)
+                    | ExprKind::RaisedAt(a)
                     | ExprKind::Spread(a)
                     | ExprKind::Stringed(a)
                     | ExprKind::Converted(_, a)

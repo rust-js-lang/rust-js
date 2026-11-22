@@ -79,7 +79,7 @@ function main() {
   const make = detailFromU32_from;
   const generic = made(20, { from: detailFromU32_from });
   console.log(
-    `${show(owned)} ${show($index(parts, 0))} ${show($index(parts, 1))} ${show($index(words, 0))} ${show($index(words, 1))} ${show(make(10))} ${show(detail("given", { into: detailFromString_from }))} ${show(generic)}`,
+    `${show(owned)} ${show($index(parts, 0, "test/corpus/untagged_from_that_does_more.rs:104:20"))} ${show($index(parts, 1, "test/corpus/untagged_from_that_does_more.rs:105:20"))} ${show($index(words, 0, "test/corpus/untagged_from_that_does_more.rs:106:20"))} ${show($index(words, 1, "test/corpus/untagged_from_that_does_more.rs:107:20"))} ${show(make(10))} ${show(detail("given", { into: detailFromString_from }))} ${show(generic)}`,
   );
   console.log(`made ${MADE}`);
 
@@ -99,7 +99,7 @@ function main() {
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);
   // One given what a borrow of the cell it writes read, once it ends.
   const held = log.length;
-  const first = $index(log, 0);
+  const first = $index(log, 0, "test/corpus/untagged_from_that_does_more.rs:126:33");
   const after = detailFromI64_from(BigInt($byteLen(first)));
   console.log(`${held} ${detailDebug_fmt(after)} ${log.length}`);
   console.log(`${detailFromStr_from("x") === "x"}`);

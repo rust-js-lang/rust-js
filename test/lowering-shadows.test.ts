@@ -916,7 +916,7 @@ pub fn current() -> Option<String> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("export function getData(endValue) {\n  if (fallbackText) {\n    return fallbackText;\n  }\n  fallbackText = $strSlice(endValue, 1);\n  return fallbackText;\n}");
+  expect(js).toContain("export function getData(endValue) {\n  if (fallbackText) {\n    return fallbackText;\n  }\n  fallbackText = $strSlice(endValue, 1, \"lib.rs:15:34\");\n  return fallbackText;\n}");
   expect(js).toContain("  let fallbackText$1 = fallbackText;\n  if (fallbackText$1) {\n    reset();\n    return fallbackText$1;\n  }\n");
   // One set and never stored keeps its local, the variable unchanged.
   expect(js).toContain("export function peek(endValue) {\n  let fallbackText$1 = fallbackText;\n");

@@ -723,7 +723,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::bin(Op::And, tag(which), holds)
             }
             // `v.contains(&x)` (ADRs 0053, 0966), `contained`'s.
-            Comb::SplitOff => helper("$splitOff", vec![subject, next()]),
+            Comb::SplitOff => self.split_off(subject, next(), subject_ty),
             Comb::BinarySearch => {
                 let item =
                     (self.slice_item(subject_ty)).ok_or_else(|| self.unsupported(span, "`binary_search` of this"))?;
@@ -1300,6 +1300,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 result::tagged(result::tag(subject.clone()), handle(Lend::Ok, Some(tag(true))))
             }
             _ => Expr::cond(tag(true), result::ok(ok), result::err(part(boxed(err_ty), Lend::Err))),
+        })
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `v.split_off(at)` of a `Vec`, `$splitOff(v, at)`, its panic its
+    /// caller's; of a `VecDeque`, its `assert!`'s own, its message and its
+    /// line std's (#2292).
+    fn split_off(&mut self, subject: Expr, at: Expr, subject_ty: Ty<'tcx>) -> Expr {
+        if !self.is_std_type(subject_ty, crate::recognition::StdItem::VecDeque) {
+            return Expr::call(Expr::helper("$splitOff"), vec![subject, at]);
+        }
+        Expr::raised_at(Expr::std_site("vecDequeSplitOff", 0), || {
+            Expr::call(Expr::helper("$splitOff"), vec![subject, at, Expr::bool(true)])
         })
     }
 }

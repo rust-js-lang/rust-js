@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "branch-operator-found-in-a-string",
+    breaks: "a branch's comments split its line at an operator inside a string before it, a location's path's `-`, which breaks the string, or a string's escaped quote taken for its end",
+    file: "crates/rust-js-emit/src/to_oxc/lines.rs",
+    find: "                    escaped = true;\n",
+    replace: "                    escaped = false;\n",
+    unitTests: "to_oxc::lines::tests::an_operator_is_found_outside_strings",
+  },
+  {
     name: "object-end-comment-a-line-of-nothing-before",
     breaks: "a comment before an object's `}` first on its line has a line of nothing before it, which oxfmt keeps",
     file: "crates/rust-js-emit/src/to_oxc/lines.rs",
@@ -30,17 +38,19 @@ export const mutations: Mutation[] = [
     name: "operand-after-any-operator",
     breaks: "an operand's comment is after a `?`, `:` or `+` alone, so one after `&&` has no place and is lost (ADR 0444, amended)",
     file: "crates/rust-js-emit/src/to_oxc/lines.rs",
-    find: "                .rfind(operator)\n                .map(|found| (at, written, found + operator.len()))\n",
-    replace: "                .rfind(['?', ':', '+'])\n                .map(|found| (at, written, found + 1))\n",
+    find: "            rfind_in_code(before, operator).map(|found| (at, written, found + operator.len()))\n",
+    replace: "            before.rfind(['?', ':', '+']).map(|found| (at, written, found + 1))\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment between a binary's operands"],
-  },  {
+  },
+  {
     name: "if-opening-unsplit",
     breaks: "an `if (` placed with its test isn't found before its first JS, so its test's comment is split after an operator lines above, or lost",
     file: "crates/rust-js-emit/src/to_oxc/lines.rs",
     find: "            let before = if at == line {\n                written.get(..column + opening)?",
     replace: "            let before = if at == line {\n                written.get(..column + opening * 0)?",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or's if"],
-  },  {
+  },
+  {
     name: "utf16-branch-operator-at-the-map-column",
     breaks: "a conditional's branch's operator is looked for before the map's column taken as a byte, short of it past non-ASCII text, so its comments are left out (#1668)",
     file: "crates/rust-js-emit/src/to_oxc/lines.rs",

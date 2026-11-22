@@ -157,8 +157,9 @@ enum Value<'tcx> {
     /// where it's made, which its JS is at, as a value's is (`mir_store`).
     List(Vec<Value<'tcx>>, js::Span),
     /// `&mut v[a..b]` unmade, `[v, a, b]` (`b` short of the end) and where: a view where it's used,
-    /// `$view(v, a, b)`, or what it's given alone to's form over a range, `$reverseRange` (ADR 1073).
-    View(Vec<Expr>, js::Span),
+    /// `$view(v, a, b)`, or what it's given alone to's form over a range, `$reverseRange` (ADR 1073);
+    /// and where it raises its panic, the index's location, `Expr::raising_at` (#2292).
+    View(Vec<Expr>, js::Span, Option<Expr>),
     /// The variant of an enum, read to choose a branch: the enum, its type,
     /// and whether it's an untagged one given of what's there, never
     /// `undefined` nor `null`, `classify(Some(value))`'s (ADR 0676).
@@ -394,7 +395,8 @@ struct State<'m, 'tcx> {
     /// The indexes whose bounds check is where the element is read, `false`,
     /// `$index(xs, i)`, or written, `true`, `xs[$at(xs, i)]`
     /// (`deferred_check`).
-    deferred: IndexMap<Local, bool>,
+    /// Of each, where its `Assert` is, the location its panic names (#2292).
+    deferred: IndexMap<Local, (bool, Expr)>,
     /// The block whose statements are being lowered, and the statement of
     /// it, its terminator's past the last.
     at: BasicBlock,
@@ -531,6 +533,10 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         self.holds_declared_arity(def_id, params.len());
         // The drops it used, which its callers give it (ADR 0300).
         self.note_drop_uses(def_id);
+        let entry = match self.copy {
+            None => self.entry_of(def_id, span)?,
+            Some(_) => None,
+        };
         Ok(LoweredFn {
             function: js::Function {
                 // A copy its callers need, by its own name (ADR 0051, amended).
@@ -569,6 +575,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             },
             jsx: self.jsx,
             dependencies: self.dependencies.take(),
+            entry,
         })
     }
 

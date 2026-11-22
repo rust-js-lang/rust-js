@@ -42,14 +42,14 @@ function main() {
     ),
     8,
   );
-  v[$at(v, 1)] = 0xff;
+  v[$at(v, 1, "test/corpus/mutable_slice_of_another_types_bytes.rs:23:5")] = 0xff;
   v.reverse();
   console.log(`[${a.join(", ")}]`);
 
   // Bytes seen as words, each written whole, by an iterator and sorted.
   const b = [[1, 0, 0, 0, 2, 1, 0, 0]];
   const words = $ptrSliceMut($ptrRetyped($ptr(b[0], 0), 4, false), 2);
-  words[$at(words, 0)] = 0x0a0b0c0d;
+  words[$at(words, 0, "test/corpus/mutable_slice_of_another_types_bytes.rs:30:5")] = 0x0a0b0c0d;
   for (let i = 0; i < words.length; i++) {
     words[i] = (words[i] + 1) >>> 0;
   }
@@ -73,9 +73,9 @@ function main() {
     4,
   );
   console.log(`[${halves.join(", ")}]`);
-  halves[$at(halves, 1)] = -2;
-  $view(halves, 2).fill(-1);
-  $swap(halves, 0, 3);
+  halves[$at(halves, 1, "test/corpus/mutable_slice_of_another_types_bytes.rs:42:5")] = -2;
+  $view(halves, 2, "test/corpus/mutable_slice_of_another_types_bytes.rs:43:11").fill(-1);
+  $swap(halves, 0, 3, "test/corpus/mutable_slice_of_another_types_bytes.rs:44:12");
   console.log(`[${halves.join(", ")}] [${c.map((item) => item.toString(16)).join(", ")}]`);
   const unsigned = $ptrSliceMut(
     $ptrRetyped(
@@ -90,11 +90,19 @@ function main() {
     ),
     4,
   );
-  bump($view(unsigned, 1, 3));
-  $copyFromSlice($view(unsigned, 0, 2), [7, 8]);
-  const [front, back] = $splitAtMut(unsigned, 2);
-  const value = $index(back, 0);
-  front[$at(front, 1)] = value;
+  bump($view(unsigned, 1, "test/corpus/mutable_slice_of_another_types_bytes.rs:47:23", 3));
+  $copyFromSlice(
+    $view(unsigned, 0, "test/corpus/mutable_slice_of_another_types_bytes.rs:48:13", 2),
+    [7, 8],
+    "test/corpus/mutable_slice_of_another_types_bytes.rs:48:19",
+  );
+  const [front, back] = $splitAtMut(
+    unsigned,
+    2,
+    "test/corpus/mutable_slice_of_another_types_bytes.rs:49:34",
+  );
+  const value = $index(back, 0, "test/corpus/mutable_slice_of_another_types_bytes.rs:50:16");
+  front[$at(front, 1, "test/corpus/mutable_slice_of_another_types_bytes.rs:50:5")] = value;
   console.log(`[${unsigned.join(", ")}] [${c.map((item) => item.toString(16)).join(", ")}]`);
 
   // Words seen as pairs of bytes: each pair written in place, whole, and
@@ -115,15 +123,25 @@ function main() {
   );
   const length = pairs.length;
   if (0 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/mutable_slice_of_another_types_bytes.rs:57:5",
+    );
   }
   pairs[0][1] = 9;
-  const kept = $index(pairs, 1).slice();
+  const kept = $index(
+    pairs,
+    1,
+    "test/corpus/mutable_slice_of_another_types_bytes.rs:58:16",
+  ).slice();
   pairs[1][0] = 3;
-  pairs[$at(pairs, 2)] = [6, 6];
+  pairs[$at(pairs, 2, "test/corpus/mutable_slice_of_another_types_bytes.rs:60:5")] = [6, 6];
   const value$1 = pairs.length;
   if (3 >= value$1) {
-    throw $stringPanic(`index out of bounds: the len is ${value$1} but the index is 3`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${value$1} but the index is 3`,
+      "test/corpus/mutable_slice_of_another_types_bytes.rs:61:21",
+    );
   }
   const last = pairs[3];
   last[0] = 1;
@@ -144,7 +162,7 @@ function main() {
     ),
     8,
   );
-  const p = $ptr($view(bytes, 2), 0);
+  const p = $ptr($view(bytes, 2, "test/corpus/mutable_slice_of_another_types_bytes.rs:70:18"), 0);
   $ptrAdd(p, 1).value = 9;
   p.value = 4;
   const offset = ($addr(p, 1) - $addr($ptr(d, 0), 4)) >>> 0;

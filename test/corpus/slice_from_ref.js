@@ -22,7 +22,7 @@ function main() {
   one[0].value = 9;
   console.log(`${c.value} ${one.length}`);
   const v = [3, 4];
-  const first = [$index(v, 0)];
+  const first = [$index(v, 0, "test/corpus/slice_from_ref.rs:20:40")];
   console.log(`[${first.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -25,6 +25,7 @@ import {
   $roomForHint,
   $sortedKeys,
   $splicing,
+  $stdSites,
 } from "@rust-js/std";
 
 export function entry() {
@@ -138,7 +139,13 @@ function more(word, IRefIntoIterator) {
   $keepCapacity(w);
   const out = $grownVec(
     $roomForHint(
-      $splicing(w, 1, 2, $given(IRefIntoIterator.intoIter(word), IntoIterIterator)),
+      $splicing(
+        w,
+        1,
+        2,
+        $given(IRefIntoIterator.intoIter(word), IntoIterIterator),
+        $stdSites.vecDrain[0],
+      ),
       4,
       false,
     ),

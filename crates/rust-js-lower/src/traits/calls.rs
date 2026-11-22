@@ -340,6 +340,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         tr: ty::TraitRef<'tcx>,
         span: Span,
     ) -> R<Expr> {
+        // std's impl tracks its caller, whose location a dictionary's entry
+        // isn't given yet: `undefined`, `<unknown>` (#2324).
+        Expr::raised_at(Expr::js_undefined(), || self.number_operator_at(op, a, b, tr, span))
+    }
+
+    /// `number_operator`'s, where its panics are raised given.
+    fn number_operator_at(
+        &mut self,
+        op: Result<BinOp, UnOp>,
+        a: Expr,
+        b: Option<Expr>,
+        tr: ty::TraitRef<'tcx>,
+        span: Span,
+    ) -> R<Expr> {
         let ty = tr.self_ty().peel_refs();
         match op {
             Ok(op) => {

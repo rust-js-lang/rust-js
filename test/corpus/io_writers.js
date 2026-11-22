@@ -33,7 +33,7 @@ function render(out, n, WWrite) {
 function shout(out, text) {
   out.impl.writeFmt(out, `${$toUppercase(text)}!`);
   out.impl.writeAll(out, [10]);
-  $someValue($unwrap($some(undefined), "a write never fails"));
+  $someValue($unwrap($some(undefined), "test/corpus/io_writers.rs:16:31", "a write never fails"));
 }
 
 function main() {
@@ -42,7 +42,11 @@ function main() {
   shout({ value: buf, impl: $vecWriter }, "héllo");
   $writeText(buf, "7");
   buf.push(10);
-  $print($unwrapOk($fromUtf8(buf.slice(), true), undefined, (e) => $debugUtf8Error(e, true)));
+  $print(
+    $unwrapOk($fromUtf8(buf.slice(), true), "test/corpus/io_writers.rs:25:49", undefined, (e) =>
+      $debugUtf8Error(e, true),
+    ),
+  );
   $print(`${buf.length}\n`);
 
   render($cellOf(undefined), 2, $stdoutWriter);

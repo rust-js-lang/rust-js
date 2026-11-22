@@ -46,7 +46,7 @@ pub fn held(text: &str, first: bool) -> Option<&'static Unknown> {
   expect(js).toContain("function parsed(text) {\n  return JSON.parse(text);\n}");
   expect(js).toContain('function coerced(value) {\n  return "" + value;\n}');
   expect(js).toContain("async function awaited(p) {\n  return await p;\n}");
-  expect(js).toContain('$unwrapOk(\n    $try(() => JSON.parse(text)),\n    "valid JSON",');
+  expect(js).toContain('$unwrapOk(\n    $try(() => JSON.parse(text)),\n    "lib.rs:12:23",\n    "valid JSON",');
   expect(js).toContain("const parsed = $try(() => JSON.parse(text));");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.parsed("[1]")).toEqual([1]);

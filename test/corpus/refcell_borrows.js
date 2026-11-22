@@ -13,6 +13,7 @@ import {
   $eq,
   $index,
   $showBorrowed,
+  $stdSites,
   $tryBorrow,
   $unborrow,
 } from "@rust-js/std";
@@ -23,11 +24,11 @@ export function entry() {
 
 function main() {
   const cell = [1, 2];
-  const a = $borrow(cell, true);
+  const a = $borrow(cell, "test/corpus/refcell_borrows.rs:21:22", true);
   try {
-    const b = $borrow(cell, true);
+    const b = $borrow(cell, "test/corpus/refcell_borrows.rs:22:22", true);
     try {
-      const value = $index(b, 0);
+      const value = $index(b, 0, "test/corpus/refcell_borrows.rs:23:40");
       const tryBorrowMut = $tryBorrow(cell, true);
       console.log(`${a.length} ${value} ${tryBorrowMut.TAG === "Err"}`);
       if (tryBorrowMut.TAG === "Ok") {
@@ -40,10 +41,10 @@ function main() {
     $unborrow(a);
   }
   if (cell.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_borrows.rs:25:10");
   }
   cell.push(3);
-  const writing = $borrowMut(cell, true);
+  const writing = $borrowMut(cell, "test/corpus/refcell_borrows.rs:26:24", true);
   let writing$live;
   try {
     const tryBorrow = $tryBorrow(cell);
@@ -72,12 +73,14 @@ function main() {
     }
   }
   if (cell.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_borrows.rs:30:11");
   }
   $assign(cell, [7]);
   const number = 5;
   const text = "t";
-  console.log(`[${$borrow(cell).join(", ")}] ${number} ${text}`);
+  console.log(
+    `[${$borrow(cell, "test/corpus/refcell_borrows.rs:35:33").join(", ")}] ${number} ${text}`,
+  );
   const grid = [1, 2, 3];
   grid[0] = 3;
   grid[1] = (grid[1] + 3) | 0;
@@ -93,14 +96,14 @@ function main() {
   console.log(`${hit()}`);
   const shared = { value: "a" };
   if (shared.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_borrows.rs:45:11");
   }
   shared.value += "b";
   for (let i = 0; i < 2; i++) {
     let borrowMut;
     try {
       if (shared.borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("test/corpus/refcell_borrows.rs:47:16");
       }
       borrowMut = shared;
     } catch (error) {
@@ -114,7 +117,7 @@ function main() {
   let borrow;
   try {
     if (shared.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/refcell_borrows.rs:49:30");
     }
     borrow = shared;
   } catch (error) {
@@ -126,7 +129,7 @@ function main() {
   let tmp;
   try {
     if (shared.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/refcell_borrows.rs:49:46");
     }
     tmp = shared;
   } catch (error) {
@@ -138,7 +141,7 @@ function main() {
   console.log(`${borrow.value} ${$byteLen(tmp.value)}`);
   let held;
   try {
-    held = $borrowMut(shared, true);
+    held = $borrowMut(shared, "test/corpus/refcell_borrows.rs:50:23", true);
   } catch (error) {
     if (writing$live) {
       $unborrow(writing);
@@ -159,7 +162,7 @@ function main() {
   $unborrow(held);
   let copy;
   try {
-    copy = { value: $borrow(shared).value };
+    copy = { value: $borrow(shared, "test/corpus/refcell_borrows.rs:53:16").value };
   } catch (error) {
     if (writing$live) {
       $unborrow(writing);
@@ -176,7 +179,7 @@ function main() {
   }
   let replace;
   try {
-    replace = $cellReplace($borrowMut(shared), "z");
+    replace = $cellReplace($borrowMut(shared, "test/corpus/refcell_borrows.rs:55:35"), "z");
   } catch (error) {
     if (writing$live) {
       $unborrow(writing);
@@ -193,7 +196,9 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${$debugStr(replace)} ${tmp$1} ${$cellReplace($borrowMut(shared), "")}`);
+    console.log(
+      `${$debugStr(replace)} ${tmp$1} ${$cellReplace($borrowMut(shared, $stdSites.refCellTake[0]), "")}`,
+    );
   } catch (error) {
     if (writing$live) {
       $unborrow(writing);
@@ -202,7 +207,7 @@ function main() {
   }
   let reading;
   try {
-    reading = $borrow(copy, true);
+    reading = $borrow(copy, "test/corpus/refcell_borrows.rs:56:24", true);
   } catch (error) {
     if (writing$live) {
       $unborrow(writing);

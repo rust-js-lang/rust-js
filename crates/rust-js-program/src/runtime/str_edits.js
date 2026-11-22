@@ -2,41 +2,41 @@
 // units of the bytes `start..end` of `s`, checked as std checks them,
 // `slice::range`'s, then each a `char`'s boundary: `replace_range`'s message,
 // or the other edits' assertion.
-function $strRange(s, start, end, replacing, inclusive) {
+function $strRange(s, start, end, replacing, raisedAt, inclusive) {
   const length = $byteLen(s);
   end ??= length;
-  $checkRange(start, end, length, inclusive);
+  $checkRange(start, end, length, raisedAt, inclusive);
   const from = $charBoundary(s, start);
   if (from === undefined) {
-    throw new Error(replacing ? "start of range should be a character boundary" : "assertion failed: self.is_char_boundary(start)");
+    throw $panic(replacing ? "start of range should be a character boundary" : "assertion failed: self.is_char_boundary(start)", raisedAt);
   }
   const to = $charBoundary(s, end);
   if (to === undefined) {
-    throw new Error(replacing ? "end of range should be a character boundary" : "assertion failed: self.is_char_boundary(end)");
+    throw $panic(replacing ? "end of range should be a character boundary" : "assertion failed: self.is_char_boundary(end)", raisedAt);
   }
   return [from, to];
 }
 
 // `s.split_off(at)`: what's kept, and the rest from the byte `at`.
-function $strSplitOff(s, at) {
+function $strSplitOff(s, at, raisedAt) {
   const unit = $charBoundary(s, at);
-  if (unit === undefined) throw new Error("assertion failed: self.is_char_boundary(at)");
+  if (unit === undefined) throw $panic("assertion failed: self.is_char_boundary(at)", raisedAt);
   return [s.slice(0, unit), s.slice(unit)];
 }
 
-function $replaceRange(s, start, end, replacement, inclusive) {
-  const [from, to] = $strRange(s, start, end, true, inclusive);
+function $replaceRange(s, start, end, replacement, raisedAt, inclusive) {
+  const [from, to] = $strRange(s, start, end, true, raisedAt, inclusive);
   return s.slice(0, from) + replacement + s.slice(to);
 }
 
 // `s.drain(range)`: what's kept, and the `char`s taken out.
-function $strDrain(s, start, end, inclusive) {
-  const [from, to] = $strRange(s, start, end, false, inclusive);
+function $strDrain(s, start, end, raisedAt, inclusive) {
+  const [from, to] = $strRange(s, start, end, false, raisedAt, inclusive);
   return [s.slice(0, from) + s.slice(to), Array.from(s.slice(from, to))];
 }
 
-function $strExtendWithin(s, start, end, inclusive) {
-  const [from, to] = $strRange(s, start, end, false, inclusive);
+function $strExtendWithin(s, start, end, raisedAt, inclusive) {
+  const [from, to] = $strRange(s, start, end, false, raisedAt, inclusive);
   return s + s.slice(from, to);
 }
 

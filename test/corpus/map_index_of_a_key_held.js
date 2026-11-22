@@ -76,21 +76,41 @@ function heldOnOnePath(counts, key, tested) {
   if (tested && !counts.has(key)) {
     return 0;
   }
-  return $unwrap(counts.get(key), "no entry found for key");
+  return $unwrap(
+    counts.get(key),
+    "test/corpus/map_index_of_a_key_held.rs:78:11",
+    "no entry found for key",
+  );
 }
 
 function anotherKey(counts, key, other) {
-  return counts.has(key) ? $unwrap(counts.get(other), "no entry found for key") : 0;
+  return counts.has(key)
+    ? $unwrap(
+        counts.get(other),
+        "test/corpus/map_index_of_a_key_held.rs:82:41",
+        "no entry found for key",
+      )
+    : 0;
 }
 
 function anotherMap(counts, others, key) {
-  return counts.has(key) ? $unwrap(others.get(key), "no entry found for key") : 0;
+  return counts.has(key)
+    ? $unwrap(
+        others.get(key),
+        "test/corpus/map_index_of_a_key_held.rs:86:41",
+        "no entry found for key",
+      )
+    : 0;
 }
 
 function removedBetween(counts, key) {
   if (counts.has(key)) {
     counts.delete(key);
-    return $unwrap(counts.get(key), "no entry found for key");
+    return $unwrap(
+      counts.get(key),
+      "test/corpus/map_index_of_a_key_held.rs:92:22",
+      "no entry found for key",
+    );
   }
   return 0;
 }
@@ -98,7 +118,11 @@ function removedBetween(counts, key) {
 function removedOnTheRight(counts, key) {
   if (counts.has(key)) {
     counts.clear();
-    return $unwrap(counts.get(key), "no entry found for key");
+    return $unwrap(
+      counts.get(key),
+      "test/corpus/map_index_of_a_key_held.rs:104:15",
+      "no entry found for key",
+    );
   } else {
     return 0;
   }
@@ -107,7 +131,11 @@ function removedOnTheRight(counts, key) {
 function keySetBetween(counts, key, other) {
   if (counts.has(key)) {
     key = other;
-    return $unwrap(counts.get(key), "no entry found for key");
+    return $unwrap(
+      counts.get(key),
+      "test/corpus/map_index_of_a_key_held.rs:113:22",
+      "no entry found for key",
+    );
   }
   return 0;
 }
@@ -116,7 +144,13 @@ function calledBetween(errors, id, clear) {
   let error = 9;
   if (errors.has(id)) {
     clear();
-    error = $someValue($unwrap($someGet(errors, id), "no entry found for key"));
+    error = $someValue(
+      $unwrap(
+        $someGet(errors, id),
+        "test/corpus/map_index_of_a_key_held.rs:122:32",
+        "no entry found for key",
+      ),
+    );
   }
   return error;
 }
@@ -134,7 +168,13 @@ function droppedBetween(errors, id, clearer) {
   if (containsKey) {
     const _gone = clearer;
     _gone[0].clear();
-    return $someValue($unwrap($someGet(errors, id), "no entry found for key"));
+    return $someValue(
+      $unwrap(
+        $someGet(errors, id),
+        "test/corpus/map_index_of_a_key_held.rs:132:31",
+        "no entry found for key",
+      ),
+    );
   }
   const result = 9;
   clearer[0].clear();

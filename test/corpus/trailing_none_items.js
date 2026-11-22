@@ -13,6 +13,7 @@ import {
   $someValue,
   $sortedKeys,
   $splice,
+  $stdSites,
 } from "@rust-js/std";
 
 export function entry() {
@@ -26,14 +27,14 @@ function shown(items) {
 function main() {
   const v = [1];
   v.push(undefined);
-  $insertAt(v, 1, undefined);
+  $insertAt(v, 1, undefined, "test/corpus/trailing_none_items.rs:13:7");
   v.push(2, undefined);
   const value = [undefined, undefined];
   for (let i = 0; i < value.length; i++) {
     v.push(value[i]);
   }
   v.push(3, undefined);
-  $splice(v, 1, 2, [4, undefined]);
+  $splice(v, 1, 2, [4, undefined], $stdSites.vecDrain[0]);
   $resize(v, 12);
   $append(v, [5, undefined]);
   console.log(`${shown(v)}`);

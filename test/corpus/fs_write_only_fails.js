@@ -21,8 +21,17 @@ function emit(out, WWrite) {
 }
 
 function main() {
-  const program = $unwrap($args()[0], "the program's path");
-  const file = $unwrapOk($fileOpen(program), "the program is there", $ioErrorDebug);
+  const program = $unwrap(
+    $args()[0],
+    "test/corpus/fs_write_only_fails.rs:13:43",
+    "the program's path",
+  );
+  const file = $unwrapOk(
+    $fileOpen(program),
+    "test/corpus/fs_write_only_fails.rs:14:40",
+    "the program is there",
+    $ioErrorDebug,
+  );
   const e = $writeTry(() => emit($cellOf(file), $fileWriter));
   if (e === undefined) {
     console.log("written");

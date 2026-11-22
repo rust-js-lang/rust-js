@@ -16,6 +16,7 @@ import {
   $iterator,
   $live,
   $next,
+  $panic,
   $partition,
   $stringPanic,
   $unwindsOn,
@@ -37,7 +38,10 @@ function dDrop_drop(d) {
 function stepsIterator_next(steps, IIterator, dropI, dropIItem) {
   steps.step = (steps.step + 1) >>> 0;
   if (steps.step === steps.n) {
-    throw $stringPanic(`step ${steps.n}`);
+    throw $stringPanic(
+      `step ${steps.n}`,
+      "test/corpus/consumers_keep_what_they_built_on_a_panic.rs:33:13",
+    );
   }
   return IIterator.next(steps.items);
 }
@@ -245,7 +249,7 @@ function main() {
       ).map((p) => {
         if (p[0][0] === 2) {
           try {
-            throw new Error("at 2");
+            throw $panic("at 2", "test/corpus/consumers_keep_what_they_built_on_a_panic.rs:89:38");
           } catch (error) {
             $cleanup(() => {
               dDrop_drop(p[0]);

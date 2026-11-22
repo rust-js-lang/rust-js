@@ -10,6 +10,7 @@ import {
   $dropItems,
   $fill,
   $madeEach,
+  $panic,
   $rcClone,
   $rcDrop,
 } from "@rust-js/std";
@@ -22,7 +23,7 @@ export const dClone = { clone: dClone_clone, $drop: dDrop_drop };
 function dClone_clone(d) {
   console.log(`clone ${d[0]}`);
   if (d[0] === 4) {
-    throw new Error("clone");
+    throw $panic("clone", "test/corpus/vec_clone_from_in_place.rs:15:13");
   }
   return [d[0]];
 }
@@ -30,7 +31,7 @@ function dClone_clone(d) {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 8) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/vec_clone_from_in_place.rs:25:13");
   }
 }
 
@@ -224,6 +225,7 @@ function main() {
       $cloneFromSlice(
         w,
         v,
+        "test/corpus/vec_clone_from_in_place.rs:90:11",
         undefined,
         (items, i, from) => {
           $cloneIntoVec(items[i], from, (item) => dClone_clone(item), undefined, dDrop_drop);

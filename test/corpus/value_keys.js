@@ -33,7 +33,11 @@ function main() {
     `${size} ${get == null ? "None" : `Some(${$debugStr(get)})`} ${value == null ? "None" : `Some(${$debugStr(value)})`}`,
   );
   console.log(
-    `${$unwrap(walls.get({ x: 1, y: 2 }), "no entry found for key")} ${walls.has({ x: 1, y: 2 })}`,
+    `${$unwrap(
+      walls.get({ x: 1, y: 2 }),
+      "test/corpus/value_keys.rs:40:28",
+      "no entry found for key",
+    )} ${walls.has({ x: 1, y: 2 })}`,
   );
   console.log(
     `{${Array.from(walls)
@@ -85,7 +89,7 @@ function main() {
   // A key with a string, a BigInt and a struct in it.
   const ann = { owner: "ann", id: 1099511627776n, at: { x: 0, y: 0 } };
   const balances = new $KeyMap([[{ ...ann, at: { ...ann.at } }, 10]]);
-  const value$8 = $unwrap($mutGet(balances, ann));
+  const value$8 = $unwrap($mutGet(balances, ann), "test/corpus/value_keys.rs:67:29");
   value$8.value = (value$8.value + 5) | 0;
   const value$9 = { ...ann, at: { ...ann.at } };
   const other = { id: 2199023255552n, owner: value$9.owner, at: { ...value$9.at } };

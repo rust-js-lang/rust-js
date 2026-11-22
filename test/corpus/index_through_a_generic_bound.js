@@ -37,7 +37,10 @@ export const squaresIndexUsize = { index: squaresIndexUsize_index };
 function squaresIndexUsize_index(squares, i) {
   const TABLE = [0, 1, 4, 9, 16];
   if (i >= 5) {
-    throw $stringPanic(`index out of bounds: the len is 5 but the index is ${i}`);
+    throw $stringPanic(
+      `index out of bounds: the len is 5 but the index is ${i}`,
+      "test/corpus/index_through_a_generic_bound.rs:45:10",
+    );
   }
   return TABLE[i];
 }
@@ -47,46 +50,111 @@ function pointDebug_fmt(point) {
 }
 
 function main() {
-  const index = { index: (items, i) => $index(items, i) };
-  const vecDequeIndex$1 = { index: (items, i) => $index(items, i, "out of bounds access") };
   const words = ["a", "b", "c", "d"];
   let got = Array.from(
     $iterator(
-      pick(words, [3, 0, 2], index),
-      (iterator) => pickedIterator_next(iterator, index),
+      pick(words, [3, 0, 2], {
+        index: (items, i) => $index(items, i, "test/corpus/index_through_a_generic_bound.rs:57:27"),
+      }),
+      (iterator) =>
+        pickedIterator_next(iterator, {
+          index: (items, i) =>
+            $index(items, i, "test/corpus/index_through_a_generic_bound.rs:57:59"),
+        }),
       true,
     ),
   );
   console.log(`[${got.map((item) => $debugStr(item)).join(", ")}]`);
   got = Array.from(
-    $iterator(pick(words, [1, 1], index), (iterator) => pickedIterator_next(iterator, index), true),
+    $iterator(
+      pick(words, [1, 1], {
+        index: (items, i) => $index(items, i, "test/corpus/index_through_a_generic_bound.rs:59:27"),
+      }),
+      (iterator) =>
+        pickedIterator_next(iterator, {
+          index: (items, i) =>
+            $index(items, i, "test/corpus/index_through_a_generic_bound.rs:59:52"),
+        }),
+      true,
+    ),
   );
   console.log(`[${got.map((item) => $debugStr(item)).join(", ")}]`);
   const v = [10, 20, 30];
   got = Array.from(
-    $iterator(pick(v, [2, 2, 1], index), (iterator) => pickedIterator_next(iterator, index), true),
+    $iterator(
+      pick(v, [2, 2, 1], {
+        index: (items, i) => $index(items, i, "test/corpus/index_through_a_generic_bound.rs:62:26"),
+      }),
+      (iterator) =>
+        pickedIterator_next(iterator, {
+          index: (items, i) =>
+            $index(items, i, "test/corpus/index_through_a_generic_bound.rs:62:50"),
+        }),
+      true,
+    ),
   );
   console.log(`[${got.join(", ")}]`);
   const names = ["x", "yz"];
   const owned = Array.from(
-    $iterator(pick(names, [1, 0], index), (iterator) => pickedIterator_next(iterator, index), true),
+    $iterator(
+      pick(names, [1, 0], {
+        index: (items, i) => $index(items, i, "test/corpus/index_through_a_generic_bound.rs:65:30"),
+      }),
+      (iterator) =>
+        pickedIterator_next(iterator, {
+          index: (items, i) =>
+            $index(items, i, "test/corpus/index_through_a_generic_bound.rs:65:55"),
+        }),
+      true,
+    ),
   );
-  const arg = first(names, index);
+  const arg = first(names, {
+    index: (items, i) => $index(items, i, "test/corpus/index_through_a_generic_bound.rs:66:30"),
+  });
   console.log(`[${owned.map((item) => $debugStr(item)).join(", ")}] ${arg}`);
   const points = [
     { x: 1, y: 2 },
     { x: 3, y: 4 },
   ];
-  const p = first(points, index);
-  const arg$1 = $eq(pickedIterator_next(pick(points, [1], index), index), { x: 3, y: 4 });
+  const p = first(points, {
+    index: (items, i) => $index(items, i, "test/corpus/index_through_a_generic_bound.rs:68:13"),
+  });
+  const arg$1 = $eq(
+    pickedIterator_next(
+      pick(points, [1], {
+        index: (items, i) => $index(items, i, "test/corpus/index_through_a_generic_bound.rs:69:26"),
+      }),
+      {
+        index: (items, i) => $index(items, i, "test/corpus/index_through_a_generic_bound.rs:69:49"),
+      },
+    ),
+    { x: 3, y: 4 },
+  );
   console.log(`${pointDebug_fmt(p)} ${arg$1}`);
   const deque = [];
   deque.push(7);
   deque.unshift(6);
   got = Array.from(
     $iterator(
-      pick(deque, [0, 1], vecDequeIndex$1),
-      (iterator) => pickedIterator_next(iterator, vecDequeIndex$1),
+      pick(deque, [0, 1], {
+        index: (items, i) =>
+          $index(
+            items,
+            i,
+            "test/corpus/index_through_a_generic_bound.rs:73:25",
+            "out of bounds access",
+          ),
+      }),
+      (iterator) =>
+        pickedIterator_next(iterator, {
+          index: (items, i) =>
+            $index(
+              items,
+              i,
+              "test/corpus/index_through_a_generic_bound.rs:73:50",
+              "out of bounds access",
+            ),
+        }),
       true,
     ),
   );
@@ -102,34 +170,59 @@ function main() {
   console.log(`[${got.join(", ")}] ${arg$2}`);
   const message = (caught) =>
     caught.impl.typeId() === "alloc::string::String" ? caught.value : undefined;
-  let outOfBounds = $catchUnwind(() => {
-    const vecIndex = index;
-    return $iterator(
-      pick(v, [0, 5], vecIndex),
-      (iterator) => pickedIterator_next(iterator, vecIndex),
+  let outOfBounds = $catchUnwind(() =>
+    $iterator(
+      pick(v, [0, 5], {
+        index: (items, i) => $index(items, i, "test/corpus/index_through_a_generic_bound.rs:78:48"),
+      }),
+      (iterator) =>
+        pickedIterator_next(iterator, {
+          index: (items, i) =>
+            $index(items, i, "test/corpus/index_through_a_generic_bound.rs:78:69"),
+        }),
       true,
-    ).reduce((n) => n + 1, 0);
-  });
+    ).reduce((n) => n + 1, 0),
+  );
   const value =
     outOfBounds.TAG === "Err" ? { TAG: "Err", _0: message(outOfBounds._0) } : outOfBounds;
   console.log(
     `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0 == null ? "None" : `Some(${$debugStr(value._0)})`})`}`,
   );
-  outOfBounds = $catchUnwind(() => {
-    const vecDequeIndex = vecDequeIndex$1;
-    return $iterator(
-      pick(deque, [2], vecDequeIndex),
-      (iterator) => pickedIterator_next(iterator, vecDequeIndex),
+  outOfBounds = $catchUnwind(() =>
+    $iterator(
+      pick(deque, [2], {
+        index: (items, i) =>
+          $index(
+            items,
+            i,
+            "test/corpus/index_through_a_generic_bound.rs:80:48",
+            "out of bounds access",
+          ),
+      }),
+      (iterator) =>
+        pickedIterator_next(iterator, {
+          index: (items, i) =>
+            $index(
+              items,
+              i,
+              "test/corpus/index_through_a_generic_bound.rs:80:70",
+              "out of bounds access",
+            ),
+        }),
       true,
-    ).reduce((n) => n + 1, 0);
-  });
+    ).reduce((n) => n + 1, 0),
+  );
   const value$1 =
     outOfBounds.TAG === "Err" ? { TAG: "Err", _0: message(outOfBounds._0) } : outOfBounds;
   console.log(
     `${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0 == null ? "None" : `Some(${$debugStr(value$1._0)})`})`}`,
   );
   const empty = [];
-  outOfBounds = $catchUnwind(() => first(empty, index));
+  outOfBounds = $catchUnwind(() =>
+    first(empty, {
+      index: (items, i) => $index(items, i, "test/corpus/index_through_a_generic_bound.rs:83:49"),
+    }),
+  );
   const value$2 =
     outOfBounds.TAG === "Err" ? { TAG: "Err", _0: message(outOfBounds._0) } : outOfBounds;
   console.log(

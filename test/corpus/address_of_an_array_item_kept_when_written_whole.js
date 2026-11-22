@@ -23,7 +23,10 @@ function main() {
   const first = $addr($ptr(items, 0), 8);
   const value = at(1);
   if (value >= 2) {
-    throw $stringPanic(`index out of bounds: the len is 2 but the index is ${value}`);
+    throw $stringPanic(
+      `index out of bounds: the len is 2 but the index is ${value}`,
+      "test/corpus/address_of_an_array_item_kept_when_written_whole.rs:19:29",
+    );
   }
   $stored($ptr(items, value), 8);
   const second = $ptr(items, value);

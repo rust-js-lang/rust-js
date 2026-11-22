@@ -11,11 +11,11 @@ function main() {
   const p = [cell];
   let v;
   try {
-    v = $borrow(cell, true);
+    v = $borrow(cell, "test/corpus/refcell_let_guard_drops_moved.rs:21:22", true);
   } catch (error) {
     $cleanup(() => {
       if (p[0].borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("test/corpus/refcell_let_guard_drops_moved.rs:13:16");
       }
       p[0].push(0);
     }, error);
@@ -25,12 +25,12 @@ function main() {
   const _q = p;
   try {
     if (_q[0].borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/refcell_let_guard_drops_moved.rs:13:16");
     }
     _q[0].push(0);
   } finally {
     $unborrow(v);
   }
-  console.log(`${$borrow(cell).length}`);
+  console.log(`${$borrow(cell, "test/corpus/refcell_let_guard_drops_moved.rs:25:25").length}`);
 }
 //# sourceMappingURL=case.js.map

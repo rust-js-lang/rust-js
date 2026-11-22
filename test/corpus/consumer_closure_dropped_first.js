@@ -10,6 +10,7 @@ import {
   $iter,
   $iterator,
   $live,
+  $panic,
   $print,
   $rangeNext,
   $rev,
@@ -85,7 +86,10 @@ function main() {
     const iter = It.new(2, "it");
     function f(x) {
       if ((x + zero(g)) >>> 0 >= 9) {
-        throw new Error("assertion failed: x + zero(&g) < 9");
+        throw $panic(
+          "assertion failed: x + zero(&g) < 9",
+          "test/corpus/consumer_closure_dropped_first.rs:59:44",
+        );
       }
     }
     try {
@@ -679,7 +683,7 @@ function main() {
     const iter = It.new(3, "it");
     function f(a, x) {
       if (x === 1) {
-        throw new Error("one");
+        throw $panic("one", "test/corpus/consumer_closure_dropped_first.rs:133:13");
       }
       return (((a + x) >>> 0) + zero(g)) >>> 0;
     }
@@ -713,7 +717,7 @@ function main() {
     function f(a, d) {
       try {
         if (d[0] === "y") {
-          throw new Error("y");
+          throw $panic("y", "test/corpus/consumer_closure_dropped_first.rs:139:13");
         }
         return (((a + 1) >>> 0) + zero(g)) >>> 0;
       } catch (error) {
@@ -732,7 +736,7 @@ function main() {
     const iter = It.new(3, "it");
     function f(a, x) {
       if (x === 0) {
-        throw new Error("zero");
+        throw $panic("zero", "test/corpus/consumer_closure_dropped_first.rs:146:17");
       }
       return (((a + x) >>> 0) + zero(g)) >>> 0;
     }

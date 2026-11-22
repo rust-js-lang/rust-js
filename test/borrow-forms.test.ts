@@ -147,7 +147,7 @@ test("a momentary borrow and Vec::remove are checked where they're called, then 
   const dir = compiled("borrow-forms");
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(
-    "function consume(nodes, i) {\n  if (nodes.borrows) {\n    $alreadyBorrowed();\n  }\n  if (i >= nodes.length) {\n    $removeOutOfBounds(nodes, i);\n  }\n  nodes.splice(i, 1);\n}",
+    "function consume(nodes, i) {\n  if (nodes.borrows) {\n    $alreadyBorrowed(\"lib.rs:5:11\");\n  }\n  if (i >= nodes.length) {\n    $removeOutOfBounds(nodes, i, \"lib.rs:5:24\");\n  }\n  nodes.splice(i, 1);\n}",
   );
   expect(js).toContain("const first = nodes.splice(0, 1)[0];");
   expect(ran(dir, "removed")).toBe("1 [3, 4]\n");
@@ -162,9 +162,9 @@ test("a momentary borrow and Vec::remove are checked where they're called, then 
 test("a momentary borrow in a loop's test or a branch is the call, as before", () => {
   const dir = compiled("borrow-forms-tests");
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  for (let i = 0; i < $borrow(cell).length; i++) {\n");
-  expect(js).toContain("  return look && $borrow(cell).length !== 0;\n");
-  expect(js).toContain("  return look ? $borrow(cell).length : 0;\n");
+  expect(js).toContain("  for (let i = 0; i < $borrow(cell, \"lib.rs:52:20\").length; i++) {\n");
+  expect(js).toContain("  return look && $borrow(cell, \"lib.rs:60:19\").length !== 0;\n");
+  expect(js).toContain("  return look ? $borrow(cell, \"lib.rs:64:20\").length : 0;\n");
   expect(ran(dir, "loops_and_short_circuits")).toBe("6 false 0\n");
 });
 
@@ -174,7 +174,7 @@ test("a momentary borrow in a loop's test or a branch is the call, as before", (
 test("a momentary borrow in a then's test is checked first", () => {
   const dir = compiled("borrow-forms-then");
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  if (chunks.borrows < 0) {\n    $alreadyMutablyBorrowed();\n  }\n  return chunks.length === 0 && children.length === 1 ? $index(children, 0) : undefined;\n");
+  expect(js).toContain("  if (chunks.borrows < 0) {\n    $alreadyMutablyBorrowed(\"lib.rs:24:13\");\n  }\n  return chunks.length === 0 && children.length === 1\n    ? $index(children, 0, \"lib.rs:24:73\")\n    : undefined;\n");
   expect(ran(dir, "only_child")).toBe("Some(7) RefCell already mutably borrowed\n");
 });
 
@@ -184,7 +184,7 @@ test("a momentary borrow in a then's test is checked first", () => {
 test("a guard held while a Drop runs is counted, as it was", () => {
   const dir = compiled("borrow-forms-counted");
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("const borrow = $borrow(cell, true);");
+  expect(js).toContain("const borrow = $borrow(cell, \"lib.rs:85:10\", true);");
   expect(js).toContain("$unborrow(borrow);");
   expect(ran(dir, "borrowed_across_a_drop")).toBe("RefCell already borrowed [1, 2]\n");
   // A counted guard taken where another is held panics as Rust's does.
@@ -214,12 +214,12 @@ test("an undo stack's guards, held while only Rc counts and reads run, are neith
 // named as the parameter it borrows is its check alone, no `state = state;`.
 test("a quiet let guard of a counted cell is checked, not counted, and no self-assignment is left", () => {
   const one = caseJs("guard_let_checked_beside_a_counted_one");
-  expect(one).toContain("if (history.borrows) {\n      $alreadyBorrowed();\n    }");
+  expect(one).toContain("if (history.borrows) {\n      $alreadyBorrowed(\"guard_let_checked_beside_a_counted_one.rs:23:26\");\n    }");
   expect(one.match(/\$borrowMut\(/g) ?? []).toEqual([]);
   const advance = caseJs("refcell_eq_through_guard");
-  expect(advance).toContain("if (state.borrows) {\n    $alreadyBorrowed();\n  }");
+  expect(advance).toContain("if (state.borrows) {\n    $alreadyBorrowed(\"refcell_eq_through_guard.rs:15:27\");\n  }");
   expect(advance).not.toContain("state = state;");
   // One dropped unread, a check alone, stays a count and its release.
   const unread = caseJs("nullable_written_through_borrows");
-  expect(unread).toContain("const guard = $borrow(COUNTED, true);\n  $unborrow(guard);");
+  expect(unread).toContain("const guard = $borrow(COUNTED, \"nullable_written_through_borrows.rs:119:23\", true);\n  $unborrow(guard);");
 });

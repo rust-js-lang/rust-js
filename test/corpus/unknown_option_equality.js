@@ -35,8 +35,8 @@ function same(a, b) {
 }
 
 function main() {
-  const object = $unwrap(JSON.parse("{}"));
-  const other = $unwrap(JSON.parse("{}"));
+  const object = $unwrap(JSON.parse("{}"), "test/corpus/unknown_option_equality.rs:73:30");
+  const other = $unwrap(JSON.parse("{}"), "test/corpus/unknown_option_equality.rs:74:29");
   const nil = JSON.parse("null");
   const absent = object.missing;
   // `null` and `undefined` are each `None`.

@@ -39,7 +39,9 @@ export function createUndoStack(initial, options) {
       time - history$1.open.time < groupDelay;
     if (joins) {
       const index = history$1.index;
-      history$1.entries[$at(history$1.entries, index)] = state;
+      history$1.entries[
+        $at(history$1.entries, index, "test/corpus/undo_stack_map_reentered.rs:106:32")
+      ] = state;
     } else {
       history$1.entries.push(state);
       if (history$1.entries.length > limit + 1) {
@@ -58,7 +60,7 @@ export function createUndoStack(initial, options) {
       return;
     }
     history.index--;
-    return $index(history.entries, history.index);
+    return $index(history.entries, history.index, "test/corpus/undo_stack_map_reentered.rs:132:44");
   };
   const redo = () => {
     history.open = undefined;
@@ -66,7 +68,7 @@ export function createUndoStack(initial, options) {
       return;
     }
     history.index = (history.index + 1) >>> 0;
-    return $index(history.entries, history.index);
+    return $index(history.entries, history.index, "test/corpus/undo_stack_map_reentered.rs:144:44");
   };
   const canUndo = () => history.index > 0;
   const canRedo = () => history.index < (history.entries.length - 1) >>> 0;

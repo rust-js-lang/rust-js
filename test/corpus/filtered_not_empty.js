@@ -8,8 +8,8 @@ export function entry() {
 
 function processed(queue, replace) {
   if (queue != null && queue.length !== 0) {
-    let total = replace ? $index(queue, 0) : 100;
-    for (const part of $slice(queue, replace ? 1 : 0)) {
+    let total = replace ? $index(queue, 0, "test/corpus/filtered_not_empty.rs:12:43") : 100;
+    for (const part of $slice(queue, replace ? 1 : 0, "test/corpus/filtered_not_empty.rs:13:28")) {
       total = (total + part) | 0;
     }
     return total;
@@ -21,7 +21,7 @@ function processed(queue, replace) {
 function anyTest(queue, replace) {
   if (queue != null && queue.length < 3) {
     let total = 0;
-    for (const part of $slice(queue, replace ? 1 : 0)) {
+    for (const part of $slice(queue, replace ? 1 : 0, "test/corpus/filtered_not_empty.rs:25:28")) {
       total = (total + part) | 0;
     }
     return total;

@@ -17,6 +17,7 @@ import {
   $mapEnds,
   $nextBack,
   $nthBack,
+  $panic,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
@@ -47,7 +48,7 @@ function dDisplay_fmt(d) {
 function foldsIterator_next(folds) {
   console.log(`next ${folds[0]}`);
   if (folds[0] === 7) {
-    throw new Error("no 7");
+    throw $panic("no 7", "test/corpus/own_iterator_flattened_from_its_back.rs:39:13");
   }
   function value() {
     folds[0] = (folds[0] + 1) >>> 0;
@@ -59,7 +60,7 @@ function foldsIterator_next(folds) {
 function foldsDoubleEndedIterator_nextBack(folds) {
   console.log(`next_back ${folds[1]}`);
   if (folds[1] === 9) {
-    throw new Error("no 9");
+    throw $panic("no 9", "test/corpus/own_iterator_flattened_from_its_back.rs:52:13");
   }
   function value() {
     folds[1] = (folds[1] - 1) >>> 0;

@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function record(root, f) {
-  const log = $borrowMut(root.log, true);
+  const log = $borrowMut(root.log, "test/corpus/fn_pointer_closure_borrows_held.rs:13:28", true);
   try {
     const n = f(root);
     log.push(n);
@@ -20,13 +20,15 @@ function main() {
   const root = { log: [] };
   function counted(root) {
     if (root.log.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/fn_pointer_closure_borrows_held.rs:22:55");
     }
     return root.log.length;
   }
   const constant = () => 7;
   record(root, constant);
-  console.log(`[${$borrow(root.log).join(", ")}]`);
+  console.log(
+    `[${$borrow(root.log, "test/corpus/fn_pointer_closure_borrows_held.rs:25:31").join(", ")}]`,
+  );
   console.log(`${counted(root)}`);
   record(root, counted);
 }

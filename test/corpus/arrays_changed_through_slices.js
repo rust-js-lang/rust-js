@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function zero(items) {
-  items[$at(items, 0)] = 0;
+  items[$at(items, 0, "test/corpus/arrays_changed_through_slices.rs:5:5")] = 0;
 }
 
 function sorted(items) {
@@ -36,7 +36,7 @@ function main() {
     cell.value = 1;
   }
   grid[1].fill(7);
-  $swap(grid[2], 0, 1);
+  $swap(grid[2], 0, 1, "test/corpus/arrays_changed_through_slices.rs:32:13");
   for (const row of grid) {
     row[1] = (row[1] + 1) & 255;
   }

@@ -8,7 +8,7 @@ export function entry() {
 
 function main() {
   const target = [0, 0, 0];
-  $copyFromSlice(target, [1, 2]);
+  $copyFromSlice(target, [1, 2], "test/corpus/copy_from_slice_panic.rs:6:12");
   console.log(`[${target.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

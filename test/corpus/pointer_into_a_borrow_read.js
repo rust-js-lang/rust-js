@@ -14,11 +14,11 @@ function main() {
       { a: 3, b: 30 },
     ],
   };
-  const borrow = $borrow(cell, true);
+  const borrow = $borrow(cell, "test/corpus/pointer_into_a_borrow_read.rs:16:31", true);
   const a = $ptr(borrow.value[2], "a", 4, borrow.value, 20);
   let tmp;
   try {
-    tmp = $borrow(cell, true);
+    tmp = $borrow(cell, "test/corpus/pointer_into_a_borrow_read.rs:17:31", true);
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -28,7 +28,7 @@ function main() {
   let tmp$1;
   try {
     if (cell.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/pointer_into_a_borrow_read.rs:21:25");
     }
     tmp$1 = cell;
   } catch (error) {

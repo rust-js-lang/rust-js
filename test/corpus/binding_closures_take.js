@@ -34,10 +34,12 @@ function main() {
   const first = { value: 3 };
   const other = { value: 100 };
   const closure = { bound: first };
-  const made = $unwrap(callbacks(closure, 4));
+  const made = $unwrap(callbacks(closure, 4), "test/corpus/binding_closures_take.rs:41:39");
   closure.bound = other;
   console.log(`${first.value}`);
-  console.log(`${$index(made, 0)(1)} ${$index(made, 1)(2)}`);
+  console.log(
+    `${$index(made, 0, "test/corpus/binding_closures_take.rs:44:27")(1)} ${$index(made, 1, "test/corpus/binding_closures_take.rs:44:39")(2)}`,
+  );
   console.log(`${first.value} ${other.value}`);
   console.log(`${callbacks({}, 1) == null}`);
   console.log(`${callbacks({ bound: { value: 0 } }, 1)?.length ?? 9}`);

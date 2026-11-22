@@ -37,7 +37,7 @@ function change(payload) {
 
 function fails(n) {
   if (n > 2) {
-    throw $stringPanic(`big ${n}`);
+    throw $stringPanic(`big ${n}`, "test/corpus/catch_unwind_payload_where_read.rs:42:9");
   }
   return n;
 }

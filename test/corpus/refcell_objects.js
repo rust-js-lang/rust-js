@@ -27,7 +27,7 @@ function totalsDebug_fmt(totals) {
 
 function add(totals, name, n) {
   if (totals.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_objects.rs:18:29");
   }
   totals.sum = BigInt.asIntN(64, totals.sum + n);
   totals.names.push(name);
@@ -41,18 +41,24 @@ function main() {
   const taken = shared.splice(0);
   console.log(`[${taken.join(", ")}] ${shared.length === 0} ${shared === shared}`);
   shared.push(4, 5);
-  const before = $replaceWith(shared, (v) => v.map((n) => (n * 2) | 0), false, true);
+  const before = $replaceWith(
+    shared,
+    (v) => v.map((n) => (n * 2) | 0),
+    "test/corpus/refcell_objects.rs:32:25",
+    false,
+    true,
+  );
   console.log(`[${before.join(", ")}] [${shared.join(", ")}]`);
 
   const left = new Map([["a", 1]]);
   const right = new Map([["b", 2]]);
   $refCellSwap(left, right, true);
   if (left.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_objects.rs:38:32");
   }
   const get = left.get("b");
   if (right.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_objects.rs:38:57");
   }
   const value = right.get("a");
   console.log(
@@ -71,20 +77,25 @@ function main() {
   const totals = { sum: 0n, names: [] };
   add(totals, "a", 2n);
   add(totals, "b", 3n);
-  const copy = $withBorrow(totals, (value) => ({ ...value, names: value.names.slice() }), true);
-  $borrowMut(totals).names.length = 0;
+  const copy = $withBorrow(
+    totals,
+    (value) => ({ ...value, names: value.names.slice() }),
+    "test/corpus/refcell_objects.rs:51:23",
+    true,
+  );
+  $borrowMut(totals, "test/corpus/refcell_objects.rs:52:12").names.length = 0;
   const value$1 = $eq(totals, copy, true);
   console.log(
     `RefCell { value: ${$showBorrowed(totals, (value) => totalsDebug_fmt(value), true)} } RefCell { value: ${$showBorrowed(copy, (value) => totalsDebug_fmt(value), true)} } ${value$1}`,
   );
   if (totals.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_objects.rs:54:13");
   }
   $assign(totals, {
     sum: 1n,
     names: ["c"],
   });
-  const reading = $borrow(totals, true);
+  const reading = $borrow(totals, "test/corpus/refcell_objects.rs:58:26", true);
   try {
     const tryBorrowMut = $tryBorrow(totals, true);
     try {

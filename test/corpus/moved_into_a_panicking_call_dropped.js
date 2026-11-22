@@ -13,6 +13,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $splicing,
+  $stdSites,
   $stringPanic,
   $unwindsOn,
   $unwound,
@@ -54,7 +55,7 @@ function loudDrop_drop(loud) {
 
 function loudOrPanic(i) {
   if (i === 1) {
-    throw $stringPanic(`made ${i}`);
+    throw $stringPanic(`made ${i}`, "test/corpus/moved_into_a_panicking_call_dropped.rs:39:9");
   }
   return [(10 + i) >>> 0];
 }
@@ -65,6 +66,7 @@ function spliceGiven(w, at, with$, dropI) {
     at.start,
     at.end,
     $closing(Iterator.from(with$), dropI, false),
+    $stdSites.vecDrain[0],
     loudDrop_drop,
   ).reduce((n, item) => {
     loudDrop_drop(item);
@@ -85,6 +87,7 @@ function main() {
           n(1),
           n(4),
           $closing(Iterator.from([[7]]), $dropEach(loudDrop_drop)),
+          $stdSites.vecDrain[0],
           loudDrop_drop,
         ).reduce((n, item) => {
           loudDrop_drop(item);
@@ -112,6 +115,7 @@ function main() {
           n(1),
           n(3) + 1,
           $closing(Iterator.from([[7], [8]]), $dropEach(loudDrop_drop)),
+          $stdSites.vecDrain[0],
           loudDrop_drop,
           true,
         ).reduce((n, item) => {
@@ -140,6 +144,7 @@ function main() {
           n(2),
           n(1),
           $closing(Iterator.from([[7]]), $dropEach(loudDrop_drop)),
+          $stdSites.vecDrain[0],
           loudDrop_drop,
         ).reduce((n, item) => {
           loudDrop_drop(item);
@@ -167,6 +172,7 @@ function main() {
           n(1),
           n(2),
           $closing(Iterator.from([[7]]), $dropEach(loudDrop_drop)),
+          $stdSites.vecDrain[0],
           loudDrop_drop,
         ).reduce((n, item) => {
           loudDrop_drop(item);
@@ -196,6 +202,7 @@ function main() {
           range.start,
           range.end,
           $mapEnds($iterator({ start: 0, end: 3 }, $rangeNext, false, $rangeNextBack), loudOrPanic),
+          $stdSites.vecDrain[0],
           loudDrop_drop,
         ).reduce((n, item) => {
           loudDrop_drop(item);
@@ -224,6 +231,7 @@ function main() {
           range.start,
           range.end,
           $mapEnds($iterator({ start: 0, end: 3 }, $rangeNext, false, $rangeNextBack), loudOrPanic),
+          $stdSites.vecDrain[0],
           loudDrop_drop,
         );
         splice.return();
@@ -268,7 +276,13 @@ function main() {
     () => {
       const w = [[1], [2]];
       try {
-        $insertAt(w, n(5), [9], loudDrop_drop);
+        $insertAt(
+          w,
+          n(5),
+          [9],
+          "test/corpus/moved_into_a_panicking_call_dropped.rs:84:11",
+          loudDrop_drop,
+        );
         return w.length;
       } catch (error) {
         throw $unwindsOn(error);

@@ -13,7 +13,9 @@ import { $unwrap } from "@rust-js/std";
 
 /** Render the page into `#app`. */
 export function start() {
-  const root = createRoot($unwrap(document.getElementById("app"), "the page has an #app"));
+  const root = createRoot(
+    $unwrap(document.getElementById("app"), "wasm/web/rust/lib.rs:28:64", "the page has an #app"),
+  );
   root.render(
     <StrictMode>
       <App />

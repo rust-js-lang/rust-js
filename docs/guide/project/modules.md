@@ -676,6 +676,7 @@ import { $unwrap } from "@rust-js/std";
 
 const ReactSharedInternalsServer = $unwrap(
   React.__SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE,
+  "internals.rs:16:26",
   'The "react-server" condition must be enabled.',
 );
 

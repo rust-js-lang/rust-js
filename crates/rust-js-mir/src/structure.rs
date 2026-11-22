@@ -300,7 +300,8 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             match &statement.kind {
                 StatementKind::Assign(assign) => {
                     let (place, rvalue) = &**assign;
-                    self.mir_assign(state, place, rvalue, span, &mut made)?;
+                    let at = self.caller_location(span);
+                    Expr::raised_at(at, || self.mir_assign(state, place, rvalue, span, &mut made))?;
                 }
                 StatementKind::SetDiscriminant { .. } => {
                     return Err(self.unsupported(span, "an enum made by parts, from its MIR"));
@@ -340,8 +341,22 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         .at(self.js_span(span))
     }
 
-    /// Where a block goes.
+    /// Where a block goes, each helper call it makes that takes where a
+    /// panic it raises was raised given its caller location, as rustc's
+    /// codegen gives a call: its `fn_span`'s, the method's name; another
+    /// terminator's, an `Assert`'s, its span's (#2292).
     fn mir_terminator(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock) -> R<Vec<Stmt>> {
+        let terminator = state.body.basic_blocks[block].terminator();
+        let span = match &terminator.kind {
+            TerminatorKind::Call { fn_span, .. } => *fn_span,
+            _ => terminator.source_info.span,
+        };
+        let at = self.caller_location(span);
+        Expr::raised_at(at, || self.mir_terminator_at(state, block))
+    }
+
+    /// `mir_terminator`'s JS, its location given.
+    fn mir_terminator_at(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock) -> R<Vec<Stmt>> {
         let mut out = Vec::new();
         // An `Option`'s test that it's `Some` whose `Some` tests its payload
         // alone: that test, of the value itself (`mir_payload_tests`).
@@ -530,7 +545,8 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 if let Some(check) = self.assert_check(state.body, state.facts.drops(), terminator) =>
             {
                 if let Check::Deferred(index, write) = check {
-                    state.deferred.insert(index, write);
+                    let raised = self.caller_location(terminator.source_info.span);
+                    state.deferred.insert(index, (write, raised));
                 }
                 out.extend(self.mir_branch(state, block, *target)?);
             }

@@ -298,7 +298,8 @@ test("a function's caller's location and a const parameter's value are declared"
   expect(js).toContain("export function checked(n, why, location) {");
   expect(js).toContain("export function sized(shapes, location, N, SShape) {");
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  const location = "{\n    readonly file: string;\n    readonly line: number;\n    readonly column: number;\n}";
+  // A `Location` is its text, `"file:line:col"` (ADR 1184).
+  const location = "string";
   expect(declarations).toContain(`export function here(location: ${location}): ${location};`);
   expect(declarations).toContain(`export function checked(n: number, why: string | null | undefined, location: ${location}): number;`);
   // One that reads no location takes none, its `Option` left out as before.
@@ -313,7 +314,7 @@ test("a function's caller's location and a const parameter's value are declared"
     `import { big, checked, Grid, here, sized, zeros } from "./lib.js";
 import { squareShape } from "./shape.js";
 
-const at = { file: "use.ts", line: 4, column: 12 };
+const at = "use.ts:4:12";
 let panicked = "";
 try {
   checked(0, null, at);
@@ -336,7 +337,7 @@ export const unsized = zeros();
   expect(errors.map((line) => line.replace(/: error.*/, ""))).toEqual(["wrong.ts(2,25)", "wrong.ts(3,24)"]);
   // What it gives is what Rust's calls give, a panic naming where it's told it's called from.
   expect(JSON.parse(run([process.execPath, join(dir, "use.ts")]))).toEqual([
-    { file: "use.ts", line: 4, column: 12 },
+    "use.ts:4:12",
     2,
     [0, 0, 0],
     "4",

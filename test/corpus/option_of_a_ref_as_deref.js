@@ -8,7 +8,13 @@ export function entry() {
 
 // A guard of a number's cell, which derefs to its value.
 function countOf(transition) {
-  const count = transition.started ? $borrow($fieldCell(transition, "count"), true) : undefined;
+  const count = transition.started
+    ? $borrow(
+        $fieldCell(transition, "count"),
+        "test/corpus/option_of_a_ref_as_deref.rs:15:61",
+        true,
+      )
+    : undefined;
   const result = count?.value;
   if (count != null) {
     $unborrow(count);
@@ -17,7 +23,9 @@ function countOf(transition) {
 }
 
 function typesOf(transition) {
-  return transition.started ? $borrow(transition.types, true) : undefined;
+  return transition.started
+    ? $borrow(transition.types, "test/corpus/option_of_a_ref_as_deref.rs:20:49", true)
+    : undefined;
 }
 
 function shown(transition) {
@@ -47,7 +55,7 @@ function main() {
   };
   console.log(`${shown(started)}`);
   if (started.types.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/option_of_a_ref_as_deref.rs:43:19");
   }
   started.types.push("c");
   console.log(`${shown(started)}`);
@@ -57,7 +65,10 @@ function main() {
   if (value != null) {
     $unborrow(value);
   }
-  const value$1 = $borrowMut($fieldCell(started, "count"));
+  const value$1 = $borrowMut(
+    $fieldCell(started, "count"),
+    "test/corpus/option_of_a_ref_as_deref.rs:47:20",
+  );
   value$1.value = (value$1.value + 1) >>> 0;
   const value$2 = countOf(started);
   const value$3 = countOf(idle);

@@ -196,30 +196,34 @@ export function words(s) {
  */
 export function indexed(i) {
   const v = [10, 20, 30];
-  const read = $index(v, i);
+  const read = $index(v, i, "examples/collections.rs:168:17");
   v[i] = (read + 1) >>> 0;
-  v[$at(v, 0)] = (v[0] + 5) >>> 0;
+  v[$at(v, 0, "examples/collections.rs:170:6")] = (v[0] + 5) >>> 0;
   const slice = v;
-  slice[2] = (slice[$at(slice, 2)] * 2) >>> 0;
+  slice[2] = (slice[$at(slice, 2, "examples/collections.rs:172:5")] * 2) >>> 0;
   return [read, v[i], v];
 }
 
 /** An element's fields are written in place, and a copy of one is its own. */
 export function elementFields(i) {
   const cells = [{ hits: 0 }, { hits: 0 }];
-  const cell2 = $index(cells, i);
+  const cell2 = $index(cells, i, "examples/collections.rs:184:10");
   cell2.hits = (cell2.hits + 1) >>> 0;
   const before = { ...cells[i] };
   const r = cells[i];
   r.hits = 10;
-  return [before.hits, cells[i].hits, $index(cells, (1 - i) >>> 0).hits];
+  return [
+    before.hits,
+    cells[i].hits,
+    $index(cells, (1 - i) >>> 0, "examples/collections.rs:188:39").hits,
+  ];
 }
 
 /** An array changed in place is copied when it's copied. */
 export function arrays(i) {
   const a = [1, 2, 3];
   const b = a.slice();
-  a[$at(a, i)] = 9;
+  a[$at(a, i, "examples/collections.rs:195:5")] = 9;
   return [a[i], b[i]];
 }
 
@@ -250,7 +254,7 @@ export function mapBasics(n) {
   for (const [, v] of m) {
     total = (total + v) >>> 0;
   }
-  const value = $unwrap($mutGet(m, "a"));
+  const value = $unwrap($mutGet(m, "a"), "examples/collections.rs:223:21");
   value.value = (value.value + 10) >>> 0;
   return [
     old,
@@ -258,7 +262,7 @@ export function mapBasics(n) {
     m.has("b"),
     m.size,
     removed,
-    (total + $unwrap(m.get("a"), "no entry found for key")) >>> 0,
+    (total + $unwrap(m.get("a"), "examples/collections.rs:224:66", "no entry found for key")) >>> 0,
   ];
 }
 
@@ -324,7 +328,11 @@ export function sortedMaps(text) {
   const collect = $sortedEntries(counts, $cmp);
   const arg = $sortedKeys(set, $cmp).toReversed();
   const value = `{${Array.from($sortedKeys(set, $cmp)).join(", ")}} [${arg.join(", ")}]`;
-  const arg$1 = $unwrap(tiers.get("Bronze"), "no entry found for key");
+  const arg$1 = $unwrap(
+    tiers.get("Bronze"),
+    "examples/collections.rs:278:38",
+    "no entry found for key",
+  );
   return [
     collect,
     order,

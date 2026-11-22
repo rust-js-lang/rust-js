@@ -14,17 +14,17 @@ export function entry() {
 
 function merge(types, other) {
   let into = other;
-  const borrow = $borrow(types, true);
+  const borrow = $borrow(types, "test/corpus/contains_guarded_set_again.rs:10:20", true);
   try {
     for (let i = 0; i < borrow.length; i++) {
       const t = borrow[i];
       if (into.borrows < 0) {
-        $alreadyMutablyBorrowed();
+        $alreadyMutablyBorrowed("test/corpus/contains_guarded_set_again.rs:11:18");
       }
       if (!into.includes(t)) {
         into = types;
         if (into.borrows) {
-          $alreadyBorrowed();
+          $alreadyBorrowed("test/corpus/contains_guarded_set_again.rs:13:18");
         }
         into.push(t);
       }
@@ -37,7 +37,7 @@ function merge(types, other) {
 export function main() {
   const chars = ["a", "b"];
   console.log(
-    `[${$borrow(chars)
+    `[${$borrow(chars, "test/corpus/contains_guarded_set_again.rs:20:28")
       .map((item) => $debugStr(item, "'"))
       .join(", ")}]`,
   );

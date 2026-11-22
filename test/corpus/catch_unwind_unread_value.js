@@ -19,7 +19,7 @@ export function entry() {
 
 function check(n) {
   if (n > 2) {
-    throw $stringPanic(`big ${n}`);
+    throw $stringPanic(`big ${n}`, "test/corpus/catch_unwind_unread_value.rs:13:9");
   }
   return n + 1;
 }
@@ -36,7 +36,7 @@ function called(n) {
 
 function indexed(items, i) {
   try {
-    $index(items, i);
+    $index(items, i, "test/corpus/catch_unwind_unread_value.rs:23:21");
     return false;
   } catch (error) {
     $catchable(error);
@@ -46,7 +46,7 @@ function indexed(items, i) {
 
 function divided(a, b) {
   try {
-    $div(a, b) >>> 0;
+    $div(a, b, "test/corpus/catch_unwind_unread_value.rs:27:21") >>> 0;
     return false;
   } catch (error) {
     $catchable(error);
@@ -56,7 +56,7 @@ function divided(a, b) {
 
 function unwrapped(found) {
   try {
-    $unwrap(found);
+    $unwrap(found, "test/corpus/catch_unwind_unread_value.rs:31:27");
     return true;
   } catch (error) {
     $catchable(error);
@@ -65,10 +65,12 @@ function unwrapped(found) {
 }
 
 function borrowed(cell, held) {
-  const _guard = held ? $borrow(cell, true) : undefined;
+  const _guard = held
+    ? $borrow(cell, "test/corpus/catch_unwind_unread_value.rs:35:36", true)
+    : undefined;
   try {
     if (cell.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/catch_unwind_unread_value.rs:36:44");
     }
     return false;
   } catch (error) {
@@ -83,7 +85,7 @@ function borrowed(cell, held) {
 
 function cut(text, at) {
   try {
-    $byteLen($strSlice(text, 0, at));
+    $byteLen($strSlice(text, 0, "test/corpus/catch_unwind_unread_value.rs:40:25", at));
     return false;
   } catch (error) {
     $catchable(error);

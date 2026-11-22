@@ -72,7 +72,7 @@ function textOf(r, RRead) {
   const readToString = RRead.readToString(self, buf, true);
   r = self.value;
   s = buf.value;
-  $unwrapOk(readToString, undefined, $ioErrorDebug);
+  $unwrapOk(readToString, "test/corpus/io_read_generic.rs:38:30", undefined, $ioErrorDebug);
   return s;
 }
 
@@ -131,11 +131,7 @@ function main() {
   c.pos = 0n;
   console.log(`${$debugStr(textOf($cellOf(c), $mutReader(cursorRead$1)))}`);
   const result = pair($cellOf({ inner: "hi", pos: 0n }), cursorRead);
-  const map = (e) =>
-    $fmtOrPanic(
-      () => e.impl.Display().fmt(e.value),
-      "a Display implementation returned an error unexpectedly: Error",
-    );
+  const map = (e) => $fmtOrPanic(() => e.impl.Display().fmt(e.value), "toString");
   const value$2 = result.TAG === "Err" ? { TAG: "Err", _0: map(result._0) } : result;
   console.log(
     `${value$2.TAG === "Ok" ? `Ok([${value$2._0.join(", ")}])` : `Err(${$debugStr(value$2._0)})`}`,
@@ -152,11 +148,7 @@ function main() {
       tmp$3 = r$3.value;
     }
   }
-  const map$1 = (e) =>
-    $fmtOrPanic(
-      () => e.impl.Display().fmt(e.value),
-      "a Display implementation returned an error unexpectedly: Error",
-    );
+  const map$1 = (e) => $fmtOrPanic(() => e.impl.Display().fmt(e.value), "toString");
   const value$3 = tmp$4.TAG === "Err" ? { TAG: "Err", _0: map$1(tmp$4._0) } : tmp$4;
   console.log(
     `${value$3.TAG === "Ok" ? `Ok([${value$3._0.join(", ")}])` : `Err(${$debugStr(value$3._0)})`}`,

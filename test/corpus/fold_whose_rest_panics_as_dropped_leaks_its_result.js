@@ -8,6 +8,7 @@ import {
   $foldDropping,
   $held,
   $iter,
+  $panic,
   $sizeHint,
   $taking,
 } from "@rust-js/std";
@@ -19,7 +20,7 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 4) {
-    throw new Error("at 4");
+    throw $panic("at 4", "test/corpus/fold_whose_rest_panics_as_dropped_leaks_its_result.rs:15:13");
   }
 }
 

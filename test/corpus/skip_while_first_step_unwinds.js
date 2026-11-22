@@ -13,6 +13,7 @@ import {
   $lazySkipWhile,
   $lent,
   $live,
+  $panic,
   $skipping,
   $stepBy,
   $tryFoldOk,
@@ -32,7 +33,7 @@ function dDrop_drop(d) {
 function ownIterator_next(own) {
   own[0] = (own[0] + 1) >>> 0;
   if (own[0] === 1) {
-    throw new Error("own");
+    throw $panic("own", "test/corpus/skip_while_first_step_unwinds.rs:26:9");
   }
   const condition = own[0] < 5;
   const f = ["own"];
@@ -46,7 +47,7 @@ function ownIterator_next(own) {
 function skipping(n, calls) {
   calls.value = (calls.value + 1) >>> 0;
   if (calls.value === 2) {
-    throw new Error("skip_while");
+    throw $panic("skip_while", "test/corpus/skip_while_first_step_unwinds.rs:33:5");
   }
   return n < 2;
 }
@@ -258,7 +259,7 @@ function main() {
         $closing($iter(value), $dropEach(dDrop_drop)).map((x) => {
           if (x[0] === "2") {
             try {
-              throw new Error("skip");
+              throw $panic("skip", "test/corpus/skip_while_first_step_unwinds.rs:98:17");
             } catch (error) {
               $cleanup(() => {
                 dDrop_drop(x);
@@ -301,7 +302,7 @@ function main() {
           $closing($iter(value), $dropEach(dDrop_drop)).map((x) => {
             if (x[0] === "2") {
               try {
-                throw new Error("skip");
+                throw $panic("skip", "test/corpus/skip_while_first_step_unwinds.rs:113:17");
               } catch (error) {
                 $cleanup(() => {
                   dDrop_drop(x);
@@ -417,7 +418,7 @@ function main() {
         $closing($iter(value), $dropEach(dDrop_drop)).map((x) => {
           if (x[0] === "1") {
             try {
-              throw new Error("first");
+              throw $panic("first", "test/corpus/skip_while_first_step_unwinds.rs:146:17");
             } catch (error) {
               $cleanup(() => {
                 dDrop_drop(x);
@@ -459,7 +460,7 @@ function main() {
     try {
       tmp = $lazyRange(1, 4).map((x) => {
         if (x === 2) {
-          throw new Error("map");
+          throw $panic("map", "test/corpus/skip_while_first_step_unwinds.rs:163:17");
         }
         return x;
       });

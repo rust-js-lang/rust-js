@@ -9,7 +9,7 @@ export function entry() {
 function after(items, i, end) {
   const out = [];
   for (let j = end - 1; j > i; j--) {
-    out.push($index(items, j));
+    out.push($index(items, j, "test/corpus/range_rev_from_computed.rs:10:18"));
   }
   return out;
 }

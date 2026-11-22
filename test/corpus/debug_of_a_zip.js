@@ -103,7 +103,7 @@ function main() {
   console.log(`${zipDebug_fmt(skipped, undefined, iterDebug, skipDebug(iterDebug), true, true)}`);
   console.log(`${skipped.reduce((n) => n + 1, 0)}`);
   const chunks = iterator_zip(
-    $iter($chunks(v, 1)),
+    $iter($chunks(v, 1, "test/corpus/debug_of_a_zip.rs:24:20")),
     $iter(v),
     { next: $next },
     intoIterator,

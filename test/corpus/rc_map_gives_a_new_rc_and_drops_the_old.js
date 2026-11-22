@@ -7,6 +7,7 @@ import {
   $cleanup,
   $downgrade,
   $live,
+  $panic,
   $rcClone,
   $rcDrop,
   $unwindsOn,
@@ -92,7 +93,10 @@ function main() {
             try {
               mapped = ((l) => {
                 if (l[0] === 3) {
-                  throw new Error("boom");
+                  throw $panic(
+                    "boom",
+                    "test/corpus/rc_map_gives_a_new_rc_and_drops_the_old.rs:51:27",
+                  );
                 } else {
                   return l[0];
                 }

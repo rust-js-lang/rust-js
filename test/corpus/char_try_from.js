@@ -13,9 +13,11 @@ export function entry() {
 }
 
 function main() {
-  const e = $unwrapErr($charTryFrom(0xd800), undefined, (e) => $debugStr(e, "'"));
-  const f = $unwrapErr($u8TryFromChar("Ā"));
-  const g = $unwrapErr($u8TryFromChar("😀"));
+  const e = $unwrapErr($charTryFrom(0xd800), "test/corpus/char_try_from.rs:4:39", undefined, (e) =>
+    $debugStr(e, "'"),
+  );
+  const f = $unwrapErr($u8TryFromChar("Ā"), "test/corpus/char_try_from.rs:5:31");
+  const g = $unwrapErr($u8TryFromChar("😀"), "test/corpus/char_try_from.rs:6:32");
   console.log(
     `[${e}] [${$debugParseError(e, "CharTryFromError")}] [${$debugParseError(e, "CharTryFromError", { alternate: true })}]`,
   );

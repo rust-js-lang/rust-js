@@ -15,6 +15,7 @@ import {
   $live,
   $next,
   $nextBack,
+  $panic,
   $rangeNext,
   $roomFor,
   $roomForHint,
@@ -49,7 +50,7 @@ function ownIterator_next(own) {
   const next = $next(own.items);
   if (next != null && next[0] === own.at) {
     try {
-      throw new Error("boom");
+      throw $panic("boom", "test/corpus/adapters_over_own_next_that_panics.rs:38:13");
     } catch (error) {
       $cleanup(() => {
         if (next != null) {
@@ -132,7 +133,7 @@ function ownDoubleEndedIterator_nextBack(own) {
   const next = $nextBack(own.items);
   if (next != null && next[0] === own.at) {
     try {
-      throw new Error("boom back");
+      throw $panic("boom back", "test/corpus/adapters_over_own_next_that_panics.rs:61:13");
     } catch (error) {
       $cleanup(() => {
         if (next != null) {

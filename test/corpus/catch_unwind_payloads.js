@@ -6,6 +6,7 @@ import {
   $debugParseError,
   $div,
   $index,
+  $panic,
   $parseInt,
   $stringPanic,
   $unwinding,
@@ -44,11 +45,11 @@ function caught(name, result, TDebug) {
 }
 
 function pick(items, at) {
-  return $index(items, at);
+  return $index(items, at, "test/corpus/catch_unwind_payloads.rs:29:5");
 }
 
 function halve(n, by) {
-  return $div(n, by, -2147483648) | 0;
+  return $div(n, by, "test/corpus/catch_unwind_payloads.rs:33:5", -2147483648) | 0;
 }
 
 function main() {
@@ -61,7 +62,7 @@ function main() {
   caught(
     "literal",
     $catchUnwind(() => {
-      throw new Error("boom");
+      throw $panic("boom", "test/corpus/catch_unwind_payloads.rs:38:55");
     }),
     debug,
   );
@@ -69,7 +70,7 @@ function main() {
   caught(
     "formatted",
     $catchUnwind(() => {
-      throw $stringPanic(`too big: ${n}`);
+      throw $stringPanic(`too big: ${n}`, "test/corpus/catch_unwind_payloads.rs:40:57");
     }),
     debug,
   );
@@ -80,14 +81,17 @@ function main() {
   );
   caught(
     "unwrap",
-    $catchUnwind(() => $unwrap(undefined)),
+    $catchUnwind(() => $unwrap(undefined, "test/corpus/catch_unwind_payloads.rs:42:57")),
     debug,
   );
   caught(
     "parse",
     $catchUnwind(() =>
-      $unwrapOk($parseInt("x", -2147483648, 2147483647), undefined, (e) =>
-        $debugParseError(e, "ParseIntError"),
+      $unwrapOk(
+        $parseInt("x", -2147483648, 2147483647),
+        "test/corpus/catch_unwind_payloads.rs:43:63",
+        undefined,
+        (e) => $debugParseError(e, "ParseIntError"),
       ),
     ),
     debug,
@@ -100,9 +104,9 @@ function main() {
 
   // What's resumed is caught again, as itself.
   const inner = $catchUnwind(() => {
-    throw new Error("inner 1");
+    throw $panic("inner 1", "test/corpus/catch_unwind_payloads.rs:47:49");
   });
-  const payload = $unwrapErr(inner, "it panicked");
+  const payload = $unwrapErr(inner, "test/corpus/catch_unwind_payloads.rs:48:25", "it panicked");
   caught(
     "resumed",
     $catchUnwind(() => {
@@ -121,7 +125,7 @@ function main() {
   // Caught inside, it's the outer one's value.
   const nested = $catchUnwind(() => {
     try {
-      throw new Error("deep");
+      throw $panic("deep", "test/corpus/catch_unwind_payloads.rs:53:79");
     } catch (error) {
       $catchable(error);
       return 9;
@@ -134,7 +138,7 @@ function main() {
   const result = $catchUnwind(() => {
     count = (count + 1) | 0;
     if (count > 0) {
-      throw new Error("counted");
+      throw $panic("counted", "test/corpus/catch_unwind_payloads.rs:64:13");
     }
     count += 100;
   });
@@ -143,7 +147,7 @@ function main() {
   // `Box::downcast` takes the message out.
   let owned;
   try {
-    throw new Error("owned 2");
+    throw $panic("owned 2", "test/corpus/catch_unwind_payloads.rs:71:55");
     owned = "";
   } catch (thrown) {
     $catchable(thrown);

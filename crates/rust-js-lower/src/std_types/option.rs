@@ -744,19 +744,28 @@ pub fn unwrap_tested(e: &Expr) -> Option<(Expr, &Expr, Expr)> {
     }
     // `unwrap()`'s payload is a `&str`, `panic("..")`'s; `expect(msg)`'s a
     // `String`, std's `expect_failed` showing it (ADR 0660, amended).
-    let (option, message, payload) = match args.as_slice() {
-        [option] => (
+    // Each raised where its `unwrap()` is, `at` (#2292).
+    let (option, at, message, payload) = match args.as_slice() {
+        [option, at] => (
             option,
+            at,
             Expr::str("called `Option::unwrap()` on a `None` value"),
             js::Payload::Str,
         ),
-        [option, message] if matches!(message.kind, js::ExprKind::Str(_)) => {
-            (option, message.clone(), js::Payload::String)
+        [option, at, message] if matches!(message.kind, js::ExprKind::Str(_)) => {
+            (option, at, message.clone(), js::Payload::String)
         }
         _ => return None,
     };
+    let js::ExprKind::RaisedAt(at) = &at.kind else {
+        return None;
+    };
     let test = Expr::bin(Op::LooseEq, option.clone(), Expr::null());
-    Some((test, option, Expr::panic(message, payload)))
+    Some((
+        test,
+        option,
+        Expr::raised_at((**at).clone(), || Expr::panic(message, payload)),
+    ))
 }
 
 /// The field of the box of a `Some` that looks like `None` (ADR 0051),

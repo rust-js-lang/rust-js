@@ -15,7 +15,7 @@ function peek(slot, f, TClone) {
   let result;
   if (slot.TAG === "Full") {
     const current = $fieldCell(slot, "current");
-    const borrow = $borrow(current, true);
+    const borrow = $borrow(current, "test/corpus/refcell_generic_variant_held.rs:21:56", true);
     try {
       result = after(borrow.value, f, TClone);
     } finally {
@@ -43,7 +43,7 @@ function main() {
       if (slot.TAG === "Full") {
         const current = $fieldCell(slot, "current");
         if (current.borrows) {
-          $alreadyBorrowed();
+          $alreadyBorrowed("test/corpus/refcell_generic_variant_held.rs:33:21");
         }
         current.value.push(2);
       }

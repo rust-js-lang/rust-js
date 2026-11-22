@@ -49,11 +49,12 @@ function main() {
   const e = undefined;
   const buf = [7, 7, 7];
   console.log(
-    `${$unwrapOk($emptyReader.read({ value: e }, buf), undefined, $ioErrorDebug)} [${buf.join(", ")}]`,
+    `${$unwrapOk($emptyReader.read({ value: e }, buf), "test/corpus/io_read_empty_and_repeat.rs:23:47", undefined, $ioErrorDebug)} [${buf.join(", ")}]`,
   );
   let failed = $writeExpectErr(
     $writeTry(() => $emptyReader.readExact({ value: e }, buf)),
     "called `Result::unwrap_err()` on an `Ok` value",
+    "test/corpus/io_read_empty_and_repeat.rs:24:41",
   );
   console.log(`${failed.kind} ${$ioErrorDisplay(failed)}`);
   console.log(`${$ioResultDebug($writeTry(() => $emptyReader.readExact({ value: e }, [])))}`);
@@ -71,15 +72,18 @@ function main() {
           },
         },
       ),
+      "test/corpus/io_read_empty_and_repeat.rs:28:53",
       undefined,
       $ioErrorDebug,
     )} ${$debugStr(s)}`,
   );
   const v = [1];
   console.log(
-    `${$unwrapOk($emptyReader.readToEnd({ value: e }, v), undefined, $ioErrorDebug)} [${v.join(", ")}]`,
+    `${$unwrapOk($emptyReader.readToEnd({ value: e }, v), "test/corpus/io_read_empty_and_repeat.rs:30:50", undefined, $ioErrorDebug)} [${v.join(", ")}]`,
   );
-  console.log(`${$unwrapOk($emptyReader.fillBuf({ value: e }), undefined, $ioErrorDebug).length}`);
+  console.log(
+    `${$unwrapOk($emptyReader.fillBuf({ value: e }), "test/corpus/io_read_empty_and_repeat.rs:31:35", undefined, $ioErrorDebug).length}`,
+  );
   $emptyReader.consume({ value: e }, 3);
   console.log(
     `${$unwrapOk(
@@ -94,19 +98,26 @@ function main() {
           },
         },
       ),
+      "test/corpus/io_read_empty_and_repeat.rs:33:48",
       undefined,
       $ioErrorDebug,
     )} ${$debugStr(s)}`,
   );
   console.log(
-    `${$unwrapOk($emptyReader.readUntil({ value: e }, 10, v), undefined, $ioErrorDebug)} [${v.join(", ")}]`,
+    `${$unwrapOk($emptyReader.readUntil({ value: e }, 10, v), "test/corpus/io_read_empty_and_repeat.rs:34:56", undefined, $ioErrorDebug)} [${v.join(", ")}]`,
   );
   const end = $unwrapOk(
     $emptyReader.seek({ value: e }, { TAG: "End", _0: -4n }),
+    "test/corpus/io_read_empty_and_repeat.rs:35:41",
     undefined,
     $ioErrorDebug,
   );
-  const arg = $unwrapOk($emptyReader.streamPosition({ value: e }), undefined, $ioErrorDebug);
+  const arg = $unwrapOk(
+    $emptyReader.streamPosition({ value: e }),
+    "test/corpus/io_read_empty_and_repeat.rs:36:46",
+    undefined,
+    $ioErrorDebug,
+  );
   console.log(`${end} ${arg}`);
   console.log(`${countLines(undefined, $emptyReader)}`);
   const result = first(undefined, $emptyReader);
@@ -115,14 +126,21 @@ function main() {
 
   const r = { byte: 5 };
   console.log(
-    `${$unwrapOk($repeatReader.read({ value: r }, buf), undefined, $ioErrorDebug)} [${buf.join(", ")}]`,
+    `${$unwrapOk($repeatReader.read({ value: r }, buf), "test/corpus/io_read_empty_and_repeat.rs:41:47", undefined, $ioErrorDebug)} [${buf.join(", ")}]`,
   );
   const four = [0, 0, 0, 0];
   const result$1 = $writeTry(() => $repeatReader.readExact({ value: r }, four));
-  $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$1,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/io_read_empty_and_repeat.rs:43:29",
+  );
   console.log(`[${four.join(", ")}]`);
   const out = [];
-  failed = $unwrapErr($repeatReader.readToEnd({ value: r }, out));
+  failed = $unwrapErr(
+    $repeatReader.readToEnd({ value: r }, out),
+    "test/corpus/io_read_empty_and_repeat.rs:46:42",
+  );
   console.log(
     `${failed.kind} ${$ioErrorDisplay(failed)} ${$ioErrorDebug(failed)} [${out.join(", ")}]`,
   );
@@ -148,7 +166,11 @@ function main() {
   const dynamic = { value: r, impl: $repeatReader };
   const two = [0, 0];
   const result$3 = $writeTry(() => dynamic.impl.readExact(dynamic, two));
-  $writeExpect(result$3, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$3,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/io_read_empty_and_repeat.rs:52:34",
+  );
   console.log(`[${two.join(", ")}]`);
   let boxed = { impl: $emptyReader };
   const b = { value: boxed };

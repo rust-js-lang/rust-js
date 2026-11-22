@@ -50,7 +50,10 @@ function heldAll(
         $cleanup(() => {
           dropHItem?.(i);
         });
-        throw $stringPanic(`at ${n}`);
+        throw $stringPanic(
+          `at ${n}`,
+          "test/corpus/default_gives_its_callee_what_self_collects_in_place.rs:32:13",
+        );
       }
       return {
         _it: $held(HItemIntoIterator.intoIter(i)),

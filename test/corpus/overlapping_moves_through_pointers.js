@@ -56,22 +56,26 @@ function overlaps(name, W, TDebug, TFromU8) {
     $ptrCopy($ptrWhole(p, W), $ptrWhole($ptrAdd(p, k), W), 1, (item) => item.map((item) => item));
     console.log(`${name} ${W} ${k} copy whole [${a.map((item) => TDebug.fmt(item)).join(", ")}]`);
     a = start(TFromU8);
-    $copyWithin(a, 0, W, k);
+    $copyWithin(a, 0, W, k, "test/corpus/overlapping_moves_through_pointers.rs:55:11");
     console.log(`${name} ${W} ${k} copy_within [${a.map((item) => TDebug.fmt(item)).join(", ")}]`);
     a = start(TFromU8);
-    $copyWithin(a, k, (k + W) >>> 0, 0);
+    $copyWithin(a, k, (k + W) >>> 0, 0, "test/corpus/overlapping_moves_through_pointers.rs:58:11");
     console.log(
       `${name} ${W} ${k} copy_within back [${a.map((item) => TDebug.fmt(item)).join(", ")}]`,
     );
     a = start(TFromU8);
-    $rotateLeft($view(a, 0, W), k, "mid");
+    $rotateLeft(
+      $view(a, 0, "test/corpus/overlapping_moves_through_pointers.rs:62:10", W),
+      k,
+      "mid",
+    );
     console.log(`${name} ${W} ${k} rotate_left [${a.map((item) => TDebug.fmt(item)).join(", ")}]`);
     a = start(TFromU8);
-    $rotateRight($view(a, 0, W), k, "k");
+    $rotateRight($view(a, 0, "test/corpus/overlapping_moves_through_pointers.rs:65:10", W), k, "k");
     console.log(`${name} ${W} ${k} rotate_right [${a.map((item) => TDebug.fmt(item)).join(", ")}]`);
     a = start(TFromU8);
-    $swap(a, 0, k);
-    $swap(a, k, k);
+    $swap(a, 0, k, "test/corpus/overlapping_moves_through_pointers.rs:69:11");
+    $swap(a, k, k, "test/corpus/overlapping_moves_through_pointers.rs:70:11");
     console.log(`${name} ${W} ${k} slice swap [${a.map((item) => TDebug.fmt(item)).join(", ")}]`);
     a = start(TFromU8);
     p = $ptr(a, 0);

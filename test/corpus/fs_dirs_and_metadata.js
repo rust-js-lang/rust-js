@@ -89,7 +89,11 @@ function main() {
 
 function run() {
   const unitDebug = { fmt: (value, options) => "()" };
-  const base = $unwrap($args()[1], "the outcome's file");
+  const base = $unwrap(
+    $args()[1],
+    "test/corpus/fs_dirs_and_metadata.rs:40:40",
+    "the outcome's file",
+  );
   const root = `${base}.dirs`;
   clear(root);
 
@@ -182,7 +186,11 @@ function run() {
             const result$2 = $fsReadDir(`${root}/a/`);
             if (result$2.TAG !== "Err") {
               const entries = result$2._0;
-              const result$1 = $unwrap($next(entries), "an entry");
+              const result$1 = $unwrap(
+                $next(entries),
+                "test/corpus/fs_dirs_and_metadata.rs:75:32",
+                "an entry",
+              );
               if (result$1.TAG !== "Err") {
                 const first = result$1._0;
                 console.log(`${sorted.includes(first.name)} ${entries.reduce((n) => n + 1, 0)}`);

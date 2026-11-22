@@ -11,7 +11,7 @@ function loudDrop_drop(loud) {
 }
 
 function replaced(points, i) {
-  points[$at(points, i)] = { x: 9, y: -1 };
+  points[$at(points, i, "test/corpus/vec_item_written_whole.rs:24:11")] = { x: 9, y: -1 };
   points.push({ ...points[i] });
 }
 
@@ -19,7 +19,7 @@ function main() {
   const origin = { x: 0, y: 0 };
   const points = [{ ...origin }, { ...origin }, { ...origin }];
   replaced(points, 1);
-  points[$at(points, 2)] = { x: 3, y: 4 };
+  points[$at(points, 2, "test/corpus/vec_item_written_whole.rs:32:11")] = { x: 3, y: 4 };
   let shown = points.map((p) => `(${$displayF64(p.x)}, ${$displayF64(p.y)})`);
   console.log(
     `(${$displayF64(origin.x)}, ${$displayF64(origin.y)}) [${shown.map((item) => $debugStr(item)).join(", ")}]`,
@@ -27,7 +27,7 @@ function main() {
 
   const names = [{ name: "a" }, { name: "b" }];
   const first = { name: "c" };
-  names[$at(names, 0)] = first;
+  names[$at(names, 0, "test/corpus/vec_item_written_whole.rs:38:10")] = first;
   names.push({ name: "d" });
   shown = names.map((n) => n.name);
   console.log(`[${shown.map((item) => $debugStr(item)).join(", ")}]`);
@@ -36,7 +36,7 @@ function main() {
   const loud = [3];
   try {
     try {
-      $index(louds, 0);
+      $index(louds, 0, "test/corpus/vec_item_written_whole.rs:44:10");
     } catch (error) {
       $cleanup(() => {
         loudDrop_drop(loud);

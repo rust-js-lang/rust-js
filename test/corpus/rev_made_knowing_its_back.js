@@ -16,6 +16,7 @@ import {
   $next,
   $nextBack,
   $nthBack,
+  $panic,
   $rangeInclusiveNext,
   $rangeInclusiveNextBack,
   $rangeInclusiveNthBack,
@@ -49,7 +50,7 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 13) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/rev_made_knowing_its_back.rs:16:13");
   }
 }
 
@@ -464,7 +465,7 @@ function main() {
       (s, d) => {
         if (d[0] === 2) {
           try {
-            throw new Error("fold");
+            throw $panic("fold", "test/corpus/rev_made_knowing_its_back.rs:106:17");
           } catch (error) {
             $cleanup(() => {
               dDrop_drop(d);

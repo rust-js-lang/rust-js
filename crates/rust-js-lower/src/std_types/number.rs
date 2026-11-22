@@ -381,6 +381,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        // A panic of its operator, its division's, raised where std's impl
+        // is, every type's one line (#2292).
+        let site = match kind {
+            IntNewtype::Wrapping => "wrappingOp",
+            IntNewtype::Saturating => "saturatingOp",
+        };
+        Expr::raised_at(Expr::std_site(site, 0), || {
+            self.newtype_result_at(op, a, rhs, (inner, kind), span, out)
+        })
+    }
+
+    /// `newtype_result`'s, where its panics are raised given.
+    fn newtype_result_at(
+        &mut self,
+        op: Result<BinOp, UnOp>,
+        a: Expr,
+        rhs: Option<(Expr, Ty<'tcx>)>,
+        (inner, kind): (Ty<'tcx>, IntNewtype),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         self.num(inner, span)?;
         let rhs = rhs.map(|(rhs, ty)| match self.recognition().int_newtype(ty.peel_refs()) {
             Some(_) => Expr::index(rhs, Expr::int(0)),
@@ -479,9 +500,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     "$nextMultipleOf"
                 };
-                helper(name, vec![a, b, num.literal(hi as i128)])
+                let mut list = vec![a, b, num.literal(hi as i128)];
+                // Std raises its panic at its type's own line (#2292).
+                if !checked {
+                    list.push(Expr::str(ty.to_string()));
+                }
+                helper(name, list)
             }
-            (NumOp::IlogBase { checked }, Some(base)) => helper("$ilog", vec![a, base, Expr::bool(checked)]),
+            (NumOp::IlogBase { checked }, Some(base)) => {
+                helper(if checked { "$checkedIlog" } else { "$ilog" }, vec![a, base])
+            }
             (NumOp::CheckedIsqrt, None) => helper("$checkedIsqrt", vec![a]),
             // std's bodies, of the operators: `self & self.wrapping_neg()`,
             // `lanes & -lanes`; and `self & (MIN_BIT.wrapping_shr(
@@ -906,8 +934,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::Signum if num.float() => helper("$signum", vec![arg()]),
             NumOp::Signum => unreachable!("`math::function`'s"),
             NumOp::Clamp if num.float() => {
-                let debug = if num == Num::F32 { "$debugF32" } else { "$debugF64" };
-                let list = vec![arg(), arg(), arg(), Expr::helper(debug)];
+                let type_ = if num == Num::F32 { "f32" } else { "f64" };
+                let list = vec![arg(), arg(), arg(), Expr::str(type_)];
                 helper("$clampFloat", list)
             }
             NumOp::Clamp => helper("$clamp", vec![arg(), arg(), arg()]),

@@ -1,8 +1,9 @@
 // `x.clamp(min, max)` of an integer, a number or a BigInt: `min` or `max` if
 // it's past either. Bounds the wrong way round panic as std's integers do,
 // each shown as `{:?}` shows it, which is its digits.
-function $clamp(x, min, max) {
-  if (!(min <= max)) throw $stringPanic("min > max. min = " + min + ", max = " + max);
+// Raised where it was called, `raisedAt` (#2292).
+function $clamp(x, min, max, raisedAt) {
+  if (!(min <= max)) throw $stringPanic("min > max. min = " + min + ", max = " + max, raisedAt);
   return x < min ? min : x > max ? max : x;
 }
 
@@ -13,12 +14,12 @@ function $clamp(x, min, max) {
 // with a destructor, `drop`: the two not given back dropped, the later
 // parameter first, and all three as a comparison or the bounds' panic
 // unwinds, as std's `clamp` drops its parameters (#912).
-function $clampBy(x, min, max, ord, show, drop) {
+function $clampBy(x, min, max, ord, raisedAt, show, drop) {
   const parts = [x, min, max];
   const at = $unwinds(
     () => {
       if (!ord.le(min, max)) {
-        throw show ? $stringPanic(`min > max. min = ${show(min)}, max = ${show(max)}`) : new Error("assertion failed: min <= max");
+        throw show ? $stringPanic(`min > max. min = ${show(min)}, max = ${show(max)}`, raisedAt) : $panic("assertion failed: min <= max", raisedAt);
       }
       return ord.lt(x, min) ? 1 : ord.gt(x, max) ? 2 : 0;
     },

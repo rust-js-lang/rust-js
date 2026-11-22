@@ -16,9 +16,11 @@ import {
   $mapEnds,
   $next,
   $nextBack,
+  $panic,
   $rangeNext,
   $repeatingN,
   $splicing,
+  $stdSites,
   $unwindsOn,
   iterator_map,
 } from "@rust-js/std";
@@ -65,6 +67,7 @@ function generic(v, make, IIterator, dropI) {
     0,
     1,
     $closing($given(make(), IIterator), $givenDrop(dropI), false),
+    $stdSites.vecDrain[0],
     dDrop_drop,
   ).return();
 }
@@ -73,7 +76,7 @@ function main() {
   const v = [[10], [11], [12], [13]];
   // Collected, then put in place as it's dropped.
   try {
-    const removed = Array.from($splicing(v, 1, 3, made(), dDrop_drop));
+    const removed = Array.from($splicing(v, 1, 3, made(), $stdSites.vecDrain[0], dDrop_drop));
     try {
       console.log(
         `[${removed.map((item) => dDebug_fmt(item)).join(", ")}] [${v.map((item) => dDebug_fmt(item)).join(", ")}]`,
@@ -88,7 +91,7 @@ function main() {
       }
     }
     // Held: what it hasn't given dropped where it's dropped, then filled.
-    let s = $splicing(v, 0, 2, made(), dDrop_drop);
+    let s = $splicing(v, 0, 2, made(), $stdSites.vecDrain[0], dDrop_drop);
     let next;
     try {
       next = $next(s);
@@ -122,7 +125,7 @@ function main() {
     console.log("held");
     s.return();
     console.log(`[${v.map((item) => dDebug_fmt(item)).join(", ")}]`);
-    s = $splicing(v, 0, 3, made(), dDrop_drop);
+    s = $splicing(v, 0, 3, made(), $stdSites.vecDrain[0], dDrop_drop);
     let nextBack;
     try {
       nextBack = $nextBack(s);
@@ -223,6 +226,7 @@ function main() {
           }
         },
       ),
+      $stdSites.vecDrain[0],
       dDrop_drop,
     ).return();
     console.log(`[${v.map((item) => dDebug_fmt(item)).join(", ")}]`);
@@ -231,6 +235,7 @@ function main() {
       1,
       2,
       $repeatingN([7], 2, (value) => dClone_clone(value), dDrop_drop),
+      $stdSites.vecDrain[0],
       dDrop_drop,
     ).return();
     console.log(`[${v.map((item) => dDebug_fmt(item)).join(", ")}]`);
@@ -242,7 +247,7 @@ function main() {
         $mapEnds($closing($iter([[4], [5], [6]]), $dropEach(dDrop_drop)), (d) => {
           if (d[0] === 6) {
             try {
-              throw new Error("at 6");
+              throw $panic("at 6", "test/corpus/splice_drops_and_fills_as_std.rs:79:81");
             } catch (error) {
               $cleanup(() => {
                 dDrop_drop(d);
@@ -252,6 +257,7 @@ function main() {
           }
           return d;
         }),
+        $stdSites.vecDrain[0],
         dDrop_drop,
       ).return();
     });
@@ -267,13 +273,14 @@ function main() {
           $closing($iter([[30], [31], [32], [33]]), $dropEach(dDrop_drop)),
           (d) => {
             if (d[0] === 33) {
-              throw new Error("at 33");
+              throw $panic("at 33", "test/corpus/splice_drops_and_fills_as_std.rs:87:84");
             } else {
               return true;
             }
           },
           dDrop_drop,
         ),
+        $stdSites.vecDrain[0],
         dDrop_drop,
       ).return();
     });
@@ -293,7 +300,7 @@ function main() {
                 (d) => {
                   if (d[0] === 9) {
                     try {
-                      throw new Error("at 9");
+                      throw $panic("at 9", "test/corpus/splice_drops_and_fills_as_std.rs:94:78");
                     } catch (error) {
                       $cleanup(() => {
                         dDrop_drop(d);
@@ -326,6 +333,7 @@ function main() {
             it.of[0].return();
           },
         ),
+        $stdSites.vecDrain[0],
         dDrop_drop,
       ).return();
     });

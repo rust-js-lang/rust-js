@@ -6,6 +6,7 @@ import {
   $catchUnwind,
   $div,
   $rem,
+  $stdSites,
   $wrappingDiv,
   $wrappingRem,
 } from "@rust-js/std";
@@ -24,15 +25,23 @@ function divided(a, b, TDiv, TRem, TCopy) {
 
 function main() {
   const wrappingCopy = { copy: (value) => [value[0]] };
-  const wrappingRem = { rem: (a, b) => [$wrappingRem(a[0], b[0], -9223372036854775808n)] };
-  const wrappingDiv = { div: (a, b) => [$wrappingDiv(a[0], b[0], -9223372036854775808n)] };
+  const wrappingRem = {
+    rem: (a, b) => [$wrappingRem(a[0], b[0], $stdSites.wrappingOp[0], -9223372036854775808n)],
+  };
+  const wrappingDiv = {
+    div: (a, b) => [$wrappingDiv(a[0], b[0], $stdSites.wrappingOp[0], -9223372036854775808n)],
+  };
   let lo = [0];
   let hi = [255];
   const one = [1];
   let two = [2];
   console.log(`u8 + ${(hi[0] + one[0]) & 255}`);
-  console.log(`${(lo[0] - one[0]) & 255} ${(hi[0] * two[0]) & 255} ${$div(hi[0], two[0]) & 255}`);
-  console.log(`${$rem(hi[0], two[0]) & 255} ${-lo[0] & 255} ${-one[0] & 255}`);
+  console.log(
+    `${(lo[0] - one[0]) & 255} ${(hi[0] * two[0]) & 255} ${$div(hi[0], two[0], $stdSites.wrappingOp[0]) & 255}`,
+  );
+  console.log(
+    `${$rem(hi[0], two[0], $stdSites.wrappingOp[0]) & 255} ${-lo[0] & 255} ${-one[0] & 255}`,
+  );
   console.log(`${~lo[0] & 255} ${hi[0] & two[0]} ${lo[0] | one[0]} ${hi[0] ^ two[0]}`);
   console.log(`${(one[0] << (9 & 7)) & 255} ${hi[0] >>> (9 & 7)}`);
   let w = hi;
@@ -43,7 +52,7 @@ function main() {
   w = [(w[0] * two[0]) & 255];
   w = [(w[0] * 5) & 255];
   console.log(`${w[0]}`);
-  w = [$div(w[0], two[0]) & 255];
+  w = [$div(w[0], two[0], $stdSites.wrappingOp[0]) & 255];
   w = [(w[0] / 3) & 255];
   w = [w[0] % 7];
   w = [w[0] % 4];
@@ -58,13 +67,15 @@ function main() {
   w = [w[0] >>> (1 & 7)];
   console.log(`${w[0]}`);
   const zero = [0];
-  let byZero = $catchUnwind(() => [$div(one[0], zero[0]) & 255]).TAG === "Err";
-  let remZero = $catchUnwind(() => [$rem(one[0], zero[0]) & 255]).TAG === "Err";
+  let byZero =
+    $catchUnwind(() => [$div(one[0], zero[0], $stdSites.wrappingOp[0]) & 255]).TAG === "Err";
+  let remZero =
+    $catchUnwind(() => [$rem(one[0], zero[0], $stdSites.wrappingOp[0]) & 255]).TAG === "Err";
   const z = one;
   let z$10 = z;
   let assignZero =
     $catchUnwind(() => {
-      z$10 = [$div(z$10[0], 0) & 255];
+      z$10 = [$div(z$10[0], 0, $stdSites.wrappingOp[0]) & 255];
       return z$10;
     }).TAG === "Err";
   console.log(`${byZero} ${remZero} ${assignZero}`);
@@ -74,9 +85,11 @@ function main() {
   two = [2];
   console.log(`u16 + ${(hi[0] + one$1[0]) & 65535}`);
   console.log(
-    `${(lo[0] - one$1[0]) & 65535} ${(hi[0] * two[0]) & 65535} ${$div(hi[0], two[0]) & 65535}`,
+    `${(lo[0] - one$1[0]) & 65535} ${(hi[0] * two[0]) & 65535} ${$div(hi[0], two[0], $stdSites.wrappingOp[0]) & 65535}`,
   );
-  console.log(`${$rem(hi[0], two[0]) & 65535} ${-lo[0] & 65535} ${-one$1[0] & 65535}`);
+  console.log(
+    `${$rem(hi[0], two[0], $stdSites.wrappingOp[0]) & 65535} ${-lo[0] & 65535} ${-one$1[0] & 65535}`,
+  );
   console.log(`${~lo[0] & 65535} ${hi[0] & two[0]} ${lo[0] | one$1[0]} ${hi[0] ^ two[0]}`);
   console.log(`${(one$1[0] << (9 & 15)) & 65535} ${hi[0] >>> (9 & 15)}`);
   w = hi;
@@ -87,7 +100,7 @@ function main() {
   w = [(w[0] * two[0]) & 65535];
   w = [(w[0] * 5) & 65535];
   console.log(`${w[0]}`);
-  w = [$div(w[0], two[0]) & 65535];
+  w = [$div(w[0], two[0], $stdSites.wrappingOp[0]) & 65535];
   w = [(w[0] / 3) & 65535];
   w = [w[0] % 7];
   w = [w[0] % 4];
@@ -102,13 +115,15 @@ function main() {
   w = [w[0] >>> (1 & 15)];
   console.log(`${w[0]}`);
   const zero$1 = [0];
-  byZero = $catchUnwind(() => [$div(one$1[0], zero$1[0]) & 65535]).TAG === "Err";
-  remZero = $catchUnwind(() => [$rem(one$1[0], zero$1[0]) & 65535]).TAG === "Err";
+  byZero =
+    $catchUnwind(() => [$div(one$1[0], zero$1[0], $stdSites.wrappingOp[0]) & 65535]).TAG === "Err";
+  remZero =
+    $catchUnwind(() => [$rem(one$1[0], zero$1[0], $stdSites.wrappingOp[0]) & 65535]).TAG === "Err";
   const z$1 = one$1;
   let z$11 = z$1;
   assignZero =
     $catchUnwind(() => {
-      z$11 = [$div(z$11[0], 0) & 65535];
+      z$11 = [$div(z$11[0], 0, $stdSites.wrappingOp[0]) & 65535];
       return z$11;
     }).TAG === "Err";
   console.log(`${byZero} ${remZero} ${assignZero}`);
@@ -118,9 +133,11 @@ function main() {
   two = [2];
   console.log(`u32 + ${(hi[0] + one$2[0]) >>> 0}`);
   console.log(
-    `${(lo[0] - one$2[0]) >>> 0} ${Math.imul(hi[0], two[0]) >>> 0} ${$div(hi[0], two[0]) >>> 0}`,
+    `${(lo[0] - one$2[0]) >>> 0} ${Math.imul(hi[0], two[0]) >>> 0} ${$div(hi[0], two[0], $stdSites.wrappingOp[0]) >>> 0}`,
   );
-  console.log(`${$rem(hi[0], two[0]) >>> 0} ${-lo[0] >>> 0} ${-one$2[0] >>> 0}`);
+  console.log(
+    `${$rem(hi[0], two[0], $stdSites.wrappingOp[0]) >>> 0} ${-lo[0] >>> 0} ${-one$2[0] >>> 0}`,
+  );
   console.log(
     `${~lo[0] >>> 0} ${(hi[0] & two[0]) >>> 0} ${(lo[0] | one$2[0]) >>> 0} ${(hi[0] ^ two[0]) >>> 0}`,
   );
@@ -133,7 +150,7 @@ function main() {
   w = [Math.imul(w[0], two[0]) >>> 0];
   w = [(w[0] * 5) >>> 0];
   console.log(`${w[0]}`);
-  w = [$div(w[0], two[0]) >>> 0];
+  w = [$div(w[0], two[0], $stdSites.wrappingOp[0]) >>> 0];
   w = [(w[0] / 3) >>> 0];
   w = [w[0] % 7];
   w = [w[0] % 4];
@@ -148,13 +165,15 @@ function main() {
   w = [w[0] >>> 1];
   console.log(`${w[0]}`);
   const zero$2 = [0];
-  byZero = $catchUnwind(() => [$div(one$2[0], zero$2[0]) >>> 0]).TAG === "Err";
-  remZero = $catchUnwind(() => [$rem(one$2[0], zero$2[0]) >>> 0]).TAG === "Err";
+  byZero =
+    $catchUnwind(() => [$div(one$2[0], zero$2[0], $stdSites.wrappingOp[0]) >>> 0]).TAG === "Err";
+  remZero =
+    $catchUnwind(() => [$rem(one$2[0], zero$2[0], $stdSites.wrappingOp[0]) >>> 0]).TAG === "Err";
   const z$2 = one$2;
   let z$12 = z$2;
   assignZero =
     $catchUnwind(() => {
-      z$12 = [$div(z$12[0], 0) >>> 0];
+      z$12 = [$div(z$12[0], 0, $stdSites.wrappingOp[0]) >>> 0];
       return z$12;
     }).TAG === "Err";
   console.log(`${byZero} ${remZero} ${assignZero}`);
@@ -164,10 +183,10 @@ function main() {
   two = [2n];
   console.log(`u64 + ${BigInt.asUintN(64, hi[0] + one$3[0])}`);
   console.log(
-    `${BigInt.asUintN(64, lo[0] - one$3[0])} ${BigInt.asUintN(64, hi[0] * two[0])} ${$bigDiv(hi[0], two[0])}`,
+    `${BigInt.asUintN(64, lo[0] - one$3[0])} ${BigInt.asUintN(64, hi[0] * two[0])} ${$bigDiv(hi[0], two[0], $stdSites.wrappingOp[0])}`,
   );
   console.log(
-    `${$bigRem(hi[0], two[0])} ${BigInt.asUintN(64, -lo[0])} ${BigInt.asUintN(64, -one$3[0])}`,
+    `${$bigRem(hi[0], two[0], $stdSites.wrappingOp[0])} ${BigInt.asUintN(64, -lo[0])} ${BigInt.asUintN(64, -one$3[0])}`,
   );
   console.log(
     `${BigInt.asUintN(64, ~lo[0])} ${hi[0] & two[0]} ${lo[0] | one$3[0]} ${hi[0] ^ two[0]}`,
@@ -181,7 +200,7 @@ function main() {
   w = [BigInt.asUintN(64, w[0] * two[0])];
   w = [BigInt.asUintN(64, w[0] * 5n)];
   console.log(`${w[0]}`);
-  w = [$bigDiv(w[0], two[0])];
+  w = [$bigDiv(w[0], two[0], $stdSites.wrappingOp[0])];
   w = [w[0] / 3n];
   w = [w[0] % 7n];
   w = [w[0] % 4n];
@@ -196,13 +215,15 @@ function main() {
   w = [w[0] >> 1n];
   console.log(`${w[0]}`);
   const zero$3 = [0n];
-  byZero = $catchUnwind(() => [$bigDiv(one$3[0], zero$3[0])]).TAG === "Err";
-  remZero = $catchUnwind(() => [$bigRem(one$3[0], zero$3[0])]).TAG === "Err";
+  byZero =
+    $catchUnwind(() => [$bigDiv(one$3[0], zero$3[0], $stdSites.wrappingOp[0])]).TAG === "Err";
+  remZero =
+    $catchUnwind(() => [$bigRem(one$3[0], zero$3[0], $stdSites.wrappingOp[0])]).TAG === "Err";
   const z$3 = one$3;
   let z$13 = z$3;
   assignZero =
     $catchUnwind(() => {
-      z$13 = [$bigDiv(z$13[0], 0n)];
+      z$13 = [$bigDiv(z$13[0], 0n, $stdSites.wrappingOp[0])];
       return z$13;
     }).TAG === "Err";
   console.log(`${byZero} ${remZero} ${assignZero}`);
@@ -212,10 +233,10 @@ function main() {
   two = [2n];
   console.log(`u128 + ${BigInt.asUintN(128, hi[0] + one$4[0])}`);
   console.log(
-    `${BigInt.asUintN(128, lo[0] - one$4[0])} ${BigInt.asUintN(128, hi[0] * two[0])} ${$bigDiv(hi[0], two[0])}`,
+    `${BigInt.asUintN(128, lo[0] - one$4[0])} ${BigInt.asUintN(128, hi[0] * two[0])} ${$bigDiv(hi[0], two[0], $stdSites.wrappingOp[0])}`,
   );
   console.log(
-    `${$bigRem(hi[0], two[0])} ${BigInt.asUintN(128, -lo[0])} ${BigInt.asUintN(128, -one$4[0])}`,
+    `${$bigRem(hi[0], two[0], $stdSites.wrappingOp[0])} ${BigInt.asUintN(128, -lo[0])} ${BigInt.asUintN(128, -one$4[0])}`,
   );
   console.log(
     `${BigInt.asUintN(128, ~lo[0])} ${hi[0] & two[0]} ${lo[0] | one$4[0]} ${hi[0] ^ two[0]}`,
@@ -229,7 +250,7 @@ function main() {
   w = [BigInt.asUintN(128, w[0] * two[0])];
   w = [BigInt.asUintN(128, w[0] * 5n)];
   console.log(`${w[0]}`);
-  w = [$bigDiv(w[0], two[0])];
+  w = [$bigDiv(w[0], two[0], $stdSites.wrappingOp[0])];
   w = [w[0] / 3n];
   w = [w[0] % 7n];
   w = [w[0] % 4n];
@@ -244,13 +265,15 @@ function main() {
   w = [w[0] >> 1n];
   console.log(`${w[0]}`);
   const zero$4 = [0n];
-  byZero = $catchUnwind(() => [$bigDiv(one$4[0], zero$4[0])]).TAG === "Err";
-  remZero = $catchUnwind(() => [$bigRem(one$4[0], zero$4[0])]).TAG === "Err";
+  byZero =
+    $catchUnwind(() => [$bigDiv(one$4[0], zero$4[0], $stdSites.wrappingOp[0])]).TAG === "Err";
+  remZero =
+    $catchUnwind(() => [$bigRem(one$4[0], zero$4[0], $stdSites.wrappingOp[0])]).TAG === "Err";
   const z$4 = one$4;
   let z$14 = z$4;
   assignZero =
     $catchUnwind(() => {
-      z$14 = [$bigDiv(z$14[0], 0n)];
+      z$14 = [$bigDiv(z$14[0], 0n, $stdSites.wrappingOp[0])];
       return z$14;
     }).TAG === "Err";
   console.log(`${byZero} ${remZero} ${assignZero}`);
@@ -260,10 +283,10 @@ function main() {
   two = [2];
   console.log(`i8 + ${((hi[0] + one$5[0]) << 24) >> 24}`);
   console.log(
-    `${((lo[0] - one$5[0]) << 24) >> 24} ${((hi[0] * two[0]) << 24) >> 24} ${$wrappingDiv(hi[0], two[0], -128)}`,
+    `${((lo[0] - one$5[0]) << 24) >> 24} ${((hi[0] * two[0]) << 24) >> 24} ${$wrappingDiv(hi[0], two[0], $stdSites.wrappingOp[0], -128)}`,
   );
   console.log(
-    `${$wrappingRem(hi[0], two[0], -128)} ${(-lo[0] << 24) >> 24} ${(-one$5[0] << 24) >> 24}`,
+    `${$wrappingRem(hi[0], two[0], $stdSites.wrappingOp[0], -128)} ${(-lo[0] << 24) >> 24} ${(-one$5[0] << 24) >> 24}`,
   );
   console.log(`${~lo[0]} ${hi[0] & two[0]} ${lo[0] | one$5[0]} ${hi[0] ^ two[0]}`);
   console.log(`${((one$5[0] << (9 & 7)) << 24) >> 24} ${hi[0] >> (9 & 7)}`);
@@ -275,10 +298,10 @@ function main() {
   w = [((w[0] * two[0]) << 24) >> 24];
   w = [((w[0] * 5) << 24) >> 24];
   console.log(`${w[0]}`);
-  w = [$wrappingDiv(w[0], two[0], -128)];
-  w = [$wrappingDiv(w[0], 3, -128)];
-  w = [$wrappingRem(w[0], 7, -128)];
-  w = [$wrappingRem(w[0], 4, -128)];
+  w = [$wrappingDiv(w[0], two[0], $stdSites.wrappingOp[0], -128)];
+  w = [$wrappingDiv(w[0], 3, $stdSites.wrappingOp[0], -128)];
+  w = [$wrappingRem(w[0], 7, $stdSites.wrappingOp[0], -128)];
+  w = [$wrappingRem(w[0], 4, $stdSites.wrappingOp[0], -128)];
   console.log(`${w[0]}`);
   w = [w[0] | one$5[0]];
   w = [w[0] | 6];
@@ -290,13 +313,17 @@ function main() {
   w = [w[0] >> (1 & 7)];
   console.log(`${w[0]}`);
   const zero$5 = [0];
-  byZero = $catchUnwind(() => [$wrappingDiv(one$5[0], zero$5[0], -128)]).TAG === "Err";
-  remZero = $catchUnwind(() => [$wrappingRem(one$5[0], zero$5[0], -128)]).TAG === "Err";
+  byZero =
+    $catchUnwind(() => [$wrappingDiv(one$5[0], zero$5[0], $stdSites.wrappingOp[0], -128)]).TAG ===
+    "Err";
+  remZero =
+    $catchUnwind(() => [$wrappingRem(one$5[0], zero$5[0], $stdSites.wrappingOp[0], -128)]).TAG ===
+    "Err";
   const z$5 = one$5;
   let z$15 = z$5;
   assignZero =
     $catchUnwind(() => {
-      z$15 = [$wrappingDiv(z$15[0], 0, -128)];
+      z$15 = [$wrappingDiv(z$15[0], 0, $stdSites.wrappingOp[0], -128)];
       return z$15;
     }).TAG === "Err";
   console.log(`${byZero} ${remZero} ${assignZero}`);
@@ -306,10 +333,10 @@ function main() {
   two = [2];
   console.log(`i16 + ${((hi[0] + one$6[0]) << 16) >> 16}`);
   console.log(
-    `${((lo[0] - one$6[0]) << 16) >> 16} ${((hi[0] * two[0]) << 16) >> 16} ${$wrappingDiv(hi[0], two[0], -32768)}`,
+    `${((lo[0] - one$6[0]) << 16) >> 16} ${((hi[0] * two[0]) << 16) >> 16} ${$wrappingDiv(hi[0], two[0], $stdSites.wrappingOp[0], -32768)}`,
   );
   console.log(
-    `${$wrappingRem(hi[0], two[0], -32768)} ${(-lo[0] << 16) >> 16} ${(-one$6[0] << 16) >> 16}`,
+    `${$wrappingRem(hi[0], two[0], $stdSites.wrappingOp[0], -32768)} ${(-lo[0] << 16) >> 16} ${(-one$6[0] << 16) >> 16}`,
   );
   console.log(`${~lo[0]} ${hi[0] & two[0]} ${lo[0] | one$6[0]} ${hi[0] ^ two[0]}`);
   console.log(`${((one$6[0] << (9 & 15)) << 16) >> 16} ${hi[0] >> (9 & 15)}`);
@@ -321,10 +348,10 @@ function main() {
   w = [((w[0] * two[0]) << 16) >> 16];
   w = [((w[0] * 5) << 16) >> 16];
   console.log(`${w[0]}`);
-  w = [$wrappingDiv(w[0], two[0], -32768)];
-  w = [$wrappingDiv(w[0], 3, -32768)];
-  w = [$wrappingRem(w[0], 7, -32768)];
-  w = [$wrappingRem(w[0], 4, -32768)];
+  w = [$wrappingDiv(w[0], two[0], $stdSites.wrappingOp[0], -32768)];
+  w = [$wrappingDiv(w[0], 3, $stdSites.wrappingOp[0], -32768)];
+  w = [$wrappingRem(w[0], 7, $stdSites.wrappingOp[0], -32768)];
+  w = [$wrappingRem(w[0], 4, $stdSites.wrappingOp[0], -32768)];
   console.log(`${w[0]}`);
   w = [w[0] | one$6[0]];
   w = [w[0] | 6];
@@ -336,13 +363,17 @@ function main() {
   w = [w[0] >> (1 & 15)];
   console.log(`${w[0]}`);
   const zero$6 = [0];
-  byZero = $catchUnwind(() => [$wrappingDiv(one$6[0], zero$6[0], -32768)]).TAG === "Err";
-  remZero = $catchUnwind(() => [$wrappingRem(one$6[0], zero$6[0], -32768)]).TAG === "Err";
+  byZero =
+    $catchUnwind(() => [$wrappingDiv(one$6[0], zero$6[0], $stdSites.wrappingOp[0], -32768)]).TAG ===
+    "Err";
+  remZero =
+    $catchUnwind(() => [$wrappingRem(one$6[0], zero$6[0], $stdSites.wrappingOp[0], -32768)]).TAG ===
+    "Err";
   const z$6 = one$6;
   let z$16 = z$6;
   assignZero =
     $catchUnwind(() => {
-      z$16 = [$wrappingDiv(z$16[0], 0, -32768)];
+      z$16 = [$wrappingDiv(z$16[0], 0, $stdSites.wrappingOp[0], -32768)];
       return z$16;
     }).TAG === "Err";
   console.log(`${byZero} ${remZero} ${assignZero}`);
@@ -352,9 +383,11 @@ function main() {
   two = [2];
   console.log(`i32 + ${(hi[0] + one$7[0]) | 0}`);
   console.log(
-    `${(lo[0] - one$7[0]) | 0} ${Math.imul(hi[0], two[0])} ${$wrappingDiv(hi[0], two[0], -2147483648)}`,
+    `${(lo[0] - one$7[0]) | 0} ${Math.imul(hi[0], two[0])} ${$wrappingDiv(hi[0], two[0], $stdSites.wrappingOp[0], -2147483648)}`,
   );
-  console.log(`${$wrappingRem(hi[0], two[0], -2147483648)} ${-lo[0] | 0} ${-one$7[0] | 0}`);
+  console.log(
+    `${$wrappingRem(hi[0], two[0], $stdSites.wrappingOp[0], -2147483648)} ${-lo[0] | 0} ${-one$7[0] | 0}`,
+  );
   console.log(`${~lo[0]} ${hi[0] & two[0]} ${lo[0] | one$7[0]} ${hi[0] ^ two[0]}`);
   console.log(`${one$7[0] << 9} ${hi[0] >> 9}`);
   w = hi;
@@ -365,10 +398,10 @@ function main() {
   w = [Math.imul(w[0], two[0])];
   w = [(w[0] * 5) | 0];
   console.log(`${w[0]}`);
-  w = [$wrappingDiv(w[0], two[0], -2147483648)];
-  w = [$wrappingDiv(w[0], 3, -2147483648)];
-  w = [$wrappingRem(w[0], 7, -2147483648)];
-  w = [$wrappingRem(w[0], 4, -2147483648)];
+  w = [$wrappingDiv(w[0], two[0], $stdSites.wrappingOp[0], -2147483648)];
+  w = [$wrappingDiv(w[0], 3, $stdSites.wrappingOp[0], -2147483648)];
+  w = [$wrappingRem(w[0], 7, $stdSites.wrappingOp[0], -2147483648)];
+  w = [$wrappingRem(w[0], 4, $stdSites.wrappingOp[0], -2147483648)];
   console.log(`${w[0]}`);
   w = [w[0] | one$7[0]];
   w = [w[0] | 6];
@@ -380,13 +413,17 @@ function main() {
   w = [w[0] >> 1];
   console.log(`${w[0]}`);
   const zero$7 = [0];
-  byZero = $catchUnwind(() => [$wrappingDiv(one$7[0], zero$7[0], -2147483648)]).TAG === "Err";
-  remZero = $catchUnwind(() => [$wrappingRem(one$7[0], zero$7[0], -2147483648)]).TAG === "Err";
+  byZero =
+    $catchUnwind(() => [$wrappingDiv(one$7[0], zero$7[0], $stdSites.wrappingOp[0], -2147483648)])
+      .TAG === "Err";
+  remZero =
+    $catchUnwind(() => [$wrappingRem(one$7[0], zero$7[0], $stdSites.wrappingOp[0], -2147483648)])
+      .TAG === "Err";
   const z$7 = one$7;
   let z$17 = z$7;
   assignZero =
     $catchUnwind(() => {
-      z$17 = [$wrappingDiv(z$17[0], 0, -2147483648)];
+      z$17 = [$wrappingDiv(z$17[0], 0, $stdSites.wrappingOp[0], -2147483648)];
       return z$17;
     }).TAG === "Err";
   console.log(`${byZero} ${remZero} ${assignZero}`);
@@ -396,10 +433,10 @@ function main() {
   two = [2n];
   console.log(`i64 + ${BigInt.asIntN(64, hi[0] + one$8[0])}`);
   console.log(
-    `${BigInt.asIntN(64, lo[0] - one$8[0])} ${BigInt.asIntN(64, hi[0] * two[0])} ${$wrappingDiv(hi[0], two[0], -9223372036854775808n)}`,
+    `${BigInt.asIntN(64, lo[0] - one$8[0])} ${BigInt.asIntN(64, hi[0] * two[0])} ${$wrappingDiv(hi[0], two[0], $stdSites.wrappingOp[0], -9223372036854775808n)}`,
   );
   console.log(
-    `${$wrappingRem(hi[0], two[0], -9223372036854775808n)} ${BigInt.asIntN(64, -lo[0])} ${BigInt.asIntN(64, -one$8[0])}`,
+    `${$wrappingRem(hi[0], two[0], $stdSites.wrappingOp[0], -9223372036854775808n)} ${BigInt.asIntN(64, -lo[0])} ${BigInt.asIntN(64, -one$8[0])}`,
   );
   console.log(`${~lo[0]} ${hi[0] & two[0]} ${lo[0] | one$8[0]} ${hi[0] ^ two[0]}`);
   console.log(`${BigInt.asIntN(64, one$8[0] << 9n)} ${hi[0] >> 9n}`);
@@ -411,10 +448,10 @@ function main() {
   w = [BigInt.asIntN(64, w[0] * two[0])];
   w = [BigInt.asIntN(64, w[0] * 5n)];
   console.log(`${w[0]}`);
-  w = [$wrappingDiv(w[0], two[0], -9223372036854775808n)];
-  w = [$wrappingDiv(w[0], 3n, -9223372036854775808n)];
-  w = [$wrappingRem(w[0], 7n, -9223372036854775808n)];
-  w = [$wrappingRem(w[0], 4n, -9223372036854775808n)];
+  w = [$wrappingDiv(w[0], two[0], $stdSites.wrappingOp[0], -9223372036854775808n)];
+  w = [$wrappingDiv(w[0], 3n, $stdSites.wrappingOp[0], -9223372036854775808n)];
+  w = [$wrappingRem(w[0], 7n, $stdSites.wrappingOp[0], -9223372036854775808n)];
+  w = [$wrappingRem(w[0], 4n, $stdSites.wrappingOp[0], -9223372036854775808n)];
   console.log(`${w[0]}`);
   w = [w[0] | one$8[0]];
   w = [w[0] | 6n];
@@ -427,14 +464,18 @@ function main() {
   console.log(`${w[0]}`);
   const zero$8 = [0n];
   byZero =
-    $catchUnwind(() => [$wrappingDiv(one$8[0], zero$8[0], -9223372036854775808n)]).TAG === "Err";
+    $catchUnwind(() => [
+      $wrappingDiv(one$8[0], zero$8[0], $stdSites.wrappingOp[0], -9223372036854775808n),
+    ]).TAG === "Err";
   remZero =
-    $catchUnwind(() => [$wrappingRem(one$8[0], zero$8[0], -9223372036854775808n)]).TAG === "Err";
+    $catchUnwind(() => [
+      $wrappingRem(one$8[0], zero$8[0], $stdSites.wrappingOp[0], -9223372036854775808n),
+    ]).TAG === "Err";
   const z$8 = one$8;
   let z$18 = z$8;
   assignZero =
     $catchUnwind(() => {
-      z$18 = [$wrappingDiv(z$18[0], 0n, -9223372036854775808n)];
+      z$18 = [$wrappingDiv(z$18[0], 0n, $stdSites.wrappingOp[0], -9223372036854775808n)];
       return z$18;
     }).TAG === "Err";
   console.log(`${byZero} ${remZero} ${assignZero}`);
@@ -444,10 +485,10 @@ function main() {
   two = [2n];
   console.log(`i128 + ${BigInt.asIntN(128, hi[0] + one$9[0])}`);
   console.log(
-    `${BigInt.asIntN(128, lo[0] - one$9[0])} ${BigInt.asIntN(128, hi[0] * two[0])} ${$wrappingDiv(hi[0], two[0], -170141183460469231731687303715884105728n)}`,
+    `${BigInt.asIntN(128, lo[0] - one$9[0])} ${BigInt.asIntN(128, hi[0] * two[0])} ${$wrappingDiv(hi[0], two[0], $stdSites.wrappingOp[0], -170141183460469231731687303715884105728n)}`,
   );
   console.log(
-    `${$wrappingRem(hi[0], two[0], -170141183460469231731687303715884105728n)} ${BigInt.asIntN(128, -lo[0])} ${BigInt.asIntN(128, -one$9[0])}`,
+    `${$wrappingRem(hi[0], two[0], $stdSites.wrappingOp[0], -170141183460469231731687303715884105728n)} ${BigInt.asIntN(128, -lo[0])} ${BigInt.asIntN(128, -one$9[0])}`,
   );
   console.log(`${~lo[0]} ${hi[0] & two[0]} ${lo[0] | one$9[0]} ${hi[0] ^ two[0]}`);
   console.log(`${BigInt.asIntN(128, one$9[0] << 9n)} ${hi[0] >> 9n}`);
@@ -459,10 +500,12 @@ function main() {
   w = [BigInt.asIntN(128, w[0] * two[0])];
   w = [BigInt.asIntN(128, w[0] * 5n)];
   console.log(`${w[0]}`);
-  w = [$wrappingDiv(w[0], two[0], -170141183460469231731687303715884105728n)];
-  w = [$wrappingDiv(w[0], 3n, -170141183460469231731687303715884105728n)];
-  w = [$wrappingRem(w[0], 7n, -170141183460469231731687303715884105728n)];
-  w = [$wrappingRem(w[0], 4n, -170141183460469231731687303715884105728n)];
+  w = [
+    $wrappingDiv(w[0], two[0], $stdSites.wrappingOp[0], -170141183460469231731687303715884105728n),
+  ];
+  w = [$wrappingDiv(w[0], 3n, $stdSites.wrappingOp[0], -170141183460469231731687303715884105728n)];
+  w = [$wrappingRem(w[0], 7n, $stdSites.wrappingOp[0], -170141183460469231731687303715884105728n)];
+  w = [$wrappingRem(w[0], 4n, $stdSites.wrappingOp[0], -170141183460469231731687303715884105728n)];
   console.log(`${w[0]}`);
   w = [w[0] | one$9[0]];
   w = [w[0] | 6n];
@@ -476,70 +519,94 @@ function main() {
   const zero$9 = [0n];
   byZero =
     $catchUnwind(() => [
-      $wrappingDiv(one$9[0], zero$9[0], -170141183460469231731687303715884105728n),
+      $wrappingDiv(
+        one$9[0],
+        zero$9[0],
+        $stdSites.wrappingOp[0],
+        -170141183460469231731687303715884105728n,
+      ),
     ]).TAG === "Err";
   remZero =
     $catchUnwind(() => [
-      $wrappingRem(one$9[0], zero$9[0], -170141183460469231731687303715884105728n),
+      $wrappingRem(
+        one$9[0],
+        zero$9[0],
+        $stdSites.wrappingOp[0],
+        -170141183460469231731687303715884105728n,
+      ),
     ]).TAG === "Err";
   const z$9 = one$9;
   let z$19 = z$9;
   assignZero =
     $catchUnwind(() => {
-      z$19 = [$wrappingDiv(z$19[0], 0n, -170141183460469231731687303715884105728n)];
+      z$19 = [
+        $wrappingDiv(
+          z$19[0],
+          0n,
+          $stdSites.wrappingOp[0],
+          -170141183460469231731687303715884105728n,
+        ),
+      ];
       return z$19;
     }).TAG === "Err";
   console.log(`${byZero} ${remZero} ${assignZero}`);
   lo = [-128];
   let minus = [-1];
   w = lo;
-  w = [$wrappingDiv(w[0], minus[0], -128)];
+  w = [$wrappingDiv(w[0], minus[0], $stdSites.wrappingOp[0], -128)];
   let r = lo;
-  r = [$wrappingRem(r[0], -1, -128)];
+  r = [$wrappingRem(r[0], -1, $stdSites.wrappingOp[0], -128)];
   console.log(
-    `${$wrappingDiv(lo[0], minus[0], -128)} ${$wrappingRem(lo[0], minus[0], -128)} ${w[0]} ${r[0]}`,
+    `${$wrappingDiv(lo[0], minus[0], $stdSites.wrappingOp[0], -128)} ${$wrappingRem(lo[0], minus[0], $stdSites.wrappingOp[0], -128)} ${w[0]} ${r[0]}`,
   );
   lo = [-32768];
   minus = [-1];
   w = lo;
-  w = [$wrappingDiv(w[0], minus[0], -32768)];
+  w = [$wrappingDiv(w[0], minus[0], $stdSites.wrappingOp[0], -32768)];
   r = lo;
-  r = [$wrappingRem(r[0], -1, -32768)];
+  r = [$wrappingRem(r[0], -1, $stdSites.wrappingOp[0], -32768)];
   console.log(
-    `${$wrappingDiv(lo[0], minus[0], -32768)} ${$wrappingRem(lo[0], minus[0], -32768)} ${w[0]} ${r[0]}`,
+    `${$wrappingDiv(lo[0], minus[0], $stdSites.wrappingOp[0], -32768)} ${$wrappingRem(lo[0], minus[0], $stdSites.wrappingOp[0], -32768)} ${w[0]} ${r[0]}`,
   );
   lo = [-2147483648];
   minus = [-1];
   w = lo;
-  w = [$wrappingDiv(w[0], minus[0], -2147483648)];
+  w = [$wrappingDiv(w[0], minus[0], $stdSites.wrappingOp[0], -2147483648)];
   r = lo;
-  r = [$wrappingRem(r[0], -1, -2147483648)];
+  r = [$wrappingRem(r[0], -1, $stdSites.wrappingOp[0], -2147483648)];
   console.log(
-    `${$wrappingDiv(lo[0], minus[0], -2147483648)} ${$wrappingRem(lo[0], minus[0], -2147483648)} ${w[0]} ${r[0]}`,
+    `${$wrappingDiv(lo[0], minus[0], $stdSites.wrappingOp[0], -2147483648)} ${$wrappingRem(lo[0], minus[0], $stdSites.wrappingOp[0], -2147483648)} ${w[0]} ${r[0]}`,
   );
   lo = [-9223372036854775808n];
   minus = [-1n];
   w = lo;
-  w = [$wrappingDiv(w[0], minus[0], -9223372036854775808n)];
+  w = [$wrappingDiv(w[0], minus[0], $stdSites.wrappingOp[0], -9223372036854775808n)];
   r = lo;
-  r = [$wrappingRem(r[0], -1n, -9223372036854775808n)];
+  r = [$wrappingRem(r[0], -1n, $stdSites.wrappingOp[0], -9223372036854775808n)];
   console.log(
-    `${$wrappingDiv(lo[0], minus[0], -9223372036854775808n)} ${$wrappingRem(lo[0], minus[0], -9223372036854775808n)} ${w[0]} ${r[0]}`,
+    `${$wrappingDiv(lo[0], minus[0], $stdSites.wrappingOp[0], -9223372036854775808n)} ${$wrappingRem(lo[0], minus[0], $stdSites.wrappingOp[0], -9223372036854775808n)} ${w[0]} ${r[0]}`,
   );
   lo = [-170141183460469231731687303715884105728n];
   minus = [-1n];
   w = lo;
-  w = [$wrappingDiv(w[0], minus[0], -170141183460469231731687303715884105728n)];
+  w = [
+    $wrappingDiv(
+      w[0],
+      minus[0],
+      $stdSites.wrappingOp[0],
+      -170141183460469231731687303715884105728n,
+    ),
+  ];
   r = lo;
-  r = [$wrappingRem(r[0], -1n, -170141183460469231731687303715884105728n)];
+  r = [$wrappingRem(r[0], -1n, $stdSites.wrappingOp[0], -170141183460469231731687303715884105728n)];
   console.log(
-    `${$wrappingDiv(lo[0], minus[0], -170141183460469231731687303715884105728n)} ${$wrappingRem(lo[0], minus[0], -170141183460469231731687303715884105728n)} ${w[0]} ${r[0]}`,
+    `${$wrappingDiv(lo[0], minus[0], $stdSites.wrappingOp[0], -170141183460469231731687303715884105728n)} ${$wrappingRem(lo[0], minus[0], $stdSites.wrappingOp[0], -170141183460469231731687303715884105728n)} ${w[0]} ${r[0]}`,
   );
   const value = divided(
     [-128],
     [-1],
-    { div: (a, b) => [$wrappingDiv(a[0], b[0], -128)] },
-    { rem: (a, b) => [$wrappingRem(a[0], b[0], -128)] },
+    { div: (a, b) => [$wrappingDiv(a[0], b[0], $stdSites.wrappingOp[0], -128)] },
+    { rem: (a, b) => [$wrappingRem(a[0], b[0], $stdSites.wrappingOp[0], -128)] },
     wrappingCopy,
   );
   console.log(`(${value[0][0]}, ${value[1][0]})`);

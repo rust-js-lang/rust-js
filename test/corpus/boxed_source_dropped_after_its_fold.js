@@ -16,6 +16,7 @@ import {
   $nextBack,
   $nth,
   $nthBack,
+  $panic,
   $unwindsOn,
   inspectDoubleEndedIterator_nextBack,
   iterator_inspect,
@@ -287,7 +288,10 @@ function main() {
             (it) => {
               console.log("drop src");
               if (it.of.panics) {
-                throw new Error("drop src");
+                throw $panic(
+                  "drop src",
+                  "test/corpus/boxed_source_dropped_after_its_fold.rs:60:13",
+                );
               }
             },
           ),
@@ -307,7 +311,10 @@ function main() {
             (it) => {
               console.log("drop src");
               if (it.of.panics) {
-                throw new Error("drop src");
+                throw $panic(
+                  "drop src",
+                  "test/corpus/boxed_source_dropped_after_its_fold.rs:60:13",
+                );
               }
             },
           ),
@@ -327,7 +334,10 @@ function main() {
             (it) => {
               console.log("drop src");
               if (it.of.panics) {
-                throw new Error("drop src");
+                throw $panic(
+                  "drop src",
+                  "test/corpus/boxed_source_dropped_after_its_fold.rs:60:13",
+                );
               }
             },
           ),
@@ -347,7 +357,10 @@ function main() {
             (it) => {
               console.log("drop src");
               if (it.of.panics) {
-                throw new Error("drop src");
+                throw $panic(
+                  "drop src",
+                  "test/corpus/boxed_source_dropped_after_its_fold.rs:60:13",
+                );
               }
             },
           ),

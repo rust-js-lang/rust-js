@@ -23,24 +23,34 @@ function main() {
   const label = "a write fails";
   let fine = $catchUnwind(() => {
     buf += "1";
-    return $writeExpectErr(undefined, label);
+    return $writeExpectErr(
+      undefined,
+      label,
+      "test/corpus/fmt_result_unwrap_err_never_failing.rs:20:77",
+    );
   });
   function map() {}
   const result = fine.TAG === "Ok" ? { TAG: "Ok", _0: map(fine._0) } : fine;
   console.log(
     `${$unwrapErr(
       result.TAG === "Err" ? { TAG: "Err", _0: message(result._0) } : result,
+      "test/corpus/fmt_result_unwrap_err_never_failing.rs:21:62",
     )} [${buf}]`,
   );
   fine = $catchUnwind(() => {
     buf += "2";
-    return $writeExpectErr(undefined, "called `Result::unwrap_err()` on an `Ok` value");
+    return $writeExpectErr(
+      undefined,
+      "called `Result::unwrap_err()` on an `Ok` value",
+      "test/corpus/fmt_result_unwrap_err_never_failing.rs:22:77",
+    );
   });
   function map$1() {}
   const result$1 = fine.TAG === "Ok" ? { TAG: "Ok", _0: map$1(fine._0) } : fine;
   console.log(
     `${$unwrapErr(
       result$1.TAG === "Err" ? { TAG: "Err", _0: message(result$1._0) } : result$1,
+      "test/corpus/fmt_result_unwrap_err_never_failing.rs:23:62",
     )} [${buf}]`,
   );
 }

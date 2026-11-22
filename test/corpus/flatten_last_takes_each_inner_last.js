@@ -15,6 +15,7 @@ import {
   $lent,
   $live,
   $next,
+  $panic,
   $rangeNext,
   $unwindsOn,
   iterator_flatMap,
@@ -34,7 +35,7 @@ function uptoIterator_next(upto) {
   }
   upto.at = (upto.at + 1) >>> 0;
   if (upto.at === upto.boom) {
-    throw new Error("boom");
+    throw $panic("boom", "test/corpus/flatten_last_takes_each_inner_last.rs:29:13");
   }
   return [upto.at];
 }

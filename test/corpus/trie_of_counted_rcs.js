@@ -69,7 +69,7 @@ function insert(root, word) {
     let borrow;
     try {
       if (cur.value.borrows < 0) {
-        $alreadyMutablyBorrowed();
+        $alreadyMutablyBorrowed("test/corpus/trie_of_counted_rcs.rs:26:48");
       }
       borrow = cur.value;
     } catch (error) {
@@ -82,7 +82,7 @@ function insert(root, word) {
     const label = [borrow.label[0] + c];
     let borrowMut;
     try {
-      borrowMut = $borrowMut(cur.value, true);
+      borrowMut = $borrowMut(cur.value, "test/corpus/trie_of_counted_rcs.rs:27:34", true);
     } catch (error) {
       $cleanup(() => {
         console.log(`drop ${$debugStr(label[0])}`);
@@ -196,7 +196,7 @@ function depth(node) {
     let borrow;
     try {
       if (cur.value.borrows < 0) {
-        $alreadyMutablyBorrowed();
+        $alreadyMutablyBorrowed("test/corpus/trie_of_counted_rcs.rs:42:26");
       }
       borrow = cur.value;
     } catch (error) {
@@ -302,7 +302,7 @@ function main() {
   let borrow;
   try {
     if (root.value.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/trie_of_counted_rcs.rs:61:29");
     }
     borrow = root.value;
   } catch (error) {
@@ -315,7 +315,13 @@ function main() {
   }
   let a;
   try {
-    a = $rcClone($unwrap(borrow.children.get("a"), "no entry found for key"));
+    a = $rcClone(
+      $unwrap(
+        borrow.children.get("a"),
+        "test/corpus/trie_of_counted_rcs.rs:61:46",
+        "no entry found for key",
+      ),
+    );
   } catch (error) {
     $cleanup(() => {
       if (root$live) {
@@ -327,7 +333,7 @@ function main() {
   let tmp$1;
   try {
     if (a.value.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/trie_of_counted_rcs.rs:62:27");
     }
     tmp$1 = a.value;
   } catch (error) {
@@ -341,7 +347,13 @@ function main() {
   }
   let ab;
   try {
-    ab = $rcClone($unwrap(tmp$1.children.get("b"), "no entry found for key"));
+    ab = $rcClone(
+      $unwrap(
+        tmp$1.children.get("b"),
+        "test/corpus/trie_of_counted_rcs.rs:62:44",
+        "no entry found for key",
+      ),
+    );
   } catch (error) {
     $cleanup(() => {
       $rcDrop(a, dropNode);
@@ -391,7 +403,7 @@ function main() {
   }
   let borrowMut;
   try {
-    borrowMut = $borrowMut(a.value, true);
+    borrowMut = $borrowMut(a.value, "test/corpus/trie_of_counted_rcs.rs:64:19", true);
   } catch (error) {
     $cleanup(() => {
       $rcDrop(ab, dropNode);
@@ -455,7 +467,7 @@ function main() {
   }
   let tmp$4;
   try {
-    tmp$4 = $borrow(ab.value, true);
+    tmp$4 = $borrow(ab.value, "test/corpus/trie_of_counted_rcs.rs:70:44", true);
   } catch (error) {
     $cleanup(() => {
       $rcDrop(ab, dropNode);

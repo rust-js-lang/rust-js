@@ -71,7 +71,7 @@ function main() {
       }
     }),
   );
-  const result = $someValue($unwrap(kept));
+  const result = $someValue($unwrap(kept, "test/corpus/fmt_error_as_a_value.rs:48:34"));
   console.log(`${result === undefined}`);
   console.log(
     `${$writeTry(() => made(true)) === undefined ? "Ok(())" : "Err(Error)"} ${$writeTry(() => made(false)) === undefined ? "Ok(())" : "Err(Error)"}`,
@@ -93,6 +93,7 @@ function main() {
             t = value;
           },
         },
+    "test/corpus/fmt_error_as_a_value.rs:54:36",
   );
   const again = $writeTry(() => {
     try {

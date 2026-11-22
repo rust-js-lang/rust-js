@@ -8,7 +8,7 @@ import { type Exit, runSync, stopped } from "./child";
 import { keptApps, markUsed, mayKeep, nativeCache, pruneKeptApps } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
 import { parts, shard } from "../scripts/shard";
-import { checkoutTarget, helpersModule, stdDir, target } from "./packages-of";
+import { checkoutTarget, compiler, compilerGiven, helpersModule, stdDir, target } from "./packages-of";
 
 export const root = join(import.meta.dir, "..");
 
@@ -82,10 +82,21 @@ export function writeKnown(list: KnownList, text: string, dir = knownDir(list)):
 // `@rust-js/std` the JS written in it imports: the checkout's, or a
 // runtime mutant's own in its target (#720).
 export { helpersModule, stdDir, target };
-// This checkout's debug build, or with `RUST_JS_COMPILER`, another, as the
-// rustc tests workflow's build job makes one for its machines to share.
-const given = process.env.RUST_JS_COMPILER;
-export const compiler = given ? resolve(given) : join(target, "debug", "rust-js");
+export { compiler };
+
+let stdNames: { local: string; shipped: string } | undefined;
+/** `text`, a native run's, std's files named as rust-js names them: where
+ * the toolchain has its source (`rust-src`) and the caller's crate compiles
+ * the panicking body, a generic or inlined one's, native Rust names its
+ * local copy; rust-js names each `/rustc/<commit>/..`, as the shipped std
+ * does, on every machine (ADR 0262's exception, difference 62, #2292). */
+export function shippedStd(text: string): string {
+  stdNames ??= {
+    local: `${run(["rustc", "--print", "sysroot"]).trim()}/lib/rustlib/src/rust/`,
+    shipped: `/rustc/${/^commit-hash: (\S+)$/m.exec(run(["rustc", "-vV"]))?.[1]}/`,
+  };
+  return text.replaceAll(stdNames.local, stdNames.shipped);
+}
 
 /** What `cmd` printed, with `env` added to its environment, or why it
  * failed. It's stopped after `timeout` ms:
@@ -466,7 +477,7 @@ export function bunTest(args: string[], { cwd = root, env = {}, timeout = 600_00
 /**
  * This checkout's compiler, built once for the run, whichever file asks
  * first, however many run side by side (`bun test --parallel`): a build
- * in each would take `target/debug/rust-js` away from the others while
+ * in each would take the checkout's debug build away from the others while
  * Cargo links it again, though nothing's changed. One file builds it, the
  * others wait for it and then don't, and what they run is given it, as
  * `RUST_JS_COMPILER`, so a script doesn't build it again either. A run is
@@ -475,7 +486,7 @@ export function bunTest(args: string[], { cwd = root, env = {}, timeout = 600_00
  */
 export function buildCompiler() {
   ownPackages();
-  if (built || given) return;
+  if (built || compilerGiven) return;
   once(join(target, "tests-build", thisRun()), () => run(compilerBuild.cmd, 600_000, compilerBuild.env));
   process.env.RUST_JS_COMPILER = compiler;
   built = true;

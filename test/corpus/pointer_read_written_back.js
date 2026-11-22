@@ -16,9 +16,9 @@ function main() {
   p.value = held;
   console.log(`${m.size}`);
   const sets = [new Set([3, 4, 5])];
-  const q = $ptr(sets, $at(sets, 0));
+  const q = $ptr(sets, $at(sets, 0, "test/corpus/pointer_read_written_back.rs:16:41"));
   held = $apart(q.value);
   q.value = held;
-  console.log(`${$index(sets, 0).size}`);
+  console.log(`${$index(sets, 0, "test/corpus/pointer_read_written_back.rs:22:24").size}`);
 }
 //# sourceMappingURL=case.js.map

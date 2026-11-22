@@ -1373,7 +1373,7 @@ pub fn give(value: Option<&'static Unknown>) {
   expect(js).toContain("  resolveFamily = handler != null && !debug ? handler : null;\n  resolveFamily = previous;\n");
   const kept = ["CURRENT", "SHARED", "GENERIC", "LENT", "SEEN", "COUNTED"].map((key) => `  ${key} = value ?? null;\n`);
   expect(js).toContain(
-    `export function setAll(value) {\n${kept.join("")}  $cellReplace($borrowMut(BORROWED), value ?? null);\n` +
+    `export function setAll(value) {\n${kept.join("")}  $cellReplace($borrowMut(BORROWED, $stdSites.localKeySet[0]), value ?? null);\n` +
       "  HANDED.value = value ?? null;\n  initial = value ?? null;\n  MOVED = value ?? null;\n}",
   );
   const lib = await import(join(dir, "lib.js"));

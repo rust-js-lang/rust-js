@@ -65,11 +65,11 @@ export function methods(c) {
 }
 
 export function unwrapped(c) {
-  return $unwrapOk(parseDigit(c));
+  return $unwrapOk(parseDigit(c), "examples/results.rs:38:20");
 }
 
 export function expected(c) {
-  return $unwrapOk(parseDigit(c), "a digit");
+  return $unwrapOk(parseDigit(c), "examples/results.rs:42:20", "a digit");
 }
 
 function appErrorFromString_from(message) {

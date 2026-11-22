@@ -260,6 +260,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::call(Expr::helper(name), list)
     }
 
+    /// `view_call`'s, made where a view unmade is used, its panic raised
+    /// where it was indexed, `raised` (`Value::View`, #2292).
+    pub fn raised_view_call(&mut self, name: &'static str, list: Vec<Expr>, raised: Option<Expr>) -> Expr {
+        match raised {
+            Some(at) => Expr::raised_at(at, || self.view_call(name, list)),
+            None => self.view_call(name, list),
+        }
+    }
+
     /// How a slice's `starts_with` and `strip_*` compare its items (ADR
     /// 0336), and an iterator's `eq` another's, `item` to `rhs`: `None` where
     /// JS's `===` is their `==`, numbers, text and `bool`s, or a function of
@@ -335,7 +344,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             list.push(Expr::bool(handle));
         }
         list.extend(inclusive);
-        Expr::call(Expr::helper("$extractIf"), list)
+        // `slice::range`'s panic, where std's `ExtractIf::new` checks (#2292).
+        Expr::raised_at(Expr::std_site("vecExtractIf", 0), || {
+            Expr::call(Expr::helper("$extractIf"), list)
+        })
     }
 
     /// `slots.write_copy_of_slice(src)`, of `values`, the slots and the
@@ -363,7 +375,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![slots, source, clone],
             ));
         }
-        let copy = Expr::call(Expr::helper("$copyFromSlice"), vec![slots.clone(), source]);
+        // `copy_from_slice`'s panic, where std's `write_copy_of_slice` calls
+        // it (#2292).
+        let copy = Expr::raised_at(Expr::std_site("writeCopyOfSlice", 0), || {
+            Expr::call(Expr::helper("$copyFromSlice"), vec![slots.clone(), source])
+        });
         out.push(StmtKind::Expr(copy).at(self.js_span(span)));
         Ok(slots)
     }
@@ -560,13 +576,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             SliceOp::Rchunks { exact, mutable: true } => {
                 self.view_call("$rchunksMut", vec![arg(), arg(), Expr::bool(exact)])
             }
-            SliceOp::SplitAtMut { checked } => {
-                let mut list = vec![arg(), arg()];
-                if checked {
-                    list.push(Expr::bool(true));
-                }
-                self.view_call("$splitAtMut", list)
-            }
+            SliceOp::SplitAtMut { checked } => self.view_call(
+                if checked { "$checkedSplitAtMut" } else { "$splitAtMut" },
+                vec![arg(), arg()],
+            ),
             SliceOp::SplitEndMut { last } => {
                 let mut list = vec![arg(), Expr::bool(last)];
                 if self.handles_mut(item()) {

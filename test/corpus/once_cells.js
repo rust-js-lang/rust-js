@@ -65,7 +65,10 @@ function main() {
   $print(`${name == null ? "None" : `Some(${$debugStr(name)})`} ${taken.value == null}\n`);
 
   const count = { value: 5 };
-  const value$3 = $unwrap(count.value == null ? undefined : count);
+  const value$3 = $unwrap(
+    count.value == null ? undefined : count,
+    "test/corpus/once_cells.rs:46:22",
+  );
   value$3.value = (value$3.value + 1) | 0;
   $print(`${count.value == null ? "None" : `Some(${count.value})`}\n`);
 
@@ -115,6 +118,7 @@ function main() {
   }
   $unwrapOk(
     unset$3 ? { TAG: "Ok" } : { TAG: "Err", _0: value$7 },
+    "test/corpus/once_cells.rs:63:24",
     undefined,
     (e) => `[${e.join(", ")}]`,
   );

@@ -43,11 +43,18 @@ function steps() {
         if (n === 0) {
           return 0;
         }
-        const borrow = $borrow(this$$1.value, true);
+        const borrow = $borrow(
+          this$$1.value,
+          "test/corpus/self_handle_called_early.rs:19:30",
+          true,
+        );
         const weak = borrow.value;
         let steps;
         try {
-          steps = $unwrap(weak != null ? $upgrade(weak) : undefined);
+          steps = $unwrap(
+            weak != null ? $upgrade(weak) : undefined,
+            "test/corpus/self_handle_called_early.rs:19:72",
+          );
         } finally {
           $unborrow(borrow);
         }
@@ -87,7 +94,7 @@ function steps() {
     }
     let borrowMut;
     try {
-      borrowMut = $borrowMut(this$.value, true);
+      borrowMut = $borrowMut(this$.value, "test/corpus/self_handle_called_early.rs:24:11", true);
     } catch (error) {
       $cleanup(() => {
         if (tmp != null) {

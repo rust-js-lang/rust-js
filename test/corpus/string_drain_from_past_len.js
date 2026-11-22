@@ -9,7 +9,7 @@ export function entry() {
 function main() {
   let s = "abcd";
   const start = $byteLen(s) + 1;
-  const drained = $strDrain(s, start);
+  const drained = $strDrain(s, start, undefined, "test/corpus/string_drain_from_past_len.rs:7:24");
   s = drained[0];
   console.log(`${drained[1].length}`);
 }

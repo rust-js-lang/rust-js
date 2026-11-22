@@ -11,6 +11,7 @@ import {
   $mutAt,
   $next,
   $nextBack,
+  $panic,
   $rev,
   $sizeHint,
   $sliceSplitBy,
@@ -202,7 +203,8 @@ function main() {
   console.log(`[${m.join(", ")}]`);
   const c = [1, 1, 2, 2, 2];
   for (const run of $lazyChunkByMut(c, (a, b) => a === b)) {
-    run[$at(run, 0)] = (run.length * 100) | 0;
+    run[$at(run, 0, "test/corpus/slice_searches_ask_a_predicate_as_they_step.rs:106:9")] =
+      (run.length * 100) | 0;
   }
   console.log(`[${c.join(", ")}]`);
   const r = $catchUnwind(() => {
@@ -210,7 +212,7 @@ function main() {
       [1, 2, 3, 0, 4],
       (x) => {
         if (x === 4) {
-          throw new Error("at 4");
+          throw $panic("at 4", "test/corpus/slice_searches_ask_a_predicate_as_they_step.rs:112:17");
         }
         return x === 0;
       },

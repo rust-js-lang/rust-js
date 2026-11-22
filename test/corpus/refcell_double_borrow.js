@@ -8,10 +8,10 @@ export function entry() {
 
 function main() {
   const cell = [1];
-  const reading = $borrow(cell, true);
+  const reading = $borrow(cell, "test/corpus/refcell_double_borrow.rs:8:24", true);
   try {
     if (cell.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/refcell_double_borrow.rs:9:10");
     }
     cell.push(2);
     console.log(`${reading.length}`);

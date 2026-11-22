@@ -14,12 +14,18 @@ export function entry() {
 }
 
 export function touch(handler) {
-  $borrowMut($fieldCell(handler, "chunk")).value = undefined;
+  $borrowMut(
+    $fieldCell(handler, "chunk"),
+    "test/corpus/guard_value_read_before_write.rs:19:20",
+  ).value = undefined;
 }
 
 export function first(handler) {
   // The clone is taken, and the guard dropped, before `touch` clears the cell.
-  const borrow = $borrow($fieldCell(handler, "chunk"));
+  const borrow = $borrow(
+    $fieldCell(handler, "chunk"),
+    "test/corpus/guard_value_read_before_write.rs:24:37",
+  );
   if (borrow.value == null) {
     return 0;
   }
@@ -30,13 +36,17 @@ export function first(handler) {
 
 function lend(cell) {
   if (cell.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/guard_value_read_before_write.rs:32:10");
   }
   return cell.value != null;
 }
 
 export function held(handler) {
-  const guard = $borrow($fieldCell(handler, "chunk"), true);
+  const guard = $borrow(
+    $fieldCell(handler, "chunk"),
+    "test/corpus/guard_value_read_before_write.rs:36:31",
+    true,
+  );
   try {
     touch(handler);
     return lend($fieldCell(handler, "chunk")) ? (guard.value?.id ?? 0) : 1;
@@ -47,7 +57,10 @@ export function held(handler) {
 
 export function second(handler) {
   // Through a guard named, read then dropped.
-  const guard = $borrow($fieldCell(handler, "chunk"));
+  const guard = $borrow(
+    $fieldCell(handler, "chunk"),
+    "test/corpus/guard_value_read_before_write.rs:43:31",
+  );
   const chunk = guard.value;
   touch(handler);
   return chunk?.id ?? -1;
@@ -56,7 +69,10 @@ export function second(handler) {
 function main() {
   const handler = { chunk: { id: 5 } };
   console.log(`${$displayF64(first(handler))}`);
-  $borrowMut($fieldCell(handler, "chunk")).value = { id: 7 };
+  $borrowMut(
+    $fieldCell(handler, "chunk"),
+    "test/corpus/guard_value_read_before_write.rs:54:20",
+  ).value = { id: 7 };
   console.log(`${$displayF64(second(handler))}`);
   console.log(`${lend($fieldCell(handler, "chunk"))}`);
 }

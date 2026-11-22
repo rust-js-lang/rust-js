@@ -11,7 +11,7 @@ function weekend(day) {
     return true;
   }
   if (day < 1 || day > 5) {
-    throw $stringPanic(`no day ${day}`);
+    throw $stringPanic(`no day ${day}`, "test/corpus/match_arms_then_a_panicking_rest.rs:9:14");
   }
   return false;
 }

@@ -11,7 +11,7 @@ let depth = 0;
 function run(n) {
   if (n > 5) {
     try {
-      throw $stringPanic(`too big ${n}`);
+      throw $stringPanic(`too big ${n}`, "test/corpus/drop_guard_inside_a_drop.rs:35:9");
     } catch (error) {
       $cleanup(() => {
         const previous = depth;

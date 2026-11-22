@@ -7,8 +7,10 @@ export function entry() {
 }
 
 function main() {
-  console.log(`${$wrappingRem(-2147483648, -1, -2147483648)}`);
+  console.log(
+    `${$wrappingRem(-2147483648, -1, "test/corpus/wrapping_rem_zero.rs:5:29", -2147483648)}`,
+  );
   const zero = 0;
-  console.log(`${$wrappingRem(7, zero, -2147483648)}`);
+  console.log(`${$wrappingRem(7, zero, "test/corpus/wrapping_rem_zero.rs:7:25", -2147483648)}`);
 }
 //# sourceMappingURL=case.js.map

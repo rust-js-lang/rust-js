@@ -365,7 +365,14 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                                 rust_js_lower::analysis::shadow_check(this.tcx, this.frame.owner, span, || {
                                     Some(rust_js_lower::analysis::Proof::CallBounds(block))
                                 });
-                                this.slice_range_values((op, in_bounds), items, (range, arg_tys[1]), span, out)?
+                                match this.std_range_site(op, arg_tys[0]) {
+                                    Some(site) => Expr::raised_at(Expr::std_site(site, 0), || {
+                                        this.slice_range_values((op, in_bounds), items, (range, arg_tys[1]), span, out)
+                                    })?,
+                                    None => {
+                                        this.slice_range_values((op, in_bounds), items, (range, arg_tys[1]), span, out)?
+                                    }
+                                }
                             }
                         }
                     }))
@@ -524,19 +531,28 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                     let place = match values.next().expect("the string") {
                         Value::Ref(place) if fixed_place(&place) => place,
                         // `s[a..b].make_ascii_uppercase()`: `s` given its new text,
-                        // that part changed, `s = $asciiCase(s, true, a,
-                        // b)` (ADR 0334).
+                        // that part changed, `s = $asciiCaseRange(s, true, a,
+                        // raisedAt, b)`, checked where `s[a..b]` was, its
+                        // location the part's (ADR 0334, #2292); of all of
+                        // it, `$asciiCase(s, true)`.
                         Value::Ref(ref place)
                             if let StringEdit::AsciiCase { upper } = edit
                                 && let Some((whole, mut bounds)) = str_part_of(place) =>
                         {
                             this.flush(state, out)?;
-                            if bounds.first().and_then(Expr::as_int) == Some(0) && bounds.len() == 1 {
+                            // `[start, raisedAt]` of `s[0..]`: none.
+                            let all = bounds.first().and_then(Expr::as_int) == Some(0) && bounds.len() == 2;
+                            if all {
                                 bounds.clear();
                             }
                             let mut list = vec![whole.clone(), Expr::bool(upper)];
+                            let helper = if bounds.is_empty() {
+                                "$asciiCase"
+                            } else {
+                                "$asciiCaseRange"
+                            };
                             list.extend(bounds);
-                            let edited = Expr::call(Expr::helper("$asciiCase"), list);
+                            let edited = Expr::call(Expr::helper(helper), list);
                             out.push(StmtKind::Assign(whole, edited).at(this.js_span(span)));
                             return Ok(Value::Expr(Expr::js_undefined()));
                         }
@@ -664,7 +680,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 let mut list = vec![items, start];
                 list.extend(end);
                 list.extend(inclusive);
-                let view = this.view_call("$viewRange", list);
+                let view = Expr::raised_at(Expr::std_site("vecDequeRange", 0), || this.view_call("$viewRange", list));
                 match this.mut_ref_form(generic_args.type_at(0)).is_cell() {
                     true => Expr::call_helper("$mutItems", vec![view]),
                     false => view,
@@ -798,7 +814,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 // A `get_mut`'s `None` says nothing of the range.
                 let inclusive = inclusive.filter(|_| !checked);
                 let list = [vec![items, start], end.into_iter().chain(inclusive).collect()].concat();
-                Ok(if checked { Value::Expr(this.view_call("$viewGet", list)) } else { Value::View(list, js::Span::NONE) })
+                Ok(if checked { Value::Expr(this.view_call("$viewGet", list)) } else { Value::View(list, js::Span::NONE, Expr::raising_at()) })
             }),
             // `vec![item; n]`: each a clone, of what it can't remake.
             // A count rustc knows, a constant's read by its name, is known

@@ -15,6 +15,7 @@ import {
   $iterator,
   $lazyZip,
   $next,
+  $panic,
   $range,
   $rangeLen,
   $rangeNext,
@@ -53,7 +54,7 @@ function boom(n) {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (boom(d[0])) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/adapters_own_work_that_panics.rs:31:13");
   }
 }
 
@@ -67,7 +68,7 @@ function dClone_clone(d) {
   const left = clones;
   clones = Math.max(left - 1, 0);
   if (left === 1) {
-    throw new Error("clone");
+    throw $panic("clone", "test/corpus/adapters_own_work_that_panics.rs:51:13");
   }
   return [(d[0] + 100) >>> 0];
 }
@@ -88,7 +89,7 @@ function twiceClone_clone(twice) {
   const left = clones;
   clones = Math.max(left - 1, 0);
   if (left === 1) {
-    throw new Error("clone");
+    throw $panic("clone", "test/corpus/adapters_own_work_that_panics.rs:87:13");
   }
   return [twice[0]];
 }
@@ -114,7 +115,7 @@ function once(held) {
 function tickDrop_drop(tick) {
   console.log(`drop tick ${tick[0]}`);
   if (boom(tick[0])) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/adapters_own_work_that_panics.rs:124:13");
   }
 }
 
@@ -355,7 +356,10 @@ function main() {
     }
     let result;
     try {
-      result = $trustedZip(tmp$1, $iter($slice(w, 0, 2))).reduce((n, item) => {
+      result = $trustedZip(
+        tmp$1,
+        $iter($slice(w, 0, "test/corpus/adapters_own_work_that_panics.rs:173:32", 2)),
+      ).reduce((n, item) => {
         dDrop_drop(item[0]);
         return n + 1;
       }, 0);

@@ -74,23 +74,31 @@ function main() {
   ];
   for (let i = 0; i < listeners.length; i++) {
     const listener = listeners[i];
-    const receiver = $borrowMut(listener, true);
+    const receiver = $borrowMut(listener, "test/corpus/rc_refcell_dyn_shared.rs:78:18", true);
     try {
       receiver.impl.notify(receiver, "start");
     } finally {
       $unborrow(receiver);
     }
   }
-  const value = $borrowMut($index(listeners, 0), true);
+  const value = $borrowMut(
+    $index(listeners, 0, "test/corpus/rc_refcell_dyn_shared.rs:80:14"),
+    "test/corpus/rc_refcell_dyn_shared.rs:80:18",
+    true,
+  );
   try {
     value.impl.notify(value, "stop");
   } finally {
     $unborrow(value);
   }
-  const borrow = $borrow(logger, true);
+  const borrow = $borrow(logger, "test/corpus/rc_refcell_dyn_shared.rs:81:30", true);
   try {
     const count = loggerListener_count(borrow.value);
-    const receiver = $borrow($index(listeners, 1), true);
+    const receiver = $borrow(
+      $index(listeners, 1, "test/corpus/rc_refcell_dyn_shared.rs:81:57"),
+      "test/corpus/rc_refcell_dyn_shared.rs:81:61",
+      true,
+    );
     try {
       console.log(`${count} ${receiver.impl.count(receiver.value)}`);
     } finally {
@@ -118,7 +126,11 @@ function main() {
   }
   let borrowMut;
   try {
-    borrowMut = $borrowMut($fieldCell(leaf.value, "parent"), true);
+    borrowMut = $borrowMut(
+      $fieldCell(leaf.value, "parent"),
+      "test/corpus/rc_refcell_dyn_shared.rs:85:18",
+      true,
+    );
   } catch (error) {
     $cleanup(() => {
       $weakDrop(tmp);
@@ -136,7 +148,11 @@ function main() {
   $unborrow(borrowMut);
   let tmp$1;
   try {
-    tmp$1 = $borrow($fieldCell(leaf.value, "parent"), true);
+    tmp$1 = $borrow(
+      $fieldCell(leaf.value, "parent"),
+      "test/corpus/rc_refcell_dyn_shared.rs:86:49",
+      true,
+    );
   } catch (error) {
     $cleanup(() => {
       $rcDrop(leaf, (value) => {
@@ -243,7 +259,7 @@ function main() {
           const sink = tmp[1];
           let tmp$1;
           try {
-            tmp$1 = $borrowMut(sink.value, true);
+            tmp$1 = $borrowMut(sink.value, "test/corpus/rc_refcell_dyn_shared.rs:92:18", true);
           } catch (error) {
             $cleanup(() => {
               $dropItems(sinks, (item) => {
@@ -271,7 +287,11 @@ function main() {
         }
         let tmp;
         try {
-          tmp = $borrow($index(sinks, 0).value, true);
+          tmp = $borrow(
+            $index(sinks, 0, "test/corpus/rc_refcell_dyn_shared.rs:94:35").value,
+            "test/corpus/rc_refcell_dyn_shared.rs:94:39",
+            true,
+          );
         } catch (error) {
           $cleanup(() => {
             $dropItems(sinks, (item) => {
@@ -298,7 +318,7 @@ function main() {
         }
         let tmp$1;
         try {
-          tmp$1 = $index(sinks, 0).strong;
+          tmp$1 = $index(sinks, 0, "test/corpus/rc_refcell_dyn_shared.rs:94:80").strong;
         } catch (error) {
           $cleanup(() => {
             $unborrow(tmp);
@@ -317,7 +337,9 @@ function main() {
             value.impl.$drop?.(value.value);
           });
         });
-        console.log(`${counterSink_total($borrow(counter.value).value)} ${counter.strong}`);
+        console.log(
+          `${counterSink_total($borrow(counter.value, "test/corpus/rc_refcell_dyn_shared.rs:96:31").value)} ${counter.strong}`,
+        );
       } finally {
         $rcDrop(counter);
       }

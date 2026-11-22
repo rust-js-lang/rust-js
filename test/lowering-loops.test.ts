@@ -364,7 +364,7 @@ pub fn decorate(lines: &[D], inline: &[D]) -> u32 {
   for (let i = 0; i < inline.length; i++) {
     const decorator = inline[i];
     if (starts.has(decorator.line)) {
-      throw $stringPanic(\`already at \${decorator.line}\`);
+      throw $stringPanic(\`already at \${decorator.line}\`, "lib.rs:11:13");
     }
     starts.set(decorator.line, decorator.className);
   }
@@ -757,7 +757,7 @@ pub fn sliced(code: &str) -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("  const end = $byteLen(code);\n  for (let i = 0; i < end; i++) {\n");
-  expect(js).toContain('    if ($strSlice(code, i, i + 1) === "a") {\n');
+  expect(js).toContain('    if ($strSlice(code, i, "lib.rs:13:17", i + 1) === "a") {\n');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.plain("abcdef"), lib.sliced("aba")]).toEqual([3, 2]);
 });

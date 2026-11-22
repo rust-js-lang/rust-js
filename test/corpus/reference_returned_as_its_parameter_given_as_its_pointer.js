@@ -16,10 +16,21 @@ function deinitSliceMut(s) {
 
 function parseHeadersIterUninit(headers, bytes) {
   bytes.seen = headers;
-  headers.value[$at(headers.value, 0)] = { name: "Host" };
+  headers.value[
+    $at(
+      headers.value,
+      0,
+      "test/corpus/reference_returned_as_its_parameter_given_as_its_pointer.rs:28:5",
+    )
+  ] = { name: "Host" };
   const taken = headers.value;
   headers.value = [];
-  headers.value = $view(taken, 0, 1);
+  headers.value = $view(
+    taken,
+    0,
+    "test/corpus/reference_returned_as_its_parameter_given_as_its_pointer.rs:30:26",
+    1,
+  );
   bytes.cursor = $ptrAdd(bytes.cursor, 1);
   return 1;
 }
@@ -30,7 +41,10 @@ function parseHeadersIter(headers, bytes) {
   console.log(`same place: ${$ptrEq(at, bytes.seen, 0)}`);
   const length = headers.value.length;
   if (0 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/reference_returned_as_its_parameter_given_as_its_pointer.rs:39:5",
+    );
   }
   headers.value[0].name = "Written after";
   return n;

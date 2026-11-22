@@ -30,14 +30,35 @@ function longestCommon(a, b) {
     for (const [j, y] of b.entries()) {
       const max =
         x === y
-          ? ($index($index(lengths, i), j) + 1) >>> 0
-          : Math.max($index($index(lengths, i), j + 1), $index($index(lengths, i + 1), j));
-      const items = $index(lengths, i + 1);
+          ? ($index(
+              $index(lengths, i, "test/corpus/table_rows.rs:21:24"),
+              j,
+              "test/corpus/table_rows.rs:21:27",
+            ) +
+              1) >>>
+            0
+          : Math.max(
+              $index(
+                $index(lengths, i, "test/corpus/table_rows.rs:23:24"),
+                j + 1,
+                "test/corpus/table_rows.rs:23:27",
+              ),
+              $index(
+                $index(lengths, i + 1, "test/corpus/table_rows.rs:23:46"),
+                j,
+                "test/corpus/table_rows.rs:23:53",
+              ),
+            );
+      const items = $index(lengths, i + 1, "test/corpus/table_rows.rs:20:20");
       const index = j + 1;
-      items[$at(items, index)] = max;
+      items[$at(items, index, "test/corpus/table_rows.rs:20:27")] = max;
     }
   }
-  return $index($index(lengths, a.length), b.length);
+  return $index(
+    $index(lengths, a.length, "test/corpus/table_rows.rs:27:12"),
+    b.length,
+    "test/corpus/table_rows.rs:27:21",
+  );
 }
 
 function shortened(width, height) {

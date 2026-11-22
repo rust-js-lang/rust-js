@@ -20,6 +20,10 @@
 //   //@ nondeterministic: <why>    its run reads the clock, randomness, the file system or its
 //                                  environment, so native Rust's run isn't kept by what it was
 //                                  built from, but run each time (test/native-outcomes.ts)
+//   //@ located-otherwise: #<issue> <why>
+//                                  where its panic is raised isn't native's until the issue is
+//                                  fixed (#2292): its runs compared but for that; one that's
+//                                  native's is an error; beside run-fail
 
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -41,6 +45,7 @@ export type Expect =
   | { kind: "ignore-rust-js"; reason: string; message?: string };
 
 export type Directives = Expect & {
+  locatedOtherwise?: string;
   edition: string;
   native: "host" | "wasm32";
   libraryDiffers: boolean;
@@ -57,6 +62,14 @@ export function nondeterministic(source: string): string | undefined {
   return /^\/\/@ nondeterministic: (.+)$/m.exec(source)?.[1];
 }
 
+/** The issue and why a case's panic is raised otherwise than native's, as
+ * its `//@ located-otherwise: #<issue> <why>` says (#2292): every net
+ * compares its runs but for where it was raised (`runNative`'s), and the
+ * corpus that it still differs. */
+export function locatedOtherwise(source: string): string | undefined {
+  return /^\/\/@ located-otherwise: (#\d+ .+)$/m.exec(source)?.[1];
+}
+
 /** What a case's directives say, or the problems with them. */
 export function directives(source: string): Directives | string {
   const found: Expect[] = [];
@@ -70,6 +83,8 @@ export function directives(source: string): Directives | string {
   let instancesKeepCost: string | undefined;
   // Why its native run isn't kept (`nondeterministic`).
   let why: string | undefined;
+  // Why where it panics isn't native's, and its issue (`locatedOtherwise`).
+  let located: string | undefined;
   for (const [, line] of source.matchAll(/^\/\/@(.*)$/gm)) {
     const [, name, value] = /^ ([a-z-]+)(?:: (.+))?$/.exec(line) ?? [];
     if (name === "edition" && value && ["2015", "2018", "2021", "2024"].includes(value)) edition = value;
@@ -78,6 +93,7 @@ export function directives(source: string): Directives | string {
     else if (name === "library-differs" && value === undefined) libraryDiffers = true;
     else if (name === "instances-keep-cost" && value) instancesKeepCost = value;
     else if (name === "nondeterministic" && value) why = value;
+    else if (name === "located-otherwise" && value && /^#\d+ ./.test(value)) located = value;
     else if (name === "run-pass" && value === undefined) found.push({ kind: "run-pass" });
     else if (name === "run-fail" && value) found.push({ kind: "run-fail", message: value.replaceAll("\\n", "\n") });
     else if (name === "run-abort" && value === undefined) found.push({ kind: "run-abort" });
@@ -93,5 +109,6 @@ export function directives(source: string): Directives | string {
   if (found.length > 1) return "more than one directive";
   const expect = found[0] ?? { kind: "run-pass" };
   if (native === "wasm32" && expect.kind !== "run-pass") return "`native: wasm32` aborts on a panic: only of a case that runs to its end";
-  return { ...expect, edition, native, libraryDiffers, libraryRefused, instancesKeepCost, nondeterministic: why };
+  if (located !== undefined && expect.kind !== "run-fail") return "`located-otherwise` is of a case that panics: beside `run-fail`";
+  return { ...expect, locatedOtherwise: located, edition, native, libraryDiffers, libraryRefused, instancesKeepCost, nondeterministic: why };
 }

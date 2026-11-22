@@ -25,37 +25,41 @@ export function entry() {
 
 function main() {
   const v = [1, 2, 3, 4, 5, 6];
-  const a = $slice(v, 1, 3);
-  const b = $slice(v, 1, 3);
+  const a = $slice(v, 1, "test/corpus/slice_parts_by_address.rs:11:15", 3);
+  const b = $slice(v, 1, "test/corpus/slice_parts_by_address.rs:12:15", 3);
   console.log(`${$ptrEq($ptr(a, 0), $ptr(b, 0), 1)} ${$slicePtrEq(a, b, 1)}`);
-  console.log(`${$slicePtrEq($slice(v, 1, 3), $slice(v, 1, 4), 1)}`);
+  console.log(
+    `${$slicePtrEq($slice(v, 1, "test/corpus/slice_parts_by_address.rs:14:30", 3), $slice(v, 1, "test/corpus/slice_parts_by_address.rs:14:40", 4), 1)}`,
+  );
   console.log(`${$ptrEq($ptr(a, 0), $ptrAdd($ptr(v, 0), 1), 1)}`);
-  const [l, r] = $sliceSplitAt(v, 2);
+  const [l, r] = $sliceSplitAt(v, 2, "test/corpus/slice_parts_by_address.rs:16:20");
   console.log(
-    `${$ptrEq($ptr(r, 0), $ptrAdd($ptr(l, 0), 2), 1)} ${$slicePtrEq(l, $slice(v, 0, 2), 1)}`,
+    `${$ptrEq($ptr(r, 0), $ptrAdd($ptr(l, 0), 2), 1)} ${$slicePtrEq(l, $slice(v, 0, "test/corpus/slice_parts_by_address.rs:17:80", 2), 1)}`,
   );
-  const chunks = $chunks(v, 2);
+  const chunks = $chunks(v, 2, "test/corpus/slice_parts_by_address.rs:18:32");
   console.log(
-    `${$ptrEq($ptr($index(chunks, 1), 0), $ptrAdd($ptr(v, 0), 2), 1)} ${$slicePtrEq($ptrTo($index(chunks, 2)), $slice(v, 4), 1)}`,
+    `${$ptrEq($ptr($index(chunks, 1, "test/corpus/slice_parts_by_address.rs:19:29"), 0), $ptrAdd($ptr(v, 0), 2), 1)} ${$slicePtrEq($ptrTo($index(chunks, 2, "test/corpus/slice_parts_by_address.rs:19:89")), $slice(v, 4, "test/corpus/slice_parts_by_address.rs:19:96"), 1)}`,
   );
-  const windows = $windows(v, 3);
-  console.log(`${$slicePtrEq($ptrTo($index(windows, 1)), $slice(v, 1, 4), 1)}`);
-  const got = $unwrap($sliceGet(v, 1, 3));
+  const windows = $windows(v, 3, "test/corpus/slice_parts_by_address.rs:20:33");
+  console.log(
+    `${$slicePtrEq($ptrTo($index(windows, 1, "test/corpus/slice_parts_by_address.rs:21:35")), $slice(v, 1, "test/corpus/slice_parts_by_address.rs:21:42", 4), 1)}`,
+  );
+  const got = $unwrap($sliceGet(v, 1, 3), "test/corpus/slice_parts_by_address.rs:22:27");
   console.log(`${$slicePtrEq(got, a, 1)} ${$ptrEq($ptr(got, 0), $ptr(a, 0), 1)}`);
-  const inner = $slice(a, 1);
+  const inner = $slice(a, 1, "test/corpus/slice_parts_by_address.rs:24:19");
   console.log(`${$ptrEq($ptr(inner, 0), $ptrAdd($ptr(v, 0), 2), 1)}`);
-  const empty = $slice(v, 2, 2);
+  const empty = $slice(v, 2, "test/corpus/slice_parts_by_address.rs:26:19", 2);
   console.log(`${$ptrEq($ptr(empty, 0), $ptrAdd($ptr(v, 0), 2), 1)}`);
   // An owned copy is an allocation of its own.
-  const owned = $copyOf(v, 1, 3);
-  owned[$at(owned, 0)] = 9;
+  const owned = $copyOf(v, 1, "test/corpus/slice_parts_by_address.rs:29:22", 3);
+  owned[$at(owned, 0, "test/corpus/slice_parts_by_address.rs:30:10")] = 9;
   console.log(`${$ptrEq($ptr(owned, 0), $ptr(a, 0), 1)} ${owned[0]}`);
-  const collected = $copyOf(v, 2, 5);
+  const collected = $copyOf(v, 2, "test/corpus/slice_parts_by_address.rs:32:31", 5);
   console.log(`${$ptrEq($ptr(collected, 0), $ptrAdd($ptr(v, 0), 2), 1)} [${collected.join(", ")}]`);
   // Through a view.
   const w = [10, 20, 30, 40];
   const base = $ptr(w, 0);
-  const part = $view(w, 1, 3);
+  const part = $view(w, 1, "test/corpus/slice_parts_by_address.rs:37:22", 3);
   const p = $ptr(part, 0);
   $ptrAdd(p, 1).value = 99;
   console.log(`${$ptrEq(p, $ptrAdd(base, 1), 4)}`);
@@ -67,9 +71,15 @@ function main() {
   }
   const arr = [5, 6, 7, 8];
   const items = $part(arr, 1);
-  const first = $unwrap(items.length >= 2 ? $part(items, 0, 2) : undefined);
+  const first = $unwrap(
+    items.length >= 2 ? $part(items, 0, 2) : undefined,
+    "test/corpus/slice_parts_by_address.rs:47:51",
+  );
   const items$1 = $part(arr, 0, 3);
-  const last = $unwrap(items$1.length >= 2 ? $part(items$1, -2) : undefined);
+  const last = $unwrap(
+    items$1.length >= 2 ? $part(items$1, -2) : undefined,
+    "test/corpus/slice_parts_by_address.rs:48:49",
+  );
   console.log(
     `${$ptrEq($ptr(first, 0), $ptrAdd($ptr(arr, 0), 1), 2)} ${$ptrEq($ptr(last, 0), $ptr(first, 0), 2)}`,
   );

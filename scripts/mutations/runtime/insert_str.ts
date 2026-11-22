@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "insert-inside-char",
     breaks: "`s.insert(3, 'y')` inside an `é` splits it, where Rust's assertion fails",
     file: "crates/rust-js-program/src/runtime/insert_str.js",
-    find: '  if (unit === undefined) throw new Error("assertion failed: self.is_char_boundary(idx)");\n',
+    find: '  if (unit === undefined) throw $panic("assertion failed: self.is_char_boundary(idx)", raisedAt);\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "string_insert_boundary"],
   },

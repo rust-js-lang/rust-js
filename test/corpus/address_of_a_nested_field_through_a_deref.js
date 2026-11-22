@@ -30,7 +30,11 @@ function first(items) {
 
 function main() {
   const cell = { value: ps() };
-  const borrow = $borrow($storedValue(cell, 4), true);
+  const borrow = $borrow(
+    $storedValue(cell, 4),
+    "test/corpus/address_of_a_nested_field_through_a_deref.rs:27:33",
+    true,
+  );
   try {
     $storedItems(borrow.value, 8);
   } catch (error) {
@@ -46,7 +50,10 @@ function main() {
   }
   let tmp;
   try {
-    tmp = $borrow($storedValue(cell, 4));
+    tmp = $borrow(
+      $storedValue(cell, 4),
+      "test/corpus/address_of_a_nested_field_through_a_deref.rs:28:42",
+    );
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -56,7 +63,10 @@ function main() {
   const seen = [];
   let tmp$1;
   try {
-    tmp$1 = $borrow($storedValue(cell, 4));
+    tmp$1 = $borrow(
+      $storedValue(cell, 4),
+      "test/corpus/address_of_a_nested_field_through_a_deref.rs:30:22",
+    );
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -71,7 +81,10 @@ function main() {
   for (let i = 0; i < end; i++) {
     let tmp;
     try {
-      tmp = $borrow($storedValue(cell, 4));
+      tmp = $borrow(
+        $storedValue(cell, 4),
+        "test/corpus/address_of_a_nested_field_through_a_deref.rs:31:37",
+      );
     } catch (error) {
       $unborrow(borrow);
       throw error;
@@ -88,7 +101,10 @@ function main() {
       continue;
     }
     $unborrow(borrow);
-    throw $stringPanic(`index out of bounds: the len is 3 but the index is ${i}`);
+    throw $stringPanic(
+      `index out of bounds: the len is 3 but the index is ${i}`,
+      "test/corpus/address_of_a_nested_field_through_a_deref.rs:31:30",
+    );
   }
   try {
     console.log(`ref [${seen.join(", ")}]`);

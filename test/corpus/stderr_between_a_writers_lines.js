@@ -8,6 +8,7 @@ import {
   $fmtPrintFailed,
   $fmtWritten,
   $out,
+  $panic,
   $printing,
   $sink,
 } from "@rust-js/std";
@@ -52,7 +53,7 @@ function panicsDisplay_fmt(panics, options) {
   f.write("<");
   $out("p\n");
   $eprint("err p\n");
-  throw new Error("stopped");
+  throw $panic("stopped", "test/corpus/stderr_between_a_writers_lines.rs:48:9");
 }
 
 export const failsDisplay = { fmt: failsDisplay_fmt };

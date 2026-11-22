@@ -49,9 +49,13 @@ function main() {
   pass(undefined);
   const shown = `() and ${(weak(), "(Weak)")}`;
   console.log(`${shown}`);
-  console.log(`${($unwrapErr(decoded([56606])), "invalid utf-16: lone surrogate found")}`);
+  console.log(
+    `${($unwrapErr(decoded([56606]), "test/corpus/text_of_a_value_made_by_a_call.rs:47:39"), "invalid utf-16: lone surrogate found")}`,
+  );
   const checked = $catchUnwind(() => {
-    console.log(`${($unwrapErr(decoded([104, 105])), "invalid utf-16: lone surrogate found")}`);
+    console.log(
+      `${($unwrapErr(decoded([104, 105]), "test/corpus/text_of_a_value_made_by_a_call.rs:49:45"), "invalid utf-16: lone surrogate found")}`,
+    );
   });
   console.log(`unwrap_err of Ok panicked: ${checked.TAG === "Err"}`);
 }

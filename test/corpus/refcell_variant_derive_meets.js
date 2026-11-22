@@ -30,7 +30,7 @@ function count(holder) {
   if (holder.TAG === "Full") {
     const item = $fieldCell(holder, "item");
     if (item.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/refcell_variant_derive_meets.rs:40:49");
     }
     return countOf(item.value);
   } else {
@@ -42,7 +42,10 @@ function bump(holder) {
   const n = count(holder);
   if (holder.TAG === "Full") {
     const item = $fieldCell(holder, "item");
-    $cellReplace($borrowMut(item), { TAG: "Count", _0: (n + 1) & 255 });
+    $cellReplace($borrowMut(item, "test/corpus/refcell_variant_derive_meets.rs:48:14"), {
+      TAG: "Count",
+      _0: (n + 1) & 255,
+    });
   }
 }
 
@@ -55,7 +58,11 @@ function main() {
     holder$1.TAG === "Full"
       ? {
           ...holder$1,
-          item: $withBorrow($fieldCell(holder$1, "item"), (value) => itemClone_clone(value)),
+          item: $withBorrow(
+            $fieldCell(holder$1, "item"),
+            (value) => itemClone_clone(value),
+            "test/corpus/refcell_variant_derive_meets.rs:56:27",
+          ),
         }
       : holder$1;
   console.log(`${count(first)} ${count("Empty")}`);
@@ -64,7 +71,11 @@ function main() {
     holder$1.TAG === "Full"
       ? {
           ...holder$1,
-          item: $withBorrow($fieldCell(holder$1, "item"), (value) => itemClone_clone(value)),
+          item: $withBorrow(
+            $fieldCell(holder$1, "item"),
+            (value) => itemClone_clone(value),
+            "test/corpus/refcell_variant_derive_meets.rs:59:28",
+          ),
         }
       : holder$1;
   console.log(`${count(second)}`);

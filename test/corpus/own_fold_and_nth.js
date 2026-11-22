@@ -234,11 +234,11 @@ function main() {
   );
   let text = Array.from(
     $folded(
-      iterator_map(up(), (x) => $unwrap($fromDigit(x, 10)), {
-        next: upIterator_next,
-        fold: upIterator_fold,
-        nth: upIterator_nth,
-      }),
+      iterator_map(
+        up(),
+        (x) => $unwrap($fromDigit(x, 10), "test/corpus/own_fold_and_nth.rs:73:61"),
+        { next: upIterator_next, fold: upIterator_fold, nth: upIterator_nth },
+      ),
     ),
   ).join("");
   console.log(`string ${text}`);
@@ -357,7 +357,7 @@ function main() {
   console.log(`extend set ${set.size}`);
   text = "";
   $extendText(
-    iterator_map(up(), (x) => $unwrap($fromDigit(x, 10)), {
+    iterator_map(up(), (x) => $unwrap($fromDigit(x, 10), "test/corpus/own_fold_and_nth.rs:95:54"), {
       next: upIterator_next,
       fold: upIterator_fold,
       nth: upIterator_nth,

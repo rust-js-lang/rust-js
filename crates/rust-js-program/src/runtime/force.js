@@ -3,7 +3,7 @@
 function $force(lazy) {
   const init = lazy.init;
   if (init !== undefined) {
-    if (init === null) throw new Error("LazyCell instance has previously been poisoned");
+    if (init === null) throw $panic("LazyCell instance has previously been poisoned", $stdSites.lazyCellPoisoned[0]);
     lazy.init = null;
     lazy.value = init();
     lazy.init = undefined;

@@ -625,7 +625,10 @@ function wrapperBoom(IIterator, dropI, dropIItem) {
               dropIItem?.(item);
             });
           });
-          throw $stringPanic(`boom at ${at}`);
+          throw $stringPanic(
+            `boom at ${at}`,
+            "test/corpus/match_moves_a_part_or_the_whole.rs:164:17",
+          );
         }
         result = back.length;
         try {

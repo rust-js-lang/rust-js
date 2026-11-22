@@ -8,10 +8,10 @@ export function entry() {
 
 function main() {
   const cell = [1];
-  const kept = $borrowMut(cell, true);
+  const kept = $borrowMut(cell, "test/corpus/refcell_let_guard_kept.rs:12:22", true);
   console.log(`${kept.length}`);
   try {
-    console.log(`${$borrow(cell).length}`);
+    console.log(`${$borrow(cell, "test/corpus/refcell_let_guard_kept.rs:16:25").length}`);
   } finally {
     $unborrow(kept);
   }

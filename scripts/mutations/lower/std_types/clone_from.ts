@@ -1,8 +1,7 @@
 // Mutations of crates/rust-js-lower/src/std_types/clone_from.rs (#919, #922, #927, #928).
 import type { Mutation } from "../../../mutations";
 
-export const mutations: Mutation[] = [
-  {
+export const mutations: Mutation[] = [  {
     name: "clone-from-slice-own-unused",
     breaks:
       "`clone_from_slice` and `fill` of items with their own `clone_from` are refused",
@@ -87,7 +86,7 @@ export const mutations: Mutation[] = [
     name: "clone-into-array-replaced",
     breaks: "an array's `clone_from` is `*w = v.clone()`, every clone before any drop, not each item written over (#922)",
     file: "crates/rust-js-lower/src/std_types/clone_from.rs",
-    find: "            return Ok(Some(CloneInto {\n                helper: \"$cloneFromSlice\",\n                args,\n            }));\n",
+    find: "            return Ok(Some(CloneInto {\n                helper: \"$cloneEach\",\n                args,\n            }));\n",
     replace: "            return Ok(None);\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
   },

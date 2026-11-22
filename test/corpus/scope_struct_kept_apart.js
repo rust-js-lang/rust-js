@@ -176,6 +176,7 @@ function unit() {
       "Eq",
       method.TAG === "Ok" ? `Ok(${method._0})` : `Err(${$debugStr(method._0)})`,
       value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`,
+      "test/corpus/scope_struct_kept_apart.rs:216:5",
     );
   }
   const test = Unit.test({
@@ -192,6 +193,7 @@ function unit() {
       "Eq",
       test.TAG === "Ok" ? `Ok(${test._0})` : `Err(${$debugStr(test._0)})`,
       value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugStr(value$1._0)})`,
+      "test/corpus/scope_struct_kept_apart.rs:217:5",
     );
   }
   return 8;

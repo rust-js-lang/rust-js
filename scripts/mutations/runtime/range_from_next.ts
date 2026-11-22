@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "range-from-char-unchecked",
     breaks: "an `a..` of `char`s steps past `char::MAX` to nothing, where std panics `overflow in `Step::forward``",
     file: "crates/rust-js-program/src/runtime/range_from_next.js",
-    find: "    if (next === undefined) throw $stringPanic(\"overflow in `Step::forward`\");\n",
+    find: "    if (next === undefined) throw $stringPanic(\"overflow in `Step::forward`\", $stdSites.stepForward[0]);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_from_wraps.rs$"],
   },

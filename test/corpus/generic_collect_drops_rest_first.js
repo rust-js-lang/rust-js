@@ -19,6 +19,7 @@ import {
   $lazyChain,
   $mapEnds,
   $next,
+  $panic,
   $roomForHint,
   $slicing,
   $stepsOf,
@@ -41,7 +42,7 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === BOOM) {
     BOOM = 0;
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/generic_collect_drops_rest_first.rs:26:13");
   }
 }
 
@@ -269,7 +270,7 @@ function kept(src, TSize, TAlign, IInPlace, dropT, dropI) {
       const previous = CALLS;
       CALLS = (previous + 1) >>> 0;
       if (previous === 2) {
-        throw new Error("filter");
+        throw $panic("filter", "test/corpus/generic_collect_drops_rest_first.rs:87:17");
       }
       return true;
     },

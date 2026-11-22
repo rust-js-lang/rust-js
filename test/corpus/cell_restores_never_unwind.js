@@ -18,7 +18,7 @@ let depth = 0;
 
 function work(n) {
   if (n > 100) {
-    throw $stringPanic(`too big: ${n}`);
+    throw $stringPanic(`too big: ${n}`, "test/corpus/cell_restores_never_unwind.rs:83:9");
   }
   return n + 1;
 }

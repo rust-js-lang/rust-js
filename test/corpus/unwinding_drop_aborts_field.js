@@ -14,14 +14,20 @@ function held(n) {
   };
   if (n > 0) {
     try {
-      throw $stringPanic(`unwinding with ${parts.bomb[0]}`);
+      throw $stringPanic(
+        `unwinding with ${parts.bomb[0]}`,
+        "test/corpus/unwinding_drop_aborts_field.rs:37:9",
+      );
     } catch (error) {
       $cleanup(() => {
         console.log(`drop ${parts.first[0]}`);
         try {
           console.log(`bomb ${parts.bomb[0]}`);
           if (parts.bomb[0] > 1) {
-            throw $stringPanic(`bomb ${parts.bomb[0]} went off`);
+            throw $stringPanic(
+              `bomb ${parts.bomb[0]} went off`,
+              "test/corpus/unwinding_drop_aborts_field.rs:19:13",
+            );
           }
         } finally {
           console.log(`drop ${parts.last[0]}`);
@@ -34,7 +40,10 @@ function held(n) {
   try {
     console.log(`bomb ${parts.bomb[0]}`);
     if (parts.bomb[0] > 1) {
-      throw $stringPanic(`bomb ${parts.bomb[0]} went off`);
+      throw $stringPanic(
+        `bomb ${parts.bomb[0]} went off`,
+        "test/corpus/unwinding_drop_aborts_field.rs:19:13",
+      );
     }
   } catch (error) {
     throw $unwindsOn(error);

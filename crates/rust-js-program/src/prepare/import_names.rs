@@ -213,6 +213,7 @@ fn expr(e: &Expr, visitor: &mut Words<'_>) {
         | ExprKind::Unary(_, a)
         | ExprKind::Await(a)
         | ExprKind::Unbound(a)
+        | ExprKind::RaisedAt(a)
         | ExprKind::Spread(a)
         | ExprKind::Stringed(a)
         | ExprKind::Converted(_, a)

@@ -1384,7 +1384,7 @@ pub fn changed(node: &Fiber, clear: &dyn Fn(&Fiber)) -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("const sibling = node.sibling;\n");
-  expect(js).toContain("const sibling = $unwrap(node.sibling);\n");
+  expect(js).toContain("const sibling = $unwrap(node.sibling, \"lib.rs:28:53\");\n");
   const lib = await import(join(dir, "lib.js"));
   const uncle = lib.fiber("uncle", null, null);
   const parent = lib.fiber("parent", uncle, null);

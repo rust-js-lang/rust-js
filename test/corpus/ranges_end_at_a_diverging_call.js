@@ -8,13 +8,16 @@ export function entry() {
 
 function guarded(n) {
   if (n > 100) {
-    throw $stringPanic(`too big: ${n}`);
+    throw $stringPanic(`too big: ${n}`, "test/corpus/ranges_end_at_a_diverging_call.rs:11:9");
   }
   return n + 1;
 }
 
 function tooBig(n) {
-  throw $stringPanic(`too big, through a call: ${n}`);
+  throw $stringPanic(
+    `too big, through a call: ${n}`,
+    "test/corpus/ranges_end_at_a_diverging_call.rs:17:5",
+  );
 }
 
 function throughACall(n) {
@@ -26,7 +29,10 @@ function throughACall(n) {
 
 function pastUnreachable(n) {
   if (n > 100) {
-    throw $stringPanic(`internal error: entered unreachable code: past 100: ${n}`);
+    throw $stringPanic(
+      `internal error: entered unreachable code: past 100: ${n}`,
+      "test/corpus/ranges_end_at_a_diverging_call.rs:31:9",
+    );
   }
   const small = n;
   return small + 1;
@@ -42,7 +48,10 @@ function countTo(start, stop) {
       return i;
     }
     if (i > 100) {
-      throw $stringPanic(`ran past 100: ${i}`);
+      throw $stringPanic(
+        `ran past 100: ${i}`,
+        "test/corpus/ranges_end_at_a_diverging_call.rs:46:13",
+      );
     }
     i++;
   }
@@ -53,7 +62,7 @@ function neverEnds(start) {
   let i = start;
   while (true) {
     if (i > 100) {
-      throw $stringPanic(`never ends: ${i}`);
+      throw $stringPanic(`never ends: ${i}`, "test/corpus/ranges_end_at_a_diverging_call.rs:57:13");
     }
     i++;
   }
@@ -81,7 +90,10 @@ function main() {
     console.log(`never ends ${n} ${value$5 == null ? "None" : `Some(${value$5})`}`);
     const caught = $catchUnwind(() => {
       if (n > 100) {
-        throw $stringPanic(`too big in a closure: ${n}`);
+        throw $stringPanic(
+          `too big in a closure: ${n}`,
+          "test/corpus/ranges_end_at_a_diverging_call.rs:73:17",
+        );
       }
       return n + 1;
     });

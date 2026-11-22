@@ -50,7 +50,7 @@ function random(below) {
   x = (x ^ (x >>> 17)) >>> 0;
   x = (x ^ (x << 5)) >>> 0;
   seed = x;
-  return $rem(x, below) >>> 0;
+  return $rem(x, below, "test/corpus/btree_nodes_unwinds.rs:28:5") >>> 0;
 }
 
 function log(what) {
@@ -92,7 +92,7 @@ function keyOrd_cmp(key, other) {
   if (at > 0) {
     panicAt = at - 1;
     if (at === 1) {
-      throw $stringPanic(`cmp ${key.id} ${other.id}`);
+      throw $stringPanic(`cmp ${key.id} ${other.id}`, "test/corpus/btree_nodes_unwinds.rs:77:17");
     }
   }
   return $cmp(key.k, other.k);

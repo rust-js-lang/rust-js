@@ -20,7 +20,10 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] >= 80) {
-    throw $stringPanic(`drop ${d[0]}`);
+    throw $stringPanic(
+      `drop ${d[0]}`,
+      "test/corpus/collected_adapters_dropped_after_a_predicates_panic_abort.rs:14:13",
+    );
   }
 }
 

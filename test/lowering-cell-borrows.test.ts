@@ -71,7 +71,7 @@ pub fn touch(root: &Root) {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  const expirationTimes = root.expirationTimes;\n");
-  expect(js).toContain("  return $index(root.expirationTimes, index);\n");
+  expect(js).toContain("  return $index(root.expirationTimes, index, \"lib.rs:30:35\");\n");
   expect(js).not.toContain("$borrowMut(root.expirationTimes");
   expect(js).toContain("$borrowMut(root.reported");
   const lib = await import(join(dir, "lib.js"));
@@ -181,7 +181,7 @@ pub fn touched(text: &RefCell<String>) {
   run([compiler, join(counted, "lib.rs"), "-o", join(counted, "lib.js"), ...withBindings]);
   const out = readFileSync(join(counted, "lib.js"), "utf8");
   const of = (name: string) => out.slice(out.indexOf(`export function ${name}(`), out.indexOf("\n}\n", out.indexOf(`export function ${name}(`)));
-  expect(["tagged", "reassigned", "settled"].filter((name) => !of(name).includes("$borrow(text, true)"))).toEqual([]);
+  expect(["tagged", "reassigned", "settled"].filter((name) => !/\$borrow\(text, "lib\.rs:\d+:\d+", true\)/.test(of(name)))).toEqual([]);
   const lib = await import(join(counted, "lib.js"));
   const text = { value: "a" };
   expect(await lib.tagged(text)).toEqual({ text: "a" });
@@ -255,7 +255,7 @@ pub fn touch(root: &Root) {
   expect(js).toContain("  const entanglements = root.entanglements;\n");
   expect(js).not.toContain("$borrow(root.entanglements");
   // What JS calls `apply` with may be any function: counted.
-  expect(js).toContain("$borrow(root.given, true)");
+  expect(js).toContain("$borrow(root.given, \"lib.rs:46:28\", true)");
   const lib = await import(join(dir, "lib.js"));
   const r = lib.root();
   expect(lib.entangledLanes(r, 0b101)).toBe(0b101);
@@ -332,7 +332,7 @@ pub fn touch(root: &Root) {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function expire(root, lanes) {\n  const times = root.times;\n  const index = clz32(lanes);\n");
   // What a fn pointer JS gives returns may be any function: counted.
-  expect(js).toContain("$borrow(root.given, true)");
+  expect(js).toContain("$borrow(root.given, \"lib.rs:44:28\", true)");
   const lib = await import(join(dir, "lib.js"));
   const r = lib.root();
   expect(lib.expire(r, 1)).toBe(31);
@@ -458,8 +458,8 @@ pub fn first(parent: &Node) -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("function push(siblings, child) {\n  siblings.push(child);\n}");
-  expect(js).toContain("export function first(parent) {\n  return $index(parent.children, 0).name;\n}");
-  expect(js).toContain("const borrow = $borrow(root.hooks, true);");
+  expect(js).toContain("export function first(parent) {\n  return $index(parent.children, 0, \"lib.rs:44:29\").name;\n}");
+  expect(js).toContain("const borrow = $borrow(root.hooks, \"lib.rs:20:16\", true);");
   const lib = await import(join(dir, "lib.js"));
   const r = lib.root();
   const parent = lib.node("root");
@@ -671,7 +671,7 @@ pub fn take_hooks() -> usize {
   expect(js).not.toContain("listeners.borrows");
   // A listener may change the cell, so `count`, read before the loop, bounds
   // no index past the first call: each is checked (#1885).
-  expect(js).toContain("      const listener = $index(listeners, index);\n");
+  expect(js).toContain("        const listener = $index(listeners, index, \"lib.rs:19:61\");\n");
   expect(js).toContain("$withBorrow(\n    hooks,");
   const lib = await import(join(dir, "lib.js"));
   const controller = lib.controller();
@@ -730,7 +730,7 @@ pub fn listened(listener: Rc<dyn Fn()>) -> usize {
   const borrowed = await import(join(lent, "lib.js"));
   borrowed.addHook(() => borrowed.clearHooks());
   expect(() => borrowed.runHooks()).toThrow("already borrowed");
-  expect(readFileSync(join(lent, "lib.js"), "utf8")).toContain("if (listeners.borrows) {\n    $alreadyBorrowed();");
+  expect(readFileSync(join(lent, "lib.js"), "utf8")).toContain("if (listeners.borrows) {\n    $alreadyBorrowed(\"lib.rs:26:15\");");
 });
 
 // React's update clone, `{ .., gesture: update.gesture, .., next: null }`: a
@@ -941,7 +941,7 @@ pub fn grab() -> bool {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function last(node) {\n  let next;\n  while ((next = node.next) != null) {\n    node = next;\n  }\n  return node;\n}");
-  expect(js).toContain('const borrow = $borrow($fieldCell(slot, "item"), true);');
+  expect(js).toContain('const borrow = $borrow($fieldCell(slot, "item"), "lib.rs:43:15", true);');
   const lib = await import(join(dir, "lib.js"));
   expect(lib.signal(lib.chain(4))()).toBe(3);
   expect(() => lib.grab()).toThrow("RefCell already borrowed");

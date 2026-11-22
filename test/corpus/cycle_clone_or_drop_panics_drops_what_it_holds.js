@@ -34,7 +34,10 @@ function stepsClone_clone(steps) {
   const n = (clones + 1) >>> 0;
   clones = n;
   if (n === panicCloneAt) {
-    throw $stringPanic(`clone ${n}`);
+    throw $stringPanic(
+      `clone ${n}`,
+      "test/corpus/cycle_clone_or_drop_panics_drops_what_it_holds.rs:39:13",
+    );
   }
   console.log(`clone ${steps.id} as ${(((steps.id * 10) >>> 0) + n) >>> 0}`);
   return {
@@ -46,7 +49,10 @@ function stepsClone_clone(steps) {
 function stepsDrop_drop(steps) {
   console.log(`drop Steps ${steps.id}`);
   if (steps.id === panicDropOf) {
-    throw $stringPanic(`drop ${steps.id}`);
+    throw $stringPanic(
+      `drop ${steps.id}`,
+      "test/corpus/cycle_clone_or_drop_panics_drops_what_it_holds.rs:53:13",
+    );
   }
 }
 

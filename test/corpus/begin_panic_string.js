@@ -10,7 +10,7 @@ function main() {
   const left = 3;
   const message = `${left} left`;
   if (left > 0) {
-    throw $stringPanic(message);
+    throw $stringPanic(message, "test/corpus/begin_panic_string.rs:8:9");
   }
 }
 //# sourceMappingURL=case.js.map

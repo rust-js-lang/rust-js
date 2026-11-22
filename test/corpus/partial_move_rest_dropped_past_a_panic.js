@@ -17,7 +17,10 @@ export function entry() {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
   if (loud[0].endsWith("!") && !$panicking()) {
-    throw $stringPanic(`${loud[0]} panicked`);
+    throw $stringPanic(
+      `${loud[0]} panicked`,
+      "test/corpus/partial_move_rest_dropped_past_a_panic.rs:13:13",
+    );
   }
 }
 

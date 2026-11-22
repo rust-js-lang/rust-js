@@ -100,6 +100,7 @@ export async function create(new$) {
   json.set("content-type", "application/json");
   const body = $unwrapOk(
     $toJson(new$, newContactSerialize_serialize, false),
+    "frontend/src/api.rs:76:43",
     "JSON of a model",
     $debugJsonError,
   );

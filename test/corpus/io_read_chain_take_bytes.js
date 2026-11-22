@@ -59,13 +59,20 @@ function linesOf(b, BBufRead) {
   return Array.from(
     $iterator(bufRead_lines(b, BBufRead, BBufRead.Read()), (iterator) =>
       linesIterator_next(iterator, BBufRead),
-    ).map((line) => $unwrapOk(line, undefined, $ioErrorDebug)),
+    ).map((line) =>
+      $unwrapOk(line, "test/corpus/io_read_chain_take_bytes.rs:17:31", undefined, $ioErrorDebug),
+    ),
   );
 }
 
 function until(b, byte, BBufRead) {
   const v = [];
-  $unwrapOk(bufRead_readUntil(b, byte, v, BBufRead, BBufRead.Read()), undefined, $ioErrorDebug);
+  $unwrapOk(
+    bufRead_readUntil(b, byte, v, BBufRead, BBufRead.Read()),
+    "test/corpus/io_read_chain_take_bytes.rs:22:32",
+    undefined,
+    $ioErrorDebug,
+  );
   return v;
 }
 
@@ -84,17 +91,19 @@ function main() {
   const chained = read_chain(a, b, $sliceReader, $sliceReader);
   const buf = [0, 0, 0, 0];
   console.log(
-    `${$unwrapOk(ChainRead.read({ value: chained }, buf), undefined, $ioErrorDebug)} [${buf.join(", ")}]`,
+    `${$unwrapOk(ChainRead.read({ value: chained }, buf), "test/corpus/io_read_chain_take_bytes.rs:32:51", undefined, $ioErrorDebug)} [${buf.join(", ")}]`,
   );
   console.log(
-    `${$unwrapOk(ChainRead.read({ value: chained }, buf), undefined, $ioErrorDebug)} [${buf.join(", ")}]`,
+    `${$unwrapOk(ChainRead.read({ value: chained }, buf), "test/corpus/io_read_chain_take_bytes.rs:33:51", undefined, $ioErrorDebug)} [${buf.join(", ")}]`,
   );
   let line = "";
   const arg = $cellOf(chained);
   const buf$1 = { value: line };
   const readLine = bufRead_readLine(arg, buf$1, ChainBufRead, ChainRead);
   line = buf$1.value;
-  console.log(`${$unwrapOk(readLine, undefined, $ioErrorDebug)} ${$debugStr(line)}`);
+  console.log(
+    `${$unwrapOk(readLine, "test/corpus/io_read_chain_take_bytes.rs:35:58", undefined, $ioErrorDebug)} ${$debugStr(line)}`,
+  );
   let rest = "";
   console.log(
     `${$unwrapOk(
@@ -110,11 +119,14 @@ function main() {
         },
         true,
       ),
+      "test/corpus/io_read_chain_take_bytes.rs:37:63",
       undefined,
       $ioErrorDebug,
     )} ${$debugStr(rest)}`,
   );
-  console.log(`${$unwrapOk(ChainRead.read({ value: chained }, buf), undefined, $ioErrorDebug)}`);
+  console.log(
+    `${$unwrapOk(ChainRead.read({ value: chained }, buf), "test/corpus/io_read_chain_take_bytes.rs:38:43", undefined, $ioErrorDebug)}`,
+  );
 
   // A character split between the two.
   const left = [120, 195];
@@ -133,6 +145,7 @@ function main() {
       },
       true,
     ),
+    "test/corpus/io_read_chain_take_bytes.rs:44:46",
     undefined,
     $ioErrorDebug,
   );
@@ -142,7 +155,7 @@ function main() {
   const buf$2 = { value: s$1 };
   const value = bufRead_readLine(arg$1, buf$2, ChainBufRead, ChainRead);
   s$1 = buf$2.value;
-  $unwrapOk(value, undefined, $ioErrorDebug);
+  $unwrapOk(value, "test/corpus/io_read_chain_take_bytes.rs:47:41", undefined, $ioErrorDebug);
   console.log(`${$debugStr(s$1)}`);
   const bad = [195];
   s$1 = "kept";
@@ -158,16 +171,17 @@ function main() {
         },
       },
     ),
+    "test/corpus/io_read_chain_take_bytes.rs:51:62",
   );
   console.log(`${failed.kind} ${$ioErrorDisplay(failed)} ${$debugStr(s$1)}`);
 
   let v = [9];
   console.log(
-    `${$unwrapOk(ChainRead.readToEnd({ value: read_chain(a, b, $sliceReader, $sliceReader) }, v), undefined, $ioErrorDebug)} [${v.join(", ")}]`,
+    `${$unwrapOk(ChainRead.readToEnd({ value: read_chain(a, b, $sliceReader, $sliceReader) }, v), "test/corpus/io_read_chain_take_bytes.rs:55:57", undefined, $ioErrorDebug)} [${v.join(", ")}]`,
   );
   v = [];
   console.log(
-    `${$unwrapOk(chainBufRead_readUntil(read_chain(a, b, $sliceReader, $sliceReader), 100, v, $sliceReader, $sliceReader), undefined, $ioErrorDebug)} [${v.join(", ")}]`,
+    `${$unwrapOk(chainBufRead_readUntil(read_chain(a, b, $sliceReader, $sliceReader), 100, v, $sliceReader, $sliceReader), "test/corpus/io_read_chain_take_bytes.rs:57:62", undefined, $ioErrorDebug)} [${v.join(", ")}]`,
   );
   console.log(
     `[${linesOf(read_chain(a, b, $sliceReader, $sliceReader), ChainBufRead)
@@ -183,6 +197,7 @@ function main() {
   failed = $writeExpectErr(
     $writeTry(() => ChainRead.readExact({ value: short }, three)),
     "called `Result::unwrap_err()` on an `Ok` value",
+    "test/corpus/io_read_chain_take_bytes.rs:62:47",
   );
   console.log(`${failed.kind} ${$ioErrorDisplay(failed)}`);
   let [one, two] = Chain.intoInner(read_chain(a, b, $sliceReader, $sliceReader));
@@ -192,17 +207,17 @@ function main() {
   let c = read_chain(a, b, $sliceReader, $sliceReader);
   v = [];
   console.log(
-    `${$unwrapOk(chainBufRead_readUntil(c, 99, v, $sliceReader, $sliceReader), undefined, $ioErrorDebug)} [${v.join(", ")}]`,
+    `${$unwrapOk(chainBufRead_readUntil(c, 99, v, $sliceReader, $sliceReader), "test/corpus/io_read_chain_take_bytes.rs:70:53", undefined, $ioErrorDebug)} [${v.join(", ")}]`,
   );
   console.log(
-    `${$unwrapOk(chainBufRead_readUntil(c, 10, v, $sliceReader, $sliceReader), undefined, $ioErrorDebug)} [${v.join(", ")}]`,
+    `${$unwrapOk(chainBufRead_readUntil(c, 10, v, $sliceReader, $sliceReader), "test/corpus/io_read_chain_take_bytes.rs:71:54", undefined, $ioErrorDebug)} [${v.join(", ")}]`,
   );
   console.log(
     `[${until($cellOf(c), 122, ChainBufRead).join(", ")}] [${until($cellOf(c), 122, ChainBufRead).join(", ")}]`,
   );
   c = read_chain(a, b, $sliceReader, $sliceReader);
   console.log(
-    `[${until($cellOf(c), 98, ChainBufRead).join(", ")}] [${$unwrapOk(ChainBufRead.fillBuf({ value: c }), undefined, $ioErrorDebug).join(", ")}]`,
+    `[${until($cellOf(c), 98, ChainBufRead).join(", ")}] [${$unwrapOk(ChainBufRead.fillBuf({ value: c }), "test/corpus/io_read_chain_take_bytes.rs:74:61", undefined, $ioErrorDebug).join(", ")}]`,
   );
   ChainBufRead.consume({ value: c }, 1);
   const rest$1 = until($cellOf(c), 101, ChainBufRead);
@@ -226,6 +241,7 @@ function main() {
         },
         true,
       ),
+      "test/corpus/io_read_chain_take_bytes.rs:82:58",
       undefined,
       $ioErrorDebug,
     )} ${$debugStr(t)} ${Take.limit(taken)}`,
@@ -246,6 +262,7 @@ function main() {
         },
         true,
       ),
+      "test/corpus/io_read_chain_take_bytes.rs:85:58",
       undefined,
       $ioErrorDebug,
     )} ${$debugStr(t$1)} ${Take.limit(taken)}`,
@@ -254,6 +271,7 @@ function main() {
   const out = [];
   const value$2 = $unwrapOk(
     TakeRead$1.readToEnd({ value: limited }, out),
+    "test/corpus/io_read_chain_take_bytes.rs:88:63",
     undefined,
     $ioErrorDebug,
   );
@@ -261,11 +279,21 @@ function main() {
   console.log(`${value$2} [${out.join(", ")}] ${limit}`);
   const part = read_take([97, 98, 99, 100, 101, 102], 4n, $sliceReader);
   two = [0, 0];
-  const value$3 = $unwrapOk(TakeRead.read({ value: part }, two), undefined, $ioErrorDebug);
+  const value$3 = $unwrapOk(
+    TakeRead.read({ value: part }, two),
+    "test/corpus/io_read_chain_take_bytes.rs:91:51",
+    undefined,
+    $ioErrorDebug,
+  );
   const value$4 = Take.limit(part);
   console.log(`${value$3} [${two.join(", ")}] ${value$4}`);
   const five = new Array(5).fill(0);
-  const value$5 = $unwrapOk(TakeRead.read({ value: part }, five), undefined, $ioErrorDebug);
+  const value$5 = $unwrapOk(
+    TakeRead.read({ value: part }, five),
+    "test/corpus/io_read_chain_take_bytes.rs:93:53",
+    undefined,
+    $ioErrorDebug,
+  );
   const value$6 = Take.limit(part);
   console.log(`${value$5} [${five.join(", ")}] ${value$6}`);
   console.log(`[${Take.getRef(part).join(", ")}]`);
@@ -279,12 +307,12 @@ function main() {
   const buf$3 = { value: l };
   const value$7 = bufRead_readLine(arg$2, buf$3, TakeBufRead, TakeRead);
   l = buf$3.value;
-  $unwrapOk(value$7, undefined, $ioErrorDebug);
+  $unwrapOk(value$7, "test/corpus/io_read_chain_take_bytes.rs:97:29", undefined, $ioErrorDebug);
   const arg$3 = $cellOf(lines);
   const buf$4 = { value: l };
   const value$8 = bufRead_readLine(arg$3, buf$4, TakeBufRead, TakeRead);
   l = buf$4.value;
-  $unwrapOk(value$8, undefined, $ioErrorDebug);
+  $unwrapOk(value$8, "test/corpus/io_read_chain_take_bytes.rs:98:29", undefined, $ioErrorDebug);
   const arg$4 = Take.limit(lines);
   console.log(`${$debugStr(l)} ${arg$4}`);
   console.log(
@@ -307,6 +335,7 @@ function main() {
       },
       true,
     ),
+    "test/corpus/io_read_chain_take_bytes.rs:103:36",
     undefined,
     $ioErrorDebug,
   );
@@ -317,11 +346,11 @@ function main() {
   console.log(`[${Take.intoInner(read_take([97, 98, 99], 2n, $sliceReader)).join(", ")}]`);
   const t$3 = read_take([120, 121, 122], 2n, $sliceReader);
   console.log(
-    `[${$unwrapOk(TakeBufRead.fillBuf({ value: t$3 }), undefined, $ioErrorDebug).join(", ")}]`,
+    `[${$unwrapOk(TakeBufRead.fillBuf({ value: t$3 }), "test/corpus/io_read_chain_take_bytes.rs:108:35", undefined, $ioErrorDebug).join(", ")}]`,
   );
   TakeBufRead.consume({ value: t$3 }, 1);
   console.log(
-    `[${$unwrapOk(TakeBufRead.fillBuf({ value: t$3 }), undefined, $ioErrorDebug).join(", ")}]`,
+    `[${$unwrapOk(TakeBufRead.fillBuf({ value: t$3 }), "test/corpus/io_read_chain_take_bytes.rs:110:35", undefined, $ioErrorDebug).join(", ")}]`,
   );
   console.log(`[${until($cellOf(t$3), 113, TakeBufRead).join(", ")}] ${Take.limit(t$3)}`);
 
@@ -329,7 +358,9 @@ function main() {
   let bytes = Array.from(
     $iterator(read_bytes([120, 121, 122], $sliceReader), (iterator) =>
       bytesIterator_next(iterator, $sliceReader),
-    ).map((b) => $unwrapOk(b, undefined, $ioErrorDebug)),
+    ).map((b) =>
+      $unwrapOk(b, "test/corpus/io_read_chain_take_bytes.rs:114:58", undefined, $ioErrorDebug),
+    ),
   );
   console.log(`[${bytes.join(", ")}]`);
   bytes = $collectResults(
@@ -345,9 +376,20 @@ function main() {
   );
   const it = read_bytes([112, 113], $sliceReader);
   const next = bytesIterator_next(it, $sliceReader);
-  const map = next != null ? $unwrapOk(next, undefined, $ioErrorDebug) : undefined;
+  const map =
+    next != null
+      ? $unwrapOk(next, "test/corpus/io_read_chain_take_bytes.rs:120:42", undefined, $ioErrorDebug)
+      : undefined;
   const next$1 = bytesIterator_next(it, $sliceReader);
-  const value$10 = next$1 != null ? $unwrapOk(next$1, undefined, $ioErrorDebug) : undefined;
+  const value$10 =
+    next$1 != null
+      ? $unwrapOk(
+          next$1,
+          "test/corpus/io_read_chain_take_bytes.rs:120:73",
+          undefined,
+          $ioErrorDebug,
+        )
+      : undefined;
   console.log(
     `${map == null ? "None" : `Some(${map})`} ${value$10 == null ? "None" : `Some(${value$10})`} ${bytesIterator_next(it, $sliceReader) == null}`,
   );
@@ -357,7 +399,11 @@ function main() {
   const dynamic = { value: c, impl: ChainRead };
   two = [0, 0, 0];
   const result$1 = $writeTry(() => dynamic.impl.readExact(dynamic, two));
-  $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$1,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/io_read_chain_take_bytes.rs:126:34",
+  );
   console.log(`[${two.join(", ")}]`);
   let boxed = { value: read_take([109, 10, 110], 10n, $sliceReader), impl: TakeBufRead };
   const b$1 = { value: boxed };

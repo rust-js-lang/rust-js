@@ -71,8 +71,8 @@ function main() {
   const first = value$3[0] == null ? value$3[0] : [value$3[0][0]];
   const rest = value$3[1];
   const again = value$3[2];
-  $index(rest, 0)[0] = 20;
-  $index(again, 0)[0] = 30;
+  $index(rest, 0, "test/corpus/generic_copied_cloned.rs:38:9")[0] = 20;
+  $index(again, 0, "test/corpus/generic_copied_cloned.rs:39:10")[0] = 30;
   console.log(
     `${first == null ? "None" : `Some(${pDebug_fmt(first)})`} [${rest.map((item) => pDebug_fmt(item)).join(", ")}] [${again.map((item) => pDebug_fmt(item)).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}]`,
   );
@@ -85,14 +85,14 @@ function main() {
   $next(it);
   const later = $clone(it);
   const a = Array.from(it);
-  $index(a, 0)[0] = 9;
+  $index(a, 0, "test/corpus/generic_copied_cloned.rs:45:6")[0] = 9;
   const arg = Array.from(later);
   console.log(
     `[${a.map((item) => pDebug_fmt(item)).join(", ")}] [${arg.map((item) => pDebug_fmt(item)).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}]`,
   );
   const words = ["a", "b", "c"];
   const [left, right] = clonedTwice(words, { fmt: (value) => $debugStr(value) });
-  left[$at(left, 0)] += "!";
+  left[$at(left, 0, "test/corpus/generic_copied_cloned.rs:49:9")] += "!";
   console.log(
     `[${left.map((item) => $debugStr(item)).join(", ")}] [${right.map((item) => $debugStr(item)).join(", ")}] [${words.map((item) => $debugStr(item)).join(", ")}]`,
   );

@@ -29,7 +29,7 @@ function pointDrop_drop(point) {
 }
 
 function tail(v) {
-  return $view(v, 1);
+  return $view(v, 1, "test/corpus/slice_range_reverse.rs:35:11");
 }
 
 function bump(part, by) {
@@ -49,32 +49,37 @@ function bound(seen, name, at) {
 }
 
 function flip(v, a, b) {
-  $reverseRange(v, a, b);
+  $reverseRange(v, a, "test/corpus/slice_range_reverse.rs:55:6", b);
 }
 
 function main() {
   const v = [1, 2, 3, 4, 5, 6];
-  $reverseRange(v, 1, 5);
+  $reverseRange(v, 1, "test/corpus/slice_range_reverse.rs:60:6", 5);
   console.log(`[${v.join(", ")}]`);
-  $reverseRange(v, 3);
+  $reverseRange(v, 3, "test/corpus/slice_range_reverse.rs:62:6");
   console.log(`[${v.join(", ")}]`);
-  $reverseRange(v, 0, 2);
+  $reverseRange(v, 0, "test/corpus/slice_range_reverse.rs:64:6", 2);
   console.log(`[${v.join(", ")}]`);
-  $reverseRange(v, 2, 2);
-  $reverseRange(v, 4, 5);
+  $reverseRange(v, 2, "test/corpus/slice_range_reverse.rs:66:6", 2);
+  $reverseRange(v, 4, "test/corpus/slice_range_reverse.rs:67:6", 5);
   v.reverse();
   console.log(`[${v.join(", ")}]`);
-  $reverseRange(v, 1, 4, true);
+  $reverseRange(v, 1, "test/corpus/slice_range_reverse.rs:70:6", 4, true);
   console.log(`[${v.join(", ")}]`);
-  $reverseRange($view(v, 1, 5), 1, 3);
+  $reverseRange(
+    $view(v, 1, "test/corpus/slice_range_reverse.rs:72:6", 5),
+    1,
+    "test/corpus/slice_range_reverse.rs:72:12",
+    3,
+  );
   console.log(`[${v.join(", ")}]`);
-  $reverseRange(tail(v), 2);
+  $reverseRange(tail(v), 2, "test/corpus/slice_range_reverse.rs:74:17");
   console.log(`[${v.join(", ")}]`);
 
   const seen = [];
   const a = [10, 20, 30, 40, 50];
   const range = { start: bound(seen, "start", 0), end: bound(seen, "end", 3) };
-  $reverseRange(a, range.start, range.end);
+  $reverseRange(a, range.start, "test/corpus/slice_range_reverse.rs:79:6", range.end);
   console.log(`[${a.join(", ")}] [${seen.map((item) => $debugStr(item)).join(", ")}]`);
 
   const words = ["a", "b", "c", "d"];
@@ -85,7 +90,7 @@ function main() {
   const length$1 = 3;
 
   function flipFrom(first) {
-    $reverseRange(items, first, length$1);
+    $reverseRange(items, first, "test/corpus/slice_range_reverse.rs:30:19", length$1);
   }
 
   try {
@@ -101,7 +106,7 @@ function main() {
     throw error;
   }
   try {
-    $index(items, 0);
+    $index(items, 0, "test/corpus/slice_range_reverse.rs:91:16");
   } catch (error) {
     $cleanup(() => {
       for (const item of items) {
@@ -113,7 +118,7 @@ function main() {
     throw error;
   }
   try {
-    $unwrap(items[0]).x = 30;
+    $unwrap(items[0], "test/corpus/slice_range_reverse.rs:91:29").x = 30;
   } catch (error) {
     $cleanup(() => {
       for (const item of items) {
@@ -140,7 +145,7 @@ function main() {
   }
   let part;
   try {
-    part = $view(v, 2);
+    part = $view(v, 2, "test/corpus/slice_range_reverse.rs:94:22");
   } catch (error) {
     $cleanup(() => {
       for (const item of items) {
@@ -170,7 +175,10 @@ function main() {
         pointDrop_drop(item);
       }
     }
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/slice_range_reverse.rs:96:5",
+    );
   }
   part[0] = 0;
   try {
@@ -185,7 +193,7 @@ function main() {
     // A view's range is checked where it's made, before what's given after it.
     let early = $catchUnwind(() => {
       const v = [1, 2, 3];
-      const value = $view(v, 5);
+      const value = $view(v, 5, "test/corpus/slice_range_reverse.rs:107:20");
       console.log("by");
       bump(value, 1);
       return v;
@@ -196,7 +204,7 @@ function main() {
       const _loud = { x: 9 };
       const v = [1, 2, 3];
       try {
-        const value = $view(v, 5);
+        const value = $view(v, 5, "test/corpus/slice_range_reverse.rs:118:20");
         const by = counted(calls);
         bump(value, (by + counted(calls)) | 0);
         return v;
@@ -211,7 +219,7 @@ function main() {
     console.log(`${early.TAG === "Err"} ${calls.value}`);
     early = $catchUnwind(() => {
       const v = [1, 2, 3];
-      const value = $view(v, 5);
+      const value = $view(v, 5, "test/corpus/slice_range_reverse.rs:127:20");
       const point = { x: 9 };
       try {
         bump(value, point.x);
@@ -227,13 +235,13 @@ function main() {
     console.log(`${early.TAG === "Err"}`);
     const past = $catchUnwind(() => {
       const v = [1, 2, 3];
-      $reverseRange(v, 1, 4);
+      $reverseRange(v, 1, "test/corpus/slice_range_reverse.rs:133:10", 4);
       return v;
     });
     console.log(`${past.TAG === "Err"}`);
     const v$1 = [1, 2, 3];
     const start = v$1.length;
-    $reverseRange(v$1, start, 2);
+    $reverseRange(v$1, start, "test/corpus/slice_range_reverse.rs:139:6", 2);
     console.log(`[${v$1.join(", ")}]`);
   } catch (error) {
     throw $unwindsOn(error);

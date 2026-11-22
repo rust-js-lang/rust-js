@@ -41,7 +41,7 @@ export const Lexer = {
     };
   },
   number(lexer, first) {
-    let n = $unwrap($toDigit(first, 10));
+    let n = $unwrap($toDigit(first, 10), "examples/lexer.rs:29:40");
     let c;
     while ((c = $peek(lexer.chars)) != null) {
       const d = $toDigit(c, 10);

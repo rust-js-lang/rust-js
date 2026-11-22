@@ -39,7 +39,7 @@ function dClone_clone(d) {
   console.log(`clone ${d[0]}`);
   if (boom === d[0]) {
     boom = 0;
-    throw $stringPanic(`clone ${d[0]}`);
+    throw $stringPanic(`clone ${d[0]}`, "test/corpus/clone_from_generic_std_own.rs:33:13");
   }
   return [d[0]];
 }
@@ -88,6 +88,7 @@ function assignItems(dest, source, TClone, OptionTriviallyCloned, dropT) {
   $cloneFromSlice(
     dest,
     source,
+    "test/corpus/clone_from_generic_std_own.rs:60:10",
     undefined,
     (items, i, from) => {
       if (items[i] != null && from != null && TClone.cloneFrom) {

@@ -2,7 +2,7 @@
 // `$parseInt` reads a narrower integer, its value a BigInt.
 function $parseBig(s, min, max, radix = 10) {
   if (radix < 2 || radix > 36) {
-    throw $stringPanic("from_ascii_bytes_radix: radix must lie in the range `[2, 36]` - found " + radix);
+    throw $stringPanic("from_ascii_bytes_radix: radix must lie in the range `[2, 36]` - found " + radix, $stdSites.fromStrRadix[min < 0n ? "signed" : "unsigned"][0]);
   }
   const error = (message) => ({ TAG: "Err", _0: message });
   if (s === "") return error("cannot parse integer from empty string");

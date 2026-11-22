@@ -13,7 +13,10 @@ function main() {
     if (unset) {
       cell.value = 1;
     }
-    $unwrapOk(unset ? { TAG: "Ok" } : { TAG: "Err", _0: 1 });
+    $unwrapOk(
+      unset ? { TAG: "Ok" } : { TAG: "Err", _0: 1 },
+      "test/corpus/once_cell_reentrant.rs:9:21",
+    );
     return 2;
   });
   console.log(`${value}`);

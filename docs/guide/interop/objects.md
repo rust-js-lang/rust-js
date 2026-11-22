@@ -554,7 +554,7 @@ import { circleShape, rectShape } from "./shape.js";
 import { $index } from "@rust-js/std";
 
 export function largest(shapes) {
-  let best = $index(shapes, 0);
+  let best = $index(shapes, 0, "lib.rs:38:21");
   for (let i = 0; i < shapes.length; i++) {
     const shape = shapes[i];
     if (shape.impl.area(shape.value) > best.impl.area(best.value)) {
@@ -820,7 +820,7 @@ pub fn work(fail: bool) -> u32 {
 ```
 
 ```js
-import { $live, $unwindsOn } from "@rust-js/std";
+import { $live, $panic, $unwindsOn } from "@rust-js/std";
 
 export function work(fail) {
   const name = "outer";
@@ -828,7 +828,7 @@ export function work(fail) {
   try {
     try {
       if (fail) {
-        throw new Error("failed");
+        throw $panic("failed", "lib.rs:15:9");
       }
     } catch (error) {
       throw $unwindsOn(error);

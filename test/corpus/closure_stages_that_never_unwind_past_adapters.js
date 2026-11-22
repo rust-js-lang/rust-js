@@ -15,6 +15,7 @@ import {
   $lazyChain,
   $lazyTakeWhile,
   $next,
+  $panic,
   $range,
   $rangeNext,
   $roomForHint,
@@ -41,14 +42,14 @@ function boom(n) {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (boom(d[0])) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/closure_stages_that_never_unwind_past_adapters.rs:28:13");
   }
 }
 
 function tickDrop_drop(tick) {
   console.log(`drop tick ${tick[0]}`);
   if (boom(tick[0])) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/closure_stages_that_never_unwind_past_adapters.rs:41:13");
   }
 }
 

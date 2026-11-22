@@ -13,7 +13,7 @@ function total(v) {
   const iter = r;
   let i;
   while ((i = $rangeNext(iter)) != null) {
-    t = (t + $index(v, i)) >>> 0;
+    t = (t + $index(v, i, "test/corpus/range_end_written_before_its_loop.rs:11:14")) >>> 0;
   }
   return t;
 }

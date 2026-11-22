@@ -8,7 +8,7 @@ export function entry() {
 
 function pick(v, msg) {
   if (v == null) {
-    throw $stringPanic(msg);
+    throw $stringPanic(msg, "test/corpus/panic_display.rs:7:17");
   }
   return v;
 }

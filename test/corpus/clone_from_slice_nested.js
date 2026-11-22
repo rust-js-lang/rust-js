@@ -23,16 +23,24 @@ function countedClone_cloneFrom(counted, source) {
 function main() {
   const source = [[[1], [3]]];
   const target = [[[2]]];
-  $cloneFromSlice(target, source, undefined, (items, i, from) => {
-    $cloneIntoVec(
-      items[i],
-      from,
-      (item) => countedClone_clone(item),
-      (items, i, from) => {
-        countedClone_cloneFrom(items[i], from);
-      },
-    );
-  });
-  console.log(`${$index(target[0], 0)[0]} ${$index(target[0], 1)[0]}`);
+  $cloneFromSlice(
+    target,
+    source,
+    "test/corpus/clone_from_slice_nested.rs:22:12",
+    undefined,
+    (items, i, from) => {
+      $cloneIntoVec(
+        items[i],
+        from,
+        (item) => countedClone_clone(item),
+        (items, i, from) => {
+          countedClone_cloneFrom(items[i], from);
+        },
+      );
+    },
+  );
+  console.log(
+    `${$index(target[0], 0, "test/corpus/clone_from_slice_nested.rs:23:32")[0]} ${$index(target[0], 1, "test/corpus/clone_from_slice_nested.rs:23:48")[0]}`,
+  );
 }
 //# sourceMappingURL=case.js.map

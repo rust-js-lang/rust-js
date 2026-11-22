@@ -24,6 +24,7 @@ import {
   $mapEnds,
   $maxByKey,
   $next,
+  $panic,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
@@ -60,7 +61,7 @@ function ds(r) {
 }
 function boom(d, at) {
   if (d[0] === at) {
-    throw new Error("boom");
+    throw $panic("boom", "test/corpus/panic_mid_fold_drops.rs:19:9");
   }
   return true;
 }
@@ -611,7 +612,7 @@ function main() {
         0,
         (_, n) => {
           if (n === 92) {
-            throw new Error("92");
+            throw $panic("92", "test/corpus/panic_mid_fold_drops.rs:223:21");
           }
           return n;
         },
@@ -737,7 +738,7 @@ function main() {
         { start: 40, end: 43 },
         (n) => {
           if (n === 41) {
-            throw new Error("41");
+            throw $panic("41", "test/corpus/panic_mid_fold_drops.rs:267:21");
           }
           return [n];
         },
@@ -811,7 +812,7 @@ function main() {
           { start: 60, end: 64 },
           (n) => {
             if (n === 62) {
-              throw new Error("62");
+              throw $panic("62", "test/corpus/panic_mid_fold_drops.rs:291:21");
             }
           },
           { next: $rangeNext },
@@ -847,7 +848,7 @@ function main() {
           { start: 70, end: 74 },
           (n) => {
             if (n === 72) {
-              throw new Error("72");
+              throw $panic("72", "test/corpus/panic_mid_fold_drops.rs:305:21");
             }
           },
           { next: $rangeNext },
@@ -882,7 +883,7 @@ function main() {
         { start: 80, end: 84 },
         (n) => {
           if (n === 82) {
-            throw new Error("82");
+            throw $panic("82", "test/corpus/panic_mid_fold_drops.rs:319:21");
           }
           return true;
         },
@@ -945,7 +946,7 @@ function main() {
           { start: 10, end: 14 },
           (n) => {
             if (n === 12) {
-              throw new Error("12");
+              throw $panic("12", "test/corpus/panic_mid_fold_drops.rs:343:21");
             }
           },
           { next: $rangeNext },

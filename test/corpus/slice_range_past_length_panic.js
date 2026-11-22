@@ -13,7 +13,7 @@ function all(items) {
 
 function past(items) {
   const n = items.length + 1;
-  return $copyOf(items, 0, n);
+  return $copyOf(items, 0, "test/corpus/slice_range_past_length_panic.rs:12:10", n);
 }
 
 function main() {

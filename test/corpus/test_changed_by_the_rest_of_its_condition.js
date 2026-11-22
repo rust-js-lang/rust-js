@@ -40,21 +40,23 @@ function clear(queue) {
 function clearedOnTheRight(v, i) {
   if (i < v.length) {
     v.length = 0;
-    return $index(v, i);
+    return $index(v, i, "test/corpus/test_changed_by_the_rest_of_its_condition.rs:40:10");
   } else {
     return 7;
   }
 }
 
 function cellClearedOnTheRight(queue, i) {
-  return i < queue.length && clear(queue) ? $index(queue, i) : 7;
+  return i < queue.length && clear(queue)
+    ? $index(queue, i, "test/corpus/test_changed_by_the_rest_of_its_condition.rs:48:23")
+    : 7;
 }
 
 function clearedInAGroup(v, i) {
   if (i < v.length) {
     v.length = 0;
     if (i < 10) {
-      return $index(v, i);
+      return $index(v, i, "test/corpus/test_changed_by_the_rest_of_its_condition.rs:62:10");
     }
   }
   return 7;
@@ -63,7 +65,7 @@ function clearedInAGroup(v, i) {
 function clearedPastAnOr(v, i) {
   if (i < v.length) {
     v.length = 0;
-    return $index(v, i);
+    return $index(v, i, "test/corpus/test_changed_by_the_rest_of_its_condition.rs:77:10");
   }
   return 7;
 }

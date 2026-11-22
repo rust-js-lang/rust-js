@@ -17,7 +17,7 @@ function u32Account_deposit(self, n) {
 }
 
 function pay(c, AAccount) {
-  const borrowMut = $borrowMut(c, true);
+  const borrowMut = $borrowMut(c, "test/corpus/refcell_generic_mut_method.rs:27:7", true);
   const self = { value: borrowMut.value };
   try {
     try {
@@ -35,7 +35,7 @@ function pay(c, AAccount) {
 }
 
 function payThrough(c, AAccount) {
-  const guard = $borrowMut(c, true);
+  const guard = $borrowMut(c, "test/corpus/refcell_generic_mut_method.rs:31:23", true);
   const self = { value: guard.value };
   try {
     try {
@@ -57,7 +57,7 @@ function give(a, AAccount) {
 }
 
 function payGiven(c, AAccount) {
-  const borrowMut = $borrowMut(c, true);
+  const borrowMut = $borrowMut(c, "test/corpus/refcell_generic_mut_method.rs:41:18", true);
   const a = { value: borrowMut.value };
   try {
     try {
@@ -79,11 +79,11 @@ function main() {
   pay(h, accAccount);
   payThrough(h, accAccount);
   payGiven(h, accAccount);
-  console.log(`${$borrow(h).value.b}`);
+  console.log(`${$borrow(h, "test/corpus/refcell_generic_mut_method.rs:49:22").value.b}`);
   const n = { value: 1 };
   pay(n, u32Account);
   payThrough(n, u32Account);
   payGiven(n, u32Account);
-  console.log(`${$borrow(n).value}`);
+  console.log(`${$borrow(n, "test/corpus/refcell_generic_mut_method.rs:54:22").value}`);
 }
 //# sourceMappingURL=case.js.map

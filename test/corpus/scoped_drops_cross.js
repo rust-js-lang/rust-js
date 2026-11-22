@@ -8,7 +8,7 @@ export function entry() {
 
 function check(n, what) {
   if (n > 2) {
-    throw $stringPanic(`gave up with ${what}`);
+    throw $stringPanic(`gave up with ${what}`, "test/corpus/scoped_drops_cross.rs:15:9");
   }
   console.log(`checked ${n}`);
   return n;

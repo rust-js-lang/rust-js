@@ -96,7 +96,7 @@ function rows(width, height) {
 function main() {
   console.log(`${halvings(1)} ${halvings(8)} ${halvings(1000)}`);
   console.log(`${countdown(10, 3)} ${countdown(0, 4)}`);
-  const head = $unwrap(list([1, 2, 3, 4]), "a list");
+  const head = $unwrap(list([1, 2, 3, 4]), "test/corpus/do_while_tested_last.rs:114:36", "a list");
   const value = sumUntil(head, 3);
   const value$1 = sumUntil(head, 9);
   console.log(

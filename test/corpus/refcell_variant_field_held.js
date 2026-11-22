@@ -10,7 +10,7 @@ function tries(task) {
   if (task.job.TAG === "Queued") {
     const tries = $fieldCell(task.job, "tries");
     if (tries.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/refcell_variant_field_held.rs:19:41");
     }
     return tries.value;
   } else {
@@ -19,7 +19,7 @@ function tries(task) {
 }
 
 function bump(cell, task) {
-  const held = $borrowMut(cell, true);
+  const held = $borrowMut(cell, "test/corpus/refcell_variant_field_held.rs:25:25", true);
   held.value = (held.value + 1) >>> 0;
   console.log(`${held.value}`);
   try {

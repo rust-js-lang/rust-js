@@ -696,7 +696,7 @@ pub fn made(x: Option<String>, n: u32) -> Pooled {
     }
 }
 `);
-  expect(js).toContain("    pool: (n + 1) >>> 0,\n\n    // The parent, a refresh's.\n    parent: $unwrap(x),\n");
+  expect(js).toContain("    pool: (n + 1) >>> 0,\n\n    // The parent, a refresh's.\n    parent: $unwrap(x, \"lib.rs:11:19\"),\n");
   const made = lib.made as (x: string, n: number) => unknown;
   expect(made("p", 1)).toEqual({ pool: 2, parent: "p" });
 });

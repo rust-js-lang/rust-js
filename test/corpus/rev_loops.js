@@ -101,7 +101,7 @@ function moving(n) {
 function main() {
   const names = ["a", "react", "dom", "fiber", "x"];
   const value = lastLong(names);
-  const value$1 = lastLong($slice(names, 0, 1));
+  const value$1 = lastLong($slice(names, 0, "test/corpus/rev_loops.rs:88:62", 1));
   console.log(
     `${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`,
   );

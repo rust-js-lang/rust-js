@@ -4,6 +4,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unlocated-helper-allowed",
+    breaks: "a helper that raises a panic, called with no location, isn't refused, its hook naming `<unknown>`",
+    file: "crates/rust-js-program/src/js/validate.rs",
+    find: "            self.problems.push(Problem::Unlocated(helper.to_string()));\n",
+    replace: "",
+    unitTests: "js::validate::tests::a_raising_helper_is_given_where_it_raises",
+  },
+  {
     name: "captured-read-unrefused",
     breaks:
       "a read of a variable another declaration of its word takes, nearer, is printed, JS reading that one (#2026)",

@@ -1,8 +1,7 @@
 // Mutations of crates/rust-js-mir/src/places.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
-export const mutations: Mutation[] = [
-  {
+export const mutations: Mutation[] = [  {
     name: "nested-field-payload-boxed",
     breaks: "what a nested field's `Some` holds is read through the box, `$someValue(candidate.line)` (#470)",
     file: "crates/rust-js-mir/src/places.rs",
@@ -97,8 +96,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an element written, `xs[i] = v`, is checked as one read, `$index(xs, i) = v`",
     file: "crates/rust-js-mir/src/places.rs",
-    find: "                value = match write && at + 1 == last {\n",
-    replace: "                value = match false {\n",
+    find: "match write && at + 1 == last {",
+    replace: "match false {",
     tests: ["test/lowering-numbers.test.ts", "-t", "nothing proves in bounds"],
   },
   {

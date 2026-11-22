@@ -198,19 +198,44 @@ function main() {
     return [undefined, i, new Array(i).fill(1), undefined];
   });
   const working = new Map();
-  working.set(1, $index(children, 1));
-  track($unwrap(working.get(1), "no entry found for key"), 8, 10);
+  working.set(1, $index(children, 1, "test/corpus/untagged_told_by_length.rs:228:42"));
+  track(
+    $unwrap(
+      working.get(1),
+      "test/corpus/untagged_told_by_length.rs:229:19",
+      "no entry found for key",
+    ),
+    8,
+    10,
+  );
   console.log(`${show(children)}`);
-  track($index(children, 1), undefined, 11);
+  track($index(children, 1, "test/corpus/untagged_told_by_length.rs:231:20"), undefined, 11);
   console.log(`${show(children)}`);
-  untrack($unwrap(working.get(1), "no entry found for key"));
-  console.log(`${show(children)} ${replayNodeDebug_fmt($index(children, 1))}`);
-  renumber($index(children, 2), 20);
-  renumber($unwrap(working.get(1), "no entry found for key"), 10);
+  untrack(
+    $unwrap(
+      working.get(1),
+      "test/corpus/untagged_told_by_length.rs:233:21",
+      "no entry found for key",
+    ),
+  );
+  console.log(
+    `${show(children)} ${replayNodeDebug_fmt($index(children, 1, "test/corpus/untagged_told_by_length.rs:234:50"))}`,
+  );
+  renumber($index(children, 2, "test/corpus/untagged_told_by_length.rs:235:27"), 20);
+  renumber(
+    $unwrap(
+      working.get(1),
+      "test/corpus/untagged_told_by_length.rs:236:26",
+      "no entry found for key",
+    ),
+    10,
+  );
   console.log(`${show(children)}`);
-  track($index(children, 0), 12, 13);
-  demote($index(children, 0));
-  console.log(`${show(children)} ${replayNodeDebug_fmt($index(children, 0))}`);
+  track($index(children, 0, "test/corpus/untagged_told_by_length.rs:238:20"), 12, 13);
+  demote($index(children, 0, "test/corpus/untagged_told_by_length.rs:239:21"));
+  console.log(
+    `${show(children)} ${replayNodeDebug_fmt($index(children, 0, "test/corpus/untagged_told_by_length.rs:240:50"))}`,
+  );
 
   let node = boundary.slice();
   const held = node;

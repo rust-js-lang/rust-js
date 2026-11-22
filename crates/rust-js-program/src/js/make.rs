@@ -338,6 +338,36 @@ impl Expr {
         }
     }
 
+    /// `f()`, every helper call it makes that takes where a panic it raises
+    /// was raised given `at`: the location of the statement or terminator of
+    /// MIR the lowering is at, `caller_location`'s (#2292, ADR 0427 amended).
+    /// What makes a helper call outside, tidy or preparation, gives it none,
+    /// which `js::validate` refuses.
+    pub fn raised_at<T>(at: Expr, f: impl FnOnce() -> T) -> T {
+        let outer = RAISED_AT.replace(Some(Expr::new(ExprKind::RaisedAt(Box::new(at)))));
+        let made = f();
+        RAISED_AT.set(outer);
+        made
+    }
+
+    /// The location `raised_at` gives what's made now, kept for a call made
+    /// later, where the lowering is elsewhere: `&mut v[1..]`'s view, made
+    /// where it's indexed and called where it's used, raises its panic at
+    /// the index, as Rust's does (#2292). Given back to `raised_at` there.
+    pub fn raising_at() -> Option<Expr> {
+        RAISED_AT.with_borrow(|at| match at.as_ref().map(|at| &at.kind) {
+            Some(ExprKind::RaisedAt(at)) => Some((**at).clone()),
+            _ => None,
+        })
+    }
+
+    /// Where std raises one of its panics, the `at`th site of `name`,
+    /// `$stdSites.name[at]`: the runtime's constant of the toolchain, which
+    /// `bun run std` writes from std's MIR, whatever calls it (#2292).
+    pub fn std_site(name: &str, at: usize) -> Expr {
+        Expr::index(Expr::member(Expr::helper("$stdSites"), name), Expr::int(at as i128))
+    }
+
     pub fn call_helper(name: &'static str, args: Vec<Expr>) -> Expr {
         Expr::call(Expr::helper(name), args)
     }
@@ -915,6 +945,16 @@ impl Expr {
         // A call of an entry of a `&mut`'s dictionary through its box: the
         // entry of what it's to (`through_box::called`, #1470).
         let mut args = args;
+        // A helper that takes where a panic it raises was raised is given
+        // the location the lowering is at, as it's made (`raised_at`, #2292).
+        if let Some(helper) = callee.helper_name()
+            && let Some(at) = crate::runtime::location_at(helper)
+            && args.len() >= at
+            && !args.iter().any(|arg| matches!(arg.kind, ExprKind::RaisedAt(_)))
+            && let Some(location) = RAISED_AT.with_borrow(Clone::clone)
+        {
+            args.insert(at, location);
+        }
         if let Some(folded) = super::through_box::called(&callee, &mut args) {
             return folded;
         }
@@ -1284,4 +1324,10 @@ fn null_apart(op: Op, lhs: &Expr, rhs: &Expr) -> Option<Expr> {
         Box::new(inner.clone()),
         Box::new(Expr::null()),
     )))
+}
+
+thread_local! {
+    /// The location helper calls made now are given (`Expr::raised_at`):
+    /// the lowering's, scoped to one statement or terminator of MIR.
+    static RAISED_AT: std::cell::RefCell<Option<Expr>> = const { std::cell::RefCell::new(None) };
 }

@@ -24,7 +24,10 @@ function main() {
   places.set({ x: 1, y: 2 }, "c");
   const keys = Array.from(places.keys());
   keys.sort((a, b) => $cmp(a.x, b.x) || $cmp(a.y, b.y));
-  const arg = ($index(keys, 0).x + $index(keys, 1).y) | 0;
+  const arg =
+    ($index(keys, 0, "test/corpus/value_key_iteration.rs:27:33").x +
+      $index(keys, 1, "test/corpus/value_key_iteration.rs:27:45").y) |
+    0;
   console.log(`[${keys.map((item) => pointDebug_fmt(item)).join(", ")}] ${arg}`);
   const values = Array.from(places.values());
   values.sort($cmp);

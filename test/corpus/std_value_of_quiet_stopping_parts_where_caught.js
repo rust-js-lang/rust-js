@@ -9,6 +9,7 @@ import {
   $formatting,
   $iterator,
   $out,
+  $panic,
   $printing,
   $sink,
   $writerSink,
@@ -23,7 +24,7 @@ export const quietDebug = { fmt: quietDebug_fmt };
 function quietDebug_fmt(quiet, options) {
   const f = $sink();
   if (quiet[0] >= 3) {
-    throw new Error("too big");
+    throw $panic("too big", "test/corpus/std_value_of_quiet_stopping_parts_where_caught.rs:16:9");
   }
   f.write(`Q${quiet[0]}`);
   return f.done();
@@ -31,7 +32,10 @@ function quietDebug_fmt(quiet, options) {
 
 function stepsIterator_next(steps) {
   if (steps[0] >= 2) {
-    throw new Error("stepped too far");
+    throw $panic(
+      "stepped too far",
+      "test/corpus/std_value_of_quiet_stopping_parts_where_caught.rs:27:9",
+    );
   }
   steps[0]++;
   return steps[0];
@@ -53,7 +57,7 @@ export const shortWrite = {
 };
 function shortWrite_writeStr(short, s) {
   if ($byteLen(s) >= 3) {
-    throw new Error("too long");
+    throw $panic("too long", "test/corpus/std_value_of_quiet_stopping_parts_where_caught.rs:45:9");
   }
 }
 

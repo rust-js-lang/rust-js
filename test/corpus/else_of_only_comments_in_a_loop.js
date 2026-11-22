@@ -54,7 +54,10 @@ function main() {
   middle.alternate = fiber(0);
   const leaf = fiber(0, middle);
   schedule(leaf, 2, root);
-  const alternate = $unwrap(middle.alternate);
+  const alternate = $unwrap(
+    middle.alternate,
+    "test/corpus/else_of_only_comments_in_a_loop.rs:67:55",
+  );
   console.log(`${leaf.childLanes} ${middle.childLanes} ${alternate.childLanes} ${root.childLanes}`);
   schedule(leaf, 1, middle);
   console.log(`${middle.childLanes} ${alternate.childLanes}`);

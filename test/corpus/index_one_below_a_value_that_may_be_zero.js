@@ -7,7 +7,9 @@ export function entry() {
 }
 
 function before(p, i) {
-  return i < p.length ? $index(p, (i - 1) >>> 0) : 0;
+  return i < p.length
+    ? $index(p, (i - 1) >>> 0, "test/corpus/index_one_below_a_value_that_may_be_zero.rs:9:22")
+    : 0;
 }
 
 function main() {

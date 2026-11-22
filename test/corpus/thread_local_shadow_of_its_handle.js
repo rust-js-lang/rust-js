@@ -17,7 +17,11 @@ export function addStart(n) {
 function main() {
   addStart(1);
   addStart(2);
-  const current = $unwrap(currentCallbacks, "added");
+  const current = $unwrap(
+    currentCallbacks,
+    "test/corpus/thread_local_shadow_of_its_handle.rs:32:40",
+    "added",
+  );
   console.log(
     `${current.start == null ? "None" : `Some([${current.start.join(", ")}])`} ${current.done == null ? "None" : `Some(${current.done})`}`,
   );

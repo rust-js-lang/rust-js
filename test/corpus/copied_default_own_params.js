@@ -8,6 +8,7 @@ import {
   $lazyZip,
   $mutItems,
   $next,
+  $panic,
   $ptrTo,
   $traitImpl,
 } from "@rust-js/std";
@@ -26,7 +27,10 @@ function iCollectSlice(IIterator) {
     collectArray(self, N) {
       const result = iCollectSlice(IIterator).innerArray(self, N);
       if (IIterator.next(self) != null) {
-        throw new Error("assertion failed: self.next().is_none()");
+        throw $panic(
+          "assertion failed: self.next().is_none()",
+          "test/corpus/copied_default_own_params.rs:13:9",
+        );
       }
       return result;
     },
@@ -42,7 +46,7 @@ function iCollectSlice_innerArray(self, N, IIterator) {
   }
 
   if (N !== count) {
-    $assertFailed("Eq", String(N), String(count));
+    $assertFailed("Eq", String(N), String(count), "test/corpus/copied_default_own_params.rs:32:9");
   }
 
   const tempPtr = $ptrTo(result);

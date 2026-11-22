@@ -34,7 +34,7 @@ function number(it) {
   let n = 0;
   let c;
   while ((c = $nextIf(it, (c) => /^[0-9]$/.test(c))) != null) {
-    n = (((n * 10) >>> 0) + $unwrap($toDigit(c, 10))) >>> 0;
+    n = (((n * 10) >>> 0) + $unwrap($toDigit(c, 10), "test/corpus/lent_iterators.rs:21:37")) >>> 0;
   }
   return n;
 }

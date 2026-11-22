@@ -248,7 +248,12 @@ function main() {
   );
   console.log(
     `${hashed({ size: 8, align: 8 }, layoutHash)} ${hashed(
-      $unwrapOk($layout(24, 8), undefined, (e) => "LayoutError"),
+      $unwrapOk(
+        $layout(24, 8),
+        "test/corpus/std_types_hashed_as_std_does.rs:118:48",
+        undefined,
+        (e) => "LayoutError",
+      ),
       layoutHash,
     )}`,
   );

@@ -548,7 +548,7 @@ pub fn popped(v: &mut Vec<u32>) -> u32 {
   expect(js).toContain("    const parent = (index - 1) >>> 1;\n    if (heap[parent] > heap[index]) {\n      [heap[parent], heap[index]] = [heap[index], heap[parent]];\n");
   expect(js).toContain("function item(items, i) {\n  return items[i];\n}");
   // Called where nothing bounds it too, named as a value, or a JS caller's.
-  expect(js).toContain("function other(items, i) {\n  return $index(items, i);\n}");
+  expect(js).toContain("function other(items, i) {\n  return $index(items, i, \"lib.rs:34:5\");\n}");
   expect(js).toContain("function double(n) {\n  return (n * 2) >>> 0;\n}");
   expect(js).toContain("export function half(n) {\n  return (n - 1) >>> 0;\n}");
   // Its own calls' too, until what it's given holds.
@@ -556,7 +556,7 @@ pub fn popped(v: &mut Vec<u32>) -> u32 {
   // `n` of the length before the push, below it after (ADR 1168, #1948);
   // past a `pop`, `n - 1` is the length, and keeps its check.
   expect(js).toContain("  v.push(7);\n  return v[n];\n");
-  expect(js).toContain("return $index(v, n - 1);");
+  expect(js).toContain("return $index(v, n - 1, \"lib.rs:73:6\");");
   const lib = await import(join(dir, "lib.js"));
   const heap: number[] = [];
   for (const n of [5, 3, 8, 1]) lib.push(heap, n);

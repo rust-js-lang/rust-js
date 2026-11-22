@@ -511,7 +511,7 @@ function main() {
   }
   let me;
   try {
-    me = $unwrap($upgrade(owner.value.me));
+    me = $unwrap($upgrade(owner.value.me), "test/corpus/rc_counted_uses.rs:69:33");
   } catch (error) {
     $cleanup(() => {
       $rcDrop(owner, (value) => {
@@ -542,7 +542,7 @@ function main() {
   const strong = owner.strong;
   let tmp$5;
   try {
-    tmp$5 = $unwrap($upgrade(owner.value.me));
+    tmp$5 = $unwrap($upgrade(owner.value.me), "test/corpus/rc_counted_uses.rs:72:90");
   } catch (error) {
     $cleanup(() => {
       $rcDrop(owner, (value) => {

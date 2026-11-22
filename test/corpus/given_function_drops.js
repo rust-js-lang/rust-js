@@ -111,7 +111,11 @@ function main() {
   console.log(`fold ${total}`);
   const a$4 = [5];
   const v = [3, 1, 2];
-  const f$1 = (x, y) => $cmp($rem(x, Loud.get(a$4)) >>> 0, $rem(y, Loud.get(a$4)) >>> 0);
+  const f$1 = (x, y) =>
+    $cmp(
+      $rem(x, Loud.get(a$4), "test/corpus/given_function_drops.rs:40:27") >>> 0,
+      $rem(y, Loud.get(a$4), "test/corpus/given_function_drops.rs:40:46") >>> 0,
+    );
   try {
     const value = $sortStable(v, (a, b) => f$1(a, b) < 0, "general8", 4);
   } catch (error) {

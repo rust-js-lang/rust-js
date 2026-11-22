@@ -15,6 +15,7 @@ function walk(kids, sib, up, root) {
       if (node >= kids.length) {
         throw $stringPanic(
           `index out of bounds: the len is ${kids.length} but the index is ${node}`,
+          "test/corpus/loop_value_then_tail.rs:16:30",
         );
       }
       if (kids[node] == null) {
@@ -32,13 +33,14 @@ function walk(kids, sib, up, root) {
       if (node >= sib.length) {
         throw $stringPanic(
           `index out of bounds: the len is ${sib.length} but the index is ${node}`,
+          "test/corpus/loop_value_then_tail.rs:26:33",
         );
       }
       if (sib[node] != null) {
         next = sib[node];
         break;
       }
-      node = $index(up, node);
+      node = $index(up, node, "test/corpus/loop_value_then_tail.rs:29:20");
     }
     // To the sibling.
     node = next;

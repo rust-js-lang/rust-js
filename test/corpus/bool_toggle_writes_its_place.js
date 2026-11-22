@@ -36,7 +36,7 @@ function main() {
   for (let i = 0; i < v.length; i++) {
     v[i] = !v[i];
   }
-  v[$at(v, 1)] = !v[1];
+  v[$at(v, 1, "test/corpus/bool_toggle_writes_its_place.rs:36:6")] = !v[1];
   console.log(`[${v.join(", ")}]`);
   let r = false;
   r = !r;

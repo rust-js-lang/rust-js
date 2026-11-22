@@ -8,6 +8,7 @@ import {
   $holding,
   $iter,
   $live,
+  $panic,
   $position,
   $print,
   $range,
@@ -55,7 +56,7 @@ function main() {
     function f(d) {
       try {
         if (d[0] === 2) {
-          throw new Error("two");
+          throw $panic("two", "test/corpus/closure_folded_by_value_panics.rs:35:17");
         }
         return (d[0] + zero(g)) >>> 0;
       } catch (error) {
@@ -103,7 +104,10 @@ function main() {
     }
     function f(x) {
       if ((x + zero(g)) >>> 0 === 2) {
-        throw new Error("assertion failed: x + zero(&g) != 2");
+        throw $panic(
+          "assertion failed: x + zero(&g) != 2",
+          "test/corpus/closure_folded_by_value_panics.rs:44:32",
+        );
       }
     }
     try {
@@ -133,7 +137,10 @@ function main() {
     }
     function f(a, x) {
       if (x === 2) {
-        throw new Error("assertion failed: x != 2");
+        throw $panic(
+          "assertion failed: x != 2",
+          "test/corpus/closure_folded_by_value_panics.rs:48:13",
+        );
       }
       return (((a + x) >>> 0) + zero(g)) >>> 0;
     }
@@ -156,7 +163,10 @@ function main() {
     try {
       function f(x) {
         if (x === 2) {
-          throw new Error("assertion failed: x != 2");
+          throw $panic(
+            "assertion failed: x != 2",
+            "test/corpus/closure_folded_by_value_panics.rs:55:13",
+          );
         }
         return (x + zero(g)) >>> 0 === 9;
       }
@@ -175,7 +185,10 @@ function main() {
     const v = [[1], [2], [3]];
     function f(d) {
       if (d[0] === 2) {
-        throw new Error("assertion failed: d.0 != 2");
+        throw $panic(
+          "assertion failed: d.0 != 2",
+          "test/corpus/closure_folded_by_value_panics.rs:63:13",
+        );
       }
       return (d[0] + zero(g)) >>> 0 > 0;
     }
@@ -204,7 +217,10 @@ function main() {
     const v = [3, 1, 2];
     function f(x) {
       if (x === 2) {
-        throw new Error("assertion failed: x != 2");
+        throw $panic(
+          "assertion failed: x != 2",
+          "test/corpus/closure_folded_by_value_panics.rs:71:13",
+        );
       }
       return (x + zero(g)) >>> 0;
     }
@@ -224,7 +240,10 @@ function main() {
     try {
       function f(x) {
         if (x === 2) {
-          throw new Error("assertion failed: x != 2");
+          throw $panic(
+            "assertion failed: x != 2",
+            "test/corpus/closure_folded_by_value_panics.rs:78:13",
+          );
         }
         return (x + zero(g)) >>> 0 === 9;
       }

@@ -11,7 +11,7 @@ const LIMIT = 3;
 function popped(items) {
   const truncated = items.length >= LIMIT;
   items.pop();
-  return truncated ? $copyOf(items, 0, LIMIT) : [];
+  return truncated ? $copyOf(items, 0, "test/corpus/slice_range_tested_panic.rs:10:25", LIMIT) : [];
 }
 
 function main() {

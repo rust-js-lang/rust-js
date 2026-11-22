@@ -18,6 +18,7 @@ import {
   $mapEnds,
   $next,
   $nextBack,
+  $panic,
   $rangeNext,
   $rev,
   $roomFor,
@@ -46,7 +47,7 @@ function ds(r) {
 
 function boom(d, at) {
   if (d[0] === at) {
-    throw new Error("boom");
+    throw $panic("boom", "test/corpus/generic_folds_unwind.rs:25:9");
   }
 }
 

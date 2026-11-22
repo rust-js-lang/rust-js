@@ -529,7 +529,7 @@ export function demo() {
   ];
   const s = { side: 3 };
   const value = totalArea(shapes);
-  const receiver = $index(shapes, 1);
+  const receiver = $index(shapes, 1, "lib.rs:55:52");
   return `${$displayF64(value)} ${receiver.impl.describe(receiver.value)} ${squareDisplay_fmt(s)}`;
 }
 ```
@@ -805,14 +805,14 @@ export function portOrDefault(line) {
 }
 
 export function mustPort(line) {
-  return $unwrapOk(port(line), "a valid port line", configErrorDebug_fmt);
+  return $unwrapOk(port(line), "lib.rs:46:16", "a valid port line", configErrorDebug_fmt);
 }
 
 export function ratio(a, b) {
   if (b === 0) {
-    throw $stringPanic(`ratio of ${a} to nothing`);
+    throw $stringPanic(`ratio of ${a} to nothing`, "lib.rs:51:9");
   }
-  return $div(a, b) >>> 0;
+  return $div(a, b, "lib.rs:53:5") >>> 0;
 }
 ```
 
@@ -1149,7 +1149,7 @@ pub fn entangle(root: &Root, index: usize, lane: u32) {
 import { $at } from "@rust-js/std";
 
 export function entangle(root, index, lane) {
-  root.lanes[$at(root.lanes, index)] = (root.lanes[index] | lane) >>> 0;
+  root.lanes[$at(root.lanes, index, "lib.rs:8:28")] = (root.lanes[index] | lane) >>> 0;
 }
 ```
 

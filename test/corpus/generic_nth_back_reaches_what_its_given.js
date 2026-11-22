@@ -55,8 +55,16 @@ function refsDoubleEndedIterator_nthBack(refs, n) {
   console.log(`own nth_back ${n}`);
   const len = refs[0].length;
   const checkedSub = $checked(len - ((n + 1) >>> 0), 0, 4294967295);
-  const item = checkedSub != null ? $index(refs[0], checkedSub) : undefined;
-  refs[0] = $slice(refs[0], 0, Math.max(len - ((n + 1) >>> 0), 0));
+  const item =
+    checkedSub != null
+      ? $index(refs[0], checkedSub, "test/corpus/generic_nth_back_reaches_what_its_given.rs:30:52")
+      : undefined;
+  refs[0] = $slice(
+    refs[0],
+    0,
+    "test/corpus/generic_nth_back_reaches_what_its_given.rs:31:25",
+    Math.max(len - ((n + 1) >>> 0), 0),
+  );
   return item;
 }
 function refsDoubleEndedIterator_rfold(refs, init, f) {

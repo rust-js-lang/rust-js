@@ -11,6 +11,7 @@ import {
   $resizeWith,
   $roomFor,
   $splice,
+  $stdSites,
   $swapRemove,
   $toLowercase,
 } from "@rust-js/std";
@@ -56,11 +57,11 @@ function main() {
   $dedupByCells(words, (a, b) => $toLowercase(a.value) === $toLowercase(b.value));
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
   const s = [1, 2, 3];
-  $extend(s, $copyRange(s, 1));
+  $extend(s, $copyRange(s, 1, $stdSites.vecExtendFromWithin[0]));
   console.log(`[${s.join(", ")}]`);
-  const removed = Array.from($splice(s, 1, 3, [7, 8, 9]));
+  const removed = Array.from($splice(s, 1, 3, [7, 8, 9], $stdSites.vecDrain[0]));
   console.log(`[${removed.join(", ")}] [${s.join(", ")}]`);
-  $splice(s, 0, 1, []);
+  $splice(s, 0, 1, [], $stdSites.vecDrain[0]);
   console.log(`[${s.join(", ")}]`);
   const top = $popIfCell(s, (x) => x.value > 5);
   const kept = $popIfCell(s, (x) => x.value > 100);
@@ -90,7 +91,7 @@ function main() {
   const value = [0];
   const points = Array.from({ length: 1 }, () => value.slice());
   $resize(points, 3, [1], undefined, (item) => item.slice());
-  $index(points, 1).push(2);
+  $index(points, 1, "test/corpus/vec_edits.rs:68:11").push(2);
   console.log(`[${points.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
   const q = [];
   $roomFor(q.length + 2, 4);

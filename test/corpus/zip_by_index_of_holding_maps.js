@@ -13,6 +13,7 @@ import {
   $mapEnds,
   $next,
   $nextBack,
+  $panic,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
@@ -496,7 +497,7 @@ function main() {
     }
     function f$1(x) {
       if (x === 17) {
-        throw new Error("map");
+        throw $panic("map", "test/corpus/zip_by_index_of_holding_maps.rs:53:13");
       }
       return plus(gb, x);
     }

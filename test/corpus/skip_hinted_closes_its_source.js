@@ -8,6 +8,7 @@ import {
   $held,
   $iter,
   $lastDropping,
+  $panic,
   $sizeHint,
   $skipping,
   $some,
@@ -21,7 +22,7 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 3) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/skip_hinted_closes_its_source.rs:13:13");
   }
 }
 

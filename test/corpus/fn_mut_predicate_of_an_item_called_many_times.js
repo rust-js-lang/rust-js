@@ -41,7 +41,9 @@ function orderedPairs(it, f, FPredIItem, IVecCollect, IItemSize, dropF) {
   let n = 0;
   let iter;
   try {
-    iter = $iter($windows(items, 2));
+    iter = $iter(
+      $windows(items, 2, "test/corpus/fn_mut_predicate_of_an_item_called_many_times.rs:28:23"),
+    );
   } catch (error) {
     $cleanup(() => {
       dropF?.(f);
@@ -66,14 +68,20 @@ function orderedPairs(it, f, FPredIItem, IVecCollect, IItemSize, dropF) {
       $cleanup(() => {
         dropF?.(f);
       });
-      throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+      throw $stringPanic(
+        `index out of bounds: the len is ${length} but the index is 0`,
+        "test/corpus/fn_mut_predicate_of_an_item_called_many_times.rs:29:20",
+      );
     }
     const value = pair.length;
     if (1 >= value) {
       $cleanup(() => {
         dropF?.(f);
       });
-      throw $stringPanic(`index out of bounds: the len is ${value} but the index is 1`);
+      throw $stringPanic(
+        `index out of bounds: the len is ${value} but the index is 1`,
+        "test/corpus/fn_mut_predicate_of_an_item_called_many_times.rs:29:30",
+      );
     }
     let test;
     try {

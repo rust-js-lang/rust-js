@@ -8,6 +8,7 @@ import {
   $cmp,
   $collectDropping,
   $iterator,
+  $panic,
   $sortedKeys,
   $treeFrom,
 } from "@rust-js/std";
@@ -23,7 +24,7 @@ function dDrop_drop(d) {
 function ownIterator_next(own) {
   own[0] = (own[0] + 1) >>> 0;
   if (own[0] === own[1]) {
-    throw new Error("next");
+    throw $panic("next", "test/corpus/collect_of_own_iterator_drops_it_first.rs:26:13");
   }
   return own[0] < 5 ? [own[0]] : undefined;
 }

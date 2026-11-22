@@ -14,7 +14,7 @@ function keep(n) {
 }
 
 function zeroHeld() {
-  $unwrap(held).to.value = 0;
+  $unwrap(held, "test/corpus/pointer_kept_of_a_mut_given.rs:32:43").to.value = 0;
 }
 
 function keptOfStdFromMut(n) {

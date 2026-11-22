@@ -20,6 +20,7 @@ import {
   $mapEnds,
   $next,
   $nth,
+  $panic,
   $rangeNext,
   $rangeNextBack,
   $rev,
@@ -581,7 +582,7 @@ function foldedFromTheBackAsItPanics() {
     }
     function f$1(a, x) {
       if (a) {
-        throw new Error("consumer");
+        throw $panic("consumer", "test/corpus/folded_functions_drop_before_the_rest.rs:173:17");
       }
       return a + x;
     }

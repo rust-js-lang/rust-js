@@ -81,7 +81,7 @@ pub fn moved(items: &mut Vec<Rc<String>>, into: &mut Vec<Rc<String>>) {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(
-    "    // Taken, then moved.\n    if (0 >= items.length) {\n      $removeOutOfBounds(items, 0);\n    }\n    items.splice(0, 1);\n",
+    "    // Taken, then moved.\n    if (0 >= items.length) {\n      $removeOutOfBounds(items, 0, \"lib.rs:7:15\");\n    }\n    items.splice(0, 1);\n",
   );
 });
 

@@ -24,23 +24,23 @@ function main() {
     { n: 1, tag: "a" },
     { n: 5, tag: "b" },
   ];
-  const item = $index(es, 0);
+  const item = $index(es, 0, "test/corpus/mut_field_given.rs:11:16");
   const x = { value: item.n };
   inc(x);
   item.n = x.value;
   const i = (es.length - 1) >>> 0;
-  const item$1 = $index(es, i);
+  const item$1 = $index(es, i, "test/corpus/mut_field_given.rs:13:16");
   const x$1 = { value: item$1.n };
   inc(x$1);
   item$1.n = x$1.value;
   let c = 0;
-  const item$2 = $index(es, 1);
+  const item$2 = $index(es, 1, "test/corpus/mut_field_given.rs:15:18");
   const a = { value: item$2.n };
   const b = { value: c };
   twice(a, b);
   item$2.n = a.value;
   c = b.value;
-  const item$3 = $index(es, 0);
+  const item$3 = $index(es, 0, "test/corpus/mut_field_given.rs:16:21");
   const s = { value: item$3.tag };
   try {
     pushTag(s);
@@ -64,7 +64,7 @@ function main() {
   inc(x$3);
   pairs[1][0] = x$3.value;
   for (let k = 0; k < 2; k++) {
-    const item = $index(es, k);
+    const item = $index(es, k, "test/corpus/mut_field_given.rs:22:20");
     const x = { value: item.n };
     inc(x);
     item.n = x.value;
@@ -76,12 +76,15 @@ function main() {
 }
 
 function first(v) {
-  return $handleOn($index(v, 0), 0);
+  return $handleOn($index(v, 0, "test/corpus/mut_field_given.rs:28:55"), 0);
 }
 function xOf(ps, i) {
   const length = ps.length;
   if (i >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is ${i}`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is ${i}`,
+      "test/corpus/mut_field_given.rs:32:52",
+    );
   }
   return {
     get value() {
@@ -93,7 +96,7 @@ function xOf(ps, i) {
   };
 }
 function firstX(ps) {
-  return $handleOn($index(ps, 0), "x");
+  return $handleOn($index(ps, 0, "test/corpus/mut_field_given.rs:34:12"), "x");
 }
 
 function returned() {
@@ -110,6 +113,8 @@ function returned() {
   h.value = -h.value | 0;
   const value$2 = firstX(ps);
   value$2.value = (value$2.value + 100) | 0;
-  console.log(`${$index(ps, 0).x} ${$index(ps, 1).x}`);
+  console.log(
+    `${$index(ps, 0, "test/corpus/mut_field_given.rs:48:25").x} ${$index(ps, 1, "test/corpus/mut_field_given.rs:48:34").x}`,
+  );
 }
 //# sourceMappingURL=case.js.map

@@ -14,6 +14,9 @@ pub(super) struct Pass {
     /// What each module runs when it's loaded, each `js::on_load!`'s
     /// (ADR 0267).
     pub(super) statements: IndexMap<LocalModId, Vec<Vec<js::Stmt>>>,
+    /// A binary's `main`'s start, `$main(main)`, which its module runs last
+    /// (#2292).
+    pub(super) entry: Option<(LocalModId, Vec<js::Stmt>)>,
     /// `thread_local!`s' values, made from their lowered `init`s.
     pub(super) local_consts: IndexMap<LocalModId, Vec<js::Const>>,
     /// Each dictionary that's its module's `const`, or whose cache is, by

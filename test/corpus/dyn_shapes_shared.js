@@ -83,7 +83,11 @@ function main() {
     try {
       $sortStable(
         sorted,
-        (a, b) => $unwrap($partialCmp(a.impl.area(a.value), b.impl.area(b.value))) < 0,
+        (a, b) =>
+          $unwrap(
+            $partialCmp(a.impl.area(a.value), b.impl.area(b.value)),
+            "test/corpus/dyn_shapes_shared.rs:55:59",
+          ) < 0,
         "general8",
         8,
       );
@@ -107,7 +111,7 @@ function main() {
         )}`,
       );
       const twice = sqShape.twice([3]);
-      const shown = $index(shapes, 1);
+      const shown = $index(shapes, 1, "test/corpus/dyn_shapes_shared.rs:61:53");
       console.log(
         `${$displayF64(twice)} ${show({ value: shown.value, impl: shown.impl.Debug() })}`,
       );
@@ -196,7 +200,11 @@ function main() {
       }
       let keys;
       try {
-        keys = Array.from(byKind).map(([k, v]) => [k, v.length, $index(v, 0).strong]);
+        keys = Array.from(byKind).map(([k, v]) => [
+          k,
+          v.length,
+          $index(v, 0, "test/corpus/dyn_shapes_shared.rs:68:56").strong,
+        ]);
       } catch (error) {
         $cleanup(() => {
           for (const list of byKind.values()) {
@@ -278,7 +286,13 @@ function main() {
       try {
         console.log(
           `[${names
-            .map((n) => $unwrap(ops.get(n), "no entry found for key")(2, 3))
+            .map((n) =>
+              $unwrap(
+                ops.get(n),
+                "test/corpus/dyn_shapes_shared.rs:78:46",
+                "no entry found for key",
+              )(2, 3),
+            )
             .map((item) => $debugF64(item))
             .join(", ")}]`,
         );

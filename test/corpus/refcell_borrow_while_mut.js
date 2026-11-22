@@ -8,19 +8,19 @@ export function entry() {
 
 function total(cell) {
   if (cell.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_borrow_while_mut.rs:8:10");
   }
   return cell.reduce((a, b) => (a + b) | 0, 0);
 }
 
 function main() {
   const cell = [1, 2];
-  const borrowMut = $borrowMut(cell, true);
+  const borrowMut = $borrowMut(cell, "test/corpus/refcell_borrow_while_mut.rs:13:10", true);
   try {
     borrowMut.push(total(cell));
   } finally {
     $unborrow(borrowMut);
   }
-  console.log(`[${$borrow(cell).join(", ")}]`);
+  console.log(`[${$borrow(cell, "test/corpus/refcell_borrow_while_mut.rs:14:27").join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

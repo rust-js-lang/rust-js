@@ -18,6 +18,7 @@ import {
   $next,
   $nextBack,
   $nthBack,
+  $panic,
   $peek,
   $rev,
   $slicing,
@@ -299,7 +300,7 @@ function breaksIterator_next(breaks) {
 
 function breaksDoubleEndedIterator_nextBack(breaks) {
   if (breaks[1] === 2) {
-    throw new Error("next_back");
+    throw $panic("next_back", "test/corpus/own_steps_a_type_parameter_may_reach.rs:128:13");
   }
   function value() {
     breaks[1] = (breaks[1] - 1) >>> 0;

@@ -16,7 +16,7 @@ function note(n) {
 function throwException(x) {
   note(x);
   if (x === 5) {
-    throw $stringPanic(`exception ${x}`);
+    throw $stringPanic(`exception ${x}`, "test/corpus/catch_unwind_arms_where_returned.rs:27:9");
   }
   return x > 2;
 }
@@ -24,7 +24,7 @@ function throwException(x) {
 function panicOnRootError(x) {
   note((x + 1) >>> 0);
   if (x >= 7) {
-    throw $stringPanic(`root ${x}`);
+    throw $stringPanic(`root ${x}`, "test/corpus/catch_unwind_arms_where_returned.rs:35:9");
   }
 }
 
@@ -67,7 +67,7 @@ function armPanics(x) {
     return 9;
   }
   if (catchUnwind) {
-    throw $stringPanic(`arm ${x}`);
+    throw $stringPanic(`arm ${x}`, "test/corpus/catch_unwind_arms_where_returned.rs:76:21");
   }
   return (x + 2) >>> 0;
 }

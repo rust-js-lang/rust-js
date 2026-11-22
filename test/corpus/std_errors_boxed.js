@@ -63,13 +63,17 @@ function settings(text) {
   const result = $parseF64(parts[0]);
   if (result.TAG !== "Err") {
     const scale = result._0;
-    const result$1 = $parseBool($index(parts, 1));
+    const result$1 = $parseBool($index(parts, 1, "test/corpus/std_errors_boxed.rs:30:25"));
     if (result$1.TAG !== "Err") {
       const on = result$1._0;
-      const result = $parseChar($index(parts, 2));
+      const result = $parseChar($index(parts, 2, "test/corpus/std_errors_boxed.rs:31:27"));
       if (result.TAG !== "Err") {
         const mark = result._0;
-        const result$1 = $parseInt($index(parts, 3), -2147483648, 2147483647);
+        const result$1 = $parseInt(
+          $index(parts, 3, "test/corpus/std_errors_boxed.rs:32:26"),
+          -2147483648,
+          2147483647,
+        );
         if (result$1.TAG !== "Err") {
           const wide = result$1._0;
           const result = $tryFromInt(wide, 0, 255);
@@ -165,21 +169,24 @@ function main() {
       console.log(`err ${e.impl.Display().fmt(e.value)} / ${e.impl.Debug().fmt(e.value)}`);
     }
   }
-  const err = $unwrapErr($parseInt("x", -2147483648, 2147483647));
+  const err = $unwrapErr(
+    $parseInt("x", -2147483648, 2147483647),
+    "test/corpus/std_errors_boxed.rs:83:34",
+  );
   console.log(`${describe(err, $parseErrorDyn("core::num::error::ParseIntError"))}`);
   const value = tAsDyn_asDyn(err, $parseErrorDyn("core::num::error::ParseIntError"));
   const receiver = tAsDyn_asDyn(err, $parseErrorDyn("core::num::error::ParseIntError"));
   const value$1 = receiver.impl.source(receiver.value) == null;
   console.log(`${value.impl.Display().fmt(value.value)} ${value$1}`);
   console.log(
-    `${describe($unwrapErr($tryFromInt(300, 0, 255)), $parseErrorDyn("core::num::error::TryFromIntError"))}`,
+    `${describe($unwrapErr($tryFromInt(300, 0, 255), "test/corpus/std_errors_boxed.rs:86:51"), $parseErrorDyn("core::num::error::TryFromIntError"))}`,
   );
   console.log(
-    `${describe($unwrapErr($parseBool("maybe")), $parseErrorDyn("core::str::error::ParseBoolError"))}`,
+    `${describe($unwrapErr($parseBool("maybe"), "test/corpus/std_errors_boxed.rs:87:54"), $parseErrorDyn("core::str::error::ParseBoolError"))}`,
   );
   console.log(
     `${reported({
-      value: $unwrapErr($parseInt("x", 0, 255)),
+      value: $unwrapErr($parseInt("x", 0, 255), "test/corpus/std_errors_boxed.rs:88:48"),
       impl: eReport($parseErrorDyn("core::num::error::ParseIntError")),
     })}`,
   );

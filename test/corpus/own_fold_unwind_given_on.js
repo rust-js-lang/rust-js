@@ -13,6 +13,7 @@ import {
   $iterator,
   $next,
   $nextBack,
+  $panic,
   $sizeHint,
   $tryOf,
   fuseClone,
@@ -39,7 +40,7 @@ function dDrop_drop(d) {
 function numsIterator_next(nums) {
   const next = $next(nums.items);
   if (next === nums.at) {
-    throw new Error("boom");
+    throw $panic("boom", "test/corpus/own_fold_unwind_given_on.rs:30:13");
   }
   return next;
 }

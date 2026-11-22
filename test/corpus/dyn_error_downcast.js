@@ -131,7 +131,7 @@ function main() {
     { value: [7], impl: mineError },
     { impl: otherError },
     {
-      value: $unwrapErr($parseInt("x", 0, 255)),
+      value: $unwrapErr($parseInt("x", 0, 255), "test/corpus/dyn_error_downcast.rs:72:36"),
       impl: $parseErrorDyn("core::num::error::ParseIntError"),
     },
     { value: [3], impl: wrappedError({ fmt: (value) => String(value) }) },

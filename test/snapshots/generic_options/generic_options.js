@@ -75,11 +75,11 @@ function innerOrBoxed(x, keep, fallback) {
 }
 
 export function unwrapped(x) {
-  return $unwrap(pick(x, true));
+  return $unwrap(pick(x, true), "examples/generic_options.rs:39:19");
 }
 
 function unwrappedBoxed(x) {
-  return $someValue($unwrap(pickBoxed(x, true)));
+  return $someValue($unwrap(pickBoxed(x, true), "examples/generic_options.rs:39:19"));
 }
 
 export function mapped(x, f) {
@@ -219,8 +219,14 @@ export function innerValues() {
 }
 
 export function mappedValues() {
-  const noneInside = $unwrap(mappedBoxed(undefined, (o) => o == null));
-  const doubled = $unwrap(mapped(4, (n) => (n * 2) | 0));
+  const noneInside = $unwrap(
+    mappedBoxed(undefined, (o) => o == null),
+    "examples/generic_options.rs:123:60",
+  );
+  const doubled = $unwrap(
+    mapped(4, (n) => (n * 2) | 0),
+    "examples/generic_options.rs:124:45",
+  );
   return [noneInside, triedSomeBoxed(undefined, true), doubled];
 }
 
@@ -228,6 +234,11 @@ export function stdValues() {
   const poppedNone = poppedSomeBoxed([1, undefined]);
   const empty = poppedSomeBoxed([]);
   const firstNone = firstSomeBoxed([undefined, 1]);
-  return [poppedNone, empty, firstNone, $unwrap(popped([1, 2, 3]))];
+  return [
+    poppedNone,
+    empty,
+    firstNone,
+    $unwrap(popped([1, 2, 3]), "examples/generic_options.rs:132:60"),
+  ];
 }
 //# sourceMappingURL=generic_options.js.map

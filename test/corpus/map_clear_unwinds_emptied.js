@@ -11,6 +11,7 @@ import {
   $dropItems,
   $insert,
   $live,
+  $panic,
   $sortedEntries,
   $sortedKeys,
   $unwindsOn,
@@ -23,14 +24,14 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 2) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/map_clear_unwinds_emptied.rs:14:13");
   }
 }
 
 function kDrop_drop(k) {
   console.log(`drop key ${k[0]}`);
   if (k[0] === 2) {
-    throw new Error("drop key");
+    throw $panic("drop key", "test/corpus/map_clear_unwinds_emptied.rs:26:13");
   }
 }
 

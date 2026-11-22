@@ -12,7 +12,10 @@ function doubled(n) {
 
 function unwinding(n) {
   if (n > 1n) {
-    throw $stringPanic(`unwinds at ${n}`);
+    throw $stringPanic(
+      `unwinds at ${n}`,
+      "test/corpus/panic_out_of_an_extern_c_function_aborts.rs:15:9",
+    );
   }
   return n;
 }
@@ -22,7 +25,10 @@ function sum(count) {
     let total = 0n;
     for (let i = 0; i < count; i++) {
       if (i === 2) {
-        throw $stringPanic(`at ${i}`);
+        throw $stringPanic(
+          `at ${i}`,
+          "test/corpus/panic_out_of_an_extern_c_function_aborts.rs:24:13",
+        );
       }
       total = BigInt.asIntN(64, total + BigInt(i));
     }

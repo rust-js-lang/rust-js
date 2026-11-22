@@ -14,9 +14,13 @@ export function entry() {
 
 function summed(cell) {
   let total = 0;
-  for (let i = 0; i < $borrow(cell).length; i++) {
+  for (
+    let i = 0;
+    i < $borrow(cell, "test/corpus/momentary_borrow_in_a_test.rs:12:20").length;
+    i++
+  ) {
     if (cell.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/momentary_borrow_in_a_test.rs:13:23");
     }
     total = (total + cell[i]) >>> 0;
   }
@@ -25,9 +29,9 @@ function summed(cell) {
 
 function drained(cell) {
   let total = 0;
-  while ($borrow(cell).length !== 0) {
+  while ($borrow(cell, "test/corpus/momentary_borrow_in_a_test.rs:21:17").length !== 0) {
     if (cell.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/momentary_borrow_in_a_test.rs:22:23");
     }
     total = (total + cell.shift()) >>> 0;
   }
@@ -35,23 +39,25 @@ function drained(cell) {
 }
 
 function guarded(cell, look) {
-  return look && $borrow(cell).length !== 0;
+  return look && $borrow(cell, "test/corpus/momentary_borrow_in_a_test.rs:28:19").length !== 0;
 }
 
 function chosen(cell, look) {
-  return look ? $borrow(cell).length : 0;
+  return look ? $borrow(cell, "test/corpus/momentary_borrow_in_a_test.rs:32:20").length : 0;
 }
 
 function main() {
   const cell = [1, 2, 3];
   console.log(`${summed(cell)}`);
-  const held = $borrowMut(cell, true);
+  const held = $borrowMut(cell, "test/corpus/momentary_borrow_in_a_test.rs:38:21", true);
   try {
     console.log(`${guarded(cell, false)} ${chosen(cell, false)}`);
   } finally {
     $unborrow(held);
   }
   console.log(`${guarded(cell, true)} ${chosen(cell, true)}`);
-  console.log(`${drained(cell)} [${$borrow(cell).join(", ")}]`);
+  console.log(
+    `${drained(cell)} [${$borrow(cell, "test/corpus/momentary_borrow_in_a_test.rs:42:46").join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

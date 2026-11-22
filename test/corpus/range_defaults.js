@@ -119,7 +119,7 @@ function main() {
     )}`,
   );
   console.log("..");
-  const empty = $slice([1, 2, 3], 0, 0);
+  const empty = $slice([1, 2, 3], 0, "test/corpus/range_defaults.rs:88:35", 0);
   console.log(`[${empty.join(", ")}] [${[4, 5, 6].join(", ")}]`);
 
   // A struct's derived `Default` of its ranges.

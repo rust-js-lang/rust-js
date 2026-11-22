@@ -417,7 +417,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// clones each, `$cloneIntoDeque`; a `LinkedList`'s, which writes each it
     /// keeps over, pops the rest from its back, then clones,
     /// `$cloneIntoList`; an array's, each item written over,
-    /// `$cloneFromSlice`; a hashed map's or set's, which drops its entries,
+    /// `$cloneEach`; a hashed map's or set's, which drops its entries,
     /// stopping at one that panics, as hashbrown's does, then clones each,
     /// `$cloneIntoMap`; a `Box`'s, its value's. `None` where std's is
     /// `*dest = source.clone()`, a B-tree's, or where no order is seen: of
@@ -438,7 +438,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let drop = self.std_drop_function(item, span)?;
             let args = Expr::optional_args(Vec::new(), vec![clone, clone_from, drop]);
             return Ok(Some(CloneInto {
-                helper: "$cloneFromSlice",
+                helper: "$cloneEach",
                 args,
             }));
         };

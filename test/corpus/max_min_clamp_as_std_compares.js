@@ -9,6 +9,7 @@ import {
   $maxOf,
   $minOf,
   $ord,
+  $panic,
   $partialEq,
   $partialOrd,
   $unwindsOn,
@@ -54,7 +55,7 @@ function dOrd_cmp(d, other) {
   if (n > 0) {
     boom = n - 1;
     if (n === 1) {
-      throw new Error("cmp");
+      throw $panic("cmp", "test/corpus/max_min_clamp_as_std_compares.rs:43:17");
     }
   }
   return $cmp(d[0], other[0]);
@@ -154,7 +155,15 @@ function main() {
       }
     });
     run("clamp", boom, () => {
-      const clamp = $clampBy([4], [3], [5], dPartialOrd, undefined, dDrop_drop);
+      const clamp = $clampBy(
+        [4],
+        [3],
+        [5],
+        dPartialOrd,
+        "test/corpus/max_min_clamp_as_std_compares.rs:88:53",
+        undefined,
+        dDrop_drop,
+      );
       try {
         console.log(`${dDebug_fmt(clamp)}`);
       } catch (error) {
@@ -166,7 +175,15 @@ function main() {
       }
     });
     run("clamp below", boom, () => {
-      const clamp = $clampBy([1], [3], [5], dPartialOrd, undefined, dDrop_drop);
+      const clamp = $clampBy(
+        [1],
+        [3],
+        [5],
+        dPartialOrd,
+        "test/corpus/max_min_clamp_as_std_compares.rs:89:59",
+        undefined,
+        dDrop_drop,
+      );
       try {
         console.log(`${dDebug_fmt(clamp)}`);
       } catch (error) {
@@ -178,7 +195,15 @@ function main() {
       }
     });
     run("clamp above", boom, () => {
-      const clamp = $clampBy([9], [3], [5], dPartialOrd, undefined, dDrop_drop);
+      const clamp = $clampBy(
+        [9],
+        [3],
+        [5],
+        dPartialOrd,
+        "test/corpus/max_min_clamp_as_std_compares.rs:90:59",
+        undefined,
+        dDrop_drop,
+      );
       try {
         console.log(`${dDebug_fmt(clamp)}`);
       } catch (error) {
@@ -209,6 +234,7 @@ function main() {
         { a: [3], b: 0 },
         { a: [5], b: 0 },
         pPartialOrd,
+        "test/corpus/max_min_clamp_as_std_compares.rs:95:41",
         undefined,
         (p) => {
           dDrop_drop(p.a);

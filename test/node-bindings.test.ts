@@ -1112,7 +1112,7 @@ js::export_default! {
   expect(js).toContain("const prototype = Module.prototype;");
   expect(js).toContain("return original.apply(this, arguments);");
   expect(js).toContain("this.exports = `client ${filename}`;");
-  expect(js).toContain("Object.keys($unwrap(this.exports))");
+  expect(js).toContain("Object.keys($unwrap(this.exports, \"lib.rs:24:66\"))");
   writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
   writeFileSync(join(dir, "client.cjs"), '"use client";\nmodule.exports = 1;\n');
   writeFileSync(join(dir, "server.cjs"), '"use server";\nexports.a = 1;\nexports.b = 2;\n');

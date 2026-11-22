@@ -4,7 +4,7 @@ import {
   $KeySet,
   $catchUnwind,
   $cleanup,
-  $cloneFromSlice,
+  $cloneEach,
   $cloneIntoDeque,
   $cloneIntoList,
   $cloneIntoMap,
@@ -49,7 +49,7 @@ function dClone_clone(d) {
   console.log(`clone ${d[0]}`);
   if (boom === d[0]) {
     boom = 0;
-    throw $stringPanic(`clone ${d[0]}`);
+    throw $stringPanic(`clone ${d[0]}`, "test/corpus/clone_from_std_own.rs:33:13");
   }
   return [d[0]];
 }
@@ -66,7 +66,7 @@ export const pClone = { clone: pClone_clone };
 function pClone_clone(p) {
   if (boom === p[0]) {
     boom = 0;
-    throw $stringPanic(`clone ${p[0]}`);
+    throw $stringPanic(`clone ${p[0]}`, "test/corpus/clone_from_std_own.rs:48:13");
   }
   return [p[0]];
 }
@@ -256,7 +256,7 @@ function main() {
       const w = [[7], [8]];
       try {
         try {
-          $cloneFromSlice(w, v, (value) => dClone_clone(value), undefined, dDrop_drop);
+          $cloneEach(w, v, (value) => dClone_clone(value), undefined, dDrop_drop);
           console.log(`[${w.map((item) => dDebug_fmt(item)).join(", ")}]`);
         } catch (error) {
           throw $unwindsOn(error);
@@ -320,7 +320,7 @@ function main() {
       const w = [[[7], [8]], undefined, [[5]]];
       try {
         try {
-          $cloneFromSlice(
+          $cloneEach(
             w,
             v,
             undefined,
@@ -474,7 +474,7 @@ function main() {
     console.log(`[${w$1.map((item) => pDebug_fmt(item)).join(", ")}]`);
     const w$2 = [[7], [8]];
     run("array of no drop", boom, () => {
-      $cloneFromSlice(w$2, [[3], [1]], (value) => pClone_clone(value));
+      $cloneEach(w$2, [[3], [1]], (value) => pClone_clone(value));
     });
     console.log(`[${w$2.map((item) => pDebug_fmt(item)).join(", ")}]`);
     const w$3 = new Map([[9, [7]]]);

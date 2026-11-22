@@ -45,7 +45,7 @@ function renderKept(chunks, kept) {
     const chunk = chunks[i];
     destination.push(chunk);
   }
-  $borrowMut(kept).value = destination;
+  $borrowMut(kept, "test/corpus/taken_and_returned.rs:45:11").value = destination;
   return result;
 }
 
@@ -63,7 +63,7 @@ function renderPeeked(chunks, kept) {
     push("!");
     return result;
   }
-  $borrowMut(kept).value = peek;
+  $borrowMut(kept, "test/corpus/taken_and_returned.rs:66:11").value = peek;
   const old = result;
   result = "";
   return old;
@@ -83,7 +83,7 @@ function counted(steps, kept) {
     length(String(step));
   }
   if (kept.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/taken_and_returned.rs:87:10");
   }
   kept.push(length);
   const old = log;
@@ -158,7 +158,7 @@ function summed(values, kept) {
     const value = values[i];
     add(value);
   }
-  $borrowMut(kept).value = add;
+  $borrowMut(kept, "test/corpus/taken_and_returned.rs:141:11").value = add;
   return sum;
 }
 
@@ -172,7 +172,7 @@ function last(values, kept) {
     const value = values[i];
     see(value);
   }
-  $borrowMut(kept).value = see;
+  $borrowMut(kept, "test/corpus/taken_and_returned.rs:155:11").value = see;
   return seen;
 }
 
@@ -180,7 +180,7 @@ function main() {
   console.log(`${render(["a", "b", "c"])}`);
   const kept = {};
   console.log(`${renderKept(["d", "e"], kept)}`);
-  const borrow = $borrow(kept, true);
+  const borrow = $borrow(kept, "test/corpus/taken_and_returned.rs:163:37", true);
   try {
     if (borrow.value != null) {
       console.log(`${borrow.value.push("late")}`);
@@ -190,7 +190,7 @@ function main() {
   }
   const peeked = {};
   console.log(`${renderPeeked(["f", "g"], peeked)}`);
-  const value = $borrow(peeked, true);
+  const value = $borrow(peeked, "test/corpus/taken_and_returned.rs:168:32", true);
   const peek = value.value;
   try {
     if (peek != null) {
@@ -201,7 +201,7 @@ function main() {
   }
   const lengths = [];
   console.log(`${counted(4, lengths)}`);
-  const value$1 = $borrow(lengths, true);
+  const value$1 = $borrow(lengths, "test/corpus/taken_and_returned.rs:173:27", true);
   try {
     for (let i = 0; i < value$1.length; i++) {
       const length = value$1[i];
@@ -215,7 +215,7 @@ function main() {
   console.log(`${joined(["j", "k"])}`);
   const adder = {};
   console.log(`${$displayF64(summed([1.5, 2.25], adder))}`);
-  const value$2 = $borrow(adder, true);
+  const value$2 = $borrow(adder, "test/corpus/taken_and_returned.rs:181:30", true);
   const add = value$2.value;
   try {
     if (add != null) {
@@ -230,7 +230,7 @@ function main() {
   console.log(
     `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );
-  const value$5 = $borrow(seer, true);
+  const value$5 = $borrow(seer, "test/corpus/taken_and_returned.rs:186:29", true);
   const see = value$5.value;
   try {
     if (see != null) {

@@ -114,7 +114,10 @@ function element(v) {
   const length = v.length;
   if (0 >= length) {
     noisyDrop_drop(noisy);
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/option_insert_makes_its_value_first.rs:56:5",
+    );
   }
   noisyDrop_drop(v[0]);
   v[0] = noisy;

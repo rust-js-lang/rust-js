@@ -241,6 +241,9 @@ helpers! {
     Print,
     DebugBuilders,
     Process,
+    Main,
+    Location,
+    StdSites,
     Fs,
     Alloc,
     SliceIndex,
@@ -355,6 +358,7 @@ helpers! {
     RsplitOnce,
     Try,
     Unwind,
+    Marks,
     Settle,
     UnwrapOk,
     Range,
@@ -536,6 +540,29 @@ pub fn helper_of(name: &str) -> Option<Helper> {
             .collect()
     });
     OWNERS.get(name).copied()
+}
+
+/// Where a helper `name` takes the location a panic it raises names, of
+/// its parameters, the one named `raisedAt`, which the lowering gives each call
+/// of it (#2292, ADR 0427 amended): after its required parameters, before
+/// any optional one. `None` of a helper that raises none. The runtime's
+/// source is the one authority: each helper's own parameter list.
+pub fn location_at(name: &str) -> Option<usize> {
+    static AT: std::sync::LazyLock<IndexMap<&'static str, usize>> = std::sync::LazyLock::new(|| {
+        (Helper::ALL.iter())
+            .flat_map(|&helper| helper.source().lines())
+            .filter_map(|line| {
+                let rest = ["function ", "async function ", "function* "]
+                    .iter()
+                    .find_map(|keyword| line.strip_prefix(keyword))?;
+                let (name, params) = rest.split_once('(')?;
+                let params = &params[..params.find(')')?];
+                let at = params.split(',').position(|param| param.trim() == "raisedAt")?;
+                name.starts_with('$').then_some((name, at))
+            })
+            .collect()
+    });
+    AT.get(name).copied()
 }
 
 /// Whether `name` is a helper whose call names a place, the same one each
@@ -843,6 +870,8 @@ impl Helper {
             Helper::Settle => include_str!("runtime/settle.js"),
             // `catch_unwind` and `resume_unwind` (ADR 0660).
             Helper::Unwind => include_str!("runtime/unwind.js"),
+            // The marks every copy of the runtime reads (ADR 1184).
+            Helper::Marks => include_str!("runtime/marks.js"),
             // `print!` and `eprint!` of text that may not end a line: written as
             // it is where JS can (Node, Bun, Deno), else each line as it ends,
             // as a browser's `console` only writes lines, and what's left when
@@ -852,6 +881,13 @@ impl Helper {
             // writer's sink (#1533).
             Helper::DebugBuilders => include_str!("runtime/debug_builders.js"),
             Helper::Process => include_str!("runtime/process.js"),
+            // A binary's start, std's `lang_start` (#2292).
+            Helper::Main => include_str!("runtime/main.js"),
+            // A `Location`, `file:line:column` (ADR 0427, amended by #2292).
+            Helper::Location => include_str!("runtime/location.js"),
+            // Where std raises the panics its hook names its own lines of,
+            // `bun run std`'s, from std's MIR (#2292).
+            Helper::StdSites => include_str!("runtime/std_sites.js"),
             // std's files, through Node's fs (#1156).
             Helper::Fs => include_str!("runtime/fs.js"),
             Helper::Alloc => include_str!("runtime/alloc.js"),

@@ -948,7 +948,11 @@ function main() {
     const f = $writerSink(chars, charsWrite_writeStr, charsWrite_writeChar);
     $writingInto(f, shownDisplay_fmt, [-2, 'a"b']);
   });
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_rest.rs:222:44",
+  );
   let text = "";
   try {
     text += "[";
@@ -977,7 +981,7 @@ function main() {
   const f$7 = $writerSink(log, logWrite_writeStr, logWrite_writeStr);
   $writingInto(f$7, celledDebug_fmt, celled);
   f$7.write("|");
-  const borrowed = $borrowMut(celled.names, true);
+  const borrowed = $borrowMut(celled.names, "test/corpus/writer_sink_rest.rs:234:33", true);
   try {
     const f = $writerSink(log, logWrite_writeStr, logWrite_writeStr);
     $writingInto(f, celledDebug_fmt, celled, { alternate: true });
@@ -1033,7 +1037,9 @@ function main() {
   $writingInto(f$9, hexyLowerExp_fmt, [25], { precision: 1 });
   console.log(`[${chars$1[0].map((item) => $debugStr(item)).join(", ")}]`);
 
-  const failed = [$unwrapErr($parseInt("zz", -2147483648, 2147483647))];
+  const failed = [
+    $unwrapErr($parseInt("zz", -2147483648, 2147483647), "test/corpus/writer_sink_rest.rs:253:50"),
+  ];
   chars$1 = [[]];
   const f$10 = $writerSink(chars$1, charsWrite_writeStr, charsWrite_writeChar);
   $writingInto(f$10, parseFailedDisplay_fmt, failed);
@@ -1077,14 +1083,32 @@ function main() {
     `[${failing$2[0].map((item) => $debugStr(item)).join(", ")}] ${r === undefined ? "Ok(())" : "Err(Error)"}`,
   );
 
-  const int = $unwrapErr($parseInt("x", -2147483648, 2147483647));
+  const int = $unwrapErr(
+    $parseInt("x", -2147483648, 2147483647),
+    "test/corpus/writer_sink_rest.rs:272:34",
+  );
   const errors = {
     int,
-    float: $unwrapErr($parseF64("y"), undefined, $debugF64),
-    boolean: $unwrapErr($parseBool("z")),
-    narrow: $unwrapErr($tryFromInt(300, 0, 255)),
-    charFrom: $unwrapErr($charTryFrom(0xd800), undefined, (e) => $debugStr(e, "'")),
-    charParse: $unwrapErr($parseChar("ab"), undefined, (e) => $debugStr(e, "'")),
+    float: $unwrapErr(
+      $parseF64("y"),
+      "test/corpus/writer_sink_rest.rs:275:35",
+      undefined,
+      $debugF64,
+    ),
+    boolean: $unwrapErr($parseBool("z"), "test/corpus/writer_sink_rest.rs:276:38"),
+    narrow: $unwrapErr($tryFromInt(300, 0, 255), "test/corpus/writer_sink_rest.rs:277:38"),
+    charFrom: $unwrapErr(
+      $charTryFrom(0xd800),
+      "test/corpus/writer_sink_rest.rs:278:46",
+      undefined,
+      (e) => $debugStr(e, "'"),
+    ),
+    charParse: $unwrapErr(
+      $parseChar("ab"),
+      "test/corpus/writer_sink_rest.rs:279:42",
+      undefined,
+      (e) => $debugStr(e, "'"),
+    ),
   };
   log = [[]];
   const f$12 = $writerSink(log, logWrite_writeStr, logWrite_writeStr);

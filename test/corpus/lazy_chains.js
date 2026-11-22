@@ -123,7 +123,7 @@ function main() {
   console.log(`${counted.reduce((n) => n + 1, 0)}`);
   const pairs = Array.from(
     $trustedZip(
-      $slice(v, 0, 2)
+      $slice(v, 0, "test/corpus/lazy_chains.rs:56:35", 2)
         .values()
         .map((x) => noisy("left", x)),
       $mapEnds($iter(v), (x) => noisy("right", x)),
@@ -132,7 +132,7 @@ function main() {
   console.log(`[${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   const short = Array.from(
     $lazyZip(
-      $iter($slice(v, 0, 2)),
+      $iter($slice(v, 0, "test/corpus/lazy_chains.rs:62:35", 2)),
       v.values().map((x) => noisy("other", x)),
     ),
   );
@@ -141,7 +141,7 @@ function main() {
   console.log(`[${back.join(", ")}]`);
   const joined = Array.from(
     $lazyChain(
-      $iter($slice(v, 0, 1)),
+      $iter($slice(v, 0, "test/corpus/lazy_chains.rs:66:29", 1)),
       v.values().map((x) => noisy("joined", x)),
     ).take(2),
   );

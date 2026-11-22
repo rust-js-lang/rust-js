@@ -1150,15 +1150,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 {
                     return json!({ "kind": "literal", "value": value.literal() });
                 }
-                // A `Location` is `{ file, line, column }` (ADR 0427, #560).
+                // A `Location` is its text, `file:line:column` (ADR 0427,
+                // amended by #2292).
                 if tcx.is_lang_item(did, LangItem::PanicLocation) {
-                    let members: Vec<Value> = (super::std_types::location::PARTS.iter())
-                        .map(|&(name, text)| {
-                            let ty = keyword(if text { "string" } else { "number" });
-                            json!({ "kind": "property", "name": name, "optional": false, "readonly": true, "type": ty })
-                        })
-                        .collect();
-                    return json!({ "kind": "object", "members": members });
+                    return keyword("string");
                 }
                 if is_std_def(tcx, did, StdItem::Vec) {
                     return json!({ "kind": "array", "element": self.ts(args.type_at(0)), "readonly": false });

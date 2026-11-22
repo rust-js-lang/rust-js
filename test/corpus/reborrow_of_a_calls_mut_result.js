@@ -17,19 +17,19 @@ function deinitSliceMut(s) {
 
 function throughUnsafe(headers) {
   const item = same(headers);
-  item.value[$at(item.value, 0)] = 9;
+  item.value[$at(item.value, 0, "test/corpus/reborrow_of_a_calls_mut_result.rs:23:5")] = 9;
   return item.value.length;
 }
 
 function byHand(headers) {
   const item = same(headers);
-  item.value[$at(item.value, 1)] = 8;
+  item.value[$at(item.value, 1, "test/corpus/reborrow_of_a_calls_mut_result.rs:29:5")] = 8;
   return item.value.length;
 }
 
 function deinit(headers) {
   const item = deinitSliceMut(headers);
-  item.value[$at(item.value, 2)] = 7;
+  item.value[$at(item.value, 2, "test/corpus/reborrow_of_a_calls_mut_result.rs:35:5")] = 7;
   return item.value.length;
 }
 

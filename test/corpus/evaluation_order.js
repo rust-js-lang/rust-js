@@ -26,7 +26,9 @@ function main() {
   console.log(`pair ${pair.left} ${pair.right}`);
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);
   const zero = log.length - 8;
-  (($div(note(log, "before", 1), zero, -2147483648) | 0) + note(log, "never", 2)) | 0;
+  (($div(note(log, "before", 1), zero, "test/corpus/evaluation_order.rs:29:13", -2147483648) | 0) +
+    note(log, "never", 2)) |
+    0;
   console.log("unreachable");
 }
 //# sourceMappingURL=case.js.map

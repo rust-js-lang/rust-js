@@ -93,9 +93,9 @@ pub fn detach(fiber: &Fiber) {
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  const times = root.times;\n  times[$at(times, index)] = 1;\n");
+  expect(js).toContain("  const times = root.times;\n  times[$at(times, index, \"lib.rs:16:10\")] = 1;\n");
   expect(js).toContain("  const old = root.times;\n  root.times = [];\n  return old;\n");
-  expect(js).toContain('  const borrow = $borrow($fieldCell(cursor, "current"), true);\n');
+  expect(js).toContain('  const borrow = $borrow($fieldCell(cursor, "current"), "lib.rs:41:20", true);\n');
   expect(js).toContain("export let current;\n");
   expect(js).toContain("  current = fiber;\n");
   // Its guard the field itself, no drop of its own to hold it (#700).
@@ -163,7 +163,7 @@ pub fn unlink(fiber: &Fiber) {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('  return $fieldCell(fiber, "return", true);\n');
-  expect(js).toContain('  const sibling = $borrow($fieldCell(fiber, "sibling", true), true);\n');
+  expect(js).toContain('  const sibling = $borrow($fieldCell(fiber, "sibling", true), "lib.rs:21:33", true);\n');
   const lib = await import(join(dir, "lib.js"));
   const parent = { tag: 3, return: null, sibling: null };
   const child: { tag: number; return: object | null; sibling: object | null } = { tag: 5, return: parent, sibling: parent };

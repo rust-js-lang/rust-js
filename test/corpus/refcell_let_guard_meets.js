@@ -8,17 +8,17 @@ export function entry() {
 
 function main() {
   const cell = [1];
-  const v = $borrow(cell, true);
+  const v = $borrow(cell, "test/corpus/refcell_let_guard_meets.rs:20:22", true);
   const n = v.length;
   console.log(`${n}`);
   try {
     if (cell.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/refcell_let_guard_meets.rs:13:16");
     }
     cell.push(0);
   } finally {
     $unborrow(v);
   }
-  console.log(`${$borrow(cell).length}`);
+  console.log(`${$borrow(cell, "test/corpus/refcell_let_guard_meets.rs:25:25").length}`);
 }
 //# sourceMappingURL=case.js.map

@@ -89,7 +89,7 @@ export function createUndoStack(initial, options) {
       if (joins) {
         const index = history.index;
         try {
-          $index(history.entries, index);
+          $index(history.entries, index, "test/corpus/guard_held_in_an_undo_stack.rs:101:32");
         } catch (error) {
           $rcDrop(state);
           throw error;
@@ -170,7 +170,9 @@ export function createUndoStack(initial, options) {
         return;
       }
       history.index--;
-      return $rcClone($index(history.entries, history.index));
+      return $rcClone(
+        $index(history.entries, history.index, "test/corpus/guard_held_in_an_undo_stack.rs:127:44"),
+      );
     },
     () => {
       $rcDrop(history$3, (value) => {
@@ -204,7 +206,9 @@ export function createUndoStack(initial, options) {
         return;
       }
       history.index = (history.index + 1) >>> 0;
-      return $rcClone($index(history.entries, history.index));
+      return $rcClone(
+        $index(history.entries, history.index, "test/corpus/guard_held_in_an_undo_stack.rs:139:44"),
+      );
     },
     () => {
       $rcDrop(history$4, (value) => {

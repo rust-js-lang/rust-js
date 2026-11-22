@@ -23,6 +23,7 @@ import {
   $rcDrop,
   $rev,
   $roomForCounted,
+  $stdSites,
   $stringPanic,
   $tryOf,
   $unwindsOn,
@@ -49,7 +50,7 @@ let panicAt = 0;
 function step() {
   steps = (steps + 1) >>> 0;
   if (steps === panicAt) {
-    throw $stringPanic(`step ${steps}`);
+    throw $stringPanic(`step ${steps}`, "test/corpus/collect_into_an_rc_slice_unwinding.rs:29:13");
   }
 }
 
@@ -79,20 +80,6 @@ function main() {
       steps = 0;
       console.log(`panic at ${panicAt$1}, case ${which}`);
       const made$1 = $catchUnwind(() => {
-        const fromIterator = {
-          fromIter: (items, ITrustedLen, IInPlace) => ({
-            value: $collectCounted(
-              items,
-              1,
-              1,
-              ITrustedLen,
-              $vecCollectWay($collectsInPlace(IInPlace, 1, 1), ITrustedLen, IInPlace),
-              loudDrop_drop,
-            ),
-            strong: 1,
-            weak: 0,
-          }),
-        };
         const mapped = $held(
           iterator_map(
             $iter(louds()),
@@ -307,7 +294,11 @@ function main() {
             let result$1;
             try {
               result$1 = {
-                value: $collectDropping($roomForCounted(iter, 1, 1), loudDrop_drop, true),
+                value: $collectDropping(
+                  $roomForCounted(iter, 1, 1, $stdSites.rcFromTrustedLen[0]),
+                  loudDrop_drop,
+                  true,
+                ),
                 strong: 1,
                 weak: 0,
               };
@@ -328,9 +319,29 @@ function main() {
           }
           case 6: {
             mapped$live = false;
-            const value = made(mapped, fromIterator, true, [1, 1], (map) => {
-              map.return();
-            });
+            const value = made(
+              mapped,
+              {
+                fromIter: (items, ITrustedLen, IInPlace) => ({
+                  value: $collectCounted(
+                    items,
+                    1,
+                    1,
+                    ITrustedLen,
+                    $vecCollectWay($collectsInPlace(IInPlace, 1, 1), ITrustedLen, IInPlace),
+                    $stdSites.rcFromTrustedLen[0],
+                    loudDrop_drop,
+                  ),
+                  strong: 1,
+                  weak: 0,
+                }),
+              },
+              true,
+              [1, 1],
+              (map) => {
+                map.return();
+              },
+            );
             result = value.value.length;
             $rcDrop(value, (value) => {
               for (const item of value) {
@@ -343,7 +354,21 @@ function main() {
             mapped$live = false;
             const value = made(
               $filterEnds(mapped, () => true, loudDrop_drop),
-              fromIterator,
+              {
+                fromIter: (items, ITrustedLen, IInPlace) => ({
+                  value: $collectCounted(
+                    items,
+                    1,
+                    1,
+                    ITrustedLen,
+                    $vecCollectWay($collectsInPlace(IInPlace, 1, 1), ITrustedLen, IInPlace),
+                    $stdSites.arcFromTrustedLen[0],
+                    loudDrop_drop,
+                  ),
+                  strong: 1,
+                  weak: 0,
+                }),
+              },
               false,
               [1, 1],
               (filter) => {
@@ -370,6 +395,7 @@ function main() {
                     }),
                     1,
                     1,
+                    $stdSites.arcFromTrustedLen[0],
                   ),
                   loudDrop_drop,
                   true,

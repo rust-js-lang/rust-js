@@ -19,6 +19,7 @@ import {
   $lazyChain,
   $next,
   $nthBack,
+  $panic,
   $partialEq,
   $partialOrd,
   $peek,
@@ -43,7 +44,7 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 3) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/vec_last_takes_its_back.rs:23:13");
   }
 }
 
@@ -382,7 +383,7 @@ function main() {
             ((v) => {
               let tmp;
               try {
-                tmp = $index(v, 0)[0] === 2;
+                tmp = $index(v, 0, "test/corpus/vec_last_takes_its_back.rs:113:21")[0] === 2;
               } catch (error) {
                 $cleanup(() => {
                   $dropItems(v, dDrop_drop);
@@ -391,7 +392,7 @@ function main() {
               }
               if (tmp) {
                 try {
-                  throw new Error("made");
+                  throw $panic("made", "test/corpus/vec_last_takes_its_back.rs:114:21");
                 } catch (error) {
                   $cleanup(() => {
                     $dropItems(v, dDrop_drop);

@@ -52,12 +52,12 @@ function main() {
 
   const names = ["x", "y"];
   const owned = Array.from($cycle(names).take(5));
-  owned[$at(owned, 0)] += "!";
+  owned[$at(owned, 0, "test/corpus/iter_cycle.rs:22:10")] += "!";
   console.log(`[${owned.map((item) => $debugStr(item)).join(", ")}]`);
 
   const lists = [[1], [2]];
   const copies = Array.from($cycle(lists, (item) => item.slice()).take(3));
-  $index(copies, 0).push(9);
+  $index(copies, 0, "test/corpus/iter_cycle.rs:27:11").push(9);
   console.log(`[${copies.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 
   const none = [];

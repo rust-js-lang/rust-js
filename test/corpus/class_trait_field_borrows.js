@@ -16,7 +16,7 @@ export function entry() {
 
 function countOf(cell) {
   if (cell.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/class_trait_field_borrows.rs:49:10");
   }
   return cell.length;
 }
@@ -28,11 +28,11 @@ function Books() {
 }
 
 Books.prototype.first = function () {
-  return $index(this.items, 0);
+  return $index(this.items, 0, "test/corpus/class_trait_field_borrows.rs:70:28");
 };
 
 Books.prototype.slotted = function () {
-  return $borrow($fieldCell(this, "slot")).value;
+  return $borrow($fieldCell(this, "slot"), "test/corpus/class_trait_field_borrows.rs:74:20").value;
 };
 
 Books.prototype.push = function (n) {
@@ -44,7 +44,11 @@ Books.prototype.total = function () {
 };
 
 Books.prototype.fill = function (value) {
-  const held = $borrow($fieldCell(this, "slot"), true);
+  const held = $borrow(
+    $fieldCell(this, "slot"),
+    "test/corpus/class_trait_field_borrows.rs:39:32",
+    true,
+  );
   // Held: a borrow of the field's own meets it.
   let free;
   try {
@@ -56,12 +60,13 @@ Books.prototype.fill = function (value) {
   } finally {
     $unborrow(held);
   }
-  $borrowMut($fieldCell(this, "slot")).value = value;
+  $borrowMut($fieldCell(this, "slot"), "test/corpus/class_trait_field_borrows.rs:43:22").value =
+    value;
   return free;
 };
 
 Books.prototype.record = function (entry) {
-  const entries = $borrowMut(this.entries, true);
+  const entries = $borrowMut(this.entries, "test/corpus/class_trait_field_borrows.rs:24:42", true);
   let result;
   try {
     entries.push(entry);

@@ -138,20 +138,22 @@ export function table(input) {
     out += `${$pad(team, 6, ">")}: n=${members.length} avg=${$toFixed(avg, 1).padStart(6)} best=${best}\n`;
   }
   const ages = rows.map((r) => r.age);
-  const gaps = $windows(ages, 2).map((w) => (($index(w, 1) | 0) - (w[0] | 0)) | 0);
+  const gaps = $windows(ages, 2, "examples/report.rs:113:31").map(
+    (w) => (($index(w, 1, "examples/report.rs:113:50") | 0) - (w[0] | 0)) | 0,
+  );
   out += `[${gaps.join(", ")}]\n`;
   out += `${rows.every((r) => r.score > 50)} ${rows.some((r) => r.team === "red")} ${((value) => (value == null ? "None" : `Some(${value})`))($position(rows, (r) => r.age > 40))}\n`;
   return out;
 }
 
 export function parseErrors() {
-  const value = $unwrapErr($parseInt("", 0, 255));
-  const value$1 = $unwrapErr($parseInt("300", 0, 255));
-  const value$2 = $unwrapErr($parseInt("-40000", -32768, 32767));
-  const value$3 = $unwrapErr($parseF64("x"), undefined, $debugF64);
-  const value$4 = $unwrapErr($parseBool("no"));
+  const value = $unwrapErr($parseInt("", 0, 255), "examples/report.rs:127:26");
+  const value$1 = $unwrapErr($parseInt("300", 0, 255), "examples/report.rs:128:29");
+  const value$2 = $unwrapErr($parseInt("-40000", -32768, 32767), "examples/report.rs:129:33");
+  const value$3 = $unwrapErr($parseF64("x"), "examples/report.rs:130:28", undefined, $debugF64);
+  const value$4 = $unwrapErr($parseBool("no"), "examples/report.rs:131:30");
   return `${$debugParseError(value, "ParseIntError")} ${$debugParseError(value$1, "ParseIntError")} ${$debugParseError(value$2, "ParseIntError")} ${$debugParseError(value$3, "ParseFloatError")} ${$debugParseError(value$4, "ParseBoolError")} ${$debugParseError(
-    $unwrapErr($parseChar("ab"), undefined, (e) => $debugStr(e, "'")),
+    $unwrapErr($parseChar("ab"), "examples/report.rs:132:30", undefined, (e) => $debugStr(e, "'")),
     "ParseCharError",
   )}`;
 }

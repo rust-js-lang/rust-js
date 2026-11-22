@@ -219,13 +219,13 @@ pub fn index_for_sorting() -> u32 {
 
 ```
 error: rust-js: `sort_index` and `index_for_sorting` are both exported as `sortIndex` in JS, where an importer reads one export by that name; give one another with `#[rust_js::name = ".."]`
- --> src/lib.rs:6:1
+ --> lib.rs:6:1
   |
 6 | pub fn index_for_sorting() -> u32 {
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
 note: `sortIndex` is exported here first
- --> src/lib.rs:1:1
+ --> lib.rs:1:1
   |
 1 | pub fn sort_index() -> u32 {
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -595,7 +595,7 @@ pub fn count(#[cfg_attr(rust_js, rust_js::rest)] items: Vec<f64>) -> usize {
 
 ```
 error: rust-js: `#[rust_js::rest]` is a slice's, `items: &[T]`, not a `Vec<f64>`'s
- --> src/lib.rs:1:14
+ --> lib.rs:1:14
   |
 1 | pub fn count(#[cfg_attr(rust_js, rust_js::rest)] items: Vec<f64>) -> usize {
   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -763,8 +763,10 @@ pub const CLONE_INSTANCE: Shim = |args| shim(args);
 ```
 
 ```js
+import { $panic } from "@rust-js/std";
+
 function shim(...args) {
-  throw new Error("The current renderer does not support persistence.");
+  throw $panic("The current renderer does not support persistence.", "lib.rs:4:5");
 }
 
 export const cloneInstance = shim;
@@ -2633,7 +2635,7 @@ import { $stringPanic } from "@rust-js/std";
 
 export function checked(n, location) {
   if (n === 0) {
-    throw $stringPanic(`zero at ${location.file}:${location.line}:${location.column}`);
+    throw $stringPanic(`zero at ${location}`, location);
   }
   return n;
 }
@@ -2644,11 +2646,7 @@ export function zeros(N) {
 ```
 
 ```ts
-export function checked(n: number, location: {
-    readonly file: string;
-    readonly line: number;
-    readonly column: number;
-}): number;
+export function checked(n: number, location: string): number;
 
 export function zeros(N: number): number[];
 ```

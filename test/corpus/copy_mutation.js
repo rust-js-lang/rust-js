@@ -51,7 +51,7 @@ function main() {
   const shape = { name: "tri", points: [{ ...a }, { ...b }] };
   let copy = { ...shape, points: shape.points.map((item) => ({ ...item })) };
   copy.name += "-copy";
-  $index(copy.points, 0).y = -1;
+  $index(copy.points, 0, "test/corpus/copy_mutation.rs:69:16").y = -1;
   copy.points.push({ x: 0, y: 0 });
   console.log(`${shapeDebug_fmt(shape)}\n${shapeDebug_fmt(copy)}`);
 
@@ -72,9 +72,9 @@ function main() {
 
   const nested = [[1, 2], [3]];
   const snapshot = nested.map((item) => item.slice());
-  $index(nested, 0).push(9);
-  const items = $index(nested, 1);
-  items[$at(items, 0)] = 0;
+  $index(nested, 0, "test/corpus/copy_mutation.rs:86:11").push(9);
+  const items = $index(nested, 1, "test/corpus/copy_mutation.rs:87:11");
+  items[$at(items, 0, "test/corpus/copy_mutation.rs:87:14")] = 0;
   console.log(
     `[${nested.map((item) => `[${item.join(", ")}]`).join(", ")}] [${snapshot.map((item) => `[${item.join(", ")}]`).join(", ")}]`,
   );

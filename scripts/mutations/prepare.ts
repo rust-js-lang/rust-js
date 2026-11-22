@@ -734,4 +734,12 @@ export const mutations: Mutation[] = [
     replace: "",
     unitTests: "prepare::reclaim::tests::an_unspelled_name_is_spelled_apart_from_the_modules",
   },
+  {
+    name: "checked-item-of-two-arguments-alone",
+    breaks: "an item's checked place is compounded only where its check is given two arguments, so `v[$at(v, i, loc)] = v[i] | lane`, which gives the check where it panics, stays an assignment (#2292)",
+    file: "crates/rust-js-program/src/prepare.rs",
+    find: "    let [of, index, ..] = args.as_slice() else {\n",
+    replace: "    let [of, index] = args.as_slice() else {\n",
+    tests: ["test/lowering-bits.test.ts", "-t", "an item's bitwise assignment is its compound"],
+  },
 ];

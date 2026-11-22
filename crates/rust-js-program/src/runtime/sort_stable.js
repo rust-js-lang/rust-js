@@ -90,7 +90,7 @@ function $createRun(v, start, end, minGoodRun, eager, sort) {
   if (len >= minGoodRun) {
     const [run, reversed] = $existingRun(v, start, end, sort.isLess);
     if (run >= minGoodRun) {
-      if (reversed) $reverseRange(v, start, start + run);
+      if (reversed) $reverseRange(v, start, undefined, start + run);
       return { len: run, sorted: true };
     }
   }

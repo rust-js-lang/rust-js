@@ -61,11 +61,11 @@ function parse(text, headers) {
 
 function fill(buf, byte, n) {
   for (let i = 0; i < n; i++) {
-    buf.value[$at(buf.value, i)] = byte;
+    buf.value[$at(buf.value, i, "test/corpus/mut_ref_of_a_mut_slice.rs:31:9")] = byte;
   }
   const taken = buf.value;
   buf.value = [];
-  buf.value = $view(taken, n);
+  buf.value = $view(taken, n, "test/corpus/mut_ref_of_a_mut_slice.rs:34:22");
 }
 
 // Each once refused, now as Rust: the caller's slice re-pointed by a
@@ -90,7 +90,7 @@ function held() {
     },
   };
   h.s.value = ys;
-  rest[$at(rest, 0)] = 5;
+  rest[$at(rest, 0, "test/corpus/mut_ref_of_a_mut_slice.rs:55:9")] = 5;
   return [xs, ys];
 }
 
@@ -101,16 +101,16 @@ function split() {
   rest = split[0];
   const h = split[1];
   if (h != null) {
-    h[$at(h, 0)] = 9;
+    h[$at(h, 0, "test/corpus/mut_ref_of_a_mut_slice.rs:65:9")] = 9;
   }
-  rest[$at(rest, 0)] = -7;
+  rest[$at(rest, 0, "test/corpus/mut_ref_of_a_mut_slice.rs:67:5")] = -7;
   return w;
 }
 
 function swapEnds(buf) {
   const n = buf.value.length;
   if (n > 1) {
-    $swap(buf.value, 0, n - 1);
+    $swap(buf.value, 0, n - 1, "test/corpus/mut_ref_of_a_mut_slice.rs:74:13");
   }
   const taken = buf.value;
   buf.value = [];
@@ -160,6 +160,7 @@ export function main() {
       },
       [111, 118, 101, 114, 102, 108, 111, 119, 105, 110, 103, 33],
     ),
+    "test/corpus/mut_ref_of_a_mut_slice.rs:89:49",
     undefined,
     $ioErrorDebug,
   );
@@ -170,7 +171,7 @@ export function main() {
 
   // `(&mut buf[..])` as the issue writes it.
   const buf = new Array(8).fill(46);
-  let tmp = $view(buf, 2);
+  let tmp = $view(buf, 2, "test/corpus/mut_ref_of_a_mut_slice.rs:94:14");
   $sliceWriter.writeAll(
     {
       get value() {
@@ -203,7 +204,11 @@ export function main() {
       word,
     ),
   );
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/mut_ref_of_a_mut_slice.rs:100:34",
+  );
   let rest = "";
   $unwrapOk(
     $sliceReader.readToString(
@@ -225,6 +230,7 @@ export function main() {
       },
       true,
     ),
+    "test/corpus/mut_ref_of_a_mut_slice.rs:102:38",
     undefined,
     $ioErrorDebug,
   );
@@ -290,7 +296,7 @@ export function main() {
   const s$1 = { value: s };
   reset(s$1, b);
   s = s$1.value;
-  s[$at(s, 1)] = 0;
+  s[$at(s, 1, "test/corpus/mut_ref_of_a_mut_slice.rs:123:5")] = 0;
   const value$2 = held();
   const arg$1 = split();
   console.log(
@@ -313,7 +319,7 @@ export function main() {
     }
   }
   const value$3 = free.length;
-  const arg$2 = $slice(headers, 0, n);
+  const arg$2 = $slice(headers, 0, "test/corpus/mut_ref_of_a_mut_slice.rs:130:49", n);
   console.log(`${n} ${value$3} [${arg$2.map((item) => headerDebug_fmt(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

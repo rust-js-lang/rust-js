@@ -2,7 +2,9 @@
 
 import {
   $asciiCase,
+  $asciiCaseRange,
   $at,
+  $checkedStrSplitAtMut,
   $debugStr,
   $fromUtf8Mut,
   $index,
@@ -25,7 +27,7 @@ function upper(t) {
 }
 
 function tail(s) {
-  return $strPart(s, 7);
+  return $strPart(s, 7, "test/corpus/str_mut.rs:18:11");
 }
 
 function main() {
@@ -57,8 +59,8 @@ function main() {
   console.log(`${u}`);
 
   const v = ["x", "y"];
-  v[$at(v, 1)] = $asciiCase(v[1], true);
-  $index(v, 0);
+  v[$at(v, 1, "test/corpus/str_mut.rs:46:6")] = $asciiCase(v[1], true);
+  $index(v, 0, "test/corpus/str_mut.rs:47:17");
   const t$3 = { value: v[0] };
   shout(t$3);
   v[0] = t$3.value;
@@ -83,7 +85,7 @@ function main() {
 
   // A range of one, by its UTF-8 bytes.
   let name = "élan vital";
-  name = $asciiCase(name, true, 2, 4);
+  name = $asciiCaseRange(name, true, 2, "test/corpus/str_mut.rs:60:9", 4);
   console.log(`${name}`);
   name = $asciiCase(name, false);
   console.log(`${name}`);
@@ -98,6 +100,7 @@ function main() {
         },
       },
       0,
+      "test/corpus/str_mut.rs:64:20",
       4,
     ),
   );
@@ -190,7 +193,7 @@ function main() {
   console.log(`${pair}`);
   console.log(
     `${
-      $strSplitAtMut(
+      $checkedStrSplitAtMut(
         {
           get value() {
             return pair;
@@ -200,11 +203,10 @@ function main() {
           },
         },
         11,
-        true,
       ) == null
     }`,
   );
-  const splitAtMutChecked = $strSplitAtMut(
+  const splitAtMutChecked = $checkedStrSplitAtMut(
     {
       get value() {
         return pair;
@@ -214,17 +216,16 @@ function main() {
       },
     },
     4,
-    true,
   );
   if (splitAtMutChecked != null) {
     const rest = splitAtMutChecked[1];
     rest.value = $asciiCase(rest.value, false);
   }
   console.log(`${pair}`);
-  console.log(`${$strSlice(pair, 1, 3)}`);
-  console.log(`${$strSlice(pair, 2, 5)}`);
-  pair = $asciiCase(pair, true, 0, 2);
-  pair = $asciiCase(pair, true, 6, 8);
+  console.log(`${$strSlice(pair, 1, "test/corpus/str_mut.rs:92:29", 3)}`);
+  console.log(`${$strSlice(pair, 2, "test/corpus/str_mut.rs:93:29", 5)}`);
+  pair = $asciiCaseRange(pair, true, 0, "test/corpus/str_mut.rs:94:14", 2);
+  pair = $asciiCaseRange(pair, true, 6, "test/corpus/str_mut.rs:95:14", 8);
   console.log(`${pair}`);
   const item = $strPart(
     {
@@ -236,13 +237,14 @@ function main() {
       },
     },
     0,
+    "test/corpus/str_mut.rs:98:30",
     3,
   );
   item.value = $asciiCase(item.value, false);
   console.log(`${pair}`);
-  pair = $asciiCase(pair, true, 7);
+  pair = $asciiCaseRange(pair, true, 7, "test/corpus/str_mut.rs:101:9");
   console.log(`${pair}`);
-  pair = $asciiCase(pair, true, 0, 2);
+  pair = $asciiCaseRange(pair, true, 0, "test/corpus/str_mut.rs:103:9", 2);
   console.log(`${pair}`);
 
   // A `&mut str` of bytes, written through to them.

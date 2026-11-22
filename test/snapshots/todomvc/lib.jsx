@@ -121,7 +121,11 @@ export function App() {
 }
 
 export function main() {
-  const app = $unwrap(document.getElementById("app"), "the page has an #app");
+  const app = $unwrap(
+    document.getElementById("app"),
+    "examples/todomvc/lib.rs:116:51",
+    "the page has an #app",
+  );
   createRoot(app).render(<App />);
 }
 //# sourceMappingURL=lib.jsx.map

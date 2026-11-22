@@ -24,7 +24,10 @@ function countDigits(text) {
   let digits = 0;
   let chars = 0;
   let c;
-  while ((c = $next($chars($strSlice(text, i)))) != null) {
+  while (
+    (c = $next($chars($strSlice(text, i, "test/corpus/long_text_read_char_by_char.rs:12:29")))) !=
+    null
+  ) {
     if (/^[0-9]$/.test(c)) {
       digits = (digits + 1) >>> 0;
     }
@@ -40,13 +43,15 @@ function words(text) {
   let count = 0;
   let longest = 0;
   while (pos < $byteLen(text)) {
-    const rest = $strSlice(text, pos);
+    const rest = $strSlice(text, pos, "test/corpus/long_text_read_char_by_char.rs:28:25");
     const end = $charIndices(rest).find(([, c]) => c === " ")?.[0] ?? $byteLen(rest);
     if (end > 0) {
       count = (count + 1) >>> 0;
       longest = Math.max(longest, end);
     }
-    const next = $next($chars($strSlice(rest, end)));
+    const next = $next(
+      $chars($strSlice(rest, end, "test/corpus/long_text_read_char_by_char.rs:34:26")),
+    );
     pos = (pos + ((end + (next != null ? $byteLen(next) : 0)) >>> 0)) >>> 0;
   }
   return [count, longest];
@@ -58,7 +63,11 @@ function fromTheEnd(text) {
   let uppercase = 0;
   let first = " ";
   let c;
-  while ((c = $nextBack($chars($strSlice(text, 0, end)))) != null) {
+  while (
+    (c = $nextBack(
+      $chars($strSlice(text, 0, "test/corpus/long_text_read_char_by_char.rs:44:29", end)),
+    )) != null
+  ) {
     if ($isUppercase(c)) {
       uppercase = (uppercase + 1) >>> 0;
     }

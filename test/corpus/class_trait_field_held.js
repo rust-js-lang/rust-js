@@ -11,11 +11,15 @@ function Gate() {
 }
 
 Gate.prototype.probe = function () {
-  return $borrow($fieldCell(this, "flag")).value;
+  return $borrow($fieldCell(this, "flag"), "test/corpus/class_trait_field_held.rs:38:20").value;
 };
 
 Gate.prototype.guarded = function () {
-  const _held = $borrowMut($fieldCell(this, "flag"), true);
+  const _held = $borrowMut(
+    $fieldCell(this, "flag"),
+    "test/corpus/class_trait_field_held.rs:13:33",
+    true,
+  );
   try {
     return this.probe();
   } finally {

@@ -10,6 +10,7 @@ import {
   $foldToArray,
   $iter,
   $next,
+  $panic,
   $rangeNext,
   $roomForHint,
   iterator_map,
@@ -23,7 +24,7 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] >= 80) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/collected_in_place_zipped_leaked_past_a_maps_drop.rs:14:13");
   }
 }
 

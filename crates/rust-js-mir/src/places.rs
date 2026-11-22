@@ -115,7 +115,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             // Its bounds checked here: `$index(xs, i)` where it's read,
             // `xs[$at(xs, i)]` where it's the place written.
             if let PlaceElem::Index(local) = elem
-                && let Some(write) = state.deferred.swap_remove(&local)
+                && let Some((write, raised)) = state.deferred.swap_remove(&local)
             {
                 let items = match value.reads_same() {
                     true => value,
@@ -124,10 +124,12 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 let index = self.read_local(state, local, out)?;
                 // A constant index of an array as long as that has no check
                 // to defer: `assert_check` knows it in bounds.
-                value = match write && at + 1 == last {
+                // Its panic names where its `Assert` is, the indexing's own
+                // place, not the statement's that reads it (#2292).
+                value = Expr::raised_at(raised, || match write && at + 1 == last {
                     true => Expr::index(items.clone(), Expr::call(Expr::helper("$at"), vec![items, index])),
                     false => Expr::call(Expr::helper("$index"), vec![items, index]),
-                };
+                });
                 placed = false;
                 ty = ty.projection_ty(self.tcx, elem);
                 continue;

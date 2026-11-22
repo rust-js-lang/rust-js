@@ -60,7 +60,7 @@ function main() {
     },
     tGetMutT,
   );
-  $index(kept, 0);
+  $index(kept, 0, "test/corpus/mut_kept_by_what_a_call_gives_back.rs:54:10");
   kept[0].value = (kept[0].value + 1) >>> 0;
   console.log(`${a}`);
 

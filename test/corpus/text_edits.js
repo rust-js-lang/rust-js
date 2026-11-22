@@ -25,23 +25,23 @@ export function entry() {
 
 function main() {
   let text = "héllo wörld";
-  const split = $strSplitOff(text, 6);
+  const split = $strSplitOff(text, 6, "test/corpus/text_edits.rs:6:21");
   text = split[0];
   const tail = split[1];
   console.log(`[${text}] [${tail}]`);
-  text = $replaceRange(text, 1, 3, "e");
+  text = $replaceRange(text, 1, 3, "e", "test/corpus/text_edits.rs:8:10");
   console.log(`[${text}]`);
   let long = "aé-bc-déf";
-  const drained = $strDrain(long, 0, 4);
+  const drained = $strDrain(long, 0, 4, "test/corpus/text_edits.rs:11:30");
   long = drained[0];
   const taken = drained[1].slice().join("");
   console.log(`[${taken}] [${long}]`);
-  const drained$1 = $strDrain(long, 2, 4, true);
+  const drained$1 = $strDrain(long, 2, 4, "test/corpus/text_edits.rs:13:35", true);
   long = drained$1[0];
   const removed = drained$1[1].slice();
   console.log(`[${removed.map((item) => $debugStr(item, "'")).join(", ")}] [${long}]`);
-  long = $strExtendWithin(long, 0, 2);
-  long = $strExtendWithin(long, 1);
+  long = $strExtendWithin(long, 0, 2, "test/corpus/text_edits.rs:15:10");
+  long = $strExtendWithin(long, 1, undefined, "test/corpus/text_edits.rs:16:10");
   console.log(`[${long}]`);
 
   console.log(
@@ -97,7 +97,9 @@ function main() {
   console.log(
     `${value$2.TAG === "Ok" ? `Ok(${$debugStr(value$2._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"} ${value$3.TAG === "Ok" ? `Ok(${$debugStr(value$3._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"}`,
   );
-  console.log(`${($unwrapErr($fromUtf16([56606])), "invalid utf-16: lone surrogate found")}`);
+  console.log(
+    `${($unwrapErr($fromUtf16([56606]), "test/corpus/text_edits.rs:31:50"), "invalid utf-16: lone surrogate found")}`,
+  );
   console.log(`${$fromUtf16Lossy([104, 55348, 105])}`);
   console.log(`${$floorCharBoundary("héllo", 2)} ${$ceilCharBoundary("héllo", 2)}`);
   console.log(`${$floorCharBoundary("héllo", 99)} ${$ceilCharBoundary("héllo", 99)}`);

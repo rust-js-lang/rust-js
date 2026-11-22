@@ -9,25 +9,25 @@ export function entry() {
 function main() {
   const next = { value: 1 };
   if (next.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_if_let_held.rs:10:28");
   }
   if (next.value != null) {
     console.log(`tested ${next.value}`);
   }
   if (next.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_if_let_held.rs:13:27");
   }
   console.log(`${next.value == null ? "None" : `Some(${next.value})`}`);
-  const borrow = $borrow(next, true);
+  const borrow = $borrow(next, "test/corpus/refcell_if_let_held.rs:14:28", true);
   try {
     if (borrow.value != null) {
-      $borrowMut(next).value = (borrow.value + 1) | 0;
+      $borrowMut(next, "test/corpus/refcell_if_let_held.rs:15:14").value = (borrow.value + 1) | 0;
     }
   } finally {
     $unborrow(borrow);
   }
   if (next.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_if_let_held.rs:17:27");
   }
   console.log(`${next.value == null ? "None" : `Some(${next.value})`}`);
 }

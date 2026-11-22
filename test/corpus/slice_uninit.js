@@ -6,6 +6,7 @@ import {
   $copyFromSlice,
   $debugStr,
   $live,
+  $stdSites,
   $stringPanic,
   $unwindsOn,
   $writeCloneOfSlice,
@@ -30,11 +31,11 @@ const mainConst$1 = "";
 
 function main() {
   const buf = Array.from({ length: 3 });
-  $copyFromSlice(buf, [1, 2, 3]);
+  $copyFromSlice(buf, [1, 2, 3], $stdSites.writeCopyOfSlice[0]);
   const written = buf;
-  written[$at(written, 0)] = 9;
+  written[$at(written, 0, "test/corpus/slice_uninit.rs:27:5")] = 9;
   console.log(`[${buf.join(", ")}]`);
-  buf[$at(buf, 2)] = 7;
+  buf[$at(buf, 2, "test/corpus/slice_uninit.rs:30:9")] = 7;
   console.log(`[${buf.join(", ")}]`);
 
   const src = [[1], [2]];
@@ -55,7 +56,10 @@ function main() {
     for (const item of src) {
       noisyDrop_drop(item);
     }
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 1`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 1`,
+      "test/corpus/slice_uninit.rs:37:20",
+    );
   }
   console.log(`${cloned[1][0]}`);
   try {

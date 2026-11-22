@@ -13,7 +13,7 @@ function shortened(width) {
   board.forEach((row) => {
     row.pop();
   });
-  return $index(board[0], width - 1);
+  return $index(board[0], width - 1, "test/corpus/for_each_changes_items_in_place.rs:15:13");
 }
 
 function popRow(row) {
@@ -25,7 +25,7 @@ function popped(width) {
   const item = new Array(width).fill(1);
   const board = Array.from({ length: 2 }, () => item.slice());
   board.forEach(popRow);
-  return $index(board[1], width - 1);
+  return $index(board[1], width - 1, "test/corpus/for_each_changes_items_in_place.rs:25:13");
 }
 
 function main() {

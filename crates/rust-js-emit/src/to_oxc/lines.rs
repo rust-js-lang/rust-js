@@ -41,15 +41,39 @@ pub(super) fn arm_splits<'a>(
             } else {
                 written
             };
-            before
-                .rfind(operator)
-                .map(|found| (at, written, found + operator.len()))
+            rfind_in_code(before, operator).map(|found| (at, written, found + operator.len()))
         });
         if let Some((line, written, after)) = found {
             let start = after + written[after..].len() - written[after..].trim_start().len();
             splits.entry(line).or_default().push((start, texts.as_slice()));
         }
     }
+}
+
+/// Where `operator` is last in `code`, a line's JS, outside its strings:
+/// a location's `"packages/react-dom-bindings/.."` holds a `-` that isn't
+/// a subtraction (#2292).
+fn rfind_in_code(code: &str, operator: &str) -> Option<usize> {
+    let mut quote = None;
+    let mut escaped = false;
+    let mut found = None;
+    for (at, c) in code.char_indices() {
+        match quote {
+            Some(q) => {
+                if escaped {
+                    escaped = false;
+                } else if c == '\\' {
+                    escaped = true;
+                } else if c == q {
+                    quote = None;
+                }
+            }
+            None if matches!(c, '"' | '\'' | '`') => quote = Some(c),
+            None if code[at..].starts_with(operator) => found = Some(at),
+            None => {}
+        }
+    }
+    found
 }
 
 /// The JS's lines and what's placed in them: where each line is in `code`,
@@ -199,5 +223,20 @@ impl Laid<'_> {
             .map(|&(.., width)| width.0)
             .sum();
         (to, MapCol(column.0 - MapCol::of_byte(text, from).0 + wider))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::rfind_in_code;
+
+    // A branch's operator is found in its line's code, not inside a string
+    // before it, a location's path's `-` (#2292).
+    #[test]
+    fn an_operator_is_found_outside_strings() {
+        let line = r#"let end = rangeEnd - $unwrap(timing.delay, "packages/react-dom-bindings/x.rs:1:2") * m"#;
+        assert_eq!(rfind_in_code(line, "-"), Some(line.find(" - ").unwrap() + 1));
+        assert_eq!(rfind_in_code(r#"a ? "x ? y" : b"#, "?"), Some(2));
+        assert_eq!(rfind_in_code(r#""a \" - b""#, "-"), None);
     }
 }

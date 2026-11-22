@@ -8,6 +8,7 @@ import {
   $byteLen,
   $catchUnwind,
   $index,
+  $panic,
   $unborrow,
 } from "@rust-js/std";
 
@@ -18,13 +19,16 @@ export function entry() {
 function contentSegment(boundary) {
   const completedSegments = boundary.completedSegments;
   if (completedSegments.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/an_index_is_no_pattern.rs:18:27");
   }
   if (completedSegments.length !== 1) {
-    throw new Error("A previously unvisited boundary must have exactly one root segment.");
+    throw $panic(
+      "A previously unvisited boundary must have exactly one root segment.",
+      "test/corpus/an_index_is_no_pattern.rs:19:9",
+    );
   }
   if (completedSegments.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/an_index_is_no_pattern.rs:21:57");
   }
   const contentSegment = completedSegments[0];
   return contentSegment;
@@ -33,24 +37,28 @@ function contentSegment(boundary) {
 function firstAndLast(boundary) {
   const segments = boundary.completedSegments;
   if (segments.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/an_index_is_no_pattern.rs:27:17");
   }
   if (segments.length < 2) {
-    throw new Error("two segments at least");
+    throw $panic("two segments at least", "test/corpus/an_index_is_no_pattern.rs:28:9");
   }
   if (segments.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/an_index_is_no_pattern.rs:30:26");
   }
   const first = $byteLen(segments[0]);
   if (segments.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/an_index_is_no_pattern.rs:31:25");
   }
-  const last = $byteLen($index(segments, 1));
+  const last = $byteLen($index(segments, 1, "test/corpus/an_index_is_no_pattern.rs:31:33"));
   return [first, last];
 }
 
 function flushed(boundary, flush) {
-  const held = $borrow(boundary.completedSegments, true);
+  const held = $borrow(
+    boundary.completedSegments,
+    "test/corpus/an_index_is_no_pattern.rs:36:44",
+    true,
+  );
   try {
     return (flush(boundary) + held.length) >>> 0;
   } finally {
@@ -64,14 +72,14 @@ function main() {
   const arg = contentSegment(boundary);
   console.log(`${total} ${arg}`);
   if (boundary.completedSegments.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/an_index_is_no_pattern.rs:48:10");
   }
   boundary.completedSegments.push("late");
   let caught = $catchUnwind(() => contentSegment(boundary));
   console.log(`two segments: ${caught.TAG === "Err"}`);
   const [first, last] = firstAndLast(boundary);
   console.log(`${first} ${last}`);
-  $borrowMut(boundary.completedSegments).length = 0;
+  $borrowMut(boundary.completedSegments, "test/corpus/an_index_is_no_pattern.rs:54:33").length = 0;
   caught = $catchUnwind(() => firstAndLast(boundary));
   console.log(`none: ${caught.TAG === "Err"}`);
 }

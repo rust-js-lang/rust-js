@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "panic-runs-no-hook",
+    breaks: "a binary's panic writes no hook's text where it's raised",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
+    find: "  $onPanic?.(error);\n",
+    replace: "",
+    tests: ["test/binaries.test.ts", "-t", "where it's raised"],
+  },
+  {
+    name: "resumed-unwind-hooked",
+    breaks: "a binary's `resume_unwind` writes std's hook's text, where std runs none",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
+    find: "  $hooked.add(resumed);\n",
+    replace: "",
+    tests: ["test/binaries.test.ts", "-t", "resumed unwind"],
+  },
+  {
     name: "panic-error-lost",
     breaks: "a thrown `Error` of JS's own constructor is a panic's message alone, so a downcast to `&JsError` finds none and its `stack` is gone",
     file: "crates/rust-js-program/src/runtime/unwind.js",
@@ -54,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "resumed-text-not-a-panic",
     breaks: "`resume_unwind` of a panic's message throws a `Box<dyn Any>`, not the panic",
     file: "crates/rust-js-program/src/runtime/unwind.js",
-    find: "    return new Error(payload.value);\n",
-    replace: "    return new $Unwinding(payload);\n",
+    find: "id === \"&str\" || id === \"alloc::string::String\" ? new Error(payload.value) : new $Unwinding(payload);",
+    replace: "id === \"alloc::string::String\" ? new Error(payload.value) : new $Unwinding(payload);",
     tests: ["test/lowering-unwinds.test.ts", "-t", "resume_unwind throws what unwound"],
   },
   {
@@ -262,8 +278,8 @@ export const mutations: Mutation[] = [
     name: "resumed-string-a-str",
     breaks: "a `String` payload resumed is thrown as a `&str` panic",
     file: "crates/rust-js-program/src/runtime/unwind.js",
-    find: "    return $stringPanic(payload.value);\n",
-    replace: "    return new Error(payload.value);\n",
+    find: "  if (id === \"alloc::string::String\") Object.defineProperty(resumed, $stringPayload, { value: true });\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^panic_payload_kinds\\.rs$"],
   },
 ];

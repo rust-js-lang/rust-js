@@ -147,7 +147,7 @@ function main() {
       .join(", ")}]`,
   );
   const rows = Array.from($repeating([0], (value) => value.slice()).take(2));
-  $index(rows, 0).push(1);
+  $index(rows, 0, "test/corpus/iterator_sources.rs:83:9").push(1);
   let k = 0;
   squares = Array.from(
     $repeatingWith(() => {

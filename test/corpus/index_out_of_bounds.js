@@ -10,6 +10,6 @@ function main() {
   const v = [1, 2, 3];
   const i = v.length + 2;
   console.log(`reading ${i}`);
-  console.log(`${$index(v, i)}`);
+  console.log(`${$index(v, i, "test/corpus/index_out_of_bounds.rs:6:21")}`);
 }
 //# sourceMappingURL=case.js.map

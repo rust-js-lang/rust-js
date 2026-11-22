@@ -73,8 +73,10 @@ function main() {
   const bumped = { value: 1 };
   bump(bumped);
   const many = [{ value: 2 }, { value: 3 }];
-  bump($index(many, 1));
-  console.log(`${bumped.value} ${$index(many, 1).value}`);
+  bump($index(many, 1, "test/corpus/unsafe_cell_values.rs:110:19"));
+  console.log(
+    `${bumped.value} ${$index(many, 1, "test/corpus/unsafe_cell_values.rs:111:58").value}`,
+  );
   let zero = 0;
   console.log(`${zero}`);
 }

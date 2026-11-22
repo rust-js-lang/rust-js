@@ -27,7 +27,10 @@ function main() {
     `[${lengths.map((item) => metersDebug_fmt(item)).join(", ")}] ${first == null ? "None" : `Some(${metersDebug_fmt(first)})`}`,
   );
   const items = [1, 2, 3];
-  const pointer = $unwrap(ConstNonNull.new($ptr(items, 0)));
+  const pointer = $unwrap(
+    ConstNonNull.new($ptr(items, 0)),
+    "test/corpus/transparent_constructor_value.rs:28:53",
+  );
   const all = $ptrSlice(ConstNonNull.asPtr(pointer), 3);
   console.log(`[${all.join(", ")}]`);
 }

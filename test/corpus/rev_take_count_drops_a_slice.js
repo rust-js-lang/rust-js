@@ -23,7 +23,7 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === boom) {
     boom = 0;
-    throw $stringPanic(`drop ${d[0]}`);
+    throw $stringPanic(`drop ${d[0]}`, "test/corpus/rev_take_count_drops_a_slice.rs:22:13");
   }
 }
 

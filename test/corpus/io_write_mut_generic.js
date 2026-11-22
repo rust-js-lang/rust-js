@@ -29,7 +29,12 @@ function greet(out, WWrite) {
 
 function twice(out, WWrite) {
   greet(out, $mutWriter(WWrite));
-  const n = $unwrapOk(WWrite.write(out, [33]), undefined, $ioErrorDebug);
+  const n = $unwrapOk(
+    WWrite.write(out, [33]),
+    "test/corpus/io_write_mut_generic.rs:15:29",
+    undefined,
+    $ioErrorDebug,
+  );
   console.log(`${n}`);
 }
 
@@ -37,6 +42,8 @@ function main() {
   const bytes = [];
   greet($cellOf(bytes), $mutWriter($vecWriter));
   twice($cellOf(bytes), $vecWriter);
-  console.log(`${$unwrapOk($fromUtf8(bytes, true), undefined, (e) => $debugUtf8Error(e, true))}`);
+  console.log(
+    `${$unwrapOk($fromUtf8(bytes, true), "test/corpus/io_write_mut_generic.rs:23:45", undefined, (e) => $debugUtf8Error(e, true))}`,
+  );
 }
 //# sourceMappingURL=case.js.map

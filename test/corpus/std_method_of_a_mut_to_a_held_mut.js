@@ -53,7 +53,11 @@ function main() {
   held.push(122);
   held.push(121, 120);
   const result = $writeText(held, "7");
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/std_method_of_a_mut_to_a_held_mut.rs:53:24",
+  );
   console.log(`[${bytes.join(", ")}]`);
 
   let text = "<";
@@ -109,12 +113,26 @@ function main() {
   const buf = { value: line };
   const readLine = bufRead_readLine(reader, buf, $sliceReader, $sliceReader);
   line = buf.value;
-  const read = $unwrapOk(readLine, undefined, $ioErrorDebug);
+  const read = $unwrapOk(
+    readLine,
+    "test/corpus/std_method_of_a_mut_to_a_held_mut.rs:74:42",
+    undefined,
+    $ioErrorDebug,
+  );
   const two = [0, 0];
   const result$1 = $writeTry(() => $sliceReader.readExact(reader, two));
-  $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$1,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/std_method_of_a_mut_to_a_held_mut.rs:76:31",
+  );
   const left = [];
-  $unwrapOk($sliceReader.readToEnd(reader, left), undefined, $ioErrorDebug);
+  $unwrapOk(
+    $sliceReader.readToEnd(reader, left),
+    "test/corpus/std_method_of_a_mut_to_a_held_mut.rs:78:33",
+    undefined,
+    $ioErrorDebug,
+  );
   const length = data.length;
   console.log(`${read} ${$debugStr(line)} [${two.join(", ")}] [${left.join(", ")}] ${length}`);
 

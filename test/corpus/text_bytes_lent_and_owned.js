@@ -22,49 +22,50 @@ export function entry() {
 }
 
 function first(b, BAsRefU8Slice) {
-  return $index(BAsRefU8Slice.asRef(b), 0);
+  return $index(BAsRefU8Slice.asRef(b), 0, "test/corpus/text_bytes_lent_and_owned.rs:6:5");
 }
 
 function uses(s) {
   const a = $utf8Bytes(s).slice();
-  a[$at(a, 0)] = 1;
+  a[$at(a, 0, "test/corpus/text_bytes_lent_and_owned.rs:11:6")] = 1;
   const b = $utf8Bytes(s).slice();
-  b[$at(b, 1)] = 2;
+  b[$at(b, 1, "test/corpus/text_bytes_lent_and_owned.rs:13:6")] = 2;
   const c = $utf8Bytes(s).slice();
-  c[$at(c, 2)] = 3;
+  c[$at(c, 2, "test/corpus/text_bytes_lent_and_owned.rs:15:6")] = 3;
   const d = $utf8Bytes(s).slice();
-  d[$at(d, 3)] = 4;
+  d[$at(d, 3, "test/corpus/text_bytes_lent_and_owned.rs:17:6")] = 4;
   const e = $utf8Bytes(s).slice();
-  e[$at(e, 4)] = 5;
-  const slice = $slice($utf8Bytes(s), 0, 6);
+  e[$at(e, 4, "test/corpus/text_bytes_lent_and_owned.rs:19:6")] = 5;
+  const slice = $slice($utf8Bytes(s), 0, "test/corpus/text_bytes_lent_and_owned.rs:20:38", 6);
   const f = $unwrapOk(
     slice.length === 6 ? { TAG: "Ok", _0: slice.slice() } : { TAG: "Err" },
+    "test/corpus/text_bytes_lent_and_owned.rs:20:55",
     undefined,
     (e) => "TryFromSliceError(())",
   );
   f[5] = 6;
   const g = Array.from(new TextEncoder().encode(s));
-  g[$at(g, 0)] = 7;
+  g[$at(g, 0, "test/corpus/text_bytes_lent_and_owned.rs:23:6")] = 7;
   const i = $utf8Bytes(s).slice();
   i.sort((a, b) => a - b);
   i.reverse();
   const j = $repeatItems($utf8Bytes(s), 2, 1);
-  j[$at(j, 0)] = 10;
+  j[$at(j, 0, "test/corpus/text_bytes_lent_and_owned.rs:28:6")] = 10;
   const k = [...$utf8Bytes(s), 33];
-  k[$at(k, 0)] = 11;
+  k[$at(k, 0, "test/corpus/text_bytes_lent_and_owned.rs:30:6")] = 11;
   const l = $asciiBytes($utf8Bytes(s), true);
-  l[$at(l, 0)] = 12;
+  l[$at(l, 0, "test/corpus/text_bytes_lent_and_owned.rs:32:6")] = 12;
   const m = $utf8Bytes(s).toReversed();
   const n = [];
   const items = $utf8Bytes(s);
   for (let i$1 = 0; i$1 < items.length; i$1++) {
     n.push(items[i$1]);
   }
-  n[$at(n, 0)] = 13;
+  n[$at(n, 0, "test/corpus/text_bytes_lent_and_owned.rs:36:6")] = 13;
   const o = Array.from(new TextEncoder().encode(s));
-  o[$at(o, 0)] = 14;
+  o[$at(o, 0, "test/corpus/text_bytes_lent_and_owned.rs:38:5")] = 14;
   const q = Array.from(new TextEncoder().encode(s));
-  q[$at(q, 0)] = 15;
+  q[$at(q, 0, "test/corpus/text_bytes_lent_and_owned.rs:40:6")] = 15;
   const r = $utf8Bytes(s).map((x) => (x + 1) & 255);
   const t = $utf8Bytes(s).slice();
   t.sort((a, b) => a - b);
@@ -73,8 +74,15 @@ function uses(s) {
   const p = $ptr($utf8Bytes(s), 0);
   const second = $ptrAdd(p, 1).value;
   const third = $ptrAdd($ptr($utf8Bytes(s), 0), 2).value;
-  const chunks = $chunks($utf8Bytes(s), 4).slice(0, 2);
-  const [left, right] = $sliceSplitAt($utf8Bytes(s), 3);
+  const chunks = $chunks($utf8Bytes(s), 4, "test/corpus/text_bytes_lent_and_owned.rs:49:43").slice(
+    0,
+    2,
+  );
+  const [left, right] = $sliceSplitAt(
+    $utf8Bytes(s),
+    3,
+    "test/corpus/text_bytes_lent_and_owned.rs:50:38",
+  );
   console.log(
     `[${a.join(", ")}]\n[${b.join(", ")}]\n[${c.join(", ")}]\n[${d.join(", ")}]\n[${e.join(", ")}]\n[${f.join(", ")}]\n[${g.join(", ")}]\n[${i.join(", ")}]\n[${j.join(", ")}]\n[${k.join(", ")}]\n[${l.join(", ")}]\n[${m.join(", ")}]\n[${n.join(", ")}]\n[${o.join(", ")}]\n[${q.join(", ")}]\n[${r.join(", ")}]\n[${t.join(", ")}]`,
   );

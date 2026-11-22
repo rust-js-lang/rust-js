@@ -17,10 +17,10 @@ const CALLS = { value: 0 };
 let NEXT_ID = 1;
 
 function remember(n) {
-  const value = $lock(CALLS);
+  const value = $lock(CALLS, "test/corpus/static_locks.rs:22:19");
   value.value = (value.value + 1) >>> 0;
   $unlock(value);
-  const table = $lock(TABLE);
+  const table = $lock(TABLE, "test/corpus/static_locks.rs:23:35");
   try {
     table.value.items.push(n);
     return table.value.items.length;
@@ -40,9 +40,9 @@ function nextId() {
 
 function main() {
   console.log(`${remember(3n)} ${remember(4n)}`);
-  const table = $lockRead(TABLE);
+  const table = $lockRead(TABLE, "test/corpus/static_locks.rs:34:30");
   try {
-    const value = $lock(CALLS);
+    const value = $lock(CALLS, "test/corpus/static_locks.rs:35:51");
     try {
       console.log(`[${table.value.items.join(", ")}] ${value.value}`);
     } catch (error) {

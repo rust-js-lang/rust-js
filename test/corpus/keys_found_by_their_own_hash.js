@@ -106,7 +106,10 @@ const tupleOrd = $ord({
 export const fragileHash = { hash: fragileHash_hash, hashSlice: $hashSlice(fragileHash_hash) };
 function fragileHash_hash(fragile, state, HHasher) {
   if (panicAt === fragile[0]) {
-    throw $stringPanic(`hash of ${fragile[0]}`);
+    throw $stringPanic(
+      `hash of ${fragile[0]}`,
+      "test/corpus/keys_found_by_their_own_hash.rs:81:13",
+    );
   }
   HHasher.writeU32(state, fragile[0]);
 }
@@ -387,7 +390,7 @@ function holding() {
   const copy = new ($hashedMap(wordHash, wordPartialEq_eq))(
     Array.from(lists).map(([key, value]) => [key, value.slice()]),
   );
-  $unwrap(lists.get(["K"])).push(5);
+  $unwrap(lists.get(["K"]), "test/corpus/keys_found_by_their_own_hash.rs:241:38").push(5);
   console.log(
     `{${Array.from(lists)
       .map(([key, value]) => `${wordDebug_fmt(key)}: [${value.join(", ")}]`)

@@ -7,6 +7,7 @@ import {
   $dropEach,
   $flatMap,
   $iter,
+  $panic,
   $panicking,
 } from "@rust-js/std";
 
@@ -36,7 +37,10 @@ function main() {
               $cleanup(() => {
                 dDrop_drop(x);
               });
-              throw new Error("flat_map");
+              throw $panic(
+                "flat_map",
+                "test/corpus/drops_unwinding_out_of_a_closure_see_the_panic.rs:34:17",
+              );
             }
             return [[(x[0] + 10) >>> 0], x];
           })(item),
@@ -55,7 +59,10 @@ function main() {
       .map((x) => {
         if (x[0] === 2) {
           try {
-            throw new Error("map");
+            throw $panic(
+              "map",
+              "test/corpus/drops_unwinding_out_of_a_closure_see_the_panic.rs:44:17",
+            );
           } catch (error) {
             $cleanup(() => {
               dDrop_drop(x);
@@ -80,7 +87,10 @@ function main() {
           $cleanup(() => {
             notedDrop_drop(noted);
           });
-          throw new Error("noted");
+          throw $panic(
+            "noted",
+            "test/corpus/drops_unwinding_out_of_a_closure_see_the_panic.rs:55:17",
+          );
         }
         return noted;
       })

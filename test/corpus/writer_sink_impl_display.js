@@ -52,7 +52,7 @@ function effectsDisplayDisplay_fmt(effectsDisplay) {
   const f = $sink();
   const end = effectsDisplay[0];
   for (let i = 0; i < end; i++) {
-    f.write($index(["b", "i", "u"], i % 3));
+    f.write($index(["b", "i", "u"], i % 3, "test/corpus/writer_sink_impl_display.rs:37:25"));
   }
   return f.done();
 }

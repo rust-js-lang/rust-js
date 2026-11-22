@@ -72,7 +72,7 @@ export function inner(rows, log) {
         // The row's done.
         continue;
       default:
-        log.push($index(row, 0));
+        log.push($index(row, 0, "test/corpus/comment_before_an_arms_only_continue.rs:65:27"));
         break;
     }
     log.push(400);

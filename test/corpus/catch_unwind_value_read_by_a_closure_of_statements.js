@@ -23,14 +23,21 @@ function keptByAClosure(n) {
       note(twice);
       return (twice + next) >>> 0;
     }
-    $borrowMut(stored).value = report;
+    $borrowMut(
+      stored,
+      "test/corpus/catch_unwind_value_read_by_a_closure_of_statements.rs:30:17",
+    ).value = report;
     total = next;
   } catch (error) {
     $catchable(error);
     return 0;
   }
   total = (total + 1) >>> 0;
-  const borrow = $borrow(stored, true);
+  const borrow = $borrow(
+    stored,
+    "test/corpus/catch_unwind_value_read_by_a_closure_of_statements.rs:36:20",
+    true,
+  );
   const f = borrow.value;
   try {
     return (total + (f != null ? f() : 0)) >>> 0;
@@ -51,7 +58,10 @@ function shadowed(n) {
   try {
     total$1 = (n * 3) >>> 0;
     if (n > 2) {
-      throw $stringPanic(`big ${n}`);
+      throw $stringPanic(
+        `big ${n}`,
+        "test/corpus/catch_unwind_value_read_by_a_closure_of_statements.rs:50:13",
+      );
     }
   } catch (error) {
     $catchable(error);

@@ -15,6 +15,8 @@ use crate::{FnCx, R};
 use rust_js_program::js::{self, Expr, Stmt, StmtKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
+use rustc_span::def_id::DefId;
+use rustc_structures::CrateType;
 
 /// What's asked of the process.
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -85,6 +87,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.reported(value, call.tys[0], call.span, out).map(Some);
         }
         Ok(Some(Expr::call(Expr::helper(op.helper()), values.collect())))
+    }
+
+    /// Of `def_id`, a binary's `main`, what its module runs last as it
+    /// loads, std's runtime's start of it, `$main(main)`, or of one that
+    /// gives a `T`, `$main(() => ..)` of the status `T`'s report gives
+    /// (#2292); `None` of another function, of a library's, or of a test
+    /// build, whose harness is its entry.
+    pub fn entry_of(&mut self, def_id: DefId, span: Span) -> R<Option<Vec<Stmt>>> {
+        let tcx = self.tcx;
+        let is_main = tcx.entry_fn(()).is_some_and(|(main, _)| main == def_id);
+        if !is_main || !tcx.crate_types().contains(&CrateType::Executable) || tcx.sess.opts.test {
+            return Ok(None);
+        }
+        let js_span = self.js_span(span);
+        let main = self.fn_ref(def_id);
+        let output = tcx
+            .instantiate_bound_regions_with_erased(tcx.fn_sig(def_id).instantiate_identity().skip_normalization())
+            .output();
+        let entry = match output.is_unit() {
+            true => main,
+            false => {
+                let mut body = Vec::new();
+                let status = self.reported(Expr::call(main, Vec::new()), output, span, &mut body)?;
+                body.push(StmtKind::Return(Some(status)).at(js_span));
+                Expr::arrow(Vec::new(), body)
+            }
+        };
+        Ok(Some(vec![
+            StmtKind::Expr(Expr::call(Expr::helper("$main"), vec![entry])).at(js_span),
+        ]))
     }
 
     /// The status `Termination::report` of `value`, a `ty`, gives, as std

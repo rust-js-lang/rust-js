@@ -5,6 +5,7 @@ import {
   $foldToArray,
   $iterator,
   $live,
+  $panic,
   $range,
   $rangeFromStep,
   $resize,
@@ -119,7 +120,7 @@ function main() {
       { start: 0 },
       (i) => {
         if (i >= 3) {
-          throw new Error("ran on");
+          throw $panic("ran on", "test/corpus/asked_length_overflow.rs:82:31");
         }
       },
       { next: $rangeFromStep(-2147483648, 2147483647) },

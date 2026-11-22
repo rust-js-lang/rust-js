@@ -63,14 +63,22 @@ function backwardsPartialOrd_partialCmp(backwards, other) {
 
 function triples(items, THash, TPartialEq, TCopy, TSet) {
   return new ($arrayKeyClassOf(true, false, TSet))(
-    $windows(items, 3)
+    $windows(items, 3, "test/corpus/map_keyed_by_an_array_of_a_type_parameter.rs:47:10")
       .values()
       .map((w) => {
-        const value = $index(w, 0);
+        const value = $index(
+          w,
+          0,
+          "test/corpus/map_keyed_by_an_array_of_a_type_parameter.rs:48:19",
+        );
         return [
           TCopy ? TCopy.copy(value) : value,
-          ((value) => (TCopy ? TCopy.copy(value) : value))($index(w, 1)),
-          ((value) => (TCopy ? TCopy.copy(value) : value))($index(w, 2)),
+          ((value) => (TCopy ? TCopy.copy(value) : value))(
+            $index(w, 1, "test/corpus/map_keyed_by_an_array_of_a_type_parameter.rs:48:25"),
+          ),
+          ((value) => (TCopy ? TCopy.copy(value) : value))(
+            $index(w, 2, "test/corpus/map_keyed_by_an_array_of_a_type_parameter.rs:48:31"),
+          ),
         ];
       }),
   ).size;
@@ -83,7 +91,11 @@ function longKeys(items, THash, TPartialEq, TCopy, TMap) {
   while ((value = $next(iter)) != null) {
     const i = value[0];
     const item = TCopy ? TCopy.copy(value[1]) : value[1];
-    const value$1 = $index(items, 0);
+    const value$1 = $index(
+      items,
+      0,
+      "test/corpus/map_keyed_by_an_array_of_a_type_parameter.rs:56:24",
+    );
     const item$1 = TCopy ? TCopy.copy(value$1) : value$1;
     const key = Array.from({ length: 4096 }, () => (TCopy ? TCopy.copy(item$1) : item$1));
     key[4095] = TCopy ? TCopy.copy(item) : item;
@@ -102,13 +114,19 @@ function longKeys(items, THash, TPartialEq, TCopy, TMap) {
 function ordered(items, TOrd, TCopy, TTreeSet, TArraySize, TArrayStableSort) {
   const set = $treeFromSorted(
     new ($arrayKeyClassOf(true, true, TTreeSet))(),
-    $windows(items, 2)
+    $windows(items, 2, "test/corpus/map_keyed_by_an_array_of_a_type_parameter.rs:64:39")
       .values()
       .map((w) => {
-        const value = $index(w, 0);
+        const value = $index(
+          w,
+          0,
+          "test/corpus/map_keyed_by_an_array_of_a_type_parameter.rs:64:59",
+        );
         return [
           TCopy ? TCopy.copy(value) : value,
-          ((value) => (TCopy ? TCopy.copy(value) : value))($index(w, 1)),
+          ((value) => (TCopy ? TCopy.copy(value) : value))(
+            $index(w, 1, "test/corpus/map_keyed_by_an_array_of_a_type_parameter.rs:64:65"),
+          ),
         ];
       }),
     $ord({
@@ -136,12 +154,21 @@ function counted(items, TOrd, TCopy, TTreeMap) {
     true,
     $keyClassOf(false, true, [TTreeMap, $BTreeMap]),
   ))();
-  for (const w of $windows(items, 2)) {
-    const value = $index(w, 0);
+  for (const w of $windows(
+    items,
+    2,
+    "test/corpus/map_keyed_by_an_array_of_a_type_parameter.rs:70:20",
+  )) {
+    const value = $index(w, 0, "test/corpus/map_keyed_by_an_array_of_a_type_parameter.rs:71:25");
     const orInsert = $entryOrInsert(
       $entry(counts, [
         [TCopy ? TCopy.copy(value) : value, true],
-        [((value) => (TCopy ? TCopy.copy(value) : value))($index(w, 1)), false],
+        [
+          ((value) => (TCopy ? TCopy.copy(value) : value))(
+            $index(w, 1, "test/corpus/map_keyed_by_an_array_of_a_type_parameter.rs:71:39"),
+          ),
+          false,
+        ],
       ]),
       0,
       true,

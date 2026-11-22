@@ -33,6 +33,7 @@ function main() {
         },
         two,
       ),
+      "test/corpus/io_read_slice.rs:12:57",
       undefined,
       $ioErrorDebug,
     )} [${two.join(", ")}] [${src.join(", ")}]`,
@@ -51,6 +52,7 @@ function main() {
         },
         one,
       ),
+      "test/corpus/io_read_slice.rs:14:57",
       undefined,
       $ioErrorDebug,
     )} [${one.join(", ")}] [${src.join(", ")}]`,
@@ -69,6 +71,7 @@ function main() {
         },
         big,
       ),
+      "test/corpus/io_read_slice.rs:16:57",
       undefined,
       $ioErrorDebug,
     )} [${big.join(", ")}] [${src.join(", ")}]`,
@@ -86,6 +89,7 @@ function main() {
         },
         big,
       ),
+      "test/corpus/io_read_slice.rs:17:49",
       undefined,
       $ioErrorDebug,
     )} [${src.join(", ")}]`,
@@ -108,6 +112,7 @@ function main() {
       ),
     ),
     "called `Result::unwrap_err()` on an `Ok` value",
+    "test/corpus/io_read_slice.rs:21:41",
   );
   console.log(
     `${e.kind} ${$ioErrorDisplay(e)} ${$ioErrorDebug(e)} [${four.join(", ")}] [${short.join(", ")}]`,
@@ -126,7 +131,11 @@ function main() {
       two,
     ),
   );
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/io_read_slice.rs:24:32",
+  );
   console.log(`[${two.join(", ")}] [${exact.join(", ")}]`);
   const result$1 = $writeTry(() =>
     $sliceReader.readExact(
@@ -141,7 +150,11 @@ function main() {
       [],
     ),
   );
-  $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$1,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/io_read_slice.rs:26:31",
+  );
   console.log(`[${exact.join(", ")}]`);
 
   let rest = [116, 97, 105, 108];
@@ -159,6 +172,7 @@ function main() {
         },
         v,
       ),
+      "test/corpus/io_read_slice.rs:31:62",
       undefined,
       $ioErrorDebug,
     )} [${v.join(", ")}] [${rest.join(", ")}]`,
@@ -186,6 +200,7 @@ function main() {
           },
         },
       ),
+      "test/corpus/io_read_slice.rs:35:63",
       undefined,
       $ioErrorDebug,
     )} ${s} [${text.join(", ")}]`,
@@ -211,6 +226,7 @@ function main() {
         },
       },
     ),
+    "test/corpus/io_read_slice.rs:38:43",
   );
   console.log(`${e.kind} ${$ioErrorDisplay(e)} ${kept} [${bad.join(", ")}]`);
 
@@ -224,6 +240,7 @@ function main() {
         buffered = value;
       },
     }),
+    "test/corpus/io_read_slice.rs:42:38",
     undefined,
     $ioErrorDebug,
   );

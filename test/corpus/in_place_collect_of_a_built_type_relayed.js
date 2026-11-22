@@ -22,6 +22,7 @@ import {
   $mapEnds,
   $next,
   $nextSome,
+  $panic,
   $rangeInclusiveNext,
   $rangeInclusiveNextBack,
   $roomForHint,
@@ -383,7 +384,7 @@ function heldOf(
 function wide(w) {
   if (w != null && w[0] === 3n) {
     try {
-      throw new Error("wide");
+      throw $panic("wide", "test/corpus/in_place_collect_of_a_built_type_relayed.rs:102:9");
     } catch (error) {
       $cleanup(() => {
         if (w != null) {
@@ -399,7 +400,7 @@ function wide(w) {
 function narrow(v) {
   let tmp;
   try {
-    tmp = $index(v, 0)[0] === 3n;
+    tmp = $index(v, 0, "test/corpus/in_place_collect_of_a_built_type_relayed.rs:108:9")[0] === 3n;
   } catch (error) {
     $cleanup(() => {
       for (const item of v) {
@@ -410,7 +411,7 @@ function narrow(v) {
   }
   if (tmp) {
     try {
-      throw new Error("narrow");
+      throw $panic("narrow", "test/corpus/in_place_collect_of_a_built_type_relayed.rs:109:9");
     } catch (error) {
       $cleanup(() => {
         for (const item of v) {

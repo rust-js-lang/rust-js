@@ -47,7 +47,11 @@ function nodeClone_clone(node) {
 }
 
 function flip(cell) {
-  const borrowMut = $borrowMut(cell, true);
+  const borrowMut = $borrowMut(
+    cell,
+    "test/corpus/refcell_generic_borrow_meets_held.rs:25:10",
+    true,
+  );
   try {
     borrowMut.reverse();
   } finally {
@@ -59,7 +63,9 @@ function main() {
   const list = $newCyclic((me) => [{ list: $weakClone(me) }]);
   try {
     flip(list.value);
-    console.log(`${$borrow(list.value).length}`);
+    console.log(
+      `${$borrow(list.value, "test/corpus/refcell_generic_borrow_meets_held.rs:31:25").length}`,
+    );
     const copy = $withBorrow(
       list.value,
       (value) =>
@@ -70,10 +76,13 @@ function main() {
             $weakDrop(node.list);
           },
         ),
+      "test/corpus/refcell_generic_borrow_meets_held.rs:32:16",
       true,
     );
     try {
-      console.log(`${$borrow(copy).length}`);
+      console.log(
+        `${$borrow(copy, "test/corpus/refcell_generic_borrow_meets_held.rs:33:25").length}`,
+      );
     } catch (error) {
       throw $unwindsOn(error);
     } finally {

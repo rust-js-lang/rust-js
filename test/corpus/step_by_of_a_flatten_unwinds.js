@@ -13,6 +13,7 @@ import {
   $iter,
   $live,
   $mapFrom,
+  $panic,
   $range,
   $rev,
   $stepBy,
@@ -69,7 +70,7 @@ function main() {
         if (seen === 2) {
           dDrop_drop(d);
           accDrop_drop(a);
-          throw new Error("fold");
+          throw $panic("fold", "test/corpus/step_by_of_a_flatten_unwinds.rs:48:17");
         }
         a[0] = (a[0] + d[0]) >>> 0;
         const result = a;
@@ -98,7 +99,7 @@ function main() {
         if (seen === 2) {
           dDrop_drop(d);
           accDrop_drop(a);
-          throw new Error("flat_map");
+          throw $panic("flat_map", "test/corpus/step_by_of_a_flatten_unwinds.rs:60:17");
         }
         a[0] = (a[0] + d[0]) >>> 0;
         const result = a;
@@ -125,7 +126,7 @@ function main() {
           seen = (seen + 1) | 0;
           try {
             if (seen === 2) {
-              throw new Error("collect");
+              throw $panic("collect", "test/corpus/step_by_of_a_flatten_unwinds.rs:73:21");
             }
             return String.fromCharCode(97 + ((d[0] & 255) % 26));
           } catch (error) {
@@ -153,7 +154,7 @@ function main() {
         ).map((d) => {
           try {
             if (d[0] === 12) {
-              throw new Error("set");
+              throw $panic("set", "test/corpus/step_by_of_a_flatten_unwinds.rs:84:21");
             }
             return d[0];
           } catch (error) {

@@ -60,7 +60,7 @@ function random(below) {
   x = (x ^ (x >>> 17)) >>> 0;
   x = (x ^ (x << 5)) >>> 0;
   seed = x;
-  return $rem(x, below) >>> 0;
+  return $rem(x, below, "test/corpus/btree_nodes_seen.rs:34:5") >>> 0;
 }
 
 function nextId() {
@@ -350,7 +350,9 @@ function maps(n) {
     drained.set(key(i), i);
   }
   for (let i = 0; i < n; i++) {
-    drained.delete(key($rem((i * 7) >>> 0, Math.max(n, 1)) >>> 0));
+    drained.delete(
+      key($rem((i * 7) >>> 0, Math.max(n, 1), "test/corpus/btree_nodes_seen.rs:208:29") >>> 0),
+    );
     if (i % 5 === 0) {
       drained.set(key((n + i) >>> 0), i);
     }

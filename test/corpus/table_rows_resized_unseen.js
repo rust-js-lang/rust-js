@@ -44,7 +44,14 @@ function check(what, f, TDebug) {
 function firstRow(board, width) {
   let total = 0;
   for (let c = 0; c < width; c++) {
-    total = (total + $index($index(board, 0), c)) >>> 0;
+    total =
+      (total +
+        $index(
+          $index(board, 0, "test/corpus/table_rows_resized_unseen.rs:37:18"),
+          c,
+          "test/corpus/table_rows_resized_unseen.rs:37:26",
+        )) >>>
+      0;
   }
   return total;
 }
@@ -63,7 +70,7 @@ function filled(width, height) {
   $fill(board, [], (value) => value.slice());
   let total = 0;
   for (let c = 0; c < width; c++) {
-    total = (total + $index(board[0], c)) >>> 0;
+    total = (total + $index(board[0], c, "test/corpus/table_rows_resized_unseen.rs:64:26")) >>> 0;
   }
   return total;
 }
@@ -76,7 +83,7 @@ function viewed(width, height) {
   shrink($iter(board));
   let total = 0;
   for (let c = 0; c < width; c++) {
-    total = (total + $index(board[0], c)) >>> 0;
+    total = (total + $index(board[0], c, "test/corpus/table_rows_resized_unseen.rs:74:26")) >>> 0;
   }
   return total;
 }
@@ -97,7 +104,7 @@ function held(width, height) {
   empty();
   let total = 0;
   for (let c = 0; c < width; c++) {
-    total = (total + $index(board[0], c)) >>> 0;
+    total = (total + $index(board[0], c, "test/corpus/table_rows_resized_unseen.rs:85:26")) >>> 0;
   }
   return total;
 }
@@ -110,7 +117,7 @@ function replaced(width, height) {
   board[0] = [];
   let total = 0;
   for (let c = 0; c < width; c++) {
-    total = (total + $index(board[0], c)) >>> 0;
+    total = (total + $index(board[0], c, "test/corpus/table_rows_resized_unseen.rs:95:26")) >>> 0;
   }
   return total;
 }
@@ -123,7 +130,7 @@ function written(width, height) {
   board[0] = [];
   let total = 0;
   for (let c = 0; c < width; c++) {
-    total = (total + $index(board[0], c)) >>> 0;
+    total = (total + $index(board[0], c, "test/corpus/table_rows_resized_unseen.rs:105:26")) >>> 0;
   }
   return total;
 }
@@ -137,7 +144,7 @@ function swappedOut(width, height) {
   $exchange(board[0], empty);
   let total = 0;
   for (let c = 0; c < width; c++) {
-    total = (total + $index(board[0], c)) >>> 0;
+    total = (total + $index(board[0], c, "test/corpus/table_rows_resized_unseen.rs:116:26")) >>> 0;
   }
   return total;
 }
@@ -150,7 +157,7 @@ function taken(width, height) {
   const row = board[0].splice(0);
   let total = row.length;
   for (let c = 0; c < width; c++) {
-    total = (total + $index(board[0], c)) >>> 0;
+    total = (total + $index(board[0], c, "test/corpus/table_rows_resized_unseen.rs:126:26")) >>> 0;
   }
   return total;
 }
@@ -163,7 +170,7 @@ function rowsSwapped(width, height) {
   [board[0], board[1]] = [board[1], board[0]];
   let total = 0;
   for (let c = 0; c < width; c++) {
-    total = (total + $index(board[0], c)) >>> 0;
+    total = (total + $index(board[0], c, "test/corpus/table_rows_resized_unseen.rs:136:26")) >>> 0;
   }
   return total;
 }
@@ -178,7 +185,7 @@ function looped(width, height) {
   }
   let total = 0;
   for (let c = 0; c < width; c++) {
-    total = (total + $index(board[0], c)) >>> 0;
+    total = (total + $index(board[0], c, "test/corpus/table_rows_resized_unseen.rs:148:26")) >>> 0;
   }
   return total;
 }
@@ -193,7 +200,7 @@ function closured(width, height) {
   });
   let total = 0;
   for (let c = 0; c < width; c++) {
-    total = (total + $index(board[0], c)) >>> 0;
+    total = (total + $index(board[0], c, "test/corpus/table_rows_resized_unseen.rs:158:26")) >>> 0;
   }
   return total;
 }
@@ -208,7 +215,7 @@ function clearedEach(width, height) {
   });
   let total = 0;
   for (let c = 0; c < width; c++) {
-    total = (total + $index(board[0], c)) >>> 0;
+    total = (total + $index(board[0], c, "test/corpus/table_rows_resized_unseen.rs:168:26")) >>> 0;
   }
   return total;
 }
@@ -219,11 +226,11 @@ function collected(width, height) {
   $roomFor(height, 12);
   const board = Array.from({ length: height }, () => item.slice());
   const rows = board.slice();
-  $index(rows, 0);
+  $index(rows, 0, "test/corpus/table_rows_resized_unseen.rs:176:9");
   rows[0].length = 0;
   let total = 0;
   for (let c = 0; c < width; c++) {
-    total = (total + $index(board[0], c)) >>> 0;
+    total = (total + $index(board[0], c, "test/corpus/table_rows_resized_unseen.rs:179:26")) >>> 0;
   }
   return total;
 }

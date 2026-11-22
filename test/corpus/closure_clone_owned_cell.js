@@ -24,8 +24,9 @@ function main() {
   const make$1 = (cells) =>
     $cloning(
       () => {
-        $index(cells, 0).value = ($index(cells, 0).value + 1) | 0;
-        return $index(cells, 0).value;
+        $index(cells, 0, "test/corpus/closure_clone_owned_cell.rs:19:14").value =
+          ($index(cells, 0, "test/corpus/closure_clone_owned_cell.rs:19:27").value + 1) | 0;
+        return $index(cells, 0, "test/corpus/closure_clone_owned_cell.rs:20:14").value;
       },
       () => make$1(cells.map((item) => ({ value: item.value }))),
     );

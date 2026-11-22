@@ -107,7 +107,7 @@ function addresses() {
     "float",
   ).value = 1.5;
   console.log(
-    `${($index(at, 1) - $index(at, 0)) >>> 0} ${($index(at, 2) - $index(at, 0)) >>> 0} 0x${bits.value.toString(16)}`,
+    `${($index(at, 1, "test/corpus/pointer_to_a_lent_slot.rs:67:35") - $index(at, 0, "test/corpus/pointer_to_a_lent_slot.rs:67:43")) >>> 0} ${($index(at, 2, "test/corpus/pointer_to_a_lent_slot.rs:67:50") - $index(at, 0, "test/corpus/pointer_to_a_lent_slot.rs:67:58")) >>> 0} 0x${bits.value.toString(16)}`,
   );
 }
 

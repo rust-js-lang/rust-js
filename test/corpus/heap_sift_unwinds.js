@@ -14,6 +14,7 @@ import {
   $live,
   $next,
   $ord,
+  $panic,
   $partialEq,
   $partialOrd,
   $unwindsOn,
@@ -59,7 +60,7 @@ function dOrd_cmp(d, other) {
   if (n > 0) {
     boom = n - 1;
     if (n === 1) {
-      throw new Error("cmp");
+      throw $panic("cmp", "test/corpus/heap_sift_unwinds.rs:45:17");
     }
   }
   return $cmp(d[0], other[0]);

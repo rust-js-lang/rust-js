@@ -32,7 +32,7 @@ function main() {
   const more = new Set();
   $extendMap(more, $reserveHint($lazyRange(2, 5), 4, 4, more), true);
   $extendMap(more, $reserveHint($lazyRange(4, (s.size | 0) + 1), 4, 4, more), true);
-  const value = $unwrap(m.get(3), "no entry found for key");
+  const value = $unwrap(m.get(3), "test/corpus/range_into_set.rs:12:49", "no entry found for key");
   console.log(
     `${s.size} {${Array.from($sortedKeys(t, $cmp)).join(", ")}} ${value} {${Array.from(
       $sortedKeys(u, $cmp),

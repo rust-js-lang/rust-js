@@ -9,7 +9,7 @@ export function entry() {
 function main() {
   const v = [1, 2];
   const at = v.length + 1;
-  const [before] = $sliceSplitAt(v, at);
+  const [before] = $sliceSplitAt(v, at, "test/corpus/slice_split_at_panic.rs:7:25");
   console.log(`${before.length}`);
 }
 //# sourceMappingURL=case.js.map

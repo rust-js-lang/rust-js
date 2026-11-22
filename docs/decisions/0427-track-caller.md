@@ -109,3 +109,16 @@ const at = here({ file: "test/corpus/track_caller.rs", line: 41, column: 14 });
   `track_caller` pair a library's tracked default through its consumer's
   generic code. `file-is-nul-terminated` reads a file's C string, which is
   addressable memory, and `track-caller-ffi` calls through FFI.
+
+
+## Amendment: a `Location` is its text, and every panic raises one (2026-11-22, #2292)
+
+A `Location` is the string `"file:line:col"`, no longer an object of its
+parts: `{}` is the text, `{:?}` std's `Location { file: "..", line: N,
+column: N }`, written as it compiles where the text is known and else by
+`$locationDebug`; `file()`, `line()` and `column()` read it from its end,
+as a file may hold a `:`; `==` and its order compare its parts. And every
+helper that raises a panic takes where it's raised, `raisedAt`, the
+caller's line, the lowering's location of the MIR statement or call it
+makes it in, `caller_location`'s, or a site of std's own, `$stdSites`
+(ADR 1184).

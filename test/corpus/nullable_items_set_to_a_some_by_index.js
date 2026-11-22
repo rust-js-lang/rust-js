@@ -8,16 +8,19 @@ export function entry() {
 
 function add(root, index, made) {
   const lanes = root.lanes;
-  const transitions = $index(lanes, index) ?? made;
+  const transitions =
+    $index(lanes, index, "test/corpus/nullable_items_set_to_a_some_by_index.rs:20:28") ?? made;
   lanes[index] = transitions;
 }
 
 function put(root, index, value) {
-  root.lanes[$at(root.lanes, index)] = value ?? null;
+  root.lanes[$at(root.lanes, index, "test/corpus/nullable_items_set_to_a_some_by_index.rs:25:28")] =
+    value ?? null;
 }
 
 function clear(root, index) {
-  root.lanes[$at(root.lanes, index)] = null;
+  root.lanes[$at(root.lanes, index, "test/corpus/nullable_items_set_to_a_some_by_index.rs:29:28")] =
+    null;
 }
 
 function shown(root) {

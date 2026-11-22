@@ -9,8 +9,8 @@ export function entry() {
 function main() {
   const v = [1, 2, 3, 4];
   const end = v.length + 5;
-  const part = $view(v, 2, end);
+  const part = $view(v, 2, "test/corpus/slice_view_past_len.rs:6:22", end);
   console.log("made");
-  part[$at(part, 0)] = 0;
+  part[$at(part, 0, "test/corpus/slice_view_past_len.rs:8:5")] = 0;
 }
 //# sourceMappingURL=case.js.map

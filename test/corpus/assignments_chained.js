@@ -90,7 +90,7 @@ function main() {
   const node = hook(3);
   const pinned = { current: hook(4) };
   currentOf(pinned, node);
-  console.log(`${$unwrap(node.next) === node}`);
+  console.log(`${$unwrap(node.next, "test/corpus/assignments_chained.rs:115:59") === node}`);
   node.next = undefined;
   const other = hook(5);
   const moved = movedTo(other, node);

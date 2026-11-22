@@ -6,6 +6,7 @@ import {
   $count,
   $lastDropping,
   $live,
+  $panic,
   $unwindsOn,
   iterator_chain,
   iterator_enumerate,
@@ -31,7 +32,7 @@ function countsIterator_count(counts) {
   console.log(`own count of ${counts[0].length}`);
   try {
     if (counts[1]) {
-      throw new Error("count panics");
+      throw $panic("count panics", "test/corpus/own_count_and_last_that_panic_drop_once.rs:31:13");
     }
     return counts[0].length;
   } catch (error) {
@@ -51,7 +52,7 @@ function countsIterator_last(counts) {
     for (const item of counts[0]) {
       dDrop_drop(item);
     }
-    throw new Error("last panics");
+    throw $panic("last panics", "test/corpus/own_count_and_last_that_panic_drop_once.rs:39:13");
   }
   const items = counts[0];
   try {

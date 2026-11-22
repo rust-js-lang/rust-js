@@ -18,6 +18,7 @@ import {
   $lent,
   $live,
   $next,
+  $panic,
   $partition,
   $rangeInclusiveNext,
   $reserveHint,
@@ -387,7 +388,10 @@ function main() {
                     ),
                     (d) => {
                       if (d[0] === 8) {
-                        throw new Error("at 8");
+                        throw $panic(
+                          "at 8",
+                          "test/corpus/iterator_consumed_by_extend_unzip_partition_eq.rs:84:17",
+                        );
                       }
                       return true;
                     },
@@ -402,7 +406,10 @@ function main() {
                       loud(["a", "b", "c"], "text"),
                       (c) => {
                         if (c === "c") {
-                          throw new Error("at c");
+                          throw $panic(
+                            "at c",
+                            "test/corpus/iterator_consumed_by_extend_unzip_partition_eq.rs:92:77",
+                          );
                         } else {
                           return c;
                         }
@@ -427,7 +434,10 @@ function main() {
                     $extendText(
                       ["x", "y", "z"].values().map((p) => {
                         if (p === "z") {
-                          throw new Error("at z");
+                          throw $panic(
+                            "at z",
+                            "test/corpus/iterator_consumed_by_extend_unzip_partition_eq.rs:96:71",
+                          );
                         } else {
                           return p;
                         }
@@ -445,7 +455,10 @@ function main() {
                         into,
                         ["1", "2", "3"].values().map((c) => {
                           if (c === "3") {
-                            throw new Error("at 3");
+                            throw $panic(
+                              "at 3",
+                              "test/corpus/iterator_consumed_by_extend_unzip_partition_eq.rs:100:79",
+                            );
                           } else {
                             return c;
                           }

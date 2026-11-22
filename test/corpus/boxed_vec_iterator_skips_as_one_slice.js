@@ -7,6 +7,7 @@ import {
   $droppingIterator,
   $foldDropping,
   $iter,
+  $panic,
   $stepBy,
 } from "@rust-js/std";
 
@@ -17,7 +18,7 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 3) {
-    throw new Error("drop 3");
+    throw $panic("drop 3", "test/corpus/boxed_vec_iterator_skips_as_one_slice.rs:14:13");
   }
 }
 

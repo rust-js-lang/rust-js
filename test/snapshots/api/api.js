@@ -466,7 +466,12 @@ export function responseDebug(TDebug) {
 }
 
 export function encode(value, writeT) {
-  return $unwrapOk($toJson(value, writeT, false), undefined, $debugJsonError);
+  return $unwrapOk(
+    $toJson(value, writeT, false),
+    "examples/api.rs:138:34",
+    undefined,
+    $debugJsonError,
+  );
 }
 
 export function decode(text, readT) {
@@ -476,7 +481,7 @@ export function decode(text, readT) {
 
 export function roundtrip(value, writeT, readT, TDebug) {
   const text = encode(value, writeT);
-  const back = $unwrapOk(decode(text, readT));
+  const back = $unwrapOk(decode(text, readT), "examples/api.rs:147:33");
   return `${text} ${TDebug.fmt(back)}`;
 }
 
@@ -908,6 +913,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:298:5",
       undefined,
       $debugJsonError,
     );
@@ -930,6 +936,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:298:5",
       undefined,
       $debugJsonError,
     );
@@ -952,6 +959,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:298:5",
       undefined,
       $debugJsonError,
     );
@@ -972,6 +980,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:300:5",
       undefined,
       $debugJsonError,
     );
@@ -992,6 +1001,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:300:5",
       undefined,
       $debugJsonError,
     );
@@ -1016,6 +1026,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:302:5",
       undefined,
       $debugJsonError,
     );
@@ -1042,6 +1053,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:303:5",
       undefined,
       $debugJsonError,
     );
@@ -1071,6 +1083,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:304:5",
       undefined,
       $debugJsonError,
     );
@@ -1100,6 +1113,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:304:5",
       undefined,
       $debugJsonError,
     );
@@ -1120,6 +1134,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:305:5",
       undefined,
       $debugJsonError,
     );
@@ -1140,6 +1155,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:305:5",
       undefined,
       $debugJsonError,
     );
@@ -1160,6 +1176,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:305:5",
       undefined,
       $debugJsonError,
     );
@@ -1180,6 +1197,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:305:5",
       undefined,
       $debugJsonError,
     );
@@ -1207,6 +1225,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:306:5",
       undefined,
       $debugJsonError,
     );
@@ -1234,6 +1253,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:306:5",
       undefined,
       $debugJsonError,
     );
@@ -1261,6 +1281,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:306:5",
       undefined,
       $debugJsonError,
     );
@@ -1281,6 +1302,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:307:5",
       undefined,
       $debugJsonError,
     );
@@ -1303,6 +1325,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:308:5",
       undefined,
       $debugJsonError,
     );
@@ -1325,6 +1348,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:308:5",
       undefined,
       $debugJsonError,
     );
@@ -1354,6 +1378,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:309:5",
       undefined,
       $debugJsonError,
     );
@@ -1383,6 +1408,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:309:5",
       undefined,
       $debugJsonError,
     );
@@ -1412,6 +1438,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:309:5",
       undefined,
       $debugJsonError,
     );
@@ -1446,6 +1473,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:310:5",
       undefined,
       $debugJsonError,
     );
@@ -1463,6 +1491,7 @@ export function report() {
         },
         true,
       ),
+      "examples/api.rs:312:55",
       undefined,
       $debugJsonError,
     ) + "\n";
@@ -1477,6 +1506,7 @@ export function report() {
     if (value.TAG === "Ok") {
       const arg = $unwrapOk(
         $toJson(value._0, outcomeSerialize_serialize, false),
+        "examples/api.rs:322:92",
         undefined,
         $debugJsonError,
       );
@@ -1509,7 +1539,12 @@ export function report() {
   }
   const temp = { celsius: -3 };
   out +=
-    $unwrapOk($toJson(temp, tempSerialize_serialize, false), undefined, $debugJsonError) + "\n";
+    $unwrapOk(
+      $toJson(temp, tempSerialize_serialize, false),
+      "examples/api.rs:345:48",
+      undefined,
+      $debugJsonError,
+    ) + "\n";
   out +=
     $unwrapOk(
       $toJson(
@@ -1524,6 +1559,7 @@ export function report() {
         },
         false,
       ),
+      "examples/api.rs:347:68",
       undefined,
       $debugJsonError,
     ) + "\n";
@@ -1763,6 +1799,7 @@ export function report() {
   out +=
     $unwrapOk(
       $toJson({ listing, flag: false }, nestedSerialize_serialize, true),
+      "examples/api.rs:380:82",
       undefined,
       $debugJsonError,
     ) + "\n";
@@ -1776,6 +1813,7 @@ export function report() {
     if (value.TAG === "Ok") {
       const arg = $unwrapOk(
         $toJson(value._0, reqSerialize_serialize, false),
+        "examples/api.rs:389:92",
         undefined,
         $debugJsonError,
       );

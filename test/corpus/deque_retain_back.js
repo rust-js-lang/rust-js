@@ -19,7 +19,7 @@ function dDebug_fmt(d) {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 13) {
-    throw $stringPanic(`drop ${d[0]}`);
+    throw $stringPanic(`drop ${d[0]}`, "test/corpus/deque_retain_back.rs:14:13");
   }
 }
 

@@ -36,10 +36,7 @@ function spanDisplay_fmt(span) {
 
 function main() {
   console.log("before");
-  const s = $fmtOrPanic(
-    () => `<${spanDisplay_fmt([[1], [99]])}>`,
-    "a formatting trait implementation returned an error when the underlying stream did not: Error",
-  );
+  const s = $fmtOrPanic(() => `<${spanDisplay_fmt([[1], [99]])}>`, "format");
   console.log(`${s}`);
 }
 //# sourceMappingURL=case.js.map

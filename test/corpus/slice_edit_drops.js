@@ -14,6 +14,7 @@ import {
   $resize,
   $splitAtMut,
   $splitEndMut,
+  $stdSites,
   $stringPanic,
   $take,
   $unwindsOn,
@@ -111,7 +112,14 @@ function resize() {
     console.log(`grown [${ids(v).join(", ")}]`);
     const value = [[8], [9], [10]];
     try {
-      $cloneFromSlice(v, value, (value) => [value[0]], undefined, loudDrop_drop);
+      $cloneFromSlice(
+        v,
+        value,
+        "test/corpus/slice_edit_drops.rs:67:7",
+        (value) => [value[0]],
+        undefined,
+        loudDrop_drop,
+      );
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
@@ -159,7 +167,7 @@ function lend() {
   try {
     $extend(
       d,
-      $copyRange(d, 1).map((value) => [value[0]]),
+      $copyRange(d, 1, $stdSites.vecExtendFromWithin[0]).map((value) => [value[0]]),
     );
   } catch (error) {
     $cleanup(() => {
@@ -201,7 +209,7 @@ function lend() {
   }
   let splitAtMut;
   try {
-    splitAtMut = $splitAtMut(d, 1);
+    splitAtMut = $splitAtMut(d, 1, "test/corpus/slice_edit_drops.rs:89:20");
   } catch (error) {
     $cleanup(() => {
       for (const item of d) {
@@ -217,14 +225,20 @@ function lend() {
     for (const item of d) {
       loudDrop_drop(item);
     }
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/slice_edit_drops.rs:90:25",
+    );
   }
   const value = b.length;
   if (0 >= value) {
     for (const item of d) {
       loudDrop_drop(item);
     }
-    throw $stringPanic(`index out of bounds: the len is ${value} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${value} but the index is 0`,
+      "test/corpus/slice_edit_drops.rs:90:36",
+    );
   }
   try {
     $exchange(a[0], b[0]);
@@ -234,7 +248,7 @@ function lend() {
       const rest = splitFirstMut[1];
       head[0] = (head[0] + (rest.length & 255)) & 255;
     }
-    for (const chunk of $chunksMut(d, 2)) {
+    for (const chunk of $chunksMut(d, 2, "test/corpus/slice_edit_drops.rs:94:20")) {
       chunk.reverse();
     }
     console.log(`edited [${ids(d).join(", ")}]`);

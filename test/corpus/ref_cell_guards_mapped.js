@@ -10,6 +10,7 @@ import {
   $guardFilterMap,
   $guardMap,
   $guardMapSplit,
+  $panic,
   $tryBorrow,
   $unborrow,
 } from "@rust-js/std";
@@ -25,10 +26,10 @@ function pointDebug_fmt(point) {
 function main() {
   // Plain: a field lent, written, and released.
   const c = { x: 1, name: "p" };
-  const guard = $borrow(c, true);
+  const guard = $borrow(c, "test/corpus/ref_cell_guards_mapped.rs:26:28", true);
   let x = $guardMap(guard, () => guard.x, "value");
   try {
-    const guard = $borrow(c, true);
+    const guard = $borrow(c, "test/corpus/ref_cell_guards_mapped.rs:27:31", true);
     const name = $guardMap(guard, () => guard.name, "value");
     try {
       const tryBorrowMut = $tryBorrow(c, true);
@@ -47,7 +48,7 @@ function main() {
   if (value.TAG === "Ok") {
     $unborrow(value._0);
   }
-  const guard$1 = $borrowMut(c, true);
+  const guard$1 = $borrowMut(c, "test/corpus/ref_cell_guards_mapped.rs:32:35", true);
   x = $guardMap(
     guard$1,
     () => ({
@@ -70,9 +71,9 @@ function main() {
   } finally {
     $unborrow(x);
   }
-  console.log(`${pointDebug_fmt($borrow(c))}`);
+  console.log(`${pointDebug_fmt($borrow(c, "test/corpus/ref_cell_guards_mapped.rs:36:24"))}`);
   // filter_map: its `Err` gives the guard back, still held.
-  const guard$2 = $borrow(c, true);
+  const guard$2 = $borrow(c, "test/corpus/ref_cell_guards_mapped.rs:38:31", true);
   const r = $guardFilterMap(
     guard$2,
     () => {
@@ -102,7 +103,7 @@ function main() {
     $unborrow(value$1._0);
   }
   // map_split: both halves hold it, released when the second drops.
-  const guard$3 = $borrow(c, true);
+  const guard$3 = $borrow(c, "test/corpus/ref_cell_guards_mapped.rs:46:42", true);
   const [x$1, name] = $guardMapSplit(guard$3, () => [guard$3.x, guard$3.name], "value", "value");
   $unborrow(x$1);
   try {
@@ -121,11 +122,11 @@ function main() {
   }
   // A panicking closure releases what it was given.
   const caught = $catchUnwind(() => {
-    const guard$5 = $borrow(c, true);
+    const guard$5 = $borrow(c, "test/corpus/ref_cell_guards_mapped.rs:53:29", true);
     const _g = $guardMap(
       guard$5,
       () => {
-        throw new Error("in map");
+        throw $panic("in map", "test/corpus/ref_cell_guards_mapped.rs:53:54");
       },
       "value",
     );
@@ -140,11 +141,11 @@ function main() {
 
   const outer = { items: [1, 2], count: 0 };
   if (outer.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/ref_cell_guards_mapped.rs:58:11");
   }
   outer.count = (outer.count + 1) >>> 0;
   // (c) Nested maps, and a map of one of `map_split`'s halves.
-  const guard$4 = $borrow(outer, true);
+  const guard$4 = $borrow(outer, "test/corpus/ref_cell_guards_mapped.rs:61:32", true);
   const guard$5 = $guardMap(guard$4, () => guard$4, "object");
   const n = $guardMap(guard$5, () => guard$5.count, "value");
   try {
@@ -161,7 +162,7 @@ function main() {
   if (value$4.TAG === "Ok") {
     $unborrow(value$4._0);
   }
-  const guard$6 = $borrow(c, true);
+  const guard$6 = $borrow(c, "test/corpus/ref_cell_guards_mapped.rs:67:42", true);
   const [x$2, guard$7] = $guardMapSplit(guard$6, () => [guard$6.x, guard$6.name], "value", "value");
   let len;
   try {
@@ -186,11 +187,11 @@ function main() {
 
   // (d) Two shared maps of one cell to one object.
   const v = { value: [[1, 2], 0] };
-  const guard$8 = $borrow(v, true);
+  const guard$8 = $borrow(v, "test/corpus/ref_cell_guards_mapped.rs:77:28", true);
   const a = $guardMap(guard$8, () => guard$8.value[0], "object");
   let b;
   try {
-    const guard = $borrow(v, true);
+    const guard = $borrow(v, "test/corpus/ref_cell_guards_mapped.rs:78:28", true);
     b = $guardMap(guard, () => guard.value[0], "object");
   } finally {
     $unborrow(a);

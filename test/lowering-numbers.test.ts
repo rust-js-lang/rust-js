@@ -318,10 +318,10 @@ pub fn shrunk(mut items: Vec<u32>) -> u32 {
   expect(wrapsProved(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   for (const read of ["items[0]", "items[1]", "items[i]", "items[i] + items[0]"]) expect(js).toContain(read);
-  expect(js).toContain("$index(items, 2)");
-  expect(js).toContain("$index(items, 0)");
+  expect(js).toContain("$index(items, 2, \"lib.rs:25:26\")");
+  expect(js).toContain("$index(items, 0, \"lib.rs:33:10\")");
   // A loop below a length its body changes, `truncate`'s `&mut`, checks.
-  expect(js).toContain("$index(items, i)");
+  expect(js).toContain("$index(items, i, \"lib.rs:67:21\")");
   expect(js.match(/\$index/g)?.length).toBe(9);
   const lib = await import(join(dir, "lib.js"));
   expect([lib.first([]), lib.first([4]), lib.second([1, 2]), lib.second([1]), lib.total([1, 2, 3]), lib.below([5, 6], 1), lib.below([5], 3)]).toEqual([undefined, 4, 2, 0, 6, 11, 0]);
@@ -369,7 +369,7 @@ pub fn negated(x: i32) -> i32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("return (x / HALVES) >>> 0;");
-  expect(js).toContain("$div(x, NEGATIVE, -2147483648)");
+  expect(js).toContain("$div(x, NEGATIVE, \"lib.rs:9:5\", -2147483648)");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.half(7), lib.negated(6)]).toEqual([3, -6]);
   expect(() => lib.negated(-2147483648)).toThrow("attempt to divide with overflow");
@@ -391,8 +391,8 @@ pub fn set(xs: &mut [u32], i: usize) {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("  return crumbs.length > 1 && crumbs[crumbs.length - 1].path == path;\n");
-  expect(js).toContain("  return ($index(xs, 1) + 1) >>> 0;\n");
-  expect(js).toContain("  xs[$at(xs, i)] = 3;\n");
+  expect(js).toContain("  return ($index(xs, 1, \"lib.rs:6:5\") + 1) >>> 0;\n");
+  expect(js).toContain("  xs[$at(xs, i, \"lib.rs:9:5\")] = 3;\n");
   const lib = await import(join(dir, "mir.js"));
   expect(() => lib.second([1])).toThrow("index out of bounds: the len is 1 but the index is 1");
   expect(() => lib.set([1], 4)).toThrow("index out of bounds: the len is 1 but the index is 4");
@@ -515,7 +515,7 @@ pub fn by(a: i32, b: i32) -> i32 {
   const lib = await import(join(dir, "mir.js"));
   expect(lib.odds(7)).toEqual([0, 1, 1, 2]);
   // A divisor not known is checked where it divides, once.
-  expect(js).toContain("export function by(a, b) {\n  return $rem(a, b, -2147483648) | 0;\n}");
+  expect(js).toContain("export function by(a, b) {\n  return $rem(a, b, \"lib.rs:14:5\", -2147483648) | 0;\n}");
   expect(() => lib.by(-2147483648, -1)).toThrow("remainder with overflow");
   expect(() => lib.by(1, 0)).toThrow("divisor of zero");
 });
@@ -539,7 +539,7 @@ pub fn put(args: &mut Vec<String>, i: usize, made: impl Fn() -> String) {
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   // One the length's test shows in bounds is set as it is (ADR 0576).
   expect(js).toContain('    args[0] = "HTML";\n');
-  expect(js).toMatch(/  args\[\$at\(args, i\)\] = \w+;\n}/);
+  expect(js).toMatch(/  args\[\$at\(args, i, "lib\.rs:7:9"\)\] = \w+;\n}/);
   const lib = await import(join(dir, "mir.js"));
   const args = [""];
   lib.fill(args);
@@ -576,7 +576,7 @@ test("a slice to a computed end from MIR reads the end where it's used", async (
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("$copyOf(segments, 0, Math.max(segments.length - 1, 0))");
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("$copyOf(segments, 0, \"lib.rs:2:13\", Math.max(segments.length - 1, 0))");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.crumbs(["a", "b", "c"]), lib.crumbs([])]).toEqual([["a", "b"], []]);
 });

@@ -198,8 +198,8 @@ export const mutations: Mutation[] = [
     name: "str-split-at-mut-unchecked",
     breaks: "`split_at_mut_checked` panics where it's `None`",
     file: "crates/rust-js-lower/src/std_types/text.rs",
-    find: '                if checked {\n                    list.push(Expr::bool(true));\n                }\n                "$strSplitAtMut"',
-    replace: '                "$strSplitAtMut"',
+    find: '            TextOp::StrSplitAtMut { checked: true } => "$checkedStrSplitAtMut",',
+    replace: '            TextOp::StrSplitAtMut { checked: true } => "$strSplitAtMut",',
     tests: ["test/corpus.test.ts", "-t", "str_mut"],
   },
   {
@@ -231,9 +231,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`extend_from_within(a..b)` is checked as `&v[a..b]` is, its start first",
     file: "crates/rust-js-lower/src/std_types/text.rs",
-    find: '            let copied = Expr::call(Expr::helper("$copyRange"), list);\n',
+    find: '|| Expr::call(Expr::helper("$copyRange"), list)',
     replace:
-      '            let copied = Expr::call(Expr::helper("$slice"), list);\n',
+      '|| Expr::call(Expr::helper("$slice"), list)',
     tests: ["test/corpus.test.ts", "-t", "extend_within_past_len"],
   },
   {
@@ -289,9 +289,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`v.extend_from_within(..)`, all of it, which reads the `Vec` itself, crashes the compiler",
     file: "crates/rust-js-lower/src/std_types/text.rs",
-    find: "            js::ExprKind::Call(_, list) => list,\n            kind => vec![\n",
+    find: "                .collect(),\n            kind => vec![\n",
     replace:
-      "            js::ExprKind::Call(_, list) => list,\n            _ => unreachable!(\"a range's read is a helper's call\"),\n            #[allow(unreachable_patterns)]\n            kind => vec![\n",
+      "                .collect(),\n            _ => unreachable!(\"a range's read is a helper's call\"),\n            #[allow(unreachable_patterns)]\n            kind => vec![\n",
     tests: [
       "test/lowering-collections.test.ts",
       "-t",
@@ -570,5 +570,22 @@ export const mutations: Mutation[] = [
     replace: "                stripped\n",
     tests: ["test/corpus.test.ts", "-t", "^trim_prefix_and_suffix_strip_once_or_keep\\.rs$"],
     snapshots: true,
+  },
+
+  {
+    name: "deque-drain-site-of-vec",
+    breaks: "a `VecDeque`'s `drain` past its end names a `Vec`'s line",
+    file: "crates/rust-js-lower/src/std_types/text.rs",
+    find: "            TextOp::Drain if deque => Some(\"vecDequeDrain\"),\n",
+    replace: "",
+    tests: ["test/binaries.test.ts", "-t", "std raises"],
+  },
+  {
+    name: "range-edit-keeps-the-reads-location",
+    breaks: "a `Vec`'s `splice` keeps its range read's location among its arguments, so it's refused as unlocated",
+    file: "crates/rust-js-lower/src/std_types/text.rs",
+    find: "                .filter(|given| !matches!(given.kind, js::ExprKind::RaisedAt(_)))\n",
+    replace: "",
+    tests: ["test/binaries.test.ts", "-t", "std raises"],
   },
 ];

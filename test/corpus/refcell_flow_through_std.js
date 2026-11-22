@@ -23,13 +23,21 @@ function main() {
     const cell = find(registry, 0);
     function map(cell) {
       if (cell.borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("test/corpus/refcell_flow_through_std.rs:29:73");
       }
       cell.push(2);
     }
     return cell != null ? $some(map(cell)) : undefined;
   }
-  const held = $borrow($unwrap(byName.get("a"), "no entry found for key"), true);
+  const held = $borrow(
+    $unwrap(
+      byName.get("a"),
+      "test/corpus/refcell_flow_through_std.rs:30:23",
+      "no entry found for key",
+    ),
+    "test/corpus/refcell_flow_through_std.rs:30:29",
+    true,
+  );
   console.log(`${held.length}`);
   try {
     touch(registry);

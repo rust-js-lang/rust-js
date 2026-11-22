@@ -24,7 +24,7 @@ function main() {
       loudDrop_drop,
     );
     console.log(`${items.map((l) => String(l[0])).join(" ")}`);
-    $fillWith($view(items, 0, 2), () => [0], loudDrop_drop);
+    $fillWith($view(items, 0, "test/corpus/fill_with_drops.rs:20:10", 2), () => [0], loudDrop_drop);
     console.log("end");
   } catch (error) {
     throw $unwindsOn(error);

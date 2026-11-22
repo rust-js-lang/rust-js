@@ -11,7 +11,7 @@ let supported = false;
 function probe(n) {
   supported = true;
   if (n > 2) {
-    throw $stringPanic(`no passive ${n}`);
+    throw $stringPanic(`no passive ${n}`, "test/corpus/catch_unwind_tested_last.rs:16:9");
   }
 }
 

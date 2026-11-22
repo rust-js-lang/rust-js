@@ -24,7 +24,7 @@ function shown(n) {
 }
 
 function pick(table, at) {
-  return $index(table, at);
+  return $index(table, at, "test/corpus/closure_stages_that_never_unwind.rs:25:5");
 }
 
 function tagged(items, TIntoU8) {
@@ -75,7 +75,11 @@ function main() {
       const table = [5, 6];
       const r = $catchUnwind(() =>
         $collectDropping(
-          v.values().map((n) => [$index(table, n)]),
+          v
+            .values()
+            .map((n) => [
+              $index(table, n, "test/corpus/closure_stages_that_never_unwind.rs:61:59"),
+            ]),
           loudDrop_drop,
           true,
         ),
@@ -84,7 +88,12 @@ function main() {
       try {
         const r = $catchUnwind(() =>
           $collectDropping(
-            v.values().map((n) => [$div(6, (2 - n) & 255) & 255]),
+            v
+              .values()
+              .map((n) => [
+                $div(6, (2 - n) & 255, "test/corpus/closure_stages_that_never_unwind.rs:63:59") &
+                  255,
+              ]),
             loudDrop_drop,
             true,
           ),
@@ -95,7 +104,10 @@ function main() {
             $collectDropping(
               v.values().map((n) => {
                 if (n >= 3) {
-                  throw $stringPanic(`too big ${n}`);
+                  throw $stringPanic(
+                    `too big ${n}`,
+                    "test/corpus/closure_stages_that_never_unwind.rs:68:17",
+                  );
                 }
                 return [n];
               }),

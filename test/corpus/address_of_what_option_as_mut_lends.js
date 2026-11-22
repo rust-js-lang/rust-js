@@ -17,9 +17,23 @@ function main() {
   $stored($ptr(o, "value", 0), undefined, 1);
   let base = $addr($ptr(o, "value", 0), 2);
   $stored($ptr(o, "value", 0), undefined, 1);
-  let at = $ptr($unwrap(o.value == null ? undefined : $ptr(o, "value", 1)), "value", 0);
+  let at = $ptr(
+    $unwrap(
+      o.value == null ? undefined : $ptr(o, "value", 1),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:34:5",
+    ),
+    "value",
+    0,
+  );
   $stored($ptr(o, "value", 0), undefined, 1);
-  let again = $ptr($unwrap(o.value == null ? undefined : $ptr(o, "value", 1)), "value", 0);
+  let again = $ptr(
+    $unwrap(
+      o.value == null ? undefined : $ptr(o, "value", 1),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:34:5",
+    ),
+    "value",
+    0,
+  );
   at.value = 2;
   const value = ($addr(at, 1) - base) >>> 0;
   $stored($ptr(o, "value", 0), undefined, 1);
@@ -30,9 +44,23 @@ function main() {
   $stored($ptr(o, "value", 0), undefined, 2);
   base = $addr($ptr(o, "value", 0), 4);
   $stored($ptr(o, "value", 0), undefined, 2);
-  at = $ptr($unwrap(o.value == null ? undefined : $ptr(o, "value", 2)), "value", 0);
+  at = $ptr(
+    $unwrap(
+      o.value == null ? undefined : $ptr(o, "value", 2),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:35:5",
+    ),
+    "value",
+    0,
+  );
   $stored($ptr(o, "value", 0), undefined, 2);
-  again = $ptr($unwrap(o.value == null ? undefined : $ptr(o, "value", 2)), "value", 0);
+  again = $ptr(
+    $unwrap(
+      o.value == null ? undefined : $ptr(o, "value", 2),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:35:5",
+    ),
+    "value",
+    0,
+  );
   at.value = 2;
   const value$1 = ($addr(at, 2) - base) >>> 0;
   $stored($ptr(o, "value", 0), undefined, 2);
@@ -43,9 +71,23 @@ function main() {
   $stored($ptr(o, "value", 0), undefined, 4);
   base = $addr($ptr(o, "value", 0), 8);
   $stored($ptr(o, "value", 0), undefined, 4);
-  at = $ptr($unwrap(o.value == null ? undefined : $ptr(o, "value", 4)), "value", 0);
+  at = $ptr(
+    $unwrap(
+      o.value == null ? undefined : $ptr(o, "value", 4),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:36:5",
+    ),
+    "value",
+    0,
+  );
   $stored($ptr(o, "value", 0), undefined, 4);
-  again = $ptr($unwrap(o.value == null ? undefined : $ptr(o, "value", 4)), "value", 0);
+  again = $ptr(
+    $unwrap(
+      o.value == null ? undefined : $ptr(o, "value", 4),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:36:5",
+    ),
+    "value",
+    0,
+  );
   at.value = 2;
   const value$2 = ($addr(at, 4) - base) >>> 0;
   $stored($ptr(o, "value", 0), undefined, 4);
@@ -56,9 +98,23 @@ function main() {
   $stored($ptr(o, "value", 0), undefined, 8);
   base = $addr($ptr(o, "value", 0), 16);
   $stored($ptr(o, "value", 0), undefined, 8);
-  at = $ptr($unwrap(o.value == null ? undefined : $ptr(o, "value", 8)), "value", 0);
+  at = $ptr(
+    $unwrap(
+      o.value == null ? undefined : $ptr(o, "value", 8),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:37:5",
+    ),
+    "value",
+    0,
+  );
   $stored($ptr(o, "value", 0), undefined, 8);
-  again = $ptr($unwrap(o.value == null ? undefined : $ptr(o, "value", 8)), "value", 0);
+  again = $ptr(
+    $unwrap(
+      o.value == null ? undefined : $ptr(o, "value", 8),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:37:5",
+    ),
+    "value",
+    0,
+  );
   at.value = 2n;
   const value$3 = ($addr(at, 8) - base) >>> 0;
   $stored($ptr(o, "value", 0), undefined, 8);
@@ -67,24 +123,66 @@ function main() {
   );
   o = { value: false };
   base = $addr($ptr(o, "value", 0), 1);
-  at = $ptr($unwrap(o.value == null ? undefined : $ptr(o, "value", 0)), "value", 0);
-  again = $ptr($unwrap(o.value == null ? undefined : $ptr(o, "value", 0)), "value", 0);
+  at = $ptr(
+    $unwrap(
+      o.value == null ? undefined : $ptr(o, "value", 0),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:38:5",
+    ),
+    "value",
+    0,
+  );
+  again = $ptr(
+    $unwrap(
+      o.value == null ? undefined : $ptr(o, "value", 0),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:38:5",
+    ),
+    "value",
+    0,
+  );
   at.value = true;
   console.log(
     `bool ${($addr(at, 1) - base) >>> 0} ${$ptrEq(at, again, 1)} ${o.value == null ? "None" : `Some(${o.value})`}`,
   );
   o = { value: 1 };
   base = $addr($ptr(o, "value", 0), 4);
-  at = $ptr($unwrap(o.value == null ? undefined : $ptr(o, "value", 0)), "value", 0);
-  again = $ptr($unwrap(o.value == null ? undefined : $ptr(o, "value", 0)), "value", 0);
+  at = $ptr(
+    $unwrap(
+      o.value == null ? undefined : $ptr(o, "value", 0),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:39:5",
+    ),
+    "value",
+    0,
+  );
+  again = $ptr(
+    $unwrap(
+      o.value == null ? undefined : $ptr(o, "value", 0),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:39:5",
+    ),
+    "value",
+    0,
+  );
   at.value = 4294967295;
   console.log(
     `nonzero ${($addr(at, 4) - base) >>> 0} ${$ptrEq(at, again, 4)} ${o.value == null ? "None" : `Some(${o.value})`}`,
   );
   o = { value: SEVEN };
   base = $addr($ptr(o, "value", 0), 4);
-  at = $ptr($unwrap(o.value == null ? undefined : $ptr(o, "value", 0)), "value", 0);
-  again = $ptr($unwrap(o.value == null ? undefined : $ptr(o, "value", 0)), "value", 0);
+  at = $ptr(
+    $unwrap(
+      o.value == null ? undefined : $ptr(o, "value", 0),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:40:5",
+    ),
+    "value",
+    0,
+  );
+  again = $ptr(
+    $unwrap(
+      o.value == null ? undefined : $ptr(o, "value", 0),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:40:5",
+    ),
+    "value",
+    0,
+  );
   at.value = SEVEN;
   console.log(
     `ref ${($addr(at, 4) - base) >>> 0} ${$ptrEq(at, again, 4)} ${o.value == null ? "None" : `Some(${o.value})`}`,
@@ -93,9 +191,9 @@ function main() {
   $stored($ptr(o, "value", 0), undefined, 4);
   base = $addr($ptr(o, "value", 0), 12);
   $stored($ptr(o, "value", 0), undefined, 4);
-  at = $ptrTo($unwrap(o.value));
+  at = $ptrTo($unwrap(o.value, "test/corpus/address_of_what_option_as_mut_lends.rs:41:5"));
   $stored($ptr(o, "value", 0), undefined, 4);
-  again = $ptrTo($unwrap(o.value));
+  again = $ptrTo($unwrap(o.value, "test/corpus/address_of_what_option_as_mut_lends.rs:41:5"));
   at.value = { a: 3, b: 4 };
   const value$4 = ($addr(at, 8) - base) >>> 0;
   $stored($ptr(o, "value", 0), undefined, 4);
@@ -105,9 +203,23 @@ function main() {
   // Its own address never asked: a cell for `as_mut`'s handle alone.
   const alone = { value: 10 };
   $stored($ptr(alone, "value", 0), undefined, 4);
-  const one = $ptr($unwrap(alone.value == null ? undefined : $ptr(alone, "value", 4)), "value", 0);
+  const one = $ptr(
+    $unwrap(
+      alone.value == null ? undefined : $ptr(alone, "value", 4),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:44:40",
+    ),
+    "value",
+    0,
+  );
   $stored($ptr(alone, "value", 0), undefined, 4);
-  const two = $ptr($unwrap(alone.value == null ? undefined : $ptr(alone, "value", 4)), "value", 0);
+  const two = $ptr(
+    $unwrap(
+      alone.value == null ? undefined : $ptr(alone, "value", 4),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:45:40",
+    ),
+    "value",
+    0,
+  );
   one.value = (one.value + 1) >>> 0;
   $stored($ptr(alone, "value", 0), undefined, 4);
   const arg = $ptrEq(one, two, 4);
@@ -127,9 +239,13 @@ function main() {
             outer = value;
           },
         }),
+    "test/corpus/address_of_what_option_as_mut_lends.rs:52:32",
   );
   const three = $ptr(
-    $unwrap(inner.value == null ? undefined : $ptr(inner, "value", 4)),
+    $unwrap(
+      inner.value == null ? undefined : $ptr(inner, "value", 4),
+      "test/corpus/address_of_what_option_as_mut_lends.rs:53:32",
+    ),
     "value",
     0,
   );

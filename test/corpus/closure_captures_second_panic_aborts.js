@@ -8,7 +8,10 @@ export function entry() {
 
 function partDrop_drop(part) {
   if (part[0] === 2 || part[0] === 3) {
-    throw $stringPanic(`part ${part[0]} panics`);
+    throw $stringPanic(
+      `part ${part[0]} panics`,
+      "test/corpus/closure_captures_second_panic_aborts.rs:13:13",
+    );
   }
   console.log(`drop ${part[0]}`);
 }

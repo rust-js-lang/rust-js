@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "duration-new-unchecked",
     breaks: "`Duration::new` past `MAX` doesn't panic",
     file: "crates/rust-js-program/src/runtime/duration.js",
-    find: "  if (duration > 18446744073709551615999999999n) throw $stringPanic(\"overflow in Duration::new\");\n",
+    find: "  if (duration > 18446744073709551615999999999n) throw $stringPanic(\"overflow in Duration::new\", $stdSites.durationNew[0]);\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","duration_overflow"],
   },

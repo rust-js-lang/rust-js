@@ -18,6 +18,7 @@ import {
   $jsIterator,
   $live,
   $next,
+  $panic,
   $reserveHint,
   $roomForHint,
   $slicing,
@@ -44,7 +45,7 @@ function point() {
   if (n === POINT) {
     POINT = 0;
     console.log(`panic at ${n}`);
-    throw new Error("point");
+    throw $panic("point", "test/corpus/back_knowing_adapters_hint_and_try_fold.rs:23:9");
   }
 }
 

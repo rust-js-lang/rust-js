@@ -97,11 +97,17 @@ export function words(text) {
 export function slices(v) {
   const a = [10, 20, 30];
   const tail = a.slice(1).reduce((a, b) => (a + b) >>> 0, 0);
-  return [$copyOf(v, 1, 3), $copyOf(v, 2), $copyOf(v, 0, 1), v.slice(), tail];
+  return [
+    $copyOf(v, 1, "examples/text.rs:69:7", 3),
+    $copyOf(v, 2, "examples/text.rs:69:25"),
+    $copyOf(v, 0, "examples/text.rs:69:42", 1),
+    v.slice(),
+    tail,
+  ];
 }
 export function slicePanics(start, end) {
   const v = [1, 2, 3];
-  return $copyOf(v, start, end);
+  return $copyOf(v, start, "examples/text.rs:73:6", end);
 }
 export function escapes() {
   return `${$debugStr('a"b\\c\n\t\r\x00\x1b\x7fé\u3000\xa0\u200b\u2028\ue000́x\u{10ffff}')} ${$debugStr("a", "'")} ${$debugStr("'", "'")} ${$debugStr('"', "'")} ${$debugStr("it's")}`;

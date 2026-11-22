@@ -6,9 +6,9 @@ const $partsOf = Symbol("rust-js.partsOf");
 
 // `chunks(size)`: each `size` items, the last fewer, as `cut` cuts them:
 // copies, or views of `chunks_mut`'s (ADR 0335).
-function $chunks(v, size, cut = $part) {
+function $chunks(v, size, raisedAt, cut = $part) {
   if (size === 0) {
-    throw new Error("chunk size must be non-zero");
+    throw $panic("chunk size must be non-zero", raisedAt);
   }
   const parts = Array.from({ length: Math.ceil(v.length / size) }, (_, i) => cut(v, i * size, Math.min(i * size + size, v.length)));
   parts[$partsOf] = { source: v, size, windows: false };

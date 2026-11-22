@@ -65,7 +65,10 @@ function main() {
   const caught = $catchUnwind(() =>
     runWith("panics", true, () => {
       const value = current();
-      throw $stringPanic(`thrown in ${value == null ? "None" : `Some(${$debugStr(value)})`}`);
+      throw $stringPanic(
+        `thrown in ${value == null ? "None" : `Some(${$debugStr(value)})`}`,
+        "test/corpus/drop_guard_early_return.rs:50:46",
+      );
     }),
   );
   console.log(

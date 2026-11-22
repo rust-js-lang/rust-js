@@ -13,6 +13,7 @@ import {
   $iterator,
   $next,
   $nextBack,
+  $panic,
   $rangeNext,
   $tryOf,
   flatMapDoubleEndedIterator_advanceBackBy,
@@ -45,7 +46,7 @@ function ownIterator_next(own) {
 function ownIterator_count(own) {
   console.log(`own count ${own[0]}`);
   if (own[0] === 13) {
-    throw new Error("count");
+    throw $panic("count", "test/corpus/flatten_count_takes_each_inner_count.rs:37:13");
   }
   return own[0];
 }

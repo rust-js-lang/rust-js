@@ -36,10 +36,7 @@ function spanDisplay_fmt(span) {
 
 function main() {
   console.log("before");
-  const s = $fmtOrPanic(
-    () => spanDisplay_fmt([[1], [99]]),
-    "a Display implementation returned an error unexpectedly: Error",
-  );
+  const s = $fmtOrPanic(() => spanDisplay_fmt([[1], [99]]), "toString");
   console.log(`${s}`);
 }
 //# sourceMappingURL=case.js.map

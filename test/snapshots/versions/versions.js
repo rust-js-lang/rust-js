@@ -23,6 +23,7 @@ import {
   $partiallyOrdered,
   $range,
   $splitOff,
+  $stdSites,
   $strictlyEqual,
   $toFixed,
   $toUppercase,
@@ -122,8 +123,8 @@ export function tour() {
     vs,
     (a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor) || $cmp(a.patch, b.patch),
   );
-  const version = $index(vs, 1);
-  const right = $index(vs, 2);
+  const version = $index(vs, 1, "examples/versions.rs:103:53");
+  const right = $index(vs, 2, "examples/versions.rs:103:61");
   const value =
     ($cmp(version.major, right.major) ||
       $cmp(version.minor, right.minor) ||
@@ -147,8 +148,8 @@ export function tour() {
     }),
   );
   const v = $range(1, 9);
-  const tail = $splitOff(v, 5);
-  const drained = $drain(v, 1, 3);
+  const tail = $splitOff(v, 5, "examples/versions.rs:124:18");
+  const drained = $drain(v, 1, $stdSites.vecDrain[0], 3);
   out += `[${running.join(", ")}] [${v.join(", ")}] [${tail.join(", ")}] [${drained.join(", ")}]\n`;
   const fs = [2.5, -1, 3.25, 0];
   fs.sort((a, b) => $totalCmp(a, b));
@@ -207,11 +208,11 @@ export function panics(i) {
   const v = [1, 2, 3];
   switch (i) {
     case 0:
-      return $splitOff(v, 4);
+      return $splitOff(v, 4, "examples/versions.rs:194:16");
     case 1:
-      return $drain(v, 2, 1);
+      return $drain(v, 2, $stdSites.vecDrain[0], 1);
     default:
-      return $drain(v, 1, 5);
+      return $drain(v, 1, $stdSites.vecDrain[0], 5);
   }
 }
 

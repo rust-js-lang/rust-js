@@ -5,6 +5,7 @@ import {
   $eprint,
   $live,
   $out,
+  $panic,
   $print,
   $printing,
   $sink,
@@ -46,7 +47,7 @@ export const partialDisplay = { fmt: partialDisplay_fmt };
 function partialDisplay_fmt(partial) {
   const f = $sink();
   f.write("half");
-  throw new Error("mid-line");
+  throw $panic("mid-line", "test/corpus/eprinted_while_formatting.rs:39:9");
 }
 function main() {
   $printing(() => {

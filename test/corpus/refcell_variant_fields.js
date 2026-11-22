@@ -63,11 +63,11 @@ export function attempt(task, line) {
     const tries = $fieldCell(task.job, "tries");
     task.job.log.push(`${task.name}: ${line}`);
     if (tries.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/refcell_variant_fields.rs:94:20");
     }
     tries.value = (tries.value + 1) >>> 0;
     if (tries.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/refcell_variant_fields.rs:95:20");
     }
     return tries.value;
   }
@@ -93,11 +93,11 @@ export function retry(outcome) {
     tries = $fieldCell(outcome, "_0");
   }
   if (tries.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_variant_fields.rs:125:20");
   }
   tries.value = (tries.value + 1) >>> 0;
   if (tries.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_variant_fields.rs:126:20");
   }
   return tries.value;
 }
@@ -128,10 +128,10 @@ export function movedOn(first, second) {
   const tries = $fieldCell(job, "tries");
   task = second;
   if (tries.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_variant_fields.rs:153:12");
   }
   tries.value = (tries.value + 10) >>> 0;
-  const borrow = $borrow(tries, true);
+  const borrow = $borrow(tries, "test/corpus/refcell_variant_fields.rs:154:12", true);
   try {
     return (borrow.value + attempt(task, "moved")) >>> 0;
   } finally {

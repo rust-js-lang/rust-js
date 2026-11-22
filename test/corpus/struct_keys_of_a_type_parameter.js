@@ -417,7 +417,7 @@ function main() {
       tag: { id: 1, note: "c" },
     },
   ];
-  const note = $index(clashes, 2).tag.note;
+  const note = $index(clashes, 2, "test/corpus/struct_keys_of_a_type_parameter.rs:275:23").tag.note;
   const arg = named(clashes, clashHash, clashPartialEq, $hashedMap(clashHash, clashPartialEq_eq));
   console.log(`${note} ${arg}`);
   console.log(

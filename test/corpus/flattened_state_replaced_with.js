@@ -43,7 +43,7 @@ function advance(state) {
 function heldAcross() {
   const cell = { value: 1 };
   const other = { value: 5 };
-  const held = $borrow(other, true);
+  const held = $borrow(other, "test/corpus/flattened_state_replaced_with.rs:58:22", true);
   try {
     const old = $replaceWith(
       cell,
@@ -55,9 +55,12 @@ function heldAcross() {
         }
         return free ? (n.value + 10) >>> 0 : (n.value + 20) >>> 0;
       },
+      "test/corpus/flattened_state_replaced_with.rs:59:20",
       true,
     );
-    console.log(`held ${old} ${$borrow(cell).value} ${held.value}`);
+    console.log(
+      `held ${old} ${$borrow(cell, "test/corpus/flattened_state_replaced_with.rs:63:39").value} ${held.value}`,
+    );
   } finally {
     $unborrow(held);
   }

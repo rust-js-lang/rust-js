@@ -44,13 +44,13 @@ function check(what, f, TDebug) {
 /** The undo stack's step back: its index tested, then stepped. */
 function undo(history) {
   if (history.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_guard_fields.rs:41:31");
   }
   if (history.index === 0) {
     return;
   }
   history.index--;
-  return $index(history.entries, history.index);
+  return $index(history.entries, history.index, "test/corpus/refcell_guard_fields.rs:46:25");
 }
 
 /** A guard made each turn, a call between the turns setting its index. */
@@ -58,7 +58,7 @@ function steppedBack(history, between) {
   const seen = [];
   for (let turn = 0; turn < 2; turn++) {
     if (history.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/refcell_guard_fields.rs:54:39");
     }
     if (turn === 0) {
       history.index = 5;
@@ -75,7 +75,7 @@ function undoneEachTurn(history, turns) {
   let undone = 0;
   for (let i = 0; i < turns; i++) {
     if (history.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/refcell_guard_fields.rs:70:35");
     }
     if (history.index > 0) {
       history.index--;
@@ -87,7 +87,7 @@ function undoneEachTurn(history, turns) {
 
 /** A field that's a cell, which another `Ref` of it sets between. */
 function countedDown(counted, reset) {
-  counted = $borrow(counted, true);
+  counted = $borrow(counted, "test/corpus/refcell_guard_fields.rs:86:27", true);
   const value = counted.count === 0;
   let result;
   if (value) {
@@ -106,7 +106,7 @@ function countedDown(counted, reset) {
 
 /** A plain field of a `Ref`, which no call can write while it lives. */
 function labelBefore(counted, call) {
-  counted = $borrow(counted, true);
+  counted = $borrow(counted, "test/corpus/refcell_guard_fields.rs:96:27", true);
   let result;
   if (counted.label === 0) {
     result = 0;
@@ -124,7 +124,7 @@ function labelBefore(counted, call) {
 
 /** A guard made into one of its field. */
 function mappedBack(history) {
-  const guard = $borrowMut(history, true);
+  const guard = $borrowMut(history, "test/corpus/refcell_guard_fields.rs:106:41", true);
   const index = $guardMap(
     guard,
     () => ({
@@ -152,7 +152,7 @@ function mappedBack(history) {
 /** A guard given whole to a function, which may set its index. */
 function givenWhole(history, step) {
   if (history.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_guard_fields.rs:116:31");
   }
   if (history.index === 0) {
     return 0;
@@ -168,7 +168,7 @@ function givenWhole(history, step) {
  */
 function lentThrough(history, step) {
   if (history.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_guard_fields.rs:128:31");
   }
   if (history.index === 0) {
     return 0;
@@ -187,7 +187,7 @@ const History = {
 /** A guard's `DerefMut` given to a method, which sets its index. */
 function rewoundByAMethod(history) {
   if (history.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_guard_fields.rs:145:31");
   }
   if (history.index === 0) {
     return 0;
@@ -202,7 +202,7 @@ function rewoundByAMethod(history) {
  * step.
  */
 function borrowedAgain(first, second) {
-  let history = $borrowMut(first, true);
+  let history = $borrowMut(first, "test/corpus/refcell_guard_fields.rs:157:29", true);
   let result;
   if (history.index === 0) {
     result = 0;
@@ -211,7 +211,7 @@ function borrowedAgain(first, second) {
   }
   let borrowMut;
   try {
-    borrowMut = $borrowMut(second, true);
+    borrowMut = $borrowMut(second, "test/corpus/refcell_guard_fields.rs:161:22", true);
   } finally {
     $unborrow(history);
   }
@@ -232,17 +232,17 @@ function main() {
   check("undo", () => undo(history), optionDebug);
   check("undo again", () => undo(history), optionDebug);
   check("undo at the first", () => undo(history), optionDebug);
-  $borrowMut(history).index = 7;
+  $borrowMut(history, "test/corpus/refcell_guard_fields.rs:174:13").index = 7;
   check("undo past the end", () => undo(history), optionDebug);
   check(
     "stepped back",
     () =>
       steppedBack(history, () => {
-        $borrowMut(history).index = 0;
+        $borrowMut(history, "test/corpus/refcell_guard_fields.rs:178:42").index = 0;
       }),
     { fmt: (value) => `[${value.join(", ")}]` },
   );
-  $borrowMut(history).index = 2;
+  $borrowMut(history, "test/corpus/refcell_guard_fields.rs:180:13").index = 2;
   check("undone each turn", () => undoneEachTurn(history, 3), u32Debug);
   const counted = {
     count: 1,
@@ -252,7 +252,7 @@ function main() {
     "counted down",
     () =>
       countedDown(counted, () => {
-        $borrow(counted).count = 0;
+        $borrow(counted, "test/corpus/refcell_guard_fields.rs:188:42").count = 0;
       }),
     u32Debug,
   );
@@ -260,14 +260,14 @@ function main() {
     "label before",
     () =>
       labelBefore(counted, () => {
-        $borrow(counted).count = 5;
+        $borrow(counted, "test/corpus/refcell_guard_fields.rs:191:42").count = 5;
       }),
     u32Debug,
   );
-  $borrowMut(history).index = 1;
+  $borrowMut(history, "test/corpus/refcell_guard_fields.rs:193:13").index = 1;
   check("mapped back", () => mappedBack(history), u32Debug);
   check("mapped back at the first", () => mappedBack(history), u32Debug);
-  $borrowMut(history).index = 1;
+  $borrowMut(history, "test/corpus/refcell_guard_fields.rs:196:13").index = 1;
   check(
     "given whole",
     () =>
@@ -276,7 +276,7 @@ function main() {
       }),
     u32Debug,
   );
-  $borrowMut(history).index = 1;
+  $borrowMut(history, "test/corpus/refcell_guard_fields.rs:198:13").index = 1;
   check(
     "lent through",
     () =>
@@ -285,13 +285,13 @@ function main() {
       }),
     u32Debug,
   );
-  $borrowMut(history).index = 1;
+  $borrowMut(history, "test/corpus/refcell_guard_fields.rs:200:13").index = 1;
   check("rewound by a method", () => rewoundByAMethod(history), u32Debug);
   const second = {
     entries: [],
     index: 0,
   };
-  $borrowMut(history).index = 1;
+  $borrowMut(history, "test/corpus/refcell_guard_fields.rs:206:13").index = 1;
   check("borrowed again", () => borrowedAgain(history, second), u32Debug);
 }
 //# sourceMappingURL=case.js.map

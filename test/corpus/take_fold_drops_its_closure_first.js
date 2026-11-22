@@ -23,7 +23,7 @@ function countIterator_next(count) {
 }
 
 function countIterator_nth(count, n) {
-  throw $stringPanic(`nth ${n}`);
+  throw $stringPanic(`nth ${n}`, "test/corpus/take_fold_drops_its_closure_first.rs:21:9");
 }
 
 function loudDrop_drop(loud) {

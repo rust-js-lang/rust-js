@@ -18,7 +18,7 @@ function zero(x) {
 
 function ends(v) {
   if (v.length >= 2) {
-    const middle = $view(v, 1, v.length - 1);
+    const middle = $view(v, 1, "test/corpus/slice_pattern_mut_rest.rs:16:20", v.length - 1);
     [v[0], v[v.length - 1]] = [v[v.length - 1], v[0]];
     bump(middle);
   }
@@ -27,7 +27,7 @@ function ends(v) {
 function main() {
   const v = [1, 2, 3, 4, 5];
   if (v.length >= 1) {
-    const rest = $view(v, 1);
+    const rest = $view(v, 1, "test/corpus/slice_pattern_mut_rest.rs:24:19");
     v[0] = 10;
     rest.sort((a, b) => $cmp(b, a));
   }
@@ -41,12 +41,12 @@ function main() {
   }
   console.log(`[${v.join(", ")}]`);
   const a = [1, 2, 3];
-  const rest = $view(a, 1, 3);
+  const rest = $view(a, 1, "test/corpus/slice_pattern_mut_rest.rs:36:20", 3);
   a[0] = (a[0] + 1) | 0;
   rest[0] = 9;
   console.log(`[${a.join(", ")}]`);
   const grid = [1, 2, 3, 4];
-  const inner = $view(grid, 1, 3);
+  const inner = $view(grid, 1, "test/corpus/slice_pattern_mut_rest.rs:42:13", 3);
   inner.reverse();
   console.log(`[${grid.join(", ")}]`);
 }

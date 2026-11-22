@@ -160,7 +160,7 @@ pub fn tail(s: &'static Unknown, a: &'static Unknown, b: &'static Unknown, log: 
     case textType:
       return "text";
     default:
-      throw new Error("Invalid selector type specified.");
+      throw $panic("Invalid selector type specified.", "lib.rs:24:9");
   }
 }`);
   expect(js).toContain(`export function matchSelector(selector, tag) {
@@ -178,7 +178,7 @@ pub fn tail(s: &'static Unknown, a: &'static Unknown, b: &'static Unknown, log: 
       }
       break;
     default:
-      throw new Error("Invalid selector type specified.");
+      throw $panic("Invalid selector type specified.", "lib.rs:40:9");
   }
   return false;
 }`);

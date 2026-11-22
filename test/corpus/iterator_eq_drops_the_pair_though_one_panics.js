@@ -6,6 +6,7 @@ import {
   $dropEach,
   $iter,
   $iterEq,
+  $panic,
   $panicking,
   $partialEq,
 } from "@rust-js/std";
@@ -17,14 +18,14 @@ export function entry() {
 export const dPartialEq = $partialEq({ eq: dPartialEq_eq, $drop: dDrop_drop });
 function dPartialEq_eq(d, other) {
   if (d[0] === 2) {
-    throw new Error("eq of 2");
+    throw $panic("eq of 2", "test/corpus/iterator_eq_drops_the_pair_though_one_panics.rs:9:9");
   }
   return d[0] === other[0];
 }
 function dDrop_drop(d) {
   console.log(`drop ${d[1]}${d[0]} panicking=${$panicking()}`);
   if (d[0] === 1 && d[1] === "b" && !$panicking()) {
-    throw new Error("drop of b1");
+    throw $panic("drop of b1", "test/corpus/iterator_eq_drops_the_pair_though_one_panics.rs:17:13");
   }
 }
 function main() {

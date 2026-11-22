@@ -80,6 +80,8 @@ function main() {
   console.log(`${owned}`);
 
   const euro = $utf8Decode([226, 130, 172]);
-  console.log(`${euro} ${$fromUtf8($slice(inputs[2], 2, 3)).TAG === "Ok"}`);
+  console.log(
+    `${euro} ${$fromUtf8($slice(inputs[2], 2, "test/corpus/utf8_decoding.rs:65:59", 3)).TAG === "Ok"}`,
+  );
 }
 //# sourceMappingURL=case.js.map

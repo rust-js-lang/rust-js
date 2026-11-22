@@ -21,25 +21,38 @@ function countOf(item) {
 }
 
 function count(holder) {
-  return countOf($borrow($fieldCell(holder, "item")).value);
+  return countOf(
+    $borrow($fieldCell(holder, "item"), "test/corpus/refcell_field_derive_meets.rs:38:27").value,
+  );
 }
 
 function bump(holder) {
   const n = count(holder);
-  $cellReplace($borrowMut($fieldCell(holder, "item")), { TAG: "Count", _0: (n + 1) & 255 });
+  $cellReplace(
+    $borrowMut($fieldCell(holder, "item"), "test/corpus/refcell_field_derive_meets.rs:43:17"),
+    { TAG: "Count", _0: (n + 1) & 255 },
+  );
 }
 
 function main() {
   const holder$1 = { item: { TAG: "Count", _0: 1 } };
   const first = {
     ...holder$1,
-    item: $withBorrow($fieldCell(holder$1, "item"), (value) => itemClone_clone(value)),
+    item: $withBorrow(
+      $fieldCell(holder$1, "item"),
+      (value) => itemClone_clone(value),
+      "test/corpus/refcell_field_derive_meets.rs:50:27",
+    ),
   };
   console.log(`${count(first)}`);
   holder = holder$1;
   const second = {
     ...holder$1,
-    item: $withBorrow($fieldCell(holder$1, "item"), (value) => itemClone_clone(value)),
+    item: $withBorrow(
+      $fieldCell(holder$1, "item"),
+      (value) => itemClone_clone(value),
+      "test/corpus/refcell_field_derive_meets.rs:53:28",
+    ),
   };
   console.log(`${count(second)}`);
 }

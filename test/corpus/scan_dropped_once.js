@@ -13,6 +13,7 @@ import {
   $lazyScan,
   $live,
   $next,
+  $panic,
   $range,
   $rev,
   $roomForHint,
@@ -254,7 +255,7 @@ function panics() {
       (s, x) => {
         s.value = (s.value + 1) >>> 0;
         if (s.value === 2) {
-          throw new Error("scan");
+          throw $panic("scan", "test/corpus/scan_dropped_once.rs:113:17");
         }
         return x;
       },
@@ -281,7 +282,7 @@ function panics() {
         calls = (calls + 1) | 0;
         if (calls === 2) {
           itemDrop_drop(x);
-          throw new Error("scan");
+          throw $panic("scan", "test/corpus/scan_dropped_once.rs:126:17");
         }
         s.value = (s.value + 1) >>> 0;
         const value = s.value < 4;
@@ -307,7 +308,7 @@ function panics() {
         calls = (calls + 1) | 0;
         if (calls === 3) {
           itemDrop_drop(x);
-          throw new Error("scan");
+          throw $panic("scan", "test/corpus/scan_dropped_once.rs:140:17");
         }
         return x;
       }),

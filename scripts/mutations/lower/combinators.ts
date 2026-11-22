@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "deque-split-off-as-vec",
+    breaks: "a `VecDeque`'s `split_off` is a `Vec`'s, its message and its line the caller's",
+    file: "crates/rust-js-lower/src/combinators.rs",
+    find: "        if !self.is_std_type(subject_ty, crate::recognition::StdItem::VecDeque) {",
+    replace: "        if true || !self.is_std_type(subject_ty, crate::recognition::StdItem::VecDeque) {",
+    tests: ["test/binaries.test.ts", "-t", "std raises"],
+  },
+  {
     name: "inspect-err-holds-ok",
     breaks: "`inspect_err`'s `Err` is dropped as the `Ok`'s type as its closure panics (#903)",
     file: "crates/rust-js-lower/src/combinators.rs",

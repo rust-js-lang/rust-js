@@ -28,7 +28,7 @@ export function entry() {
 
 function fillViaChunks(src, dest) {
   const size = 4;
-  dest = $iter($chunksExactMut(dest, size));
+  dest = $iter($chunksExactMut(dest, size, "test/corpus/zip_len_of_chunks.rs:8:25"));
   src = $iter(src);
   const zipped = iterator_zip(
     $lent(dest),
@@ -44,14 +44,23 @@ function fillViaChunks(src, dest) {
   );
   const numChunks = $exactLen($sizeHint(zipped));
   zipped.forEach(([dest, src]) => {
-    $copyFromSlice(dest, $toBytes(src, 4, true));
+    $copyFromSlice(dest, $toBytes(src, 4, true), "test/corpus/zip_len_of_chunks.rs:12:40");
   });
   const byteLen = Math.imul(numChunks, size) >>> 0;
   dest = $next(dest);
   if (dest != null) {
     const n = dest.length;
     const next = $next(src);
-    $copyFromSlice(dest, $slice(next != null ? $toBytes(next, 4, true) : [0, 0, 0, 0], 0, n));
+    $copyFromSlice(
+      dest,
+      $slice(
+        next != null ? $toBytes(next, 4, true) : [0, 0, 0, 0],
+        0,
+        "test/corpus/zip_len_of_chunks.rs:16:77",
+        n,
+      ),
+      "test/corpus/zip_len_of_chunks.rs:16:14",
+    );
   }
   return [numChunks, byteLen];
 }
@@ -71,7 +80,7 @@ function main() {
   const v = [1, 2, 3, 4, 5, 6, 7];
   const w = [10, 20, 30];
   let z = iterator_zip(
-    $iter($chunks(v, 2)),
+    $iter($chunks(v, 2, "test/corpus/zip_len_of_chunks.rs:31:15")),
     $iter(w),
     { next: $next },
     intoIterator,
@@ -86,8 +95,8 @@ function main() {
     `${$exactLen($sizeHint(z))} ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint(z))}`,
   );
   z = iterator_zip(
-    $iter($windows(v, 3)),
-    $iter($chunksExact(v, 3)),
+    $iter($windows(v, 3, "test/corpus/zip_len_of_chunks.rs:33:15")),
+    $iter($chunksExact(v, 3, "test/corpus/zip_len_of_chunks.rs:33:32")),
     { next: $next },
     intoIterator,
     true,
@@ -102,7 +111,7 @@ function main() {
       .map((item) => `([${item[0].join(", ")}], [${item[1].join(", ")}])`)
       .join(", ")}]`,
   );
-  const c = $iter($rchunks(v, 3, false));
+  const c = $iter($rchunks(v, 3, false, "test/corpus/zip_len_of_chunks.rs:35:19"));
   $next(c);
   z = iterator_zip(
     $lent(c),

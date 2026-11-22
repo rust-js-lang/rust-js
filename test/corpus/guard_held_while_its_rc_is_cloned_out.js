@@ -23,7 +23,13 @@ function stepper(history) {
         return;
       }
       history$1.index--;
-      return $rcClone($index(history$1.entries, history$1.index));
+      return $rcClone(
+        $index(
+          history$1.entries,
+          history$1.index,
+          "test/corpus/guard_held_while_its_rc_is_cloned_out.rs:21:40",
+        ),
+      );
     },
     () => {
       $rcDrop(history, (value) => {
@@ -129,7 +135,9 @@ function main() {
       throw error;
     }
     try {
-      console.log(`${history.value.index} ${$index(history.value.entries, 0).strong}`);
+      console.log(
+        `${history.value.index} ${$index(history.value.entries, 0, "test/corpus/guard_held_while_its_rc_is_cloned_out.rs:35:51").strong}`,
+      );
     } catch (error) {
       $cleanup(() => {
         $dispose(back);

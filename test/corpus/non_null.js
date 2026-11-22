@@ -18,7 +18,7 @@ function sum(at) {
 
 function main() {
   let last = { value: 3 };
-  last = $unwrap($ptrTo(last));
+  last = $unwrap($ptrTo(last), "test/corpus/non_null.rs:24:50");
   const first = $ptrTo({ value: 2, next: last });
   console.log(`${sum(first)}`);
   first.value.value = 10;

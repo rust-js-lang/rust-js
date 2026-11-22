@@ -47,7 +47,7 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === boom) {
     boom = 0;
-    throw $stringPanic(`drop ${d[0]}`);
+    throw $stringPanic(`drop ${d[0]}`, "test/corpus/nth_passes_a_slice_or_each.rs:23:13");
   }
 }
 

@@ -95,7 +95,7 @@ function rematched(c) {
         },
       };
       v.push(3);
-      $unwrap(x.value).push(4);
+      $unwrap(x.value, "test/corpus/if_let_mut_else_assign.rs:69:24").push(4);
     } else {
       const v = x.value;
       v.push(5);

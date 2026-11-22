@@ -447,7 +447,11 @@ function main() {
   const p = { x: -1, y: 2 };
   const l = [[]];
   const result = $writeTry(() => shownGeneric($cellOf(l), -12, charsWrite, debug, debug));
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:166:36",
+  );
   const result$1 = $writeTry(() =>
     shownGeneric(
       $cellOf(l),
@@ -457,7 +461,11 @@ function main() {
       strDebug,
     ),
   );
-  $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$1,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:167:35",
+  );
   const result$2 = $writeTry(() =>
     shownGeneric(
       $cellOf(l),
@@ -481,7 +489,11 @@ function main() {
       },
     ),
   );
-  $writeExpect(result$2, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$2,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:168:36",
+  );
   const result$3 = $writeTry(() =>
     shownGeneric(
       $cellOf(l),
@@ -498,19 +510,35 @@ function main() {
       },
     ),
   );
-  $writeExpect(result$3, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$3,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:169:33",
+  );
   const result$4 = $writeTry(() =>
     shownGeneric($cellOf(l), p, charsWrite, pointDisplay, pointDebug),
   );
-  $writeExpect(result$4, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$4,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:170:31",
+  );
   const result$5 = $writeTry(() =>
     shownGeneric($cellOf(l), [-1, 20], charsWrite, DuoDisplay, DuoDebug),
   );
-  $writeExpect(result$5, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$5,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:171:41",
+  );
   const result$6 = $writeTry(() =>
     passedOn($cellOf(l), [["ab"], ["c"]], charsWrite, duoDisplay(nameDisplay)),
   );
-  $writeExpect(result$6, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$6,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:172:52",
+  );
   console.log(`[${l[0].map((item) => $debugStr(item)).join(", ")}]`);
   const l$1 = [[]];
   const value = [1, undefined];
@@ -564,7 +592,11 @@ function main() {
     f.write("|");
     $writingInto(f, labelledDebug_fmt, { label: "p" }, undefined, pointDebug);
   });
-  $writeExpect(result$7, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$7,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:191:6",
+  );
   const result$8 = $writeTry(() =>
     radixes(
       $cellOf(l$1),
@@ -592,7 +624,11 @@ function main() {
       },
     ),
   );
-  $writeExpect(result$8, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$8,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:192:28",
+  );
   const result$9 = $writeTry(() =>
     radixes(
       $cellOf(l$1),
@@ -624,11 +660,19 @@ function main() {
       },
     ),
   );
-  $writeExpect(result$9, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$9,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:193:28",
+  );
   const result$10 = $writeTry(() =>
     radixes($cellOf(l$1), [171], logWrite, hexedLowerHex, hexedUpperHex),
   );
-  $writeExpect(result$10, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$10,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:194:33",
+  );
   const result$11 = $writeTry(() =>
     bits(
       $cellOf(l$1),
@@ -652,7 +696,11 @@ function main() {
       },
     ),
   );
-  $writeExpect(result$11, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$11,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:195:24",
+  );
   const result$12 = $writeTry(() =>
     bits(
       $cellOf(l$1),
@@ -684,7 +732,11 @@ function main() {
       },
     ),
   );
-  $writeExpect(result$12, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$12,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:196:24",
+  );
   console.log(`[${l$1[0].map((item) => $debugStr(item)).join(", ")}]`);
   const l$2 = [[]];
   const result$13 = $writeTry(() =>
@@ -697,13 +749,25 @@ function main() {
       },
     }),
   );
-  $writeExpect(result$13, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$13,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:199:30",
+  );
   const result$14 = $writeTry(() =>
     passedOn($cellOf(l$2), "ab", charsWrite, { fmt: $formatted, fmtInto: $writePadded }),
   );
-  $writeExpect(result$14, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$14,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:200:29",
+  );
   const result$15 = $writeTry(() => passedOn($cellOf(l$2), ["x"], charsWrite, nameDisplay));
-  $writeExpect(result$15, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$15,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:201:35",
+  );
   const shown = [
     { value: 7, impl: debug },
     { value: "s", impl: { fmt: $formatted, fmtInto: $writePadded } },
@@ -731,7 +795,11 @@ function main() {
       $writeBy(f, d.impl, d.value);
       f.write("|");
     });
-    $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+    $writeExpect(
+      result,
+      "called `Result::unwrap()` on an `Err` value",
+      "test/corpus/writer_sink_generic_and_dyn.rs:211:38",
+    );
     const result$1 = $writeTry(() =>
       passedOn($cellOf(l$2), d, charsWrite, {
         fmt(value, options) {
@@ -742,19 +810,26 @@ function main() {
         },
       }),
     );
-    $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+    $writeExpect(
+      result$1,
+      "called `Result::unwrap()` on an `Err` value",
+      "test/corpus/writer_sink_generic_and_dyn.rs:212:33",
+    );
   }
   console.log(`[${l$2[0].map((item) => $debugStr(item)).join(", ")}]`);
   const l$3 = [[]];
   const message = { value: "boom", impl: $stringError() };
-  const own = $unwrapErr(failing(4));
+  const own = $unwrapErr(failing(4), "test/corpus/writer_sink_generic_and_dyn.rs:217:26");
   const io = {
     value: new $IoError("Other", { value: "oops", impl: $stringError() }),
     impl: $ioErrorDyn("core::io::error::Error"),
   };
   const kind = { value: new $IoError("NotFound"), impl: $ioErrorDyn("core::io::error::Error") };
   const parse = {
-    value: $unwrapErr($parseInt("x", -2147483648, 2147483647)),
+    value: $unwrapErr(
+      $parseInt("x", -2147483648, 2147483647),
+      "test/corpus/writer_sink_generic_and_dyn.rs:220:73",
+    ),
     impl: $parseErrorDyn("core::num::error::ParseIntError"),
   };
   for (const e of [message, own, io, kind, parse]) {
@@ -767,14 +842,18 @@ function main() {
       $writeBy(f, e.impl.Display(), e.value, { precision: 2 });
       f.write("|");
     });
-    $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+    $writeExpect(
+      result,
+      "called `Result::unwrap()` on an `Err` value",
+      "test/corpus/writer_sink_generic_and_dyn.rs:222:47",
+    );
   }
   console.log(`[${l$3[0].map((item) => $debugStr(item)).join(", ")}]`);
   for (let n = 1; n < 8; n++) {
     const nth = [0, n, ""];
     const r = $writeTry(() => shownGeneric($cellOf(nth), [-5, 6], nthWrite, DuoDisplay, DuoDebug));
     const dynNth = [0, n, ""];
-    const value = $index(shown, 3);
+    const value = $index(shown, 3, "test/corpus/writer_sink_generic_and_dyn.rs:229:47");
     const d = $writeTry(() => {
       const f = $writerSink(dynNth, nthWrite_writeStr, nthWrite_writeStr);
       $writeBy(f, value.impl, value.value, { width: 4, align: "Right" });
@@ -820,13 +899,21 @@ function main() {
       $writeBy(f, item.impl, item.value, { alternate: true });
       f.write("|");
     });
-    $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+    $writeExpect(
+      result,
+      "called `Result::unwrap()` on an `Err` value",
+      "test/corpus/writer_sink_generic_and_dyn.rs:236:48",
+    );
   }
   const result$16 = $writeTry(() => {
     const f = $writerSink(log, logWrite_writeStr, logWrite_writeStr);
     $writingInto(f, listedDisplay_fmt);
   });
-  $writeExpect(result$16, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$16,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_generic_and_dyn.rs:238:31",
+  );
   console.log(`[${log[0].map((item) => $debugStr(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

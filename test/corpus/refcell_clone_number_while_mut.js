@@ -8,10 +8,12 @@ export function entry() {
 
 function main() {
   const cell = { value: 5 };
-  const writing = $borrowMut(cell, true);
+  const writing = $borrowMut(cell, "test/corpus/refcell_clone_number_while_mut.rs:10:28", true);
   writing.value = (writing.value + 1) >>> 0;
   try {
-    const copy = { value: $borrow(cell).value };
+    const copy = {
+      value: $borrow(cell, "test/corpus/refcell_clone_number_while_mut.rs:12:21").value,
+    };
     console.log(
       `RefCell { value: ${$showBorrowed(copy, (value) => String(value))} } ${writing.value}`,
     );

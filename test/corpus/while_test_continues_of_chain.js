@@ -11,7 +11,7 @@ function walk(start, nodes, log) {
   let i = 0;
   while (i < 3) {
     while (at != null) {
-      const node = $index(nodes, at);
+      const node = $index(nodes, at, "test/corpus/while_test_continues_of_chain.rs:18:25");
       if (node.status === 5) {
         at = undefined;
         continue;
@@ -46,8 +46,12 @@ function walkTested(start, nodes, log) {
   let at = start;
   let i = 0;
   while (i < 3) {
-    while (at != null && $index(nodes, at).status < 10 && (at != null ? at % 7 : undefined) !== 6) {
-      const node = $index(nodes, at);
+    while (
+      at != null &&
+      $index(nodes, at, "test/corpus/while_test_continues_of_chain.rs:55:31").status < 10 &&
+      (at != null ? at % 7 : undefined) !== 6
+    ) {
+      const node = $index(nodes, at, "test/corpus/while_test_continues_of_chain.rs:56:25");
       if (node.status === 5) {
         at = undefined;
         continue;

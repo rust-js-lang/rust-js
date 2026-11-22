@@ -175,8 +175,8 @@ pub fn derived(n: i32) -> usize {
   // only whether it's mutably borrowed, which no borrow of it is: none is
   // checked (ADR 0863).
   expect(js).toContain("const guard = asked.values;");
-  expect(js).toContain("$borrowMut(pushed.values, true)");
-  expect(js).toContain("$borrowMut(ticked.values, true)");
+  expect(js).toContain("$borrowMut(pushed.values, \"lib.rs:95:19\", true)");
+  expect(js).toContain("$borrowMut(ticked.values, \"lib.rs:117:19\", true)");
   const lib = await import(join(dir, "lib.js"));
   const items = [1, 2, 2, 3, 2].map((depth, i) => ({ depth, url: `#${i}` }));
   const root = lib.nested(items);
@@ -831,7 +831,7 @@ pub fn clash() -> usize {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("let current;");
   expect(js).toContain("export function active() {\n  return current;\n}");
-  expect(js).toContain("$withBorrow(log, grow, true)");
+  expect(js).toContain("$withBorrow(log, grow, $stdSites.localKeyWithBorrow[0], true)");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.active()).toBeUndefined();
   lib.start("a");

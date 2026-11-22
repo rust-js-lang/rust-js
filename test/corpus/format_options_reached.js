@@ -29,12 +29,12 @@ function main() {
     `${$debugDuration(d, 2)} ${$debugDuration(d, 0)} ${$debugDuration(1000001n, 1)} ${$debugDuration(1000500n, 3)}`,
   );
   console.log(
-    `${$debugParseError($unwrapErr($parseInt("x", 0, 255)), "ParseIntError", { alternate: true })}`,
+    `${$debugParseError($unwrapErr($parseInt("x", 0, 255), "test/corpus/format_options_reached.rs:25:41"), "ParseIntError", { alternate: true })}`,
   );
   console.log(
-    `${$debugParseError($unwrapErr($tryFromInt(-1, 0, 255)), "TryFromIntError", { alternate: true })}`,
+    `${$debugParseError($unwrapErr($tryFromInt(-1, 0, 255), "test/corpus/format_options_reached.rs:26:43"), "TryFromIntError", { alternate: true })}`,
   );
-  const bad = $unwrapErr($fromUtf8([97, 255]));
+  const bad = $unwrapErr($fromUtf8([97, 255]), "test/corpus/format_options_reached.rs:27:50");
   console.log(`${$debugUtf8Error(bad, false, { width: 3 })}`);
   console.log(`${$debugUtf8Error(bad, false, { alternate: true })}`);
   console.log(

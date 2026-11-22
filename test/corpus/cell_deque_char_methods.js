@@ -24,6 +24,7 @@ import {
   $refCellSwap,
   $restStr,
   $retainDeque,
+  $stdSites,
   $unwrap,
 } from "@rust-js/std";
 
@@ -43,10 +44,10 @@ function main() {
   const more = [9];
   $refCellSwap(list, more, true);
   if (list.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/cell_deque_char_methods.rs:19:32");
   }
   if (more.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/cell_deque_char_methods.rs:19:47");
   }
   console.log(`[${list.join(", ")}] [${more.join(", ")}]`);
   const lock = { value: 1 };
@@ -63,11 +64,11 @@ function main() {
   if (x != null) {
     x.value = (x.value + 100) | 0;
   }
-  const value = $unwrap($mutAt(deque, 0));
+  const value = $unwrap($mutAt(deque, 0), "test/corpus/cell_deque_char_methods.rs:30:24");
   value.value = (value.value + 1) | 0;
-  const value$1 = $unwrap($mutAt(deque, -1));
+  const value$1 = $unwrap($mutAt(deque, -1), "test/corpus/cell_deque_char_methods.rs:31:23");
   value$1.value = (value$1.value * 10) | 0;
-  const arg = $copyRange(deque, 1, 3);
+  const arg = $copyRange(deque, 1, $stdSites.vecDequeRange[0], 3);
   console.log(`[${deque.join(", ")}] [${arg.join(", ")}]`);
   const swapRemoveBack = $dequeSwapRemove(deque, 1, false);
   const swapRemoveFront = $dequeSwapRemove(deque, 3, true);

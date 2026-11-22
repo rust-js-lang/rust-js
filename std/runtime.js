@@ -28,16 +28,16 @@ export function $bytes(text) {
 
 // `items[index]`, checked as a slice's index is; a `VecDeque`'s gives its
 // own message, `failure`.
-export function $index(items, index, failure) {
+export function $index(items, index, raisedAt, failure) {
   if (index < 0 || index >= items.length) {
-    throw $stringPanic(failure ?? `index out of bounds: the len is ${items.length} but the index is ${index}`);
+    throw $stringPanic(failure ?? `index out of bounds: the len is ${items.length} but the index is ${index}`, raisedAt);
   }
   return items[index];
 }
 
-export function $at(items, index, failure) {
+export function $at(items, index, raisedAt, failure) {
   if (index < 0 || index >= items.length) {
-    throw $stringPanic(failure ?? `index out of bounds: the len is ${items.length} but the index is ${index}`);
+    throw $stringPanic(failure ?? `index out of bounds: the len is ${items.length} but the index is ${index}`, raisedAt);
   }
   return index;
 }
@@ -294,22 +294,24 @@ export function $f64Min(a, b) {
   return Number.isNaN(a) ? b : Number.isNaN(b) ? a : Math.min(a, b);
 }
 
-export function $div(a, b, min) {
+// Raised where it was called, `raisedAt` (#2292).
+export function $div(a, b, raisedAt, min) {
   if (b === 0) {
-    throw new Error("attempt to divide by zero");
+    throw $panic("attempt to divide by zero", raisedAt);
   }
   if (a === min && b === -1) {
-    throw new Error("attempt to divide with overflow");
+    throw $panic("attempt to divide with overflow", raisedAt);
   }
   return a / b;
 }
 
-export function $rem(a, b, min) {
+// Raised where it was called, `raisedAt` (#2292).
+export function $rem(a, b, raisedAt, min) {
   if (b === 0) {
-    throw new Error("attempt to calculate the remainder with a divisor of zero");
+    throw $panic("attempt to calculate the remainder with a divisor of zero", raisedAt);
   }
   if (a === min && b === -1) {
-    throw new Error("attempt to calculate the remainder with overflow");
+    throw $panic("attempt to calculate the remainder with overflow", raisedAt);
   }
   return a % b;
 }
@@ -393,7 +395,8 @@ export function $eq(a, b, cells) {
     return false;
   }
   // A `RefCell` mutably borrowed can't be borrowed to compare (ADR 0328).
-  if (cells && (a.borrows < 0 || b.borrows < 0)) throw $stringPanic("RefCell already mutably borrowed");
+  if (cells && a.borrows < 0) throw $stringPanic("RefCell already mutably borrowed", $stdSites.refCellEq[0]);
+  if (cells && b.borrows < 0) throw $stringPanic("RefCell already mutably borrowed", $stdSites.refCellEq[1]);
   if (Array.isArray(a)) {
     return Array.isArray(b) && a.length === b.length && a.every((x, i) => $eq(x, b[i], true));
   }
@@ -424,10 +427,10 @@ export function $setEq(a, b) {
 }
 
 // `left` and `right` are their `{:?}` strings already (ADR 0060).
-export function $assertFailed(kind, left, right, message) {
+export function $assertFailed(kind, left, right, raisedAt, message) {
   const op = kind === "Eq" ? "==" : kind === "Ne" ? "!=" : "matches";
   const why = message === undefined ? "" : ": " + message;
-  throw $stringPanic("assertion `left " + op + " right` failed" + why + "\n  left: " + left + "\n right: " + right);
+  throw $stringPanic("assertion `left " + op + " right` failed" + why + "\n  left: " + left + "\n right: " + right, raisedAt);
 }
 
 // `#[should_panic]` (ADR 0026): the test passes only if it panics, and if
@@ -462,9 +465,12 @@ export function $testResult(result) {
 
 // `unwrap()`'s panic, its payload a `&str`, or `expect(message)`'s, its
 // payload a `String`, as std's `expect_failed` shows it (ADR 0660, amended).
-export function $unwrap(value, message) {
+// Each is raised where it was called, `raisedAt` (#2292).
+export function $unwrap(value, raisedAt, message) {
   if (value == null) {
-    throw message === undefined ? new Error("called `Option::unwrap()` on a `None` value") : $stringPanic(message);
+    throw message === undefined
+      ? $panic("called `Option::unwrap()` on a `None` value", raisedAt)
+      : $stringPanic(message, raisedAt);
   }
   return value;
 }
@@ -1350,7 +1356,7 @@ export const $sliceReader = {
   fillBuf: (r) => ({ TAG: "Ok", _0: r.value }),
   // `*self = &self[amt..]`, which panics past its end.
   consume(r, amt) {
-    r.value = $slice(r.value, amt);
+    r.value = $slice(r.value, amt, $stdSites.byteSliceConsume[0]);
   },
 };
 
@@ -1388,7 +1394,7 @@ export const $dequeReader = {
   },
   // `self.drain(..amt)`, which panics past its end.
   consume(r, amt) {
-    $checkRange(0, amt, r.value.length);
+    $checkRange(0, amt, r.value.length, $stdSites.vecDequeDrain[0]);
     r.value.splice(0, amt);
   },
 };
@@ -1657,7 +1663,7 @@ export function $bufReader(R) {
       const position = R.streamPosition(inner(b));
       if (position.TAG === "Err") return position;
       if (position._0 < remainder) {
-        throw $stringPanic("overflow when subtracting remaining buffer size from inner stream position");
+        throw $stringPanic("overflow when subtracting remaining buffer size from inner stream position", $stdSites.bufReaderStreamPosition[0]);
       }
       return { TAG: "Ok", _0: position._0 - remainder };
     },
@@ -1780,7 +1786,7 @@ export function $takeReadBuf(TRead) {
     if (take.limit < BigInt($unfilled(buf))) {
       const limit = Number(take.limit);
       const isInit = buf.init;
-      const slicedBuf = { buf: $view(buf.buf, buf.filled, buf.filled + limit), filled: 0, init: false };
+      const slicedBuf = { buf: $view(buf.buf, buf.filled, undefined, buf.filled + limit), filled: 0, init: false };
       // Flags, not a state: core's `BorrowedBuf` has one `init` flag, which this mirrors.
       if (isInit) slicedBuf.init = true;
       const result = innerReadBuf($fieldBox(take, "inner"), slicedBuf);
@@ -3329,10 +3335,10 @@ export class $OrdTree extends $OrdMap {
   range(start, end, name, eq, ord, checked) {
     if (checked && start !== "Unbounded" && end !== "Unbounded") {
       if (start.TAG === "Excluded" && end.TAG === "Excluded" && eq(start._0, end._0)) {
-        throw new Error(`range start and end are equal and excluded in ${name}`);
+        throw $panic(`range start and end are equal and excluded in ${name}`, $stdSites.btreeRange[name === "BTreeSet" ? 0 : 1]);
       }
       if (ord.gt(start._0, end._0)) {
-        throw new Error(`range start is greater than range end in ${name}`);
+        throw $panic(`range start is greater than range end in ${name}`, $stdSites.btreeRange[name === "BTreeSet" ? 2 : 3]);
       }
     }
     let node = this.#root;
@@ -4951,10 +4957,11 @@ export function $collectVec(it, size, how, drop) {
 // given, as std's `ToRcSlice` collects the type its caller knows: of a
 // `TrustedLen`, `trusted`, `from_iter_exact`'s, room asked as
 // `$roomForCounted` asks it, of items `size` bytes aligned to `align`,
+// its panic of no upper bound at `unbounded`, std's line of it,
 // then each item by `next`, a panic dropping what's left before what it
 // wrote; of another, a `Vec`'s, `$collectVec`'s by `how` (#1678, #1694).
-export function $collectCounted(it, size, align, trusted, how, drop) {
-  if (trusted) return $collectDropping($roomForCounted(it, size, align), drop, true);
+export function $collectCounted(it, size, align, trusted, how, unbounded, drop) {
+  if (trusted) return $collectDropping($roomForCounted(it, size, align, unbounded), drop, true);
   return $collectVec(it, size, how, drop);
 }
 
@@ -6000,33 +6007,33 @@ export function $checkedDiv(a, b, min) {
   return b === 0 || (a === min && b === -1) ? undefined : Math.trunc(a / b) + 0;
 }
 
-export function $remEuclid(a, b, min) {
-  const r = $rem(a, b, min) + 0;
+export function $remEuclid(a, b, raisedAt, min) {
+  const r = $rem(a, b, raisedAt, min) + 0;
   return r < 0 ? (b < 0 ? r - b : r + b) : r;
 }
 
 // `a.wrapping_rem_euclid(b)` and `wrapping_div_euclid`, a number's or a
 // BigInt's: `MIN` by `-1`, which would overflow, is 0 and `MIN`; else the
 // Euclidean remainder or quotient, a zero `b` panicking as `%` does.
-export function $wrappingRemEuclid(a, b, min) {
+export function $wrappingRemEuclid(a, b, raisedAt, min) {
   if (a === min && b == -1) return typeof a === "bigint" ? 0n : 0;
-  return typeof a === "bigint" ? $bigRemEuclid(a, b, min) : $remEuclid(a, b, min);
+  return typeof a === "bigint" ? $bigRemEuclid(a, b, raisedAt, min) : $remEuclid(a, b, raisedAt, min);
 }
 
-export function $wrappingDivEuclid(a, b, min) {
+export function $wrappingDivEuclid(a, b, raisedAt, min) {
   if (a === min && b == -1) return a;
-  return typeof a === "bigint" ? $bigDivEuclid(a, b, min) : $divEuclid(a, b, min);
+  return typeof a === "bigint" ? $bigDivEuclid(a, b, raisedAt, min) : $divEuclid(a, b, raisedAt, min);
 }
 
 // `a.overflowing_div_euclid(b)`, `div`, or `overflowing_rem_euclid`: what
 // its `wrapping_` gives, and whether it wrapped, `MIN` by `-1`'s (#940).
-export function $overflowingEuclid(a, b, min, div) {
-  const made = div ? $wrappingDivEuclid(a, b, min) : $wrappingRemEuclid(a, b, min);
+export function $overflowingEuclid(a, b, raisedAt, min, div) {
+  const made = div ? $wrappingDivEuclid(a, b, raisedAt, min) : $wrappingRemEuclid(a, b, raisedAt, min);
   return [made, a === min && b == -1];
 }
 
-export function $divEuclid(a, b, min) {
-  const q = Math.trunc($div(a, b, min)) + 0;
+export function $divEuclid(a, b, raisedAt, min) {
+  const q = Math.trunc($div(a, b, raisedAt, min)) + 0;
   return a % b < 0 ? (b > 0 ? q - 1 : q + 1) : q;
 }
 
@@ -7323,22 +7330,24 @@ export function $jsonNumber(x) {
   return fixed.includes(".") ? fixed : `${fixed}.0`;
 }
 
-export function $bigDiv(a, b, min) {
+// Raised where it was called, `raisedAt` (#2292).
+export function $bigDiv(a, b, raisedAt, min) {
   if (b === 0n) {
-    throw new Error("attempt to divide by zero");
+    throw $panic("attempt to divide by zero", raisedAt);
   }
   if (a === min && b === -1n) {
-    throw new Error("attempt to divide with overflow");
+    throw $panic("attempt to divide with overflow", raisedAt);
   }
   return a / b;
 }
 
-export function $bigRem(a, b, min) {
+// Raised where it was called, `raisedAt` (#2292).
+export function $bigRem(a, b, raisedAt, min) {
   if (b === 0n) {
-    throw new Error("attempt to calculate the remainder with a divisor of zero");
+    throw $panic("attempt to calculate the remainder with a divisor of zero", raisedAt);
   }
   if (a === min && b === -1n) {
-    throw new Error("attempt to calculate the remainder with overflow");
+    throw $panic("attempt to calculate the remainder with overflow", raisedAt);
   }
   return a % b;
 }
@@ -7383,13 +7392,13 @@ export function $bigClamp(value, lo, hi) {
   return value < lo ? lo : value > hi ? hi : value;
 }
 
-export function $bigRemEuclid(a, b, min) {
-  const r = $bigRem(a, b, min);
+export function $bigRemEuclid(a, b, raisedAt, min) {
+  const r = $bigRem(a, b, raisedAt, min);
   return r < 0n ? (b < 0n ? r - b : r + b) : r;
 }
 
-export function $bigDivEuclid(a, b, min) {
-  const q = $bigDiv(a, b, min);
+export function $bigDivEuclid(a, b, raisedAt, min) {
+  const q = $bigDiv(a, b, raisedAt, min);
   if (a % b < 0n) return b > 0n ? q - 1n : q + 1n;
   return q;
 }
@@ -7426,7 +7435,7 @@ export function $bigMin(a, b) {
 // `$parseInt` reads a narrower integer, its value a BigInt.
 export function $parseBig(s, min, max, radix = 10) {
   if (radix < 2 || radix > 36) {
-    throw $stringPanic("from_ascii_bytes_radix: radix must lie in the range `[2, 36]` - found " + radix);
+    throw $stringPanic("from_ascii_bytes_radix: radix must lie in the range `[2, 36]` - found " + radix, $stdSites.fromStrRadix[min < 0n ? "signed" : "unsigned"][0]);
   }
   const error = (message) => ({ TAG: "Err", _0: message });
   if (s === "") return error("cannot parse integer from empty string");
@@ -7648,7 +7657,7 @@ export function $rangeFromNext(range, lo, hi) {
   const n = range.start;
   if (typeof n === "string") {
     const next = $charStep(n, 1);
-    if (next === undefined) throw $stringPanic("overflow in `Step::forward`");
+    if (next === undefined) throw $stringPanic("overflow in `Step::forward`", $stdSites.stepForward[0]);
     range.start = next;
   } else {
     range.start = n === hi ? lo : typeof n === "bigint" ? n + 1n : n + 1;
@@ -7667,15 +7676,18 @@ export function $rangeFromStep(lo, hi) {
 
 // `make_ascii_uppercase()` of a `char` or a string, or of the bytes
 // `start..end` of one, as `s[start..end]`'s, checked as that is (ADR 0334).
-export function $asciiCase(text, upper = false, start, end, inclusive) {
-  if (start !== undefined) {
-    end ??= $byteLen(text);
-    const part = $strSlice(text, start, end, inclusive);
-    return $strSlice(text, 0, start) + $asciiCase(part, upper) + $strSlice(text, end);
-  }
+export function $asciiCase(text, upper = false) {
   return upper
     ? text.replace(/[a-z]+/g, (letters) => letters.toUpperCase())
     : text.replace(/[A-Z]+/g, (letters) => letters.toLowerCase());
+}
+
+// `s[start..end].make_ascii_uppercase()` (`upper`) or `_lowercase()` of a
+// `String`: its text, that part's letters changed, checked as `&mut
+// s[start..end]` is where it was made, `raisedAt` (#2292).
+export function $asciiCaseRange(text, upper, start, raisedAt, end = $byteLen(text), inclusive) {
+  const part = $strSlice(text, start, raisedAt, end, inclusive);
+  return $strSlice(text, 0, undefined, start) + $asciiCase(part, upper) + $strSlice(text, end);
 }
 
 export function $append(items, other) {
@@ -7738,25 +7750,25 @@ export function $charBoundary(s, at) {
 
 // `s.truncate(n)`: its first `n` bytes, or all of it, if it has fewer;
 // inside a `char`, Rust's assertion fails.
-export function $strTruncate(s, n) {
+export function $strTruncate(s, n, raisedAt) {
   if (n >= $byteLen(s)) return s;
   const unit = $charBoundary(s, n);
-  if (unit === undefined) throw new Error("assertion failed: self.is_char_boundary(new_len)");
+  if (unit === undefined) throw $panic("assertion failed: self.is_char_boundary(new_len)", raisedAt);
   return s.slice(0, unit);
 }
 
 // `s.insert(at, c)` and `s.insert_str(at, t)`: `t` at the byte `at`, which
 // must start a `char` or be the end, as Rust asserts.
-export function $insertStr(s, at, t) {
+export function $insertStr(s, at, t, raisedAt) {
   const unit = $charBoundary(s, at);
-  if (unit === undefined) throw new Error("assertion failed: self.is_char_boundary(idx)");
+  if (unit === undefined) throw $panic("assertion failed: self.is_char_boundary(idx)", raisedAt);
   return s.slice(0, unit) + t + s.slice(unit);
 }
 
 // `s.remove(at)`: `s` without the `char` at the byte `at`, and that `char`,
 // panicking as Rust's does at the end, past it or inside a `char`.
-export function $strRemove(s, at) {
-  if (at === $byteLen(s)) throw new Error("cannot remove a char from the end of a string");
+export function $strRemove(s, at, raisedAt) {
+  if (at === $byteLen(s)) throw $panic("cannot remove a char from the end of a string", raisedAt);
   const rest = $strSlice(s, at);
   const c = String.fromCodePoint(rest.codePointAt(0));
   return [s.slice(0, s.length - rest.length) + rest.slice(c.length), c];
@@ -7818,7 +7830,7 @@ export function $splitTerminator(s, p) {
 // `s.split_at(at)`: before and after the byte `at`, panicking as Rust's
 // `&s[..at]` does.
 export function $splitAt(s, at) {
-  return [$strSlice(s, 0, at), $strSlice(s, at)];
+  return [$strSlice(s, 0, $stdSites.strSplitAt[0], at), $strSlice(s, at, $stdSites.strSplitAt[0])];
 }
 
 // `s.match_indices(p)`: each match, from the start, none overlapping, with
@@ -8061,7 +8073,11 @@ export function $comparedOf(items) {
 // `v.rotate_left(n)`: its first `n` items moved to its end. More than it
 // has fails Rust's assertion, of `n` named `name` as std names it.
 export function $rotateLeft(v, n, name) {
-  if (n > v.length) throw new Error(`assertion failed: ${name} <= self.len()`);
+  if (n > v.length) {
+    // A `VecDeque`'s, its `n`, or a slice's.
+    const at = name === "n" ? $stdSites.vecDequeRotateLeft[0] : $stdSites.rotateLeft[0];
+    throw $panic(`assertion failed: ${name} <= self.len()`, at);
+  }
   const items = v.slice();
   for (let i = 0; i < items.length; i++) {
     v[i] = items[(i + n) % items.length];
@@ -8071,7 +8087,11 @@ export function $rotateLeft(v, n, name) {
 // `v.rotate_right(n)`: its last `n` items moved to its start. More than it
 // has fails Rust's assertion, of `n` named `name` as std names it.
 export function $rotateRight(v, n, name) {
-  if (n > v.length) throw new Error(`assertion failed: ${name} <= self.len()`);
+  if (n > v.length) {
+    // A `VecDeque`'s, its `n`, or a slice's.
+    const at = name === "n" ? $stdSites.vecDequeRotateRight[0] : $stdSites.rotateRight[0];
+    throw $panic(`assertion failed: ${name} <= self.len()`, at);
+  }
   const items = v.slice();
   for (let i = 0; i < items.length; i++) {
     v[(i + n) % items.length] = items[i];
@@ -8121,7 +8141,7 @@ export function $arrayMap(items, f, dropMade, dropLeft) {
 export function $force(lazy) {
   const init = lazy.init;
   if (init !== undefined) {
-    if (init === null) throw new Error("LazyCell instance has previously been poisoned");
+    if (init === null) throw $panic("LazyCell instance has previously been poisoned", $stdSites.lazyCellPoisoned[0]);
     lazy.init = null;
     lazy.value = init();
     lazy.init = undefined;
@@ -8147,7 +8167,7 @@ export function $forceLock(lazy) {
 }
 
 export function $lazyLockPoisoned() {
-  throw new Error("LazyLock instance has previously been poisoned");
+  throw $panic("LazyLock instance has previously been poisoned", $stdSites.lazyLockPoisoned[0]);
 }
 
 // `cow.to_mut()` of a `Cow` of text or a number, which JS never changes in
@@ -8397,7 +8417,7 @@ export function $pathSetFileName(buf, name) {
 // extension panics, as std's does.
 export function $pathSetExtension(buf, extension) {
   if (extension.includes("/")) {
-    throw $stringPanic(`extension cannot contain path separators: ${$debugStr(extension)}`);
+    throw $stringPanic(`extension cannot contain path separators: ${$debugStr(extension)}`, $stdSites.pathExtension[0]);
   }
   const c = $components(buf);
   const name = $nextComponentBack(c);
@@ -9385,7 +9405,7 @@ export function $ptrSliceMut(pointer, count) {
     // A byte array's own bytes, the array's items.
     if ($itemsAreBytes(pointer) && pointer.width === 1 && pointer.signed === false) {
       $allocUsed(pointer, "bytes");
-      return $view(pointer.of, pointer.at, pointer.at + count);
+      return $view(pointer.of, pointer.at, undefined, pointer.at + count);
     }
     // Another's, a view of its bytes `width` at a time, each item read and
     // written where its bytes are, through their codec, or a `[u8; N]`'s
@@ -9420,7 +9440,7 @@ export function $ptrSliceMut(pointer, count) {
   if (start + count > items.length && $spares.has(items)) {
     throw $unsupported("rust-js does not support a mutable slice past a vector's length, over what's left there, which reads memory by where it is");
   }
-  return start === 0 && count === items.length ? items : $view(items, start, start + count);
+  return start === 0 && count === items.length ? items : $view(items, start, undefined, start + count);
 }
 
 // The array a pointer is into, and its index there, for `count` items from
@@ -9449,7 +9469,7 @@ export function $wholeOf(pointer) {
 export function $ptrWhole(pointer, length) {
   if (Array.isArray(pointer.of) && typeof pointer.at === "number" && pointer.at + length <= pointer.of.length) {
     if (pointer.at === 0 && pointer.of.length === length) return $ptrTo(pointer.of);
-    return $ptrTo($view(pointer.of, pointer.at, pointer.at + length));
+    return $ptrTo($view(pointer.of, pointer.at, undefined, pointer.at + length));
   }
   throw $unsupported("rust-js does not support a pointer to part of an array as one to an array past its end, which reads memory by where it is");
 }
@@ -9880,41 +9900,41 @@ export function $joinWith(lists, sep, spread, clone) {
 // units of the bytes `start..end` of `s`, checked as std checks them,
 // `slice::range`'s, then each a `char`'s boundary: `replace_range`'s message,
 // or the other edits' assertion.
-export function $strRange(s, start, end, replacing, inclusive) {
+export function $strRange(s, start, end, replacing, raisedAt, inclusive) {
   const length = $byteLen(s);
   end ??= length;
-  $checkRange(start, end, length, inclusive);
+  $checkRange(start, end, length, raisedAt, inclusive);
   const from = $charBoundary(s, start);
   if (from === undefined) {
-    throw new Error(replacing ? "start of range should be a character boundary" : "assertion failed: self.is_char_boundary(start)");
+    throw $panic(replacing ? "start of range should be a character boundary" : "assertion failed: self.is_char_boundary(start)", raisedAt);
   }
   const to = $charBoundary(s, end);
   if (to === undefined) {
-    throw new Error(replacing ? "end of range should be a character boundary" : "assertion failed: self.is_char_boundary(end)");
+    throw $panic(replacing ? "end of range should be a character boundary" : "assertion failed: self.is_char_boundary(end)", raisedAt);
   }
   return [from, to];
 }
 
 // `s.split_off(at)`: what's kept, and the rest from the byte `at`.
-export function $strSplitOff(s, at) {
+export function $strSplitOff(s, at, raisedAt) {
   const unit = $charBoundary(s, at);
-  if (unit === undefined) throw new Error("assertion failed: self.is_char_boundary(at)");
+  if (unit === undefined) throw $panic("assertion failed: self.is_char_boundary(at)", raisedAt);
   return [s.slice(0, unit), s.slice(unit)];
 }
 
-export function $replaceRange(s, start, end, replacement, inclusive) {
-  const [from, to] = $strRange(s, start, end, true, inclusive);
+export function $replaceRange(s, start, end, replacement, raisedAt, inclusive) {
+  const [from, to] = $strRange(s, start, end, true, raisedAt, inclusive);
   return s.slice(0, from) + replacement + s.slice(to);
 }
 
 // `s.drain(range)`: what's kept, and the `char`s taken out.
-export function $strDrain(s, start, end, inclusive) {
-  const [from, to] = $strRange(s, start, end, false, inclusive);
+export function $strDrain(s, start, end, raisedAt, inclusive) {
+  const [from, to] = $strRange(s, start, end, false, raisedAt, inclusive);
   return [s.slice(0, from) + s.slice(to), Array.from(s.slice(from, to))];
 }
 
-export function $strExtendWithin(s, start, end, inclusive) {
-  const [from, to] = $strRange(s, start, end, false, inclusive);
+export function $strExtendWithin(s, start, end, raisedAt, inclusive) {
+  const [from, to] = $strRange(s, start, end, false, raisedAt, inclusive);
   return s + s.slice(from, to);
 }
 
@@ -10077,9 +10097,9 @@ export function $fillWith(v, f, drop) {
 
 // Of items `copy` copies, a `Copy` struct something changes in place,
 // each a copy.
-export function $copyFromSlice(v, src, copy) {
+export function $copyFromSlice(v, src, raisedAt, copy) {
   if (v.length !== src.length) {
-    throw $stringPanic(`copy_from_slice: source slice length (${src.length}) does not match destination slice length (${v.length})`);
+    throw $stringPanic(`copy_from_slice: source slice length (${src.length}) does not match destination slice length (${v.length})`, raisedAt);
   }
   for (let i = 0; i < v.length; i++) v[i] = copy === undefined ? src[i] : copy(src[i]);
 }
@@ -10092,22 +10112,30 @@ export function $writeCloneOfSlice(v, src, clone) {
   if (v.length !== src.length) {
     throw $stringPanic(
       `assertion \`left == right\` failed: destination and source slices have different lengths\n  left: ${v.length}\n right: ${src.length}`,
+      $stdSites.writeCloneOfSlice[0],
     );
   }
   for (let i = 0; i < v.length; i++) v[i] = clone ? clone(src[i]) : src[i];
   return v;
 }
 
-// `v.clone_from_slice(src)`: each item its type's `clone_from` of the
-// source's (`cloneFrom`), or a clone of it, the one it replaces dropped by
-// `drop`, as std's assignment drops it (ADR 0507).
-export function $cloneFromSlice(v, src, clone, cloneFrom, drop, trivial) {
+// `v.clone_from_slice(src)`: `$cloneEach`'s of a source of its length,
+// else a panic raised where it was called, `raisedAt` (#2292).
+export function $cloneFromSlice(v, src, raisedAt, clone, cloneFrom, drop, trivial) {
   if (v.length !== src.length) {
     // Of items a generic caller says std clones as their bits, std's
     // specialization's, `copy_from_slice`'s (#2318).
-    if (trivial) $copyFromSlice(v, src);
-    throw new Error("destination and source slices have different lengths");
+    if (trivial) $copyFromSlice(v, src, raisedAt);
+    throw $panic("destination and source slices have different lengths", raisedAt);
   }
+  $cloneEach(v, src, clone, cloneFrom, drop);
+}
+
+// Of `v` and `src` of one length, an array's `clone_from` or a `Vec`'s
+// items it keeps: each item its type's `clone_from` of the source's
+// (`cloneFrom`), or a clone of it, the one it replaces dropped by `drop`,
+// as std's assignment drops it (ADR 0507).
+export function $cloneEach(v, src, clone, cloneFrom, drop) {
   for (let i = 0; i < v.length; i++) {
     if (cloneFrom) {
       cloneFrom(v, i, src[i]);
@@ -10121,12 +10149,12 @@ export function $cloneFromSlice(v, src, clone, cloneFrom, drop, trivial) {
 
 // `w.clone_from(&v)` of a `Vec`, std's `SpecCloneIntoVec`: what `w` has
 // past `v`'s length dropped, `truncate`'s; each item it keeps written over
-// by `v`'s, `$cloneFromSlice`'s; then a clone of each of the rest pushed,
+// by `v`'s, `$cloneEach`'s; then a clone of each of the rest pushed,
 // what's pushed `w`'s as a later clone panics, `extend_from_slice`'s
 // (#919).
 export function $cloneIntoVec(w, v, clone, cloneFrom, drop) {
   $truncate(w, v.length, drop);
-  $cloneFromSlice(w, v.slice(0, w.length), clone, cloneFrom, drop);
+  $cloneEach(w, v.slice(0, w.length), clone, cloneFrom, drop);
   for (let i = w.length; i < v.length; i++) w.push(clone ? clone(v[i]) : v[i]);
 }
 
@@ -10161,15 +10189,15 @@ export function $cloneIntoList(w, v, clone, cloneFrom, drop) {
   for (let i = kept; i < v.length; i++) w.push(clone ? clone(v[i]) : v[i]);
 }
 
-export function $swapWithSlice(v, other) {
-  if (v.length !== other.length) throw new Error("destination and source slices have different lengths");
+export function $swapWithSlice(v, other, raisedAt) {
+  if (v.length !== other.length) throw $panic("destination and source slices have different lengths", raisedAt);
   for (let i = 0; i < v.length; i++) [v[i], other[i]] = [other[i], v[i]];
 }
 
-export function $copyWithin(v, start, end, dest, inclusive) {
+export function $copyWithin(v, start, end, dest, raisedAt, inclusive) {
   end ??= v.length;
-  $checkRange(start, end, v.length, inclusive);
-  if (dest > v.length - (end - start)) throw new Error("dest is out of bounds");
+  $checkRange(start, end, v.length, raisedAt, inclusive);
+  if (dest > v.length - (end - start)) throw $panic("dest is out of bounds", raisedAt);
   v.copyWithin(dest, start, end);
 }
 
@@ -10269,8 +10297,8 @@ export function $partitionPoint(v, p) {
   return base + (p(v[base]) ? 1 : 0);
 }
 
-export function $chunkSize(n) {
-  if (n === 0) throw new Error("chunk size must be non-zero");
+export function $chunkSize(n, raisedAt) {
+  if (n === 0) throw $panic("chunk size must be non-zero", raisedAt);
 }
 
 // What a slice's parts, its ranges, chunks and splits, are cut as: copies,
@@ -10301,8 +10329,8 @@ export function $partPlaced(part, items, start) {
 }
 
 // `chunks_exact(n)`: each whole chunk, and what's left, its `remainder()`.
-export function $chunksExact(v, n, cut = $part) {
-  $chunkSize(n);
+export function $chunksExact(v, n, raisedAt, cut = $part) {
+  $chunkSize(n, raisedAt);
   const whole = v.length - (v.length % n);
   const chunks = [];
   for (let i = 0; i < whole; i += n) chunks.push(cut(v, i, i + n));
@@ -10312,8 +10340,8 @@ export function $chunksExact(v, n, cut = $part) {
 
 // `rchunks(n)`, and `rchunks_exact(n)`: chunks from the end; the exact ones
 // leave what's left at the start, their `remainder()`.
-export function $rchunks(v, n, exact, cut = $part) {
-  $chunkSize(n);
+export function $rchunks(v, n, exact, raisedAt, cut = $part) {
+  $chunkSize(n, raisedAt);
   const chunks = [];
   let end = v.length;
   for (; end >= n; end -= n) chunks.push(cut(v, end - n, end));
@@ -10642,14 +10670,14 @@ export function $pushFrontMut(v, x, handle) {
 // A `VecDeque`'s `insert(i, x)` and `insert_mut`: checked as its
 // `assert!` checks, and a `&mut` to what it put in.
 export function $dequeInsert(v, i, x, handle, drop) {
-  $insertAt(v, i, x, drop, "index out of bounds");
+  $insertAt(v, i, x, $stdSites.vecDequeInsert[0], drop, "index out of bounds");
   return handle ? $mutAt(v, i) : x;
 }
 
 // A `Vec`'s `insert_mut(i, x)`: as its `insert`, `x` dropped by `drop` as
 // an index past the end panics (#1274), and a `&mut` to what it put in.
-export function $insertMut(v, i, x, handle, drop) {
-  $insertAt(v, i, x, drop);
+export function $insertMut(v, i, x, raisedAt, handle, drop) {
+  $insertAt(v, i, x, raisedAt, drop);
   return handle ? $mutAt(v, i) : x;
 }
 
@@ -10828,10 +10856,10 @@ export function $treeRange(m, cmp, set, name, start, end, checked = true, eq, or
   if (checked && start !== "Unbounded" && end !== "Unbounded") {
     const order = cmp(start._0, end._0);
     if (order > 0) {
-      throw new Error(`range start is greater than range end in ${name}`);
+      throw $panic(`range start is greater than range end in ${name}`, $stdSites.btreeRange[name === "BTreeSet" ? 2 : 3]);
     }
     if (order === 0 && start.TAG === "Excluded" && end.TAG === "Excluded") {
-      throw new Error(`range start and end are equal and excluded in ${name}`);
+      throw $panic(`range start and end are equal and excluded in ${name}`, $stdSites.btreeRange[name === "BTreeSet" ? 0 : 1]);
     }
   }
   const sorted = set ? $sortedKeys(m, cmp) : $sortedEntries(m, cmp);
@@ -11382,25 +11410,26 @@ export function $decodeUtf16(units) {
 // nothing can ask, is checked where it's taken, `if (cell.borrows)
 // $alreadyBorrowed();`, with no call where the cell is free (rd218, #1692).
 export const $alreadyBorrowedMessage = "RefCell already borrowed";
-export function $alreadyBorrowed() {
-  throw $stringPanic($alreadyBorrowedMessage);
+// Each raised where its borrow was asked, `raisedAt` (#2292).
+export function $alreadyBorrowed(raisedAt) {
+  throw $stringPanic($alreadyBorrowedMessage, raisedAt);
 }
-export function $alreadyMutablyBorrowed() {
-  throw $stringPanic("RefCell already mutably borrowed");
+export function $alreadyMutablyBorrowed(raisedAt) {
+  throw $stringPanic("RefCell already mutably borrowed", raisedAt);
 }
 
-export function $borrow(cell, hold) {
-  if (cell.borrows < 0) $alreadyMutablyBorrowed();
+export function $borrow(cell, raisedAt, hold) {
+  if (cell.borrows < 0) $alreadyMutablyBorrowed(raisedAt);
   if (hold) $setBorrows(cell, (cell.borrows ?? 0) + 1);
   return cell;
 }
 
-export function $borrowMut(cell, hold, dropGiven) {
+export function $borrowMut(cell, raisedAt, hold, dropGiven) {
   if (cell.borrows) {
     // What the call was given, a `replace`'s value, dropped as its panic
     // unwinds, as Rust's parameter is (#1587): a cleanup of that panic, so
     // `thread::panicking()` holds in its drop, and a panic there aborts.
-    const error = $stringPanic($alreadyBorrowedMessage);
+    const error = $stringPanic($alreadyBorrowedMessage, raisedAt);
     if (dropGiven !== undefined) $cleanup(dropGiven, error);
     throw error;
   }
@@ -11552,15 +11581,15 @@ export function $tryBorrow(cell, mutable) {
   if (mutable ? cell.borrows : cell.borrows < 0) {
     return { TAG: "Err", _0: mutable ? "RefCell already borrowed" : "RefCell already mutably borrowed" };
   }
-  return { TAG: "Ok", _0: mutable ? $borrowMut(cell, true) : $borrow(cell, true) };
+  return { TAG: "Ok", _0: mutable ? $borrowMut(cell, undefined, true) : $borrow(cell, undefined, true) };
 }
 
 // What `f` makes of a `RefCell`'s value while it's borrowed: its clone, or
 // whether it's equal, where `f` may ask too. A panic's unwinding releases
 // it before what it drops can ask. Of one that's the object it holds
 // (`itself`, ADR 0863), the cell.
-export function $withBorrow(cell, f, itself) {
-  $borrow(cell, true);
+export function $withBorrow(cell, f, raisedAt, itself) {
+  $borrow(cell, raisedAt, true);
   try {
     return f(itself ? cell : cell.value);
   } finally {
@@ -11571,8 +11600,8 @@ export function $withBorrow(cell, f, itself) {
 // What `f` makes of a `&mut` to a `RefCell`'s value while it's mutably
 // borrowed, the cell itself for a number or text (ADR 0074): a
 // thread-local's `with_borrow_mut(f)`.
-export function $withBorrowMut(cell, f, boxed) {
-  $borrowMut(cell, true);
+export function $withBorrowMut(cell, f, raisedAt, boxed) {
+  $borrowMut(cell, raisedAt, true);
   try {
     return f(boxed ? cell : cell.value);
   } finally {
@@ -11583,7 +11612,7 @@ export function $withBorrowMut(cell, f, boxed) {
 // A `RefCell`'s `{:?}`: what it holds, shown by `show` while it's borrowed,
 // or `<borrowed>` where it's mutably borrowed.
 export function $showBorrowed(cell, show, itself) {
-  return cell.borrows < 0 ? "<borrowed>" : $withBorrow(cell, show, itself);
+  return cell.borrows < 0 ? "<borrowed>" : $withBorrow(cell, show, undefined, itself);
 }
 
 // A `RefCell`'s `{:?}` into a writer's sink `f`: what it holds, written
@@ -11591,15 +11620,15 @@ export function $showBorrowed(cell, show, itself) {
 // `write_str`, where it's mutably borrowed (#1652).
 export function $writeBorrowed(f, cell, write, itself) {
   if (cell.borrows < 0) return f.write("<borrowed>");
-  $withBorrow(cell, (value) => write(f, value), itself);
+  $withBorrow(cell, (value) => write(f, value), undefined, itself);
 }
 
 // A `RefCell`'s `replace_with(f)`: `f` given a `&mut` to its value while
 // it's mutably borrowed, the cell itself for a number or text (ADR 0074),
 // and what it makes in its place. Of one that's the object it holds
 // (`itself`, ADR 0863), the object is the `&mut`, changed in place.
-export function $replaceWith(cell, f, boxed, itself) {
-  const next = $withBorrowMut(cell, f, boxed || itself);
+export function $replaceWith(cell, f, raisedAt, boxed, itself) {
+  const next = $withBorrowMut(cell, f, raisedAt, boxed || itself);
   if (itself) return $take(cell, next);
   const previous = cell.value;
   cell.value = next;
@@ -11607,12 +11636,13 @@ export function $replaceWith(cell, f, boxed, itself) {
 }
 
 // A `RefCell`'s `swap(&other)`: each mutably borrowed, the first while the
-// second is, so a cell swapped with itself is borrowed twice. Two that are
-// the objects they hold (`itself`, ADR 0863) swap what's in them.
+// second is, so a cell swapped with itself is borrowed twice, each panic at
+// std's line of its borrow (#2292). Two that are the objects they hold
+// (`itself`, ADR 0863) swap what's in them.
 export function $refCellSwap(a, b, itself) {
-  $borrowMut(a, true);
+  $borrowMut(a, $stdSites.refCellSwap[0], true);
   try {
-    $borrowMut(b);
+    $borrowMut(b, $stdSites.refCellSwap[1]);
   } finally {
     $unborrow(a);
   }
@@ -11644,12 +11674,12 @@ export function $locked(cell, mutable) {
 // or with `expect(message)`, its message: the guard, held; or, of a
 // poisoned lock, `unwrap`'s panic, the guard it held released as it
 // unwinds, as the lock was.
-export function $lock(cell, message) {
-  return $unpoisoned($lockHeld(cell, true), message, true);
+export function $lock(cell, raisedAt, message) {
+  return $unpoisoned($lockHeld(cell, true), raisedAt, message, true);
 }
 
-export function $lockRead(cell, message) {
-  return $unpoisoned($lockHeld(cell, false), message, true);
+export function $lockRead(cell, raisedAt, message) {
+  return $unpoisoned($lockHeld(cell, false), raisedAt, message, true);
 }
 
 export function $lockHeld(cell, mutable) {
@@ -11670,10 +11700,10 @@ export function $lockHeld(cell, mutable) {
 // A lock, `cell`, where it isn't poisoned; else `unwrap`'s panic, or
 // `expect(message)`'s, of the `PoisonError` that holds its guard, which is
 // released as the panic unwinds where it's `held`.
-export function $unpoisoned(cell, message = "called `Result::unwrap()` on an `Err` value", held = false) {
+export function $unpoisoned(cell, raisedAt, message = "called `Result::unwrap()` on an `Err` value", held = false) {
   if (!$poisonedLocks.has(cell)) return cell;
   if (held) $unlock(cell);
-  throw $stringPanic(`${message}: PoisonError { .. }`);
+  throw $stringPanic(`${message}: PoisonError { .. }`, raisedAt);
 }
 
 // A `Mutex`'s or an `RwLock`'s `into_inner()` and `get_mut()`: `Ok` of
@@ -11742,7 +11772,7 @@ export function $lockedData(cell, show, exclusive) {
   const locked = exclusive ? cell.borrows : cell.borrows < 0;
   if (locked) return exclusive ? '"<locked>"' : "<locked>";
   try {
-    return $withBorrow(cell, show);
+    return $withBorrow(cell, show, undefined);
   } catch (error) {
     // A panic, as a cleanup it runs, not a write's `Err`, which returns.
     if (exclusive && !(error instanceof $WriteError)) $cleanup(() => $poison(cell), error);
@@ -11910,7 +11940,7 @@ export function $getOrInitLock(cell, f) {
 export function $getOrInit(cell, f) {
   if (cell.value === undefined) {
     const value = f();
-    if (cell.value !== undefined) throw new Error("reentrant init");
+    if (cell.value !== undefined) throw $panic("reentrant init", $stdSites.onceCellReentrant[0]);
     cell.value = $some(value);
   }
   return $someValue(cell.value);
@@ -11919,8 +11949,9 @@ export function $getOrInit(cell, f) {
 // `x.clamp(min, max)` of an integer, a number or a BigInt: `min` or `max` if
 // it's past either. Bounds the wrong way round panic as std's integers do,
 // each shown as `{:?}` shows it, which is its digits.
-export function $clamp(x, min, max) {
-  if (!(min <= max)) throw $stringPanic("min > max. min = " + min + ", max = " + max);
+// Raised where it was called, `raisedAt` (#2292).
+export function $clamp(x, min, max, raisedAt) {
+  if (!(min <= max)) throw $stringPanic("min > max. min = " + min + ", max = " + max, raisedAt);
   return x < min ? min : x > max ? max : x;
 }
 
@@ -11931,12 +11962,12 @@ export function $clamp(x, min, max) {
 // with a destructor, `drop`: the two not given back dropped, the later
 // parameter first, and all three as a comparison or the bounds' panic
 // unwinds, as std's `clamp` drops its parameters (#912).
-export function $clampBy(x, min, max, ord, show, drop) {
+export function $clampBy(x, min, max, ord, raisedAt, show, drop) {
   const parts = [x, min, max];
   const at = $unwinds(
     () => {
       if (!ord.le(min, max)) {
-        throw show ? $stringPanic(`min > max. min = ${show(min)}, max = ${show(max)}`) : new Error("assertion failed: min <= max");
+        throw show ? $stringPanic(`min > max. min = ${show(min)}, max = ${show(max)}`, raisedAt) : $panic("assertion failed: min <= max", raisedAt);
       }
       return ord.lt(x, min) ? 1 : ord.gt(x, max) ? 2 : 0;
     },
@@ -11976,17 +12007,19 @@ export function $keptOf(a, b, ord, drop, max) {
 // `x.clamp(min, max)` of a float: `min` or `max` if it's past either, and a
 // NaN itself. `min` past `max`, or either a NaN, panics, showing each with
 // `debug`, as `{:?}` shows an `f64` or an `f32`.
-export function $clampFloat(x, min, max, debug) {
+export function $clampFloat(x, min, max, type) {
   if (!(min <= max)) {
-    throw $stringPanic("min > max, or either was NaN. min = " + debug(min) + ", max = " + debug(max));
+    const debug = type === "f32" ? $debugF32 : $debugF64;
+    throw $stringPanic("min > max, or either was NaN. min = " + debug(min) + ", max = " + debug(max), $stdSites.clamp[type][0]);
   }
   return x < min ? min : x > max ? max : x;
 }
 
 // `a.div_ceil(b)` of an unsigned integer, a number or a BigInt: `a / b`,
 // rounded up.
-export function $divCeil(a, b) {
-  if (b == 0) throw new Error("attempt to divide by zero");
+// Raised where it was called, `raisedAt` (#2292).
+export function $divCeil(a, b, raisedAt) {
+  if (b == 0) throw $panic("attempt to divide by zero", raisedAt);
   if (typeof a === "bigint") return a / b + (a % b > 0n ? 1n : 0n);
   return Math.trunc(a / b) + (a % b > 0 ? 1 : 0);
 }
@@ -12006,15 +12039,14 @@ export function $signNegative(x) {
 // `x.ilog2()` or `x.ilog10()` of an integer, a number or a BigInt: how many
 // times `base` divides into it, rounded down; `checked_ilog10()`'s
 // `undefined`, `None`, where it isn't positive.
-export function $ilog(x, base, checked = false) {
-  if (x <= 0) {
-    if (checked) return undefined;
-    throw new Error("argument of integer logarithm must be positive");
-  }
-  if (base < 2) {
-    if (checked) return undefined;
-    throw new Error("base of integer logarithm must be at least 2");
-  }
+// `checked_ilog(base)`: `None` of what has none.
+export function $checkedIlog(x, base) {
+  return x <= 0 || base < 2 ? undefined : $ilog(x, base, undefined);
+}
+// Raised where it was called, `raisedAt` (#2292).
+export function $ilog(x, base, raisedAt) {
+  if (x <= 0) throw $panic("argument of integer logarithm must be positive", raisedAt);
+  if (base < 2) throw $panic("base of integer logarithm must be at least 2", raisedAt);
   let log = 0;
   if (typeof x === "bigint") {
     for (const b = BigInt(base); x >= b; x /= b) log++;
@@ -12028,11 +12060,12 @@ export function $ilog(x, base, checked = false) {
 // down. A BigInt's starts from a float's guess, which it corrects.
 // `x.checked_isqrt()` of a signed integer: none of a negative.
 export function $checkedIsqrt(x) {
-  return x < 0 ? undefined : $isqrt(x);
+  return x < 0 ? undefined : $isqrt(x, undefined);
 }
 
-export function $isqrt(x) {
-  if (x < 0) throw new Error("argument of integer square root cannot be negative");
+// Raised where it was called, `raisedAt` (#2292).
+export function $isqrt(x, raisedAt) {
+  if (x < 0) throw $panic("argument of integer square root cannot be negative", raisedAt);
   if (typeof x !== "bigint") return Math.floor(Math.sqrt(x));
   let root = BigInt(Math.floor(Math.sqrt(Number(x))));
   while (root * root > x) root--;
@@ -12050,21 +12083,22 @@ export function $checkedRem(a, b, min) {
 
 // `a.wrapping_div(b)`, a number's or a BigInt's: `MIN / -1` is `MIN`, where
 // it would overflow; a zero `b` panics as `/` does.
-export function $wrappingDiv(a, b, min) {
-  if (b == 0) throw new Error("attempt to divide by zero");
+// Each division's panic raised where it was called, `raisedAt` (#2292).
+export function $wrappingDiv(a, b, raisedAt, min) {
+  if (b == 0) throw $panic("attempt to divide by zero", raisedAt);
   if (a === min && b == -1) return a;
   return typeof a === "bigint" ? a / b : Math.trunc(a / b) + 0;
 }
 
 // `a.overflowing_div(b)`: what `wrapping_div` gives, and whether it wrapped,
 // `MIN / -1`'s.
-export function $overflowingDiv(a, b, min) {
-  return [$wrappingDiv(a, b, min), a === min && b == -1];
+export function $overflowingDiv(a, b, raisedAt, min) {
+  return [$wrappingDiv(a, b, raisedAt, min), a === min && b == -1];
 }
 
 // `a.saturating_div(b)`: `MIN / -1` is `MAX`, where it would overflow.
-export function $saturatingDiv(a, b, min, max) {
-  return a === min && b == -1 ? max : $wrappingDiv(a, b, min);
+export function $saturatingDiv(a, b, raisedAt, min, max) {
+  return a === min && b == -1 ? max : $wrappingDiv(a, b, raisedAt, min);
 }
 
 // `a.is_multiple_of(b)` of an unsigned number or BigInt: whether `b`
@@ -12085,8 +12119,8 @@ export function $checkedNextMultipleOf(a, b, max) {
 // `a.next_multiple_of(b)` of an unsigned number or BigInt: the least
 // multiple of `b` at least `a`, wrapped past `max` as overflow wraps; a
 // zero `b` panics as `%` does.
-export function $nextMultipleOf(a, b, max) {
-  if (b == 0) throw new Error("attempt to calculate the remainder with a divisor of zero");
+export function $nextMultipleOf(a, b, max, type) {
+  if (b == 0) throw $panic("attempt to calculate the remainder with a divisor of zero", $stdSites.nextMultipleOf[type][0]);
   const r = a % b;
   const next = r == 0 ? a : a + (b - r);
   return next > max ? next - max - (typeof next === "bigint" ? 1n : 1) : next;
@@ -12094,8 +12128,9 @@ export function $nextMultipleOf(a, b, max) {
 
 // `a.wrapping_rem(b)`, a number's or a BigInt's: `MIN % -1` is 0, where it
 // would overflow; a zero `b` panics as `%` does.
-export function $wrappingRem(a, b, min) {
-  if (b == 0) throw new Error("attempt to calculate the remainder with a divisor of zero");
+// Raised where it was called, `raisedAt` (#2292).
+export function $wrappingRem(a, b, raisedAt, min) {
+  if (b == 0) throw $panic("attempt to calculate the remainder with a divisor of zero", raisedAt);
   if (a === min && b == -1) return typeof a === "bigint" ? 0n : 0;
   const rem = a % b;
   return typeof rem === "bigint" ? rem : rem + 0;
@@ -12103,8 +12138,8 @@ export function $wrappingRem(a, b, min) {
 
 // `a.overflowing_rem(b)`: what `wrapping_rem` gives, and whether it wrapped,
 // `MIN % -1`'s.
-export function $overflowingRem(a, b, min) {
-  return [$wrappingRem(a, b, min), a === min && b == -1];
+export function $overflowingRem(a, b, raisedAt, min) {
+  return [$wrappingRem(a, b, raisedAt, min), a === min && b == -1];
 }
 
 // An integer's `overflowing_*`: what wrapping gives, and whether the exact
@@ -12604,15 +12639,15 @@ export function $strGet(s, start, end) {
 // `&s[start..end]` is, then that part of it, read and written in place.
 // Nothing a `&mut str` does changes its length in bytes, so the part stays
 // where it was.
-export function $strPart(cell, start, end, inclusive) {
+export function $strPart(cell, start, raisedAt, end, inclusive) {
   end ??= $byteLen(cell.value);
-  $strSlice(cell.value, start, end, inclusive);
+  $strSlice(cell.value, start, raisedAt, end, inclusive);
   return {
     get value() {
-      return $strSlice(cell.value, start, end);
+      return $strSlice(cell.value, start, undefined, end);
     },
     set value(text) {
-      cell.value = $strSlice(cell.value, 0, start) + text + $strSlice(cell.value, end);
+      cell.value = $strSlice(cell.value, 0, undefined, start) + text + $strSlice(cell.value, end);
     },
   };
 }
@@ -12620,14 +12655,21 @@ export function $strPart(cell, start, end, inclusive) {
 // `s.get_mut(start..end)`: that part, or `undefined`, `None`, where
 // `&mut s[start..end]` would panic.
 export function $strGetMut(cell, start, end) {
-  return $strGet(cell.value, start, end) === undefined ? undefined : $strPart(cell, start, end);
+  return $strGet(cell.value, start, end) === undefined ? undefined : $strPart(cell, start, undefined, end);
 }
 
 // `s.split_at_mut(at)`: the parts before and after the byte `at`, panicking
-// as `&s[..at]` does; or, `checked`, `undefined` where that would panic.
-export function $strSplitAtMut(cell, at, checked) {
-  if (checked && $charBoundary(cell.value, at) === undefined) return undefined;
-  return [$strPart(cell, 0, at), $strPart(cell, at)];
+// as `&s[..at]` does, where std's does (#2292).
+export function $strSplitAtMut(cell, at) {
+  const raisedAt = $stdSites.strSplitAtMut[0];
+  return [$strPart(cell, 0, raisedAt, at), $strPart(cell, at, raisedAt)];
+}
+
+// `split_at_mut_checked(at)`: those parts, or `undefined` where that would
+// panic.
+export function $checkedStrSplitAtMut(cell, at) {
+  if ($charBoundary(cell.value, at) === undefined) return undefined;
+  return [$strPart(cell, 0, undefined, at), $strPart(cell, at)];
 }
 
 // `v.extract_if(start..end, f)` of a `Vec`, or a list's of all of it (ADR
@@ -12635,9 +12677,9 @@ export function $strSplitAtMut(cell, at, checked) {
 // next from `start`, a handle on a number or text (`handle`), and takes out
 // and gives each it holds of. What it doesn't reach stays. Checked as
 // `slice::range` checks, as it's made.
-export function $extractIf(v, start, end, f, handle = false, inclusive) {
+export function $extractIf(v, start, end, f, raisedAt, handle = false, inclusive) {
   end ??= v.length;
-  $checkRange(start, end, v.length, inclusive);
+  $checkRange(start, end, v.length, raisedAt, inclusive);
   let at = start;
   return Iterator.from({
     next() {
@@ -12732,11 +12774,11 @@ export function $sortUnstable(v, isLess, kind) {
 // (`handle`).
 export function $selectNthUnstable(v, index, isLess, kind, handle = false) {
   const len = v.length;
-  if (index >= len) throw $stringPanic(`partition_at_index index ${index} greater than length of slice ${len}`);
+  if (index >= len) throw $stringPanic(`partition_at_index index ${index} greater than length of slice ${len}`, $stdSites.selectNth[0]);
   if (index === len - 1) $swapItems(v, $extremeIndex(v, 0, len, isLess, true), index);
   else if (index === 0) $swapItems(v, $extremeIndex(v, 0, len, isLess, false), index);
   else $selectLoop(v, 0, len, index, isLess, kind);
-  return [$view(v, 0, index), handle ? $mutAt(v, index) : v[index], $view(v, index + 1)];
+  return [$view(v, 0, undefined, index), handle ? $mutAt(v, index) : v[index], $view(v, index + 1)];
 }
 
 export function $swapItems(v, a, b) {
@@ -13167,7 +13209,7 @@ export function $bidirectionalMerge(src, from, len, dst, at, isLess) {
     else right++;
   }
   if (left !== leftEnd || right !== rightEnd) {
-    throw new Error("user-provided comparison function does not correctly implement a total order");
+    throw $panic("user-provided comparison function does not correctly implement a total order", $stdSites.sortTotalOrder[0]);
   }
 }
 
@@ -13263,7 +13305,7 @@ export function $createRun(v, start, end, minGoodRun, eager, sort) {
   if (len >= minGoodRun) {
     const [run, reversed] = $existingRun(v, start, end, sort.isLess);
     if (run >= minGoodRun) {
-      if (reversed) $reverseRange(v, start, start + run);
+      if (reversed) $reverseRange(v, start, undefined, start + run);
       return { len: run, sorted: true };
     }
   }
@@ -13382,8 +13424,14 @@ export function $mergeRuns(v, start, end, mid, isLess, scratch) {
 // own methods, whose every read and write is one of `items`. Checked as
 // `&v[start..end]` is, as it's made. Nothing a `&mut [T]` does makes it
 // longer or shorter, so it stays over the same items.
-export function $view(items, start, end = items.length, inclusive) {
-  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);
+export function $view(items, start, raisedAt, end = items.length, inclusive) {
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, raisedAt, inclusive);
+  return $viewPart(items, start, end);
+}
+
+// `$view`'s of items its caller knows are in bounds, unchecked, as `$part`
+// is a copy's: each part a slice's chunks, splits and windows cut.
+export function $viewPart(items, start, end = items.length) {
   const target = $partPlaced([], items, start);
   return $proxy(
     end - start,
@@ -13398,15 +13446,15 @@ export function $view(items, start, end = items.length, inclusive) {
 // A deque's `range_mut(start..end)`: `$view`'s of those items, checked as
 // `slice::range` checks them, its end first, not as `&mut v[a..b]` is
 // (#1937).
-export function $viewRange(items, start, end = items.length, inclusive) {
-  $checkRange(start, end, items.length, inclusive);
-  return $view(items, start, end);
+export function $viewRange(items, start, raisedAt, end = items.length, inclusive) {
+  $checkRange(start, end, items.length, raisedAt, inclusive);
+  return $viewPart(items, start, end);
 }
 
 // `v[start..end].reverse()`: those items of `items` reversed where they
 // are, checked as `&mut v[start..end]` is, no view made (ADR 1073).
-export function $reverseRange(items, start, end = items.length, inclusive) {
-  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);
+export function $reverseRange(items, start, raisedAt, end = items.length, inclusive) {
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, raisedAt, inclusive);
   for (let left = start, right = end - 1; left < right; left++, right--) {
     const item = items[left];
     items[left] = items[right];
@@ -13469,17 +13517,18 @@ export function $oneItemOf(h) {
 // `v.get_mut(start..end)`: a view, or `undefined`, `None`, where
 // `&mut v[start..end]` would panic.
 export function $viewGet(v, start, end = v.length) {
-  return start <= end && end <= v.length ? $view(v, start, end) : undefined;
+  return start <= end && end <= v.length ? $viewPart(v, start, end) : undefined;
 }
 
-// `split_at_mut(mid)`: views of the items before and after `mid`; or,
-// `checked`, `undefined` where `mid` is past the end.
-export function $splitAtMut(v, mid, checked) {
-  if (mid > v.length) {
-    if (checked) return undefined;
-    throw new Error("mid > len");
-  }
-  return [$view(v, 0, mid), $view(v, mid)];
+// `split_at_mut(mid)`: views of the items before and after `mid`, past
+// the end a panic raised where it was called, `raisedAt` (#2292).
+export function $splitAtMut(v, mid, raisedAt) {
+  if (mid > v.length) throw $panic("mid > len", raisedAt);
+  return [$viewPart(v, 0, mid), $viewPart(v, mid)];
+}
+// `split_at_mut_checked(mid)`: `undefined`, `None`, where `mid` is past the end.
+export function $checkedSplitAtMut(v, mid) {
+  return mid > v.length ? undefined : [$viewPart(v, 0, mid), $viewPart(v, mid)];
 }
 
 // `split_first_mut()`, or `split_last_mut()` (`last`): the item at that end,
@@ -13488,39 +13537,39 @@ export function $splitAtMut(v, mid, checked) {
 export function $splitEndMut(v, last, handle) {
   if (v.length === 0) return undefined;
   const at = last ? v.length - 1 : 0;
-  return [handle ? $mutAt(v, at) : v[at], last ? $view(v, 0, at) : $view(v, 1)];
+  return [handle ? $mutAt(v, at) : v[at], last ? $viewPart(v, 0, at) : $viewPart(v, 1)];
 }
 
-export function $chunksMut(v, n) {
-  return $chunks(v, n, $view);
+export function $chunksMut(v, n, raisedAt) {
+  return $chunks(v, n, raisedAt, $viewPart);
 }
 
-export function $chunksExactMut(v, n) {
-  return $chunksExact(v, n, $view);
+export function $chunksExactMut(v, n, raisedAt) {
+  return $chunksExact(v, n, raisedAt, $viewPart);
 }
 
-export function $rchunksMut(v, n, exact) {
-  return $rchunks(v, n, exact, $view);
+export function $rchunksMut(v, n, exact, raisedAt) {
+  return $rchunks(v, n, exact, raisedAt, $viewPart);
 }
 
 export function $sliceSplitByMut(v, p, n, inclusive, back) {
-  return $sliceSplitBy(v, p, n, inclusive, back, $view);
+  return $sliceSplitBy(v, p, n, inclusive, back, $viewPart);
 }
 
 export function $chunkByMut(v, p) {
-  return $chunkBy(v, p, $view);
+  return $chunkBy(v, p, $viewPart);
 }
 
 export function $lazySliceSplitByMut(v, p, n, inclusive, back) {
-  return $lazySliceSplitBy(v, p, n, inclusive, back, $view);
+  return $lazySliceSplitBy(v, p, n, inclusive, back, $viewPart);
 }
 
 export function $lazyChunkByMut(v, p) {
-  return $lazyChunkBy(v, p, $view);
+  return $lazyChunkBy(v, p, $viewPart);
 }
 
 export function $splitChunkMut(v, n, last) {
-  return $splitChunk(v, n, last, $view);
+  return $splitChunk(v, n, last, $viewPart);
 }
 
 // `as_chunks_mut::<N>()`: a view of its whole chunks of `n`, each a view,
@@ -13558,7 +13607,7 @@ export function $asChunksMut(v, n, back = false) {
       for (let j = 0; j < n; j++) v[start + i * n + j] = items[j];
     },
   );
-  return back ? [$view(v, 0, rest), chunks] : [chunks, $view(v, v.length - rest)];
+  return back ? [$viewPart(v, 0, rest), chunks] : [chunks, $viewPart(v, v.length - rest)];
 }
 
 // `as_flattened_mut()` of arrays of `n`: a view of their items, in order.
@@ -13573,12 +13622,12 @@ export function $flatView(v, n) {
 }
 
 export function $sliceSplitOffMut(v, n, back) {
-  return $sliceSplitOff(v, n, back, $view);
+  return $sliceSplitOff(v, n, back, $viewPart);
 }
 
 // Of a `&mut` slice, its item a handle on a number or text (`handle`).
 export function $sliceSplitOffEndMut(v, last, handle) {
-  return $sliceSplitOffEnd(v, last, $view, handle ? $mutAt : undefined);
+  return $sliceSplitOffEnd(v, last, $viewPart, handle ? $mutAt : undefined);
 }
 
 // `get_disjoint_mut(indices)` (ADR 0339): `Ok` of each index's item, a
@@ -13595,7 +13644,7 @@ export function $getDisjointMut(v, indices, handle = false, inclusive = false) {
       if (start < bounds[j][1] && bounds[j][0] < end) return { TAG: "Err", _0: "OverlappingIndices" };
     }
   }
-  const take = (at, i) => (typeof at !== "number" ? $view(v, bounds[i][0], bounds[i][1]) : handle ? $mutAt(v, at) : v[at]);
+  const take = (at, i) => (typeof at !== "number" ? $viewPart(v, bounds[i][0], bounds[i][1]) : handle ? $mutAt(v, at) : v[at]);
   return { TAG: "Ok", _0: indices.map(take) };
 }
 
@@ -13603,20 +13652,21 @@ export function $getDisjointMut(v, indices, handle = false, inclusive = false) {
 // `length` items, as Rust says it, its start first. Of `a..=b`, `end` is
 // `b + 1`, `inclusive`: past the slice's end, core says `b` itself, as it
 // checks `b` against the length, not `b + 1` (#1935).
-export function $sliceIndexFail(start, end, length, inclusive) {
+// Raised where it was called, `raisedAt` (#2292).
+export function $sliceIndexFail(start, end, length, raisedAt, inclusive) {
   if (inclusive && end > length) end -= 1;
-  if (start > length) throw $stringPanic(`range start index ${start} out of range for slice of length ${length}`);
-  if (end > length) throw $stringPanic(`range end index ${end} out of range for slice of length ${length}`);
-  if (start > end) throw $stringPanic(`slice index starts at ${start} but ends at ${end}`);
-  throw $stringPanic(`range end index ${end} out of range for slice of length ${length}`);
+  if (start > length) throw $stringPanic(`range start index ${start} out of range for slice of length ${length}`, raisedAt);
+  if (end > length) throw $stringPanic(`range end index ${end} out of range for slice of length ${length}`, raisedAt);
+  if (start > end) throw $stringPanic(`slice index starts at ${start} but ends at ${end}`, raisedAt);
+  throw $stringPanic(`range end index ${end} out of range for slice of length ${length}`, raisedAt);
 }
 
 // std's `slice::range`, which `drain`, `splice`, `copy_within` and
 // `extend_from_within` check theirs by: its end, then its start; of `a..=b`,
 // `inclusive`, as `$sliceIndexFail`'s.
-export function $checkRange(start, end, length, inclusive) {
-  if (end > length) $sliceIndexFail(0, end, length, inclusive);
-  if (start > end) $sliceIndexFail(start, end, length);
+export function $checkRange(start, end, length, raisedAt, inclusive) {
+  if (end > length) $sliceIndexFail(0, end, length, raisedAt, inclusive);
+  if (start > end) $sliceIndexFail(start, end, length, raisedAt);
 }
 
 // `s.strip_circumfix(prefix, suffix)`: `strip_prefix`'s, then
@@ -13633,7 +13683,7 @@ export function $exactLen(hint) {
   const [lower, upper] = hint;
   if (upper !== lower) {
     const shown = upper === undefined ? "None" : `Some(${upper})`;
-    throw $stringPanic(`assertion \`left == right\` failed\n  left: ${shown}\n right: Some(${lower})`);
+    throw $stringPanic(`assertion \`left == right\` failed\n  left: ${shown}\n right: Some(${lower})`, $stdSites.exactSizeLen[0]);
   }
   return lower;
 }
@@ -14604,6 +14654,321 @@ export function $abortExit(code) {
   globalThis.process?.exit?.(code);
 }
 
+// A binary's start, std's `lang_start` (#2292): its `main` run, `entry`,
+// the status it gives, `0` of one that gives nothing, or `101` of a panic,
+// and the process ended with a failing status at once, as std's exit ends
+// it: nothing runs after, a binding's pending timer neither. What it wrote
+// is all written first: Node writes a pipe later on macOS, which an exit
+// would cut off, so the process's streams are made to write at once as it
+// starts, where Node lets them be, and else ended once each has written
+// what it holds. A status of `0` lets the process end as it does by
+// itself. In a browser, which has no process, a panic is thrown on to the
+// page, and a failing status thrown as an error, its signal of a failure
+// (#847's of an abort).
+export function $main(entry) {
+  const process = globalThis.process;
+  const browser = process?.argv === undefined;
+  if (!browser) for (const stream of [process.stdout, process.stderr]) stream?._handle?.setBlocking?.(true);
+  if (!browser) $onPanic = $hook;
+  let status;
+  try {
+    status = entry() ?? 0;
+  } catch (e) {
+    if (browser || $endsTheProgram(e)) throw e;
+    $hook(e);
+    status = 101;
+  }
+  if (browser) {
+    if (status !== 0) throw new Error(`main exited with status ${status}`);
+    return;
+  }
+  if (status === 0) return;
+  process.exitCode = status & 255;
+  const blocking = [process.stdout, process.stderr].every((stream) => stream?._handle?.setBlocking !== undefined || stream?.isTTY);
+  if (blocking) process.exit(status & 255);
+  process.stdout.write("", () => process.stderr.write("", () => process.exit(status & 255)));
+}
+
+// std's panic hook's text of `e`, a panic, on stderr, once: where it was
+// raised, as `$panic` marked it, and its message, as std 1.100's default
+// hook writes them, a newline first, and of the process's first panic
+// alone, the note of a backtrace (#2292). The thread is the process's.
+// What JS threw, which reaches `main`, is written so too, raised at
+// `<unknown>`; a `resume_unwind`'s never (`$unwinding`).
+export const $hooked = new WeakSet();
+export let $noted = false;
+export function $hook(e) {
+  if (typeof e !== "object" || e === null || $hooked.has(e)) return;
+  $hooked.add(e);
+  const at = e[$raisedAt] ?? "<unknown>";
+  const thread = globalThis.process?.pid ?? 0;
+  const note = $noted ? "" : "note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n";
+  $noted = true;
+  $eprint(`\nthread 'main' (${thread}) panicked at ${at}:\n${e.message}\n${note}`);
+}
+
+// A `Location` (ADR 0427, amended by #2292): the text `file:line:column`,
+// where rustc places a call, each panic's as each `Location::caller()`'s,
+// one compact form. Read from its end, as a file may hold a `:`, a
+// Windows path's `C:\`; equal, and hashed, as its parts are, as text is.
+export function $locationParts(location) {
+  const column = location.lastIndexOf(":");
+  const line = location.lastIndexOf(":", column - 1);
+  return [location.slice(0, line), Number(location.slice(line + 1, column)), Number(location.slice(column + 1))];
+}
+// `location.file()`.
+export function $locationFile(location) {
+  return $locationParts(location)[0];
+}
+// `location.line()`.
+export function $locationLine(location) {
+  return $locationParts(location)[1];
+}
+// `location.column()`.
+export function $locationColumn(location) {
+  return $locationParts(location)[2];
+}
+// `{:?}` of a `Location`, std's: `Location { file: "m.rs", line: 9, column: 13 }`.
+export function $locationDebug(location) {
+  const [file, line, column] = $locationParts(location);
+  return `Location { file: ${$debugStr(file)}, line: ${line}, column: ${column} }`;
+}
+// `a.cmp(&b)` of two `Location`s, as std derives it: by file, then line,
+// then column, each as its own type orders, not as their text does.
+export function $locationCmp(a, b) {
+  const [x, y] = [$locationParts(a), $locationParts(b)];
+  for (let at = 0; at < 3; at++) {
+    if (x[at] < y[at]) return -1;
+    if (x[at] > y[at]) return 1;
+  }
+  return 0;
+}
+
+// Where std raises each panic std's hook names its own line of, `file:line:column`
+// under the toolchain's `/rustc/<commit>/`, as its shipped std names its
+// files, each a constant of the toolchain, whatever calls it; of a site that
+// differs by type, each type's (#2292, ADR 0262's exception).
+// Generated by `bun run std` from std's MIR (`compiled_std/raised.rs`). Do not edit.
+export const $stdSites = {
+  "vecDequeSwap": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/vec_deque/mod.rs:1062:9",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/vec_deque/mod.rs:1063:9"
+  ],
+  "vecDequeInsert": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/vec_deque/mod.rs:2612:9"
+  ],
+  "vecDequeRotateLeft": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/vec_deque/mod.rs:3198:9"
+  ],
+  "vecDequeRotateRight": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/vec_deque/mod.rs:3243:9"
+  ],
+  "swapRemove": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:2181:13"
+  ],
+  "capacityOverflow": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/raw_vec/mod.rs:29:5"
+  ],
+  "strSplitAt": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/str/mod.rs:861:21"
+  ],
+  "strSplitAtMut": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/str/mod.rs:906:13"
+  ],
+  "rotateLeft": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/mod.rs:3902:9"
+  ],
+  "rotateRight": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/mod.rs:3948:9"
+  ],
+  "selectNth": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/sort/select.rs:29:9",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/sort/select.rs:37:50",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/sort/select.rs:38:11",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/sort/select.rs:42:50",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/sort/select.rs:43:11",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/sort/select.rs:55:27",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/sort/select.rs:56:32",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/sort/select.rs:57:22"
+  ],
+  "clamp": {
+    "f32": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/f32.rs:1665:9"
+    ],
+    "f64": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/f64.rs:1643:9"
+    ]
+  },
+  "fromDigit": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/char/convert.rs:332:9"
+  ],
+  "encodeUtf8": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/char/methods.rs:2507:9",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/char/methods.rs:2520:14"
+  ],
+  "encodeUtf16": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/char/methods.rs:2601:13",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/char/methods.rs:2611:14"
+  ],
+  "stepBy": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/step_by.rs:36:9"
+  ],
+  "durationNew": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/time.rs:281:18"
+  ],
+  "durationAdd": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/time.rs:1345:31"
+  ],
+  "durationSub": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/time.rs:1365:31"
+  ],
+  "onceCellReentrant": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell/once.rs:325:66"
+  ],
+  "lazyCellPoisoned": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell/lazy.rs:383:5"
+  ],
+  "btreeRange": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/btree/search.rs:110:21",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/btree/search.rs:112:21",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/btree/search.rs:119:21",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/btree/search.rs:121:21"
+  ],
+  "refCellTake": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell.rs:1434:14"
+  ],
+  "refCellSwap": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell.rs:1083:30",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell.rs:1083:56"
+  ],
+  "localKeyWithBorrow": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/std/src/thread/local.rs:681:34"
+  ],
+  "localKeyWithBorrowMut": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/std/src/thread/local.rs:714:38"
+  ],
+  "localKeySet": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/std/src/thread/local.rs:752:23"
+  ],
+  "localKeyReplace": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/std/src/thread/local.rs:820:31"
+  ],
+  "vecFromTrustedLen": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/spec_from_iter_nested.rs:57:18"
+  ],
+  "rcFromTrustedLen": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/rc.rs:3275:13"
+  ],
+  "arcFromTrustedLen": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/sync.rs:4368:13"
+  ],
+  "vecExtendTrusted": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:4111:13"
+  ],
+  "vecDequeExtendTrusted": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/vec_deque/spec_extend.rs:75:13"
+  ],
+  "vecDequeReserve": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/vec_deque/mod.rs:1142:56"
+  ],
+  "sortTotalOrder": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/sort/shared/smallsort.rs:854:5"
+  ],
+  "refCellEq": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell.rs:1482:15",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell.rs:1482:34"
+  ],
+  "nextMultipleOf": {
+    "u128": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/mod.rs:1359:5"
+    ],
+    "u16": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/mod.rs:1239:5"
+    ],
+    "u32": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/mod.rs:1295:5"
+    ],
+    "u64": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/mod.rs:1327:5"
+    ],
+    "u8": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/mod.rs:590:5"
+    ],
+    "usize": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/mod.rs:1425:5"
+    ]
+  },
+  "fromStrRadix": {
+    "signed": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/mod.rs:1884:1"
+    ],
+    "unsigned": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/mod.rs:1885:1"
+    ]
+  },
+  "writeCloneOfSlice": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1230:9",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1236:23",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1242:13",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1242:34"
+  ],
+  "writeCopyOfSlice": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1170:14"
+  ],
+  "exactSizeLen": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/traits/exact_size.rs:122:9"
+  ],
+  "stepForward": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:119:45"
+  ],
+  "toString": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/string.rs:2992:14"
+  ],
+  "format": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/fmt.rs:657:14"
+  ],
+  "printFailed": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/io/write.rs:411:17"
+  ],
+  "bufReaderStreamPosition": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/io/buffered/bufreader.rs:598:40"
+  ],
+  "lazyLockPoisoned": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/std/src/sync/lazy_lock.rs:475:5"
+  ],
+  "pathExtension": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/std/src/path.rs:386:13"
+  ],
+  "vecDrain": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:2990:36",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:2996:31"
+  ],
+  "vecExtendFromWithin": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:3597:21"
+  ],
+  "vecExtractIf": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/extract_if.rs:43:36"
+  ],
+  "vecDequeDrain": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/vec_deque/mod.rs:1998:36"
+  ],
+  "vecDequeRange": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/vec_deque/mod.rs:1845:36"
+  ],
+  "vecDequeSplitOff": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/vec_deque/mod.rs:2724:9"
+  ],
+  "byteSliceConsume": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/io/impls.rs:389:22"
+  ],
+  "wrappingOp": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/wrapping.rs:566:1"
+  ],
+  "saturatingOp": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/saturating.rs:551:1"
+  ]
+};
+
 // std's files (#1156), through Node's fs, `$nodeFs`, which in a browser
 // panics, saying what needed it (ADR 0391). A `File` is `{ fd, pos, path,
 // read, write, append }`: its descriptor and the position std's would keep, a
@@ -15226,8 +15591,8 @@ export function $vecFromRaw(pointer, length) {
 // shared subslice is, and a view of them in a box, of each kind of range.
 export function $boundsIndex(start, end) {
   return {
-    index: (range, items) => $slice(items, start(range), end(range)),
-    indexMut: (range, items) => ({ value: $view(items, start(range), end(range)) }),
+    index: (range, items) => $slice(items, start(range), undefined, end(range)),
+    indexMut: (range, items) => ({ value: $view(items, start(range), undefined, end(range)) }),
   };
 }
 
@@ -15410,7 +15775,7 @@ export function $keepCapacity(v) {
 // capacity is asked (ADR 0774): past `isize::MAX` bytes, or past
 // `usize::MAX` items, of no size too, a `capacity overflow` panic.
 export function $roomFor(count, size) {
-  if (count > 2 ** 32 - 1 || count * size > 2 ** 31 - 1) throw new Error("capacity overflow");
+  if (count > 2 ** 32 - 1 || count * size > 2 ** 31 - 1) throw $panic("capacity overflow", $stdSites.capacityOverflow[0]);
 }
 
 // `it`, a `TrustedLen` an `Rc<[T]>` or an `Arc<[T]>` is collected of, of
@@ -15419,12 +15784,14 @@ export function $roomFor(count, size) {
 // (#1678): of no upper bound, a `capacity overflow` panic; of one whose
 // slice, after the counts' two `usize`s, wasm32's 8 bytes, is past
 // `isize::MAX` bytes at its alignment, the panic of std's `unwrap()` of a
-// `Layout`'s `LayoutError`. Where asking it throws, `it` is closed.
-export function $roomForCounted(it, size, align) {
+// `Layout`'s `LayoutError`. Where asking it throws, `it` is closed. Its
+// `capacity overflow` is raised at `unbounded`, `ToRcSlice`'s line or
+// `ToArcSlice`'s (#2292).
+export function $roomForCounted(it, size, align, unbounded) {
   $unwinds(
     () => {
       const [, upper] = $sizeHint(it);
-      if (upper === undefined) throw new Error("capacity overflow");
+      if (upper === undefined) throw $panic("capacity overflow", unbounded);
       const max = 2 ** 31 - 1;
       const bytes = upper * size;
       const counts = Math.ceil(8 / align) * align;
@@ -15470,7 +15837,7 @@ export function $roomForHint(it, size, trusted, endless = false, drop) {
       // whose type its caller knows, `repeat(x).map(f)` (#1239). No hint
       // std's `TrustedLen`s have runs the crate's code, so asking it first
       // is unseen.
-      if (upper === undefined && lower >= 2 ** 32 - 1) throw new Error("capacity overflow");
+      if (upper === undefined && lower >= 2 ** 32 - 1) throw $panic("capacity overflow", $stdSites.vecFromTrustedLen[0]);
       $roomFor(upper !== undefined ? upper : Math.min(lower + 1, 2 ** 32 - 1), size);
     });
     return it;
@@ -15485,7 +15852,7 @@ export function $roomForHint(it, size, trusted, endless = false, drop) {
   if (!first.done) {
     unwound(
       () => {
-        if (endless) throw new Error("capacity overflow");
+        if (endless) throw $panic("capacity overflow", $stdSites.capacityOverflow[0]);
         const [lower] = $sizeHint(it);
         capacity = size === 0 ? Infinity : Math.max(least, Math.min(lower + 1, max));
         $roomFor(Math.min(lower + 1, max), size);
@@ -15516,7 +15883,7 @@ export function $roomForHint(it, size, trusted, endless = false, drop) {
           () => {
             const [lower] = $sizeHint(it);
             const required = length + Math.min(lower + 1, max);
-            if (required > max) throw new Error("capacity overflow");
+            if (required > max) throw $panic("capacity overflow", $stdSites.capacityOverflow[0]);
             capacity = Math.max(capacity * 2, required, least);
             $roomFor(capacity, size);
           },
@@ -15695,7 +16062,10 @@ export function $grownBy(v, items, size, deque = false, drop, own = false, lost 
             unkept ||= !known;
             const additional = Math.min(lower + 1, max);
             if (capacity - v.length < additional) {
-              if (v.length + additional > max) throw new Error("capacity overflow");
+              // A `VecDeque`'s `reserve`'s own, or a `Vec`'s `RawVec`'s.
+              if (v.length + additional > max) {
+                throw $panic("capacity overflow", deque ? $stdSites.vecDequeReserve[0] : $stdSites.capacityOverflow[0]);
+              }
               $reserve(v, additional, size);
               $roomFor($capacity(v), size);
             }
@@ -15721,10 +16091,14 @@ export function $grownBy(v, items, size, deque = false, drop, own = false, lost 
       asked = true;
       const [[, upper], known] = byValue ? $hintAsked(it) : [$sizeHint(it), true];
       unkept ||= !known;
-      if (upper === undefined || upper === null) throw new Error("capacity overflow");
+      if (upper === undefined || upper === null) {
+        throw $panic("capacity overflow", deque ? $stdSites.vecDequeExtendTrusted[0] : $stdSites.vecExtendTrusted[0]);
+      }
       const capacity = size === 0 ? Infinity : $capacity(v);
       if (capacity - v.length < upper) {
-        if (v.length + upper > max) throw new Error("capacity overflow");
+        if (v.length + upper > max) {
+          throw $panic("capacity overflow", deque ? $stdSites.vecDequeReserve[0] : $stdSites.capacityOverflow[0]);
+        }
         $reserve(v, upper, size);
         $roomFor($capacity(v), size);
       }
@@ -18493,7 +18867,7 @@ export function $systemTimeOfJson(offset) {
 // Of one that's the object it holds (`itself`, ADR 0863), the cell.
 export function $jsonBorrowed(cell, write, itself) {
   if (cell.borrows < 0) throw $jsonError("already mutably borrowed");
-  $withBorrow(cell, write, itself);
+  $withBorrow(cell, write, undefined, itself);
 }
 
 // A `Mutex`'s or an `RwLock`'s value written by `write` while it's locked,
@@ -18669,7 +19043,7 @@ export function $lowerExpRounded(x, precision) {
 }
 
 export function $fromDigit(num, radix) {
-  if (radix > 36) throw new Error("from_digit: radix is too high (maximum 36)");
+  if (radix > 36) throw $panic("from_digit: radix is too high (maximum 36)", $stdSites.fromDigit[0]);
   return num < radix ? String.fromCharCode(num < 10 ? 48 + num : 87 + num) : undefined;
 }
 
@@ -18687,13 +19061,18 @@ export function $totalCmp(a, b) {
   return x < y ? -1 : x > y ? 1 : 0;
 }
 
-export function $drain(items, start, end = items.length, inclusive) {
-  $checkRange(start, end, items.length, inclusive);
+export function $drain(items, start, raisedAt, end = items.length, inclusive) {
+  $checkRange(start, end, items.length, raisedAt, inclusive);
   return items.splice(start, end - start);
 }
 
-export function $splitOff(items, at) {
-  if (at > items.length) throw $stringPanic(`\`at\` split index (is ${at}) should be <= len (is ${items.length})`);
+// `v.split_off(at)`: what's from `at`, taken out, past the end a `Vec`'s
+// panic, or a `VecDeque`'s (`deque`), its `assert!`'s literal, a `&str`,
+// each raised where `raisedAt` says (#2292).
+export function $splitOff(items, at, raisedAt, deque = false) {
+  if (at > items.length) {
+    throw deque ? $panic("`at` out of bounds", raisedAt) : $stringPanic(`\`at\` split index (is ${at}) should be <= len (is ${items.length})`, raisedAt);
+  }
   return items.splice(at);
 }
 
@@ -18872,9 +19251,9 @@ export function $restStr(it) {
 // `r.unwrap_err()` or `r.expect_err(message)`: what an `Err` holds; of an
 // `Ok`, a panic whose message shows its value by `debug`, the value then
 // dropped by `drop`, where it has a destructor, as `$unwrapOk`'s (#1505).
-export function $unwrapErr(result, message = "called `Result::unwrap_err()` on an `Ok` value", debug = $debug, drop) {
+export function $unwrapErr(result, raisedAt, message = "called `Result::unwrap_err()` on an `Ok` value", debug = $debug, drop) {
   if (result.TAG === "Ok") {
-    const panic = $stringPanic(message + ": " + debug(result._0));
+    const panic = $stringPanic(message + ": " + debug(result._0), raisedAt);
     if (drop !== undefined) $dropsUnwinding([() => drop(result._0)]);
     throw panic;
   }
@@ -19176,7 +19555,7 @@ export function $heapExtend(heap, items, ord) {
 // an invalid digit, though 260 is too large.
 export function $parseInt(s, min, max, radix = 10) {
   if (radix < 2 || radix > 36) {
-    throw $stringPanic("from_ascii_bytes_radix: radix must lie in the range `[2, 36]` - found " + radix);
+    throw $stringPanic("from_ascii_bytes_radix: radix must lie in the range `[2, 36]` - found " + radix, $stdSites.fromStrRadix[min < 0 ? "signed" : "unsigned"][0]);
   }
   const error = (message) => ({ TAG: "Err", _0: message });
   if (s === "") return error("cannot parse integer from empty string");
@@ -19222,30 +19601,30 @@ export function $parseChar(s) {
 
 // `&v[a..b]`: those items, a part of `v` that says where it is in it
 // (#1185), with Rust's panic out of bounds.
-export function $slice(items, start, end = items.length, inclusive) {
-  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);
+export function $slice(items, start, raisedAt, end = items.length, inclusive) {
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, raisedAt, inclusive);
   return $part(items, start, end);
 }
 
 // `v[a..b].to_vec()`, `into()`, a `collect()` of its items copied: a copy
 // of those items, owned, an allocation of its own, which no record places
 // in `v`, with `&v[a..b]`'s panic out of bounds (#1185).
-export function $copyOf(items, start, end = items.length, inclusive) {
-  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);
+export function $copyOf(items, start, raisedAt, end = items.length, inclusive) {
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, raisedAt, inclusive);
   return items.slice(start, end);
 }
 
 // A deque's `range(start..end)`: those items, a part of `items`, checked as
 // `slice::range` checks them, its end first, not as `&v[a..b]` is (#1937).
-export function $sliceRange(items, start, end = items.length, inclusive) {
-  $checkRange(start, end, items.length, inclusive);
+export function $sliceRange(items, start, raisedAt, end = items.length, inclusive) {
+  $checkRange(start, end, items.length, raisedAt, inclusive);
   return $part(items, start, end);
 }
 
 // `v.extend_from_within(start..end)`'s copy of those items, checked as
 // `slice::range` checks them.
-export function $copyRange(items, start, end = items.length, inclusive) {
-  $checkRange(start, end, items.length, inclusive);
+export function $copyRange(items, start, raisedAt, end = items.length, inclusive) {
+  $checkRange(start, end, items.length, raisedAt, inclusive);
   return items.slice(start, end);
 }
 
@@ -19256,14 +19635,15 @@ export function $sliceGet(items, start = 0, end = items.length) {
 }
 
 // `v.split_at(mid)` of a slice: copies of the items before `mid` and from
-// it, as `&v[..mid]` and `&v[mid..]` are, panicking as Rust's does, or,
-// `split_at_checked` (`checked`), `undefined`, `None`.
-export function $sliceSplitAt(items, mid, checked = false) {
-  if (mid > items.length) {
-    if (checked) return undefined;
-    throw new Error("mid > len");
-  }
+// it, as `&v[..mid]` and `&v[mid..]` are, panicking where it was called,
+// `raisedAt`, as Rust's does (#2292).
+export function $sliceSplitAt(items, mid, raisedAt) {
+  if (mid > items.length) throw $panic("mid > len", raisedAt);
   return [$part(items, 0, mid), $part(items, mid)];
+}
+// `split_at_checked(mid)`: `undefined`, `None`, where `mid` is past the end.
+export function $checkedSliceSplitAt(items, mid) {
+  return mid > items.length ? undefined : [$part(items, 0, mid), $part(items, mid)];
 }
 
 // `v.starts_with(prefix)`, or `ends_with` (`end`): each item `eq` to the
@@ -19436,7 +19816,7 @@ export function $encodeUtf8(c, buf) {
   const bytes = new TextEncoder().encode(c);
   if (bytes.length > buf.length) {
     const code = c.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
-    throw $stringPanic(`encode_utf8: need ${bytes.length} bytes to encode U+${code} but buffer has just ${buf.length}`);
+    throw $stringPanic(`encode_utf8: need ${bytes.length} bytes to encode U+${code} but buffer has just ${buf.length}`, $stdSites.encodeUtf8[0]);
   }
   bytes.forEach((b, i) => (buf[i] = b));
   return $utf8Mut(buf, bytes.length);
@@ -19447,10 +19827,10 @@ export function $encodeUtf8(c, buf) {
 export function $encodeCharUtf16(c, buf) {
   if (c.length > buf.length) {
     const code = c.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
-    throw $stringPanic(`encode_utf16: need ${c.length} bytes to encode U+${code} but buffer has just ${buf.length}`);
+    throw $stringPanic(`encode_utf16: need ${c.length} bytes to encode U+${code} but buffer has just ${buf.length}`, $stdSites.encodeUtf16[0]);
   }
   for (let i = 0; i < c.length; i++) buf[i] = c.charCodeAt(i);
-  return $view(buf, 0, c.length);
+  return $view(buf, 0, undefined, c.length);
 }
 
 // `String::from_utf8_lossy(bytes)`: a `Cow`, borrowed where the bytes are
@@ -20299,12 +20679,17 @@ export function $fmtTextOr(make, written) {
 export function $writeCheck(result) {
   if (result !== undefined) throw result;
 }
-// `to_string()` and `format!` of what fails: std's panic, `message`.
-export function $fmtOrPanic(write, message) {
+// `to_string()` (`toString`) and `format!` (`format`) of what fails: std's
+// panic, where std raises it (#2292).
+export const $fmtFailed = {
+  toString: "a Display implementation returned an error unexpectedly: Error",
+  format: "a formatting trait implementation returned an error when the underlying stream did not: Error",
+};
+export function $fmtOrPanic(write, kind) {
   try {
     return write();
   } catch (error) {
-    if (error instanceof $FmtError) throw $stringPanic(message);
+    if (error instanceof $FmtError) throw $stringPanic($fmtFailed[kind], $stdSites[kind][0]);
     throw error;
   }
 }
@@ -20316,18 +20701,18 @@ export function $fmtPrintFailed(error, text, stderr) {
   else $write(text + error.written, stderr);
   // std's `write_fmt` writes it `panic!("..")`, a literal: a `&str`, where
   // `format!`'s `expect` makes a `String` (ADR 0660, amended).
-  throw new Error("a formatting trait implementation returned an error when the underlying stream did not");
+  throw $panic("a formatting trait implementation returned an error when the underlying stream did not", $stdSites.printFailed[0]);
 }
 // `unwrap()` and `expect(..)` of one: `()`, or std's panic, of the error's
 // `{:?}`.
-export function $writeExpect(result, message) {
+export function $writeExpect(result, message, raisedAt) {
   if (result === undefined) return;
-  throw $stringPanic(message + ": " + (result instanceof $IoError ? $ioErrorDebug(result) : "Error"));
+  throw $stringPanic(message + ": " + (result instanceof $IoError ? $ioErrorDebug(result) : "Error"), raisedAt);
 }
 // `unwrap_err()` and `expect_err(..)` of one: its error, or std's panic, of
 // `Ok`'s `()`.
-export function $writeExpectErr(result, message) {
-  if (result === undefined) throw $stringPanic(message + ": ()");
+export function $writeExpectErr(result, message, raisedAt) {
+  if (result === undefined) throw $stringPanic(message + ": ()", raisedAt);
   return result;
 }
 // What a write to a `String` had written before it failed, taken from the
@@ -20698,16 +21083,16 @@ export function $dropItems(items, drop) {
 // `u64::MAX` seconds and 999,999,999 nanoseconds, and past it, std panics.
 export function $durationNew(secs, nanos) {
   const duration = secs * 1000000000n + BigInt(nanos);
-  if (duration > 18446744073709551615999999999n) throw $stringPanic("overflow in Duration::new");
+  if (duration > 18446744073709551615999999999n) throw $stringPanic("overflow in Duration::new", $stdSites.durationNew[0]);
   return duration;
 }
 export function $durationAdd(a, b) {
   const sum = a + b;
-  if (sum > 18446744073709551615999999999n) throw $stringPanic("overflow when adding durations");
+  if (sum > 18446744073709551615999999999n) throw $stringPanic("overflow when adding durations", $stdSites.durationAdd[0]);
   return sum;
 }
 export function $durationSub(a, b) {
-  if (a < b) throw $stringPanic("overflow when subtracting durations");
+  if (a < b) throw $stringPanic("overflow when subtracting durations", $stdSites.durationSub[0]);
   return a - b;
 }
 // `checked_add`'s: `None` past `MAX`.
@@ -20848,19 +21233,19 @@ export function $textStops(s, facts) {
   return (facts.stops = stops);
 }
 
-export function $strSlice(s, start, end, inclusive) {
+export function $strSlice(s, start, raisedAt, end, inclusive) {
   const length = $byteLen(s);
   end ??= length;
   // Of `a..=b`, `end` is `b + 1`: past the string's end, core checks `b`
   // itself, then `a`'s boundary, and says `b` (#1935).
   const past = inclusive && end > length;
   if (past) end -= 1;
-  if (start > length) throw $stringPanic(`start byte index ${start} is out of bounds for string of length ${length}`);
-  if (end > length) throw $stringPanic(`end byte index ${end} is out of bounds for string of length ${length}`);
-  if (start > end) throw $stringPanic(`byte range starts at ${start} but ends at ${end}`);
-  const from = $unitAt(s, start, "start");
-  if (past) throw $stringPanic(`end byte index ${end} is out of bounds for string of length ${length}`);
-  const part = s.slice(from, $unitAt(s, end, "end"));
+  if (start > length) throw $stringPanic(`start byte index ${start} is out of bounds for string of length ${length}`, raisedAt);
+  if (end > length) throw $stringPanic(`end byte index ${end} is out of bounds for string of length ${length}`, raisedAt);
+  if (start > end) throw $stringPanic(`byte range starts at ${start} but ends at ${end}`, raisedAt);
+  const from = $unitAt(s, start, "start", raisedAt);
+  if (past) throw $stringPanic(`end byte index ${end} is out of bounds for string of length ${length}`, raisedAt);
+  const part = s.slice(from, $unitAt(s, end, "end", raisedAt));
   // A long part's facts are of where it is in `s` (#1184).
   if (part.length >= $textLong) $textPart(part, s, start, from, end - start);
   return part;
@@ -20868,13 +21253,13 @@ export function $strSlice(s, start, end, inclusive) {
 
 // The UTF-16 unit byte `at` of `s` starts at, `at` within it, or Rust's
 // panic where it's inside a character.
-export function $unitAt(s, at, which) {
+export function $unitAt(s, at, which, raisedAt) {
   const unit = $charBoundary(s, at);
   if (unit !== undefined) return unit;
   let from = at - 1;
   while ($charBoundary(s, from) === undefined) from--;
   const c = String.fromCodePoint(s.codePointAt($charBoundary(s, from)));
-  throw $stringPanic(`${which} byte index ${at} is not a char boundary; it is inside ${$debugStr(c, "'")} (bytes ${from}..${from + $byteLen(c)} of string)`);
+  throw $stringPanic(`${which} byte index ${at} is not a char boundary; it is inside ${$debugStr(c, "'")} (bytes ${from}..${from + $byteLen(c)} of string)`, raisedAt);
 }
 
 export function $find(s, pattern) {
@@ -21002,29 +21387,31 @@ export function $extend(v, items, byFold = false) {
 
 // Past its end, `item`, which Rust's `insert` took, is dropped by `drop`
 // as the panic unwinds, then the panic, `message` or `Vec`'s (#1171).
-export function $insertAt(v, index, item, drop, message) {
+export function $insertAt(v, index, item, raisedAt, drop, message) {
   if (index > v.length) {
     drop?.(item);
     // `Vec`'s, formatted, a `String`; a `VecDeque`'s `message`, its
     // `assert!`'s literal, a `&str` (ADR 0660, amended).
-    throw message === undefined ? $stringPanic(`insertion index (is ${index}) should be <= len (is ${v.length})`) : new Error(message);
+    throw message === undefined
+      ? $stringPanic(`insertion index (is ${index}) should be <= len (is ${v.length})`, raisedAt)
+      : $panic(message, raisedAt);
   }
   v.splice(index, 0, item);
 }
 
 // `Vec::remove(index)` past its end: std's panic, its message as std's.
 // The removal itself is JS's `splice` where it's called (#1692).
-export function $removeOutOfBounds(v, index) {
-  throw $stringPanic(`removal index (is ${index}) should be < len (is ${v.length})`);
+export function $removeOutOfBounds(v, index, raisedAt) {
+  throw $stringPanic(`removal index (is ${index}) should be < len (is ${v.length})`, raisedAt);
 }
 
 // `v.swap(a, b)`: out of bounds, a slice's message of the first index std
 // checks, or a `VecDeque`'s assertion (`deque`).
-export function $swap(v, a, b, deque = false) {
-  if (deque && a >= v.length) throw new Error("assertion failed: i < self.len()");
-  if (deque && b >= v.length) throw new Error("assertion failed: j < self.len()");
+export function $swap(v, a, b, raisedAt, deque = false) {
+  if (deque && a >= v.length) throw $panic("assertion failed: i < self.len()", $stdSites.vecDequeSwap[0]);
+  if (deque && b >= v.length) throw $panic("assertion failed: j < self.len()", $stdSites.vecDequeSwap[1]);
   if (a >= v.length || b >= v.length) {
-    throw $stringPanic(`index out of bounds: the len is ${v.length} but the index is ${a >= v.length ? a : b}`);
+    throw $stringPanic(`index out of bounds: the len is ${v.length} but the index is ${a >= v.length ? a : b}`, raisedAt);
   }
   [v[a], v[b]] = [v[b], v[a]];
 }
@@ -21115,7 +21502,7 @@ export function $dedupBy(v, same, drop, cells = false) {
 
 export function $swapRemove(v, index) {
   if (index >= v.length) {
-    throw $stringPanic(`swap_remove index (is ${index}) should be < len (is ${v.length})`);
+    throw $stringPanic(`swap_remove index (is ${index}) should be < len (is ${v.length})`, $stdSites.swapRemove[0]);
   }
   const item = v[index];
   v[index] = v[v.length - 1];
@@ -21237,8 +21624,8 @@ export function $dedupByCells(v, same, drop) {
 // destructor, whose `Splice` runs nothing as it's dropped: `replacement`, an
 // array or an array's iterator, put in place where it's made, as nothing
 // sees `items` till it's dropped; an iterator over what it took out (#1189).
-export function $splice(items, start, end, replacement, inclusive) {
-  $checkRange(start, end, items.length, inclusive);
+export function $splice(items, start, end, replacement, raisedAt, inclusive) {
+  $checkRange(start, end, items.length, raisedAt, inclusive);
   const tail = items.splice(end);
   const removed = items.splice(start);
   $extend(items, replacement);
@@ -21263,9 +21650,9 @@ export function $splice(items, start, end, replacement, inclusive) {
 // made, the crate's own `into_iter` where it's the crate's (`$ownIntoIter`),
 // as std's `splice` makes its `Drain` first: where that panics, what was
 // taken out dropped and the tail put back, the `Drain`'s drop (#1940).
-export function $splicing(items, start, end, replacement, dropItem, inclusive) {
+export function $splicing(items, start, end, replacement, raisedAt, dropItem, inclusive) {
   const given = typeof replacement.next === "function" ? replacement : undefined;
-  $unwinds(() => $checkRange(start, end, items.length, inclusive), () => given?.return?.());
+  $unwinds(() => $checkRange(start, end, items.length, raisedAt, inclusive), () => given?.return?.());
   const tail = items.splice(end);
   const removed = items.splice(start);
   const it =
@@ -21318,9 +21705,9 @@ export function $splicing(items, start, end, replacement, dropItem, inclusive) {
   });
 }
 
-export function $windows(v, size) {
+export function $windows(v, size, raisedAt) {
   if (size === 0) {
-    throw $stringPanic("window size must be non-zero");
+    throw $stringPanic("window size must be non-zero", raisedAt);
   }
   const parts = Array.from({ length: Math.max(0, v.length - size + 1) }, (_, i) => $part(v, i, i + size));
   // What std's `Debug` of what's left shows, `Windows { v, size }` (#2252).
@@ -21336,9 +21723,9 @@ export const $partsOf = Symbol("rust-js.partsOf");
 
 // `chunks(size)`: each `size` items, the last fewer, as `cut` cuts them:
 // copies, or views of `chunks_mut`'s (ADR 0335).
-export function $chunks(v, size, cut = $part) {
+export function $chunks(v, size, raisedAt, cut = $part) {
   if (size === 0) {
-    throw new Error("chunk size must be non-zero");
+    throw $panic("chunk size must be non-zero", raisedAt);
   }
   const parts = Array.from({ length: Math.ceil(v.length / size) }, (_, i) => cut(v, i * size, Math.min(i * size + size, v.length)));
   parts[$partsOf] = { source: v, size, windows: false };
@@ -21387,7 +21774,7 @@ export function $itemLeft(it, boxed) {
 
 // `step_by(step)`'s step, which std asserts isn't 0 as it's given.
 export function $step(step) {
-  if (step === 0) throw new Error("assertion failed: step != 0");
+  if (step === 0) throw $panic("assertion failed: step != 0", $stdSites.stepBy[0]);
   return step;
 }
 
@@ -22707,14 +23094,29 @@ export function $isPanic(e) {
 export const $panicMessage = { typeId: () => "&str" };
 export const $panicString = { typeId: () => "alloc::string::String" };
 
-// What marks a panic's `Error` as one whose payload is a `String`: not
-// enumerable, so its host shows it as any `Error`.
-export const $stringPayload = Symbol("a panic whose payload is a String");
+// A panic's marks, `$stringPayload` and `$raisedAt`, are any copy of the
+// runtime's (marks.js).
 
-// A panic whose payload is a `String`, thrown: `throw $stringPanic(..)`, an
-// `Error` of JS's own constructor, marked (ADR 0660, amended).
-export function $stringPanic(message) {
+// A panic, thrown: `throw $panic("message", at)`, an `Error` of JS's own
+// constructor, its message the panic's, where it was raised marked
+// (ADR 0706, amended by #2292). Made where it's raised, before what it
+// drops as it unwinds, where a binary's hook writes it, as std's runs
+// (`$hook`).
+export function $panic(message, raisedAt) {
   const error = new Error(message);
+  Object.defineProperty(error, $raisedAt, { value: raisedAt });
+  $onPanic?.(error);
+  return error;
+}
+
+// What a panic runs as it's made: a binary's hook, `$hook`, which `$main`
+// sets; of a library, nothing, so a helper bundled alone holds none of it.
+export let $onPanic;
+
+// A panic whose payload is a `String`, thrown: `throw $stringPanic(..)`, a
+// panic's `Error`, marked (ADR 0660, amended).
+export function $stringPanic(message, raisedAt) {
+  const error = $panic(message, raisedAt);
   Object.defineProperty(error, $stringPayload, { value: true });
   return error;
 }
@@ -22766,13 +23168,11 @@ export function $unwinding(payload) {
   if (id === "&js::JsError") {
     return payload.value;
   }
-  if (id === "&str") {
-    return new Error(payload.value);
-  }
-  if (id === "alloc::string::String") {
-    return $stringPanic(payload.value);
-  }
-  return new $Unwinding(payload);
+  // `resume_unwind`'s, which std's hook isn't run for: none written.
+  const resumed = id === "&str" || id === "alloc::string::String" ? new Error(payload.value) : new $Unwinding(payload);
+  if (id === "alloc::string::String") Object.defineProperty(resumed, $stringPayload, { value: true });
+  $hooked.add(resumed);
+  return resumed;
 }
 
 // `catch_unwind(f)`: `Ok` of what `f()` gives, or `Err` of what unwound;
@@ -23023,6 +23423,21 @@ export class $InternalError extends Error {
   }
 }
 
+// The marks the runtime sets on what it makes, which every copy of the
+// runtime reads: a bundled library and the app that uses it may each hold
+// one, and a panic one raises is caught, hooked or downcast by the other
+// (ADR 1184). Each is a registry symbol, `Symbol.for`, named `rust-js: ..`:
+// a mark made by `Symbol(..)` is one copy's alone, which
+// `test/runtime-marks.test.ts` refuses except where it names why. Neither
+// is enumerable on what it marks, so a host shows it as it is.
+
+// What marks a panic's `Error` as one whose payload is a `String`.
+export const $stringPayload = Symbol.for("rust-js: a panic whose payload is a String");
+
+// Where a panic was raised, `file:line:column` (#2292), which a binary's
+// hook names.
+export const $raisedAt = Symbol.for("rust-js: where a panic was raised");
+
 export function $settle(promise) {
   return promise.then((value) => ({ TAG: "Ok", _0: value }), (e) => ({ TAG: "Err", _0: e }));
 }
@@ -23032,9 +23447,10 @@ export function $settle(promise) {
 // `drop`, where it has a destructor, as std's `unwrap_failed(msg, &e)`
 // panics while `e` is a local of `unwrap`'s frame, which drops it as the
 // panic unwinds, caught or not; a drop that panics then aborts (#1505).
-export function $unwrapOk(result, message = "called `Result::unwrap()` on an `Err` value", debug = $debug, drop) {
+// Raised where it was called, `raisedAt` (#2292).
+export function $unwrapOk(result, raisedAt, message = "called `Result::unwrap()` on an `Err` value", debug = $debug, drop) {
   if (result.TAG === "Err") {
-    const panic = $stringPanic(message + ": " + debug(result._0));
+    const panic = $stringPanic(message + ": " + debug(result._0), raisedAt);
     if (drop !== undefined) $dropsUnwinding([() => drop(result._0)]);
     throw panic;
   }
@@ -23106,7 +23522,7 @@ export function $ord(dictionary) {
   const partialOrd = dictionary.PartialOrd;
   dictionary.max ??= (a, b, drop) => $maxOf(a, b, partialOrd(), drop);
   dictionary.min ??= (a, b, drop) => $minOf(a, b, partialOrd(), drop);
-  dictionary.clamp ??= (x, min, max, drop) => $clampBy(x, min, max, partialOrd(), undefined, drop);
+  dictionary.clamp ??= (x, min, max, drop) => $clampBy(x, min, max, partialOrd(), undefined, undefined, drop);
   return dictionary;
 }
 
@@ -23130,7 +23546,7 @@ export const $intsOrdered = /* @__PURE__ */ $ord({ PartialOrd: () => $partiallyO
 export const $charsOrdered = /* @__PURE__ */ $ord({
   PartialOrd: () => $partiallyOrdered,
   cmp: $cmp,
-  clamp: (x, min, max) => $clampBy(x, min, max, $partiallyOrdered, (c) => $debugStr(c, "'")),
+  clamp: (x, min, max) => $clampBy(x, min, max, $partiallyOrdered, undefined, (c) => $debugStr(c, "'")),
 });
 
 export function $toFixed(value, digits) {

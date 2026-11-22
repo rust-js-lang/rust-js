@@ -26,7 +26,7 @@ function hook() {
   const this$ = { value: {}, strong: 1, weak: 0 };
   let _held;
   try {
-    _held = $borrow(this$.value, true);
+    _held = $borrow(this$.value, "test/corpus/self_handle_maker_borrows.rs:13:22", true);
   } catch (error) {
     $cleanup(() => {
       $rcDrop(this$, (value) => {
@@ -57,11 +57,18 @@ function hook() {
         if (n === 0) {
           return 0;
         }
-        const borrow = $borrow(this$$1.value, true);
+        const borrow = $borrow(
+          this$$1.value,
+          "test/corpus/self_handle_maker_borrows.rs:20:29",
+          true,
+        );
         const weak = borrow.value;
         let hook;
         try {
-          hook = $unwrap(weak != null ? $upgrade(weak) : undefined);
+          hook = $unwrap(
+            weak != null ? $upgrade(weak) : undefined,
+            "test/corpus/self_handle_maker_borrows.rs:20:71",
+          );
         } finally {
           $unborrow(borrow);
         }
@@ -101,7 +108,7 @@ function hook() {
       }
       let borrowMut;
       try {
-        borrowMut = $borrowMut(this$.value, true);
+        borrowMut = $borrowMut(this$.value, "test/corpus/self_handle_maker_borrows.rs:24:11", true);
       } catch (error) {
         $cleanup(() => {
           if (tmp != null) {

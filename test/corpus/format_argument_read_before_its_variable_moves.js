@@ -37,7 +37,7 @@ function bumpPlain(p) {
 }
 
 function consume(o) {
-  const p = $unwrap(o);
+  const p = $unwrap(o, "test/corpus/format_argument_read_before_its_variable_moves.rs:44:19");
   p.x = (p.x + 50) | 0;
   return p.x;
 }

@@ -11,6 +11,7 @@ import {
   $div,
   $dropping,
   $index,
+  $panic,
   $slice,
   $strSlice,
   $stringPanic,
@@ -33,7 +34,7 @@ function runGiven(task) {
     $cleanup(() => {
       $dispose(task);
     });
-    throw $stringPanic("no run given");
+    throw $stringPanic("no run given", "test/corpus/panic_payload_kinds.rs:28:15");
   }
   run(task);
 }
@@ -73,29 +74,32 @@ function main() {
   const v = [1, 2, 3];
   const text = "héllo";
   shown("plain", () => {
-    throw new Error("plain");
+    throw $panic("plain", "test/corpus/panic_payload_kinds.rs:54:23");
   });
   shown("empty", () => {
-    throw new Error("explicit panic");
+    throw $panic("explicit panic", "test/corpus/panic_payload_kinds.rs:55:23");
   });
   shown("formatted", () => {
-    throw $stringPanic(`n = ${n}`);
+    throw $stringPanic(`n = ${n}`, "test/corpus/panic_payload_kinds.rs:56:27");
   });
   shown("display", () => {
-    throw $stringPanic(String(n));
+    throw $stringPanic(String(n), "test/corpus/panic_payload_kinds.rs:57:25");
   });
   shown("unwrap", () => {
-    $unwrap(none);
+    $unwrap(none, "test/corpus/panic_payload_kinds.rs:59:14");
   });
   shown("expect", () => {
-    $unwrap(none, "gone");
+    $unwrap(none, "test/corpus/panic_payload_kinds.rs:62:14", "gone");
   });
   shown("index", () => {
-    $index(v, n);
+    $index(v, n, "test/corpus/panic_payload_kinds.rs:65:18");
   });
   shown("array index", () => {
     if (n >= 3) {
-      throw $stringPanic(`index out of bounds: the len is 3 but the index is ${n}`);
+      throw $stringPanic(
+        `index out of bounds: the len is 3 but the index is ${n}`,
+        "test/corpus/panic_payload_kinds.rs:69:17",
+      );
     }
   });
   shown("expect dropping", () => {
@@ -109,48 +113,54 @@ function main() {
     );
   });
   shown("slice", () => {
-    $slice(v, 0, n);
+    $slice(v, 0, "test/corpus/panic_payload_kinds.rs:78:19", n);
   });
   shown("str", () => {
-    $strSlice(text, 0, 2);
+    $strSlice(text, 0, "test/corpus/panic_payload_kinds.rs:81:22", 2);
   });
   shown("unreachable", () => {
-    throw new Error("internal error: entered unreachable code");
+    throw $panic(
+      "internal error: entered unreachable code",
+      "test/corpus/panic_payload_kinds.rs:83:29",
+    );
   });
   shown("unreachable message", () => {
-    throw new Error("internal error: entered unreachable code: x");
+    throw $panic(
+      "internal error: entered unreachable code: x",
+      "test/corpus/panic_payload_kinds.rs:84:37",
+    );
   });
   shown("todo", () => {
-    throw new Error("not yet implemented");
+    throw $panic("not yet implemented", "test/corpus/panic_payload_kinds.rs:85:22");
   });
   shown("assert", () => {
     if (n !== 5) {
-      throw new Error("assertion failed: n == 5");
+      throw $panic("assertion failed: n == 5", "test/corpus/panic_payload_kinds.rs:86:24");
     }
   });
   shown("assert message", () => {
     if (n !== 5) {
-      throw new Error("msg");
+      throw $panic("msg", "test/corpus/panic_payload_kinds.rs:87:32");
     }
   });
   shown("assert formatted", () => {
     if (n !== 5) {
-      throw $stringPanic(`n is ${n}`);
+      throw $stringPanic(`n is ${n}`, "test/corpus/panic_payload_kinds.rs:88:34");
     }
   });
   shown("assert_eq", () => {
     if (n !== 5) {
-      $assertFailed("Eq", String(n), "5");
+      $assertFailed("Eq", String(n), "5", "test/corpus/panic_payload_kinds.rs:89:27");
     }
   });
   shown("divide", () => {
-    $div(1, 0, -2147483648) | 0;
+    $div(1, 0, "test/corpus/panic_payload_kinds.rs:91:17", -2147483648) | 0;
   });
   const cell = { value: 1 };
   shown("refcell", () => {
-    const _a = $borrowMut(cell, true);
+    const _a = $borrowMut(cell, "test/corpus/panic_payload_kinds.rs:97:27", true);
     try {
-      const _b = $borrowMut(cell, true);
+      const _b = $borrowMut(cell, "test/corpus/panic_payload_kinds.rs:98:27", true);
       $unborrow(_b);
     } finally {
       $unborrow(_a);
@@ -159,8 +169,9 @@ function main() {
   shown("resumed str", () => {
     const payload = $unwrapErr(
       $catchUnwind(() => {
-        throw new Error("plain");
+        throw $panic("plain", "test/corpus/panic_payload_kinds.rs:102:39");
       }),
+      "test/corpus/panic_payload_kinds.rs:102:56",
       undefined,
       (e) => "",
     );
@@ -169,8 +180,9 @@ function main() {
   shown("resumed String", () => {
     const payload = $unwrapErr(
       $catchUnwind(() => {
-        throw $stringPanic(`n = ${n}`);
+        throw $stringPanic(`n = ${n}`, "test/corpus/panic_payload_kinds.rs:106:39");
       }),
+      "test/corpus/panic_payload_kinds.rs:106:58",
       undefined,
       (e) => "",
     );

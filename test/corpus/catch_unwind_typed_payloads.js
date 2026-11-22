@@ -15,6 +15,7 @@ function thrown(value, TAny) {
     $catchUnwind(() => {
       throw $unwinding({ value, impl: TAny });
     }),
+    "test/corpus/catch_unwind_typed_payloads.rs:18:10",
     "it unwound",
   );
 }
@@ -51,7 +52,9 @@ function main() {
   const again = $catchUnwind(() => {
     throw $unwinding(payload);
   });
-  console.log(`${describe($unwrapErr(again, "resumed"))}`);
+  console.log(
+    `${describe($unwrapErr(again, "test/corpus/catch_unwind_typed_payloads.rs:45:37", "resumed"))}`,
+  );
 
   // `Box::downcast` takes the value out, or gives the box back.
   const any = thrown({ n: 9, why: "taken" }, codeAny);

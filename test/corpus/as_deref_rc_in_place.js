@@ -9,11 +9,11 @@ export function entry() {
 const fiberStack = [];
 
 function poppedWrong(dev, index, fiber) {
-  return dev && $index(fiberStack, index) !== fiber;
+  return dev && $index(fiberStack, index, "test/corpus/as_deref_rc_in_place.rs:32:61") !== fiber;
 }
 
 function isAt(stack, index, fiber) {
-  return $index(stack, index) === fiber;
+  return $index(stack, index, "test/corpus/as_deref_rc_in_place.rs:36:5") === fiber;
 }
 
 function main() {

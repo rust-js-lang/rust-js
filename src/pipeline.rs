@@ -550,6 +550,7 @@ pub fn lower_crate<'tcx>(
                 function,
                 jsx: cx.jsx,
                 dependencies: cx.dependencies.take(),
+                entry: None,
             }),
             None => cx
                 .lower_dictionary(def_id, &cache_of[&def_id])
@@ -561,6 +562,7 @@ pub fn lower_crate<'tcx>(
                         function,
                         jsx: cx.jsx,
                         dependencies: cx.dependencies.take(),
+                        entry: None,
                     }
                 }),
         };
@@ -695,6 +697,10 @@ pub fn lower_crate<'tcx>(
         .filter(|(id, _)| !derived.contains(id) || reached.contains(id))
     {
         let module = fns[&def_id].module;
+        // A binary's `main`'s start, which its module runs last (#2292).
+        if let Some(entry) = lowered.entry.take() {
+            pass.entry = Some((module, entry));
+        }
         // Each recursive type's function, and std order's dictionary (#944), it
         // reads: its module's, before it where it's the first (`recursive_fns`).
         let first = module_fns.written_before(def_id);
@@ -1125,6 +1131,9 @@ pub fn lower_crate<'tcx>(
                             .flatten()
                             .map(js::Item::Statements),
                     )
+                    // A binary's `main`'s start, after all its module makes
+                    // and runs as it loads (#2292).
+                    .chain((pass.entry.take_if(|(of, _)| *of == module)).map(|(_, entry)| js::Item::Statements(entry)))
                     .chain(
                         pass.functions
                             .swap_remove(&module)

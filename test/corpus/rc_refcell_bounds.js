@@ -57,7 +57,7 @@ function clearedBetween(listeners, clear) {
     if (i === 1) {
       clear();
     }
-    total = (total + $index(listeners, i)) >>> 0;
+    total = (total + $index(listeners, i, "test/corpus/rc_refcell_bounds.rs:64:36")) >>> 0;
   }
   return total;
 }
@@ -67,7 +67,7 @@ function reassigned(first, other, i) {
   let items = first;
   if (i < items.length) {
     items = other;
-    return $index(items, i);
+    return $index(items, i, "test/corpus/rc_refcell_bounds.rs:75:30");
   }
   return 0;
 }
@@ -83,7 +83,7 @@ function lentBetween(first, other, i) {
     const items$1 = { value: items };
     replace(items$1, other);
     items = items$1.value;
-    return $index(items, i);
+    return $index(items, i, "test/corpus/rc_refcell_bounds.rs:89:30");
   }
   return 0;
 }
@@ -96,7 +96,7 @@ function boxed(i) {
   }
   if (i < items.length) {
     clear();
-    return $index(items, i);
+    return $index(items, i, "test/corpus/rc_refcell_bounds.rs:100:30");
   }
   return 0;
 }
@@ -109,7 +109,7 @@ function doubled(i) {
   }
   if (i < items.length) {
     clear();
-    return $index(items, i);
+    return $index(items, i, "test/corpus/rc_refcell_bounds.rs:111:30");
   }
   return 0;
 }
@@ -117,12 +117,12 @@ function doubled(i) {
 function alternatingDeref_deref(alternating) {
   const n = alternating.next;
   alternating.next = (1 - n) >>> 0;
-  return $index(alternating.cells, n);
+  return $index(alternating.cells, n, "test/corpus/rc_refcell_bounds.rs:127:10");
 }
 
 function alternating(cells, i) {
   if (i < alternatingDeref_deref(cells).length) {
-    return $index(alternatingDeref_deref(cells), i);
+    return $index(alternatingDeref_deref(cells), i, "test/corpus/rc_refcell_bounds.rs:133:30");
   }
   return 0;
 }

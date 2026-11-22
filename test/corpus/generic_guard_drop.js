@@ -75,15 +75,25 @@ function holderDrop_drop(holder) {
 
 function main() {
   const cell = [1, 2];
-  take($borrow(cell, true), $unborrow);
-  console.log(`${length($borrow(cell, true), { deref: (x) => x }, $unborrow)}`);
+  take($borrow(cell, "test/corpus/generic_guard_drop.rs:48:15", true), $unborrow);
+  console.log(
+    `${length($borrow(cell, "test/corpus/generic_guard_drop.rs:49:32", true), { deref: (x) => x }, $unborrow)}`,
+  );
   if (cell.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/generic_guard_drop.rs:50:10");
   }
   cell.push(3);
-  console.log(`${length($borrowMut(cell, true), { deref: (x) => x }, $unborrow)}`);
-  shown($borrow(cell, true), { deref: (x) => x }, $unborrow);
-  console.log(`${firstOr($borrow(cell, true), 0, { deref: (x) => x }, $unborrow)}`);
+  console.log(
+    `${length($borrowMut(cell, "test/corpus/generic_guard_drop.rs:51:32", true), { deref: (x) => x }, $unborrow)}`,
+  );
+  shown(
+    $borrow(cell, "test/corpus/generic_guard_drop.rs:52:16", true),
+    { deref: (x) => x },
+    $unborrow,
+  );
+  console.log(
+    `${firstOr($borrow(cell, "test/corpus/generic_guard_drop.rs:53:34", true), 0, { deref: (x) => x }, $unborrow)}`,
+  );
   const log = [];
   const held = {
     items: [4, 5, 6],

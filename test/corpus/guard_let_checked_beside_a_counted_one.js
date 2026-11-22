@@ -9,7 +9,7 @@ export function entry() {
 function make(history) {
   function one(group) {
     if (history.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/guard_let_checked_beside_a_counted_one.rs:23:26");
     }
     const time = 3;
     return (
@@ -21,7 +21,11 @@ function make(history) {
     );
   }
   function each(f) {
-    const _held = $borrow(history, true);
+    const _held = $borrow(
+      history,
+      "test/corpus/guard_let_checked_beside_a_counted_one.rs:34:29",
+      true,
+    );
     try {
       f();
     } finally {
@@ -47,6 +51,8 @@ function main() {
       $unborrow(tryBorrowMut._0);
     }
   });
-  console.log(`${one("a")} ${$borrow(history).entries.length}`);
+  console.log(
+    `${one("a")} ${$borrow(history, "test/corpus/guard_let_checked_beside_a_counted_one.rs:50:58").entries.length}`,
+  );
 }
 //# sourceMappingURL=case.js.map

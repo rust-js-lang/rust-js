@@ -22,7 +22,7 @@ pub fn total() -> i32 {
 
 ```
 error[E0308]: mismatched types
- --> src/lib.rs:2:5
+ --> lib.rs:2:5
   |
 1 | pub fn total() -> i32 {
   |                   --- expected `i32` because of return type
@@ -51,7 +51,7 @@ pub fn spawn() {
 
 ```
 error: rust-js does not support calling `std::thread::spawn` (ADR 1126) yet
- --> src/lib.rs:2:5
+ --> lib.rs:2:5
   |
 2 |     std::thread::spawn(|| {});
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -81,7 +81,7 @@ pub fn address(value: &u32) -> usize {
 
 ```
 error: rust-js does not support addressable memory yet: a raw pointer to this place
- --> src/lib.rs:2:5
+ --> lib.rs:2:5
   |
 2 |     value as *const u32 as usize
   |     ^^^^^
@@ -141,7 +141,7 @@ unsafe extern "Rust" {
 
 ```
 error: rust-js: a JS function is bound as an ordinary function, `#[cfg_attr(rust_js, rust_js::link_name = "Math.max")] fn max(..) { unreachable!() }`, not in an `extern` block (ADR 0373)
- --> src/lib.rs:3:5
+ --> lib.rs:3:5
   |
 3 |     pub safe fn max(a: f64, b: f64) -> f64;
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

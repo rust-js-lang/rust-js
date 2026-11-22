@@ -11,6 +11,7 @@ import {
   $lent,
   $live,
   $next,
+  $panic,
   $repeating,
   $unwindsOn,
 } from "@rust-js/std";
@@ -121,7 +122,7 @@ function main() {
         $closing($iter(ds([1, 2, 3, 4])), $dropEach(dDrop_drop)),
         (a, b) => {
           if (b[0] === 3) {
-            throw new Error("cmp");
+            throw $panic("cmp", "test/corpus/is_sorted_of_items_with_a_destructor.rs:51:17");
           }
           return a[0] <= b[0];
         },

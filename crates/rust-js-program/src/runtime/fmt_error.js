@@ -82,12 +82,17 @@ function $fmtTextOr(make, written) {
 function $writeCheck(result) {
   if (result !== undefined) throw result;
 }
-// `to_string()` and `format!` of what fails: std's panic, `message`.
-function $fmtOrPanic(write, message) {
+// `to_string()` (`toString`) and `format!` (`format`) of what fails: std's
+// panic, where std raises it (#2292).
+const $fmtFailed = {
+  toString: "a Display implementation returned an error unexpectedly: Error",
+  format: "a formatting trait implementation returned an error when the underlying stream did not: Error",
+};
+function $fmtOrPanic(write, kind) {
   try {
     return write();
   } catch (error) {
-    if (error instanceof $FmtError) throw $stringPanic(message);
+    if (error instanceof $FmtError) throw $stringPanic($fmtFailed[kind], $stdSites[kind][0]);
     throw error;
   }
 }
@@ -99,18 +104,18 @@ function $fmtPrintFailed(error, text, stderr) {
   else $write(text + error.written, stderr);
   // std's `write_fmt` writes it `panic!("..")`, a literal: a `&str`, where
   // `format!`'s `expect` makes a `String` (ADR 0660, amended).
-  throw new Error("a formatting trait implementation returned an error when the underlying stream did not");
+  throw $panic("a formatting trait implementation returned an error when the underlying stream did not", $stdSites.printFailed[0]);
 }
 // `unwrap()` and `expect(..)` of one: `()`, or std's panic, of the error's
 // `{:?}`.
-function $writeExpect(result, message) {
+function $writeExpect(result, message, raisedAt) {
   if (result === undefined) return;
-  throw $stringPanic(message + ": " + (result instanceof $IoError ? $ioErrorDebug(result) : "Error"));
+  throw $stringPanic(message + ": " + (result instanceof $IoError ? $ioErrorDebug(result) : "Error"), raisedAt);
 }
 // `unwrap_err()` and `expect_err(..)` of one: its error, or std's panic, of
 // `Ok`'s `()`.
-function $writeExpectErr(result, message) {
-  if (result === undefined) throw $stringPanic(message + ": ()");
+function $writeExpectErr(result, message, raisedAt) {
+  if (result === undefined) throw $stringPanic(message + ": ()", raisedAt);
   return result;
 }
 // What a write to a `String` had written before it failed, taken from the

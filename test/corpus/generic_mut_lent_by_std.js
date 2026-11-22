@@ -21,6 +21,7 @@ import {
   $popIfCell,
   $rcDrop,
   $roomForHint,
+  $stdSites,
   $stepsOf,
   $strictlyEqual,
   $unwindsOn,
@@ -140,7 +141,7 @@ function heapPeekMut(h, v, TOrd) {
 }
 
 function dequeRangeMut(d, v) {
-  for (const x of $mutItems($viewRange(d, 0, 1))) {
+  for (const x of $mutItems($viewRange(d, 0, $stdSites.vecDequeRange[0], 1))) {
     x.value = v;
   }
 }

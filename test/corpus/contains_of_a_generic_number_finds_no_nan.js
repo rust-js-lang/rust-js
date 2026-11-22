@@ -19,16 +19,20 @@ function has(items, x, TPartialEq) {
 }
 
 function merge(values, into, TPartialEq) {
-  const borrow = $borrow(values, true);
+  const borrow = $borrow(
+    values,
+    "test/corpus/contains_of_a_generic_number_finds_no_nan.rs:15:21",
+    true,
+  );
   try {
     for (let i = 0; i < borrow.length; i++) {
       const v = borrow[i];
       if (into.borrows < 0) {
-        $alreadyMutablyBorrowed();
+        $alreadyMutablyBorrowed("test/corpus/contains_of_a_generic_number_finds_no_nan.rs:16:18");
       }
       if (into.indexOf(v) < 0) {
         if (into.borrows) {
-          $alreadyBorrowed();
+          $alreadyBorrowed("test/corpus/contains_of_a_generic_number_finds_no_nan.rs:17:18");
         }
         into.push(v);
       }
@@ -48,10 +52,14 @@ function main() {
     const f = [1.5, NaN];
     const g = [];
     merge(f, g, $strictlyEqual);
-    console.log(`${$borrow(g).length}`);
+    console.log(
+      `${$borrow(g, "test/corpus/contains_of_a_generic_number_finds_no_nan.rs:42:22").length}`,
+    );
     const u = [1, 2];
     merge(u, u, $strictlyEqual);
-    console.log(`[${$borrow(u).join(", ")}]`);
+    console.log(
+      `[${$borrow(u, "test/corpus/contains_of_a_generic_number_finds_no_nan.rs:45:24").join(", ")}]`,
+    );
     merge(f, f, $strictlyEqual);
   } catch (error) {
     throw $unwindsOn(error);

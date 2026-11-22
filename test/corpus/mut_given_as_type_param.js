@@ -41,7 +41,11 @@ function same(given) {
 const refMutTStableDeref = { Deref: () => ({ deref: (x) => x.value }) };
 
 function first(items, DStableDeref) {
-  return $index(DStableDeref.Deref().deref(items), 0);
+  return $index(
+    DStableDeref.Deref().deref(items),
+    0,
+    "test/corpus/mut_given_as_type_param.rs:40:10",
+  );
 }
 
 const $counterWrite_writeStr = (counter, s) => counterWrite_writeStr(counter.value, s);

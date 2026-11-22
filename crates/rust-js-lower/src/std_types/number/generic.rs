@@ -633,13 +633,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 /// `x.ilog10()`, `$ilog(x, 10)`, a number's or a BigInt's, of `base`;
-/// `checked_ilog10()`'s, `None` of what isn't positive.
+/// `checked_ilog10()`'s, `$checkedIlog`, `None` of what isn't positive,
+/// which raises no panic, so takes no location (#2292).
 pub(super) fn ilog(x: Expr, base: u32, checked: bool) -> Expr {
-    let mut given = vec![x, Expr::int(base.into())];
-    if checked {
-        given.push(Expr::bool(true));
-    }
-    Expr::call_helper("$ilog", given)
+    Expr::call_helper(
+        if checked { "$checkedIlog" } else { "$ilog" },
+        vec![x, Expr::int(base.into())],
+    )
 }
 
 /// Whether `n`, a `from`, is out of `to`'s range: of each bound `from` can

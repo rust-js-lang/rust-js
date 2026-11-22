@@ -7,6 +7,7 @@ import {
   $debugStr,
   $lines,
   $live,
+  $panic,
   $parseInt,
   $strSlice,
   $stringPanic,
@@ -31,7 +32,10 @@ function describe(name) {
   if (prefix == null) {
     // What the first line starts with.
     try {
-      throw new Error("Error\n    at one\n    at two");
+      throw $panic(
+        "Error\n    at one\n    at two",
+        "test/corpus/catch_unwind_irrefutable.rs:28:38",
+      );
     } catch (thrown) {
       $catchable(thrown);
       const x = $unwound(thrown);
@@ -53,7 +57,7 @@ function root(n) {
   let control;
   try {
     try {
-      throw new Error("control");
+      throw $panic("control", "test/corpus/catch_unwind_irrefutable.rs:44:38");
     } catch (thrown) {
       $catchable(thrown);
       const x = $unwound(thrown);
@@ -61,7 +65,7 @@ function root(n) {
     }
     console.log(`rendering ${n}`);
     if (n > 1) {
-      throw new Error("sample");
+      throw $panic("sample", "test/corpus/catch_unwind_irrefutable.rs:48:13");
     }
   } catch (thrown) {
     $catchable(thrown);
@@ -79,13 +83,13 @@ function root(n) {
  */
 function chain(k) {
   try {
-    throw new Error("abcdef");
+    throw $panic("abcdef", "test/corpus/catch_unwind_irrefutable.rs:61:34");
   } catch (thrown) {
     $catchable(thrown);
     const x = $unwound(thrown);
     const text = (x.impl.typeId() === "&str" ? x.value : undefined) ?? "";
     console.log("between");
-    const head = $strSlice(text, 0, k);
+    const head = $strSlice(text, 0, "test/corpus/catch_unwind_irrefutable.rs:64:21", k);
     let shout = $toUppercase(head);
     console.log(`shout ${shout}`);
     const after = (k * 2) >>> 0;
@@ -101,7 +105,7 @@ function chain(k) {
  */
 function renamed(k) {
   try {
-    throw new Error("abc");
+    throw $panic("abc", "test/corpus/catch_unwind_irrefutable.rs:76:34");
   } catch (thrown) {
     $catchable(thrown);
     let x = $unwound(thrown);
@@ -121,7 +125,7 @@ function renamed(k) {
 function hoisted(n) {
   const first = twice(n);
   const { _0: x } = $catchUnwind(() => {
-    throw new Error("hoisted");
+    throw $panic("hoisted", "test/corpus/catch_unwind_irrefutable.rs:89:34");
   });
   function twice(n) {
     return n * 2;
@@ -134,7 +138,7 @@ function hoisted(n) {
 /** A `?` in what follows returns from the `catch`. */
 function parsed(text) {
   try {
-    throw $stringPanic(text);
+    throw $stringPanic(text, "test/corpus/catch_unwind_irrefutable.rs:99:39");
   } catch (thrown) {
     $catchable(thrown);
     const x = $unwound(thrown);
@@ -159,7 +163,7 @@ function dropped(early) {
   let result;
   try {
     try {
-      throw new Error("dropped");
+      throw $panic("dropped", "test/corpus/catch_unwind_irrefutable.rs:110:34");
     } catch (thrown) {
       $catchable(thrown);
       const guard = "guard";
@@ -196,7 +200,7 @@ function looped() {
   const lens = [];
   for (let i = 0; i < 4; i++) {
     try {
-      throw new Error("loop");
+      throw $panic("loop", "test/corpus/catch_unwind_irrefutable.rs:125:38");
     } catch (thrown) {
       $catchable(thrown);
       if (i === 1) {
@@ -217,7 +221,7 @@ function looped() {
 /** Its value what follows gives. */
 function tail() {
   try {
-    throw new Error("tail");
+    throw $panic("tail", "test/corpus/catch_unwind_irrefutable.rs:140:34");
   } catch (thrown) {
     $catchable(thrown);
     const x = $unwound(thrown);
@@ -232,7 +236,7 @@ function tail() {
  */
 function fake(n) {
   if (n > 1) {
-    throw $stringPanic(`fake ${n}`);
+    throw $stringPanic(`fake ${n}`, "test/corpus/catch_unwind_irrefutable.rs:149:9");
   }
   return n;
 }

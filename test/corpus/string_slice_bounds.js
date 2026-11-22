@@ -8,7 +8,7 @@ export function entry() {
 
 function main() {
   const s = "héllo";
-  console.log(`${$strSlice(s, 3)}`);
-  console.log(`${$strSlice(s, 3, 20)}`);
+  console.log(`${$strSlice(s, 3, "test/corpus/string_slice_bounds.rs:5:22")}`);
+  console.log(`${$strSlice(s, 3, "test/corpus/string_slice_bounds.rs:6:22", 20)}`);
 }
 //# sourceMappingURL=case.js.map

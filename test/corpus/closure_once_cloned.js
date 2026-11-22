@@ -24,7 +24,7 @@ function main() {
     $cloning(
       () => {
         const v$1 = v;
-        v$1[$at(v$1, 0)] = (v$1[0] * 5) | 0;
+        v$1[$at(v$1, 0, "test/corpus/closure_once_cloned.rs:19:10")] = (v$1[0] * 5) | 0;
         return v$1;
       },
       () => make(v.slice()),

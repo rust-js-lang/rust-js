@@ -14,6 +14,7 @@ import {
   $mapEnds,
   $next,
   $nextBack,
+  $panic,
   $rev,
   $sizeHint,
   $splitBy,
@@ -214,7 +215,7 @@ function main() {
   const r = $catchUnwind(() => {
     for (const p of $lazySplitBy("1,2,3", (c) => {
       if (c === "3") {
-        throw new Error("at 3");
+        throw $panic("at 3", "test/corpus/str_searches_ask_a_closure_as_they_step.rs:148:17");
       }
       return c === ",";
     })) {

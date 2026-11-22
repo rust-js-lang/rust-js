@@ -79,7 +79,11 @@ function main() {
     `found again ${(first - base) >>> 0} ${(second - first) >>> 0} ${$ptrAdd(again, 1).value.b}`,
   );
   const n = { value: 7 };
-  const borrow = $borrow($storedValue(n, 4), true);
+  const borrow = $borrow(
+    $storedValue(n, 4),
+    "test/corpus/address_of_what_a_cell_lends.rs:62:20",
+    true,
+  );
   try {
     held = $addr($ptr(borrow, "value", 0), 4);
   } catch (error) {
@@ -91,7 +95,7 @@ function main() {
   let guard;
   try {
     if (one.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/address_of_what_a_cell_lends.rs:66:29");
     }
     guard = one;
   } catch (error) {
@@ -102,7 +106,7 @@ function main() {
   const own = $addr($ptrOuter(one, 4), 12);
   console.log(`object ${(lent - own) >>> 0} ${($addr($ptrTo(one), 8) - own) >>> 0}`);
   try {
-    p = $borrow(one, true);
+    p = $borrow(one, "test/corpus/address_of_what_a_cell_lends.rs:72:26", true);
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -123,7 +127,7 @@ function main() {
   }
   const m = { value: { a: 9, b: 10 } };
   try {
-    guard = $lock($storedValue(m, 4));
+    guard = $lock($storedValue(m, 4), "test/corpus/address_of_what_a_cell_lends.rs:83:26");
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -150,7 +154,7 @@ function main() {
   $unlock(guard);
   const r = { value: { a: 11, b: 12 } };
   try {
-    read = $lockRead($storedValue(r, 4));
+    read = $lockRead($storedValue(r, 4), "test/corpus/address_of_what_a_cell_lends.rs:88:29");
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -173,7 +177,7 @@ function main() {
   $unborrow(read);
   let written;
   try {
-    written = $lock($storedValue(r, 4));
+    written = $lock($storedValue(r, 4), "test/corpus/address_of_what_a_cell_lends.rs:92:37");
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -213,7 +217,10 @@ function main() {
   $storedIn(counter, "count", 0, 4);
   let count$1;
   try {
-    count$1 = $borrow($fieldCell(counter, "count"));
+    count$1 = $borrow(
+      $fieldCell(counter, "count"),
+      "test/corpus/address_of_what_a_cell_lends.rs:106:35",
+    );
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -230,7 +237,10 @@ function main() {
   $storedIn(counter, "count", 0, 4);
   let borrowMut;
   try {
-    borrowMut = $borrowMut($fieldCell(counter, "count"));
+    borrowMut = $borrowMut(
+      $fieldCell(counter, "count"),
+      "test/corpus/address_of_what_a_cell_lends.rs:110:20",
+    );
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -240,18 +250,24 @@ function main() {
   $storedIn(counter, "count", 0, 4);
   const tag = counter.tag;
   try {
-    const value = $borrow($fieldCell(counter, "count"));
+    const value = $borrow(
+      $fieldCell(counter, "count"),
+      "test/corpus/address_of_what_a_cell_lends.rs:115:23",
+    );
     const seen = counter.seen;
     if (one.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/address_of_what_a_cell_lends.rs:117:13");
     }
     const props = { ...c.value };
     const value$1 = $storedValue(items, 4).value;
     const value$2 = $storedValue(shared, 4).value;
-    const value$3 = $lock($storedValue(m, 4));
+    const value$3 = $lock($storedValue(m, 4), "test/corpus/address_of_what_a_cell_lends.rs:119:63");
     const value$4 = (((value$1[0].a + value$2[0].a) & 255) + value$3.value.a) & 255;
     try {
-      const value$1 = $lockRead($storedValue(r, 4));
+      const value$1 = $lockRead(
+        $storedValue(r, 4),
+        "test/corpus/address_of_what_a_cell_lends.rs:119:85",
+      );
       try {
         console.log(
           `${tag} ${value.value} ${seen} ${pDebug_fmt(one)} ${pDebug_fmt({ ...props })} ${(value$4 + value$1.value.a) & 255}`,

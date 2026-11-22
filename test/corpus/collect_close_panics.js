@@ -12,6 +12,7 @@ import {
   $iter,
   $lazyRange,
   $lazyZip,
+  $panic,
   $rev,
 } from "@rust-js/std";
 
@@ -22,7 +23,7 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 3) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/collect_close_panics.rs:14:13");
   }
 }
 
@@ -74,7 +75,7 @@ function main() {
         $closing($iter([[4], [5], [6], [7]]), $dropEach(dDrop_drop)),
         (d) => {
           if (d[0] === 6) {
-            throw new Error("filter");
+            throw $panic("filter", "test/corpus/collect_close_panics.rs:47:21");
           }
           return true;
         },

@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "get-or-init-reentrant",
     breaks: "an init that sets the cell itself is overwritten, not std's panic",
     file: "crates/rust-js-program/src/runtime/get_or_init.js",
-    find: '    if (cell.value !== undefined) throw new Error("reentrant init");\n',
+    find: '    if (cell.value !== undefined) throw $panic("reentrant init", $stdSites.onceCellReentrant[0]);\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "once_cell_reentrant"],
   },

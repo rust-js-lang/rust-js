@@ -28,7 +28,8 @@ function root(n) {
 }
 
 function entangle(root, index, lane) {
-  root.lanes[$at(root.lanes, index)] = (root.lanes[index] | lane) >>> 0;
+  root.lanes[$at(root.lanes, index, "test/corpus/refcell_vec_element_places.rs:28:28")] =
+    (root.lanes[index] | lane) >>> 0;
 }
 
 function entangleHeld(root, lanes) {
@@ -42,7 +43,7 @@ function entangleHeld(root, lanes) {
 
 function hide(root, index, update) {
   const hidden = root.hidden;
-  $index(hidden, index);
+  $index(hidden, index, "test/corpus/refcell_vec_element_places.rs:42:22");
   if (hidden[index] == null) {
     hidden[index] = [update];
   } else {
@@ -53,7 +54,7 @@ function hide(root, index, update) {
 
 function hideAsMut(root, index, update) {
   const hidden = root.hidden;
-  $index(hidden, index);
+  $index(hidden, index, "test/corpus/refcell_vec_element_places.rs:50:17");
   const list = hidden[index];
   if (list == null) {
     hidden[index] = [update, update];
@@ -65,7 +66,7 @@ function hideAsMut(root, index, update) {
 function bump(root, index) {
   const lanes = root.lanes;
   const index$1 = index;
-  $index(lanes, index$1);
+  $index(lanes, index$1, "test/corpus/refcell_vec_element_places.rs:58:27");
   const first = {
     get value() {
       return lanes[index$1];
@@ -80,30 +81,33 @@ function bump(root, index) {
 }
 
 function bumpPushed(v, index) {
-  v[$at(v, index)] = (v[index] + 100) >>> 0;
+  v[$at(v, index, "test/corpus/refcell_vec_element_places.rs:65:6")] = (v[index] + 100) >>> 0;
   v.push(0);
 }
 
 function movedRoot(root, other) {
   const root$1 = root;
   root = other;
-  root$1.lanes[$at(root$1.lanes, 0)] = (root$1.lanes[0] | 4) >>> 0;
-  root.lanes[$at(root.lanes, 1)] = (root.lanes[1] | 8) >>> 0;
+  root$1.lanes[$at(root$1.lanes, 0, "test/corpus/refcell_vec_element_places.rs:70:28")] =
+    (root$1.lanes[0] | 4) >>> 0;
+  root.lanes[$at(root.lanes, 1, "test/corpus/refcell_vec_element_places.rs:74:28")] =
+    (root.lanes[1] | 8) >>> 0;
 }
 
 function count(root, index) {
   if (root.counts.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_vec_element_places.rs:78:17");
   }
   const borrowMut = root.counts;
-  borrowMut[$at(borrowMut, index)] = (borrowMut[index] + 1) & 255;
+  borrowMut[$at(borrowMut, index, "test/corpus/refcell_vec_element_places.rs:78:29")] =
+    (borrowMut[index] + 1) & 255;
 }
 
 function meets(root) {
-  const held = $borrowMut(root.counts, true);
+  const held = $borrowMut(root.counts, "test/corpus/refcell_vec_element_places.rs:82:28", true);
   try {
     count(root, 0);
-    return $index(held, 0);
+    return $index(held, 0, "test/corpus/refcell_vec_element_places.rs:84:9");
   } finally {
     $unborrow(held);
   }
@@ -138,6 +142,8 @@ function main() {
   console.log(`${out.TAG === "Err"}`);
   out = $catchUnwind(() => meets(r));
   count(r, 1);
-  console.log(`${out.TAG === "Err"} [${$borrow(r.counts).join(", ")}]`);
+  console.log(
+    `${out.TAG === "Err"} [${$borrow(r.counts, "test/corpus/refcell_vec_element_places.rs:114:48").join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

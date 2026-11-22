@@ -12,6 +12,7 @@ import {
   $iterator,
   $live,
   $next,
+  $panic,
   $rangeInclusiveNext,
   $reserveHint,
   $sortedKeys,
@@ -59,7 +60,7 @@ function upIterator_fold(up, init, f, dropB, dropF) {
 
 function downIterator_next(down) {
   if (down.n === 7) {
-    throw new Error("seven");
+    throw $panic("seven", "test/corpus/extend_through_a_dictionary_drops_its_iterator.rs:49:9");
   }
   if (down.n > 0) {
     down.n--;

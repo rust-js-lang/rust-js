@@ -48,9 +48,11 @@ function main() {
   const plain = make(count$1);
   const held = $clone(plain);
   const held2 = held == null ? held : $clone(held);
-  const value = $unwrap(held)();
+  const value = $unwrap(held, "test/corpus/closure_cloned_in_a_holder.rs:39:37")();
   const f = held2 == null ? held2 : $clone(held2);
-  console.log(`${value} ${$unwrap(f != null ? f() : undefined)}`);
+  console.log(
+    `${value} ${$unwrap(f != null ? f() : undefined, "test/corpus/closure_cloned_in_a_holder.rs:39:72")}`,
+  );
 
   const maybe = counter();
   const copied = maybe == null ? maybe : $clone(maybe);
@@ -60,7 +62,9 @@ function main() {
   const f$2 = copied == null ? copied : $clone(copied);
   const value$2 = f$2 != null ? f$2() : undefined;
   const f$3 = cloned == null ? cloned : $clone(cloned);
-  console.log(`${value$1} ${value$2} ${$unwrap(f$3 != null ? f$3() : undefined)}`);
+  console.log(
+    `${value$1} ${value$2} ${$unwrap(f$3 != null ? f$3() : undefined, "test/corpus/closure_cloned_in_a_holder.rs:48:33")}`,
+  );
 
   const pair = [counter(), 1];
   const other = $clone(pair[0]);
@@ -70,8 +74,12 @@ function main() {
   const ok = { TAG: "Ok", _0: texts() };
   const ok2 = ok.TAG === "Ok" ? { ...ok, _0: $clone(ok._0) } : ok;
   console.log(
-    `${$unwrapOk(ok.TAG === "Ok" ? { TAG: "Ok", _0: ok._0() } : ok)} ${$unwrapOk(
+    `${$unwrapOk(
+      ok.TAG === "Ok" ? { TAG: "Ok", _0: ok._0() } : ok,
+      "test/corpus/closure_cloned_in_a_holder.rs:58:43",
+    )} ${$unwrapOk(
       ok2.TAG === "Ok" ? { TAG: "Ok", _0: ok2._0() } : ok2,
+      "test/corpus/closure_cloned_in_a_holder.rs:58:74",
     )}`,
   );
 
@@ -81,7 +89,9 @@ function main() {
 
   const many = [texts()];
   const many2 = many.map((item) => $clone(item));
-  console.log(`${$index(many, 0)()} ${$index(many, 0)()} ${$index(many2, 0)()}`);
+  console.log(
+    `${$index(many, 0, "test/corpus/closure_cloned_in_a_holder.rs:66:30")()} ${$index(many, 0, "test/corpus/closure_cloned_in_a_holder.rs:66:41")()} ${$index(many2, 0, "test/corpus/closure_cloned_in_a_holder.rs:66:53")()}`,
+  );
 
   const boxed = texts();
   const boxed2 = $clone(boxed);

@@ -39,7 +39,7 @@ export function thrown(tag) {
       break;
     default: /* "x" */
       // Never.
-      throw $stringPanic(`no ${tag}`);
+      throw $stringPanic(`no ${tag}`, "test/corpus/match_arm_comments_kept.rs:40:24");
   }
   return tag;
 }

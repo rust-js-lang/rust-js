@@ -252,7 +252,7 @@ export function boxes() {
   settle(slot$1);
   stats.last = slot$1.value;
   const counts = [1, 2, 3];
-  $index(counts, 1);
+  $index(counts, 1, "examples/values.rs:190:21");
   const count$3 = { value: counts[1] };
   bump(count$3, 40);
   counts[1] = count$3.value;

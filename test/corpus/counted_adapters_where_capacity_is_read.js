@@ -105,7 +105,7 @@ function main() {
   const r = $grownVec($roomForHint($rev($mapEnds(s, (x) => (x + 1) >>> 0)), 4, false), (grown) =>
     Array.from(grown),
   );
-  const value$1 = $slice(r, 0, 3);
+  const value$1 = $slice(r, 0, "test/corpus/counted_adapters_where_capacity_is_read.rs:43:39", 3);
   const arg$3 = $capacity(r, 4);
   console.log(`${r.length} [${value$1.join(", ")}] ${arg$3}`);
   const t = $skipping($closing($iter([[7], [8], [9]]), $dropEach(loudDrop_drop)), 1, loudDrop_drop);

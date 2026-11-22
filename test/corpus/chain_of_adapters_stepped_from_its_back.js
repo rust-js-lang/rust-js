@@ -16,6 +16,7 @@ import {
   $mapEnds,
   $next,
   $nextBack,
+  $panic,
   $range,
   $rev,
   $tryOf,
@@ -446,7 +447,7 @@ function main() {
       $closing($iter(ds(1)), $dropEach(dDrop_drop)),
       (d) => {
         if (d[0] === 2) {
-          throw new Error("filter");
+          throw $panic("filter", "test/corpus/chain_of_adapters_stepped_from_its_back.rs:64:13");
         }
         return true;
       },

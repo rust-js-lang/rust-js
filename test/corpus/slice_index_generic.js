@@ -26,7 +26,7 @@ function main() {
   smallIndexMutI_indexMut(s, 1, $sliceIndexes.item).value = 20;
   smallIndexMutI_indexMut(s, { start: 2 }, $sliceIndexes.from).value.sort((a, b) => $cmp(b, a));
   const value = smallIndexMutI_indexMut(s, { end: 1 }, $sliceIndexes.toInclusive).value;
-  value[0] = (value[$at(value, 0)] + 5) >>> 0;
+  value[0] = (value[$at(value, 0, "test/corpus/slice_index_generic.rs:29:5")] + 5) >>> 0;
   const value$1 = smallIndexI_index(s, 1, $sliceIndexes.item);
   const value$2 = smallIndexI_index(s, { start: 1, end: 3 }, $sliceIndexes.range);
   const value$3 = smallIndexI_index(s, undefined, $sliceIndexes.full);

@@ -46,6 +46,7 @@ function main() {
 
   const owned = $unwrapOk(
     $cstringNew(Array.from(new TextEncoder().encode("raw bytes"))),
+    "test/corpus/c_string_pointers.rs:30:43",
     undefined,
     (e) => $debugCStrError(e, "nul"),
   );

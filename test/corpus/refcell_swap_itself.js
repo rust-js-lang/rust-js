@@ -14,7 +14,9 @@ function main() {
   const cell = { value: 1 };
   const other = { value: 2 };
   swap(cell, other);
-  console.log(`${$borrow(cell).value} ${$borrow(other).value}`);
+  console.log(
+    `${$borrow(cell, "test/corpus/refcell_swap_itself.rs:15:28").value} ${$borrow(other, "test/corpus/refcell_swap_itself.rs:15:44").value}`,
+  );
   swap(cell, cell);
 }
 //# sourceMappingURL=case.js.map

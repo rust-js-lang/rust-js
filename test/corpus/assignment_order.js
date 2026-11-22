@@ -45,7 +45,10 @@ function first(ps) {
   console.log("first: place");
   const length = ps.length;
   if (0 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/assignment_order.rs:55:10",
+    );
   }
   return ps[0];
 }
@@ -53,17 +56,17 @@ function first(ps) {
 function set(r) {
   const value$2 = value("through a reference", 8);
   const value$1 = index("through a reference", 0);
-  r[$at(r, value$1)] = value$2;
+  r[$at(r, value$1, "test/corpus/assignment_order.rs:59:5")] = value$2;
 }
 
 function main() {
   const v = [0, 0];
   const value$1 = value("vec =", 1);
   const index$1 = index("vec =", 0);
-  v[$at(v, index$1)] = value$1;
+  v[$at(v, index$1, "test/corpus/assignment_order.rs:64:6")] = value$1;
   const value$3 = value("vec +=", 2);
   const index$2 = index("vec +=", 1);
-  $index(v, index$2);
+  $index(v, index$2, "test/corpus/assignment_order.rs:65:6");
   const value$2 = {
     get value() {
       return v[index$2];
@@ -76,30 +79,33 @@ function main() {
   let a = [0, 0];
   const value$5 = value("array =", 3);
   const value$4 = index("array =", 0);
-  a[$at(a, value$4)] = value$5;
+  a[$at(a, value$4, "test/corpus/assignment_order.rs:67:5")] = value$5;
   const value$7 = value("array +=", 4);
   const value$6 = index("array +=", 1);
-  const value$8 = (a[$at(a, value$6)] + value$7) | 0;
+  const value$8 = (a[$at(a, value$6, "test/corpus/assignment_order.rs:68:5")] + value$7) | 0;
   a[value$6] = value$8;
   const ps = [{ x: 0 }];
   const value$9 = value("field =", 5);
-  $index(ps, index("field =", 0)).x = value$9;
+  $index(ps, index("field =", 0), "test/corpus/assignment_order.rs:70:7").x = value$9;
   const value$10 = value("field +=", 6);
-  const p = $index(ps, index("field +=", 0));
+  const p = $index(ps, index("field +=", 0), "test/corpus/assignment_order.rs:71:7");
   p.x = (p.x + value$10) | 0;
   const totals = [[0]];
-  totalAddAssignI32_addAssign($index(totals, index("AddAssign", 0)), value("AddAssign", 7));
+  totalAddAssignI32_addAssign(
+    $index(totals, index("AddAssign", 0), "test/corpus/assignment_order.rs:73:11"),
+    value("AddAssign", 7),
+  );
   set(a);
   const rows = [[0, 0]];
   const value$11 = value("rows", 9);
-  const items = $index(rows, index("rows row", 0));
+  const items = $index(rows, index("rows row", 0), "test/corpus/assignment_order.rs:76:9");
   const index$3 = index("rows column", 1);
-  items[$at(items, index$3)] = value$11;
+  items[$at(items, index$3, "test/corpus/assignment_order.rs:76:31")] = value$11;
   // A field of what a call gives: the value, then the call (rd633).
-  const tenth = P.tenth($index(ps, 0));
+  const tenth = P.tenth($index(ps, 0, "test/corpus/assignment_order.rs:78:26"));
   first(ps).x = tenth;
-  const value$12 = $index(ps, 0).x;
-  const arg = $index(totals, 0);
+  const value$12 = $index(ps, 0, "test/corpus/assignment_order.rs:79:48").x;
+  const arg = $index(totals, 0, "test/corpus/assignment_order.rs:79:61");
   console.log(
     `[${v.join(", ")}] [${a.join(", ")}] ${value$12} ${totalDebug_fmt(arg)} [${rows.map((item) => `[${item.join(", ")}]`).join(", ")}]`,
   );
@@ -113,18 +119,20 @@ function main() {
   const w = [0];
   const value$14 = y;
   y = 2;
-  w[$at(w, 0)] = value$14;
+  w[$at(w, 0, "test/corpus/assignment_order.rs:86:6")] = value$14;
   let z = 1;
   const u = [0];
   const value$15 = z;
   z = 2;
-  u[$at(u, 0)] = (u[0] + value$15) | 0;
+  u[$at(u, 0, "test/corpus/assignment_order.rs:89:6")] = (u[0] + value$15) | 0;
   const c = { n: 1 };
   const t = [0];
   const n = c.n;
   const index$4 = bump(c);
-  t[$at(t, index$4)] = n;
-  console.log(`${one[0]} ${x} ${$index(w, 0)} ${y} ${$index(u, 0)} ${z} ${$index(t, 0)} ${c.n}`);
+  t[$at(t, index$4, "test/corpus/assignment_order.rs:92:6")] = n;
+  console.log(
+    `${one[0]} ${x} ${$index(w, 0, "test/corpus/assignment_order.rs:93:53")} ${y} ${$index(u, 0, "test/corpus/assignment_order.rs:93:59")} ${z} ${$index(t, 0, "test/corpus/assignment_order.rs:93:65")} ${c.n}`,
+  );
   // `+=` reads its place after the value, which may change it. Found in
   // review.
   const d = { n: 1 };
@@ -146,21 +154,21 @@ function main() {
   let cur = a;
   const value$18 = cur;
   cur = b;
-  value$18[$at(value$18, 0)] = (value$18[0] + 1) | 0;
+  value$18[$at(value$18, 0, "test/corpus/assignment_order.rs:110:8")] = (value$18[0] + 1) | 0;
   console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
   a = [1, 2];
   b = [10, 20];
   cur = a;
   const value$19 = cur;
   cur = b;
-  value$19[$at(value$19, 0)] = 7;
+  value$19[$at(value$19, 0, "test/corpus/assignment_order.rs:117:8")] = 7;
   console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
   a = [1, 2];
   b = [10, 20];
   cur = a;
   const value$20 = cur;
   cur = b;
-  value$20[$at(value$20, 0)] = (value$20[0] + 1) | 0;
+  value$20[$at(value$20, 0, "test/corpus/assignment_order.rs:124:21")] = (value$20[0] + 1) | 0;
   console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
   a = [1, 2].slice();
   b = [10, 20].slice();
@@ -170,6 +178,6 @@ function main() {
   const empty = [];
   const value$21 = value("out of bounds", 8);
   const index$5 = index("out of bounds", 0);
-  empty[$at(empty, index$5)] = (value$21 << 24) >> 24;
+  empty[$at(empty, index$5, "test/corpus/assignment_order.rs:139:10")] = (value$21 << 24) >> 24;
 }
 //# sourceMappingURL=case.js.map

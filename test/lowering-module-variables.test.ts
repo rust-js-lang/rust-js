@@ -298,7 +298,7 @@ pub fn total() -> usize {
   expect(callbacksJs).toContain("  callbacks = [];\n");
   expect(readFileSync(join(dir, "users.js"), "utf8")).toContain("  $assign(callbacks, [value]);\n");
   // Another module's, as its import reads it (ADR 0866, amended).
-  expect(readFileSync(join(dir, "users.js"), "utf8")).toContain("  return $withBorrow(callbacks, (items) => items.length, true);\n");
+  expect(readFileSync(join(dir, "users.js"), "utf8")).toContain("  return $withBorrow(callbacks, (items) => items.length, $stdSites.localKeyWithBorrow[0], true);\n");
   expect(readFileSync(join(dir, "callbacks.d.ts"), "utf8")).toContain("export let callbacks: number[];\n");
   writeFileSync(join(dir, "reader.js"), 'import { callbacks } from "./callbacks.js";\nexport const read = () => callbacks;\n');
   const reader = await import(join(dir, "reader.js"));

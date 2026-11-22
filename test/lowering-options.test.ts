@@ -362,7 +362,7 @@ pub fn replaced_any(items: &mut Vec<u32>, i: usize, x: u32) -> u32 {
   expect(js).toContain("  return items[0] ?? null;\n");
   expect(js).toContain("    return first;\n");
   expect(js).toContain("export function replaced(items, i, x) {\n  if (i < items.length) {\n    const old = items[i];\n    items[i] = x;\n");
-  expect(js).toContain("export function replacedAny(items, i, x) {\n  $index(items, i);\n");
+  expect(js).toContain("export function replacedAny(items, i, x) {\n  $index(items, i, \"lib.rs:36:33\");\n");
   const lib = await import(join(dir, "lib.js"));
   const heap = [1, 2, 3];
   expect([lib.pop(heap), heap, lib.pop([4]), lib.pop([]), lib.first([]), lib.first([5]), lib.kept([])]).toEqual([1, [3, 2], 4, null, null, 5, null]);

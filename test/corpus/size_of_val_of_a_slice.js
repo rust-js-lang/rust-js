@@ -17,13 +17,17 @@ export function entry() {
 
 function words(src) {
   if (src.length !== 8) {
-    $assertFailed("Eq", String(src.length), "8");
+    $assertFailed("Eq", String(src.length), "8", "test/corpus/size_of_val_of_a_slice.rs:8:5");
   }
   const dst = [0, 0];
-  for (const [out, chunk] of $lazyZip($iter($mutItems(dst)), $iter($chunksExact(src, 4)))) {
+  for (const [out, chunk] of $lazyZip(
+    $iter($mutItems(dst)),
+    $iter($chunksExact(src, 4, "test/corpus/size_of_val_of_a_slice.rs:10:48")),
+  )) {
     out.value = $fromBytes(
       $unwrapOk(
         chunk.length === 4 ? { TAG: "Ok", _0: chunk.slice() } : { TAG: "Err" },
+        "test/corpus/size_of_val_of_a_slice.rs:11:52",
         undefined,
         (e) => "TryFromSliceError(())",
       ),

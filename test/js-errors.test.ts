@@ -254,7 +254,7 @@ js::export_default!(INTERNALS);
   expect(js).toContain("e.errors.length");
   // The cell is the array, borrowed unchecked: no borrow meets another.
   expect(js).toContain("const internals = { thrownErrors: [] };");
-  expect(js).toContain("aggregateErrors($unwrap(internals.thrownErrors))");
+  expect(js).toContain("aggregateErrors($unwrap(internals.thrownErrors, \"lib.rs:25:88\"))");
   expect(js).not.toContain("$borrow");
   const lib = await import(join(dir, "lib.js"));
   const [a, b] = [new Error("a"), "b"];

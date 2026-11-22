@@ -24,7 +24,7 @@ function second(targets) {
   if (targets.length > 2) {
     targets.splice(1, 0, 5);
     if (2 >= targets.length) {
-      $removeOutOfBounds(targets, 2);
+      $removeOutOfBounds(targets, 2, "test/corpus/vec_remove_insert_in_bounds.rs:26:24");
     }
     return targets.splice(2, 1)[0];
   }
@@ -48,14 +48,14 @@ function picked(targets) {
 // Past what its test shows of the length: checked, and it panics.
 function pastLeast(targets) {
   if (targets.length > 2) {
-    $insertAt(targets, 5, 1);
+    $insertAt(targets, 5, 1, "test/corpus/vec_remove_insert_in_bounds.rs:48:17");
   }
 }
 
 function unknown(targets, i) {
-  $insertAt(targets, i, 7);
+  $insertAt(targets, i, 7, "test/corpus/vec_remove_insert_in_bounds.rs:53:13");
   if (i >= targets.length) {
-    $removeOutOfBounds(targets, i);
+    $removeOutOfBounds(targets, i, "test/corpus/vec_remove_insert_in_bounds.rs:54:13");
   }
   return targets.splice(i, 1)[0];
 }

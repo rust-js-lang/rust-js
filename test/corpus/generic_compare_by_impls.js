@@ -257,7 +257,9 @@ function main() {
   const pop = $heapPop(heap, ownOpsPartialOrd);
   console.log(`${pop == null ? "None" : `Some(${ownOpsDebug_fmt(pop)})`}`);
   console.log("concrete clamp own");
-  console.log(`${ownOpsDebug_fmt($clampBy([0], [1], [3], ownOpsPartialOrd))}`);
+  console.log(
+    `${ownOpsDebug_fmt($clampBy([0], [1], [3], ownOpsPartialOrd, "test/corpus/generic_compare_by_impls.rs:197:32"))}`,
+  );
 
   const x = [1];
   const y = [2];

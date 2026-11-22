@@ -65,7 +65,12 @@ function transform(s, withWord, boundary, options) {
           if (!firstWord) {
             f.write(boundary(options));
           }
-          f.write(withWord($strSlice(word, init, nextI), options));
+          f.write(
+            withWord(
+              $strSlice(word, init, "test/corpus/writer_callables.rs:54:36", nextI),
+              options,
+            ),
+          );
           firstWord = false;
           init = nextI;
           mode = "Boundary";
@@ -75,7 +80,9 @@ function transform(s, withWord, boundary, options) {
           } else {
             firstWord = false;
           }
-          f.write(withWord($strSlice(word, init, i), options));
+          f.write(
+            withWord($strSlice(word, init, "test/corpus/writer_callables.rs:64:36", i), options),
+          );
           init = i;
           mode = "Boundary";
         } else {
@@ -87,7 +94,7 @@ function transform(s, withWord, boundary, options) {
         } else {
           firstWord = false;
         }
-        f.write(withWord($strSlice(word, init), options));
+        f.write(withWord($strSlice(word, init, "test/corpus/writer_callables.rs:76:32"), options));
         break;
       }
     }

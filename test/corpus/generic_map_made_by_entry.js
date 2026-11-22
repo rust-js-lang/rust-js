@@ -133,9 +133,9 @@ function main() {
     12,
     "general8",
   );
-  const value = $index(maps, 0);
+  const value = $index(maps, 0, "test/corpus/generic_map_made_by_entry.rs:36:26");
   const merged = new ($btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap))(value);
-  const value$1 = $index(maps, 1);
+  const value$1 = $index(maps, 1, "test/corpus/generic_map_made_by_entry.rs:37:23");
   $extendMap(
     merged,
     $sortedEntries(

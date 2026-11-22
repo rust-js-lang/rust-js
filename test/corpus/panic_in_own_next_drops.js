@@ -12,6 +12,7 @@ import {
   $lastDropping,
   $live,
   $next,
+  $panic,
   $rangeNext,
   $roomFor,
   $unwindsOn,
@@ -29,7 +30,7 @@ function panickyIterator_next(panicky) {
   const next = $next(panicky.items);
   if (next != null && next[0] === panicky.at) {
     try {
-      throw new Error("boom");
+      throw $panic("boom", "test/corpus/panic_in_own_next_drops.rs:27:13");
     } catch (error) {
       $cleanup(() => {
         if (next != null) {
@@ -49,14 +50,14 @@ function questionedIterator_next(questioned) {
   }
   if (d[0] === questioned.at) {
     dDrop_drop(d);
-    throw new Error("boom");
+    throw $panic("boom", "test/corpus/panic_in_own_next_drops.rs:45:13");
   }
   return d;
 }
 
 function madeIterator_next(made) {
   if (made.at === made.upto) {
-    throw new Error("boom");
+    throw $panic("boom", "test/corpus/panic_in_own_next_drops.rs:62:13");
   }
   made.at = (made.at + 1) >>> 0;
   return [made.at];
@@ -172,7 +173,7 @@ function main() {
             ((d) => {
               try {
                 if (d[0] === 62) {
-                  throw new Error("62");
+                  throw $panic("62", "test/corpus/panic_in_own_next_drops.rs:115:21");
                 }
                 return [[(d[0] + 100) >>> 0]];
               } catch (error) {
@@ -215,7 +216,7 @@ function main() {
     }
     function inspect(d) {
       if (d[0] === 72) {
-        throw new Error("72");
+        throw $panic("72", "test/corpus/panic_in_own_next_drops.rs:128:21");
       }
     }
     const x = $foldDropping(
@@ -257,7 +258,7 @@ function main() {
     const x = $foldDropping(
       "abcd"[Symbol.iterator]().map((c) => {
         if (c === "c") {
-          throw new Error("c");
+          throw $panic("c", "test/corpus/panic_in_own_next_drops.rs:142:21");
         }
         return c.codePointAt(0);
       }),

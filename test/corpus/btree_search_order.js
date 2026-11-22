@@ -14,6 +14,7 @@ import {
   $ordMap,
   $ordTreeMap,
   $ordTreeSet,
+  $panic,
   $partialEq,
   $partialOrd,
   $remove,
@@ -62,7 +63,7 @@ function dOrd_cmp(d, other) {
   if (n > 0) {
     boom = n - 1;
     if (n === 1) {
-      throw new Error("cmp");
+      throw $panic("cmp", "test/corpus/btree_search_order.rs:45:17");
     }
   }
   return $cmp(d[0], other[0]);

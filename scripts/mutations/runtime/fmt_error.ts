@@ -3,10 +3,18 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "to-string-site-of-format",
+    breaks: "a failing `Display`'s `to_string()` names `format!`'s line",
+    file: "crates/rust-js-program/src/runtime/fmt_error.js",
+    find: "$stdSites[kind][0]",
+    replace: "$stdSites.format[0]",
+    tests: ["test/binaries.test.ts", "-t", "writer that fails"],
+  },
+  {
     name: "write-expect-err-of-ok-silent",
     breaks: "`unwrap_err()` and `expect_err(..)` of a write that didn't fail give `undefined`, not std's panic",
     file: "crates/rust-js-program/src/runtime/fmt_error.js",
-    find: '  if (result === undefined) throw $stringPanic(message + ": ()");\n',
+    find: '  if (result === undefined) throw $stringPanic(message + ": ()", raisedAt);\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fmt_result_unwrap_err"],
   },
@@ -14,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "write-expect-err-message-unsuffixed",
     breaks: "`expect_err(msg)` of a write that didn't fail panics `msg`, not std's `msg: ()`",
     file: "crates/rust-js-program/src/runtime/fmt_error.js",
-    find: '  if (result === undefined) throw $stringPanic(message + ": ()");\n',
-    replace: '  if (result === undefined) throw $stringPanic(message);\n',
+    find: '  if (result === undefined) throw $stringPanic(message + ": ()", raisedAt);\n',
+    replace: '  if (result === undefined) throw $stringPanic(message, raisedAt);\n',
     tests: ["test/corpus.test.ts", "-t", "^fmt_result_unwrap_err"],
   },
   {
@@ -38,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "write-expect-io-plain",
     breaks: "`expect` of an `io::Result<()>` that's an `Err` panics with `: Error`, not its error's `{:?}`",
     file: "crates/rust-js-program/src/runtime/fmt_error.js",
-    find: "  throw $stringPanic(message + \": \" + (result instanceof $IoError ? $ioErrorDebug(result) : \"Error\"));\n",
-    replace: "  throw $stringPanic(message + \": Error\");\n",
+    find: "  throw $stringPanic(message + \": \" + (result instanceof $IoError ? $ioErrorDebug(result) : \"Error\"), raisedAt);\n",
+    replace: "  throw $stringPanic(message + \": Error\", raisedAt);\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result_expect.rs$"],
   },
   {

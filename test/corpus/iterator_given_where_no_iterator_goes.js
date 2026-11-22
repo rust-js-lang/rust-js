@@ -77,7 +77,9 @@ function main() {
     console.log(`${result} ${b[0]}`);
     const held = kept([4], genDrop_drop);
     try {
-      console.log(`${$index(held, 0)[0]}`);
+      console.log(
+        `${$index(held, 0, "test/corpus/iterator_given_where_no_iterator_goes.rs:44:24")[0]}`,
+      );
       const total = $flatMap(
         $closing($iter(kept([3], genDrop_drop)), $dropEach(genDrop_drop)),
         (item) =>

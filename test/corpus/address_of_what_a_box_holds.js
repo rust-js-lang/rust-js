@@ -33,7 +33,9 @@ function main() {
   console.log(`rc ${outside($addr($ptrTo(s.shared), 8))}`);
   $storedItems(s.items, 8);
   console.log(`vec ${outside($addr($ptr(s.items, 0), 8))}`);
-  console.log(`option box ${outside($addr($ptrTo($unwrap(s.maybe)), 8))}`);
+  console.log(
+    `option box ${outside($addr($ptrTo($unwrap(s.maybe, "test/corpus/address_of_what_a_box_holds.rs:45:58")), 8))}`,
+  );
   console.log(
     `fields inside ${!outside($addr($ptr(s, "boxed", 12), 4)) && !outside($addr($ptr(s, "shared", 16), 4))}`,
   );

@@ -14,14 +14,16 @@ function main() {
     const value = counted?.value;
     try {
       console.log(
-        `${value == null ? "None" : `Some([${value.join(", ")}])`} ${$unwrap(again).strong}`,
+        `${value == null ? "None" : `Some([${value.join(", ")}])`} ${$unwrap(again, "test/corpus/as_deref_counted.rs:9:77").strong}`,
       );
       // Two counted layers: `as_deref` takes off one.
       const nested = { value: { value: "in", strong: 1, weak: 0 }, strong: 1, weak: 0 };
       const inner = nested?.value;
       const strong = inner?.strong;
       try {
-        console.log(`${strong == null ? "None" : `Some(${strong})`} ${$unwrap(nested).strong}`);
+        console.log(
+          `${strong == null ? "None" : `Some(${strong})`} ${$unwrap(nested, "test/corpus/as_deref_counted.rs:13:96").strong}`,
+        );
         const countedOk = { TAG: "Ok", _0: { value: [3], strong: 1, weak: 0 } };
         try {
           const value = countedOk.TAG === "Ok" ? { TAG: "Ok", _0: countedOk._0.value } : countedOk;

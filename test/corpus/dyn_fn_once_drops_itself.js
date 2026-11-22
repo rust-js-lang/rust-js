@@ -18,7 +18,10 @@ function once(name, fail) {
     () => {
       try {
         if (fail) {
-          throw $stringPanic(`${Noisy.name(noisy)} failed`);
+          throw $stringPanic(
+            `${Noisy.name(noisy)} failed`,
+            "test/corpus/dyn_fn_once_drops_itself.rs:25:13",
+          );
         }
         console.log(`ran ${Noisy.name(noisy)}`);
       } catch (error) {

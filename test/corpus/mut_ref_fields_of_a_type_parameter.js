@@ -201,7 +201,7 @@ function main() {
     throw error;
   }
   try {
-    $index(g.target.value, 0);
+    $index(g.target.value, 0, "test/corpus/mut_ref_fields_of_a_type_parameter.rs:207:17");
   } catch (error) {
     $cleanup(() => {
       guardDrop_drop(g, vecDebug);

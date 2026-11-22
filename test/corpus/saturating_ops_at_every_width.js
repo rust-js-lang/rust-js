@@ -19,6 +19,7 @@ import {
   $rotateBits,
   $saturatingDiv,
   $saturatingPow,
+  $stdSites,
   $wrappingDiv,
   $wrappingRem,
 } from "@rust-js/std";
@@ -50,8 +51,10 @@ function main() {
   let one = [1];
   let two = [2];
   console.log(`u8 ${Math.min(hi[0] + one[0], 255)} ${Math.max(lo[0] - one[0], 0)}`);
-  const value = $div(hi[0], two[0]) & 255;
-  console.log(`${Math.min(hi[0] * two[0], 255)} ${value} ${$rem(hi[0], two[0]) & 255}`);
+  const value = $div(hi[0], two[0], $stdSites.saturatingOp[0]) & 255;
+  console.log(
+    `${Math.min(hi[0] * two[0], 255)} ${value} ${$rem(hi[0], two[0], $stdSites.saturatingOp[0]) & 255}`,
+  );
   console.log(`${~lo[0] & 255} ${hi[0] & two[0]} ${lo[0] | one[0]} ${hi[0] ^ two[0]}`);
   let s = hi;
   s = [Math.min(s[0] + one[0], 255)];
@@ -61,7 +64,7 @@ function main() {
   s = [Math.min(s[0] * two[0], 255)];
   s = [Math.min(s[0] * 5, 255)];
   console.log(`${s[0]}`);
-  s = [$div(s[0], two[0]) & 255];
+  s = [$div(s[0], two[0], $stdSites.saturatingOp[0]) & 255];
   s = [(s[0] / 3) & 255];
   s = [s[0] % 7];
   s = [s[0] % 4];
@@ -110,8 +113,10 @@ function main() {
   one = [1];
   two = [2];
   console.log(`u16 ${Math.min(hi[0] + one[0], 65535)} ${Math.max(lo[0] - one[0], 0)}`);
-  const value$1 = $div(hi[0], two[0]) & 65535;
-  console.log(`${Math.min(hi[0] * two[0], 65535)} ${value$1} ${$rem(hi[0], two[0]) & 65535}`);
+  const value$1 = $div(hi[0], two[0], $stdSites.saturatingOp[0]) & 65535;
+  console.log(
+    `${Math.min(hi[0] * two[0], 65535)} ${value$1} ${$rem(hi[0], two[0], $stdSites.saturatingOp[0]) & 65535}`,
+  );
   console.log(`${~lo[0] & 65535} ${hi[0] & two[0]} ${lo[0] | one[0]} ${hi[0] ^ two[0]}`);
   s = hi;
   s = [Math.min(s[0] + one[0], 65535)];
@@ -121,7 +126,7 @@ function main() {
   s = [Math.min(s[0] * two[0], 65535)];
   s = [Math.min(s[0] * 5, 65535)];
   console.log(`${s[0]}`);
-  s = [$div(s[0], two[0]) & 65535];
+  s = [$div(s[0], two[0], $stdSites.saturatingOp[0]) & 65535];
   s = [(s[0] / 3) & 65535];
   s = [s[0] % 7];
   s = [s[0] % 4];
@@ -170,8 +175,10 @@ function main() {
   one = [1];
   two = [2];
   console.log(`u32 ${Math.min(hi[0] + one[0], 4294967295)} ${Math.max(lo[0] - one[0], 0)}`);
-  const value$2 = $div(hi[0], two[0]) >>> 0;
-  console.log(`${Math.min(hi[0] * two[0], 4294967295)} ${value$2} ${$rem(hi[0], two[0]) >>> 0}`);
+  const value$2 = $div(hi[0], two[0], $stdSites.saturatingOp[0]) >>> 0;
+  console.log(
+    `${Math.min(hi[0] * two[0], 4294967295)} ${value$2} ${$rem(hi[0], two[0], $stdSites.saturatingOp[0]) >>> 0}`,
+  );
   console.log(
     `${~lo[0] >>> 0} ${(hi[0] & two[0]) >>> 0} ${(lo[0] | one[0]) >>> 0} ${(hi[0] ^ two[0]) >>> 0}`,
   );
@@ -183,7 +190,7 @@ function main() {
   s = [Math.min(s[0] * two[0], 4294967295)];
   s = [Math.min(s[0] * 5, 4294967295)];
   console.log(`${s[0]}`);
-  s = [$div(s[0], two[0]) >>> 0];
+  s = [$div(s[0], two[0], $stdSites.saturatingOp[0]) >>> 0];
   s = [(s[0] / 3) >>> 0];
   s = [s[0] % 7];
   s = [s[0] % 4];
@@ -227,7 +234,7 @@ function main() {
     `u64 ${$bigClamp(hi[0] + one[0], 0n, 18446744073709551615n)} ${$bigClamp(lo[0] - one[0], 0n, 18446744073709551615n)}`,
   );
   console.log(
-    `${$bigClamp(hi[0] * two[0], 0n, 18446744073709551615n)} ${$bigDiv(hi[0], two[0])} ${$bigRem(hi[0], two[0])}`,
+    `${$bigClamp(hi[0] * two[0], 0n, 18446744073709551615n)} ${$bigDiv(hi[0], two[0], $stdSites.saturatingOp[0])} ${$bigRem(hi[0], two[0], $stdSites.saturatingOp[0])}`,
   );
   console.log(
     `${BigInt.asUintN(64, ~lo[0])} ${hi[0] & two[0]} ${lo[0] | one[0]} ${hi[0] ^ two[0]}`,
@@ -240,7 +247,7 @@ function main() {
   s = [$bigClamp(s[0] * two[0], 0n, 18446744073709551615n)];
   s = [$bigClamp(s[0] * 5n, 0n, 18446744073709551615n)];
   console.log(`${s[0]}`);
-  s = [$bigDiv(s[0], two[0])];
+  s = [$bigDiv(s[0], two[0], $stdSites.saturatingOp[0])];
   s = [s[0] / 3n];
   s = [s[0] % 7n];
   s = [s[0] % 4n];
@@ -294,7 +301,7 @@ function main() {
     `u128 ${$bigClamp(hi[0] + one[0], 0n, 340282366920938463463374607431768211455n)} ${$bigClamp(lo[0] - one[0], 0n, 340282366920938463463374607431768211455n)}`,
   );
   console.log(
-    `${$bigClamp(hi[0] * two[0], 0n, 340282366920938463463374607431768211455n)} ${$bigDiv(hi[0], two[0])} ${$bigRem(hi[0], two[0])}`,
+    `${$bigClamp(hi[0] * two[0], 0n, 340282366920938463463374607431768211455n)} ${$bigDiv(hi[0], two[0], $stdSites.saturatingOp[0])} ${$bigRem(hi[0], two[0], $stdSites.saturatingOp[0])}`,
   );
   console.log(
     `${BigInt.asUintN(128, ~lo[0])} ${hi[0] & two[0]} ${lo[0] | one[0]} ${hi[0] ^ two[0]}`,
@@ -307,7 +314,7 @@ function main() {
   s = [$bigClamp(s[0] * two[0], 0n, 340282366920938463463374607431768211455n)];
   s = [$bigClamp(s[0] * 5n, 0n, 340282366920938463463374607431768211455n)];
   console.log(`${s[0]}`);
-  s = [$bigDiv(s[0], two[0])];
+  s = [$bigDiv(s[0], two[0], $stdSites.saturatingOp[0])];
   s = [s[0] / 3n];
   s = [s[0] % 7n];
   s = [s[0] % 4n];
@@ -358,8 +365,10 @@ function main() {
   one = [1];
   two = [2];
   console.log(`usize ${Math.min(hi[0] + one[0], 4294967295)} ${Math.max(lo[0] - one[0], 0)}`);
-  const value$3 = $div(hi[0], two[0]) >>> 0;
-  console.log(`${Math.min(hi[0] * two[0], 4294967295)} ${value$3} ${$rem(hi[0], two[0]) >>> 0}`);
+  const value$3 = $div(hi[0], two[0], $stdSites.saturatingOp[0]) >>> 0;
+  console.log(
+    `${Math.min(hi[0] * two[0], 4294967295)} ${value$3} ${$rem(hi[0], two[0], $stdSites.saturatingOp[0]) >>> 0}`,
+  );
   console.log(
     `${~lo[0] >>> 0} ${(hi[0] & two[0]) >>> 0} ${(lo[0] | one[0]) >>> 0} ${(hi[0] ^ two[0]) >>> 0}`,
   );
@@ -371,7 +380,7 @@ function main() {
   s = [Math.min(s[0] * two[0], 4294967295)];
   s = [Math.min(s[0] * 5, 4294967295)];
   console.log(`${s[0]}`);
-  s = [$div(s[0], two[0]) >>> 0];
+  s = [$div(s[0], two[0], $stdSites.saturatingOp[0]) >>> 0];
   s = [(s[0] / 3) >>> 0];
   s = [s[0] % 7];
   s = [s[0] % 4];
@@ -414,9 +423,9 @@ function main() {
   console.log(
     `i8 ${Math.min(Math.max(hi[0] + one[0], -128), 127)} ${Math.min(Math.max(lo[0] - one[0], -128), 127)}`,
   );
-  const value$4 = $saturatingDiv(hi[0], two[0], -128, 127);
+  const value$4 = $saturatingDiv(hi[0], two[0], $stdSites.saturatingOp[0], -128, 127);
   console.log(
-    `${Math.min(Math.max(hi[0] * two[0], -128), 127) | 0} ${value$4} ${($rem(hi[0], two[0], -128) << 24) >> 24}`,
+    `${Math.min(Math.max(hi[0] * two[0], -128), 127) | 0} ${value$4} ${($rem(hi[0], two[0], $stdSites.saturatingOp[0], -128) << 24) >> 24}`,
   );
   console.log(`${~lo[0]} ${hi[0] & two[0]} ${lo[0] | one[0]} ${hi[0] ^ two[0]}`);
   s = hi;
@@ -427,8 +436,8 @@ function main() {
   s = [Math.min(Math.max(s[0] * two[0], -128), 127) | 0];
   s = [Math.min(Math.max(s[0] * 5, -128), 127) | 0];
   console.log(`${s[0]}`);
-  s = [$saturatingDiv(s[0], two[0], -128, 127)];
-  s = [$saturatingDiv(s[0], 3, -128, 127)];
+  s = [$saturatingDiv(s[0], two[0], $stdSites.saturatingOp[0], -128, 127)];
+  s = [$saturatingDiv(s[0], 3, $stdSites.saturatingOp[0], -128, 127)];
   s = [(s[0] % 7) | 0];
   s = [(s[0] % 4) | 0];
   console.log(`${s[0]}`);
@@ -480,9 +489,9 @@ function main() {
   console.log(
     `i16 ${Math.min(Math.max(hi[0] + one[0], -32768), 32767)} ${Math.min(Math.max(lo[0] - one[0], -32768), 32767)}`,
   );
-  const value$5 = $saturatingDiv(hi[0], two[0], -32768, 32767);
+  const value$5 = $saturatingDiv(hi[0], two[0], $stdSites.saturatingOp[0], -32768, 32767);
   console.log(
-    `${Math.min(Math.max(hi[0] * two[0], -32768), 32767) | 0} ${value$5} ${($rem(hi[0], two[0], -32768) << 16) >> 16}`,
+    `${Math.min(Math.max(hi[0] * two[0], -32768), 32767) | 0} ${value$5} ${($rem(hi[0], two[0], $stdSites.saturatingOp[0], -32768) << 16) >> 16}`,
   );
   console.log(`${~lo[0]} ${hi[0] & two[0]} ${lo[0] | one[0]} ${hi[0] ^ two[0]}`);
   s = hi;
@@ -493,8 +502,8 @@ function main() {
   s = [Math.min(Math.max(s[0] * two[0], -32768), 32767) | 0];
   s = [Math.min(Math.max(s[0] * 5, -32768), 32767) | 0];
   console.log(`${s[0]}`);
-  s = [$saturatingDiv(s[0], two[0], -32768, 32767)];
-  s = [$saturatingDiv(s[0], 3, -32768, 32767)];
+  s = [$saturatingDiv(s[0], two[0], $stdSites.saturatingOp[0], -32768, 32767)];
+  s = [$saturatingDiv(s[0], 3, $stdSites.saturatingOp[0], -32768, 32767)];
   s = [(s[0] % 7) | 0];
   s = [(s[0] % 4) | 0];
   console.log(`${s[0]}`);
@@ -546,9 +555,9 @@ function main() {
   console.log(
     `i32 ${Math.min(Math.max(hi[0] + one[0], -2147483648), 2147483647)} ${Math.min(Math.max(lo[0] - one[0], -2147483648), 2147483647)}`,
   );
-  const value$6 = $saturatingDiv(hi[0], two[0], -2147483648, 2147483647);
+  const value$6 = $saturatingDiv(hi[0], two[0], $stdSites.saturatingOp[0], -2147483648, 2147483647);
   console.log(
-    `${Math.min(Math.max(hi[0] * two[0], -2147483648), 2147483647) | 0} ${value$6} ${$rem(hi[0], two[0], -2147483648) | 0}`,
+    `${Math.min(Math.max(hi[0] * two[0], -2147483648), 2147483647) | 0} ${value$6} ${$rem(hi[0], two[0], $stdSites.saturatingOp[0], -2147483648) | 0}`,
   );
   console.log(`${~lo[0]} ${hi[0] & two[0]} ${lo[0] | one[0]} ${hi[0] ^ two[0]}`);
   s = hi;
@@ -559,8 +568,8 @@ function main() {
   s = [Math.min(Math.max(s[0] * two[0], -2147483648), 2147483647) | 0];
   s = [Math.min(Math.max(s[0] * 5, -2147483648), 2147483647) | 0];
   console.log(`${s[0]}`);
-  s = [$saturatingDiv(s[0], two[0], -2147483648, 2147483647)];
-  s = [$saturatingDiv(s[0], 3, -2147483648, 2147483647)];
+  s = [$saturatingDiv(s[0], two[0], $stdSites.saturatingOp[0], -2147483648, 2147483647)];
+  s = [$saturatingDiv(s[0], 3, $stdSites.saturatingOp[0], -2147483648, 2147483647)];
   s = [(s[0] % 7) | 0];
   s = [(s[0] % 4) | 0];
   console.log(`${s[0]}`);
@@ -603,7 +612,7 @@ function main() {
     `i64 ${$bigClamp(hi[0] + one[0], -9223372036854775808n, 9223372036854775807n)} ${$bigClamp(lo[0] - one[0], -9223372036854775808n, 9223372036854775807n)}`,
   );
   console.log(
-    `${$bigClamp(hi[0] * two[0], -9223372036854775808n, 9223372036854775807n)} ${$saturatingDiv(hi[0], two[0], -9223372036854775808n, 9223372036854775807n)} ${$bigRem(hi[0], two[0], -9223372036854775808n)}`,
+    `${$bigClamp(hi[0] * two[0], -9223372036854775808n, 9223372036854775807n)} ${$saturatingDiv(hi[0], two[0], $stdSites.saturatingOp[0], -9223372036854775808n, 9223372036854775807n)} ${$bigRem(hi[0], two[0], $stdSites.saturatingOp[0], -9223372036854775808n)}`,
   );
   console.log(`${~lo[0]} ${hi[0] & two[0]} ${lo[0] | one[0]} ${hi[0] ^ two[0]}`);
   s = hi;
@@ -614,8 +623,24 @@ function main() {
   s = [$bigClamp(s[0] * two[0], -9223372036854775808n, 9223372036854775807n)];
   s = [$bigClamp(s[0] * 5n, -9223372036854775808n, 9223372036854775807n)];
   console.log(`${s[0]}`);
-  s = [$saturatingDiv(s[0], two[0], -9223372036854775808n, 9223372036854775807n)];
-  s = [$saturatingDiv(s[0], 3n, -9223372036854775808n, 9223372036854775807n)];
+  s = [
+    $saturatingDiv(
+      s[0],
+      two[0],
+      $stdSites.saturatingOp[0],
+      -9223372036854775808n,
+      9223372036854775807n,
+    ),
+  ];
+  s = [
+    $saturatingDiv(
+      s[0],
+      3n,
+      $stdSites.saturatingOp[0],
+      -9223372036854775808n,
+      9223372036854775807n,
+    ),
+  ];
   s = [s[0] % 7n];
   s = [s[0] % 4n];
   console.log(`${s[0]}`);
@@ -668,7 +693,7 @@ function main() {
     `i128 ${$bigClamp(hi[0] + one[0], -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$bigClamp(lo[0] - one[0], -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)}`,
   );
   console.log(
-    `${$bigClamp(hi[0] * two[0], -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$saturatingDiv(hi[0], two[0], -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$bigRem(hi[0], two[0], -170141183460469231731687303715884105728n)}`,
+    `${$bigClamp(hi[0] * two[0], -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$saturatingDiv(hi[0], two[0], $stdSites.saturatingOp[0], -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$bigRem(hi[0], two[0], $stdSites.saturatingOp[0], -170141183460469231731687303715884105728n)}`,
   );
   console.log(`${~lo[0]} ${hi[0] & two[0]} ${lo[0] | one[0]} ${hi[0] ^ two[0]}`);
   s = hi;
@@ -719,6 +744,7 @@ function main() {
     $saturatingDiv(
       s[0],
       two[0],
+      $stdSites.saturatingOp[0],
       -170141183460469231731687303715884105728n,
       170141183460469231731687303715884105727n,
     ),
@@ -727,6 +753,7 @@ function main() {
     $saturatingDiv(
       s[0],
       3n,
+      $stdSites.saturatingOp[0],
       -170141183460469231731687303715884105728n,
       170141183460469231731687303715884105727n,
     ),
@@ -798,9 +825,9 @@ function main() {
   console.log(
     `isize ${Math.min(Math.max(hi[0] + one[0], -2147483648), 2147483647)} ${Math.min(Math.max(lo[0] - one[0], -2147483648), 2147483647)}`,
   );
-  const value$7 = $saturatingDiv(hi[0], two[0], -2147483648, 2147483647);
+  const value$7 = $saturatingDiv(hi[0], two[0], $stdSites.saturatingOp[0], -2147483648, 2147483647);
   console.log(
-    `${Math.min(Math.max(hi[0] * two[0], -2147483648), 2147483647) | 0} ${value$7} ${$rem(hi[0], two[0], -2147483648) | 0}`,
+    `${Math.min(Math.max(hi[0] * two[0], -2147483648), 2147483647) | 0} ${value$7} ${$rem(hi[0], two[0], $stdSites.saturatingOp[0], -2147483648) | 0}`,
   );
   console.log(`${~lo[0]} ${hi[0] & two[0]} ${lo[0] | one[0]} ${hi[0] ^ two[0]}`);
   s = hi;
@@ -811,8 +838,8 @@ function main() {
   s = [Math.min(Math.max(s[0] * two[0], -2147483648), 2147483647) | 0];
   s = [Math.min(Math.max(s[0] * 5, -2147483648), 2147483647) | 0];
   console.log(`${s[0]}`);
-  s = [$saturatingDiv(s[0], two[0], -2147483648, 2147483647)];
-  s = [$saturatingDiv(s[0], 3, -2147483648, 2147483647)];
+  s = [$saturatingDiv(s[0], two[0], $stdSites.saturatingOp[0], -2147483648, 2147483647)];
+  s = [$saturatingDiv(s[0], 3, $stdSites.saturatingOp[0], -2147483648, 2147483647)];
   s = [(s[0] % 7) | 0];
   s = [(s[0] % 4) | 0];
   console.log(`${s[0]}`);
@@ -851,10 +878,10 @@ function main() {
   hi = [127];
   let minus = [-1];
   console.log(
-    `i8 ${$saturatingDiv(lo[0], minus[0], -128, 127)} ${Math.min(-lo[0], 127) | 0} ${Math.min(-minus[0], 127) | 0}`,
+    `i8 ${$saturatingDiv(lo[0], minus[0], $stdSites.saturatingOp[0], -128, 127)} ${Math.min(-lo[0], 127) | 0} ${Math.min(-minus[0], 127) | 0}`,
   );
   s = lo;
-  s = [$saturatingDiv(s[0], minus[0], -128, 127)];
+  s = [$saturatingDiv(s[0], minus[0], $stdSites.saturatingOp[0], -128, 127)];
   let t = hi;
   t = [Math.min(Math.max(t[0] - -1, -128), 127)];
   console.log(
@@ -866,10 +893,10 @@ function main() {
   hi = [32767];
   minus = [-1];
   console.log(
-    `i16 ${$saturatingDiv(lo[0], minus[0], -32768, 32767)} ${Math.min(-lo[0], 32767) | 0} ${Math.min(-minus[0], 32767) | 0}`,
+    `i16 ${$saturatingDiv(lo[0], minus[0], $stdSites.saturatingOp[0], -32768, 32767)} ${Math.min(-lo[0], 32767) | 0} ${Math.min(-minus[0], 32767) | 0}`,
   );
   s = lo;
-  s = [$saturatingDiv(s[0], minus[0], -32768, 32767)];
+  s = [$saturatingDiv(s[0], minus[0], $stdSites.saturatingOp[0], -32768, 32767)];
   t = hi;
   t = [Math.min(Math.max(t[0] - -1, -32768), 32767)];
   console.log(
@@ -883,10 +910,10 @@ function main() {
   hi = [2147483647];
   minus = [-1];
   console.log(
-    `i32 ${$saturatingDiv(lo[0], minus[0], -2147483648, 2147483647)} ${Math.min(-lo[0], 2147483647) | 0} ${Math.min(-minus[0], 2147483647) | 0}`,
+    `i32 ${$saturatingDiv(lo[0], minus[0], $stdSites.saturatingOp[0], -2147483648, 2147483647)} ${Math.min(-lo[0], 2147483647) | 0} ${Math.min(-minus[0], 2147483647) | 0}`,
   );
   s = lo;
-  s = [$saturatingDiv(s[0], minus[0], -2147483648, 2147483647)];
+  s = [$saturatingDiv(s[0], minus[0], $stdSites.saturatingOp[0], -2147483648, 2147483647)];
   t = hi;
   t = [Math.min(Math.max(t[0] - -1, -2147483648), 2147483647)];
   console.log(
@@ -900,14 +927,36 @@ function main() {
   hi = [9223372036854775807n];
   minus = [-1n];
   console.log(
-    `i64 ${$saturatingDiv(lo[0], minus[0], -9223372036854775808n, 9223372036854775807n)} ${$clamp(-lo[0], -9223372036854775808n, 9223372036854775807n)} ${$clamp(-minus[0], -9223372036854775808n, 9223372036854775807n)}`,
+    `i64 ${$saturatingDiv(lo[0], minus[0], $stdSites.saturatingOp[0], -9223372036854775808n, 9223372036854775807n)} ${$clamp(-lo[0], -9223372036854775808n, 9223372036854775807n, $stdSites.saturatingOp[0])} ${$clamp(-minus[0], -9223372036854775808n, 9223372036854775807n, $stdSites.saturatingOp[0])}`,
   );
   s = lo;
-  s = [$saturatingDiv(s[0], minus[0], -9223372036854775808n, 9223372036854775807n)];
+  s = [
+    $saturatingDiv(
+      s[0],
+      minus[0],
+      $stdSites.saturatingOp[0],
+      -9223372036854775808n,
+      9223372036854775807n,
+    ),
+  ];
   t = hi;
   t = [$bigClamp(t[0] - -1n, -9223372036854775808n, 9223372036854775807n)];
-  const value$8 = [$clamp($bigAbs(lo[0]), -9223372036854775808n, 9223372036854775807n)];
-  const arg$12 = [$clamp($bigAbs(minus[0]), -9223372036854775808n, 9223372036854775807n)];
+  const value$8 = [
+    $clamp(
+      $bigAbs(lo[0]),
+      -9223372036854775808n,
+      9223372036854775807n,
+      "test/corpus/saturating_ops_at_every_width.rs:94:5",
+    ),
+  ];
+  const arg$12 = [
+    $clamp(
+      $bigAbs(minus[0]),
+      -9223372036854775808n,
+      9223372036854775807n,
+      "test/corpus/saturating_ops_at_every_width.rs:94:5",
+    ),
+  ];
   console.log(`${s[0]} ${t[0]} ${value$8[0]} ${arg$12[0]}`);
   console.log(`${$bigSignum(lo[0])} ${lo[0] < 0n} ${hi[0] > 0n}`);
   console.log(
@@ -917,13 +966,14 @@ function main() {
   hi = [170141183460469231731687303715884105727n];
   minus = [-1n];
   console.log(
-    `i128 ${$saturatingDiv(lo[0], minus[0], -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$clamp(-lo[0], -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$clamp(-minus[0], -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)}`,
+    `i128 ${$saturatingDiv(lo[0], minus[0], $stdSites.saturatingOp[0], -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$clamp(-lo[0], -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n, $stdSites.saturatingOp[0])} ${$clamp(-minus[0], -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n, $stdSites.saturatingOp[0])}`,
   );
   s = lo;
   s = [
     $saturatingDiv(
       s[0],
       minus[0],
+      $stdSites.saturatingOp[0],
       -170141183460469231731687303715884105728n,
       170141183460469231731687303715884105727n,
     ),
@@ -941,6 +991,7 @@ function main() {
       $bigAbs(lo[0]),
       -170141183460469231731687303715884105728n,
       170141183460469231731687303715884105727n,
+      "test/corpus/saturating_ops_at_every_width.rs:94:5",
     ),
   ];
   const arg$13 = [
@@ -948,6 +999,7 @@ function main() {
       $bigAbs(minus[0]),
       -170141183460469231731687303715884105728n,
       170141183460469231731687303715884105727n,
+      "test/corpus/saturating_ops_at_every_width.rs:94:5",
     ),
   ];
   console.log(`${s[0]} ${t[0]} ${value$9[0]} ${arg$13[0]}`);
@@ -959,10 +1011,10 @@ function main() {
   hi = [2147483647];
   minus = [-1];
   console.log(
-    `isize ${$saturatingDiv(lo[0], minus[0], -2147483648, 2147483647)} ${Math.min(-lo[0], 2147483647) | 0} ${Math.min(-minus[0], 2147483647) | 0}`,
+    `isize ${$saturatingDiv(lo[0], minus[0], $stdSites.saturatingOp[0], -2147483648, 2147483647)} ${Math.min(-lo[0], 2147483647) | 0} ${Math.min(-minus[0], 2147483647) | 0}`,
   );
   s = lo;
-  s = [$saturatingDiv(s[0], minus[0], -2147483648, 2147483647)];
+  s = [$saturatingDiv(s[0], minus[0], $stdSites.saturatingOp[0], -2147483648, 2147483647)];
   t = hi;
   t = [Math.min(Math.max(t[0] - -1, -2147483648), 2147483647)];
   console.log(
@@ -992,10 +1044,10 @@ function main() {
   w = [(w[0] - one[0]) | 0];
   console.log(`isize ${(hi[0] + one[0]) | 0} ${(lo[0] - one[0]) | 0} ${(hi[0] * 2) | 0} ${w[0]}`);
   console.log(
-    `${$wrappingDiv(hi[0], 2, -2147483648)} ${$wrappingRem(hi[0], 7, -2147483648)} ${-one[0] | 0} ${(hi[0] >>> 0).toString(16)}`,
+    `${$wrappingDiv(hi[0], 2, $stdSites.wrappingOp[0], -2147483648)} ${$wrappingRem(hi[0], 7, $stdSites.wrappingOp[0], -2147483648)} ${-one[0] | 0} ${(hi[0] >>> 0).toString(16)}`,
   );
   const wrapping = [-2147483648];
-  console.log(`${$wrappingDiv(wrapping[0], -1, -2147483648)}`);
+  console.log(`${$wrappingDiv(wrapping[0], -1, $stdSites.wrappingOp[0], -2147483648)}`);
   console.log(`${(4 & (4 - 1)) === 0}`);
   console.log("Reverse(0)");
   const wrapping$1 = [250];

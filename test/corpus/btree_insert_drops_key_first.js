@@ -22,7 +22,7 @@ let BOOM = 0;
 function boom(n, what) {
   if (BOOM === n) {
     BOOM = 0;
-    throw $stringPanic(`${what} ${n}`);
+    throw $stringPanic(`${what} ${n}`, "test/corpus/btree_insert_drops_key_first.rs:17:9");
   }
 }
 

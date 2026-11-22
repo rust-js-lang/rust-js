@@ -164,7 +164,7 @@ function $keepCapacity(v) {
 // capacity is asked (ADR 0774): past `isize::MAX` bytes, or past
 // `usize::MAX` items, of no size too, a `capacity overflow` panic.
 function $roomFor(count, size) {
-  if (count > 2 ** 32 - 1 || count * size > 2 ** 31 - 1) throw new Error("capacity overflow");
+  if (count > 2 ** 32 - 1 || count * size > 2 ** 31 - 1) throw $panic("capacity overflow", $stdSites.capacityOverflow[0]);
 }
 
 // `it`, a `TrustedLen` an `Rc<[T]>` or an `Arc<[T]>` is collected of, of
@@ -173,12 +173,14 @@ function $roomFor(count, size) {
 // (#1678): of no upper bound, a `capacity overflow` panic; of one whose
 // slice, after the counts' two `usize`s, wasm32's 8 bytes, is past
 // `isize::MAX` bytes at its alignment, the panic of std's `unwrap()` of a
-// `Layout`'s `LayoutError`. Where asking it throws, `it` is closed.
-function $roomForCounted(it, size, align) {
+// `Layout`'s `LayoutError`. Where asking it throws, `it` is closed. Its
+// `capacity overflow` is raised at `unbounded`, `ToRcSlice`'s line or
+// `ToArcSlice`'s (#2292).
+function $roomForCounted(it, size, align, unbounded) {
   $unwinds(
     () => {
       const [, upper] = $sizeHint(it);
-      if (upper === undefined) throw new Error("capacity overflow");
+      if (upper === undefined) throw $panic("capacity overflow", unbounded);
       const max = 2 ** 31 - 1;
       const bytes = upper * size;
       const counts = Math.ceil(8 / align) * align;
@@ -224,7 +226,7 @@ function $roomForHint(it, size, trusted, endless = false, drop) {
       // whose type its caller knows, `repeat(x).map(f)` (#1239). No hint
       // std's `TrustedLen`s have runs the crate's code, so asking it first
       // is unseen.
-      if (upper === undefined && lower >= 2 ** 32 - 1) throw new Error("capacity overflow");
+      if (upper === undefined && lower >= 2 ** 32 - 1) throw $panic("capacity overflow", $stdSites.vecFromTrustedLen[0]);
       $roomFor(upper !== undefined ? upper : Math.min(lower + 1, 2 ** 32 - 1), size);
     });
     return it;
@@ -239,7 +241,7 @@ function $roomForHint(it, size, trusted, endless = false, drop) {
   if (!first.done) {
     unwound(
       () => {
-        if (endless) throw new Error("capacity overflow");
+        if (endless) throw $panic("capacity overflow", $stdSites.capacityOverflow[0]);
         const [lower] = $sizeHint(it);
         capacity = size === 0 ? Infinity : Math.max(least, Math.min(lower + 1, max));
         $roomFor(Math.min(lower + 1, max), size);
@@ -270,7 +272,7 @@ function $roomForHint(it, size, trusted, endless = false, drop) {
           () => {
             const [lower] = $sizeHint(it);
             const required = length + Math.min(lower + 1, max);
-            if (required > max) throw new Error("capacity overflow");
+            if (required > max) throw $panic("capacity overflow", $stdSites.capacityOverflow[0]);
             capacity = Math.max(capacity * 2, required, least);
             $roomFor(capacity, size);
           },
@@ -449,7 +451,10 @@ function $grownBy(v, items, size, deque = false, drop, own = false, lost = false
             unkept ||= !known;
             const additional = Math.min(lower + 1, max);
             if (capacity - v.length < additional) {
-              if (v.length + additional > max) throw new Error("capacity overflow");
+              // A `VecDeque`'s `reserve`'s own, or a `Vec`'s `RawVec`'s.
+              if (v.length + additional > max) {
+                throw $panic("capacity overflow", deque ? $stdSites.vecDequeReserve[0] : $stdSites.capacityOverflow[0]);
+              }
               $reserve(v, additional, size);
               $roomFor($capacity(v), size);
             }
@@ -475,10 +480,14 @@ function $grownBy(v, items, size, deque = false, drop, own = false, lost = false
       asked = true;
       const [[, upper], known] = byValue ? $hintAsked(it) : [$sizeHint(it), true];
       unkept ||= !known;
-      if (upper === undefined || upper === null) throw new Error("capacity overflow");
+      if (upper === undefined || upper === null) {
+        throw $panic("capacity overflow", deque ? $stdSites.vecDequeExtendTrusted[0] : $stdSites.vecExtendTrusted[0]);
+      }
       const capacity = size === 0 ? Infinity : $capacity(v);
       if (capacity - v.length < upper) {
-        if (v.length + upper > max) throw new Error("capacity overflow");
+        if (v.length + upper > max) {
+          throw $panic("capacity overflow", deque ? $stdSites.vecDequeReserve[0] : $stdSites.capacityOverflow[0]);
+        }
         $reserve(v, upper, size);
         $roomFor($capacity(v), size);
       }

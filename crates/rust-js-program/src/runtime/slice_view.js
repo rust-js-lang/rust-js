@@ -2,8 +2,14 @@
 // own methods, whose every read and write is one of `items`. Checked as
 // `&v[start..end]` is, as it's made. Nothing a `&mut [T]` does makes it
 // longer or shorter, so it stays over the same items.
-function $view(items, start, end = items.length, inclusive) {
-  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);
+function $view(items, start, raisedAt, end = items.length, inclusive) {
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, raisedAt, inclusive);
+  return $viewPart(items, start, end);
+}
+
+// `$view`'s of items its caller knows are in bounds, unchecked, as `$part`
+// is a copy's: each part a slice's chunks, splits and windows cut.
+function $viewPart(items, start, end = items.length) {
   const target = $partPlaced([], items, start);
   return $proxy(
     end - start,
@@ -18,15 +24,15 @@ function $view(items, start, end = items.length, inclusive) {
 // A deque's `range_mut(start..end)`: `$view`'s of those items, checked as
 // `slice::range` checks them, its end first, not as `&mut v[a..b]` is
 // (#1937).
-function $viewRange(items, start, end = items.length, inclusive) {
-  $checkRange(start, end, items.length, inclusive);
-  return $view(items, start, end);
+function $viewRange(items, start, raisedAt, end = items.length, inclusive) {
+  $checkRange(start, end, items.length, raisedAt, inclusive);
+  return $viewPart(items, start, end);
 }
 
 // `v[start..end].reverse()`: those items of `items` reversed where they
 // are, checked as `&mut v[start..end]` is, no view made (ADR 1073).
-function $reverseRange(items, start, end = items.length, inclusive) {
-  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);
+function $reverseRange(items, start, raisedAt, end = items.length, inclusive) {
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, raisedAt, inclusive);
   for (let left = start, right = end - 1; left < right; left++, right--) {
     const item = items[left];
     items[left] = items[right];
@@ -89,17 +95,18 @@ function $oneItemOf(h) {
 // `v.get_mut(start..end)`: a view, or `undefined`, `None`, where
 // `&mut v[start..end]` would panic.
 function $viewGet(v, start, end = v.length) {
-  return start <= end && end <= v.length ? $view(v, start, end) : undefined;
+  return start <= end && end <= v.length ? $viewPart(v, start, end) : undefined;
 }
 
-// `split_at_mut(mid)`: views of the items before and after `mid`; or,
-// `checked`, `undefined` where `mid` is past the end.
-function $splitAtMut(v, mid, checked) {
-  if (mid > v.length) {
-    if (checked) return undefined;
-    throw new Error("mid > len");
-  }
-  return [$view(v, 0, mid), $view(v, mid)];
+// `split_at_mut(mid)`: views of the items before and after `mid`, past
+// the end a panic raised where it was called, `raisedAt` (#2292).
+function $splitAtMut(v, mid, raisedAt) {
+  if (mid > v.length) throw $panic("mid > len", raisedAt);
+  return [$viewPart(v, 0, mid), $viewPart(v, mid)];
+}
+// `split_at_mut_checked(mid)`: `undefined`, `None`, where `mid` is past the end.
+function $checkedSplitAtMut(v, mid) {
+  return mid > v.length ? undefined : [$viewPart(v, 0, mid), $viewPart(v, mid)];
 }
 
 // `split_first_mut()`, or `split_last_mut()` (`last`): the item at that end,
@@ -108,39 +115,39 @@ function $splitAtMut(v, mid, checked) {
 function $splitEndMut(v, last, handle) {
   if (v.length === 0) return undefined;
   const at = last ? v.length - 1 : 0;
-  return [handle ? $mutAt(v, at) : v[at], last ? $view(v, 0, at) : $view(v, 1)];
+  return [handle ? $mutAt(v, at) : v[at], last ? $viewPart(v, 0, at) : $viewPart(v, 1)];
 }
 
-function $chunksMut(v, n) {
-  return $chunks(v, n, $view);
+function $chunksMut(v, n, raisedAt) {
+  return $chunks(v, n, raisedAt, $viewPart);
 }
 
-function $chunksExactMut(v, n) {
-  return $chunksExact(v, n, $view);
+function $chunksExactMut(v, n, raisedAt) {
+  return $chunksExact(v, n, raisedAt, $viewPart);
 }
 
-function $rchunksMut(v, n, exact) {
-  return $rchunks(v, n, exact, $view);
+function $rchunksMut(v, n, exact, raisedAt) {
+  return $rchunks(v, n, exact, raisedAt, $viewPart);
 }
 
 function $sliceSplitByMut(v, p, n, inclusive, back) {
-  return $sliceSplitBy(v, p, n, inclusive, back, $view);
+  return $sliceSplitBy(v, p, n, inclusive, back, $viewPart);
 }
 
 function $chunkByMut(v, p) {
-  return $chunkBy(v, p, $view);
+  return $chunkBy(v, p, $viewPart);
 }
 
 function $lazySliceSplitByMut(v, p, n, inclusive, back) {
-  return $lazySliceSplitBy(v, p, n, inclusive, back, $view);
+  return $lazySliceSplitBy(v, p, n, inclusive, back, $viewPart);
 }
 
 function $lazyChunkByMut(v, p) {
-  return $lazyChunkBy(v, p, $view);
+  return $lazyChunkBy(v, p, $viewPart);
 }
 
 function $splitChunkMut(v, n, last) {
-  return $splitChunk(v, n, last, $view);
+  return $splitChunk(v, n, last, $viewPart);
 }
 
 // `as_chunks_mut::<N>()`: a view of its whole chunks of `n`, each a view,
@@ -178,7 +185,7 @@ function $asChunksMut(v, n, back = false) {
       for (let j = 0; j < n; j++) v[start + i * n + j] = items[j];
     },
   );
-  return back ? [$view(v, 0, rest), chunks] : [chunks, $view(v, v.length - rest)];
+  return back ? [$viewPart(v, 0, rest), chunks] : [chunks, $viewPart(v, v.length - rest)];
 }
 
 // `as_flattened_mut()` of arrays of `n`: a view of their items, in order.
@@ -193,12 +200,12 @@ function $flatView(v, n) {
 }
 
 function $sliceSplitOffMut(v, n, back) {
-  return $sliceSplitOff(v, n, back, $view);
+  return $sliceSplitOff(v, n, back, $viewPart);
 }
 
 // Of a `&mut` slice, its item a handle on a number or text (`handle`).
 function $sliceSplitOffEndMut(v, last, handle) {
-  return $sliceSplitOffEnd(v, last, $view, handle ? $mutAt : undefined);
+  return $sliceSplitOffEnd(v, last, $viewPart, handle ? $mutAt : undefined);
 }
 
 // `get_disjoint_mut(indices)` (ADR 0339): `Ok` of each index's item, a
@@ -215,6 +222,6 @@ function $getDisjointMut(v, indices, handle = false, inclusive = false) {
       if (start < bounds[j][1] && bounds[j][0] < end) return { TAG: "Err", _0: "OverlappingIndices" };
     }
   }
-  const take = (at, i) => (typeof at !== "number" ? $view(v, bounds[i][0], bounds[i][1]) : handle ? $mutAt(v, at) : v[at]);
+  const take = (at, i) => (typeof at !== "number" ? $viewPart(v, bounds[i][0], bounds[i][1]) : handle ? $mutAt(v, at) : v[at]);
   return { TAG: "Ok", _0: indices.map(take) };
 }

@@ -209,14 +209,24 @@ function main() {
     [1, "a"],
     [2, "b"],
   ];
-  const [first, rest] = $splitAtMut(pairs, 1);
+  const [first, rest] = $splitAtMut(
+    pairs,
+    1,
+    "test/corpus/generic_code_right_for_every_instance.rs:118:31",
+  );
   const length = first.length;
   if (0 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/generic_code_right_for_every_instance.rs:119:18",
+    );
   }
   const value$3 = rest.length;
   if (0 >= value$3) {
-    throw $stringPanic(`index out of bounds: the len is ${value$3} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${value$3} but the index is 0`,
+      "test/corpus/generic_code_right_for_every_instance.rs:119:33",
+    );
   }
   swapIn($cellOf(first[0]), $cellOf(rest[0]));
   console.log(

@@ -104,14 +104,14 @@ pub fn sums(v: &[f64]) -> Vec<f64> {
   // Written out, its items; held, spread.
   expect(out).toContain("total(1, 2),");
   expect(out).toContain("total(...v),");
-  expect(out).toContain("total(...$slice(v, 1)),");
+  expect(out).toContain("total(...$slice(v, 1, \"lib.rs:51:17\")),");
   expect(out).toContain("total(),");
-  expect(out).toContain("Point.moved({ x: 10 }, 1, $index(v, 0)),");
+  expect(out).toContain("Point.moved({ x: 10 }, 1, $index(v, 0, \"lib.rs:53:40\")),");
   // As a value, what's given it spread.
   expect(out).toContain("const pointer = (xs) => total(...xs);");
   expect(out).toContain("apply((xs) => total(...xs), v),");
   // A variable of it is it, called as it is.
-  expect(out).toContain("total($index(v, 1)),");
+  expect(out).toContain('total($index(v, 1, "lib.rs:56:17")),');
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain("export default function formatProdErrorMessage(code: number, ...args: unknown[]): string;");
   expect(declarations).toContain("export function total(...xs: number[]): number;");
@@ -665,7 +665,7 @@ pub fn named(names: &[&str]) -> (String, String) {
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
   const out = readFileSync(join(dir, "lib.js"), "utf8");
   expect(out).toContain("const count = (...args) => args.length;");
-  expect(out).toContain("    count(1, \"a\", 2),\n    count(),\n    count(...v),\n    held(\"a\"),\n    boxed($index(v, 0), $index(v, 1)),\n    pointer(...v),\n");
+  expect(out).toContain("    count(1, \"a\", 2),\n    count(),\n    count(...v),\n    held(\"a\"),\n    boxed($index(v, 0, \"lib.rs:27:17\"), $index(v, 1, \"lib.rs:27:23\")),\n    pointer(...v),\n");
   expect(out).toContain("  return f(1, 2);");
   expect(out).toContain("return (...names) => names.join(\", \");");
   expect(out).toContain("return (...args) => f.call(undefined, ...args);");
@@ -808,7 +808,7 @@ pub fn ends_of_slice(#[cfg_attr(rust_js, rust_js::rest)] value: &[f64]) -> f64 {
   const out = readFileSync(join(dir, "lib.js"), "utf8");
   expect(out).toContain("return (...value) => (value.length === 0 ? 0 : value[0]);");
   expect(out).toContain("return (...value) => (value.length > 2 ? value[value.length - 1] + value[1] : -1);");
-  expect(out).toContain("return (...value) => (value.length === 0 ? 0 : $index(value, 1));");
+  expect(out).toContain("return (...value) => (value.length === 0 ? 0 : $index(value, 1, \"lib.rs:18:64\"));");
   expect(out).toContain("return value.length === 0 ? 0 : value[0];");
   expect(out).toContain("return value.length > 2 ? value[value.length - 1] + value[1] : -1;");
   const lib = await import(join(dir, "lib.js"));

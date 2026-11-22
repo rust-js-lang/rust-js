@@ -8,6 +8,7 @@ import {
   $dropEach,
   $dropItems,
   $iter,
+  $panic,
   $range,
   $skipping,
   $stepBy,
@@ -27,7 +28,7 @@ function main() {
             $dropEach((pair) => {
               console.log(`drop boom ${pair.d[0]}`);
               if (pair.d[0] === 3) {
-                throw new Error("boom");
+                throw $panic("boom", "test/corpus/passed_item_drops_that_panic.rs:13:13");
               }
             }),
           ),
@@ -35,7 +36,7 @@ function main() {
           (pair) => {
             console.log(`drop boom ${pair.d[0]}`);
             if (pair.d[0] === 3) {
-              throw new Error("boom");
+              throw $panic("boom", "test/corpus/passed_item_drops_that_panic.rs:13:13");
             }
           },
         ),
@@ -43,14 +44,14 @@ function main() {
         (pair) => {
           console.log(`drop boom ${pair.d[0]}`);
           if (pair.d[0] === 3) {
-            throw new Error("boom");
+            throw $panic("boom", "test/corpus/passed_item_drops_that_panic.rs:13:13");
           }
         },
       ),
       (pair) => {
         console.log(`drop boom ${pair.d[0]}`);
         if (pair.d[0] === 3) {
-          throw new Error("boom");
+          throw $panic("boom", "test/corpus/passed_item_drops_that_panic.rs:13:13");
         }
       },
       true,
@@ -63,7 +64,7 @@ function main() {
         $dropItems(v, (item) => {
           console.log(`drop boom ${item.d[0]}`);
           if (item.d[0] === 3) {
-            throw new Error("boom");
+            throw $panic("boom", "test/corpus/passed_item_drops_that_panic.rs:13:13");
           }
         });
       }, error);
@@ -72,7 +73,7 @@ function main() {
     $dropItems(v, (item) => {
       console.log(`drop boom ${item.d[0]}`);
       if (item.d[0] === 3) {
-        throw new Error("boom");
+        throw $panic("boom", "test/corpus/passed_item_drops_that_panic.rs:13:13");
       }
     });
     return result;

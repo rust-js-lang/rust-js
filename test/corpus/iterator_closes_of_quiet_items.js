@@ -29,14 +29,17 @@ function quietDrop_drop(quiet) {
 
 function loudDrop_drop(loud) {
   if (bomb === loud[0]) {
-    throw $stringPanic(`loud ${loud[0]} panics`);
+    throw $stringPanic(
+      `loud ${loud[0]} panics`,
+      "test/corpus/iterator_closes_of_quiet_items.rs:27:13",
+    );
   }
   console.log(`loud ${loud[0]}`);
 }
 
 function work(n) {
   if (n > 100) {
-    throw $stringPanic(`too big: ${n}`);
+    throw $stringPanic(`too big: ${n}`, "test/corpus/iterator_closes_of_quiet_items.rs:35:9");
   }
   return n + 1;
 }

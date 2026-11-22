@@ -7,6 +7,7 @@ import {
   $index,
   $live,
   $nullableCell,
+  $stdSites,
   $unborrow,
   $unwindsOn,
   $withBorrow,
@@ -38,7 +39,7 @@ function current() {
 }
 
 function counted() {
-  return $withBorrow(COUNTED, (arg0) => arg0);
+  return $withBorrow(COUNTED, (arg0) => arg0, $stdSites.localKeyWithBorrow[0]);
 }
 
 function clearSlot(slot, n) {
@@ -74,20 +75,20 @@ function paramSwapped(x) {
 
 function reset() {
   CURRENT = 4;
-  $cellReplace($borrowMut(target), 4);
-  $cellReplace($borrowMut(COUNTED), 4);
+  $cellReplace($borrowMut(target, $stdSites.localKeySet[0]), 4);
+  $cellReplace($borrowMut(COUNTED, $stdSites.localKeySet[0]), 4);
 }
 
 function report(what) {
   const c = CURRENT;
   const currentIs = c ?? 0;
   const value = absent(CURRENT);
-  const value$1 = absent($withBorrow(target, (arg0) => arg0));
-  const value$2 = absent($withBorrow(COUNTED, (arg0) => arg0));
+  const value$1 = absent($withBorrow(target, (arg0) => arg0, $stdSites.localKeyWithBorrow[0]));
+  const value$2 = absent($withBorrow(COUNTED, (arg0) => arg0, $stdSites.localKeyWithBorrow[0]));
   const value$3 = current();
   const value$4 = counted();
   const isNone = CURRENT == null;
-  const arg = $withBorrow(target, (x) => x == null);
+  const arg = $withBorrow(target, (x) => x == null, $stdSites.localKeyWithBorrow[0]);
   console.log(
     `${what}: ${value} ${value$1} ${value$2} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${currentIs} ${isNone} ${arg}`,
   );
@@ -95,7 +96,8 @@ function report(what) {
 
 function reportFiber(what, fiber) {
   const value = absent(fiber.owner);
-  const isNone = $index(fiber.lanes, 0) == null;
+  const isNone =
+    $index(fiber.lanes, 0, "test/corpus/nullable_written_through_borrows.rs:108:20") == null;
   const borrow = {
     get value() {
       return fiber.target;
@@ -113,11 +115,11 @@ function main() {
   reset();
   CURRENT = noneOf(1) ?? null;
   const value = noneOf(1);
-  $borrowMut(target).value = value;
-  const guard = $borrow(COUNTED, true);
+  $borrowMut(target, "test/corpus/nullable_written_through_borrows.rs:117:24").value = value;
+  const guard = $borrow(COUNTED, "test/corpus/nullable_written_through_borrows.rs:119:23", true);
   $unborrow(guard);
   const value$1 = noneOf(1);
-  $borrowMut(COUNTED).value = value$1;
+  $borrowMut(COUNTED, "test/corpus/nullable_written_through_borrows.rs:121:12").value = value$1;
   report("with, set");
 
   reset();
@@ -137,6 +139,7 @@ function main() {
     (t) => {
       t.value = noneOf(1);
     },
+    $stdSites.localKeyWithBorrowMut[0],
     true,
   );
   $withBorrowMut(
@@ -144,6 +147,7 @@ function main() {
     (t) => {
       t.value = noneOf(1);
     },
+    $stdSites.localKeyWithBorrowMut[0],
     true,
   );
   report("with_borrow_mut, assigned");
@@ -157,14 +161,18 @@ function main() {
       t.value = undefined;
       return old;
     },
+    $stdSites.localKeyWithBorrowMut[0],
     true,
   );
-  $cellReplace($borrowMut(COUNTED));
+  $cellReplace($borrowMut(COUNTED, $stdSites.refCellTake[0]));
   report("take");
 
   reset();
   CURRENT = noneOf(2) ?? null;
-  $cellReplace($borrowMut(COUNTED), noneOf(2));
+  $cellReplace(
+    $borrowMut(COUNTED, "test/corpus/nullable_written_through_borrows.rs:142:24"),
+    noneOf(2),
+  );
   report("replace");
 
   reset();
@@ -175,6 +183,7 @@ function main() {
       t.value = noneOf(2);
       return old;
     },
+    $stdSites.localKeyWithBorrowMut[0],
     true,
   );
   $withBorrowMut(
@@ -184,6 +193,7 @@ function main() {
       t.value = noneOf(2);
       return old;
     },
+    $stdSites.localKeyWithBorrowMut[0],
     true,
   );
   report("mem::replace");
@@ -197,6 +207,7 @@ function main() {
       t.value = other;
       other = t$1;
     },
+    $stdSites.localKeyWithBorrowMut[0],
     true,
   );
   let other$1;
@@ -207,13 +218,14 @@ function main() {
       t.value = other$1;
       other$1 = t$1;
     },
+    $stdSites.localKeyWithBorrowMut[0],
     true,
   );
   report("mem::swap");
 
   reset();
-  $withBorrowMut(target, (t) => clearGeneric(t), true);
-  $withBorrowMut(COUNTED, clearGeneric, true);
+  $withBorrowMut(target, (t) => clearGeneric(t), $stdSites.localKeyWithBorrowMut[0], true);
+  $withBorrowMut(COUNTED, clearGeneric, $stdSites.localKeyWithBorrowMut[0], true);
   report("generic");
 
   reset();
@@ -232,13 +244,14 @@ function main() {
         }
       }
     },
+    $stdSites.localKeyWithBorrowMut[0],
     true,
   );
   report("generic swap");
 
   reset();
-  $withBorrowMut(target, (t) => clearSlot(t, 1), true);
-  $withBorrowMut(COUNTED, (t) => clearSlot(t, 1), true);
+  $withBorrowMut(target, (t) => clearSlot(t, 1), $stdSites.localKeyWithBorrowMut[0], true);
+  $withBorrowMut(COUNTED, (t) => clearSlot(t, 1), $stdSites.localKeyWithBorrowMut[0], true);
   report("given on");
 
   reset();
@@ -256,7 +269,7 @@ function main() {
   const slot = { value: fiber.owner };
   clearSlot(slot, 1);
   fiber.owner = slot.value ?? null;
-  $index(fiber.lanes, 0);
+  $index(fiber.lanes, 0, "test/corpus/nullable_written_through_borrows.rs:185:35");
   const slot$1 = { value: fiber.lanes[0] };
   clearGeneric(slot$1);
   fiber.lanes[0] = slot$1.value ?? null;

@@ -64,7 +64,7 @@ function main() {
   const cs = ["x", "y"];
   $extendText(
     $reserveHint(
-      iterator_map(loud(2), (x) => $index(cs, x), {
+      iterator_map(loud(2), (x) => $index(cs, x, "test/corpus/extend_reserves_by_hint.rs:41:31"), {
         next: loudIterator_next,
         sizeHint: loudIterator_sizeHint,
       }),

@@ -24,7 +24,7 @@ function main() {
   $print(
     `${array == null ? "None" : `Some([${array.join(", ")}])`} ${value == null ? "None" : `Some([${value.join(", ")}])`}\n`,
   );
-  for (const [a, b] of $windows(v, 2)) {
+  for (const [a, b] of $windows(v, 2, "test/corpus/slice_arrays.rs:8:21")) {
     $print(`${Math.imul(a, b)} `);
   }
   $print("\n");
@@ -37,26 +37,29 @@ function main() {
   $print(`[${pairs.map((item) => `[${item.join(", ")}]`).join(", ")}] [${arg.join(", ")}]\n`);
 
   const w = [1, 2, 3, 4, 5, 6, 7];
-  const items$1 = $view(w, 0, 2);
+  const items$1 = $view(w, 0, "test/corpus/slice_arrays.rs:20:25", 2);
   const all = items$1.length === 2 ? items$1 : undefined;
   if (all != null) {
-    $swap(all, 0, 1);
+    $swap(all, 0, 1, "test/corpus/slice_arrays.rs:21:13");
   }
   const [chunks$2, rest$2] = $asChunksMut(w, 3);
   const length = chunks$2.length;
   if (0 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/slice_arrays.rs:24:5",
+    );
   }
   chunks$2[0][2] = 0;
-  chunks$2[$at(chunks$2, 1)] = [9, 9, 9];
+  chunks$2[$at(chunks$2, 1, "test/corpus/slice_arrays.rs:25:5")] = [9, 9, 9];
   [chunks$2[0], chunks$2[1]] = [chunks$2[1], chunks$2[0]];
   const kept = chunks$2[0].slice();
   chunks$2[0][0] = 8;
   $print(`[${kept.join(", ")}] `);
-  rest$2[$at(rest$2, 0)] = -1;
+  rest$2[$at(rest$2, 0, "test/corpus/slice_arrays.rs:30:5")] = -1;
   $print(`[${w.join(", ")}]\n`);
   const [rest$3, chunks$3] = $asChunksMut(w, 2, true);
-  rest$3[$at(rest$3, 0)] = 100;
+  rest$3[$at(rest$3, 0, "test/corpus/slice_arrays.rs:33:5")] = 100;
   chunks$3.reverse();
   for (const chunk of chunks$3) {
     chunk.reverse();
@@ -69,8 +72,8 @@ function main() {
     [5, 6],
   ];
   const flat = $flatView(grid, 2);
-  flat[$at(flat, 1)] = 20;
-  $view(flat, 4).fill(0);
+  flat[$at(flat, 1, "test/corpus/slice_arrays.rs:42:5")] = 20;
+  $view(flat, 4, "test/corpus/slice_arrays.rs:43:9").fill(0);
   flat.reverse();
   const arg$1 = grid.flat().length;
   $print(`[${grid.map((item) => `[${item.join(", ")}]`).join(", ")}] ${arg$1}\n`);

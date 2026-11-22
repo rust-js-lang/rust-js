@@ -49,7 +49,9 @@ function firsts(i, IItemDebug) {
 function main() {
   const v = [1, 2, 3];
   const arr = [4, 5];
-  console.log(`${total(v)} ${total(arr)} ${total($slice(v, 1))} ${total($iter(v.toReversed()))}`);
+  console.log(
+    `${total(v)} ${total(arr)} ${total($slice(v, 1, "test/corpus/iterables_given_to_generics.rs:32:17"))} ${total($iter(v.toReversed()))}`,
+  );
   bump($iter($mutItems(v)));
   bump($mutItems(v).values().drop(1));
   const a2 = [10, 20];

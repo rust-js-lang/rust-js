@@ -18,6 +18,7 @@ import {
   $locked,
   $lockedValue,
   $next,
+  $panic,
   $parseInt,
   $poison,
   $showLocked,
@@ -34,7 +35,7 @@ export function entry() {
 
 const TABLE = {
   init() {
-    throw new Error("no table");
+    throw $panic("no table", "test/corpus/lock_poisoning.rs:14:53");
   },
 };
 
@@ -52,9 +53,9 @@ function message(payload) {
 }
 
 function pick(items, i) {
-  const held = $lock(items);
+  const held = $lock(items, "test/corpus/lock_poisoning.rs:39:29");
   try {
-    return ($index(held.value, i) + 1) >>> 0;
+    return ($index(held.value, i, "test/corpus/lock_poisoning.rs:40:9") + 1) >>> 0;
   } catch (error) {
     $poison(held);
     throw error;
@@ -64,11 +65,19 @@ function pick(items, i) {
 }
 
 function bumpTwice(count, by) {
-  const held = $lock(count);
+  const held = $lock(count, "test/corpus/lock_poisoning.rs:44:33");
   try {
-    const value = $unwrap($checked(held.value + by, 0, 4294967295), "too many");
+    const value = $unwrap(
+      $checked(held.value + by, 0, 4294967295),
+      "test/corpus/lock_poisoning.rs:45:34",
+      "too many",
+    );
     held.value = value;
-    const value$1 = $unwrap($checked(held.value + by, 0, 4294967295), "too many");
+    const value$1 = $unwrap(
+      $checked(held.value + by, 0, 4294967295),
+      "test/corpus/lock_poisoning.rs:46:34",
+      "too many",
+    );
     held.value = value$1;
     return held.value;
   } catch (error) {
@@ -80,12 +89,15 @@ function bumpTwice(count, by) {
 }
 
 function slot(table, i) {
-  const held = $lock(table);
+  const held = $lock(table, "test/corpus/lock_poisoning.rs:51:29");
   if (i >= 2) {
     $cleanup(() => {
       $unlock(held);
     });
-    throw $stringPanic(`index out of bounds: the len is 2 but the index is ${i}`);
+    throw $stringPanic(
+      `index out of bounds: the len is 2 but the index is ${i}`,
+      "test/corpus/lock_poisoning.rs:52:5",
+    );
   }
   const result = held.value[i];
   $unlock(held);
@@ -93,12 +105,18 @@ function slot(table, i) {
 }
 
 function firstOver(items, floor) {
-  const held = $lock(items);
+  const held = $lock(items, "test/corpus/lock_poisoning.rs:56:29");
   try {
     const iter = held.value.values();
     let item;
     while ((item = iter.next().value) != null) {
-      if ($unwrap($checked(item - floor, 0, 4294967295), "below zero") > 0) {
+      if (
+        $unwrap(
+          $checked(item - floor, 0, 4294967295),
+          "test/corpus/lock_poisoning.rs:58:36",
+          "below zero",
+        ) > 0
+      ) {
         return item;
       }
     }
@@ -111,7 +129,7 @@ function firstOver(items, floor) {
 }
 
 function parsedTotal(items) {
-  const held = $lock(items);
+  const held = $lock(items, "test/corpus/lock_poisoning.rs:66:29");
   let total = 0;
   try {
     const iter = held.value.values();
@@ -137,7 +155,7 @@ function evensUntil(items, stop) {
   const found = [];
   let iter;
   for (let round = 0; round < 3; round++) {
-    const held = $lock(items);
+    const held = $lock(items, "test/corpus/lock_poisoning.rs:77:33");
     try {
       if (round !== 1) {
         iter = $iter(held.value);
@@ -147,7 +165,13 @@ function evensUntil(items, stop) {
             break;
           }
           if (item % 2 === 0) {
-            found.push($unwrap($checked(item * (round + 1), 0, 4294967295), "too big"));
+            found.push(
+              $unwrap(
+                $checked(item * (round + 1), 0, 4294967295),
+                "test/corpus/lock_poisoning.rs:86:56",
+                "too big",
+              ),
+            );
           }
         }
         continue;
@@ -166,17 +190,21 @@ function main() {
   const count = { value: 1 };
   let caught = $catchUnwind(() => {
     try {
-      throw new Error("relocked");
+      throw $panic("relocked", "test/corpus/lock_poisoning.rs:97:9");
     } catch (error) {
       $cleanup(() => {
         // Taken as a panic unwinds: their drops poison nothing, released
         // whether or not what they hold may panic.
-        let held = $lock(count);
+        let held = $lock(count, "test/corpus/lock_poisoning.rs:23:42");
         held.value = (held.value + 1) >>> 0;
         $unlock(held);
-        held = $lock(count);
+        held = $lock(count, "test/corpus/lock_poisoning.rs:26:38");
         try {
-          const value = $unwrap($checked(held.value + 1, 0, 4294967295), "too many");
+          const value = $unwrap(
+            $checked(held.value + 1, 0, 4294967295),
+            "test/corpus/lock_poisoning.rs:27:37",
+            "too many",
+          );
           held.value = value;
         } catch (error) {
           $poison(held);
@@ -268,14 +296,14 @@ function main() {
     }
   }
   caught = $catchUnwind(() => {
-    const value = $lock(count, "lock it");
+    const value = $lock(count, "test/corpus/lock_poisoning.rs:117:72", "lock it");
     $unlock(value);
     return value.value;
   });
   const value$1 = caught.TAG === "Err" ? { TAG: "Err", _0: message(caught._0) } : caught;
   console.log(`${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugStr(value$1._0)})`}`);
   caught = $catchUnwind(() => {
-    const value = $lock(count);
+    const value = $lock(count, "test/corpus/lock_poisoning.rs:119:72");
     $unlock(value);
     return value.value;
   });
@@ -318,7 +346,7 @@ function main() {
   console.log(
     `${value$9.TAG === "Ok" ? `Ok(${value$9._0})` : `Err(${$debugParseError(value$9._0, "ParseIntError")})`}`,
   );
-  const value$10 = $lock(words);
+  const value$10 = $lock(words, "test/corpus/lock_poisoning.rs:139:18");
   try {
     value$10.value.push("x");
   } catch (error) {
@@ -332,12 +360,12 @@ function main() {
     `${value$11.TAG === "Ok" ? `Ok(${value$11._0})` : `Err(${$debugStr(value$11._0)})`} ${$isPoisoned(words)}`,
   );
   const isErr = parsedTotal(words).TAG === "Err";
-  const value$12 = $lock(words);
+  const value$12 = $lock(words, "test/corpus/lock_poisoning.rs:141:69");
   console.log(`${isErr} ${value$12.value.length}`);
   $unlock(value$12);
   const numbers = { value: [2, 3, 4, 5, 6] };
   console.log(`[${evensUntil(numbers, 5).join(", ")}] [${evensUntil(numbers, 9).join(", ")}]`);
-  const value$13 = $lock(numbers);
+  const value$13 = $lock(numbers, "test/corpus/lock_poisoning.rs:144:20");
   try {
     value$13.value.push(4294967295 - 1);
   } catch (error) {
@@ -361,16 +389,16 @@ function main() {
 
   const list = { value: [1, 2] };
   try {
-    const _first = $lockRead(list);
+    const _first = $lockRead(list, "test/corpus/lock_poisoning.rs:154:34");
     let _second;
     try {
-      _second = $lockRead(list);
+      _second = $lockRead(list, "test/corpus/lock_poisoning.rs:155:35");
     } catch (error) {
       $unborrow(_first);
       throw error;
     }
     try {
-      throw new Error("readers");
+      throw $panic("readers", "test/corpus/lock_poisoning.rs:156:9");
     } catch (error) {
       $unborrow(_second);
       $unborrow(_first);
@@ -380,14 +408,14 @@ function main() {
     $catchable(error);
   }
   const isPoisoned = $isPoisoned(list);
-  const value$16 = $lockRead(list);
+  const value$16 = $lockRead(list, "test/corpus/lock_poisoning.rs:158:62");
   try {
     console.log(`read ${isPoisoned} [${value$16.value.join(", ")}]`);
   } finally {
     $unborrow(value$16);
   }
   try {
-    const value = $lock(list);
+    const value = $lock(list, "test/corpus/lock_poisoning.rs:160:22");
     try {
       value.value.push(3);
     } catch (error) {
@@ -396,13 +424,13 @@ function main() {
     } finally {
       $unborrow(value);
     }
-    throw new Error("after a write");
+    throw $panic("after a write", "test/corpus/lock_poisoning.rs:161:9");
   } catch (error) {
     $catchable(error);
   }
   console.log(`written ${$isPoisoned(list)}`);
   try {
-    const writing = $lock(list);
+    const writing = $lock(list, "test/corpus/lock_poisoning.rs:165:40");
     try {
       writing.value.push(4);
     } catch (error) {
@@ -412,7 +440,7 @@ function main() {
       throw error;
     }
     try {
-      throw new Error("writer");
+      throw $panic("writer", "test/corpus/lock_poisoning.rs:167:9");
     } catch (error) {
       $cleanup(() => {
         $unlock(writing);
@@ -445,7 +473,7 @@ function main() {
   try {
     const _held = $locked(name, true);
     try {
-      throw new Error("held as a Result");
+      throw $panic("held as a Result", "test/corpus/lock_poisoning.rs:177:9");
     } catch (error) {
       $cleanup(() => {
         if (_held.TAG === "Ok") {
@@ -469,7 +497,7 @@ function main() {
   const once = {};
   caught = $catchUnwind(() =>
     $getOrInitLock(once, () => {
-      throw new Error("not yet");
+      throw $panic("not yet", "test/corpus/lock_poisoning.rs:182:62");
     }),
   );
   const value$18 = once.value;

@@ -471,7 +471,7 @@ pub fn find_first_list(row: &Rc<Fiber>) -> Option<Rc<Fiber>> {
       "      }\n" +
       "      node = returnFiber;\n" +
       "    }\n" +
-      "    const sibling = $unwrap(node.sibling);\n",
+      "    const sibling = $unwrap(node.sibling, \"lib.rs:72:53\");\n",
   );
   const lib = await import(join(dir, "lib.js"));
   const fiber = (tag: number): Record<string, unknown> => ({ tag, flags: 0, return: null, child: null, sibling: null, memoizedProps: null, memoizedState: null });

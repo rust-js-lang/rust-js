@@ -10,7 +10,10 @@ function first(v) {
   console.log("first");
   const length = v.length;
   if (0 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/assign_op_through_a_call.rs:13:10",
+    );
   }
   return {
     get value() {

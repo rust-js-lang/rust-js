@@ -9,7 +9,11 @@ export function entry() {
 function main() {
   const stock = new Map();
   stock.set("pen", 3);
-  console.log(`${$unwrap(stock.get("pen"), "no entry found for key")}`);
-  console.log(`${$unwrap(stock.get("ink"), "no entry found for key")}`);
+  console.log(
+    `${$unwrap(stock.get("pen"), "test/corpus/map_index_missing.rs:8:25", "no entry found for key")}`,
+  );
+  console.log(
+    `${$unwrap(stock.get("ink"), "test/corpus/map_index_missing.rs:9:25", "no entry found for key")}`,
+  );
 }
 //# sourceMappingURL=case.js.map

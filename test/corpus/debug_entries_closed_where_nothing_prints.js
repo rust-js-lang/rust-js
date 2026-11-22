@@ -8,6 +8,7 @@ import {
   $entriesShown,
   $iter,
   $next,
+  $panic,
   $stringPanic,
   iterator_chain,
 } from "@rust-js/std";
@@ -31,7 +32,10 @@ function countedDebug_fmt(counted) {
 function stepsIterator_next(steps) {
   steps[0] = (steps[0] + 1) >>> 0;
   if (steps[0] >= 3) {
-    throw $stringPanic(`step ${steps[0]}`);
+    throw $stringPanic(
+      `step ${steps[0]}`,
+      "test/corpus/debug_entries_closed_where_nothing_prints.rs:38:9",
+    );
   }
   return [steps[0]];
 }
@@ -70,7 +74,10 @@ function touchyDrop_drop(touchy) {
 export const touchyDebug = { fmt: touchyDebug_fmt, $drop: touchyDrop_drop };
 function touchyDebug_fmt(touchy) {
   if (touchy[0] === 2) {
-    throw $stringPanic(`touchy ${touchy[0]}`);
+    throw $stringPanic(
+      `touchy ${touchy[0]}`,
+      "test/corpus/debug_entries_closed_where_nothing_prints.rs:62:9",
+    );
   }
   return `T${touchy[0]}`;
 }
@@ -88,7 +95,7 @@ export const quietDebug = { fmt: quietDebug_fmt };
 function quietDebug_fmt(quiet) {
   let f = "Q";
   if (quiet[0] > 5) {
-    throw new Error("quiet");
+    throw $panic("quiet", "test/corpus/debug_entries_closed_where_nothing_prints.rs:81:13");
   }
   f += quiet[0];
   return f;

@@ -27,14 +27,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-unwinds.test.ts", "-t", "resume_unwind throws what unwound"],
   },
   {
-    name: "panic-of-nothing-written",
-    breaks: "`panic!(\"\")` is `new Error(\"\")`, not `new Error()`",
-    file: "crates/rust-js-program/src/js/make/unwinding.rs",
-    find: "            ExprKind::Str(text) if text.is_empty() => Vec::new(),\n",
-    replace: "",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a port throws an Error by panic!"],
-  },
-  {
     name: "thrown-error-unrecognized",
     breaks: "a downcast of an unwind's payload to `&JsError`, `payload.error`, isn't known as what was thrown",
     file: "crates/rust-js-program/src/js/make/unwinding.rs",

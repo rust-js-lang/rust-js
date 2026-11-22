@@ -27,7 +27,7 @@ function main() {
 
   // Borrowed while the initializer runs, and free in the `else`.
   const cell = { value: 4 };
-  const borrow = $borrow(cell, true);
+  const borrow = $borrow(cell, "test/corpus/let_else_guard_released.rs:36:32", true);
   function map(v) {
     const tryBorrowMut = $tryBorrow(cell, true);
     const result = [v, tryBorrowMut.TAG === "Ok"];
@@ -50,11 +50,11 @@ function main() {
     console.log(`${x} ${free}`);
     const empty = {};
     if (empty.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/let_else_guard_released.rs:41:26");
     }
     if (empty.value == null) {
-      $borrowMut(empty).value = 5;
-      const value = $borrow(empty, true);
+      $borrowMut(empty, "test/corpus/let_else_guard_released.rs:42:16").value = 5;
+      const value = $borrow(empty, "test/corpus/let_else_guard_released.rs:43:35", true);
       try {
         const tryBorrowMut = $tryBorrow(empty, true);
         console.log(

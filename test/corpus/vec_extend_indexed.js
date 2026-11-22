@@ -42,7 +42,7 @@ function main() {
     out.push(items[i]);
   }
   const holder = { items: [] };
-  const items$1 = $slice(out, 1, 3);
+  const items$1 = $slice(out, 1, "test/corpus/vec_extend_indexed.rs:33:28", 3);
   for (let i = 0; i < items$1.length; i++) {
     holder.items.push(items$1[i]);
   }
@@ -53,7 +53,7 @@ function main() {
   for (let i = 0; i < points.length; i++) {
     copied.push({ ...points[i] });
   }
-  $index(copied, 0).x = 9;
+  $index(copied, 0, "test/corpus/vec_extend_indexed.rs:39:11").x = 9;
   console.log(
     `[${points.map((item) => pointDebug_fmt(item)).join(", ")}] [${copied.map((item) => pointDebug_fmt(item)).join(", ")}]`,
   );
@@ -74,7 +74,7 @@ function main() {
   for (let i = 0; i < items$3.length; i++) {
     copiedWhole.push({ ...items$3[i] });
   }
-  $index(copiedWhole, 0).x = 7;
+  $index(copiedWhole, 0, "test/corpus/vec_extend_indexed.rs:48:17").x = 7;
   console.log(
     `[${out.join(", ")}] [${points.map((item) => pointDebug_fmt(item)).join(", ")}] [${copiedWhole.map((item) => pointDebug_fmt(item)).join(", ")}]`,
   );

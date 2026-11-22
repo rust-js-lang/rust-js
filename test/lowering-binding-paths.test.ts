@@ -347,6 +347,7 @@ pub fn internals() -> &'static Internals {
   const server = readFileSync(join(dir, "server.js"), "utf8");
   expect(server).toContain(`const ReactSharedInternalsServer = $unwrap(
   React.__SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE,
+  "server.rs:15:26",
   'The "react-server" condition must be enabled.',
 );
 

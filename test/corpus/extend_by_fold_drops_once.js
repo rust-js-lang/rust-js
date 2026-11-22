@@ -185,7 +185,7 @@ function main() {
   $extendText(
     iterator_map(
       up(),
-      (x) => $unwrap($fromDigit(x, 10)),
+      (x) => $unwrap($fromDigit(x, 10), "test/corpus/extend_by_fold_drops_once.rs:85:54"),
       { next: upIterator_next, fold: upIterator_fold },
       upDrop_drop,
     ),

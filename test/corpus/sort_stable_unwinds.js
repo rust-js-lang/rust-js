@@ -31,7 +31,7 @@ function compared() {
   const n = BigInt.asUintN(64, calls + 1n);
   calls = n;
   if (n === boom) {
-    throw $stringPanic(`comparison ${n}`);
+    throw $stringPanic(`comparison ${n}`, "test/corpus/sort_stable_unwinds.rs:23:9");
   }
 }
 
@@ -76,8 +76,15 @@ function keys(len, distinct, halves) {
       { length: len },
       (_, i) =>
         $rem(
-          $rem((((i * 2) >>> 0) + ($div(i, (len / 2) >>> 0) >>> 0)) >>> 0, len) >>> 0,
+          $rem(
+            (((i * 2) >>> 0) +
+              ($div(i, (len / 2) >>> 0, "test/corpus/sort_stable_unwinds.rs:79:31") >>> 0)) >>>
+              0,
+            len,
+            "test/corpus/sort_stable_unwinds.rs:79:22",
+          ) >>> 0,
           distinct,
+          "test/corpus/sort_stable_unwinds.rs:79:22",
         ) >>> 0,
     );
   }
@@ -85,7 +92,13 @@ function keys(len, distinct, halves) {
   $roomFor(len, 4);
   return Array.from({ length: len }, () => {
     state = BigInt.asUintN(64, state * 6364136223846793005n + 1442695040888963407n);
-    return $rem(Number(BigInt.asUintN(32, state >> 33n)), distinct) >>> 0;
+    return (
+      $rem(
+        Number(BigInt.asUintN(32, state >> 33n)),
+        distinct,
+        "test/corpus/sort_stable_unwinds.rs:88:13",
+      ) >>> 0
+    );
   });
 }
 

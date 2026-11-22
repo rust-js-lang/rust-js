@@ -1,8 +1,7 @@
 // Mutations of crates/rust-js-lower/src/std_types/option.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
-export const mutations: Mutation[] = [
-  {
+export const mutations: Mutation[] = [  {
     name: "inserted-answer-unsaid",
     breaks: "an `insert`'s or `get_or_insert`'s `Some` through a handle is stored `?? null`, `thenableState ??= createThenableState() ?? null` (#2112 S4b)",
     file: "crates/rust-js-lower/src/std_types/option.rs",
@@ -406,8 +405,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `expect` whose message is a variable's is its test too, the message read after the drops, which changed it: `changed` where Rust's is `no impl`",
     file: "crates/rust-js-lower/src/std_types/option.rs",
-    find: "        [option, message] if matches!(message.kind, js::ExprKind::Str(_)) => {\n",
-    replace: "        [option, message] => {\n",
+    find: "        [option, at, message] if matches!(message.kind, js::ExprKind::Str(_)) => {\n",
+    replace: "        [option, at, message] => {\n",
     tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
   },
   {
@@ -620,8 +619,8 @@ export const mutations: Mutation[] = [
     name: "expect-a-str",
     breaks: "`expect`'s payload, a `String`, downcasts as a `&str`",
     file: "crates/rust-js-lower/src/std_types/option.rs",
-    find: "            (option, message.clone(), js::Payload::String)\n",
-    replace: "            (option, message.clone(), js::Payload::Str)\n",
+    find: "            (option, at, message.clone(), js::Payload::String)\n",
+    replace: "            (option, at, message.clone(), js::Payload::Str)\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_payload_kinds\\.rs$"],
   },
 ];

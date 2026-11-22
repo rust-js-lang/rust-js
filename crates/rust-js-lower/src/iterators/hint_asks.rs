@@ -718,7 +718,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `it`, a `TrustedLen` of type `iter_ty` collected into an `Rc<[T]>` or
     /// an `Arc<[T]>` of `item`s, as a `Box<[T]>`, `boxed`, would be, given
     /// room as std's `ToRcSlice` asks it, `$roomForCounted(it, size,
-    /// align)`: of no upper bound, `capacity overflow`; past what a `Layout`
+    /// align, unbounded)`: of no upper bound, `capacity overflow`, raised
+    /// at `unbounded`, std's line of it (#2292); past what a `Layout`
     /// of the slice after its counts holds, `LayoutError`'s (#1678). Not of
     /// one bounded by items that exist already, which asks no room it could
     /// lack (`bounded_by_items`).
@@ -727,13 +728,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         it: Expr,
         (boxed, item): (Ty<'tcx>, Ty<'tcx>),
         iter_ty: Ty<'tcx>,
+        unbounded: Expr,
         span: Span,
     ) -> R<Expr> {
         if self.recognition().bounded_by_items(iter_ty) {
             return Ok(it);
         }
         let (size, align) = self.counted_slice_layout((boxed, item), iter_ty, span)?;
-        Ok(Expr::call_helper("$roomForCounted", vec![it, size, align]))
+        Ok(Expr::call_helper("$roomForCounted", vec![it, size, align, unbounded]))
     }
 
     /// The size and the alignment of each of `item`s an `Rc<[T]>`, as a

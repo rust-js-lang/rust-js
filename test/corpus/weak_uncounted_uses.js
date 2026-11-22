@@ -34,9 +34,9 @@ function main() {
       tag: 1,
     },
   ];
-  const value = $index(links, 0);
+  const value = $index(links, 0, "test/corpus/weak_uncounted_uses.rs:51:21");
   const copy = { ...value };
-  const item = $index(links, 0);
+  const item = $index(links, 0, "test/corpus/weak_uncounted_uses.rs:52:21");
   const slot = { value: item.to };
   try {
     point(slot, root);
@@ -47,15 +47,19 @@ function main() {
       item.to = slot.value;
     }
   }
-  console.log(`${$index(links, 0).to === kid.parent} ${copy.to === kid.parent}`);
+  console.log(
+    `${$index(links, 0, "test/corpus/weak_uncounted_uses.rs:55:28").to === kid.parent} ${copy.to === kid.parent}`,
+  );
   console.log(`${copy.to === null} ${copy.tag}`);
   let w = kid;
   const old = w;
   w = null;
   console.log(`${old === kid} ${w === null}`);
-  const taken = $index(links, 0).to;
-  $index(links, 0).to = null;
-  console.log(`${taken === kid.parent} ${$index(links, 0).to === null}`);
+  const taken = $index(links, 0, "test/corpus/weak_uncounted_uses.rs:66:42").to;
+  $index(links, 0, "test/corpus/weak_uncounted_uses.rs:66:42").to = null;
+  console.log(
+    `${taken === kid.parent} ${$index(links, 0, "test/corpus/weak_uncounted_uses.rs:70:28").to === null}`,
+  );
   const ws = new Array(3).fill(root);
   console.log(`${ws.every((w) => w === kid.parent)}`);
 }

@@ -28,7 +28,7 @@ function main() {
   let once = { value: { a: 1, b: 2 } };
   let base = $addr($ptrTo(once), 12);
   console.log(
-    `struct get ${($addr($ptrTo($unwrap($lentFrom(once, "value", 4, 0, once.value))), 8) - base) >>> 0}`,
+    `struct get ${($addr($ptrTo($unwrap($lentFrom(once, "value", 4, 0, once.value), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:88:5")), 8) - base) >>> 0}`,
   );
   let filled = {};
   base = $addr($ptrTo(filled), 12);
@@ -53,22 +53,22 @@ function main() {
   let it = iterator_peekable($iter([{ a: 1, b: 2 }]));
   base = $addr($ptrTo(it), 28);
   console.log(
-    `struct peek ${($addr($ptrTo($unwrap($lentFrom(it, "peeked", 4, 0, $peek(it)))), 8) - base) >>> 0}`,
+    `struct peek ${($addr($ptrTo($unwrap($lentFrom(it, "peeked", 4, 0, $peek(it)), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:88:5")), 8) - base) >>> 0}`,
   );
   let ok = { TAG: "Ok", _0: { a: 1, b: 2 } };
   base = $addr($ptrTo(ok), 12);
   console.log(
-    `struct ok ${($addr($ptrTo($unwrapOk($lentFrom(ok, "_0", ok.TAG === "Ok" ? 4 : 1, 0, ok))), 8) - base) >>> 0}`,
+    `struct ok ${($addr($ptrTo($unwrapOk($lentFrom(ok, "_0", ok.TAG === "Ok" ? 4 : 1, 0, ok), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:88:5")), 8) - base) >>> 0}`,
   );
   let err = { TAG: "Err", _0: { a: 1, b: 2 } };
   base = $addr($ptrTo(err), 12);
   console.log(
-    `struct err ${($addr($ptrTo($unwrapErr($lentFrom(err, "_0", err.TAG === "Ok" ? 1 : 4, 0, err))), 8) - base) >>> 0}`,
+    `struct err ${($addr($ptrTo($unwrapErr($lentFrom(err, "_0", err.TAG === "Ok" ? 1 : 4, 0, err), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:88:5")), 8) - base) >>> 0}`,
   );
   once = { value: { a: 1, b: 2 } };
   base = $addr($ptrTo(once), 12);
   console.log(
-    `struct get_mut ${($addr($ptrTo($unwrap($lentFrom(once, "value", 4, 0, once.value))), 8) - base) >>> 0}`,
+    `struct get_mut ${($addr($ptrTo($unwrap($lentFrom(once, "value", 4, 0, once.value), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:88:5")), 8) - base) >>> 0}`,
   );
   let lazy = { init: () => ({ a: 1, b: 2 }) };
   base = $addr($ptrTo(lazy), 12);
@@ -81,7 +81,7 @@ function main() {
   it = iterator_peekable($iter([{ a: 1, b: 2 }]));
   base = $addr($ptrTo(it), 28);
   console.log(
-    `struct peek_mut ${($addr($ptrTo($unwrap($lentFrom(it, "peeked", 4, 0, $peek(it)))), 8) - base) >>> 0}`,
+    `struct peek_mut ${($addr($ptrTo($unwrap($lentFrom(it, "peeked", 4, 0, $peek(it)), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:88:5")), 8) - base) >>> 0}`,
   );
   err = { TAG: "Err", _0: { a: 1, b: 2 } };
   base = $addr($ptrTo(err), 12);
@@ -97,6 +97,7 @@ function main() {
               0,
               err.TAG === "Ok" ? { TAG: "Ok", _0: $ptr(err, "_0", 1) } : { TAG: "Err", _0: err._0 },
             ),
+            "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:88:5",
           ),
         ),
         8,
@@ -108,7 +109,7 @@ function main() {
   once = { value: [3, 4] };
   base = $addr($ptrTo(once), 6);
   console.log(
-    `tuple get ${($addr($ptrTo($unwrap($lentFrom(once, "value", 2, 0, once.value))), 4) - base) >>> 0}`,
+    `tuple get ${($addr($ptrTo($unwrap($lentFrom(once, "value", 2, 0, once.value), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:89:5")), 4) - base) >>> 0}`,
   );
   filled = {};
   base = $addr($ptrTo(filled), 6);
@@ -133,22 +134,22 @@ function main() {
   it = iterator_peekable($iter([[3, 4]]));
   base = $addr($ptrTo(it), 24);
   console.log(
-    `tuple peek ${($addr($ptrTo($unwrap($lentFrom(it, "peeked", 18, 0, $peek(it)))), 4) - base) >>> 0}`,
+    `tuple peek ${($addr($ptrTo($unwrap($lentFrom(it, "peeked", 18, 0, $peek(it)), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:89:5")), 4) - base) >>> 0}`,
   );
   ok = { TAG: "Ok", _0: [3, 4] };
   base = $addr($ptrTo(ok), 6);
   console.log(
-    `tuple ok ${($addr($ptrTo($unwrapOk($lentFrom(ok, "_0", ok.TAG === "Ok" ? 2 : 1, 0, ok))), 4) - base) >>> 0}`,
+    `tuple ok ${($addr($ptrTo($unwrapOk($lentFrom(ok, "_0", ok.TAG === "Ok" ? 2 : 1, 0, ok), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:89:5")), 4) - base) >>> 0}`,
   );
   err = { TAG: "Err", _0: [3, 4] };
   base = $addr($ptrTo(err), 6);
   console.log(
-    `tuple err ${($addr($ptrTo($unwrapErr($lentFrom(err, "_0", err.TAG === "Ok" ? 1 : 2, 0, err))), 4) - base) >>> 0}`,
+    `tuple err ${($addr($ptrTo($unwrapErr($lentFrom(err, "_0", err.TAG === "Ok" ? 1 : 2, 0, err), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:89:5")), 4) - base) >>> 0}`,
   );
   once = { value: [3, 4] };
   base = $addr($ptrTo(once), 6);
   console.log(
-    `tuple get_mut ${($addr($ptrTo($unwrap($lentFrom(once, "value", 2, 0, once.value))), 4) - base) >>> 0}`,
+    `tuple get_mut ${($addr($ptrTo($unwrap($lentFrom(once, "value", 2, 0, once.value), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:89:5")), 4) - base) >>> 0}`,
   );
   lazy = { init: () => [3, 4] };
   base = $addr($ptrTo(lazy), 6);
@@ -161,7 +162,7 @@ function main() {
   it = iterator_peekable($iter([[3, 4]]));
   base = $addr($ptrTo(it), 24);
   console.log(
-    `tuple peek_mut ${($addr($ptrTo($unwrap($lentFrom(it, "peeked", 18, 0, $peek(it)))), 4) - base) >>> 0}`,
+    `tuple peek_mut ${($addr($ptrTo($unwrap($lentFrom(it, "peeked", 18, 0, $peek(it)), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:89:5")), 4) - base) >>> 0}`,
   );
   err = { TAG: "Err", _0: [3, 4] };
   base = $addr($ptrTo(err), 6);
@@ -177,6 +178,7 @@ function main() {
               0,
               err.TAG === "Ok" ? { TAG: "Ok", _0: $ptr(err, "_0", 1) } : { TAG: "Err", _0: err._0 },
             ),
+            "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:89:5",
           ),
         ),
         4,
@@ -188,7 +190,7 @@ function main() {
   once = { value: [5, 6, 7] };
   base = $addr($ptrTo(once), 8);
   console.log(
-    `array get ${($addr($ptrTo($unwrap($lentFrom(once, "value", 2, 0, once.value))), 6) - base) >>> 0}`,
+    `array get ${($addr($ptrTo($unwrap($lentFrom(once, "value", 2, 0, once.value), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:90:5")), 6) - base) >>> 0}`,
   );
   filled = {};
   base = $addr($ptrTo(filled), 8);
@@ -213,22 +215,22 @@ function main() {
   it = iterator_peekable($iter([[5, 6, 7]]));
   base = $addr($ptrTo(it), 24);
   console.log(
-    `array peek ${($addr($ptrTo($unwrap($lentFrom(it, "peeked", 2, 0, $peek(it)))), 6) - base) >>> 0}`,
+    `array peek ${($addr($ptrTo($unwrap($lentFrom(it, "peeked", 2, 0, $peek(it)), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:90:5")), 6) - base) >>> 0}`,
   );
   ok = { TAG: "Ok", _0: [5, 6, 7] };
   base = $addr($ptrTo(ok), 8);
   console.log(
-    `array ok ${($addr($ptrTo($unwrapOk($lentFrom(ok, "_0", ok.TAG === "Ok" ? 2 : 1, 0, ok))), 6) - base) >>> 0}`,
+    `array ok ${($addr($ptrTo($unwrapOk($lentFrom(ok, "_0", ok.TAG === "Ok" ? 2 : 1, 0, ok), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:90:5")), 6) - base) >>> 0}`,
   );
   err = { TAG: "Err", _0: [5, 6, 7] };
   base = $addr($ptrTo(err), 8);
   console.log(
-    `array err ${($addr($ptrTo($unwrapErr($lentFrom(err, "_0", err.TAG === "Ok" ? 1 : 2, 0, err))), 6) - base) >>> 0}`,
+    `array err ${($addr($ptrTo($unwrapErr($lentFrom(err, "_0", err.TAG === "Ok" ? 1 : 2, 0, err), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:90:5")), 6) - base) >>> 0}`,
   );
   once = { value: [5, 6, 7] };
   base = $addr($ptrTo(once), 8);
   console.log(
-    `array get_mut ${($addr($ptrTo($unwrap($lentFrom(once, "value", 2, 0, once.value))), 6) - base) >>> 0}`,
+    `array get_mut ${($addr($ptrTo($unwrap($lentFrom(once, "value", 2, 0, once.value), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:90:5")), 6) - base) >>> 0}`,
   );
   lazy = { init: () => [5, 6, 7] };
   base = $addr($ptrTo(lazy), 8);
@@ -241,7 +243,7 @@ function main() {
   it = iterator_peekable($iter([[5, 6, 7]]));
   base = $addr($ptrTo(it), 24);
   console.log(
-    `array peek_mut ${($addr($ptrTo($unwrap($lentFrom(it, "peeked", 2, 0, $peek(it)))), 6) - base) >>> 0}`,
+    `array peek_mut ${($addr($ptrTo($unwrap($lentFrom(it, "peeked", 2, 0, $peek(it)), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:90:5")), 6) - base) >>> 0}`,
   );
   err = { TAG: "Err", _0: [5, 6, 7] };
   base = $addr($ptrTo(err), 8);
@@ -257,6 +259,7 @@ function main() {
               0,
               err.TAG === "Ok" ? { TAG: "Ok", _0: $ptr(err, "_0", 1) } : { TAG: "Err", _0: err._0 },
             ),
+            "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:90:5",
           ),
         ),
         6,
@@ -271,7 +274,7 @@ function main() {
   ok = { TAG: "Ok", _0: { a: 8, b: 9 } };
   base = $addr($ptrTo(ok), 12);
   console.log(
-    `option ok ${($addr($ptrOuter($unwrapOk($lentFrom(ok, "_0", ok.TAG === "Ok" ? 0 : 4, ok.TAG === "Ok" ? 4 : 0, ok)), 4), 12) - base) >>> 0}`,
+    `option ok ${($addr($ptrOuter($unwrapOk($lentFrom(ok, "_0", ok.TAG === "Ok" ? 0 : 4, ok.TAG === "Ok" ? 4 : 0, ok), "test/corpus/address_of_an_object_std_lends_from_its_storage.rs:96:42"), 4), 12) - base) >>> 0}`,
   );
   // Variants at different offsets: the `Ok`'s at 2, the `Err`'s at 4.
   for (const r of [

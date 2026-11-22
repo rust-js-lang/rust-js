@@ -37,7 +37,7 @@ function reversedLen(items, part, JClone, JSliceIndexU32Slice) {
 }
 
 function second(items) {
-  return $index(items, 1);
+  return $index(items, 1, "test/corpus/index_bound_generic.rs:58:10");
 }
 
 function main() {

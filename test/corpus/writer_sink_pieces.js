@@ -742,8 +742,8 @@ function main() {
     text: "",
     calls: 0,
   };
-  const value$1 = $index(args, 0);
-  const value$2 = $index(args, 1);
+  const value$1 = $index(args, 0, "test/corpus/writer_sink_pieces.rs:322:42");
+  const value$2 = $index(args, 1, "test/corpus/writer_sink_pieces.rs:322:51");
   let r = $writeTry(() => {
     const f = $writerSink(counted, countedWrite_writeStr, countedWrite_writeStr);
     f.write(value$1);
@@ -753,8 +753,8 @@ function main() {
   console.log(
     `${$debugStr(counted.text)} ${counted.calls} ${r === undefined ? "Ok(())" : "Err(Error)"}`,
   );
-  const value$3 = $index(args, 2);
-  const value$4 = $index(args, 3);
+  const value$3 = $index(args, 2, "test/corpus/writer_sink_pieces.rs:324:43");
+  const value$4 = $index(args, 3, "test/corpus/writer_sink_pieces.rs:324:52");
   r = $writeTry(() => {
     const f$1 = $writerSink(counted, countedWrite_writeStr, countedWrite_writeStr);
     f$1.write("[");
@@ -767,14 +767,14 @@ function main() {
   );
   const inlined = [[]];
   logWrite_writeStr(inlined, "b1");
-  const value$5 = $index(args, 0);
+  const value$5 = $index(args, 0, "test/corpus/writer_sink_pieces.rs:328:33");
   const f = $writerSink(inlined, logWrite_writeStr, logWrite_writeStr);
   f.write(value$5);
   f.write("\n");
   logWrite_writeStr(inlined, "\n");
   const value = inlined;
   const impl = logWrite;
-  const value$6 = $index(args, 1);
+  const value$6 = $index(args, 1, "test/corpus/writer_sink_pieces.rs:330:56");
   const result = $writeTry(() => {
     const f$3 = $writerSink(
       { value, impl },
@@ -785,7 +785,11 @@ function main() {
     f$3.write("|");
     $writeInteger(f$3, -3);
   });
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_pieces.rs:330:66",
+  );
   console.log(`[${inlined[0].map((item) => $debugStr(item)).join(", ")}]`);
 
   const nums = [-42, 7, 0, -2147483648];
@@ -793,14 +797,14 @@ function main() {
   const wide = [-170141183460469231731687303715884105728n];
   const s = "héllo";
   const c = "é";
-  const b = $index(nums, 2) === 0;
+  const b = $index(nums, 2, "test/corpus/writer_sink_pieces.rs:338:17") === 0;
 
   const log = [[]];
-  const value$7 = $index(nums, 0);
-  const value$8 = $index(nums, 3);
-  const value$9 = $index(big, 0);
-  const value$10 = $index(big, 1);
-  const value$11 = $index(wide, 0);
+  const value$7 = $index(nums, 0, "test/corpus/writer_sink_pieces.rs:341:39");
+  const value$8 = $index(nums, 3, "test/corpus/writer_sink_pieces.rs:341:48");
+  const value$9 = $index(big, 0, "test/corpus/writer_sink_pieces.rs:341:56");
+  const value$10 = $index(big, 1, "test/corpus/writer_sink_pieces.rs:341:64");
+  const value$11 = $index(wide, 0, "test/corpus/writer_sink_pieces.rs:341:73");
   const f$1 = $writerSink(log, logWrite_writeStr, logWrite_writeStr);
   $writeInteger(f$1, value$7);
   f$1.write(" ");
@@ -811,9 +815,9 @@ function main() {
   f$1.write(String(value$10));
   f$1.write(" ");
   $writeInteger(f$1, value$11);
-  const value$12 = $index(nums, 1);
-  const value$13 = $index(nums, 1);
-  const value$14 = $index(nums, 0);
+  const value$12 = $index(nums, 1, "test/corpus/writer_sink_pieces.rs:342:45");
+  const value$13 = $index(nums, 1, "test/corpus/writer_sink_pieces.rs:342:54");
+  const value$14 = $index(nums, 0, "test/corpus/writer_sink_pieces.rs:342:63");
   const f$2 = $writerSink(log, logWrite_writeStr, logWrite_writeStr);
   $writeInteger(f$2, value$12, { alternate: true });
   f$2.write(" ");
@@ -822,8 +826,8 @@ function main() {
   $writeInteger(f$2, value$14);
   f$2.write(" ");
   f$2.write(b ? "true" : "false");
-  const value$15 = $index(nums, 0);
-  const value$16 = $index(big, 1);
+  const value$15 = $index(nums, 0, "test/corpus/writer_sink_pieces.rs:343:37");
+  const value$16 = $index(big, 1, "test/corpus/writer_sink_pieces.rs:343:45");
   const f$3 = $writerSink(log, logWrite_writeStr, logWrite_writeStr);
   $writeIntegral(f$3, true, "0x", (value$15 >>> 0).toString(16), { debugHex: "x" });
   f$3.write(" ");
@@ -848,7 +852,7 @@ function main() {
   f$6.write("|");
   $writePadded(f$6, s, { width: 10, precision: 3 });
   f$6.write("|");
-  const value$17 = $index(nums, 0);
+  const value$17 = $index(nums, 0, "test/corpus/writer_sink_pieces.rs:347:47");
   const f$7 = $writerSink(log, logWrite_writeStr, logWrite_writeStr);
   $writeInteger(f$7, value$17, { width: 6 });
   f$7.write("|");
@@ -858,8 +862,8 @@ function main() {
   console.log(`[${log[0].map((item) => $debugStr(item)).join(", ")}]`);
 
   let chars = [[]];
-  const value$18 = $index(nums, 1);
-  const value$19 = $index(nums, 1);
+  const value$18 = $index(nums, 1, "test/corpus/writer_sink_pieces.rs:351:48");
+  const value$19 = $index(nums, 1, "test/corpus/writer_sink_pieces.rs:351:63");
   const f$8 = $writerSink(chars, charsWrite_writeStr, charsWrite_writeChar);
   $writeInteger(f$8, value$18, { width: 5, fill: "*", align: "Right" });
   f$8.write("|");
@@ -868,8 +872,8 @@ function main() {
   f$8.writeChar(c);
   f$8.write("|");
   $writeInteger(f$8, value$19, { plus: true });
-  const value$20 = $index(nums, 0);
-  const value$21 = $index(nums, 1);
+  const value$20 = $index(nums, 0, "test/corpus/writer_sink_pieces.rs:352:41");
+  const value$21 = $index(nums, 1, "test/corpus/writer_sink_pieces.rs:352:50");
   const f$9 = $writerSink(chars, charsWrite_writeStr, charsWrite_writeChar);
   $writeInteger(f$9, value$20, { width: 8, precision: 3, zero: true });
   f$9.write("|");
@@ -877,27 +881,77 @@ function main() {
   console.log(`[${chars[0].map((item) => $debugStr(item)).join(", ")}]`);
 
   const any = [[]];
-  const result$1 = $writeTry(() => intoAny($cellOf(any), $index(nums, 0), s, c, logWrite));
-  $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
-  const result$2 = $writeTry(() => intoAny($cellOf(any), $index(nums, 1), "", "x", logWrite));
-  $writeExpect(result$2, "called `Result::unwrap()` on an `Err` value");
+  const result$1 = $writeTry(() =>
+    intoAny(
+      $cellOf(any),
+      $index(nums, 0, "test/corpus/writer_sink_pieces.rs:356:28"),
+      s,
+      c,
+      logWrite,
+    ),
+  );
+  $writeExpect(
+    result$1,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_pieces.rs:356:40",
+  );
+  const result$2 = $writeTry(() =>
+    intoAny(
+      $cellOf(any),
+      $index(nums, 1, "test/corpus/writer_sink_pieces.rs:357:28"),
+      "",
+      "x",
+      logWrite,
+    ),
+  );
+  $writeExpect(
+    result$2,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_pieces.rs:357:42",
+  );
   console.log(`[${any[0].map((item) => $debugStr(item)).join(", ")}]`);
   let text = "";
   const w = { value: text };
-  const value$22 = $writeTry(() => intoAny(w, $index(nums, 0), s, c, $stringWriter));
+  const value$22 = $writeTry(() =>
+    intoAny(w, $index(nums, 0, "test/corpus/writer_sink_pieces.rs:360:29"), s, c, $stringWriter),
+  );
   text = w.value;
-  $writeExpect(value$22, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    value$22,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_pieces.rs:360:41",
+  );
   console.log(`${$debugStr(text)}`);
   const own = [[]];
-  const result$3 = $writeTry(() => intoAny($cellOf(own), $index(nums, 1), s, c, charsWrite));
-  $writeExpect(result$3, "called `Result::unwrap()` on an `Err` value");
+  const result$3 = $writeTry(() =>
+    intoAny(
+      $cellOf(own),
+      $index(nums, 1, "test/corpus/writer_sink_pieces.rs:363:28"),
+      s,
+      c,
+      charsWrite,
+    ),
+  );
+  $writeExpect(
+    result$3,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_pieces.rs:363:40",
+  );
   console.log(`[${own[0].map((item) => $debugStr(item)).join(", ")}]`);
 
   const d = [[]];
   const result$4 = $writeTry(() => intoDyn({ value: d, impl: logWrite }, b, s));
-  $writeExpect(result$4, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$4,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_pieces.rs:367:29",
+  );
   const result$5 = $writeTry(() => intoDyn({ value: d, impl: logWrite }, !b, ""));
-  $writeExpect(result$5, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$5,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_pieces.rs:368:30",
+  );
   console.log(`[${d[0].map((item) => $debugStr(item)).join(", ")}]`);
 
   for (let i = 0; i < nums.length; i++) {
@@ -911,7 +965,15 @@ function main() {
     console.log(`${t[0]} ${$debugStr(t[1])} ${r === undefined ? "Ok(())" : "Err(Error)"}`);
   }
   const t = [0, ""];
-  r = $writeTry(() => intoAny($cellOf(t), $index(nums, 1), s, c, thirdWrite));
+  r = $writeTry(() =>
+    intoAny(
+      $cellOf(t),
+      $index(nums, 1, "test/corpus/writer_sink_pieces.rs:377:34"),
+      s,
+      c,
+      thirdWrite,
+    ),
+  );
   console.log(`${t[0]} ${$debugStr(t[1])} ${r === undefined ? "Ok(())" : "Err(Error)"}`);
 
   // Each argument is evaluated before anything is written: the index
@@ -919,7 +981,7 @@ function main() {
   const early = [[]];
   const at = nums.length + 1;
   const ended = $catchUnwind(() => {
-    const value = $index(nums, at);
+    const value = $index(nums, at, "test/corpus/writer_sink_pieces.rs:384:79");
     const f$14 = $writerSink(early, logWrite_writeStr, logWrite_writeStr);
     f$14.write(s);
     $writeInteger(f$14, value);
@@ -996,7 +1058,11 @@ function main() {
     align: "Left",
   });
   const result$6 = $writeTry(() => shown($cellOf(chars), p, charsWrite));
-  $writeExpect(result$6, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$6,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_pieces.rs:419:27",
+  );
   console.log(`[${chars[0].map((item) => $debugStr(item)).join(", ")}]`);
 
   for (let n = 1; n < 9; n++) {

@@ -55,7 +55,7 @@ function rotated(items, TCopy) {
 
 function swappedFirst(items, v) {
   const cells = $mutItems(items);
-  const item = $index(cells, 0);
+  const item = $index(cells, 0, "test/corpus/cell_from_mut_generic.rs:44:5");
   const old = $apart(item.value);
   item.value = v;
   return old;
@@ -136,7 +136,8 @@ function main() {
 
   const numbers = [10, 20];
   const cells = $mutItems(numbers);
-  $index(cells, 1).value = (cells[0].value + 1) & 65535;
+  $index(cells, 1, "test/corpus/cell_from_mut_generic.rs:114:5").value =
+    (cells[0].value + 1) & 65535;
   console.log(`[${numbers.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

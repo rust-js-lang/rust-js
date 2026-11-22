@@ -22,14 +22,20 @@ function countedClone_cloneFrom(counted, source) {
 function main() {
   const source = [[1]];
   const target = [[2]];
-  $cloneFromSlice(target, source, undefined, (items, i, from) => {
-    if (items[i] != null && from != null) {
-      countedClone_cloneFrom(items[i], from);
-    } else {
-      const old = items[i];
-      items[i] = from == null ? from : countedClone_clone(from);
-    }
-  });
+  $cloneFromSlice(
+    target,
+    source,
+    "test/corpus/clone_from_slice_nested_option.rs:21:12",
+    undefined,
+    (items, i, from) => {
+      if (items[i] != null && from != null) {
+        countedClone_cloneFrom(items[i], from);
+      } else {
+        const old = items[i];
+        items[i] = from == null ? from : countedClone_clone(from);
+      }
+    },
+  );
   console.log(`${target[0]?.[0] ?? 0}`);
 }
 //# sourceMappingURL=case.js.map

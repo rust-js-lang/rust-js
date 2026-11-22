@@ -66,17 +66,17 @@ function main() {
     console.log(`${Value.show(v)} ${Value.isZero(v)}`);
   }
   // A copy is a union of its own: writing one leaves the other.
-  const value = $index(values, 0);
+  const value = $index(values, 0, "test/corpus/unions.rs:96:22");
   const copy = { ...value, number: { ...value.number } };
-  $unionSet($index(values, 0).number, "int", 8);
-  $index(values, 0).kind = "Int";
+  $unionSet($index(values, 0, "test/corpus/unions.rs:97:11").number, "int", 8);
+  $index(values, 0, "test/corpus/unions.rs:98:11").kind = "Int";
   console.log(
     `${$unionField(copy.number, "int", [], {
       float(value) {
         const bytes = $toBytes($floatToBits(value, 8), 8, true);
         return $fromBytes(bytes.slice(0, 4), 4, true, true);
       },
-    })} ${$unionField($index(values, 0).number, "int", [], {
+    })} ${$unionField($index(values, 0, "test/corpus/unions.rs:100:50").number, "int", [], {
       float(value) {
         const bytes = $toBytes($floatToBits(value, 8), 8, true);
         return $fromBytes(bytes.slice(0, 4), 4, true, true);
@@ -84,9 +84,9 @@ function main() {
     })}`,
   );
   // Written as another field, it holds that one now.
-  $index(values, 1).kind = "Int";
-  $unionSet($index(values, 1).number, "int", -3);
-  console.log(`${Value.show($index(values, 1))}`);
+  $index(values, 1, "test/corpus/unions.rs:103:11").kind = "Int";
+  $unionSet($index(values, 1, "test/corpus/unions.rs:104:11").number, "int", -3);
+  console.log(`${Value.show($index(values, 1, "test/corpus/unions.rs:105:26"))}`);
   const n = { int: 1 };
   setFloat(n, 0.5);
   console.log(`${$displayF64($unionField(n, "float"))}`);

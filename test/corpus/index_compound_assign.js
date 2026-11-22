@@ -12,17 +12,21 @@ function upgrade(root, lanesToUpgrade) {
   let lanes = lanesToUpgrade;
   while (lanes) {
     const lane = lanes & -lanes;
-    root.entanglements[$at(root.entanglements, SYNC_LANE_INDEX)] |= lane;
+    root.entanglements[
+      $at(root.entanglements, SYNC_LANE_INDEX, "test/corpus/index_compound_assign.rs:19:40")
+    ] |= lane;
     lanes &= ~lane;
   }
 }
 
 function spawned(root, index, entangled) {
-  root.entanglements[$at(root.entanglements, index)] |= 64 | (entangled & 8);
+  root.entanglements[
+    $at(root.entanglements, index, "test/corpus/index_compound_assign.rs:25:36")
+  ] |= 64 | (entangled & 8);
 }
 
 function plain(v, index, lane) {
-  v[$at(v, index)] ^= lane;
+  v[$at(v, index, "test/corpus/index_compound_assign.rs:29:5")] ^= lane;
   v[0] = (v[0] + lane) | 0;
 }
 

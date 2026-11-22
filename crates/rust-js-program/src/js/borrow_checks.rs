@@ -20,8 +20,9 @@ impl Expr {
         }
     }
 
-    /// Of a momentary borrow, its cell and whether it's mutable.
-    pub fn momentary_cell(&self) -> Option<(&Expr, bool)> {
+    /// Of a momentary borrow, its cell, whether it's mutable, and where its
+    /// panic was raised, `raisedAt` (#2292).
+    pub fn momentary_cell(&self) -> Option<(&Expr, bool, &Expr)> {
         if !self.facts.has(Known::Momentary) {
             return None;
         }
@@ -29,8 +30,8 @@ impl Expr {
             return None;
         };
         match (callee.helper_name(), given.as_slice()) {
-            (Some("$borrowMut"), [cell]) => Some((cell, true)),
-            (Some("$borrow"), [cell]) => Some((cell, false)),
+            (Some("$borrowMut"), [cell, raised]) => Some((cell, true, raised)),
+            (Some("$borrow"), [cell, raised]) => Some((cell, false, raised)),
             _ => None,
         }
     }
@@ -40,14 +41,14 @@ impl Stmt {
     /// A momentary borrow's check, where it's evaluated first: `if
     /// (cell.borrows) $alreadyBorrowed();` of a mutable one, `if
     /// (cell.borrows < 0) $alreadyMutablyBorrowed();` of a shared one,
-    /// std's panics.
-    pub fn borrow_check(cell: Expr, mutable: bool, span: Span) -> Stmt {
+    /// std's panics, raised where the borrow was, `raised` (#2292).
+    pub fn borrow_check(cell: Expr, mutable: bool, raised: Expr, span: Span) -> Stmt {
         let borrows = Expr::member(cell, "borrows");
         let (taken, refused) = match mutable {
             true => (borrows, "$alreadyBorrowed"),
             false => (Expr::bin(Op::Lt, borrows, Expr::int(0)), "$alreadyMutablyBorrowed"),
         };
-        let refused = StmtKind::Expr(Expr::call_helper(refused, Vec::new())).at(span);
+        let refused = StmtKind::Expr(Expr::call_helper(refused, vec![raised])).at(span);
         StmtKind::If(taken, vec![refused], None).at(span)
     }
 
@@ -70,8 +71,9 @@ impl Stmt {
             _ => return Vec::new(),
         };
         let mut checks = Vec::new();
-        while let Taken::Cell(cell, mutable) = taken_first(first) {
-            checks.push(Stmt::borrow_check(cell, mutable, span));
+        while let Taken::Cell(taken) = taken_first(first) {
+            let (cell, mutable, raised) = *taken;
+            checks.push(Stmt::borrow_check(cell, mutable, raised, span));
         }
         checks
     }
@@ -140,19 +142,20 @@ pub fn borrow_checks_first(stmts: &mut Vec<Stmt>) {
 /// same twice, which is taken, its cell in its place; something else that
 /// does something, where the walk stops; or nothing that does.
 enum Taken {
-    Cell(Expr, bool),
+    /// The cell, whether its borrow is mutable, and where it's raised.
+    Cell(Box<(Expr, bool, Expr)>),
     Stopped,
     Nothing,
 }
 
 fn taken_first(e: &mut Expr) -> Taken {
-    if let Some((cell, mutable)) = e.momentary_cell()
+    if let Some((cell, mutable, raised)) = e.momentary_cell()
         && cell.reads_same()
         && !cell.has_effects()
     {
-        let cell = cell.clone();
+        let (cell, raised) = (cell.clone(), raised.clone());
         *e = cell.clone();
-        return Taken::Cell(cell, mutable);
+        return Taken::Cell(Box::new((cell, mutable, raised)));
     }
     // Its parts in the order JS evaluates them, those it always does; and
     // whether what it does then, or the parts it may not evaluate, stop
@@ -204,7 +207,13 @@ mod tests {
                 StmtKind::Expr(call).at(Span::NONE),
             ];
             let mut stmts = vec![
-                StmtKind::Const(alias.clone(), Expr::momentary_borrow(Expr::var(&cell), true)).at(Span::NONE),
+                StmtKind::Const(
+                    alias.clone(),
+                    Expr::raised_at(Expr::str("lib.rs:1:1"), || {
+                        Expr::momentary_borrow(Expr::var(&cell), true)
+                    }),
+                )
+                .at(Span::NONE),
                 StmtKind::If(Expr::var("c"), block, None).at(Span::NONE),
             ];
             borrow_checks_first(&mut stmts);

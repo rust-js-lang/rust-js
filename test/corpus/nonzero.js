@@ -29,7 +29,7 @@ function nonZero(n) {
 }
 
 function main() {
-  const a = $unwrap(7);
+  const a = $unwrap(7, "test/corpus/nonzero.rs:20:31");
   const b = undefined;
   console.log(`${a} ${a} ${b == null ? "None" : `Some(${b})`} ${(a + 1) & 255}`);
   const value = year(2024);
@@ -42,10 +42,10 @@ function main() {
   console.log(
     `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
-  const big = $unwrap(18446744073709551615n);
+  const big = $unwrap(18446744073709551615n, "test/corpus/nonzero.rs:25:41");
   console.log(`${big} ${$bigLeadingZeros(big)} 1`);
   const c = a | 8;
-  console.log(`${c} ${a < c} ${a === $unwrap(7)}`);
+  console.log(`${c} ${a < c} ${a === $unwrap(7, "test/corpus/nonzero.rs:28:59")}`);
   const parse = $nonZeroOk($parseInt("12", 0, 255), "number would be zero for non-zero type");
   console.log(
     `${parse.TAG === "Ok" ? `Ok(${parse._0})` : `Err(${$debugParseError(parse._0, "ParseIntError")})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugParseError(result._0, "ParseIntError")})`))($nonZeroOk($parseInt("0", 0, 255), "number would be zero for non-zero type"))}`,
@@ -58,9 +58,13 @@ function main() {
   );
   const d = -5;
   console.log(
-    `${Math.abs(d) | 0} ${((value) => (value == null ? "None" : `Some(${value})`))($checked(d * $unwrap(2), -2147483648, 2147483647))}`,
+    `${Math.abs(d) | 0} ${((value) => (value == null ? "None" : `Some(${value})`))($checked(d * $unwrap(2, "test/corpus/nonzero.rs:33:73"), -2147483648, 2147483647))}`,
   );
-  const v = [$unwrap(9), a, $unwrap(1)];
+  const v = [
+    $unwrap(9, "test/corpus/nonzero.rs:34:40"),
+    a,
+    $unwrap(1, "test/corpus/nonzero.rs:34:71"),
+  ];
   v.sort((a, b) => a - b);
   console.log(`[${v.join(", ")}] 8`);
   for (let i = 0; i < v.length; i++) {

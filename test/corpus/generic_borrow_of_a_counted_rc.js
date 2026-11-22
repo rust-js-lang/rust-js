@@ -36,7 +36,7 @@ function shout(t, TAsRefStr, dropT) {
 }
 
 function first(t, TAsRefI32Slice) {
-  return $index(TAsRefI32Slice.asRef(t), 0);
+  return $index(TAsRefI32Slice.asRef(t), 0, "test/corpus/generic_borrow_of_a_counted_rc.rs:20:5");
 }
 
 function valueOf(k, KBorrowI32) {

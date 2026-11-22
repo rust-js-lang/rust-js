@@ -29,7 +29,7 @@ function nodeClone_clone(node) {
   if (me != null) {
     try {
       if (me.value.borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("test/corpus/refcell_clone_borrows_itself.rs:18:16");
       }
       const borrowMut = me.value;
       borrowMut.visits = (borrowMut.visits + 1) >>> 0;
@@ -53,14 +53,21 @@ function main() {
   const node = $newCyclic((me) => ({ me: $weakClone(me), visits: 0 }));
   try {
     if (node.value.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/refcell_clone_borrows_itself.rs:29:10");
     }
     const borrowMut = node.value;
     borrowMut.visits = (borrowMut.visits + 1) >>> 0;
-    console.log(`${$borrow(node.value).visits}`);
-    const copy = $withBorrow(node.value, (value) => nodeClone_clone(value), true);
+    console.log(
+      `${$borrow(node.value, "test/corpus/refcell_clone_borrows_itself.rs:30:25").visits}`,
+    );
+    const copy = $withBorrow(
+      node.value,
+      (value) => nodeClone_clone(value),
+      "test/corpus/refcell_clone_borrows_itself.rs:31:16",
+      true,
+    );
     try {
-      console.log(`${$borrow(copy).visits}`);
+      console.log(`${$borrow(copy, "test/corpus/refcell_clone_borrows_itself.rs:32:25").visits}`);
     } finally {
       $weakDrop(copy.me);
     }

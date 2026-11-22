@@ -336,7 +336,7 @@ pub async fn load(url: &str) -> String {
 import { $unwrap } from "@rust-js/std";
 
 export function mount() {
-  const app = $unwrap(document.getElementById("app"), "the page has an #app");
+  const app = $unwrap(document.getElementById("app"), "lib.rs:6:51", "the page has an #app");
   const button = document.createElement("button");
   button.textContent = "Save";
   button.addEventListener("click", (event) => {
@@ -768,6 +768,7 @@ function orderDeserialize_deserialize(json) {
 export function toJson(order) {
   return $unwrapOk(
     $toJson(order, orderSerialize_serialize, false),
+    "lib.rs:12:34",
     "an order is JSON",
     $debugJsonError,
   );

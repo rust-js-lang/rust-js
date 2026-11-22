@@ -48,7 +48,7 @@ function countedRead_read(counted, buf) {
   if (counted.log) {
     $print(` ${buf.length}->${n}`);
   }
-  for (const b of $mutItems($view(buf, 0, n))) {
+  for (const b of $mutItems($view(buf, 0, "test/corpus/read_of_a_crates_own_reader.rs:28:26", n))) {
     b.value = counted.next;
     counted.next = counted.next === 122 ? 97 : (counted.next + 1) & 255;
   }
@@ -75,7 +75,11 @@ function flakyRead_read(flaky, buf) {
     return { TAG: "Err", _0: new $IoError(kind, { value: "flaky", impl: $stringError() }) };
   }
   const n = Math.min(buf.length, flaky.bytes.length, 2);
-  $copyFromSlice($view(buf, 0, n), flaky.bytes.slice(0, n));
+  $copyFromSlice(
+    $view(buf, 0, "test/corpus/read_of_a_crates_own_reader.rs:58:12", n),
+    flaky.bytes.slice(0, n),
+    "test/corpus/read_of_a_crates_own_reader.rs:58:18",
+  );
   flaky.bytes = flaky.bytes.slice(n);
   return { TAG: "Ok", _0: n };
 }
@@ -263,7 +267,12 @@ function main() {
     bytes: [104, 101, 108, 108, 111, 33],
   };
   read = $writeTry(() => flakyRead.readExact({ value: flaky }, buf));
-  const arg = $unwrapOk($fromUtf8(buf), undefined, $debugUtf8Error);
+  const arg = $unwrapOk(
+    $fromUtf8(buf),
+    "test/corpus/read_of_a_crates_own_reader.rs:161:69",
+    undefined,
+    $debugUtf8Error,
+  );
   $print(`read_exact: ${$ioResultDebug(read)} ${$debugStr(arg)}\n`);
   const buf$1 = new Array(5).fill(0);
   const value$6 = {
@@ -316,7 +325,14 @@ function main() {
           countedRead,
         ),
         (iterator) => bytesIterator_next(iterator, countedRead),
-      ).map((result) => $unwrapOk(result, undefined, $ioErrorDebug)),
+      ).map((result) =>
+        $unwrapOk(
+          result,
+          "test/corpus/read_of_a_crates_own_reader.rs:195:6",
+          undefined,
+          $ioErrorDebug,
+        ),
+      ),
       1,
       false,
     ),
@@ -394,6 +410,8 @@ function main() {
   $print(
     `its own string: ${value$17.TAG === "Ok" ? `Ok(${value$17._0})` : `Err(${value$17._0})`} ${$debugStr(s$3)}\n`,
   );
-  $print(`${$unwrapOk(slurp(undefined, wholeRead), undefined, $ioErrorDebug)}\n`);
+  $print(
+    `${$unwrapOk(slurp(undefined, wholeRead), "test/corpus/read_of_a_crates_own_reader.rs:233:33", undefined, $ioErrorDebug)}\n`,
+  );
 }
 //# sourceMappingURL=case.js.map

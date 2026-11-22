@@ -1,8 +1,7 @@
 // Mutations of crates/rust-js-lower/src/std_types/number/generic.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
-export const mutations: Mutation[] = [
-  {
+export const mutations: Mutation[] = [  {
     name: "ordering-predicate-wrong-zero",
     breaks: "Ordering predicates compare against one instead of zero",
     file: "crates/rust-js-lower/src/std_types/number/generic.rs",
@@ -142,8 +141,8 @@ export const mutations: Mutation[] = [
     name: "checked-ilog-unchecked",
     breaks: "`checked_ilog10()` is `ilog10()`, which panics of zero",
     file: "crates/rust-js-lower/src/std_types/number/generic.rs",
-    find: '    if checked {\n        given.push(Expr::bool(true));\n    }\n    Expr::call_helper("$ilog", given)\n',
-    replace: '    let _ = checked;\n    Expr::call_helper("$ilog", given)\n',
+    find: '        if checked { "$checkedIlog" } else { "$ilog" },',
+    replace: '        "$ilog",',
     tests: ["test/corpus.test.ts", "-t", "^number_methods.rs$"],
   },
   {

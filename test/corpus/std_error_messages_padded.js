@@ -104,6 +104,7 @@ function main() {
       ),
     ),
     "called `Result::unwrap_err()` on an `Ok` value",
+    "test/corpus/std_error_messages_padded.rs:32:68",
   );
   console.log(
     `[${$ioErrorDisplay(short, {
@@ -136,26 +137,50 @@ function main() {
       align: "Right",
     })}] [${$formatted("an error occurred when formatting an argument", { precision: 5 })}]`,
   );
-  $unwrapErr($fromUtf16([55296]));
+  $unwrapErr($fromUtf16([55296]), "test/corpus/std_error_messages_padded.rs:40:47");
   console.log(
     `[${$formatted("invalid utf-16: lone surrogate found", { width: 40, align: "Center" })}]`,
   );
-  $unwrapErr($pathStripPrefix("/a", "/b"), undefined, $debugStr);
+  $unwrapErr(
+    $pathStripPrefix("/a", "/b"),
+    "test/corpus/std_error_messages_padded.rs:42:64",
+    undefined,
+    $debugStr,
+  );
   console.log(`[${$formatted("prefix not found", { width: 20, align: "Right" })}]`);
   const notUtf8 = $unwrapErr(
-    $cstringIntoString($unwrapOk($cstringNew([0xff]), undefined, (e) => $debugCStrError(e, "nul"))),
+    $cstringIntoString(
+      $unwrapOk(
+        $cstringNew([0xff]),
+        "test/corpus/std_error_messages_padded.rs:44:47",
+        undefined,
+        (e) => $debugCStrError(e, "nul"),
+      ),
+    ),
+    "test/corpus/std_error_messages_padded.rs:44:70",
   );
   console.log(
     `[${$formatted($cstrErrorMessage(notUtf8, "intoString"), { width: 40, align: "Right" })}]`,
   );
-  const nul = $unwrapErr($cstringNew([97, 0]), undefined, $debugCStr);
+  const nul = $unwrapErr(
+    $cstringNew([97, 0]),
+    "test/corpus/std_error_messages_padded.rs:46:43",
+    undefined,
+    $debugCStr,
+  );
   console.log(`[${$cstrErrorMessage(nul, "nul")}]`);
   const lock = { value: 1 };
-  const _held = $lock(lock);
+  const _held = $lock(lock, "test/corpus/std_error_messages_padded.rs:49:29");
   let blocked;
 
   try {
-    blocked = $unwrapErr($tryLock(lock, true), undefined, (e) => String(e.value), $unlock);
+    blocked = $unwrapErr(
+      $tryLock(lock, true),
+      "test/corpus/std_error_messages_padded.rs:50:35",
+      undefined,
+      (e) => String(e.value),
+      $unlock,
+    );
   } catch (error) {
     $cleanup(() => {
       $unlock(_held);

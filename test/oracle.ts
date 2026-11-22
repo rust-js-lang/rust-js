@@ -17,8 +17,9 @@ import { helpersModule } from "./packages-of.ts";
 // The runtime the generated JS imports, a runtime mutant's own in its
 // target (#720): one module, so a panic it throws is one its `$isPanic`
 // knows, an `$Unwinding` of its own class.
-const { $isPanic, $unwindsOn } = (await import(pathToFileURL(helpersModule).href)) as {
+const { $isPanic, $raisedAt, $unwindsOn } = (await import(pathToFileURL(helpersModule).href)) as {
   $isPanic: (e: unknown) => boolean;
+  $raisedAt: symbol;
   $unwindsOn: (e: unknown) => unknown;
 };
 
@@ -38,8 +39,11 @@ export function asMain(run: () => unknown): () => unknown {
 }
 
 // `{ exit }` is a run that ended the process: one that aborted, as Rust does
-// where a drop panics while a panic unwinds, `{ exit: 134 }` (#847).
-export type Outcome = { value: unknown } | { panic: string } | { error: string } | { exit: number };
+// where a drop panics while a panic unwinds, `{ exit: 134 }` (#847). A
+// panic's `at` is where it was raised, `file:line:col`, as its hook is told,
+// where the run says (`observe`'s `located`, a native program's harness,
+// #2292); `<unknown>` where the JS was given none.
+export type Outcome = { value: unknown } | { panic: string; at?: string } | { error: string } | { exit: number };
 
 // JSON has no -0, NaN, infinities or BigInts, so the native side tags them:
 // `{"$f64":"-0"}`, `{"$bigint":"18446744073709551615"}`.
@@ -79,12 +83,13 @@ export function encode(value: unknown): string {
   return JSON.stringify(tagged(value));
 }
 
-/** Run generated JS as native Rust ran the Rust, and say what happened. */
-export function observe(run: () => unknown): Outcome {
+/** Run generated JS as native Rust ran the Rust, and say what happened:
+ * `located`, a panic's `at` too. */
+export function observe(run: () => unknown, located = false): Outcome {
   try {
     return { value: normalize(run()) };
   } catch (e) {
-    if ($isPanic(e)) return { panic: (e as Error).message };
+    if ($isPanic(e)) return located ? { panic: (e as Error).message, at: (e as Record<symbol, string | undefined>)[$raisedAt] ?? "<unknown>" } : { panic: (e as Error).message };
     return { error: e instanceof Error ? `${e.name}: ${e.message}` : `a thrown ${typeof e}: ${String(e)}` };
   }
 }
@@ -99,12 +104,21 @@ export function normalize(v: unknown): unknown {
   return v;
 }
 
-/** What native Rust recorded: `{ value }`, or `{ panic }` with its message. */
-export function expected(c: { value?: unknown; panic?: string }): Outcome {
-  return c.panic !== undefined ? { panic: c.panic } : { value: c.value };
+/** What native Rust recorded: `{ value }`, or `{ panic }` with its message,
+ * and where it was raised where it says. */
+export function expected(c: { value?: unknown; panic?: string; at?: string }): Outcome {
+  if (c.panic === undefined) return { value: c.value };
+  return c.at === undefined ? { panic: c.panic } : { panic: c.panic, at: c.at };
 }
 
-/** Strictly the same: -0 isn't 0, 1n isn't 1, a `TypeError` isn't a panic. */
+/** Strictly the same: -0 isn't 0, 1n isn't 1, a `TypeError` isn't a panic.
+ * Two panics' `at`s are compared where both say one: a harness that
+ * records no location, `compiler.test`'s, and a case `located-otherwise`
+ * says differs there, whose native run leaves it out (`runNative`), are
+ * compared by the rest (#2292). */
 export function same(a: Outcome, b: Outcome): boolean {
+  if ("panic" in a && "panic" in b && (a.at === undefined) !== (b.at === undefined)) {
+    return Bun.deepEquals({ panic: a.panic }, { panic: b.panic }, true);
+  }
   return Bun.deepEquals(a, b, true);
 }

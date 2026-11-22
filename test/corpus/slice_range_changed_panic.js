@@ -11,7 +11,9 @@ const LIMIT = 3;
 function changed(items) {
   const truncated = items.length > LIMIT;
   $truncate(items, 1);
-  return truncated ? $copyOf(items, 0, LIMIT) : [];
+  return truncated
+    ? $copyOf(items, 0, "test/corpus/slice_range_changed_panic.rs:10:25", LIMIT)
+    : [];
 }
 
 function main() {

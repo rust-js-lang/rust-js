@@ -17,6 +17,7 @@ import {
   $mapEnds,
   $next,
   $nextBack,
+  $panic,
   $peek,
   $rangeInclusiveLen,
   $rangeInclusiveNext,
@@ -199,7 +200,7 @@ function main() {
             $skipping(
               $mapEnds($iter([1, 2, 3, 4]), (x) => {
                 if (x === 2) {
-                  throw new Error("two");
+                  throw $panic("two", "test/corpus/back_steps_beside_a_live_drop.rs:80:17");
                 }
                 return x;
               }),

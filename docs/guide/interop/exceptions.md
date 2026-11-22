@@ -47,21 +47,21 @@ pub fn fail(message: &str) -> ! {
 import { $debugParseError, $div, $index, $parseInt, $stringPanic, $unwrapOk } from "@rust-js/std";
 
 export function third(items) {
-  return $index(items, 2);
+  return $index(items, 2, "lib.rs:2:5");
 }
 
 export function port(text) {
-  return $unwrapOk($parseInt(text, 0, 65535), "a port number", (e) =>
+  return $unwrapOk($parseInt(text, 0, 65535), "lib.rs:6:18", "a port number", (e) =>
     $debugParseError(e, "ParseIntError"),
   );
 }
 
 export function ratio(a, b) {
-  return $div(a, b) >>> 0;
+  return $div(a, b, "lib.rs:10:5") >>> 0;
 }
 
 export function fail(message) {
-  throw $stringPanic(message);
+  throw $stringPanic(message, "lib.rs:14:5");
 }
 ```
 
@@ -144,7 +144,7 @@ export function sum(a, b) {
 }
 
 export function must(text) {
-  return $unwrapOk(parse(text), undefined, parseErrorDebug_fmt);
+  return $unwrapOk(parse(text), "lib.rs:20:17", undefined, parseErrorDebug_fmt);
 }
 ```
 
@@ -223,6 +223,7 @@ export function configOrDefault(path) {
 export function config(path) {
   return $unwrapOk(
     $try(() => loadConfig(path)),
+    "lib.rs:13:23",
     "the config loads",
     String,
   );
@@ -373,7 +374,7 @@ pub fn work(fail: bool) -> u32 {
 ```
 
 ```js
-import { $live, $unwindsOn } from "@rust-js/std";
+import { $live, $panic, $unwindsOn } from "@rust-js/std";
 
 export function work(fail) {
   const name = "outer";
@@ -381,7 +382,7 @@ export function work(fail) {
   try {
     try {
       if (fail) {
-        throw new Error("failed");
+        throw $panic("failed", "lib.rs:15:9");
       }
     } catch (error) {
       throw $unwindsOn(error);
@@ -452,10 +453,10 @@ pub fn record(log: &RefCell<Vec<String>>) {
 import { $alreadyBorrowed, $borrow, $unborrow } from "@rust-js/std";
 
 export function record(log) {
-  const entries = $borrow(log, true);
+  const entries = $borrow(log, "lib.rs:4:23", true);
   try {
     if (log.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("lib.rs:5:9");
     }
     log.push(`${entries.length} entries`);
   } finally {
@@ -522,7 +523,7 @@ pub fn check(items: &[u32], expected: u32) {
 ```
 
 ```js
-import { $assertFailed, $stringPanic } from "@rust-js/std";
+import { $assertFailed, $panic, $stringPanic } from "@rust-js/std";
 
 export function pick(n) {
   switch (n % 3) {
@@ -533,18 +534,21 @@ export function pick(n) {
     case 2:
       return "none";
     default:
-      throw new Error("internal error: entered unreachable code: a remainder of 3 is under 3");
+      throw $panic(
+        "internal error: entered unreachable code: a remainder of 3 is under 3",
+        "lib.rs:6:14",
+      );
   }
 }
 
 export function check(items, expected) {
   if (items.length >= 10) {
-    throw $stringPanic(`too many items: ${items.length}`);
+    throw $stringPanic(`too many items: ${items.length}`, "lib.rs:11:5");
   }
   const value = items.reduce((a, b) => (a + b) >>> 0, 0);
   const value$1 = expected;
   if (value !== value$1) {
-    $assertFailed("Eq", String(value), String(value$1));
+    $assertFailed("Eq", String(value), String(value$1), "lib.rs:12:5");
   }
 }
 ```
@@ -692,7 +696,7 @@ export function url(value) {
 
 export function item(items, at) {
   try {
-    const item = $index(items, at);
+    const item = $index(items, at, "lib.rs:13:34");
     return String(item);
   } catch (thrown) {
     $catchable(thrown);
@@ -843,13 +847,13 @@ pub fn described(value: &Unknown) -> String {
 ```
 
 ```js
-import { $catchable } from "@rust-js/std";
+import { $catchable, $panic } from "@rust-js/std";
 
 export function stacks(render) {
   let control;
   try {
     try {
-      throw new Error();
+      throw $panic("", "lib.rs:7:38");
     } catch (x) {
       $catchable(x);
       control = x;
@@ -881,7 +885,7 @@ export function passive(canUseDom, probe) {
 
 export function controlStack() {
   try {
-    throw new Error();
+    throw $panic("", "lib.rs:29:34");
   } catch (x) {
     $catchable(x);
     const control = x;
@@ -1059,7 +1063,10 @@ import { $bigChecked, $catchStackOverflow, $catchable, $unwrap } from "@rust-js/
 function depth(n) {
   return n === 0n
     ? 0n
-    : $unwrap($bigChecked(depth(BigInt.asUintN(64, n - 1n)) + 1n, 0n, 18446744073709551615n));
+    : $unwrap(
+        $bigChecked(depth(BigInt.asUintN(64, n - 1n)) + 1n, 0n, 18446744073709551615n),
+        "lib.rs:4:56",
+      );
 }
 
 export function measured(n) {

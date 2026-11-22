@@ -8,7 +8,7 @@ export function entry() {
 
 export function mark(root, index) {
   const times = root.times;
-  times[$at(times, index)] = 1;
+  times[$at(times, index, "test/corpus/refcell_field_places.rs:18:10")] = 1;
 }
 
 export function read(cursor) {

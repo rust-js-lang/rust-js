@@ -24,6 +24,7 @@ function main() {
   try {
     $unwrapOk(
       $send(tx, ["a"]),
+      "test/corpus/channel_of_droppers.rs:18:24",
       undefined,
       (e) => "SendError { .. }",
       (sendError) => {
@@ -40,6 +41,7 @@ function main() {
   try {
     $unwrapOk(
       $send(tx, ["b"]),
+      "test/corpus/channel_of_droppers.rs:19:24",
       undefined,
       (e) => "SendError { .. }",
       (sendError) => {
@@ -56,6 +58,7 @@ function main() {
   try {
     $unwrapOk(
       $send(tx, ["c"]),
+      "test/corpus/channel_of_droppers.rs:20:24",
       undefined,
       (e) => "SendError { .. }",
       (sendError) => {
@@ -71,7 +74,12 @@ function main() {
   }
   let first;
   try {
-    first = $unwrapOk($recv(rx), undefined, (e) => "RecvError");
+    first = $unwrapOk(
+      $recv(rx),
+      "test/corpus/channel_of_droppers.rs:22:31",
+      undefined,
+      (e) => "RecvError",
+    );
   } catch (error) {
     $cleanup(() => {
       $dropReceiver(rx, loudDrop_drop);
@@ -133,6 +141,7 @@ function main() {
   try {
     $unwrapOk(
       $send(outerTx, innerTx),
+      "test/corpus/channel_of_droppers.rs:34:29",
       undefined,
       (e) => "SendError { .. }",
       (sendError) => {

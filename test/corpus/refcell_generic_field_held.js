@@ -12,7 +12,11 @@ function after(value, f, TClone) {
 }
 
 function peek(cursor, f, TClone) {
-  const borrow = $borrow($fieldCell(cursor, "current"), true);
+  const borrow = $borrow(
+    $fieldCell(cursor, "current"),
+    "test/corpus/refcell_generic_field_held.rs:19:28",
+    true,
+  );
   try {
     return after(borrow.value, f, TClone);
   } finally {
@@ -29,7 +33,7 @@ function main() {
     cursor,
     () => {
       if (captured.borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("test/corpus/refcell_generic_field_held.rs:27:48");
       }
       captured.value.push(2);
     },

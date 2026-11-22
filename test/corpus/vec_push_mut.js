@@ -14,13 +14,13 @@ function main() {
   const counts = [1, 2];
   const last = $pushMut(counts, 10, true);
   last.value = (last.value + 5) | 0;
-  const first = $insertMut(counts, 0, 7, true);
+  const first = $insertMut(counts, 0, 7, "test/corpus/vec_push_mut.rs:12:24", true);
   first.value = (first.value * 3) | 0;
   console.log(`[${counts.join(", ")}]`);
   const entries = [{ hits: 0 }];
   const pushMut = $pushMut(entries, { hits: 4 });
   pushMut.hits = (pushMut.hits + 1) >>> 0;
-  const insertMut = $insertMut(entries, 1, { hits: 9 });
+  const insertMut = $insertMut(entries, 1, { hits: 9 }, "test/corpus/vec_push_mut.rs:17:13");
   insertMut.hits = (insertMut.hits - 2) >>> 0;
   console.log(`[${entries.map((item) => entryDebug_fmt(item)).join(", ")}]`);
   const names = [];

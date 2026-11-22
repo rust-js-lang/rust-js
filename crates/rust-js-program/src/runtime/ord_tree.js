@@ -407,10 +407,10 @@ class $OrdTree extends $OrdMap {
   range(start, end, name, eq, ord, checked) {
     if (checked && start !== "Unbounded" && end !== "Unbounded") {
       if (start.TAG === "Excluded" && end.TAG === "Excluded" && eq(start._0, end._0)) {
-        throw new Error(`range start and end are equal and excluded in ${name}`);
+        throw $panic(`range start and end are equal and excluded in ${name}`, $stdSites.btreeRange[name === "BTreeSet" ? 0 : 1]);
       }
       if (ord.gt(start._0, end._0)) {
-        throw new Error(`range start is greater than range end in ${name}`);
+        throw $panic(`range start is greater than range end in ${name}`, $stdSites.btreeRange[name === "BTreeSet" ? 2 : 3]);
       }
     }
     let node = this.#root;

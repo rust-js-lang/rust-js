@@ -20,20 +20,32 @@ export function entry() {
 
 function put(w, WWrite) {
   const result = $writeTry(() => WWrite.writeAll(w, [120]));
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/mut_of_a_held_mut_given_to_generic_code.rs:12:23",
+  );
 }
 
 function putByValue(w, WWrite) {
   const self = { value: w };
   const writeAll = $writeTry(() => WWrite.writeAll(self, [121]));
   w = self.value;
-  $writeExpect(writeAll, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    writeAll,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/mut_of_a_held_mut_given_to_generic_code.rs:16:23",
+  );
 }
 
 function first(r, RRead) {
   const b = [0];
   const result = $writeTry(() => RRead.readExact(r, b));
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/mut_of_a_held_mut_given_to_generic_code.rs:21:26",
+  );
   return b[0];
 }
 
@@ -86,6 +98,7 @@ function main() {
                 slot = value;
               },
             },
+        "test/corpus/mut_of_a_held_mut_given_to_generic_code.rs:44:23",
       ),
     ),
     $mutWriter($vecWriter),

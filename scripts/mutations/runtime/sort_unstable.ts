@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","sort_unstable_adversary"],
   },
+  {
+    name: "total-order-panic-unplaced",
+    breaks: "a sort's comparison that isn't a total order panics with no location, where std names its smallsort's line (#2292)",
+    file: "crates/rust-js-program/src/runtime/sort_unstable.js",
+    find: ", $stdSites.sortTotalOrder[0]);",
+    replace: ");",
+    tests: ["test/corpus.test.ts", "-t", "^sort_not_total.rs$"],
+  },
 ];

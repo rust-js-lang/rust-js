@@ -318,6 +318,9 @@ pub struct LoweredFn {
     pub function: js::Function,
     pub jsx: bool,
     pub dependencies: Dependencies,
+    /// Of a binary's `main`, what its module runs last as it loads,
+    /// `$main(main)`: std's runtime's start of it (#2292).
+    pub entry: Option<Vec<js::Stmt>>,
 }
 
 pub struct Var {
@@ -1282,4 +1285,11 @@ pub fn module_symbol(module: LocalModId, export: &str) -> rust_js_program::js::S
 /// `bun run std` keeps (`--std-catalogue`, #2305).
 pub fn compiled_std_catalogue(tcx: TyCtxt<'_>) -> String {
     recognition::catalogue(tcx)
+}
+
+/// Where each std function std's hook names its own line of raises its
+/// panics, from its MIR, which `bun run std` keeps (`--std-raised`, #2292):
+/// `Err` naming one whose sites aren't there.
+pub fn std_raised(tcx: TyCtxt<'_>) -> Result<String, String> {
+    recognition::raised_catalogue(tcx)
 }

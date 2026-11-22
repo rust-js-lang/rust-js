@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     name: "str-range-unchecked",
     breaks: "a `String`'s `drain(a..)` with `a` past the end says it's inside a `char`",
     file: "crates/rust-js-program/src/runtime/str_edits.js",
-    find: "  $checkRange(start, end, length, inclusive);\n",
+    find: "  $checkRange(start, end, length, raisedAt, inclusive);\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","string_drain_from_past_len"],
   },

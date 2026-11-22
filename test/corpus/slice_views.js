@@ -3,6 +3,7 @@
 import {
   $assign,
   $at,
+  $checkedSplitAtMut,
   $chunksExactMut,
   $chunksMut,
   $index,
@@ -35,7 +36,7 @@ function bumpAll(part) {
 }
 
 function tail(v) {
-  return $view(v, 2);
+  return $view(v, 2, "test/corpus/slice_views.rs:12:11");
 }
 
 function pointDebug_fmt(point) {
@@ -44,42 +45,51 @@ function pointDebug_fmt(point) {
 
 function main() {
   const v = [5, 3, 9, 1, 4, 8];
-  $view(v, 1, 4).sort((a, b) => a - b);
+  $view(v, 1, "test/corpus/slice_views.rs:22:6", 4).sort((a, b) => a - b);
   console.log(`[${v.join(", ")}]`);
-  $reverseRange(v, 0, 3);
+  $reverseRange(v, 0, "test/corpus/slice_views.rs:24:6", 3);
   console.log(`[${v.join(", ")}]`);
-  $view(v, 4).fill(0);
+  $view(v, 4, "test/corpus/slice_views.rs:26:6").fill(0);
   console.log(`[${v.join(", ")}]`);
-  let part = $view(v, 1, 3);
-  part[$at(part, 0)] = 7;
-  $swap(part, 0, 1);
+  let part = $view(v, 1, "test/corpus/slice_views.rs:28:22", 3);
+  part[$at(part, 0, "test/corpus/slice_views.rs:29:5")] = 7;
+  $swap(part, 0, 1, "test/corpus/slice_views.rs:30:10");
   console.log(`${part.length} [${v.join(", ")}]`);
-  bumpAll($view(v, 0, 2));
+  bumpAll($view(v, 0, "test/corpus/slice_views.rs:32:20", 2));
   console.log(`[${v.join(", ")}]`);
   const value = tail(v);
-  value[$at(value, 0)] = -1;
+  value[$at(value, 0, "test/corpus/slice_views.rs:34:5")] = -1;
   console.log(`[${v.join(", ")}]`);
-  $rotateLeft($view($view(v, 1, 5), 1, 3), 1, "mid");
+  $rotateLeft(
+    $view(
+      $view(v, 1, "test/corpus/slice_views.rs:36:6", 5),
+      1,
+      "test/corpus/slice_views.rs:36:12",
+      3,
+    ),
+    1,
+    "mid",
+  );
   console.log(`[${v.join(", ")}]`);
   const all = v;
-  all[$at(all, 5)] = 6;
+  all[$at(all, 5, "test/corpus/slice_views.rs:39:5")] = 6;
   console.log(`[${v.join(", ")}]`);
 
-  const [left, right] = $splitAtMut(v, 3);
-  const value$1 = $index(right, 0);
-  left[$at(left, 0)] = value$1;
-  right[$at(right, 2)] = left.length;
+  const [left, right] = $splitAtMut(v, 3, "test/corpus/slice_views.rs:42:27");
+  const value$1 = $index(right, 0, "test/corpus/slice_views.rs:43:15");
+  left[$at(left, 0, "test/corpus/slice_views.rs:43:5")] = value$1;
+  right[$at(right, 2, "test/corpus/slice_views.rs:44:5")] = left.length;
   console.log(`[${v.join(", ")}]`);
-  console.log(`${$splitAtMut(v, 7, true) == null}`);
-  const [a, b] = $sliceSplitAt(v, 4);
+  console.log(`${$checkedSplitAtMut(v, 7) == null}`);
+  const [a, b] = $sliceSplitAt(v, 4, "test/corpus/slice_views.rs:48:24");
   console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
-  const [, b$1] = $splitAtMut(v, 5);
-  b$1[0] = (b$1[$at(b$1, 0)] + 1) | 0;
-  const splitAtMutChecked = $splitAtMut(v, 6, true);
+  const [, b$1] = $splitAtMut(v, 5, "test/corpus/slice_views.rs:50:24");
+  b$1[0] = (b$1[$at(b$1, 0, "test/corpus/slice_views.rs:51:9")] + 1) | 0;
+  const splitAtMutChecked = $checkedSplitAtMut(v, 6);
   if (splitAtMutChecked != null) {
     const a = splitAtMutChecked[0];
     const b = splitAtMutChecked[1];
-    a[$at(a, 0)] = b.length;
+    a[$at(a, 0, "test/corpus/slice_views.rs:54:9")] = b.length;
   }
   console.log(`[${v.join(", ")}]`);
 
@@ -88,32 +98,32 @@ function main() {
     const first = splitFirstMut[0];
     const rest = splitFirstMut[1];
     first.value = 10;
-    rest[$at(rest, 0)] = 11;
+    rest[$at(rest, 0, "test/corpus/slice_views.rs:60:9")] = 11;
   }
   const splitLastMut = $splitEndMut(v, true, true);
   if (splitLastMut != null) {
     const last = splitLastMut[0];
     const rest = splitLastMut[1];
     last.value = rest.length;
-    rest[$at(rest, 0)] = 20;
+    rest[$at(rest, 0, "test/corpus/slice_views.rs:64:9")] = 20;
   }
   console.log(`[${v.join(", ")}]`);
 
-  for (const chunk of $chunksMut(v, 4)) {
-    chunk[0] = (chunk[$at(chunk, 0)] * 2) | 0;
+  for (const chunk of $chunksMut(v, 4, "test/corpus/slice_views.rs:68:20")) {
+    chunk[0] = (chunk[$at(chunk, 0, "test/corpus/slice_views.rs:69:9")] * 2) | 0;
   }
   console.log(`[${v.join(", ")}]`);
-  const exact = $iter($chunksExactMut(v, 4));
+  const exact = $iter($chunksExactMut(v, 4, "test/corpus/slice_views.rs:72:23"));
   for (const chunk of exact) {
     chunk.reverse();
   }
-  exact.items.remainder[$at(exact.items.remainder, 0)] = 0;
+  exact.items.remainder[$at(exact.items.remainder, 0, "test/corpus/slice_views.rs:76:5")] = 0;
   console.log(`[${v.join(", ")}]`);
-  for (const chunk of $rchunksMut(v, 4, false)) {
-    chunk[0] = -$index(chunk, 0) | 0;
+  for (const chunk of $rchunksMut(v, 4, false, "test/corpus/slice_views.rs:78:20")) {
+    chunk[0] = -$index(chunk, 0, "test/corpus/slice_views.rs:79:21") | 0;
   }
-  for (const chunk of $rchunksMut(v, 5, true)) {
-    chunk[$at(chunk, 4)] = 99;
+  for (const chunk of $rchunksMut(v, 5, true, "test/corpus/slice_views.rs:81:20")) {
+    chunk[$at(chunk, 4, "test/corpus/slice_views.rs:82:9")] = 99;
   }
   console.log(`[${v.join(", ")}]`);
 
@@ -127,7 +137,7 @@ function main() {
   }
   console.log(`[${words.join(", ")}]`);
   for (const part of $lazySliceSplitByMut(words, (x) => x === 0, 2, false, false)) {
-    part[0] = -$index(part, 0) | 0;
+    part[0] = -$index(part, 0, "test/corpus/slice_views.rs:95:20") | 0;
   }
   console.log(`[${words.join(", ")}]`);
   for (const part of $lazySliceSplitByMut(words, (x) => x === 0, undefined, true, false)) {
@@ -135,7 +145,7 @@ function main() {
   }
   console.log(`[${words.join(", ")}]`);
   for (const part of $lazySliceSplitByMut(words, (x) => x === 0, undefined, false, true)) {
-    part[$at(part, 0)] = 1;
+    part[$at(part, 0, "test/corpus/slice_views.rs:103:9")] = 1;
   }
   for (const part of $lazySliceSplitByMut(words, (x) => x === 0, 2, false, true)) {
     part.fill(2);
@@ -147,16 +157,20 @@ function main() {
     part.fill(5);
   }
   console.log(`${$viewGet(words, 5, 9) == null} [${words.join(", ")}]`);
-  $view(words, 0, 2).fill(6);
+  $view(words, 0, "test/corpus/slice_views.rs:115:15", 2).fill(6);
   const getUncheckedMut = $mutAt(words, 2);
   getUncheckedMut.value = (getUncheckedMut.value + 1) | 0;
   console.log(`[${words.join(", ")}]`);
 
-  let head = words.length >= 2 ? $view(words, 0, 2) : undefined;
+  let head =
+    words.length >= 2 ? $view(words, 0, "test/corpus/slice_views.rs:120:31", 2) : undefined;
   if (head != null) {
     head[1] = 0;
   }
-  const end = words.length >= 2 ? $view(words, words.length - 2) : undefined;
+  const end =
+    words.length >= 2
+      ? $view(words, words.length - 2, "test/corpus/slice_views.rs:123:30")
+      : undefined;
   if (end != null) {
     end[0] = 0;
   }
@@ -178,7 +192,7 @@ function main() {
   const runs = [1, 1, 2, 3, 3, 3];
   for (const run of $lazyChunkByMut(runs, (a, b) => a === b)) {
     const n = run.length;
-    run[$at(run, 0)] = n;
+    run[$at(run, 0, "test/corpus/slice_views.rs:138:9")] = n;
   }
   console.log(`[${runs.join(", ")}]`);
   console.log(
@@ -187,22 +201,30 @@ function main() {
       .join(", ")}]`,
   );
 
-  head = runs.length >= 2 ? $view(runs, 0, 2) : undefined;
+  head = runs.length >= 2 ? $view(runs, 0, "test/corpus/slice_views.rs:143:30", 2) : undefined;
   if (head != null) {
     $assign(head, [7, 8]);
   }
   console.log(`[${runs.join(", ")}]`);
 
   const points = [{ x: 1 }, { x: 2 }, { x: 3 }];
-  const [head$1, tail$1] = $splitAtMut(points, 1);
-  const value$2 = $index(tail$1, 1).x;
+  const [head$1, tail$1] = $splitAtMut(points, 1, "test/corpus/slice_views.rs:149:31");
+  const value$2 = $index(tail$1, 1, "test/corpus/slice_views.rs:150:17").x;
   const length = head$1.length;
   if (0 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/slice_views.rs:150:5",
+    );
   }
   head$1[0].x = value$2;
   tail$1[0] = { x: 0 };
-  $swap($view(points, 1), 0, 1);
+  $swap(
+    $view(points, 1, "test/corpus/slice_views.rs:152:11"),
+    0,
+    1,
+    "test/corpus/slice_views.rs:152:17",
+  );
   console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

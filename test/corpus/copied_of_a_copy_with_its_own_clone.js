@@ -121,7 +121,7 @@ function main() {
       () => makeCopied($iter(it.items.slice(it.at, it.end))),
     );
   const copied = Array.from(makeCopied($iter(ps)));
-  $index(copied, 0)[0] = 9;
+  $index(copied, 0, "test/corpus/copied_of_a_copy_with_its_own_clone.rs:91:11")[0] = 9;
   $print(
     `copied [${copied.map((item) => pDebug_fmt(item)).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}]\n`,
   );
@@ -199,7 +199,9 @@ function main() {
 
   const item = [0];
   const into = Array.from({ length: 3 }, () => [item[0]]);
-  $copyFromSlice(into, ps, (item) => [item[0]]);
+  $copyFromSlice(into, ps, "test/corpus/copied_of_a_copy_with_its_own_clone.rs:116:10", (item) => [
+    item[0],
+  ]);
   into[1][0] = 7;
   $print(
     `copy_from_slice [${into.map((item) => pDebug_fmt(item)).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}]\n`,
@@ -227,13 +229,14 @@ function main() {
     ps.map((item) => [item[0]]),
     (p) => p[0] === 1,
   );
-  $index(ones, 0)[0] = 8;
+  $index(ones, 0, "test/corpus/copied_of_a_copy_with_its_own_clone.rs:127:9")[0] = 8;
   $print(
     `partition [${ones.map((item) => pDebug_fmt(item)).join(", ")}] [${others.map((item) => pDebug_fmt(item)).join(", ")}]\n`,
   );
   const slice = ps.slice(1);
   const array = $unwrapOk(
     slice.length === 2 ? { TAG: "Ok", _0: slice.map((item) => [item[0]]) } : { TAG: "Err" },
+    "test/corpus/copied_of_a_copy_with_its_own_clone.rs:129:48",
     undefined,
     (e) => "TryFromSliceError(())",
   );
@@ -246,7 +249,7 @@ function main() {
     (item) => [item[0]],
     (item) => pClone_clone(item),
   );
-  $index(repeated, 2)[0] = 5;
+  $index(repeated, 2, "test/corpus/copied_of_a_copy_with_its_own_clone.rs:133:13")[0] = 5;
   $print(`repeat [${repeated.map((item) => pDebug_fmt(item)).join(", ")}]\n`);
 
   $print(

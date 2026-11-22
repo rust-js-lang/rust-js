@@ -28,7 +28,10 @@ export const SEVEN = 7;
 
 function heapPtr(h, TOrd) {
   $storedItems(h);
-  const top = $unwrap($peekMut(h, TOrd.PartialOrd()));
+  const top = $unwrap(
+    $peekMut(h, TOrd.PartialOrd()),
+    "test/corpus/address_of_a_mut_std_lends_from_its_storage.rs:90:32",
+  );
   let result;
   try {
     result = $ptr($peekMutTop(top, true), "value", 0);

@@ -12,17 +12,28 @@ function measured(nonce) {
 
 function prepare(nonce, response) {
   const length = measured(nonce);
-  $borrowMut($fieldCell(response, "nonce")).value = undefined;
+  $borrowMut($fieldCell(response, "nonce"), "test/corpus/argument_guard_reentered.rs:19:21").value =
+    undefined;
   return length;
 }
 
 export function main() {
   const response = { nonce: "abc" };
-  console.log(`${measured($borrow($fieldCell(response, "nonce")).value)}`);
-  const { value: copied } = $borrow($fieldCell(response, "nonce"));
+  console.log(
+    `${measured($borrow($fieldCell(response, "nonce"), "test/corpus/argument_guard_reentered.rs:27:44").value)}`,
+  );
+  const { value: copied } = $borrow(
+    $fieldCell(response, "nonce"),
+    "test/corpus/argument_guard_reentered.rs:28:33",
+  );
   console.log(`${prepare(copied, response)}`);
-  $borrowMut($fieldCell(response, "nonce")).value = "again";
-  const borrow = $borrow($fieldCell(response, "nonce"), true);
+  $borrowMut($fieldCell(response, "nonce"), "test/corpus/argument_guard_reentered.rs:30:21").value =
+    "again";
+  const borrow = $borrow(
+    $fieldCell(response, "nonce"),
+    "test/corpus/argument_guard_reentered.rs:31:41",
+    true,
+  );
   let length;
   try {
     length = prepare(borrow.value, response);

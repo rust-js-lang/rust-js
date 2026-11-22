@@ -30,7 +30,7 @@ function keeps(n) {
   console.log(`keep? ${n}`);
   if (boom === n) {
     boom = 0;
-    throw $stringPanic(`keep ${n}`);
+    throw $stringPanic(`keep ${n}`, "test/corpus/vec_deque_retain_swaps.rs:37:9");
   }
   return n % 2 === 0;
 }

@@ -28,6 +28,6 @@ const run = await import(pathToFileURL(module).href).then(
   },
 );
 // Of `main`, as Rust's runtime runs it (#1193).
-const outcome = observe(asMain(run));
+const outcome = observe(asMain(run), true);
 ended = true;
 writeFileSync(outcomeFile, JSON.stringify(outcome));

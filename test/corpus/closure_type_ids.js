@@ -23,7 +23,12 @@ function main() {
   const value = id(a, any);
   const value$1 = id(b, any$1);
   if (value === value$1) {
-    $assertFailed("Ne", $typeIdShown(value), $typeIdShown(value$1));
+    $assertFailed(
+      "Ne",
+      $typeIdShown(value),
+      $typeIdShown(value$1),
+      "test/corpus/closure_type_ids.rs:17:5",
+    );
   }
 }
 //# sourceMappingURL=case.js.map

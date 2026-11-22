@@ -731,3 +731,12 @@ printed there, before what reads the value, `try { // Called once.\n const
 doubled = (f(x) * 2) >>> 0; .. }` (test/lowering-comments.test.ts "a
 comment in catch_unwind's closure is in the try"; mutation
 `value-in-place-comment-lost`).
+
+
+## Amendment: a panic is `$panic(message, raisedAt)` (2026-11-22, #2292)
+
+`panic!("plain")` is `throw $panic("plain", raisedAt)`, an `Error` of JS's
+own constructor marked with where it was raised, no longer `new
+Error("plain")`; `panic!("n = {n}")`'s `$stringPanic` likewise. An empty
+message is given as it is, `$panic("", raisedAt)`, as its location
+follows it (ADR 1184).

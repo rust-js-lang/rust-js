@@ -231,7 +231,7 @@ function $pathSetFileName(buf, name) {
 // extension panics, as std's does.
 function $pathSetExtension(buf, extension) {
   if (extension.includes("/")) {
-    throw $stringPanic(`extension cannot contain path separators: ${$debugStr(extension)}`);
+    throw $stringPanic(`extension cannot contain path separators: ${$debugStr(extension)}`, $stdSites.pathExtension[0]);
   }
   const c = $components(buf);
   const name = $nextComponentBack(c);

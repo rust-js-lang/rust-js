@@ -12,10 +12,18 @@ function main() {
   for (let i = 0; i < points.length; i++) {
     refs.push(points[i]);
   }
-  console.log(`${$index(refs, 0) === $index(points, 0)} ${$index(refs, 1) === $index(points, 0)}`);
-  const pick = { chosen: $index(points, 1) };
-  console.log(`${pick.chosen === $index(points, 1)} ${pick.chosen === $index(refs, 0)}`);
-  console.log(`${refs.filter((r) => r === $index(points, 1)).length}`);
-  console.log(`${($index(refs, 0).x + pick.chosen.x) | 0}`);
+  console.log(
+    `${$index(refs, 0, "test/corpus/ptr_eq_through_refs.rs:17:40") === $index(points, 0, "test/corpus/ptr_eq_through_refs.rs:17:52")} ${$index(refs, 1, "test/corpus/ptr_eq_through_refs.rs:17:75") === $index(points, 0, "test/corpus/ptr_eq_through_refs.rs:17:87")}`,
+  );
+  const pick = { chosen: $index(points, 1, "test/corpus/ptr_eq_through_refs.rs:18:38") };
+  console.log(
+    `${pick.chosen === $index(points, 1, "test/corpus/ptr_eq_through_refs.rs:19:56")} ${pick.chosen === $index(refs, 0, "test/corpus/ptr_eq_through_refs.rs:19:92")}`,
+  );
+  console.log(
+    `${refs.filter((r) => r === $index(points, 1, "test/corpus/ptr_eq_through_refs.rs:20:68")).length}`,
+  );
+  console.log(
+    `${($index(refs, 0, "test/corpus/ptr_eq_through_refs.rs:21:26").x + pick.chosen.x) | 0}`,
+  );
 }
 //# sourceMappingURL=case.js.map

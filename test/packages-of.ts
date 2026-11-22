@@ -40,6 +40,12 @@ function packageOf(at: string): string {
 
 /** The package this run's JS imports, `target`'s, and its helpers' module,
  * `runtime.js`, which a test that calls a helper itself imports. */
+// This checkout's debug build, or with `RUST_JS_COMPILER`, another, as the
+// rustc tests workflow's build job makes one for its machines to share, a
+// mutant's (scripts/mutations.ts).
+export const compilerGiven = process.env.RUST_JS_COMPILER;
+export const compiler = compilerGiven ? resolve(compilerGiven) : join(target, "debug", "rust-js");
+
 export const stdDir = packageOf(target);
 export const helpersModule = join(stdDir, "runtime.js");
 

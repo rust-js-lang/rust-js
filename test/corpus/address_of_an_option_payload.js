@@ -33,7 +33,9 @@ function main() {
   $stored($ptr(o, "value", 0), undefined, 4);
   const base = $addr($ptr(o, "value", 0), 12);
   $stored($ptr(o, "value", 0), undefined, 4);
-  console.log(`as_ref ${($addr($ptrTo($unwrap(o.value)), 8) - base) >>> 0}`);
+  console.log(
+    `as_ref ${($addr($ptrTo($unwrap(o.value, "test/corpus/address_of_an_option_payload.rs:36:38")), 8) - base) >>> 0}`,
+  );
   $stored($ptr(o, "value", 0), undefined, 4);
   const p = o.value;
   if (p != null) {
@@ -42,14 +44,18 @@ function main() {
     );
   }
   $stored($ptr(o, "value", 0), undefined, 4);
-  console.log(`as_mut ${($addr($ptrTo($unwrap(o.value)), 8) - base) >>> 0}`);
+  console.log(
+    `as_mut ${($addr($ptrTo($unwrap(o.value, "test/corpus/address_of_an_option_payload.rs:40:38")), 8) - base) >>> 0}`,
+  );
   $stored($ptr(o, "value", 0), undefined, 4);
   console.log(
-    `iter ${($addr($ptrTo($unwrap((o.value == null ? [] : [o.value])[0])), 8) - base) >>> 0}`,
+    `iter ${($addr($ptrTo($unwrap((o.value == null ? [] : [o.value])[0], "test/corpus/address_of_an_option_payload.rs:41:41")), 8) - base) >>> 0}`,
   );
   $stored($ptr(o, "value", 0), undefined, 4);
   $stored($ptr(o, "value", 0), undefined, 4);
-  console.log(`by reference ${($addr($ptrTo($unwrap(o.value)), 8) - outer(o.value)) >>> 0}`);
+  console.log(
+    `by reference ${($addr($ptrTo($unwrap(o.value, "test/corpus/address_of_an_option_payload.rs:42:44")), 8) - outer(o.value)) >>> 0}`,
+  );
 
   const empty = {};
   $stored($ptr(empty, "value", 0), undefined, 4);
@@ -84,19 +90,24 @@ function main() {
   const pair = [{ a: 7, b: 8 }, 9];
   const pb = $addr($ptrTo(pair), 16);
   $stored($ptr(pair, 0, 0), undefined, 4);
-  console.log(`in a tuple ${($addr($ptrTo($unwrap(pair[0])), 8) - pb) >>> 0}`);
+  console.log(
+    `in a tuple ${($addr($ptrTo($unwrap(pair[0], "test/corpus/address_of_an_option_payload.rs:61:47")), 8) - pb) >>> 0}`,
+  );
 
   const slot = { tag: 1, held: { a: 10, b: 11 } };
   const sb = $addr($ptrTo(slot), 16);
   $stored($ptr(slot, "held", 0), undefined, 4);
-  const lent = $addr($ptrTo($unwrap(slot.held)), 8);
+  const lent = $addr(
+    $ptrTo($unwrap(slot.held, "test/corpus/address_of_an_option_payload.rs:65:35")),
+    8,
+  );
   $stored($ptr(slot, "held", 0), undefined, 4);
   console.log(`in a field ${($addr($ptr(slot, "held", 0), 12) - sb) >>> 0} ${(lent - sb) >>> 0}`);
   $stored($ptr(slot, "held", 0), undefined, 4);
   console.log(`the field by reference ${(outer(slot.held) - sb) >>> 0}`);
 
   const cell = { a: 12, b: 13 };
-  const borrow = $borrow(cell, true);
+  const borrow = $borrow(cell, "test/corpus/address_of_an_option_payload.rs:70:24", true);
   const value = $addr($ptrTo(borrow), 8);
   console.log(`cell ${(value - ofCell(cell)) >>> 0}`);
 

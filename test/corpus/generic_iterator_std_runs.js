@@ -10,9 +10,15 @@ function chunksIterator_next(chunks, N, TDebug) {
   if (chunks.rest.length < N) {
     return;
   }
-  const [first, rest] = $sliceSplitAt(chunks.rest, N);
+  const [first, rest] = $sliceSplitAt(
+    chunks.rest,
+    N,
+    "test/corpus/generic_iterator_std_runs.rs:17:39",
+  );
   chunks.rest = rest;
-  return Array.from({ length: N }, (_, i) => $index(first, i));
+  return Array.from({ length: N }, (_, i) =>
+    $index(first, i, "test/corpus/generic_iterator_std_runs.rs:19:39"),
+  );
 }
 
 function chunks(items, N) {

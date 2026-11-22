@@ -9,7 +9,7 @@ export function entry() {
 function main() {
   const v = [1, 2, 3, 4];
   const mid = v.length + 1;
-  const [a] = $splitAtMut(v, mid);
-  a[$at(a, 0)] = 0;
+  const [a] = $splitAtMut(v, mid, "test/corpus/split_at_mut_past_len.rs:6:20");
+  a[$at(a, 0, "test/corpus/split_at_mut_past_len.rs:7:5")] = 0;
 }
 //# sourceMappingURL=case.js.map

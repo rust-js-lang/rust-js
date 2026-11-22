@@ -145,7 +145,17 @@ function main() {
   console.log(
     `max ${downDebug_fmt(max)}, by cmp ${value$1 == null ? "None" : `Some(${downDebug_fmt(value$1)})`}`,
   );
-  console.log(`clamp ${downDebug_fmt($clampBy({ a: 9, b: 9 }, x, y, downPartialOrd))}`);
+  console.log(
+    `clamp ${downDebug_fmt(
+      $clampBy(
+        { a: 9, b: 9 },
+        x,
+        y,
+        downPartialOrd,
+        "test/corpus/partial_ord_apart_from_ord.rs:122:48",
+      ),
+    )}`,
+  );
   let heap = $heapFrom(downs.slice(), downPartialOrd);
   console.log(
     `heap [${$heapSorted(heap, downPartialOrd)
@@ -202,7 +212,9 @@ function main() {
   const value$6 = $reduceBy(seen, (a, b) => (seenPartialOrd_partialCmp(b, a) < 0 ? a : b));
   console.log(`${value$6 == null ? "None" : `Some(${seenDebug_fmt(value$6)})`}`);
   console.log("clamp");
-  console.log(`${seenDebug_fmt($clampBy([5], [1], [3], seenPartialOrd))}`);
+  console.log(
+    `${seenDebug_fmt($clampBy([5], [1], [3], seenPartialOrd, "test/corpus/partial_ord_apart_from_ord.rs:150:30"))}`,
+  );
   console.log("heap");
   heap = [];
   for (let i = 0; i < seen.length; i++) {

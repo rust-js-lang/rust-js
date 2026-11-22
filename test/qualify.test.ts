@@ -42,7 +42,7 @@ test("a distribution's files are what its checksums say, or it isn't qualified",
 // `RUST_JS_COMPILER`, as each test that runs it says.
 test("tests use the compiler they're given", () => {
   const named: string[] = [];
-  for (const file of readdirSync(join(root, "test")).filter((f) => f.endsWith(".ts") && f !== "support.ts")) {
+  for (const file of readdirSync(join(root, "test")).filter((f) => f.endsWith(".ts") && f !== "packages-of.ts")) {
     const source = readFileSync(join(root, "test", file), "utf8");
     if (/join\(target, "debug", "rust-js"\)|target\/debug\/rust-js/.test(source)) named.push(file);
   }

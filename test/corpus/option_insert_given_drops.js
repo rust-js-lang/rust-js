@@ -155,7 +155,11 @@ function main() {
       const slot$3 = { value: lent };
       let tmp$3;
       try {
-        tmp$3 = putIter(slot$3, $slice(v, 1), vecIntoIterator$1);
+        tmp$3 = putIter(
+          slot$3,
+          $slice(v, 1, "test/corpus/option_insert_given_drops.rs:44:42"),
+          vecIntoIterator$1,
+        );
       } catch (error) {
         throw $unwindsOn(error);
       } finally {

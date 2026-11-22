@@ -1744,7 +1744,7 @@ export function weekend(day) {
     return true;
   }
   if (day < 1 || day > 5) {
-    throw $stringPanic(`no day ${day}`);
+    throw $stringPanic(`no day ${day}`, "lib.rs:14:14");
   }
   return false;
 }
@@ -3644,7 +3644,7 @@ export function sameRef(a, b) {
 }
 
 export function isFirst(points, p) {
-  return $index(points, 0) === p;
+  return $index(points, 0, "lib.rs:24:19") === p;
 }
 ```
 

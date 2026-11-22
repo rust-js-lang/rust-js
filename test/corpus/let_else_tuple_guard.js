@@ -23,8 +23,8 @@ function dumpTree(log, roots, containers, rootId) {
 }
 
 function sum(roots, containers, i) {
-  const root = $index(roots, i);
-  const container = $index(containers, i);
+  const root = $index(roots, i, "test/corpus/let_else_tuple_guard.rs:26:42");
+  const container = $index(containers, i, "test/corpus/let_else_tuple_guard.rs:26:52");
   if (root == null || container == null) {
     console.log(`none at ${i}`);
     return 0;

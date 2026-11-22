@@ -8,10 +8,10 @@ export function entry() {
 
 function main() {
   const log = [1];
-  const borrowMut = $borrowMut(log, true);
+  const borrowMut = $borrowMut(log, "test/corpus/refcell_borrow_after_a_held_one.rs:11:29", true);
   try {
     if (log.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/refcell_borrow_after_a_held_one.rs:11:47");
     }
     console.log(`[${borrowMut.join(", ")}] ${log.length}`);
   } finally {

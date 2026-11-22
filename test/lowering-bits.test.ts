@@ -47,9 +47,9 @@ pub fn spawned(entanglements: &mut [i32], index: usize, entangled: i32) -> i32 {
     entanglements[index]
 }
 `);
-  expect(js).toContain("    root.entanglements[$at(root.entanglements, SYNC_LANE_INDEX)] |= lane;\n");
-  expect(js).toContain("  entanglements[$at(entanglements, index)] |= 64 | (entangled & 8);\n");
-  expect(js).toContain("  entanglements[$at(entanglements, SYNC_LANE_INDEX)] |= lane;\n");
+  expect(js).toContain("    root.entanglements[$at(root.entanglements, SYNC_LANE_INDEX, \"lib.rs:12:40\")] |= lane;\n");
+  expect(js).toContain("  entanglements[$at(entanglements, index, \"lib.rs:22:5\")] |= 64 | (entangled & 8);\n");
+  expect(js).toContain("  entanglements[$at(entanglements, SYNC_LANE_INDEX, \"lib.rs:18:5\")] |= lane;\n");
   expect(js).not.toContain("get value()");
   const v = [0, 0, 0];
   lib.upgrade({ entanglements: v }, 0b101);

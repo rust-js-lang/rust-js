@@ -17,20 +17,27 @@ function decode(bytes) {
       point = b;
       width = 1;
     } else if (b < 0xe0) {
-      point = ((((b & 0x1f) << 6) >>> 0) | ($index(bytes, i + 1) & 0x3f)) >>> 0;
+      point =
+        ((((b & 0x1f) << 6) >>> 0) |
+          ($index(bytes, i + 1, "test/corpus/char_from_code.rs:12:35") & 0x3f)) >>>
+        0;
       width = 2;
     } else if (b < 0xf0) {
       point =
-        ((((((b & 0x0f) << 12) >>> 0) | (($index(bytes, i + 1) & 0x3f) << 6)) >>> 0) |
-          ($index(bytes, i + 2) & 0x3f)) >>>
+        ((((((b & 0x0f) << 12) >>> 0) |
+          (($index(bytes, i + 1, "test/corpus/char_from_code.rs:14:37") & 0x3f) << 6)) >>>
+          0) |
+          ($index(bytes, i + 2, "test/corpus/char_from_code.rs:14:74") & 0x3f)) >>>
         0;
       width = 3;
     } else {
       point =
-        ((((((((b & 0x07) << 18) >>> 0) | (($index(bytes, i + 1) & 0x3f) << 12)) >>> 0) |
-          (($index(bytes, i + 2) & 0x3f) << 6)) >>>
+        ((((((((b & 0x07) << 18) >>> 0) |
+          (($index(bytes, i + 1, "test/corpus/char_from_code.rs:18:25") & 0x3f) << 12)) >>>
           0) |
-          ($index(bytes, i + 3) & 0x3f)) >>>
+          (($index(bytes, i + 2, "test/corpus/char_from_code.rs:19:25") & 0x3f) << 6)) >>>
+          0) |
+          ($index(bytes, i + 3, "test/corpus/char_from_code.rs:20:24") & 0x3f)) >>>
         0;
       width = 4;
     }
@@ -43,6 +50,8 @@ function decode(bytes) {
 function main() {
   const chars = decode($utf8Bytes("aé€😀"));
   console.log(`[${chars.map((item) => $debugStr(item, "'")).join(", ")}] ${chars.length}`);
-  console.log(`[${chars.map((c) => c === $unwrap($fromU32(c.codePointAt(0)))).join(", ")}]`);
+  console.log(
+    `[${chars.map((c) => c === $unwrap($fromU32(c.codePointAt(0)), "test/corpus/char_from_code.rs:34:74")).join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

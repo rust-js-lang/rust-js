@@ -148,11 +148,11 @@ pub fn later(items: &mut Vec<u32>) -> u32 {
   expect(js).toContain("  while (i < n) {\n    i++;\n  }\n");
   expect(js).toContain("steps = (steps + 1) >>> 0;");
   expect(js).toContain("return (k + 1) >>> 0;");
-  expect(js).toContain("i <= items.length ? $index(items, i) : 0");
+  expect(js).toContain("i <= items.length ? $index(items, i, \"lib.rs:88:27\") : 0");
   // A slice changed in a loop, an index nothing bounds, a length changed.
-  expect(js).toContain("$index(items, i)");
-  expect(js).toContain("$swap(items, 0, i);");
-  expect(js).toContain("$index(items, 0)");
+  expect(js).toContain("$index(items, i, \"lib.rs:88:27\")");
+  expect(js).toContain("$swap(items, 0, i, \"lib.rs:101:11\");");
+  expect(js).toContain("$index(items, 0, \"lib.rs:109:10\")");
   const lib = await import(join(dir, "lib.js"));
   const heap = [1, 3, 2, 7, 4, 6, 5];
   const out = [];
@@ -334,7 +334,7 @@ pub fn past(items: &[i32]) -> i32 {
   expect(js).toContain("    if (sample[s] !== control[c]) {\n      return s;\n    }\n    s--;\n    c--;\n");
   expect(js).not.toContain("s | 0");
   // Nothing shows `i`'s sign, nor `s`'s: `usize`'s, `isize`'s wraps.
-  expect(js).toContain("  return $index(items, i >>> 0);\n");
+  expect(js).toContain("  return $index(items, i >>> 0, \"lib.rs:22:5\");\n");
   expect(js).toContain("  return (s - 1) | 0;\n");
   // Items of no size may be more than `isize`'s most.
   expect(js).toContain("  return ((items.length | 0) - 1) | 0;\n");
@@ -390,7 +390,7 @@ pub fn past(lines: &[&str]) -> usize {
   expect(js).toContain('  while (s < lines.length && !lines[s].includes("Root")) {\n    s++;\n  }\n');
   expect(js).toContain("    if (lines[s] !== control[c]) {\n      return s;\n    }\n");
   // Past its loop it may be the length: checked where it's read.
-  expect(js).toContain("$index(lines, s)");
+  expect(js).toContain("$index(lines, s, \"lib.rs:25:5\")");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.root(["a", "Root", "x"], ["b", "c", "x"])).toBe(1);
   expect(lib.root(["a", "b"], ["b"])).toBe(-1);
@@ -524,7 +524,7 @@ pub fn first_of_some(keys: &[String]) -> String {
   // it, so `prevLength - 1` below it (ADR 1168, #1948).
   expect(js).toContain('properties[prevLength - 1][1] = "unchanged";');
   expect(js).toContain('return length === 1 && keys[0] === "children";');
-  expect(js).toContain("length >= 2 ? keys[1] : $index(keys, 0)");
+  expect(js).toContain("length >= 2 ? keys[1] : $index(keys, 0, \"lib.rs:23:47\")");
   const lib = await import(join(dir, "lib.js"));
   const properties: [string, string][] = [];
   lib.diff(properties, false);
@@ -1029,7 +1029,7 @@ pub fn read(v: &RefCell<Vec<u32>>, i: usize) -> u32 {
 `);
   expect(wrapsProved(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("    return $index(v, i);\n");
+  expect(js).toContain("    return $index(v, i, \"lib.rs:7:26\");\n");
   const lib = await import(join(dir, "lib.js"));
   expect(() => lib.read([1, 2], 0)).toThrow("index out of bounds: the len is 0 but the index is 0");
 });

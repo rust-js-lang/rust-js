@@ -1,0 +1,780 @@
+//! Where std's own functions raise the panics std's hook names a line of
+//! std's own of (#2292): `VecDeque::swap`'s `assert!(j < self.len())`,
+//! `/rustc/<commit>/library/alloc/src/collections/vec_deque/mod.rs:1063:9`,
+//! where a caller's own `v[9]` names the caller's. Read by `bun run std`
+//! (`--std-raised`) from each one's MIR in std's own build, of a `core` and
+//! an `alloc` built of the toolchain's source with every body's MIR, for
+//! the target rust-js compiles for, wasm32's (ADR 0562), each site as
+//! rustc's `caller_location` places it, and written as the runtime's
+//! `$stdSites`, each a constant of the toolchain, whatever calls it: a
+//! helper that raises one reads it (ADR 0262's exception, the user's
+//! decision: always under `/rustc/<commit>/`).
+
+use super::*;
+use rust_js_program::collections::{IndexMap, IndexSet};
+use rustc_hir::attrs::lang_items::LangItem;
+use rustc_middle::mir;
+use rustc_middle::ty::fast_reject::SimplifiedType;
+use rustc_middle::ty::{FloatTy, IntTy, UintTy};
+
+/// A trait: by its lang item, as a derive macro has its name, or at its
+/// path, of one that isn't one.
+#[derive(Clone, Copy, Debug)]
+enum Trait {
+    Lang(LangItem),
+    Path(StdCrate, &'static [&'static str]),
+}
+
+/// Whose a function is: a type's own, at its path in its crate; a
+/// primitive's own; a trait's impl, the trait by its lang item, as a
+/// derive macro has its name, for a type at its path; or a free function,
+/// at its path, its name the path's last.
+#[derive(Clone, Copy, Debug)]
+enum Owner {
+    Type(StdCrate, &'static [&'static str]),
+    /// A type's own impl of the type over another, the second path,
+    /// a thread-local of a `RefCell`, apart from one of a `Cell`.
+    TypeOver(StdCrate, &'static [&'static str], (StdCrate, &'static [&'static str])),
+    Primitive(SimplifiedType),
+    /// A trait's impl, the first path, for a type, the second, or for any
+    /// type, `None`, of those std specializes, the one bound by a trait,
+    /// the third: `SpecFromIterNested`'s for a `TrustedLen`.
+    Bounded(
+        (StdCrate, &'static [&'static str]),
+        Option<(StdCrate, &'static [&'static str])>,
+        (StdCrate, &'static [&'static str]),
+    ),
+    Impl {
+        trait_: Trait,
+        of: (StdCrate, &'static [&'static str]),
+    },
+    Free(StdCrate, &'static [&'static str]),
+    /// A trait's own default of a method, the trait at its path.
+    Default(StdCrate, &'static [&'static str]),
+    /// A trait's impl for any type, `impl<T: Display> SpecToString for T`,
+    /// the trait at its path.
+    Blanket(StdCrate, &'static [&'static str]),
+    /// A trait's impl for a reference to a slice of bytes, `&[u8]`'s
+    /// `BufRead`, the trait at its path.
+    ForByteSlice(StdCrate, &'static [&'static str]),
+}
+
+/// Each site of std's panics a helper raises, by its name in `$stdSites`,
+/// and a type's where a helper serves several (`u8`), or a kind of type's
+/// whose sites are one (`signed`): whose function holds
+/// it, and its name, of a free function none, its path's last. A
+/// function's sites are in the order they're written.
+const RAISED: &[(&str, Option<&str>, Owner, &str)] = &[
+    (
+        "vecDequeSwap",
+        None,
+        Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
+        "swap",
+    ),
+    (
+        "vecDequeInsert",
+        None,
+        Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
+        "insert_mut",
+    ),
+    (
+        "vecDequeRotateLeft",
+        None,
+        Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
+        "rotate_left",
+    ),
+    (
+        "vecDequeRotateRight",
+        None,
+        Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
+        "rotate_right",
+    ),
+    (
+        "swapRemove",
+        None,
+        Owner::Type(StdCrate::Alloc, &["vec", "Vec"]),
+        "swap_remove",
+    ),
+    (
+        "capacityOverflow",
+        None,
+        Owner::Free(StdCrate::Alloc, &["raw_vec", "capacity_overflow"]),
+        "",
+    ),
+    ("strSplitAt", None, Owner::Primitive(SimplifiedType::Str), "split_at"),
+    (
+        "strSplitAtMut",
+        None,
+        Owner::Primitive(SimplifiedType::Str),
+        "split_at_mut",
+    ),
+    (
+        "rotateLeft",
+        None,
+        Owner::Primitive(SimplifiedType::Slice),
+        "rotate_left",
+    ),
+    (
+        "rotateRight",
+        None,
+        Owner::Primitive(SimplifiedType::Slice),
+        "rotate_right",
+    ),
+    (
+        "selectNth",
+        None,
+        Owner::Free(StdCrate::Core, &["slice", "sort", "select", "partition_at_index"]),
+        "",
+    ),
+    (
+        "clamp",
+        Some("f64"),
+        Owner::Primitive(SimplifiedType::Float(FloatTy::F64)),
+        "clamp",
+    ),
+    (
+        "clamp",
+        Some("f32"),
+        Owner::Primitive(SimplifiedType::Float(FloatTy::F32)),
+        "clamp",
+    ),
+    (
+        "fromDigit",
+        None,
+        Owner::Free(StdCrate::Core, &["char", "convert", "from_digit"]),
+        "",
+    ),
+    (
+        "encodeUtf8",
+        None,
+        Owner::Free(StdCrate::Core, &["char", "encode_utf8_raw"]),
+        "",
+    ),
+    (
+        "encodeUtf16",
+        None,
+        Owner::Free(StdCrate::Core, &["char", "encode_utf16_raw"]),
+        "",
+    ),
+    ("stepBy", None, Owner::Type(StdCrate::Core, &["iter", "StepBy"]), "new"),
+    (
+        "durationNew",
+        None,
+        Owner::Type(StdCrate::Core, &["time", "Duration"]),
+        "new",
+    ),
+    (
+        "durationAdd",
+        None,
+        Owner::Impl {
+            trait_: Trait::Lang(LangItem::Add),
+            of: (StdCrate::Core, &["time", "Duration"]),
+        },
+        "add",
+    ),
+    (
+        "durationSub",
+        None,
+        Owner::Impl {
+            trait_: Trait::Lang(LangItem::Sub),
+            of: (StdCrate::Core, &["time", "Duration"]),
+        },
+        "sub",
+    ),
+    (
+        "onceCellReentrant",
+        None,
+        Owner::Type(StdCrate::Core, &["cell", "OnceCell"]),
+        "try_init",
+    ),
+    (
+        "lazyCellPoisoned",
+        None,
+        Owner::Free(StdCrate::Core, &["cell", "lazy", "panic_poisoned"]),
+        "",
+    ),
+    (
+        "btreeRange",
+        None,
+        Owner::Type(StdCrate::Alloc, &["collections", "btree", "node", "NodeRef"]),
+        "search_tree_for_bifurcation",
+    ),
+    // `RefCell::take`'s borrow, its `replace`'s call, and `swap`'s two,
+    // `self`'s and `other`'s.
+    (
+        "refCellTake",
+        None,
+        Owner::Type(StdCrate::Core, &["cell", "RefCell"]),
+        "take",
+    ),
+    (
+        "refCellSwap",
+        None,
+        Owner::Type(StdCrate::Core, &["cell", "RefCell"]),
+        "swap",
+    ),
+    // A thread-local `RefCell`'s: each its `with`'s call, then its borrow.
+    (
+        "localKeyWithBorrow",
+        None,
+        Owner::TypeOver(
+            StdCrate::Std,
+            &["thread", "local", "LocalKey"],
+            (StdCrate::Core, &["cell", "RefCell"]),
+        ),
+        "with_borrow",
+    ),
+    (
+        "localKeyWithBorrowMut",
+        None,
+        Owner::TypeOver(
+            StdCrate::Std,
+            &["thread", "local", "LocalKey"],
+            (StdCrate::Core, &["cell", "RefCell"]),
+        ),
+        "with_borrow_mut",
+    ),
+    (
+        "localKeySet",
+        None,
+        Owner::TypeOver(
+            StdCrate::Std,
+            &["thread", "local", "LocalKey"],
+            (StdCrate::Core, &["cell", "RefCell"]),
+        ),
+        "set",
+    ),
+    (
+        "localKeyReplace",
+        None,
+        Owner::TypeOver(
+            StdCrate::Std,
+            &["thread", "local", "LocalKey"],
+            (StdCrate::Core, &["cell", "RefCell"]),
+        ),
+        "replace",
+    ),
+    // Where std's own `capacity overflow` panics are, past `raw_vec`'s: a
+    // `TrustedLen` of no upper bound, collected into a `Vec`, an `Rc<[T]>`
+    // or an `Arc<[T]>`, or extending a `Vec` or a `VecDeque`; and a
+    // `VecDeque`'s reserve past `usize::MAX`.
+    (
+        "vecFromTrustedLen",
+        None,
+        Owner::Bounded(
+            (StdCrate::Alloc, &["vec", "spec_from_iter_nested", "SpecFromIterNested"]),
+            Some((StdCrate::Alloc, &["vec", "Vec"])),
+            (StdCrate::Core, &["iter", "traits", "marker", "TrustedLen"]),
+        ),
+        "from_iter",
+    ),
+    (
+        "rcFromTrustedLen",
+        None,
+        Owner::Bounded(
+            (StdCrate::Alloc, &["rc", "ToRcSlice"]),
+            None,
+            (StdCrate::Core, &["iter", "traits", "marker", "TrustedLen"]),
+        ),
+        "to_rc_slice",
+    ),
+    (
+        "arcFromTrustedLen",
+        None,
+        Owner::Bounded(
+            (StdCrate::Alloc, &["sync", "ToArcSlice"]),
+            None,
+            (StdCrate::Core, &["iter", "traits", "marker", "TrustedLen"]),
+        ),
+        "to_arc_slice",
+    ),
+    (
+        "vecExtendTrusted",
+        None,
+        Owner::Type(StdCrate::Alloc, &["vec", "Vec"]),
+        "extend_trusted",
+    ),
+    (
+        "vecDequeExtendTrusted",
+        None,
+        Owner::Bounded(
+            (
+                StdCrate::Alloc,
+                &["collections", "vec_deque", "spec_extend", "SpecExtend"],
+            ),
+            Some((StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"])),
+            (StdCrate::Core, &["iter", "traits", "marker", "TrustedLen"]),
+        ),
+        "spec_extend",
+    ),
+    (
+        "vecDequeReserve",
+        None,
+        Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
+        "reserve",
+    ),
+    // A sort's comparison that isn't a total order, its merge's check.
+    (
+        "sortTotalOrder",
+        None,
+        Owner::Free(
+            StdCrate::Core,
+            &["slice", "sort", "shared", "smallsort", "panic_on_ord_violation"],
+        ),
+        "",
+    ),
+    (
+        "refCellEq",
+        None,
+        Owner::Impl {
+            trait_: Trait::Lang(LangItem::PartialEq),
+            of: (StdCrate::Core, &["cell", "RefCell"]),
+        },
+        "eq",
+    ),
+    (
+        "nextMultipleOf",
+        Some("u8"),
+        Owner::Primitive(SimplifiedType::Uint(UintTy::U8)),
+        "next_multiple_of",
+    ),
+    (
+        "nextMultipleOf",
+        Some("u16"),
+        Owner::Primitive(SimplifiedType::Uint(UintTy::U16)),
+        "next_multiple_of",
+    ),
+    (
+        "nextMultipleOf",
+        Some("u32"),
+        Owner::Primitive(SimplifiedType::Uint(UintTy::U32)),
+        "next_multiple_of",
+    ),
+    (
+        "nextMultipleOf",
+        Some("u64"),
+        Owner::Primitive(SimplifiedType::Uint(UintTy::U64)),
+        "next_multiple_of",
+    ),
+    (
+        "nextMultipleOf",
+        Some("u128"),
+        Owner::Primitive(SimplifiedType::Uint(UintTy::U128)),
+        "next_multiple_of",
+    ),
+    (
+        "nextMultipleOf",
+        Some("usize"),
+        Owner::Primitive(SimplifiedType::Uint(UintTy::Usize)),
+        "next_multiple_of",
+    ),
+    (
+        "fromStrRadix",
+        Some("signed"),
+        Owner::Primitive(SimplifiedType::Int(IntTy::I8)),
+        "from_ascii_bytes_radix_impl",
+    ),
+    (
+        "fromStrRadix",
+        Some("signed"),
+        Owner::Primitive(SimplifiedType::Int(IntTy::I16)),
+        "from_ascii_bytes_radix_impl",
+    ),
+    (
+        "fromStrRadix",
+        Some("signed"),
+        Owner::Primitive(SimplifiedType::Int(IntTy::I32)),
+        "from_ascii_bytes_radix_impl",
+    ),
+    (
+        "fromStrRadix",
+        Some("signed"),
+        Owner::Primitive(SimplifiedType::Int(IntTy::I64)),
+        "from_ascii_bytes_radix_impl",
+    ),
+    (
+        "fromStrRadix",
+        Some("signed"),
+        Owner::Primitive(SimplifiedType::Int(IntTy::I128)),
+        "from_ascii_bytes_radix_impl",
+    ),
+    (
+        "fromStrRadix",
+        Some("signed"),
+        Owner::Primitive(SimplifiedType::Int(IntTy::Isize)),
+        "from_ascii_bytes_radix_impl",
+    ),
+    (
+        "fromStrRadix",
+        Some("unsigned"),
+        Owner::Primitive(SimplifiedType::Uint(UintTy::U8)),
+        "from_ascii_bytes_radix_impl",
+    ),
+    (
+        "fromStrRadix",
+        Some("unsigned"),
+        Owner::Primitive(SimplifiedType::Uint(UintTy::U16)),
+        "from_ascii_bytes_radix_impl",
+    ),
+    (
+        "fromStrRadix",
+        Some("unsigned"),
+        Owner::Primitive(SimplifiedType::Uint(UintTy::U32)),
+        "from_ascii_bytes_radix_impl",
+    ),
+    (
+        "fromStrRadix",
+        Some("unsigned"),
+        Owner::Primitive(SimplifiedType::Uint(UintTy::U64)),
+        "from_ascii_bytes_radix_impl",
+    ),
+    (
+        "fromStrRadix",
+        Some("unsigned"),
+        Owner::Primitive(SimplifiedType::Uint(UintTy::U128)),
+        "from_ascii_bytes_radix_impl",
+    ),
+    (
+        "fromStrRadix",
+        Some("unsigned"),
+        Owner::Primitive(SimplifiedType::Uint(UintTy::Usize)),
+        "from_ascii_bytes_radix_impl",
+    ),
+    (
+        "writeCloneOfSlice",
+        None,
+        Owner::Primitive(SimplifiedType::Slice),
+        "write_clone_of_slice",
+    ),
+    (
+        "writeCopyOfSlice",
+        None,
+        Owner::Primitive(SimplifiedType::Slice),
+        "write_copy_of_slice",
+    ),
+    (
+        "exactSizeLen",
+        None,
+        Owner::Default(StdCrate::Core, &["iter", "ExactSizeIterator"]),
+        "len",
+    ),
+    (
+        "stepForward",
+        None,
+        Owner::Default(StdCrate::Core, &["iter", "Step"]),
+        "forward",
+    ),
+    (
+        "toString",
+        None,
+        Owner::Blanket(StdCrate::Alloc, &["string", "SpecToString"]),
+        "spec_to_string",
+    ),
+    ("format", None, Owner::Free(StdCrate::Alloc, &["fmt", "format"]), ""),
+    (
+        "printFailed",
+        None,
+        Owner::Free(StdCrate::Core, &["io", "write", "default_write_fmt"]),
+        "",
+    ),
+    (
+        "bufReaderStreamPosition",
+        None,
+        Owner::Impl {
+            trait_: Trait::Path(StdCrate::Alloc, &["io", "Seek"]),
+            of: (StdCrate::Alloc, &["io", "BufReader"]),
+        },
+        "stream_position",
+    ),
+    (
+        "lazyLockPoisoned",
+        None,
+        Owner::Free(StdCrate::Std, &["sync", "lazy_lock", "panic_poisoned"]),
+        "",
+    ),
+    (
+        "pathExtension",
+        None,
+        Owner::Free(StdCrate::Std, &["path", "validate_extension"]),
+        "",
+    ),
+    ("vecDrain", None, Owner::Type(StdCrate::Alloc, &["vec", "Vec"]), "drain"),
+    (
+        "vecExtendFromWithin",
+        None,
+        Owner::Type(StdCrate::Alloc, &["vec", "Vec"]),
+        "extend_from_within",
+    ),
+    (
+        "vecExtractIf",
+        None,
+        Owner::Type(StdCrate::Alloc, &["vec", "ExtractIf"]),
+        "new",
+    ),
+    (
+        "vecDequeDrain",
+        None,
+        Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
+        "drain",
+    ),
+    (
+        "vecDequeRange",
+        None,
+        Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
+        "slice_ranges",
+    ),
+    (
+        "vecDequeSplitOff",
+        None,
+        Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
+        "split_off",
+    ),
+    (
+        "byteSliceConsume",
+        None,
+        Owner::ForByteSlice(StdCrate::Alloc, &["io", "BufRead"]),
+        "consume",
+    ),
+    (
+        "wrappingOp",
+        None,
+        Owner::Impl {
+            trait_: Trait::Lang(LangItem::Div),
+            of: (StdCrate::Core, &["num", "Wrapping"]),
+        },
+        "div",
+    ),
+    (
+        "saturatingOp",
+        None,
+        Owner::Impl {
+            trait_: Trait::Lang(LangItem::Div),
+            of: (StdCrate::Core, &["num", "Saturating"]),
+        },
+        "div",
+    ),
+];
+
+/// The function `owner`'s `name` is, where std has it.
+fn function(tcx: TyCtxt<'_>, owner: Owner, name: &str) -> Option<DefId> {
+    let impls: Vec<DefId> = match owner {
+        Owner::Type(krate, path) => tcx.inherent_impls(registry::by_path(tcx, krate, path)?).to_vec(),
+        Owner::TypeOver(krate, path, over) => {
+            let over = registry::by_path(tcx, over.0, over.1)?;
+            (tcx.inherent_impls(registry::by_path(tcx, krate, path)?).iter().copied())
+                .filter(|&imp| match tcx.type_of(imp).skip_binder().kind() {
+                    ty::Adt(_, args) => {
+                        matches!(args.types().next().map(|of| of.kind()), Some(ty::Adt(adt, _)) if adt.did() == over)
+                    }
+                    _ => false,
+                })
+                .collect()
+        }
+        Owner::Primitive(kind) => tcx.incoherent_impls(kind).to_vec(),
+        Owner::Bounded(trait_, of, bound) => {
+            let trait_ = registry::by_path(tcx, trait_.0, trait_.1)?;
+            let of = match of {
+                Some(of) => Some(registry::by_path(tcx, of.0, of.1)?),
+                None => None,
+            };
+            let bound = registry::by_path(tcx, bound.0, bound.1)?;
+            let impls: Vec<DefId> = match of {
+                Some(of) => (tcx.all_impls(trait_))
+                    .filter(|&imp| matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(adt, _) if adt.did() == of))
+                    .collect(),
+                None => tcx.trait_impls_of(trait_).blanket_impls().to_vec(),
+            };
+            (impls.into_iter())
+                .filter(|&imp| {
+                    tcx.param_env(imp)
+                        .caller_bounds()
+                        .any(|clause| clause.as_trait_clause().is_some_and(|clause| clause.def_id() == bound))
+                })
+                .collect()
+        }
+        Owner::Free(krate, path) => return registry::by_path(tcx, krate, path),
+        Owner::Default(krate, path) => vec![registry::by_path(tcx, krate, path)?],
+        Owner::ForByteSlice(krate, path) => {
+            let trait_ = registry::by_path(tcx, krate, path)?;
+            (tcx.all_impls(trait_))
+                .filter(|&imp| {
+                    let of = tcx.type_of(imp).skip_binder();
+                    matches!(of.kind(), ty::Ref(_, inner, _) if matches!(inner.kind(), ty::Slice(item) if matches!(item.kind(), ty::Uint(ty::UintTy::U8))))
+                })
+                .collect()
+        }
+        Owner::Blanket(krate, path) => {
+            let trait_ = registry::by_path(tcx, krate, path)?;
+            tcx.trait_impls_of(trait_).blanket_impls().to_vec()
+        }
+        Owner::Impl { trait_, of } => {
+            let trait_ = match trait_ {
+                Trait::Lang(item) => tcx.lang_items().get(item)?,
+                Trait::Path(krate, path) => registry::by_path(tcx, krate, path)?,
+            };
+            let of = registry::by_path(tcx, of.0, of.1)?;
+            (tcx.all_impls(trait_))
+                .filter(|&imp| matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(adt, _) if adt.did() == of))
+                .collect()
+        }
+    };
+    let name = rustc_span::Symbol::intern(name);
+    (impls.into_iter())
+        .flat_map(|imp| {
+            tcx.associated_items(imp)
+                .filter_by_name_unhygienic(name)
+                .map(|item| item.def_id)
+        })
+        .find(|&id| matches!(tcx.def_kind(id), DefKind::AssocFn))
+}
+
+/// Where `info`'s call or check raises a panic, as rustc's codegen places
+/// it (`get_caller_location`): up through each scope inlined of a function
+/// that tracks its caller, to the call of the outermost, at its outermost
+/// macro's call. `None` of one inside a body inlined of another function,
+/// `is_char_boundary`'s bounds check in `split_at_mut`: that function's,
+/// not this one's; but of one inlined of a closure of `root`'s own,
+/// through `Result::map`'s, `root`'s, where its closure writes it.
+fn site(tcx: TyCtxt<'_>, root: DefId, body: &mir::Body<'_>, info: mir::SourceInfo) -> Option<(String, usize, usize)> {
+    let mut span = info.span;
+    let mut scope = info.scope;
+    loop {
+        let data = &body.source_scopes[scope];
+        if let Some((callee, call)) = data.inlined {
+            match (
+                tracks_caller(tcx, callee.def_id()),
+                nested_in(tcx, callee.def_id(), root),
+            ) {
+                (true, _) => span = call,
+                (false, true) => break,
+                (false, false) => return None,
+            }
+        }
+        match data.inlined_parent_scope {
+            Some(parent) => scope = parent,
+            None => break,
+        }
+    }
+    let topmost = span.ctxt().outer_expn().expansion_cause().unwrap_or(span);
+    let at = tcx.sess.source_map().lookup_char_pos(topmost.lo());
+    let file = at
+        .file
+        .name
+        .display(rustc_span::RemapPathScopeComponents::MACRO)
+        .to_string_lossy()
+        .into_owned();
+    // Of std's source, from its `library/`, which `bun run std` places
+    // under the toolchain's `/rustc/<commit>/`, as its shipped std names it.
+    let file = file
+        .find("/library/")
+        .map_or(file.clone(), |at| file[at + 1..].to_string());
+    Some((file, at.line, at.col_display + 1))
+}
+
+/// Each site of `id`'s panics, in the order they're written: each call of
+/// a function that tracks its caller, and each check MIR asserts; and those
+/// of each function nested in it that it calls, `swap_remove`'s cold
+/// `assert_failed`, whose own lines std's hook names.
+fn sites(tcx: TyCtxt<'_>, root: DefId) -> Vec<(String, usize, usize)> {
+    let mut found: Vec<(String, usize, usize)> = Vec::new();
+    let mut each = vec![root];
+    let mut seen = IndexSet::default();
+    while let Some(id) = each.pop() {
+        if !seen.insert(id) {
+            continue;
+        }
+        let body = tcx.optimized_mir(id);
+        for block in body.basic_blocks.iter() {
+            let terminator = block.terminator();
+            match &terminator.kind {
+                mir::TerminatorKind::Call {
+                    func, fn_span, args, ..
+                } => {
+                    // A closure of its own it gives what it calls,
+                    // `with_borrow`'s `|cell| f(&cell.borrow())` that `with`
+                    // calls, or `set`'s, of nothing captured, a constant, to
+                    // `initialize_with`.
+                    for arg in args.iter() {
+                        if let ty::Closure(closure, _) = arg.node.ty(body, tcx).kind()
+                            && nested_in(tcx, *closure, root)
+                        {
+                            each.push(*closure);
+                        }
+                    }
+                    let Some((callee, _)) = func.const_fn_def() else {
+                        continue;
+                    };
+                    if tracks_caller(tcx, callee) {
+                        // Codegen places a call by its `fn_span`, a method's
+                        // name to its end, `expect(..)`.
+                        let info = mir::SourceInfo {
+                            span: *fn_span,
+                            ..terminator.source_info
+                        };
+                        found.extend(site(tcx, root, body, info));
+                    } else if nested_in(tcx, callee, root) {
+                        each.push(callee);
+                    }
+                }
+                mir::TerminatorKind::Assert { .. } => found.extend(site(tcx, root, body, terminator.source_info)),
+                _ => {}
+            }
+        }
+    }
+    found.sort_by_key(|site| (site.1, site.2));
+    found.dedup();
+    found
+}
+
+/// Whether `inner` is an item nested in `outer`'s body.
+fn nested_in(tcx: TyCtxt<'_>, inner: DefId, outer: DefId) -> bool {
+    let mut at = inner;
+    while let Some(parent) = tcx.opt_parent(at) {
+        if parent == outer {
+            return true;
+        }
+        at = parent;
+    }
+    false
+}
+
+/// The sites, `--std-raised`'s: each name's, or each type's of a name,
+/// `library/..:line:column`; `Err` naming a function std hasn't, or of no
+/// site.
+pub(crate) fn raised_catalogue(tcx: TyCtxt<'_>) -> Result<String, String> {
+    let mut kept: IndexMap<&str, ::serde_json::Value> = IndexMap::default();
+    for &(name, tag, owner, function_name) in RAISED {
+        let id =
+            function(tcx, owner, function_name).ok_or_else(|| format!("std has no `{function_name}` of {owner:?}"))?;
+        let sites = sites(tcx, id);
+        if sites.is_empty() {
+            return Err(format!("`{function_name}` of {owner:?} raises no panic in its MIR"));
+        }
+        let sites = ::serde_json::Value::from(
+            (sites.into_iter())
+                .map(|(file, line, column)| format!("{file}:{line}:{column}"))
+                .collect::<Vec<_>>(),
+        );
+        match tag {
+            None => {
+                kept.insert(name, sites);
+            }
+            // Of types whose sites a helper reads by a kind, `signed` or
+            // `unsigned`, each the same, as one macro writes them; one that
+            // differs is a site no helper names.
+            Some(tag) => {
+                let typed = kept.entry(name).or_insert_with(|| ::serde_json::json!({}));
+                if typed.get(tag).is_some_and(|kept| *kept != sites) {
+                    return Err(format!(
+                        "`{function_name}` of {owner:?} raises its panic elsewhere than another `{tag}` one's"
+                    ));
+                }
+                typed[tag] = sites;
+            }
+        }
+    }
+    Ok(format!(
+        "{}\n",
+        ::serde_json::to_string_pretty(&kept).expect("the sites serialize")
+    ))
+}

@@ -53,7 +53,7 @@ function squareShape_name(square) {
 function total(shapes) {
   return shapes
     .map((s) => {
-      const receiver = $borrow(s, true);
+      const receiver = $borrow(s, "test/corpus/dyn_ref_cells.rs:59:29", true);
       try {
         return receiver.impl.area(receiver.value);
       } finally {
@@ -66,7 +66,7 @@ function total(shapes) {
 function growAll(shapes, by) {
   for (let i = 0; i < shapes.length; i++) {
     const s = shapes[i];
-    const receiver = $borrowMut(s, true);
+    const receiver = $borrowMut(s, "test/corpus/dyn_ref_cells.rs:64:11", true);
     try {
       receiver.impl.grow(receiver, by);
     } finally {
@@ -81,13 +81,13 @@ function main() {
   console.log(`${$displayF64(total(shapes))}`);
   growAll(shapes, 1);
   // Through the concrete `Rc`, the same cell.
-  $borrowMut(circle).value.r = 10;
+  $borrowMut(circle, "test/corpus/dyn_ref_cells.rs:74:12").value.r = 10;
   for (let i = 0; i < shapes.length; i++) {
     const s = shapes[i];
-    const receiver = $borrow(s, true);
+    const receiver = $borrow(s, "test/corpus/dyn_ref_cells.rs:76:29", true);
     try {
       const name = receiver.impl.name(receiver.value);
-      const value = $borrow(s, true);
+      const value = $borrow(s, "test/corpus/dyn_ref_cells.rs:76:48", true);
       try {
         console.log(`${name} ${$displayF64(value.impl.area(value.value))}`);
       } finally {
@@ -97,8 +97,12 @@ function main() {
       $unborrow(receiver);
     }
   }
-  $borrowMut(circle).value = { r: 0.5 };
-  const value = $borrow($index(shapes, 0), true);
+  $borrowMut(circle, "test/corpus/dyn_ref_cells.rs:78:13").value = { r: 0.5 };
+  const value = $borrow(
+    $index(shapes, 0, "test/corpus/dyn_ref_cells.rs:79:26"),
+    "test/corpus/dyn_ref_cells.rs:79:30",
+    true,
+  );
   try {
     console.log(`${value.impl.name(value.value)}`);
   } finally {
@@ -106,16 +110,24 @@ function main() {
   }
   // The same cell, a `dyn` of another trait too.
   const labeled = $dynCell(circle, circleLabeled);
-  const value$1 = $borrowMut($index(shapes, 0), true);
+  const value$1 = $borrowMut(
+    $index(shapes, 0, "test/corpus/dyn_ref_cells.rs:82:11"),
+    "test/corpus/dyn_ref_cells.rs:82:15",
+    true,
+  );
   try {
     value$1.impl.grow(value$1, 1);
   } finally {
     $unborrow(value$1);
   }
-  const value$2 = $borrow(labeled, true);
+  const value$2 = $borrow(labeled, "test/corpus/dyn_ref_cells.rs:83:31", true);
   try {
     const label = value$2.impl.label(value$2.value);
-    const receiver = $borrow($index(shapes, 0), true);
+    const receiver = $borrow(
+      $index(shapes, 0, "test/corpus/dyn_ref_cells.rs:83:55"),
+      "test/corpus/dyn_ref_cells.rs:83:59",
+      true,
+    );
     try {
       console.log(`${label} ${$displayF64(receiver.impl.area(receiver.value))}`);
     } finally {
@@ -127,19 +139,19 @@ function main() {
   // Its `impl` isn't one of its fields: it's equal to a cell of its value.
   console.log(`${$eq(circle, { value: { r: 1.5 } }, true)}`);
   const boxed = { value: { side: 1 }, impl: squareShape };
-  const value$3 = $borrowMut(boxed, true);
+  const value$3 = $borrowMut(boxed, "test/corpus/dyn_ref_cells.rs:87:11", true);
   try {
     value$3.impl.grow(value$3, 2);
   } finally {
     $unborrow(value$3);
   }
-  const value$4 = $borrow(boxed, true);
+  const value$4 = $borrow(boxed, "test/corpus/dyn_ref_cells.rs:88:26", true);
   try {
     console.log(`${value$4.impl.name(value$4.value)}`);
   } finally {
     $unborrow(value$4);
   }
-  const again = $tryBorrow($index(shapes, 1), true);
+  const again = $tryBorrow($index(shapes, 1, "test/corpus/dyn_ref_cells.rs:89:23"), true);
   console.log(`${again.TAG === "Ok"}`);
   if (again.TAG === "Ok") {
     $unborrow(again._0);

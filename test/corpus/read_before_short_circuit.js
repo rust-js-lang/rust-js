@@ -18,7 +18,7 @@ function keyOf(prefix, mapped, child, childKey) {
   return (
     prefix +
     (mapped != null && (child == null || child != mapped)
-      ? escape($unwrap(text(mapped))) + "/"
+      ? escape($unwrap(text(mapped), "test/corpus/read_before_short_circuit.rs:18:34")) + "/"
       : "") +
     childKey
   );
@@ -32,7 +32,7 @@ function logged(prefix, mapped) {
   let tmp;
   if (mapped != null && mapped !== "") {
     console.log("mapped");
-    tmp = escape($unwrap(text(mapped))) + "/";
+    tmp = escape($unwrap(text(mapped), "test/corpus/read_before_short_circuit.rs:33:34")) + "/";
   } else {
     tmp = "";
   }

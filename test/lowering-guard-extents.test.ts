@@ -210,8 +210,8 @@ pub fn log_renamed(response: &Response) {
   expect(js).toContain("  response.nonce != null\n    ? globalThis.prepare(loading, response.nonce)\n    : globalThis.prepare(loading);\n");
   expect(js).toContain("  target.nonce = response.nonce;\n");
   expect(js).not.toContain('$fieldCell(response, "nonce")');
-  expect(js).toContain('  globalThis.logTime($borrow($fieldCell(response, "time")).value, "now");\n');
-  expect(js).toContain('$borrow($fieldCell(response, "time"), true)');
+  expect(js).toContain('  globalThis.logTime($borrow($fieldCell(response, "time"), "lib.rs:43:29").value, "now");\n');
+  expect(js).toContain('$borrow($fieldCell(response, "time"), "lib.rs:52:29", true)');
   const lib = await import(join(dir, "lib.js"));
   const globals = globalThis as any;
   const response = lib.response("first");

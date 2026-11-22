@@ -75,7 +75,7 @@ function describe(token, limit) {
   if (token === "zero") {
     text = "0";
   } else if (token.startsWith("#")) {
-    const result = parse($strSlice(token, 1));
+    const result = parse($strSlice(token, 1, "test/corpus/returns_in_place.rs:47:29"));
     if (result.TAG === "Err") {
       return result;
     }

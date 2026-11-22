@@ -23,7 +23,11 @@ async function countDown(output, from) {
 }
 
 export function main() {
-  const app = $unwrap(document.getElementById("app"), "the page has an #app");
+  const app = $unwrap(
+    document.getElementById("app"),
+    "examples/countdown.rs:31:51",
+    "the page has an #app",
+  );
   const start = document.createElement("button");
   start.textContent = "Start";
   const output = document.createElement("output");

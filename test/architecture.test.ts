@@ -357,8 +357,10 @@ test("only the publisher and the driver write files", () => {
 
 // A panic's `Error` is made one way, `Expr::panic` (ADR 0706): five
 // places wrote `new Error(..)` each, and `panic!("")` was `new Error("")`.
+// It's the runtime's `$panic` or `$stringPanic`, which marks where it was
+// raised (ADR 1184).
 test("a panic's Error is made in one place", () => {
-  const made = /Expr::(?:var|global)\("Error"\)/;
+  const made = /Expr::(?:var|global)\("Error"\)|helper\("\$(?:panic|stringPanic)"/;
   expect(sources.filter(file => made.test(read(file)))).toEqual(["crates/rust-js-program/src/js/make/unwinding.rs"]);
 });
 
@@ -498,7 +500,7 @@ const shapeTests: Record<string, [number, string]> = {
   "crates/rust-js-lower/src/passed_on.rs passed_on": [2, "JS's call: a member's callee is called with its object as `this`, and a namespace's member is its import's binding"],
   "crates/rust-js-lower/src/pointers.rs read_only_pointer_to": [2, "whether the JS names a place to read again, else a cell of the value"],
   "crates/rust-js-lower/src/pointers.rs pointer_to": [1, "a pointer to a property is its object and key, not `$ptrTo`"],
-  "crates/rust-js-lower/src/std_types/cell.rs cell_call": [2, "a fact's to ask: a quiet `RefCell`'s object replaced in a field where the cell is the field's place, which a field holding a `&RefCell` is shaped as too"],
+  "crates/rust-js-lower/src/std_types/cell.rs cell_call_here": [2, "a fact's to ask: a quiet `RefCell`'s object replaced in a field where the cell is the field's place, which a field holding a `&RefCell` is shaped as too"],
   "crates/rust-js-lower/src/std_types/map_entries.rs first": [3, "JS's evaluation: what a statement evaluates first"],
   "crates/rust-js-lower/src/iterators/mir_steps/backs.rs closed_rev": [1, "JS's evaluation: a variable's or a field's read evaluates nothing, so the receiver is read as it is"],
   "crates/rust-js-lower/src/iterators/mir_steps/backs.rs rev_items": [2, "JS's evaluation: a variable's or a field's read, a tuple struct's `held[0]` too (#1013), evaluates nothing, so the receiver is read as it is"],

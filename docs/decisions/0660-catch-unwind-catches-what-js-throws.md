@@ -782,3 +782,12 @@ kind: every panic's payload was `$panicMessage`, and a downcast to
 - **Moved:** 176 corpus snapshots (223 `throw $stringPanic(..)` lines, and
   imports). In the React port, 63 files: 135 throws, two of them rewrapped
   by prettier onto three lines, and their imports; 160 lines out, 224 in.
+
+
+## Amendment: a binary's panic writes std's hook's text (2026-11-22, #2292)
+
+In a binary, which `$main` runs, each panic writes std's hook's text where
+it's raised, `thread 'main' (pid) panicked at file:line:col:` and its
+message, caught or not, before what it drops, as std's hook runs at the
+panic; the backtrace note on the process's first; a `resume_unwind`'s
+none. A library's still writes nothing: its host's to catch (ADR 1184).

@@ -124,7 +124,7 @@ function main() {
   stash(v);
   if (v.length !== 0) {
     clearIt();
-    console.log(`${$index(v, 0)}`);
+    console.log(`${$index(v, 0, "test/corpus/vec_lent_to_code_that_keeps_a_pointer.rs:123:25")}`);
   }
 }
 //# sourceMappingURL=case.js.map

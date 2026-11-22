@@ -11,6 +11,7 @@ import {
   $jsIterator,
   $live,
   $next,
+  $panic,
   $roomForHint,
   $stepsOf,
   $unwindsOn,
@@ -33,7 +34,10 @@ function firsts(items, IInPlace, dropI) {
         for (const item of wide[0]) {
           dDrop_drop(item);
         }
-        throw new Error("none");
+        throw $panic(
+          "none",
+          "test/corpus/collect_not_in_place_drops_its_source_first_as_a_closure_panics.rs:18:17",
+        );
       }
       const value = $iter(wide[0]);
       try {

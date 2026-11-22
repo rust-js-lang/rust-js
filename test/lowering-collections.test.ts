@@ -92,10 +92,10 @@ ${taken ? "pub fn same(v: &[u8]) -> bool {\n    std::ptr::eq(&v[1..3], &v[1..3])
   const taken = readFileSync(join(dir, "lib-true.js"), "utf8");
   expect(plain).toContain("const part = v.slice(1, 3);");
   expect(plain).not.toContain("$part");
-  expect(plain).toContain("return $copyOf(v, 0, n);");
+  expect(plain).toContain('return $copyOf(v, 0, "lib.rs:9:6", n);');
   expect(taken).toContain("const part = $part(v, 1, 3);");
-  expect(taken).toContain("return $copyOf(v, 0, n);");
-  expect(taken).toContain("$slicePtrEq($slice(v, 1, 3), $slice(v, 1, 3), 1)");
+  expect(taken).toContain('return $copyOf(v, 0, "lib.rs:9:6", n);');
+  expect(taken).toContain("$slicePtrEq($slice(v, 1, \"lib.rs:21:20\", 3), $slice(v, 1, \"lib.rs:21:30\", 3), 1)");
   const lib = await import(join(dir, "lib-true.js"));
   expect([lib.middle([1, 2, 3, 4]), lib.same([1, 2, 3, 4]), lib.owned([5, 6, 7], 2)]).toEqual([5, true, [5, 6]]);
 });
@@ -125,7 +125,7 @@ pub fn at(mut v: Vec<u32>, i: usize) -> Vec<u32> {
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain('anchors.unshift("Overview");');
   expect(js).toContain("v.unshift(8);");
-  expect(js).toContain("$insertAt(v, i, 9);");
+  expect(js).toContain("$insertAt(v, i, 9, \"lib.rs:12:7\");");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.first(["a"]), lib.first([]), lib.front([]), lib.at([1, 2], 1)]).toEqual([["Overview", "a"], [], [8], [1, 9, 2]]);
   expect(() => lib.at([1], 3)).toThrow();
@@ -581,7 +581,7 @@ pub fn stepped(v: &[u32]) -> (Vec<u32>, Vec<u32>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("$chunksExact(v, 2).remainder");
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("$chunksExact(v, 2, \"lib.rs:2:7\").remainder");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.rest([1, 2, 3]), lib.stepped([1, 2, 3, 4, 5])]).toEqual([[3], [[1, 2], [5]]]);
 });
@@ -813,7 +813,7 @@ pub fn written_twice(v: &mut Vec<u32>, mut i: usize) -> usize {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("export function setAt(v, i, x) {\n  v[$at(v, i)] = x;\n");
+  expect(js).toContain("export function setAt(v, i, x) {\n  v[$at(v, i, \"lib.rs:2:6\")] = x;\n");
   const lib = await import(join(dir, "lib.js"));
   const v = [0, 0, 0];
   expect([lib.setAt(v, 0, 7), lib.held(v, 1), lib.writtenTwice(v, 2), v]).toEqual([1, 2, 3, [7, 5, 6]]);
@@ -957,10 +957,10 @@ pub fn recounted(mut count: usize) -> u32 {
   expect(js).toContain("levels[i] = $f64Max(terraces[i], levels[i - 1]);");
   expect(js).toContain("counted[i] = Math.imul(i, i) >>> 0;");
   expect(js).toContain("table[i] = counted[i];");
-  for (const checked of ["$index(levels, i)", "$index(table, i)"]) expect(js).toContain(checked);
+  for (const checked of ["$index(levels, i, \"lib.rs:25:22\")", "$index(table, i, \"lib.rs:103:21\")"]) expect(js).toContain(checked);
   // A table at least as long as its count's least (#367).
-  for (const write of ["steps[1] = 1;", "steps[2] = 2;", "return steps[n];", "steps[0] + $index(steps, n - 1)"]) expect(js).toContain(write);
-  expect(js).toContain("steps[$at(steps, 0)] = 1;");
+  for (const write of ["steps[1] = 1;", "steps[2] = 2;", "return steps[n];", "steps[0] + $index(steps, n - 1, \"lib.rs:72:21\")"]) expect(js).toContain(write);
+  expect(js).toContain("steps[$at(steps, 0, \"lib.rs:94:10\")] = 1;");
   // An index's `min` and `max`, below what either is below (#367).
   for (const read of ["return xs[Math.min(i, xs.length - 1)];", "sum = (sum + xs[Math.max(i, j)]) >>> 0;"]) expect(js).toContain(read);
   expect(js.match(/\$index\(/g)?.length).toBe(7);
@@ -1047,7 +1047,7 @@ pub fn skipped(xs: &[u32]) -> u32 {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("sum += levels[i] - terrace + terraces[i];");
   expect(js).toContain("total += terraces[i];");
-  expect(js).toContain("$index(xs, i)");
+  expect(js).toContain("$index(xs, i, \"lib.rs:28:16\")");
   expect(js.match(/\$index\(/g)?.length).toBe(4);
   const lib = await import(join(dir, "lib.js"));
   const items = [5, 5, 5];
@@ -1159,12 +1159,12 @@ pub fn each(width: usize, height: usize) -> f64 {
   expect(js).toContain("board[r][c] = board[r - 1][c] + board[r][c - 1];");
   // And `added`'s, whose `board[r]` under `r <= height` is below the
   // length its `push` made one more (ADR 1168, #1948).
-  expect(js.match(/\$index\(board\[r\], c\)/g)?.length).toBe(5);
+  expect(js.match(/\$index\(board\[r\], c, "lib\.rs:\d+:\d+"\)/g)?.length).toBe(5);
   // Each row at least 2 long, of a count of 2, till one's cleared.
   // A table's row as long as its row count: MIR doesn't prove it since it
   // decides call indexes (#1949).
-  expect(js).toContain("const first = $index($index(board, 0), 1);");
-  expect(js).toContain("return first + $index($index(board, 0), 1);");
+  expect(js).toContain('const first = $index($index(board, 0, "lib.rs:72:22"), 1, "lib.rs:72:25");');
+  expect(js).toContain("return first + $index($index(board, 0, \"lib.rs:74:18\"), 1, \"lib.rs:74:21\");");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.paths(3, 3)).toBe(6);
   for (const changed of [() => lib.popped(2, 2), () => lib.replaced(2, 2), () => lib.held(2, 2), () => lib.each(2, 2), () => lib.added(2, 2), () => lib.cleared(1)]) {
@@ -1186,7 +1186,7 @@ test("an item lent at a parameter's index is read and written there", async () =
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  $index(v, i);\n  log.push(v[i]);\n  v[i] = 7;\n");
+  expect(js).toContain("  $index(v, i, \"lib.rs:2:22\");\n  log.push(v[i]);\n  v[i] = 7;\n");
   const lib = await import(join(dir, "lib.js"));
   const [v, log] = [[1, 2], [] as number[]];
   lib.set(v, 1, log);

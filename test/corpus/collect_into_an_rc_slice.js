@@ -10,6 +10,7 @@ import {
   $lazyRange,
   $rcClone,
   $rcDrop,
+  $stdSites,
   $stringPanic,
   $vecCollectWay,
 } from "@rust-js/std";
@@ -27,7 +28,9 @@ function loudDrop_drop(loud) {
 }
 
 function main() {
-  const fromIterator = {
+  const direct = [4, 5].map((x) => (x * 2) >>> 0);
+  console.log(`[${direct.join(", ")}] ${direct.length}`);
+  const generic = collected([1, 2, 3], {
     fromIter: (items, ITrustedLen, IInPlace) =>
       $collectCounted(
         items,
@@ -35,13 +38,21 @@ function main() {
         4,
         ITrustedLen,
         $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
+        $stdSites.rcFromTrustedLen[0],
       ),
-  };
-  const direct = [4, 5].map((x) => (x * 2) >>> 0);
-  console.log(`[${direct.join(", ")}] ${direct.length}`);
-  const generic = collected([1, 2, 3], fromIterator);
+  });
   console.log(`[${generic.join(", ")}]`);
-  const shared = collected([6], fromIterator);
+  const shared = collected([6], {
+    fromIter: (items, ITrustedLen, IInPlace) =>
+      $collectCounted(
+        items,
+        4,
+        4,
+        ITrustedLen,
+        $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
+        $stdSites.arcFromTrustedLen[0],
+      ),
+  });
   console.log(`[${shared.join(", ")}]`);
   const empty = [];
   console.log(`[${empty.map((item) => $debugStr(item)).join(", ")}] ${empty.length === 0}`);
@@ -60,7 +71,10 @@ function main() {
   if (1 >= value.length) {
     $rcDrop(other);
     $rcDrop(words);
-    throw $stringPanic(`index out of bounds: the len is ${value.length} but the index is 1`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${value.length} but the index is 1`,
+      "test/corpus/collect_into_an_rc_slice.rs:34:61",
+    );
   }
   try {
     try {
@@ -77,7 +91,7 @@ function main() {
               .filter((i) => i % 7 !== 0)
               .map((i) => {
                 if (i === 3) {
-                  throw $stringPanic(`at ${i}`);
+                  throw $stringPanic(`at ${i}`, "test/corpus/collect_into_an_rc_slice.rs:43:21");
                 }
                 return [i];
               }),

@@ -7,7 +7,11 @@ export function entry() {
 }
 
 function add(log, f) {
-  const guard = $borrowMut(log, true);
+  const guard = $borrowMut(
+    log,
+    "test/corpus/ref_cell_borrowed_while_std_runs_a_generic_callback.rs:4:25",
+    true,
+  );
   try {
     const free = 1 != null ? f(1) : undefined;
     guard.push(free ? 1 : 0);
@@ -26,6 +30,8 @@ function main() {
     }
     return result;
   });
-  console.log(`[${$borrow(log).join(", ")}]`);
+  console.log(
+    `[${$borrow(log, "test/corpus/ref_cell_borrowed_while_std_runs_a_generic_callback.rs:12:26").join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

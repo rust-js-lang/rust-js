@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     name: "stable-run-unreversed",
     breaks: "a descending run is kept as it is, not reversed, and the sort leaves it so",
     file,
-    find: "      if (reversed) $reverseRange(v, start, start + run);\n",
+    find: "      if (reversed) $reverseRange(v, start, undefined, start + run);\n",
     replace: "",
     tests: seen,
   },

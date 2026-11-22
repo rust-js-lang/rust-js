@@ -11,6 +11,7 @@ import {
   $lastDropping,
   $lent,
   $live,
+  $panic,
   $position,
   $range,
   $tryFoldOk,
@@ -68,7 +69,7 @@ function main() {
       }).reduce((n, d) => {
         try {
           if (d[0] === 1) {
-            throw new Error("1");
+            throw $panic("1", "test/corpus/consumed_own_iterator_dropped_once.rs:50:59");
           }
           return (n + d[0]) >>> 0;
         } catch (error) {
@@ -470,7 +471,7 @@ function more() {
     }).forEach((d) => {
       try {
         if (d[0] === 161) {
-          throw new Error("161");
+          throw $panic("161", "test/corpus/consumed_own_iterator_dropped_once.rs:96:17");
         }
       } catch (error) {
         throw $unwindsOn(error);

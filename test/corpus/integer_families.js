@@ -80,10 +80,10 @@ function main() {
     `${checkedRem == null ? "None" : `Some(${checkedRem})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
   );
   console.log(
-    `${$wrappingDiv(-2147483648, -1, -2147483648)} ${$wrappingDiv(-7, 2, -2147483648)} ${$wrappingRem(-2147483648, -1, -2147483648)} ${$wrappingRem(-7, 2, -2147483648)}`,
+    `${$wrappingDiv(-2147483648, -1, "test/corpus/integer_families.rs:26:38", -2147483648)} ${$wrappingDiv(-7, 2, "test/corpus/integer_families.rs:26:64", -2147483648)} ${$wrappingRem(-2147483648, -1, "test/corpus/integer_families.rs:26:90", -2147483648)} ${$wrappingRem(-7, 2, "test/corpus/integer_families.rs:26:116", -2147483648)}`,
   );
   console.log(
-    `${$wrappingDiv(0, -5, -2147483648)} ${$wrappingRem(9n, 4n)} ${((value) => (value == null ? "None" : `Some(${value})`))($checkedRem(-9223372036854775808n, -1n, -9223372036854775808n))}`,
+    `${$wrappingDiv(0, -5, "test/corpus/integer_families.rs:27:33", -2147483648)} ${$wrappingRem(9n, 4n, "test/corpus/integer_families.rs:27:56")} ${((value) => (value == null ? "None" : `Some(${value})`))($checkedRem(-9223372036854775808n, -1n, -9223372036854775808n))}`,
   );
 
   // Shifts: checked by the width, wrapping by the amount's low bits.

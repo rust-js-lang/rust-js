@@ -8,7 +8,7 @@ export function entry() {
 
 function main() {
   let text = "héllo";
-  text = $replaceRange(text, 0, 2, "x");
+  text = $replaceRange(text, 0, 2, "x", "test/corpus/replace_range_panic.rs:6:10");
   console.log(`${text}`);
 }
 //# sourceMappingURL=case.js.map

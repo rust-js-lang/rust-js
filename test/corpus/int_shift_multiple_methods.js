@@ -43,14 +43,14 @@ function main() {
     `${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`}`,
   );
   console.log(
-    `${$wrappingRemEuclid(id(-2147483648), -1, -2147483648)} ${$wrappingRemEuclid(id(-7), 3, -2147483648)} ${$wrappingDivEuclid(id(-9223372036854775808n), -1n, -9223372036854775808n)}`,
+    `${$wrappingRemEuclid(id(-2147483648), -1, "test/corpus/int_shift_multiple_methods.rs:11:39", -2147483648)} ${$wrappingRemEuclid(id(-7), 3, "test/corpus/int_shift_multiple_methods.rs:11:74", -2147483648)} ${$wrappingDivEuclid(id(-9223372036854775808n), -1n, "test/corpus/int_shift_multiple_methods.rs:11:111", -9223372036854775808n)}`,
   );
   console.log(
-    `${$wrappingDivEuclid(id(-7n), 2n, -170141183460469231731687303715884105728n)} ${$wrappingRemEuclid(id(7), 3)}`,
+    `${$wrappingDivEuclid(id(-7n), 2n, "test/corpus/int_shift_multiple_methods.rs:12:34", -170141183460469231731687303715884105728n)} ${$wrappingRemEuclid(id(7), 3, "test/corpus/int_shift_multiple_methods.rs:12:66")}`,
   );
   console.log(
-    `${$nextMultipleOf(id(7), 4, 4294967295)} ${$nextMultipleOf(id(16), 8, 255)} ${$nextMultipleOf(id(251), 10, 255)}`,
+    `${$nextMultipleOf(id(7), 4, 4294967295, "u32")} ${$nextMultipleOf(id(16), 8, 255, "u8")} ${$nextMultipleOf(id(251), 10, 255, "u8")}`,
   );
-  console.log(`${$nextMultipleOf(id(18446744073709551612n), 7n, 18446744073709551615n)}`);
+  console.log(`${$nextMultipleOf(id(18446744073709551612n), 7n, 18446744073709551615n, "u64")}`);
 }
 //# sourceMappingURL=case.js.map

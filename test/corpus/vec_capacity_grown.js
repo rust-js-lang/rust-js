@@ -238,15 +238,21 @@ function main() {
   $print(`${$capacity(z, 4)}\n`);
   $print(
     `${$capacity(
-      $unwrapOk(parsed(["1", "2", "3", "4", "5"]), undefined, (e) =>
-        $debugParseError(e, "ParseIntError"),
+      $unwrapOk(
+        parsed(["1", "2", "3", "4", "5"]),
+        "test/corpus/vec_capacity_grown.rs:104:55",
+        undefined,
+        (e) => $debugParseError(e, "ParseIntError"),
       ),
       4,
     )}\n`,
   );
   $print(
-    `${$capacity($unwrap(somes([1, 2, 3], 1)), 1)} ${$capacity(
-      $unwrap(somes([1n, 2n, 3n, 4n, 5n, 6n], 8)),
+    `${$capacity(
+      $unwrap(somes([1, 2, 3], 1), "test/corpus/vec_capacity_grown.rs:105:43"),
+      1,
+    )} ${$capacity(
+      $unwrap(somes([1n, 2n, 3n, 4n, 5n, 6n], 8), "test/corpus/vec_capacity_grown.rs:105:94"),
       8,
     )}\n`,
   );

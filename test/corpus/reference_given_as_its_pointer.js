@@ -115,9 +115,9 @@ function main() {
   // A slice's items as `MaybeUninit`s and back.
   const bytes = [1, 2, 3];
   const uninit = sliceAsUninitMut(bytes);
-  uninit[$at(uninit, 1)] = 20;
+  uninit[$at(uninit, 1, "test/corpus/reference_given_as_its_pointer.rs:121:5")] = 20;
   const back = sliceAssumeInitMut(uninit);
-  back[$at(back, 2)] = 30;
+  back[$at(back, 2, "test/corpus/reference_given_as_its_pointer.rs:123:5")] = 30;
   const arg$1 = sliceAsUninit(bytes).length;
   console.log(`[${bytes.join(", ")}] ${arg$1}`);
   console.log(`${fromRefOn(bytes).value.length}`);
@@ -177,7 +177,7 @@ function main() {
   const w = stdFromMut($ptrTo(words));
   w.value.push("d");
   const s = stdFromMut($ptrTo(bytes)).value;
-  s[$at(s, 0)] = 9;
+  s[$at(s, 0, "test/corpus/reference_given_as_its_pointer.rs:165:14")] = 9;
   const arg$5 = stdFromRef(bytes).value.length;
   console.log(
     `[${words.map((item) => $debugStr(item)).join(", ")}] [${bytes.join(", ")}] ${arg$5}`,
@@ -198,7 +198,7 @@ function main() {
   // A slice's pointer given to and back from generic code.
   const more = [4, 5, 6];
   const whole = same($ptrTo(more)).value;
-  whole[$at(whole, 0)] = 40;
+  whole[$at(whole, 0, "test/corpus/reference_given_as_its_pointer.rs:183:14")] = 40;
   const head = firstOf(more);
   head.value = (head.value + 1) & 255;
   console.log(`[${more.join(", ")}]`);

@@ -50,7 +50,7 @@ function arithmetic(n, m) {
   if (((n - m) | 0) === 0) {
     seen = (seen | 4) >>> 0;
   }
-  if (m && ($rem(n, m, -2147483648) | 0) !== 0) {
+  if (m && ($rem(n, m, "test/corpus/integer_truth.rs:50:18", -2147483648) | 0) !== 0) {
     seen = (seen | 8) >>> 0;
   }
   if ((n - m) | 0) {

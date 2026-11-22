@@ -9,6 +9,7 @@ import {
   $extendText,
   $iter,
   $iterator,
+  $panic,
   $pathComponents,
   $pathJoin,
   $stringPanic,
@@ -21,7 +22,7 @@ export function entry() {
 export const dirAsRefPath = { asRef: dirAsRefPath_asRef, $drop: dirDrop_drop };
 function dirAsRefPath_asRef(dir) {
   if (dir[0] === "bad") {
-    throw new Error("no path of bad");
+    throw $panic("no path of bad", "test/corpus/path_buf_extended_by_each_part.rs:18:13");
   }
   return dir[0];
 }
@@ -83,7 +84,10 @@ function main() {
     $extendText(
       ["first", "second", "third"].values().map((s) => {
         if (s === "third") {
-          throw $stringPanic(`stopped at ${s}`);
+          throw $stringPanic(
+            `stopped at ${s}`,
+            "test/corpus/path_buf_extended_by_each_part.rs:73:17",
+          );
         }
         return s;
       }),

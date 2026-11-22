@@ -87,15 +87,15 @@ function main() {
   const value = parts(
     17n,
     5n,
-    { div: (a, b) => $bigDiv(a, b, -9223372036854775808n) },
-    { rem: (a, b) => $bigRem(a, b, -9223372036854775808n) },
+    { div: (a, b) => $bigDiv(a, b, undefined, -9223372036854775808n) },
+    { rem: (a, b) => $bigRem(a, b, undefined, -9223372036854775808n) },
     { sub: (a, b) => BigInt.asIntN(64, a - b) },
   );
   const value$1 = parts(
     -7,
     2,
-    { div: (a, b) => $div(a, b, -2147483648) | 0 },
-    { rem: (a, b) => $rem(a, b, -2147483648) | 0 },
+    { div: (a, b) => $div(a, b, undefined, -2147483648) | 0 },
+    { rem: (a, b) => $rem(a, b, undefined, -2147483648) | 0 },
     { sub: (a, b) => (a - b) | 0 },
   );
   console.log(

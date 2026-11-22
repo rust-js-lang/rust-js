@@ -45,7 +45,7 @@ function createRequest(name, onAllReady, onShellReady) {
   const task = createTask(request);
   const names = ["root", "shell"].map((part) => `${part} ${task.id}`);
   if (request.log.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/owner_handle_quiet.rs:80:17");
   }
   const borrowMut = request.log;
   for (let i = 0; i < names.length; i++) {
@@ -88,7 +88,7 @@ function createClosingRequest(name, onAllReady, held) {
   let borrowMut;
   try {
     if (request.log.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/owner_handle_quiet.rs:122:17");
     }
     borrowMut = request.log;
   } catch (error) {
@@ -141,7 +141,7 @@ function exactMatcher_matches(exact, TPartialEq, dropT) {
 
 function createMatchedRequest(name, onAllReady, matcher) {
   const request = requestInstance(name, onAllReady);
-  const borrowMut = $borrowMut(request.log, true);
+  const borrowMut = $borrowMut(request.log, "test/corpus/owner_handle_quiet.rs:148:17", true);
   try {
     borrowMut.push(`matched ${matcher.impl.matches(matcher.value)}`);
   } finally {
@@ -163,7 +163,7 @@ function completeAll(request) {
 function startFlowing(request, destination) {
   request.flowed = (request.flowed + 1) >>> 0;
   if (request.log.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/owner_handle_quiet.rs:166:10");
   }
   request.log.push(`${destination} ${request.flowed}`);
 }
@@ -183,7 +183,7 @@ function render(name) {
 function renderLogged(name) {
   let request;
   const onAllReady = () => {
-    const request$1 = $unwrap(request);
+    const request$1 = $unwrap(request, "test/corpus/owner_handle_quiet.rs:196:62");
     startFlowing(request$1, "logged");
   };
   request = createLoggedRequest(name, onAllReady, (name) => {
@@ -195,7 +195,7 @@ function renderLogged(name) {
 function renderClosing(name) {
   let request;
   const onAllReady = () => {
-    const request$1 = $unwrap(request);
+    const request$1 = $unwrap(request, "test/corpus/owner_handle_quiet.rs:210:62");
     startFlowing(request$1, "closing");
   };
   request = createClosingRequest(name, onAllReady, held("closer"));
@@ -205,7 +205,7 @@ function renderClosing(name) {
 function renderMatched(name, kind) {
   let request;
   const onAllReady = () => {
-    const request$1 = $unwrap(request);
+    const request$1 = $unwrap(request, "test/corpus/owner_handle_quiet.rs:224:62");
     startFlowing(request$1, "matched");
   };
   request = createMatchedRequest(name, onAllReady, {
@@ -221,7 +221,7 @@ function main() {
   completeAll(a);
   completeAll(a);
   if (a.log.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/owner_handle_quiet.rs:238:46");
   }
   const borrow = a.log;
   console.log(
@@ -231,7 +231,7 @@ function main() {
   const b = renderLogged("b");
   completeAll(b);
   if (b.log.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/owner_handle_quiet.rs:242:43");
   }
   const value = b.log;
   console.log(`${b.name}: [${value.map((item) => $debugStr(item)).join(", ")}] ${b.flowed}`);
@@ -239,7 +239,7 @@ function main() {
   const d = renderClosing("d");
   completeAll(d);
   if (d.log.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/owner_handle_quiet.rs:246:43");
   }
   const value$1 = d.log;
   console.log(`${d.name}: [${value$1.map((item) => $debugStr(item)).join(", ")}] ${d.flowed}`);
@@ -251,7 +251,7 @@ function main() {
     const request = renderMatched(name, kind);
     completeAll(request);
     if (request.log.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/owner_handle_quiet.rs:251:59");
     }
     const value = request.log;
     console.log(

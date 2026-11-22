@@ -10,7 +10,7 @@ function main() {
   const a = [[1], [2]];
   const b = [[3], [4]];
   try {
-    $swapWithSlice(a, b);
+    $swapWithSlice(a, b, "test/corpus/swap_with_slice_drops.rs:14:7");
   } catch (error) {
     $cleanup(() => {
       for (const item of b) {
@@ -24,7 +24,7 @@ function main() {
   }
   let tmp;
   try {
-    tmp = $index(a, 0)[0];
+    tmp = $index(a, 0, "test/corpus/swap_with_slice_drops.rs:15:24")[0];
   } catch (error) {
     $cleanup(() => {
       for (const item of b) {
@@ -37,7 +37,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${tmp} ${$index(b, 1)[0]}`);
+    console.log(`${tmp} ${$index(b, 1, "test/corpus/swap_with_slice_drops.rs:15:32")[0]}`);
   } catch (error) {
     $cleanup(() => {
       for (const item of b) {

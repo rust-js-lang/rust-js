@@ -16,7 +16,7 @@ function blank(href) {
 
 function find(cache, href) {
   if (cache.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/borrowed_loop_value_if.rs:20:27");
   }
   const end = cache.length;
   for (let i = 0; i < end; i++) {
@@ -87,6 +87,7 @@ function main() {
     console.log(
       `${href == null ? "None" : `Some(${$debugStr(href)})`} ${value == null ? "None" : `Some(${value})`} [${$borrow(
         cache,
+        "test/corpus/borrowed_loop_value_if.rs:80:66",
       )
         .map((item) => $debugStr(item))
         .join(", ")}]`,
@@ -94,7 +95,7 @@ function main() {
   }
   // Held while what may borrow it mutably runs, the cache's borrows are
   // counted, `find`'s the one `try` around its loop.
-  const left = $borrow(cache, true);
+  const left = $borrow(cache, "test/corpus/borrowed_loop_value_if.rs:84:22", true);
   try {
     const value = removed(cache, "q", false);
     console.log(

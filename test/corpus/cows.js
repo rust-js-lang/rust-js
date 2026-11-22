@@ -34,7 +34,7 @@ function main() {
     list.TAG = "Owned";
     list._0 = list._0.slice();
   }
-  list._0[$at(list._0, 0)] = 0;
+  list._0[$at(list._0, 0, "test/corpus/cows.rs:30:18")] = 0;
   console.log(`[${list._0.join(", ")}] [${items.join(", ")}] ${list._0.length}`);
   const vec = list.TAG === "Borrowed" ? list._0.slice() : list._0;
   console.log(`[${vec.join(", ")}]`);

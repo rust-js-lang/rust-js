@@ -28,9 +28,9 @@ function showHex(t, TDebug) {
 
 function main() {
   const v = [1, 2, 3, 4, 5];
-  const fresh = $iter($chunks(v, 2));
+  const fresh = $iter($chunks(v, 2, "test/corpus/debug_of_chunks_and_windows.rs:18:19"));
   console.log(`Chunks { v: [${$partsLeft(fresh).join(", ")}], chunk_size: ${$partsSize(fresh)} }`);
-  const stepped = $iter($chunks(v, 2));
+  const stepped = $iter($chunks(v, 2, "test/corpus/debug_of_chunks_and_windows.rs:20:25"));
   $next(stepped);
   const arg = show(stepped, {
     fmt: (value, options) =>
@@ -101,17 +101,19 @@ function main() {
   console.log(
     `Chunks { v: [${$partsLeft(stepped).join(", ")}], chunk_size: ${$partsSize(stepped)} } ${arg$1 == null ? "None" : `Some([${arg$1.join(", ")}])`}`,
   );
-  const chunks = $iter($chunks(v, 3));
+  const chunks = $iter($chunks(v, 3, "test/corpus/debug_of_chunks_and_windows.rs:27:25"));
   console.log(
     `${$pretty("Chunks {", [`v: ${$pretty("[", $partsLeft(chunks), "]")}`, `chunk_size: ${$partsSize(chunks)}`], "}")}`,
   );
-  const value = $iter($chunks([10, 11, 12], 2));
+  const value = $iter($chunks([10, 11, 12], 2, "test/corpus/debug_of_chunks_and_windows.rs:28:36"));
   console.log(
     `Chunks { v: [${$partsLeft(value)
       .map((item) => (item >>> 0).toString(16))
       .join(", ")}], chunk_size: ${$partsSize(value).toString(16)} }`,
   );
-  const value$1 = $iter($chunks([255, 255, 255], 16));
+  const value$1 = $iter(
+    $chunks([255, 255, 255], 16, "test/corpus/debug_of_chunks_and_windows.rs:29:41"),
+  );
   console.log(
     `Chunks { v: [${$partsLeft(value$1)
       .map((item) => item.toString(16))
@@ -127,68 +129,71 @@ function main() {
           `size: 0x${$partsSize(it).toString(16)}`,
         ],
         "}",
-      ))($iter($windows([1, 1], 17)))}`,
+      ))($iter($windows([1, 1], 17, "test/corpus/debug_of_chunks_and_windows.rs:29:62")))}`,
   );
   console.log(
-    `${showHex($iter($chunks([255, 255, 255], 16)), {
-      fmt: (value, options) =>
-        options?.alternate
-          ? $pretty(
-              "Chunks {",
-              [
-                `v: ${
-                  options?.alternate
-                    ? $pretty(
-                        "[",
-                        $partsLeft(value).map((item) =>
-                          $formatted(
-                            $debugInt(String(item), item.toString(16), options),
-                            options,
-                            true,
+    `${showHex(
+      $iter($chunks([255, 255, 255], 16, "test/corpus/debug_of_chunks_and_windows.rs:30:41")),
+      {
+        fmt: (value, options) =>
+          options?.alternate
+            ? $pretty(
+                "Chunks {",
+                [
+                  `v: ${
+                    options?.alternate
+                      ? $pretty(
+                          "[",
+                          $partsLeft(value).map((item) =>
+                            $formatted(
+                              $debugInt(String(item), item.toString(16), options),
+                              options,
+                              true,
+                            ),
                           ),
-                        ),
-                        "]",
-                      )
-                    : `[${$partsLeft(value)
-                        .map((item) =>
-                          $formatted(
-                            $debugInt(String(item), item.toString(16), options),
-                            options,
-                            true,
-                          ),
+                          "]",
                         )
-                        .join(", ")}]`
-                }`,
-                `chunk_size: ${$formatted($debugInt(String($partsSize(value)), $partsSize(value).toString(16), options), options, true)}`,
-              ],
-              "}",
-            )
-          : `Chunks { v: ${
-              options?.alternate
-                ? $pretty(
-                    "[",
-                    $partsLeft(value).map((item) =>
-                      $formatted(
-                        $debugInt(String(item), item.toString(16), options),
-                        options,
-                        true,
+                      : `[${$partsLeft(value)
+                          .map((item) =>
+                            $formatted(
+                              $debugInt(String(item), item.toString(16), options),
+                              options,
+                              true,
+                            ),
+                          )
+                          .join(", ")}]`
+                  }`,
+                  `chunk_size: ${$formatted($debugInt(String($partsSize(value)), $partsSize(value).toString(16), options), options, true)}`,
+                ],
+                "}",
+              )
+            : `Chunks { v: ${
+                options?.alternate
+                  ? $pretty(
+                      "[",
+                      $partsLeft(value).map((item) =>
+                        $formatted(
+                          $debugInt(String(item), item.toString(16), options),
+                          options,
+                          true,
+                        ),
                       ),
-                    ),
-                    "]",
-                  )
-                : `[${$partsLeft(value)
-                    .map((item) =>
-                      $formatted(
-                        $debugInt(String(item), item.toString(16), options),
-                        options,
-                        true,
-                      ),
+                      "]",
                     )
-                    .join(", ")}]`
-            }, chunk_size: ${$formatted($debugInt(String($partsSize(value)), $partsSize(value).toString(16), options), options, true)} }`,
-    })}`,
+                  : `[${$partsLeft(value)
+                      .map((item) =>
+                        $formatted(
+                          $debugInt(String(item), item.toString(16), options),
+                          options,
+                          true,
+                        ),
+                      )
+                      .join(", ")}]`
+              }, chunk_size: ${$formatted($debugInt(String($partsSize(value)), $partsSize(value).toString(16), options), options, true)} }`,
+      },
+    )}`,
   );
-  const w = $iter($windows(v, 3));
+  const w = $iter($windows(v, 3, "test/corpus/debug_of_chunks_and_windows.rs:31:19"));
   console.log(`Windows { v: [${$partsLeft(w).join(", ")}], size: ${$partsSize(w)} }`);
   $next(w);
   $nextBack(w);
@@ -198,23 +203,23 @@ function main() {
   console.log(
     `Windows { v: [${$partsLeft(w).join(", ")}], size: ${$partsSize(w)} } ${arg$2 == null ? "None" : `Some([${arg$2.join(", ")}])`}`,
   );
-  const windows = $iter($windows([1, 2], 4));
+  const windows = $iter($windows([1, 2], 4, "test/corpus/debug_of_chunks_and_windows.rs:38:29"));
   console.log(`Windows { v: [${$partsLeft(windows).join(", ")}], size: ${$partsSize(windows)} }`);
-  const value$2 = $iter($windows([7, 8, 9], 2));
+  const value$2 = $iter($windows([7, 8, 9], 2, "test/corpus/debug_of_chunks_and_windows.rs:39:37"));
   console.log(
     `${value$2 == null ? "None" : `Some(Windows { v: [${$partsLeft(value$2).join(", ")}], size: ${$partsSize(value$2)} })`}`,
   );
-  const value$3 = $iter($windows([7, 8, 9], 2));
+  const value$3 = $iter($windows([7, 8, 9], 2, "test/corpus/debug_of_chunks_and_windows.rs:40:33"));
   console.log(
     `${$pretty("Windows {", [`v: ${$pretty("[", $partsLeft(value$3), "]")}`, `size: ${$partsSize(value$3)}`], "}")}`,
   );
   const empty = [];
-  const value$4 = $iter($chunks(empty, 2));
+  const value$4 = $iter($chunks(empty, 2, "test/corpus/debug_of_chunks_and_windows.rs:42:33"));
   console.log(
-    `Chunks { v: [${$partsLeft(value$4).join(", ")}], chunk_size: ${$partsSize(value$4)} } ${((it) => `Windows { v: [${$partsLeft(it).join(", ")}], size: ${$partsSize(it)} }`)($iter($windows(empty, 1)))}`,
+    `Chunks { v: [${$partsLeft(value$4).join(", ")}], chunk_size: ${$partsSize(value$4)} } ${((it) => `Windows { v: [${$partsLeft(it).join(", ")}], size: ${$partsSize(it)} }`)($iter($windows(empty, 1, "test/corpus/debug_of_chunks_and_windows.rs:42:50")))}`,
   );
   const words = ["a", "bc", "d"];
-  const pairs = $iter($windows(words, 2));
+  const pairs = $iter($windows(words, 2, "test/corpus/debug_of_chunks_and_windows.rs:44:27"));
   $next(pairs);
   console.log(
     `Windows { v: [${$partsLeft(pairs)

@@ -8,11 +8,18 @@ export function entry() {
 
 function main() {
   const queue = [1, 2];
-  queue[$at(queue, 1, "out of bounds access")] = 5;
-  const arg = $index(queue, 0, "out of bounds access");
+  queue[$at(queue, 1, "test/corpus/deque_index_out_of_bounds.rs:9:10", "out of bounds access")] = 5;
+  const arg = $index(
+    queue,
+    0,
+    "test/corpus/deque_index_out_of_bounds.rs:10:35",
+    "out of bounds access",
+  );
   console.log(`[${queue.join(", ")}] ${arg}`);
   const items = [3];
-  console.log(`${$index(items, 0)}`);
-  console.log(`${$index(queue, 3, "out of bounds access")}`);
+  console.log(`${$index(items, 0, "test/corpus/deque_index_out_of_bounds.rs:12:25")}`);
+  console.log(
+    `${$index(queue, 3, "test/corpus/deque_index_out_of_bounds.rs:13:25", "out of bounds access")}`,
+  );
 }
 //# sourceMappingURL=case.js.map

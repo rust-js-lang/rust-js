@@ -108,7 +108,7 @@ function main() {
   }
 
   // In an `if let`, and a `let` that can't fail.
-  const shape = $index(shapes, 4);
+  const shape = $index(shapes, 4, "test/corpus/or_bindings.rs:79:63");
   if (shape.TAG === "Rect" || shape.TAG === "Line") {
     console.log(`width ${$displayF64(shape.w)}`);
   }

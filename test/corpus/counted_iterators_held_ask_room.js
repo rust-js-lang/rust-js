@@ -9,6 +9,7 @@ import {
   $lazyRange,
   $lazyZip,
   $next,
+  $panic,
   $rangeInclusiveNext,
   $rangeInclusiveNextBack,
   $rangeNext,
@@ -162,7 +163,10 @@ function main() {
         const dropped = [1];
         if (held == null) {
           droppedDrop_drop(dropped);
-          throw new Error("called `Option::unwrap()` on a `None` value");
+          throw $panic(
+            "called `Option::unwrap()` on a `None` value",
+            "test/corpus/counted_iterators_held_ask_room.rs:78:60",
+          );
         }
         const collect = Array.from(
           $roomForHint($repeatingN(dropped, held, undefined, droppedDrop_drop), 1, true),
@@ -181,7 +185,7 @@ function main() {
         const dropped = [2];
         let borrow;
         try {
-          borrow = $borrow(cell, true);
+          borrow = $borrow(cell, "test/corpus/counted_iterators_held_ask_room.rs:82:51", true);
         } catch (error) {
           $cleanup(() => {
             droppedDrop_drop(dropped);

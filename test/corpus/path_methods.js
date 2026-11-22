@@ -76,7 +76,7 @@ function main() {
   }
 
   for (const p of ["/usr/lib/../x/./y.txt", "a//b/", "./c", "", "/"]) {
-    const parts = $pathParts(p).map((part) => $unwrap(part));
+    const parts = $pathParts(p).map((part) => $unwrap(part, "test/corpus/path_methods.rs:39:66"));
     const collect = $pathAncestors(p);
     console.log(
       `iter [${parts.map((item) => $debugStr(item)).join(", ")}] [${collect.map((item) => $debugStr(item)).join(", ")}] ${$pathParts(p).length}`,
@@ -102,7 +102,7 @@ function main() {
     console.log("error prefix not found StripPrefixError(())");
   }
   console.log(
-    `${$unwrapOk($pathStripPrefix("a/b/c", "a"), undefined, (e) => "StripPrefixError(())")}`,
+    `${$unwrapOk($pathStripPrefix("a/b/c", "a"), "test/corpus/path_methods.rs:53:57", undefined, (e) => "StripPrefixError(())")}`,
   );
   let buf = "/tmp";
   buf = $pathJoin(buf, "cache");

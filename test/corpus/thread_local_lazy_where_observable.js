@@ -6,6 +6,8 @@ import {
   $displayF64,
   $local,
   $nullableCell,
+  $panic,
+  $stdSites,
   $withBorrow,
   $withBorrowMut,
 } from "@rust-js/std";
@@ -37,7 +39,7 @@ function count() {
 
 function checked(n) {
   if (n === 0) {
-    throw new Error("no length");
+    throw $panic("no length", "test/corpus/thread_local_lazy_where_observable.rs:38:9");
   }
   return n;
 }
@@ -102,7 +104,7 @@ const END = prefixed("end");
 const START = prefixed("start");
 
 function found() {
-  return $withBorrow(FOUND(), (f) => f) ?? null;
+  return $withBorrow(FOUND(), (f) => f, $stdSites.localKeyWithBorrow[0]) ?? null;
 }
 
 function absent(x) {
@@ -112,7 +114,7 @@ function absent(x) {
 function main() {
   console.log("start");
   len = 5;
-  const withBorrow = $withBorrow(lazy(), (arg0) => arg0);
+  const withBorrow = $withBorrow(lazy(), (arg0) => arg0, $stdSites.localKeyWithBorrow[0]);
   console.log(`${withBorrow == null ? "None" : `Some(${withBorrow})`}`);
   console.log(`${LONGER()} ${DIRECT()}`);
   console.log(`${COUNT}`);
@@ -127,38 +129,46 @@ function main() {
   const value = found();
   console.log(`${value == null ? "None" : `Some(${value})`} ${absent(found())}`);
   if (!FOUND.initWith($nullableCell(null))) {
-    $cellReplace($borrowMut(FOUND()), null);
+    $cellReplace($borrowMut(FOUND(), $stdSites.localKeySet[0]), null);
   }
-  console.log(`${$withBorrow(FOUND(), (x) => x == null)} ${absent(found())}`);
+  console.log(
+    `${$withBorrow(FOUND(), (x) => x == null, $stdSites.localKeyWithBorrow[0])} ${absent(found())}`,
+  );
   if (!FOUND.initWith($nullableCell(2))) {
-    $cellReplace($borrowMut(FOUND()), 2);
+    $cellReplace($borrowMut(FOUND(), $stdSites.localKeySet[0]), 2);
   }
-  const replace = $cellReplace($borrowMut(FOUND()), null);
+  const replace = $cellReplace($borrowMut(FOUND(), $stdSites.localKeyReplace[0]), null);
   console.log(`${replace == null ? "None" : `Some(${replace})`}`);
-  console.log(`${$withBorrow(FOUND(), (x) => x == null)} ${absent(found())}`);
+  console.log(
+    `${$withBorrow(FOUND(), (x) => x == null, $stdSites.localKeyWithBorrow[0])} ${absent(found())}`,
+  );
   if (!FOUND.initWith($nullableCell(3))) {
-    $cellReplace($borrowMut(FOUND()), 3);
+    $cellReplace($borrowMut(FOUND(), $stdSites.localKeySet[0]), 3);
   }
   $withBorrowMut(
     FOUND(),
     (f) => {
       f.value = undefined;
     },
+    $stdSites.localKeyWithBorrowMut[0],
     true,
   );
-  console.log(`${$withBorrow(FOUND(), (x) => x == null)} ${absent(found())}`);
+  console.log(
+    `${$withBorrow(FOUND(), (x) => x == null, $stdSites.localKeyWithBorrow[0])} ${absent(found())}`,
+  );
   // `set` before its first use, which makes it of what it's given.
   if (!setFirst.initWith($nullableCell(4))) {
-    $cellReplace($borrowMut(setFirst()), 4);
+    $cellReplace($borrowMut(setFirst(), $stdSites.localKeySet[0]), 4);
   }
   $withBorrowMut(
     setFirst(),
     (f) => {
       f.value = undefined;
     },
+    $stdSites.localKeyWithBorrowMut[0],
     true,
   );
-  console.log(`${absent($withBorrow(setFirst(), (f) => f))}`);
+  console.log(`${absent($withBorrow(setFirst(), (f) => f, $stdSites.localKeyWithBorrow[0]))}`);
   fixed = (fixed + 1) >>> 0;
   console.log(`${fixed} ${$displayF64(BIGGER)}`);
   console.log(`${END} ${START}`);

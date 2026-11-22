@@ -8,6 +8,7 @@ import {
   $foldOf,
   $lastDropping,
   $next,
+  $panic,
   iterator_map,
   iterator_stepBy,
   stepByDoubleEndedIterator_rfold,
@@ -53,7 +54,7 @@ function itDoubleEndedIterator_nthBack(it, n) {
 
 function itDrop_drop(it) {
   console.log("drop it");
-  throw new Error("drop");
+  throw $panic("drop", "test/corpus/step_by_source_dropped_at_its_folds_end.rs:57:9");
 }
 
 function it() {

@@ -9,7 +9,7 @@ export function entry() {
 function main() {
   const m = { value: [1, 2] };
   console.log(`${$showLocked(m, (value) => `[${value.join(", ")}]`, "Mutex", true)}`);
-  const _held = $lock(m);
+  const _held = $lock(m, "test/corpus/lock_debug.rs:9:30");
   try {
     console.log(`${$showLocked(m, (value) => `[${value.join(", ")}]`, "Mutex", true)}`);
   } catch (error) {
@@ -19,13 +19,13 @@ function main() {
     $unborrow(_held);
   }
   const r = { value: "text" };
-  const _read = $lockRead(r);
+  const _read = $lockRead(r, "test/corpus/lock_debug.rs:14:30");
   try {
     console.log(`${$showLocked(r, (value) => $debugStr(value), "RwLock", false)}`);
   } finally {
     $unborrow(_read);
   }
-  const _write = $lock(r);
+  const _write = $lock(r, "test/corpus/lock_debug.rs:18:32");
   try {
     console.log(`${$showLocked(r, (value) => $debugStr(value), "RwLock", false)}`);
   } catch (error) {

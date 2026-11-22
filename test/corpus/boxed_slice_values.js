@@ -15,10 +15,13 @@ function main() {
   const rows = [[1], [2, 3]].slice();
   const h = { indices, rows };
   const copy = { ...h, indices: h.indices.slice(), rows: h.rows.map((item) => item.slice()) };
-  copy.indices[$at(copy.indices, 0)] = 9;
+  copy.indices[$at(copy.indices, 0, "test/corpus/boxed_slice_values.rs:14:5")] = 9;
   const length = copy.rows.length;
   if (1 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 1`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 1`,
+      "test/corpus/boxed_slice_values.rs:15:5",
+    );
   }
   copy.rows[1].push(4);
   console.log(`${holderDebug_fmt(h)} ${holderDebug_fmt(copy)}`);

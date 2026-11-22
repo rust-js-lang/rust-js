@@ -95,7 +95,7 @@ function main() {
     const key$4 = (p) => p[0];
     $sortUnstable(down, (a, b) => key$4(a) < key$4(b), "network");
     const value = order(again);
-    const arg$6 = order($slice(down, 0, 3));
+    const arg$6 = order($slice(down, 0, "test/corpus/sort_unstable_ties.rs:85:58", 3));
     console.log(`${n}: ${value} ${arg$6}`);
 
     let picked = base.slice();

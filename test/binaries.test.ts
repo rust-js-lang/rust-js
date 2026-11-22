@@ -1,0 +1,342 @@
+// A binary crate's `main` runs as std's runtime runs it (#2292): its
+// status, what std reports of a `Termination`, and std's panic hook's text
+// where a panic is raised, before what it drops, once noted, read through
+// one stream as a terminal shows it, `2>&1`; each against native Rust, on
+// Node and Bun. A panic's location is the compile's, `file:line:col` of the
+// file as rustc was given it, as `Location` is.
+import { expect, test } from "bun:test";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { runSync } from "./child";
+import { compiler, fixture, installStd, nativeBinary, programFlags, root, run, shippedStd } from "./support";
+
+const flags = programFlags("2024");
+
+type Ran = { status: number; out: string };
+
+// What one stream shows of a run, `2>&1`, its process id said as `<pid>`,
+// as the hook names the thread's process, and std's files as rust-js names them.
+function ran(cmd: string[], cwd: string): Ran {
+  const p = runSync(["sh", "-c", `${cmd.map((part) => `'${part}'`).join(" ")} 2>&1`], cwd, 60_000);
+  const out = p.stdout.replace(/thread 'main' \(\d+\)/g, "thread 'main' (<pid>)");
+  return { status: p.code ?? -1, out: shippedStd(out) };
+}
+
+// `source` as a binary, native and rust-js's, in `dir`, the same file
+// given to both, its directory left out of the name both give it, and each
+// run: native's, then Node's and Bun's.
+function both(name: string, source: string, dir = fixture(name)): { native: Ran; node: Ran; bun: Ran } {
+  mkdirSync(dir, { recursive: true });
+  const named = [...flags, `--remap-path-prefix=${dir}/=`];
+  const built = nativeBinary(source, dir, named);
+  if ("error" in built) throw new Error(built.error);
+  const js = join(dir, "main.js");
+  run([compiler, join(dir, "native.rs"), "-o", js, "--", ...named, "--crate-type", "bin", "-Awarnings"]);
+  installStd(dir);
+  return { native: ran([built.binary], dir), node: ran(["node", js], dir), bun: ran(["bun", js], dir) };
+}
+
+function same(name: string, source: string, dir?: string) {
+  const { native, node, bun } = both(name, source, dir);
+  expect(node).toEqual(native);
+  expect(bun).toEqual(native);
+  return native;
+}
+
+test("a binary's status is its main's: nothing, `Ok`, `Err` reported, an `ExitCode`, `exit`", () => {
+  expect(same("unit", 'fn main() {\n    println!("hi");\n}\n').status).toBe(0);
+  expect(same("ok", 'fn main() -> Result<(), String> {\n    println!("a");\n    Ok(())\n}\n').status).toBe(0);
+  const err = same("err", 'fn main() -> Result<(), String> {\n    println!("a");\n    Err("bad".to_string())\n}\n');
+  expect(err).toEqual({ status: 1, out: 'a\nError: "bad"\n' });
+  expect(same("code", "fn main() -> std::process::ExitCode {\n    std::process::ExitCode::from(42)\n}\n").status).toBe(42);
+  const exit = same(
+    "exit",
+    'struct D;\n\nimpl Drop for D {\n    fn drop(&mut self) {\n        println!("dropped");\n    }\n}\n\nfn main() {\n    let _d = D;\n    println!("before");\n    std::process::exit(3);\n}\n',
+  );
+  expect(exit).toEqual({ status: 3, out: "before\n" });
+}, 300_000);
+
+test("a panic's hook text is written where it's raised, before what it drops, its note once", () => {
+  const source = `struct D(&'static str);
+
+impl Drop for D {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+
+fn boom(n: u32) {
+    let _d = D("inner");
+    if n > 0 {
+        panic!("boom {n}");
+    }
+}
+
+fn main() {
+    println!("start");
+    let r = std::panic::catch_unwind(|| boom(1));
+    println!("caught {}", r.is_err());
+    let r = std::panic::catch_unwind(|| boom(2));
+    println!("caught {}", r.is_err());
+    let _outer = D("outer");
+    boom(3);
+}
+`;
+  const native = same("hooked", source);
+  expect(native.status).toBe(101);
+  expect(native.out.match(/RUST_BACKTRACE/g)?.length).toBe(1);
+  expect(native.out.indexOf("boom 3")).toBeLessThan(native.out.indexOf("drop outer"));
+}, 300_000);
+
+test("a resumed unwind no panic raised ends a binary with no hook's text", () => {
+  const native = same("resumed", 'fn main() {\n    println!("a");\n    std::panic::resume_unwind(Box::new(5));\n}\n');
+  expect(native).toEqual({ status: 101, out: "a\n" });
+}, 300_000);
+
+test("what stdout holds of a line is written as a panic ends a binary", () => {
+  same("partial", 'fn main() {\n    print!("partial");\n    panic!("then");\n}\n');
+}, 300_000);
+
+test("each panic of the program's own code names where it was raised", () => {
+  const kinds = [
+    "let v = vec![1];\n    let i = std::hint::black_box(3);\n    println!(\"{}\", v[i]);",
+    "let o: Option<u8> = std::hint::black_box(None);\n    o.unwrap();",
+    "let r: Result<u8, String> = Err(\"no\".into());\n    r.expect(\"wanted\");",
+    "let c = std::cell::RefCell::new(1);\n    let _a = c.borrow_mut();\n    let _b = c.borrow();",
+    "let z = std::hint::black_box(0);\n    println!(\"{}\", 1 / z);",
+    "let mut v = vec![1, 2];\n    v.insert(5, 3);",
+    "let s = String::from(\"héllo\");\n    println!(\"{}\", &s[0..2]);",
+    "assert_eq!(std::hint::black_box(1), 2, \"why {}\", 3);",
+    "println!(\"{}\", 5u32.ilog(std::hint::black_box(1)));",
+  ];
+  kinds.forEach((body, i) => {
+    expect(same(`kind${i}`, `fn main() {\n    ${body}\n}\n`).status).toBe(101);
+  });
+}, 300_000);
+
+test("a part of a slice used apart from where it's indexed names where it's indexed", () => {
+  // A view made where it's indexed, `&mut v[1..]`, and its call made where
+  // it's used, a call's argument lines below, or a form of its own over the
+  // range, `$reverseRange` (#2292).
+  const views = [
+    "fn bump(xs: &mut [u32]) {\n    xs[0] += 1;\n}\n\nfn main() {\n    let mut v: Vec<u32> = std::hint::black_box(vec![]);\n    bump(\n        &mut v[1..], // the tail\n    );\n}\n",
+    "fn main() {\n    let mut v = vec![1, 2];\n    let b = std::hint::black_box(5);\n    v[1..b].reverse();\n}\n",
+  ];
+  views.forEach((source, i) => {
+    expect(same(`view${i}`, source).status).toBe(101);
+  });
+}, 300_000);
+
+test("each panic std raises in its own code names std's line, as its hook does", () => {
+  const kinds = [
+    "let mut d: std::collections::VecDeque<u8> = [1, 2].into();\n    d.swap(0, std::hint::black_box(5));",
+    "let mut d: std::collections::VecDeque<u8> = [1, 2].into();\n    d.swap(std::hint::black_box(7), 1);",
+    "let mut v = vec![1];\n    v.swap_remove(std::hint::black_box(3));",
+    "let s = String::from(\"héllo\");\n    let _ = s.split_at(std::hint::black_box(2));",
+    "let _ = std::hint::black_box(1.0f64).clamp(2.0, 1.0);",
+    "let _ = std::hint::black_box(1.0f32).clamp(f32::NAN, 1.0);",
+    "let a = std::cell::RefCell::new(1);\n    let b = std::cell::RefCell::new(1);\n    let _m = a.borrow_mut();\n    println!(\"{}\", a == b);",
+    "let a = std::cell::RefCell::new(1);\n    let b = std::cell::RefCell::new(1);\n    let _m = b.borrow_mut();\n    println!(\"{}\", a == b);",
+    "let mut v = [1, 2];\n    v.swap(0, std::hint::black_box(4));",
+    "let mut d: std::collections::VecDeque<u8> = [1].into();\n    d.insert(std::hint::black_box(5), 1);",
+    "let mut a = [1, 2];\n    a.rotate_left(std::hint::black_box(5));",
+    "let mut a = [1, 2];\n    a.rotate_right(std::hint::black_box(5));",
+    "let mut d: std::collections::VecDeque<u8> = [1, 2].into();\n    d.rotate_left(std::hint::black_box(5));",
+    "let mut d: std::collections::VecDeque<u8> = [1, 2].into();\n    d.rotate_right(std::hint::black_box(5));",
+    "let v: Vec<u64> = Vec::with_capacity(std::hint::black_box(usize::MAX));\n    println!(\"{}\", v.len());",
+    "let mut a = [3, 1, 2];\n    a.select_nth_unstable(std::hint::black_box(5));",
+    "println!(\"{:?}\", char::from_digit(1, std::hint::black_box(40)));",
+    "let mut b = [0u8; 1];\n    let _ = 'é'.encode_utf8(&mut b);",
+    "let mut b = [0u16; 1];\n    let _ = '😀'.encode_utf16(&mut b);",
+    "println!(\"{:?}\", (0..5).step_by(std::hint::black_box(0)).count());",
+    "println!(\"{:?}\", std::time::Duration::new(u64::MAX, std::hint::black_box(1_000_000_000)));",
+    "println!(\"{:?}\", std::time::Duration::MAX + std::hint::black_box(std::time::Duration::from_secs(1)));",
+    "println!(\"{:?}\", std::time::Duration::ZERO - std::hint::black_box(std::time::Duration::from_secs(1)));",
+    "let c: std::cell::OnceCell<u8> = std::cell::OnceCell::new();\n    let _ = c.get_or_init(|| {\n        let _ = c.get_or_init(|| 1);\n        2\n    });",
+    "let l: std::cell::LazyCell<u8> = std::cell::LazyCell::new(|| panic!(\"init\"));\n    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| *l));\n    println!(\"{}\", *l);",
+    "let mut m = std::collections::BTreeMap::new();\n    m.insert(1u8, 1u8);\n    println!(\"{:?}\", m.range(std::hint::black_box(5)..std::hint::black_box(1)).count());",
+    "let mut m = std::collections::BTreeMap::new();\n    m.insert(1u8, 1u8);\n    let b = std::hint::black_box(3);\n    println!(\"{:?}\", m.range((std::ops::Bound::Excluded(b), std::ops::Bound::Excluded(b))).count());",
+    "let mut m = std::collections::BTreeSet::new();\n    m.insert(1u8);\n    println!(\"{:?}\", m.range(std::hint::black_box(5)..std::hint::black_box(1)).count());",
+    "let mut m = std::collections::BTreeSet::new();\n    m.insert(1u8);\n    let b = std::hint::black_box(3);\n    println!(\"{:?}\", m.range((std::ops::Bound::Excluded(b), std::ops::Bound::Excluded(b))).count());",
+    "println!(\"{:?}\", i64::from_str_radix(\"1\", std::hint::black_box(40)));",
+    "println!(\"{:?}\", u8::from_str_radix(\"1\", std::hint::black_box(1)));",
+    "println!(\"{:?}\", i32::from_str_radix(\"1\", std::hint::black_box(37)));",
+    "println!(\"{}\", 5u8.next_multiple_of(std::hint::black_box(0)));",
+    "println!(\"{}\", 5u32.next_multiple_of(std::hint::black_box(0)));",
+    "println!(\"{}\", 5u64.next_multiple_of(std::hint::black_box(0)));",
+    "let mut s = String::from(\"héllo\");\n    let _ = s.split_at_mut(std::hint::black_box(2));",
+    "let mut a = [std::mem::MaybeUninit::<String>::uninit(), std::mem::MaybeUninit::uninit()];\n    a.write_clone_of_slice(std::hint::black_box(&[String::new()]));",
+    "let mut a = [std::mem::MaybeUninit::<u8>::uninit(); 2];\n    a.write_copy_of_slice(std::hint::black_box(&[1]));",
+    "let mut r = (std::hint::black_box(char::MAX))..;\n    r.next();\n    println!(\"{:?}\", r.next());",
+    "let mut p = std::path::PathBuf::from(\"a\");\n    p.set_extension(std::hint::black_box(\"b/c\"));",
+    "let _ = std::num::Wrapping(1i32) / std::num::Wrapping(std::hint::black_box(0));",
+    "let _ = std::num::Wrapping(1u32) % std::num::Wrapping(std::hint::black_box(0));",
+    "let mut w = std::num::Wrapping(1u8);\n    w /= std::num::Wrapping(std::hint::black_box(0));",
+    "let _ = std::num::Saturating(1i32) / std::num::Saturating(std::hint::black_box(0));",
+    "let mut v = vec![1u8, 2];\n    v.drain(..std::hint::black_box(5));",
+    "let mut d: std::collections::VecDeque<u8> = [1, 2].into();\n    d.drain(..std::hint::black_box(5));",
+    "let d: std::collections::VecDeque<u8> = [1, 2].into();\n    println!(\"{}\", d.range(..std::hint::black_box(5)).count());",
+    "let mut d: std::collections::VecDeque<u8> = [1, 2].into();\n    println!(\"{}\", d.range_mut(..std::hint::black_box(5)).count());",
+    "let mut v = vec![1u8, 2];\n    let _ = v.splice(..std::hint::black_box(5), [9]);",
+    "let mut v = vec![1u8, 2];\n    v.extend_from_within(..std::hint::black_box(5));",
+    "let mut v = vec![1u8, 2];\n    println!(\"{}\", v.extract_if(..std::hint::black_box(5), |_| true).count());",
+    "let mut d: std::collections::VecDeque<u8> = [1, 2].into();\n    let _ = d.split_off(std::hint::black_box(5));",
+    "let mut v = vec![1u8, 2];\n    let _ = v.split_off(std::hint::black_box(5));",
+    "use std::io::BufRead;\n    let mut r: &[u8] = &[1, 2];\n    r.consume(std::hint::black_box(5));",
+    "use std::io::BufRead;\n    let mut d: std::collections::VecDeque<u8> = [1, 2].into();\n    d.consume(std::hint::black_box(5));",
+    "let mut s = String::from(\"ab\");\n    s.drain(..std::hint::black_box(5));",
+    "let mut s = String::from(\"ab\");\n    s.replace_range(..std::hint::black_box(5), \"x\");",
+    "let mut v = vec![1u8, 2];\n    v.copy_within(..std::hint::black_box(5), 0);",
+    "let mut s = String::from(\"ab\");\n    s.extend_from_within(..std::hint::black_box(5));",
+  ];
+  kinds.forEach((body, i) => {
+    expect(same(`std${i}`, `fn main() {\n    ${body}\n}\n`).status).toBe(101);
+  });
+}, 300_000);
+
+// A `usize`'s, whose width is wasm32's in rust-js (ADR 0562), std's line of
+// its own type: against native Rust built for `wasm32-wasip1`, run by WASI,
+// where a panic aborts once its hook has written, so the place it names.
+test("a `usize`'s panic std raises names wasm32's std's line, as native wasm32's hook does", () => {
+  const dir = fixture("usize-site");
+  const source = "fn main() {\n    println!(\"{}\", 5usize.next_multiple_of(std::hint::black_box(0)));\n}\n";
+  const built = nativeBinary(source, dir, [...flags, "--target=wasm32-wasip1"]);
+  if ("error" in built) throw new Error(built.error);
+  const at = (out: string) => /panicked at (.*):\n/.exec(out)?.[1];
+  const native = at(ran([process.execPath, join(root, "test", "wasi-run.ts"), built.binary, join(dir, "native.json")], dir).out);
+  const js = join(dir, "main.js");
+  run([compiler, join(dir, "native.rs"), "-o", js, "--", ...flags, "--crate-type", "bin", "-Awarnings"]);
+  installStd(dir);
+  expect(native).toContain("library/core/src/num/mod.rs:");
+  for (const runtime of ["node", "bun"]) expect(at(ran([runtime, js], dir).out)).toBe(native);
+}, 300_000);
+
+test("std's panics of a writer that fails, and of an `ExactSizeIterator` that lies, name std's lines", () => {
+  const source = (body: string) => `use std::fmt;
+
+struct Bad;
+
+impl fmt::Display for Bad {
+    fn fmt(&self, _: &mut fmt::Formatter) -> fmt::Result {
+        Err(fmt::Error)
+    }
+}
+
+struct Lies;
+
+impl Iterator for Lies {
+    type Item = u32;
+    fn next(&mut self) -> Option<u32> {
+        None
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (2, Some(3))
+    }
+}
+
+impl ExactSizeIterator for Lies {}
+
+fn main() {
+    ${body}
+}
+`;
+  const bodies = [
+    "let _ = Bad.to_string();",
+    "let _ = format!(\"{}\", Bad);",
+    "println!(\"a {}\", Bad);",
+    "let mut s = String::new();\n    fmt::write(&mut s, format_args!(\"{}\", Bad)).unwrap();",
+    "println!(\"{}\", Lies.len());",
+    "let _ = Lies;\n    let _ = Bad;",
+  ];
+  bodies.forEach((body, i) => {
+    same(`writers${i}`, source(body));
+  });
+}, 300_000);
+
+test("std's own crate's panics, and a `BufReader`'s, name std's lines", () => {
+  same(
+    "lazy-lock",
+    `use std::sync::LazyLock;
+
+static L: LazyLock<u8> = LazyLock::new(|| panic!("init"));
+
+fn main() {
+    let _ = std::panic::catch_unwind(|| *L);
+    println!("{}", *L);
+}
+`,
+  );
+  same(
+    "buf-reader-position",
+    `use std::io::{self, BufRead, BufReader, Read, Seek, SeekFrom};
+
+struct Behind;
+
+impl Read for Behind {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        buf[..2].copy_from_slice(&[1, 2]);
+        Ok(2)
+    }
+}
+
+impl Seek for Behind {
+    fn seek(&mut self, _: SeekFrom) -> io::Result<u64> {
+        Ok(0)
+    }
+}
+
+fn main() {
+    let mut r = BufReader::new(Behind);
+    r.fill_buf().unwrap();
+    println!("{:?}", r.stream_position());
+}
+`,
+  );
+}, 300_000);
+
+const located = `use std::panic::Location;
+
+#[track_caller]
+fn here() -> &'static Location<'static> {
+    Location::caller()
+}
+
+fn main() {
+    let a = here();
+    let b = here();
+    let c = a;
+    println!("{a}");
+    println!("{a:?}");
+    println!("{} {} {}", a.file(), a.line(), a.column());
+    println!("{} {}", a == b, a == c);
+    println!("{}", b);
+    panic!("at the end");
+}
+`;
+
+test("a `Location` shows, splits and compares as native Rust's", () => {
+  same("located", located);
+}, 300_000);
+
+test("a `Location` of a file whose path has a `:` splits as native Rust's", () => {
+  same("colon", located, join(fixture("colon"), "a:b"));
+}, 300_000);
+
+test("an `Err` from main ends the process at once: a host's pending timer never runs", () => {
+  const dir = fixture("timer");
+  mkdirSync(dir, { recursive: true });
+  const source = 'fn main() -> Result<(), String> {\n    Err("bad".to_string())\n}\n';
+  writeFileSync(join(dir, "native.rs"), source);
+  const js = join(dir, "main.js");
+  run([compiler, join(dir, "native.rs"), "-o", js, "--", ...flags, "--crate-type", "bin", "-Awarnings"]);
+  installStd(dir);
+  // Set as the program writes its \`Err\`, as it ends: one set before would
+  // run while its modules load, before \`main\` does.
+  writeFileSync(
+    join(dir, "timer.mjs"),
+    'const write = process.stderr.write.bind(process.stderr);\nprocess.stderr.write = (...given) => {\n  setTimeout(() => console.log("late"), 0);\n  return write(...given);\n};\n',
+  );
+  for (const runtime of ["node", "bun"]) {
+    expect(ran([runtime, "--import", "./timer.mjs", js], dir)).toEqual({ status: 1, out: 'Error: "bad"\n' });
+  }
+}, 300_000);

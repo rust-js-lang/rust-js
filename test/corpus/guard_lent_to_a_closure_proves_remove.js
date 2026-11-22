@@ -23,7 +23,7 @@ function moved(history, entry) {
     return history.at;
   }
   const at = step(3);
-  return $index(history.entries, at);
+  return $index(history.entries, at, "test/corpus/guard_lent_to_a_closure_proves_remove.rs:35:20");
 }
 
 function main() {

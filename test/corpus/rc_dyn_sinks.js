@@ -91,7 +91,7 @@ function main() {
       }
       let borrowMut;
       try {
-        borrowMut = $borrowMut(sink.value, true);
+        borrowMut = $borrowMut(sink.value, "test/corpus/rc_dyn_sinks.rs:50:18", true);
       } catch (error) {
         $cleanup(() => {
           $dropItems(sinks, (item) => {
@@ -119,7 +119,11 @@ function main() {
     }
     let borrow;
     try {
-      borrow = $borrow($index(sinks, 0).value, true);
+      borrow = $borrow(
+        $index(sinks, 0, "test/corpus/rc_dyn_sinks.rs:52:32").value,
+        "test/corpus/rc_dyn_sinks.rs:52:36",
+        true,
+      );
     } catch (error) {
       $cleanup(() => {
         $dropItems(sinks, (item) => {
@@ -145,7 +149,7 @@ function main() {
       throw error;
     }
     try {
-      console.log(`${total} ${$index(sinks, 0).strong}`);
+      console.log(`${total} ${$index(sinks, 0, "test/corpus/rc_dyn_sinks.rs:52:77").strong}`);
     } catch (error) {
       $cleanup(() => {
         $unborrow(borrow);
@@ -163,7 +167,9 @@ function main() {
         value.impl.$drop?.(value.value);
       });
     });
-    console.log(`${counterSink_total($borrow(counter.value).value)}`);
+    console.log(
+      `${counterSink_total($borrow(counter.value, "test/corpus/rc_dyn_sinks.rs:54:28").value)}`,
+    );
   } finally {
     $rcDrop(counter);
   }

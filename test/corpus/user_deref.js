@@ -37,11 +37,19 @@ function outerDeref_deref(outer) {
 export const gridIndex_usize__usize_ = { index: gridIndex_usize__usize__index };
 
 function gridIndex_usize__usize__index(grid, [row, col]) {
-  return $index(grid.cells, ((Math.imul(row, grid.width) >>> 0) + col) >>> 0);
+  return $index(
+    grid.cells,
+    ((Math.imul(row, grid.width) >>> 0) + col) >>> 0,
+    "test/corpus/user_deref.rs:64:20",
+  );
 }
 
 function gridIndexMut_usize__usize__indexMut(grid, [row, col]) {
-  return $index(grid.cells, ((Math.imul(row, grid.width) >>> 0) + col) >>> 0);
+  return $index(
+    grid.cells,
+    ((Math.imul(row, grid.width) >>> 0) + col) >>> 0,
+    "test/corpus/user_deref.rs:70:24",
+  );
 }
 
 function main() {

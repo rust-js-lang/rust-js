@@ -574,13 +574,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, "a part of a string, of its value alone"));
             }
             TextOp::Reserve => return Err(self.unsupported(span, "a `String`'s room, of its value alone")),
-            TextOp::SliceSplitAt { checked } => {
-                let mut list = vec![arg(), arg()];
+            TextOp::SliceSplitAt { checked } => call(
                 if checked {
-                    list.push(Expr::bool(true));
-                }
-                call("$sliceSplitAt", list)
-            }
+                    "$checkedSliceSplitAt"
+                } else {
+                    "$sliceSplitAt"
+                },
+                vec![arg(), arg()],
+            ),
             // `v.length === 0 ? undefined : [v[0], v.slice(1)]`.
             TextOp::SliceSplitFirst { last } => {
                 let items = arg();
@@ -741,6 +742,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Err(self.unsupported(span, &format!("`parse` to a `{target}`{}", issue.unwrap_or_default())))
     }
 
+    /// Where std raises the panic of `op` of a range of `receiver`'s, where
+    /// it's std's own line, not its caller's (#2292): a `Vec`'s or a
+    /// `VecDeque`'s `drain`, as `slice::range` checks it there, a deque's
+    /// `range` and `range_mut`; `None` of one its caller's line names.
+    pub fn std_range_site(&self, op: TextOp, receiver: Ty<'tcx>) -> Option<&'static str> {
+        let deque = self.is_std_type(receiver.peel_refs(), crate::recognition::StdItem::VecDeque);
+        match op {
+            TextOp::Drain if deque => Some("vecDequeDrain"),
+            TextOp::Drain | TextOp::Splice => Some("vecDrain"),
+            TextOp::DequeRange => Some("vecDequeRange"),
+            TextOp::ExtendFromWithin => Some("vecExtendFromWithin"),
+            _ => None,
+        }
+    }
+
     /// A `Vec`'s range, read as `range_read` reads it, `range`, replaced by
     /// `rest`, `$splice(v, a, b, items)`, or pushed again, `v.push(
     /// ...$copyRange(v, a, b))` (ADR 0315), each a clone, by `clone`, where
@@ -754,7 +770,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (clone, lazy): (Option<Expr>, bool),
     ) -> Expr {
         let mut list = match range.kind {
-            js::ExprKind::Call(_, list) => list,
+            // What its read was given, less where it said it raises: this
+            // edit's is std's own (`std_range_site`, #2292).
+            js::ExprKind::Call(_, list) => list
+                .into_iter()
+                .filter(|given| !matches!(given.kind, js::ExprKind::RaisedAt(_)))
+                .collect(),
             kind => vec![
                 Expr {
                     kind,
@@ -769,8 +790,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Checked as `slice::range` checks it, its end first, not as
         // `&v[a..b]` is: `$extend(v, $copyRange(v, a, b))`, each pushed, as
         // a call's spread of more than JS's bound of arguments throws (#334).
+        let site = Expr::std_site(
+            if op == TextOp::ExtendFromWithin {
+                "vecExtendFromWithin"
+            } else {
+                "vecDrain"
+            },
+            0,
+        );
         if op == TextOp::ExtendFromWithin {
-            let copied = Expr::call(Expr::helper("$copyRange"), list);
+            let copied = Expr::raised_at(site, || Expr::call(Expr::helper("$copyRange"), list));
             let copied = match clone {
                 Some(clone) => Expr::builtin(copied, "map", vec![clone]),
                 None => copied,
@@ -790,7 +819,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             list.push(inclusive);
         }
-        Expr::call(Expr::helper(if lazy { "$splicing" } else { "$splice" }), list)
+        Expr::raised_at(site, || {
+            Expr::call(Expr::helper(if lazy { "$splicing" } else { "$splice" }), list)
+        })
     }
 
     /// `&s[range]` of places of `s` in JS's units, `range` a `range_ty`:
@@ -887,12 +918,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut list = vec![cell];
         list.extend(given);
         let name = match op {
-            TextOp::StrSplitAtMut { checked } => {
-                if checked {
-                    list.push(Expr::bool(true));
-                }
-                "$strSplitAtMut"
-            }
+            TextOp::StrSplitAtMut { checked: true } => "$checkedStrSplitAtMut",
+            TextOp::StrSplitAtMut { checked: false } => "$strSplitAtMut",
             TextOp::StrGetMut => "$strGetMut",
             _ => "$strPart",
         };

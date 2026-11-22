@@ -51,11 +51,11 @@ export function methods(n) {
 }
 
 export function unwrapped(n) {
-  return $unwrap(half(n));
+  return $unwrap(half(n), "examples/options.rs:44:13");
 }
 
 export function expected(n) {
-  return $unwrap(half(n), "an even number");
+  return $unwrap(half(n), "examples/options.rs:48:13", "an even number");
 }
 
 /** `unwrap_or` evaluates its argument even when it isn't needed. */

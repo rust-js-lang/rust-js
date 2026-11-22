@@ -121,10 +121,10 @@ pub fn untested(x: i32) -> bool {
   );
   // Each MIR leaves as it is, `$unwrap`, the `Cell`'s `counter` too.
   expect(tidied).toEqual([]);
-  expect(js).toContain("() => $unwrap(counter).value");
-  expect(js).toContain("const ON_NONE = missing == null ? (x) => $unwrap(missing)(x) : undefined;");
-  expect(js).toContain("const UNTESTED = (x) => $unwrap(missing)(x);");
-  expect(js).toContain(": (x) => $unwrap(missing)(x);\n");
+  expect(js).toContain("() => $unwrap(counter, \"lib.rs:12:57\").value");
+  expect(js).toContain("const ON_NONE = missing == null ? (x) => $unwrap(missing, \"lib.rs:18:49\")(x) : undefined;");
+  expect(js).toContain("const UNTESTED = (x) => $unwrap(missing, \"lib.rs:22:69\")(x);");
+  expect(js).toContain(": (x) => $unwrap(missing, \"lib.rs:24:49\")(x);\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.counted(), lib.onNone(1), lib.untested(1), lib.either(1)]).toEqual([3, true, true, true]);
 });

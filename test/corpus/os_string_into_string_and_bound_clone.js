@@ -35,7 +35,7 @@ function main() {
 
   const bounds = [{ TAG: "Included", _0: "ab" }, { TAG: "Excluded", _0: "cd" }, "Unbounded"];
   const copies = bounds.map((item) => (item === "Unbounded" ? item : { ...item }));
-  $index(copies, 0);
+  $index(copies, 0, "test/corpus/os_string_into_string_and_bound_clone.rs:31:44");
   if (copies[0].TAG === "Included") {
     const item = copies[0];
     item._0 += "!";

@@ -44,9 +44,9 @@ function $fillWith(v, f, drop) {
 
 // Of items `copy` copies, a `Copy` struct something changes in place,
 // each a copy.
-function $copyFromSlice(v, src, copy) {
+function $copyFromSlice(v, src, raisedAt, copy) {
   if (v.length !== src.length) {
-    throw $stringPanic(`copy_from_slice: source slice length (${src.length}) does not match destination slice length (${v.length})`);
+    throw $stringPanic(`copy_from_slice: source slice length (${src.length}) does not match destination slice length (${v.length})`, raisedAt);
   }
   for (let i = 0; i < v.length; i++) v[i] = copy === undefined ? src[i] : copy(src[i]);
 }
@@ -59,22 +59,30 @@ function $writeCloneOfSlice(v, src, clone) {
   if (v.length !== src.length) {
     throw $stringPanic(
       `assertion \`left == right\` failed: destination and source slices have different lengths\n  left: ${v.length}\n right: ${src.length}`,
+      $stdSites.writeCloneOfSlice[0],
     );
   }
   for (let i = 0; i < v.length; i++) v[i] = clone ? clone(src[i]) : src[i];
   return v;
 }
 
-// `v.clone_from_slice(src)`: each item its type's `clone_from` of the
-// source's (`cloneFrom`), or a clone of it, the one it replaces dropped by
-// `drop`, as std's assignment drops it (ADR 0507).
-function $cloneFromSlice(v, src, clone, cloneFrom, drop, trivial) {
+// `v.clone_from_slice(src)`: `$cloneEach`'s of a source of its length,
+// else a panic raised where it was called, `raisedAt` (#2292).
+function $cloneFromSlice(v, src, raisedAt, clone, cloneFrom, drop, trivial) {
   if (v.length !== src.length) {
     // Of items a generic caller says std clones as their bits, std's
     // specialization's, `copy_from_slice`'s (#2318).
-    if (trivial) $copyFromSlice(v, src);
-    throw new Error("destination and source slices have different lengths");
+    if (trivial) $copyFromSlice(v, src, raisedAt);
+    throw $panic("destination and source slices have different lengths", raisedAt);
   }
+  $cloneEach(v, src, clone, cloneFrom, drop);
+}
+
+// Of `v` and `src` of one length, an array's `clone_from` or a `Vec`'s
+// items it keeps: each item its type's `clone_from` of the source's
+// (`cloneFrom`), or a clone of it, the one it replaces dropped by `drop`,
+// as std's assignment drops it (ADR 0507).
+function $cloneEach(v, src, clone, cloneFrom, drop) {
   for (let i = 0; i < v.length; i++) {
     if (cloneFrom) {
       cloneFrom(v, i, src[i]);
@@ -88,12 +96,12 @@ function $cloneFromSlice(v, src, clone, cloneFrom, drop, trivial) {
 
 // `w.clone_from(&v)` of a `Vec`, std's `SpecCloneIntoVec`: what `w` has
 // past `v`'s length dropped, `truncate`'s; each item it keeps written over
-// by `v`'s, `$cloneFromSlice`'s; then a clone of each of the rest pushed,
+// by `v`'s, `$cloneEach`'s; then a clone of each of the rest pushed,
 // what's pushed `w`'s as a later clone panics, `extend_from_slice`'s
 // (#919).
 function $cloneIntoVec(w, v, clone, cloneFrom, drop) {
   $truncate(w, v.length, drop);
-  $cloneFromSlice(w, v.slice(0, w.length), clone, cloneFrom, drop);
+  $cloneEach(w, v.slice(0, w.length), clone, cloneFrom, drop);
   for (let i = w.length; i < v.length; i++) w.push(clone ? clone(v[i]) : v[i]);
 }
 
@@ -128,15 +136,15 @@ function $cloneIntoList(w, v, clone, cloneFrom, drop) {
   for (let i = kept; i < v.length; i++) w.push(clone ? clone(v[i]) : v[i]);
 }
 
-function $swapWithSlice(v, other) {
-  if (v.length !== other.length) throw new Error("destination and source slices have different lengths");
+function $swapWithSlice(v, other, raisedAt) {
+  if (v.length !== other.length) throw $panic("destination and source slices have different lengths", raisedAt);
   for (let i = 0; i < v.length; i++) [v[i], other[i]] = [other[i], v[i]];
 }
 
-function $copyWithin(v, start, end, dest, inclusive) {
+function $copyWithin(v, start, end, dest, raisedAt, inclusive) {
   end ??= v.length;
-  $checkRange(start, end, v.length, inclusive);
-  if (dest > v.length - (end - start)) throw new Error("dest is out of bounds");
+  $checkRange(start, end, v.length, raisedAt, inclusive);
+  if (dest > v.length - (end - start)) throw $panic("dest is out of bounds", raisedAt);
   v.copyWithin(dest, start, end);
 }
 
@@ -236,8 +244,8 @@ function $partitionPoint(v, p) {
   return base + (p(v[base]) ? 1 : 0);
 }
 
-function $chunkSize(n) {
-  if (n === 0) throw new Error("chunk size must be non-zero");
+function $chunkSize(n, raisedAt) {
+  if (n === 0) throw $panic("chunk size must be non-zero", raisedAt);
 }
 
 // What a slice's parts, its ranges, chunks and splits, are cut as: copies,
@@ -268,8 +276,8 @@ function $partPlaced(part, items, start) {
 }
 
 // `chunks_exact(n)`: each whole chunk, and what's left, its `remainder()`.
-function $chunksExact(v, n, cut = $part) {
-  $chunkSize(n);
+function $chunksExact(v, n, raisedAt, cut = $part) {
+  $chunkSize(n, raisedAt);
   const whole = v.length - (v.length % n);
   const chunks = [];
   for (let i = 0; i < whole; i += n) chunks.push(cut(v, i, i + n));
@@ -279,8 +287,8 @@ function $chunksExact(v, n, cut = $part) {
 
 // `rchunks(n)`, and `rchunks_exact(n)`: chunks from the end; the exact ones
 // leave what's left at the start, their `remainder()`.
-function $rchunks(v, n, exact, cut = $part) {
-  $chunkSize(n);
+function $rchunks(v, n, exact, raisedAt, cut = $part) {
+  $chunkSize(n, raisedAt);
   const chunks = [];
   let end = v.length;
   for (; end >= n; end -= n) chunks.push(cut(v, end - n, end));
@@ -609,13 +617,13 @@ function $pushFrontMut(v, x, handle) {
 // A `VecDeque`'s `insert(i, x)` and `insert_mut`: checked as its
 // `assert!` checks, and a `&mut` to what it put in.
 function $dequeInsert(v, i, x, handle, drop) {
-  $insertAt(v, i, x, drop, "index out of bounds");
+  $insertAt(v, i, x, $stdSites.vecDequeInsert[0], drop, "index out of bounds");
   return handle ? $mutAt(v, i) : x;
 }
 
 // A `Vec`'s `insert_mut(i, x)`: as its `insert`, `x` dropped by `drop` as
 // an index past the end panics (#1274), and a `&mut` to what it put in.
-function $insertMut(v, i, x, handle, drop) {
-  $insertAt(v, i, x, drop);
+function $insertMut(v, i, x, raisedAt, handle, drop) {
+  $insertAt(v, i, x, raisedAt, drop);
   return handle ? $mutAt(v, i) : x;
 }

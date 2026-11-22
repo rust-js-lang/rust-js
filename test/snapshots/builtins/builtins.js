@@ -164,9 +164,12 @@ export function identical(same) {
 
 /** What was thrown: an `Error`'s message, or that it's no `Error`. */
 export async function thrown() {
-  const error = $unwrapErr($try(() => decodeURIComponent("%E0%A4%A")));
+  const error = $unwrapErr(
+    $try(() => decodeURIComponent("%E0%A4%A")),
+    "test/builtins.rs:136:54",
+  );
   const first = error instanceof Error ? error.message : "not an Error";
-  const rejected = $unwrapErr(await $settle(Promise.reject("no")));
+  const rejected = $unwrapErr(await $settle(Promise.reject("no")), "test/builtins.rs:138:41");
   const second = rejected instanceof Error ? rejected.message : "not an Error";
   return [first, second];
 }

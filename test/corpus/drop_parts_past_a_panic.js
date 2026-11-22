@@ -22,6 +22,7 @@ import {
   $live,
   $next,
   $nthBack,
+  $panic,
   $partiallyOrdered,
   $retain,
   $retainMap,
@@ -44,7 +45,7 @@ function loudDrop_drop(loud) {
 
 function boomDrop_drop(boom) {
   console.log(`boom ${boom[0]}`);
-  throw new Error("boom");
+  throw $panic("boom", "test/corpus/drop_parts_past_a_panic.rs:20:9");
 }
 
 const Item = {
@@ -61,7 +62,7 @@ function caught(name, f) {
 function keyDrop_drop(key) {
   console.log(`key ${key[0]}`);
   if (key[0] === 2) {
-    throw new Error("key");
+    throw $panic("key", "test/corpus/drop_parts_past_a_panic.rs:147:21");
   }
 }
 
@@ -442,6 +443,7 @@ function main() {
     try {
       $unwrapOk(
         $send(send, { TAG: "Loud", _0: [24] }),
+        "test/corpus/drop_parts_past_a_panic.rs:107:41",
         undefined,
         (e) => "SendError { .. }",
         (sendError) => {
@@ -470,6 +472,7 @@ function main() {
     try {
       $unwrapOk(
         $send(send, { TAG: "Quiet", _0: [25] }),
+        "test/corpus/drop_parts_past_a_panic.rs:108:42",
         undefined,
         (e) => "SendError { .. }",
         (sendError) => {
@@ -732,7 +735,7 @@ function main() {
         v,
         (l) => {
           if (l[0] === 38) {
-            throw new Error("test");
+            throw $panic("test", "test/corpus/drop_parts_past_a_panic.rs:134:37");
           } else {
             return true;
           }
@@ -950,7 +953,7 @@ function main() {
       (n) => {
         seen.push(n);
         if (n === 42) {
-          throw new Error("heap");
+          throw $panic("heap", "test/corpus/drop_parts_past_a_panic.rs:166:26");
         } else {
           return true;
         }
@@ -964,7 +967,7 @@ function main() {
     console.log(`inner ${inner[0]}`);
     try {
       console.log("panics");
-      throw new Error("own drop");
+      throw $panic("own drop", "test/corpus/drop_parts_past_a_panic.rs:40:9");
     } catch (error) {
       throw $unwindsOn(error);
     } finally {

@@ -9,6 +9,7 @@ import {
   $lazyChain,
   $lazyZip,
   $next,
+  $panic,
   $rangeFromStep,
   $repeating,
   $roomForHint,
@@ -60,7 +61,7 @@ function made(i) {
   const previous = MADE;
   MADE = (previous + 1) >>> 0;
   if (previous >= 20) {
-    throw new Error("ran on");
+    throw $panic("ran on", "test/corpus/collect_endless_once_stepped.rs:46:5");
   }
   console.log(`made ${i}`);
   return i & 255;
@@ -149,7 +150,7 @@ function main() {
       cycled$7.filter((i) => {
         seen$1 = (seen$1 + 1) | 0;
         if (seen$1 >= 6) {
-          throw new Error("ran on");
+          throw $panic("ran on", "test/corpus/collect_endless_once_stepped.rs:94:17");
         }
         return i === 2;
       }),
@@ -160,7 +161,7 @@ function main() {
     iterator_filter($iter(items), (i) => {
       stepped = (stepped + 1) | 0;
       if (stepped >= 6) {
-        throw new Error("ran on");
+        throw $panic("ran on", "test/corpus/collect_endless_once_stepped.rs:104:13");
       }
       return i === 2;
     }),
@@ -170,7 +171,7 @@ function main() {
   check("filter cycle", () => Array.from($roomForHint(cycled$8, 4, false)));
   const counted = $successors(1, (n) => {
     if (n >= 4) {
-      throw new Error("ran on");
+      throw $panic("ran on", "test/corpus/collect_endless_once_stepped.rs:110:9");
     }
     return n + 1;
   });

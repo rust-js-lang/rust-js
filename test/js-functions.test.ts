@@ -677,10 +677,10 @@ pub fn probed() -> bool {
   expect(js).toContain("return (0, request.environmentName)();");
   expect(js).toContain("return (0, request.onError)((request.pending + 1) >>> 0);");
   expect(js).toContain("return (0, pair[0])(pair[1]);");
-  expect(js).toContain("return $index(fs, 0)();");
+  expect(js).toContain("return $index(fs, 0, \"lib.rs:27:7\")();");
   expect(js).toContain("return o.g(1);");
   expect(js).toContain("return c.step(1);");
-  expect(js).toContain("$index(fs, 0)(n)");
+  expect(js).toContain("$index(fs, 0, \"lib.rs:53:7\")(n)");
   function name(this: unknown) {
     return this === undefined ? "Server" : "bound";
   }

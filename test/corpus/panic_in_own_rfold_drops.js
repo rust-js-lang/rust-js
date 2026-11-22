@@ -9,6 +9,7 @@ import {
   $foldOf,
   $live,
   $next,
+  $panic,
   $tryOf,
   $unwindsOn,
   enumerateDoubleEndedIterator_advanceBackBy,
@@ -98,7 +99,7 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
 }
 function boom(d, at) {
   if (d[0] === at) {
-    throw new Error("boom");
+    throw $panic("boom", "test/corpus/panic_in_own_rfold_drops.rs:46:9");
   }
   return true;
 }

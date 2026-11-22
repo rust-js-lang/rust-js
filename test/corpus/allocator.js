@@ -24,7 +24,12 @@ export function entry() {
 }
 
 function layoutArray(n, TSize, TAlign) {
-  return $unwrapOk($layout(Math.imul(TSize, n) >>> 0, TAlign), undefined, (e) => "LayoutError");
+  return $unwrapOk(
+    $layout(Math.imul(TSize, n) >>> 0, TAlign),
+    "test/corpus/allocator.rs:16:86",
+    undefined,
+    (e) => "LayoutError",
+  );
 }
 
 const Buf = {
@@ -42,7 +47,7 @@ const Buf = {
       const old = layoutArray(buf.cap, TSize, TAlign);
       const new$ = layoutArray((buf.cap * 2) >>> 0, TSize, TAlign);
       const grown = $realloc($ptrBytes(buf.ptr), old, new$.size);
-      buf.ptr = $ptrTyped($unwrap(grown));
+      buf.ptr = $ptrTyped($unwrap(grown, "test/corpus/allocator.rs:33:44"));
       buf.cap = (buf.cap * 2) >>> 0;
     }
     $ptrAdd(buf.ptr, buf.len).value = value;

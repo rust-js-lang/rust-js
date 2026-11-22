@@ -10,7 +10,7 @@ function main() {
   const item = [0, 0];
   const grid = Array.from({ length: 3 }, () => item.slice());
   const flattenedMut = $flatView(grid, 2);
-  flattenedMut[$at(flattenedMut, 3)] = 9;
+  flattenedMut[$at(flattenedMut, 3, "test/corpus/flattened_rows_apart.rs:5:5")] = 9;
   console.log(`[${grid.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 
   const item$1 = [0, 0];

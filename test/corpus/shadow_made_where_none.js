@@ -21,7 +21,7 @@ function main() {
   const made = { value: 0 };
   addTo(slot, 1, made);
   addTo(slot, 2, made);
-  const list = $unwrap(slot.value, "made");
+  const list = $unwrap(slot.value, "test/corpus/shadow_made_where_none.rs:31:38", "made");
   console.log(`[${list.join(", ")}] ${made.value}`);
 }
 //# sourceMappingURL=case.js.map

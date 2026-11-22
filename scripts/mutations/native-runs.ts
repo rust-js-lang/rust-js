@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "native-outcome-of-ignored",
     breaks: "a rewrite of a case marked `nondeterministic` has its native run kept, as its own text has no mark",
     file: "test/programs.ts",
-    find: "  { of = file, fresh = false }: { of?: string; fresh?: boolean } = {},",
-    replace: "  { fresh = false }: { of?: string; fresh?: boolean } = {}, of = file,",
+    find: "  { of = file, fresh = false, located = false }: { of?: string; fresh?: boolean; located?: boolean } = {},",
+    replace: "  { fresh = false, located = false }: { of?: string; fresh?: boolean; located?: boolean } = {}, of = file,",
     tests: ["test/native-outcomes.test.ts", "-t", "reads the world isn't kept"],
   },
 ];

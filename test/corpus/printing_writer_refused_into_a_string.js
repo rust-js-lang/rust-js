@@ -76,6 +76,7 @@ function main() {
       }
     }),
     "a refused write fails",
+    "test/corpus/printing_writer_refused_into_a_string.rs:42:44",
   );
   $print(`Error an error occurred when formatting an argument [${buf}]\n`);
   buf += ` and ${fineDisplay_fmt([1])}`;

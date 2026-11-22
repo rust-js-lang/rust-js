@@ -12,6 +12,7 @@ import {
   $lazyChain,
   $lent,
   $live,
+  $panic,
   $rev,
   $unwindsOn,
 } from "@rust-js/std";
@@ -62,7 +63,7 @@ function main() {
     $foldBack($closing($iter([[1], [2], [3]]), $dropEach(dDrop_drop)), 0, (a, d) => {
       try {
         if (d[0] === 2) {
-          throw new Error("f");
+          throw $panic("f", "test/corpus/rfold_and_rev_close_what_they_step.rs:47:44");
         }
         return (a + d[0]) >>> 0;
       } catch (error) {
@@ -91,7 +92,7 @@ function main() {
       (a, d) => {
         try {
           if (d[0] === 1) {
-            throw new Error("f");
+            throw $panic("f", "test/corpus/rfold_and_rev_close_what_they_step.rs:51:78");
           }
           return (a + d[0]) >>> 0;
         } catch (error) {

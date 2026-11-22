@@ -55,7 +55,7 @@ function main() {
   console.log(`[${join.join(", ")}] [${value.join(", ")}] [${nested.flat().join(", ")}]`);
   const words = [["a"], ["b"]];
   const joined = $joinWith(words, "-", false);
-  joined[$at(joined, 0)] += "!";
+  joined[$at(joined, 0, "test/corpus/text_aliases.rs:35:11")] += "!";
   console.log(
     `[${joined.map((item) => $debugStr(item)).join(", ")}] [${words.map((item) => `[${item.map((item) => $debugStr(item)).join(", ")}]`).join(", ")}]`,
   );

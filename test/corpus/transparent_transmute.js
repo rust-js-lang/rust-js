@@ -60,7 +60,7 @@ function main() {
   const arg = Uuid.asBytes(id) === bytes;
   console.log(`${uuidDebug_fmt(blank)} ${arg}`);
   const countdown = (n) => (n > 0 ? () => undefined : undefined);
-  const next = $unwrap(countdown(2), "more");
+  const next = $unwrap(countdown(2), "test/corpus/transparent_transmute.rs:80:33", "more");
   console.log(`${next(1) == null} ${countdown(0) == null}`);
   const tagged = 3;
   console.log(`${(tagged + 1) >>> 0}`);

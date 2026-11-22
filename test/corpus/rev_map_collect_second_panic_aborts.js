@@ -7,6 +7,7 @@ import {
   $dropEach,
   $dropItems,
   $iter,
+  $panic,
   $range,
   $rev,
 } from "@rust-js/std";
@@ -21,12 +22,12 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
   if (noisy[0] === 3) {
     ARMED = true;
-    throw new Error("drop 3");
+    throw $panic("drop 3", "test/corpus/rev_map_collect_second_panic_aborts.rs:18:13");
   }
   const previous = ARMED;
   ARMED = false;
   if (previous) {
-    throw new Error("drop again");
+    throw $panic("drop again", "test/corpus/rev_map_collect_second_panic_aborts.rs:21:13");
   }
 }
 

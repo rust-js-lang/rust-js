@@ -57,17 +57,17 @@ function bump(r, by, TAddAssign) {
 function main() {
   const bytes = [1, 2, 3];
   const q = applyPtr($ptrTo(bytes), measuredU8Slice).value;
-  q[$at(q, 0)] = 9;
+  q[$at(q, 0, "test/corpus/generic_fn_item_takes_generic_forms.rs:57:14")] = 9;
   const c = applyPtr($ptrTo(bytes), (x0) =>
     $ptrTo(measured($ptrTo(x0.value), u8SliceLen).value),
   ).value;
-  c[$at(c, 1)] = 8;
+  c[$at(c, 1, "test/corpus/generic_fn_item_takes_generic_forms.rs:59:14")] = 8;
   const t = applyThrough(
     $ptrTo(bytes),
     (x0) => $ptrTo(measured($ptrTo(x0.value), u8SliceLen).value),
     fIsF,
   ).value;
-  t[$at(t, 2)] = 7;
+  t[$at(t, 2, "test/corpus/generic_fn_item_takes_generic_forms.rs:61:14")] = 7;
   const r = applyRef(bytes, sharedLenU8Slice).value;
   console.log(`[${bytes.join(", ")}] ${r.length}`);
   const b = bumpU32;

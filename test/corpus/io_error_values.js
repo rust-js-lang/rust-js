@@ -53,7 +53,7 @@ function main() {
     }
   }
   const r = { TAG: "Ok", _0: 3 };
-  console.log(`${$unwrapOk(r, "fine", $ioErrorDebug)}`);
+  console.log(`${$unwrapOk(r, "test/corpus/io_error_values.rs:30:22", "fine", $ioErrorDebug)}`);
   const e = new $IoError("InvalidInput", { value: "bad input", impl: $stringError() });
   console.log(`${$ioErrorDebug(e, { alternate: true })}`);
   const k = new $IoError("TimedOut");

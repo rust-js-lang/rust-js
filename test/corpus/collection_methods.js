@@ -40,7 +40,7 @@ function main() {
   for (let i = 0; i < more.length; i++) {
     words.push(more[i]);
   }
-  words[$at(words, 1)] += "!";
+  words[$at(words, 1, "test/corpus/collection_methods.rs:23:10")] += "!";
   console.log(
     `[${v.join(", ")}] [${words.map((item) => $debugStr(item)).join(", ")}] [${more.map((item) => $debugStr(item)).join(", ")}]`,
   );
@@ -51,9 +51,9 @@ function main() {
   for (let i = 0; i < origin.length; i++) {
     grown.push({ ...origin[i] });
   }
-  $index(grown, 1).x = 7;
+  $index(grown, 1, "test/corpus/collection_methods.rs:30:10").x = 7;
   const copied = origin.map((item) => ({ ...item }));
-  $index(copied, 0).x = 9;
+  $index(copied, 0, "test/corpus/collection_methods.rs:32:11").x = 9;
   console.log(
     `[${origin.map((item) => pointDebug_fmt(item)).join(", ")}] [${grown.map((item) => pointDebug_fmt(item)).join(", ")}] [${copied.map((item) => pointDebug_fmt(item)).join(", ")}]`,
   );
@@ -114,7 +114,11 @@ function main() {
   ]);
   const queue = [1, 2];
   const list = [7, 8];
-  const value$3 = $unwrap(index.get("y"), "no entry found for key");
+  const value$3 = $unwrap(
+    index.get("y"),
+    "test/corpus/collection_methods.rs:74:72",
+    "no entry found for key",
+  );
   console.log(
     `{${Array.from($sortedKeys(tags, $cmp))
       .map((item) => $debugStr(item))
@@ -142,7 +146,12 @@ function main() {
   const after = log.splice(0);
   console.log(`[${before.join(", ")}] [${after.join(", ")}] [${log.join(", ")}]`);
   const name = { value: "old" };
-  const previous = $replaceWith(name, (s) => `${s.value}er`, true);
+  const previous = $replaceWith(
+    name,
+    (s) => `${s.value}er`,
+    "test/corpus/collection_methods.rs:89:25",
+    true,
+  );
   console.log(`${previous} ${name.value}`);
 }
 //# sourceMappingURL=case.js.map

@@ -71,8 +71,8 @@ export const mutations: Mutation[] = [
     name: "splicing-replacement-kept-past-a-range-panic",
     breaks: "`w.splice(1..4, [Loud(7)])` of three items panics without dropping its replacement, where Rust drops `Loud(7)` unwinding out of `splice` (#1936)",
     file: "crates/rust-js-program/src/runtime/splice.js",
-    find: "  $unwinds(() => $checkRange(start, end, items.length, inclusive), () => given?.return?.());\n",
-    replace: "  $checkRange(start, end, items.length, inclusive);\n",
+    find: "  $unwinds(() => $checkRange(start, end, items.length, raisedAt, inclusive), () => given?.return?.());\n",
+    replace: "  $checkRange(start, end, items.length, raisedAt, inclusive);\n",
     tests: ["test/corpus.test.ts", "-t", "^moved_into_a_panicking_call_dropped.rs$"],
   },
   {

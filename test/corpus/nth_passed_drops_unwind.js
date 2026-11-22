@@ -29,7 +29,7 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === boom) {
     boom = 0;
-    throw $stringPanic(`drop ${d[0]}`);
+    throw $stringPanic(`drop ${d[0]}`, "test/corpus/nth_passed_drops_unwind.rs:24:13");
   }
 }
 

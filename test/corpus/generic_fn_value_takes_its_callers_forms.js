@@ -48,7 +48,10 @@ function longest(r, TDefault) {
 function firstLen(f, rows) {
   const length = rows.length;
   if (0 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/generic_fn_value_takes_its_callers_forms.rs:33:12",
+    );
   }
   return f(rows[0]).length;
 }
@@ -75,7 +78,10 @@ function main() {
   const grown = rows.map(longestU8);
   console.log(`[${grown.join(", ")}] [${rows.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
   console.log(`${firstLen(viewVecU8Fn, rows)}`);
-  generic($cellOf($index(rows, 1)), emptiedVecU8);
+  generic(
+    $cellOf($index(rows, 1, "test/corpus/generic_fn_value_takes_its_callers_forms.rs:62:22")),
+    emptiedVecU8,
+  );
   generic($cellOf(rows), (rows) => {
     rows.value.push([9]);
   });

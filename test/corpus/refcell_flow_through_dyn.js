@@ -9,7 +9,7 @@ export function entry() {
 const holderTouch = { touch: holderTouch_touch };
 function holderTouch_touch(holder) {
   if (holder.cell.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_flow_through_dyn.rs:19:19");
   }
   return holder.cell.length;
 }
@@ -21,7 +21,7 @@ function run(touch) {
 function main() {
   const holder = { cell: [1] };
   console.log(`${run({ value: holder, impl: holderTouch })}`);
-  const held = $borrowMut(holder.cell, true);
+  const held = $borrowMut(holder.cell, "test/corpus/refcell_flow_through_dyn.rs:32:32", true);
   try {
     held.push(2);
     console.log(`${run({ value: holder, impl: holderTouch })}`);

@@ -78,7 +78,7 @@ function main() {
   const shapes = [value, tmp];
   let first;
   try {
-    first = $rcClone($index(shapes, 0));
+    first = $rcClone($index(shapes, 0, "test/corpus/rc_dyn_destructors.rs:37:34"));
   } catch (error) {
     $cleanup(() => {
       $dropItems(shapes, (item) => {

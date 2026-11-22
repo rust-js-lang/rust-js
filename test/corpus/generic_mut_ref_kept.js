@@ -54,7 +54,7 @@ function pick(c, a, b) {
 }
 
 function first(v) {
-  $index(v, 0);
+  $index(v, 0, "test/corpus/generic_mut_ref_kept.rs:40:11");
   return {
     get value() {
       return v[0];

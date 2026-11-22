@@ -37,7 +37,10 @@ function complete(tag, legacyOff) {
       work(4);
       return;
   }
-  throw $stringPanic(`Unknown unit of work tag (${tag}).`);
+  throw $stringPanic(
+    `Unknown unit of work tag (${tag}).`,
+    "test/corpus/switch_guard_does_nothing.rs:42:5",
+  );
 }
 
 function completeOn(tag, legacyOff) {
@@ -104,7 +107,10 @@ function completeAll(tag, legacyOff, resources, singletons, scope) {
       }
       break;
   }
-  throw $stringPanic(`Unknown unit of work tag (${tag}).`);
+  throw $stringPanic(
+    `Unknown unit of work tag (${tag}).`,
+    "test/corpus/switch_guard_does_nothing.rs:86:5",
+  );
 }
 
 function main() {

@@ -67,7 +67,7 @@ function tee(iter, dropI, dropIItem) {
 }
 
 function teeIterator_next(tee, IIterator, IItemClone, dropI, dropIItem) {
-  const buffer = $borrowMut(tee.rcbuffer.value, true);
+  const buffer = $borrowMut(tee.rcbuffer.value, "test/corpus/generic_rc_drops.rs:54:40", true);
   try {
     if (buffer.owner === tee.id) {
       const popFront = $shift(buffer.backlog);

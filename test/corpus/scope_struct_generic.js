@@ -26,7 +26,7 @@ function process(root, onDone, onPart, TDisplay) {
   function part(text) {
     const id = next();
     if (parts.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/scope_struct_generic.rs:25:20");
     }
     parts.push(`${id}:${text}`);
     return id;
@@ -40,7 +40,7 @@ function process(root, onDone, onPart, TDisplay) {
   const later = part;
   part(shown);
   later("later");
-  const borrow = $borrow(parts, true);
+  const borrow = $borrow(parts, "test/corpus/scope_struct_generic.rs:47:29", true);
   try {
     for (let i = 0; i < borrow.length; i++) {
       const part = borrow[i];
@@ -51,7 +51,7 @@ function process(root, onDone, onPart, TDisplay) {
   }
   done();
   if (parts.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/scope_struct_generic.rs:51:17");
   }
   return parts.join(",");
 }

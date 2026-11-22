@@ -29,12 +29,22 @@ function uniquePaths(width, height) {
   }
   for (let rowIndex = 1; rowIndex < height; rowIndex++) {
     for (let columnIndex = 1; columnIndex < width; columnIndex++) {
-      const value = $index(board[rowIndex - 1], columnIndex);
-      const value$1 = $index(board[rowIndex], columnIndex - 1);
-      board[rowIndex][$at(board[rowIndex], columnIndex)] = value + value$1;
+      const value = $index(
+        board[rowIndex - 1],
+        columnIndex,
+        "test/corpus/table_rows_kept_by_views.rs:18:37",
+      );
+      const value$1 = $index(
+        board[rowIndex],
+        columnIndex - 1,
+        "test/corpus/table_rows_kept_by_views.rs:18:70",
+      );
+      board[rowIndex][
+        $at(board[rowIndex], columnIndex, "test/corpus/table_rows_kept_by_views.rs:17:29")
+      ] = value + value$1;
     }
   }
-  return $index(board[height - 1], width - 1);
+  return $index(board[height - 1], width - 1, "test/corpus/table_rows_kept_by_views.rs:21:22");
 }
 
 function truncated(width, height) {
@@ -48,7 +58,7 @@ function truncated(width, height) {
   let total = 0;
   for (let r = 0; r < height; r++) {
     for (let c = 0; c < width; c++) {
-      total = (total + $index(board[r], c)) >>> 0;
+      total = (total + $index(board[r], c, "test/corpus/table_rows_kept_by_views.rs:32:30")) >>> 0;
     }
   }
   return total;
@@ -63,7 +73,7 @@ function pushed(width, height) {
     const grow = () => row.pop();
     grow();
   }
-  return $index(board[0], width - 1);
+  return $index(board[0], width - 1, "test/corpus/table_rows_kept_by_views.rs:44:13");
 }
 
 function replaced(width, height) {
@@ -74,7 +84,7 @@ function replaced(width, height) {
   for (const row of board) {
     $assign(row, []);
   }
-  return $index(board[height - 1], width - 1);
+  return $index(board[height - 1], width - 1, "test/corpus/table_rows_kept_by_views.rs:52:22");
 }
 
 function main() {
@@ -84,6 +94,7 @@ function main() {
   console.log(
     `${$unwrapOk(
       $catchUnwind(() => truncated(1, 2)),
+      "test/corpus/table_rows_kept_by_views.rs:59:65",
       undefined,
       (e) => "Any { .. }",
     )}`,

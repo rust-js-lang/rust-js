@@ -111,7 +111,7 @@ function main() {
   console.log(
     `${results.TAG === "Ok" ? `Ok([${results._0.join(", ")}])` : `Err(${appErrorDebug_fmt(results._0)})`}`,
   );
-  const e = $unwrapErr(field(config, "b"));
+  const e = $unwrapErr(field(config, "b"), "test/corpus/app_errors.rs:66:33");
   console.log(`${appErrorDebug_fmt(e)}`);
 }
 //# sourceMappingURL=case.js.map

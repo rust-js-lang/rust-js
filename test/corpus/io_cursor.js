@@ -38,36 +38,64 @@ function main() {
   const c = { inner: [10, 20, 30, 40], pos: 0n };
   const three = [0, 0, 0];
   const result = $writeTry(() => read.readExact({ value: c }, three));
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/io_cursor.rs:12:30",
+  );
   console.log(`[${three.join(", ")}] ${c.pos}`);
   let e = $writeExpectErr(
     $writeTry(() => read.readExact({ value: c }, three)),
     "called `Result::unwrap_err()` on an `Ok` value",
+    "test/corpus/io_cursor.rs:14:38",
   );
   console.log(`${$ioErrorDisplay(e)} ${c.pos} [${three.join(", ")}]`);
   c.pos = 1n;
   const rest = [];
   console.log(
-    `${$unwrapOk(read.readToEnd({ value: c }, rest), undefined, $ioErrorDebug)} [${rest.join(", ")}] ${c.pos}`,
+    `${$unwrapOk(read.readToEnd({ value: c }, rest), "test/corpus/io_cursor.rs:18:59", undefined, $ioErrorDebug)} [${rest.join(", ")}] ${c.pos}`,
   );
 
   console.log(
-    `${$unwrapOk(read.seek({ value: c }, { TAG: "Start", _0: 2n }), undefined, $ioErrorDebug)}`,
+    `${$unwrapOk(
+      read.seek({ value: c }, { TAG: "Start", _0: 2n }),
+      "test/corpus/io_cursor.rs:20:49",
+      undefined,
+      $ioErrorDebug,
+    )}`,
   );
   console.log(
-    `${$unwrapOk(read.seek({ value: c }, { TAG: "Current", _0: -1n }), undefined, $ioErrorDebug)}`,
+    `${$unwrapOk(
+      read.seek({ value: c }, { TAG: "Current", _0: -1n }),
+      "test/corpus/io_cursor.rs:21:52",
+      undefined,
+      $ioErrorDebug,
+    )}`,
   );
   console.log(
-    `${$unwrapOk(read.seek({ value: c }, { TAG: "End", _0: -3n }), undefined, $ioErrorDebug)}`,
+    `${$unwrapOk(
+      read.seek({ value: c }, { TAG: "End", _0: -3n }),
+      "test/corpus/io_cursor.rs:22:48",
+      undefined,
+      $ioErrorDebug,
+    )}`,
   );
-  e = $unwrapErr(read.seek({ value: c }, { TAG: "End", _0: -5n }));
+  e = $unwrapErr(
+    read.seek({ value: c }, { TAG: "End", _0: -5n }),
+    "test/corpus/io_cursor.rs:23:39",
+  );
   console.log(`${e.kind} ${$ioErrorDebug(e)} ${c.pos}`);
   console.log(
-    `${$unwrapOk(read.seek({ value: c }, { TAG: "End", _0: 6n }), undefined, $ioErrorDebug)}`,
+    `${$unwrapOk(
+      read.seek({ value: c }, { TAG: "End", _0: 6n }),
+      "test/corpus/io_cursor.rs:25:47",
+      undefined,
+      $ioErrorDebug,
+    )}`,
   );
   const b = [9, 9];
   console.log(
-    `${$unwrapOk(read.read({ value: c }, b), undefined, $ioErrorDebug)} [${b.join(", ")}] ${c.pos}`,
+    `${$unwrapOk(read.read({ value: c }, b), "test/corpus/io_cursor.rs:27:46", undefined, $ioErrorDebug)} [${b.join(", ")}] ${c.pos}`,
   );
   let s = "";
   console.log(
@@ -84,19 +112,29 @@ function main() {
         },
         true,
       ),
+      "test/corpus/io_cursor.rs:29:53",
       undefined,
       $ioErrorDebug,
     )} ${$debugStr(s)}`,
   );
   const result$1 = $writeTry(() => seek_rewind($cellOf(c), read));
-  $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$1,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/io_cursor.rs:30:16",
+  );
   const result$2 = $writeTry(() => read.seekRelative({ value: c }, 3n));
-  $writeExpect(result$2, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$2,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/io_cursor.rs:31:24",
+  );
   console.log(
-    `${$unwrapOk(read.streamPosition({ value: c }), undefined, $ioErrorDebug)} [${$unwrapOk(read.fillBuf({ value: c }), undefined, $ioErrorDebug).join(", ")}]`,
+    `${$unwrapOk(read.streamPosition({ value: c }), "test/corpus/io_cursor.rs:32:47", undefined, $ioErrorDebug)} [${$unwrapOk(read.fillBuf({ value: c }), "test/corpus/io_cursor.rs:32:70", undefined, $ioErrorDebug).join(", ")}]`,
   );
   $unwrapOk(
     read.seek({ value: c }, { TAG: "Start", _0: 18446744073709551615n }),
+    "test/corpus/io_cursor.rs:33:39",
     undefined,
     $ioErrorDebug,
   );
@@ -122,6 +160,7 @@ function main() {
       },
       true,
     ),
+    "test/corpus/io_cursor.rs:39:36",
     undefined,
     $ioErrorDebug,
   );
@@ -130,11 +169,15 @@ function main() {
   const byRef = { inner: owned, pos: 0n };
   const two = [0, 0];
   const result$3 = $writeTry(() => cursorRead.readExact({ value: byRef }, two));
-  $writeExpect(result$3, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$3,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/io_cursor.rs:44:33",
+  );
   console.log(`[${two.join(", ")}] ${byRef.inner}`);
   const array = { inner: [5, 5, 5], pos: 0n };
   console.log(
-    `${$unwrapOk(read.read({ value: array }, new Array(8).fill(0)), undefined, $ioErrorDebug)}`,
+    `${$unwrapOk(read.read({ value: array }, new Array(8).fill(0)), "test/corpus/io_cursor.rs:47:48", undefined, $ioErrorDebug)}`,
   );
   const boxed = { inner: [1], pos: 0n };
   const result$4 = $writeTry(() => read.readExact({ value: boxed }, two));
@@ -142,11 +185,17 @@ function main() {
   const v = [7, 8, 9];
   const through = { inner: v, pos: 0n };
   const result$5 = $writeTry(() => read.readExact({ value: through }, two));
-  $writeExpect(result$5, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$5,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/io_cursor.rs:52:34",
+  );
   console.log(`[${two.join(", ")}] [${through.inner.join(", ")}]`);
   const bytes = [97, 98];
   const ofSlice = { inner: bytes, pos: 0n };
-  console.log(`${$unwrapOk(read.read({ value: ofSlice }, [0]), undefined, $ioErrorDebug)}`);
+  console.log(
+    `${$unwrapOk(read.read({ value: ofSlice }, [0]), "test/corpus/io_cursor.rs:56:51", undefined, $ioErrorDebug)}`,
+  );
 
   const d = cursorClone_clone(ofSlice, clone);
   const arg = cursorPartialEq_eq(ofSlice, d, $partialEq({ eq: $eq }));

@@ -58,7 +58,7 @@ function main() {
 
   let tmp;
   try {
-    tmp = $unwrap(a.strong === 1 && a.weak === 0 ? a : undefined);
+    tmp = $unwrap(a.strong === 1 && a.weak === 0 ? a : undefined, "test/corpus/rc_counts.rs:26:26");
   } catch (error) {
     $rcDrop(a);
     throw error;
@@ -182,7 +182,7 @@ function main() {
     };
     let borrow;
     try {
-      borrow = $borrow($fieldCell(leaf.value, "parent"), true);
+      borrow = $borrow($fieldCell(leaf.value, "parent"), "test/corpus/rc_counts.rs:43:34", true);
     } catch (error) {
       $cleanup(() => {
         $rcDrop(leaf, dropNode);
@@ -246,7 +246,11 @@ function main() {
     }
     let borrowMut;
     try {
-      borrowMut = $borrowMut($fieldCell(leaf.value, "parent"), true);
+      borrowMut = $borrowMut(
+        $fieldCell(leaf.value, "parent"),
+        "test/corpus/rc_counts.rs:50:22",
+        true,
+      );
     } catch (error) {
       $cleanup(() => {
         $weakDrop(tmp$1);
@@ -260,7 +264,7 @@ function main() {
     $unborrow(borrowMut);
     let tmp$2;
     try {
-      tmp$2 = $borrow($fieldCell(leaf.value, "parent"), true);
+      tmp$2 = $borrow($fieldCell(leaf.value, "parent"), "test/corpus/rc_counts.rs:53:25", true);
     } catch (error) {
       $cleanup(() => {
         $rcDrop(branch, dropNode);
@@ -310,7 +314,7 @@ function main() {
     }
     let tmp$5;
     try {
-      tmp$5 = $borrow($fieldCell(leaf.value, "parent"), true);
+      tmp$5 = $borrow($fieldCell(leaf.value, "parent"), "test/corpus/rc_counts.rs:60:37", true);
     } catch (error) {
       $cleanup(() => {
         $rcDrop(leaf, dropNode);

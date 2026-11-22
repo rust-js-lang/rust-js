@@ -16,7 +16,7 @@ function clz32Fallback(x) {
   if (x === 0) {
     return 32;
   }
-  return (31 - $ilog(x, 2)) >>> 0;
+  return (31 - $ilog(x, 2, "test/corpus/fn_pointer_borrows_nothing.rs:20:12")) >>> 0;
 }
 
 function pickArbitraryLaneIndex(lanes) {
@@ -30,7 +30,11 @@ function entangledLanes(root, renderLanes) {
   while (lanes > 0) {
     const index = pickArbitraryLaneIndex(lanes);
     const lane = 1 << index;
-    entangledLanes |= $index(entanglements, index);
+    entangledLanes |= $index(
+      entanglements,
+      index,
+      "test/corpus/fn_pointer_borrows_nothing.rs:38:41",
+    );
     lanes &= ~lane;
   }
   return entangledLanes;
@@ -46,7 +50,9 @@ function main() {
   for (const x of [0, 1, 255, (1 << 20) >>> 0, 4294967295]) {
     console.log(`${x}: ${fallback(x)} ${Math.clz32(x)}`);
   }
-  root.entanglements[$at(root.entanglements, 0)] = -1;
+  root.entanglements[
+    $at(root.entanglements, 0, "test/corpus/fn_pointer_borrows_nothing.rs:55:36")
+  ] = -1;
   console.log(`${entangledLanes(root, 1)}`);
 }
 //# sourceMappingURL=case.js.map

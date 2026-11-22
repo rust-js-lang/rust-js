@@ -48,11 +48,11 @@ function startFlowing(request, destination) {
 function render(name) {
   let request;
   const onAllReady = () => {
-    const request$1 = $unwrap(request);
+    const request$1 = $unwrap(request, "test/corpus/owner_handle_named.rs:67:62");
     startFlowing(request$1, "all");
   };
   const onShellReady = () => {
-    const request$1 = $unwrap(request);
+    const request$1 = $unwrap(request, "test/corpus/owner_handle_named.rs:74:62");
     startFlowing(request$1, "shell");
   };
   request = createRequest(name, onAllReady, onShellReady);

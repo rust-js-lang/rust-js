@@ -119,7 +119,11 @@ function main() {
     (grown) => Array.from(grown),
   );
   const capacity = $capacity(kept, 8);
-  const arg$6 = $index(kept, 0);
+  const arg$6 = $index(
+    kept,
+    0,
+    "test/corpus/capacity_of_an_enumerated_chars_and_a_slice_split.rs:30:61",
+  );
   console.log(`${kept.length} ${capacity} [${arg$6.join(", ")}]`);
   const empty = $grownVec(
     $roomForHint(

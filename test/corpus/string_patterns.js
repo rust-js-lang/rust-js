@@ -90,7 +90,11 @@ function main() {
   let total = 0;
   for (const part of $splitTerminator("k=v;x=y", ";")) {
     const kv = Iterator.from($splitN(part, 2, "="));
-    total = (total + ($byteLen($unwrap($next(kv))) + $byteLen($next(kv) ?? ""))) >>> 0;
+    total =
+      (total +
+        ($byteLen($unwrap($next(kv), "test/corpus/string_patterns.rs:24:28")) +
+          $byteLen($next(kv) ?? ""))) >>>
+      0;
   }
   console.log(`${total}`);
 }

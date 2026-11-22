@@ -34,24 +34,36 @@ function lightClone_cloneFrom(light, source) {
 function main() {
   const source = [[1], [2]];
   const target = [[7], [8]];
-  $cloneFromSlice(target, source, undefined, (items, i, from) => {
-    countedClone_cloneFrom(items[i], from);
-  });
+  $cloneFromSlice(
+    target,
+    source,
+    "test/corpus/clone_from_slice_own.rs:39:12",
+    undefined,
+    (items, i, from) => {
+      countedClone_cloneFrom(items[i], from);
+    },
+  );
   console.log(`${target[0][0]} ${target[1][0]}`);
   const lights = ["Off", "On"];
-  $cloneFromSlice(lights, ["On", "Off"], undefined, (items, i, from) => {
-    lightClone_cloneFrom(
-      {
-        get value() {
-          return items[i];
+  $cloneFromSlice(
+    lights,
+    ["On", "Off"],
+    "test/corpus/clone_from_slice_own.rs:42:12",
+    undefined,
+    (items, i, from) => {
+      lightClone_cloneFrom(
+        {
+          get value() {
+            return items[i];
+          },
+          set value(value) {
+            items[i] = value;
+          },
         },
-        set value(value) {
-          items[i] = value;
-        },
-      },
-      from,
-    );
-  });
+        from,
+      );
+    },
+  );
   console.log(`[${lights.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

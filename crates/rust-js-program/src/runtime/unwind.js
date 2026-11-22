@@ -17,14 +17,29 @@ function $isPanic(e) {
 const $panicMessage = { typeId: () => "&str" };
 const $panicString = { typeId: () => "alloc::string::String" };
 
-// What marks a panic's `Error` as one whose payload is a `String`: not
-// enumerable, so its host shows it as any `Error`.
-const $stringPayload = Symbol("a panic whose payload is a String");
+// A panic's marks, `$stringPayload` and `$raisedAt`, are any copy of the
+// runtime's (marks.js).
 
-// A panic whose payload is a `String`, thrown: `throw $stringPanic(..)`, an
-// `Error` of JS's own constructor, marked (ADR 0660, amended).
-function $stringPanic(message) {
+// A panic, thrown: `throw $panic("message", at)`, an `Error` of JS's own
+// constructor, its message the panic's, where it was raised marked
+// (ADR 0706, amended by #2292). Made where it's raised, before what it
+// drops as it unwinds, where a binary's hook writes it, as std's runs
+// (`$hook`).
+function $panic(message, raisedAt) {
   const error = new Error(message);
+  Object.defineProperty(error, $raisedAt, { value: raisedAt });
+  $onPanic?.(error);
+  return error;
+}
+
+// What a panic runs as it's made: a binary's hook, `$hook`, which `$main`
+// sets; of a library, nothing, so a helper bundled alone holds none of it.
+let $onPanic;
+
+// A panic whose payload is a `String`, thrown: `throw $stringPanic(..)`, a
+// panic's `Error`, marked (ADR 0660, amended).
+function $stringPanic(message, raisedAt) {
+  const error = $panic(message, raisedAt);
   Object.defineProperty(error, $stringPayload, { value: true });
   return error;
 }
@@ -76,13 +91,11 @@ function $unwinding(payload) {
   if (id === "&js::JsError") {
     return payload.value;
   }
-  if (id === "&str") {
-    return new Error(payload.value);
-  }
-  if (id === "alloc::string::String") {
-    return $stringPanic(payload.value);
-  }
-  return new $Unwinding(payload);
+  // `resume_unwind`'s, which std's hook isn't run for: none written.
+  const resumed = id === "&str" || id === "alloc::string::String" ? new Error(payload.value) : new $Unwinding(payload);
+  if (id === "alloc::string::String") Object.defineProperty(resumed, $stringPayload, { value: true });
+  $hooked.add(resumed);
+  return resumed;
 }
 
 // `catch_unwind(f)`: `Ok` of what `f()` gives, or `Err` of what unwound;

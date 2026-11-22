@@ -51,7 +51,12 @@ function main() {
   console.log(`[${heldDebug_fmt(held, { width: 10 })}] [${heldDebug_fmt(held, { plus: true })}]`);
   console.log(`${heldDebug_fmt(held, { alternate: true, width: 12 })}`);
   console.log(`${held.took / 1000000n}`);
-  const error = $unwrapErr($timeSince(0n, 0n + d), undefined, $debugDuration);
+  const error = $unwrapErr(
+    $timeSince(0n, 0n + d),
+    "test/corpus/duration_debug_options.rs:22:59",
+    undefined,
+    $debugDuration,
+  );
   console.log(
     `[${$systemTimeErrorDebug(error, {
       width: 20,

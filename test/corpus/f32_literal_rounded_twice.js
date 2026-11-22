@@ -22,8 +22,11 @@ function main() {
   const negative = Math.fround(-7.0385307e-26);
   console.log(`0x${$floatToBits(negative, 4).toString(16)} ${$lowerExp(negative, true)}`);
   console.log(`${SMALL === x}`);
-  const parsed = $unwrapOk($parseF32("7.038531e-26"), undefined, (e) =>
-    $debugParseError(e, "ParseFloatError"),
+  const parsed = $unwrapOk(
+    $parseF32("7.038531e-26"),
+    "test/corpus/f32_literal_rounded_twice.rs:14:46",
+    undefined,
+    (e) => $debugParseError(e, "ParseFloatError"),
   );
   console.log(`${parsed === x}`);
   const near = [Math.fround(7.0385307e-26), Math.fround(7.0385313e-26)];

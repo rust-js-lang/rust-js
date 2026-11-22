@@ -97,9 +97,9 @@ function main() {
     a.value = n.value;
   }
   const row = [5, 6];
-  const last = $unwrap($mutAt(row, -1));
+  const last = $unwrap($mutAt(row, -1), "test/corpus/std_mut_items.rs:64:31");
   last.value = 60;
-  bump($unwrap($mutAt(row, 0)));
+  bump($unwrap($mutAt(row, 0), "test/corpus/std_mut_items.rs:66:26"));
   const x = $mutAt(row, 1);
   if (x != null) {
     bump(x);

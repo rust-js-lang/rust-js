@@ -10,6 +10,7 @@ import {
   $maxByKey,
   $minBy,
   $minByKey,
+  $panic,
 } from "@rust-js/std";
 
 export function entry() {
@@ -35,7 +36,10 @@ function ksIterator_next(ks) {
   }
   ks.at++;
   if (ks.at === ks.panicsAt) {
-    throw new Error("a step");
+    throw $panic(
+      "a step",
+      "test/corpus/extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs:42:9",
+    );
   }
   return [ks.at];
 }
@@ -78,7 +82,10 @@ function main() {
       $closing($iterator(ks(3, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs:51:13",
+          );
         }
       }),
       (a, b) => $cmp(a[0], b[0]),
@@ -97,7 +104,10 @@ function main() {
       $closing($iterator(ks(3, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs:51:13",
+          );
         }
       }),
       (a, b) => $cmp(a[0], b[0]),
@@ -116,7 +126,10 @@ function main() {
       $closing($iterator(ks(3, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs:51:13",
+          );
         }
       }),
       (a, b) => $cmp(a[0], b[0]),
@@ -135,7 +148,10 @@ function main() {
       $closing($iterator(ks(3, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs:51:13",
+          );
         }
       }),
       (a, b) => $cmp(a[0], b[0]),
@@ -154,7 +170,10 @@ function main() {
       $closing($iterator(ks(3, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs:51:13",
+          );
         }
       }),
       (k) => k[0] % 2,
@@ -174,7 +193,10 @@ function main() {
       $closing($iterator(ks(3, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs:51:13",
+          );
         }
       }),
       (k) => k[0] % 2,
@@ -193,7 +215,10 @@ function main() {
     const k = top($iterator(ks(3, undefined, true), ksIterator_next), (it) => {
       console.log("drop Ks");
       if (it.of.panicsAsDropped) {
-        throw new Error("as dropped");
+        throw $panic(
+          "as dropped",
+          "test/corpus/extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs:51:13",
+        );
       }
     });
     function map(k) {
@@ -208,7 +233,10 @@ function main() {
       $closing($iterator(ks(1, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs:51:13",
+          );
         }
       }),
       (a, b) => $cmp(a[0], b[0]),
@@ -227,7 +255,10 @@ function main() {
       $closing($iterator(ks(0, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs:51:13",
+          );
         }
       }),
       (a, b) => $cmp(a[0], b[0]),
@@ -246,7 +277,10 @@ function main() {
       $closing($iterator(ks(3, 3, false), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs:51:13",
+          );
         }
       }),
       (a, b) => $cmp(a[0], b[0]),
@@ -265,7 +299,10 @@ function main() {
       $closing($iterator(ks(3, 3, false), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs:51:13",
+          );
         }
       }),
       (k) => k[0],
@@ -285,7 +322,10 @@ function main() {
       $closing($iterator(ks(3, undefined, false), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/extreme_leaks_what_it_kept_as_its_iterators_drop_panics.rs:51:13",
+          );
         }
       }),
       (a, b) => $cmp(a[0], b[0]),

@@ -476,7 +476,7 @@ pub(super) fn leads(e: &Expr, name: &js::Name, guard: Option<&Expr>, passes: &dy
             in_order(&mut tag.into_iter().chain(props).chain(&jsx.children))
         }
         // `(0, f)` is `f`'s; `(a, b)` each in turn.
-        ExprKind::Unbound(a) => leads(a, name, guard, passes),
+        ExprKind::Unbound(a) | ExprKind::RaisedAt(a) => leads(a, name, guard, passes),
         ExprKind::Sequence(items) => in_order(&mut items.iter()),
         // What's read when it's called, a closure's body, or a `&mut`'s
         // place each time it's read or written, not where it's made; a

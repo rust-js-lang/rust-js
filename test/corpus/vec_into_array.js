@@ -15,6 +15,7 @@ function main() {
   const slice = Array.from({ length: 3 }, () => item.slice());
   const buckets = $unwrapOk(
     slice.length === 3 ? { TAG: "Ok", _0: slice } : { TAG: "Err", _0: slice },
+    "test/corpus/vec_into_array.rs:9:66",
     undefined,
     (e) => `[${e.map((item) => `[${item.join(", ")}]`).join(", ")}]`,
   );
@@ -22,6 +23,7 @@ function main() {
   const masks = Array.from({ length: 2 }, (_, value) => [value]);
   const fixed = $unwrapOk(
     masks.length === 2 ? { TAG: "Ok", _0: masks } : { TAG: "Err", _0: masks },
+    "test/corpus/vec_into_array.rs:12:46",
     undefined,
     (e) => `[${e.map((item) => maskDebug_fmt(item)).join(", ")}]`,
   );

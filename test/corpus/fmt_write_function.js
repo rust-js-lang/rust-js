@@ -81,7 +81,11 @@ function main() {
     },
   };
   const result = $writeTry(() => receiver$1.impl.writeStr(receiver$1, "3-x"));
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/fmt_write_function.rs:34:55",
+  );
   console.log(`${s}`);
   const result$1 = $writeTry(() =>
     put(
@@ -97,10 +101,18 @@ function main() {
       7,
     ),
   );
-  $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$1,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/fmt_write_function.rs:36:20",
+  );
   const wide = { text: "", cap: 99 };
   const result$2 = $writeTry(() => put({ value: wide, impl: bufWrite }, 8));
-  $writeExpect(result$2, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$2,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/fmt_write_function.rs:38:23",
+  );
   console.log(`${s} ${wide.text}`);
 }
 //# sourceMappingURL=case.js.map

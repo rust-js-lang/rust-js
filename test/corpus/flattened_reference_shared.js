@@ -18,7 +18,7 @@ function main() {
   };
   const reports = $range(1, 3).map((severity) => ({ ...item, severity }));
   item.seen.push(2);
-  $index(reports, 0).seen.push(3);
+  $index(reports, 0, "test/corpus/flattened_reference_shared.rs:41:12").seen.push(3);
   for (let i = 0; i < reports.length; i++) {
     const report = reports[i];
     console.log(`${describe(report)}`);

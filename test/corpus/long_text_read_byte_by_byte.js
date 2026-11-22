@@ -52,7 +52,7 @@ function spaces(input) {
   }
 
   function rest() {
-    return $strSlice(input, pos);
+    return $strSlice(input, pos, "test/corpus/long_text_read_byte_by_byte.rs:45:20");
   }
 
   let spaces = 0;
@@ -72,7 +72,7 @@ function spaces(input) {
 function digits(input) {
   let i = 0;
   while (i < $byteLen(input)) {
-    const b = $index($utf8Bytes(input), i);
+    const b = $index($utf8Bytes(input), i, "test/corpus/long_text_read_byte_by_byte.rs:67:30");
     if (!(b >= 48) || !(b <= 57)) {
       break;
     }
@@ -90,7 +90,10 @@ function widths(input) {
   while (i < $byteLen(input)) {
     const bytes = $utf8Bytes(input);
     if (i >= bytes.length) {
-      throw $stringPanic(`index out of bounds: the len is ${bytes.length} but the index is ${i}`);
+      throw $stringPanic(
+        `index out of bounds: the len is ${bytes.length} but the index is ${i}`,
+        "test/corpus/long_text_read_byte_by_byte.rs:80:27",
+      );
     }
     const width =
       bytes[i] <= 127
@@ -102,11 +105,22 @@ function widths(input) {
             : 4;
     const value = width - 1;
     counts[value] = (counts[value] + 1) >>> 0;
-    tail = (tail + ($byteLen($strSlice(input, i + width)) % 7)) >>> 0;
-    const len = $byteLen($strSlice(input, i, i + width));
+    tail =
+      (tail +
+        ($byteLen($strSlice(input, i + width, "test/corpus/long_text_read_byte_by_byte.rs:87:22")) %
+          7)) >>>
+      0;
+    const len = $byteLen(
+      $strSlice(input, i, "test/corpus/long_text_read_byte_by_byte.rs:88:25", i + width),
+    );
     const value$1 = width;
     if (len !== value$1) {
-      $assertFailed("Eq", String(len), String(value$1));
+      $assertFailed(
+        "Eq",
+        String(len),
+        String(value$1),
+        "test/corpus/long_text_read_byte_by_byte.rs:88:9",
+      );
     }
     i += width;
   }

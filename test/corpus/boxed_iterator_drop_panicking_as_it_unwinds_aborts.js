@@ -21,7 +21,10 @@ function dDrop_drop(d) {
     const previous = DROPS;
     DROPS = (previous + 1) >>> 0;
     if (previous < 2) {
-      throw $stringPanic(`drop ${d[0]}`);
+      throw $stringPanic(
+        `drop ${d[0]}`,
+        "test/corpus/boxed_iterator_drop_panicking_as_it_unwinds_aborts.rs:18:13",
+      );
     }
   }
 }

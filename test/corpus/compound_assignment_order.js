@@ -25,27 +25,41 @@ function main() {
   }
   const value = at(1);
   if (value >= 2) {
-    throw $stringPanic(`index out of bounds: the len is 2 but the index is ${value}`);
+    throw $stringPanic(
+      `index out of bounds: the len is 2 but the index is ${value}`,
+      "test/corpus/compound_assignment_order.rs:19:9",
+    );
   }
   const value$1 = at(0);
-  grid[value][value$1] = (grid[value][$at(grid[value], value$1)] + 10) | 0;
+  grid[value][value$1] =
+    (grid[value][$at(grid[value], value$1, "test/corpus/compound_assignment_order.rs:19:9")] + 10) |
+    0;
   const value$2 = at(3) | 0;
   const value$3 = at(0);
   if (value$3 >= 2) {
-    throw $stringPanic(`index out of bounds: the len is 2 but the index is ${value$3}`);
+    throw $stringPanic(
+      `index out of bounds: the len is 2 but the index is ${value$3}`,
+      "test/corpus/compound_assignment_order.rs:20:9",
+    );
   }
   const value$4 = at(1);
-  grid[value$3][value$4] = Math.imul(grid[value$3][$at(grid[value$3], value$4)], value$2);
-  const p = $index(ps, at(1));
+  grid[value$3][value$4] = Math.imul(
+    grid[value$3][$at(grid[value$3], value$4, "test/corpus/compound_assignment_order.rs:20:9")],
+    value$2,
+  );
+  const p = $index(ps, at(1), "test/corpus/compound_assignment_order.rs:21:11");
   p.x = (p.x + 5) | 0;
   const value$5 = at(2) | 0;
   const value$6 = at(0);
   if (value$6 >= 2) {
-    throw $stringPanic(`index out of bounds: the len is 2 but the index is ${value$6}`);
+    throw $stringPanic(
+      `index out of bounds: the len is 2 but the index is ${value$6}`,
+      "test/corpus/compound_assignment_order.rs:22:9",
+    );
   }
   arr[value$6].x = (arr[value$6].x - value$5) | 0;
   const index = at(2);
-  $index(v, index);
+  $index(v, index, "test/corpus/compound_assignment_order.rs:23:10");
   const value$7 = {
     get value() {
       return v[index];
@@ -56,7 +70,7 @@ function main() {
   };
   value$7.value = (value$7.value + 1) | 0;
   const value$8 = at(7) | 0;
-  v[$at(v, 1)] = (v[1] + value$8) | 0;
+  v[$at(v, 1, "test/corpus/compound_assignment_order.rs:24:10")] = (v[1] + value$8) | 0;
   console.log(
     `[${grid.map((item) => `[${item.join(", ")}]`).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}] [${arr.map((item) => pDebug_fmt(item)).join(", ")}] [${v.join(", ")}]`,
   );

@@ -1,8 +1,7 @@
 // Mutations of crates/rust-js-mir/src/std_calls.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
-export const mutations: Mutation[] = [
-  {
+export const mutations: Mutation[] = [  {
     name: "string-write-through-a-call-uncaught",
     breaks: "`write!(*t.as_mut().unwrap(), ..)` of what fails throws past its `fmt::Result`, the place reached through a call not held (#1011)",
     file: "crates/rust-js-mir/src/std_calls.rs",
@@ -45,7 +44,7 @@ export const mutations: Mutation[] = [
     name: "mir-view-whole",
     breaks: "`&mut v[a..b]` from MIR is all of `v`, not a view of those items",
     file: "crates/rust-js-mir/src/std_calls.rs",
-    find: '} else { Value::View(list, js::Span::NONE) })\n',
+    find: "} else { Value::View(list, js::Span::NONE, Expr::raising_at()) })\n",
     replace: "} else { Value::Expr(list[0].clone()) })\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_loop_bounds"],
   },
@@ -532,7 +531,7 @@ export const mutations: Mutation[] = [
     name: "view-made-at-once",
     breaks: "`&mut v[a..b]` is made a view where it's borrowed, so `v[a..b].reverse()` reverses a `Proxy`, where it's `$reverseRange(v, a, b)` (ADR 1073)",
     file: "crates/rust-js-mir/src/std_calls.rs",
-    find: '} else { Value::View(list, js::Span::NONE) })\n',
+    find: "} else { Value::View(list, js::Span::NONE, Expr::raising_at()) })\n",
     replace: '} else { Value::Expr(this.view_call("$view", list)) })\n',
     tests: ["test/corpus.test.ts", "-t", "^slice_range_reverse.rs$"],
     snapshots: true,
@@ -718,5 +717,13 @@ export const mutations: Mutation[] = [
     replace: "                let negated = place.clone();\n",
     tests: ["test/corpus.test.ts", "-t", "^bool_toggle_writes_its_place\\.rs$"],
     snapshots: true,
+  },
+  {
+    name: "view-raised-where-used",
+    breaks: "a part of a slice made where it's used, `&mut v[1..]` a call's argument lines below, raises its panic where it's used, not where it's indexed as Rust's does (#2292)",
+    file: "crates/rust-js-mir/src/std_calls.rs",
+    find: "Value::View(list, js::Span::NONE, Expr::raising_at()) })",
+    replace: "Value::View(list, js::Span::NONE, None) })",
+    tests: ["test/binaries.test.ts", "-t", "a part of a slice used apart from where it's indexed"],
   },
 ];

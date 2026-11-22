@@ -69,7 +69,11 @@ function noisyDrop_drop(noisy) {
 function total(shapes) {
   return shapes
     .map((s) => {
-      const receiver = $borrow(s.value, true);
+      const receiver = $borrow(
+        s.value,
+        "test/corpus/ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs:76:29",
+        true,
+      );
       try {
         return receiver.impl.area(receiver.shape);
       } finally {
@@ -80,7 +84,11 @@ function total(shapes) {
 }
 
 function grown(framed) {
-  const borrowMut = $borrowMut(framed, true);
+  const borrowMut = $borrowMut(
+    framed,
+    "test/corpus/ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs:80:12",
+    true,
+  );
   const receiver = {
     impl: borrowMut.impl,
     get value() {
@@ -95,7 +103,11 @@ function grown(framed) {
   } finally {
     $unborrow(borrowMut);
   }
-  const value = $borrow(framed, true);
+  const value = $borrow(
+    framed,
+    "test/corpus/ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs:81:12",
+    true,
+  );
   try {
     return value.impl.area(value.shape);
   } finally {
@@ -109,7 +121,7 @@ function main() {
     shape: { r: 1.5 },
   };
   console.log(
-    `${$displayF64(grown($dynCell(lent, circleShape)))} ${$displayF64($borrow(lent).shape.r)}`,
+    `${$displayF64(grown($dynCell(lent, circleShape)))} ${$displayF64($borrow(lent, "test/corpus/ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs:89:42").shape.r)}`,
   );
   const circle = {
     value: {
@@ -124,7 +136,11 @@ function main() {
     $dynCell(shape.value, circleShape);
     let borrowMut;
     try {
-      borrowMut = $borrowMut(shape.value, true);
+      borrowMut = $borrowMut(
+        shape.value,
+        "test/corpus/ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs:95:11",
+        true,
+      );
     } catch (error) {
       $cleanup(() => {
         $rcDrop(shape, (value) => {
@@ -157,7 +173,9 @@ function main() {
     let borrow;
     try {
       if (circle.value.borrows < 0) {
-        $alreadyMutablyBorrowed();
+        $alreadyMutablyBorrowed(
+          "test/corpus/ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs:96:27",
+        );
       }
       borrow = circle.value;
     } catch (error) {
@@ -171,7 +189,9 @@ function main() {
     let tmp;
     try {
       if (circle.value.borrows < 0) {
-        $alreadyMutablyBorrowed();
+        $alreadyMutablyBorrowed(
+          "test/corpus/ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs:96:63",
+        );
       }
       tmp = circle.value;
     } catch (error) {
@@ -208,7 +228,15 @@ function main() {
       shapes = [shape, rc];
       let tmp;
       try {
-        tmp = $borrowMut($index(shapes, 1).value, true);
+        tmp = $borrowMut(
+          $index(
+            shapes,
+            1,
+            "test/corpus/ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs:102:11",
+          ).value,
+          "test/corpus/ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs:102:15",
+          true,
+        );
       } catch (error) {
         $cleanup(() => {
           $dropItems(shapes, (item) => {
@@ -244,7 +272,14 @@ function main() {
       $unborrow(tmp);
       let tmp$1;
       try {
-        tmp$1 = $borrowMut($index(shapes, 1).value);
+        tmp$1 = $borrowMut(
+          $index(
+            shapes,
+            1,
+            "test/corpus/ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs:103:11",
+          ).value,
+          "test/corpus/ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs:103:15",
+        );
       } catch (error) {
         $cleanup(() => {
           $dropItems(shapes, (item) => {
@@ -272,7 +307,9 @@ function main() {
       let tmp$3;
       try {
         if (square.value.borrows < 0) {
-          $alreadyMutablyBorrowed();
+          $alreadyMutablyBorrowed(
+            "test/corpus/ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs:104:46",
+          );
         }
         tmp$3 = square.value;
       } catch (error) {
@@ -304,7 +341,11 @@ function main() {
     const named = { value: ["inner"], impl: noisyNamed };
     let tmp$1;
     try {
-      tmp$1 = $borrowMut(named, true);
+      tmp$1 = $borrowMut(
+        named,
+        "test/corpus/ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs:109:11",
+        true,
+      );
     } catch (error) {
       $cleanup(() => {
         named.impl.$drop?.(named.value);
@@ -323,7 +364,11 @@ function main() {
     $unborrow(tmp$1);
     let tmp$2;
     try {
-      tmp$2 = $borrow(named, true);
+      tmp$2 = $borrow(
+        named,
+        "test/corpus/ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs:110:26",
+        true,
+      );
     } catch (error) {
       $cleanup(() => {
         named.impl.$drop?.(named.value);

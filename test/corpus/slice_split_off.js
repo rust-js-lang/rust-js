@@ -87,7 +87,7 @@ function main() {
   rest = split$7[0];
   const head = split$7[1];
   if (head != null) {
-    head[$at(head, 0)] = 10;
+    head[$at(head, 0, "test/corpus/slice_split_off.rs:34:9")] = 10;
   }
   const split$8 = $sliceSplitOffEndMut(rest, false, true);
   rest = split$8[0];
@@ -113,7 +113,10 @@ function main() {
   }
   const length = all.length;
   if (0 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/slice_split_off.rs:49:5",
+    );
   }
   all[0] += "?";
   $print(`[${names.map((item) => $debugStr(item)).join(", ")}]\n`);

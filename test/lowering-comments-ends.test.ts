@@ -731,6 +731,6 @@ pub fn split() -> String {
     }
 }
 `);
-  expect(js).toMatch(/\n  \/\/ map_split: both halves hold it\.\n  const guard = \$borrow\(c, true\);\n/);
+  expect(js).toMatch(/\n  \/\/ map_split: both halves hold it\.\n  const guard = \$borrow\(c, "lib\.rs:8:42", true\);\n/);
   expect((lib.split as () => string)()).toBe("true a false");
 });

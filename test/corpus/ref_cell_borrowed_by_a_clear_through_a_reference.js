@@ -23,7 +23,11 @@ function guardDrop_drop(guard) {
 }
 
 function clearAll(g) {
-  const borrowMut = $borrowMut(g, true);
+  const borrowMut = $borrowMut(
+    g,
+    "test/corpus/ref_cell_borrowed_by_a_clear_through_a_reference.rs:17:7",
+    true,
+  );
   try {
     $truncate(borrowMut, 0, guardDrop_drop);
   } finally {
@@ -36,7 +40,11 @@ function main() {
   const guards = [[log]];
   let seen;
   try {
-    seen = $borrow(log, true);
+    seen = $borrow(
+      log,
+      "test/corpus/ref_cell_borrowed_by_a_clear_through_a_reference.rs:24:24",
+      true,
+    );
   } catch (error) {
     $cleanup(() => {
       $dropItems(guards, guardDrop_drop);

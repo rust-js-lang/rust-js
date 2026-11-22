@@ -95,8 +95,10 @@ fn main() {
   const js = compileJs(file, dir, "2024", false);
   if ("error" in js) throw new Error(js.error);
   const ran = runJs(runtimes[0][1], js.js, dir, "case");
-  expect([native.stdout, native.outcome]).toEqual(["x half", { panic: "in the middle" }]);
-  expect([ran.stdout, ran.outcome]).toEqual(["", { panic: "in the middle" }]);
+  // Each raised at the case's line (#2292).
+  const at = expect.stringMatching(/case\.rs:6:9$/);
+  expect([native.stdout, native.outcome]).toEqual(["x half", { panic: "in the middle", at }]);
+  expect([ran.stdout, ran.outcome]).toEqual(["", { panic: "in the middle", at }]);
 }, underLoad(120_000));
 
 // std's `Debug` builders, step by step through a writer's sink (#1533,

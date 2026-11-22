@@ -21,7 +21,9 @@ function describe(error) {
 
 function main() {
   for (let code = 1; code < 5; code++) {
-    const error = [$unwrap(code === 0 ? undefined : code)];
+    const error = [
+      $unwrap(code === 0 ? undefined : code, "test/corpus/non_zero_constants_matched.rs:22:49"),
+    ];
     const value = describe(error);
     console.log(`${code}: ${value == null ? "None" : `Some(${$debugStr(value)})`} ${error[0]}`);
   }

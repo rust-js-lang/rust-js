@@ -100,7 +100,10 @@ function refusedFromIteratorU32_fromIter(items, dropI, dropIIntoIter) {
   }
   if (n === 1) {
     try {
-      throw $stringPanic(`refused ${n == null ? "None" : `Some(${n})`}`);
+      throw $stringPanic(
+        `refused ${n == null ? "None" : `Some(${n})`}`,
+        "test/corpus/own_iterator_collected_by_generic_code_into_own_from_iterator.rs:60:13",
+      );
     } catch (error) {
       $cleanup(() => {
         dropIIntoIter?.(it);

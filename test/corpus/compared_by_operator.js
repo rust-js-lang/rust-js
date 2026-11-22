@@ -11,7 +11,7 @@ function clamp(value, min, max) {
 }
 
 function largest(items) {
-  let most = $index(items, 0);
+  let most = $index(items, 0, "test/corpus/compared_by_operator.rs:20:20");
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
     if (item > most) {

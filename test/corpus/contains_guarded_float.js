@@ -7,16 +7,16 @@ export function entry() {
 }
 
 function merge(values, into) {
-  const borrow = $borrow(values, true);
+  const borrow = $borrow(values, "test/corpus/contains_guarded_float.rs:10:21", true);
   try {
     for (let i = 0; i < borrow.length; i++) {
       const v = borrow[i];
       if (into.borrows < 0) {
-        $alreadyMutablyBorrowed();
+        $alreadyMutablyBorrowed("test/corpus/contains_guarded_float.rs:11:18");
       }
       if (into.indexOf(v) < 0) {
         if (into.borrows) {
-          $alreadyBorrowed();
+          $alreadyBorrowed("test/corpus/contains_guarded_float.rs:12:18");
         }
         into.push(v);
       }
@@ -30,7 +30,7 @@ export function main() {
   const f = [1.5, NaN];
   const g = [];
   merge(f, g);
-  console.log(`${$borrow(g).length}`);
+  console.log(`${$borrow(g, "test/corpus/contains_guarded_float.rs:21:22").length}`);
   merge(f, f);
 }
 //# sourceMappingURL=case.js.map

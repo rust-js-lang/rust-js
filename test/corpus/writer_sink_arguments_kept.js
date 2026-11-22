@@ -308,12 +308,7 @@ function logTo(w, args) {
 
 // Only read, its text made at once: its template, as nothing keeps it.
 function said(what) {
-  return $byteLen(
-    $fmtOrPanic(
-      () => what(),
-      "a formatting trait implementation returned an error when the underlying stream did not: Error",
-    ),
-  );
+  return $byteLen($fmtOrPanic(() => what(), "format"));
 }
 
 function logged(value, TDisplay) {
@@ -322,7 +317,11 @@ function logged(value, TDisplay) {
     const f = $writerSink(log, logWrite_writeStr, logWrite_writeStr);
     $writeBy(f, TDisplay, value);
   });
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_kept.rs:146:28",
+  );
   return `[${log[0].map((item) => $debugStr(item)).join(", ")}]`;
 }
 
@@ -515,7 +514,11 @@ function main() {
       }),
     ),
   );
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_kept.rs:190:63",
+  );
   console.log(`[${log[0].map((item) => $debugStr(item)).join(", ")}]`);
   console.log(`${said(() => "12-z")}`);
 }

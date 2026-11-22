@@ -33,6 +33,7 @@ function unwraps(a, r) {
             : $some(value == null ? value : $some($someValue(value)));
         },
       }),
+      "test/corpus/clone_dictionary_of_a_nested_option.rs:23:20",
     ),
   );
   const value = $someValue(

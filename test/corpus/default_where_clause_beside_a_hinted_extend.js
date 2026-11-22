@@ -21,6 +21,7 @@ import {
   $live,
   $next,
   $nextSome,
+  $panic,
   $rangeInclusiveNext,
   $rangeNext,
   $someValue,
@@ -280,7 +281,7 @@ function tJoining(TIterator, HeldSize, dropT, dropTItem, dropTItemItem, dropTIte
 function wide(w) {
   if (w != null && w[0] === 3n) {
     try {
-      throw new Error("wide");
+      throw $panic("wide", "test/corpus/default_where_clause_beside_a_hinted_extend.rs:84:9");
     } catch (error) {
       $cleanup(() => {
         if (w != null) {

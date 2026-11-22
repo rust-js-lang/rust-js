@@ -8,9 +8,9 @@ export function entry() {
 
 function main() {
   const d = [1, 2, 3].slice();
-  $swap(d, 0, 2, true);
+  $swap(d, 0, 2, "test/corpus/deque_swap_out_of_bounds.rs:8:7", true);
   console.log(`[${d.join(", ")}]`);
   const j = d.length;
-  $swap(d, 0, j, true);
+  $swap(d, 0, j, "test/corpus/deque_swap_out_of_bounds.rs:11:7", true);
 }
 //# sourceMappingURL=case.js.map

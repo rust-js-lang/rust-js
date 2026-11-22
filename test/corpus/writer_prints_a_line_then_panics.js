@@ -275,12 +275,7 @@ function logTo(w, args) {
   $writingInto(f, args);
 }
 function said(what) {
-  return $byteLen(
-    $fmtOrPanic(
-      () => what(),
-      "a formatting trait implementation returned an error when the underlying stream did not: Error",
-    ),
-  );
+  return $byteLen($fmtOrPanic(() => what(), "format"));
 }
 function logged(value, TDisplay) {
   const log = [[]];
@@ -290,7 +285,11 @@ function logged(value, TDisplay) {
       const f = $writerSink(log, logWrite_writeStr, logWrite_writeStr);
       $writeBy(f, TDisplay, value);
     });
-    $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+    $writeExpect(
+      result$1,
+      "called `Result::unwrap()` on an `Err` value",
+      "test/corpus/writer_prints_a_line_then_panics.rs:111:28",
+    );
   } catch (error) {
     $cleanup(() => {
       logDrop_drop(log);
@@ -1083,7 +1082,11 @@ function main() {
         }),
       ),
     );
-    $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+    $writeExpect(
+      result,
+      "called `Result::unwrap()` on an `Err` value",
+      "test/corpus/writer_prints_a_line_then_panics.rs:150:63",
+    );
   } catch (error) {
     $cleanup(() => {
       logDrop_drop(log);
@@ -1239,17 +1242,17 @@ function metamorphLoud(what) {
   const n = (previous + 1) >>> 0;
   if (n <= 2000) {
     const said = Array.from(
-      $fmtOrPanic(
-        () => $formatting(() => what()),
-        "a formatting trait implementation returned an error when the underlying stream did not: Error",
-      )
+      $fmtOrPanic(() => $formatting(() => what()), "format")
         [Symbol.iterator]()
         .take(160),
     ).join("");
     $out(`~loud ${n} ${said}\n`);
   }
   if (n === METAMORPH_PANIC_AT && !$panicking()) {
-    throw $stringPanic(`~loud panic at ${n}`);
+    throw $stringPanic(
+      `~loud panic at ${n}`,
+      "test/corpus/writer_prints_a_line_then_panics.rs:213:9",
+    );
   }
 }
 //# sourceMappingURL=case.js.map

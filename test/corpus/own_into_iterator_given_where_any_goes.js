@@ -13,9 +13,11 @@ import {
   $live,
   $next,
   $ownIntoIter,
+  $panic,
   $sortedEntries,
   $sortedKeys,
   $splicing,
+  $stdSites,
   iterator_map,
 } from "@rust-js/std";
 
@@ -26,7 +28,7 @@ export function entry() {
 function refBoardIntoIterator_intoIter(board) {
   console.log("into_iter &Board");
   if (board.bad) {
-    throw new Error("a bad board");
+    throw $panic("a bad board", "test/corpus/own_into_iterator_given_where_any_goes.rs:23:9");
   }
   return $iter(board.cells);
 }
@@ -72,6 +74,7 @@ function panics() {
         1,
         9,
         $ownIntoIter(() => refBoardIntoIterator_intoIter(good)),
+        $stdSites.vecDrain[0],
       ),
     );
     console.log(`[${gone.join(", ")}]`);
@@ -85,6 +88,7 @@ function panics() {
         1,
         3,
         $ownIntoIter(() => refBoardIntoIterator_intoIter(bad)),
+        $stdSites.vecDrain[0],
       ),
     );
     console.log(`[${gone.join(", ")}]`);
@@ -100,6 +104,7 @@ function panics() {
           1,
           3,
           $ownIntoIter(() => loudsIntoIterator_intoIter([value])),
+          $stdSites.vecDrain[0],
           loudDrop_drop,
         ),
       );
@@ -159,6 +164,7 @@ function main() {
       1,
       3,
       $ownIntoIter(() => refBoardIntoIterator_intoIter(b)),
+      $stdSites.vecDrain[0],
     ),
   );
   console.log(`[${w.join(", ")}] [${gone.join(", ")}]`);

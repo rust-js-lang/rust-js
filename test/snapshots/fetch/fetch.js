@@ -17,7 +17,11 @@ async function load(url, output) {
 }
 
 export function main() {
-  const app = $unwrap(document.getElementById("app"), "the page has an #app");
+  const app = $unwrap(
+    document.getElementById("app"),
+    "examples/fetch.rs:23:51",
+    "the page has an #app",
+  );
   const button = document.createElement("button");
   button.textContent = "Fetch";
   const output = document.createElement("output");

@@ -1201,7 +1201,7 @@ pub fn message(kind: Kind) -> String {
     const text = kind._0[0];
     message = text + text;
   } else {
-    throw new Error("Expected a plain string.");
+    throw $panic("Expected a plain string.", "lib.rs:16:9");
   }`);
   const lib = await import(join(dir, "mir.js"));
   expect([lib.message({ TAG: "Text", _0: "a" }), lib.message({ TAG: "Element", _0: ["bc"] })]).toEqual(["a", "bcbc"]);

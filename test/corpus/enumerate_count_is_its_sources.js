@@ -8,6 +8,7 @@ import {
   $held,
   $live,
   $next,
+  $panic,
   $peek,
   $unwindsOn,
   iterator_enumerate,
@@ -37,7 +38,7 @@ function itemsIterator_next(items) {
     return;
   }
   if (items.at === items.boom) {
-    throw new Error("next");
+    throw $panic("next", "test/corpus/enumerate_count_is_its_sources.rs:40:13");
   }
   items.at = (items.at + 1) >>> 0;
   return [(items.at - 1) >>> 0];

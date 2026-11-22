@@ -26,7 +26,7 @@ function main() {
   const named = { value: ["first"], impl: noisyNamed };
   let borrowMut;
   try {
-    borrowMut = $borrowMut(named, true);
+    borrowMut = $borrowMut(named, "test/corpus/dyn_ref_cell_drop.rs:29:11", true);
   } catch (error) {
     $cleanup(() => {
       named.impl.$drop?.(named.value);
@@ -45,7 +45,7 @@ function main() {
   $unborrow(borrowMut);
   let borrow;
   try {
-    borrow = $borrow(named, true);
+    borrow = $borrow(named, "test/corpus/dyn_ref_cell_drop.rs:30:26", true);
   } catch (error) {
     $cleanup(() => {
       named.impl.$drop?.(named.value);
@@ -65,7 +65,7 @@ function main() {
   const inner = { value: ["inner"], impl: noisyNamed };
   let tmp;
   try {
-    tmp = $borrow(inner, true);
+    tmp = $borrow(inner, "test/corpus/dyn_ref_cell_drop.rs:33:30", true);
   } catch (error) {
     $cleanup(() => {
       inner.impl.$drop?.(inner.value);

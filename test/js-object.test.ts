@@ -1012,7 +1012,7 @@ pub fn cached(r#fn: &Function, frame: String) -> Option<String> {
   expect(warnings).toEqual([]);
   expect(js).toContain('const componentFrameCache = typeof WeakMap !== "undefined" ? new WeakMap() : new Map();');
   expect(js).toContain(
-    '    if (construct) {\n      // Something should be setting the props in the constructor.\n      function Fake() {\n        throw new Error("explicit panic");\n      }\n      Object.defineProperty(Fake.prototype, "props", {',
+    '    if (construct) {\n      // Something should be setting the props in the constructor.\n      function Fake() {\n        throw $panic("explicit panic", "lib.rs:45:17");\n      }\n      Object.defineProperty(Fake.prototype, "props", {',
   );
   expect(js).toContain("Reflect.construct(Fake, []);");
   expect(js).toContain("Reflect.construct(fn, [], Fake);");
@@ -1158,7 +1158,7 @@ pub fn run() -> Vec<String> {
   }
   const index$1 = index >>> 0;
   // Safety: what's at \`index\` is what \`push\` kept of this cursor's \`T\`.
-  cursor.current = $index(valueStack, index$1);`);
+  cursor.current = $index(valueStack, index$1, "lib.rs:31:95");`);
   expect(js).toContain(`export function push(cursor, value, fiber) {
   index = (index + 1) | 0;
   const index$1 = index >>> 0;

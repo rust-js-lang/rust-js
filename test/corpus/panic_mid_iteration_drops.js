@@ -10,6 +10,7 @@ import {
   $foldToArray,
   $iter,
   $live,
+  $panic,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -33,7 +34,7 @@ function main() {
       $closing($iter(v), $dropEach(dDrop_drop)).map((d) => {
         if (d[0] === 3) {
           try {
-            throw new Error("three");
+            throw $panic("three", "test/corpus/panic_mid_iteration_drops.rs:23:63");
           } catch (error) {
             $cleanup(() => {
               dDrop_drop(d);
@@ -57,7 +58,7 @@ function main() {
         .map((d) => {
           try {
             if (d[0] === 6) {
-              throw new Error("six");
+              throw $panic("six", "test/corpus/panic_mid_iteration_drops.rs:28:72");
             }
             return d[0];
           } catch (error) {
@@ -77,7 +78,7 @@ function main() {
     $closing($iter(v), $dropEach(dDrop_drop)).forEach((d) => {
       try {
         if (d[0] === 9) {
-          throw new Error("nine");
+          throw $panic("nine", "test/corpus/panic_mid_iteration_drops.rs:33:50");
         }
       } catch (error) {
         throw $unwindsOn(error);
@@ -93,7 +94,7 @@ function main() {
     const n = $closing($iter(v), $dropEach(dDrop_drop)).reduce((acc, d) => {
       try {
         if (d[0] === 12) {
-          throw new Error("12");
+          throw $panic("12", "test/corpus/panic_mid_iteration_drops.rs:37:63");
         }
         return (acc + d[0]) >>> 0;
       } catch (error) {
@@ -114,7 +115,7 @@ function main() {
         $closing($iter([[15], [16], [17]]), $dropEach(dDrop_drop)).map((d) => {
           if (d[0] === 16) {
             try {
-              throw new Error("16");
+              throw $panic("16", "test/corpus/panic_mid_iteration_drops.rs:42:79");
             } catch (error) {
               $cleanup(() => {
                 dDrop_drop(d);

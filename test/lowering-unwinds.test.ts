@@ -375,7 +375,7 @@ pub fn rethrown() -> u32 {
     }
 }
 `);
-  expect(js).toContain("throw $stringPanic(`big ${n}`);");
+  expect(js).toContain("throw $stringPanic(`big ${n}`, \"lib.rs:20:32\");");
   const lib = await import(join(dir, "lib.js"));
   const g = globalThis as Record<string, unknown>;
   const thrown = new Error("no props");
@@ -477,7 +477,7 @@ pub fn counted(n: u32) -> u32 {
   try {
     count = (count + 1) >>> 0;
     if (n > 3) {
-      throw new Error("no");
+      throw $panic("no", "lib.rs:59:13");
     }
   } catch (error) {
     $catchable(error);
@@ -816,7 +816,7 @@ pub fn of_any() -> Option<String> {
   // `catch`, as nothing after the `try` runs but once it threw (ADR 0830).
   expect(js).toContain(`export function control() {
   try {
-    throw new Error();
+    throw $panic("", "lib.rs:5:34");
   } catch (x) {
     $catchable(x);
     const control = x;
@@ -1239,7 +1239,7 @@ pub fn describe_built_in_component_frame(name: &str) -> String {
   expect(js).toContain(`  if (prefix == null) {
     // Extract the VM specific prefix used by each line.
     try {
-      throw new Error();
+      throw $panic("", "lib.rs:13:38");
     } catch (x) {
       $catchable(x);
       const stack = x.stack ?? "";
@@ -1329,7 +1329,7 @@ pub fn counted(limit: u32) -> u32 {
   // What the control's `catch` sets, the rest of its block after it, as
   // nothing else there reads the payload (ADR 0830).
   expect(js).toContain(`      try {
-        throw new Error();
+        throw $panic("", "lib.rs:15:42");
       } catch (x) {
         $catchable(x);
         control = x;

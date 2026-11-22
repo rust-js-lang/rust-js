@@ -190,9 +190,9 @@ pub fn unwrapped(s: &str) -> &str {
 `);
   expect(js).toContain('return $find(s, "é");');
   expect(js).toContain("at < 3");
-  expect(js).toContain("return at != null ? $strSlice(other, 0, at) : other;");
-  expect(js).toContain('return at != null ? $strSlice(s, (at + 3) >>> 0) : "";');
-  expect(js).toContain("return $strSlice(s, 0, at);");
+  expect(js).toContain("return at != null ? $strSlice(other, 0, \"lib.rs:11:27\", at) : other;");
+  expect(js).toContain('return at != null ? $strSlice(s, (at + 3) >>> 0, "lib.rs:18:23") : "";');
+  expect(js).toContain("return $strSlice(s, 0, \"lib.rs:25:7\", at);");
   expect([lib.found("🦀é"), lib.found("x")]).toEqual([4, undefined]);
   expect([lib.nearStart("ab"), lib.nearStart("ééb")]).toEqual([true, false]);
   expect(lib.onAnother("🦀 x", "abcdefgh")).toBe("abcd");
@@ -213,7 +213,7 @@ test("a place of a string a variable held before is bytes", async () => {
     &s[at..]
 }
 `);
-  expect(js).toContain("$strSlice(s, at)");
+  expect(js).toContain("$strSlice(s, at, \"lib.rs:8:7\")");
   expect(js).not.toContain("indexOf");
   expect(lib.shifted("aé x")).toBe("x");
 });
@@ -248,9 +248,9 @@ pub fn between(s: &str) -> &str {
     ""
 }
 `);
-  expect(js).toContain("return $strSlice(s, 0, at);");
-  expect(js).toContain("$strSlice(s, (at + $byteLen(q)) >>> 0)");
-  expect(js).toContain("return $strSlice(s, (open + 1) >>> 0, close);");
+  expect(js).toContain("return $strSlice(s, 0, \"lib.rs:5:22\", at);");
+  expect(js).toContain("$strSlice(s, (at + $byteLen(q)) >>> 0, \"lib.rs:13:23\")");
+  expect(js).toContain("return $strSlice(s, (open + 1) >>> 0, \"lib.rs:22:18\", close);");
   expect(lib.inSuffix("é.ab.c")).toBe("é");
   expect(lib.pastAnother("🦀ab", "a", "é")).toBe("");
   expect(lib.between("a(é)")).toBe("é");

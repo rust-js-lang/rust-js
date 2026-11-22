@@ -6,6 +6,7 @@ import {
   $cleanup,
   $debugStr,
   $exposeAddresses,
+  $panic,
   $part,
   $ptr,
   $ptrAdd,
@@ -71,7 +72,7 @@ const Stack = {
   /** Its items, read as the whole array, when it's full. */
   intoArray(stack, CAP) {
     if (!Stack.isFull(stack, CAP)) {
-      throw new Error("assertion failed: self.is_full()");
+      throw $panic("assertion failed: self.is_full()", "test/corpus/array_vec_raw.rs:60:9");
     }
     const array = $apart($ptrWhole(Stack.asPtr(stack, CAP), CAP).value);
     return array;
@@ -95,7 +96,7 @@ const Stack = {
       $cleanup(() => {
         dropT?.(value);
       });
-      throw new Error("assertion failed: self.len < CAP");
+      throw $panic("assertion failed: self.len < CAP", "test/corpus/array_vec_raw.rs:79:9");
     }
     let tmp;
     try {
@@ -115,7 +116,10 @@ const Stack = {
 
   insert(stack, index, value, CAP) {
     if (!(index <= stack.len && stack.len < CAP)) {
-      throw new Error("assertion failed: index <= self.len && self.len < CAP");
+      throw $panic(
+        "assertion failed: index <= self.len && self.len < CAP",
+        "test/corpus/array_vec_raw.rs:85:9",
+      );
     }
     const p = $ptrAdd(Stack.asMutPtr(stack, CAP), index);
     $ptrCopy(p, $ptrAdd(p, 1), (stack.len - index) >>> 0);
@@ -125,7 +129,7 @@ const Stack = {
 
   remove(stack, index, CAP) {
     if (index >= stack.len) {
-      throw new Error("assertion failed: index < self.len");
+      throw $panic("assertion failed: index < self.len", "test/corpus/array_vec_raw.rs:95:9");
     }
     const p = $ptrAdd(Stack.asMutPtr(stack, CAP), index);
     const taken = p.value;
@@ -140,7 +144,10 @@ const Stack = {
    */
   extendFromSlice(stack, other, CAP) {
     if ((stack.len + other.length) >>> 0 > CAP) {
-      throw new Error("assertion failed: self.len + other.len() <= CAP");
+      throw $panic(
+        "assertion failed: self.len + other.len() <= CAP",
+        "test/corpus/array_vec_raw.rs:111:9",
+      );
     }
     $ptrCopy(
       $ptr(other, 0),
@@ -187,7 +194,10 @@ function main() {
   const mutSlice = Stack.asMutSlice(words, 4);
   const length = mutSlice.length;
   if (1 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 1`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 1`,
+      "test/corpus/array_vec_raw.rs:148:5",
+    );
   }
   mutSlice[1] += "!";
   console.log(

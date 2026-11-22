@@ -143,9 +143,11 @@ function main() {
   console.log(`[${v.map((item) => refByRefDebug_fmt(item)).join(", ")}] ${value}`);
   const boxes = [[3], [4]];
   console.log(`[${boxes.map((item) => boxDebug_fmt(item)).join(", ")}]`);
-  const boxed = $index(boxes, 0);
-  const value$1 = $index(boxes, 1);
-  const value$2 = boxDisplay_fmt($index(boxes, 0));
+  const boxed = $index(boxes, 0, "test/corpus/debug_impl_of_a_reference_box_or_pin.rs:75:41");
+  const value$1 = $index(boxes, 1, "test/corpus/debug_impl_of_a_reference_box_or_pin.rs:75:51");
+  const value$2 = boxDisplay_fmt(
+    $index(boxes, 0, "test/corpus/debug_impl_of_a_reference_box_or_pin.rs:75:61"),
+  );
   console.log(
     `[${boxDisplay_fmt(boxed, { width: 8, align: "Right" })}] [${boxDisplay_fmt(value$1, {
       width: 7,
@@ -176,7 +178,10 @@ function main() {
   $writingInto(f, pinDebug_fmt, p);
   f.write("|");
   $writingInto(f, refMutByRefDisplay_fmt, mr);
-  const d = { value: $index(boxes, 1), impl: boxDebug };
+  const d = {
+    value: $index(boxes, 1, "test/corpus/debug_impl_of_a_reference_box_or_pin.rs:85:36"),
+    impl: boxDebug,
+  };
   const f$1 = $writerSink(log, logWrite_writeStr, logWrite_writeStr);
   $writeBy(f$1, d.impl, d.value);
   console.log(`[${log[0].map((item) => $debugStr(item)).join(", ")}]`);

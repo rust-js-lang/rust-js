@@ -1,8 +1,7 @@
 // Mutations of crates/rust-js-lower/src/std_types/slice.rs (ADR 0324).
 import type { Mutation } from "../../../mutations";
 
-export const mutations: Mutation[] = [
-  {
+export const mutations: Mutation[] = [  {
     name: "clone-from-slice-trivial-fact-ungiven",
     breaks:
       "a generic `clone_from_slice` gives `$cloneFromSlice` no `TTriviallyCloned`, so of integers it panics with its own assertion's message (#2318)",
@@ -34,8 +33,8 @@ export const mutations: Mutation[] = [
     name: "split-at-mut-checked-dropped",
     breaks: "`split_at_mut_checked` panics where it's `None`",
     file: "crates/rust-js-lower/src/std_types/slice.rs",
-    find: '                if checked {\n                    list.push(Expr::bool(true));\n                }\n                self.view_call("$splitAtMut", list)',
-    replace: '                self.view_call("$splitAtMut", list)',
+    find: '                if checked { "$checkedSplitAtMut" } else { "$splitAtMut" },',
+    replace: '                "$splitAtMut",',
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {

@@ -31,7 +31,7 @@ function text(tag, s) {
 /** When `event` fires on `target`, apply `change` to the state and draw it again. */
 function on(target, event, state, view, change) {
   target.addEventListener(event, () => {
-    const borrowMut = $borrowMut(state, true);
+    const borrowMut = $borrowMut(state, "examples/todo.rs:56:27", true);
     try {
       change(borrowMut);
     } finally {
@@ -90,7 +90,7 @@ function item(state, view, todo) {
 }
 
 function render(state, view) {
-  const s = $borrow(state, true);
+  const s = $borrow(state, "examples/todo.rs:105:19", true);
   try {
     view.list.textContent = "";
     let left = 0;
@@ -110,7 +110,11 @@ function render(state, view) {
 }
 
 export function main() {
-  const app = $unwrap(document.getElementById("app"), "the page has an #app");
+  const app = $unwrap(
+    document.getElementById("app"),
+    "examples/todo.rs:121:51",
+    "the page has an #app",
+  );
   const state = { todos: [], nextId: 1, filter: "All" };
   const view = { list: create("ul"), left: create("span") };
 
@@ -122,7 +126,7 @@ export function main() {
     title = $trim(title);
     if (e.key === "Enter" && title !== "") {
       if (state.borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("examples/todo.rs:133:29");
       }
       add(state, title);
       input.value = "";

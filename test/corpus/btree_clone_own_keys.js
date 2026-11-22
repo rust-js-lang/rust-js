@@ -40,7 +40,7 @@ function dDebug_fmt(d) {
 function boom(n, what) {
   if (BOOM === n) {
     BOOM = 0;
-    throw $stringPanic(`${what} ${n}`);
+    throw $stringPanic(`${what} ${n}`, "test/corpus/btree_clone_own_keys.rs:23:9");
   }
 }
 

@@ -26,7 +26,7 @@ function main() {
   $print("an error occurred when formatting an argument\n");
   $print("Error\n");
 
-  const e = $unwrapErr($parseInt("x", -2147483648, 2147483647));
+  const e = $unwrapErr($parseInt("x", -2147483648, 2147483647), "test/corpus/str_odds.rs:12:32");
   const c = e;
   const arg = $parseErrorKind(c);
   $print(`${c} ${arg} ${e === c}\n`);
@@ -62,7 +62,7 @@ function main() {
   }
 
   let s = "héllo wörld";
-  const drained = $strDrain(s, 1, 7);
+  const drained = $strDrain(s, 1, 7, "test/corpus/str_odds.rs:39:19");
   s = drained[0];
   let d = $iter(drained[1]);
   $print(`${$debugStr($restStr(d))}\n`);
@@ -72,7 +72,7 @@ function main() {
   $print(`${rest} ${s}\n`);
 
   s = "héllo wörld";
-  const drained$1 = $strDrain(s, 1, 10);
+  const drained$1 = $strDrain(s, 1, 10, "test/corpus/str_odds.rs:47:19");
   s = drained$1[0];
   d = $iter(drained$1[1]);
   const nextBack = $nextBack(d);

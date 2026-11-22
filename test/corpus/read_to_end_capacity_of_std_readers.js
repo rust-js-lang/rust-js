@@ -80,8 +80,13 @@ function main() {
     v = [];
     const value$2 = read_take(
       read_chain(
-        $slice(data, 0, (n / 2) >>> 0),
-        $slice(data, 0, n - ((n / 2) >>> 0)),
+        $slice(data, 0, "test/corpus/read_to_end_capacity_of_std_readers.rs:43:26", (n / 2) >>> 0),
+        $slice(
+          data,
+          0,
+          "test/corpus/read_to_end_capacity_of_std_readers.rs:43:48",
+          n - ((n / 2) >>> 0),
+        ),
         $sliceReader,
         $sliceReader,
       ),
@@ -116,8 +121,18 @@ function main() {
     read = ChainRead.readToString(
       {
         value: read_chain(
-          $slice(data, 0, (n / 2) >>> 0),
-          $slice(data, 0, n - ((n / 2) >>> 0)),
+          $slice(
+            data,
+            0,
+            "test/corpus/read_to_end_capacity_of_std_readers.rs:51:26",
+            (n / 2) >>> 0,
+          ),
+          $slice(
+            data,
+            0,
+            "test/corpus/read_to_end_capacity_of_std_readers.rs:51:48",
+            n - ((n / 2) >>> 0),
+          ),
           $sliceReader,
           $sliceReader,
         ),

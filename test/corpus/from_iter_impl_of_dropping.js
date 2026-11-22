@@ -12,6 +12,7 @@ import {
   $iter,
   $lazyRange,
   $live,
+  $panic,
   $stringPanic,
   $unwindsOn,
   $vecCollectWay,
@@ -126,7 +127,7 @@ function main() {
     for (const item of reqFromIteratorD_fromIter(
       $lazyRange(1, 4).map((n) => {
         if (n === 3) {
-          throw $stringPanic(`at ${n}`);
+          throw $stringPanic(`at ${n}`, "test/corpus/from_iter_impl_of_dropping.rs:57:34");
         } else {
           return [n];
         }
@@ -143,7 +144,7 @@ function main() {
         $closing($iter([[8], [9], [10]]), $dropEach(dDrop_drop)).map((d) => {
           if (d[0] === 10) {
             try {
-              throw new Error("at 10");
+              throw $panic("at 10", "test/corpus/from_iter_impl_of_dropping.rs:62:95");
             } catch (error) {
               $cleanup(() => {
                 dDrop_drop(d);

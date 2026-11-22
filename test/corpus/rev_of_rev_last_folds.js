@@ -12,6 +12,7 @@ import {
   $lazyChain,
   $lent,
   $nthDropping,
+  $panic,
   $rev,
   $skipping,
   $some,
@@ -25,7 +26,7 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 3) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/rev_of_rev_last_folds.rs:16:13");
   }
 }
 

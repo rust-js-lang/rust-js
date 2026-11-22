@@ -36,7 +36,16 @@ export function entry() {
 export const textRead = $readerDefaults({ read: (text, buf) => textRead_read(text.value, buf) });
 function textRead_read(text, buf) {
   const n = Math.min(buf.length, (text.data.length - text.pos) >>> 0);
-  $copyFromSlice($view(buf, 0, n), $slice(text.data, text.pos, (text.pos + n) >>> 0));
+  $copyFromSlice(
+    $view(buf, 0, "test/corpus/readers_of_the_crates_own_and_boxed.rs:18:12", n),
+    $slice(
+      text.data,
+      text.pos,
+      "test/corpus/readers_of_the_crates_own_and_boxed.rs:18:44",
+      (text.pos + n) >>> 0,
+    ),
+    "test/corpus/readers_of_the_crates_own_and_boxed.rs:18:18",
+  );
   text.pos = (text.pos + n) >>> 0;
   return { TAG: "Ok", _0: n };
 }
@@ -47,7 +56,10 @@ export const textBufRead = {
   consume: (text, n) => textBufRead_consume(text.value, n),
 };
 function textBufRead_fillBuf(text) {
-  return { TAG: "Ok", _0: $slice(text.data, text.pos) };
+  return {
+    TAG: "Ok",
+    _0: $slice(text.data, text.pos, "test/corpus/readers_of_the_crates_own_and_boxed.rs:26:22"),
+  };
 }
 
 function textBufRead_consume(text, n) {
@@ -92,7 +104,14 @@ function sumBytes(r, RRead) {
   return $iterator(read_bytes(r, $mutReader(RRead)), (iterator) =>
     bytesIterator_next(iterator, $mutReader(RRead)),
   )
-    .map((b) => $unwrapOk(b, undefined, $ioErrorDebug))
+    .map((b) =>
+      $unwrapOk(
+        b,
+        "test/corpus/readers_of_the_crates_own_and_boxed.rs:61:25",
+        undefined,
+        $ioErrorDebug,
+      ),
+    )
     .reduce((a, b) => (a + b) >>> 0, 0);
 }
 
@@ -140,7 +159,11 @@ function main() {
     `${value$5.TAG === "Ok" ? "Ok(())" : `Err((${value$5._0[0]}, ${$debugStr(value$5._0[1])}))`}`,
   );
   const result$5 = $writeTry(() => seek_rewind($cellOf(t), textSeek));
-  $writeExpect(result$5, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$5,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/readers_of_the_crates_own_and_boxed.rs:80:16",
+  );
   const result$6 = textSeek.seek({ value: t }, { TAG: "End", _0: -2n });
   const mapErr = result$6.TAG === "Err" ? { TAG: "Err", _0: result$6._0.kind } : result$6;
   console.log(

@@ -1,8 +1,7 @@
 // Mutations of crates/rust-js-lower/src/iterators/mir_steps/collect.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
-export const mutations: Mutation[] = [
-  {
+export const mutations: Mutation[] = [  {
     name: "quiet-call-may-unwind",
     breaks: "a closure of the crate's that never unwinds is taken to, so `inspect` of one guards its value for no reason (#903)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
@@ -779,7 +778,7 @@ export const mutations: Mutation[] = [
     name: "rc-slice-room-unasked",
     breaks: "a `collect()` into an `Rc<[T]>` of a range past what a `Layout` can be asks no room, and steps on till memory runs out, where std panics (#1694)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
-    find: "                        Some(item) => self.counted_slice_room(it, (boxed, item), iter_ty, span)?,\n",
+    find: "                        Some(item) => self.counted_slice_room(it, (boxed, item), iter_ty, unbounded, span)?,\n",
     replace: "                        Some(_) => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_room.rs$"],
   },

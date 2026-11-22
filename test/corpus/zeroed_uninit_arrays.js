@@ -31,7 +31,10 @@ function main() {
   const u = Bytes.uninit(3);
   const len = u.len;
   if (len >= 3) {
-    throw $stringPanic(`index out of bounds: the len is 3 but the index is ${len}`);
+    throw $stringPanic(
+      `index out of bounds: the len is 3 but the index is ${len}`,
+      "test/corpus/zeroed_uninit_arrays.rs:40:5",
+    );
   }
   u.xs[len] = 7;
   u.len = (u.len + 1) >>> 0;

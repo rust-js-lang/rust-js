@@ -20,6 +20,7 @@ import {
   $next,
   $nextBack,
   $nthBack,
+  $panic,
   chainDoubleEndedIterator_nextBack,
   flattenDoubleEndedIterator_nextBack,
   iterator_chain,
@@ -36,7 +37,7 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === BOOM) {
     BOOM = 0;
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/parts_close_past_a_panic.rs:23:13");
   }
 }
 

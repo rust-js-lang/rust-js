@@ -65,7 +65,7 @@ function rect(x, y, width, height) {
 // React's findBoundingRects's merge of the rects it found.
 function merged(boundingRects) {
   for (let i = boundingRects.length - 1; i > 0; i--) {
-    const targetRect = $index(boundingRects, i);
+    const targetRect = $index(boundingRects, i, "test/corpus/loop_ending_branch_loop.rs:83:42");
     const targetLeft = targetRect.x;
     const targetRight = targetLeft + targetRect.width;
     const targetTop = targetRect.y;

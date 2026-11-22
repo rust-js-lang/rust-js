@@ -10,7 +10,7 @@ function main() {
   let canvas = "canvas";
   console.log(`${canvas == null ? "None" : `Some(${$debugStr(canvas)})`}`);
   canvas = undefined;
-  const name = $unwrap(canvas);
+  const name = $unwrap(canvas, "test/corpus/cell_set_none_then_read_back.rs:11:29");
   console.log(`${name}`);
 }
 //# sourceMappingURL=case.js.map

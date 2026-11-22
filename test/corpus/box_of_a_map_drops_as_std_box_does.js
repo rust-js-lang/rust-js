@@ -10,6 +10,7 @@ import {
   $lent,
   $live,
   $next,
+  $panic,
   $unwindsOn,
   iterator_map,
 } from "@rust-js/std";
@@ -58,7 +59,7 @@ function main() {
   let folded = $catchUnwind(() =>
     $lent(boxed, "boxed").reduce((a, x) => {
       if (x === 2) {
-        throw new Error("stop");
+        throw $panic("stop", "test/corpus/box_of_a_map_drops_as_std_box_does.rs:28:17");
       }
       return (a + x) >>> 0;
     }, 0),
@@ -99,7 +100,7 @@ function main() {
     try {
       return iter.reduce((a, x) => {
         if (x === 5) {
-          throw new Error("stop");
+          throw $panic("stop", "test/corpus/box_of_a_map_drops_as_std_box_does.rs:42:17");
         }
         return (a + x) >>> 0;
       }, 0);

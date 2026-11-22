@@ -289,6 +289,7 @@ export function report() {
   }
   let v = $unwrapOk(
     $fromJson('{"name":"n","list":[1,2,3],"nested":{"k":"v"},"flag":true,"f":2.5}', $json.value),
+    "examples/dynamic.rs:90:114",
     undefined,
     $debugJsonError,
   );
@@ -333,6 +334,7 @@ export function report() {
         }
         json.endArray();
       }),
+      "examples/dynamic.rs:114:13",
       undefined,
       $debugJsonError,
     ),
@@ -347,6 +349,7 @@ export function report() {
           json.int(value);
         }
       }),
+      "examples/dynamic.rs:114:13",
       undefined,
       $debugJsonError,
     ),
@@ -366,10 +369,16 @@ export function report() {
     },
     meta: new Map(),
   };
-  const text = $unwrapOk($toJson(e, recordSerialize_serialize, false), undefined, $debugJsonError);
+  const text = $unwrapOk(
+    $toJson(e, recordSerialize_serialize, false),
+    "examples/dynamic.rs:117:42",
+    undefined,
+    $debugJsonError,
+  );
   out += `${text}\n`;
   const back = $unwrapOk(
     $fromJson(text, recordDeserialize_deserialize),
+    "examples/dynamic.rs:119:52",
     undefined,
     $debugJsonError,
   );
@@ -385,7 +394,12 @@ export function report() {
   value$8.set("c", { TAG: "Array", _0: [$jsonFloat(1.5), $jsonFloat(2)] });
   const arg = $eq(o, { TAG: "Object", _0: value$8 });
   out += `${$jsonValueText(o, false)} ${arg}\n`;
-  const tv = $unwrapOk($toJsonValue(e, recordSerialize_serialize), undefined, $debugJsonError);
+  const tv = $unwrapOk(
+    $toJsonValue(e, recordSerialize_serialize),
+    "examples/dynamic.rs:127:39",
+    undefined,
+    $debugJsonError,
+  );
   out += `${$jsonValueText(tv, false)}\n`;
   out += `${$jsonValueText($jsonFloat(NaN), false)}\n`;
   const value$9 = $jsonNumberOfF64(1.5);
@@ -829,7 +843,12 @@ export function report() {
     out += `err ${$displayJsonError(value$78._0)}\n`;
   }
   const user = { name: "r", age: 9, tags: ["t"], initial: "z" };
-  const value = $unwrapOk($toJsonValue(user, userSerialize_serialize), undefined, $debugJsonError);
+  const value = $unwrapOk(
+    $toJsonValue(user, userSerialize_serialize),
+    "examples/dynamic.rs:154:45",
+    undefined,
+    $debugJsonError,
+  );
   out += `${$jsonValueText(value, false)}\n`;
   const value$79 = $fromJsonValue(value, userDeserialize_deserialize);
   if (value$79.TAG === "Ok") {
@@ -865,11 +884,17 @@ export function report() {
     obj.set("e", { TAG: "Bool", _0: false });
   }
   out += `${$jsonValueText(v, false)}\n${$jsonValueText(copy, false)}\n`;
-  for (const [key, value] of $sortedEntries($unwrap($jsonValueAs(v, "Object")), $cmp)) {
+  for (const [key, value] of $sortedEntries(
+    $unwrap($jsonValueAs(v, "Object"), "examples/dynamic.rs:171:39"),
+    $cmp,
+  )) {
     out += `${key}=${$jsonValueText(value, false)};`;
   }
   out += "\n";
-  const keys = $sortedEntries($unwrap($jsonValueAs(v, "Object")), $cmp).map((entry) => entry[0]);
+  const keys = $sortedEntries(
+    $unwrap($jsonValueAs(v, "Object"), "examples/dynamic.rs:175:44"),
+    $cmp,
+  ).map((entry) => entry[0]);
   out += `[${keys.map((item) => $debugStr(item)).join(", ")}]\n`;
   const d = "Null";
   out += `${$jsonValueText(d, false)} ${d === "Null"} ${"Null" === d}\n`;
@@ -891,6 +916,7 @@ export function report() {
     if (value.TAG === "Ok") {
       const arg = $unwrapOk(
         $toJson(value._0, messageSerialize_serialize, false),
+        "examples/dynamic.rs:185:90",
         undefined,
         $debugJsonError,
       );
@@ -904,6 +930,7 @@ export function report() {
     if (value.TAG === "Ok") {
       const arg = $unwrapOk(
         $toJson(value._0, openSerialize_serialize, false),
+        "examples/dynamic.rs:191:90",
         undefined,
         $debugJsonError,
       );

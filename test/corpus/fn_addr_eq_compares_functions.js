@@ -27,7 +27,11 @@ function pick(byTwo) {
 function main() {
   const ops = [double, triple, (x) => (x + 1) | 0];
   const found = $position(ops, (op) => op === pick(false));
-  const arg = $index(ops, $unwrap(found))(5);
+  const arg = $index(
+    ops,
+    $unwrap(found, "test/corpus/fn_addr_eq_compares_functions.rs:27:40"),
+    "test/corpus/fn_addr_eq_compares_functions.rs:27:30",
+  )(5);
   console.log(`${found == null ? "None" : `Some(${found})`} ${arg}`);
   console.log(`${pick(true) === double} ${pick(true) === pick(false)}`);
   const inc = ops[2];

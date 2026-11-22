@@ -46,8 +46,20 @@ function refsDoubleEndedIterator_nthBack(refs, n) {
   console.log(`own nth_back ${n}`);
   const len = refs[0].length;
   const checkedSub = $checked(len - ((n + 1) >>> 0), 0, 4294967295);
-  const item = checkedSub != null ? $index(refs[0], checkedSub) : undefined;
-  refs[0] = $slice(refs[0], 0, Math.max(len - ((n + 1) >>> 0), 0));
+  const item =
+    checkedSub != null
+      ? $index(
+          refs[0],
+          checkedSub,
+          "test/corpus/cloned_of_a_generic_source_cloned_and_stepped_from_its_back.rs:28:52",
+        )
+      : undefined;
+  refs[0] = $slice(
+    refs[0],
+    0,
+    "test/corpus/cloned_of_a_generic_source_cloned_and_stepped_from_its_back.rs:29:25",
+    Math.max(len - ((n + 1) >>> 0), 0),
+  );
   return item;
 }
 

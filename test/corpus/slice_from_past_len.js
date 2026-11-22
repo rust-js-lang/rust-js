@@ -9,6 +9,6 @@ export function entry() {
 function main() {
   const v = [1, 2, 3, 4];
   const start = v.length + 1;
-  console.log(`[${$slice(v, start).join(", ")}]`);
+  console.log(`[${$slice(v, start, "test/corpus/slice_from_past_len.rs:6:24").join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

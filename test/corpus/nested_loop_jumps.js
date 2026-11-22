@@ -73,11 +73,11 @@ function splitWords(s) {
           const next = peek[1];
           const nextMode = $isLowercase(c) ? "Lowercase" : $isUppercase(c) ? "Uppercase" : mode;
           if (nextMode === "Lowercase" && $isUppercase(next)) {
-            words.push($strSlice(word, init, nextI));
+            words.push($strSlice(word, init, "test/corpus/nested_loop_jumps.rs:62:36", nextI));
             init = nextI;
             mode = "Boundary";
           } else if (mode === "Uppercase" && $isUppercase(c) && $isLowercase(next)) {
-            words.push($strSlice(word, init, i));
+            words.push($strSlice(word, init, "test/corpus/nested_loop_jumps.rs:66:36", i));
             init = i;
             mode = "Boundary";
           } else {
@@ -85,7 +85,7 @@ function splitWords(s) {
           }
           continue;
         } else {
-          words.push($strSlice(word, init));
+          words.push($strSlice(word, init, "test/corpus/nested_loop_jumps.rs:73:32"));
         }
       }
       break;

@@ -3,8 +3,7 @@ import type { Mutation } from "../../../mutations";
 
 const given1840 = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
 
-export const mutations: Mutation[] = [
-  {
+export const mutations: Mutation[] = [  {
     name: "store-answer-unsaid",
     breaks: "an assignment through a place whose storage is learned later is told nothing of what MIR said of its value, so a handle stores `?? null` (#2112 S4b)",
     file: "crates/rust-js-mir/src/assign.rs",
@@ -891,7 +890,7 @@ export const mutations: Mutation[] = [
     name: "view-unplaced",
     breaks: "a view given as an argument, `&mut v[1..], // the tail`, isn't where its Rust is, so the comment after it isn't after its line's JS (ADR 1073)",
     file: "crates/rust-js-mir/src/assign.rs",
-    find: "            Value::View(list, at) if at.is_none() => Value::View(list, self.js_span(span)),\n",
+    find: "            Value::View(list, at, raised) if at.is_none() => Value::View(list, self.js_span(span), raised),\n",
     replace: "",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a comment after a view argument"],
   },

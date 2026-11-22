@@ -21,6 +21,7 @@ import {
   $mutItems,
   $next,
   $nthDropping,
+  $panic,
   $partialEq,
   $traitImpl,
   $unwinds,
@@ -48,7 +49,7 @@ function loudDrop_drop(loud) {
 
 function fragileDrop_drop(fragile) {
   if (fragile[0] === 0) {
-    throw new Error("dropped 0");
+    throw $panic("dropped 0", "test/corpus/into_iterator_named_by_another_bound.rs:34:13");
   }
   console.log(`drop fragile ${fragile[0]}`);
 }

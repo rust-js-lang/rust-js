@@ -30,13 +30,22 @@ function main() {
   const result = $writeTry(() =>
     $bufReader($mutReader(cursorRead$1)).readExact({ value: byRef }, b),
   );
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/buf_reader_of_a_borrowed_reader.rs:12:35",
+  );
   const buffer = $part(byRef.buf, byRef.pos, byRef.filled);
   console.log(`[${b.join(", ")}] [${buffer.join(", ")}] ${byRef.inner.value.pos}`);
   console.log(`${inner.pos}`);
 
   const rest = [];
-  $unwrapOk(cursorRead$1.readToEnd({ value: inner }, rest), undefined, $ioErrorDebug);
+  $unwrapOk(
+    cursorRead$1.readToEnd({ value: inner }, rest),
+    "test/corpus/buf_reader_of_a_borrowed_reader.rs:18:34",
+    undefined,
+    $ioErrorDebug,
+  );
   console.log(`[${rest.join(", ")}]`);
 
   const text = { inner: "one\ntwo\nthree\n", pos: 0n };
@@ -46,7 +55,12 @@ function main() {
   const buf = { value: line };
   const readLine = bufRead_readLine(arg, buf, BufReaderRead, BufReaderRead);
   line = buf.value;
-  $unwrapOk(readLine, undefined, $ioErrorDebug);
+  $unwrapOk(
+    readLine,
+    "test/corpus/buf_reader_of_a_borrowed_reader.rs:24:32",
+    undefined,
+    $ioErrorDebug,
+  );
   const back = lines.inner.value;
   console.log(`${$debugStr(line)} ${back.pos}`);
   back.pos = 4n;
@@ -64,6 +78,7 @@ function main() {
       },
       true,
     ),
+    "test/corpus/buf_reader_of_a_borrowed_reader.rs:29:36",
     undefined,
     $ioErrorDebug,
   );
@@ -80,7 +95,11 @@ function main() {
   const result$1 = $writeTry(() =>
     $bufReader($mutReader(BufReaderRead$1)).readExact({ value: nested }, first),
   );
-  $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$1,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/buf_reader_of_a_borrowed_reader.rs:36:39",
+  );
   let after = "";
   $unwrapOk(
     BufReaderRead$1.readToString(
@@ -95,6 +114,7 @@ function main() {
       },
       true,
     ),
+    "test/corpus/buf_reader_of_a_borrowed_reader.rs:39:38",
     undefined,
     $ioErrorDebug,
   );
@@ -105,7 +125,11 @@ function main() {
   const over = { inner: bytes, pos: 0n };
   const one = [0];
   const result$2 = $writeTry(() => cursorRead$1.readExact({ value: over }, one));
-  $writeExpect(result$2, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$2,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/buf_reader_of_a_borrowed_reader.rs:46:31",
+  );
   console.log(`[${one.join(", ")}] [${over.inner.join(", ")}] ${over.pos}`);
 }
 //# sourceMappingURL=case.js.map

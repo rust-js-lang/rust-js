@@ -137,7 +137,7 @@ function main() {
     { n: 0, label: "", items: [] },
     { n: 2, label: "", items: [] },
   ];
-  Counter.restart($index(row, 1), 6);
+  Counter.restart($index(row, 1, "test/corpus/replace_through_mut.rs:140:8"), 6);
   console.log(`[${row.map((item) => counterDebug_fmt(item)).join(", ")}]`);
   const items = [4, 5];
   console.log(`[${takeAll(items).join(", ")}] [${items.join(", ")}]`);
@@ -175,7 +175,7 @@ function main() {
   for (const light of $mutItems(lights)) {
     Light.toggle(light);
   }
-  $index(lights, 0);
+  $index(lights, 0, "test/corpus/replace_through_mut.rs:169:25");
   const l$3 = { value: lights[0] };
   brighter(l$3);
   lights[0] = l$3.value;

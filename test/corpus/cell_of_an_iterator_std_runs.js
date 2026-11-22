@@ -23,7 +23,7 @@ function sumFromIterator_u32__u32__fromIter(items) {
   const it = { value: $held($intoIter(items)) };
   let sum = 0;
   while (true) {
-    const borrowMut = $borrowMut(it, true);
+    const borrowMut = $borrowMut(it, "test/corpus/cell_of_an_iterator_std_runs.rs:17:37", true);
     try {
       const next = $next(borrowMut.value);
       if (next != null) {
@@ -43,7 +43,7 @@ function sumFromIterator_u32__u32__fromIter(items) {
 function fixedFromIteratorU32_fromIter(items, N) {
   let slots = new Array(N).fill(0);
   for (const [at, item] of $enumerate($intoIter(items).take(N))) {
-    slots[$at(slots, at)] = item;
+    slots[$at(slots, at, "test/corpus/cell_of_an_iterator_std_runs.rs:31:13")] = item;
   }
   return [slots.slice()];
 }

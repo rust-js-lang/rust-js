@@ -159,7 +159,7 @@ pub mod batch {
   batch.length = 0;
   return total;`);
   // The tag cache's, held while a getter runs: checked.
-  expect(fn(readFileSync(join(dir, "hoist.js"), "utf8"), "hydrate")).toContain("$borrowMut(nodes, true)");
+  expect(fn(readFileSync(join(dir, "hoist.js"), "utf8"), "hydrate")).toContain("$borrowMut(nodes, \"lib.rs:40:31\", true)");
   const lib = { ...(await import(join(dir, "batch.js"))), ...(await import(join(dir, "hoist.js"))) };
   const globals = globalThis as any;
   try {
@@ -213,7 +213,7 @@ pub fn reveal_pending() -> usize {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(fn(js, "revealPending")).toContain("if (globalThis.$RB.borrows < 0) {\n    $alreadyMutablyBorrowed();");
+  expect(fn(js, "revealPending")).toContain("if (globalThis.$RB.borrows < 0) {\n    $alreadyMutablyBorrowed(\"lib.rs:23:8\");");
   const lib = await import(join(dir, "lib.js"));
   const globals = globalThis as any;
   try {
@@ -268,7 +268,7 @@ pub fn bump() -> usize {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(fn(js, "bump")).toContain("if (cell.borrows < 0) {\n    $alreadyMutablyBorrowed();");
+  expect(fn(js, "bump")).toContain("if (cell.borrows < 0) {\n    $alreadyMutablyBorrowed(\"lib.rs:31:10\");");
   const lib = await import(join(dir, "lib.js"));
   const globals = globalThis as any;
   let kept: unknown;

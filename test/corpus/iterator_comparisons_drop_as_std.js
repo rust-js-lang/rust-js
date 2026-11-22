@@ -17,6 +17,7 @@ import {
   $live,
   $next,
   $nextSome,
+  $panic,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -39,7 +40,7 @@ function it(items, name, step) {
 function itIterator_next(it, IIterator, dropI, dropIItem) {
   it.steps = (it.steps + 1) >>> 0;
   if (it.steps === it.step) {
-    throw new Error("step");
+    throw $panic("step", "test/corpus/iterator_comparisons_drop_as_std.rs:37:13");
   }
   return IIterator.next(it.items);
 }

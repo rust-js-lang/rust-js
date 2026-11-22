@@ -114,25 +114,25 @@ export function vecs(n) {
   const v = [1, 1, 2, 3, 3, 3, 4];
   const has = v.includes(n);
   $dedup(v);
-  $insertAt(v, 1, 50);
+  $insertAt(v, 1, 50, "examples/combinators.rs:88:7");
   if (0 >= v.length) {
-    $removeOutOfBounds(v, 0);
+    $removeOutOfBounds(v, 0, "examples/combinators.rs:89:21");
   }
   const removed = v.splice(0, 1)[0];
-  $swap(v, 0, 1);
+  $swap(v, 0, 1, "examples/combinators.rs:90:7");
   const value = [7, 8];
   for (let i = 0; i < value.length; i++) {
     v.push(value[i]);
   }
   $truncate(v, 6);
-  const w = $windows(v, 2).map((w) => w.slice());
-  const c = $chunks(v, 4).map((c) => c.slice());
+  const w = $windows(v, 2, "examples/combinators.rs:93:15").map((w) => w.slice());
+  const c = $chunks(v, 4, "examples/combinators.rs:94:15").map((c) => c.slice());
   return [has, v, removed, w, c, [[1, 2], [3]].flat()];
 }
 export function panics(i) {
   const v = [1, 2];
   if (i >= v.length) {
-    $removeOutOfBounds(v, i);
+    $removeOutOfBounds(v, i, "examples/combinators.rs:99:7");
   }
   return v.splice(i, 1)[0];
 }

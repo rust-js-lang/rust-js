@@ -13,7 +13,7 @@ function run(k) {
   };
 
   function bump() {
-    const n = $borrowMut($fieldCell(tally, "n"));
+    const n = $borrowMut($fieldCell(tally, "n"), "test/corpus/scope_struct_read_whole.rs:14:28");
     n.value = (n.value + tally.pair[0]) >>> 0;
     return n.value;
   }
@@ -30,7 +30,11 @@ function run(k) {
   }
 
   const value = bump();
-  const borrow = $borrow($fieldCell(tally, "n"), true);
+  const borrow = $borrow(
+    $fieldCell(tally, "n"),
+    "test/corpus/scope_struct_read_whole.rs:42:17",
+    true,
+  );
   try {
     return `${value} ${borrow.value} ${bumpIf(false)} ${show()}`;
   } finally {

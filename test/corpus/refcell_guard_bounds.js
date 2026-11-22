@@ -51,11 +51,11 @@ function check(what, f, TDebug) {
  */
 function truncatedByItsGuard(queue, i) {
   if (queue.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_guard_bounds.rs:35:27");
   }
   if (i < queue.length) {
     $truncate(queue, 0);
-    queue[$at(queue, i)] = 1;
+    queue[$at(queue, i, "test/corpus/refcell_guard_bounds.rs:38:14")] = 1;
   }
   return 0;
 }
@@ -66,39 +66,39 @@ function shrink(items) {
 
 function shrunkByACall(queue, i) {
   if (queue.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_guard_bounds.rs:48:27");
   }
   if (i < queue.length) {
     shrink(queue);
-    return $index(queue, i);
+    return $index(queue, i, "test/corpus/refcell_guard_bounds.rs:51:21");
   }
   return 0;
 }
 
 function replacedThroughItsGuard(queue, i) {
   if (queue.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_guard_bounds.rs:57:27");
   }
   if (i < queue.length) {
     $assign(queue, []);
-    return $index(queue, i);
+    return $index(queue, i, "test/corpus/refcell_guard_bounds.rs:60:21");
   }
   return 0;
 }
 
 /** A `RefMut` a function gives, of another cell than the one it's given. */
 function elsewhere(queue, other) {
-  return $borrowMut(other, true);
+  return $borrowMut(other, "test/corpus/refcell_guard_bounds.rs:67:11", true);
 }
 
 function borrowedElsewhere(queue, other, i) {
   if (queue.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_guard_bounds.rs:71:18");
   }
   if (i < queue.length) {
     const items = elsewhere(queue, other);
     try {
-      items[$at(items, i)] = 1;
+      items[$at(items, i, "test/corpus/refcell_guard_bounds.rs:73:14")] = 1;
     } finally {
       $unborrow(items);
     }
@@ -112,16 +112,16 @@ function borrowedElsewhere(queue, other, i) {
  */
 function afterItsGuard(queue, clear, i) {
   if (queue.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_guard_bounds.rs:82:27");
   }
   if (i >= queue.length) {
     return 0;
   }
   clear();
   if (queue.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_guard_bounds.rs:88:11");
   }
-  return $index(queue, i);
+  return $index(queue, i, "test/corpus/refcell_guard_bounds.rs:88:19");
 }
 
 /**
@@ -129,7 +129,7 @@ function afterItsGuard(queue, clear, i) {
  * kept, as no other borrow of it can be made meanwhile.
  */
 function takeFirst(queue, f) {
-  const items = $borrowMut(queue, true);
+  const items = $borrowMut(queue, "test/corpus/refcell_guard_bounds.rs:94:27", true);
   try {
     const end = items.length;
     for (let i = 0; i < end; i++) {
@@ -148,17 +148,17 @@ function main() {
   const queue = [11, 12];
   check("truncated by its guard", () => truncatedByItsGuard(queue, 1), u32Debug);
   if (queue.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_guard_bounds.rs:106:11");
   }
   queue.push(13, 14);
   check("shrunk by a call", () => shrunkByACall(queue, 1), u32Debug);
   if (queue.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_guard_bounds.rs:108:11");
   }
   queue.push(15, 16);
   check("replaced through its guard", () => replacedThroughItsGuard(queue, 1), u32Debug);
   if (queue.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_guard_bounds.rs:110:11");
   }
   queue.push(17, 18);
   const other = [1];
@@ -170,14 +170,14 @@ function main() {
       afterItsGuard(
         queue,
         () => {
-          $borrowMut(queue).length = 0;
+          $borrowMut(queue, "test/corpus/refcell_guard_bounds.rs:115:69").length = 0;
         },
         1,
       ),
     u32Debug,
   );
   if (queue.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_guard_bounds.rs:116:11");
   }
   queue.push(19, 20, 21);
   check(
@@ -198,10 +198,10 @@ function main() {
   );
   check("take none", () => takeFirst(queue, () => false), optionDebug);
   if (queue.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_guard_bounds.rs:120:48");
   }
   if (other.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_guard_bounds.rs:120:64");
   }
   console.log(`queue: [${queue.join(", ")}], other: [${other.join(", ")}]`);
 }

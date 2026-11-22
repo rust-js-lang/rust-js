@@ -12,6 +12,7 @@ import {
   $ptrAdd,
   $ptrSliceMut,
   $slice,
+  $stdSites,
 } from "@rust-js/std";
 
 export function entry() {
@@ -19,9 +20,9 @@ export function entry() {
 }
 
 function drained(v, start, end) {
-  const range = $slice(v, start, end);
+  const range = $slice(v, start, "test/corpus/slice_pointers.rs:10:33", end);
   const taken = range.slice();
-  $drain(v, start, end);
+  $drain(v, start, $stdSites.vecDrain[0], end);
   return taken;
 }
 
@@ -91,7 +92,7 @@ function droppedTail() {
   }
   let first;
   try {
-    first = $apart(items[$at(items, 0)]);
+    first = $apart(items[$at(items, 0, "test/corpus/slice_pointers.rs:77:42")]);
   } catch (error) {
     $cleanup(() => {
       for (const item of items) {
@@ -113,12 +114,12 @@ function main() {
   const bytes = [1, 2, 3, 4];
   const rest = tail(bytes, 2);
   console.log(`${rest.length}`);
-  rest[$at(rest, 0)] = 9;
+  rest[$at(rest, 0, "test/corpus/slice_pointers.rs:91:14")] = 9;
   const raw = $ptrSliceMut($ptr(bytes, 0), 2);
-  raw[$at(raw, 1)] = 7;
+  raw[$at(raw, 1, "test/corpus/slice_pointers.rs:93:14")] = 7;
   const front = raw === null ? undefined : raw;
   if (front != null) {
-    front[$at(front, 0)] = 8;
+    front[$at(front, 0, "test/corpus/slice_pointers.rs:95:9")] = 8;
   }
   console.log(`[${bytes.join(", ")}]`);
   const taken = Array.from($iterator({ iter: $iter([4, 5, 6]) }, takenIterator_next, true));

@@ -1618,12 +1618,12 @@ pub fn copies(items: &[Loud]) -> Vec<Loud> {
 ```
 
 ```js
-import { $madeEach, $madeInTurn } from "@rust-js/std";
+import { $madeEach, $madeInTurn, $panic } from "@rust-js/std";
 
 export const loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
 function loudClone_clone(loud) {
   if (loud[0] <= 0) {
-    throw new Error("no clone of zero");
+    throw $panic("no clone of zero", "lib.rs:5:9");
   }
   return [loud[0]];
 }
@@ -1728,6 +1728,7 @@ import {
   $dropEach,
   $dropItems,
   $live,
+  $panic,
   $sortedEntries,
   $unwindsOn,
 } from "@rust-js/std";
@@ -1739,7 +1740,7 @@ function loudClone_clone(loud) {
 
 function loudDrop_drop(loud) {
   if (loud[0] <= 0) {
-    throw new Error("no drop of zero");
+    throw $panic("no drop of zero", "lib.rs:13:9");
   }
 }
 
@@ -1919,10 +1920,23 @@ missing key, `unreachable!`, `todo!` ([0012](../decisions/0012-panics-and-runtim
 
 Differences:
 
-- **A crate is a library: nothing calls `main`.** A host calls it, and an
-  uncaught panic is the host's error: a JS stack trace and exit code 1,
-  where Rust prints `thread 'main' panicked at` and exits with 101. A
-  `main` that returns `Err` returns it to its caller.
+- **A binary runs its `main` as std's runtime does; a library, its host
+  calls.** A crate given `--crate-type bin`, or a package's `bin` target,
+  ends with `$main(main)`: its status, `0`, an `ExitCode`'s, `1` of an
+  `Err` after `Error: ..` on stderr, `101` of a panic, the process ended
+  at once as std's exit ends it, a pending timer of the host's never
+  running. Each panic writes std's hook's text where it's raised, before
+  what it drops, `thread 'main' (pid) panicked at src/main.rs:4:5:` and
+  its message, the backtrace note once; a `resume_unwind` none. Where is
+  Rust's own: the program's line, or a `#[track_caller]` std function's
+  caller's, made as it compiles, `$index(v, i, "src/main.rs:4:5")`; or a
+  line of std's own, `VecDeque::swap`'s assertion's, a constant of the
+  toolchain the runtime keeps, `$stdSites`. A library's panic writes
+  nothing, its host's to catch: a JS stack trace and exit code 1 where it
+  doesn't ([1184](../decisions/1184-a-binary-crate-runs-its-main-as-stds-runtime-does.md)).
+  A `Location` is its text, `"src/main.rs:4:5"`, `{:?}` std's
+  `Location { file: .., line: .., column: .. }`
+  ([0427](../decisions/0427-track-caller.md), amended).
 - **`catch_unwind` catches what JS throws,** a panic or a getter's throw,
   as JS's `try`: a panic's payload is its message, which downcasts as a
   `&str` and as a `String` both, where Rust's is one; what JS threw is a
@@ -1930,8 +1944,8 @@ Differences:
   panic, whoever threw it, and a `&JsError` too, where Rust's panic is
   none ([0692](../decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md)); every payload downcasts as the `&JsError` thrown,
   a payload of another type's too, `resume_unwind(Box::new(5))`'s, where
-  Rust's is `None` ([0710](../decisions/0710-every-unwinds-payload-is-the-js-error-thrown.md)). A caught panic writes nothing, where Rust's
-  hook writes its message; `set_hook` is refused, and so is unwinding where
+  Rust's is `None` ([0710](../decisions/0710-every-unwinds-payload-is-the-js-error-thrown.md)). A library's caught panic writes nothing,
+  where Rust's hook writes its message, as a binary's does; `set_hook` is refused, and so is unwinding where
   the crate's panics abort ([0660](../decisions/0660-catch-unwind-catches-what-js-throws.md)).
 - **`unwrap()` of a throwing JS call's `Result` is the call:** what JS
   threw goes on as itself, `JSON.parse(text)` throwing its `SyntaxError`,
@@ -2279,11 +2293,6 @@ React and JSX are [their own pages](README.md#react).
 8. A future starts when it's made, and runs though no one awaits it.
 9. There's one thread: a channel's `recv()` that would wait forever is refused
    as the program runs.
-10. rust-js has no binaries: it compiles every crate as a library, and
-    nothing calls `main`. A JS host that calls a Rust function owns the
-    process and its exit status: a panic it doesn't catch is its `Error`,
-    which Node and Bun end with exit code 1, where a native binary's
-    uncaught panic exits with 101.
 11. A panic is an `Error`, which JS catches, and `catch_unwind` catches what
     JS throws, its payload a `&str` of its message; every payload, a typed
     one's too, downcasts as the `&JsError` thrown.
@@ -2644,3 +2653,11 @@ React and JSX are [their own pages](README.md#react).
     declared type has no guaranteed meaning (ADR 0262, the user's
     decision, 2026-11-18, #2081; [ADR 1161](../decisions/1161-a-present-slot-and-a-results-undefined.md),
     amended).
+62. A panic raised in std's own code names std's file under
+    `/rustc/<commit>/library/..`, as the shipped std names it, on every
+    machine; native Rust names one in a body the caller's crate compiles,
+    a generic or an inlined one's, by the toolchain's local copy of std's
+    source where `rust-src` is installed,
+    `~/.rustup/toolchains/../lib/rustlib/src/rust/library/..`. The line and
+    column are the same (ADR 0262, the user's decision, 2026-11-22, #2292;
+    [ADR 1184](../decisions/1184-a-binary-crate-runs-its-main-as-stds-runtime-does.md)).

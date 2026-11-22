@@ -7,18 +7,19 @@ export function entry() {
 }
 
 function bump(cell, b) {
-  const held = $borrow(b, true);
+  const held = $borrow(b, "test/corpus/replace_with_held_across.rs:12:18", true);
   let old;
   try {
     old = $replaceWith(
       cell,
       (n) => {
         if (b.borrows) {
-          $alreadyBorrowed();
+          $alreadyBorrowed("test/corpus/replace_with_held_across.rs:14:11");
         }
         b.value += "!";
         return n.value;
       },
+      "test/corpus/replace_with_held_across.rs:13:20",
       true,
     );
     console.log(`${held.value}`);
@@ -31,7 +32,9 @@ function bump(cell, b) {
 function main() {
   const cells = [{ value: 1 }, { value: 2 }];
   const b = { value: "b" };
-  const old = bump($index(cells, 1), b);
-  console.log(`${old} ${$borrow($index(cells, 1)).value}`);
+  const old = bump($index(cells, 1, "test/corpus/replace_with_held_across.rs:24:26"), b);
+  console.log(
+    `${old} ${$borrow($index(cells, 1, "test/corpus/replace_with_held_across.rs:25:31"), "test/corpus/replace_with_held_across.rs:25:35").value}`,
+  );
 }
 //# sourceMappingURL=case.js.map

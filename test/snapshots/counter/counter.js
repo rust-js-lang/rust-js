@@ -28,7 +28,11 @@ function stepper(label, by, count, output) {
 }
 
 export function main() {
-  const app = $unwrap(document.getElementById("app"), "the page has an #app");
+  const app = $unwrap(
+    document.getElementById("app"),
+    "examples/counter.rs:35:51",
+    "the page has an #app",
+  );
   // Both buttons change one count, so they share it: `Rc` to share, `Cell`
   // to change it through a shared reference.
   const count = { value: 0 };

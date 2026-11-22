@@ -14,6 +14,7 @@ import {
   $minByKey,
   $minOf,
   $ord,
+  $panic,
   $partialEq,
   $partialOrd,
   $reduceBy,
@@ -56,7 +57,10 @@ function ksIterator_next(ks) {
   }
   ks.at++;
   if (ks.at === ks.panicsAt) {
-    throw new Error("a step");
+    throw $panic(
+      "a step",
+      "test/corpus/reduce_leaks_what_it_kept_as_its_iterators_drop_panics.rs:54:9",
+    );
   }
   return [ks.at];
 }
@@ -104,7 +108,10 @@ function main() {
       $closing($iterator(ks(3, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/reduce_leaks_what_it_kept_as_its_iterators_drop_panics.rs:63:13",
+          );
         }
       }),
       (a, b) => $maxOf(a, b, kPartialOrd, kDrop_drop),
@@ -123,7 +130,10 @@ function main() {
       $closing($iterator(ks(3, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/reduce_leaks_what_it_kept_as_its_iterators_drop_panics.rs:63:13",
+          );
         }
       }),
       (a, b) => $minOf(a, b, kPartialOrd, kDrop_drop),
@@ -142,7 +152,10 @@ function main() {
       $closing($iterator(ks(3, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/reduce_leaks_what_it_kept_as_its_iterators_drop_panics.rs:63:13",
+          );
         }
       }),
       (a, b) => kOrd_cmp(a, b),
@@ -161,7 +174,10 @@ function main() {
       $closing($iterator(ks(3, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/reduce_leaks_what_it_kept_as_its_iterators_drop_panics.rs:63:13",
+          );
         }
       }),
       (a, b) => kOrd_cmp(a, b),
@@ -180,7 +196,10 @@ function main() {
       $closing($iterator(ks(3, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/reduce_leaks_what_it_kept_as_its_iterators_drop_panics.rs:63:13",
+          );
         }
       }),
       (k) => k[0] % 2,
@@ -200,7 +219,10 @@ function main() {
       $closing($iterator(ks(3, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/reduce_leaks_what_it_kept_as_its_iterators_drop_panics.rs:63:13",
+          );
         }
       }),
       (k) => k[0] % 2,
@@ -219,7 +241,10 @@ function main() {
     const k = top($iterator(ks(3, undefined, true), ksIterator_next), (it) => {
       console.log("drop Ks");
       if (it.of.panicsAsDropped) {
-        throw new Error("as dropped");
+        throw $panic(
+          "as dropped",
+          "test/corpus/reduce_leaks_what_it_kept_as_its_iterators_drop_panics.rs:63:13",
+        );
       }
     });
     function map(k) {
@@ -234,7 +259,10 @@ function main() {
       $closing($iterator(ks(1, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/reduce_leaks_what_it_kept_as_its_iterators_drop_panics.rs:63:13",
+          );
         }
       }),
       (a, b) => $maxOf(a, b, kPartialOrd, kDrop_drop),
@@ -253,7 +281,10 @@ function main() {
       $closing($iterator(ks(0, undefined, true), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/reduce_leaks_what_it_kept_as_its_iterators_drop_panics.rs:63:13",
+          );
         }
       }),
       (a, b) => $maxOf(a, b, kPartialOrd, kDrop_drop),
@@ -272,7 +303,10 @@ function main() {
       $closing($iterator(ks(3, 3, false), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/reduce_leaks_what_it_kept_as_its_iterators_drop_panics.rs:63:13",
+          );
         }
       }),
       (a, b) => $maxOf(a, b, kPartialOrd, kDrop_drop),
@@ -291,7 +325,10 @@ function main() {
       $closing($iterator(ks(3, 3, false), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/reduce_leaks_what_it_kept_as_its_iterators_drop_panics.rs:63:13",
+          );
         }
       }),
       (k) => k[0],
@@ -311,7 +348,10 @@ function main() {
       $closing($iterator(ks(3, undefined, false), ksIterator_next), (it) => {
         console.log("drop Ks");
         if (it.of.panicsAsDropped) {
-          throw new Error("as dropped");
+          throw $panic(
+            "as dropped",
+            "test/corpus/reduce_leaks_what_it_kept_as_its_iterators_drop_panics.rs:63:13",
+          );
         }
       }),
       (a, b) => $maxOf(a, b, kPartialOrd, kDrop_drop),

@@ -30,7 +30,7 @@ function main() {
   other.value = $asciiCase(other.value, true);
   console.log(`${other.value}`);
   const kept = [{ value: "ef" }];
-  $index(kept, 0);
+  $index(kept, 0, "test/corpus/leaked_string_written.rs:31:9");
   kept[0].value = $asciiCase(kept[0].value, true);
   kept.push({ value: "gh" });
   console.log(`[${kept.map((item) => $debugStr(item.value)).join(", ")}]`);

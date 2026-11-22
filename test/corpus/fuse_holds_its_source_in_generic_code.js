@@ -20,6 +20,7 @@ import {
   $lazyZip,
   $lent,
   $next,
+  $panic,
   $stepsOf,
   $unwrapErr,
   iterator_fuse,
@@ -223,7 +224,7 @@ function panicsAtItsEnd(it, IFused, dropI) {
     }
     if (next == null) {
       try {
-        throw new Error("at its end");
+        throw $panic("at its end", "test/corpus/fuse_holds_its_source_in_generic_code.rs:96:5");
       } catch (error) {
         $cleanup(() => {
           fused.return();
@@ -499,7 +500,7 @@ function main() {
   );
   let tmp$2;
   try {
-    tmp$2 = $unwrapErr(unwound);
+    tmp$2 = $unwrapErr(unwound, "test/corpus/fuse_holds_its_source_in_generic_code.rs:150:45");
   } catch (error) {
     $cleanup(() => {
       if (d$live$1) {

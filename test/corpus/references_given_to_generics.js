@@ -99,7 +99,9 @@ function fill(w, WWrite) {
   return w;
 }
 function pathLen(p, PAsRefPath) {
-  return $byteLen($unwrap(PAsRefPath.asRef(p)));
+  return $byteLen(
+    $unwrap(PAsRefPath.asRef(p), "test/corpus/references_given_to_generics.rs:46:25"),
+  );
 }
 function main() {
   const asRef = { asRef: (value) => value };

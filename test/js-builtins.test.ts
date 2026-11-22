@@ -961,7 +961,7 @@ pub fn of_nothing() -> Promise<u32> {
   });`);
   expect(js).toContain("return await value.then(\n    (n) => String(n),\n    (e) => e.message,\n  );");
   expect(js).toContain("  value.then(\n    () => {},\n    () => {},\n  );");
-  expect(js).toContain("  $unwrap(rejectDebugValue)(error);\n");
+  expect(js).toContain("  $unwrap(rejectDebugValue, \"lib.rs:48:24\")(error);\n");
   expect(js).toContain("  return value.then((n) => (n + 1) >>> 0);\n");
   expect(js).toContain("  return Promise.reject(error);\n");
   expect(js).toContain("  return Promise.reject();\n");

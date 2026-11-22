@@ -7,6 +7,7 @@ import {
   $partialEq,
   $rcDrop,
   $showBorrowed,
+  $stdSites,
   $tryBorrow,
   $unborrow,
   $unwindsOn,
@@ -103,7 +104,7 @@ function nodeDebug_fmt(node) {
 
 function main() {
   const cell = [1, 2];
-  const borrow = $borrow(cell, true);
+  const borrow = $borrow(cell, "test/corpus/refcell_held_while_asked.rs:73:28", true);
   try {
     const tryBorrowMut = $tryBorrow(cell, true);
     console.log(`${borrow.length} ${tryBorrowMut.TAG === "Err"}`);
@@ -113,7 +114,7 @@ function main() {
   } finally {
     $unborrow(borrow);
   }
-  const value = $borrow(cell, true);
+  const value = $borrow(cell, "test/corpus/refcell_held_while_asked.rs:74:18", true);
   const probe = [cell, 0];
   const n = (value.length + probe[1]) >>> 0;
   try {
@@ -127,7 +128,7 @@ function main() {
   }
   console.log(`${n}`);
   const peeks = [[cell]];
-  const value$1 = $borrow(cell, true);
+  const value$1 = $borrow(cell, "test/corpus/refcell_held_while_asked.rs:77:18", true);
   let m;
   try {
     m = value$1.length + peeks.map((item) => peekClone_clone(item)).length;
@@ -136,7 +137,7 @@ function main() {
   }
   console.log(`${m}`);
   const options = [[cell]];
-  const value$2 = $borrow(cell, true);
+  const value$2 = $borrow(cell, "test/corpus/refcell_held_while_asked.rs:80:18", true);
   let k;
   try {
     k =
@@ -145,7 +146,7 @@ function main() {
     $unborrow(value$2);
   }
   console.log(`${k}`);
-  const value$3 = $borrow(cell, true);
+  const value$3 = $borrow(cell, "test/corpus/refcell_held_while_asked.rs:82:33", true);
   let asked;
   try {
     asked = value$3.map(() => {
@@ -161,7 +162,7 @@ function main() {
   }
   console.log(`[${asked.join(", ")}]`);
   const seen = ((s) => {
-    const value = $borrow(s, true);
+    const value = $borrow(s, "test/corpus/refcell_held_while_asked.rs:84:45", true);
     try {
       return value.map(asksShared);
     } finally {
@@ -172,12 +173,17 @@ function main() {
 
   const node = $newCyclic((me) => ({ me: $weakClone(me) }));
   try {
-    const copy = $withBorrow(node.value, (value) => nodeClone_clone(value), true);
+    const copy = $withBorrow(
+      node.value,
+      (value) => nodeClone_clone(value),
+      "test/corpus/refcell_held_while_asked.rs:88:16",
+      true,
+    );
     try {
       console.log(
-        `${$withBorrow(node.value, (x) => $withBorrow(copy, (y) => nodePartialEq_eq(x, y), true), true)} RefCell { value: ${$showBorrowed(node.value, (value) => nodeDebug_fmt(value), true)} }`,
+        `${$withBorrow(node.value, (x) => $withBorrow(copy, (y) => nodePartialEq_eq(x, y), $stdSites.refCellEq[1], true), $stdSites.refCellEq[0], true)} RefCell { value: ${$showBorrowed(node.value, (value) => nodeDebug_fmt(value), true)} }`,
       );
-      const value = $borrow(node.value, true);
+      const value = $borrow(node.value, "test/corpus/refcell_held_while_asked.rs:90:25", true);
       try {
         console.log(`${Node.asks(value)}`);
       } finally {

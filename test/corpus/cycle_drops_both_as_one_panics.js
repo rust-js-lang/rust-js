@@ -6,6 +6,7 @@ import {
   $collectDropping,
   $held,
   $next,
+  $panic,
   $roomForHint,
   iterator_cycle,
   iterator_take,
@@ -25,7 +26,10 @@ function stepsIterator_next(steps) {
 function stepsDrop_drop(steps) {
   console.log(`drop ${steps[0]} at ${steps[1]}`);
   if (steps[0] === 1 && steps[1] === 0) {
-    throw new Error("the kept one's drop panics");
+    throw $panic(
+      "the kept one's drop panics",
+      "test/corpus/cycle_drops_both_as_one_panics.rs:26:13",
+    );
   }
 }
 

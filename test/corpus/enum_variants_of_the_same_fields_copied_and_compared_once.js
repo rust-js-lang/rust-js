@@ -213,7 +213,16 @@ function main() {
     { TAG: "Shaped", _0: "Dot" },
     { TAG: "Nested", _0: { TAG: "First", _0: [1] }, _1: 0 },
   ];
-  $sortStable(outers, (a, b) => $unwrap(partialCmpOuter(a, b)) < 0, "general", 32);
+  $sortStable(
+    outers,
+    (a, b) =>
+      $unwrap(
+        partialCmpOuter(a, b),
+        "test/corpus/enum_variants_of_the_same_fields_copied_and_compared_once.rs:97:44",
+      ) < 0,
+    "general",
+    32,
+  );
   console.log(`[${outers.map((item) => outerDebug_fmt(item)).join(", ")}]`);
   const nan = { TAG: "Shaped", _0: { TAG: "Circle", _0: NaN, _1: [] } };
   const value$2 = partialCmpOuter(nan, nan);

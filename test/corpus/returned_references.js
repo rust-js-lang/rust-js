@@ -12,7 +12,7 @@ function itemDebug_fmt(item) {
 
 function pick(items, log) {
   log.push("pick");
-  return $unwrap(items.slice().at(-1));
+  return $unwrap(items.slice().at(-1), "test/corpus/returned_references.rs:14:29");
 }
 
 function value(log) {
@@ -25,8 +25,8 @@ function main() {
     { name: "a", count: 1 },
     { name: "b", count: 2 },
   ];
-  $unwrap(items.slice().at(-1)).count = 9;
-  const value$1 = $unwrap(items[1]);
+  $unwrap(items.slice().at(-1), "test/corpus/returned_references.rs:24:29").count = 9;
+  const value$1 = $unwrap(items[1], "test/corpus/returned_references.rs:25:29");
   value$1.count = (value$1.count + 1) >>> 0;
   const log = [];
   const value$2 = value(log);
@@ -37,8 +37,10 @@ function main() {
 
   const stock = new Map();
   stock.set("pen", { name: "pen", count: 3 });
-  const value$3 = $unwrap(stock.get("pen"));
+  const value$3 = $unwrap(stock.get("pen"), "test/corpus/returned_references.rs:32:26");
   value$3.count = (value$3.count * 4) >>> 0;
-  console.log(`${$unwrap(stock.get("pen"), "no entry found for key").count}`);
+  console.log(
+    `${$unwrap(stock.get("pen"), "test/corpus/returned_references.rs:33:25", "no entry found for key").count}`,
+  );
 }
 //# sourceMappingURL=case.js.map

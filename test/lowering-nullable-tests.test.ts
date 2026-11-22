@@ -519,8 +519,8 @@ pub fn run() -> Vec<u32> {
   expect(own.tidied).toEqual([]);
   const js = readFileSync(join(own.dir, "lib.js"), "utf8");
   const body = (name: string) => js.slice(js.indexOf(`function ${name}(`), js.indexOf("\n}\n", js.indexOf(`function ${name}(`)));
-  expect(body("called")).toContain("$unwrap(node.sibling)");
-  expect(body("rebound")).toContain("$unwrap(node.sibling)");
+  expect(body("called")).toContain('$unwrap(node.sibling, "lib.rs:');
+  expect(body("rebound")).toContain('$unwrap(node.sibling, "lib.rs:');
   // A clone that may run the crate's code: not one this proves.
   expect(body("held")).toContain("$unwrap(");
   expect(body("nextSibling")).not.toContain("$unwrap");
@@ -548,7 +548,7 @@ pub fn tested(node: &Fiber) -> u32 {
 `,
   );
   expect(given.tidied).toEqual([]);
-  expect(given.fn("tested")).toContain("$unwrap(node.sibling)");
+  expect(given.fn("tested")).toContain('$unwrap(node.sibling, "lib.rs:');
   // Its getter answers `Some`, then `None`: Rust's `unwrap()` panics, as
   // `$unwrap` throws, where a read as it is threw a `TypeError` (#1950).
   const givenLib = await import(join(given.dir, "lib.js"));
@@ -607,7 +607,7 @@ pub fn next_id(init: &Init) -> u32 {
 }
 `,
   );
-  expect(built.fn("nextId")).toContain("$unwrap(init.next)");
+  expect(built.fn("nextId")).toContain("$unwrap(init.next, \"lib.rs:34:47\")");
   expect(built.tidied).toEqual([]);
   expect(built.fn("tested")).toContain("const sibling = node.sibling;");
   const builtLib = await import(join(built.dir, "lib.js"));

@@ -16,7 +16,7 @@ export function entry() {
 
 function advance(state, done) {
   if (state.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_eq_through_guard.rs:15:27");
   }
   state.step = (state.step + 1) >>> 0;
   const line = `step ${state.step}`;
@@ -34,7 +34,7 @@ function main() {
     log: ["step 1", "step 2"],
   };
   console.log(`${advance(state, done)} ${advance(state, done)}`);
-  const held = $borrowMut(state, true);
+  const held = $borrowMut(state, "test/corpus/refcell_eq_through_guard.rs:32:26", true);
   try {
     const same = $eq(held, done);
     held.step = 3;
@@ -57,7 +57,11 @@ function main() {
   }
   const outer = [{ value: 1 }, { value: 2 }];
   const inner = outer;
-  const guard = $borrowMut($index(inner, 0), true);
+  const guard = $borrowMut(
+    $index(inner, 0, "test/corpus/refcell_eq_through_guard.rs:43:22"),
+    "test/corpus/refcell_eq_through_guard.rs:43:26",
+    true,
+  );
   const copy = [{ value: 1 }, { value: 2 }];
   try {
     const compared = $catchUnwind(() => $eq(inner, copy));

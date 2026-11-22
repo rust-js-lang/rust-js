@@ -5,6 +5,14 @@ const given1840 = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
 
 export const mutations: Mutation[] = [
   {
+    name: "call-raised-at-its-whole-span",
+    breaks: "a method call's panic names where its expression starts, not its method's name, as codegen's `fn_span`",
+    file: "crates/rust-js-mir/src/structure.rs",
+    find: "            TerminatorKind::Call { fn_span, .. } => *fn_span,\n",
+    replace: "            TerminatorKind::Call { .. } => terminator.source_info.span,\n",
+    tests: ["test/binaries.test.ts", "-t", "program's own code"],
+  },
+  {
     name: "guard-box-not-copied-back-on-unwind",
     breaks: "`set_then_panic(&mut slot.borrow_mut())` in a `catch_unwind` loses what it wrote before it panicked, the guard taken for a place of the body's own (#1021)",
     file: "crates/rust-js-mir/src/structure.rs",

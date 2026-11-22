@@ -20,7 +20,12 @@ export function entry() {
 function produce(tx) {
   for (let id = 1; id <= 3; id++) {
     try {
-      $unwrapOk($send(tx, { id, name: `job ${id}` }), undefined, (e) => "SendError { .. }");
+      $unwrapOk(
+        $send(tx, { id, name: `job ${id}` }),
+        "test/corpus/channels.rs:14:56",
+        undefined,
+        (e) => "SendError { .. }",
+      );
     } catch (error) {
       $cleanup(() => {
         $dropSender(tx);
@@ -62,7 +67,12 @@ function main() {
     throw error;
   }
   try {
-    $unwrapOk($send(tx2, { id: 9, name: "late" }), undefined, (e) => "SendError { .. }");
+    $unwrapOk(
+      $send(tx2, { id: 9, name: "late" }),
+      "test/corpus/channels.rs:30:55",
+      undefined,
+      (e) => "SendError { .. }",
+    );
   } catch (error) {
     $cleanup(() => {
       $dropSender(tx2);
@@ -159,7 +169,12 @@ function main() {
   const tx$1 = tmp$2[0];
   rx$1 = tmp$2[1];
   function notify() {
-    $unwrapOk($send(tx$1, "done"), undefined, (e) => "SendError { .. }");
+    $unwrapOk(
+      $send(tx$1, "done"),
+      "test/corpus/channels.rs:44:46",
+      undefined,
+      (e) => "SendError { .. }",
+    );
   }
   try {
     notify();

@@ -15,8 +15,8 @@ export const vecPoolIndex = {
   },
   first(self) {
     const vec = self.value;
-    vec[0] = (vec[$at(vec, 0)] + 1) >>> 0;
-    return $index(vec, 0);
+    vec[0] = (vec[$at(vec, 0, "test/corpus/borrow_mut_supertrait.rs:14:9")] + 1) >>> 0;
+    return $index(vec, 0, "test/corpus/borrow_mut_supertrait.rs:15:9");
   },
 };
 
@@ -32,8 +32,8 @@ export function _usize__K_PoolIndex(K) {
     },
     first(boxed) {
       const self = boxed.value;
-      self[0] = (self[$at(self, 0)] + 1) >>> 0;
-      return $index(self, 0);
+      self[0] = (self[$at(self, 0, "test/corpus/borrow_mut_supertrait.rs:14:9")] + 1) >>> 0;
+      return $index(self, 0, "test/corpus/borrow_mut_supertrait.rs:15:9");
     },
   }));
 }
@@ -51,7 +51,7 @@ function total(p, PPoolIndex) {
 
 export const tailBorrowUsizeSlice = { borrow: tailBorrowUsizeSlice_borrow };
 function tailBorrowUsizeSlice_borrow(tail) {
-  return $slice(tail.items, 1);
+  return $slice(tail.items, 1, "test/corpus/borrow_mut_supertrait.rs:36:20");
 }
 
 export const tailBorrowMutUsizeSlice = {
@@ -59,7 +59,7 @@ export const tailBorrowMutUsizeSlice = {
   borrowMut: (tail) => $cellOf(tailBorrowMutUsizeSlice_borrowMut(tail.value)),
 };
 function tailBorrowMutUsizeSlice_borrowMut(tail) {
-  return $view(tail.items, 1);
+  return $view(tail.items, 1, "test/corpus/borrow_mut_supertrait.rs:42:24");
 }
 
 function bump(p, PBorrowMutUsizeSlice) {
@@ -71,7 +71,7 @@ function bump(p, PBorrowMutUsizeSlice) {
       p = value;
     },
   }).value;
-  value[0] = (value[$at(value, 0)] + 1) >>> 0;
+  value[0] = (value[$at(value, 0, "test/corpus/borrow_mut_supertrait.rs:47:5")] + 1) >>> 0;
   const all = PBorrowMutUsizeSlice.Borrow().borrow(p);
   return all.reduce((a, b) => (a + b) >>> 0, 0);
 }

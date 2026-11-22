@@ -17,6 +17,7 @@ import {
   $live,
   $mapFrom,
   $next,
+  $panic,
   $range,
   $skipping,
   $stepBy,
@@ -38,7 +39,7 @@ function dDrop_drop(d) {
 function boomDrop_drop(boom) {
   console.log(`drop boom ${boom[0]}`);
   if (boom[0] === 3) {
-    throw new Error("boom");
+    throw $panic("boom", "test/corpus/compiled_adapters_closed_as_a_collect_unwinds.rs:25:13");
   }
 }
 
@@ -58,7 +59,10 @@ function main() {
       ).map((d) => {
         try {
           if (d[0] === 2) {
-            throw new Error("map");
+            throw $panic(
+              "map",
+              "test/corpus/compiled_adapters_closed_as_a_collect_unwinds.rs:41:21",
+            );
           }
           return String.fromCharCode((97 + (d[0] & 255)) & 255);
         } catch (error) {
@@ -84,7 +88,10 @@ function main() {
       ).map((d) => {
         try {
           if (d[0] === 12) {
-            throw new Error("map");
+            throw $panic(
+              "map",
+              "test/corpus/compiled_adapters_closed_as_a_collect_unwinds.rs:54:37",
+            );
           }
           return d[0];
         } catch (error) {
@@ -122,7 +129,10 @@ function main() {
       chain.map((d) => {
         try {
           if (d[0] === 22) {
-            throw new Error("map");
+            throw $panic(
+              "map",
+              "test/corpus/compiled_adapters_closed_as_a_collect_unwinds.rs:63:37",
+            );
           }
           return [d[0], d[0]];
         } catch (error) {
@@ -179,7 +189,10 @@ function main() {
         try {
           try {
             if (a[0] === 42) {
-              throw new Error("map");
+              throw $panic(
+                "map",
+                "test/corpus/compiled_adapters_closed_as_a_collect_unwinds.rs:74:21",
+              );
             }
             result = String.fromCharCode(97 + ((((a[0] + b[0]) >>> 0) & 255) % 26));
           } catch (error) {
@@ -234,7 +247,10 @@ function main() {
       .map((d) => {
         try {
           if (d[0] === 62) {
-            throw new Error("map");
+            throw $panic(
+              "map",
+              "test/corpus/compiled_adapters_closed_as_a_collect_unwinds.rs:87:37",
+            );
           }
           return d[0];
         } catch (error) {
@@ -258,7 +274,10 @@ function main() {
       ).map((d) => {
         try {
           if (d[0] === 72) {
-            throw new Error("map");
+            throw $panic(
+              "map",
+              "test/corpus/compiled_adapters_closed_as_a_collect_unwinds.rs:95:37",
+            );
           }
           return d[0];
         } catch (error) {

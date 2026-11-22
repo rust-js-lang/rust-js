@@ -4,7 +4,9 @@
 // on all of it, never on what it printed alone. A compile of rust-js's is
 // kept by its inputs, and given again (`test/compiles.ts`, ADR 1099).
 
+import { dirname, resolve } from "node:path";
 import { keptBuildsAsync, keptCompile, keptCompileAsync } from "./compiles";
+import { compiler } from "./packages-of";
 import { workerJob } from "./workers";
 
 export type Exit = {
@@ -96,10 +98,25 @@ export function guarded(cmd: string[]): string[] {
   return ["/bin/sh", "-c", watch, String(process.pid), ...cmd];
 }
 
+/** `cmd`, a compile of a crate's file by the compiler, given its file's
+ * directory left out of the files it names, as the corpus leaves the
+ * checkout's (ADR 0427): a panic's location in its JS is `lib.rs:6:5`, the
+ * same on every machine and in every fixture (#2292). Not where it says
+ * where it's left out itself, nor of rustc's own run, `--rustc`. */
+export function located(cmd: string[], cwd: string): string[] {
+  const file = cmd[0] === compiler ? cmd.find((arg) => arg.endsWith(".rs")) : undefined;
+  // Not rustc's own run of a crate, `--rustc`, which writes no JS.
+  if (file === undefined || cmd.includes("--rustc") || cmd.some((arg) => arg.startsWith("--remap-path-prefix"))) return cmd;
+  const remap = `--remap-path-prefix=${dirname(resolve(cwd, file))}/=`;
+  const rustc = cmd.indexOf("--");
+  return rustc < 0 ? [...cmd, "--", remap] : [...cmd.slice(0, rustc + 1), remap, ...cmd.slice(rustc + 1)];
+}
+
 /** `cmd`, stopped after `timeout` ms or `maxBuffer` bytes of output, with
  * this process's environment and `env`, which a change to `process.env`
  * wouldn't give it; a setting that's `undefined` in `env` is left out. */
 export function runSync(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined> = {}): Exit {
+  cmd = located(cmd, cwd);
   return keptCompile(cmd, cwd, env, (cmd) => spawnedSync(cmd, cwd, timeout, env));
 }
 
@@ -145,6 +162,7 @@ export function spawnedSync(cmd: string[], cwd: string, timeout: number, env: Re
  * group's or one of its own, hold more than `memoryCap` bytes together
  * (#1097). */
 export function run(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined> = {}, memoryCap?: number): Promise<Exit> {
+  cmd = located(cmd, cwd);
   return keptCompileAsync(cmd, cwd, env, (cmd) => spawned(cmd, cwd, timeout, env, memoryCap));
 }
 

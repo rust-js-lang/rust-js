@@ -9,7 +9,7 @@ export function entry() {
 function main() {
   const low = 5;
   const high = 1;
-  console.log(`${$clamp(3, high, low)}`);
-  console.log(`${$clamp(3, low, high)}`);
+  console.log(`${$clamp(3, high, low, "test/corpus/clamp_reversed.rs:6:22")}`);
+  console.log(`${$clamp(3, low, high, "test/corpus/clamp_reversed.rs:7:22")}`);
 }
 //# sourceMappingURL=case.js.map

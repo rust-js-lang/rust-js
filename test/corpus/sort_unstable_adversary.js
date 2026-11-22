@@ -20,8 +20,8 @@ function adversary(n, select) {
   // Two above the rest, out of order, so it isn't one run std just reverses.
   $roomFor(n, 4);
   const start = new Array(n).fill(gas);
-  start[$at(start, 0)] = (gas + 2) >>> 0;
-  start[$at(start, 1)] = (gas + 1) >>> 0;
+  start[$at(start, 0, "test/corpus/sort_unstable_adversary.rs:11:10")] = (gas + 2) >>> 0;
+  start[$at(start, 1, "test/corpus/sort_unstable_adversary.rs:12:10")] = (gas + 1) >>> 0;
   const values = start;
   let solid = 0;
   let candidate = 0;
@@ -29,22 +29,28 @@ function adversary(n, select) {
   function compare(x, y) {
     asked = (asked + 1) >>> 0;
     const v = values;
-    if ($index(v, x) === gas && $index(v, y) === gas) {
+    if (
+      $index(v, x, "test/corpus/sort_unstable_adversary.rs:20:13") === gas &&
+      $index(v, y, "test/corpus/sort_unstable_adversary.rs:20:29") === gas
+    ) {
       if (x === candidate) {
         const value = solid;
-        v[$at(v, x)] = value;
+        v[$at(v, x, "test/corpus/sort_unstable_adversary.rs:22:18")] = value;
       } else {
         const value = solid;
-        v[$at(v, y)] = value;
+        v[$at(v, y, "test/corpus/sort_unstable_adversary.rs:24:18")] = value;
       }
       solid = (solid + 1) >>> 0;
     }
-    if ($index(v, x) === gas) {
+    if ($index(v, x, "test/corpus/sort_unstable_adversary.rs:28:13") === gas) {
       candidate = x;
-    } else if ($index(v, y) === gas) {
+    } else if ($index(v, y, "test/corpus/sort_unstable_adversary.rs:30:20") === gas) {
       candidate = y;
     }
-    return $cmp($index(v, x), $index(v, y));
+    return $cmp(
+      $index(v, x, "test/corpus/sort_unstable_adversary.rs:33:10"),
+      $index(v, y, "test/corpus/sort_unstable_adversary.rs:33:21"),
+    );
   }
   const items = $range(0, n, 4);
   if (select != null) {
@@ -58,10 +64,10 @@ function adversary(n, select) {
 function main() {
   for (const n of [64, 300, 1000]) {
     const [sorted, asked] = adversary(n);
-    const arg = $slice(sorted, 0, 12);
+    const arg = $slice(sorted, 0, "test/corpus/sort_unstable_adversary.rs:48:59", 12);
     console.log(`${n} sorted after ${asked}: [${arg.join(", ")}]`);
     const [picked, asked$1] = adversary(n, (n / 3) >>> 0);
-    const arg$1 = $slice(picked, 0, 12);
+    const arg$1 = $slice(picked, 0, "test/corpus/sort_unstable_adversary.rs:50:59", 12);
     console.log(`${n} picked after ${asked$1}: [${arg$1.join(", ")}]`);
   }
 }

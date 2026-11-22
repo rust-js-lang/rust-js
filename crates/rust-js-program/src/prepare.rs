@@ -413,7 +413,9 @@ fn checked_item(checked: &Expr, other: &Expr) -> bool {
     let ExprKind::Call(helper, args) = &at.kind else {
         return false;
     };
-    let [of, index] = args.as_slice() else {
+    // Past the two, where the check raises its panic and a `VecDeque`'s
+    // message (#2292), which read no place.
+    let [of, index, ..] = args.as_slice() else {
         return false;
     };
     helper.helper_name().is_some_and(crate::runtime::checks_an_index)
@@ -1125,6 +1127,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::Unary(_, a)
         | ExprKind::Await(a)
         | ExprKind::Unbound(a)
+        | ExprKind::RaisedAt(a)
         | ExprKind::Spread(a)
         | ExprKind::Stringed(a)
         | ExprKind::Converted(_, a)

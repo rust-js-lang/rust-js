@@ -48,7 +48,7 @@ function last(items) {
 }
 
 function at(items, i) {
-  return $index(items, i >>> 0);
+  return $index(items, i >>> 0, "test/corpus/signed_index.rs:55:5");
 }
 
 function main() {

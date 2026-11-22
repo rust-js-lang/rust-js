@@ -10,6 +10,7 @@ import {
   $rangeNext,
   $roomFor,
   $roomForCounted,
+  $stdSites,
   $unwound,
   $vecCollectWay,
   iterator_map,
@@ -48,6 +49,7 @@ function main() {
             $lazyRange(0, 4294967295).map((i) => BigInt(i)),
             8,
             8,
+            $stdSites.rcFromTrustedLen[0],
           ),
         ).length,
     )}`,
@@ -60,12 +62,13 @@ function main() {
             $lazyRange(0, 4294967295).map((i) => i & 65535),
             2,
             2,
+            $stdSites.arcFromTrustedLen[0],
           ),
         ).length,
     )}`,
   );
   console.log(
-    `${said(() => Array.from($roomForCounted($iterator({ start: 0n }, $rangeFromStep(0n, 18446744073709551615n)), 8, 8)).length)}`,
+    `${said(() => Array.from($roomForCounted($iterator({ start: 0n }, $rangeFromStep(0n, 18446744073709551615n)), 8, 8, $stdSites.rcFromTrustedLen[0])).length)}`,
   );
   console.log(
     `${said(() => {
@@ -81,6 +84,7 @@ function main() {
             $lazyRange(0, 5).map((i) => (i * 2) & 255),
             1,
             1,
+            $stdSites.rcFromTrustedLen[0],
           ),
         ).length,
     )}`,
@@ -98,6 +102,7 @@ function main() {
                 8,
                 ITrustedLen,
                 $vecCollectWay($collectsInPlace(IInPlace, 8, 8), ITrustedLen, IInPlace),
+                $stdSites.rcFromTrustedLen[0],
               ),
           },
           true,
@@ -117,6 +122,7 @@ function main() {
                 8,
                 ITrustedLen,
                 $vecCollectWay($collectsInPlace(IInPlace, 8, 8), ITrustedLen, IInPlace),
+                $stdSites.arcFromTrustedLen[0],
               ),
           },
           true,

@@ -12,17 +12,20 @@ function rest(length) {
 
 function mixed(a, b, d) {
   return [
-    (($rem(a, d, -2147483648) | 0) + b) | 0,
-    (b - ($rem(a, d, -2147483648) | 0)) | 0,
-    Math.imul($rem(a, d, -2147483648) | 0, b),
-    Math.imul($rem(a, d, -2147483648) | 0, $rem(b, d, -2147483648) | 0),
+    (($rem(a, d, "test/corpus/remainder_operands.rs:11:6", -2147483648) | 0) + b) | 0,
+    (b - ($rem(a, d, "test/corpus/remainder_operands.rs:11:21", -2147483648) | 0)) | 0,
+    Math.imul($rem(a, d, "test/corpus/remainder_operands.rs:11:28", -2147483648) | 0, b),
+    Math.imul(
+      $rem(a, d, "test/corpus/remainder_operands.rs:11:41", -2147483648) | 0,
+      $rem(b, d, "test/corpus/remainder_operands.rs:11:49", -2147483648) | 0,
+    ),
   ];
 }
 
 function narrow(a, d) {
   return [
-    ((a - (($rem(a, d, -128) << 24) >> 24)) << 24) >> 24,
-    (((($rem(a, d, -128) << 24) >> 24) * a) << 24) >> 24,
+    ((a - (($rem(a, d, "test/corpus/remainder_operands.rs:15:10", -128) << 24) >> 24)) << 24) >> 24,
+    (((($rem(a, d, "test/corpus/remainder_operands.rs:15:17", -128) << 24) >> 24) * a) << 24) >> 24,
   ];
 }
 

@@ -65,7 +65,11 @@ function saltedHash_hash(salted, state, HHasher) {
 function counted(m, k, bump) {
   if (m.has(k)) {
     bump();
-    return $unwrap(m.get(k), "no entry found for key");
+    return $unwrap(
+      m.get(k),
+      "test/corpus/map_key_changed_between_test_and_index.rs:75:17",
+      "no entry found for key",
+    );
   }
   return 0;
 }
@@ -73,7 +77,11 @@ function counted(m, k, bump) {
 function salted(m, k, bump) {
   if (m.has(k)) {
     bump();
-    return $unwrap(m.get(k), "no entry found for key");
+    return $unwrap(
+      m.get(k),
+      "test/corpus/map_key_changed_between_test_and_index.rs:83:17",
+      "no entry found for key",
+    );
   }
   return 0;
 }
@@ -82,7 +90,11 @@ function salted(m, k, bump) {
 function generic(m, k, bump, KHash, KPartialEq) {
   if (m.has(k)) {
     bump();
-    return $unwrap(m.get(k), "no entry found for key");
+    return $unwrap(
+      m.get(k),
+      "test/corpus/map_key_changed_between_test_and_index.rs:92:17",
+      "no entry found for key",
+    );
   }
   return 0;
 }

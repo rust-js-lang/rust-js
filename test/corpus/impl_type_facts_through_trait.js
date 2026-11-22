@@ -87,7 +87,10 @@ function copied(items, TSize) {
 }
 
 function parsed(text, TSize) {
-  return $unwrapOk(stackFromStr_fromStr(text, TSize));
+  return $unwrapOk(
+    stackFromStr_fromStr(text, TSize),
+    "test/corpus/impl_type_facts_through_trait.rs:90:18",
+  );
 }
 
 function main() {

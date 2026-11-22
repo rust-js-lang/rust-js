@@ -89,7 +89,11 @@ function twoPast(n, i) {
 /** A number the compiler can't see, as a program's input is. */
 function input(text, TFromStr) {
   const result = TFromStr.fromStr(text);
-  return $unwrap(result.TAG === "Ok" ? result._0 : undefined, "a number");
+  return $unwrap(
+    result.TAG === "Ok" ? result._0 : undefined,
+    "test/corpus/bounds_by_a_value.rs:91:23",
+    "a number",
+  );
 }
 
 function main() {

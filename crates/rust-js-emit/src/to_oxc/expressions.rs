@@ -313,6 +313,8 @@ impl<'a> Cx<'a> {
                 let zero = Expression::new_numeric_literal(sp, 0.0, None, NumberBase::Decimal, b);
                 Expression::new_sequence_expression(sp, ArenaVec::from_iter_in([zero, self.expr(f)], b), b)
             }
+            // Where a panic a helper raises was raised: the location itself (#2292).
+            ExprKind::RaisedAt(at) => self.expr(at),
             ExprKind::Spread(_) => unreachable!("`...items` is an array's item or a call's argument, which they write"),
             ExprKind::Call(callee, args) => {
                 let args = args.iter().map(argument);

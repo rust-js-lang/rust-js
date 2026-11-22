@@ -63,21 +63,21 @@ function main() {
   const b = backU8SliceFn;
   const bytes = [1, 2, 3];
   const value = b(bytes);
-  value[$at(value, 0)] = 9;
+  value[$at(value, 0, "test/corpus/generic_fn_pointer_takes_its_types_forms.rs:59:5")] = 9;
 
   const s = sameU8SliceFn;
   const p = s(bytes);
-  p[$at(p, 1)] = 8;
+  p[$at(p, 1, "test/corpus/generic_fn_pointer_takes_its_types_forms.rs:63:14")] = 8;
   const m = measuredU8SliceFn;
   const q = m(bytes);
-  q[$at(q, 2)] = 7;
+  q[$at(q, 2, "test/corpus/generic_fn_pointer_takes_its_types_forms.rs:66:14")] = 7;
   console.log(`[${bytes.join(", ")}]`);
 
   const again = sameU8SliceFn;
   console.log(`${s === again}`);
 
   const t = applyPtr($ptrTo(bytes), (x0) => $ptrTo(m(x0.value))).value;
-  t[$at(t, 0)] = 6;
+  t[$at(t, 0, "test/corpus/generic_fn_pointer_takes_its_types_forms.rs:73:14")] = 6;
   console.log(`[${bytes.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

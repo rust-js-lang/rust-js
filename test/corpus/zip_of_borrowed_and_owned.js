@@ -87,7 +87,9 @@ function main() {
   const items = [[1], [2]];
   try {
     louds(items, [[10], [20], [30]]);
-    console.log(`${$index(items, 0)[0]} ${$index(items, 1)[0]}`);
+    console.log(
+      `${$index(items, 0, "test/corpus/zip_of_borrowed_and_owned.rs:34:28")[0]} ${$index(items, 1, "test/corpus/zip_of_borrowed_and_owned.rs:34:40")[0]}`,
+    );
     const iter = $lazyZip(
       "ab"[Symbol.iterator](),
       $closing($iter([[41], [42], [43]]), $dropEach(loudDrop_drop)),

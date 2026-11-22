@@ -10,12 +10,16 @@ import { $byteLen, $next, $unwrap } from "@rust-js/std";
 export function forms() {
   const input = document.createElement("input");
   input.value = "typed";
-  const app = $unwrap(document.getElementById("app"), "the page has an #app");
+  const app = $unwrap(
+    document.getElementById("app"),
+    "test/web_forms.rs:10:51",
+    "the page has an #app",
+  );
   app.append(input, "!");
   const ping = new Event("ping");
   app.addEventListener("ping", (e) => e.preventDefault());
   window.dispatchEvent(ping);
-  return $unwrap(app.textContent) + input.value;
+  return $unwrap(app.textContent, "test/web_forms.rs:15:24") + input.value;
 }
 
 /**

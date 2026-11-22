@@ -31,7 +31,12 @@ function main() {
       tmp = self.value;
     }
   }
-  $unwrapOk(readUntil, undefined, $ioErrorDebug);
+  $unwrapOk(
+    readUntil,
+    "test/corpus/capacity_of_what_std_bodies_grow.rs:11:47",
+    undefined,
+    $ioErrorDebug,
+  );
   console.log(`${v.length} ${$capacity(v, 1)}`);
   const longer = $withCapacity(2);
   let tmp$1 = [97, 98, 99, 100, 101, 102, 103, 104, 105, 106];
@@ -46,7 +51,12 @@ function main() {
       tmp$1 = self$1.value;
     }
   }
-  $unwrapOk(tmp$2, undefined, $ioErrorDebug);
+  $unwrapOk(
+    tmp$2,
+    "test/corpus/capacity_of_what_std_bodies_grow.rs:14:57",
+    undefined,
+    $ioErrorDebug,
+  );
   console.log(`${longer.length} ${$capacity(longer, 1)}`);
   const iter = bufRead_split(
     [97, 98, 44, 99, 100, 101, 102, 103, 44, 104],
@@ -59,7 +69,12 @@ function main() {
     if (item == null) {
       return;
     }
-    item = $unwrapOk(item, undefined, $ioErrorDebug);
+    item = $unwrapOk(
+      item,
+      "test/corpus/capacity_of_what_std_bodies_grow.rs:17:25",
+      undefined,
+      $ioErrorDebug,
+    );
     const arg = $capacity(item, 1);
     console.log(`${item.length} ${arg}`);
   }

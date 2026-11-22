@@ -319,7 +319,7 @@ test("a library's request that owns its callbacks alone is its consumer's callba
   expect(app).toContain("  request = createRequest(name, onAllReady, onShellReady);\n  return request;\n");
   // A callback the library may call before it returns, before the cell is
   // set, keeps the cell's `None` there, so its fellow's `unwrap` stays.
-  expect(app).toContain("    const request$1 = $unwrap(request);\n    startFlowing(request$1, \"all\");\n");
+  expect(app).toContain("    const request$1 = $unwrap(request, \"app.rs:15:62\");\n    startFlowing(request$1, \"all\");\n");
   // Where the library's contract says none is called before it returns,
   // each `unwrap` is the request (rd621).
   expect(app).toContain("  const onAllReady = () => {\n    startFlowing(request, \"quiet all\");\n  };\n");
@@ -349,8 +349,8 @@ test("a library's checked cell of a Vec of dyn Fns is no consumer's cell of a Ve
   const out = chain(pairs, "cell_dyn_apart", ["dep", "app"]);
   // Checked: the held borrow counted, the momentary one checked alone (3901c815a).
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
-  expect(dep).toContain("  if (hooks.list.borrows) {\n    $alreadyBorrowed();\n  }\n  hooks.list.push(hook);\n");
-  expect(dep).toContain("  const borrow = $borrow(hooks.list, true);\n");
+  expect(dep).toContain("  if (hooks.list.borrows) {\n    $alreadyBorrowed(\"dep.rs:17:16\");\n  }\n  hooks.list.push(hook);\n");
+  expect(dep).toContain("  const borrow = $borrow(hooks.list, \"dep.rs:21:28\", true);\n");
   expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain("function push(siblings, child) {\n  siblings.push(child);\n}");
 }, 300_000);
 
@@ -560,7 +560,7 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   // reads, whatever the consumer's own borrows of its type count.
   counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\npub struct Mine {\n    types: RefCell<Option<Rc<RefCell<Vec<String>>>>>,\n}\n\nfn count(mine: &Mine) -> usize {\n    mine.types.borrow().as_ref().map_or(0, |types| types.borrow().len())\n}\n\nfn maybe(mine: &Mine, go: bool) -> usize {\n    if go {\n        count(mine)\n    } else {\n        0\n    }\n}\n\nfn twice(mine: &Mine) -> usize {\n    let held = mine.types.borrow_mut();\n    maybe(mine, false) + held.as_ref().map_or(0, |types| types.borrow().len())\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let mine = Mine { types: RefCell::new(None) };\n    let n = t.types.borrow().as_ref().map_or(0, |types| types.borrow().len());\n    println!(\"{n} {}\", twice(&mine));\n}\n");
   const reads = readFileSync(join(out, "counting", "lib.js"), "utf8");
-  expect([reads.includes("$borrowMut($fieldCell(mine, \"types\"), true)"), reads.includes("$fieldCell(t")]).toEqual([true, false]);
+  expect([/\$borrowMut\(\$fieldCell\(mine, "types"\), "[^"]*\.rs:\d+:\d+", true\)/.test(reads), reads.includes("$fieldCell(t")]).toEqual([true, false]);
   expect(() => counting(out, "pub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    let held = types.borrow_mut();\n    dep::add_type(&t, \"b\");\n    println!(\"{}\", held.len());\n}\n"))
     .toThrow("is held while code rust-js can't see runs, which may be `dep`'s");
   expect(() => counting(out, "pub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    let n = types.borrow().len() + dep::types(&t).len();\n    println!(\"{n}\");\n}\n"))
@@ -588,7 +588,7 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   // held one counted, not refused, as a cell's borrow runs only its own
   // check.
   counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn copy(from: &Rc<RefCell<Vec<String>>>, to: &Rc<RefCell<Vec<String>>>) {\n    for t in from.borrow().iter() {\n        to.borrow_mut().push(t.clone());\n    }\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let u = dep::start(None);\n    dep::add_type(&u, \"b\");\n    let types = t.types.borrow().clone().unwrap();\n    let theirs = u.types.borrow().clone().unwrap();\n    copy(&types, &theirs);\n    println!(\"{}\", theirs.borrow().len());\n}\n");
-  expect(readFileSync(join(out, "counting", "lib.js"), "utf8")).toContain("const borrow = $borrow(from, true);");
+  expect(readFileSync(join(out, "counting", "lib.js"), "utf8")).toContain("const borrow = $borrow(from, \"counting.rs:5:19\", true);");
   // React's scheduleGesture, a type pushed only where it isn't there,
   // which it is where the two are one cell: neither borrow is counted.
   counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn merge(types: &Rc<RefCell<Vec<String>>>, into: &Rc<RefCell<Vec<String>>>) {\n    for t in types.borrow().iter() {\n        if !into.borrow().contains(t) {\n            into.borrow_mut().push(t.clone());\n        }\n    }\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    merge(&types, &types);\n    println!(\"{}\", types.borrow().len());\n}\n");
@@ -602,8 +602,8 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   // Each momentary borrow checked alone (3901c815a), the library's held one
   // found by the closure's; its `Rc`, which the library's own calls don't
   // count, is the cell itself (#1234).
-  expect(consumer).toContain("  if (list.borrows) {\n    $alreadyBorrowed();\n  }\n  list.value.push(3);\n");
-  expect(consumer).toContain("      if (list.borrows) {\n        $alreadyBorrowed();\n      }\n      list.value.push(n);\n");
+  expect(consumer).toContain("  if (list.borrows) {\n    $alreadyBorrowed(\"app.rs:9:10\");\n  }\n  list.value.push(3);\n");
+  expect(consumer).toContain("      if (list.borrows) {\n        $alreadyBorrowed(\"app.rs:13:35\");\n      }\n      list.value.push(n);\n");
 }, 300_000);
 
 // ADR 0863, amended (#445): a library's cell its consumer may share is
@@ -614,7 +614,7 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
 test("a library checks a cell its consumer may share as its type says", () => {
   const out = chain(pairs, "ref_cells_flow", ["dep", "app"]);
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
-  expect(dep).toContain("if (cell.borrows) {\n    $alreadyBorrowed();\n  }\n  cell.push(1);");
+  expect(dep).toContain("if (cell.borrows) {\n    $alreadyBorrowed(\"dep.rs:15:10\");\n  }\n  cell.push(1);");
   expect(contract(out).ref_cells.unchecked).toBeUndefined();
 }, 300_000);
 
@@ -629,11 +629,11 @@ test("a library's cell only its own code and constants reach is its flow's, as a
   const out = chain(pairs, "ref_cells_flow_reach", ["dep", "app"]);
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
   // Taken, given, a static's, or a struct's the consumer holds: checked.
-  expect(dep).toContain("  if (cell.borrows) {\n    $alreadyBorrowed();\n  }\n  cell.push(1);\n");
-  expect(dep).toContain("  const cell = [];\n  if (cell.borrows) {\n    $alreadyBorrowed();\n  }\n  cell.push(5);\n");
-  expect(dep).toContain("  $borrowMut(itemsOf(open)).push(2);\n");
-  expect(dep).toContain("    $borrowMut(Tally.cell(tally)).push(n);\n");
-  expect(dep).toContain("if (LOG.borrows) {\n    $alreadyBorrowed();\n  }\n  LOG.push(n);");
+  expect(dep).toContain("  if (cell.borrows) {\n    $alreadyBorrowed(\"dep.rs:20:10\");\n  }\n  cell.push(1);\n");
+  expect(dep).toContain("  const cell = [];\n  if (cell.borrows) {\n    $alreadyBorrowed(\"dep.rs:26:10\");\n  }\n  cell.push(5);\n");
+  expect(dep).toContain("  $borrowMut(itemsOf(open), \"dep.rs:36:20\").push(2);\n");
+  expect(dep).toContain("    $borrowMut(Tally.cell(tally), \"dep.rs:70:21\").push(n);\n");
+  expect(dep).toContain("if (LOG.borrows) {\n    $alreadyBorrowed(\"dep.rs:48:32\");\n  }\n  LOG.push(n);");
   // Only the crate's and a constant's: plain.
   expect(dep).toContain("  return stock.TAG === \"Many\" ? stock._0.reduce(");
   expect(dep).toContain("    stock._0.push(3);\n");
@@ -652,7 +652,7 @@ test("a thread-local's RefCell is its own, whatever generic code's RefCell<T> is
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
   expect(app).toContain("const valueStack = [];\nconst names = [\"first\"];\n");
   expect(app).toContain("export function cellOf(value) {\n  return { value };\n}");
-  expect(app).toContain("  valueStack[$at(valueStack, 0)] = undefined;\n");
+  expect(app).toContain("  valueStack[$at(valueStack, 0, \"app.rs:29:58\")] = undefined;\n");
 }, 300_000);
 
 // ADR 0037, amended (#376), and ADR 1006, amended: a thread-local whose

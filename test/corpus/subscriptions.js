@@ -26,7 +26,7 @@ function subscriptionDrop_drop(subscription) {
   if (bus != null) {
     try {
       if (bus.value.borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("test/corpus/subscriptions.rs:24:17");
       }
       bus.value.handlers.delete(subscription.id);
       console.log(`unsubscribed ${subscription.id}`);
@@ -37,7 +37,7 @@ function subscriptionDrop_drop(subscription) {
 }
 
 function subscribe(bus, f) {
-  const b = $borrowMut(bus.value, true);
+  const b = $borrowMut(bus.value, "test/corpus/subscriptions.rs:31:21", true);
   const id = b.next;
   b.next = (b.next + 1) >>> 0;
   let bus$1;
@@ -54,13 +54,17 @@ function subscribe(bus, f) {
 }
 
 function publish(bus, msg) {
-  const b = $borrow(bus.value, true);
+  const b = $borrow(bus.value, "test/corpus/subscriptions.rs:42:17", true);
   try {
     const ids = Array.from(b.handlers.keys());
     ids.sort($cmp);
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
-      $unwrap(b.handlers.get(id), "no entry found for key")(msg);
+      $unwrap(
+        b.handlers.get(id),
+        "test/corpus/subscriptions.rs:46:20",
+        "no entry found for key",
+      )(msg);
     }
   } finally {
     $unborrow(b);
@@ -226,7 +230,7 @@ function main() {
     let borrow;
     try {
       if (bus.value.borrows < 0) {
-        $alreadyMutablyBorrowed();
+        $alreadyMutablyBorrowed("test/corpus/subscriptions.rs:84:29");
       }
       borrow = bus.value;
     } catch (error) {

@@ -22,7 +22,8 @@ function main() {
   const x = d2.slice();
   const ps = [["a"]];
   const owned = ps.map((item) => [item[0]]);
-  $index(owned, 0)[0] += "!";
+  $index(owned, 0, "test/corpus/vec_from_items.rs:19:10")[0] =
+    $index(owned, 0, "test/corpus/vec_from_items.rs:19:10")[0] + "!";
   console.log(
     `[${v.join(", ")}] [${w.join(", ")}] [${s.join(", ")}] [${t.join(", ")}] [${x.join(", ")}] [${owned.map((item) => pDebug_fmt(item)).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}] [${d.join(", ")}]`,
   );

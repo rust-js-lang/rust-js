@@ -16,13 +16,19 @@ export function entry() {
 
 function pusherDrop_drop(pusher) {
   if (pusher[0].borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed(
+      "test/corpus/ref_cell_borrowed_mutably_by_a_clear_through_a_reference.rs:12:16",
+    );
   }
   pusher[0].push(1);
 }
 
 function clearAll(g) {
-  const borrowMut = $borrowMut(g, true);
+  const borrowMut = $borrowMut(
+    g,
+    "test/corpus/ref_cell_borrowed_mutably_by_a_clear_through_a_reference.rs:17:7",
+    true,
+  );
   try {
     $truncate(borrowMut, 0, pusherDrop_drop);
   } finally {
@@ -35,7 +41,11 @@ function main() {
   const pushers = [[log]];
   let seen;
   try {
-    seen = $borrow(log, true);
+    seen = $borrow(
+      log,
+      "test/corpus/ref_cell_borrowed_mutably_by_a_clear_through_a_reference.rs:23:20",
+      true,
+    );
   } catch (error) {
     $cleanup(() => {
       $dropItems(pushers, pusherDrop_drop);

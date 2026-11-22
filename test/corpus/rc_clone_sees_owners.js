@@ -7,6 +7,7 @@ import {
   $newCyclic,
   $rcClone,
   $rcDrop,
+  $stdSites,
   $unwindsOn,
   $unwrapOrClone,
   $weakClone,
@@ -38,6 +39,7 @@ function loneClone_clone(lone) {
         }
       }
     },
+    $stdSites.localKeyWithBorrowMut[0],
     true,
   );
   return [(lone[0] + 1) & 255];
@@ -99,6 +101,7 @@ function main() {
                 }
               }
             },
+            $stdSites.localKeyWithBorrowMut[0],
             true,
           );
           lone = $makeMut(lone, (value) => loneClone_clone(value), loneDrop_drop);
@@ -121,6 +124,7 @@ function main() {
                   }
                 }
               },
+              $stdSites.localKeyWithBorrowMut[0],
               true,
             );
           } catch (error) {

@@ -9,25 +9,26 @@
 // nothing can ask, is checked where it's taken, `if (cell.borrows)
 // $alreadyBorrowed();`, with no call where the cell is free (rd218, #1692).
 const $alreadyBorrowedMessage = "RefCell already borrowed";
-function $alreadyBorrowed() {
-  throw $stringPanic($alreadyBorrowedMessage);
+// Each raised where its borrow was asked, `raisedAt` (#2292).
+function $alreadyBorrowed(raisedAt) {
+  throw $stringPanic($alreadyBorrowedMessage, raisedAt);
 }
-function $alreadyMutablyBorrowed() {
-  throw $stringPanic("RefCell already mutably borrowed");
+function $alreadyMutablyBorrowed(raisedAt) {
+  throw $stringPanic("RefCell already mutably borrowed", raisedAt);
 }
 
-function $borrow(cell, hold) {
-  if (cell.borrows < 0) $alreadyMutablyBorrowed();
+function $borrow(cell, raisedAt, hold) {
+  if (cell.borrows < 0) $alreadyMutablyBorrowed(raisedAt);
   if (hold) $setBorrows(cell, (cell.borrows ?? 0) + 1);
   return cell;
 }
 
-function $borrowMut(cell, hold, dropGiven) {
+function $borrowMut(cell, raisedAt, hold, dropGiven) {
   if (cell.borrows) {
     // What the call was given, a `replace`'s value, dropped as its panic
     // unwinds, as Rust's parameter is (#1587): a cleanup of that panic, so
     // `thread::panicking()` holds in its drop, and a panic there aborts.
-    const error = $stringPanic($alreadyBorrowedMessage);
+    const error = $stringPanic($alreadyBorrowedMessage, raisedAt);
     if (dropGiven !== undefined) $cleanup(dropGiven, error);
     throw error;
   }
@@ -179,15 +180,15 @@ function $tryBorrow(cell, mutable) {
   if (mutable ? cell.borrows : cell.borrows < 0) {
     return { TAG: "Err", _0: mutable ? "RefCell already borrowed" : "RefCell already mutably borrowed" };
   }
-  return { TAG: "Ok", _0: mutable ? $borrowMut(cell, true) : $borrow(cell, true) };
+  return { TAG: "Ok", _0: mutable ? $borrowMut(cell, undefined, true) : $borrow(cell, undefined, true) };
 }
 
 // What `f` makes of a `RefCell`'s value while it's borrowed: its clone, or
 // whether it's equal, where `f` may ask too. A panic's unwinding releases
 // it before what it drops can ask. Of one that's the object it holds
 // (`itself`, ADR 0863), the cell.
-function $withBorrow(cell, f, itself) {
-  $borrow(cell, true);
+function $withBorrow(cell, f, raisedAt, itself) {
+  $borrow(cell, raisedAt, true);
   try {
     return f(itself ? cell : cell.value);
   } finally {
@@ -198,8 +199,8 @@ function $withBorrow(cell, f, itself) {
 // What `f` makes of a `&mut` to a `RefCell`'s value while it's mutably
 // borrowed, the cell itself for a number or text (ADR 0074): a
 // thread-local's `with_borrow_mut(f)`.
-function $withBorrowMut(cell, f, boxed) {
-  $borrowMut(cell, true);
+function $withBorrowMut(cell, f, raisedAt, boxed) {
+  $borrowMut(cell, raisedAt, true);
   try {
     return f(boxed ? cell : cell.value);
   } finally {
@@ -210,7 +211,7 @@ function $withBorrowMut(cell, f, boxed) {
 // A `RefCell`'s `{:?}`: what it holds, shown by `show` while it's borrowed,
 // or `<borrowed>` where it's mutably borrowed.
 function $showBorrowed(cell, show, itself) {
-  return cell.borrows < 0 ? "<borrowed>" : $withBorrow(cell, show, itself);
+  return cell.borrows < 0 ? "<borrowed>" : $withBorrow(cell, show, undefined, itself);
 }
 
 // A `RefCell`'s `{:?}` into a writer's sink `f`: what it holds, written
@@ -218,15 +219,15 @@ function $showBorrowed(cell, show, itself) {
 // `write_str`, where it's mutably borrowed (#1652).
 function $writeBorrowed(f, cell, write, itself) {
   if (cell.borrows < 0) return f.write("<borrowed>");
-  $withBorrow(cell, (value) => write(f, value), itself);
+  $withBorrow(cell, (value) => write(f, value), undefined, itself);
 }
 
 // A `RefCell`'s `replace_with(f)`: `f` given a `&mut` to its value while
 // it's mutably borrowed, the cell itself for a number or text (ADR 0074),
 // and what it makes in its place. Of one that's the object it holds
 // (`itself`, ADR 0863), the object is the `&mut`, changed in place.
-function $replaceWith(cell, f, boxed, itself) {
-  const next = $withBorrowMut(cell, f, boxed || itself);
+function $replaceWith(cell, f, raisedAt, boxed, itself) {
+  const next = $withBorrowMut(cell, f, raisedAt, boxed || itself);
   if (itself) return $take(cell, next);
   const previous = cell.value;
   cell.value = next;
@@ -234,12 +235,13 @@ function $replaceWith(cell, f, boxed, itself) {
 }
 
 // A `RefCell`'s `swap(&other)`: each mutably borrowed, the first while the
-// second is, so a cell swapped with itself is borrowed twice. Two that are
-// the objects they hold (`itself`, ADR 0863) swap what's in them.
+// second is, so a cell swapped with itself is borrowed twice, each panic at
+// std's line of its borrow (#2292). Two that are the objects they hold
+// (`itself`, ADR 0863) swap what's in them.
 function $refCellSwap(a, b, itself) {
-  $borrowMut(a, true);
+  $borrowMut(a, $stdSites.refCellSwap[0], true);
   try {
-    $borrowMut(b);
+    $borrowMut(b, $stdSites.refCellSwap[1]);
   } finally {
     $unborrow(a);
   }
@@ -271,12 +273,12 @@ function $locked(cell, mutable) {
 // or with `expect(message)`, its message: the guard, held; or, of a
 // poisoned lock, `unwrap`'s panic, the guard it held released as it
 // unwinds, as the lock was.
-function $lock(cell, message) {
-  return $unpoisoned($lockHeld(cell, true), message, true);
+function $lock(cell, raisedAt, message) {
+  return $unpoisoned($lockHeld(cell, true), raisedAt, message, true);
 }
 
-function $lockRead(cell, message) {
-  return $unpoisoned($lockHeld(cell, false), message, true);
+function $lockRead(cell, raisedAt, message) {
+  return $unpoisoned($lockHeld(cell, false), raisedAt, message, true);
 }
 
 function $lockHeld(cell, mutable) {
@@ -297,10 +299,10 @@ function $lockHeld(cell, mutable) {
 // A lock, `cell`, where it isn't poisoned; else `unwrap`'s panic, or
 // `expect(message)`'s, of the `PoisonError` that holds its guard, which is
 // released as the panic unwinds where it's `held`.
-function $unpoisoned(cell, message = "called `Result::unwrap()` on an `Err` value", held = false) {
+function $unpoisoned(cell, raisedAt, message = "called `Result::unwrap()` on an `Err` value", held = false) {
   if (!$poisonedLocks.has(cell)) return cell;
   if (held) $unlock(cell);
-  throw $stringPanic(`${message}: PoisonError { .. }`);
+  throw $stringPanic(`${message}: PoisonError { .. }`, raisedAt);
 }
 
 // A `Mutex`'s or an `RwLock`'s `into_inner()` and `get_mut()`: `Ok` of
@@ -369,7 +371,7 @@ function $lockedData(cell, show, exclusive) {
   const locked = exclusive ? cell.borrows : cell.borrows < 0;
   if (locked) return exclusive ? '"<locked>"' : "<locked>";
   try {
-    return $withBorrow(cell, show);
+    return $withBorrow(cell, show, undefined);
   } catch (error) {
     // A panic, as a cleanup it runs, not a write's `Err`, which returns.
     if (exclusive && !(error instanceof $WriteError)) $cleanup(() => $poison(cell), error);

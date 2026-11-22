@@ -23,6 +23,7 @@ function main() {
         c[k$1] = value;
       },
     }),
+    "test/corpus/kept_handle_of_a_place_set_again.rs:22:29",
   );
   k = 2;
   t.value = (t.value + 10) >>> 0;

@@ -86,6 +86,10 @@ pub(crate) struct Build {
     /// and every compile reads embedded (#2305): dev-only, std's build's,
     /// as `--std-coverage` is.
     pub std_catalogue: Option<PathBuf>,
+    /// `--std-raised <file>`: where to write where each std function the
+    /// hook names std's own line of raises its panics, from its MIR, which
+    /// `bun run std` keeps in the catalogue (#2292): dev-only, std's build's.
+    pub std_raised: Option<PathBuf>,
     /// `--std-bodies`: the crate is `@rust-js/std`, given std's bodies to
     /// lower, each from the MIR of a `core` built to unwind (ADR 0561, #424).
     pub std_bodies: bool,
@@ -268,6 +272,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     let manifest = valued(&mut ours, "--manifest", "a path")?.map(PathBuf::from);
     let std_coverage = valued(&mut ours, "--std-coverage", "a path")?.map(PathBuf::from);
     let std_catalogue = valued(&mut ours, "--std-catalogue", "a path")?.map(PathBuf::from);
+    let std_raised = valued(&mut ours, "--std-raised", "a path")?.map(PathBuf::from);
     let tidy_until = valued(&mut ours, "--tidy-until", "a pass, `stage/pass`")?;
     if let Some(pass) = &tidy_until
         && !crate::pipeline::tidy_pass_names().contains(pass)
@@ -339,6 +344,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         manifest,
         std_coverage,
         std_catalogue,
+        std_raised,
         std_bodies,
         tidy_until,
         tidy_fired,
@@ -454,6 +460,11 @@ impl Build {
         }
         if flag_values(&self.rustc, "--target").next().is_some() {
             args.retain(|arg| !arg.starts_with("--target="));
+        }
+        // So is a crate type, `-- --crate-type bin`'s, a binary whose `main`
+        // runs as it loads (#2292): a file alone is a library otherwise.
+        if flag_values(&self.rustc, "--crate-type").next().is_some() {
+            args.retain(|arg| arg != "--crate-type=lib");
         }
         args.extend(self.rustc.iter().cloned());
         let staged = self.stage(&mut args)?;

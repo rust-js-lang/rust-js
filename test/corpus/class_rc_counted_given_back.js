@@ -79,7 +79,7 @@ function main() {
         $weakDrop(value.me);
       });
     }
-    let node = $unwrap(value, "the only one");
+    let node = $unwrap(value, "test/corpus/class_rc_counted_given_back.rs:38:43", "the only one");
     let get;
     let upgrade;
     try {

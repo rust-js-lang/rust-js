@@ -16,6 +16,7 @@ import {
   $live,
   $mapEnds,
   $nthBack,
+  $panic,
   $range,
   $rev,
   $roomForHint,
@@ -77,7 +78,7 @@ function main() {
           calls = (calls + 1) | 0;
           try {
             if (calls === 2) {
-              throw new Error("map");
+              throw $panic("map", "test/corpus/take_from_its_back_drops_as_std.rs:48:21");
             }
             return [(d[0] + 100) >>> 0];
           } catch (error) {

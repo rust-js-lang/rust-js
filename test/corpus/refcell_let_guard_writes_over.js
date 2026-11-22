@@ -18,15 +18,15 @@ function main() {
   let p = [cell];
   let v;
   try {
-    v = $borrow(cell, true);
+    v = $borrow(cell, "test/corpus/refcell_let_guard_writes_over.rs:21:22", true);
   } catch (error) {
     $cleanup(() => {
       if (p[0].borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("test/corpus/refcell_let_guard_writes_over.rs:12:16");
       }
       p[0].push(0);
       if (q[0].borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("test/corpus/refcell_let_guard_writes_over.rs:12:16");
       }
       q[0].push(0);
     }, error);
@@ -35,7 +35,7 @@ function main() {
   console.log(`${v.length}`);
   try {
     if (p[0].borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/refcell_let_guard_writes_over.rs:12:16");
     }
     p[0].push(0);
   } catch (error) {
@@ -43,7 +43,7 @@ function main() {
       p = q;
       $unborrow(v);
       if (p[0].borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("test/corpus/refcell_let_guard_writes_over.rs:12:16");
       }
       p[0].push(0);
     }, error);
@@ -54,13 +54,13 @@ function main() {
   let borrow;
   try {
     if (cell.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/refcell_let_guard_writes_over.rs:25:28");
     }
     borrow = cell;
   } catch (error) {
     $cleanup(() => {
       if (p[0].borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("test/corpus/refcell_let_guard_writes_over.rs:12:16");
       }
       p[0].push(0);
     }, error);
@@ -69,13 +69,13 @@ function main() {
   let tmp;
   try {
     if (p[0].borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/refcell_let_guard_writes_over.rs:25:48");
     }
     tmp = p[0];
   } catch (error) {
     $cleanup(() => {
       if (p[0].borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("test/corpus/refcell_let_guard_writes_over.rs:12:16");
       }
       p[0].push(0);
     }, error);
@@ -83,7 +83,7 @@ function main() {
   }
   console.log(`${borrow.length} ${tmp.length}`);
   if (p[0].borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_let_guard_writes_over.rs:12:16");
   }
   p[0].push(0);
 }

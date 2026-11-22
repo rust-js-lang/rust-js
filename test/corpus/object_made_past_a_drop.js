@@ -42,7 +42,7 @@ function branchy(s, k) {
   let v;
   try {
     v = {
-      label: $strSlice(s, 1),
+      label: $strSlice(s, 1, "test/corpus/object_made_past_a_drop.rs:36:18"),
       n: k,
     };
   } catch (error) {

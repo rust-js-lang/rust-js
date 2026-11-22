@@ -117,6 +117,9 @@ struct RustJs {
     /// `--std-catalogue <file>`: where to write the catalogue of std's
     /// bodies `@rust-js/std` compiles, which `bun run std` keeps (#2305).
     std_catalogue: Option<PathBuf>,
+    /// `--std-raised <file>`: where to write where std's functions raise the
+    /// panics std's hook names their own line of (#2292).
+    std_raised: Option<PathBuf>,
     /// `--std-bodies`: the crate is given std's bodies to lower, from the MIR
     /// of a `core` built to unwind (ADR 0561, #424).
     std_bodies: bool,
@@ -355,6 +358,19 @@ impl Callbacks for RustJs {
                 rust_js_emit::publish::publish_file(path, rust_js_lower::compiled_std_catalogue(tcx).into_bytes())
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
+        }
+        if let Some(path) = &self.std_raised {
+            match rust_js_lower::std_raised(tcx) {
+                Ok(raised) => {
+                    if let Err(error) = rust_js_emit::publish::publish_file(path, raised.into_bytes()) {
+                        tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
+                    }
+                }
+                Err(missing) => {
+                    tcx.dcx()
+                        .err(format!("rust-js: where std raises its panics: {missing}"));
+                }
+            }
         }
         self.lower_build(tcx, (&mut bodies, &mut initializers), &serde_attrs);
         self.after_builds(tcx, self.lowered.is_some())
@@ -818,6 +834,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
         manifest,
         std_coverage,
         std_catalogue,
+        std_raised,
         std_bodies,
         tidy_until,
         tidy_fired,
@@ -881,6 +898,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
         &intervals_shadow,
         &drops_shadow,
         &std_catalogue,
+        &std_raised,
     ]
     .into_iter()
     .flatten()
@@ -900,6 +918,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
         lowered: None,
         std_coverage,
         std_catalogue,
+        std_raised,
         std_bodies,
         tidy_until,
         std_iterators,

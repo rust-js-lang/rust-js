@@ -24,7 +24,7 @@ const ready = [];
 
 function requestInstance(name, onReady) {
   try {
-    const borrowMut = $borrowMut(ready, true);
+    const borrowMut = $borrowMut(ready, "test/corpus/owner_handle_stashed.rs:20:30", true);
     try {
       borrowMut.push($rcClone(onReady));
     } finally {
@@ -150,7 +150,7 @@ function main() {
   $rcDrop(request, (value) => {
     $rcDrop(value.onReady, $dispose);
   });
-  const borrow = $borrow(ready, true);
+  const borrow = $borrow(ready, "test/corpus/owner_handle_stashed.rs:52:31", true);
   try {
     for (let i = 0; i < borrow.length; i++) {
       const onReady = borrow[i];

@@ -37,6 +37,7 @@ import {
   $maxByKey,
   $minBy,
   $next,
+  $panic,
   $partialEq,
   $partialOrd,
   $partition,
@@ -79,7 +80,7 @@ function cDrop_drop(c) {
 
 function boom(d, at) {
   if (d[0] === at) {
-    throw new Error("boom");
+    throw $panic("boom", "test/corpus/panic_part_way_drops.rs:35:9");
   }
   return $isMultipleOf(d[0], 2);
 }
@@ -1060,7 +1061,7 @@ function main() {
       $closing($iter(ds({ start: 0, end: 3 })), $dropEach(dDrop_drop)).flatMap((d) => {
         try {
           if (d[0] === 1) {
-            throw new Error("1");
+            throw $panic("1", "test/corpus/panic_part_way_drops.rs:365:41");
           }
           return [d[0], d[0]];
         } catch (error) {
@@ -1080,7 +1081,7 @@ function main() {
       (d) => {
         try {
           if (d[0] === 11) {
-            throw new Error("11");
+            throw $panic("11", "test/corpus/panic_part_way_drops.rs:372:37");
           }
           return d[0];
         } catch (error) {
@@ -1169,7 +1170,7 @@ function main() {
       $closing($iter(ds({ start: 30, end: 33 })), $dropEach(dDrop_drop)).map((d) => {
         try {
           if (d[0] === 32) {
-            throw new Error("32");
+            throw $panic("32", "test/corpus/panic_part_way_drops.rs:382:21");
           }
           return String.fromCharCode(97 + (d[0] % 26));
         } catch (error) {
@@ -1190,7 +1191,7 @@ function main() {
         $closing($iter(ds({ start: 40, end: 43 })), $dropEach(dDrop_drop)),
         (d) => {
           if (d[0] === 41) {
-            throw new Error("41");
+            throw $panic("41", "test/corpus/panic_part_way_drops.rs:393:40");
           } else {
             return true;
           }
@@ -1210,7 +1211,7 @@ function main() {
       $closing($iter(ds({ start: 50, end: 53 })), $dropEach(dDrop_drop)).map((d) => {
         if (d[0] === 52) {
           dDrop_drop(d);
-          throw new Error("52");
+          throw $panic("52", "test/corpus/panic_part_way_drops.rs:401:37");
         }
         return { TAG: "Ok", _0: d };
       }),
@@ -1380,7 +1381,7 @@ function main() {
         $iter(cs),
         (c) => {
           if (c[0] === 942) {
-            throw new Error("942");
+            throw $panic("942", "test/corpus/panic_part_way_drops.rs:444:17");
           }
           return c[0];
         },
@@ -1398,7 +1399,7 @@ function main() {
         $iter(cs),
         (c) => {
           if (c[0] === 943) {
-            throw new Error("943");
+            throw $panic("943", "test/corpus/panic_part_way_drops.rs:453:17");
           }
           return c[0] % 2 === 0;
         },

@@ -8,6 +8,7 @@ import {
   $dispose,
   $dropping,
   $index,
+  $panic,
   $stringPanic,
 } from "@rust-js/std";
 
@@ -24,7 +25,7 @@ const Noisy = {
 /** The label, which mustn't be empty. */
 function checked(label) {
   if (label === "") {
-    throw new Error("no label");
+    throw $panic("no label", "test/corpus/dyn_fn_handed_to_js.rs:52:5");
   }
   return label;
 }
@@ -40,7 +41,7 @@ function enqueueTask(task, host) {
       if (host === "node") {
         enqueueTaskImpl = (box) => box.call();
       } else if (host !== "none") {
-        throw $stringPanic(`no timers in ${host}`);
+        throw $stringPanic(`no timers in ${host}`, "test/corpus/dyn_fn_handed_to_js.rs:85:17");
       }
     } catch (_err) {
       $catchable(_err);
@@ -51,7 +52,10 @@ function enqueueTask(task, host) {
           $cleanup(() => {
             $dispose(callback);
           });
-          throw $stringPanic(`no port for post ${posted$1}`);
+          throw $stringPanic(
+            `no port for post ${posted$1}`,
+            "test/corpus/dyn_fn_handed_to_js.rs:93:17",
+          );
         }
         (() => {
           callback();
@@ -63,7 +67,7 @@ function enqueueTask(task, host) {
     $cleanup(() => {
       $dispose(task);
     });
-    throw new Error("no host");
+    throw $panic("no host", "test/corpus/dyn_fn_handed_to_js.rs:98:5");
   }
   if (enqueueTaskImpl != null) {
     task$live = false;
@@ -82,7 +86,7 @@ function enqueueOn(task, at) {
   let task$live = true;
   let port;
   try {
-    port = $index(ports, at);
+    port = $index(ports, at, "test/corpus/dyn_fn_handed_to_js.rs:107:47");
   } catch (error) {
     $cleanup(() => {
       $dispose(task);

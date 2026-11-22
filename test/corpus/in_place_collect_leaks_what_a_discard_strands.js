@@ -10,6 +10,7 @@ import {
   $foldToArray,
   $iter,
   $lazyTakeWhile,
+  $panic,
   $range,
 } from "@rust-js/std";
 
@@ -23,7 +24,7 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === boom) {
     boom = 0;
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/in_place_collect_leaks_what_a_discard_strands.rs:21:13");
   }
 }
 
@@ -77,7 +78,10 @@ function main() {
       $closing($iter(ds()), $dropEach(dDrop_drop)).map((d) => {
         if (d[0] === 4) {
           try {
-            throw new Error("map");
+            throw $panic(
+              "map",
+              "test/corpus/in_place_collect_leaks_what_a_discard_strands.rs:47:36",
+            );
           } catch (error) {
             $cleanup(() => {
               dDrop_drop(d);

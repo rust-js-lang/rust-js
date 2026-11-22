@@ -47,7 +47,7 @@ function main() {
   console.log(`${name}`);
 
   const counts = [1, 2];
-  $index(counts, 1);
+  $index(counts, 1, "test/corpus/trait_mut_self_value.rs:44:11");
   const self$5 = { value: counts[1] };
   i32Bump_bump(self$5);
   counts[1] = self$5.value;

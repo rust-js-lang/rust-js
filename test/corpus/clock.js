@@ -20,6 +20,7 @@ function main() {
   const now = $systemNow();
   const since = $unwrapOk(
     $timeSince(now, 0n),
+    "test/corpus/clock.rs:9:48",
     undefined,
     (e) => `SystemTimeError(${$debugDuration(e)})`,
   );
@@ -30,7 +31,12 @@ function main() {
   console.log(
     `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(SystemTimeError(${$debugDuration(value._0)}))`}`,
   );
-  const err = $unwrapErr($timeSince(0n, later), undefined, $debugDuration);
+  const err = $unwrapErr(
+    $timeSince(0n, later),
+    "test/corpus/clock.rs:13:48",
+    undefined,
+    $debugDuration,
+  );
   console.log(
     `${err / 1000000000n} second time provided was later than self SystemTimeError(${$debugDuration(err)})`,
   );

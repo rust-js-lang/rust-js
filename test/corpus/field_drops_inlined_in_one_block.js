@@ -22,7 +22,12 @@ function main() {
     const value = fields._one.state.value;
     const value$1 = fields._one.number;
     if (value !== value$1) {
-      $assertFailed("Eq", String(value), String(value$1));
+      $assertFailed(
+        "Eq",
+        String(value),
+        String(value$1),
+        "test/corpus/field_drops_inlined_in_one_block.rs:16:9",
+      );
     }
     fields._one.state.value = (fields._one.state.value + 1) >>> 0;
   } catch (error) {
@@ -31,14 +36,24 @@ function main() {
       const value = fields._two.state.value;
       const value$1 = fields._two.number;
       if (value !== value$1) {
-        $assertFailed("Eq", String(value), String(value$1));
+        $assertFailed(
+          "Eq",
+          String(value),
+          String(value$1),
+          "test/corpus/field_drops_inlined_in_one_block.rs:16:9",
+        );
       }
       fields._two.state.value = (fields._two.state.value + 1) >>> 0;
       console.log(`dropping field ${fields._three.number}`);
       const value$2 = fields._three.state.value;
       const number = fields._three.number;
       if (value$2 !== number) {
-        $assertFailed("Eq", String(value$2), String(number));
+        $assertFailed(
+          "Eq",
+          String(value$2),
+          String(number),
+          "test/corpus/field_drops_inlined_in_one_block.rs:16:9",
+        );
       }
       fields._three.state.value = (fields._three.state.value + 1) >>> 0;
     }, error);
@@ -49,7 +64,12 @@ function main() {
     const value = fields._two.state.value;
     const value$1 = fields._two.number;
     if (value !== value$1) {
-      $assertFailed("Eq", String(value), String(value$1));
+      $assertFailed(
+        "Eq",
+        String(value),
+        String(value$1),
+        "test/corpus/field_drops_inlined_in_one_block.rs:16:9",
+      );
     }
     fields._two.state.value = (fields._two.state.value + 1) >>> 0;
   } catch (error) {
@@ -58,7 +78,12 @@ function main() {
       const value = fields._three.state.value;
       const value$1 = fields._three.number;
       if (value !== value$1) {
-        $assertFailed("Eq", String(value), String(value$1));
+        $assertFailed(
+          "Eq",
+          String(value),
+          String(value$1),
+          "test/corpus/field_drops_inlined_in_one_block.rs:16:9",
+        );
       }
       fields._three.state.value = (fields._three.state.value + 1) >>> 0;
     }, error);
@@ -68,7 +93,12 @@ function main() {
   const value = fields._three.state.value;
   const value$1 = fields._three.number;
   if (value !== value$1) {
-    $assertFailed("Eq", String(value), String(value$1));
+    $assertFailed(
+      "Eq",
+      String(value),
+      String(value$1),
+      "test/corpus/field_drops_inlined_in_one_block.rs:16:9",
+    );
   }
   fields._three.state.value = (fields._three.state.value + 1) >>> 0;
   console.log(`${state.value}`);

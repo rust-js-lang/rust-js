@@ -22,7 +22,7 @@ function skipped(v, s, k) {
 }
 
 function chunked(v, k) {
-  return $chunks(v, k).toReversed().length;
+  return $chunks(v, k, "test/corpus/len_of_a_reversed_copy_of_a_map.rs:25:7").toReversed().length;
 }
 
 function clonedSkipped(v, k) {

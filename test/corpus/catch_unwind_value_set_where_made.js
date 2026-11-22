@@ -33,7 +33,7 @@ function note(n) {
 function throwException(n) {
   note(1);
   if (n === 0) {
-    throw $stringPanic(`thrown ${n}`);
+    throw $stringPanic(`thrown ${n}`, "test/corpus/catch_unwind_value_set_where_made.rs:36:9");
   }
   return n > 5;
 }
@@ -41,7 +41,7 @@ function throwException(n) {
 function panicOnRootError(n) {
   note(2);
   if (n === 9) {
-    throw $stringPanic(`root ${n}`);
+    throw $stringPanic(`root ${n}`, "test/corpus/catch_unwind_value_set_where_made.rs:44:9");
   }
 }
 
@@ -81,7 +81,7 @@ function fallback(n) {
   try {
     value = (n * 3) >>> 0;
     if (n > 2) {
-      throw $stringPanic(`big ${n}`);
+      throw $stringPanic(`big ${n}`, "test/corpus/catch_unwind_value_set_where_made.rs:83:13");
     }
   } catch (error) {
     $catchable(error);
@@ -100,7 +100,7 @@ function kept(n) {
   try {
     const found = (n + 1) >>> 0;
     if (n > 2) {
-      throw $stringPanic(`big ${n}`);
+      throw $stringPanic(`big ${n}`, "test/corpus/catch_unwind_value_set_where_made.rs:103:13");
     }
     done = found;
   } catch (error) {
@@ -119,7 +119,7 @@ function keptAfter(n) {
   try {
     const found = (n + 1) >>> 0;
     if (n > 2) {
-      throw $stringPanic(`big ${n}`);
+      throw $stringPanic(`big ${n}`, "test/corpus/catch_unwind_value_set_where_made.rs:120:13");
     }
     done = found;
   } catch (error) {
@@ -135,7 +135,7 @@ function returned(n) {
   try {
     const found = (n + 1) >>> 0;
     if (n > 2) {
-      throw $stringPanic(`big ${n}`);
+      throw $stringPanic(`big ${n}`, "test/corpus/catch_unwind_value_set_where_made.rs:136:13");
     }
     done = found;
     return done;
@@ -151,7 +151,7 @@ function readThenSet(n) {
   try {
     const found = (n + 1) >>> 0;
     if (n > 2) {
-      throw $stringPanic(`big ${n}`);
+      throw $stringPanic(`big ${n}`, "test/corpus/catch_unwind_value_set_where_made.rs:152:13");
     }
     done = found;
   } catch (error) {
@@ -173,7 +173,7 @@ function inLoop(n) {
     try {
       const found = (i * 3) >>> 0;
       if (i === 2) {
-        throw $stringPanic(`two ${i}`);
+        throw $stringPanic(`two ${i}`, "test/corpus/catch_unwind_value_set_where_made.rs:174:17");
       }
       done = found;
     } catch (error) {
@@ -193,14 +193,15 @@ function captured(n) {
   let total;
   try {
     const next = (n * 2) >>> 0;
-    $borrowMut(stored).value = () => next;
+    $borrowMut(stored, "test/corpus/catch_unwind_value_set_where_made.rs:191:17").value = () =>
+      next;
     total = next;
   } catch (error) {
     $catchable(error);
     return 0;
   }
   total = (total + 1) >>> 0;
-  const borrow = $borrow(stored, true);
+  const borrow = $borrow(stored, "test/corpus/catch_unwind_value_set_where_made.rs:197:20", true);
   const f = borrow.value;
   try {
     return (total + (f != null ? f() : 0)) >>> 0;

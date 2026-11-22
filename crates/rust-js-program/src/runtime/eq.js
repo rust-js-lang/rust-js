@@ -12,7 +12,8 @@ function $eq(a, b, cells) {
     return false;
   }
   // A `RefCell` mutably borrowed can't be borrowed to compare (ADR 0328).
-  if (cells && (a.borrows < 0 || b.borrows < 0)) throw $stringPanic("RefCell already mutably borrowed");
+  if (cells && a.borrows < 0) throw $stringPanic("RefCell already mutably borrowed", $stdSites.refCellEq[0]);
+  if (cells && b.borrows < 0) throw $stringPanic("RefCell already mutably borrowed", $stdSites.refCellEq[1]);
   if (Array.isArray(a)) {
     return Array.isArray(b) && a.length === b.length && a.every((x, i) => $eq(x, b[i], true));
   }

@@ -632,7 +632,7 @@ pub fn Block<C: ReactNode>(BlockProps { children }: BlockProps<C>) -> JSX::Eleme
     if (typeof inner === "string") {
       message = inner;
     } else {
-      throw new Error("Expected plain text.");
+      throw $panic("Expected plain text.", "lib.rs:17:9");
     }
   }`);
   expect(jsx).not.toContain("break");

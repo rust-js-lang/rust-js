@@ -14,7 +14,7 @@ function main() {
   const args = $args();
   const arg = $args().length;
   console.log(`${args.length} ${arg}`);
-  console.log(`${$index(args, 1).endsWith(".json")}`);
+  console.log(`${$index(args, 1, "test/corpus/env_args.rs:13:24").endsWith(".json")}`);
   for (const arg of $args().slice(1)) {
     console.log(`${arg.endsWith(".json")}`);
   }

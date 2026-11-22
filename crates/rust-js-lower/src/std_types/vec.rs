@@ -44,8 +44,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A momentary borrow's, its check first, then its cell, as the
         // bounds' is (`js::borrow_checks`).
         let items = match items.momentary_cell() {
-            Some((cell, mutable)) if cell.reads_same() && !cell.has_effects() => {
-                out.push(Stmt::borrow_check(cell.clone(), mutable, self.js_span(span)));
+            Some((cell, mutable, raised)) if cell.reads_same() && !cell.has_effects() => {
+                out.push(Stmt::borrow_check(
+                    cell.clone(),
+                    mutable,
+                    raised.clone(),
+                    self.js_span(span),
+                ));
                 cell.clone()
             }
             _ if items.reads_same() => items,

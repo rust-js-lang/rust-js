@@ -14,7 +14,10 @@ const schedule = $byteLen("ab") > 1 ? double : undefined;
 const missing = $byteLen("ab") > 5 ? double : undefined;
 const frame = schedule != null ? (x) => (schedule(x) + 1) | 0 : undefined;
 const notNone = schedule == null ? undefined : (x) => (schedule(x) + 2) | 0;
-const onNone = missing == null ? (x) => $unwrap(missing)(x) : undefined;
+const onNone =
+  missing == null
+    ? (x) => $unwrap(missing, "test/corpus/thread_local_tested_present_in_a_closure.rs:31:49")(x)
+    : undefined;
 let slot = double;
 let held = double;
 
@@ -22,38 +25,50 @@ let CHANGING = double;
 
 function slotReader() {
   if (slot != null) {
-    return (x) => $unwrap(slot)(x);
+    return (x) => $unwrap(slot, "test/corpus/thread_local_tested_present_in_a_closure.rs:42:51")(x);
   }
 }
 
 function heldReader() {
   if (held != null) {
-    return (x) => $unwrap(held)(x);
+    return (x) => $unwrap(held, "test/corpus/thread_local_tested_present_in_a_closure.rs:47:47")(x);
   }
 }
 
 function changingReader() {
   const now = CHANGING;
   if (now != null) {
-    return (x) => $unwrap(CHANGING)(x);
+    return (x) =>
+      $unwrap(CHANGING, "test/corpus/thread_local_tested_present_in_a_closure.rs:58:40")(x);
   }
 }
 
 function main() {
-  const frame$1 = $unwrap(frame);
+  const frame$1 = $unwrap(frame, "test/corpus/thread_local_tested_present_in_a_closure.rs:65:42");
   console.log(`${frame$1(20)}`);
-  console.log(`${$unwrap(notNone)(20)}`);
-  const onNone$1 = $unwrap(onNone);
+  console.log(
+    `${$unwrap(notNone, "test/corpus/thread_local_tested_present_in_a_closure.rs:67:48")(20)}`,
+  );
+  const onNone$1 = $unwrap(onNone, "test/corpus/thread_local_tested_present_in_a_closure.rs:68:50");
   console.log(`${$catchUnwind(() => onNone$1(1)).TAG === "Err"}`);
-  const slot$1 = $unwrap(slotReader());
+  const slot$1 = $unwrap(
+    slotReader(),
+    "test/corpus/thread_local_tested_present_in_a_closure.rs:70:30",
+  );
   console.log(`${slot$1(4)}`);
   slot = undefined;
   console.log(`${$catchUnwind(() => slot$1(4)).TAG === "Err"}`);
-  const held$1 = $unwrap(heldReader());
+  const held$1 = $unwrap(
+    heldReader(),
+    "test/corpus/thread_local_tested_present_in_a_closure.rs:74:30",
+  );
   console.log(`${held$1(5)}`);
   held = undefined;
   console.log(`${$catchUnwind(() => held$1(5)).TAG === "Err"}`);
-  const changing = $unwrap(changingReader());
+  const changing = $unwrap(
+    changingReader(),
+    "test/corpus/thread_local_tested_present_in_a_closure.rs:78:38",
+  );
   console.log(`${changing(6)}`);
   CHANGING = undefined;
   console.log(`${$catchUnwind(() => changing(6)).TAG === "Err"}`);

@@ -29,7 +29,10 @@ function main() {
   const node = [{}, { value: 1 }];
   node[0].value = leaf;
   const root = [{ value: node }, 2];
-  const below = $unwrap(root[0].value[0].value);
+  const below = $unwrap(
+    root[0].value[0].value,
+    "test/corpus/refcell_tuple_struct_field_made.rs:38:52",
+  );
   below[1].value = (below[1].value + root[1]) >>> 0;
   console.log(`${below[1].value} ${root[0].value[1].value}`);
 }

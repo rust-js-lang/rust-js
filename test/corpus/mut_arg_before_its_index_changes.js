@@ -12,7 +12,7 @@ function addTo(place, n) {
 
 function bump(lanes, index) {
   const index$1 = index;
-  $index(lanes, index$1);
+  $index(lanes, index$1, "test/corpus/mut_arg_before_its_index_changes.rs:10:22");
   index++;
   const place = { value: lanes[index$1] };
   addTo(place, 10);
@@ -31,7 +31,7 @@ function bumpPlain(lanes, index) {
 }
 
 function bumpField(ps, i) {
-  const item = $index(ps, i);
+  const item = $index(ps, i, "test/corpus/mut_arg_before_its_index_changes.rs:31:19");
   i++;
   const place = { value: item.x };
   addTo(place, 5);
@@ -48,6 +48,8 @@ function main() {
   console.log(`[${a.join(", ")}] ${n}`);
   const ps = [{ x: 1 }, { x: 2 }];
   const i = bumpField(ps, 0);
-  console.log(`${$index(ps, 0).x} ${$index(ps, 1).x} ${i}`);
+  console.log(
+    `${$index(ps, 0, "test/corpus/mut_arg_before_its_index_changes.rs:47:29").x} ${$index(ps, 1, "test/corpus/mut_arg_before_its_index_changes.rs:47:38").x} ${i}`,
+  );
 }
 //# sourceMappingURL=case.js.map

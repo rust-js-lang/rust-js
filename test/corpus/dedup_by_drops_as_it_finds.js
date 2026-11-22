@@ -7,6 +7,7 @@ import {
   $dropItems,
   $index,
   $live,
+  $panic,
   $popIfCell,
   $rcDrop,
   $unwindsOn,
@@ -19,7 +20,7 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 5) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/dedup_by_drops_as_it_finds.rs:15:13");
   }
 }
 
@@ -123,7 +124,7 @@ function main() {
                 a.value = d;
               }
             }
-            throw new Error("by");
+            throw $panic("by", "test/corpus/dedup_by_drops_as_it_finds.rs:54:21");
           }
           return a.value[0] % 2 === b.value[0] % 2;
         },
@@ -190,11 +191,13 @@ function main() {
             x.value = d;
           }
         }
-        throw new Error("pop_if");
+        throw $panic("pop_if", "test/corpus/dedup_by_drops_as_it_finds.rs:78:17");
       }),
     );
     try {
-      console.log(`${r.TAG === "Ok"} ${$index(v, 1)[0]}`);
+      console.log(
+        `${r.TAG === "Ok"} ${$index(v, 1, "test/corpus/dedup_by_drops_as_it_finds.rs:81:39")[0]}`,
+      );
     } catch (error) {
       $cleanup(() => {
         if (r.TAG === "Ok") {

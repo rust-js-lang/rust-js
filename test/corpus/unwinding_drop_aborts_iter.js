@@ -8,6 +8,7 @@ import {
   $dropItems,
   $foldToArray,
   $iter,
+  $panic,
 } from "@rust-js/std";
 
 export function entry() {
@@ -17,7 +18,7 @@ export function entry() {
 function bombDrop_drop(bomb) {
   console.log(`drop ${bomb[0]}`);
   if (bomb[0] === "bomb") {
-    throw new Error("bomb went off");
+    throw $panic("bomb went off", "test/corpus/unwinding_drop_aborts_iter.rs:12:13");
   }
 }
 
@@ -28,7 +29,7 @@ function main() {
       $closing($iter(items), $dropEach(bombDrop_drop)).map((b) => {
         if (b[0] === "go") {
           try {
-            throw new Error("step panicked");
+            throw $panic("step panicked", "test/corpus/unwinding_drop_aborts_iter.rs:24:21");
           } catch (error) {
             $cleanup(() => {
               bombDrop_drop(b);

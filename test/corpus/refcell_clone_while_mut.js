@@ -8,9 +8,9 @@ export function entry() {
 
 function main() {
   const cell = [1];
-  const writing = $borrowMut(cell, true);
+  const writing = $borrowMut(cell, "test/corpus/refcell_clone_while_mut.rs:9:24", true);
   try {
-    const copy = $borrow(cell).slice();
+    const copy = $borrow(cell, "test/corpus/refcell_clone_while_mut.rs:10:21").slice();
     console.log(
       `RefCell { value: ${$showBorrowed(copy, (value) => `[${value.join(", ")}]`, true)} } ${writing.length}`,
     );

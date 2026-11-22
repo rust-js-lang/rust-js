@@ -106,7 +106,7 @@ function main() {
   }
   console.log(`${n}`);
   const cell = { value: 3 };
-  const borrowMut = $borrowMut(cell, true);
+  const borrowMut = $borrowMut(cell, "test/corpus/generic_deref_mut.rs:54:20", true);
   try {
     bump($cellOf(borrowMut), {
       Deref: () => ({ deref: (x) => x.value }),
@@ -115,7 +115,7 @@ function main() {
   } finally {
     $unborrow(borrowMut);
   }
-  console.log(`${$borrow(cell).value}`);
+  console.log(`${$borrow(cell, "test/corpus/generic_deref_mut.rs:55:25").value}`);
 
   let s = "hi";
   const p$2 = { value: s };

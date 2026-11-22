@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function shorten(s) {
-  s.value = $strSlice(s.value, 1);
+  s.value = $strSlice(s.value, 1, "test/corpus/mut_ref_to_ref.rs:5:12");
 }
 
 function pick(slot, other) {

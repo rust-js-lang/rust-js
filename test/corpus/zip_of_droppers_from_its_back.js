@@ -14,6 +14,7 @@ import {
   $live,
   $mapEnds,
   $next,
+  $panic,
   $print,
   $range,
   $rev,
@@ -30,7 +31,7 @@ const PANICS = 99;
 function dDrop_drop(d) {
   $print(`drop ${d[0]} `);
   if (d[0] === PANICS) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/zip_of_droppers_from_its_back.rs:22:13");
   }
 }
 
@@ -214,7 +215,7 @@ function main() {
   const r = $catchUnwind(() => {
     const sides = ds(1, 5);
     try {
-      $index(sides, 2)[0] = PANICS;
+      $index(sides, 2, "test/corpus/zip_of_droppers_from_its_back.rs:73:14")[0] = PANICS;
     } catch (error) {
       $cleanup(() => {
         $dropItems(sides, dDrop_drop);

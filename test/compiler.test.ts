@@ -596,7 +596,7 @@ test("options are the value or undefined", async () => {
   expect(js).toContain("h != null, h == null, h ?? -1");
   // `unwrap_or`'s argument runs even when it isn't needed, as in Rust.
   expect(js).toContain("  const option = half(n);\n  const fallback = bump();\n  const v = option ?? fallback;");
-  expect(js).toContain('  return $unwrap(half(n), "an even number");');
+  expect(js).toContain('  return $unwrap(half(n), "examples/options.rs:48:13", "an even number");');
   // `==` on options is `==`: `null` from JS equals `undefined` from Rust.
   expect(js).toContain("  return a == b;");
   // `map` puts the closure's body in place, on the option read once.
@@ -634,7 +634,7 @@ test("structs and tuples are plain objects and arrays", async () => {
   // The tuple `(u32, u32)` is never changed in place, so it is taken apart as it is.
   expect(js).toContain("const [q, r] = divmod(a, b);");
   // Fields are listed, and run, in the order written (ADR 0674).
-  expect(js).toContain("return { y: $div(100, a, -2147483648) | 0, x: $rem(100, b, -2147483648) | 0 };");
+  expect(js).toContain("return {\n    y: $div(100, a, \"examples/structs.rs:140:16\", -2147483648) | 0,\n    x: $rem(100, b, \"examples/structs.rs:140:28\", -2147483648) | 0,\n  };");
   // A tuple parameter is taken apart where it is, and `match (a, b)` tests its
   // parts directly, without building an array.
   expect(js).toContain("export function classify([a, b]) {\n  if (a === 0) {\n    if (b === 0) {");
@@ -660,8 +660,8 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain('const input = document.createElement("input");');
   expect(js).toContain('input.value = "typed";');
   // A result that may be `null` is an `Option` (ADR 0030), unwrapped here.
-  expect(js).toContain('const app = $unwrap(document.getElementById("app"), "the page has an #app");');
-  expect(js).toContain("return $unwrap(app.textContent) + input.value;");
+  expect(js).toContain('const app = $unwrap(\n    document.getElementById("app"),\n    "test/web_forms.rs:10:51",\n    "the page has an #app",\n  );');
+  expect(js).toContain("return $unwrap(app.textContent, \"test/web_forms.rs:15:24\") + input.value;");
   // A union is its untagged enum, whose value is the member itself (ADR
   // 0215); a rest parameter's tuple, its arguments (ADR 0640).
   expect(js).toContain('app.append(input, "!");');
@@ -972,7 +972,7 @@ test("chars, parse and slices are plain JS with Rust's answers", async () => {
   // `map_err(|e| e.to_string())` of a fresh `Result`: the message already is one.
   expect(js).toContain("const n = $parseInt(s, 0, 4294967295);");
   expect(js).toContain("$splitWhitespace(text)");
-  expect(js).toContain("$copyOf(v, 1, 3)");
+  expect(js).toContain("$copyOf(v, 1, \"examples/text.rs:69:7\", 3)");
 });
 
 // A program that reads text: loops take tuples apart as JS does, and a
@@ -1020,7 +1020,7 @@ test("64-bit integers are BigInts, wrapped as release Rust wraps them", async ()
   expect(js).toContain("return Number(id[0] & 4095n);");
   expect(js).toContain("worker = BigInt(worker & 0x3ff);");
   // A division by what may be zero, or `-1` of `i64::MIN`, panics as Rust's.
-  expect(js).toContain("$bigDiv(7n, zero, -9223372036854775808n)");
+  expect(js).toContain("$bigDiv(7n, zero, \"examples/wide.rs:180:14\", -9223372036854775808n)");
   const id = (wide.Id as any).new(1700000000123n, 5, 42);
   expect(id).toEqual([1724551110972166186n]);
   expect((wide.Id as any).millis(id)).toBe(1700000000123n);
@@ -1055,7 +1055,7 @@ test("the report's JS: function values, case mapping, and plain array reads", as
   expect(js).toContain('.map((c) => $isWhitespace(c))');
   expect(js).toContain(".map((n) => Math.sqrt(n))");
   expect(js).toContain("HEADERS[0]");
-  expect(js).toContain("const value = $unwrapErr($parseInt(\"\", 0, 255));");
+  expect(js).toContain("const value = $unwrapErr($parseInt(\"\", 0, 255), \"examples/report.rs:127:26\");");
 });
 // ADR 0071: an iterator stepped through knows where it is: a string's `chars()`, `$chars(src)`, lazy (ADR 1117).
 // ADR 0071: an iterator stepped through is a `$iter`, which knows where it is.
@@ -1095,7 +1095,7 @@ test("versions' JS: struct update in Rust's order, scan, drain and total_cmp", a
   // item is the value, no box (ADR 0051, amended).
   expect(js).toContain("const next = $next(it);");
   expect(js).toContain("fs.sort((a, b) => $totalCmp(a, b));");
-  expect(js).toContain("const tail = $splitOff(v, 5);");
+  expect(js).toContain("const tail = $splitOff(v, 5, \"examples/versions.rs:124:18\");");
   expect(js).toContain("$lowerExp(1234.5)");
 });
 

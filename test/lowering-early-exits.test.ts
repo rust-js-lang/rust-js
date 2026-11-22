@@ -977,8 +977,8 @@ pub fn resolve_after(run: impl Fn()) -> &'static Unknown {
     CURRENT.get().unwrap()
 }
 `);
-  expect(js).toContain('    throw new Error("Invalid hook call.");\n  }\n  return current;\n}');
-  expect(js).toContain("  run();\n  return $unwrap(current);\n}");
+  expect(js).toContain('    throw $panic("Invalid hook call.", "lib.rs:16:9");\n  }\n  return current;\n}');
+  expect(js).toContain("  run();\n  return $unwrap(current, \"lib.rs:26:19\");\n}");
   expect(() => lib.resolve()).toThrow("Invalid hook call.");
   const { set, resolveAfter } = lib as unknown as { set(value: unknown): void; resolveAfter(run: () => void): unknown };
   const component = {};

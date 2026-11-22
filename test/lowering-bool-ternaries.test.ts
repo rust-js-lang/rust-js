@@ -76,7 +76,7 @@ pub fn truth(v: Option<&Unknown>, n: u32) -> bool {
   expect(js).toContain("  return at != null && at < 3;\n");
   expect(js).toContain("  return dev && n > 2;\n");
   expect(js).toContain("  return dev || n > 2;\n");
-  expect(js).toContain("  return dev && $index(flags, 1);\n");
+  expect(js).toContain("  return dev && $index(flags, 1, \"lib.rs:24:14\");\n");
   expect(js).toContain("  return dev && globalThis.bigIt(n);\n");
   expect(js).toContain("  const wide = dev && big(n);\n");
   expect(js).toContain("  const any = n === 0 || dev;\n");

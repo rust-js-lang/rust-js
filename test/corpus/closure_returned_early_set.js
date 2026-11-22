@@ -13,7 +13,7 @@ let count = 0;
 function firstName(name) {
   let first;
   if (names != null) {
-    const first$1 = $index(names, 0);
+    const first$1 = $index(names, 0, "test/corpus/closure_returned_early_set.rs:22:30");
     names.push(name);
     first = first$1;
   } else {

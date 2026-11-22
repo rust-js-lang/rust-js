@@ -233,7 +233,7 @@ function outerContinue() {
 // inner one, never ending.
 function borrowed(items, seen) {
   let total = 0;
-  const borrow = $borrow(items, true);
+  const borrow = $borrow(items, "test/corpus/looped_drops_jumps.rs:93:29", true);
   try {
     outer: for (let i = 0; i < borrow.length; i++) {
       const x = borrow[i];
@@ -264,9 +264,9 @@ function main() {
     })}`,
   );
   if (items.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/looped_drops_jumps.rs:115:11");
   }
   items.push(9);
-  console.log(`[${$borrow(items).join(", ")}]`);
+  console.log(`[${$borrow(items, "test/corpus/looped_drops_jumps.rs:116:28").join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -12,14 +12,14 @@ function quiet(root) {
 
 function touch(root) {
   if (root.log.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/fn_pointer_borrows_held.rs:17:14");
   }
   root.log.push(1);
   return 1;
 }
 
 function report(root, f) {
-  const log = $borrow(root.log, true);
+  const log = $borrow(root.log, "test/corpus/fn_pointer_borrows_held.rs:22:24", true);
   try {
     return (log.length + f(root)) >>> 0;
   } finally {
@@ -31,7 +31,7 @@ function main() {
   const root = { log: [] };
   function pushed(root) {
     if (root.log.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/fn_pointer_borrows_held.rs:31:18");
     }
     root.log.push(2);
     return 2;

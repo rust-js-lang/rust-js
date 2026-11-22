@@ -117,7 +117,10 @@ function main() {
     ),
     (item) => ({ ...item }),
   );
-  const first = $unwrap($next(c));
+  const first = $unwrap(
+    $next(c),
+    "test/corpus/copied_structs_ask_their_sources_own_steps.rs:43:30",
+  );
   first.x = (first.x + 10) >>> 0;
   const next = $next(c);
   const nth = $nth($lent(c), 0);

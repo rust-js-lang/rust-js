@@ -16,6 +16,7 @@ import {
   $lazySkipWhile,
   $lazyTakeWhile,
   $next,
+  $panic,
   $range,
   $rangeNext,
   $slicing,
@@ -35,7 +36,7 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === boom) {
     boom = 0;
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/discarded_drop_leaks_the_accumulator.rs:23:13");
   }
 }
 
@@ -269,7 +270,7 @@ function main() {
   run("predicate panics", 0, () => {
     function keep(d) {
       if (d[0] === 4) {
-        throw new Error("keep");
+        throw $panic("keep", "test/corpus/discarded_drop_leaks_the_accumulator.rs:96:17");
       }
       return odd(d);
     }

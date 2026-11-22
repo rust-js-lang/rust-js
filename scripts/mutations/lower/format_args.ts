@@ -7,8 +7,7 @@ const concat = [
   "a format string of a concat! is its pieces joined by",
 ];
 
-export const mutations: Mutation[] = [
-  {
+export const mutations: Mutation[] = [  {
     name: "stdout-flush-writes-nothing",
     breaks: "`io::stdout().flush()` leaves what stdout holds of a line held, so stderr written after it comes first (#2319)",
     file: "crates/rust-js-lower/src/format_args.rs",
@@ -179,8 +178,8 @@ export const mutations: Mutation[] = [
     name: "arguments-to-string-display-message",
     breaks: "`to_string()` of an `Arguments` whose writer fails panics with `ToString`'s message, where std's `fmt::format` gives its own (#1565)",
     file: "crates/rust-js-lower/src/format_args.rs",
-    find: "            Std::ToString if !arguments => \"a Display implementation returned an error unexpectedly: Error\",\n",
-    replace: "            Std::ToString => \"a Display implementation returned an error unexpectedly: Error\",\n",
+    find: "            Std::ToString if !arguments => \"toString\",\n",
+    replace: "            Std::ToString => \"toString\",\n",
     tests: ["test/corpus.test.ts", "-t", "^format_args_given_on_formatted_where_written\\.rs$"],
   },
   {

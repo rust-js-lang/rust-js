@@ -1,8 +1,7 @@
 // Mutations of crates/rust-js-mir/src/temporaries.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
-export const mutations: Mutation[] = [
-  {
+export const mutations: Mutation[] = [  {
     name: "kept-mut-ref-of-unit-nothing",
     breaks:
       "a `&mut ()` a struct keeps, `Wrapper(&mut unit)`, is `undefined`, so generic code's `*x` of `&*held.0`, which reads its `value` as of any `&mut ()`, throws (#1247)",
@@ -568,8 +567,8 @@ export const mutations: Mutation[] = [
     name: "view-unmade-as-its-parts",
     breaks: "a view used as a value, `let part = &mut v[2..]`, is an array of its slice and range, `[v, 2]`, not `$view(v, 2)` (ADR 1073)",
     file: "crates/rust-js-mir/src/temporaries.rs",
-    find: "            Value::View(list, at) => self.view_call(\"$view\", list).or_at(at),\n",
-    replace: "            Value::View(list, at) => Expr::array(list).or_at(at),\n",
+    find: "            Value::View(list, at, raised) => self.raised_view_call(\"$view\", list, raised).or_at(at),\n",
+    replace: "            Value::View(list, at, _) => Expr::array(list).or_at(at),\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_range_reverse.rs$"],
   },
   {

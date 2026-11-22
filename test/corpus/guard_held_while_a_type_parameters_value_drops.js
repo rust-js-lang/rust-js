@@ -30,7 +30,11 @@ function plainDrop_drop(plain) {
 function pushAfter(it, counts, dropT) {
   let borrowMut;
   try {
-    borrowMut = $borrowMut(counts, true);
+    borrowMut = $borrowMut(
+      counts,
+      "test/corpus/guard_held_while_a_type_parameters_value_drops.rs:21:12",
+      true,
+    );
   } catch (error) {
     $cleanup(() => {
       dropT?.(it);
@@ -58,7 +62,11 @@ const concreteOfConcrete = {
   pushConcrete(concrete, counts) {
     let borrowMut;
     try {
-      borrowMut = $borrowMut(counts, true);
+      borrowMut = $borrowMut(
+        counts,
+        "test/corpus/guard_held_while_a_type_parameters_value_drops.rs:32:16",
+        true,
+      );
     } catch (error) {
       $cleanup(() => {
         concreteDrop_drop(concrete);
@@ -83,7 +91,11 @@ function genericOfGeneric(dropI) {
     pushGeneric(generic, counts) {
       let borrowMut;
       try {
-        borrowMut = $borrowMut(counts, true);
+        borrowMut = $borrowMut(
+          counts,
+          "test/corpus/guard_held_while_a_type_parameters_value_drops.rs:54:16",
+          true,
+        );
       } catch (error) {
         $cleanup(() => {
           try {
@@ -151,7 +163,11 @@ function sized_OfConstGeneric(N) {
     pushSized(sized_, counts) {
       let borrowMut;
       try {
-        borrowMut = $borrowMut(counts, true);
+        borrowMut = $borrowMut(
+          counts,
+          "test/corpus/guard_held_while_a_type_parameters_value_drops.rs:80:16",
+          true,
+        );
       } catch (error) {
         $cleanup(() => {
           const tryBorrow = $tryBorrow(sized_[1]);
@@ -191,7 +207,11 @@ function tOfAny(dropT) {
     pushAny(self, counts) {
       let borrowMut;
       try {
-        borrowMut = $borrowMut(counts, true);
+        borrowMut = $borrowMut(
+          counts,
+          "test/corpus/guard_held_while_a_type_parameters_value_drops.rs:102:16",
+          true,
+        );
       } catch (error) {
         $cleanup(() => {
           dropT?.(self);
@@ -230,7 +250,11 @@ function pushItem(it, counts, dropI, dropIItem) {
   $held(it);
   let borrowMut;
   try {
-    borrowMut = $borrowMut(counts, true);
+    borrowMut = $borrowMut(
+      counts,
+      "test/corpus/guard_held_while_a_type_parameters_value_drops.rs:128:12",
+      true,
+    );
   } catch (error) {
     $cleanup(() => {
       dropI?.(it);
@@ -283,7 +307,11 @@ function pushInClosure(it, counts, dropT) {
   function run() {
     let borrowMut;
     try {
-      borrowMut = $borrowMut(counts, true);
+      borrowMut = $borrowMut(
+        counts,
+        "test/corpus/guard_held_while_a_type_parameters_value_drops.rs:144:16",
+        true,
+      );
     } catch (error) {
       $cleanup(() => {
         dropT?.(it);
@@ -318,12 +346,26 @@ function main() {
   pushItem($slicing($iter([[item]]), itemDrop_drop), item, $dropEach(itemDrop_drop), itemDrop_drop);
   const captured = [];
   pushInClosure([captured], captured, capturedDrop_drop);
-  console.log(`[${$borrow(plain).join(", ")}]`);
-  console.log(`[${$borrow(concrete).join(", ")}]`);
-  console.log(`[${$borrow(generic).join(", ")}]`);
-  console.log(`[${$borrow(sized).join(", ")}]`);
-  console.log(`[${$borrow(blanket).join(", ")}]`);
-  console.log(`[${$borrow(item).join(", ")}]`);
-  console.log(`[${$borrow(captured).join(", ")}]`);
+  console.log(
+    `[${$borrow(plain, "test/corpus/guard_held_while_a_type_parameters_value_drops.rs:168:28").join(", ")}]`,
+  );
+  console.log(
+    `[${$borrow(concrete, "test/corpus/guard_held_while_a_type_parameters_value_drops.rs:169:31").join(", ")}]`,
+  );
+  console.log(
+    `[${$borrow(generic, "test/corpus/guard_held_while_a_type_parameters_value_drops.rs:170:30").join(", ")}]`,
+  );
+  console.log(
+    `[${$borrow(sized, "test/corpus/guard_held_while_a_type_parameters_value_drops.rs:171:28").join(", ")}]`,
+  );
+  console.log(
+    `[${$borrow(blanket, "test/corpus/guard_held_while_a_type_parameters_value_drops.rs:172:30").join(", ")}]`,
+  );
+  console.log(
+    `[${$borrow(item, "test/corpus/guard_held_while_a_type_parameters_value_drops.rs:173:27").join(", ")}]`,
+  );
+  console.log(
+    `[${$borrow(captured, "test/corpus/guard_held_while_a_type_parameters_value_drops.rs:174:31").join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

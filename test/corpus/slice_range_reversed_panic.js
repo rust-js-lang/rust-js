@@ -7,7 +7,9 @@ export function entry() {
 }
 
 function reversed(items, start) {
-  return items.length > 4 && start <= 3 ? $copyOf(items, start, 1) : [];
+  return items.length > 4 && start <= 3
+    ? $copyOf(items, start, "test/corpus/slice_range_reversed_panic.rs:6:45", 1)
+    : [];
 }
 
 function main() {

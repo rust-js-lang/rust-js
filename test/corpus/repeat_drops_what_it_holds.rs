@@ -5,6 +5,7 @@
 // with a text alone, the `fmt::Arguments::from_str` rustc's inliner put in
 // std's optimized body, called again (#1569).
 //@ run-fail: iterator is infinite
+//@ located-otherwise: #2324 `Repeat`'s `last` and `count`, std's runtime model, are given no location
 use std::iter::repeat;
 
 #[derive(Debug)]

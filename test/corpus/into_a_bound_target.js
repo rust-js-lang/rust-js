@@ -32,7 +32,7 @@ function identity(n, TElement, TSize) {
   for (let i = 0; i < n; i++) {
     const value = From.from(1);
     const index = i * n + i;
-    items[$at(items, index)] = value;
+    items[$at(items, index, "test/corpus/into_a_bound_target.rs:19:14")] = value;
   }
   return items;
 }

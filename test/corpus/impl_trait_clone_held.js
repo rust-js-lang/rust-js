@@ -60,11 +60,15 @@ function main() {
   console.log(`${numbersStack_len(pair[0])} ${numbersStack_len(pair2[0])} ${pair[1]()}`);
   const many = [stack(), stack()];
   const many2 = many.map((item) => ({ ...item, items: item.items.slice() }));
-  numbersStack_push($index(many, 0), 4);
-  console.log(`${numbersStack_len($index(many, 0))} ${numbersStack_len($index(many2, 0))}`);
+  numbersStack_push($index(many, 0, "test/corpus/impl_trait_clone_held.rs:61:9"), 4);
+  console.log(
+    `${numbersStack_len($index(many, 0, "test/corpus/impl_trait_clone_held.rs:62:27"))} ${numbersStack_len($index(many2, 0, "test/corpus/impl_trait_clone_held.rs:62:43"))}`,
+  );
   const maybe = counter();
   const maybe2 = maybe == null ? maybe : $clone(maybe);
-  console.log(`${$unwrap(maybe)()} ${$unwrap(maybe2 != null ? maybe2() : undefined)}`);
+  console.log(
+    `${$unwrap(maybe, "test/corpus/impl_trait_clone_held.rs:65:38")()} ${$unwrap(maybe2 != null ? maybe2() : undefined, "test/corpus/impl_trait_clone_held.rs:65:74")}`,
+  );
   // Through generic code.
   const t = counter();
   t();

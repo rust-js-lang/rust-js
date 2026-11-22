@@ -180,7 +180,7 @@ function main() {
   console.log("replaced");
   try {
     if (0 >= handlers.length) {
-      $removeOutOfBounds(handlers, 0);
+      $removeOutOfBounds(handlers, 0, "test/corpus/dyn_fn_drops.rs:48:19");
     }
   } catch (error) {
     $cleanup(() => {

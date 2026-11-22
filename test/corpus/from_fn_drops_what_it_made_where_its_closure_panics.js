@@ -6,6 +6,7 @@ import {
   $collectDropping,
   $debugStr,
   $lazyRange,
+  $panic,
   $roomFor,
   $stringPanic,
 } from "@rust-js/std";
@@ -44,7 +45,10 @@ function main() {
     const v = $collectDropping(
       $lazyRange(0, 4).map((i) => {
         if (i === 2) {
-          throw $stringPanic(`at ${i}`);
+          throw $stringPanic(
+            `at ${i}`,
+            "test/corpus/from_fn_drops_what_it_made_where_its_closure_panics.rs:24:61",
+          );
         } else {
           return [i];
         }
@@ -62,7 +66,10 @@ function main() {
     const v = $collectDropping(
       $lazyRange(0, 5).map((i) => {
         if (i === 3) {
-          throw $stringPanic(`at ${i}`);
+          throw $stringPanic(
+            `at ${i}`,
+            "test/corpus/from_fn_drops_what_it_made_where_its_closure_panics.rs:29:57",
+          );
         } else {
           return [(10 + i) >>> 0];
         }
@@ -78,7 +85,10 @@ function main() {
   console.log(`${r.TAG === "Err"}`);
   const e = Array.from({ length: 0 }, (_, i) =>
     (() => {
-      throw new Error("internal error: entered unreachable code");
+      throw $panic(
+        "internal error: entered unreachable code",
+        "test/corpus/from_fn_drops_what_it_made_where_its_closure_panics.rs:33:42",
+      );
     })(i),
   );
   const arg$1 = $capacity(e, 1);

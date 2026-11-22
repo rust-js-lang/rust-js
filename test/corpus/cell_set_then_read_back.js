@@ -32,7 +32,11 @@ const Surface = {
     console.log(`${$displayF64(size)}`);
     // A message that runs code runs it still.
     surface.size = size + 1;
-    size = $unwrap(surface.size, noted("set again"));
+    size = $unwrap(
+      surface.size,
+      "test/corpus/cell_set_then_read_back.rs:40:36",
+      noted("set again"),
+    );
     console.log(`${$displayF64(size)}`);
     // Through a block that only binds, `_ = ..`'s.
     surface.canvas = "framed";
@@ -54,11 +58,14 @@ const Surface = {
   remount(surface) {
     // Another cell's read back is no read of this one.
     surface.size = 4;
-    const other = $unwrap(surface.canvas);
+    const other = $unwrap(surface.canvas, "test/corpus/cell_set_then_read_back.rs:62:39");
     console.log(`${other}`);
     // A call that runs first may unset it, here as an argument before.
     surface.canvas = "again";
-    const line = joined(Surface.unset(surface), $unwrap(surface.canvas));
+    const line = joined(
+      Surface.unset(surface),
+      $unwrap(surface.canvas, "test/corpus/cell_set_then_read_back.rs:66:59"),
+    );
     console.log(`${line}`);
   },
 };

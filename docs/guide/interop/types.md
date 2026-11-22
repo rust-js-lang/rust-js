@@ -288,7 +288,7 @@ export function ranked(ranks) {
 }
 
 export function middle(items) {
-  return $slice(items, 1, (items.length - 1) >>> 0);
+  return $slice(items, 1, "lib.rs:30:11", (items.length - 1) >>> 0);
 }
 ```
 
@@ -1147,7 +1147,7 @@ export function ratio(a, b) {
   if (b === 0) {
     return { TAG: "Err", _0: "divide by zero" };
   }
-  return { TAG: "Ok", _0: $div(a, b) >>> 0 };
+  return { TAG: "Ok", _0: $div(a, b, "lib.rs:52:8") >>> 0 };
 }
 ```
 
@@ -2947,7 +2947,7 @@ export function push(value) {
 }
 
 export function pop() {
-  const value = $someValue($unwrap($pop(valueStack), "a value pushed"));
+  const value = $someValue($unwrap($pop(valueStack), "lib.rs:15:77", "a value pushed"));
   // Safety: each is what `push` was given of a `T`.
   return value;
 }
@@ -3280,7 +3280,7 @@ import { $stringPanic } from "@rust-js/std";
 export function bindToConsole(methodName, args) {
   const method = console[methodName];
   if (typeof method !== "function") {
-    throw $stringPanic(`console.${methodName} is no function`);
+    throw $stringPanic(`console.${methodName} is no function`, "lib.rs:6:9");
   }
   return method.bind(console, ...args);
 }
@@ -3822,7 +3822,7 @@ export function firstWord(text) {
 
 function delete$(tasks, at) {
   if (at >= tasks.length) {
-    $removeOutOfBounds(tasks, at);
+    $removeOutOfBounds(tasks, at, "lib.rs:11:11");
   }
   tasks.splice(at, 1);
 }

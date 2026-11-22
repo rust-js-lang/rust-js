@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "refcell-eq-other-site-of-self",
+    breaks: "`==` of two `RefCell`s, the other mutably borrowed, names the line of the first's borrow",
+    file: "crates/rust-js-program/src/runtime/eq.js",
+    find: "$stdSites.refCellEq[1]",
+    replace: "$stdSites.refCellEq[0]",
+    tests: ["test/binaries.test.ts", "-t", "std raises"],
+  },
+  {
     name: "eq-counts-keys",
     breaks: "two structs alike but for a `None` one left out aren't equal",
     file: "crates/rust-js-program/src/runtime/eq.js",
@@ -14,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "eq-of-borrowed-cell",
     breaks: "`==` of a mutably borrowed `RefCell` runs on",
     file: "crates/rust-js-program/src/runtime/eq.js",
-    find: "  if (cells && (a.borrows < 0 || b.borrows < 0)) throw $stringPanic(\"RefCell already mutably borrowed\");\n",
+    find: "  if (cells && a.borrows < 0) throw $stringPanic(\"RefCell already mutably borrowed\", $stdSites.refCellEq[0]);\n  if (cells && b.borrows < 0) throw $stringPanic(\"RefCell already mutably borrowed\", $stdSites.refCellEq[1]);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "refcell_eq_while_mut"],
   },
@@ -46,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "eq-of-values-borrowed",
     breaks: "what a `RefCell` of an object holds, compared through its guard, is borrowed to compare, and found borrowed by that guard (ADR 0863)",
     file: "crates/rust-js-program/src/runtime/eq.js",
-    find: "  if (cells && (a.borrows < 0 || b.borrows < 0)) throw $stringPanic(\"RefCell already mutably borrowed\");\n",
-    replace: "  if (a.borrows < 0 || b.borrows < 0) throw $stringPanic(\"RefCell already mutably borrowed\");\n",
+    find: "  if (cells && a.borrows < 0) throw $stringPanic(\"RefCell already mutably borrowed\", $stdSites.refCellEq[0]);\n  if (cells && b.borrows < 0) throw $stringPanic(\"RefCell already mutably borrowed\", $stdSites.refCellEq[1]);\n",
+    replace: "  if (a.borrows < 0) throw $stringPanic(\"RefCell already mutably borrowed\", $stdSites.refCellEq[0]);\n  if (b.borrows < 0) throw $stringPanic(\"RefCell already mutably borrowed\", $stdSites.refCellEq[1]);\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_eq_through_guard.rs$"],
   },
   {

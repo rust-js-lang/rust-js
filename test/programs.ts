@@ -11,9 +11,9 @@ import { testShareBytes } from "../scripts/shard";
 import { compileFailure, run as runAsync, runBuilds, runSync, stopped, type Exit } from "./child";
 import { decode, encode, same, type Outcome } from "./oracle";
 import { helpersModule, stdDir } from "./packages-of";
-import { directives } from "./corpus-cases";
+import { directives, locatedOtherwise } from "./corpus-cases";
 import { keepRun, keptRun, recheck, rechecked } from "./native-outcomes";
-import { compiler, contentDirectory, nativeBinary, nativeKey, programFlags, root, run } from "./support";
+import { compiler, contentDirectory, nativeBinary, nativeKey, programFlags, root, run, shippedStd } from "./support";
 
 export const node = Bun.which("node");
 // The generated JS runs under Node, the runtime rust-js targets (ADR 0095);
@@ -91,7 +91,8 @@ export function execute(cmd: string[], outcomeFile: string, limit = timeout): Ru
   const outcome = readFileSync(outcomeFile, "utf8");
   if (p.code === abortCode && same(JSON.parse(outcome), aborted)) return ran(aborted);
   if (p.code !== 0) return ran(`exited ${p.code} after it ended ${outcome}`);
-  return ran(JSON.parse(outcome));
+  // Where a panic was raised, std's files named as rust-js names them.
+  return ran(JSON.parse(outcome, (key, value) => (key === "at" && typeof value === "string" ? shippedStd(value) : value)));
 }
 
 /** How a run that aborted ended, natively or as JS (`execute`). */
@@ -101,7 +102,8 @@ export const aborted: Outcome = { exit: abortCode };
 /** The native wrapper of the case at `file`: it's included, its `main` run
  * as Rust's runtime runs it, its panic hook silenced, so stderr is only
  * what the program writes, and how it ended written to the file named
- * first (`runNative`'s). */
+ * first (`runNative`'s): a panic's message and where the last panic was
+ * raised, which its hook is told (#2292). */
 function nativeSource(file: string): string {
   return `mod case {
     include!(${rustString(file)});
@@ -120,12 +122,20 @@ fn json(s: &str) -> String {
     out.push('"');
     out
 }
+static RAISED_AT: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
 fn main() {
-    std::panic::set_hook(Box::new(|_| {}));
+    std::panic::set_hook(Box::new(|info| {
+        if let Some(at) = info.location() {
+            *RAISED_AT.lock().unwrap_or_else(|held| held.into_inner()) = at.to_string();
+        }
+    }));
     let outcome = match std::panic::catch_unwind(case::entry) {
         Ok(()) => String::from("{\\"value\\":null}"),
         Err(e) => match e.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| e.downcast_ref::<String>().cloned()) {
-            Some(message) => format!("{{\\"panic\\":{}}}", json(&message)),
+            Some(message) => {
+                let at = RAISED_AT.lock().unwrap_or_else(|held| held.into_inner()).clone();
+                format!("{{\\"panic\\":{},\\"at\\":{}}}", json(&message), json(&at))
+            }
             None => String::from("\\"a panic whose payload isn't a string\\""),
         },
     };
@@ -155,9 +165,19 @@ export function runNative(
   // rustc's flags besides: a library the case uses, `--extern
   // metamorph_lib=<rlib>` (the metamorphic net's `library`).
   rustc: string[] = [],
-  { of = file, fresh = false }: { of?: string; fresh?: boolean } = {},
+  // `located`: where a panic was raised kept of a case `located-otherwise`
+  // says differs there, which the corpus checks it still does.
+  { of = file, fresh = false, located = false }: { of?: string; fresh?: boolean; located?: boolean } = {},
 ): Run | string {
   if (target === "wasm32") return runWasm32(file, dir, edition, rustc);
+  const ran = runNativeLocated(file, dir, edition, rustc, { of, fresh });
+  if (located || typeof ran === "string" || typeof ran.outcome === "string" || !("at" in ran.outcome)) return ran;
+  // The case's directive, of a rewritten variant its case's (`of`).
+  if (locatedOtherwise(readFileSync(of, "utf8")) === undefined) return ran;
+  return { ...ran, outcome: { panic: ran.outcome.panic } };
+}
+
+function runNativeLocated(file: string, dir: string, edition: string, rustc: string[], { of, fresh }: { of: string; fresh: boolean }): Run | string {
   const source = nativeSource(file);
   const at = contentDirectory(source);
   const flags = [...nativeFlags(edition), ...rustc];

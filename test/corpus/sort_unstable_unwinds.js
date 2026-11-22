@@ -9,6 +9,7 @@ import {
   $iter,
   $live,
   $ord,
+  $panic,
   $partialEq,
   $partialOrd,
   $roomFor,
@@ -27,7 +28,7 @@ function point() {
   if (n > 0) {
     boom = n - 1;
     if (n === 1) {
-      throw new Error("cmp");
+      throw $panic("cmp", "test/corpus/sort_unstable_unwinds.rs:18:13");
     }
   }
 }

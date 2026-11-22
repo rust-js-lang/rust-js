@@ -57,7 +57,7 @@ function main() {
     $peekMutDrop(top);
   }
   console.log(`[${heap.join(", ")}]`);
-  top = $unwrap($peekMut(heap, $partiallyOrdered));
+  top = $unwrap($peekMut(heap, $partiallyOrdered), "test/corpus/heap_peek_mut.rs:32:39");
   let tmp;
   try {
     tmp = $peekMutTop(top, true);
@@ -71,7 +71,7 @@ function main() {
   console.log(`${top.heap[0]} PeekMut(${top.heap[0]})`);
   $peekMutDrop(top);
   console.log(`[${heap.join(", ")}]`);
-  top = $unwrap($peekMut(heap, $partiallyOrdered));
+  top = $unwrap($peekMut(heap, $partiallyOrdered), "test/corpus/heap_peek_mut.rs:37:31");
   console.log(`popped ${$peekMutPop(top)}`);
   console.log(`[${heap.join(", ")}]`);
   const loud = [];

@@ -22,8 +22,11 @@ let depth = 0;
 const DEV = true;
 
 function parseModel(text) {
-  return $unwrapOk($parseInt(text, 0, 4294967295), undefined, (e) =>
-    $debugParseError(e, "ParseIntError"),
+  return $unwrapOk(
+    $parseInt(text, 0, 4294967295),
+    "test/corpus/drop_guard_restores_taken_fields.rs:42:18",
+    undefined,
+    (e) => $debugParseError(e, "ParseIntError"),
   );
 }
 

@@ -14,6 +14,7 @@ import {
   $lazyChain,
   $live,
   $mapEnds,
+  $panic,
   $rangeNext,
   $roomFor,
   $tryFoldOk,
@@ -39,7 +40,7 @@ function boom(at) {
   return (d) => {
     if (d[0] === at) {
       try {
-        throw new Error("boom");
+        throw $panic("boom", "test/corpus/try_folds_of_stages_unwind.rs:23:13");
       } catch (error) {
         $cleanup(() => {
           dDrop_drop(d);

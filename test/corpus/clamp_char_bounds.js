@@ -8,6 +8,8 @@ export function entry() {
 
 function main() {
   const x = "z";
-  console.log(`${$clampBy(x, "k", "a", $partiallyOrdered, (c) => $debugStr(c, "'"))}`);
+  console.log(
+    `${$clampBy(x, "k", "a", $partiallyOrdered, "test/corpus/clamp_char_bounds.rs:6:22", (c) => $debugStr(c, "'"))}`,
+  );
 }
 //# sourceMappingURL=case.js.map

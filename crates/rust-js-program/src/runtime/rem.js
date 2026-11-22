@@ -1,10 +1,11 @@
 
-function $rem(a, b, min) {
+// Raised where it was called, `raisedAt` (#2292).
+function $rem(a, b, raisedAt, min) {
   if (b === 0) {
-    throw new Error("attempt to calculate the remainder with a divisor of zero");
+    throw $panic("attempt to calculate the remainder with a divisor of zero", raisedAt);
   }
   if (a === min && b === -1) {
-    throw new Error("attempt to calculate the remainder with overflow");
+    throw $panic("attempt to calculate the remainder with overflow", raisedAt);
   }
   return a % b;
 }

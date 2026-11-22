@@ -217,7 +217,7 @@ function main() {
     const held = [{ ...props, f }, holder];
     let tmp$2;
     try {
-      tmp$2 = $index(held, 0).f();
+      tmp$2 = $index(held, 0, "test/corpus/closure_clone_counted.rs:65:34").f();
     } catch (error) {
       $cleanup(() => {
         $dropItems(held, (item) => {

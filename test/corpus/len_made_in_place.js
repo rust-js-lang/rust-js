@@ -104,10 +104,10 @@ function main() {
     )} ${takenLen($iterator({ start: 0, end: 1 }, $rangeNext, false, undefined, $rangeLen))}`,
   );
   console.log(
-    `${zippedLen($iter(v), $slice(v, 1))} ${zippedAfter(
+    `${zippedLen($iter(v), $slice(v, 1, "test/corpus/len_made_in_place.rs:76:45"))} ${zippedAfter(
       $iterator({ start: 3, end: 9 }, $rangeNext, false, undefined, $rangeLen),
       v,
-    )} ${copiesTaken($iter(v))} ${copiesSkipped($iter($slice(v, 4)))}`,
+    )} ${copiesTaken($iter(v))} ${copiesSkipped($iter($slice(v, 4, "test/corpus/len_made_in_place.rs:79:25")))}`,
   );
   console.log(
     `${zippedLen($iter([]), v)} ${zippedAfter($iter([7]), [])} ${copiesTaken($iter([]))} ${copiesSkipped($iter([]))}`,

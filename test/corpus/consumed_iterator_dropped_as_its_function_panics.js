@@ -7,6 +7,7 @@ import {
   $live,
   $maxByKey,
   $minBy,
+  $panic,
   $reduce,
   $unwindsOn,
 } from "@rust-js/std";
@@ -24,7 +25,7 @@ function loudIterator_next(loud) {
 
 function checked(x) {
   if (x === 3) {
-    throw new Error("three");
+    throw $panic("three", "test/corpus/consumed_iterator_dropped_as_its_function_panics.rs:27:9");
   }
   return x;
 }

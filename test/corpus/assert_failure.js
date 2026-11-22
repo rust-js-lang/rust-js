@@ -9,11 +9,11 @@ export function entry() {
 function main() {
   const total = [1, 2, 3].reduce((a, b) => (a + b) | 0, 0);
   if (total !== 6) {
-    $assertFailed("Eq", String(total), "6");
+    $assertFailed("Eq", String(total), "6", "test/corpus/assert_failure.rs:5:5");
   }
   console.log("first holds");
   if (total !== 7) {
-    $assertFailed("Eq", String(total), "7", "totals differ");
+    $assertFailed("Eq", String(total), "7", "test/corpus/assert_failure.rs:7:5", "totals differ");
   }
 }
 //# sourceMappingURL=case.js.map

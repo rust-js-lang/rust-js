@@ -85,7 +85,11 @@ export const BlockRng64 = {
       blockRng64.index = 0;
     }
 
-    const value = $index(RResultsAsRefU64Slice.asRef(blockRng64.results), blockRng64.index);
+    const value = $index(
+      RResultsAsRefU64Slice.asRef(blockRng64.results),
+      blockRng64.index,
+      "test/corpus/block_results_read_as_another_width.rs:68:21",
+    );
     blockRng64.index++;
     blockRng64.halfUsed = false;
     return value;

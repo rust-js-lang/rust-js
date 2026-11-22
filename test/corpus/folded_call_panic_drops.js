@@ -8,7 +8,7 @@ export function entry() {
 
 function boom(n) {
   if (n > 1) {
-    throw $stringPanic(`boom at ${n}`);
+    throw $stringPanic(`boom at ${n}`, "test/corpus/folded_call_panic_drops.rs:14:9");
   }
   return n;
 }

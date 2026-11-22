@@ -11,6 +11,7 @@ import {
   $nextIf,
   $nextIfSome,
   $nextSome,
+  $panic,
   $someValue,
   $unwindsOn,
   iterator_peekable,
@@ -43,7 +44,10 @@ function main() {
         it,
         (l) => {
           if (l[0] === 4) {
-            throw new Error("predicate");
+            throw $panic(
+              "predicate",
+              "test/corpus/next_if_drops_its_item_as_its_test_panics.rs:21:13",
+            );
           }
           return true;
         },
@@ -117,7 +121,10 @@ function main() {
               it,
               (l) => {
                 if (l != null) {
-                  throw new Error("an option");
+                  throw $panic(
+                    "an option",
+                    "test/corpus/next_if_drops_its_item_as_its_test_panics.rs:37:13",
+                  );
                 }
                 return true;
               },

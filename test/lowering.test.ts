@@ -180,7 +180,7 @@ test("a value moved before anything can leave needs no drop of its scope", async
   // Dropped where the assertion fails, then the panic: no flag, as it's
   // known there, and no \`try\` of a \`throw\` (ADR 0372); its one drop its
   // body (ADR 0589).
-  expect(js).toContain('  if (n <= 0) {\n    console.log(`drop ${l[0]}`);\n    throw new Error("assertion failed: n > 0");\n  }\n  return { l };');
+  expect(js).toContain('  if (n <= 0) {\n    console.log(`drop ${l[0]}`);\n    throw $panic("assertion failed: n > 0", "lib.rs:14:5");\n  }\n  return { l };');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.hold([1]).l[0], lib.checked([2], 1).l[0]]).toEqual([1, 2]);
 });

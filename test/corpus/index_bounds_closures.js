@@ -24,7 +24,12 @@ function equal(next, prev) {
 
 function equalInClosure(next, prev) {
   for (let i = 0; i < prev.length && i < next.length; i++) {
-    if (!same($index(next, i), $index(prev, i))) {
+    if (
+      !same(
+        $index(next, i, "test/corpus/index_bounds_closures.rs:33:33"),
+        $index(prev, i, "test/corpus/index_bounds_closures.rs:33:43"),
+      )
+    ) {
       return false;
     }
   }
@@ -43,7 +48,7 @@ function nested(a, b) {
 
 function later(items, i) {
   if (i < items.length) {
-    const read = () => ($index(items, i) + 1) >>> 0;
+    const read = () => ($index(items, i, "test/corpus/index_bounds_closures.rs:54:23") + 1) >>> 0;
     return (read() + read()) >>> 0;
   } else {
     return 0;
@@ -53,7 +58,7 @@ function later(items, i) {
 function inANestedClosure(items, i) {
   if (i < items.length) {
     function outer() {
-      const inner = () => $index(items, i);
+      const inner = () => $index(items, i, "test/corpus/index_bounds_closures.rs:64:28");
       return (inner() * 2) >>> 0;
     }
     return outer();
@@ -64,7 +69,7 @@ function inANestedClosure(items, i) {
 
 function anotherSlice(a, b, i) {
   if (i < a.length) {
-    const read = () => $index(b, i);
+    const read = () => $index(b, i, "test/corpus/index_bounds_closures.rs:75:23");
     return read();
   } else {
     return 0;
@@ -77,7 +82,7 @@ function changedByTheClosure(items) {
   if (i < items.length) {
     let i$1 = i;
     function step() {
-      const item = $index(items, i$1);
+      const item = $index(items, i$1, "test/corpus/index_bounds_closures.rs:87:24");
       i$1++;
       return item;
     }
@@ -93,7 +98,7 @@ function changedThroughABorrow(items) {
   const found = [];
   if (i < items.length) {
     function step() {
-      const item = $index(items, i);
+      const item = $index(items, i, "test/corpus/index_bounds_closures.rs:103:24");
       i++;
       return item;
     }
@@ -106,7 +111,7 @@ function changedThroughABorrow(items) {
 
 function inACell(cell, i) {
   if (i < cell.length) {
-    const read = () => $index(cell, i);
+    const read = () => $index(cell, i, "test/corpus/index_bounds_closures.rs:116:36");
     cell.length = 0;
     return read();
   } else {

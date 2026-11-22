@@ -24,7 +24,7 @@ function main() {
   // `Vec` of which is changed.
   const v = [1, 2];
   const b = v.slice();
-  b[$at(b, 0)] = 9;
+  b[$at(b, 0, "test/corpus/clone_changed_as_a_vec_or_a_boxed_slice.rs:19:5")] = 9;
   console.log(`[${v.join(", ")}] [${b.join(", ")}]`);
   const unsorted = [3n, 1n, 2n];
   const sorted = unsorted.slice();
@@ -35,10 +35,13 @@ function main() {
   const s = [1, 2, 3];
   const u = s.slice();
   u.push(4);
-  u[$at(u, 0)] = 7;
+  u[$at(u, 0, "test/corpus/clone_changed_as_a_vec_or_a_boxed_slice.rs:30:6")] = 7;
   console.log(`[${s.join(", ")}] [${u.join(", ")}]`);
   const kept = s.slice();
-  const taken = $unwrap(kept == null ? kept : kept.slice());
+  const taken = $unwrap(
+    kept == null ? kept : kept.slice(),
+    "test/corpus/clone_changed_as_a_vec_or_a_boxed_slice.rs:33:34",
+  );
   taken.reverse();
   console.log(`${kept == null ? "None" : `Some([${kept.join(", ")}])`} [${taken.join(", ")}]`);
 
@@ -49,11 +52,14 @@ function main() {
   console.log(`${heldDebug_fmt(h)} [${items.join(", ")}]`);
 
   // A C string's bytes, with and without its nul.
-  const c = $unwrapOk($cstringNew(Array.from(new TextEncoder().encode("ab"))), undefined, (e) =>
-    $debugCStrError(e, "nul"),
+  const c = $unwrapOk(
+    $cstringNew(Array.from(new TextEncoder().encode("ab"))),
+    "test/corpus/clone_changed_as_a_vec_or_a_boxed_slice.rs:46:32",
+    undefined,
+    (e) => $debugCStrError(e, "nul"),
   );
   const bytes = c.slice();
-  bytes[$at(bytes, 0)] = 88;
+  bytes[$at(bytes, 0, "test/corpus/clone_changed_as_a_vec_or_a_boxed_slice.rs:48:10")] = 88;
   const plain = $cstringIntoBytes(c.slice());
   plain.push(33);
   console.log(`${$debugCStr(c)} [${bytes.join(", ")}] [${plain.join(", ")}]`);

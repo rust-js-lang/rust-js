@@ -54,7 +54,11 @@ function main() {
 
 function run() {
   const pathBufDebug = { fmt: (value) => $debugStr(value) };
-  const base = $unwrap($args()[1], "the outcome's file");
+  const base = $unwrap(
+    $args()[1],
+    "test/corpus/fs_canonicalize_and_current_dir.rs:24:40",
+    "the outcome's file",
+  );
   const root = `${base}.canonical`;
   $writeTry(() => $fsRemoveFile($pathJoin(root, "x")));
   $writeTry(() => $fsRemoveDir(root));
@@ -65,7 +69,9 @@ function run() {
     const real = result._0;
     console.log(`absolute ${real.startsWith("/")}`);
     const dotted = $pathJoin($pathJoin(root, "."), "x");
-    const result$1 = $pathCanonicalize(`${root}/../${$unwrap($unwrap($pathFileName(root)))}/x`);
+    const result$1 = $pathCanonicalize(
+      `${root}/../${$unwrap($unwrap($pathFileName(root), "test/corpus/fs_canonicalize_and_current_dir.rs:33:85"), "test/corpus/fs_canonicalize_and_current_dir.rs:33:103")}/x`,
+    );
     if (result$1.TAG !== "Err") {
       const through = result$1._0;
       const result = $pathCanonicalize(dotted);

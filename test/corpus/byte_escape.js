@@ -31,10 +31,15 @@ function debugByteDebug_fmt(debugByte) {
     if (i >= 2 && 97 <= b && b <= 102) {
       b -= 32;
     }
-    bytes[$at(bytes, len)] = b;
+    bytes[$at(bytes, len, "test/corpus/byte_escape.rs:18:13")] = b;
     len++;
   }
-  return $unwrapOk($fromUtf8(bytes.slice(0, len)), undefined, $debugUtf8Error);
+  return $unwrapOk(
+    $fromUtf8(bytes.slice(0, len)),
+    "test/corpus/byte_escape.rs:21:60",
+    undefined,
+    $debugUtf8Error,
+  );
 }
 
 function main() {

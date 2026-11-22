@@ -473,9 +473,9 @@ test("a string's part changed in place gives the string its text", async () => {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("name = $asciiCase(name, true, 2, 4);");
+  expect(js).toContain('name = $asciiCaseRange(name, true, 2, "lib.rs:2:9", 4);');
   expect(js).toContain("name = $asciiCase(name, false);");
-  expect(js).toContain("name = $asciiCase(name, true, 2);");
+  expect(js).toContain('name = $asciiCaseRange(name, true, 2, "lib.rs:4:9");');
   const lib = await import(join(dir, "mir.js"));
   expect(lib.shout("élan Vital")).toBe("éLAN VITAL");
 });

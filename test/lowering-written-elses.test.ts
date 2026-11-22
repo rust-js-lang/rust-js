@@ -57,7 +57,7 @@ pub fn mark_ref(current: Option<&Fiber>, work_in_progress: &Fiber) {
 `,
   );
   expect(js).toContain(
-    '  } else {\n    if (ref > 9) {\n      throw new Error("Expected ref to be a function.");\n    }\n    if (current == null || current.ref !== ref) {\n',
+    '  } else {\n    if (ref > 9) {\n      throw $panic("Expected ref to be a function.", "lib.rs:17:17");\n    }\n    if (current == null || current.ref !== ref) {\n',
   );
   const fiber = (ref: number | undefined) => ({ flags: 0, ref });
   const marked = (current: { ref: number | undefined } | undefined, ref: number | undefined) => {
@@ -206,12 +206,12 @@ pub fn kept(v: &[u32], out: &mut Vec<u32>) {
 `,
   );
   expect(js).toContain(
-    '  if (child.TAG === "Text") {\n    // Noop for string children of Text\n    throw new Error("Text children should already be flattened.");\n  }\n  for (let i = 0; i < child._0.length; i++) {\n    parent.push(child._0[i]);\n  }\n}\n',
+    '  if (child.TAG === "Text") {\n    // Noop for string children of Text\n    throw $panic("Text children should already be flattened.", "lib.rs:10:13");\n  }\n  for (let i = 0; i < child._0.length; i++) {\n    parent.push(child._0[i]);\n  }\n}\n',
   );
-  expect(js).toContain('  if (x == null) {\n    throw new Error("empty");\n  }\n  return (x + 1) >>> 0;\n');
+  expect(js).toContain('  if (x == null) {\n    throw $panic("empty", "lib.rs:20:17");\n  }\n  return (x + 1) >>> 0;\n');
   expect(js).toContain("  if (x == null) {\n    out.push(0);\n  } else {\n    out.push(x);\n  }\n");
   // An arm of more than the panic, as of more than a jump, keeps its `else`.
-  expect(js).toContain('    out.push(0);\n    throw new Error("empty");\n  } else {\n');
+  expect(js).toContain('    out.push(0);\n    throw $panic("empty", "lib.rs:29:13");\n  } else {\n');
   const parent: number[] = [];
   lib.appendInitialChild(parent as never, { TAG: "Instance", _0: [1, 2] } as never);
   expect(parent).toEqual([1, 2]);

@@ -9,13 +9,19 @@ export function entry() {
 const INSERTED = 4;
 
 function maySuspend(resource) {
-  return resource.kind === "stylesheet" && ($unwrap(resource.state).loading & INSERTED) >>> 0 === 0;
+  return (
+    resource.kind === "stylesheet" &&
+    ($unwrap(resource.state, "test/corpus/unwrapped_cell_in_a_chain.rs:22:63").loading &
+      INSERTED) >>>
+      0 ===
+      0
+  );
 }
 
 function inserted(resource) {
-  const state = $unwrap(resource.state);
+  const state = $unwrap(resource.state, "test/corpus/unwrapped_cell_in_a_chain.rs:26:41");
   state.loading = (state.loading | INSERTED) >>> 0;
-  return $unwrap(resource.state).loading;
+  return $unwrap(resource.state, "test/corpus/unwrapped_cell_in_a_chain.rs:28:29").loading;
 }
 
 function main() {

@@ -33,7 +33,9 @@ function main() {
     }
   }
   console.log(`[${counted(rows).join(", ")}]`);
-  console.log(`[${counted($slice(rows, 8)).join(", ")}]`);
+  console.log(
+    `[${counted($slice(rows, 8, "test/corpus/match_in_loop_continue_break.rs:33:35")).join(", ")}]`,
+  );
   console.log(
     `[${counted([
       [1, 0, 0],

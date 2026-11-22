@@ -3,6 +3,7 @@
 import {
   $catchUnwind,
   $collectDropping,
+  $panic,
   $roomForHint,
   iterator_fuse,
   iterator_peekable,
@@ -28,7 +29,7 @@ function ownIterator_next(own) {
 function ownIterator_sizeHint(own) {
   console.log(`hint at ${own.at}`);
   if (own.hintPanics) {
-    throw new Error("hint");
+    throw $panic("hint", "test/corpus/collect_closes_what_its_hint_panics.rs:40:13");
   }
   return [0, 3];
 }

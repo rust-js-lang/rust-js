@@ -5,6 +5,7 @@ import {
   $debugStr,
   $live,
   $mutWriter,
+  $panic,
   $sink,
   $stringWriter,
   $traitImpl,
@@ -317,7 +318,10 @@ function main() {
     countingWrite,
   );
   if (left.TAG !== "Left" || right.TAG !== "Right") {
-    throw new Error("internal error: entered unreachable code");
+    throw $panic(
+      "internal error: entered unreachable code",
+      "test/corpus/writer_sink_own_write_fmt.rs:180:14",
+    );
   }
   log = left._0;
   counting = right._0;

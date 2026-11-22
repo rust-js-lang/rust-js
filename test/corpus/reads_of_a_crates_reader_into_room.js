@@ -21,7 +21,7 @@ export const loggedRead = $readerDefaults({
 function loggedRead_read(logged, buf) {
   const n = Math.min(buf.length, logged[0]);
   $print(` ${buf.length}->${n}`);
-  $view(buf, 0, n).fill(114);
+  $view(buf, 0, "test/corpus/reads_of_a_crates_reader_into_room.rs:14:12", n).fill(114);
   logged[0] -= n;
   return { TAG: "Ok", _0: n };
 }
@@ -32,7 +32,12 @@ function intoRoom(reader, room, RRead) {
   const self = { value: reader };
   const readToEnd = RRead.readToEnd(self, v);
   reader = self.value;
-  return $unwrapOk(readToEnd, undefined, $ioErrorDebug);
+  return $unwrapOk(
+    readToEnd,
+    "test/corpus/reads_of_a_crates_reader_into_room.rs:22:32",
+    undefined,
+    $ioErrorDebug,
+  );
 }
 
 function main() {
@@ -46,7 +51,12 @@ function main() {
     $print(`${room} ${left}:`);
     $roomFor(room, 1);
     const v = $withCapacity(room);
-    const read = $unwrapOk(loggedRead.readToEnd({ value: [left] }, v), undefined, $ioErrorDebug);
+    const read = $unwrapOk(
+      loggedRead.readToEnd({ value: [left] }, v),
+      "test/corpus/reads_of_a_crates_reader_into_room.rs:29:53",
+      undefined,
+      $ioErrorDebug,
+    );
     $print(` = ${read}\n`);
   }
   $print("generic:");
@@ -66,6 +76,7 @@ function main() {
       },
       true,
     ),
+    "test/corpus/reads_of_a_crates_reader_into_room.rs:36:50",
     undefined,
     $ioErrorDebug,
   );

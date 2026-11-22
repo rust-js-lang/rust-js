@@ -8,11 +8,11 @@ export function entry() {
 
 export const gridIndexUsize = { index: gridIndexUsize_index };
 function gridIndexUsize_index(grid, i) {
-  return $index(grid[0], i);
+  return $index(grid[0], i, "test/corpus/mut_ref_kept.rs:12:16");
 }
 
 function gridIndexMutUsize_indexMut(grid, i) {
-  $index(grid[0], i);
+  $index(grid[0], i, "test/corpus/mut_ref_kept.rs:18:20");
   return {
     get value() {
       return grid[0][i];

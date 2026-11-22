@@ -737,7 +737,7 @@ impl Component for Mounted {
     if (this._root === undefined) {
       this._root = { label: "root" };
     }
-    console.log(\`\${$unwrap(this._root).label}\`);
+    console.log(\`\${$unwrap(this._root, "lib.rs:19:41").label}\`);
   }`);
   const ran = rendered(dir, `import { expect, test } from "bun:test";
 import { createElement } from "react";

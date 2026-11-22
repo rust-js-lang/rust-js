@@ -309,7 +309,11 @@ function main() {
     b: { value: item.b.value },
   }));
   let w = v.map((item) => ({ ...item, a: { value: item.a.value }, b: { value: item.b.value } }));
-  bothIterator_next($index(w, 0), { next: triIterator_next }, { next: triIterator_next });
+  bothIterator_next(
+    $index(w, 0, "test/corpus/iterator_field_in_its_place_copied_cloned_compared.rs:279:6"),
+    { next: triIterator_next },
+    { next: triIterator_next },
+  );
   console.log(
     `[${v.map((item) => bothDebug_fmt(item, $throughPlace(triDebug, { fmt: [1] }), $throughPlace(triDebug, { fmt: [1] }))).join(", ")}] [${w.map((item) => bothDebug_fmt(item, $throughPlace(triDebug, { fmt: [1] }), $throughPlace(triDebug, { fmt: [1] }))).join(", ")}]`,
   );

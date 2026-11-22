@@ -14,6 +14,7 @@ import {
   $iter,
   $next,
   $nextBack,
+  $panic,
   flatMapDoubleEndedIterator_nextBack,
   flatMapDoubleEndedIterator_rfold,
   iterator_flatMap,
@@ -49,7 +50,7 @@ function main() {
               calls = (calls + 1) | 0;
               if (calls === 2) {
                 dDrop_drop(x);
-                throw new Error("flat_map");
+                throw $panic("flat_map", "test/corpus/flatten_fold_closure_panics.rs:34:17");
               }
               return [[(x[0] + 10) >>> 0], x];
             })(item),
@@ -76,7 +77,7 @@ function main() {
               calls$1 = (calls$1 + 1) | 0;
               if (calls$1 === 2) {
                 dDrop_drop(x);
-                throw new Error("flat_map");
+                throw $panic("flat_map", "test/corpus/flatten_fold_closure_panics.rs:47:17");
               }
               return [[(x[0] + 10) >>> 0], x];
             })(item),
@@ -108,7 +109,7 @@ function main() {
           calls$2 = (calls$2 + 1) | 0;
           if (calls$2 === 3) {
             dDrop_drop(x);
-            throw new Error("flat_map");
+            throw $panic("flat_map", "test/corpus/flatten_fold_closure_panics.rs:58:13");
           }
           return [[(x[0] + 10) >>> 0], x];
         },

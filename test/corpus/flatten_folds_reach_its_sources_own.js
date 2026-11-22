@@ -20,6 +20,7 @@ import {
   $next,
   $nextBack,
   $nthBack,
+  $panic,
   $stepsOf,
   $tryOf,
   $unwindsOn,
@@ -756,7 +757,7 @@ function main() {
       (a, d) => {
         try {
           if (d[0] === 20) {
-            throw new Error("rfold");
+            throw $panic("rfold", "test/corpus/flatten_folds_reach_its_sources_own.rs:90:17");
           }
           return (a + d[0]) >>> 0;
         } catch (error) {
@@ -810,7 +811,7 @@ function main() {
     ).reduce((a, d) => {
       try {
         if (d[0] === 2) {
-          throw new Error("fold");
+          throw $panic("fold", "test/corpus/flatten_folds_reach_its_sources_own.rs:100:17");
         }
         return (a + d[0]) >>> 0;
       } catch (error) {

@@ -11,6 +11,7 @@ import {
   $madeInTurn,
   $mapFrom,
   $ordTreeMap,
+  $panic,
   $sortedEntries,
   $treeFromSorted,
   $unwindsOn,
@@ -28,7 +29,7 @@ export const dClone = { clone: dClone_clone, $drop: dDrop_drop };
 function dClone_clone(d) {
   console.log(`clone ${d[0]}`);
   if (d[0] === 0) {
-    throw new Error("clone");
+    throw $panic("clone", "test/corpus/clone_unwinds_what_it_made.rs:17:13");
   }
   return [d[0]];
 }

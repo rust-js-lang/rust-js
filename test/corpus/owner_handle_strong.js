@@ -40,7 +40,7 @@ function legacyRoot(name, callback, early) {
   let root;
   if (callback != null) {
     wrapped = () => {
-      const instance = publicInstance($unwrap(root));
+      const instance = publicInstance($unwrap(root, "test/corpus/owner_handle_strong.rs:61:58"));
       callback(instance);
     };
   }

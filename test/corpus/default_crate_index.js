@@ -9,7 +9,7 @@ export function entry() {
 export const tSliceIndexId = { index: tSliceIndexId_index };
 
 function tSliceIndexId_index(self, index) {
-  return $index(self, index[0]);
+  return $index(self, index[0], "test/corpus/default_crate_index.rs:13:10");
 }
 
 const fixedAutomaton = {

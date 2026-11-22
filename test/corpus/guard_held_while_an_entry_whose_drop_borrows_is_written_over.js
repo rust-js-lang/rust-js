@@ -86,7 +86,11 @@ function recorder(history, dropState) {
     (state) => {
       let history$1;
       try {
-        history$1 = $borrowMut(history.value, true);
+        history$1 = $borrowMut(
+          history.value,
+          "test/corpus/guard_held_while_an_entry_whose_drop_borrows_is_written_over.rs:28:35",
+          true,
+        );
       } catch (error) {
         $cleanup(() => {
           $rcDrop(state, (value) => {
@@ -98,7 +102,11 @@ function recorder(history, dropState) {
       const index = history$1.index;
       try {
         try {
-          $index(history$1.entries, index);
+          $index(
+            history$1.entries,
+            index,
+            "test/corpus/guard_held_while_an_entry_whose_drop_borrows_is_written_over.rs:30:24",
+          );
         } catch (error) {
           $cleanup(() => {
             $rcDrop(state, (value) => {
@@ -164,7 +172,11 @@ function main() {
   }
   let borrowMut;
   try {
-    borrowMut = $borrowMut(history.value, true);
+    borrowMut = $borrowMut(
+      history.value,
+      "test/corpus/guard_held_while_an_entry_whose_drop_borrows_is_written_over.rs:40:13",
+      true,
+    );
   } catch (error) {
     $cleanup(() => {
       $weakDrop(weak);
@@ -327,7 +339,9 @@ function main() {
   let borrow;
   try {
     if (history.value.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed(
+        "test/corpus/guard_held_while_an_entry_whose_drop_borrows_is_written_over.rs:50:28",
+      );
     }
     borrow = history.value;
   } catch (error) {
@@ -348,7 +362,9 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${$index(borrow.entries, 0).value.name}`);
+    console.log(
+      `${$index(borrow.entries, 0, "test/corpus/guard_held_while_an_entry_whose_drop_borrows_is_written_over.rs:50:44").value.name}`,
+    );
   } catch (error) {
     $cleanup(() => {
       $dispose(record);

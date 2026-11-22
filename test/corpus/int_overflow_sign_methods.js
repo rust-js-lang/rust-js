@@ -5,6 +5,7 @@ import {
   $bigPow,
   $bytesEqIgnoreAsciiCase,
   $checked,
+  $checkedIlog,
   $checkedIsqrt,
   $ilog,
   $overflowing,
@@ -54,11 +55,11 @@ function main() {
     `(${overflowingPow[0]}, ${overflowingPow[1]}) (${value$4[0]}, ${value$4[1]}) (${value$5[0]}, ${value$5[1]})`,
   );
   console.log(
-    `${$ilog(id(1000), 10, false)} ${$ilog(id(81n), 3n, false)} ${$ilog(id(340282366920938463463374607431768211455n), 16n, false)}`,
+    `${$ilog(id(1000), 10, "test/corpus/int_overflow_sign_methods.rs:9:38")} ${$ilog(id(81n), 3n, "test/corpus/int_overflow_sign_methods.rs:9:58")} ${$ilog(id(340282366920938463463374607431768211455n), 16n, "test/corpus/int_overflow_sign_methods.rs:9:81")}`,
   );
-  const checkedIlog = $ilog(id(0), 2, true);
-  const value$6 = $ilog(id(9), 1, true);
-  const value$7 = $ilog(id(27), 3, true);
+  const checkedIlog = $checkedIlog(id(0), 2);
+  const value$6 = $checkedIlog(id(9), 1);
+  const value$7 = $checkedIlog(id(27), 3);
   console.log(
     `${checkedIlog == null ? "None" : `Some(${checkedIlog})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
   );

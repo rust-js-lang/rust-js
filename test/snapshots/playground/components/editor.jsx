@@ -14,7 +14,14 @@ export function Editor({ state, view, onSubmit }) {
   const made = useRef(undefined);
   const dark = useDarkMode();
   useEffect(() => {
-    const editor = openView($unwrap(parent.current, "the editor's element is mounted"), state);
+    const editor = openView(
+      $unwrap(
+        parent.current,
+        "wasm/web/rust/components/editor.rs:27:53",
+        "the editor's element is mounted",
+      ),
+      state,
+    );
     made.current = editor;
     if (view != null) {
       view.current = editor;

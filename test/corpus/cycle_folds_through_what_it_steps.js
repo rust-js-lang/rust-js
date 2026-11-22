@@ -36,7 +36,7 @@ function countClone_clone(count) {
   const n = (clones + 1) >>> 0;
   clones = n;
   if (n === panicCloneAt) {
-    throw $stringPanic(`clone ${n}`);
+    throw $stringPanic(`clone ${n}`, "test/corpus/cycle_folds_through_what_it_steps.rs:24:13");
   }
   return [count[0]];
 }

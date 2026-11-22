@@ -91,22 +91,36 @@ function main() {
   }
 
   // Owned, of each kind of bytes.
-  const a = $unwrapOk($cstringNew(Array.from(new TextEncoder().encode("text"))), undefined, (e) =>
+  const a = $unwrapOk(
+    $cstringNew(Array.from(new TextEncoder().encode("text"))),
+    "test/corpus/c_strings.rs:37:34",
+    undefined,
+    (e) => $debugCStrError(e, "nul"),
+  );
+  const b = $unwrapOk(
+    $cstringNew(Array.from(new TextEncoder().encode("owned"))),
+    "test/corpus/c_strings.rs:38:49",
+    undefined,
+    (e) => $debugCStrError(e, "nul"),
+  );
+  const c = $unwrapOk($cstringNew([65, 66]), "test/corpus/c_strings.rs:39:42", undefined, (e) =>
     $debugCStrError(e, "nul"),
   );
-  const b = $unwrapOk($cstringNew(Array.from(new TextEncoder().encode("owned"))), undefined, (e) =>
+  const d = $unwrapOk(
+    $cstringNew([115, 108, 105, 99, 101]),
+    "test/corpus/c_strings.rs:40:41",
+    undefined,
+    (e) => $debugCStrError(e, "nul"),
+  );
+  const e = $unwrapOk($cstringNew([0x41, 0x42]), "test/corpus/c_strings.rs:41:42", undefined, (e) =>
     $debugCStrError(e, "nul"),
   );
-  const c = $unwrapOk($cstringNew([65, 66]), undefined, (e) => $debugCStrError(e, "nul"));
-  const d = $unwrapOk($cstringNew([115, 108, 105, 99, 101]), undefined, (e) =>
-    $debugCStrError(e, "nul"),
-  );
-  const e = $unwrapOk($cstringNew([0x41, 0x42]), undefined, (e) => $debugCStrError(e, "nul"));
   console.log(
     `${$debugCStr(a)} ${$debugCStr(b)} ${$debugCStr(c)} ${$debugCStr(d)} ${$debugCStr(e)}`,
   );
   const bad = $unwrapErr(
     $cstringNew(Array.from(new TextEncoder().encode("a\x00b"))),
+    "test/corpus/c_strings.rs:43:36",
     undefined,
     $debugCStr,
   );
@@ -127,7 +141,7 @@ function main() {
     `${value$11.TAG === "Ok" ? `Ok(${$debugStr(value$11._0)})` : `Err(${$debugCStrError(value$11._0, "intoString")})`}`,
   );
   const invalid = $cstringFromVec([0xff, 0x41]);
-  const failed = $unwrapErr($cstringIntoString(invalid));
+  const failed = $unwrapErr($cstringIntoString(invalid), "test/corpus/c_strings.rs:55:48");
   console.log(
     `${$debugCStr(invalid)} ${$cstrErrorMessage(failed, "intoString")} | ${$debugCStrError(failed, "intoString")}`,
   );
@@ -152,8 +166,11 @@ function main() {
   console.log(`${set.size}`);
   const map = new $KeyMap();
   map.set(
-    $unwrapOk($cstringNew(Array.from(new TextEncoder().encode("k"))), undefined, (e) =>
-      $debugCStrError(e, "nul"),
+    $unwrapOk(
+      $cstringNew(Array.from(new TextEncoder().encode("k"))),
+      "test/corpus/c_strings.rs:69:34",
+      undefined,
+      (e) => $debugCStrError(e, "nul"),
     ),
     7,
   );
@@ -171,8 +188,11 @@ function main() {
   // Held in a B-tree, in order.
   const tree = new ($btreeSet((a, b) => $cmpItems(a, b, $cmp), $KeySet))(
     ["b", "a", "ab"].map((s) =>
-      $unwrapOk($cstringNew(Array.from(new TextEncoder().encode(s))), undefined, (e) =>
-        $debugCStrError(e, "nul"),
+      $unwrapOk(
+        $cstringNew(Array.from(new TextEncoder().encode(s))),
+        "test/corpus/c_strings.rs:77:76",
+        undefined,
+        (e) => $debugCStrError(e, "nul"),
       ),
     ),
   );
@@ -182,8 +202,11 @@ function main() {
       .join(", ")}}`,
   );
   const all = [
-    $unwrapOk($cstringNew(Array.from(new TextEncoder().encode("x"))), undefined, (e) =>
-      $debugCStrError(e, "nul"),
+    $unwrapOk(
+      $cstringNew(Array.from(new TextEncoder().encode("x"))),
+      "test/corpus/c_strings.rs:79:52",
+      undefined,
+      (e) => $debugCStrError(e, "nul"),
     ),
     [0],
   ];
@@ -197,15 +220,31 @@ function main() {
   console.log(`${$debugCStr([101, 204, 129, 32, 240, 159, 152, 128, 32, 10, 0])}`);
   const pretty = $unwrapErr(
     $cstringIntoString(
-      $unwrapOk($cstringWithNul([0xc3, 0]), undefined, (e) => $debugCStrError(e, "fromVec")),
+      $unwrapOk($cstringWithNul([0xc3, 0]), "test/corpus/c_strings.rs:82:60", undefined, (e) =>
+        $debugCStrError(e, "fromVec"),
+      ),
     ),
+    "test/corpus/c_strings.rs:82:83",
   );
   console.log(`${$debugCStrError(pretty, "intoString", { alternate: true })}`);
-  const kept = $unwrapOk($cstringWithNul([111, 107, 0]), undefined, (e) =>
-    $debugCStrError(e, "fromVec"),
+  const kept = $unwrapOk(
+    $cstringWithNul([111, 107, 0]),
+    "test/corpus/c_strings.rs:84:61",
+    undefined,
+    (e) => $debugCStrError(e, "fromVec"),
   );
-  const interior = $unwrapErr($cstringWithNul([97, 0, 98, 0]), undefined, $debugCStr);
-  const unended = $unwrapErr($cstringWithNul([97, 98]), undefined, $debugCStr);
+  const interior = $unwrapErr(
+    $cstringWithNul([97, 0, 98, 0]),
+    "test/corpus/c_strings.rs:85:67",
+    undefined,
+    $debugCStr,
+  );
+  const unended = $unwrapErr(
+    $cstringWithNul([97, 98]),
+    "test/corpus/c_strings.rs:86:62",
+    undefined,
+    $debugCStr,
+  );
   console.log(
     `${$debugCStr(kept)} ${$cstrErrorMessage(interior, "fromVec")} | ${$debugCStrError(interior, "fromVec")} | ${$cstrErrorMessage(unended, "fromVec")} | ${$debugCStrError(unended, "fromVec")}`,
   );
@@ -225,9 +264,14 @@ function main() {
       .join(", ")}} ${arg == null ? "None" : `Some(${arg})`}`,
   );
   const high = [
-    $unwrapOk($cstringNew([0x80]), undefined, (e) => $debugCStrError(e, "nul")),
-    $unwrapOk($cstringNew(Array.from(new TextEncoder().encode("z"))), undefined, (e) =>
+    $unwrapOk($cstringNew([0x80]), "test/corpus/c_strings.rs:96:52", undefined, (e) =>
       $debugCStrError(e, "nul"),
+    ),
+    $unwrapOk(
+      $cstringNew(Array.from(new TextEncoder().encode("z"))),
+      "test/corpus/c_strings.rs:96:80",
+      undefined,
+      (e) => $debugCStrError(e, "nul"),
     ),
   ];
   high.sort((a, b) => $cmpItems(a, b, $cmp));

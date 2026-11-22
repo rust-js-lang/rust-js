@@ -75,7 +75,7 @@ function main() {
   let calls = 0;
   function counted(w) {
     calls = (calls + 1) | 0;
-    return $index($utf8Bytes(w), 0);
+    return $index($utf8Bytes(w), 0, "test/corpus/key_functions_boxed.rs:41:9");
   }
   const value$2 = $minByKey(words, counted, $cmp);
   console.log(`${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`}`);

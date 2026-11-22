@@ -10,7 +10,7 @@ let depth = 0;
 
 function step(n) {
   if (n === 13) {
-    throw $stringPanic(`unlucky ${n}`);
+    throw $stringPanic(`unlucky ${n}`, "test/corpus/drop_guard_scope_returns.rs:25:9");
   }
   return n * 2;
 }

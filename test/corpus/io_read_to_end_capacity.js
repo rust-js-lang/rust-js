@@ -19,7 +19,7 @@ function generic(r, v, RRead) {
   const self = { value: r };
   const readToEnd = RRead.readToEnd(self, v);
   r = self.value;
-  $unwrapOk(readToEnd, undefined, $ioErrorDebug);
+  $unwrapOk(readToEnd, "test/corpus/io_read_to_end_capacity.rs:10:27", undefined, $ioErrorDebug);
   return [v.length, $capacity(v, 1)];
 }
 
@@ -39,6 +39,7 @@ function main() {
       },
       v,
     ),
+    "test/corpus/io_read_to_end_capacity.rs:16:38",
     undefined,
     $ioErrorDebug,
   );
@@ -57,6 +58,7 @@ function main() {
       },
       v,
     ),
+    "test/corpus/io_read_to_end_capacity.rs:19:41",
     undefined,
     $ioErrorDebug,
   );
@@ -77,6 +79,7 @@ function main() {
       },
       v,
     ),
+    "test/corpus/io_read_to_end_capacity.rs:22:42",
     undefined,
     $ioErrorDebug,
   );
@@ -95,6 +98,7 @@ function main() {
       },
       v,
     ),
+    "test/corpus/io_read_to_end_capacity.rs:25:36",
     undefined,
     $ioErrorDebug,
   );
@@ -103,6 +107,7 @@ function main() {
   v = [];
   $unwrapOk(
     cursorRead.readToEnd({ value: { inner: [1, 2, 3], pos: 0n } }, v),
+    "test/corpus/io_read_to_end_capacity.rs:29:54",
     undefined,
     $ioErrorDebug,
   );
@@ -110,16 +115,31 @@ function main() {
   const c = { inner: new Array(20).fill(5), pos: 0n };
   c.pos = 15n;
   v = new Array(4).fill(0);
-  $unwrapOk(cursorRead.readToEnd({ value: c }, v), undefined, $ioErrorDebug);
+  $unwrapOk(
+    cursorRead.readToEnd({ value: c }, v),
+    "test/corpus/io_read_to_end_capacity.rs:34:27",
+    undefined,
+    $ioErrorDebug,
+  );
   console.log(`${v.length} ${$capacity(v, 1)}`);
 
   let d = $range(1, 21);
   v = new Array(3).fill(0);
-  $unwrapOk($dequeReader.readToEnd({ value: d }, v), undefined, $ioErrorDebug);
+  $unwrapOk(
+    $dequeReader.readToEnd({ value: d }, v),
+    "test/corpus/io_read_to_end_capacity.rs:39:27",
+    undefined,
+    $ioErrorDebug,
+  );
   console.log(`${v.length} ${$capacity(v, 1)} ${d.length}`);
   d = [1, 2];
   v = [];
-  $unwrapOk($dequeReader.readToEnd({ value: d }, v), undefined, $ioErrorDebug);
+  $unwrapOk(
+    $dequeReader.readToEnd({ value: d }, v),
+    "test/corpus/io_read_to_end_capacity.rs:43:27",
+    undefined,
+    $ioErrorDebug,
+  );
   console.log(`${v.length} ${$capacity(v, 1)}`);
 
   const value = generic([97, 98, 99], [], $sliceReader);

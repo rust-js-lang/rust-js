@@ -12,9 +12,9 @@ function bump(w, by) {
 
 function main() {
   const c = [5];
-  const d = [$unwrap(c)[0]];
-  const value = $unwrap(c);
-  const wrapping = [$unwrap(d)[0]];
+  const d = [$unwrap(c, "test/corpus/wrapping_written_through_a_reference.rs:14:30")[0]];
+  const value = $unwrap(c, "test/corpus/wrapping_written_through_a_reference.rs:15:17");
+  const wrapping = [$unwrap(d, "test/corpus/wrapping_written_through_a_reference.rs:15:41")[0]];
   $assign(value, [(value[0] + ((wrapping[0] << 1) >>> 0)) >>> 0]);
   console.log(`${(c == null ? c : [c[0]])[0]} ${(d == null ? d : [d[0]])[0]}`);
   const held = [7];

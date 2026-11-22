@@ -11,7 +11,7 @@ function named(item, wanted) {
 }
 
 function firstName(items, wanted) {
-  const value = $index(items, 0);
+  const value = $index(items, 0, "test/corpus/tested_options.rs:20:41");
   if (!wanted) {
     return "none";
   }

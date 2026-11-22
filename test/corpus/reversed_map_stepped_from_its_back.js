@@ -33,8 +33,11 @@ function words() {
 
 function made(s) {
   return [
-    ($unwrapOk($parseInt(s, 0, 4294967295), undefined, (e) =>
-      $debugParseError(e, "ParseIntError"),
+    ($unwrapOk(
+      $parseInt(s, 0, 4294967295),
+      "test/corpus/reversed_map_stepped_from_its_back.rs:19:24",
+      undefined,
+      (e) => $debugParseError(e, "ParseIntError"),
     ) +
       100) >>>
       0,

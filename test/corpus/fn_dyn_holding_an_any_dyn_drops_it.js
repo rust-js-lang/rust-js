@@ -115,7 +115,7 @@ function main() {
   }
   try {
     if (0 >= fs.length) {
-      $removeOutOfBounds(fs, 0);
+      $removeOutOfBounds(fs, 0, "test/corpus/fn_dyn_holding_an_any_dyn_drops_it.rs:37:13");
     }
   } catch (error) {
     $cleanup(() => {

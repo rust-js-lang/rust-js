@@ -6,6 +6,7 @@ import {
   $cleanup,
   $debugStr,
   $live,
+  $panic,
   $stringPanic,
   $unwound,
 } from "@rust-js/std";
@@ -31,7 +32,7 @@ function chosen(picked) {
 
 function scope(n) {
   if (n === 4) {
-    throw $stringPanic(`scope ${n}`);
+    throw $stringPanic(`scope ${n}`, "test/corpus/catch_unwind_guard_returned.rs:44:9");
   }
   return n;
 }
@@ -39,7 +40,7 @@ function scope(n) {
 function report(error) {
   console.log(`reported ${error == null ? "None" : `Some(${$debugStr(error)})`}`);
   if (error != null && error.endsWith("5")) {
-    throw new Error("report");
+    throw $panic("report", "test/corpus/catch_unwind_guard_returned.rs:52:9");
   }
 }
 

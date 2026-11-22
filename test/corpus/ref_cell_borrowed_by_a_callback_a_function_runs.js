@@ -12,12 +12,18 @@ function lengthBy(f) {
 
 function main() {
   const log = [1];
-  const borrowMut = $borrowMut(log, true);
+  const borrowMut = $borrowMut(
+    log,
+    "test/corpus/ref_cell_borrowed_by_a_callback_a_function_runs.rs:10:9",
+    true,
+  );
   try {
     borrowMut.push(
       lengthBy(() => {
         if (log.borrows < 0) {
-          $alreadyMutablyBorrowed();
+          $alreadyMutablyBorrowed(
+            "test/corpus/ref_cell_borrowed_by_a_callback_a_function_runs.rs:10:44",
+          );
         }
         return log.length;
       }),
@@ -25,6 +31,8 @@ function main() {
   } finally {
     $unborrow(borrowMut);
   }
-  console.log(`[${$borrow(log).join(", ")}]`);
+  console.log(
+    `[${$borrow(log, "test/corpus/ref_cell_borrowed_by_a_callback_a_function_runs.rs:11:26").join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

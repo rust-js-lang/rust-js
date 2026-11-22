@@ -39,31 +39,31 @@ function main() {
   console.log(`${it.reduce((n) => n + 1, 0)}`);
   console.log(`[${v.join(", ")}]`);
 
-  for (const x of $mutItems($view(v, 2))) {
+  for (const x of $mutItems($view(v, 2, "test/corpus/iter_mut_kept.rs:26:21"))) {
     x.value = -x.value | 0;
   }
   console.log(`[${v.join(", ")}]`);
 
   const names = ["a", "b", "c"];
   const each = $iter($mutItems(names));
-  const value = $unwrap($next(each));
+  const value = $unwrap($next(each), "test/corpus/iter_mut_kept.rs:34:17");
   value.value += "!";
   const rest = Array.from(each);
   for (let i = 0; i < rest.length; i++) {
     const name = rest[i];
-    name.value = $insertStr(name.value, 0, ">");
+    name.value = $insertStr(name.value, 0, ">", "test/corpus/iter_mut_kept.rs:37:14");
   }
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
 
   const points = [{ x: 1 }, { x: 2 }];
   const walk = $iter(points);
-  $unwrap($nextBack(walk)).x = 9;
+  $unwrap($nextBack(walk), "test/corpus/iter_mut_kept.rs:43:22").x = 9;
   console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
 
   const queue = [1, 2, 3];
   queue.unshift(0);
   const q = Iterator.from($mutItems(queue));
-  const value$1 = $unwrap($next(q));
+  const value$1 = $unwrap($next(q), "test/corpus/iter_mut_kept.rs:49:15");
   value$1.value = (value$1.value + 10) & 255;
   for (const x of q) {
     x.value = (x.value * 2) & 255;

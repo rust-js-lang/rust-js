@@ -27,7 +27,7 @@ function main() {
   console.log(`${$displayF64(context.value)}`);
   const old = context.consumer;
   context.consumer = null;
-  const consumer = $unwrap(old, "a consumer");
+  const consumer = $unwrap(old, "test/corpus/weak_cycle_set_after.rs:43:44", "a consumer");
   context.consumer = consumer;
   console.log(`${consumer.kind}`);
   // The same allocation: a `Weak`'s identity, which needs no count.

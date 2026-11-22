@@ -7,16 +7,16 @@ export function entry() {
 }
 
 function add(ids, into, other) {
-  const borrow = $borrow(ids, true);
+  const borrow = $borrow(ids, "test/corpus/contains_guarded_other.rs:10:18", true);
   try {
     for (let i = 0; i < borrow.length; i++) {
       const _ = borrow[i];
       if (into.borrows < 0) {
-        $alreadyMutablyBorrowed();
+        $alreadyMutablyBorrowed("test/corpus/contains_guarded_other.rs:11:18");
       }
       if (!into.includes(other)) {
         if (into.borrows) {
-          $alreadyBorrowed();
+          $alreadyBorrowed("test/corpus/contains_guarded_other.rs:12:18");
         }
         into.push(other);
       }
@@ -30,7 +30,7 @@ export function main() {
   const ids = [1, 2];
   const more = [11];
   add(ids, more, 12);
-  console.log(`[${$borrow(more).join(", ")}]`);
+  console.log(`[${$borrow(more, "test/corpus/contains_guarded_other.rs:21:27").join(", ")}]`);
   add(ids, ids, 20);
 }
 //# sourceMappingURL=case.js.map

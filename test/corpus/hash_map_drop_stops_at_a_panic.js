@@ -26,7 +26,7 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (boom === d[0]) {
     boom = 0;
-    throw $stringPanic(`drop ${d[0]}`);
+    throw $stringPanic(`drop ${d[0]}`, "test/corpus/hash_map_drop_stops_at_a_panic.rs:23:13");
   }
 }
 

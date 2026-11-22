@@ -14,6 +14,7 @@ import {
   $heapFrom,
   $heapSorted,
   $iterator,
+  $panic,
   $partialEq,
   $partialOrd,
   $partiallyOrdered,
@@ -47,7 +48,7 @@ function ownIterator_next(own, dropT, dropF) {
 function ownIterator_sizeHint(own, dropT, dropF) {
   console.log(`hint at ${own.at}`);
   if (own.at === own.panicsAt) {
-    throw new Error("hint");
+    throw $panic("hint", "test/corpus/collect_as_vec_asks_hint.rs:37:13");
   }
   return [0, undefined];
 }

@@ -12,6 +12,7 @@ import {
   $iter,
   $jsIterator,
   $live,
+  $panic,
   $stepsOf,
   $unwindsOn,
   iterator_map,
@@ -38,7 +39,10 @@ function grow(src, ITrustedLen, dropI) {
         calls$1 = (calls$1 + 1) | 0;
         try {
           if (calls$1 === 3) {
-            throw new Error("map");
+            throw $panic(
+              "map",
+              "test/corpus/extend_in_generic_code_drops_a_maps_closure_first.rs:22:13",
+            );
           }
           return [(d[0] + 100) >>> 0];
         } catch (error) {

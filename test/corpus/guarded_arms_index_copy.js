@@ -45,6 +45,7 @@ function scanHeld(codes) {
     if (value >= codes.length) {
       throw $stringPanic(
         `index out of bounds: the len is ${codes.length} but the index is ${value}`,
+        "test/corpus/guarded_arms_index_copy.rs:44:15",
       );
     }
     if (codes[value] === 97 && step(n)) {

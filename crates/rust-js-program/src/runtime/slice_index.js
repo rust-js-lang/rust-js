@@ -4,8 +4,8 @@
 // shared subslice is, and a view of them in a box, of each kind of range.
 function $boundsIndex(start, end) {
   return {
-    index: (range, items) => $slice(items, start(range), end(range)),
-    indexMut: (range, items) => ({ value: $view(items, start(range), end(range)) }),
+    index: (range, items) => $slice(items, start(range), undefined, end(range)),
+    indexMut: (range, items) => ({ value: $view(items, start(range), undefined, end(range)) }),
   };
 }
 

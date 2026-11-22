@@ -14,6 +14,7 @@ import {
   $ord,
   $ordTreeMap,
   $ordTreeSet,
+  $panic,
   $partialEq,
   $partialOrd,
   $rem,
@@ -43,7 +44,7 @@ function log(what) {
 function cloned() {
   clones = (clones + 1) >>> 0;
   if (clones === panicAt) {
-    throw $stringPanic(`clone ${clones}`);
+    throw $stringPanic(`clone ${clones}`, "test/corpus/btree_clone_nodes_unwinds.rs:28:9");
   }
 }
 
@@ -98,7 +99,9 @@ function main() {
     const m = new ($ordTreeMap(keyOrd_cmp))();
     for (let i = 0; i < n; i++) {
       if (n) {
-        const key = [$rem((i * 7) >>> 0, n) >>> 0];
+        const key = [
+          $rem((i * 7) >>> 0, n, "test/corpus/btree_clone_nodes_unwinds.rs:87:26") >>> 0,
+        ];
         const val = [i];
         let insert;
         try {
@@ -154,7 +157,10 @@ function main() {
           valDrop_drop(value);
         });
       });
-      throw new Error("attempt to calculate the remainder with a divisor of zero");
+      throw $panic(
+        "attempt to calculate the remainder with a divisor of zero",
+        "test/corpus/btree_clone_nodes_unwinds.rs:87:26",
+      );
     }
     try {
       iter = $stepBy($lazyRange(1, ((2 * n) >>> 0) + 1), 3);
@@ -425,7 +431,9 @@ function main() {
       s = $treeFromSorted(
         new ($ordTreeSet(keyOrd_cmp))(),
         $collectDropping(
-          $lazyRange(0, n).map((i) => [$rem((i * 5) >>> 0, n) >>> 0]),
+          $lazyRange(0, n).map((i) => [
+            $rem((i * 5) >>> 0, n, "test/corpus/btree_clone_nodes_unwinds.rs:106:51") >>> 0,
+          ]),
           keyDrop_drop,
           true,
         ),

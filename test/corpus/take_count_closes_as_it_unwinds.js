@@ -6,6 +6,7 @@ import {
   $foldOf,
   $live,
   $next,
+  $panic,
   $unwindsOn,
   iterator_skip,
   iterator_take,
@@ -22,7 +23,7 @@ function dDrop_drop(d) {
 function ownIterator_next(own) {
   own[0] = (own[0] + 1) >>> 0;
   if (own[0] === 3) {
-    throw new Error("next");
+    throw $panic("next", "test/corpus/take_count_closes_as_it_unwinds.rs:22:13");
   }
   return [own[0]];
 }

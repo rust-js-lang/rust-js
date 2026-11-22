@@ -27,7 +27,7 @@ function messageOf(payload) {
 
 function fails(n) {
   if (n > 2) {
-    throw $stringPanic(`big ${n}`);
+    throw $stringPanic(`big ${n}`, "test/corpus/catch_unwind_thrown_named.rs:32:9");
   }
   return n;
 }

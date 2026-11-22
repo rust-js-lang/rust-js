@@ -1026,11 +1026,11 @@ pub fn bumped(mut v: Vec<i32>, by: i32) -> Vec<i32> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  bump(\n    $view(v, 1), // the tail\n    by,\n  );");
+  expect(js).toContain("  bump(\n    $view(v, 1, \"lib.rs:9:15\"), // the tail\n    by,\n  );");
   const lib = await import(join(dir, "lib.js"));
   expect((lib.bumped as (v: number[], by: number) => number[])([1, 2, 3], 2)).toEqual([1, 4, 5]);
   const { decodeMappings } = await import("./sourcemap");
-  const at = js.split("\n").findIndex((line) => line.includes("$view(v, 1)"));
+  const at = js.split("\n").findIndex((line) => line.includes("$view(v, 1, "));
   const map = JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8"));
   // Its end, at line 9, 1-based, of `&mut v[1..], // the tail`, the `]`.
   const mapped = decodeMappings(map.mappings).filter((s) => s.jsLine === at).map((s) => [s.srcLine + 1, s.srcCol]);

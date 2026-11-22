@@ -41,7 +41,7 @@ function firstLine(r) {
   const buf = { value: s };
   const readLine = bufRead_readLine(arg, buf, $dynReader, $dynReader);
   s = buf.value;
-  $unwrapOk(readLine, undefined, $ioErrorDebug);
+  $unwrapOk(readLine, "test/corpus/io_buf_read.rs:15:25", undefined, $ioErrorDebug);
   return s;
 }
 
@@ -51,6 +51,7 @@ function fields(r, RBufRead) {
   while (
     $unwrapOk(
       bufRead_readUntil(r, 59, field, RBufRead, RBufRead.Read()),
+      "test/corpus/io_buf_read.rs:22:42",
       undefined,
       $ioErrorDebug,
     ) > 0
@@ -72,7 +73,7 @@ function main() {
     const buf = { value: line };
     const readLine = bufRead_readLine(arg, buf, bufRead, bufRead);
     line = buf.value;
-    if (!($unwrapOk(readLine, undefined, $ioErrorDebug) > 0)) {
+    if (!($unwrapOk(readLine, "test/corpus/io_buf_read.rs:32:37", undefined, $ioErrorDebug) > 0)) {
       break;
     }
     console.log(`${$debugStr(line)}`);
@@ -81,13 +82,15 @@ function main() {
   const iter = bufRead_lines({ inner: "one\r\ntwo\n\nthree", pos: 0n }, bufRead, bufRead);
   let line$1;
   while ((line$1 = linesIterator_next(iter, bufRead)) != null) {
-    console.log(`${$debugStr($unwrapOk(line$1, undefined, $ioErrorDebug))}`);
+    console.log(
+      `${$debugStr($unwrapOk(line$1, "test/corpus/io_buf_read.rs:37:31", undefined, $ioErrorDebug))}`,
+    );
   }
   const parts = Array.from(
     $iterator(
       bufRead_split([49, 44, 50, 50, 44, 44, 51, 51, 51, 44], 44, $sliceReader, $sliceReader),
       (iterator) => splitIterator_next(iterator, $sliceReader),
-    ).map((part) => $unwrapOk(part, undefined, $ioErrorDebug)),
+    ).map((part) => $unwrapOk(part, "test/corpus/io_buf_read.rs:40:26", undefined, $ioErrorDebug)),
   );
   console.log(`[${parts.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 
@@ -136,7 +139,9 @@ function main() {
       skip = self.value;
     }
   }
-  console.log(`${$unwrapOk(skipUntil, undefined, $ioErrorDebug)} [${skip.join(", ")}]`);
+  console.log(
+    `${$unwrapOk(skipUntil, "test/corpus/io_buf_read.rs:54:53", undefined, $ioErrorDebug)} [${skip.join(", ")}]`,
+  );
   const self$1 = { value: skip };
   let tmp$2;
   try {
@@ -148,7 +153,9 @@ function main() {
       skip = self$1.value;
     }
   }
-  console.log(`${$unwrapOk(tmp$2, undefined, $ioErrorDebug)} [${skip.join(", ")}]`);
+  console.log(
+    `${$unwrapOk(tmp$2, "test/corpus/io_buf_read.rs:55:53", undefined, $ioErrorDebug)} [${skip.join(", ")}]`,
+  );
 
   let bad = [111, 107, 255, 10, 122];
   let kept = "kept";
@@ -165,7 +172,7 @@ function main() {
       kept = buf.value;
     }
   }
-  const e = $unwrapErr(tmp$3);
+  const e = $unwrapErr(tmp$3, "test/corpus/io_buf_read.rs:59:38");
   console.log(`${$ioErrorDisplay(e)} ${$debugStr(kept)} [${bad.join(", ")}]`);
   const lines = Array.from(
     $iterator(

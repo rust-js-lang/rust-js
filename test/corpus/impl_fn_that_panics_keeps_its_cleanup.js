@@ -9,7 +9,10 @@ export function entry() {
 function checked(limit) {
   return (x) => {
     if (x > limit) {
-      throw $stringPanic(`${x} is over ${limit}`);
+      throw $stringPanic(
+        `${x} is over ${limit}`,
+        "test/corpus/impl_fn_that_panics_keeps_its_cleanup.rs:19:13",
+      );
     }
     return x * 2;
   };

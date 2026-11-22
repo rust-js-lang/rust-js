@@ -3,10 +3,10 @@
 import {
   $bigCountOnes,
   $bigPow,
+  $checkedIlog,
   $clamp,
   $clampFloat,
   $countOnes,
-  $debugF64,
   $debugParseError,
   $debugStr,
   $displayF32,
@@ -27,10 +27,10 @@ export function entry() {
 function main() {
   // Clamped, into a range, an integer's or a float's.
   console.log(
-    `${$clamp(17, 0, 10)} ${$clamp(-3n, -2n, 2n)} ${$clamp(200, 1, 100)} ${$displayF64($clampFloat(1.5, 0, 1, $debugF64))} ${$displayF64($clampFloat(NaN, 0, 1, $debugF64))}`,
+    `${$clamp(17, 0, 10, "test/corpus/number_methods.rs:8:15")} ${$clamp(-3n, -2n, 2n, "test/corpus/number_methods.rs:9:17")} ${$clamp(200, 1, 100, "test/corpus/number_methods.rs:10:15")} ${$displayF64($clampFloat(1.5, 0, 1, "f64"))} ${$displayF64($clampFloat(NaN, 0, 1, "f64"))}`,
   );
   const level = 7;
-  console.log(`${($clamp(level, 1, 5) * 2) >>> 0}`);
+  console.log(`${($clamp(level, 1, 5, "test/corpus/number_methods.rs:15:26") * 2) >>> 0}`);
 
   // Parsed in a radix, and errors where Rust finds them.
   const value = $parseInt("-ff", -2147483648, 2147483647, 16);
@@ -48,7 +48,9 @@ function main() {
   }
 
   // Divided, rounding up.
-  console.log(`${$divCeil(7, 2)} ${$divCeil(8, 2)} ${$divCeil(0, 3)} ${$divCeil(10n, 3n)}`);
+  console.log(
+    `${$divCeil(7, 2, "test/corpus/number_methods.rs:34:34")} ${$divCeil(8, 2, "test/corpus/number_methods.rs:34:52")} ${$divCeil(0, 3, "test/corpus/number_methods.rs:34:69")} ${$divCeil(10n, 3n, "test/corpus/number_methods.rs:34:88")}`,
+  );
 
   // A float's sign, fraction and angle.
   for (const x of [-2.5, 0, -0, 3.75]) {
@@ -62,18 +64,22 @@ function main() {
   );
 
   // Integer logarithms, roots, midpoints and zeros.
-  console.log(`${$ilog(1000, 10)} ${$ilog(999, 10)} ${$ilog(8, 2)} ${$ilog(255, 2)}`);
-  console.log(`${$ilog(1n, 10)} ${$ilog(18446744073709551615n, 2)} ${$ilog(12345n, 10)}`);
+  console.log(
+    `${$ilog(1000, 10, "test/corpus/number_methods.rs:51:37")} ${$ilog(999, 10, "test/corpus/number_methods.rs:51:54")} ${$ilog(8, 2, "test/corpus/number_methods.rs:51:69")} ${$ilog(255, 2, "test/corpus/number_methods.rs:51:84")}`,
+  );
+  console.log(
+    `${$ilog(1n, 10, "test/corpus/number_methods.rs:52:31")} ${$ilog(18446744073709551615n, 2, "test/corpus/number_methods.rs:52:50")} ${$ilog(12345n, 10, "test/corpus/number_methods.rs:52:68")}`,
+  );
   // `checked_`, writeable's digit count: `None` of what isn't positive.
-  const digits = (n) => (($ilog(n, 10, true) ?? 0) + 1) >>> 0;
-  const checkedIlog10 = $ilog(0, 10, true);
-  const checkedIlog2 = $ilog(-4, 2, true);
-  const value$3 = $ilog(1024n, 2, true);
+  const digits = (n) => (($checkedIlog(n, 10) ?? 0) + 1) >>> 0;
+  const checkedIlog10 = $checkedIlog(0, 10);
+  const checkedIlog2 = $checkedIlog(-4, 2);
+  const value$3 = $checkedIlog(1024n, 2);
   console.log(
     `${checkedIlog10 == null ? "None" : `Some(${checkedIlog10})`} ${checkedIlog2 == null ? "None" : `Some(${checkedIlog2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${digits(205)}`,
   );
   console.log(
-    `${$isqrt(17)} ${$isqrt(0)} ${$isqrt(99)} ${$isqrt(BigInt.asUintN(64, $bigPow(10n, 18)))}`,
+    `${$isqrt(17, "test/corpus/number_methods.rs:56:35")} ${$isqrt(0, "test/corpus/number_methods.rs:56:48")} ${$isqrt(99, "test/corpus/number_methods.rs:56:63")} ${$isqrt(BigInt.asUintN(64, $bigPow(10n, 18)), "test/corpus/number_methods.rs:56:86")}`,
   );
   console.log(
     `${Math.trunc((3 + 8) / 2)} ${Math.trunc((-7 + 0) / 2)} ${Math.trunc((0 + -7) / 2)} ${Math.trunc((255 + 253) / 2)} ${(-9223372036854775808n + -1n) / 2n}`,

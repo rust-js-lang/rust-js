@@ -95,7 +95,13 @@ export function stack(initial, settings) {
         return;
       }
       history$1.index--;
-      return $rcClone($index(history$1.entries, history$1.index));
+      return $rcClone(
+        $index(
+          history$1.entries,
+          history$1.index,
+          "test/corpus/rc_field_of_a_parameter_beside_an_untagged_rc.rs:68:40",
+        ),
+      );
     },
     () => {
       $rcDrop(history, (value) => {
@@ -136,7 +142,10 @@ function main() {
   }
   let back;
   try {
-    back = $unwrap(plain.undo());
+    back = $unwrap(
+      plain.undo(),
+      "test/corpus/rc_field_of_a_parameter_beside_an_untagged_rc.rs:77:31",
+    );
   } catch (error) {
     $cleanup(() => {
       try {

@@ -18,7 +18,7 @@ export function entry() {
 }
 
 function record(stats, name) {
-  const s = $lock(stats);
+  const s = $lock(stats, "test/corpus/locks.rs:16:30");
   s.value.hits = (s.value.hits + 1) >>> 0;
   try {
     s.value.names.push(name);
@@ -31,7 +31,7 @@ function record(stats, name) {
 }
 
 function total(shared, f) {
-  const value = $lock(shared);
+  const value = $lock(shared, "test/corpus/locks.rs:22:22");
   try {
     return f(value.value);
   } catch (error) {
@@ -46,10 +46,10 @@ function main() {
   const stats = { value: { hits: 0, names: [] } };
   record(stats, "a");
   record(stats, "b");
-  const value = $lock(stats);
+  const value = $lock(stats, "test/corpus/locks.rs:30:29");
   const hits = value.value.hits;
   $unlock(value);
-  const value$1 = $lock(stats);
+  const value$1 = $lock(stats, "test/corpus/locks.rs:31:44");
   try {
     console.log(`${hits} [${value$1.value.names.map((item) => $debugStr(item)).join(", ")}]`);
   } catch (error) {
@@ -60,19 +60,19 @@ function main() {
   }
 
   const count = { value: 5 };
-  const value$2 = $lock(count);
+  const value$2 = $lock(count, "test/corpus/locks.rs:34:19");
   value$2.value = (value$2.value + 2) >>> 0;
   $unlock(value$2);
-  const value$3 = $lock(count, "not poisoned");
+  const value$3 = $lock(count, "test/corpus/locks.rs:36:18", "not poisoned");
   value$3.value = (value$3.value * 3) >>> 0;
   $unlock(value$3);
-  const value$4 = $lock(count);
+  const value$4 = $lock(count, "test/corpus/locks.rs:37:29");
   const now = value$4.value;
   $unlock(value$4);
   console.log(`${now} ${total(count, (n) => (n + 1) >>> 0)}`);
 
   const config = { value: [1, 2] };
-  const value$5 = $lock(config);
+  const value$5 = $lock(config, "test/corpus/locks.rs:41:20");
   try {
     value$5.value.push(3);
   } catch (error) {
@@ -81,10 +81,10 @@ function main() {
   } finally {
     $unborrow(value$5);
   }
-  const value$6 = $lockRead(config);
+  const value$6 = $lockRead(config, "test/corpus/locks.rs:42:29");
   const len = value$6.value.length;
   $unborrow(value$6);
-  const value$7 = $lockRead(config);
+  const value$7 = $lockRead(config, "test/corpus/locks.rs:43:40");
   try {
     console.log(`[${value$7.value.join(", ")}] ${len}`);
   } finally {
@@ -92,18 +92,18 @@ function main() {
   }
 
   const m = { value: "x" };
-  const value$8 = $lock(m);
+  const value$8 = $lock(m, "test/corpus/locks.rs:46:14");
   value$8.value += "y";
   $unlock(value$8);
-  console.log(`${$unpoisoned(m).value}`);
+  console.log(`${$unpoisoned(m, "test/corpus/locks.rs:47:35").value}`);
 
   const counter = { value: 0 };
-  const num = $lock(counter);
+  const num = $lock(counter, "test/corpus/locks.rs:51:38");
   num.value = (num.value + 1) | 0;
   num.value = (num.value * 10) | 0;
   console.log(`inside ${num.value}`);
   $unlock(num);
-  const value$9 = $lock(counter);
+  const value$9 = $lock(counter, "test/corpus/locks.rs:56:38");
   console.log(`${value$9.value}`);
   $unlock(value$9);
   let cell = 1.5;
@@ -111,13 +111,13 @@ function main() {
   let r = cell;
   console.log(`${$displayF64(r)} ${$displayF64(cell)}`);
   const text = { value: "a" };
-  const w = $lock(text);
+  const w = $lock(text, "test/corpus/locks.rs:66:34");
   w.value += "b";
   w.value += "c";
   $unlock(w);
   const slots = [{ value: 1 }, { value: 2 }];
   let i = 0;
-  const first = $lock($index(slots, i));
+  const first = $lock($index(slots, i, "test/corpus/locks.rs:72:26"), "test/corpus/locks.rs:72:37");
   i++;
   first.value = (first.value + 10) | 0;
   console.log(`${first.value} ${i}`);
@@ -125,13 +125,13 @@ function main() {
   console.log(
     `[${slots
       .map((m) => {
-        const value = $lock(m);
+        const value = $lock(m, "test/corpus/locks.rs:77:53");
         $unlock(value);
         return value.value;
       })
       .join(", ")}]`,
   );
-  r = $lockRead(text);
+  r = $lockRead(text, "test/corpus/locks.rs:78:25");
   console.log(`${r.value} ${$byteLen(r.value)} ${$displayF64(cell)}`);
   $unborrow(r);
 }

@@ -8,7 +8,7 @@ export function entry() {
 
 function main() {
   const v = [1, 2, 3, 4];
-  for (const x of $mutItems($view(v, 3, 9))) {
+  for (const x of $mutItems($view(v, 3, "test/corpus/mut_ref_loop_bounds.rs:6:20", 9))) {
     x.value = 0;
   }
   console.log(`[${v.join(", ")}]`);

@@ -12,7 +12,8 @@ function summed(v) {
     i,
     x,
   ])) {
-    total = (total + $index(v, i)) >>> 0;
+    total =
+      (total + $index(v, i, "test/corpus/enumerate_of_a_split_indexes_checked.rs:11:19")) >>> 0;
   }
   return total;
 }
@@ -24,7 +25,8 @@ function summedOfASlice(v) {
     i,
     x,
   ])) {
-    total = (total + $index(v, i)) >>> 0;
+    total =
+      (total + $index(v, i, "test/corpus/enumerate_of_a_split_indexes_checked.rs:20:19")) >>> 0;
   }
   return total;
 }

@@ -8,48 +8,73 @@ export function entry() {
 
 function main() {
   const queue = [1, 2];
-  const items = [$borrowMut(queue, true)];
+  const items = [
+    $borrowMut(queue, "test/corpus/guard_held_in_an_aggregate_written_whole.rs:16:32", true),
+  ];
   $assign(items[0], [7]);
   $unborrow(items[0]);
-  console.log(`tuple [${$borrow(queue).join(", ")}]`);
+  console.log(
+    `tuple [${$borrow(queue, "test/corpus/guard_held_in_an_aggregate_written_whole.rs:19:34").join(", ")}]`,
+  );
   if (queue.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/guard_held_in_an_aggregate_written_whole.rs:20:11");
   }
   queue.push(8);
-  console.log(`then [${$borrow(queue).join(", ")}]`);
-  const h = { guard: $borrowMut(queue, true) };
+  console.log(
+    `then [${$borrow(queue, "test/corpus/guard_held_in_an_aggregate_written_whole.rs:21:33").join(", ")}]`,
+  );
+  const h = {
+    guard: $borrowMut(queue, "test/corpus/guard_held_in_an_aggregate_written_whole.rs:23:43", true),
+  };
   $assign(h.guard, [9]);
   $unborrow(h.guard);
-  console.log(`struct [${$borrow(queue).join(", ")}]`);
-  const a = [$borrowMut(queue, true)];
+  console.log(
+    `struct [${$borrow(queue, "test/corpus/guard_held_in_an_aggregate_written_whole.rs:26:35").join(", ")}]`,
+  );
+  const a = [
+    $borrowMut(queue, "test/corpus/guard_held_in_an_aggregate_written_whole.rs:28:28", true),
+  ];
   $assign(a[0], [10]);
   for (const item of a) {
     $unborrow(item);
   }
-  console.log(`array [${$borrow(queue).join(", ")}]`);
-  const nested = [[$borrowMut(queue, true), 1]];
+  console.log(
+    `array [${$borrow(queue, "test/corpus/guard_held_in_an_aggregate_written_whole.rs:31:34").join(", ")}]`,
+  );
+  const nested = [
+    [$borrowMut(queue, "test/corpus/guard_held_in_an_aggregate_written_whole.rs:33:34", true), 1],
+  ];
   $assign(nested[0][0], [11]);
   try {
     nested[0][0].push(12);
   } finally {
     $unborrow(nested[0][0]);
   }
-  console.log(`nested [${$borrow(queue).join(", ")}]`);
+  console.log(
+    `nested [${$borrow(queue, "test/corpus/guard_held_in_an_aggregate_written_whole.rs:37:35").join(", ")}]`,
+  );
   // A cell of what isn't an object, `{ value }`: its guard gives the
   // cell's `value`, the place written.
   const count = { value: 5 };
-  let kept = [$borrowMut(count, true), 0];
+  let kept = [
+    $borrowMut(count, "test/corpus/guard_held_in_an_aggregate_written_whole.rs:42:31", true),
+    0,
+  ];
   kept[0].value = 6;
   kept[0].value = (kept[0].value + 1) >>> 0;
   $unborrow(kept[0]);
-  console.log(`count ${$borrow(count).value}`);
+  console.log(
+    `count ${$borrow(count, "test/corpus/guard_held_in_an_aggregate_written_whole.rs:46:32").value}`,
+  );
   const text = { value: "a" };
-  kept = [$borrowMut(text, true)];
+  kept = [$borrowMut(text, "test/corpus/guard_held_in_an_aggregate_written_whole.rs:49:30", true)];
   kept[0].value = "b";
   kept[0].value += "c";
   for (const item of kept) {
     $unborrow(item);
   }
-  console.log(`text ${$borrow(text).value}`);
+  console.log(
+    `text ${$borrow(text, "test/corpus/guard_held_in_an_aggregate_written_whole.rs:53:30").value}`,
+  );
 }
 //# sourceMappingURL=case.js.map

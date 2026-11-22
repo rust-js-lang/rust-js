@@ -2,11 +2,12 @@
 // down. A BigInt's starts from a float's guess, which it corrects.
 // `x.checked_isqrt()` of a signed integer: none of a negative.
 function $checkedIsqrt(x) {
-  return x < 0 ? undefined : $isqrt(x);
+  return x < 0 ? undefined : $isqrt(x, undefined);
 }
 
-function $isqrt(x) {
-  if (x < 0) throw new Error("argument of integer square root cannot be negative");
+// Raised where it was called, `raisedAt` (#2292).
+function $isqrt(x, raisedAt) {
+  if (x < 0) throw $panic("argument of integer square root cannot be negative", raisedAt);
   if (typeof x !== "bigint") return Math.floor(Math.sqrt(x));
   let root = BigInt(Math.floor(Math.sqrt(Number(x))));
   while (root * root > x) root--;

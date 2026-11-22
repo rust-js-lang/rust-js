@@ -9,6 +9,7 @@ import {
   $last,
   $lazyChain,
   $live,
+  $panic,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -18,7 +19,10 @@ export function entry() {
 
 function ownIterator_next(own) {
   if (own[1] && own[0] === 1) {
-    throw new Error("own next");
+    throw $panic(
+      "own next",
+      "test/corpus/boxed_source_chained_or_skipped_asks_its_own_last_and_count.rs:21:13",
+    );
   }
   const checkedSub = $checked(own[0] - 1, 0, 4294967295);
   if (checkedSub == null) {
@@ -32,7 +36,10 @@ function ownIterator_last(own) {
   console.log(`own last ${own[0]}`);
   try {
     if (own[1]) {
-      throw new Error("own last");
+      throw $panic(
+        "own last",
+        "test/corpus/boxed_source_chained_or_skipped_asks_its_own_last_and_count.rs:30:13",
+      );
     }
     if (own[0] !== 0) {
       return 0;
@@ -50,7 +57,10 @@ function ownIterator_count(own) {
   console.log(`own count ${own[0]}`);
   try {
     if (own[1]) {
-      throw new Error("own count");
+      throw $panic(
+        "own count",
+        "test/corpus/boxed_source_chained_or_skipped_asks_its_own_last_and_count.rs:42:13",
+      );
     }
     return own[0];
   } catch (error) {

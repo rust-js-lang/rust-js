@@ -62,16 +62,22 @@ function main() {
   h.write(value);
   console.log(`${h.finish()}`);
   console.log(`${hashOf([0], hash)} ${hashOf([255, 128, 97, 0], hash)}`);
-  const owned = $unwrapOk($cstringNew(Array.from(new TextEncoder().encode("hi"))), undefined, (e) =>
-    $debugCStrError(e, "nul"),
+  const owned = $unwrapOk(
+    $cstringNew(Array.from(new TextEncoder().encode("hi"))),
+    "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:39:36",
+    undefined,
+    (e) => $debugCStrError(e, "nul"),
   );
   console.log(`${hashOf(owned, hash)} ${hashOf(owned, hash) === hashOf([104, 105, 0], hash)}`);
   console.log(
     `${hashOf(
       [
         [97, 0],
-        $unwrapOk($cstringNew(Array.from(new TextEncoder().encode("b"))), undefined, (e) =>
-          $debugCStrError(e, "nul"),
+        $unwrapOk(
+          $cstringNew(Array.from(new TextEncoder().encode("b"))),
+          "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:41:54",
+          undefined,
+          (e) => $debugCStrError(e, "nul"),
         ),
       ],
       {
@@ -94,7 +100,12 @@ function main() {
   );
   const named = {
     name: [110, 0],
-    owned: $unwrapOk($cstringNew([0x7f, 0xff]), undefined, (e) => $debugCStrError(e, "nul")),
+    owned: $unwrapOk(
+      $cstringNew([0x7f, 0xff]),
+      "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:44:49",
+      undefined,
+      (e) => $debugCStrError(e, "nul"),
+    ),
   };
   console.log(`${hashOf(named, namedHash)}`);
   console.log(
@@ -161,40 +172,72 @@ function main() {
   console.log(`${both.finish()}`);
 
   // Each error cloned and compared.
-  const with$ = $unwrapErr($cstrWithNul([97, 0, 98, 0]), undefined, $debugCStr);
-  const unended = $unwrapErr($cstrWithNul([97, 98]), undefined, $debugCStr);
+  const with$ = $unwrapErr(
+    $cstrWithNul([97, 0, 98, 0]),
+    "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:57:53",
+    undefined,
+    $debugCStr,
+  );
+  const unended = $unwrapErr(
+    $cstrWithNul([97, 98]),
+    "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:58:52",
+    undefined,
+    $debugCStr,
+  );
   const value$3 = $eq(with$, with$);
   console.log(`${$debugCStrError(with$, "withNul")} ${value$3} ${$eq(with$, unended)}`);
-  const until = $unwrapErr($cstrUntilNul([120]), undefined, $debugCStr);
+  const until = $unwrapErr(
+    $cstrUntilNul([120]),
+    "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:60:50",
+    undefined,
+    $debugCStr,
+  );
   console.log(`${$debugCStrError(until, "untilNul")} ${$eq(until, until)}`);
   const nul = $unwrapErr(
     $cstringNew(Array.from(new TextEncoder().encode("a\x00b"))),
+    "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:62:36",
     undefined,
     $debugCStr,
   );
   const copy = [nul[0], nul[1].slice()];
   console.log(
-    `${$eq(copy, nul)} ${$eq(copy, $unwrapErr($cstringNew(Array.from(new TextEncoder().encode("a\x00c"))), undefined, $debugCStr))}`,
+    `${$eq(copy, nul)} ${$eq(copy, $unwrapErr($cstringNew(Array.from(new TextEncoder().encode("a\x00c"))), "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:64:65", undefined, $debugCStr))}`,
   );
   const bytes = copy[1];
   bytes.push(9);
   console.log(`[${bytes.join(", ")}] ${$debugCStrError(nul, "nul")} ${nul[0]}`);
   const into = $unwrapErr(
     $cstringIntoString(
-      $unwrapOk($cstringWithNul([0xc3, 0]), undefined, (e) => $debugCStrError(e, "fromVec")),
+      $unwrapOk(
+        $cstringWithNul([0xc3, 0]),
+        "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:69:10",
+        undefined,
+        (e) => $debugCStrError(e, "fromVec"),
+      ),
     ),
+    "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:71:10",
   );
   const again = { ...into, inner: into.inner.slice(), error: { ...into.error } };
   console.log(`${$eq(into, again)} ${$debugUtf8Error(again.error)}`);
   const inner = again.inner;
-  inner[$at(inner, 0)] = 65;
+  inner[$at(inner, 0, "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:75:10")] = 65;
   console.log(`[${inner.join(", ")}] ${$debugCStr(into.inner)}`);
-  const vecErr = $unwrapErr($cstringWithNul([97, 0, 98, 0]), undefined, $debugCStr);
+  const vecErr = $unwrapErr(
+    $cstringWithNul([97, 0, 98, 0]),
+    "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:77:66",
+    undefined,
+    $debugCStr,
+  );
   let other = { ...vecErr, bytes: vecErr.bytes.slice() };
   console.log(
     `[${other.bytes.join(", ")}] ${$debugCStrError(vecErr, "fromVec")} ${$eq(vecErr, other)}`,
   );
-  other = $unwrapErr($cstringWithNul([97, 98]), undefined, $debugCStr);
+  other = $unwrapErr(
+    $cstringWithNul([97, 98]),
+    "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:80:56",
+    undefined,
+    $debugCStr,
+  );
   console.log(
     `${$eq(vecErr, other)} [${{ ...other, bytes: other.bytes.slice() }.bytes.join(", ")}]`,
   );
@@ -204,8 +247,18 @@ function main() {
 
   // Held, in a `Vec` and in a struct of the crate's that derives both.
   const errs = [
-    $unwrapErr($cstringNew(Array.from(new TextEncoder().encode("x\x00"))), undefined, $debugCStr),
-    $unwrapErr($cstringNew([1, 0]), undefined, $debugCStr),
+    $unwrapErr(
+      $cstringNew(Array.from(new TextEncoder().encode("x\x00"))),
+      "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:88:29",
+      undefined,
+      $debugCStr,
+    ),
+    $unwrapErr(
+      $cstringNew([1, 0]),
+      "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:89:36",
+      undefined,
+      $debugCStr,
+    ),
   ];
   const copies = errs.map((item) => [item[0], item[1].slice()]);
   const arg = $eq(errs, copies);
@@ -213,10 +266,16 @@ function main() {
   const failed = {
     nul: $unwrapErr(
       $cstringNew(Array.from(new TextEncoder().encode("\x00"))),
+      "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:94:33",
       undefined,
       $debugCStr,
     ),
-    until: $unwrapErr($cstrUntilNul([]), undefined, $debugCStr),
+    until: $unwrapErr(
+      $cstrUntilNul([]),
+      "test/corpus/c_strings_hashed_and_their_errors_cloned.rs:95:48",
+      undefined,
+      $debugCStr,
+    ),
   };
   const kept = { ...failed, nul: [failed.nul[0], failed.nul[1].slice()] };
   const arg$1 = $eq(kept, failed);

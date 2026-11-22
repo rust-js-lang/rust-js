@@ -13,6 +13,7 @@ import {
   $reserveHint,
   $sortedEntries,
   $sortedKeys,
+  $stdSites,
   $treeRange,
 } from "@rust-js/std";
 
@@ -22,7 +23,9 @@ export function entry() {
 
 function main() {
   const v = $range(1, 11);
-  const evens = Array.from($extractIf(v, 0, undefined, (x) => x.value % 2 === 0, true));
+  const evens = Array.from(
+    $extractIf(v, 0, undefined, (x) => x.value % 2 === 0, $stdSites.vecExtractIf[0], true),
+  );
   console.log(`[${evens.join(", ")}] [${v.join(", ")}]`);
   const w = $range(1, 11);
   for (const x of $extractIf(
@@ -33,6 +36,7 @@ function main() {
       x.value = (x.value * 10) | 0;
       return x.value > 40;
     },
+    $stdSites.vecExtractIf[0],
     true,
   )) {
     console.log(`took ${x}`);
@@ -42,14 +46,27 @@ function main() {
   }
   console.log(`[${w.join(", ")}]`);
   const names = ["ann", "bob", "al"];
-  const a = Array.from($extractIf(names, 0, undefined, (n) => n.value.startsWith("a"), true));
+  const a = Array.from(
+    $extractIf(
+      names,
+      0,
+      undefined,
+      (n) => n.value.startsWith("a"),
+      $stdSites.vecExtractIf[0],
+      true,
+    ),
+  );
   console.log(
     `[${a.map((item) => $debugStr(item)).join(", ")}] [${names.map((item) => $debugStr(item)).join(", ")}]`,
   );
-  console.log(`${Iterator.from($extractIf(w, 1, 1, () => true, true)).reduce((n) => n + 1, 0)}`);
+  console.log(
+    `${Iterator.from($extractIf(w, 1, 1, () => true, $stdSites.vecExtractIf[0], true)).reduce((n) => n + 1, 0)}`,
+  );
 
   const list = $range(1, 7);
-  const odd = Array.from($extractIf(list, 0, undefined, (x) => x.value % 2 === 1, true));
+  const odd = Array.from(
+    $extractIf(list, 0, undefined, (x) => x.value % 2 === 1, $stdSites.vecExtractIf[0], true),
+  );
   console.log(`[${odd.join(", ")}] [${list.join(", ")}]`);
 
   const scores = new Map([

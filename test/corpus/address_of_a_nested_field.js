@@ -25,7 +25,10 @@ function main() {
   const end = items.length;
   for (let i = 0; i < end; i++) {
     if (i >= 3) {
-      throw $stringPanic(`index out of bounds: the len is 3 but the index is ${i}`);
+      throw $stringPanic(
+        `index out of bounds: the len is 3 but the index is ${i}`,
+        "test/corpus/address_of_a_nested_field.rs:28:30",
+      );
     }
     $stored($ptr(items, i), 8);
     seen.push(($addr($ptr(items[i], "b", 0, items, i * 8), 4) - first) >>> 0);

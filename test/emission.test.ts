@@ -66,7 +66,8 @@ test("source map points from fib.js back into fib.rs", async () => {
     ["i < n; i++)", "i < n"],
     ["if (i === n)", "if i == n"],
     ["(((x * 3) | 0) - 7) | 0", "x * 3 - 7"],
-    ["$div(a, b, -2147483648) | 0", "a / b"],
+    // Given where its panic is raised (#2292).
+    ['$div(a, b, "', "a / b"],
     // A two-arm match's test, written as an if's (ADR 0237, amended), is
     // where the match is.
     ['order === "Ascending"', "match order"],

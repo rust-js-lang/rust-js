@@ -8,7 +8,7 @@ export function entry() {
 
 function first(v) {
   const s = v;
-  s[0] = (s[$at(s, 0)] + 1) >>> 0;
+  s[0] = (s[$at(s, 0, "test/corpus/borrow_mut_of_a_vec_as_a_slice.rs:9:5")] + 1) >>> 0;
   return s.length;
 }
 
@@ -17,13 +17,16 @@ function main() {
   console.log(`${first(v)} [${v.join(", ")}]`);
   const a = [3, 4, 5];
   const s = a;
-  s[$at(s, 2)] = 9;
+  s[$at(s, 2, "test/corpus/borrow_mut_of_a_vec_as_a_slice.rs:18:5")] = 9;
   console.log(`[${a.join(", ")}]`);
   const w = ["x"];
   const t = w;
   const length = t.length;
   if (0 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/borrow_mut_of_a_vec_as_a_slice.rs:22:5",
+    );
   }
   t[0] += "y";
   console.log(`[${w.map((item) => $debugStr(item)).join(", ")}]`);

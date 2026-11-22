@@ -15,7 +15,7 @@ function count(to) {
   for (let i = 1; i <= to; i++) {
     if (i === 3) {
       try {
-        throw $stringPanic(`gave up at ${i}`);
+        throw $stringPanic(`gave up at ${i}`, "test/corpus/drop_on_panic.rs:21:13");
       } catch (error) {
         $cleanup(() => {
           console.log(`drop ${i}`);

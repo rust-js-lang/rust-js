@@ -50,7 +50,7 @@ function describeNode(node, indent) {
 }
 
 function isFirst(items, node) {
-  return $index(items, 0) === node;
+  return $index(items, 0, "test/corpus/ptr_eq_items_and_counts.rs:56:19") === node;
 }
 
 function firstDiff(server, client) {
@@ -85,12 +85,23 @@ function main() {
     ],
   };
   $print(describeNode(tree, 0));
-  $print(describeNode($index($index(tree.children, 0).children, 0), 1));
+  $print(
+    describeNode(
+      $index(
+        $index(tree.children, 0, "test/corpus/ptr_eq_items_and_counts.rs:89:46").children,
+        0,
+        "test/corpus/ptr_eq_items_and_counts.rs:89:58",
+      ),
+      1,
+    ),
+  );
   const items = [leaf("x"), leaf("y")];
-  $print(`${isFirst(items, $index(items, 0))} ${isFirst(items, $index(items, 1))}\n`);
+  $print(
+    `${isFirst(items, $index(items, 0, "test/corpus/ptr_eq_items_and_counts.rs:91:46"))} ${isFirst(items, $index(items, 1, "test/corpus/ptr_eq_items_and_counts.rs:91:75"))}\n`,
+  );
   const empty = [];
   try {
-    const first = isFirst(empty, $index(items, 0));
+    const first = isFirst(empty, $index(items, 0, "test/corpus/ptr_eq_items_and_counts.rs:93:74"));
     $print(`no panic: ${first}\n`);
   } catch (thrown) {
     $catchable(thrown);

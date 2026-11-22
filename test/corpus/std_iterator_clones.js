@@ -116,7 +116,7 @@ function main() {
   const copied = revClone_clone(rows, {
     clone: (value) => $iter(value.items.slice(value.at, value.end).map((item) => item.slice())),
   });
-  $unwrap($next(copied)).push(9);
+  $unwrap($next(copied), "test/corpus/std_iterator_clones.rs:55:19").push(9);
   const value$4 = $next(rows);
   console.log(
     `${value$4 == null ? "None" : `Some([${value$4.join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.join(", ")}])`))($next(copied))}`,

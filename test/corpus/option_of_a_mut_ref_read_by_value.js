@@ -27,7 +27,7 @@ function mapped(o) {
   return o?.value;
 }
 function unwrapped(o) {
-  return $unwrap(o).value;
+  return $unwrap(o, "test/corpus/option_of_a_mut_ref_read_by_value.rs:16:8").value;
 }
 function deref(o) {
   return o?.value;

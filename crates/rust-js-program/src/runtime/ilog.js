@@ -1,15 +1,14 @@
 // `x.ilog2()` or `x.ilog10()` of an integer, a number or a BigInt: how many
 // times `base` divides into it, rounded down; `checked_ilog10()`'s
 // `undefined`, `None`, where it isn't positive.
-function $ilog(x, base, checked = false) {
-  if (x <= 0) {
-    if (checked) return undefined;
-    throw new Error("argument of integer logarithm must be positive");
-  }
-  if (base < 2) {
-    if (checked) return undefined;
-    throw new Error("base of integer logarithm must be at least 2");
-  }
+// `checked_ilog(base)`: `None` of what has none.
+function $checkedIlog(x, base) {
+  return x <= 0 || base < 2 ? undefined : $ilog(x, base, undefined);
+}
+// Raised where it was called, `raisedAt` (#2292).
+function $ilog(x, base, raisedAt) {
+  if (x <= 0) throw $panic("argument of integer logarithm must be positive", raisedAt);
+  if (base < 2) throw $panic("base of integer logarithm must be at least 2", raisedAt);
   let log = 0;
   if (typeof x === "bigint") {
     for (const b = BigInt(base); x >= b; x /= b) log++;

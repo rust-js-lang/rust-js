@@ -22,7 +22,7 @@ function fill(headers) {
   }
   const taken = headers.value;
   headers.value = [];
-  headers.value = $view(taken, 0, n);
+  headers.value = $view(taken, 0, "test/corpus/pointer_to_a_kept_mut.rs:27:26", n);
   return n;
 }
 
@@ -42,7 +42,7 @@ function main() {
   console.log(`${n} [${headers.join(", ")}]`);
   const raw = [5, 6];
   const init = assumeInitSlice(raw);
-  init[$at(init, 1)] = 60;
+  init[$at(init, 1, "test/corpus/pointer_to_a_kept_mut.rs:38:5")] = 60;
   console.log(`[${init.join(", ")}]`);
   console.log(`[${storage.join(", ")}]`);
 }

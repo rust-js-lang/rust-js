@@ -48,28 +48,25 @@ impl Expr {
     }
 
     /// A panic, of Rust's or a port's (ADR 0012), the one way rust-js makes
-    /// one, of its payload's kind (ADR 0660, amended): `new Error(message)`
-    /// of a `&str`'s, `panic!("plain")`'s, as JS's own; `$stringPanic(message)`
-    /// of a `String`'s, `panic!("n = {n}")`'s, the rarer in programs and
-    /// ports alike, which `$unwound` reads as a `String`. Of an empty
-    /// message, `panic!("")`'s, no argument, as `message` is `""` either way
-    /// (ADR 0706).
+    /// one, of its payload's kind (ADR 0660, amended): `$panic(message)` of a
+    /// `&str`'s, `panic!("plain")`'s, an `Error` of JS's own constructor;
+    /// `$stringPanic(message)` of a `String`'s, `panic!("n = {n}")`'s, which
+    /// `$unwound` reads as a `String`. Each takes where it was raised, `at`,
+    /// which the lowering gives it as it gives every helper that takes one
+    /// (`runtime::location_at`, ADR 0706, amended by #2292).
     pub fn panic(message: Expr, payload: Payload) -> Expr {
-        let args = match &message.kind {
-            ExprKind::Str(text) if text.is_empty() => Vec::new(),
-            _ => vec![message],
-        };
         match payload {
-            Payload::Str => Expr::new_(Expr::global("Error"), args),
-            Payload::String => Expr::call_helper("$stringPanic", args),
+            Payload::Str => Expr::call_helper("$panic", vec![message]),
+            Payload::String => Expr::call_helper("$stringPanic", vec![message]),
         }
     }
 
     /// Of a panic `Expr::panic` made, what its message is made of.
     pub fn panic_message(&self) -> Option<&[Expr]> {
         match &self.kind {
-            ExprKind::New(class, args) if matches!(&class.kind, ExprKind::Var(name) if name.is("Error")) => Some(args),
-            ExprKind::Call(callee, args) if callee.helper_name() == Some("$stringPanic") => Some(args),
+            ExprKind::Call(callee, args) if matches!(callee.helper_name(), Some("$panic" | "$stringPanic")) => {
+                Some(&args[..1])
+            }
             _ => None,
         }
     }

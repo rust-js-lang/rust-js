@@ -24,7 +24,7 @@ function risky(n) {
   try {
     check(n);
     if (n === 2) {
-      throw $stringPanic(`boom at ${n}`);
+      throw $stringPanic(`boom at ${n}`, "test/corpus/io_unit_result_panic.rs:17:9");
     }
     return { TAG: "Ok", _0: n };
   } catch (error) {

@@ -41,7 +41,7 @@ function main() {
       a = value;
     },
   });
-  $index(kept, 0);
+  $index(kept, 0, "test/corpus/mut_ref_escapes.rs:35:10");
   kept[0].value = (kept[0].value + 1) >>> 0;
   let b = 20;
   const holder = {};

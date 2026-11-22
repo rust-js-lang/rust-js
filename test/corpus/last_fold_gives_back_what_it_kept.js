@@ -14,6 +14,7 @@ import {
   $lazyRange,
   $lazyZip,
   $next,
+  $panic,
   $rangeNext,
   $some,
   $someValue,
@@ -32,7 +33,7 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === BOOM) {
     BOOM = 0;
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/last_fold_gives_back_what_it_kept.rs:26:13");
   }
 }
 
@@ -43,7 +44,7 @@ function ds() {
 function panicsIterator_next(panics) {
   panics.at = (panics.at + 1) >>> 0;
   if (panics.at === panics.n) {
-    throw new Error("next");
+    throw $panic("next", "test/corpus/last_fold_gives_back_what_it_kept.rs:46:13");
   }
   return panics.at < 6 ? [(panics.at + 10) >>> 0] : undefined;
 }
@@ -184,7 +185,7 @@ function main() {
         $closing($iter([[1], [2], [4], [5]]), $dropEach(dDrop_drop)),
         (d) => {
           if (d[0] === 4) {
-            throw new Error("stage");
+            throw $panic("stage", "test/corpus/last_fold_gives_back_what_it_kept.rs:101:21");
           }
           return true;
         },

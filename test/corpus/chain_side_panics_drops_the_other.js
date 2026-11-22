@@ -15,6 +15,7 @@ import {
   $lazyChain,
   $live,
   $next,
+  $panic,
   $roomForHint,
   $unwindsOn,
   iterator_chain,
@@ -32,7 +33,7 @@ function dDrop_drop(d) {
 function ownIterator_next(own) {
   own[0] = (own[0] + 1) >>> 0;
   if (own[0] === 2) {
-    throw new Error("next");
+    throw $panic("next", "test/corpus/chain_side_panics_drops_the_other.rs:19:13");
   }
   return [own[0]];
 }
@@ -47,17 +48,17 @@ function counterDrop_drop(counter) {
 function plainIterator_next(plain) {
   plain[0] = (plain[0] + 1) >>> 0;
   if (plain[0] === 2) {
-    throw new Error("plain");
+    throw $panic("plain", "test/corpus/chain_side_panics_drops_the_other.rs:45:13");
   }
   return plain[0];
 }
 function plainIterator_last(plain) {
-  throw new Error("plain last");
+  throw $panic("plain last", "test/corpus/chain_side_panics_drops_the_other.rs:50:9");
 }
 function spentIterator_next(spent) {
   spent[0] = (spent[0] + 1) >>> 0;
   if (spent[0] === 2) {
-    throw new Error("spent");
+    throw $panic("spent", "test/corpus/chain_side_panics_drops_the_other.rs:60:13");
   }
   return spent[0];
 }

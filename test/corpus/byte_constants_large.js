@@ -790,7 +790,7 @@ function made(N) {
   const bytes = new Array(N).fill(0);
   for (let i = 0; i < N; i++) {
     const value = ((i * 7) >>> 0) % 251;
-    bytes[$at(bytes, i)] = value;
+    bytes[$at(bytes, i, "test/corpus/byte_constants_large.rs:12:9")] = value;
   }
   return bytes;
 }
@@ -802,8 +802,8 @@ function sum(bytes, TAsRefU8Slice) {
 }
 
 function report(name, bytes) {
-  const value = $index(bytes, 0);
-  const value$1 = $slice(bytes, 0, 4);
+  const value = $index(bytes, 0, "test/corpus/byte_constants_large.rs:26:9");
+  const value$1 = $slice(bytes, 0, "test/corpus/byte_constants_large.rs:28:15", 4);
   const collect = bytes.toReversed().slice(0, 3);
   const arg = sum(bytes, { asRef: (value) => value });
   console.log(
@@ -824,8 +824,10 @@ function main() {
     ),
   );
   const copy = PAST_THE_LIMIT.slice();
-  copy[$at(copy, 0)] = 99;
-  console.log(`${$index(copy, 0)} ${PAST_THE_LIMIT[0]} ${$eq(copy, PAST_THE_LIMIT.slice())}`);
+  copy[$at(copy, 0, "test/corpus/byte_constants_large.rs:41:9")] = 99;
+  console.log(
+    `${$index(copy, 0, "test/corpus/byte_constants_large.rs:42:30")} ${PAST_THE_LIMIT[0]} ${$eq(copy, PAST_THE_LIMIT.slice())}`,
+  );
   console.log(`${$eq(PAST_THE_LIMIT.slice(0, 16384), AT_THE_LIMIT)}`);
   console.log(`${sum(PAST_THE_LIMIT.slice(), itemsAsRef) === sum(PAST_THE_LIMIT, itemsAsRef)}`);
   const inline = [115, 104, 111, 114, 116, 32, 98, 121, 116, 101, 115];

@@ -11,16 +11,16 @@ function main() {
   const add = { value: (x) => (x * 2) | 0 };
   let tmp;
   for (const x of [1, 2, 3]) {
-    const borrowMut = $borrowMut(add, true);
+    const borrowMut = $borrowMut(add, "test/corpus/unsized_struct_fn.rs:9:43", true);
     try {
       const value = borrowMut.value(x);
-      tmp = $borrowMut(total, true);
+      tmp = $borrowMut(total, "test/corpus/unsized_struct_fn.rs:9:16", true);
       tmp.value = (tmp.value + value) | 0;
       $unborrow(tmp);
     } finally {
       $unborrow(borrowMut);
     }
   }
-  console.log(`${$borrow(total).value}`);
+  console.log(`${$borrow(total, "test/corpus/unsized_struct_fn.rs:11:26").value}`);
 }
 //# sourceMappingURL=case.js.map

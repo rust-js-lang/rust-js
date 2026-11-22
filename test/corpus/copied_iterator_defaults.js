@@ -10,6 +10,7 @@ import {
   $lent,
   $live,
   $next,
+  $panic,
   $rangeNext,
   $roomForHint,
   $someValue,
@@ -200,7 +201,7 @@ function loudGenIterator_next(loudGen) {
 
 function added(n, x) {
   if (x === 1) {
-    throw new Error("one");
+    throw $panic("one", "test/corpus/copied_iterator_defaults.rs:148:9");
   }
   return (n + x) & 255;
 }

@@ -40,7 +40,7 @@ export function label(count) {
 }
 
 export function pick(items, index) {
-  return $index(items, index);
+  return $index(items, index, "lib.rs:6:5");
 }
 ```
 

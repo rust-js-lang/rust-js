@@ -83,6 +83,7 @@ export const LiteMap = {
         },
         0,
       ),
+      "test/corpus/store_get_mut.rs:30:35",
     )[1];
   },
 
@@ -99,6 +100,7 @@ export const LiteMap = {
         },
         i,
       ),
+      "test/corpus/store_get_mut.rs:34:48",
     )[1];
     const old = $apart(item.value);
     item.value = value;

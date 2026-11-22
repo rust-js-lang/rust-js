@@ -152,9 +152,17 @@ function logTo(w, args) {
 
 function relay(w, args) {
   const result = $writeTry(() => logTo(w, args));
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_given_on.rs:98:21",
+  );
   const result$1 = $writeTry(() => logTo(w, args));
-  $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$1,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_given_on.rs:99:21",
+  );
 }
 
 function intoAny(w, args, WWrite) {
@@ -176,7 +184,11 @@ function both(w, args) {
     const f = $writerSink(w, logWrite_writeStr, logWrite_writeStr);
     $writingInto(f, args);
   });
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_given_on.rs:112:23",
+  );
   $printing(() => {
     try {
       $out("both: ");
@@ -186,16 +198,8 @@ function both(w, args) {
       $fmtPrintFailed(error, "", false);
     }
   });
-  const len = $byteLen(
-    $fmtOrPanic(
-      () => args(),
-      "a formatting trait implementation returned an error when the underlying stream did not: Error",
-    ),
-  );
-  return $fmtOrPanic(
-    () => `[${args()}|${len}]`,
-    "a formatting trait implementation returned an error when the underlying stream did not: Error",
-  );
+  const len = $byteLen($fmtOrPanic(() => args(), "format"));
+  return $fmtOrPanic(() => `[${args()}|${len}]`, "format");
 }
 
 const logSink = { put: (log, args) => logSink_put(log.value, args), text: logSink_text };
@@ -210,10 +214,7 @@ function logSink_text(log) {
 
 const stringSink = { put: stringSink_put, text: stringSink_text };
 function stringSink_put(string, args) {
-  string.value += $fmtOrPanic(
-    () => args(),
-    "a formatting trait implementation returned an error when the underlying stream did not: Error",
-  );
+  string.value += $fmtOrPanic(() => args(), "format");
 }
 
 function stringSink_text(string) {
@@ -280,7 +281,11 @@ function main() {
       return f.done();
     }),
   );
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_given_on.rs:160:57",
+  );
   relay(log, () => {
     const f = $sink();
     try {
@@ -303,7 +308,11 @@ function main() {
       return f.done();
     }),
   );
-  $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$1,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_given_on.rs:162:45",
+  );
   console.log(`[${log[0].map((item) => $debugStr(item)).join(", ")}]`);
 
   const chars = [[]];
@@ -327,7 +336,11 @@ function main() {
       charsWrite,
     ),
   );
-  $writeExpect(result$2, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$2,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_given_on.rs:166:79",
+  );
   const value = chars;
   const impl = charsWrite;
   const result$3 = $writeTry(() =>
@@ -342,7 +355,11 @@ function main() {
       return f.done();
     }),
   );
-  $writeExpect(result$3, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$3,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_given_on.rs:167:58",
+  );
   let text = "";
   const value$2 = [3, 4];
   const w = { value: text };
@@ -364,7 +381,11 @@ function main() {
     ),
   );
   text = w.value;
-  $writeExpect(any, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    any,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_given_on.rs:169:64",
+  );
   const value$3 = {
     impl: $stringWriter,
     get value() {
@@ -385,7 +406,11 @@ function main() {
       return f.done();
     }),
   );
-  $writeExpect(result$4, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$4,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_given_on.rs:170:51",
+  );
   const value$4 = [1];
   const w$1 = { value: text };
   const value$5 = $writeTry(() =>
@@ -406,7 +431,11 @@ function main() {
     ),
   );
   text = w$1.value;
-  $writeExpect(value$5, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    value$5,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_given_on.rs:171:56",
+  );
   const value$6 = {
     impl: $stringWriter,
     get value() {
@@ -430,7 +459,11 @@ function main() {
       return f.done();
     }),
   );
-  $writeExpect(result$5, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$5,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_given_on.rs:172:56",
+  );
   console.log(`[${chars[0].map((item) => $debugStr(item)).join(", ")}] ${$debugStr(text)}`);
 
   const failing = [0, ""];
@@ -525,7 +558,11 @@ function main() {
         return f.done();
       }),
     );
-    $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+    $writeExpect(
+      result,
+      "called `Result::unwrap()` on an `Err` value",
+      "test/corpus/writer_sink_arguments_given_on.rs:191:63",
+    );
     console.log(`${sinks[i].impl.text(sinks[i].value)}`);
   }
   const own = [[]];
@@ -541,7 +578,11 @@ function main() {
       return f.done();
     }),
   );
-  $writeExpect(result$6, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$6,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_given_on.rs:195:43",
+  );
   console.log(`[${own[0].map((item) => $debugStr(item)).join(", ")}]`);
 
   const inner = [[]];
@@ -558,7 +599,11 @@ function main() {
       return f.done();
     }),
   );
-  $writeExpect(result$7, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$7,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_given_on.rs:200:39",
+  );
   const result$8 = $writeTry(() =>
     intoAny(
       $cellOf(bracketed),
@@ -574,7 +619,11 @@ function main() {
       bracketedWrite,
     ),
   );
-  $writeExpect(result$8, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$8,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_given_on.rs:201:58",
+  );
   console.log(`[${inner[0].map((item) => $debugStr(item)).join(", ")}]`);
 
   const shown = [[]];
@@ -584,7 +633,11 @@ function main() {
     f.write("|");
     $writingInto(f, prefixedDisplay_fmt, ["é", 8], { width: 9, align: "Right" });
   });
-  $writeExpect(result$9, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$9,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/writer_sink_arguments_given_on.rs:205:69",
+  );
   let text$1 = "";
   try {
     text$1 += "[";

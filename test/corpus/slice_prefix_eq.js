@@ -43,7 +43,7 @@ function main() {
   ];
   const origin = [{ x: 0, y: 0 }];
   console.log(
-    `${$sliceStartsWith(path, origin, false, $eq)} ${$sliceStartsWith(path, $slice(path, 1), true, $eq)}`,
+    `${$sliceStartsWith(path, origin, false, $eq)} ${$sliceStartsWith(path, $slice(path, 1, "test/corpus/slice_prefix_eq.rs:28:70"), true, $eq)}`,
   );
   const stripPrefix = $sliceStrip(path, origin, false, $eq);
   console.log(
@@ -57,7 +57,12 @@ function main() {
   console.log(
     `${stripCircumfix == null ? "None" : `Some([${stripCircumfix.map((item) => pointDebug_fmt(item)).join(", ")}])`}`,
   );
-  const value = $sliceStripCircumfix($slice(path, 0, 1), origin, origin, $eq);
+  const value = $sliceStripCircumfix(
+    $slice(path, 0, "test/corpus/slice_prefix_eq.rs:32:26", 1),
+    origin,
+    origin,
+    $eq,
+  );
   console.log(
     `${value == null ? "None" : `Some([${value.map((item) => pointDebug_fmt(item)).join(", ")}])`}`,
   );

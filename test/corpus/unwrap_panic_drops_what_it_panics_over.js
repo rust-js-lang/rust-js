@@ -29,33 +29,93 @@ function ok(n) {
 }
 
 function unwrapped(r, EDebug, dropE) {
-  return $unwrapOk(r, undefined, (e) => EDebug.fmt(e), dropE);
+  return $unwrapOk(
+    r,
+    "test/corpus/unwrap_panic_drops_what_it_panics_over.rs:30:7",
+    undefined,
+    (e) => EDebug.fmt(e),
+    dropE,
+  );
 }
 
 function main() {
-  let r = $catchUnwind(() => $unwrapOk(get(7), undefined, loudDebug_fmt, loudDrop_drop));
+  let r = $catchUnwind(() =>
+    $unwrapOk(
+      get(7),
+      "test/corpus/unwrap_panic_drops_what_it_panics_over.rs:34:43",
+      undefined,
+      loudDebug_fmt,
+      loudDrop_drop,
+    ),
+  );
   console.log(`caught ${r.TAG === "Err"}`);
-  r = $catchUnwind(() => $unwrapOk(get(8), "eight", loudDebug_fmt, loudDrop_drop));
+  r = $catchUnwind(() =>
+    $unwrapOk(
+      get(8),
+      "test/corpus/unwrap_panic_drops_what_it_panics_over.rs:36:43",
+      "eight",
+      loudDebug_fmt,
+      loudDrop_drop,
+    ),
+  );
   console.log(`caught ${r.TAG === "Err"}`);
-  r = $catchUnwind(() => $unwrapErr(ok(9), undefined, loudDebug_fmt, loudDrop_drop));
+  r = $catchUnwind(() =>
+    $unwrapErr(
+      ok(9),
+      "test/corpus/unwrap_panic_drops_what_it_panics_over.rs:38:42",
+      undefined,
+      loudDebug_fmt,
+      loudDrop_drop,
+    ),
+  );
   console.log(`caught ${r.TAG === "Err"}`);
-  r = $catchUnwind(() => $unwrapErr(ok(10), "ten", loudDebug_fmt, loudDrop_drop));
+  r = $catchUnwind(() =>
+    $unwrapErr(
+      ok(10),
+      "test/corpus/unwrap_panic_drops_what_it_panics_over.rs:40:43",
+      "ten",
+      loudDebug_fmt,
+      loudDrop_drop,
+    ),
+  );
   console.log(`caught ${r.TAG === "Err"}`);
   r = $catchUnwind(() => unwrapped(get(12), loudDebug, loudDrop_drop));
   console.log(`caught generic ${r.TAG === "Err"}`);
   r = $catchUnwind(() => {
     const p = { TAG: "Err", _0: [[13], [14]] };
-    return $unwrapOk(p, undefined, pairDebug_fmt, (pair) => {
-      loudDrop_drop(pair[0]);
-      loudDrop_drop(pair[1]);
-    });
+    return $unwrapOk(
+      p,
+      "test/corpus/unwrap_panic_drops_what_it_panics_over.rs:46:11",
+      undefined,
+      pairDebug_fmt,
+      (pair) => {
+        loudDrop_drop(pair[0]);
+        loudDrop_drop(pair[1]);
+      },
+    );
   });
   console.log(`caught pair ${r.TAG === "Err"}`);
   r = { TAG: "Err", _0: [15] };
-  const r$1 = $catchUnwind(() => $unwrapOk(r, undefined, loudDebug_fmt, loudDrop_drop));
+  const r$1 = $catchUnwind(() =>
+    $unwrapOk(
+      r,
+      "test/corpus/unwrap_panic_drops_what_it_panics_over.rs:50:43",
+      undefined,
+      loudDebug_fmt,
+      loudDrop_drop,
+    ),
+  );
   console.log(`caught boxed ${r$1.TAG === "Err"}`);
-  console.log(`${$unwrapOk(get(3), undefined, loudDebug_fmt, loudDrop_drop)}`);
+  console.log(
+    `${$unwrapOk(get(3), "test/corpus/unwrap_panic_drops_what_it_panics_over.rs:52:27", undefined, loudDebug_fmt, loudDrop_drop)}`,
+  );
   console.log(`${unwrapped(get(4), loudDebug, loudDrop_drop)}`);
-  $unwrapOk(get(11), undefined, loudDebug_fmt, loudDrop_drop);
+  $unwrapOk(
+    get(11),
+    "test/corpus/unwrap_panic_drops_what_it_panics_over.rs:54:13",
+    undefined,
+    loudDebug_fmt,
+    loudDrop_drop,
+  );
 }
 //# sourceMappingURL=case.js.map

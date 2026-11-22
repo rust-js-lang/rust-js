@@ -3,7 +3,7 @@
 import { isRendering } from "./fiber.js";
 import * as Fiber from "./fiber.js";
 import * as Probe from "./probe.js";
-import { $debugStr, $withBorrow, $withBorrowMut } from "@rust-js/std";
+import { $debugStr, $stdSites, $withBorrow, $withBorrowMut } from "@rust-js/std";
 
 export function entry() {
   main();
@@ -18,6 +18,7 @@ function told() {
     (log) => {
       log.push(current ?? 0);
     },
+    $stdSites.localKeyWithBorrowMut[0],
     true,
   );
   // What was read before is what it was then, not what it's set to now.
@@ -33,6 +34,8 @@ function main() {
   console.log(`${told()}`);
   Fiber.setCurrent(undefined, "");
   console.log(`${told()}`);
-  console.log(`[${$withBorrow(Fiber.log, (log) => log.slice(), true).join(", ")}]`);
+  console.log(
+    `[${$withBorrow(Fiber.log, (log) => log.slice(), $stdSites.localKeyWithBorrow[0], true).join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

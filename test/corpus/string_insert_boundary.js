@@ -8,8 +8,8 @@ export function entry() {
 
 function main() {
   let s = "héllo";
-  s = $insertStr(s, 1, "x");
-  s = $insertStr(s, 3, "y");
+  s = $insertStr(s, 1, "x", "test/corpus/string_insert_boundary.rs:6:7");
+  s = $insertStr(s, 3, "y", "test/corpus/string_insert_boundary.rs:7:7");
   console.log(`${s}`);
 }
 //# sourceMappingURL=case.js.map

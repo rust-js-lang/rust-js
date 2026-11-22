@@ -26,7 +26,7 @@ function shortened(items, n) {
   if (index !== -1) {
     $truncate(items, 1);
     if (index >= items.length) {
-      $removeOutOfBounds(items, index);
+      $removeOutOfBounds(items, index, "test/corpus/position_index_removed_unchecked.rs:22:19");
     }
     return items.splice(index, 1)[0];
   } else {

@@ -16,7 +16,11 @@ function removeChild(parentInstance, child) {
   const index = parentInstance.children.indexOf(child);
   if (index !== -1) {
     if (index >= parentInstance.children.length) {
-      $removeOutOfBounds(parentInstance.children, index);
+      $removeOutOfBounds(
+        parentInstance.children,
+        index,
+        "test/corpus/untagged_field_of_each_variant.rs:36:49",
+      );
     }
     parentInstance.children.splice(index, 1);
   }

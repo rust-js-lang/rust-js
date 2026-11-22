@@ -17,6 +17,7 @@ import {
   $iter,
   $live,
   $next,
+  $panic,
   $roomForHint,
   $some,
   $someValue,
@@ -264,7 +265,10 @@ function main() {
               (l) => {
                 try {
                   if (l[0] === 3) {
-                    throw new Error("at 3");
+                    throw $panic(
+                      "at 3",
+                      "test/corpus/collect_of_an_impls_own_associated_type.rs:78:46",
+                    );
                   }
                   return [(l[0] * 10) >>> 0];
                 } catch (error) {

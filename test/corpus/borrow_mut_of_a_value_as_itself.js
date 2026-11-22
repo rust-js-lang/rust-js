@@ -91,7 +91,7 @@ function main() {
   b = w;
   b.push(2);
   s = w;
-  s[$at(s, 0)] = 7;
+  s[$at(s, 0, "test/corpus/borrow_mut_of_a_value_as_itself.rs:103:5")] = 7;
   console.log(`[${w.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

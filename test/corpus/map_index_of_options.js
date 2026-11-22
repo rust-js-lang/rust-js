@@ -10,12 +10,30 @@ function main() {
   const partner = new Map();
   partner.set("ann");
   partner.set("bea", "cal");
-  const value = $someValue($unwrap($someGet(partner, "ann"), "no entry found for key"));
-  const value$1 = $someValue($unwrap($someGet(partner, "bea"), "no entry found for key"));
+  const value = $someValue(
+    $unwrap(
+      $someGet(partner, "ann"),
+      "test/corpus/map_index_of_options.rs:10:34",
+      "no entry found for key",
+    ),
+  );
+  const value$1 = $someValue(
+    $unwrap(
+      $someGet(partner, "bea"),
+      "test/corpus/map_index_of_options.rs:10:50",
+      "no entry found for key",
+    ),
+  );
   console.log(
     `${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`,
   );
-  const current = $someValue($unwrap($someGet(partner, "bea"), "no entry found for key"));
+  const current = $someValue(
+    $unwrap(
+      $someGet(partner, "bea"),
+      "test/corpus/map_index_of_options.rs:11:35",
+      "no entry found for key",
+    ),
+  );
   if (current != null) {
     console.log(`bea is with ${current}`);
   }
@@ -25,9 +43,27 @@ function main() {
     [2, $some(undefined)],
     [3, 4],
   ]);
-  const value$2 = $someValue($unwrap($someGet(nested, 1), "no entry found for key"));
-  const value$3 = $someValue($unwrap($someGet(nested, 2), "no entry found for key"));
-  const value$4 = $someValue($unwrap($someGet(nested, 3), "no entry found for key"));
+  const value$2 = $someValue(
+    $unwrap(
+      $someGet(nested, 1),
+      "test/corpus/map_index_of_options.rs:17:38",
+      "no entry found for key",
+    ),
+  );
+  const value$3 = $someValue(
+    $unwrap(
+      $someGet(nested, 2),
+      "test/corpus/map_index_of_options.rs:17:50",
+      "no entry found for key",
+    ),
+  );
+  const value$4 = $someValue(
+    $unwrap(
+      $someGet(nested, 3),
+      "test/corpus/map_index_of_options.rs:17:62",
+      "no entry found for key",
+    ),
+  );
   console.log(
     `${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`} ${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`} ${value$4 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$4))})`}`,
   );

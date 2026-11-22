@@ -23,7 +23,7 @@ function dDrop_drop(d) {
 
 function made(n) {
   if (n === 3) {
-    throw $stringPanic(`at ${n}`);
+    throw $stringPanic(`at ${n}`, "test/corpus/collect_panic_drops_collected.rs:19:9");
   }
   return [n];
 }

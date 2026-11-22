@@ -672,6 +672,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let Some(iter_ty) = iter_ty else { return Ok(it) };
             let boxed = Ty::new_box(self.tcx, pointee);
+            // Where std's `ToRcSlice`, or `ToArcSlice`, panics of a
+            // `TrustedLen` of no upper bound (#2292).
+            let unbounded = Expr::std_site(
+                match self.is_std_type(output, StdItem::Arc) {
+                    true => "arcFromTrustedLen",
+                    false => "rcFromTrustedLen",
+                },
+                0,
+            );
             // Of a `TrustedLen` whose steps may panic, std's
             // `from_iter_exact` writes each item in place, so a panic as it
             // steps drops what's left of the iterator before what it wrote,
@@ -693,7 +702,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some((item, how)) = given_counted {
                 let trusted = self.type_fact_value(iter_ty, crate::recognition::TypeFact::TrustedLen, span)?;
                 let (size, align) = self.counted_slice_layout((boxed, item), iter_ty, span)?;
-                let mut args = vec![it, size, align, trusted, how];
+                let mut args = vec![it, size, align, trusted, how, unbounded];
                 if self.drops(item) != crate::drops::Drops::Nothing {
                     args.extend(self.drop_function(item, span)?);
                 }
@@ -706,7 +715,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let items = match exact {
                 true => {
                     let it = match item {
-                        Some(item) => self.counted_slice_room(it, (boxed, item), iter_ty, span)?,
+                        Some(item) => self.counted_slice_room(it, (boxed, item), iter_ty, unbounded, span)?,
                         None => it,
                     };
                     match self.unwinding_collect(output, item, Some(iter_ty), span)? {

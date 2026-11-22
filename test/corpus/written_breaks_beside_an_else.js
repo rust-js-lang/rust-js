@@ -86,7 +86,10 @@ export function performWorkOnRoot(root, lanes, shouldTimeSlice) {
       }
 
       // The render completed.
-      const finishedWork = $unwrap(root.current.alternate);
+      const finishedWork = $unwrap(
+        root.current.alternate,
+        "test/corpus/written_breaks_beside_an_else.rs:108:82",
+      );
       if (renderWasConcurrent && !isRenderConsistentWithExternalStores(finishedWork)) {
         if (ENABLE_PROFILER_TIMER && ENABLE_COMPONENT_PERFORMANCE_TRACK) {
           setCurrentTrackFromLanes(lanes);

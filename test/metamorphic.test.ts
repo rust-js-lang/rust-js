@@ -443,7 +443,7 @@ firstPart("loud-call panics at the middle call, and what's held is dropped as it
   writeFileSync(program, made!.program);
   const ran = runNative(program, dir, "2024");
   if (typeof ran === "string") throw new Error(ran);
-  expect(ran.outcome).toEqual({ panic: "~loud panic at 5" });
+  expect(ran.outcome).toEqual({ panic: "~loud panic at 5", at: expect.stringMatching(/loud\.rs:\d+:\d+$/) });
   expect(ran.stdout.split("\n").filter((line) => line.startsWith("~loud ")).slice(-3)).toEqual(["~loud 5 call 1", "~loud 6 drop Token(1)", "~loud 7 drop Token(1)"]);
 });
 

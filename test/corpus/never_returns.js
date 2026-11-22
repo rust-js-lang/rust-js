@@ -8,7 +8,7 @@ export function entry() {
 
 function fail(message) {
   console.log(`failing: ${message}`);
-  throw $stringPanic(message);
+  throw $stringPanic(message, "test/corpus/never_returns.rs:7:5");
 }
 
 function forever() {

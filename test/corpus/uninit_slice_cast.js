@@ -13,13 +13,16 @@ function sliceAssumeInitMut(slice) {
 function main() {
   const buf = [1, 2, 3];
   const all = sliceAssumeInitMut(buf);
-  all[$at(all, 1)] = 20;
+  all[$at(all, 1, "test/corpus/uninit_slice_cast.rs:13:5")] = 20;
   console.log(`[${all.join(", ")}]`);
   const words = ["a", "b"];
   const ws = sliceAssumeInitMut(words);
   const length = ws.length;
   if (0 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/uninit_slice_cast.rs:17:5",
+    );
   }
   ws[0] += "!";
   console.log(`[${ws.map((item) => $debugStr(item)).join(", ")}]`);

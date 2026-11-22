@@ -17,7 +17,12 @@ function check(name, value) {
     if (name === "checked") {
       return true;
     }
-    const prefix = $strSlice(name, 0, Math.min($byteLen(name), 5));
+    const prefix = $strSlice(
+      name,
+      0,
+      "test/corpus/arm_returns_as_written.rs:32:35",
+      Math.min($byteLen(name), 5),
+    );
     if (prefix === "data-" || prefix === "aria-") {
       return true;
     }

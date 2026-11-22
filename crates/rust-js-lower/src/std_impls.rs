@@ -406,6 +406,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let (mut a, _) = self.through_refs(a, ty);
         let (mut b, mut ty) = self.through_refs(b, ty);
+        // A `Location`'s text, `file:line:column`, which is equal as its
+        // parts are (ADR 0427, amended by #2292).
+        if matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.is_lang_item(adt.did(), LangItem::PanicLocation)) {
+            return Ok(Expr::bin(Op::Eq, a, b));
+        }
         // An `Rc`'s or an `Arc`'s of an `Eq` value: the same allocation
         // first, `Rc::ptr_eq`'s `===` (ADR 0582), as std's `RcEqIdent`
         // specializes it, then its value's, where that runs the crate's
@@ -690,24 +695,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut body = Vec::new();
                 let eq = self.eq_value(Expr::var(&x), Expr::var(&y), args.type_at(0), false, span, &mut body)?;
                 body.push(StmtKind::Return(Some(eq)).at(js::Span::NONE));
-                let inner = Expr::call(
-                    Expr::helper("$withBorrow"),
-                    flagged(vec![b, Expr::arrow(vec![y.into()], body)]),
-                );
-                Ok(Expr::call(
-                    Expr::helper("$withBorrow"),
-                    flagged(vec![
-                        a,
-                        Expr::arrow(vec![x.into()], vec![StmtKind::Return(Some(inner)).at(js::Span::NONE)]),
-                    ]),
-                ))
+                // Each borrowed where std's `eq` borrows it, its own line
+                // (`$stdSites`, #2292).
+                let inner = Expr::raised_at(Expr::std_site("refCellEq", 1), || {
+                    Expr::call(
+                        Expr::helper("$withBorrow"),
+                        flagged(vec![b, Expr::arrow(vec![y.into()], body)]),
+                    )
+                });
+                Ok(Expr::raised_at(Expr::std_site("refCellEq", 0), || {
+                    Expr::call(
+                        Expr::helper("$withBorrow"),
+                        flagged(vec![
+                            a,
+                            Expr::arrow(vec![x.into()], vec![StmtKind::Return(Some(inner)).at(js::Span::NONE)]),
+                        ]),
+                    )
+                }))
             }
             ty::Adt(_, args) if std(StdItem::RefCell) && self.is_value_cell(ty) => {
                 let (a, b) = match self.quiet_ref_cell(ty, false) {
                     true => (a, b),
                     false => (
-                        Expr::call(Expr::helper("$borrow"), vec![a]),
-                        Expr::call(Expr::helper("$borrow"), vec![b]),
+                        Expr::raised_at(Expr::std_site("refCellEq", 0), || {
+                            Expr::call(Expr::helper("$borrow"), vec![a])
+                        }),
+                        Expr::raised_at(Expr::std_site("refCellEq", 1), || {
+                            Expr::call(Expr::helper("$borrow"), vec![b])
+                        }),
                     ),
                 };
                 self.eq_value(a, b, args.type_at(0), false, span, out)
@@ -715,8 +730,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
                 let (a, b) = match std(StdItem::RefCell) {
                     true => (
-                        Expr::call(Expr::helper("$borrow"), vec![a]),
-                        Expr::call(Expr::helper("$borrow"), vec![b]),
+                        Expr::raised_at(Expr::std_site("refCellEq", 0), || {
+                            Expr::call(Expr::helper("$borrow"), vec![a])
+                        }),
+                        Expr::raised_at(Expr::std_site("refCellEq", 1), || {
+                            Expr::call(Expr::helper("$borrow"), vec![b])
+                        }),
                     ),
                     false => (a, b),
                 };

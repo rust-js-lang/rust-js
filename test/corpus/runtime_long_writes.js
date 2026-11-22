@@ -14,6 +14,7 @@ import {
   $repeatingN,
   $roomForHint,
   $splicing,
+  $stdSites,
   $utf8Bytes,
   $vecWriter,
   $writeText,
@@ -37,7 +38,9 @@ function main() {
   console.log(`${bytes.length} ${value == null ? "None" : `Some(${value})`}`);
 
   const v = [1, 2, 3];
-  const removed = Array.from($roomForHint($splicing(v, 1, 2, $repeatingN(7, 1100000)), 1, false));
+  const removed = Array.from(
+    $roomForHint($splicing(v, 1, 2, $repeatingN(7, 1100000), $stdSites.vecDrain[0]), 1, false),
+  );
   const get = v[1];
   console.log(
     `${v.length} [${removed.join(", ")}] ${get == null ? "None" : `Some(${get})`} ${v.at(-1) == null ? "None" : `Some(${v.at(-1)})`}`,
@@ -54,6 +57,7 @@ function main() {
       ),
       (n) => n & 255,
     ),
+    $stdSites.vecDrain[0],
   ).return();
   const value$1 = v[1];
   const value$2 = v.at(-1);

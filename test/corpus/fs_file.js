@@ -65,7 +65,11 @@ function report(what, e) {
 
 function refused(options, path) {
   const result = options.open(path);
-  const e = $unwrap(result.TAG === "Err" ? result._0 : undefined, "refused");
+  const e = $unwrap(
+    result.TAG === "Err" ? result._0 : undefined,
+    "test/corpus/fs_file.rs:27:38",
+    "refused",
+  );
   console.log(
     `${$ioErrorDisplay(e)} | ${$ioErrorDebug(e)} | ${e.code == null ? "None" : `Some(${e.code})`}`,
   );
@@ -80,7 +84,7 @@ function main() {
 
 function run() {
   const BufReaderBufRead = $bufReader($fileReader);
-  const base = $unwrap($args()[1], "the outcome's file");
+  const base = $unwrap($args()[1], "test/corpus/fs_file.rs:38:40", "the outcome's file");
   const notes = `${base}.notes.txt`;
 
   // Written, then read back whole, by line, and from generic code.
@@ -145,12 +149,14 @@ function run() {
                             console.log(`${result._0}`);
                             let e = $unwrapErr(
                               $fileReader.seek({ value: file }, { TAG: "Current", _0: -7n }),
+                              "test/corpus/fs_file.rs:64:46",
                             );
                             report("before its start", e);
                             const value = new Array(64).fill(0);
                             e = $writeExpectErr(
                               $writeTry(() => $fileReader.readExact({ value: file }, value)),
                               "called `Result::unwrap_err()` on an `Ok` value",
+                              "test/corpus/fs_file.rs:66:45",
                             );
                             console.log(`${$ioErrorDisplay(e)} ${e.kind}`);
 
@@ -172,7 +178,9 @@ function run() {
                               if (result$2.TAG === "Err") {
                                 return $ioThrow(result$2._0);
                               }
-                              console.log(`[${$slice(all, (all.length - 4) >>> 0).join(", ")}]`);
+                              console.log(
+                                `[${$slice(all, (all.length - 4) >>> 0, "test/corpus/fs_file.rs:76:26").join(", ")}]`,
+                              );
 
                               // Appended, wherever it's moved to; created anew, or refused where it is.
                               const log = `${base}.log`;
@@ -220,6 +228,7 @@ function run() {
                                           "open",
                                           $unwrap(
                                             result$1.TAG === "Err" ? result$1._0 : undefined,
+                                            "test/corpus/fs_file.rs:106:48",
                                             "missing",
                                           ),
                                         );
@@ -227,6 +236,7 @@ function run() {
                                           "read",
                                           $unwrapErr(
                                             $fsRead(missing),
+                                            "test/corpus/fs_file.rs:107:40",
                                             undefined,
                                             (e) => `[${e.join(", ")}]`,
                                           ),
@@ -236,6 +246,7 @@ function run() {
                                           $writeExpectErr(
                                             $writeTry(() => $fsRemoveFile(missing)),
                                             "called `Result::unwrap_err()` on an `Ok` value",
+                                            "test/corpus/fs_file.rs:108:49",
                                           ),
                                         );
                                         const result$2 = $fileOpen(notes);
@@ -244,19 +255,34 @@ function run() {
                                           const e = $writeExpectErr(
                                             $writeTry(() => $fileWriter.writeAll({ value }, [120])),
                                             "called `Result::unwrap_err()` on an `Ok` value",
+                                            "test/corpus/fs_file.rs:109:49",
                                           );
                                           report("write to a reader", e);
                                           const result = $fileCreate(log);
                                           if (result.TAG !== "Err") {
                                             let e = $unwrapErr(
                                               $fileReader.read({ value: result._0 }, four),
+                                              "test/corpus/fs_file.rs:111:49",
                                             );
                                             report("read a writer", e);
-                                            const dir = $unwrap($pathParent(base), "its directory");
-                                            report("directory", $unwrapErr($fsReadToString(dir)));
+                                            const dir = $unwrap(
+                                              $pathParent(base),
+                                              "test/corpus/fs_file.rs:113:52",
+                                              "its directory",
+                                            );
+                                            report(
+                                              "directory",
+                                              $unwrapErr(
+                                                $fsReadToString(dir),
+                                                "test/corpus/fs_file.rs:114:51",
+                                              ),
+                                            );
                                             const value = [0xff, 0xfe];
                                             $fsWrite(log, value);
-                                            e = $unwrapErr($fsReadToString(log));
+                                            e = $unwrapErr(
+                                              $fsReadToString(log),
+                                              "test/corpus/fs_file.rs:116:38",
+                                            );
                                             console.log(
                                               `${$ioErrorDisplay(e)} | ${$ioErrorDebug(e)}`,
                                             );
@@ -275,6 +301,7 @@ function run() {
                                                     },
                                                   },
                                                 ),
+                                                "test/corpus/fs_file.rs:119:57",
                                               );
                                               console.log(
                                                 `${$ioErrorDisplay(e)} ${$debugStr(text)}`,

@@ -267,10 +267,24 @@ const Parser = {
 const Calculator = {
   new() {
     const functions = new Map();
-    functions.set("max", [2, (a) => $f64Max($index(a, 0), $index(a, 1))]);
-    functions.set("min", [2, (a) => $f64Min($index(a, 0), $index(a, 1))]);
-    functions.set("sqrt", [1, (a) => Math.sqrt($index(a, 0))]);
-    functions.set("abs", [1, (a) => Math.abs($index(a, 0))]);
+    functions.set("max", [
+      2,
+      (a) =>
+        $f64Max(
+          $index(a, 0, "test/corpus/calculator.rs:206:41"),
+          $index(a, 1, "test/corpus/calculator.rs:206:50"),
+        ),
+    ]);
+    functions.set("min", [
+      2,
+      (a) =>
+        $f64Min(
+          $index(a, 0, "test/corpus/calculator.rs:207:41"),
+          $index(a, 1, "test/corpus/calculator.rs:207:50"),
+        ),
+    ]);
+    functions.set("sqrt", [1, (a) => Math.sqrt($index(a, 0, "test/corpus/calculator.rs:208:42"))]);
+    functions.set("abs", [1, (a) => Math.abs($index(a, 0, "test/corpus/calculator.rs:209:41"))]);
     const vars = new Map();
     vars.set("pi", Math.PI);
     return { vars, functions };
@@ -349,7 +363,7 @@ const Calculator = {
     // `name = expr` assigns.
     if (tokens.length >= 2 && tokens[0].TAG === "Ident" && tokens[1] === "Assign") {
       const name = tokens[0]._0;
-      const parser = { tokens: $copyOf(tokens, 2), at: 0 };
+      const parser = { tokens: $copyOf(tokens, 2, "test/corpus/calculator.rs:247:53"), at: 0 };
       const result = Parser.expr(parser);
       if (result.TAG === "Err") {
         return result;

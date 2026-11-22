@@ -22,8 +22,12 @@ function plainDisplay_fmt(plain, options) {
 export const indexedDisplay = { fmt: indexedDisplay_fmt };
 function indexedDisplay_fmt(indexed, options) {
   const f = $sink();
-  f.write(`first ${$index(indexed[0], 0)} `);
-  f.write(`at ${$index(indexed[0], indexed[1])}`);
+  f.write(
+    `first ${$index(indexed[0], 0, "test/corpus/stopping_writers_where_a_panic_is_caught.rs:30:38")} `,
+  );
+  f.write(
+    `at ${$index(indexed[0], indexed[1], "test/corpus/stopping_writers_where_a_panic_is_caught.rs:31:34")}`,
+  );
   return f.done();
 }
 
@@ -54,7 +58,7 @@ function main() {
     );
   });
   console.log(`plain ${caught.TAG === "Err"}`);
-  const value = $index(points, 0);
+  const value = $index(points, 0, "test/corpus/stopping_writers_where_a_panic_is_caught.rs:51:34");
   console.log(
     `${value == null ? "None" : $pretty("Some(", [pointDebug_fmt(value, { alternate: true })], ")")}`,
   );

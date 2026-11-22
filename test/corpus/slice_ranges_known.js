@@ -33,7 +33,7 @@ function negated(items) {
 function changed(items) {
   const truncated = items.length > LIMIT;
   $truncate(items, 1);
-  return truncated ? $copyOf(items, 0, 1) : [];
+  return truncated ? $copyOf(items, 0, "test/corpus/slice_ranges_known.rs:32:25", 1) : [];
 }
 
 /**
@@ -43,7 +43,7 @@ function changed(items) {
 function cleared(items) {
   const truncated = items.length > LIMIT;
   items.length = 0;
-  return truncated ? $copyOf(items, 0, LIMIT) : items;
+  return truncated ? $copyOf(items, 0, "test/corpus/slice_ranges_known.rs:40:25", LIMIT) : items;
 }
 
 /**
@@ -53,7 +53,7 @@ function cleared(items) {
 function rewritten(items, n) {
   const fits = n <= items.length;
   n += 10;
-  return fits ? $copyOf(items, 0, n) : [];
+  return fits ? $copyOf(items, 0, "test/corpus/slice_ranges_known.rs:48:20", n) : [];
 }
 
 function main() {

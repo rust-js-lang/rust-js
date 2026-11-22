@@ -16,9 +16,15 @@ function check(n) {
     return n * 2;
   }
   if (n !== 6) {
-    throw $stringPanic(`internal error: entered unreachable code: ${reasonDisplay_fmt([n])}`);
+    throw $stringPanic(
+      `internal error: entered unreachable code: ${reasonDisplay_fmt([n])}`,
+      "test/corpus/unreachable_display.rs:18:14",
+    );
   }
-  throw $stringPanic("internal error: entered unreachable code: six");
+  throw $stringPanic(
+    "internal error: entered unreachable code: six",
+    "test/corpus/unreachable_display.rs:17:14",
+  );
 }
 
 function main() {

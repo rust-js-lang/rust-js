@@ -30,7 +30,11 @@ function guardDrop_drop(guard) {
 }
 
 function keepFirst(g) {
-  const borrowMut = $borrowMut(g, true);
+  const borrowMut = $borrowMut(
+    g,
+    "test/corpus/ref_cell_borrowed_by_a_truncate_retain_or_map_clear.rs:18:7",
+    true,
+  );
   try {
     $truncate(borrowMut, 1, guardDrop_drop);
   } finally {
@@ -39,7 +43,11 @@ function keepFirst(g) {
 }
 
 function keepNone(g) {
-  const borrowMut = $borrowMut(g, true);
+  const borrowMut = $borrowMut(
+    g,
+    "test/corpus/ref_cell_borrowed_by_a_truncate_retain_or_map_clear.rs:22:7",
+    true,
+  );
   try {
     $retain(borrowMut, () => false, guardDrop_drop);
   } finally {
@@ -48,7 +56,11 @@ function keepNone(g) {
 }
 
 function clearMap(g) {
-  const borrowMut = $borrowMut(g, true);
+  const borrowMut = $borrowMut(
+    g,
+    "test/corpus/ref_cell_borrowed_by_a_truncate_retain_or_map_clear.rs:26:7",
+    true,
+  );
   try {
     try {
       $dropItems($sortedEntries(borrowMut, $cmp), ([, value]) => {
@@ -80,7 +92,11 @@ function main() {
   }
   let seen;
   try {
-    seen = $borrow(log, true);
+    seen = $borrow(
+      log,
+      "test/corpus/ref_cell_borrowed_by_a_truncate_retain_or_map_clear.rs:34:24",
+      true,
+    );
   } catch (error) {
     $cleanup(() => {
       $dropItems($sortedEntries(map, $cmp), ([, value]) => {

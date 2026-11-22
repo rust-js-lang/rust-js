@@ -9,6 +9,7 @@ import {
   $last,
   $live,
   $next,
+  $panic,
   $tryFoldSome,
   $unwindsOn,
   iterator_map,
@@ -30,7 +31,7 @@ function itDrop_drop(it) {
 function itIterator_next(it) {
   it[0] = (it[0] + 1) >>> 0;
   if (it[0] === 2) {
-    throw new Error("next");
+    throw $panic("next", "test/corpus/skip_first_nth_panics.rs:29:13");
   }
   return it[0];
 }

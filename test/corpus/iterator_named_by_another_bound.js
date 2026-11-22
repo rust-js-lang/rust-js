@@ -16,6 +16,7 @@ import {
   $next,
   $nextBack,
   $nthBack,
+  $panic,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
@@ -58,7 +59,7 @@ function countdownDrop_drop(countdown) {
 
 function fragileDrop_drop(fragile) {
   if (fragile[0] === 0) {
-    throw new Error("dropped 0");
+    throw $panic("dropped 0", "test/corpus/iterator_named_by_another_bound.rs:47:13");
   }
   console.log(`drop fragile ${fragile[0]}`);
 }

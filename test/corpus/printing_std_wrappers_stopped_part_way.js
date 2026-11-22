@@ -18,6 +18,7 @@ import {
   $next,
   $nextBack,
   $out,
+  $panic,
   $partsLeft,
   $partsSize,
   $pretty,
@@ -25,6 +26,7 @@ import {
   $printing,
   $rangeInclusiveNext,
   $sink,
+  $stdSites,
   $windows,
   $writeTry,
 } from "@rust-js/std";
@@ -39,7 +41,7 @@ function gridDebug_fmt(grid, options) {
   $out("!");
   f.write("Grid(");
   if (grid[0] > 2) {
-    throw new Error("too big");
+    throw $panic("too big", "test/corpus/printing_std_wrappers_stopped_part_way.rs:28:13");
   }
   f.write(`${grid[0]})`);
   return f.done();
@@ -865,7 +867,7 @@ function main() {
   });
   shown("8", () => {
     const grids = [[1], [2], [3], [1]];
-    const drain = $iter($drain(grids, 1));
+    const drain = $iter($drain(grids, 1, $stdSites.vecDrain[0]));
     $nextBack(drain);
     $printing(() => {
       $out("8 ");
@@ -921,7 +923,9 @@ function main() {
   // and their size (#2252).
   shown("s", () => {
     const grids = [[1], [2], [3]];
-    const chunks = $iter($chunks(grids, 2));
+    const chunks = $iter(
+      $chunks(grids, 2, "test/corpus/printing_std_wrappers_stopped_part_way.rs:191:32"),
+    );
     $nextBack(chunks);
     $printing(() => {
       $out("s ");
@@ -941,7 +945,9 @@ function main() {
       );
       $out(" t\n");
     });
-    const value = $iter($chunks(grids, 2));
+    const value = $iter(
+      $chunks(grids, 2, "test/corpus/printing_std_wrappers_stopped_part_way.rs:194:37"),
+    );
     $printing(() => {
       $out("u ");
       $out(
@@ -962,7 +968,9 @@ function main() {
     });
   });
   shown("w", () => {
-    const windows = $iter($windows([[1], [3]], 1));
+    const windows = $iter(
+      $windows([[1], [3]], 1, "test/corpus/printing_std_wrappers_stopped_part_way.rs:196:59"),
+    );
     $printing(() => {
       $out("w ");
       $out(
@@ -1377,7 +1385,9 @@ function main() {
   });
   failed(text$10, written);
   let text$11 = "";
-  const value$5 = $iter($chunks([[1], [2], [3]], 2));
+  const value$5 = $iter(
+    $chunks([[1], [2], [3]], 2, "test/corpus/printing_std_wrappers_stopped_part_way.rs:260:79"),
+  );
   written = $writeTry(() => {
     try {
       text$11 += "y ";
@@ -1400,7 +1410,9 @@ function main() {
   });
   failed(text$11, written);
   let text$12 = "";
-  const value$6 = $iter($windows([[1], [3]], 2));
+  const value$6 = $iter(
+    $windows([[1], [3]], 2, "test/corpus/printing_std_wrappers_stopped_part_way.rs:263:68"),
+  );
   written = $writeTry(() => {
     try {
       text$12 += "z ";
@@ -1426,7 +1438,15 @@ function main() {
   failed(text$12, written);
   const failing = [[1], [2], [3]];
   let text$13 = "";
-  const value$7 = { parts: $iter($chunks(failing.slice(0, 2), 1)) };
+  const value$7 = {
+    parts: $iter(
+      $chunks(
+        failing.slice(0, 2),
+        1,
+        "test/corpus/printing_std_wrappers_stopped_part_way.rs:271:33",
+      ),
+    ),
+  };
   written = $writeTry(() => {
     try {
       text$13 += "p ";
@@ -1438,7 +1458,11 @@ function main() {
   });
   failed(text$13, written);
   let text$14 = "";
-  const value$8 = { parts: $iter($chunks(failing, 2)) };
+  const value$8 = {
+    parts: $iter(
+      $chunks(failing, 2, "test/corpus/printing_std_wrappers_stopped_part_way.rs:280:28"),
+    ),
+  };
   written = $writeTry(() => {
     try {
       text$14 += "o ";

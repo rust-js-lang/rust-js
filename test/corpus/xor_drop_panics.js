@@ -9,7 +9,7 @@ export function entry() {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
   if (loud[1]) {
-    throw $stringPanic(`boom ${loud[0]}`);
+    throw $stringPanic(`boom ${loud[0]}`, "test/corpus/xor_drop_panics.rs:11:13");
   }
 }
 

@@ -12,6 +12,7 @@ import {
   $mapFrom,
   $next,
   $sortedEntries,
+  $stdSites,
   $treeFrom,
   $treeRange,
   $unwindsOn,
@@ -31,7 +32,7 @@ function collected() {
   const v = [[1], [2], [3], [4], [5]];
   try {
     const odd = $collectDropping(
-      Iterator.from($extractIf(v, 0, undefined, (l) => l[0] % 2 === 1)),
+      Iterator.from($extractIf(v, 0, undefined, (l) => l[0] % 2 === 1, $stdSites.vecExtractIf[0])),
       loudDrop_drop,
       true,
     );
@@ -59,7 +60,7 @@ function collected() {
 function stoppedEarly() {
   const w = [[10], [11], [12], [13]];
   try {
-    const e = Iterator.from($extractIf(w, 1, undefined, () => true));
+    const e = Iterator.from($extractIf(w, 1, undefined, () => true, $stdSites.vecExtractIf[0]));
     const first = $next(e);
     function map(l) {
       const result = l[0];
@@ -80,13 +81,12 @@ function stoppedEarly() {
 function counted() {
   const list = [[20], [21]];
   try {
-    const n = Iterator.from($extractIf(list, 0, undefined, (l) => l[0] === 20)).reduce(
-      (n, item) => {
-        loudDrop_drop(item);
-        return n + 1;
-      },
-      0,
-    );
+    const n = Iterator.from(
+      $extractIf(list, 0, undefined, (l) => l[0] === 20, $stdSites.vecExtractIf[0]),
+    ).reduce((n, item) => {
+      loudDrop_drop(item);
+      return n + 1;
+    }, 0);
     console.log(`counted ${n} left ${list.length}`);
   } catch (error) {
     throw $unwindsOn(error);

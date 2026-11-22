@@ -71,7 +71,7 @@ function main() {
   for (let i = 0; i < values.length; i++) {
     const a = values[i];
     console.log(
-      `f64 ${f64Bits(a)}: round ${f64Bits(Math.floor(a))} ${f64Bits(Math.ceil(a))} ${f64Bits($round(a))} ${f64Bits(Math.trunc(a))} ${f64Bits(a - Math.trunc(a))} abs ${f64Bits(Math.abs(a))} ${f64Bits($signum(a))} ${f64Bits(a * (180 / Math.PI))} sqrt ${f64Bits(Math.sqrt(a))} powi ${f64Bits($powi(a, 3))} ${f64Bits($powi(a, -2))} recip ${f64Bits(1 / a)} neg ${f64Bits(-a)} clamp ${f64Bits($clampFloat(a, -1, 1, $debugF64))}`,
+      `f64 ${f64Bits(a)}: round ${f64Bits(Math.floor(a))} ${f64Bits(Math.ceil(a))} ${f64Bits($round(a))} ${f64Bits(Math.trunc(a))} ${f64Bits(a - Math.trunc(a))} abs ${f64Bits(Math.abs(a))} ${f64Bits($signum(a))} ${f64Bits(a * (180 / Math.PI))} sqrt ${f64Bits(Math.sqrt(a))} powi ${f64Bits($powi(a, 3))} ${f64Bits($powi(a, -2))} recip ${f64Bits(1 / a)} neg ${f64Bits(-a)} clamp ${f64Bits($clampFloat(a, -1, 1, "f64"))}`,
     );
     console.log(
       `f64 ${f64Bits(a)}: is ${Number.isNaN(a)} ${Number.isFinite(a)} ${Math.abs(a) === Infinity} ${$signNegative(a)} ${$isNormal(a, 2.2250738585072014e-308)} ${$isNormal(a, 2.2250738585072014e-308, true)} ${$classify(a, 2.2250738585072014e-308)} bits ${f64Bits($floatFromBits($floatToBits(a, 8), 8))}`,
@@ -120,7 +120,7 @@ function main() {
   for (let i = 0; i < values.length; i++) {
     const a = values[i];
     console.log(
-      `f32 ${f32Bits(a)}: round ${f32Bits(Math.floor(a))} ${f32Bits(Math.ceil(a))} ${f32Bits($round(a))} ${f32Bits(Math.trunc(a))} ${f32Bits(a - Math.trunc(a))} abs ${f32Bits(Math.abs(a))} ${f32Bits($signum(a))} ${f32Bits(Math.fround(a * 57.295780181884766))} sqrt ${f32Bits(Math.fround(Math.sqrt(a)))} powi ${f32Bits($powiF32(a, 3))} ${f32Bits($powiF32(a, -2))} recip ${f32Bits(Math.fround(1 / a))} neg ${f32Bits(-a)} clamp ${f32Bits($clampFloat(a, -1, 1, $debugF32))}`,
+      `f32 ${f32Bits(a)}: round ${f32Bits(Math.floor(a))} ${f32Bits(Math.ceil(a))} ${f32Bits($round(a))} ${f32Bits(Math.trunc(a))} ${f32Bits(a - Math.trunc(a))} abs ${f32Bits(Math.abs(a))} ${f32Bits($signum(a))} ${f32Bits(Math.fround(a * 57.295780181884766))} sqrt ${f32Bits(Math.fround(Math.sqrt(a)))} powi ${f32Bits($powiF32(a, 3))} ${f32Bits($powiF32(a, -2))} recip ${f32Bits(Math.fround(1 / a))} neg ${f32Bits(-a)} clamp ${f32Bits($clampFloat(a, -1, 1, "f32"))}`,
     );
     console.log(
       `f32 ${f32Bits(a)}: is ${Number.isNaN(a)} ${Number.isFinite(a)} ${Math.abs(a) === Infinity} ${$signNegative(a)} ${$isNormal(a, 1.1754943508222875e-38)} ${$isNormal(a, 1.1754943508222875e-38, true)} ${$classify(a, 1.1754943508222875e-38)} bits ${f32Bits($floatFromBits($floatToBits(a, 4), 4))}`,

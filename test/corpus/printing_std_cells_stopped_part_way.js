@@ -17,6 +17,7 @@ import {
   $locked,
   $lockedData,
   $out,
+  $panic,
   $poison,
   $pretty,
   $print,
@@ -40,7 +41,7 @@ function gridDebug_fmt(grid, options) {
   $out("!");
   f.write("Grid(");
   if (grid[0] > 2) {
-    throw new Error("too big");
+    throw $panic("too big", "test/corpus/printing_std_cells_stopped_part_way.rs:20:13");
   }
   f.write(`${grid[0]})`);
   return f.done();
@@ -65,7 +66,7 @@ function failingDebug_fmt(failing, options) {
 export const quietDebug = { fmt: quietDebug_fmt };
 function quietDebug_fmt(quiet, options) {
   if (quiet[0] > 2) {
-    throw new Error("quiet");
+    throw $panic("quiet", "test/corpus/printing_std_cells_stopped_part_way.rs:43:13");
   }
   return `Quiet(${quiet[0]})`;
 }
@@ -291,7 +292,7 @@ function main() {
   );
   $print(`${$pretty("Cell {", ["value: 3"], "}")}\n`);
   const held = { value: 5 };
-  const guard = $lock(held);
+  const guard = $lock(held, "test/corpus/printing_std_cells_stopped_part_way.rs:93:29");
   try {
     $print(
       `${$showLocked(held, (value) => String(value), "Mutex", true)} ${$showLocked(held, (value) => String(value), "Mutex", true, true)}\n`,
@@ -303,7 +304,11 @@ function main() {
     $unborrow(guard);
   }
   const cell$1 = [1];
-  const borrowed = $borrowMut(cell$1, true);
+  const borrowed = $borrowMut(
+    cell$1,
+    "test/corpus/printing_std_cells_stopped_part_way.rs:97:25",
+    true,
+  );
   try {
     const caught = $catchUnwind(() => {
       $printing(() => {

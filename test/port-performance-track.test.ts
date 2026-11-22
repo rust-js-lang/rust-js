@@ -19,7 +19,7 @@ beforeAll(() => {
 // panics of a `None` before the task is read, then the call (ADR 0752).
 test("enqueueTask calls its implementation, unwrapped", () => {
   const js = of("enqueueTask.js");
-  expect(js).toContain("  $unwrap(enqueueTaskImpl)(task);\n}\n");
+  expect(js).toContain("  $unwrap(enqueueTaskImpl, \"enqueueTask.rs:67:33\")(task);\n}\n");
   expect(js).not.toContain("if (enqueueTaskImpl) {");
 });
 

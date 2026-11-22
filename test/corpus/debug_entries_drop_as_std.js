@@ -15,6 +15,7 @@ import {
   $iterator,
   $next,
   $out,
+  $panic,
   $sink,
   $traitImpl,
 } from "@rust-js/std";
@@ -26,7 +27,7 @@ export function entry() {
 export const dDebug = { fmt: dDebug_fmt, $drop: dDrop_drop };
 function dDebug_fmt(d) {
   if (d[0] === 13) {
-    throw new Error("unlucky");
+    throw $panic("unlucky", "test/corpus/debug_entries_drop_as_std.rs:15:13");
   }
   return `D(${d[0]})`;
 }

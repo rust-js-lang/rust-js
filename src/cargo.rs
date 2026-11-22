@@ -128,20 +128,24 @@ pub fn translate(args: Vec<String>) -> Invocation {
     };
     let library = flag_values(&flags, "--crate-type").any(|kind| kind == "lib" || kind == "rlib");
     let tests = builds_tests(&flags);
+    // A bin target of the app's own, whose `main` runs as it loads (#2292);
+    // not a build script, a bin Cargo runs natively as it builds.
+    let bin = flag_values(&flags, "--crate-type").any(|kind| kind == "bin")
+        && flag_values(&flags, "--crate-name").all(|name| name != "build_script_build");
     let probe = flags
         .iter()
         .any(|flag| flag == "-" || flag == "-vV" || flag.starts_with("--print"));
     // rustc is rust-js's `--rustc`, with its tool known, as the tooling runs
     // Cargo (ADR 0112): a binding crate's, which is metadata only (ADR 0024),
     // and a registry's, which `RUST_JS_CRATES` leaves out, are checked by it.
-    if probe || !(library || tests) || flag_values(&flags, "--target").next().as_deref() != Some(TARGET) {
+    if probe || !(library || tests || bin) || flag_values(&flags, "--target").next().as_deref() != Some(TARGET) {
         return rustc_itself(&rustc, given);
     }
     let clippy = std::env::var(CLIPPY).ok();
     match whose() {
         Ok(Whose::Own) => {}
-        // Only the app's own crates' tests are compiled.
-        _ if tests => return rustc_itself(&rustc, given),
+        // Only the app's own crates' tests and bins are compiled.
+        _ if tests || bin => return rustc_itself(&rustc, given),
         // Linted, a dependency is rustc's, as `cargo clippy` lints none of
         // crates.io's, and nothing reads its JS (ADR 0888).
         Ok(Whose::Dependency) if clippy.is_some() => return rustc_itself(&rustc, given),
@@ -379,7 +383,10 @@ fn compile(flags: &[String]) -> Result<Vec<String>, String> {
     // is, an integration test's `tests/shapes.rs` `shapes.js`, its tests
     // `shapes.test.js`, as a library's `src/lib.rs` is `lib.js`.
     let tests = builds_tests(flags);
-    let root = match tests {
+    // A bin's root is named as its file is too, `src/main.rs`'s `main.js`
+    // and `src/bin/tool.rs`'s `tool.js` (#2292).
+    let bin = flag_values(flags, "--crate-type").any(|kind| kind == "bin");
+    let root = match tests || bin {
         true => Path::new(&source)
             .file_stem()
             .unwrap_or_default()

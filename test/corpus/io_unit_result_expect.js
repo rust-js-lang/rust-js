@@ -14,9 +14,9 @@ function check(n) {
 
 function main() {
   const result = $writeTry(() => check(1));
-  $writeExpect(result, "checked");
+  $writeExpect(result, "checked", "test/corpus/io_unit_result_expect.rs:14:14");
   console.log("one was fine");
   const result$1 = $writeTry(() => check(9));
-  $writeExpect(result$1, "checked");
+  $writeExpect(result$1, "checked", "test/corpus/io_unit_result_expect.rs:16:14");
 }
 //# sourceMappingURL=case.js.map

@@ -27,7 +27,7 @@ function createRequest(name, onReady, kept) {
   const made = { value: { name: "kept", onReady }, strong: 1, weak: 0 };
   let borrowMut;
   try {
-    borrowMut = $borrowMut(kept, true);
+    borrowMut = $borrowMut(kept, "test/corpus/owner_handle_returns_another.rs:19:10", true);
   } catch (error) {
     $cleanup(() => {
       $rcDrop(made, (value) => {
@@ -170,7 +170,7 @@ function main() {
   }
   let borrow;
   try {
-    borrow = $borrow(kept, true);
+    borrow = $borrow(kept, "test/corpus/owner_handle_returns_another.rs:48:10", true);
   } catch (error) {
     $cleanup(() => {
       $rcDrop(request, (value) => {
@@ -217,7 +217,7 @@ function main() {
   }
   let tmp;
   try {
-    tmp = $borrow(kept, true);
+    tmp = $borrow(kept, "test/corpus/owner_handle_returns_another.rs:50:10", true);
   } catch (error) {
     $cleanup(() => {
       $dropItems(kept, (item) => {

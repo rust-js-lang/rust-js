@@ -7,8 +7,16 @@ export function entry() {
 }
 
 function chunk(v, at, N) {
-  const [, rest] = $sliceSplitAt(v, at);
-  const [part] = $sliceSplitAt(rest, N);
+  const [, rest] = $sliceSplitAt(
+    v,
+    at,
+    "test/corpus/pointer_to_part_of_an_array_as_an_array.rs:7:23",
+  );
+  const [part] = $sliceSplitAt(
+    rest,
+    N,
+    "test/corpus/pointer_to_part_of_an_array_as_an_array.rs:8:26",
+  );
   return $ptrWhole($ptr(part, 0), N).value;
 }
 
@@ -16,7 +24,11 @@ function chunks(v, N) {
   const found = [];
   let left = v;
   while (left.length >= N) {
-    const [first, rest] = $sliceSplitAt(left, N);
+    const [first, rest] = $sliceSplitAt(
+      left,
+      N,
+      "test/corpus/pointer_to_part_of_an_array_as_an_array.rs:16:34",
+    );
     found.push($ptrWhole($ptr(first, 0), N).value);
     left = rest;
   }
@@ -32,7 +44,10 @@ function main() {
   );
   console.log(`[${chunk(v, 4, 2).join(", ")}] [${chunk(v, 0, 10).join(", ")}]`);
   const w = new Array(6).fill(0);
-  const middle = $ptrWhole($ptr($view(w, 2), 0), 3).value;
+  const middle = $ptrWhole(
+    $ptr($view(w, 2, "test/corpus/pointer_to_part_of_an_array_as_an_array.rs:28:35"), 0),
+    3,
+  ).value;
   middle[0] = 7;
   middle[2] = 9;
   const value = ((middle[0] + 1) << 16) >> 16;

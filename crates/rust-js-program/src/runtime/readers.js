@@ -115,7 +115,7 @@ const $sliceReader = {
   fillBuf: (r) => ({ TAG: "Ok", _0: r.value }),
   // `*self = &self[amt..]`, which panics past its end.
   consume(r, amt) {
-    r.value = $slice(r.value, amt);
+    r.value = $slice(r.value, amt, $stdSites.byteSliceConsume[0]);
   },
 };
 
@@ -153,7 +153,7 @@ const $dequeReader = {
   },
   // `self.drain(..amt)`, which panics past its end.
   consume(r, amt) {
-    $checkRange(0, amt, r.value.length);
+    $checkRange(0, amt, r.value.length, $stdSites.vecDequeDrain[0]);
     r.value.splice(0, amt);
   },
 };
@@ -422,7 +422,7 @@ function $bufReader(R) {
       const position = R.streamPosition(inner(b));
       if (position.TAG === "Err") return position;
       if (position._0 < remainder) {
-        throw $stringPanic("overflow when subtracting remaining buffer size from inner stream position");
+        throw $stringPanic("overflow when subtracting remaining buffer size from inner stream position", $stdSites.bufReaderStreamPosition[0]);
       }
       return { TAG: "Ok", _0: position._0 - remainder };
     },
@@ -545,7 +545,7 @@ function $takeReadBuf(TRead) {
     if (take.limit < BigInt($unfilled(buf))) {
       const limit = Number(take.limit);
       const isInit = buf.init;
-      const slicedBuf = { buf: $view(buf.buf, buf.filled, buf.filled + limit), filled: 0, init: false };
+      const slicedBuf = { buf: $view(buf.buf, buf.filled, undefined, buf.filled + limit), filled: 0, init: false };
       // Flags, not a state: core's `BorrowedBuf` has one `init` flag, which this mirrors.
       if (isInit) slicedBuf.init = true;
       const result = innerReadBuf($fieldBox(take, "inner"), slicedBuf);

@@ -17,11 +17,11 @@ function cast(apple, pair) {
 }
 
 function single(apple, one) {
-  return $index(one, apple ? 1 : 0);
+  return $index(one, apple ? 1 : 0, "test/corpus/bool_indexed_arrays.rs:21:5");
 }
 
 function singleCast(apple, one) {
-  return $index(one, apple ? 1 : 0);
+  return $index(one, apple ? 1 : 0, "test/corpus/bool_indexed_arrays.rs:25:5");
 }
 
 function main() {

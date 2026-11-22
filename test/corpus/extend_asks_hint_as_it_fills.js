@@ -8,6 +8,7 @@ import {
   $heapExtend,
   $iterator,
   $live,
+  $panic,
   $partiallyOrdered,
   $print,
   $range,
@@ -33,7 +34,7 @@ function loudIterator_next(loud) {
 function loudIterator_sizeHint(loud) {
   $print(`[hint ${loud.n}] `);
   if (loud.n < loud.panicsBelow) {
-    throw new Error("hint");
+    throw $panic("hint", "test/corpus/extend_asks_hint_as_it_fills.rs:28:13");
   }
   return [(loud.n / 2) >>> 0, undefined];
 }

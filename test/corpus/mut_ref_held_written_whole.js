@@ -18,7 +18,14 @@ function tree() {
     return result;
   }
   $assign(result._0, { balance: 1 });
-  return { TAG: "Ok", _0: $unwrap(tree.get("demo"), "no entry found for key").balance };
+  return {
+    TAG: "Ok",
+    _0: $unwrap(
+      tree.get("demo"),
+      "test/corpus/mut_ref_held_written_whole.rs:52:12",
+      "no entry found for key",
+    ).balance,
+  };
 }
 
 function hash() {
@@ -29,7 +36,14 @@ function hash() {
     return result;
   }
   $assign(result._0, { balance: 2 });
-  return { TAG: "Ok", _0: $unwrap(hash.get("demo"), "no entry found for key").balance };
+  return {
+    TAG: "Ok",
+    _0: $unwrap(
+      hash.get("demo"),
+      "test/corpus/mut_ref_held_written_whole.rs:58:12",
+      "no entry found for key",
+    ).balance,
+  };
 }
 
 function option() {
@@ -52,8 +66,12 @@ function holder() {
 function vecItem() {
   const values = [{ balance: 0 }];
   values.push({ balance: 0 });
-  values[$at(values, 0)] = { balance: 5 };
-  return ($index(values, 0).balance + $index(values, 1).balance) >>> 0;
+  values[$at(values, 0, "test/corpus/mut_ref_held_written_whole.rs:77:11")] = { balance: 5 };
+  return (
+    ($index(values, 0, "test/corpus/mut_ref_held_written_whole.rs:78:11").balance +
+      $index(values, 1, "test/corpus/mut_ref_held_written_whole.rs:78:31").balance) >>>
+    0
+  );
 }
 
 function tuple() {
@@ -68,7 +86,7 @@ function vecOfRefs() {
   const b = { balance: 0 };
   const refs = [a];
   refs.push(b);
-  $index(refs, 0);
+  $index(refs, 0, "test/corpus/mut_ref_held_written_whole.rs:93:10");
   $assign(refs[0], { balance: 7 });
   return (a.balance + b.balance) >>> 0;
 }
@@ -99,14 +117,24 @@ function copyFirst() {
 function copyInMap() {
   const p = { x: 0 };
   const map = new Map([[1, { ...p }]]);
-  const q = { ...$unwrap(map.get(1), "no entry found for key") };
+  const q = {
+    ...$unwrap(
+      map.get(1),
+      "test/corpus/mut_ref_held_written_whole.rs:117:16",
+      "no entry found for key",
+    ),
+  };
   const getMut = map.get(1);
   const result = getMut != null ? { TAG: "Ok", _0: getMut } : { TAG: "Err", _0: "missing" };
   if (result.TAG === "Err") {
     return result;
   }
   $assign(result._0, { x: 10 });
-  const arg = $unwrap(map.get(1), "no entry found for key");
+  const arg = $unwrap(
+    map.get(1),
+    "test/corpus/mut_ref_held_written_whole.rs:119:39",
+    "no entry found for key",
+  );
   return { TAG: "Ok", _0: `${pointDebug_fmt(p)} ${pointDebug_fmt(q)} ${pointDebug_fmt(arg)}` };
 }
 
@@ -143,7 +171,14 @@ function methodOption() {
     return result;
   }
   $assign(result._0, { balance: 14 });
-  return { TAG: "Ok", _0: $unwrap(byName.get("a"), "no entry found for key").balance };
+  return {
+    TAG: "Ok",
+    _0: $unwrap(
+      byName.get("a"),
+      "test/corpus/mut_ref_held_written_whole.rs:147:22",
+      "no entry found for key",
+    ).balance,
+  };
 }
 
 function holderInOption() {
@@ -181,6 +216,7 @@ function slotAsMut() {
               slot.current = value;
             },
           },
+      "test/corpus/mut_ref_held_written_whole.rs:173:29",
     ).value,
     { balance: 17 },
   );
@@ -212,8 +248,8 @@ function blockReborrow() {
 
 function holderOfItem() {
   const v = [{ x: 0 }];
-  const q = { ...$index(v, 0) };
-  const h = { point: $index(v, 0) };
+  const q = { ...$index(v, 0, "test/corpus/mut_ref_held_written_whole.rs:202:14") };
+  const h = { point: $index(v, 0, "test/corpus/mut_ref_held_written_whole.rs:203:40") };
   $assign(h.point, { x: 19 });
   return `${pointDebug_fmt(q)} [${v.map((item) => pointDebug_fmt(item)).join(", ")}]`;
 }

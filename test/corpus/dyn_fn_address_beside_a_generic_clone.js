@@ -29,7 +29,9 @@ function optionGetterT(TClone, dropT) {
   }));
 }
 function optionGetterT_get(option, TClone, dropT) {
-  return TClone.clone($someValue($unwrap(option)));
+  return TClone.clone(
+    $someValue($unwrap(option, "test/corpus/dyn_fn_address_beside_a_generic_clone.rs:24:23")),
+  );
 }
 
 function main() {

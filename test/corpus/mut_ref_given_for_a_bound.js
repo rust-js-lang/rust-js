@@ -83,7 +83,7 @@ function fill(v, VAsMutU8Slice) {
       v = value;
     },
   }).value;
-  value[$at(value, 0)] = 9;
+  value[$at(value, 0, "test/corpus/mut_ref_given_for_a_bound.rs:46:5")] = 9;
   return $index(
     VAsMutU8Slice.asMut({
       get value() {
@@ -94,11 +94,12 @@ function fill(v, VAsMutU8Slice) {
       },
     }).value,
     0,
+    "test/corpus/mut_ref_given_for_a_bound.rs:47:5",
   );
 }
 
 function first(v, VAsRefU8Slice) {
-  return $index(VAsRefU8Slice.asRef(v), 0);
+  return $index(VAsRefU8Slice.asRef(v), 0, "test/corpus/mut_ref_given_for_a_bound.rs:51:5");
 }
 
 function textLen(s, SAsRefStr) {
@@ -106,17 +107,11 @@ function textLen(s, SAsRefStr) {
 }
 
 function show(d, DDisplay) {
-  return $fmtOrPanic(
-    () => `[${DDisplay.fmt(d)}]`,
-    "a formatting trait implementation returned an error when the underlying stream did not: Error",
-  );
+  return $fmtOrPanic(() => `[${DDisplay.fmt(d)}]`, "format");
 }
 
 function debugged(d, DDebug) {
-  return $fmtOrPanic(
-    () => DDebug.fmt(d),
-    "a formatting trait implementation returned an error when the underlying stream did not: Error",
-  );
+  return $fmtOrPanic(() => DDebug.fmt(d), "format");
 }
 
 function hashOf(h, HHash) {
@@ -130,7 +125,11 @@ function readTwo(r, RRead) {
   const self = { value: r };
   const readExact = $writeTry(() => RRead.readExact(self, two));
   r = self.value;
-  $writeExpect(readExact, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    readExact,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/mut_ref_given_for_a_bound.rs:74:28",
+  );
   return two;
 }
 

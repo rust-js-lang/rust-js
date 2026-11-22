@@ -104,7 +104,7 @@ function main() {
       const quotient =
         $checkedDiv(a, b, -128) == null
           ? "-"
-          : `${($div(a, b, -128) << 24) >> 24} ${($rem(a, b, -128) << 24) >> 24}`;
+          : `${($div(a, b, "test/corpus/matrix_integers.rs:153:5", -128) << 24) >> 24} ${($rem(a, b, "test/corpus/matrix_integers.rs:153:5", -128) << 24) >> 24}`;
       const value = $checked(a + b, -128, 127);
       const value$1 = $checked(a - b, -128, 127);
       const value$2 = $checked(a * b, -128, 127);
@@ -176,7 +176,7 @@ function main() {
       const quotient =
         $checkedDiv(a, b, -32768) == null
           ? "-"
-          : `${($div(a, b, -32768) << 16) >> 16} ${($rem(a, b, -32768) << 16) >> 16}`;
+          : `${($div(a, b, "test/corpus/matrix_integers.rs:154:5", -32768) << 16) >> 16} ${($rem(a, b, "test/corpus/matrix_integers.rs:154:5", -32768) << 16) >> 16}`;
       const value = $checked(a + b, -32768, 32767);
       const value$1 = $checked(a - b, -32768, 32767);
       const value$2 = $checked(a * b, -32768, 32767);
@@ -246,7 +246,7 @@ function main() {
       const quotient =
         $checkedDiv(a, b, -2147483648) == null
           ? "-"
-          : `${$div(a, b, -2147483648) | 0} ${$rem(a, b, -2147483648) | 0}`;
+          : `${$div(a, b, "test/corpus/matrix_integers.rs:155:5", -2147483648) | 0} ${$rem(a, b, "test/corpus/matrix_integers.rs:155:5", -2147483648) | 0}`;
       const value = Math.imul(a, b);
       const value$1 = $checked(a + b, -2147483648, 2147483647);
       const value$2 = $checked(a - b, -2147483648, 2147483647);
@@ -342,7 +342,7 @@ function main() {
       const quotient =
         $bigCheckedDiv(a, b, -9223372036854775808n) == null
           ? "-"
-          : `${$bigDiv(a, b, -9223372036854775808n)} ${$bigRem(a, b, -9223372036854775808n)}`;
+          : `${$bigDiv(a, b, "test/corpus/matrix_integers.rs:156:5", -9223372036854775808n)} ${$bigRem(a, b, "test/corpus/matrix_integers.rs:156:5", -9223372036854775808n)}`;
       const value = BigInt.asIntN(64, a + b);
       const value$1 = BigInt.asIntN(64, a - b);
       const value$2 = BigInt.asIntN(64, a * b);
@@ -481,7 +481,7 @@ function main() {
       const quotient =
         $bigCheckedDiv(a, b, -170141183460469231731687303715884105728n) == null
           ? "-"
-          : `${$bigDiv(a, b, -170141183460469231731687303715884105728n)} ${$bigRem(a, b, -170141183460469231731687303715884105728n)}`;
+          : `${$bigDiv(a, b, "test/corpus/matrix_integers.rs:157:5", -170141183460469231731687303715884105728n)} ${$bigRem(a, b, "test/corpus/matrix_integers.rs:157:5", -170141183460469231731687303715884105728n)}`;
       const value = BigInt.asIntN(128, a + b);
       const value$1 = BigInt.asIntN(128, a - b);
       const value$2 = BigInt.asIntN(128, a * b);
@@ -593,7 +593,9 @@ function main() {
     for (let j = 0; j < values.length; j++) {
       const b = values[j];
       const quotient =
-        $checkedDiv(a, b, 0) == null ? "-" : `${$div(a, b) & 255} ${$rem(a, b) & 255}`;
+        $checkedDiv(a, b, 0) == null
+          ? "-"
+          : `${$div(a, b, "test/corpus/matrix_integers.rs:158:5") & 255} ${$rem(a, b, "test/corpus/matrix_integers.rs:158:5") & 255}`;
       const value = $checked(a + b, 0, 255);
       const value$1 = $checked(a - b, 0, 255);
       const value$2 = $checked(a * b, 0, 255);
@@ -656,7 +658,9 @@ function main() {
     for (let j = 0; j < values.length; j++) {
       const b = values[j];
       const quotient =
-        $checkedDiv(a, b, 0) == null ? "-" : `${$div(a, b) & 65535} ${$rem(a, b) & 65535}`;
+        $checkedDiv(a, b, 0) == null
+          ? "-"
+          : `${$div(a, b, "test/corpus/matrix_integers.rs:159:5") & 65535} ${$rem(a, b, "test/corpus/matrix_integers.rs:159:5") & 65535}`;
       const value = $checked(a + b, 0, 65535);
       const value$1 = $checked(a - b, 0, 65535);
       const value$2 = $checked(a * b, 0, 65535);
@@ -717,7 +721,9 @@ function main() {
     for (let j = 0; j < values.length; j++) {
       const b = values[j];
       const quotient =
-        $checkedDiv(a, b, 0) == null ? "-" : `${$div(a, b) >>> 0} ${$rem(a, b) >>> 0}`;
+        $checkedDiv(a, b, 0) == null
+          ? "-"
+          : `${$div(a, b, "test/corpus/matrix_integers.rs:160:5") >>> 0} ${$rem(a, b, "test/corpus/matrix_integers.rs:160:5") >>> 0}`;
       const value = Math.imul(a, b) >>> 0;
       const value$1 = $checked(a + b, 0, 4294967295);
       const value$2 = $checked(a - b, 0, 4294967295);
@@ -799,7 +805,10 @@ function main() {
     console.log(`u64 ${a}: unsigned ${a !== 0n && (a & (a - 1n)) === 0n}`);
     for (let j = 0; j < values.length; j++) {
       const b = values[j];
-      const quotient = $bigCheckedDiv(a, b) == null ? "-" : `${$bigDiv(a, b)} ${$bigRem(a, b)}`;
+      const quotient =
+        $bigCheckedDiv(a, b) == null
+          ? "-"
+          : `${$bigDiv(a, b, "test/corpus/matrix_integers.rs:161:5")} ${$bigRem(a, b, "test/corpus/matrix_integers.rs:161:5")}`;
       const value = BigInt.asUintN(64, a + b);
       const value$1 = BigInt.asUintN(64, a - b);
       const value$2 = BigInt.asUintN(64, a * b);
@@ -903,7 +912,10 @@ function main() {
     console.log(`u128 ${a}: unsigned ${a !== 0n && (a & (a - 1n)) === 0n}`);
     for (let j = 0; j < values.length; j++) {
       const b = values[j];
-      const quotient = $bigCheckedDiv(a, b) == null ? "-" : `${$bigDiv(a, b)} ${$bigRem(a, b)}`;
+      const quotient =
+        $bigCheckedDiv(a, b) == null
+          ? "-"
+          : `${$bigDiv(a, b, "test/corpus/matrix_integers.rs:162:5")} ${$bigRem(a, b, "test/corpus/matrix_integers.rs:162:5")}`;
       const value = BigInt.asUintN(128, a + b);
       const value$1 = BigInt.asUintN(128, a - b);
       const value$2 = BigInt.asUintN(128, a * b);

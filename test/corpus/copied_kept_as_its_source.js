@@ -61,9 +61,9 @@ function main() {
       () => makeCopied($iter(it.items.slice(it.at, it.end))),
     );
   const it = makeCopied($iter(ps));
-  const first = $unwrap($next(it));
+  const first = $unwrap($next(it), "test/corpus/copied_kept_as_its_source.rs:35:31");
   first[0] = (first[0] + 100) >>> 0;
-  const back = $unwrap($nextBack(it));
+  const back = $unwrap($nextBack(it), "test/corpus/copied_kept_as_its_source.rs:37:35");
   back[1] = (back[1] + 100) >>> 0;
   const arg = it.len();
   console.log(
@@ -72,7 +72,7 @@ function main() {
 
   const a = copies(ps);
   const b = dup(a, { clone: (value) => $clone(value) });
-  const x = $unwrap($next(a));
+  const x = $unwrap($next(a), "test/corpus/copied_kept_as_its_source.rs:43:26");
   x[1] = 0;
   const arg$1 = $next(b);
   console.log(
@@ -88,7 +88,7 @@ function main() {
   );
 
   const d = b;
-  const y = $unwrap($nextBack(d));
+  const y = $unwrap($nextBack(d), "test/corpus/copied_kept_as_its_source.rs:50:31");
   y[0] = 7;
   const arg$2 = $next(d);
   console.log(
@@ -106,7 +106,9 @@ function main() {
   );
 
   const kept = Array.from(copies(ps));
-  $index(kept, 1)[0] = 99;
-  console.log(`${pDebug_fmt($index(kept, 1))} ${pDebug_fmt(ps[1])}`);
+  $index(kept, 1, "test/corpus/copied_kept_as_its_source.rs:56:9")[0] = 99;
+  console.log(
+    `${pDebug_fmt($index(kept, 1, "test/corpus/copied_kept_as_its_source.rs:57:31"))} ${pDebug_fmt(ps[1])}`,
+  );
 }
 //# sourceMappingURL=case.js.map

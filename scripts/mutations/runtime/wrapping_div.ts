@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "next-multiple-of-site-of-u32",
+    breaks: "a `u8`'s `next_multiple_of(0)` names `u32`'s line",
+    file: "crates/rust-js-program/src/runtime/wrapping_div.js",
+    find: "$stdSites.nextMultipleOf[type][0]",
+    replace: "$stdSites.nextMultipleOf.u32[0]",
+    tests: ["test/binaries.test.ts", "-t", "std raises"],
+  },
+  {
     name: "wrapping-div-min",
     breaks: "`i32::MIN.wrapping_div(-1)` is 2^31, out of range, not `MIN`",
     file: "crates/rust-js-program/src/runtime/wrapping_div.js",
@@ -14,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "saturating-div-wraps",
     breaks: "`MIN.saturating_div(-1)` wraps to `MIN`, not `MAX`",
     file: "crates/rust-js-program/src/runtime/wrapping_div.js",
-    find: "  return a === min && b == -1 ? max : $wrappingDiv(a, b, min);\n",
-    replace: "  return $wrappingDiv(a, b, min);\n",
+    find: "  return a === min && b == -1 ? max : $wrappingDiv(a, b, raisedAt, min);\n",
+    replace: "  return $wrappingDiv(a, b, raisedAt, min);\n",
     tests: ["test/corpus.test.ts", "-t", "^int_div_sign_methods.rs$"],
   },
   {

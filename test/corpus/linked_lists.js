@@ -19,7 +19,7 @@ function main() {
   const more = [4, 5];
   $append(list, more);
   $print(`[${list.join(", ")}] ${more.length === 0}\n`);
-  const tail = $splitOff(list, 3);
+  const tail = $splitOff(list, 3, "test/corpus/linked_lists.rs:15:21");
   $print(`[${list.join(", ")}] [${tail.join(", ")}]\n`);
   const popFront = list.shift();
   const popBack = list.pop();

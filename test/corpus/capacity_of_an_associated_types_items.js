@@ -91,7 +91,16 @@ function gathered(s, SSource) {
   }
   const value = SSource.items(s);
   $keepCapacity(value);
-  $grew(all, SSource.ItemSize, all.length, all.push($someValue($unwrap($pop(value)))));
+  $grew(
+    all,
+    SSource.ItemSize,
+    all.length,
+    all.push(
+      $someValue(
+        $unwrap($pop(value), "test/corpus/capacity_of_an_associated_types_items.rs:77:30"),
+      ),
+    ),
+  );
   return $capacity(all, SSource.ItemSize);
 }
 

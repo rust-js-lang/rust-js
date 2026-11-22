@@ -36,8 +36,8 @@ function main() {
   }
   $storedItems(v, 12);
   $storedItems(v, 12);
-  const a = $index(v, 0).a;
-  const arg = $index(v, 1).b;
+  const a = $index(v, 0, "test/corpus/format_arguments_beside_an_address.rs:32:33").a;
+  const arg = $index(v, 1, "test/corpus/format_arguments_beside_an_address.rs:32:41").b;
   console.log(`[${seen.join(", ")}] ${a} ${arg}`);
 
   const numbers = [0, 1];

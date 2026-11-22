@@ -6,6 +6,7 @@ import {
   $holding,
   $iter,
   $live,
+  $panic,
   $stringPanic,
   $unwindsOn,
 } from "@rust-js/std";
@@ -102,7 +103,7 @@ function main() {
     function f$3(x) {
       seen$1 = (seen$1 + 1) | 0;
       if (seen$1 === 2) {
-        throw new Error("consumer");
+        throw $panic("consumer", "test/corpus/closure_block_given_to_a_call.rs:81:21");
       }
       console.log(`item ${x}`);
     }
@@ -155,7 +156,7 @@ function main() {
   // `AssertUnwindSafe`, its closure panicking.
   const g$5 = [8];
   function f$3() {
-    throw $stringPanic(`in ${g$5[0]}`);
+    throw $stringPanic(`in ${g$5[0]}`, "test/corpus/closure_block_given_to_a_call.rs:125:13");
   }
   let value$3;
   try {

@@ -11,6 +11,7 @@ import {
   $debugTuple,
   $iterator,
   $out,
+  $panic,
   $print,
   $printing,
   $sink,
@@ -26,7 +27,7 @@ function loudDebug_fmt(loud, options) {
   const f = $sink();
   $out("!");
   if (loud[0] >= 3) {
-    throw new Error("too loud");
+    throw $panic("too loud", "test/corpus/printing_std_value_stopped_part_way.rs:16:9");
   }
   f.write(`L${loud[0]}`);
   return f.done();
@@ -43,7 +44,7 @@ function holdsDebug_fmt(holds, options) {
 function stepsIterator_next(steps) {
   $out("<step>");
   if (steps[0] >= 2) {
-    throw new Error("stepped too far");
+    throw $panic("stepped too far", "test/corpus/printing_std_value_stopped_part_way.rs:33:9");
   }
   steps[0]++;
   return steps[0];

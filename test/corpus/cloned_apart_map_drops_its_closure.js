@@ -38,7 +38,10 @@ function loudClone_clone(loud) {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
   if (loud[0] === panicDropOf) {
-    throw $stringPanic(`drop ${loud[0]}`);
+    throw $stringPanic(
+      `drop ${loud[0]}`,
+      "test/corpus/cloned_apart_map_drops_its_closure.rs:34:13",
+    );
   }
 }
 

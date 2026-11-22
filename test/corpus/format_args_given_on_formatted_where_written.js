@@ -10,6 +10,7 @@ import {
   $fmtPrintFailed,
   $fmtWritten,
   $out,
+  $panic,
   $print,
   $printing,
   $sink,
@@ -47,7 +48,7 @@ function showsDisplay_fmt(shows) {
 
 export const panicsDebug = { fmt: panicsDebug_fmt };
 function panicsDebug_fmt(panics) {
-  throw new Error("formatted");
+  throw $panic("formatted", "test/corpus/format_args_given_on_formatted_where_written.rs:34:9");
 }
 
 export const badDebug = {
@@ -67,10 +68,7 @@ function badDebug_fmt(bad) {
 
 function said(what) {
   $print("said: ");
-  const text = $fmtOrPanic(
-    () => what(),
-    "a formatting trait implementation returned an error when the underlying stream did not: Error",
-  );
+  const text = $fmtOrPanic(() => what(), "format");
   $print(`${text}\n`);
 }
 
@@ -219,7 +217,10 @@ function main() {
       return text;
     }),
   );
-  const message = $unwrapErr(failed);
+  const message = $unwrapErr(
+    failed,
+    "test/corpus/format_args_given_on_formatted_where_written.rs:124:26",
+  );
   const downcastRef = message.impl.typeId() === "alloc::string::String" ? message.value : undefined;
   $print(` ${downcastRef == null ? "None" : `Some(${$debugStr(downcastRef)})`}\n`);
 

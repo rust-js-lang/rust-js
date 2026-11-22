@@ -36,12 +36,12 @@ function steppedLast(path) {
   const parts = $iter(path.split("."));
   $next(parts);
   const rest = Array.from(parts);
-  return $unwrap(rest.at(-1));
+  return $unwrap(rest.at(-1), "test/corpus/split_collected_is_never_empty.rs:29:17");
 }
 
 function terminatedLast(text) {
   const pieces = Array.from($splitTerminator(text, ","));
-  return $unwrap(pieces.at(-1));
+  return $unwrap(pieces.at(-1), "test/corpus/split_collected_is_never_empty.rs:34:19");
 }
 
 function emptied(path) {
@@ -53,7 +53,7 @@ function emptied(path) {
 function emptiedLast(path) {
   const keys = path.split(".");
   keys.length = 0;
-  return $unwrap(keys.at(-1));
+  return $unwrap(keys.at(-1), "test/corpus/split_collected_is_never_empty.rs:46:17");
 }
 
 function terminated(text) {

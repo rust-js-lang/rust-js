@@ -35,7 +35,12 @@ function u32x4Debug_fmt(u32x4, options) {
 
 function readLe(input) {
   if (input.length !== 16) {
-    $assertFailed("Eq", String(input.length), "16");
+    $assertFailed(
+      "Eq",
+      String(input.length),
+      "16",
+      "test/corpus/lanes_read_through_a_byte_array_pointer.rs:9:5",
+    );
   }
   const value = $ptrRetyped($ptr(input, 0), 16, "bytes").value.slice();
   const x = [
@@ -51,7 +56,12 @@ function readLe(input) {
 
 function readBe(input) {
   if (input.length !== 16) {
-    $assertFailed("Eq", String(input.length), "16");
+    $assertFailed(
+      "Eq",
+      String(input.length),
+      "16",
+      "test/corpus/lanes_read_through_a_byte_array_pointer.rs:15:5",
+    );
   }
   const value = $ptrRetyped($ptr(input, 0), 16, "bytes").value.slice();
   const x = [
@@ -69,7 +79,12 @@ function writeLe(x, out) {
   const length = out.length;
   const value = 16;
   if (length !== value) {
-    $assertFailed("Eq", String(length), String(value));
+    $assertFailed(
+      "Eq",
+      String(length),
+      String(value),
+      "test/corpus/lanes_read_through_a_byte_array_pointer.rs:21:5",
+    );
   }
   x = [x[0].slice()];
   const value$1 = $ptrRetyped($ptr(out, 0), 16, "bytes");
@@ -97,7 +112,12 @@ function u64x2Debug_fmt(u64x2, options) {
 
 function readWideLe(input) {
   if (input.length !== 16) {
-    $assertFailed("Eq", String(input.length), "16");
+    $assertFailed(
+      "Eq",
+      String(input.length),
+      "16",
+      "test/corpus/lanes_read_through_a_byte_array_pointer.rs:30:5",
+    );
   }
   const value = $ptrRetyped($ptr(input, 0), 16, "bytes").value.slice();
   const x = [
@@ -128,17 +148,31 @@ function main() {
   console.log(`${u32x4Debug_fmt(le, { debugHex: "x" })}`);
   console.log(`${u32x4Debug_fmt(readBe(bytes), { debugHex: "x" })}`);
   const out = new Array(20).fill(0);
-  writeLe([[0x01020304, 0xa0b0c0d0, 7, 4294967295]], $view(out, 2, 18));
+  writeLe(
+    [[0x01020304, 0xa0b0c0d0, 7, 4294967295]],
+    $view(out, 2, "test/corpus/lanes_read_through_a_byte_array_pointer.rs:54:68", 18),
+  );
   console.log(`[${out.join(", ")}]`);
-  writeLe([le[0].slice()], $view(out, 4));
+  writeLe(
+    [le[0].slice()],
+    $view(out, 4, "test/corpus/lanes_read_through_a_byte_array_pointer.rs:56:26"),
+  );
   console.log(`[${out.join(", ")}]`);
   const wide = readWideLe(bytes);
   console.log(`${u64x2Debug_fmt(wide, { debugHex: "x" })}`);
-  writeWideBe(wide, $view(out, 0, 16));
+  writeWideBe(
+    wide,
+    $view(out, 0, "test/corpus/lanes_read_through_a_byte_array_pointer.rs:60:33", 16),
+  );
   console.log(`[${out.join(", ")}]`);
   const words = [1, 2, 3, 4, 5, 6];
-  console.log(`[${firstFour($slice(words, 1)).join(", ")}]`);
-  setFirstFour($view(words, 2), [30, 40, 50, 60]);
+  console.log(
+    `[${firstFour($slice(words, 1, "test/corpus/lanes_read_through_a_byte_array_pointer.rs:63:39")).join(", ")}]`,
+  );
+  setFirstFour(
+    $view(words, 2, "test/corpus/lanes_read_through_a_byte_array_pointer.rs:64:30"),
+    [30, 40, 50, 60],
+  );
   console.log(`[${words.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

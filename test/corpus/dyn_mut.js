@@ -120,9 +120,9 @@ function main() {
     list[i].impl.twice(list[i]);
   }
   const get = boxed.impl.get(boxed.value);
-  const receiver$1 = $index(list, 0);
+  const receiver$1 = $index(list, 0, "test/corpus/dyn_mut.rs:80:43");
   const value = receiver$1.impl.get(receiver$1.value);
-  const receiver$2 = $index(list, 1);
+  const receiver$2 = $index(list, 1, "test/corpus/dyn_mut.rs:80:58");
   console.log(`${get} ${value} ${receiver$2.impl.get(receiver$2.value)}`);
 }
 //# sourceMappingURL=case.js.map

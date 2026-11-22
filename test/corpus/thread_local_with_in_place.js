@@ -50,7 +50,7 @@ function skipped(skip) {
 }
 
 function pushHeld(value) {
-  const held$1 = $unwrap(held);
+  const held$1 = $unwrap(held, "test/corpus/thread_local_with_in_place.rs:72:34");
   held$1.push(value);
 }
 
@@ -79,7 +79,9 @@ function main() {
   skipped(false);
   pushHeld(2);
   pushHeld(3);
-  console.log(`[${$unwrap(held).slice().join(", ")}]`);
+  console.log(
+    `[${$unwrap(held, "test/corpus/thread_local_with_in_place.rs:110:53").slice().join(", ")}]`,
+  );
   console.log(`${counted()} ${summed()}`);
   console.log(`[${items.slice().join(", ")}]`);
 }

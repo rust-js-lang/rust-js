@@ -50,19 +50,19 @@ function main() {
   console.log(`[${cells.map((item) => cellDebug_fmt(item)).join(", ")}]`);
 
   const target = [0, 0, 0];
-  $copyFromSlice(target, [1, 2, 3]);
+  $copyFromSlice(target, [1, 2, 3], "test/corpus/slice_methods.rs:24:12");
   const copies = [{ n: 0 }, { n: 0 }];
   const source = [{ n: 1 }, { n: 2 }];
-  $cloneFromSlice(copies, source, (value) => ({ ...value }));
-  $index(copies, 0).n = 5;
+  $cloneFromSlice(copies, source, "test/corpus/slice_methods.rs:27:12", (value) => ({ ...value }));
+  $index(copies, 0, "test/corpus/slice_methods.rs:28:11").n = 5;
   console.log(
     `[${target.join(", ")}] [${copies.map((item) => cellDebug_fmt(item)).join(", ")}] [${source.map((item) => cellDebug_fmt(item)).join(", ")}]`,
   );
   const left = [1, 2];
   const right = [3, 4];
-  $swapWithSlice(left, right);
+  $swapWithSlice(left, right, "test/corpus/slice_methods.rs:32:10");
   const shifted = [1, 2, 3, 4, 5];
-  $copyWithin(shifted, 1, 3, 3);
+  $copyWithin(shifted, 1, 3, 3, "test/corpus/slice_methods.rs:34:13");
   console.log(`[${left.join(", ")}] [${right.join(", ")}] [${shifted.join(", ")}]`);
 
   const sorted = [1, 2, 2, 5];
@@ -82,15 +82,17 @@ function main() {
 
   const items = [1, 2, 3, 4, 5, 6, 7];
   console.log(
-    `[${$chunksExact(items, 3)
+    `[${$chunksExact(items, 3, "test/corpus/slice_methods.rs:43:28")
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
-  console.log(`[${$chunksExact(items, 3).remainder.join(", ")}]`);
   console.log(
-    `[${$rchunks(items, 3, false)
+    `[${$chunksExact(items, 3, "test/corpus/slice_methods.rs:44:28").remainder.join(", ")}]`,
+  );
+  console.log(
+    `[${$rchunks(items, 3, false, "test/corpus/slice_methods.rs:45:33")
       .map((item) => `[${item.join(", ")}]`)
-      .join(", ")}] [${$rchunks(items, 2, true)
+      .join(", ")}] [${$rchunks(items, 2, true, "test/corpus/slice_methods.rs:45:71")
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );

@@ -10,7 +10,7 @@ let target = 0;
 
 function partDrop_drop(part) {
   if (target === part[0]) {
-    throw $stringPanic(`part ${part[0]} panics`);
+    throw $stringPanic(`part ${part[0]} panics`, "test/corpus/drop_glue_of_many_parts.rs:19:13");
   }
   console.log(`drop ${part[0]}`);
 }

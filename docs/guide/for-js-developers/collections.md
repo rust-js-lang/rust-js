@@ -105,7 +105,7 @@ export function onlyChildren(keys) {
 }
 
 export function first(keys) {
-  return $index(keys, 0);
+  return $index(keys, 0, "lib.rs:7:5");
 }
 ```
 
@@ -320,7 +320,15 @@ pub fn at(v: &[i32], i: usize) -> i32 {
 ```
 
 ```js
-import { $drain, $index, $removeOutOfBounds, $slice, $splice, $truncate } from "@rust-js/std";
+import {
+  $drain,
+  $index,
+  $removeOutOfBounds,
+  $slice,
+  $splice,
+  $stdSites,
+  $truncate,
+} from "@rust-js/std";
 
 export function stack() {
   const v = [1, 2, 3];
@@ -329,7 +337,7 @@ export function stack() {
   console.log(`${last == null ? "None" : `Some(${last})`}`);
   v.unshift(0);
   if (1 >= v.length) {
-    $removeOutOfBounds(v, 1);
+    $removeOutOfBounds(v, 1, "lib.rs:7:7");
   }
   v.splice(1, 1);
   v.push(7, 8);
@@ -338,11 +346,11 @@ export function stack() {
 }
 
 export function splice(v) {
-  return Array.from($splice(v, 1, 3, [10, 20, 30]));
+  return Array.from($splice(v, 1, 3, [10, 20, 30], $stdSites.vecDrain[0]));
 }
 
 export function drainFront(v) {
-  return $drain(v, 0, 2);
+  return $drain(v, 0, $stdSites.vecDrain[0], 2);
 }
 
 export function concat(a, b) {
@@ -356,11 +364,11 @@ export function spread(a, extra) {
 }
 
 export function middle(v) {
-  return $slice(v, 1, (v.length - 1) >>> 0);
+  return $slice(v, 1, "lib.rs:32:7", (v.length - 1) >>> 0);
 }
 
 export function rest(v, skipped) {
-  return $slice(v, skipped());
+  return $slice(v, skipped(), "lib.rs:36:7");
 }
 
 export function head(v) {
@@ -373,7 +381,7 @@ export function get(v, i) {
 }
 
 export function at(v, i) {
-  return $index(v, i);
+  return $index(v, i, "lib.rs:49:5");
 }
 ```
 
@@ -493,11 +501,11 @@ pub fn sort_tail(v: &mut [i32]) {
 import { $reverseRange, $view } from "@rust-js/std";
 
 export function flip(queued, first, end) {
-  $reverseRange(queued, first, end);
+  $reverseRange(queued, first, "lib.rs:2:11", end);
 }
 
 export function sortTail(v) {
-  $view(v, 1).sort((a, b) => a - b);
+  $view(v, 1, "lib.rs:6:6").sort((a, b) => a - b);
 }
 ```
 
@@ -1115,7 +1123,7 @@ export function stashed(errors, id) {
 export function removed(counts, key) {
   if (counts.has(key)) {
     counts.delete(key);
-    return $unwrap(counts.get(key), "no entry found for key");
+    return $unwrap(counts.get(key), "lib.rs:15:22", "no entry found for key");
   }
   return 0;
 }
@@ -1732,7 +1740,7 @@ export function keyValue(s) {
 }
 
 export function prefix(s) {
-  return $strSlice(s, 0, 3);
+  return $strSlice(s, 0, "lib.rs:30:7", 3);
 }
 
 export function safePrefix(s) {
@@ -1892,7 +1900,12 @@ function todoDeserialize_deserialize(json) {
 }
 
 export function toJson(todo) {
-  return $unwrapOk($toJson(todo, todoSerialize_serialize, false), undefined, $debugJsonError);
+  return $unwrapOk(
+    $toJson(todo, todoSerialize_serialize, false),
+    "lib.rs:14:33",
+    undefined,
+    $debugJsonError,
+  );
 }
 
 export function fromJson(text) {

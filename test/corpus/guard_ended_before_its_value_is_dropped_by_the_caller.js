@@ -117,7 +117,11 @@ function loudDrop_drop(loud) {
 }
 
 function take(stack) {
-  const entries = $borrowMut(stack, true);
+  const entries = $borrowMut(
+    stack,
+    "test/corpus/guard_ended_before_its_value_is_dropped_by_the_caller.rs:25:29",
+    true,
+  );
   let last;
   try {
     last = entries.pop();
@@ -160,7 +164,11 @@ function main() {
     };
     let borrowMut;
     try {
-      borrowMut = $borrowMut(stack.value, true);
+      borrowMut = $borrowMut(
+        stack.value,
+        "test/corpus/guard_ended_before_its_value_is_dropped_by_the_caller.rs:38:15",
+        true,
+      );
     } catch (error) {
       $cleanup(() => {
         $rcDrop(loud, (value) => {
@@ -226,7 +234,11 @@ function main() {
   }
   let held;
   try {
-    held = $borrow(stack.value, true);
+    held = $borrow(
+      stack.value,
+      "test/corpus/guard_ended_before_its_value_is_dropped_by_the_caller.rs:41:22",
+      true,
+    );
   } catch (error) {
     $cleanup(() => {
       if (taken != null) {
@@ -329,7 +341,9 @@ function main() {
   let borrow;
   try {
     if (stack.value.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed(
+        "test/corpus/guard_ended_before_its_value_is_dropped_by_the_caller.rs:47:26",
+      );
     }
     borrow = stack.value;
   } catch (error) {

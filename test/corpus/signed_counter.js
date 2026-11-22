@@ -50,7 +50,7 @@ function found(lines) {
   while (s < lines.length && !lines[s].includes("Root")) {
     s++;
   }
-  return $index(lines, s);
+  return $index(lines, s, "test/corpus/signed_counter.rs:53:5");
 }
 
 function main() {

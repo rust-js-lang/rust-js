@@ -47,16 +47,19 @@ function main() {
     [3, 30],
     [4, 40],
   ];
-  const a = $unwrap($next(copies(ps)));
+  const a = $unwrap($next(copies(ps)), "test/corpus/copies_given_out_of_borrowed_items.rs:33:36");
   a[1] = 0;
-  const b = $unwrap(Array.from($lent(clones(ps)).drop(1).take(1))[0]);
+  const b = $unwrap(
+    Array.from($lent(clones(ps)).drop(1).take(1))[0],
+    "test/corpus/copies_given_out_of_borrowed_items.rs:35:36",
+  );
   b[0] = 0;
-  const c = $unwrap($last(derefs(ps)));
+  const c = $unwrap($last(derefs(ps)), "test/corpus/copies_given_out_of_borrowed_items.rs:37:36");
   c[1] = (c[1] + 1) >>> 0;
-  const d = $unwrap(first(ps));
+  const d = $unwrap(first(ps), "test/corpus/copies_given_out_of_borrowed_items.rs:39:28");
   d[0] = (d[0] + 5) >>> 0;
   const e = Array.from(evensRevealed(ps));
-  $index(e, 0)[1] = 7;
+  $index(e, 0, "test/corpus/copies_given_out_of_borrowed_items.rs:42:6")[1] = 7;
   console.log(
     `${pDebug_fmt(a)} ${pDebug_fmt(b)} ${pDebug_fmt(c)} ${pDebug_fmt(d)} [${e.map((item) => pDebug_fmt(item)).join(", ")}]`,
   );

@@ -13,6 +13,7 @@ import {
   $lazyRange,
   $next,
   $nth,
+  $panic,
   $rangeNext,
   $sizeHint,
   $skipping,
@@ -33,7 +34,7 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 3) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/adapter_made_in_generic_code_asked_its_hint.rs:16:13");
   }
 }
 

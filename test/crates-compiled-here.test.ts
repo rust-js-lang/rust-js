@@ -204,16 +204,16 @@ test("a library's generic function is its program's, alone or a dependency, and 
   expect(app).toContain("\nfunction tagHash_hash(tag, state, HHasher, dropH) {\n");
   // The functions that copy what the consumer changes in place, which the
   // library never changes, are its own, and copy.
-  expect(dep).toContain("export function firstSpot(spots) {\n  return $index(spots, 0);\n}");
-  expect(app).toContain("\nfunction firstSpot(spots) {\n  return { ...$index(spots, 0) };\n}");
-  expect(app).toContain("\nfunction firstPair(pairs) {\n  const value = $index(pairs, 0);\n  return [value[0], value[1]];\n}");
+  expect(dep).toContain("export function firstSpot(spots) {\n  return $index(spots, 0, \"dep.rs:181:5\");\n}");
+  expect(app).toContain("\nfunction firstSpot(spots) {\n  return { ...$index(spots, 0, \"dep.rs:181:5\") };\n}");
+  expect(app).toContain("\nfunction firstPair(pairs) {\n  const value = $index(pairs, 0, \"dep.rs:196:5\");\n  return [value[0], value[1]];\n}");
   // An impl's that copies, its own, called through the dictionary the
   // library exports, or by a library function that calls it.
-  expect(app).toContain("\nfunction spotsFirst_first(spots) {\n  return { ...$index(spots[0], 0) };\n}");
+  expect(app).toContain("\nfunction spotsFirst_first(spots) {\n  return { ...$index(spots[0], 0, \"dep.rs:209:15\") };\n}");
   expect(app).toContain("\nfunction firstOf(spots) {\n  return spotsFirst_first(spots);\n}");
   // One that copies what the library changes in place too, whose JS copies
   // it as Rust does, is imported (rd606).
-  expect(dep).toContain("export function firstNotch(notches) {\n  const notch = { ...$index(notches, 0) };\n");
+  expect(dep).toContain("export function firstNotch(notches) {\n  const notch = { ...$index(notches, 0, \"dep.rs:228:21\") };\n");
   expect(app).toContain("Dep.firstNotch(notches)");
   expect(app).not.toContain("\nfunction firstNotch(");
   // And two that call each other, above one that copies.

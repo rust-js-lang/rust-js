@@ -61,7 +61,7 @@ function main() {
   h.f = t;
   const name = task.name;
   console.log(`${statusDebug_fmt(task)} ${name} ${holderDebug_fmt(h)}`);
-  $index(h.items, 1);
+  $index(h.items, 1, "test/corpus/flattened_state_swapped_places.rs:61:31");
   const t$1 = h.items[1];
   h.items[1] =
     task.status === "pending"

@@ -16,5 +16,5 @@ function $forceLock(lazy) {
 }
 
 function $lazyLockPoisoned() {
-  throw new Error("LazyLock instance has previously been poisoned");
+  throw $panic("LazyLock instance has previously been poisoned", $stdSites.lazyLockPoisoned[0]);
 }

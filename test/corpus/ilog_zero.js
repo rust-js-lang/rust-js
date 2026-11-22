@@ -8,7 +8,7 @@ export function entry() {
 
 function main() {
   for (const n of [100, 9, 0]) {
-    console.log(`${$ilog(n, 10)}`);
+    console.log(`${$ilog(n, 10, "test/corpus/ilog_zero.rs:5:26")}`);
   }
 }
 //# sourceMappingURL=case.js.map

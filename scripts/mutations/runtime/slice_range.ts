@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "slice-start-past-end-unchecked",
     breaks: "`&v[a..]` with `a` past the end is empty, not a panic",
     file: "crates/rust-js-program/src/runtime/slice_range.js",
-    find: "function $slice(items, start, end = items.length, inclusive) {\n  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);\n",
-    replace: "function $slice(items, start, end = items.length, inclusive) {\n  if (end > items.length) $sliceIndexFail(start, end, items.length, inclusive);\n",
+    find: "function $slice(items, start, raisedAt, end = items.length, inclusive) {\n  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, raisedAt, inclusive);\n",
+    replace: "function $slice(items, start, raisedAt, end = items.length, inclusive) {\n  if (end > items.length) $sliceIndexFail(start, end, items.length, raisedAt, inclusive);\n",
     tests: ["test/corpus.test.ts","-t","slice_from_past_len"],
   },
   {
@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "slice-range-start-first",
     breaks: "a deque's `range(5..7)` of three items says \"range start index 5\", checked as `&v[a..b]` is, where std's `slice::range` says \"range end index 7\" (#1937)",
     file: "crates/rust-js-program/src/runtime/slice_range.js",
-    find: "  $checkRange(start, end, items.length, inclusive);\n  return $part(items, start, end);\n",
-    replace: "  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);\n  return $part(items, start, end);\n",
+    find: "  $checkRange(start, end, items.length, raisedAt, inclusive);\n  return $part(items, start, end);\n",
+    replace: "  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, raisedAt, inclusive);\n  return $part(items, start, end);\n",
     tests: ["test/corpus.test.ts", "-t", "^deque_range_checked_end_first.rs$"],
   },
 ];

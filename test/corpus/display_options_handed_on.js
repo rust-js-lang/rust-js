@@ -30,15 +30,20 @@ function main() {
   const lossy = $utf8Lossy([97, 98]);
   console.log(`[${$pad(cow._0, 5, ">")}] [${$pad(lossy._0, 6, "^")}] [${$pad("a", 4, ">")}]`);
   console.log(`[${"3".padStart(4)}] [${$toFixed(2.75, 1).padStart(6)}]`);
-  const error = $unwrapErr($parseInt("x", -2147483648, 2147483647));
+  const error = $unwrapErr(
+    $parseInt("x", -2147483648, 2147483647),
+    "test/corpus/display_options_handed_on.rs:23:36",
+  );
   console.log(`[${$pad(error, 32, ">")}] [${Array.from(error).slice(0, 3).join("")}]`);
-  console.log(`[${$pad($unwrapErr($parseF64("x"), undefined, $debugF64), 24, ">")}]`);
+  console.log(
+    `[${$pad($unwrapErr($parseF64("x"), "test/corpus/display_options_handed_on.rs:25:45", undefined, $debugF64), 24, ">")}]`,
+  );
   const boxed = {
-    value: $unwrapErr($parseInt("q", 0, 255)),
+    value: $unwrapErr($parseInt("q", 0, 255), "test/corpus/display_options_handed_on.rs:26:60"),
     impl: $parseErrorDyn("core::num::error::ParseIntError"),
   };
   console.log(`[${boxed.impl.Display().fmt(boxed.value, { width: 32, align: "Right" })}]`);
-  const invalid = $unwrapErr($fromUtf8([255]));
+  const invalid = $unwrapErr($fromUtf8([255]), "test/corpus/display_options_handed_on.rs:28:48");
   console.log(`[${$utf8ErrorMessage(invalid)}]`);
 }
 //# sourceMappingURL=case.js.map

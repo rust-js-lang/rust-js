@@ -37,7 +37,9 @@ function main() {
     const value = read(text, 50);
     console.log(`${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${boundedDebug_fmt(value._0)})`}`);
   }
-  const kind = $parseErrorKind($unwrapErr($parseInt("", -2147483648, 2147483647)));
+  const kind = $parseErrorKind(
+    $unwrapErr($parseInt("", -2147483648, 2147483647), "test/corpus/int_error_kind.rs:26:34"),
+  );
   console.log(`${kind === "Empty"} ${kind} Zero`);
 }
 //# sourceMappingURL=case.js.map

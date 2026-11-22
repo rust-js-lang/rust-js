@@ -98,6 +98,7 @@ function main() {
   const value$9 = [1, 2, 3, 4];
   const b = $unwrapOk(
     value$9.length === 4 ? { TAG: "Ok", _0: value$9 } : { TAG: "Err", _0: value$9 },
+    "test/corpus/conversions_through_generic_code.rs:63:78",
     undefined,
     (e) => `[${e.join(", ")}]`,
   );

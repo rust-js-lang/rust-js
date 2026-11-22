@@ -38,7 +38,9 @@ function bufMeasured_metadata(buf, kept, SIZE) {
 function bufMeasured_written(buf, held, SIZE) {
   const f = $sink();
   if (held != null) {
-    f.write(`${$index(held.metadata, 1)} of ${$index(held.metadata, 0)}`);
+    f.write(
+      `${$index(held.metadata, 1, "test/corpus/const_generic_impl_reached_by_a_trait_default_where_caught.rs:52:62")} of ${$index(held.metadata, 0, "test/corpus/const_generic_impl_reached_by_a_trait_default_where_caught.rs:52:80")}`,
+    );
   } else {
     f.write("none");
   }

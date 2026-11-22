@@ -19,6 +19,7 @@ import {
   $nextBack,
   $nth,
   $nthBack,
+  $panic,
   $rev,
   $roomForHint,
   $skipping,
@@ -161,7 +162,7 @@ function loudDrop_drop(loud) {
 
 function added(acc, x) {
   if (x === 7) {
-    throw new Error("seven");
+    throw $panic("seven", "test/corpus/own_back_through_adapters.rs:118:9");
   }
   return (acc + x) | 0;
 }

@@ -18,6 +18,7 @@ import {
   $iter,
   $live,
   $mapFrom,
+  $panic,
   $partiallyOrdered,
   $repeatingN,
   $reserveHint,
@@ -37,7 +38,7 @@ function dDrop_drop(d) {
 function key(d) {
   try {
     if (d[0] === 2) {
-      throw new Error("at 2");
+      throw $panic("at 2", "test/corpus/generic_collect_closes_what_it_steps_on_a_panic.rs:22:9");
     }
     return d[0];
   } catch (error) {
@@ -83,7 +84,12 @@ function pairs(v, CFromIterator_u32__u32_) {
 
 function chars(v, CFromIteratorChar) {
   return CFromIteratorChar.fromIter(
-    $closing($iter(v), $dropEach(dDrop_drop)).map((d) => $unwrap($fromDigit(key(d), 10))),
+    $closing($iter(v), $dropEach(dDrop_drop)).map((d) =>
+      $unwrap(
+        $fromDigit(key(d), 10),
+        "test/corpus/generic_collect_closes_what_it_steps_on_a_panic.rs:40:56",
+      ),
+    ),
     true,
     [4, 4],
     (map) => {

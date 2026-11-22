@@ -28,6 +28,7 @@ function refill(into, from, TClone, TTriviallyCloned) {
   $cloneFromSlice(
     into,
     from,
+    "test/corpus/clone_from_slice_generic.rs:25:10",
     (value) => TClone.clone(value),
     TClone.cloneFrom &&
       ((items, i, from) => {
@@ -51,6 +52,7 @@ function refillItems(into, from, AArray, AItemClone) {
   $cloneFromSlice(
     into,
     from,
+    "test/corpus/clone_from_slice_generic.rs:41:10",
     (value) => AItemClone.clone(value),
     AItemClone.cloneFrom &&
       ((items, i, from) => {
@@ -69,7 +71,12 @@ function main() {
   refill(b, [[5]], clone, false);
   const n = [1, 2];
   refill(n, [7, 8], clone, true);
-  refillItems($view(a, 0, 1), [[6]], _T__N_Array(1, false), countedClone);
+  refillItems(
+    $view(a, 0, "test/corpus/clone_from_slice_generic.rs:51:40", 1),
+    [[6]],
+    _T__N_Array(1, false),
+    countedClone,
+  );
   console.log(
     `[${a.map((item) => countedDebug_fmt(item)).join(", ")}] ${b[0][0]} [${n.join(", ")}]`,
   );

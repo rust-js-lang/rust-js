@@ -8,7 +8,7 @@ export function entry() {
 
 function step(n) {
   if (n > 2) {
-    throw $stringPanic(`big ${n}`);
+    throw $stringPanic(`big ${n}`, "test/corpus/catch_unwind_chained.rs:9:9");
   }
   return n * 10;
 }

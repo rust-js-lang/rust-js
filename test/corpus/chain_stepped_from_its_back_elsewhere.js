@@ -26,6 +26,7 @@ import {
   $next,
   $nthBack,
   $nthDropping,
+  $panic,
   $rev,
   $roomForHint,
   $sortedKeys,
@@ -437,7 +438,7 @@ function main() {
       (a, d) => {
         try {
           if (d[0] === 6) {
-            throw new Error("rfold");
+            throw $panic("rfold", "test/corpus/chain_stepped_from_its_back_elsewhere.rs:137:17");
           }
           return (a + d[0]) >>> 0;
         } catch (error) {
@@ -593,7 +594,7 @@ function main() {
       n$1 = (n$1 + 1) | 0;
       try {
         if (n$1 === 2) {
-          throw new Error("fold");
+          throw $panic("fold", "test/corpus/chain_stepped_from_its_back_elsewhere.rs:181:17");
         }
         return (a + x[0]) >>> 0;
       } catch (error) {
@@ -640,7 +641,7 @@ function main() {
       n$1 = (n$1 + 1) | 0;
       try {
         if (n$1 === 2) {
-          throw new Error("fold");
+          throw $panic("fold", "test/corpus/chain_stepped_from_its_back_elsewhere.rs:194:17");
         }
         return (a + x[0]) >>> 0;
       } catch (error) {
@@ -681,7 +682,7 @@ function main() {
         (d) => {
           k$1 = (k$1 + 1) | 0;
           if (k$1 === 1) {
-            throw new Error("skip");
+            throw $panic("skip", "test/corpus/chain_stepped_from_its_back_elsewhere.rs:209:17");
           }
           return d[0] < 3;
         },
@@ -772,7 +773,7 @@ function main() {
         n$1 = (n$1 + 1) | 0;
         try {
           if (n$1 === 2) {
-            throw new Error("rfold");
+            throw $panic("rfold", "test/corpus/chain_stepped_from_its_back_elsewhere.rs:226:17");
           }
           return (a + x[0]) >>> 0;
         } catch (error) {

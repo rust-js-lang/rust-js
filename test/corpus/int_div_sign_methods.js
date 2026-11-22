@@ -10,17 +10,36 @@ function id(x) {
   return x;
 }
 function main() {
-  const overflowingDiv = $overflowingDiv(id(-128), -1, -128);
-  const overflowingRem = $overflowingRem(id(-9223372036854775808n), -1n, -9223372036854775808n);
-  const value = $overflowingDiv(id(-7n), 2n, -170141183460469231731687303715884105728n);
+  const overflowingDiv = $overflowingDiv(
+    id(-128),
+    -1,
+    "test/corpus/int_div_sign_methods.rs:5:44",
+    -128,
+  );
+  const overflowingRem = $overflowingRem(
+    id(-9223372036854775808n),
+    -1n,
+    "test/corpus/int_div_sign_methods.rs:5:78",
+    -9223372036854775808n,
+  );
+  const value = $overflowingDiv(
+    id(-7n),
+    2n,
+    "test/corpus/int_div_sign_methods.rs:5:110",
+    -170141183460469231731687303715884105728n,
+  );
   console.log(
     `(${overflowingDiv[0]}, ${overflowingDiv[1]}) (${overflowingRem[0]}, ${overflowingRem[1]}) (${value[0]}, ${value[1]})`,
   );
-  const value$1 = $overflowingDiv(id(18446744073709551615n), 3n);
-  const value$2 = $overflowingRem(id(9), 4);
+  const value$1 = $overflowingDiv(
+    id(18446744073709551615n),
+    3n,
+    "test/corpus/int_div_sign_methods.rs:6:40",
+  );
+  const value$2 = $overflowingRem(id(9), 4, "test/corpus/int_div_sign_methods.rs:6:68");
   console.log(`(${value$1[0]}, ${value$1[1]}) (${value$2[0]}, ${value$2[1]})`);
   console.log(
-    `${$saturatingDiv(id(-9223372036854775808n), -1n, -9223372036854775808n, 9223372036854775807n)} ${$saturatingDiv(id(-170141183460469231731687303715884105728n), -1n, -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$saturatingDiv(id(-9), 4, -32768, 32767)}`,
+    `${$saturatingDiv(id(-9223372036854775808n), -1n, "test/corpus/int_div_sign_methods.rs:7:39", -9223372036854775808n, 9223372036854775807n)} ${$saturatingDiv(id(-170141183460469231731687303715884105728n), -1n, "test/corpus/int_div_sign_methods.rs:7:73", -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$saturatingDiv(id(-9), 4, "test/corpus/int_div_sign_methods.rs:7:103", -32768, 32767)}`,
   );
   console.log(
     `${$isMultipleOf(id(340282366920938463463374607431768211455n), 5n)} ${$isMultipleOf(id(0), 0)} ${$isMultipleOf(id(7), 0)} ${$isMultipleOf(id(48), 16)}`,

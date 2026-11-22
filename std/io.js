@@ -11,6 +11,7 @@ import {
   $ioThrow,
   $keepCapacity,
   $memchr,
+  $panic,
   $partialEq,
   $readByte,
   $readerDefaults,
@@ -152,7 +153,13 @@ export function splitIterator_next(split, BBufRead, dropB) {
   if (readUntil.TAG === "Ok") {
     if (readUntil._0 !== 0) {
       const _n = readUntil._0;
-      if ($index(buf, (buf.length - 1) >>> 0) === split.delim) {
+      if (
+        $index(
+          buf,
+          (buf.length - 1) >>> 0,
+          "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/io/util.rs:423:23",
+        ) === split.delim
+      ) {
         $keepCapacity(buf);
         buf.pop();
       }
@@ -364,7 +371,12 @@ export function takeRead_read(take, buf, TRead, dropT) {
         take.inner = value;
       },
     },
-    $view(buf, 0, max),
+    $view(
+      buf,
+      0,
+      "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/io/util.rs:243:41",
+      max,
+    ),
   );
   if (result.TAG === "Err") {
     return result;
@@ -372,7 +384,10 @@ export function takeRead_read(take, buf, TRead, dropT) {
   const value = result._0;
   const value$1 = BigInt(value);
   if (!(value$1 <= take.limit)) {
-    throw new Error("number of read bytes exceeds limit");
+    throw $panic(
+      "number of read bytes exceeds limit",
+      "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/io/util.rs:244:9",
+    );
   }
   take.limit = BigInt.asUintN(64, take.limit - value$1);
   return { TAG: "Ok", _0: value };
@@ -545,7 +560,13 @@ export function defaultReadUntil(r, delim, buf, RBufRead, dropR) {
       let used;
       let tmp;
       if (i != null) {
-        available = $slice(available, 0, i + 1, true);
+        available = $slice(
+          available,
+          0,
+          "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/io/buf_read.rs:444:45",
+          i + 1,
+          true,
+        );
         const length = buf.length;
         for (let j = 0; j < available.length; j++) {
           buf.push(available[j]);

@@ -10,6 +10,7 @@ import {
   $lazyChain,
   $live,
   $next,
+  $panic,
   $rangeFromStep,
   $roomForHint,
   $unwindsOn,
@@ -92,7 +93,7 @@ function sumFromIterator_u32__u32__fromIter(items, dropI, dropIIntoIter) {
  */
 function tripled(n) {
   if (n === 9) {
-    throw new Error("nine");
+    throw $panic("nine", "test/corpus/held_adapters_stepped_to_their_end.rs:63:9");
   }
   return (n * 3) >>> 0;
 }

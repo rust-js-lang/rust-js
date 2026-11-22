@@ -63,7 +63,11 @@ function first(it, dropI) {
   const items = { value: { value: it }, strong: 1, weak: 0 };
   let borrowMut;
   try {
-    borrowMut = $borrowMut(items.value, true);
+    borrowMut = $borrowMut(
+      items.value,
+      "test/corpus/iterator_in_a_ref_cell_given_generic_code.rs:69:13",
+      true,
+    );
   } catch (error) {
     $cleanup(() => {
       $rcDrop(items, (value) => {
@@ -96,7 +100,11 @@ function second(it, dropI) {
   const items = { value: it };
   let held;
   try {
-    held = $borrowMut(items, true);
+    held = $borrowMut(
+      items,
+      "test/corpus/iterator_in_a_ref_cell_given_generic_code.rs:74:26",
+      true,
+    );
   } catch (error) {
     $cleanup(() => {
       dropI?.(items.value);
@@ -130,7 +138,11 @@ function second(it, dropI) {
 function summed(it) {
   $held(it);
   const items = { value: it };
-  const borrowMut = $borrowMut(items, true);
+  const borrowMut = $borrowMut(
+    items,
+    "test/corpus/iterator_in_a_ref_cell_given_generic_code.rs:81:11",
+    true,
+  );
   try {
     return $lent(borrowMut.value).reduce((a, b) => (a + b) >>> 0, 0);
   } finally {
@@ -142,7 +154,11 @@ function last(source, SSource) {
   const items = { value: { value: $held(SSource.items(source)) }, strong: 1, weak: 0 };
   let borrowMut;
   try {
-    borrowMut = $borrowMut(items.value, true);
+    borrowMut = $borrowMut(
+      items.value,
+      "test/corpus/iterator_in_a_ref_cell_given_generic_code.rs:86:11",
+      true,
+    );
   } catch (error) {
     $cleanup(() => {
       $rcDrop(items, (value) => {
@@ -175,7 +191,11 @@ function secondOf(source, SSource) {
   const items = { value: { value: $held(SSource.items(source)) }, strong: 1, weak: 0 };
   let borrowMut;
   try {
-    borrowMut = $borrowMut(items.value, true);
+    borrowMut = $borrowMut(
+      items.value,
+      "test/corpus/iterator_in_a_ref_cell_given_generic_code.rs:91:22",
+      true,
+    );
   } catch (error) {
     $cleanup(() => {
       $rcDrop(items, (value) => {
@@ -198,7 +218,11 @@ function secondOf(source, SSource) {
   $unborrow(borrowMut);
   let tmp;
   try {
-    tmp = $borrowMut(items.value, true);
+    tmp = $borrowMut(
+      items.value,
+      "test/corpus/iterator_in_a_ref_cell_given_generic_code.rs:92:13",
+      true,
+    );
   } catch (error) {
     $cleanup(() => {
       $rcDrop(items, (value) => {
@@ -229,8 +253,12 @@ function secondOf(source, SSource) {
 function replaced(it, other, IVecCollect) {
   $held(it);
   const held = { value: it };
-  $borrowMut(held).value = other;
-  const borrowMut = $borrowMut(held, true);
+  $borrowMut(held, "test/corpus/iterator_in_a_ref_cell_given_generic_code.rs:97:11").value = other;
+  const borrowMut = $borrowMut(
+    held,
+    "test/corpus/iterator_in_a_ref_cell_given_generic_code.rs:98:10",
+    true,
+  );
   try {
     $next(borrowMut.value);
   } finally {
@@ -245,7 +273,11 @@ function through(f) {
 
 function called(f) {
   const held = { value: f };
-  const borrowMut = $borrowMut(held, true);
+  const borrowMut = $borrowMut(
+    held,
+    "test/corpus/iterator_in_a_ref_cell_given_generic_code.rs:108:36",
+    true,
+  );
   let first;
   try {
     first = through(borrowMut.value);
@@ -253,7 +285,11 @@ function called(f) {
     $unborrow(borrowMut);
   }
   const value = (first * 10) >>> 0;
-  const value$1 = $borrowMut(held, true);
+  const value$1 = $borrowMut(
+    held,
+    "test/corpus/iterator_in_a_ref_cell_given_generic_code.rs:109:25",
+    true,
+  );
   try {
     return (value + value$1.value()) >>> 0;
   } finally {

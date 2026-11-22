@@ -107,7 +107,7 @@ function main() {
     `${value$10 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$10))})`} ${value$11 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$11))})`} ${value$12 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$12))})`}\n`,
   );
   const value$13 = $nextBackSome($iter(maybe));
-  const value$14 = $nextBackSome($iter($slice(maybe, 0, 1)));
+  const value$14 = $nextBackSome($iter($slice(maybe, 0, "test/corpus/iter_next_back.rs:39:58", 1)));
   $print(
     `${value$13 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$13))})`} ${value$14 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$14))})`}\n`,
   );

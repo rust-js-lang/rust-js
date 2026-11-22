@@ -19,7 +19,7 @@ function circleShape_grow(circle, by) {
 
 function radius(circle) {
   if (circle.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_dyn_alias_borrow.rs:25:12");
   }
   return circle.value.r;
 }
@@ -27,14 +27,14 @@ function radius(circle) {
 function main() {
   const circle = { value: { r: 1 } };
   const shape = $dynCell(circle, circleShape);
-  const receiver = $borrowMut(shape, true);
+  const receiver = $borrowMut(shape, "test/corpus/refcell_dyn_alias_borrow.rs:31:11", true);
   try {
     receiver.impl.grow(receiver, 1);
   } finally {
     $unborrow(receiver);
   }
   console.log(`${$displayF64(radius(circle))}`);
-  const held = $borrowMut(shape, true);
+  const held = $borrowMut(shape, "test/corpus/refcell_dyn_alias_borrow.rs:33:26", true);
   try {
     held.impl.grow(held, 1);
     console.log(`${$displayF64(radius(circle))}`);

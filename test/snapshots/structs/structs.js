@@ -114,9 +114,9 @@ export function optionCopyIsSeparate(x) {
 /** `*r` of a reference a call returns is a copy too. */
 export function derefCopyIsSeparate(x) {
   const points = [point(x, 0)];
-  const p = { ...$unwrap(points[0]) };
+  const p = { ...$unwrap(points[0], "examples/structs.rs:125:33") };
   p.x = (p.x + 1) | 0;
-  return [$unwrap(points[0]).x, p.x];
+  return [$unwrap(points[0], "examples/structs.rs:127:21").x, p.x];
 }
 
 /** Struct update syntax: fields not written come from `base`. */
@@ -131,12 +131,18 @@ export function withX(x, y) {
  * remainder does.
  */
 export function writtenOrder(a, b) {
-  return { y: $div(100, a, -2147483648) | 0, x: $rem(100, b, -2147483648) | 0 };
+  return {
+    y: $div(100, a, "examples/structs.rs:140:16", -2147483648) | 0,
+    x: $rem(100, b, "examples/structs.rs:140:28", -2147483648) | 0,
+  };
 }
 
 /** Tuples: built, returned and taken apart. */
 export function divmod(a, b) {
-  return [$div(a, b) >>> 0, $rem(a, b) >>> 0];
+  return [
+    $div(a, b, "examples/structs.rs:145:6") >>> 0,
+    $rem(a, b, "examples/structs.rs:145:13") >>> 0,
+  ];
 }
 
 export function divmodSum(a, b) {

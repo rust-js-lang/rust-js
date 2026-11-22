@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function hold(cell, f) {
-  const held = $borrow(cell, true);
+  const held = $borrow(cell, "test/corpus/refcell_field_lent_held.rs:13:21", true);
   try {
     f();
     console.log(`${held.value}`);
@@ -17,8 +17,14 @@ function hold(cell, f) {
 }
 
 function bump(wrap) {
-  const { value: n } = $borrow($fieldCell(wrap, "n"));
-  $cellReplace($borrowMut($fieldCell(wrap, "n")), (n + 1) & 65535);
+  const { value: n } = $borrow(
+    $fieldCell(wrap, "n"),
+    "test/corpus/refcell_field_lent_held.rs:19:21",
+  );
+  $cellReplace(
+    $borrowMut($fieldCell(wrap, "n"), "test/corpus/refcell_field_lent_held.rs:20:12"),
+    (n + 1) & 65535,
+  );
 }
 
 function main() {

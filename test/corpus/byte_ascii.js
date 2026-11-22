@@ -67,6 +67,8 @@ function main() {
   const word = [72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33].map((b) =>
     b >= 97 && b <= 122 ? b - 32 : b,
   );
-  console.log(`${$unwrapOk($fromUtf8(word, true), undefined, (e) => $debugUtf8Error(e, true))}`);
+  console.log(
+    `${$unwrapOk($fromUtf8(word, true), "test/corpus/byte_ascii.rs:41:44", undefined, (e) => $debugUtf8Error(e, true))}`,
+  );
 }
 //# sourceMappingURL=case.js.map

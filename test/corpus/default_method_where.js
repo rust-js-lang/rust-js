@@ -37,7 +37,9 @@ function labelOf(s, SSource) {
 
 function main() {
   const boxed = { value: { value: 22 }, impl: counterSource };
-  console.log(`${$unwrap(boxed.impl.next(boxed)).value} ${boxed.impl.label(boxed.value)}`);
+  console.log(
+    `${$unwrap(boxed.impl.next(boxed), "test/corpus/default_method_where.rs:67:36").value} ${boxed.impl.label(boxed.value)}`,
+  );
   console.log(`${labelOf({ value: 0 }, counterSource)}`);
   const names = { names: ["a", "b"] };
   console.log(`${labelOf(names, namesSource)}`);

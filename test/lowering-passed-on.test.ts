@@ -423,7 +423,7 @@ pub fn totals(xs: &[f64]) -> Vec<f64> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export const cloneInstance = shim;\n");
-  expect(js).toContain("export const afterFirst = (...args) => {\n  shim(...$slice(args, 1));\n};");
+  expect(js).toContain("export const afterFirst = (...args) => {\n  shim(...$slice(args, 1, \"lib.rs:17:48\"));\n};");
   expect(js).toContain("export const ofOne = (args) => {\n  shim(...args);\n};");
   expect(js).toContain("xs.map((x) => total(x))");
   const lib = await import(join(dir, "lib.js"));

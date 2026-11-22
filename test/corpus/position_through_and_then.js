@@ -45,7 +45,11 @@ function fromTheEnd(extension) {
 function main() {
   for (const name of ["sat", "xyz", undefined, "sun"]) {
     const value = byName(name);
-    const value$1 = byPrefix(name != null ? $strSlice(name, 0, 1) : undefined);
+    const value$1 = byPrefix(
+      name != null
+        ? $strSlice(name, 0, "test/corpus/position_through_and_then.rs:48:38", 1)
+        : undefined,
+    );
     const value$2 = givenOn(name);
     const value$3 = afterTheFirst(name);
     console.log(

@@ -49,7 +49,7 @@ function noisyDefault_default() {
 function first(items, TClone, dropT) {
   let result;
   try {
-    result = TClone.clone($index(items, 0));
+    result = TClone.clone($index(items, 0, "test/corpus/drop_generic.rs:51:10"));
   } catch (error) {
     $cleanup(() => {
       $dropItems(items, (item) => {

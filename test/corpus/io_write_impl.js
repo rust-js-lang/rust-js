@@ -90,7 +90,7 @@ function main() {
   }
   try {
     console.log(
-      `${$unwrapOk($fromUtf8(b.bytes.slice(), true), undefined, (e) => $debugUtf8Error(e, true))} ${n == null ? "None" : `Some(${n})`}`,
+      `${$unwrapOk($fromUtf8(b.bytes.slice(), true), "test/corpus/io_write_impl.rs:41:60", undefined, (e) => $debugUtf8Error(e, true))} ${n == null ? "None" : `Some(${n})`}`,
     );
   } catch (error) {
     $cleanup(() => {

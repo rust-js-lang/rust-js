@@ -13,7 +13,7 @@ function remember(cell) {
 }
 
 function first() {
-  return $index(cache, 0);
+  return $index(cache, 0, "test/corpus/refcell_flow_thread_local.rs:19:47");
 }
 
 function main() {
@@ -22,8 +22,8 @@ function main() {
   other.push(6);
   console.log(`${other.length}`);
   const cell = first();
-  const again = () => $borrow(first()).length;
-  const held = $borrowMut(cell, true);
+  const again = () => $borrow(first(), "test/corpus/refcell_flow_thread_local.rs:28:28").length;
+  const held = $borrowMut(cell, "test/corpus/refcell_flow_thread_local.rs:29:25", true);
   try {
     held.push(2);
     console.log(`${again()}`);

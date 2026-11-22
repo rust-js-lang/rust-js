@@ -181,7 +181,7 @@ function aUnitCircleHasAreaPi() {
   const value = unit();
   const PI = Math.PI;
   if (value !== PI) {
-    $assertFailed("Eq", $debugF64(value), $debugF64(PI));
+    $assertFailed("Eq", $debugF64(value), $debugF64(PI), "shapes.rs:17:9");
   }
 }
 

@@ -49,7 +49,11 @@ function summedFromIteratorU32_fromIter(items, PLACE, dropI, dropIIntoIter) {
       while (true) {
         let borrowMut;
         try {
-          borrowMut = $borrowMut(it.value, true);
+          borrowMut = $borrowMut(
+            it.value,
+            "test/corpus/iterator_held_in_a_place_dropped_with_it.rs:48:40",
+            true,
+          );
         } catch (error) {
           $cleanup(() => {
             $rcDrop(it, (value) => {
@@ -110,7 +114,11 @@ function summedFromIteratorU32_fromIter(items, PLACE, dropI, dropIIntoIter) {
       while (true) {
         let n;
         try {
-          n = $next($someValue($unwrap(it)));
+          n = $next(
+            $someValue(
+              $unwrap(it, "test/corpus/iterator_held_in_a_place_dropped_with_it.rs:62:49"),
+            ),
+          );
         } catch (error) {
           $cleanup(() => {
             if (it != null) {

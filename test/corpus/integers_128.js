@@ -77,7 +77,7 @@ function main() {
     `${$bigLeadingZeros(big, 128)} ${$bigTrailingZeros(big, 128)} ${$bigCountOnes(max, 128)}`,
   );
   console.log(
-    `${$bigAbs(min)} ${BigInt.asIntN(128, $bigAbs(-5n))} ${$bigRemEuclid(-5n, 3n, -170141183460469231731687303715884105728n)}`,
+    `${$bigAbs(min)} ${BigInt.asIntN(128, $bigAbs(-5n))} ${$bigRemEuclid(-5n, 3n, "test/corpus/integers_128.rs:32:71", -170141183460469231731687303715884105728n)}`,
   );
   console.log(`${big !== 0n && (big & (big - 1n)) === 0n} ${$bigMax(max, big)}`);
 
@@ -164,7 +164,7 @@ function main() {
   const values = [max, 0n, big, 1n];
   values.sort($cmp);
   console.log(
-    `${size} [${values.join(", ")}] ${$slice(values, 0, 3).reduce((a, b) => BigInt.asUintN(128, a + b), 0n)}`,
+    `${size} [${values.join(", ")}] ${$slice(values, 0, "test/corpus/integers_128.rs:64:48", 3).reduce((a, b) => BigInt.asUintN(128, a + b), 0n)}`,
   );
 }
 //# sourceMappingURL=case.js.map

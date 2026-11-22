@@ -10,7 +10,7 @@ export function entry() {
 function joiner(history) {
   return (group, time) => {
     if (history.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/option_subject_of_a_cells_field.rs:28:35");
     }
     history.asked = (history.asked + 1) >>> 0;
     const joined =
@@ -29,7 +29,11 @@ function joiner(history) {
 /** The same, a call between its test and a read. */
 function checker(history, check) {
   return (group) => {
-    const history$1 = $borrowMut(history, true);
+    const history$1 = $borrowMut(
+      history,
+      "test/corpus/option_subject_of_a_cells_field.rs:47:35",
+      true,
+    );
     history$1.asked = (history$1.asked + 1) >>> 0;
     let checked;
     try {
@@ -79,7 +83,7 @@ function resetAfter() {
 }
 
 function opened(history, group) {
-  $borrowMut(history).open = {
+  $borrowMut(history, "test/corpus/option_subject_of_a_cells_field.rs:90:13").open = {
     group,
     time: 0,
   };
@@ -101,7 +105,9 @@ function main() {
   });
   console.log(`${checks("insert")}`);
   console.log(`${checks("other")}`);
-  console.log(`asked ${$borrow(history).asked}`);
+  console.log(
+    `asked ${$borrow(history, "test/corpus/option_subject_of_a_cells_field.rs:115:34").asked}`,
+  );
   const value = writtenAfter();
   const value$1 = resetAfter();
   console.log(

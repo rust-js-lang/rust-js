@@ -33,7 +33,7 @@ function main() {
   // A plain cell of the state, whose borrows are counted: the class's
   // state's guards still count nothing.
   const other = { value: { status: "pending", tries: 0 } };
-  const held = $borrow(other, true);
+  const held = $borrow(other, "test/corpus/flattened_state_tried.rs:58:22", true);
   try {
     const tryBorrowMut = $tryBorrow(other, true);
     console.log(`other ${tryBorrowMut.TAG === "Err"}`);

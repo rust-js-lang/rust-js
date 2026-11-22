@@ -86,6 +86,7 @@ function main() {
       }
       return f.done();
     }, 8),
+    "test/corpus/writer_sink_const_generic.rs:56:69",
     undefined,
     (e) => "Error",
   );

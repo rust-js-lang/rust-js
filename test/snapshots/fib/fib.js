@@ -61,6 +61,6 @@ export function wrapDemo(x) {
 
 /** Integer division panics on zero (and on `i32::MIN / -1`), just like Rust. */
 export function ratio(a, b) {
-  return $div(a, b, -2147483648) | 0;
+  return $div(a, b, "examples/fib.rs:67:5", -2147483648) | 0;
 }
 //# sourceMappingURL=fib.js.map

@@ -74,7 +74,7 @@ export function treeSum(depth) {
 export function checkedDiv(a, b) {
   return b === 0
     ? { TAG: "Err", _0: "divide by zero" }
-    : { TAG: "Ok", _0: $div(a, b, -2147483648) | 0 };
+    : { TAG: "Ok", _0: $div(a, b, "examples/enums.rs:82:65", -2147483648) | 0 };
 }
 
 export function divOr(a, b, fallback) {

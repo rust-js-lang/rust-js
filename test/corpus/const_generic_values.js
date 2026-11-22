@@ -13,7 +13,7 @@ function filled(x, N) {
 function total(values, N) {
   let sum = 0;
   for (let i = 0; i < N; i++) {
-    sum = (sum + $index(values, i)) >>> 0;
+    sum = (sum + $index(values, i, "test/corpus/const_generic_values.rs:10:16")) >>> 0;
   }
   return Math.imul(sum, N) >>> 0;
 }

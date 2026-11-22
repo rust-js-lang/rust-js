@@ -31,7 +31,10 @@ function throwException(tag, legacy, log) {
         }
         break;
     }
-    throw $stringPanic(`Unexpected tag (${boundary.tag})`);
+    throw $stringPanic(
+      `Unexpected tag (${boundary.tag})`,
+      "test/corpus/returns_in_held_branches.rs:37:9",
+    );
   } else if (legacy) {
     return false;
   }
@@ -67,7 +70,7 @@ function fromALoop(tags) {
         return (tag * 2) & 255;
       }
     }
-    throw $stringPanic(`no tag ${boundary.tag}`);
+    throw $stringPanic(`no tag ${boundary.tag}`, "test/corpus/returns_in_held_branches.rs:66:9");
   } else if (tags.length === 0) {
     return 7;
   }

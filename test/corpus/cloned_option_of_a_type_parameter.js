@@ -37,7 +37,7 @@ function main() {
     `${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}`,
   );
   const rows = [[1], [2, 3]];
-  const last = $unwrap(lastRow(rows));
+  const last = $unwrap(lastRow(rows), "test/corpus/cloned_option_of_a_type_parameter.rs:27:36");
   last.push(4);
   const arg = lastRow([]);
   console.log(

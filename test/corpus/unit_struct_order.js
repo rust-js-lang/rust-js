@@ -51,6 +51,15 @@ function main() {
   console.log(
     `[${tagged.map((item) => taggedDebug_fmt(item)).join(", ")}] ${arg == null ? "None" : `Some(${taggedDebug_fmt(arg)})`}`,
   );
-  console.log(`${["Less", "Equal", "Greater"][order($index(tagged, 0), $index(tagged, 1)) + 1]}`);
+  console.log(
+    `${
+      ["Less", "Equal", "Greater"][
+        order(
+          $index(tagged, 0, "test/corpus/unit_struct_order.rs:35:35"),
+          $index(tagged, 1, "test/corpus/unit_struct_order.rs:35:47"),
+        ) + 1
+      ]
+    }`,
+  );
 }
 //# sourceMappingURL=case.js.map

@@ -9,7 +9,7 @@ export function entry() {
 function boom(n) {
   try {
     if (n > 0) {
-      throw $stringPanic(`boom ${n}`);
+      throw $stringPanic(`boom ${n}`, "test/corpus/catch_unwind_assert_drops.rs:17:9");
     }
   } catch (error) {
     throw $unwindsOn(error);

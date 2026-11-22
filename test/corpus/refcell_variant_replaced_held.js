@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function replace(kind) {
-  $borrowMut(kind).value = "Scope";
+  $borrowMut(kind, "test/corpus/refcell_variant_replaced_held.rs:14:11").value = "Scope";
 }
 
 function main() {
@@ -18,11 +18,11 @@ function main() {
     },
   };
   replace(kind);
-  $borrowMut(kind).value = {
+  $borrowMut(kind, "test/corpus/refcell_variant_replaced_held.rs:22:11").value = {
     TAG: "Effect",
     cleanup: 4,
   };
-  const outer = $borrow(kind, true);
+  const outer = $borrow(kind, "test/corpus/refcell_variant_replaced_held.rs:25:22", true);
   const value = outer.value;
   try {
     if (value.TAG === "Effect") {

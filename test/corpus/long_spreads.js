@@ -9,6 +9,7 @@ import {
   $lazyRange,
   $pretty,
   $rangeNext,
+  $stdSites,
   $strSlice,
   iterator_map,
 } from "@rust-js/std";
@@ -55,10 +56,12 @@ function pairsDebug_fmt(pairs, options) {
 function main() {
   const v = new Array(200000).fill(0);
   v[7] = 3;
-  $extend(v, $copyRange(v, 0));
-  console.log(`${v.length} ${$index(v, 200007)}`);
+  $extend(v, $copyRange(v, 0, $stdSites.vecExtendFromWithin[0]));
+  console.log(`${v.length} ${$index(v, 200007, "test/corpus/long_spreads.rs:34:33")}`);
   const s = bigDebug_fmt([200000]);
-  console.log(`${$byteLen(s)} ${$strSlice(s, ($byteLen(s) - 10) >>> 0)}`);
+  console.log(
+    `${$byteLen(s)} ${$strSlice(s, ($byteLen(s) - 10) >>> 0, "test/corpus/long_spreads.rs:36:34")}`,
+  );
   console.log(`${$byteLen(pairsDebug_fmt([200000]))}`);
   console.log(`${$byteLen(bigDebug_fmt([150000], { alternate: true }))}`);
 }

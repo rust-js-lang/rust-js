@@ -495,11 +495,11 @@ export function moreOrderings() {
   });
   return [
     $cmpIn(["Low", "Mid", "High"], "Low", "High") < 0,
-    $index(priorities, 0) === "Low",
+    $index(priorities, 0, "examples/std_traits.rs:522:19") === "Low",
     (3 == null ? 0 : 1) > 0,
     sizes,
     inOrder("abc", "abd", $partiallyOrdered),
-    $index(byKey, 0).major,
+    $index(byKey, 0, "examples/std_traits.rs:526:15").major,
   ];
 }
 

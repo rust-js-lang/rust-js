@@ -104,8 +104,30 @@ export const builtDebug = { fmt: builtDebug_fmt };
 function builtDebug_fmt(built, options) {
   const f = $sink();
   const struct = $debugStruct(f, "Built", options?.alternate);
-  struct.field("first", () => gridDebug_fmt([$index(built[0], 0)], options));
-  struct.field("two", () => twoDebug_fmt([$index(built[0], 1)], options));
+  struct.field("first", () =>
+    gridDebug_fmt(
+      [
+        $index(
+          built[0],
+          0,
+          "test/corpus/printing_writer_shown_by_derived_debugs_and_builders.rs:63:41",
+        ),
+      ],
+      options,
+    ),
+  );
+  struct.field("two", () =>
+    twoDebug_fmt(
+      [
+        $index(
+          built[0],
+          1,
+          "test/corpus/printing_writer_shown_by_derived_debugs_and_builders.rs:64:38",
+        ),
+      ],
+      options,
+    ),
+  );
   struct.finish();
   $out("|");
   const list = $debugList(f, options?.alternate);

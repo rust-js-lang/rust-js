@@ -8,8 +8,9 @@ export function entry() {
 
 function main() {
   const queue = [1, 2];
-  queue[$at(queue, 0, "out of bounds access")] = 7;
+  queue[$at(queue, 0, "test/corpus/deque_write_out_of_bounds.rs:9:10", "out of bounds access")] = 7;
   console.log(`[${queue.join(", ")}]`);
-  queue[$at(queue, 4, "out of bounds access")] = 9;
+  queue[$at(queue, 4, "test/corpus/deque_write_out_of_bounds.rs:11:10", "out of bounds access")] =
+    9;
 }
 //# sourceMappingURL=case.js.map

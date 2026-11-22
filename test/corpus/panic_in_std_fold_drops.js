@@ -11,6 +11,7 @@ import {
   $iterator,
   $live,
   $next,
+  $panic,
   $rangeNext,
   $roomFor,
   $unwindsOn,
@@ -35,7 +36,7 @@ function ds(r) {
 
 function boom(d, at) {
   if (d[0] === at) {
-    throw new Error("boom");
+    throw $panic("boom", "test/corpus/panic_in_std_fold_drops.rs:21:9");
   }
 }
 

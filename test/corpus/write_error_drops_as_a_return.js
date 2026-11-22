@@ -10,6 +10,7 @@ import {
   $fmtPartial,
   $fmtWritten,
   $out,
+  $panic,
   $panicking,
   $sink,
   $writeTry,
@@ -88,12 +89,12 @@ function holdsLoudDebug_fmt(holdsLoud) {
     } catch (error) {
       $cleanup(() => {
         $out("drop Loud\n");
-        throw new Error("loud drop");
+        throw $panic("loud drop", "test/corpus/write_error_drops_as_a_return.rs:33:9");
       }, error);
       throw error;
     }
     $out("drop Loud\n");
-    throw new Error("loud drop");
+    throw $panic("loud drop", "test/corpus/write_error_drops_as_a_return.rs:33:9");
   } catch (error) {
     throw $fmtWritten(error, f.done());
   }

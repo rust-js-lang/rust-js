@@ -2,6 +2,7 @@
 
 import {
   $asciiCase,
+  $asciiCaseRange,
   $at,
   $byteLen,
   $catchable,
@@ -18,6 +19,7 @@ import {
   $slice,
   $sliceGet,
   $splice,
+  $stdSites,
   $strDrain,
   $strExtendWithin,
   $strGet,
@@ -68,14 +70,32 @@ function main() {
   const v = [1, 2, 3];
   const s = "abc";
   const n = (x) => x;
-  check("..=2", () => $slice(v, 0, n(2) + 1, true).length, usizeDebug);
-  check("..=3", () => $slice(v, 0, n(3) + 1, true).length, usizeDebug);
-  check("..=5", () => $slice(v, 0, n(5) + 1, true).length, usizeDebug);
+  check(
+    "..=2",
+    () => $slice(v, 0, "test/corpus/slice_inclusive_range_panics.rs:36:23", n(2) + 1, true).length,
+    usizeDebug,
+  );
+  check(
+    "..=3",
+    () => $slice(v, 0, "test/corpus/slice_inclusive_range_panics.rs:37:23", n(3) + 1, true).length,
+    usizeDebug,
+  );
+  check(
+    "..=5",
+    () => $slice(v, 0, "test/corpus/slice_inclusive_range_panics.rs:38:23", n(5) + 1, true).length,
+    usizeDebug,
+  );
   check(
     "1..=3",
     () => {
       const range = { start: n(1), end: n(3) };
-      return $slice(v, range.start, range.end + 1, true).length;
+      return $slice(
+        v,
+        range.start,
+        "test/corpus/slice_inclusive_range_panics.rs:39:24",
+        range.end + 1,
+        true,
+      ).length;
     },
     usizeDebug,
   );
@@ -83,7 +103,13 @@ function main() {
     "4..=5",
     () => {
       const range = { start: n(4), end: n(5) };
-      return $slice(v, range.start, range.end + 1, true).length;
+      return $slice(
+        v,
+        range.start,
+        "test/corpus/slice_inclusive_range_panics.rs:40:24",
+        range.end + 1,
+        true,
+      ).length;
     },
     usizeDebug,
   );
@@ -91,7 +117,13 @@ function main() {
     "3..=1",
     () => {
       const range = { start: n(3), end: n(1) };
-      return $slice(v, range.start, range.end + 1, true).length;
+      return $slice(
+        v,
+        range.start,
+        "test/corpus/slice_inclusive_range_panics.rs:41:24",
+        range.end + 1,
+        true,
+      ).length;
     },
     usizeDebug,
   );
@@ -99,7 +131,13 @@ function main() {
     "2..=0",
     () => {
       const range = { start: n(2), end: n(0) };
-      return $slice(v, range.start, range.end + 1, true).length;
+      return $slice(
+        v,
+        range.start,
+        "test/corpus/slice_inclusive_range_panics.rs:42:24",
+        range.end + 1,
+        true,
+      ).length;
     },
     usizeDebug,
   );
@@ -107,18 +145,28 @@ function main() {
     "3..=2",
     () => {
       const range = { start: n(3), end: n(2) };
-      return $slice(v, range.start, range.end + 1, true).length;
+      return $slice(
+        v,
+        range.start,
+        "test/corpus/slice_inclusive_range_panics.rs:43:24",
+        range.end + 1,
+        true,
+      ).length;
     },
     usizeDebug,
   );
-  check("to_vec ..=3", () => $copyOf(v, 0, n(3) + 1, true), debug);
+  check(
+    "to_vec ..=3",
+    () => $copyOf(v, 0, "test/corpus/slice_inclusive_range_panics.rs:44:30", n(3) + 1, true),
+    debug,
+  );
   check("get ..=3", () => $sliceGet(v, 0, n(3) + 1)?.length, optionDebug);
   check(
     "mut ..=3",
     () => {
       const w = [1, 2, 3];
-      const part = $view(w, 0, n(3) + 1, true);
-      part[$at(part, 0)] = 9;
+      const part = $view(w, 0, "test/corpus/slice_inclusive_range_panics.rs:48:26", n(3) + 1, true);
+      part[$at(part, 0, "test/corpus/slice_inclusive_range_panics.rs:49:9")] = 9;
       return part.length;
     },
     usizeDebug,
@@ -128,8 +176,14 @@ function main() {
     () => {
       const w = [1, 2, 3];
       const range = { start: n(1), end: n(2) };
-      const part = $view(w, range.start, range.end + 1, true);
-      part[$at(part, 0)] = 9;
+      const part = $view(
+        w,
+        range.start,
+        "test/corpus/slice_inclusive_range_panics.rs:54:26",
+        range.end + 1,
+        true,
+      );
+      part[$at(part, 0, "test/corpus/slice_inclusive_range_panics.rs:55:9")] = 9;
       return w;
     },
     debug,
@@ -138,7 +192,7 @@ function main() {
     "reverse ..=3",
     () => {
       const w = [1, 2, 3];
-      $reverseRange(w, 0, n(3) + 1, true);
+      $reverseRange(w, 0, "test/corpus/slice_inclusive_range_panics.rs:60:10", n(3) + 1, true);
       return w;
     },
     debug,
@@ -151,12 +205,18 @@ function main() {
     },
     optionDebug,
   );
-  check("vec ..=3", () => $slice([1, 2, 3], 0, n(3) + 1, true).length, usizeDebug);
+  check(
+    "vec ..=3",
+    () =>
+      $slice([1, 2, 3], 0, "test/corpus/slice_inclusive_range_panics.rs:67:42", n(3) + 1, true)
+        .length,
+    usizeDebug,
+  );
   check(
     "drain ..=3",
     () => {
       const w = [1, 2, 3];
-      return $drain(w, 0, n(3) + 1, true).length;
+      return $drain(w, 0, $stdSites.vecDrain[0], n(3) + 1, true).length;
     },
     usizeDebug,
   );
@@ -165,7 +225,7 @@ function main() {
     () => {
       const w = [1, 2, 3];
       const range = { start: n(1), end: n(2) };
-      const taken = $drain(w, range.start, range.end + 1, true);
+      const taken = $drain(w, range.start, $stdSites.vecDrain[0], range.end + 1, true);
       return [taken, w];
     },
     { fmt: (value) => `([${value[0].join(", ")}], [${value[1].join(", ")}])` },
@@ -175,7 +235,7 @@ function main() {
     () => {
       const w = [1, 2, 3];
       const range = { start: n(5), end: n(3) };
-      return $drain(w, range.start, range.end + 1, true).length;
+      return $drain(w, range.start, $stdSites.vecDrain[0], range.end + 1, true).length;
     },
     usizeDebug,
   );
@@ -183,7 +243,7 @@ function main() {
     "splice ..=3",
     () => {
       const w = [1, 2, 3];
-      return $splice(w, 0, n(3) + 1, [7, 8], true).reduce((n) => n + 1, 0);
+      return $splice(w, 0, n(3) + 1, [7, 8], $stdSites.vecDrain[0], true).reduce((n) => n + 1, 0);
     },
     usizeDebug,
   );
@@ -191,7 +251,7 @@ function main() {
     "copy_within ..=3",
     () => {
       const w = [1, 2, 3];
-      $copyWithin(w, 0, n(3) + 1, 0, true);
+      $copyWithin(w, 0, n(3) + 1, 0, "test/corpus/slice_inclusive_range_panics.rs:87:11", true);
       return w;
     },
     debug,
@@ -200,10 +260,9 @@ function main() {
     "extract_if ..=3",
     () => {
       const w = [1, 2, 3];
-      return Iterator.from($extractIf(w, 0, n(3) + 1, (x) => x.value > 1, true, true)).reduce(
-        (n) => n + 1,
-        0,
-      );
+      return Iterator.from(
+        $extractIf(w, 0, n(3) + 1, (x) => x.value > 1, $stdSites.vecExtractIf[0], true, true),
+      ).reduce((n) => n + 1, 0);
     },
     usizeDebug,
   );
@@ -211,7 +270,7 @@ function main() {
     "extend_from_within ..=3",
     () => {
       const w = [1, 2, 3];
-      $extend(w, $copyRange(w, 0, n(3) + 1, true));
+      $extend(w, $copyRange(w, 0, $stdSites.vecExtendFromWithin[0], n(3) + 1, true));
       return w;
     },
     debug,
@@ -220,17 +279,41 @@ function main() {
     "deque range_mut ..=3",
     () => {
       const d = [1, 2, 3];
-      return Iterator.from($mutItems($viewRange(d, 0, n(3) + 1, true))).reduce((n) => n + 1, 0);
+      return Iterator.from(
+        $mutItems($viewRange(d, 0, $stdSites.vecDequeRange[0], n(3) + 1, true)),
+      ).reduce((n) => n + 1, 0);
     },
     usizeDebug,
   );
-  check("text ..=2", () => $byteLen($strSlice(s, 0, n(2) + 1, true)), usizeDebug);
-  check("text ..=3", () => $byteLen($strSlice(s, 0, n(3) + 1, true)), usizeDebug);
+  check(
+    "text ..=2",
+    () =>
+      $byteLen(
+        $strSlice(s, 0, "test/corpus/slice_inclusive_range_panics.rs:103:28", n(2) + 1, true),
+      ),
+    usizeDebug,
+  );
+  check(
+    "text ..=3",
+    () =>
+      $byteLen(
+        $strSlice(s, 0, "test/corpus/slice_inclusive_range_panics.rs:104:28", n(3) + 1, true),
+      ),
+    usizeDebug,
+  );
   check(
     "text 1..=3",
     () => {
       const range = { start: n(1), end: n(3) };
-      return $byteLen($strSlice(s, range.start, range.end + 1, true));
+      return $byteLen(
+        $strSlice(
+          s,
+          range.start,
+          "test/corpus/slice_inclusive_range_panics.rs:105:29",
+          range.end + 1,
+          true,
+        ),
+      );
     },
     usizeDebug,
   );
@@ -238,7 +321,15 @@ function main() {
     "text 4..=5",
     () => {
       const range = { start: n(4), end: n(5) };
-      return $byteLen($strSlice(s, range.start, range.end + 1, true));
+      return $byteLen(
+        $strSlice(
+          s,
+          range.start,
+          "test/corpus/slice_inclusive_range_panics.rs:106:29",
+          range.end + 1,
+          true,
+        ),
+      );
     },
     usizeDebug,
   );
@@ -246,7 +337,15 @@ function main() {
     "text 3..=1",
     () => {
       const range = { start: n(3), end: n(1) };
-      return $byteLen($strSlice(s, range.start, range.end + 1, true));
+      return $byteLen(
+        $strSlice(
+          s,
+          range.start,
+          "test/corpus/slice_inclusive_range_panics.rs:107:29",
+          range.end + 1,
+          true,
+        ),
+      );
     },
     usizeDebug,
   );
@@ -257,7 +356,15 @@ function main() {
     "text inside a char ..=5",
     () => {
       const range = { start: n(2), end: n(5) };
-      return $byteLen($strSlice("héllo", range.start, range.end + 1, true));
+      return $byteLen(
+        $strSlice(
+          "héllo",
+          range.start,
+          "test/corpus/slice_inclusive_range_panics.rs:109:53",
+          range.end + 1,
+          true,
+        ),
+      );
     },
     usizeDebug,
   );
@@ -265,13 +372,24 @@ function main() {
     "text inside a char ..=6",
     () => {
       const range = { start: n(2), end: n(6) };
-      return $byteLen($strSlice("héllo", range.start, range.end + 1, true));
+      return $byteLen(
+        $strSlice(
+          "héllo",
+          range.start,
+          "test/corpus/slice_inclusive_range_panics.rs:110:53",
+          range.end + 1,
+          true,
+        ),
+      );
     },
     usizeDebug,
   );
   check(
     "text inside a char ..=1",
-    () => $byteLen($strSlice("héllo", 0, n(1) + 1, true)),
+    () =>
+      $byteLen(
+        $strSlice("héllo", 0, "test/corpus/slice_inclusive_range_panics.rs:111:53", n(1) + 1, true),
+      ),
     usizeDebug,
   );
   check(
@@ -288,6 +406,7 @@ function main() {
           },
         },
         0,
+        "test/corpus/slice_inclusive_range_panics.rs:114:26",
         n(3) + 1,
         true,
       );
@@ -301,7 +420,14 @@ function main() {
     () => {
       let t = "abc";
       const range = { start: n(1), end: n(2) };
-      t = $asciiCase(t, true, range.start, range.end + 1, true);
+      t = $asciiCaseRange(
+        t,
+        true,
+        range.start,
+        "test/corpus/slice_inclusive_range_panics.rs:120:10",
+        range.end + 1,
+        true,
+      );
       return t;
     },
     stringDebug,
@@ -330,7 +456,13 @@ function main() {
     "string drain ..=3",
     () => {
       let t = "abc";
-      const drained = $strDrain(t, 0, n(3) + 1, true);
+      const drained = $strDrain(
+        t,
+        0,
+        n(3) + 1,
+        "test/corpus/slice_inclusive_range_panics.rs:129:11",
+        true,
+      );
       t = drained[0];
       return drained[1].length;
     },
@@ -341,7 +473,13 @@ function main() {
     () => {
       let t = "abc";
       const range = { start: n(1), end: n(1) };
-      const drained = $strDrain(t, range.start, range.end + 1, true);
+      const drained = $strDrain(
+        t,
+        range.start,
+        range.end + 1,
+        "test/corpus/slice_inclusive_range_panics.rs:133:31",
+        true,
+      );
       t = drained[0];
       const taken = drained[1].slice().join("");
       return [taken, t];
@@ -352,7 +490,14 @@ function main() {
     "replace_range ..=3",
     () => {
       let t = "abc";
-      t = $replaceRange(t, 0, n(3) + 1, "z", true);
+      t = $replaceRange(
+        t,
+        0,
+        n(3) + 1,
+        "z",
+        "test/corpus/slice_inclusive_range_panics.rs:138:11",
+        true,
+      );
       return t;
     },
     stringDebug,
@@ -361,7 +506,13 @@ function main() {
     "string extend_from_within ..=3",
     () => {
       let t = "abc";
-      t = $strExtendWithin(t, 0, n(3) + 1, true);
+      t = $strExtendWithin(
+        t,
+        0,
+        n(3) + 1,
+        "test/corpus/slice_inclusive_range_panics.rs:143:11",
+        true,
+      );
       return t;
     },
     stringDebug,

@@ -14,6 +14,7 @@ import {
   $maxByKey,
   $minBy,
   $minByKey,
+  $panic,
   $print,
   $unwindsOn,
 } from "@rust-js/std";
@@ -223,7 +224,7 @@ function edges() {
   let r = $catchUnwind(() => {
     function f$2(a, b) {
       if (b[0] === 1) {
-        throw new Error("cmp");
+        throw $panic("cmp", "test/corpus/max_by_drops_its_function_first.rs:107:17");
       }
       return $cmp((a[0] + zero(g$2)) >>> 0, b[0]);
     }
@@ -253,7 +254,7 @@ function edges() {
       }),
       (a) => {
         if (a[0] === 1) {
-          throw new Error("key");
+          throw $panic("key", "test/corpus/max_by_drops_its_function_first.rs:116:17");
         }
         return a[0];
       },
@@ -343,7 +344,7 @@ function edges() {
       tmp = $closing($iter(value), $dropEach(iDrop_drop)).map((i) => {
         if (i[0] === 5) {
           try {
-            throw new Error("first");
+            throw $panic("first", "test/corpus/max_by_drops_its_function_first.rs:139:17");
           } catch (error) {
             $cleanup(() => {
               iDrop_drop(i);

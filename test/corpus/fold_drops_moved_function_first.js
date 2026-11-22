@@ -29,6 +29,7 @@ import {
   $max,
   $minByKey,
   $next,
+  $panic,
   $partition,
   $print,
   $range,
@@ -50,7 +51,7 @@ export function entry() {
 function dDrop_drop(d) {
   $print(`d${d[0]} `);
   if (d[0] === 40) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/fold_drops_moved_function_first.rs:17:13");
   }
 }
 
@@ -255,7 +256,10 @@ function main() {
     }
     function f(d) {
       if (d[0] <= zero(g)) {
-        throw new Error("assertion failed: d.0 > zero(&g)");
+        throw $panic(
+          "assertion failed: d.0 > zero(&g)",
+          "test/corpus/fold_drops_moved_function_first.rs:84:31",
+        );
       }
     }
     const iter = $holding(

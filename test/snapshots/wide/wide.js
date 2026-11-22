@@ -168,8 +168,8 @@ export function report() {
   const checkedPow = $checkedPow(10n, 19, 0n, 18446744073709551615n);
   out += `${checkedAdd == null ? "None" : `Some(${checkedAdd})`} ${checkedSub == null ? "None" : `Some(${checkedSub})`} ${checkedDiv == null ? "None" : `Some(${checkedDiv})`} ${checkedPow == null ? "None" : `Some(${checkedPow})`}\n`;
   out += `${$bigClamp(max + 9n, 0n, 18446744073709551615n)} ${$bigClamp(min - 1n, -9223372036854775808n, 9223372036854775807n)} ${$bigLeadingZeros(max)} ${$bigTrailingZeros(1099511627776n)} ${$bigCountOnes(max)}\n`;
-  const remEuclid = $bigRemEuclid(-7n, 3n, -9223372036854775808n);
-  const divEuclid = $bigDivEuclid(-7n, 3n, -9223372036854775808n);
+  const remEuclid = $bigRemEuclid(-7n, 3n, "examples/wide.rs:127:17", -9223372036854775808n);
+  const divEuclid = $bigDivEuclid(-7n, 3n, "examples/wide.rs:128:17", -9223372036854775808n);
   const parse = $parseBig("18446744073709551615", 0n, 18446744073709551615n);
   out += `${remEuclid} ${divEuclid} ${parse.TAG === "Ok" ? `Ok(${parse._0})` : `Err(${$debugParseError(parse._0, "ParseIntError")})`} ${$parseBig("18446744073709551616", 0n, 18446744073709551615n).TAG === "Err"}\n`;
   const value = $tryFromInt(max, 0, 4294967295);
@@ -177,9 +177,9 @@ export function report() {
     $tryFromInt(9223372036854775808n, -9223372036854775808n, 9223372036854775807n).TAG === "Err";
   out += `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugParseError(value._0, "TryFromIntError")})`} ${isErr} ${$tryFromInt(BigInt.asIntN(64, min + min), 0, 65535).TAG === "Ok"}\n`;
   // Of too small a value, and its message, which is one for both.
-  const low = $unwrapErr($tryFromInt(-1n, 0, 255));
-  const value$1 = $unwrapErr($tryFromInt(300n, 0, 255));
-  const value$2 = low === $unwrapErr($tryFromInt(300n, 0, 255));
+  const low = $unwrapErr($tryFromInt(-1n, 0, 255), "examples/wide.rs:139:35");
+  const value$1 = $unwrapErr($tryFromInt(300n, 0, 255), "examples/wide.rs:142:30");
+  const value$2 = low === $unwrapErr($tryFromInt(300n, 0, 255), "examples/wide.rs:143:37");
   out += `${$debugParseError(low, "TryFromIntError")} ${low} ${value$1} ${value$2}\n`;
 
   const stamps = [1700000000000n, -5n, 0n, 9223372036854775807n, -9223372036854775808n];
@@ -194,12 +194,14 @@ export function report() {
   const payment = { id, cents: -1999n, at: 1700000000123n };
   const text = $unwrapOk(
     $toJson(payment, paymentSerialize_serialize, false),
+    "examples/wide.rs:152:48",
     undefined,
     $debugJsonError,
   );
   out += `${text}\n`;
   const back = $unwrapOk(
     $fromJson(text, paymentDeserialize_deserialize),
+    "examples/wide.rs:154:53",
     undefined,
     $debugJsonError,
   );
@@ -233,14 +235,20 @@ export function panics(i) {
   const zero = BigInt.asIntN(64, BigInt(i) - BigInt(i));
   switch (i) {
     case 0:
-      return $bigDiv(7n, zero, -9223372036854775808n);
+      return $bigDiv(7n, zero, "examples/wide.rs:180:14", -9223372036854775808n);
     case 1:
-      return $bigDiv(-9223372036854775808n, BigInt.asIntN(64, zero - 1n), -9223372036854775808n);
+      return $bigDiv(
+        -9223372036854775808n,
+        BigInt.asIntN(64, zero - 1n),
+        "examples/wide.rs:181:14",
+        -9223372036854775808n,
+      );
     case 2:
-      return $bigRem(7n, zero, -9223372036854775808n);
+      return $bigRem(7n, zero, "examples/wide.rs:182:14", -9223372036854775808n);
     default:
       return $unwrapOk(
         $parseBig("x", -9223372036854775808n, 9223372036854775807n),
+        "examples/wide.rs:183:33",
         undefined,
         (e) => $debugParseError(e, "ParseIntError"),
       );

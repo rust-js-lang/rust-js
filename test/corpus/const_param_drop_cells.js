@@ -21,7 +21,10 @@ const Builder = {
   push(builder, value, N) {
     const len = builder.len;
     if (!(len < N)) {
-      throw $stringPanic(`index out of bounds: the len is ${N} but the index is ${len}`);
+      throw $stringPanic(
+        `index out of bounds: the len is ${N} but the index is ${len}`,
+        "test/corpus/const_param_drop_cells.rs:17:9",
+      );
     }
     builder.items[len] = value;
     builder.len++;
@@ -51,10 +54,10 @@ function filled(word, N) {
 function main() {
   const h = { cell: [] };
   if (h.cell.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/const_param_drop_cells.rs:42:12");
   }
   h.cell.push(1);
-  const borrow = $borrow(h.cell, true);
+  const borrow = $borrow(h.cell, "test/corpus/const_param_drop_cells.rs:43:32", true);
   try {
     console.log(`[${borrow.join(", ")}] ${filled("a", 3)}`);
   } finally {

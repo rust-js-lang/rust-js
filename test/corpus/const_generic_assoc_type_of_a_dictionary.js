@@ -35,6 +35,7 @@ function main() {
       "Eq",
       `[${foo.map((item) => "()").join(", ")}]`,
       `[${value.map((item) => "()").join(", ")}]`,
+      "test/corpus/const_generic_assoc_type_of_a_dictionary.rs:33:5",
     );
   }
   console.log(`${__Foo_foo(undefined, 3).length}`);

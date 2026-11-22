@@ -14,12 +14,18 @@ export function entry() {
 }
 
 export function touch(handler) {
-  $borrowMut($fieldCell(handler, "chunk", true)).value = undefined;
+  $borrowMut(
+    $fieldCell(handler, "chunk", true),
+    "test/corpus/counted_guard_value_named.rs:25:20",
+  ).value = undefined;
 }
 
 export function first(handler) {
   // The clone is taken, and the guard dropped, before `touch` clears the cell.
-  const { value: chunk } = $borrow($fieldCell(handler, "chunk", true));
+  const { value: chunk } = $borrow(
+    $fieldCell(handler, "chunk", true),
+    "test/corpus/counted_guard_value_named.rs:30:37",
+  );
   if (chunk == null) {
     return 0;
   }
@@ -37,13 +43,17 @@ function settle(chunk) {
 
 function lend(cell) {
   if (cell.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/counted_guard_value_named.rs:46:10");
   }
   return cell.value != null;
 }
 
 export function held(handler) {
-  const guard = $borrow($fieldCell(handler, "chunk", true), true);
+  const guard = $borrow(
+    $fieldCell(handler, "chunk", true),
+    "test/corpus/counted_guard_value_named.rs:50:31",
+    true,
+  );
   try {
     touch(handler);
     return lend($fieldCell(handler, "chunk", true)) ? (guard.value?.id ?? 0) : 1;

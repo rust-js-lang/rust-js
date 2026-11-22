@@ -22,7 +22,10 @@ export function tTools(TIterator) {
 function main() {
   const IntoIterTools = tTools({ next: $next });
   const group = IntoIterTools.grouped($iter([1, 2]), (n) => (n * 10) >>> 0);
-  const first = $unwrap($next(group.iter));
+  const first = $unwrap(
+    $next(group.iter),
+    "test/corpus/reserved_named_function_called_across_modules.rs:77:35",
+  );
   console.log(`${group.f(first)}`);
   const direct = Lazy.new([5], (n) => (n + 1) >>> 0, {
     intoIter: (items) => $iter(items),

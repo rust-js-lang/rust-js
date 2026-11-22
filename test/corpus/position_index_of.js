@@ -101,7 +101,7 @@ function removeAfterPop(xs, x) {
   if (i !== -1) {
     xs.pop();
     if (i >= xs.length) {
-      $removeOutOfBounds(xs, i);
+      $removeOutOfBounds(xs, i, "test/corpus/position_index_of.rs:104:12");
     }
     xs.splice(i, 1);
     console.log(`[${xs.join(", ")}]`);

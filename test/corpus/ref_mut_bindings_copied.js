@@ -42,7 +42,7 @@ function main() {
     [1, 1],
     [2, 2],
   ];
-  const value = $index(points, 0);
+  const value = $index(points, 0, "test/corpus/ref_mut_bindings_copied.rs:41:29");
   const firstPoint = [value[0], value[1]];
   const iter = $iter(points);
   let value$1;

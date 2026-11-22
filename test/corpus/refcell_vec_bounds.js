@@ -82,17 +82,17 @@ function settle(queue, stop) {
  */
 function settleTask(queue, at, task) {
   if (queue.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_vec_bounds.rs:67:19");
   }
   if (at < queue.length) {
-    $borrowMut(queue)[at] = task;
+    $borrowMut(queue, "test/corpus/refcell_vec_bounds.rs:68:15")[at] = task;
     if (queue.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/refcell_vec_bounds.rs:69:15");
     }
     queue.splice(0, at);
   }
   if (queue.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_vec_bounds.rs:71:11");
   }
   return queue.length;
 }
@@ -103,7 +103,7 @@ function settleTask(queue, at, task) {
  */
 function settleAfter(queue, i, touch) {
   touch();
-  queue[$at(queue, i)] = 0;
+  queue[$at(queue, i, "test/corpus/refcell_vec_bounds.rs:78:23")] = 0;
   queue.splice(0, i);
   return queue.length;
 }
@@ -113,7 +113,7 @@ function calledBetween(queue, clear) {
   let total = 0;
   while (i < queue.length) {
     clear();
-    total = (total + $index(queue, i)) >>> 0;
+    total = (total + $index(queue, i, "test/corpus/refcell_vec_bounds.rs:88:32")) >>> 0;
     i++;
   }
   return total;
@@ -123,7 +123,7 @@ function droppedBetween(queue, clearer) {
   if (queue.length !== 0) {
     const _gone = clearer;
     clearerDrop_drop(_gone);
-    return $index(queue, 0);
+    return $index(queue, 0, "test/corpus/refcell_vec_bounds.rs:99:30");
   }
   const result = 0;
   clearerDrop_drop(clearer);
@@ -134,7 +134,7 @@ function replacedBetween(queue, slots, other) {
   if (queue.length !== 0) {
     let borrowMut;
     try {
-      borrowMut = $borrowMut(slots, true);
+      borrowMut = $borrowMut(slots, "test/corpus/refcell_vec_bounds.rs:106:15", true);
     } catch (error) {
       $cleanup(() => {
         clearerDrop_drop(other);
@@ -143,7 +143,7 @@ function replacedBetween(queue, slots, other) {
     }
     try {
       try {
-        $index(borrowMut, 0);
+        $index(borrowMut, 0, "test/corpus/refcell_vec_bounds.rs:106:27");
       } catch (error) {
         $cleanup(() => {
           clearerDrop_drop(other);
@@ -162,7 +162,7 @@ function replacedBetween(queue, slots, other) {
     } finally {
       $unborrow(borrowMut);
     }
-    return $index(queue, 0);
+    return $index(queue, 0, "test/corpus/refcell_vec_bounds.rs:107:30");
   }
   const result = 0;
   clearerDrop_drop(other);
@@ -174,7 +174,7 @@ function clearedByItsGuard(queue, i) {
   if (i < items.length) {
     const all = items;
     all.length = 0;
-    return $index(items, i);
+    return $index(items, i, "test/corpus/refcell_vec_bounds.rs:117:21");
   }
   return 0;
 }
@@ -182,7 +182,7 @@ function clearedByItsGuard(queue, i) {
 function testedBefore(queue, clear) {
   const there = queue.length !== 0;
   clear();
-  return there ? $index(queue, 0) : 0;
+  return there ? $index(queue, 0, "test/corpus/refcell_vec_bounds.rs:125:30") : 0;
 }
 
 function main() {
@@ -194,7 +194,7 @@ function main() {
   console.log(`settle none: ${settle(queue, 9)}`);
   const tasks = [() => 1, () => 2, () => 3];
   console.log(`settle task: ${settleTask(tasks, 1, () => 20)}`);
-  const borrow = $borrow(tasks, true);
+  const borrow = $borrow(tasks, "test/corpus/refcell_vec_bounds.rs:136:35", true);
   try {
     console.log(`tasks: [${borrow.map((task) => task()).join(", ")}]`);
   } finally {

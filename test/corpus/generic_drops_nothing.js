@@ -23,7 +23,7 @@ function loudDrop_drop(loud) {
 }
 
 function shuffle(v, extra, TClone) {
-  $swap(v, 0, 1);
+  $swap(v, 0, 1, "test/corpus/generic_drops_nothing.rs:18:7");
   for (let i = 0; i < extra.length; i++) {
     v.push(TClone.clone(extra[i]));
   }

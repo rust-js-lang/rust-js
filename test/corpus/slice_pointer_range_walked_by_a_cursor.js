@@ -33,7 +33,7 @@ const Cursor = {
 /** Its items, said once each time it's called. */
 function lent(items) {
   console.log(`lent ${items.length}`);
-  return $view(items, 1);
+  return $view(items, 1, "test/corpus/slice_pointer_range_walked_by_a_cursor.rs:42:15");
 }
 
 function main() {
@@ -44,7 +44,9 @@ function main() {
   console.log(`${offsetFrom} ${$ptrCmp(r.start, item, 4) <= 0 && $ptrCmp(item, r.end, 4) < 0}`);
   console.log(`${$ptrAdd(r.end, -1).value}`);
   const v = [5n, -6n, 7n, 8n];
-  const cursor = Cursor.over($view(v, 1));
+  const cursor = Cursor.over(
+    $view(v, 1, "test/corpus/slice_pointer_range_walked_by_a_cursor.rs:55:41"),
+  );
   const left = Cursor.left(cursor);
   const first = Cursor.nextWith(cursor, (x) => BigInt.asIntN(64, x * 10n), 8);
   const second = Cursor.nextWith(cursor, (x) => BigInt.asIntN(64, x * 10n), 8);

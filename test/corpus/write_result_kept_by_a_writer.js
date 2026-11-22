@@ -161,9 +161,7 @@ function main() {
     $fmtPrintFailed(error, text$1, false);
   }
   $print(text$1);
-  $print(
-    `${$fmtOrPanic(() => keptDisplay_fmt([[3]]), "a Display implementation returned an error unexpectedly: Error")}\n`,
-  );
+  $print(`${$fmtOrPanic(() => keptDisplay_fmt([[3]]), "toString")}\n`);
   let text$2 = "";
   try {
     text$2 += droppedDisplay_fmt([[3]]);
@@ -188,9 +186,7 @@ function main() {
     $fmtPrintFailed(error, text$4, false);
   }
   $print(text$4);
-  $print(
-    `${$debugStr($fmtOrPanic(() => passedDisplay_fmt([[4]]), "a formatting trait implementation returned an error when the underlying stream did not: Error"))}\n`,
-  );
+  $print(`${$debugStr($fmtOrPanic(() => passedDisplay_fmt([[4]]), "format"))}\n`);
   let text$5 = "";
   try {
     text$5 += lastDisplay_fmt([[6]]);
@@ -200,7 +196,7 @@ function main() {
   }
   $print(text$5);
   $print(
-    `${$fmtOrPanic(() => keptDisplay_fmt([[3]]), "a Display implementation returned an error unexpectedly: Error") + $fmtOrPanic(() => lastDisplay_fmt([[7]]), "a formatting trait implementation returned an error when the underlying stream did not: Error")}\n`,
+    `${$fmtOrPanic(() => keptDisplay_fmt([[3]]), "toString") + $fmtOrPanic(() => lastDisplay_fmt([[7]]), "format")}\n`,
   );
   $printing(() => {
     try {
@@ -220,10 +216,7 @@ function main() {
       $fmtPrintFailed(error, "", false);
     }
   });
-  const s = $fmtOrPanic(
-    () => keptLoudDisplay_fmt([[3]]),
-    "a formatting trait implementation returned an error when the underlying stream did not: Error",
-  );
+  const s = $fmtOrPanic(() => keptLoudDisplay_fmt([[3]]), "format");
   $print(`${s}\n`);
 }
 //# sourceMappingURL=case.js.map

@@ -10,6 +10,7 @@ import {
   $iterator,
   $live,
   $mapEnds,
+  $panic,
   $pop,
   $rev,
   $some,
@@ -329,7 +330,7 @@ function main() {
         (d) => {
           if (d[0] === 2) {
             try {
-              throw new Error("2");
+              throw $panic("2", "test/corpus/own_folds_unwind.rs:83:21");
             } catch (error) {
               $cleanup(() => {
                 dDrop_drop(d);
@@ -400,7 +401,7 @@ function main() {
           (d) => {
             if (d[0] === 2) {
               try {
-                throw new Error("2");
+                throw $panic("2", "test/corpus/own_folds_unwind.rs:98:21");
               } catch (error) {
                 $cleanup(() => {
                   dDrop_drop(d);
@@ -428,7 +429,7 @@ function main() {
         w,
         (d) => {
           if (d[0] === 5) {
-            throw new Error("5");
+            throw $panic("5", "test/corpus/own_folds_unwind.rs:114:21");
           }
         },
         {
@@ -464,7 +465,7 @@ function main() {
         (d) => {
           if (d[0] === 8) {
             try {
-              throw new Error("8");
+              throw $panic("8", "test/corpus/own_folds_unwind.rs:127:21");
             } catch (error) {
               $cleanup(() => {
                 dDrop_drop(d);

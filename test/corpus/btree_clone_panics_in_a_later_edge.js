@@ -58,7 +58,10 @@ function loudClone_clone(loud) {
   clones = (clones + 1) >>> 0;
   const n = clones;
   if (n === at) {
-    throw $stringPanic(`clone ${loud[0]}`);
+    throw $stringPanic(
+      `clone ${loud[0]}`,
+      "test/corpus/btree_clone_panics_in_a_later_edge.rs:47:13",
+    );
   }
   return [loud[0]];
 }

@@ -251,7 +251,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 | Value::Branch(e, _)
                 | Value::Tested(e) => reads(e),
                 Value::List(items, _) => items.iter().any(|item| value_reads(item, reads)),
-                Value::View(parts, _) => parts.iter().any(reads),
+                Value::View(parts, ..) => parts.iter().any(reads),
                 Value::Cut(test, cut, _) => reads(test) || reads(cut),
                 Value::Writes(..) => false,
             }
@@ -839,7 +839,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                     .collect::<R<Vec<_>>>()?,
             )
             .or_at(at),
-            Value::View(list, at) => self.view_call("$view", list).or_at(at),
+            Value::View(list, at, raised) => self.raised_view_call("$view", list, raised).or_at(at),
             // An enum's discriminant held as a value, as rustc's MIR does
             // where jump threading reads it in two blocks: its number, of
             // the variant `switch_test` finds it is (ADR 0899).

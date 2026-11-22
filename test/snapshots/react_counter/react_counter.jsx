@@ -20,7 +20,11 @@ export function Counter() {
 }
 
 export function main() {
-  const app = $unwrap(document.getElementById("app"), "the page has an #app");
+  const app = $unwrap(
+    document.getElementById("app"),
+    "examples/react_counter.rs:21:51",
+    "the page has an #app",
+  );
   createRoot(app).render(<Counter />);
 }
 //# sourceMappingURL=react_counter.jsx.map

@@ -15,7 +15,7 @@ function takeAll(v) {
   const len = v.length;
   $setLen(v, 0);
   $ptrCopy($ptr(v, 0), $ptr(moved, 0), len);
-  return $copyOf(moved, 0, len);
+  return $copyOf(moved, 0, "test/corpus/const_block_uninit_array.rs:17:10", len);
 }
 
 const EMPTY = undefined;

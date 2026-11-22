@@ -18,7 +18,13 @@ export const steppedDisplay = { fmt: steppedDisplay_fmt };
 function steppedDisplay_fmt(stepped) {
   const f = $sink();
   const next = (n) => (n + 1) >>> 0;
-  f.write(String(next($index(stepped[0], 0))));
+  f.write(
+    String(
+      next(
+        $index(stepped[0], 0, "test/corpus/format_made_apart_prints_before_the_next_line.rs:24:36"),
+      ),
+    ),
+  );
   return f.done();
 }
 

@@ -7,7 +7,11 @@ export function entry() {
 }
 
 function add(log, f) {
-  const borrowMut = $borrowMut(log, true);
+  const borrowMut = $borrowMut(
+    log,
+    "test/corpus/ref_cell_borrowed_by_a_generic_callback.rs:5:9",
+    true,
+  );
   try {
     borrowMut.push(f());
   } finally {
@@ -19,10 +23,12 @@ function main() {
   const log = [1];
   add(log, () => {
     if (log.borrows < 0) {
-      $alreadyMutablyBorrowed();
+      $alreadyMutablyBorrowed("test/corpus/ref_cell_borrowed_by_a_generic_callback.rs:10:22");
     }
     return log.length;
   });
-  console.log(`[${$borrow(log).join(", ")}]`);
+  console.log(
+    `[${$borrow(log, "test/corpus/ref_cell_borrowed_by_a_generic_callback.rs:11:26").join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

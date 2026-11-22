@@ -26,7 +26,7 @@ function countdownIterator_next(countdown) {
     return;
   }
   countdown[0] = checkedSub;
-  return [$index(["c0", "c1", "c2"], countdown[0])];
+  return [$index(["c0", "c1", "c2"], countdown[0], "test/corpus/loop_drops.rs:18:20")];
 }
 
 function firstLong(items) {

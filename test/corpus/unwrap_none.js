@@ -13,7 +13,7 @@ function find(v, x) {
 function main() {
   const value = find([4, 5], 5);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const at = $unwrap(find([4, 5], 6));
+  const at = $unwrap(find([4, 5], 6), "test/corpus/unwrap_none.rs:8:31");
   console.log(`${at}`);
 }
 //# sourceMappingURL=case.js.map

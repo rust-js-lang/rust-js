@@ -8,6 +8,7 @@ import {
   $held,
   $iter,
   $next,
+  $panic,
   $peek,
   iterator_peekable,
 } from "@rust-js/std";
@@ -19,7 +20,7 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 3) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/adapter_drop_past_a_panic.rs:13:13");
   }
 }
 

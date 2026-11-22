@@ -94,7 +94,7 @@ function main() {
     }
   }
   try {
-    console.log(`${v.length} ${$index(v, 0).value.name[0]}`);
+    console.log(`${v.length} ${$index(v, 0, "test/corpus/rc_destructors.rs:49:33").value.name[0]}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -114,7 +114,7 @@ function main() {
   const cell = { value: [["x"]], strong: 1, weak: 0 };
   let other;
   try {
-    const borrowMut = $borrowMut(cell.value, true);
+    const borrowMut = $borrowMut(cell.value, "test/corpus/rc_destructors.rs:54:10", true);
     try {
       borrowMut.push(["y"]);
     } finally {
@@ -133,8 +133,8 @@ function main() {
     }
   }
   try {
-    console.log(`${$borrow(other.value).length}`);
-    const borrowMut = $borrowMut(other.value, true);
+    console.log(`${$borrow(other.value, "test/corpus/rc_destructors.rs:57:26").length}`);
+    const borrowMut = $borrowMut(other.value, "test/corpus/rc_destructors.rs:58:22", true);
     let last;
     try {
       last = borrowMut.pop();

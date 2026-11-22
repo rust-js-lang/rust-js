@@ -16,14 +16,17 @@ function rainWater(terraces) {
   }
   const first = terraces[0];
   const last = terraces.at(-1);
-  leftMaxLevels[$at(leftMaxLevels, 0)] = first;
+  leftMaxLevels[$at(leftMaxLevels, 0, "test/corpus/same_length_tables.rs:13:20")] = first;
   for (let i = 1; i < terraces.length; i++) {
     leftMaxLevels[i] = $f64Max(terraces[i], leftMaxLevels[i - 1]);
   }
   const index = (terraces.length - 1) >>> 0;
-  rightMaxLevels[$at(rightMaxLevels, index)] = last;
+  rightMaxLevels[$at(rightMaxLevels, index, "test/corpus/same_length_tables.rs:17:21")] = last;
   for (let i = ((terraces.length - 1) >>> 0) - 1; i >= 0; i--) {
-    const max = $f64Max($index(terraces, i), $index(rightMaxLevels, i + 1));
+    const max = $f64Max(
+      $index(terraces, i, "test/corpus/same_length_tables.rs:19:31"),
+      $index(rightMaxLevels, i + 1, "test/corpus/same_length_tables.rs:19:63"),
+    );
     rightMaxLevels[i] = max;
   }
   let water = 0;
@@ -71,17 +74,17 @@ function staircase(stairs) {
   const n = (Math.max(stairs, 2) + 1) >>> 0;
   $roomFor(n, 8);
   const steps = new Array(n).fill(0);
-  steps[$at(steps, 1)] = 1;
-  steps[$at(steps, 2)] = 2;
+  steps[$at(steps, 1, "test/corpus/same_length_tables.rs:58:10")] = 1;
+  steps[$at(steps, 2, "test/corpus/same_length_tables.rs:59:10")] = 2;
   if (stairs <= 2) {
-    return $index(steps, stairs);
+    return $index(steps, stairs, "test/corpus/same_length_tables.rs:61:21");
   }
   for (let step = 3; step <= stairs; step++) {
-    const value = $index(steps, step - 1);
-    const value$1 = $index(steps, step - 2);
-    steps[$at(steps, step)] = value + value$1;
+    const value = $index(steps, step - 1, "test/corpus/same_length_tables.rs:64:28");
+    const value$1 = $index(steps, step - 2, "test/corpus/same_length_tables.rs:64:46");
+    steps[$at(steps, step, "test/corpus/same_length_tables.rs:64:14")] = value + value$1;
   }
-  return $index(steps, stairs);
+  return $index(steps, stairs, "test/corpus/same_length_tables.rs:66:10");
 }
 
 function lastAtMost(values, i) {

@@ -10,7 +10,10 @@ function nth(items, at) {
   const held = "held";
   if (at >= items.length) {
     console.log(`drop ${held}`);
-    throw $stringPanic(`index out of bounds: the len is ${items.length} but the index is ${at}`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${items.length} but the index is ${at}`,
+      "test/corpus/drop_index_panic.rs:14:16",
+    );
   }
   const read = items[at];
   console.log(`read ${read}`);

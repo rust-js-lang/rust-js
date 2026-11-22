@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "from-str-radix-site-of-unsigned",
+    breaks: "a signed integer's `from_str_radix` names an unsigned one's line",
+    file: "crates/rust-js-program/src/runtime/parse_int.js",
+    find: "$stdSites.fromStrRadix[min < 0 ? \"signed\" : \"unsigned\"][0]",
+    replace: "$stdSites.fromStrRadix.unsigned[0]",
+    tests: ["test/binaries.test.ts", "-t", "std raises"],
+  },
+  {
     name: "parse-overflow-before-digit",
     breaks: "`\"26x\".parse::<u8>()` reports the overflow of 260, where Rust reads the `x` first",
     file: "crates/rust-js-program/src/runtime/parse_int.js",

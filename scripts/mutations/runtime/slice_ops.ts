@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`clone_from_slice` of a generic caller's items std clones as their bits panics with its own assertion's message, not `copy_from_slice`'s (#2318)",
     file: "crates/rust-js-program/src/runtime/slice_ops.js",
-    find: "    if (trivial) $copyFromSlice(v, src);\n",
+    find: "    if (trivial) $copyFromSlice(v, src, raisedAt);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "clone_from_slice_trivial_panic"],
   },
@@ -128,8 +128,8 @@ export const mutations: Mutation[] = [
     name: "insert-mut-at-end",
     breaks: "`insert_mut(i, x)`'s `&mut` is to the last item",
     file: "crates/rust-js-program/src/runtime/slice_ops.js",
-    find: "  $insertAt(v, i, x, drop);\n  return handle ? $mutAt(v, i) : x;",
-    replace: "  $insertAt(v, i, x, drop);\n  return handle ? $mutAt(v, v.length - 1) : x;",
+    find: "  $insertAt(v, i, x, raisedAt, drop);\n  return handle ? $mutAt(v, i) : x;",
+    replace: "  $insertAt(v, i, x, raisedAt, drop);\n  return handle ? $mutAt(v, v.length - 1) : x;",
     tests: ["test/corpus.test.ts", "-t", "vec_push_mut"],
   },
   {
@@ -216,8 +216,8 @@ export const mutations: Mutation[] = [
     name: "deque-insert-vec-message",
     breaks: "`VecDeque::insert` past the end says `Vec`'s message",
     file: "crates/rust-js-program/src/runtime/slice_ops.js",
-    find: "  $insertAt(v, i, x, drop, \"index out of bounds\");\n",
-    replace: "  $insertAt(v, i, x, drop);\n",
+    find: "  $insertAt(v, i, x, $stdSites.vecDequeInsert[0], drop, \"index out of bounds\");\n",
+    replace: "  $insertAt(v, i, x, $stdSites.vecDequeInsert[0], drop);\n",
     tests: ["test/corpus.test.ts","-t","deque_insert_past_len"],
   },
   {
@@ -368,8 +368,8 @@ export const mutations: Mutation[] = [
     name: "clone-into-vec-truncated-last",
     breaks: "a `Vec`'s `clone_from` drops what it has past the source's length after it writes over the rest, not first (#919)",
     file: "crates/rust-js-program/src/runtime/slice_ops.js",
-    find: "  $truncate(w, v.length, drop);\n  $cloneFromSlice(w, v.slice(0, w.length), clone, cloneFrom, drop);\n",
-    replace: "  $cloneFromSlice(w.slice(0, v.length), v.slice(0, Math.min(w.length, v.length)), clone, cloneFrom, drop);\n  $truncate(w, v.length, drop);\n",
+    find: "  $truncate(w, v.length, drop);\n  $cloneEach(w, v.slice(0, w.length), clone, cloneFrom, drop);\n",
+    replace: "  $cloneEach(w.slice(0, v.length), v.slice(0, Math.min(w.length, v.length)), clone, cloneFrom, drop);\n  $truncate(w, v.length, drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_clone_from_in_place.rs$"],
   },
   {
@@ -449,8 +449,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `VecDeque`'s `insert` past its end never drops what it took as it panics (#1171)",
     file: "crates/rust-js-program/src/runtime/slice_ops.js",
-    find: "  $insertAt(v, i, x, drop, \"index out of bounds\");\n",
-    replace: "  $insertAt(v, i, x, undefined, \"index out of bounds\");\n",
+    find: "  $insertAt(v, i, x, $stdSites.vecDequeInsert[0], drop, \"index out of bounds\");\n",
+    replace: "  $insertAt(v, i, x, $stdSites.vecDequeInsert[0], undefined, \"index out of bounds\");\n",
     tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
   },
   {

@@ -17,7 +17,7 @@ function main() {
   const squares = Array.from({ length: 5 }, (_, i) => Math.imul(i, i) >>> 0);
   console.log(`[${squares.join(", ")}]`);
   const rows$1 = rows(3);
-  $index(rows$1, 0).push(1);
+  $index(rows$1, 0, "test/corpus/range_map_collected.rs:18:9").push(1);
   console.log(`[${rows$1.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
   const fromOne = $range(1, 4).map((i) => (i * 10) >>> 0);
   console.log(`[${fromOne.join(", ")}]`);

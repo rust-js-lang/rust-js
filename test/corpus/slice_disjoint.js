@@ -39,12 +39,14 @@ function main() {
   console.log(
     `${$unwrapErr(
       $getDisjointMut(v, [9, 2, 2], true),
+      "test/corpus/slice_disjoint.rs:18:52",
       undefined,
       (e) => `[${e.map((item) => String(item.value)).join(", ")}]`,
     )}`,
   );
   const error = $unwrapErr(
     $getDisjointMut(v, [3, 3], true),
+    "test/corpus/slice_disjoint.rs:19:44",
     undefined,
     (e) => `[${e.map((item) => String(item.value)).join(", ")}]`,
   );
@@ -57,7 +59,11 @@ function main() {
   if (value$2.TAG === "Ok") {
     const left = value$2._0[0];
     const right = value$2._0[1];
-    $copyFromSlice(left, $slice(right, 1));
+    $copyFromSlice(
+      left,
+      $slice(right, 1, "test/corpus/slice_disjoint.rs:23:36"),
+      "test/corpus/slice_disjoint.rs:23:14",
+    );
     right.reverse();
   }
   console.log(`[${v.join(", ")}]`);
@@ -95,8 +101,8 @@ function main() {
   if (value$3.TAG === "Ok") {
     const a = value$3._0[0];
     const b = value$3._0[1];
-    const value = $index(b, 0);
-    a[$at(a, 1)] = value;
+    const value = $index(b, 0, "test/corpus/slice_disjoint.rs:31:16");
+    a[$at(a, 1, "test/corpus/slice_disjoint.rs:31:9")] = value;
   }
   console.log(`[${v.join(", ")}]`);
   const [x, y] = $getDisjointMut(v, [1, 4], true)._0;
@@ -104,7 +110,12 @@ function main() {
   console.log(`[${v.join(", ")}]`);
 
   const cells = [{ n: 1 }, { n: 2 }, { n: 3 }];
-  const [first, last] = $unwrapOk($getDisjointMut(cells, [0, 2]), undefined, (e) => e);
+  const [first, last] = $unwrapOk(
+    $getDisjointMut(cells, [0, 2]),
+    "test/corpus/slice_disjoint.rs:41:56",
+    undefined,
+    (e) => e,
+  );
   first.n = (first.n + last.n) | 0;
   last.n = 0;
   console.log(`[${cells.map((item) => cellDebug_fmt(item)).join(", ")}]`);

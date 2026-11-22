@@ -20,13 +20,13 @@ function found(s) {
 
 function onAnother(s, other) {
   const at = $find(s, " ");
-  return at != null ? $strSlice(other, 0, at) : other;
+  return at != null ? $strSlice(other, 0, "test/corpus/string_places_kept.rs:16:27", at) : other;
 }
 
 function stepped(s) {
   const at = $find(s, "a");
   if (at != null && (at + 3) >>> 0 <= $byteLen(s)) {
-    return $strSlice(s, (at + 3) >>> 0);
+    return $strSlice(s, (at + 3) >>> 0, "test/corpus/string_places_kept.rs:23:44");
   }
   return "";
 }
@@ -42,7 +42,9 @@ function between(s) {
   }
   const open = $find(s, "(");
   const close = $find(s, ")");
-  return open < close ? $strSlice(s, open + 1, close) : "";
+  return open < close
+    ? $strSlice(s, open + 1, "test/corpus/string_places_kept.rs:39:25", close)
+    : "";
 }
 
 function afterColon(s) {
@@ -51,14 +53,14 @@ function afterColon(s) {
 }
 
 function unwrapped(s) {
-  const at = $unwrap($find(s, "="));
-  return $strSlice(s, 0, at);
+  const at = $unwrap($find(s, "="), "test/corpus/string_places_kept.rs:47:26");
+  return $strSlice(s, 0, "test/corpus/string_places_kept.rs:48:7", at);
 }
 
 function edited(s) {
   const at = $find(s, "é");
   if (at != null) {
-    s = $insertStr(s, at, "[");
+    s = $insertStr(s, at, "[", "test/corpus/string_places_kept.rs:53:11");
   }
   return s;
 }

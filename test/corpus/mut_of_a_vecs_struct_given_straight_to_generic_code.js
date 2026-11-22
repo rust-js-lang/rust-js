@@ -11,7 +11,14 @@ function set(t, u) {
 }
 function main() {
   const v = [{ x: 1 }];
-  set($cellOf($index(v, 0)), { x: 2 });
-  console.log(`${$index(v, 0).x}`);
+  set(
+    $cellOf(
+      $index(v, 0, "test/corpus/mut_of_a_vecs_struct_given_straight_to_generic_code.rs:13:15"),
+    ),
+    { x: 2 },
+  );
+  console.log(
+    `${$index(v, 0, "test/corpus/mut_of_a_vecs_struct_given_straight_to_generic_code.rs:14:21").x}`,
+  );
 }
 //# sourceMappingURL=case.js.map

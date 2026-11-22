@@ -8,6 +8,7 @@ import {
   $dropItems,
   $fieldCell,
   $live,
+  $locationLine,
   $pop,
   $some,
   $someValue,
@@ -103,7 +104,11 @@ const Stack = {
   push(stack, k, dropK) {
     let borrowMut;
     try {
-      borrowMut = $borrowMut($fieldCell(stack, "items"), true);
+      borrowMut = $borrowMut(
+        $fieldCell(stack, "items"),
+        "test/corpus/scope_struct_of_type_parameters.rs:110:20",
+        true,
+      );
     } catch (error) {
       $cleanup(() => {
         dropK?.(k);
@@ -118,7 +123,11 @@ const Stack = {
   },
 
   pop(stack, dropK) {
-    const borrowMut = $borrowMut($fieldCell(stack, "items"), true);
+    const borrowMut = $borrowMut(
+      $fieldCell(stack, "items"),
+      "test/corpus/scope_struct_of_type_parameters.rs:114:33",
+      true,
+    );
     let popped;
     try {
       popped = $pop(borrowMut.value);
@@ -166,7 +175,10 @@ function popTwice(items, more, dropT) {
   }
   let borrow;
   try {
-    borrow = $borrow($fieldCell(stack, "items"));
+    borrow = $borrow(
+      $fieldCell(stack, "items"),
+      "test/corpus/scope_struct_of_type_parameters.rs:127:17",
+    );
   } catch (error) {
     $cleanup(() => {
       $dropItems(stack.items, (item) => {
@@ -186,7 +198,11 @@ const Pile = {
   push(pile, k, dropK) {
     let borrowMut;
     try {
-      borrowMut = $borrowMut($fieldCell(pile, "items"), true);
+      borrowMut = $borrowMut(
+        $fieldCell(pile, "items"),
+        "test/corpus/scope_struct_of_type_parameters.rs:136:20",
+        true,
+      );
     } catch (error) {
       $cleanup(() => {
         dropK?.(k);
@@ -201,7 +217,11 @@ const Pile = {
   },
 
   pop(pile, dropK) {
-    const borrowMut = $borrowMut($fieldCell(pile, "items"), true);
+    const borrowMut = $borrowMut(
+      $fieldCell(pile, "items"),
+      "test/corpus/scope_struct_of_type_parameters.rs:140:33",
+      true,
+    );
     let popped;
     try {
       popped = borrowMut.value.pop();
@@ -221,7 +241,10 @@ function popLoud() {
   try {
     Pile.push(pile, ["y"], loudDrop_drop);
     Pile.pop(pile, loudDrop_drop);
-    borrow = $borrow($fieldCell(pile, "items"));
+    borrow = $borrow(
+      $fieldCell(pile, "items"),
+      "test/corpus/scope_struct_of_type_parameters.rs:152:16",
+    );
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -270,7 +293,7 @@ function bytesOf(n, KSize) {
 
 const Lines = {
   line(lines, location) {
-    const line = location.line;
+    const line = $locationLine(location);
     if (lines.first === 0) {
       lines.first = line;
     }
@@ -280,16 +303,8 @@ const Lines = {
 
 function lines() {
   const lines = { first: 0 };
-  const a = Lines.line(lines, {
-    file: "test/corpus/scope_struct_of_type_parameters.rs",
-    line: 222,
-    column: 19,
-  });
-  const b = Lines.line(lines, {
-    file: "test/corpus/scope_struct_of_type_parameters.rs",
-    line: 223,
-    column: 19,
-  });
+  const a = Lines.line(lines, "test/corpus/scope_struct_of_type_parameters.rs:222:19");
+  const b = Lines.line(lines, "test/corpus/scope_struct_of_type_parameters.rs:223:19");
   return [a, b];
 }
 

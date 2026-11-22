@@ -45,7 +45,10 @@ function unwraps(a, r) {
   const value = $someValue(a);
   const value$3 = $someValue(a);
   const value$2 = $someValue(
-    $unwrap(a == null ? a : $some(value == null ? value : $some($someValue(value)))),
+    $unwrap(
+      a == null ? a : $some(value == null ? value : $some($someValue(value))),
+      "test/corpus/boxed_option_unwraps.rs:19:19",
+    ),
   );
   const value$1 = $someValue(a);
   const option = a == null ? a : $some(value$1 == null ? value$1 : $some($someValue(value$1)));

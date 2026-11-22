@@ -10,6 +10,7 @@ import {
   $foldToArray,
   $holding,
   $iter,
+  $panic,
 } from "@rust-js/std";
 
 export function entry() {
@@ -19,7 +20,7 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] >= 80) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/collected_in_place_leaked_past_a_filters_drop.rs:15:13");
   }
 }
 

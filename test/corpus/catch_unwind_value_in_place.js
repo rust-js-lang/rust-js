@@ -15,14 +15,14 @@ function note(n) {
 function step(n) {
   note(n);
   if (n > 5) {
-    throw $stringPanic(`big ${n}`);
+    throw $stringPanic(`big ${n}`, "test/corpus/catch_unwind_value_in_place.rs:23:9");
   }
   return n + 1;
 }
 
 function same(a, b) {
   if (a > 7) {
-    throw $stringPanic(`same ${a}`);
+    throw $stringPanic(`same ${a}`, "test/corpus/catch_unwind_value_in_place.rs:30:9");
   }
   return a === b;
 }
@@ -114,7 +114,7 @@ function branches(n) {
   try {
     if (n % 2 !== 1) {
       if (n > 4) {
-        throw $stringPanic(`even ${n}`);
+        throw $stringPanic(`even ${n}`, "test/corpus/catch_unwind_value_in_place.rs:123:17");
       }
       found = (n / 2) >>> 0;
     } else if (n === 1) {

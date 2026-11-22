@@ -32,7 +32,7 @@ function update(m, indices, value) {
       return;
     }
     const rows = cell.value;
-    $index(rows, index);
+    $index(rows, index, "test/corpus/untagged_written_through_mut.rs:33:25");
     cell = {
       get value() {
         return rows[index];

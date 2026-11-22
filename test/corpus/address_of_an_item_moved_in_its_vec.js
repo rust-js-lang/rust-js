@@ -15,25 +15,29 @@ function main() {
   $storedItems(v, 8);
   const base = $addr($ptr(v, 0), 8);
   $storedItems(v, 8);
-  $addr($ptr(v, $at(v, 1)), 8);
+  $addr($ptr(v, $at(v, 1, "test/corpus/address_of_an_item_moved_in_its_vec.rs:14:31")), 8);
   $storedItems(v, 8);
   if (0 >= v.length) {
-    $removeOutOfBounds(v, 0);
+    $removeOutOfBounds(v, 0, "test/corpus/address_of_an_item_moved_in_its_vec.rs:15:18");
   }
   const gone = v.splice(0, 1)[0];
   $storedItems(v, 8);
-  console.log(`shifted ${($addr($ptr($index(v, 0), "b", 0), 4) - base) >>> 0}`);
+  console.log(
+    `shifted ${($addr($ptr($index(v, 0, "test/corpus/address_of_an_item_moved_in_its_vec.rs:16:40"), "b", 0), 4) - base) >>> 0}`,
+  );
   $storedItems(v, 8);
-  $addr($ptr(v, $at(v, 0)), 8);
+  $addr($ptr(v, $at(v, 0, "test/corpus/address_of_an_item_moved_in_its_vec.rs:17:30")), 8);
   $storedItems(v, 8);
   if (0 >= v.length) {
-    $removeOutOfBounds(v, 0);
+    $removeOutOfBounds(v, 0, "test/corpus/address_of_an_item_moved_in_its_vec.rs:18:17");
   }
   const out = v.splice(0, 1)[0];
   const at = $addr($ptr(out, "b", 0), 4);
   console.log(`moved out in its buffer: ${at >= base && at < (base + 24) >>> 0}`);
   $storedItems(v, 8);
   $storedItems(v, 8);
-  console.log(`${gone.a} ${out.b} ${$index(v, 0).a} ${v.length}`);
+  console.log(
+    `${gone.a} ${out.b} ${$index(v, 0, "test/corpus/address_of_an_item_moved_in_its_vec.rs:21:45").a} ${v.length}`,
+  );
 }
 //# sourceMappingURL=case.js.map

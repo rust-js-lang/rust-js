@@ -2,8 +2,8 @@
 // destructor, whose `Splice` runs nothing as it's dropped: `replacement`, an
 // array or an array's iterator, put in place where it's made, as nothing
 // sees `items` till it's dropped; an iterator over what it took out (#1189).
-function $splice(items, start, end, replacement, inclusive) {
-  $checkRange(start, end, items.length, inclusive);
+function $splice(items, start, end, replacement, raisedAt, inclusive) {
+  $checkRange(start, end, items.length, raisedAt, inclusive);
   const tail = items.splice(end);
   const removed = items.splice(start);
   $extend(items, replacement);
@@ -28,9 +28,9 @@ function $splice(items, start, end, replacement, inclusive) {
 // made, the crate's own `into_iter` where it's the crate's (`$ownIntoIter`),
 // as std's `splice` makes its `Drain` first: where that panics, what was
 // taken out dropped and the tail put back, the `Drain`'s drop (#1940).
-function $splicing(items, start, end, replacement, dropItem, inclusive) {
+function $splicing(items, start, end, replacement, raisedAt, dropItem, inclusive) {
   const given = typeof replacement.next === "function" ? replacement : undefined;
-  $unwinds(() => $checkRange(start, end, items.length, inclusive), () => given?.return?.());
+  $unwinds(() => $checkRange(start, end, items.length, raisedAt, inclusive), () => given?.return?.());
   const tail = items.splice(end);
   const removed = items.splice(start);
   const it =

@@ -76,12 +76,16 @@ function length(text, DStableDeref) {
 function main() {
   const RcStableDeref = rcStableDeref();
   const cell = { value: [1, 2, 3] };
-  console.log(`${total($borrow(cell, true), refStableDeref(), $unborrow)}`);
+  console.log(
+    `${total($borrow(cell, "test/corpus/guard_deref_dictionary.rs:27:31", true), refStableDeref(), $unborrow)}`,
+  );
   if (cell.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/guard_deref_dictionary.rs:28:10");
   }
   cell.value.push(4);
-  console.log(`${total($borrowMut(cell, true), refMutStableDeref(), $unborrow)}`);
+  console.log(
+    `${total($borrowMut(cell, "test/corpus/guard_deref_dictionary.rs:29:31", true), refMutStableDeref(), $unborrow)}`,
+  );
   console.log(`${total([5, 6], RcStableDeref)}`);
   console.log(`${length("ada", stringStableDeref)} ${length("lovelace", RcStableDeref)}`);
   const tryBorrowMut = $tryBorrow(cell, true);

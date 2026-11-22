@@ -7,7 +7,8 @@ export function entry() {
 }
 
 function mark(lanes, index, lane) {
-  lanes[index] = (($index(lanes, index) ?? 0) | lane) >>> 0;
+  lanes[index] =
+    (($index(lanes, index, "test/corpus/item_written_of_its_own_read.rs:9:30") ?? 0) | lane) >>> 0;
 }
 
 function main() {

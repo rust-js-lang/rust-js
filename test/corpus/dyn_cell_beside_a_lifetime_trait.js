@@ -19,10 +19,10 @@ function circleSpans_span(circle) {
 function main() {
   const circle = { value: { r: 2 } };
   const shape = $dynCell(circle, circleShape);
-  const receiver = $borrow(shape, true);
+  const receiver = $borrow(shape, "test/corpus/dyn_cell_beside_a_lifetime_trait.rs:36:29", true);
   try {
     console.log(
-      `${$displayF64(receiver.impl.area(receiver.value))} ${circleSpans_span($borrow(circle).value)}`,
+      `${$displayF64(receiver.impl.area(receiver.value))} ${circleSpans_span($borrow(circle, "test/corpus/dyn_cell_beside_a_lifetime_trait.rs:36:53").value)}`,
     );
   } finally {
     $unborrow(receiver);

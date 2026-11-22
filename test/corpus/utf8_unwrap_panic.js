@@ -8,7 +8,12 @@ export function entry() {
 
 function main() {
   const bytes = [97, 0xff];
-  const text = $unwrapOk($fromUtf8(bytes), undefined, $debugUtf8Error);
+  const text = $unwrapOk(
+    $fromUtf8(bytes),
+    "test/corpus/utf8_unwrap_panic.rs:6:44",
+    undefined,
+    $debugUtf8Error,
+  );
   console.log(`${text}`);
 }
 //# sourceMappingURL=case.js.map

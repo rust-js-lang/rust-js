@@ -21,6 +21,7 @@ import {
   $mapEnds,
   $next,
   $nthDropping,
+  $panic,
   $peek,
   $rangeNext,
   $roomForHint,
@@ -301,7 +302,7 @@ function sourceEnded() {
 function boomDrop_drop(boom) {
   console.log(`drop boom ${boom[0]}`);
   if (boom[0] === 2) {
-    throw new Error("boom");
+    throw $panic("boom", "test/corpus/flatten_closed_part_way_drops_source_first.rs:97:13");
   }
 }
 function sourceDropPanics() {
@@ -350,7 +351,10 @@ function foldedIntoAString() {
         seen = (seen + 1) | 0;
         try {
           if (seen === 2) {
-            throw new Error("consumer");
+            throw $panic(
+              "consumer",
+              "test/corpus/flatten_closed_part_way_drops_source_first.rs:121:21",
+            );
           }
           return String.fromCharCode(97 + (x[0] % 26));
         } catch (error) {

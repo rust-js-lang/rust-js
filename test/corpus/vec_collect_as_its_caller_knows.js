@@ -108,7 +108,7 @@ function kept(it, JInPlace, dropJ) {
       $stepsOf(it),
       (l) => {
         if (l[0] === 3) {
-          throw $stringPanic(`at ${l[0]}`);
+          throw $stringPanic(`at ${l[0]}`, "test/corpus/vec_collect_as_its_caller_knows.rs:67:9");
         }
         return true;
       },
@@ -231,7 +231,7 @@ function main() {
         { start: 1, end: 5 },
         (n) => {
           if (n >= 3) {
-            throw $stringPanic(`at ${n}`);
+            throw $stringPanic(`at ${n}`, "test/corpus/vec_collect_as_its_caller_knows.rs:109:13");
           }
           return [n];
         },
@@ -269,7 +269,10 @@ function main() {
           count = (count + 1) | 0;
           console.log(`made ${count}`);
           if (count >= 3) {
-            throw $stringPanic(`at ${count}`);
+            throw $stringPanic(
+              `at ${count}`,
+              "test/corpus/vec_collect_as_its_caller_knows.rs:121:13",
+            );
           }
           return [(a + b) >>> 0];
         },
@@ -309,7 +312,10 @@ function main() {
         ([l, n]) => {
           try {
             if (l[0] >= 3) {
-              throw $stringPanic(`at ${l[0]}`);
+              throw $stringPanic(
+                `at ${l[0]}`,
+                "test/corpus/vec_collect_as_its_caller_knows.rs:132:13",
+              );
             }
             return [[(l[0] * 10) >>> 0], n];
           } catch (error) {
@@ -354,7 +360,10 @@ function main() {
       $mapEnds($closing($iter(source), $dropEach(loudDrop_drop)), (l) => {
         try {
           if (l[0] >= 3) {
-            throw $stringPanic(`at ${l[0]}`);
+            throw $stringPanic(
+              `at ${l[0]}`,
+              "test/corpus/vec_collect_as_its_caller_knows.rs:142:13",
+            );
           }
           return [(l[0] * 10) >>> 0];
         } catch (error) {

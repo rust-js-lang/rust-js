@@ -20,9 +20,9 @@ function writeChunk(out, chunk) {
 
 function flushSegment(out, segment) {
   out.push(1000);
-  $borrowMut(segment.children).length = 0;
+  $borrowMut(segment.children, "test/corpus/inner_while_exit_in_catch.rs:31:22").length = 0;
   if (segment.chunks.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/inner_while_exit_in_catch.rs:32:20");
   }
   segment.chunks.push(3);
   return segment.index > 1;
@@ -30,18 +30,25 @@ function flushSegment(out, segment) {
 
 function flushSubtree(out, segment) {
   let r = true;
-  const chunks = $borrow(segment.chunks, true);
+  const chunks = $borrow(segment.chunks, "test/corpus/inner_while_exit_in_catch.rs:38:33", true);
   let chunkIdx = 0;
   let result;
   try {
-    const children = $borrow(segment.children, true);
+    const children = $borrow(
+      segment.children,
+      "test/corpus/inner_while_exit_in_catch.rs:40:37",
+      true,
+    );
     try {
       const iter = children.values();
       let nextChild;
       while ((nextChild = iter.next().value) != null) {
         // Write all the chunks up until the next child.
         while (chunkIdx < nextChild.index) {
-          writeChunk(out, $index(chunks, chunkIdx));
+          writeChunk(
+            out,
+            $index(chunks, chunkIdx, "test/corpus/inner_while_exit_in_catch.rs:44:36"),
+          );
           chunkIdx = (chunkIdx + 1) >>> 0;
         }
         r = flushSegment(out, nextChild);
@@ -64,17 +71,21 @@ function flushSubtree(out, segment) {
 // An inner loop the program leaves by a `break` as well: what's after it
 // is reached from both, and stays after it.
 function flushUntil(out, segment, stop) {
-  const chunks = $borrow(segment.chunks, true);
+  const chunks = $borrow(segment.chunks, "test/corpus/inner_while_exit_in_catch.rs:60:33", true);
   let chunkIdx = 0;
   let result;
   try {
-    const children = $borrow(segment.children, true);
+    const children = $borrow(
+      segment.children,
+      "test/corpus/inner_while_exit_in_catch.rs:62:37",
+      true,
+    );
     try {
       const iter = children.values();
       let nextChild;
       while ((nextChild = iter.next().value) != null) {
         while (chunkIdx < nextChild.index) {
-          if ($index(chunks, chunkIdx) === stop) {
+          if ($index(chunks, chunkIdx, "test/corpus/inner_while_exit_in_catch.rs:65:22") === stop) {
             break;
           }
           writeChunk(out, chunks[chunkIdx]);

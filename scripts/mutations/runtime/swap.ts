@@ -3,10 +3,18 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "deque-swap-site-of-i",
+    breaks: "a `VecDeque`'s `swap` of `j` past its end names the line of `i`'s assertion",
+    file: "crates/rust-js-program/src/runtime/swap.js",
+    find: "$stdSites.vecDequeSwap[1]",
+    replace: "$stdSites.vecDequeSwap[0]",
+    tests: ["test/binaries.test.ts", "-t", "std raises"],
+  },
+  {
     name: "deque-swap-slice-message",
     breaks: "a `VecDeque`'s `swap` out of bounds panics with a slice's index message, not its own assertion",
     file: "crates/rust-js-program/src/runtime/swap.js",
-    find: "  if (deque && b >= v.length) throw new Error(\"assertion failed: j < self.len()\");\n",
+    find: "  if (deque && b >= v.length) throw $panic(\"assertion failed: j < self.len()\", $stdSites.vecDequeSwap[1]);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^deque_swap_out_of_bounds.rs$"],
   },

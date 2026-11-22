@@ -35,7 +35,7 @@ function main() {
     "Empty",
   ];
   console.log(
-    `${sameKind($index(shapes, 0), $index(shapes, 2))} ${sameKind($index(shapes, 0), $index(shapes, 1))}`,
+    `${sameKind($index(shapes, 0, "test/corpus/enum_discriminant.rs:30:40"), $index(shapes, 2, "test/corpus/enum_discriminant.rs:30:52"))} ${sameKind($index(shapes, 0, "test/corpus/enum_discriminant.rs:30:75"), $index(shapes, 1, "test/corpus/enum_discriminant.rs:30:87"))}`,
   );
   const counts = new Map();
   for (let i = 0; i < shapes.length; i++) {
@@ -55,12 +55,12 @@ function main() {
   console.log(
     `Discriminant(${{ Low: 3, High: 10 }["Low"]}) Discriminant(${{ Low: 3, High: 10 }["High"]})`,
   );
-  const value$3 = $index(shapes, 3);
+  const value$3 = $index(shapes, 3, "test/corpus/enum_discriminant.rs:38:43");
   const value$4 = (value$3.TAG === "Circle" ? 0 : value$3.TAG === "Square" ? 1 : 2) === EMPTY;
-  const value$5 = $index(shapes, 1);
+  const value$5 = $index(shapes, 1, "test/corpus/enum_discriminant.rs:38:78");
   console.log(
     `${value$4} ${(value$5.TAG === "Circle" ? 0 : value$5.TAG === "Square" ? 1 : 2) === SQUARE}`,
   );
-  console.log(`${shapeDebug_fmt($index(shapes, 1))}`);
+  console.log(`${shapeDebug_fmt($index(shapes, 1, "test/corpus/enum_discriminant.rs:39:28"))}`);
 }
 //# sourceMappingURL=case.js.map

@@ -29,11 +29,11 @@ function pMeasured_size(p) {
 
 function main() {
   const cell = { a: 1, b: 2 };
-  const borrow = $borrow(cell, true);
+  const borrow = $borrow(cell, "test/corpus/pointers_into_a_cell_compared.rs:32:34", true);
   let first = $ptrTo(borrow);
   let tmp;
   try {
-    tmp = $borrow(cell, true);
+    tmp = $borrow(cell, "test/corpus/pointers_into_a_cell_compared.rs:33:35", true);
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -49,7 +49,7 @@ function main() {
   const lock = { value: { a: 3, b: 4 } };
   let tmp$1;
   try {
-    tmp$1 = $lock(lock);
+    tmp$1 = $lock(lock, "test/corpus/pointers_into_a_cell_compared.rs:36:42");
   } catch (error) {
     $unborrow(tmp);
     $unborrow(borrow);
@@ -71,7 +71,7 @@ function main() {
   let p;
   // A `dyn`'s pointer made thin is the field's it was made of.
   try {
-    p = $ptrTo($unwrap(o));
+    p = $ptrTo($unwrap(o, "test/corpus/pointers_into_a_cell_compared.rs:39:24"));
   } catch (error) {
     $cleanup(() => {
       $unlock(tmp$1);
@@ -81,7 +81,9 @@ function main() {
     throw error;
   }
   try {
-    console.log(`option ${$ptrEq(p, $ptrTo($unwrap(o)), 8)}`);
+    console.log(
+      `option ${$ptrEq(p, $ptrTo($unwrap(o, "test/corpus/pointers_into_a_cell_compared.rs:40:54")), 8)}`,
+    );
   } catch (error) {
     $cleanup(() => {
       $unlock(tmp$1);
@@ -117,7 +119,7 @@ function main() {
         const counter = { count: 7 };
         counter.count = (counter.count + 1) >>> 0;
         console.log(
-          `${pDebug_fmt($borrow(cell))} ${o == null ? "None" : `Some(${pDebug_fmt(o)})`} ${counter.count}`,
+          `${pDebug_fmt($borrow(cell, "test/corpus/pointers_into_a_cell_compared.rs:52:35"))} ${o == null ? "None" : `Some(${pDebug_fmt(o)})`} ${counter.count}`,
         );
       } catch (error) {
         $poison(tmp$1);

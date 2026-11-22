@@ -16,6 +16,7 @@ import {
   $max,
   $next,
   $nth,
+  $panic,
   $unwindsOn,
   iterator_skip,
 } from "@rust-js/std";
@@ -31,7 +32,7 @@ function ownIterator_next(own) {
   }
   own[0] = checkedSub;
   if (own[0] === 77) {
-    throw new Error("next");
+    throw $panic("next", "test/corpus/boxed_source_closed_once.rs:17:13");
   }
   return own[0];
 }

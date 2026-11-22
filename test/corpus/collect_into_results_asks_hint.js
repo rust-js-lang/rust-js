@@ -44,7 +44,17 @@ function generic(items, n, TSize) {
     iterator_map(
       loud(n),
       (r) =>
-        r.TAG === "Ok" ? { TAG: "Ok", _0: $index(items, $rem(r._0, items.length) >>> 0) } : r,
+        r.TAG === "Ok"
+          ? {
+              TAG: "Ok",
+              _0: $index(
+                items,
+                $rem(r._0, items.length, "test/corpus/collect_into_results_asks_hint.rs:43:37") >>>
+                  0,
+                "test/corpus/collect_into_results_asks_hint.rs:43:36",
+              ),
+            }
+          : r,
       { next: loudIterator_next, sizeHint: loudIterator_sizeHint },
     ),
     undefined,
@@ -67,7 +77,10 @@ function panickyIterator_next(panicky) {
 }
 function panickyIterator_sizeHint(panicky) {
   if (panicky.asked === 1) {
-    throw $stringPanic(`hint panics at ${panicky.n}`);
+    throw $stringPanic(
+      `hint panics at ${panicky.n}`,
+      "test/corpus/collect_into_results_asks_hint.rs:70:13",
+    );
   }
   return [0, undefined];
 }
@@ -77,7 +90,10 @@ function panicLaterIterator_next(panicLater) {
 }
 function panicLaterIterator_sizeHint(panicLater) {
   if (panicLater.inner.n < 5) {
-    throw $stringPanic(`hint panics at ${panicLater.inner.n}`);
+    throw $stringPanic(
+      `hint panics at ${panicLater.inner.n}`,
+      "test/corpus/collect_into_results_asks_hint.rs:87:13",
+    );
   }
   return [0, undefined];
 }

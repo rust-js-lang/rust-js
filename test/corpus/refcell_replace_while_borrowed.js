@@ -8,9 +8,9 @@ export function entry() {
 
 function main() {
   const cell = { value: 1 };
-  const reading = $borrow(cell, true);
+  const reading = $borrow(cell, "test/corpus/refcell_replace_while_borrowed.rs:9:24", true);
   try {
-    $cellReplace($borrowMut(cell), 2);
+    $cellReplace($borrowMut(cell, "test/corpus/refcell_replace_while_borrowed.rs:10:10"), 2);
     console.log(`${reading.value}`);
   } finally {
     $unborrow(reading);

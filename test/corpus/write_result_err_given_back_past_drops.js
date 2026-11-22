@@ -20,10 +20,7 @@ export function entry() {
 }
 
 function said(what) {
-  const text = $fmtOrPanic(
-    () => what(),
-    "a formatting trait implementation returned an error when the underlying stream did not: Error",
-  );
+  const text = $fmtOrPanic(() => what(), "format");
   console.log(`${text}`);
 }
 

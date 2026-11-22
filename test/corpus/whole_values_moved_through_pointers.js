@@ -211,14 +211,24 @@ function main() {
   swapArrays(x, y);
   console.log(`swapped by hand [${x.join(", ")}] [${y.join(", ")}]`);
   const vs = [[1], [2]];
-  const [first, rest] = $splitAtMut(vs, 1);
+  const [first, rest] = $splitAtMut(
+    vs,
+    1,
+    "test/corpus/whole_values_moved_through_pointers.rs:230:28",
+  );
   const length = first.length;
   if (0 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/whole_values_moved_through_pointers.rs:231:20",
+    );
   }
   const value = rest.length;
   if (0 >= value) {
-    throw $stringPanic(`index out of bounds: the len is ${value} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${value} but the index is 0`,
+      "test/corpus/whole_values_moved_through_pointers.rs:231:35",
+    );
   }
   swapVecs(first[0], rest[0]);
   console.log(`swapped by hand [${vs.map((item) => `[${item.join(", ")}]`).join(", ")}]`);

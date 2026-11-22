@@ -259,9 +259,24 @@ function distinct(items, THash, TPartialEq, TCopy, TSet) {
 }
 function pairs(items, THash, TPartialEq, TSet) {
   return new ($arrayKeyClassOf(true, false, TSet))(
-    $windows(items, 2)
+    $windows(
+      items,
+      2,
+      "test/corpus/map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy.rs:92:10",
+    )
       .values()
-      .map((w) => [$index(w, 0), $index(w, 1)]),
+      .map((w) => [
+        $index(
+          w,
+          0,
+          "test/corpus/map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy.rs:93:19",
+        ),
+        $index(
+          w,
+          1,
+          "test/corpus/map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy.rs:93:25",
+        ),
+      ]),
   ).size;
 }
 function sorted(items, TOrd, TCopy, TDebug, TTreeSet, TUsizeSize, TUsizeStableSort) {

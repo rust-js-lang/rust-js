@@ -445,10 +445,10 @@ pub fn made() -> u32 {
   );
   expect(js).toContain("export function rootTask(name) {\n  return console.createTask(name);\n}");
   expect(js).toContain("export function bound(name) {\n  return console.createTask.bind(console, name);\n}");
-  expect(js).toContain("export function kept() {\n  return $unwrap(console.createTask);\n}");
-  expect(js).toContain("return named($unwrap(console.createTask));");
-  expect(js).toContain("return $unwrap(f)(1);");
-  expect(js).toContain("return $unwrap(maker())(1);");
+  expect(js).toContain("export function kept() {\n  return $unwrap(console.createTask, \"lib.rs:13:28\");\n}");
+  expect(js).toContain("return named($unwrap(console.createTask, \"lib.rs:21:34\"));");
+  expect(js).toContain("return $unwrap(f, \"lib.rs:25:7\")(1);");
+  expect(js).toContain("return $unwrap(maker(), \"lib.rs:33:13\")(1);");
   const host = console as unknown as { createTask?: (name: string) => unknown };
   const before = host.createTask;
   try {

@@ -9,7 +9,7 @@ export function entry() {
 function sum(values, N) {
   let total = 0;
   for (let i = 0; i < N; i++) {
-    total = (total + $index(values, i)) >>> 0;
+    total = (total + $index(values, i, "test/corpus/const_generics.rs:10:18")) >>> 0;
   }
   return total;
 }
@@ -37,7 +37,7 @@ const Ring = {
   push(ring, x, CAP) {
     if (ring.items.length === CAP) {
       if (0 >= ring.items.length) {
-        $removeOutOfBounds(ring.items, 0);
+        $removeOutOfBounds(ring.items, 0, "test/corpus/const_generics.rs:41:24");
       }
       ring.items.splice(0, 1);
     }

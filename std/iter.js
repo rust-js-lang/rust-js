@@ -37,6 +37,7 @@ import {
   $nthSome,
   $optionTry,
   $overflowing,
+  $panic,
   $peekableHint,
   $rem,
   $rev,
@@ -84,14 +85,22 @@ export const StepBy = {
       $cleanup(() => {
         dropI?.(iter);
       });
-      throw new Error("assertion failed: step != 0");
+      throw $panic(
+        "assertion failed: step != 0",
+        "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/adapters/step_by.rs:36:9",
+      );
     }
     const iter$1 = tSpecRangeSetupT_setup(iter, step, dropI);
     return { iter: iter$1, stepMinusOne: step - 1, firstTake: true };
   },
   nextBackIndex(stepBy, IExactSizeIterator, dropI, dropIItem) {
     const n = (stepBy.stepMinusOne + 1) >>> 0;
-    const rem = $rem(IExactSizeIterator.len(stepBy.iter), n === 0 ? undefined : n) >>> 0;
+    const rem =
+      $rem(
+        IExactSizeIterator.len(stepBy.iter),
+        n === 0 ? undefined : n,
+        "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/nonzero.rs:2533:1",
+      ) >>> 0;
     if (stepBy.firstTake) {
       if (rem === 0) {
         return stepBy.stepMinusOne;
@@ -7527,13 +7536,19 @@ export function skipIterator_advanceBy(skip, n, IIterator = { next: $next }, dro
     tmp = remainder;
     tmp$1 = $overflowing((skipAndAdvance - tmp) >>> 0, skipAndAdvance - tmp, 0, 4294967295);
     if (tmp$1[1]) {
-      throw new Error("attempt to subtract with overflow");
+      throw $panic(
+        "attempt to subtract with overflow",
+        "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/adapters/skip.rs:145:30",
+      );
     }
     advancedInner = tmp$1[0];
     tmp$2 = Math.max(advancedInner - skipInner, 0);
     tmp$3 = $overflowing((n - tmp$2) >>> 0, n - tmp$2, 0, 4294967295);
     if (tmp$3[1]) {
-      throw new Error("attempt to subtract with overflow");
+      throw $panic(
+        "attempt to subtract with overflow",
+        "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/adapters/skip.rs:146:9",
+      );
     }
     n = tmp$3[0];
     skip.n = Math.max(skip.n - advancedInner, 0);
@@ -7543,13 +7558,19 @@ export function skipIterator_advanceBy(skip, n, IIterator = { next: $next }, dro
     tmp = remainder;
     tmp$1 = $overflowing((skipAndAdvance - tmp) >>> 0, skipAndAdvance - tmp, 0, 4294967295);
     if (tmp$1[1]) {
-      throw new Error("attempt to subtract with overflow");
+      throw $panic(
+        "attempt to subtract with overflow",
+        "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/adapters/skip.rs:145:30",
+      );
     }
     advancedInner = tmp$1[0];
     tmp$2 = Math.max(advancedInner - skipInner, 0);
     tmp$3 = $overflowing((n - tmp$2) >>> 0, n - tmp$2, 0, 4294967295);
     if (tmp$3[1]) {
-      throw new Error("attempt to subtract with overflow");
+      throw $panic(
+        "attempt to subtract with overflow",
+        "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/adapters/skip.rs:146:9",
+      );
     }
     n = tmp$3[0];
     skip.n = Math.max(skip.n - advancedInner, 0);
@@ -7601,6 +7622,7 @@ export function skipDoubleEndedIterator_nextBack(
     "Eq",
     tmp$1 == null ? "None" : `Some(${tmp$1})`,
     tmp$2 == null ? "None" : `Some(${tmp$2})`,
+    "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/traits/exact_size.rs:122:9",
   );
 }
 
@@ -7655,6 +7677,7 @@ export function skipDoubleEndedIterator_nthBack(
     "Eq",
     tmp$1 == null ? "None" : `Some(${tmp$1})`,
     tmp$2 == null ? "None" : `Some(${tmp$2})`,
+    "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/traits/exact_size.rs:122:9",
   );
 }
 
@@ -7755,6 +7778,7 @@ export function skipDoubleEndedIterator_tryRfold(
       "Eq",
       tmp$1 == null ? "None" : `Some(${tmp$1})`,
       tmp$2 == null ? "None" : `Some(${tmp$2})`,
+      "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/traits/exact_size.rs:122:9",
     );
   } catch (error) {
     $cleanup(() => {
@@ -7845,7 +7869,10 @@ export function skipDoubleEndedIterator_advanceBackBy(
         dropIItem,
       );
       if (rem.TAG !== "Ok") {
-        throw new Error("ExactSizeIterator contract violation");
+        throw $panic(
+          "ExactSizeIterator contract violation",
+          "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/adapters/skip.rs:240:9",
+        );
       }
       const n$1 = (n - min) >>> 0;
       const value$1 = n$1 === 0 ? undefined : n$1;
@@ -7856,6 +7883,7 @@ export function skipDoubleEndedIterator_advanceBackBy(
     "Eq",
     tmp$1 == null ? "None" : `Some(${tmp$1})`,
     tmp$2 == null ? "None" : `Some(${tmp$2})`,
+    "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/traits/exact_size.rs:122:9",
   );
 }
 
@@ -10007,7 +10035,10 @@ export function repeatIterator_nth(repeat, n, AClone, dropA) {
 
 export function repeatIterator_last(repeat, AClone, dropA) {
   try {
-    throw new Error("iterator is infinite");
+    throw $panic(
+      "iterator is infinite",
+      "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/sources/repeat.rs:111:9",
+    );
   } catch (error) {
     $cleanup(() => {
       repeat.return();
@@ -10018,7 +10049,10 @@ export function repeatIterator_last(repeat, AClone, dropA) {
 
 export function repeatIterator_count(repeat, AClone, dropA) {
   try {
-    throw new Error("iterator is infinite");
+    throw $panic(
+      "iterator is infinite",
+      "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/sources/repeat.rs:121:9",
+    );
   } catch (error) {
     $cleanup(() => {
       repeat.return();
@@ -14360,17 +14394,47 @@ export function stepByStepByImplI_specSizeHint(
       if (n === 0) {
         return 0;
       }
-      return (1 + ($div(n - 1, value) >>> 0)) >>> 0;
+      return (
+        (1 +
+          ($div(
+            n - 1,
+            value,
+            "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/nonzero.rs:2533:1",
+          ) >>>
+            0)) >>>
+        0
+      );
     }
     return [
-      low === 0 ? 0 : (1 + ($div(low - 1, value) >>> 0)) >>> 0,
+      low === 0
+        ? 0
+        : (1 +
+            ($div(
+              low - 1,
+              value,
+              "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/nonzero.rs:2533:1",
+            ) >>>
+              0)) >>>
+          0,
       high == null ? undefined : f(high),
     ];
   }
   const n = (stepBy.stepMinusOne + 1) >>> 0;
   const value = n === 0 ? undefined : n;
-  const f = (n) => $div(n, value) >>> 0;
-  return [$div(low, value) >>> 0, high == null ? undefined : f(high)];
+  const f = (n) =>
+    $div(
+      n,
+      value,
+      "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/nonzero.rs:2533:1",
+    ) >>> 0;
+  return [
+    $div(
+      low,
+      value,
+      "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/nonzero.rs:2533:1",
+    ) >>> 0,
+    high == null ? undefined : f(high),
+  ];
 }
 
 export function stepByStepByImplI_specNth(
@@ -14422,8 +14486,18 @@ export function stepByStepByImplI_specNth(
       );
     }
     mul = undefined;
-    const divN = $div(4294967295, n) >>> 0;
-    const divStep = $div(4294967295, step) >>> 0;
+    const divN =
+      $div(
+        4294967295,
+        n,
+        "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/adapters/step_by.rs:287:25",
+      ) >>> 0;
+    const divStep =
+      $div(
+        4294967295,
+        step,
+        "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/adapters/step_by.rs:288:28",
+      ) >>> 0;
     let nthN = Math.imul(divN, n) >>> 0;
     const nthStep = Math.imul(divStep, step) >>> 0;
     if (nthN > nthStep) {
@@ -15334,7 +15408,10 @@ export function zipZipImplAB_nextBack(
   if (tmp[0] == null) {
     if (tmp[1] != null) {
       try {
-        throw new Error("internal error: entered unreachable code");
+        throw $panic(
+          "internal error: entered unreachable code",
+          "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/adapters/zip.rs:213:5",
+        );
       } catch (error) {
         $cleanup(() => {
           if (tmp[0] != null) {
@@ -15353,7 +15430,10 @@ export function zipZipImplAB_nextBack(
   }
   if (tmp[1] == null) {
     try {
-      throw new Error("internal error: entered unreachable code");
+      throw $panic(
+        "internal error: entered unreachable code",
+        "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/adapters/zip.rs:213:5",
+      );
     } catch (error) {
       $cleanup(() => {
         if (tmp[0] != null) {
@@ -15491,7 +15571,10 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
   if (tmp[0] == null) {
     if (tmp[1] != null) {
       try {
-        throw new Error("internal error: entered unreachable code");
+        throw $panic(
+          "internal error: entered unreachable code",
+          "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/adapters/zip.rs:253:5",
+        );
       } catch (error) {
         $cleanup(() => {
           if (tmp[0] != null) {
@@ -15510,7 +15593,10 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
   }
   if (tmp[1] == null) {
     try {
-      throw new Error("internal error: entered unreachable code");
+      throw $panic(
+        "internal error: entered unreachable code",
+        "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/iter/adapters/zip.rs:253:5",
+      );
     } catch (error) {
       $cleanup(() => {
         if (tmp[0] != null) {

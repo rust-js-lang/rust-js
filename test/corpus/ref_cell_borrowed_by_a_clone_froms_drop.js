@@ -7,6 +7,7 @@ import {
   $debugStr,
   $rcClone,
   $rcDrop,
+  $stdSites,
   $tryBorrow,
   $unborrow,
   $withBorrow,
@@ -29,7 +30,11 @@ function entryDrop_drop(entry) {
 }
 
 function reset(slot, new$) {
-  const borrowMut = $borrowMut(slot, true);
+  const borrowMut = $borrowMut(
+    slot,
+    "test/corpus/ref_cell_borrowed_by_a_clone_froms_drop.rs:26:10",
+    true,
+  );
   const old = borrowMut.value;
   try {
     borrowMut.value = $rcClone(new$);
@@ -43,12 +48,16 @@ function main() {
   const slot = { value: { value: { name: "old" }, strong: 1, weak: 0 } };
   const new$ = { value: { name: "new" }, strong: 1, weak: 0 };
   try {
-    const held = $borrowMut(log, true);
+    const held = $borrowMut(
+      log,
+      "test/corpus/ref_cell_borrowed_by_a_clone_froms_drop.rs:33:28",
+      true,
+    );
     try {
       held.push("cloning");
       reset(slot, new$);
       if (slot.borrows < 0) {
-        $alreadyMutablyBorrowed();
+        $alreadyMutablyBorrowed("test/corpus/ref_cell_borrowed_by_a_clone_froms_drop.rs:36:24");
       }
       held.push(slot.value.value.name);
     } finally {
@@ -67,6 +76,7 @@ function main() {
       (log) => {
         console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);
       },
+      $stdSites.localKeyWithBorrow[0],
       true,
     );
   } catch (error) {

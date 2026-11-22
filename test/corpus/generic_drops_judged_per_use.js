@@ -5,6 +5,7 @@ import {
   $cleanup,
   $index,
   $live,
+  $panic,
   $someValue,
   $stringPanic,
   $unwindsOn,
@@ -44,14 +45,14 @@ function holderDrop_drop(holder, dropT) {
 
 function loudDrop_drop(loud) {
   if (loud[0] === "bomb") {
-    throw $stringPanic(`loud ${loud[0]}`);
+    throw $stringPanic(`loud ${loud[0]}`, "test/corpus/generic_drops_judged_per_use.rs:67:13");
   }
   console.log(`loud ${loud[0]}`);
 }
 
 function work(n) {
   if (n > 100) {
-    throw $stringPanic(`too big: ${n}`);
+    throw $stringPanic(`too big: ${n}`, "test/corpus/generic_drops_judged_per_use.rs:75:9");
   }
   return n + 1;
 }
@@ -87,7 +88,7 @@ function deferred(n) {
 function indexed(n, at) {
   const items = [1, 2, 3];
   function check() {
-    console.log(`item ${$index(items, at)}`);
+    console.log(`item ${$index(items, at, "test/corpus/generic_drops_judged_per_use.rs:96:47")}`);
   }
   let result;
   try {
@@ -193,7 +194,7 @@ function main() {
   console.log(`depth ${depth}`);
   let r = $catchUnwind(() =>
     nested(() => {
-      throw new Error("inside");
+      throw $panic("inside", "test/corpus/generic_drops_judged_per_use.rs:123:46");
     }),
   );
   console.log(`nested caught ${r.TAG === "Err"} depth ${depth}`);

@@ -68,7 +68,7 @@ function checked(n, x) {
     a = undefined;
     b = 1;
   } else {
-    throw $stringPanic(`negative ${n}`);
+    throw $stringPanic(`negative ${n}`, "test/corpus/tuple_of_taken_parts.rs:60:9");
   }
   return ((a?.length ?? 0) + (b >>> 0)) >>> 0;
 }

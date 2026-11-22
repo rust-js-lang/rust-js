@@ -11,7 +11,7 @@ function average(times, sizes, end) {
   let total = 0;
   let i = 0;
   while (i < times.length) {
-    if (times[i] === 0 || $index(sizes, i) === 0) {
+    if (times[i] === 0 || $index(sizes, i, "test/corpus/loop_ends_in_its_break.rs:13:31") === 0) {
       i++;
       continue;
     }
@@ -20,7 +20,7 @@ function average(times, sizes, end) {
       if (times[j] > end) {
         break;
       }
-      if (times[j] === 0 || $index(sizes, j) === 0) {
+      if (times[j] === 0 || $index(sizes, j, "test/corpus/loop_ends_in_its_break.rs:22:35") === 0) {
         j++;
         continue;
       }
@@ -42,7 +42,7 @@ function untilPast(times, sizes, end) {
   while (i < times.length) {
     let j = i;
     while (j < times.length) {
-      if (times[j] > end || $index(sizes, j) < 0) {
+      if (times[j] > end || $index(sizes, j, "test/corpus/loop_ends_in_its_break.rs:44:34") < 0) {
         break;
       }
       j++;

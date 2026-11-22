@@ -8,7 +8,9 @@ export function entry() {
 
 function made(fail) {
   const r = $some(fail ? new $FmtError() : undefined);
-  return $writeCheck($someValue($unwrap(r)));
+  return $writeCheck(
+    $someValue($unwrap(r, "test/corpus/write_result_copied_where_one_is_held_in_a_cell.rs:9:17")),
+  );
 }
 
 function passedOn(fail) {
@@ -23,7 +25,10 @@ function main() {
   console.log(
     `${$writeTry(() => passedOn(true)) === undefined ? "Ok(())" : "Err(Error)"} ${$writeTry(() => passedOn(false)) === undefined ? "Ok(())" : "Err(Error)"}`,
   );
-  $unwrap(cell).value = undefined;
-  console.log(`${$unwrap(cell).value === undefined ? "Ok(())" : "Err(Error)"}`);
+  $unwrap(cell, "test/corpus/write_result_copied_where_one_is_held_in_a_cell.rs:21:20").value =
+    undefined;
+  console.log(
+    `${$unwrap(cell, "test/corpus/write_result_copied_where_one_is_held_in_a_cell.rs:22:36").value === undefined ? "Ok(())" : "Err(Error)"}`,
+  );
 }
 //# sourceMappingURL=case.js.map

@@ -7,6 +7,7 @@ import {
   $iter,
   $mapEnds,
   $next,
+  $panic,
   $sizeHint,
 } from "@rust-js/std";
 
@@ -66,7 +67,7 @@ function main() {
       $mapEnds($iter([1, 2, 3]), (d) => {
         console.log(`unit ${d}`);
         if (d === 2) {
-          throw new Error("at 2");
+          throw $panic("at 2", "test/corpus/decode_utf16_steps_as_asked.rs:28:25");
         } else {
           return (0x61 + d) & 65535;
         }

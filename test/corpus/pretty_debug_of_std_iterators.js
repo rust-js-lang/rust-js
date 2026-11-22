@@ -49,13 +49,16 @@ function main() {
     )})`,
   );
   let text = "abcdef";
-  const drained = $strDrain(text, 1, 4);
+  const drained = $strDrain(text, 1, 4, "test/corpus/pretty_debug_of_std_iterators.rs:23:18");
   text = drained[0];
   const d = $iter(drained[1]);
   console.log(`${$pretty("Drain(", [$debugStr($restStr(d))], ")")}`);
   const empty = [];
   console.log(`${$pretty("Iter(", [$pretty("[", empty, "]")], ")")}`);
-  const window = { rest: $iter($slice(v, 1)), name: "w" };
+  const window = {
+    rest: $iter($slice(v, 1, "test/corpus/pretty_debug_of_std_iterators.rs:27:34")),
+    name: "w",
+  };
   console.log(`${windowDebug_fmt(window)}`);
   console.log(`${windowDebug_fmt(window, { alternate: true })}`);
 }

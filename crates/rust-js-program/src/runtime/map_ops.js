@@ -173,10 +173,10 @@ function $treeRange(m, cmp, set, name, start, end, checked = true, eq, ord) {
   if (checked && start !== "Unbounded" && end !== "Unbounded") {
     const order = cmp(start._0, end._0);
     if (order > 0) {
-      throw new Error(`range start is greater than range end in ${name}`);
+      throw $panic(`range start is greater than range end in ${name}`, $stdSites.btreeRange[name === "BTreeSet" ? 2 : 3]);
     }
     if (order === 0 && start.TAG === "Excluded" && end.TAG === "Excluded") {
-      throw new Error(`range start and end are equal and excluded in ${name}`);
+      throw $panic(`range start and end are equal and excluded in ${name}`, $stdSites.btreeRange[name === "BTreeSet" ? 0 : 1]);
     }
   }
   const sorted = set ? $sortedKeys(m, cmp) : $sortedEntries(m, cmp);

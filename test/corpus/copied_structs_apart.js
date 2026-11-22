@@ -25,39 +25,51 @@ function pointDebug_fmt(point) {
 function main() {
   const points = [{ x: 0 }, { x: 5 }];
   const copies = points.map((item) => ({ ...item }));
-  $index(copies, 0).x = 1;
-  const first = $unwrap(points.map((item) => ({ ...item }))[0]);
+  $index(copies, 0, "test/corpus/copied_structs_apart.rs:15:11").x = 1;
+  const first = $unwrap(
+    points.map((item) => ({ ...item }))[0],
+    "test/corpus/copied_structs_apart.rs:16:51",
+  );
   first.x = 2;
-  const found = $unwrap(points.map((item) => ({ ...item })).find((p) => p.x === 5));
+  const found = $unwrap(
+    points.map((item) => ({ ...item })).find((p) => p.x === 5),
+    "test/corpus/copied_structs_apart.rs:18:63",
+  );
   found.x = 3;
   const reversed = points
     .toReversed()
     .map((item) => ({ ...item }))
     .slice(0, 1);
-  $index(reversed, 0).x = 4;
+  $index(reversed, 0, "test/corpus/copied_structs_apart.rs:21:13").x = 4;
   const [small] = $partition(
     points.map((item) => ({ ...item })),
     (p) => p.x < 3,
   );
-  $index(small, 0).x = 6;
+  $index(small, 0, "test/corpus/copied_structs_apart.rs:23:10").x = 6;
   const queue = points.map((item) => ({ ...item }));
-  $index(queue, 0, "out of bounds access").x = 7;
+  $index(queue, 0, "test/corpus/copied_structs_apart.rs:25:10", "out of bounds access").x = 7;
   console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
 
   const extended = [];
   for (let i = 0; i < points.length; i++) {
     extended.push({ ...points[i] });
   }
-  $index(extended, 0).x = 8;
+  $index(extended, 0, "test/corpus/copied_structs_apart.rs:30:13").x = 8;
   const overwritten = [{ x: 9 }, { x: 9 }];
-  $copyFromSlice(overwritten, points, (item) => ({ ...item }));
+  $copyFromSlice(overwritten, points, "test/corpus/copied_structs_apart.rs:32:17", (item) => ({
+    ...item,
+  }));
   overwritten[0].x = 10;
   const repeated = $repeatItems(points, 2, 4, (item) => ({ ...item }));
-  $index(repeated, 0).x = 11;
-  const joined = [...points, ...$slice(points, 0, 1)].map((item) => ({ ...item }));
-  $index(joined, 0).x = 12;
+  $index(repeated, 0, "test/corpus/copied_structs_apart.rs:35:13").x = 11;
+  const joined = [
+    ...points,
+    ...$slice(points, 0, "test/corpus/copied_structs_apart.rs:36:43", 1),
+  ].map((item) => ({ ...item }));
+  $index(joined, 0, "test/corpus/copied_structs_apart.rs:37:11").x = 12;
   const array = $unwrapOk(
     points.length === 2 ? { TAG: "Ok", _0: points.map((item) => ({ ...item })) } : { TAG: "Err" },
+    "test/corpus/copied_structs_apart.rs:38:55",
     undefined,
     (e) => "TryFromSliceError(())",
   );
@@ -68,7 +80,7 @@ function main() {
   const values = $sortedEntries(byName, $cmp)
     .map((entry) => entry[1])
     .map((item) => ({ ...item }));
-  $index(values, 0).x = 14;
+  $index(values, 0, "test/corpus/copied_structs_apart.rs:44:11").x = 14;
   console.log(
     `{${Array.from($sortedEntries(byName, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${pointDebug_fmt(value)}`)

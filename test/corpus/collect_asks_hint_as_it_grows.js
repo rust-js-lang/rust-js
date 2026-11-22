@@ -13,6 +13,7 @@ import {
   $jsIterator,
   $lazyRange,
   $next,
+  $panic,
   $rangeNext,
   $reserveHint,
   $roomForHint,
@@ -47,7 +48,7 @@ function ownIterator_next(own, dropT, dropF) {
 function ownIterator_sizeHint(own, dropT, dropF) {
   console.log(`hint at ${own.at}`);
   if (own.at === own.panicsAt) {
-    throw new Error("hint");
+    throw $panic("hint", "test/corpus/collect_asks_hint_as_it_grows.rs:43:13");
   }
   const left = own.end - Math.min(own.at, own.end);
   return [(0, own.lower)(left), undefined];

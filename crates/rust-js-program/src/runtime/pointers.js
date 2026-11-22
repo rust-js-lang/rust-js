@@ -891,7 +891,7 @@ function $ptrSliceMut(pointer, count) {
     // A byte array's own bytes, the array's items.
     if ($itemsAreBytes(pointer) && pointer.width === 1 && pointer.signed === false) {
       $allocUsed(pointer, "bytes");
-      return $view(pointer.of, pointer.at, pointer.at + count);
+      return $view(pointer.of, pointer.at, undefined, pointer.at + count);
     }
     // Another's, a view of its bytes `width` at a time, each item read and
     // written where its bytes are, through their codec, or a `[u8; N]`'s
@@ -926,7 +926,7 @@ function $ptrSliceMut(pointer, count) {
   if (start + count > items.length && $spares.has(items)) {
     throw $unsupported("rust-js does not support a mutable slice past a vector's length, over what's left there, which reads memory by where it is");
   }
-  return start === 0 && count === items.length ? items : $view(items, start, start + count);
+  return start === 0 && count === items.length ? items : $view(items, start, undefined, start + count);
 }
 
 // The array a pointer is into, and its index there, for `count` items from
@@ -955,7 +955,7 @@ function $wholeOf(pointer) {
 function $ptrWhole(pointer, length) {
   if (Array.isArray(pointer.of) && typeof pointer.at === "number" && pointer.at + length <= pointer.of.length) {
     if (pointer.at === 0 && pointer.of.length === length) return $ptrTo(pointer.of);
-    return $ptrTo($view(pointer.of, pointer.at, pointer.at + length));
+    return $ptrTo($view(pointer.of, pointer.at, undefined, pointer.at + length));
   }
   throw $unsupported("rust-js does not support a pointer to part of an array as one to an array past its end, which reads memory by where it is");
 }

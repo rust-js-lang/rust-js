@@ -447,6 +447,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().compares_by_components(ty) {
             return Ok(Expr::call(Expr::helper("$pathCmp"), vec![a, b]));
         }
+        // A `Location`'s parts in turn, file, line and column, as std derives
+        // it, not its text's order (ADR 0427, amended by #2292).
+        if matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.is_lang_item(adt.did(), LangItem::PanicLocation)) {
+            return Ok(Expr::call(Expr::helper("$locationCmp"), vec![a, b]));
+        }
         if self.is_primitive_ord(ty) || self.is_text_ord(ty) || self.recognition().is_os_text(ty) {
             return Ok(Expr::call(Expr::helper("$cmp"), vec![a, b]));
         }

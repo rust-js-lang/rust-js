@@ -10,6 +10,7 @@ import {
   $iterator,
   $lazyRange,
   $next,
+  $panic,
   $partialEq,
   $print,
   $range,
@@ -21,6 +22,7 @@ import {
   $rangeNextBack,
   $roomForHint,
   $slice,
+  $stdSites,
   iterator_take,
   iterator_zip,
 } from "@rust-js/std";
@@ -68,7 +70,7 @@ function firstSquareOver(limit) {
       return n;
     }
   }
-  throw new Error("internal error: entered unreachable code");
+  throw $panic("internal error: entered unreachable code", "test/corpus/range_values.rs:53:5");
 }
 
 function main() {
@@ -138,7 +140,7 @@ function main() {
   const w = { rows: { start: 1, end: 3 } };
   let letters = ["a", "b", "c", "d"];
   $print(
-    `[${$slice(letters, w.rows.start, w.rows.end)
+    `[${$slice(letters, w.rows.start, "test/corpus/range_values.rs:92:30", w.rows.end)
       .map((item) => $debugStr(item))
       .join(", ")}]\n`,
   );
@@ -207,9 +209,9 @@ function main() {
 
   const numbers = [1, 2, 3, 4, 5];
   const cut = { start: 1, end: 3 };
-  const gone = $drain(numbers, cut.start, cut.end);
+  const gone = $drain(numbers, cut.start, $stdSites.vecDrain[0], cut.end);
   $print(
-    `[${gone.join(", ")}] [${numbers.join(", ")}] [${$slice(numbers, 0, 2, true).join(", ")}]\n`,
+    `[${gone.join(", ")}] [${numbers.join(", ")}] [${$slice(numbers, 0, "test/corpus/range_values.rs:131:55", 2, true).join(", ")}]\n`,
   );
 
   // `char`s step past the surrogates, which no `char` is.

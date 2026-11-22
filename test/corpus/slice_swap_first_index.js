@@ -8,10 +8,10 @@ export function entry() {
 
 function main() {
   const v = [1, 2, 3];
-  $swap(v, 0, 2);
+  $swap(v, 0, 2, "test/corpus/slice_swap_first_index.rs:6:7");
   console.log(`[${v.join(", ")}]`);
   const a = v.length + 1;
   const b = v.length + 2;
-  $swap(v, a, b);
+  $swap(v, a, b, "test/corpus/slice_swap_first_index.rs:9:7");
 }
 //# sourceMappingURL=case.js.map

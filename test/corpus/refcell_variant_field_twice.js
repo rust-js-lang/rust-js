@@ -19,11 +19,11 @@ function main() {
     const kind = kinds[i];
     if (kind.TAG === "Effect") {
       const cleanup = $fieldCell(kind, "cleanup");
-      $borrowMut(cleanup).value = 2;
-      const held = $borrow(cleanup, true);
+      $borrowMut(cleanup, "test/corpus/refcell_variant_field_twice.rs:22:22").value = 2;
+      const held = $borrow(cleanup, "test/corpus/refcell_variant_field_twice.rs:23:32", true);
       console.log(`${held.value == null ? "None" : `Some(${held.value})`}`);
       try {
-        $borrowMut(cleanup).value = undefined;
+        $borrowMut(cleanup, "test/corpus/refcell_variant_field_twice.rs:25:22").value = undefined;
         console.log(`${held.value == null ? "None" : `Some(${held.value})`}`);
       } finally {
         $unborrow(held);

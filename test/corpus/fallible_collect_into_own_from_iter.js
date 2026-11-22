@@ -13,6 +13,7 @@ import {
   $iter,
   $mapEnds,
   $next,
+  $panic,
   $tryProcessOptions,
   $tryProcessResults,
 } from "@rust-js/std";
@@ -92,7 +93,7 @@ function pickyFromIteratorI32_fromIter(it, dropI, dropIIntoIter) {
   }
   const n = result;
   console.log(`picky counted ${n}`);
-  throw new Error("picky");
+  throw $panic("picky", "test/corpus/fallible_collect_into_own_from_iter.rs:50:9");
 }
 
 function firstFromIteratorI32_fromIter(it, dropI, dropIIntoIter) {

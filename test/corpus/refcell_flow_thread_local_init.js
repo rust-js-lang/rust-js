@@ -14,12 +14,12 @@ function main() {
   function secondLen() {
     const second$1 = second();
     if (second$1.borrows) {
-      $alreadyBorrowed();
+      $alreadyBorrowed("test/corpus/refcell_flow_thread_local_init.rs:17:53");
     }
     return second$1.length;
   }
   console.log(`${secondLen()}`);
-  const held = $borrow(first$1, true);
+  const held = $borrow(first$1, "test/corpus/refcell_flow_thread_local_init.rs:19:22", true);
   try {
     console.log(`${secondLen()}`);
     console.log(`${held.length}`);

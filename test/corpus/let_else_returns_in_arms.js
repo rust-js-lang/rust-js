@@ -8,6 +8,7 @@ import {
   $drain,
   $index,
   $roomFor,
+  $stdSites,
   $stringPanic,
   $unwinding,
   $unwound,
@@ -19,7 +20,7 @@ export function entry() {
 
 function render(n) {
   if (n < 2) {
-    throw $stringPanic(`small ${n}`);
+    throw $stringPanic(`small ${n}`, "test/corpus/let_else_returns_in_arms.rs:15:9");
   }
   return n;
 }
@@ -95,21 +96,24 @@ function flushCompletedQueues(request, out) {
       }
       out.push(preamble);
       if (root.value > 100) {
-        throw $stringPanic(`big root ${root.value}`);
+        throw $stringPanic(
+          `big root ${root.value}`,
+          "test/corpus/let_else_returns_in_arms.rs:91:17",
+        );
       }
       request.root = undefined;
     }
     let i = 0;
     while (i < request.queue.length) {
-      const item = $index(request.queue, i);
+      const item = $index(request.queue, i, "test/corpus/let_else_returns_in_arms.rs:97:57");
       if (!flushItem(out, item)) {
         i++;
-        $drain(request.queue, 0, i);
+        $drain(request.queue, 0, $stdSites.vecDrain[0], i);
         return;
       }
       i++;
     }
-    $drain(request.queue, 0, i);
+    $drain(request.queue, 0, $stdSites.vecDrain[0], i);
     out.push("end");
   });
   out.push("finally");

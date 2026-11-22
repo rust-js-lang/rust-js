@@ -18,6 +18,7 @@ import {
   $lazySplitBy,
   $mapEnds,
   $orInsert,
+  $panic,
   $parseF64,
   $toLowercase,
   $unwrap,
@@ -38,7 +39,7 @@ export function tokenize(src) {
       while (i < chars.length && (/^[0-9]$/.test(chars[i]) || chars[i] === ".")) {
         i++;
       }
-      const text = $copyOf(chars, start, i).join("");
+      const text = $copyOf(chars, start, "examples/calc.rs:31:37", i).join("");
       const result = $parseF64(text);
       const result$1 = result.TAG === "Err" ? { TAG: "Err", _0: `bad number ${text}` } : result;
       if (result$1.TAG === "Err") {
@@ -85,7 +86,7 @@ export function toRpn(tokens) {
         if (last == null || last.TAG !== "Op" || prec(last._0) < prec(t._0)) {
           break;
         }
-        out.push($unwrap(stack.pop()));
+        out.push($unwrap(stack.pop(), "examples/calc.rs:59:46"));
       }
       stack.push(t);
     } else if (t === "LParen") {
@@ -143,7 +144,7 @@ function eval$(src) {
       } else if (t._0 === "/") {
         tmp = a / b;
       } else {
-        throw new Error("internal error: entered unreachable code");
+        throw $panic("internal error: entered unreachable code", "examples/calc.rs:97:26");
       }
       st.push(tmp);
     } else {

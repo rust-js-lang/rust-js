@@ -24,25 +24,25 @@ function main() {
   const clicks = { value: { label: "save", n: 0 } };
   const counter = $dynCell(clicks, clicksCounter);
   const named = $dynCell(clicks, clicksNamed);
-  const receiver = $borrowMut(counter, true);
+  const receiver = $borrowMut(counter, "test/corpus/dyn_ref_cell_supertrait.rs:38:13", true);
   try {
     receiver.impl.bump(receiver);
   } finally {
     $unborrow(receiver);
   }
-  const value = $borrowMut(counter, true);
+  const value = $borrowMut(counter, "test/corpus/dyn_ref_cell_supertrait.rs:39:13", true);
   try {
     value.impl.bump(value);
   } finally {
     $unborrow(value);
   }
-  const value$1 = $borrow(named, true);
+  const value$1 = $borrow(named, "test/corpus/dyn_ref_cell_supertrait.rs:40:26", true);
   try {
     console.log(`${value$1.impl.name(value$1.value)}`);
   } finally {
     $unborrow(value$1);
   }
-  const value$2 = $borrow(counter, true);
+  const value$2 = $borrow(counter, "test/corpus/dyn_ref_cell_supertrait.rs:41:28", true);
   try {
     console.log(`${value$2.impl.Named().name(value$2.value)}`);
   } finally {

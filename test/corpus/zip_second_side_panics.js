@@ -13,6 +13,7 @@ import {
   $lazyZip,
   $live,
   $next,
+  $panic,
   $rangeNext,
   $roomFor,
   $unwindsOn,
@@ -30,7 +31,7 @@ function panickyIterator_next(panicky) {
   const next = $next(panicky.items);
   if (next != null && next[0] === panicky.at) {
     try {
-      throw new Error("boom");
+      throw $panic("boom", "test/corpus/zip_second_side_panics.rs:25:13");
     } catch (error) {
       $cleanup(() => {
         if (next != null) {

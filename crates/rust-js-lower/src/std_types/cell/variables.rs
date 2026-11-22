@@ -398,7 +398,10 @@ pub(crate) fn imported_variables(items: &mut [js::Item], variable: &dyn Fn(&Expr
             changed = true;
         }
         js::ExprKind::Call(callee, args)
-            if callee.helper_name() == Some("$withBorrow") && matches!(args.as_slice(), [key, _] if variable(key)) =>
+            // Its location, where a borrow would raise, none of a variable's
+            // value, which no borrow guards.
+            if callee.helper_name() == Some("$withBorrow")
+                && matches!(args.as_slice(), [key, _, at] if variable(key) && matches!(at.kind, js::ExprKind::RaisedAt(_))) =>
         {
             let (mut key, f) = (args.remove(0), args.remove(0));
             key.facts = js::Facts::of(js::Known::Live);

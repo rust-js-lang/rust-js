@@ -10,6 +10,7 @@ import {
   $live,
   $maxByKey,
   $minByKey,
+  $panic,
   $unwindsOn,
   iterator_map,
 } from "@rust-js/std";
@@ -179,7 +180,10 @@ function main() {
       }),
       (x) => {
         if (x === 3) {
-          throw new Error("key");
+          throw $panic(
+            "key",
+            "test/corpus/max_by_key_drops_its_iterator_before_the_kept_key.rs:76:13",
+          );
         }
         return [x];
       },

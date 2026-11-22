@@ -51,7 +51,7 @@ function emptierClone_clone(emptier) {
 function clonedBetween(node, emptier) {
   if (node.sibling != null) {
     const again = emptierClone_clone(emptier);
-    const sibling = $unwrap(node.sibling);
+    const sibling = $unwrap(node.sibling, "test/corpus/field_read_tested_then_unwrapped.rs:69:53");
     return (sibling.id + again[0]) >>> 0;
   }
   return 0;
@@ -61,7 +61,7 @@ function clonedBetween(node, emptier) {
 function calledBetween(node, between) {
   if (node.sibling != null) {
     between();
-    const sibling = $unwrap(node.sibling);
+    const sibling = $unwrap(node.sibling, "test/corpus/field_read_tested_then_unwrapped.rs:79:53");
     return sibling.id;
   }
   return 0;

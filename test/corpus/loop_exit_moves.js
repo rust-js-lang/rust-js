@@ -91,7 +91,7 @@ function setInLoop(values) {
   let i = 0;
   let found;
   while (true) {
-    if ($index(values, i) % 7 === 0) {
+    if ($index(values, i, "test/corpus/loop_exit_moves.rs:94:12") % 7 === 0) {
       found = values[i];
       break;
     }
@@ -117,7 +117,7 @@ function reshadowed(limit) {
 function firstBig(values) {
   let i = 0;
   while (true) {
-    if ($index(values, i) > 10) {
+    if ($index(values, i, "test/corpus/loop_exit_moves.rs:123:12") > 10) {
       return (values[i] * 2) | 0;
     }
     i++;
@@ -128,7 +128,7 @@ function firstBig(values) {
 function firstEven(values) {
   let i = 0;
   while (true) {
-    if ($index(values, i) % 2 === 0) {
+    if ($index(values, i, "test/corpus/loop_exit_moves.rs:134:12") % 2 === 0) {
       return (values[i] + 1) | 0;
     }
     i++;

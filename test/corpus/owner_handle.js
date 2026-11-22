@@ -55,7 +55,7 @@ function startFlowing(request, destination) {
 function render(name, early) {
   let request;
   const onAllReady = () => {
-    const request$1 = $unwrap(request);
+    const request$1 = $unwrap(request, "test/corpus/owner_handle.rs:94:62");
     startFlowing(request$1, "all");
   };
   const onShellReady = () => {

@@ -62,12 +62,12 @@ function main() {
     { TAG: "Ok", _0: NaN },
     { TAG: "Ok", _0: 1 },
   ];
-  const value = $index(f, 0);
-  const right = $index(f, 1);
+  const value = $index(f, 0, "test/corpus/result_iter_and_order.rs:21:28");
+  const right = $index(f, 1, "test/corpus/result_iter_and_order.rs:21:46");
   const partialCmp =
     $cmp(value.TAG === "Ok" ? 0 : 1, right.TAG === "Ok" ? 0 : 1) ||
     (value.TAG === "Ok" ? $thenCmp($partialCmp(value._0, right._0)) : value.TAG === "Err" ? 0 : 0);
-  const left = $index(f, 1);
+  const left = $index(f, 1, "test/corpus/result_iter_and_order.rs:21:53");
   const right$1 = { TAG: "Err" };
   console.log(
     `${partialCmp == null ? "None" : `Some(${["Less", "Equal", "Greater"][partialCmp + 1]})`} ${((

@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function first(items) {
-  return $index(items, 0);
+  return $index(items, 0, "test/corpus/format_argument_unwinds.rs:16:5");
 }
 
 function main() {

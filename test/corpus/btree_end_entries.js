@@ -49,7 +49,10 @@ function main() {
     const arg = $entryGet(first);
     console.log(`${old} ${arg}`);
   }
-  const value = $entryGet($unwrap($endEntry(counts, $cmp, true)), true);
+  const value = $entryGet(
+    $unwrap($endEntry(counts, $cmp, true), "test/corpus/btree_end_entries.rs:22:26"),
+    true,
+  );
   value.value = (value.value * 7) | 0;
   console.log(
     `{${Array.from($sortedEntries(counts, $cmp))

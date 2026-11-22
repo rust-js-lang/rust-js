@@ -133,6 +133,7 @@ function main() {
       "Eq",
       f == null ? "None" : `Some(${hirDebug_fmt(f)})`,
       hir == null ? "None" : `Some(${hirDebug_fmt(hir)})`,
+      "test/corpus/recursive_eq.rs:92:5",
     );
   }
 

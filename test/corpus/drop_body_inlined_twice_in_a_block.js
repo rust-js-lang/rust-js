@@ -11,19 +11,19 @@ let index = 0;
 
 function sentinel() {
   const value = index;
-  order[$at(order, value)] = 9;
+  order[$at(order, value, "test/corpus/drop_body_inlined_twice_in_a_block.rs:23:35")] = 9;
   index = (index + 1) >>> 0;
 }
 
 function main() {
   let x = [1];
   const value = index;
-  order[$at(order, value)] = x[0];
+  order[$at(order, value, "test/corpus/drop_body_inlined_twice_in_a_block.rs:17:39")] = x[0];
   index = (index + 1) >>> 0;
   sentinel();
   x = [3];
   const value$1 = index;
-  order[$at(order, value$1)] = x[0];
+  order[$at(order, value$1, "test/corpus/drop_body_inlined_twice_in_a_block.rs:17:39")] = x[0];
   index = (index + 1) >>> 0;
   console.log(`[${order.join(", ")}]`);
 }

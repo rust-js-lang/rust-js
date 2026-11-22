@@ -11,7 +11,11 @@ function pick(v, i, t) {
     if (t && v.pop() == null) {
       return 0;
     }
-    return $index(v, i);
+    return $index(
+      v,
+      i,
+      "test/corpus/match_guard_that_shrank_a_vec_keeps_the_next_arms_index_checked.rs:10:19",
+    );
   } else {
     return -1;
   }

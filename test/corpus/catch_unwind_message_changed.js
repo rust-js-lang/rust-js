@@ -15,7 +15,7 @@ export function entry() {
 
 function fails(n) {
   if (n > 2) {
-    throw $stringPanic(`too big: ${n}`);
+    throw $stringPanic(`too big: ${n}`, "test/corpus/catch_unwind_message_changed.rs:9:9");
   }
   return n;
 }

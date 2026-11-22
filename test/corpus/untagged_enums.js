@@ -104,22 +104,22 @@ function main() {
   }
 
   // The payload is the value, so writing it writes the enum's.
-  $index(values, 8);
+  $index(values, 8, "test/corpus/untagged_enums.rs:122:44");
   if (Array.isArray(values[8])) {
     const items = values[8];
     items.push(3);
   }
-  const value = $index(values, 8);
+  const value = $index(values, 8, "test/corpus/untagged_enums.rs:125:22");
   const copy = Array.isArray(value) ? value.slice() : value;
-  values[$at(values, 8)] = [];
-  const value$1 = $index(values, 8);
+  values[$at(values, 8, "test/corpus/untagged_enums.rs:126:11")] = [];
+  const value$1 = $index(values, 8, "test/corpus/untagged_enums.rs:127:40");
   const arg = $eq(copy, [1, 2, 3]);
   console.log(`${valueDebug_fmt(copy)} ${valueDebug_fmt(value$1)} ${arg}`);
 
   const counts = [4, 5];
   const texts = values.filter((v) => typeof v === "string").length;
   const first = values.find((v) => typeof v === "bigint");
-  const arg$1 = $eq($index(values, 0), { x: 1, y: 2 });
+  const arg$1 = $eq($index(values, 0, "test/corpus/untagged_enums.rs:132:55"), { x: 1, y: 2 });
   console.log(
     `[${counts.map((item) => valueDebug_fmt(item)).join(", ")}] ${texts} ${first == null ? "None" : `Some(${valueDebug_fmt(first)})`} ${arg$1}`,
   );

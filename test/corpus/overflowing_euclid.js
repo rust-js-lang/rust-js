@@ -8,28 +8,79 @@ export function entry() {
 
 function main() {
   const min = -128;
-  const overflowingDivEuclid = $overflowingEuclid(min, -1, -128, true);
-  const overflowingRemEuclid = $overflowingEuclid(min, -1, -128, false);
+  const overflowingDivEuclid = $overflowingEuclid(
+    min,
+    -1,
+    "test/corpus/overflowing_euclid.rs:7:31",
+    -128,
+    true,
+  );
+  const overflowingRemEuclid = $overflowingEuclid(
+    min,
+    -1,
+    "test/corpus/overflowing_euclid.rs:7:63",
+    -128,
+    false,
+  );
   console.log(
     `(${overflowingDivEuclid[0]}, ${overflowingDivEuclid[1]}) (${overflowingRemEuclid[0]}, ${overflowingRemEuclid[1]})`,
   );
-  const value = $overflowingEuclid(-7, 2, -2147483648, true);
-  const value$1 = $overflowingEuclid(-7, 2, -2147483648, false);
+  const value = $overflowingEuclid(
+    -7,
+    2,
+    "test/corpus/overflowing_euclid.rs:8:36",
+    -2147483648,
+    true,
+  );
+  const value$1 = $overflowingEuclid(
+    -7,
+    2,
+    "test/corpus/overflowing_euclid.rs:8:83",
+    -2147483648,
+    false,
+  );
   console.log(`(${value[0]}, ${value[1]}) (${value$1[0]}, ${value$1[1]})`);
-  const value$2 = $overflowingEuclid(7n, -2n, -9223372036854775808n, true);
-  const value$3 = $overflowingEuclid(7n, -2n, -9223372036854775808n, false);
+  const value$2 = $overflowingEuclid(
+    7n,
+    -2n,
+    "test/corpus/overflowing_euclid.rs:9:33",
+    -9223372036854775808n,
+    true,
+  );
+  const value$3 = $overflowingEuclid(
+    7n,
+    -2n,
+    "test/corpus/overflowing_euclid.rs:9:78",
+    -9223372036854775808n,
+    false,
+  );
   console.log(`(${value$2[0]}, ${value$2[1]}) (${value$3[0]}, ${value$3[1]})`);
   const value$4 = $overflowingEuclid(
     -170141183460469231731687303715884105728n,
     -1n,
+    "test/corpus/overflowing_euclid.rs:10:43",
     -170141183460469231731687303715884105728n,
     true,
   );
   console.log(`(${value$4[0]}, ${value$4[1]})`);
-  const value$5 = $overflowingEuclid(18446744073709551615n, 7n, undefined, true);
-  const value$6 = $overflowingEuclid(200, 7, undefined, false);
+  const value$5 = $overflowingEuclid(
+    18446744073709551615n,
+    7n,
+    "test/corpus/overflowing_euclid.rs:11:47",
+    undefined,
+    true,
+  );
+  const value$6 = $overflowingEuclid(
+    200,
+    7,
+    "test/corpus/overflowing_euclid.rs:11:92",
+    undefined,
+    false,
+  );
   console.log(`(${value$5[0]}, ${value$5[1]}) (${value$6[0]}, ${value$6[1]})`);
-  const zero = $catchUnwind(() => $overflowingEuclid(5, 0, undefined, true));
+  const zero = $catchUnwind(() =>
+    $overflowingEuclid(5, 0, "test/corpus/overflowing_euclid.rs:12:61", undefined, true),
+  );
   console.log(`${zero.TAG === "Err"}`);
 }
 //# sourceMappingURL=case.js.map

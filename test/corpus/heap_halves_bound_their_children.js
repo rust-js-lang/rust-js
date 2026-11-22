@@ -57,7 +57,10 @@ function pastTheHalf(heap) {
   const half = heap.length >>> 1;
   let sum = 0;
   for (let index = 0; index <= half; index++) {
-    sum = (sum + $index(heap, index * 2 + 1)) >>> 0;
+    sum =
+      (sum +
+        $index(heap, index * 2 + 1, "test/corpus/heap_halves_bound_their_children.rs:62:16")) >>>
+      0;
   }
   return sum;
 }
@@ -67,7 +70,10 @@ function rightUnguarded(heap) {
   const half = heap.length >>> 1;
   let sum = 0;
   for (let index = 0; index < half; index++) {
-    sum = (sum + $index(heap, index * 2 + 2)) >>> 0;
+    sum =
+      (sum +
+        $index(heap, index * 2 + 2, "test/corpus/heap_halves_bound_their_children.rs:74:16")) >>>
+      0;
   }
   return sum;
 }
@@ -77,7 +83,11 @@ function wrapped(heap, i) {
   const half = heap.length >>> 1;
   if (i < half) {
     const j = (i + 4294967295) >>> 0;
-    return $index(heap, (((j * 2) >>> 0) + 1) >>> 0);
+    return $index(
+      heap,
+      (((j * 2) >>> 0) + 1) >>> 0,
+      "test/corpus/heap_halves_bound_their_children.rs:85:9",
+    );
   } else {
     return 0;
   }

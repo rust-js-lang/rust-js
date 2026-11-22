@@ -19,13 +19,16 @@ function bump(s) {
   for (let i = 0; i < s.length; i++) {
     s[i] = (s[i] + 1) | 0;
   }
-  s[0] = (s[$at(s, 0)] * 2) | 0;
+  s[0] = (s[$at(s, 0, "test/corpus/slice_from_mut.rs:11:5")] * 2) | 0;
 }
 
 function append(s, text) {
   const length = s.length;
   if (0 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/slice_from_mut.rs:15:5",
+    );
   }
   s[0] += text;
 }
@@ -33,7 +36,10 @@ function append(s, text) {
 function swapIn(s, new$) {
   const length = s.length;
   if (0 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/slice_from_mut.rs:19:28",
+    );
   }
   const old = s[0];
   s[0] = new$;
@@ -42,7 +48,7 @@ function swapIn(s, new$) {
 
 function double(item, TAdd) {
   const s = $oneItemOf(item);
-  s[0] = TAdd.add($index(s, 0), s[0]);
+  s[0] = TAdd.add($index(s, 0, "test/corpus/slice_from_mut.rs:24:12"), s[0]);
 }
 
 function main() {
@@ -81,7 +87,10 @@ function main() {
   });
   const length = value.length;
   if (0 >= length) {
-    throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+    throw $stringPanic(
+      `index out of bounds: the len is ${length} but the index is 0`,
+      "test/corpus/slice_from_mut.rs:34:5",
+    );
   }
   value[0] += "d";
   console.log(`${t}`);
@@ -95,7 +104,7 @@ function main() {
       z = value;
     },
   });
-  s[$at(s, 0)] = 9;
+  s[$at(s, 0, "test/corpus/slice_from_mut.rs:39:5")] = 9;
   console.log(`${s.length} [${s.join(", ")}] ${s.length === 0}`);
   console.log(`${swapIn(s, 4)}`);
   console.log(`${z}`);
@@ -121,7 +130,7 @@ function main() {
       o = value;
     },
   });
-  const n$1 = $index(s, 0);
+  const n$1 = $index(s, 0, "test/corpus/slice_from_mut.rs:51:12");
   s[0] = n$1 != null ? (n$1 * 10) >>> 0 : undefined;
   console.log(`${o == null ? "None" : `Some(${o})`}`);
   let none;
@@ -133,7 +142,7 @@ function main() {
       none = value;
     },
   });
-  value$1[$at(value$1, 0)] = 1;
+  value$1[$at(value$1, 0, "test/corpus/slice_from_mut.rs:54:5")] = 1;
   console.log(`${none == null ? "None" : `Some(${none})`}`);
 
   let f = 1.5;
@@ -187,6 +196,7 @@ function main() {
       false,
       true,
     ),
+    "test/corpus/slice_from_mut.rs:75:67",
   );
   first.value = (first.value + 1) & 65535;
   console.log(`${rest.length} ${k}`);

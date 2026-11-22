@@ -51,7 +51,8 @@ function heldGrown(batch) {
   const end = batch.length;
   for (let i = 0; i < end; i += 2) {
     batch.push(9);
-    total = (total + $index(batch, i)) >>> 0;
+    total =
+      (total + $index(batch, i, "test/corpus/cell_length_across_a_loops_steps.rs:52:32")) >>> 0;
   }
   return total;
 }
@@ -60,7 +61,8 @@ function heldCleared(batch) {
   let total = 0;
   const end = batch.length;
   for (let i = 0; i < end; i++) {
-    total = (total + $index(batch, i)) >>> 0;
+    total =
+      (total + $index(batch, i, "test/corpus/cell_length_across_a_loops_steps.rs:61:32")) >>> 0;
     batch.length = 0;
   }
   return total;
@@ -74,7 +76,8 @@ function heldEmptiedByACall(batch) {
   let total = 0;
   const end = batch.length;
   for (let i = 0; i < end; i++) {
-    total = (total + $index(batch, i)) >>> 0;
+    total =
+      (total + $index(batch, i, "test/corpus/cell_length_across_a_loops_steps.rs:75:32")) >>> 0;
     empty(batch);
   }
   return total;
@@ -84,7 +87,8 @@ function pastTheEnd(batch) {
   let total = 0;
   const end = batch.length;
   for (let i = 0; i <= end; i += 2) {
-    total = (total + $index(batch, i)) >>> 0;
+    total =
+      (total + $index(batch, i, "test/corpus/cell_length_across_a_loops_steps.rs:84:32")) >>> 0;
   }
   return total;
 }
@@ -93,22 +97,24 @@ function onePast(batch) {
   let total = 0;
   const end = batch.length;
   for (let i = 0; i < end; i += 2) {
-    total = (total + $index(batch, i + 1)) >>> 0;
+    total =
+      (total + $index(batch, i + 1, "test/corpus/cell_length_across_a_loops_steps.rs:92:32")) >>> 0;
   }
   return total;
 }
 
 function grownInTheLoop(batch) {
   let total = 0;
-  const borrow = $borrow(batch, true);
+  const borrow = $borrow(batch, "test/corpus/cell_length_across_a_loops_steps.rs:99:24", true);
   try {
     for (let i = 0; i < borrow.length; i += 2) {
       if (batch.borrows < 0) {
-        $alreadyMutablyBorrowed();
+        $alreadyMutablyBorrowed("test/corpus/cell_length_across_a_loops_steps.rs:100:24");
       }
-      total = (total + $index(batch, i)) >>> 0;
+      total =
+        (total + $index(batch, i, "test/corpus/cell_length_across_a_loops_steps.rs:100:32")) >>> 0;
       if (batch.borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("test/corpus/cell_length_across_a_loops_steps.rs:101:15");
       }
       batch.push(1);
     }

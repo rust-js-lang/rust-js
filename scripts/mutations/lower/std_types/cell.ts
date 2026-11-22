@@ -791,5 +791,37 @@ export const mutations: Mutation[] = [
     tests: ["test/borrow-forms.test.ts", "-t", "checked where they're called"],
   },
 
+  {
+    name: "ref-cell-take-raised-by-its-caller",
+    breaks: "a `RefCell`'s `take`, which tracks no caller, raises its borrow's panic at its caller's line, where std names its own (#2292)",
+    file: "crates/rust-js-lower/src/std_types/cell.rs",
+    find: "            Std::CellTake => Some(\"refCellTake\"),\n",
+    replace: "            Std::CellTake => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^(cell_taken_default_borrowed|thread_local_refcell_take_borrowed).rs$"],
+  },
+  {
+    name: "local-key-set-raised-by-its-caller",
+    breaks: "a thread-local `RefCell`'s `set` raises its borrow's panic at its caller's line, where std names its own (#2292)",
+    file: "crates/rust-js-lower/src/std_types/cell.rs",
+    find: "            Std::CellSet if local_key => Some(\"localKeySet\"),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_refcell_set_borrowed.rs$"],
+  },
+  {
+    name: "local-key-with-borrow-raised-by-its-caller",
+    breaks: "a thread-local `RefCell`'s `with_borrow` raises its borrow's panic at its caller's line, where std names its own (#2292)",
+    file: "crates/rust-js-lower/src/std_types/cell.rs",
+    find: "            Std::LocalBorrow { mutable: false } if local_key => Some(\"localKeyWithBorrow\"),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(thread_local_borrow_inside|ref_cell_borrowed_by_a_fn_pointer_argument).rs$"],
+  },
+  {
+    name: "flattened-swap-side-site-first",
+    breaks: "a flattened state's `swap` raises `other`'s borrow's panic at `self`'s line of std's (#2292)",
+    file: "crates/rust-js-lower/src/std_types/cell.rs",
+    find: "Expr::raised_at(Expr::std_site(\"refCellSwap\", side), || {",
+    replace: "Expr::raised_at(Expr::std_site(\"refCellSwap\", 0), || {",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell_swapped_borrowed.rs$"],
+  },
 ];
 

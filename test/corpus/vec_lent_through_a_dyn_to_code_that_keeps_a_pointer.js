@@ -63,7 +63,9 @@ function main() {
     stash({ value: v, impl: vecItems });
     if (v.length !== 0) {
       clearIt();
-      console.log(`${$index(v, 0)}`);
+      console.log(
+        `${$index(v, 0, "test/corpus/vec_lent_through_a_dyn_to_code_that_keeps_a_pointer.rs:76:25")}`,
+      );
     }
   } catch (error) {
     throw $unwindsOn(error);

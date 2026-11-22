@@ -113,7 +113,7 @@ function main() {
     }),
     node(8, {}),
   ];
-  set($index(nodes, 0), 3);
+  set($index(nodes, 0, "test/corpus/flattened_keyed_enum.rs:133:15"), 3);
   console.log(`${name({})}`);
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
@@ -124,15 +124,15 @@ function main() {
       `${value} ${flags} ${value$1 == null ? "None" : `Some(${value$1})`} ${isSource(node)} ${((value) => (value == null ? "None" : `Some(${value})`))(pending(node))}`,
     );
   }
-  const value = read($index(nodes, 1));
+  const value = read($index(nodes, 1, "test/corpus/flattened_keyed_enum.rs:145:33"));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  becomeComputed($index(nodes, 0));
-  becomeComputed($index(nodes, 3));
-  becomeGiven($index(nodes, 1), {
+  becomeComputed($index(nodes, 0, "test/corpus/flattened_keyed_enum.rs:146:31"));
+  becomeComputed($index(nodes, 3, "test/corpus/flattened_keyed_enum.rs:147:31"));
+  becomeGiven($index(nodes, 1, "test/corpus/flattened_keyed_enum.rs:149:19"), {
     run: seven,
     cleanup: 2,
   });
-  becomeGiven($index(nodes, 2), {});
+  becomeGiven($index(nodes, 2, "test/corpus/flattened_keyed_enum.rs:155:28"), {});
   const cached = node(16, {
     current: undefined,
     pending: 5,

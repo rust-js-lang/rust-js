@@ -384,7 +384,7 @@ function main() {
   }
   let tmp$1;
   try {
-    tmp$1 = $unwrap($removeEntry(ids, asked), "there");
+    tmp$1 = $unwrap($removeEntry(ids, asked), "test/corpus/map_key_drops.rs:62:45", "there");
   } catch (error) {
     $cleanup(() => {
       for (const [key, ,] of $sortedEntries(t, (a, b) => $cmp(a[0], b[0]))) {

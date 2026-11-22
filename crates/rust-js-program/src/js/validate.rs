@@ -41,6 +41,10 @@ pub enum Problem {
     /// put back, of any tree; a library's item asked for, of a module's,
     /// whose crate is lowered again before it's made.
     Hole(super::Hole),
+    /// A call of a helper that takes the location a panic it raises names,
+    /// `at` (`runtime::location_at`), given none: its hook would name
+    /// another place (#2292).
+    Unlocated(String),
 }
 
 impl std::fmt::Display for Problem {
@@ -55,6 +59,7 @@ impl std::fmt::Display for Problem {
                 write!(f, "it holds {}, taken at {at}", super::Hole::Taken(at).what())
             }
             Problem::Hole(hole) => write!(f, "it holds {}", hole.what()),
+            Problem::Unlocated(helper) => write!(f, "`{helper}` is called with no location, its `at`"),
             Problem::ModuleShadowed(name) => write!(
                 f,
                 "the module's `{name}` is read where a local declaration of `{name}` is in scope, which JS reads instead"
@@ -310,6 +315,16 @@ impl Cx {
         if expr.facts.has(super::Known::Literal) {
             return;
         }
+        if let ExprKind::Call(callee, args) = &expr.kind
+            && let Some(helper) = callee.helper_name()
+            && crate::runtime::location_at(helper).is_some_and(|at| {
+                !args
+                    .get(at)
+                    .is_some_and(|given| matches!(given.kind, ExprKind::RaisedAt(_)))
+            })
+        {
+            self.problems.push(Problem::Unlocated(helper.to_string()));
+        }
         match &expr.kind {
             ExprKind::Assigned(target, value) => {
                 self.expr(target);
@@ -320,6 +335,7 @@ impl Cx {
             | ExprKind::Unary(_, a)
             | ExprKind::Await(a)
             | ExprKind::Unbound(a)
+            | ExprKind::RaisedAt(a)
             | ExprKind::Spread(a)
             | ExprKind::Stringed(a)
             | ExprKind::Converted(_, a)
@@ -405,6 +421,16 @@ mod tests {
 
     fn read(e: Expr) -> Stmt {
         stmt(StmtKind::Expr(e))
+    }
+
+    // A helper that raises a panic is given where it's raised: a call of one
+    // with no location is refused, as its hook would name no place; one made
+    // where the lowering says, given (#2292, ADR 1184).
+    #[test]
+    fn a_raising_helper_is_given_where_it_raises() {
+        let call = || Expr::call(Expr::helper("$index"), vec![Expr::array(Vec::new()), Expr::int(0)]);
+        assert_eq!(of(vec![read(call())]), vec![Problem::Unlocated("$index".into())]);
+        assert_eq!(of(vec![read(Expr::raised_at(Expr::str("lib.rs:1:1"), call))]), vec![]);
     }
 
     // A read is of the variable it is, by its id: one spelled as another

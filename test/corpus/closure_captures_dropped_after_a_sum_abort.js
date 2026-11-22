@@ -23,13 +23,19 @@ function main() {
         if (b$live) {
           console.log(`drop ${b[0]}`);
           if (b[0] >= 80) {
-            throw $stringPanic(`drop ${b[0]}`);
+            throw $stringPanic(
+              `drop ${b[0]}`,
+              "test/corpus/closure_captures_dropped_after_a_sum_abort.rs:13:13",
+            );
           }
         }
         if (a$live) {
           console.log(`drop ${a[0]}`);
           if (a[0] >= 80) {
-            throw $stringPanic(`drop ${a[0]}`);
+            throw $stringPanic(
+              `drop ${a[0]}`,
+              "test/corpus/closure_captures_dropped_after_a_sum_abort.rs:13:13",
+            );
           }
         }
       }, error);
@@ -42,20 +48,29 @@ function main() {
         try {
           console.log(`drop ${a[0]}`);
           if (a[0] >= 80) {
-            throw $stringPanic(`drop ${a[0]}`);
+            throw $stringPanic(
+              `drop ${a[0]}`,
+              "test/corpus/closure_captures_dropped_after_a_sum_abort.rs:13:13",
+            );
           }
         } catch (error) {
           $cleanup(() => {
             console.log(`drop ${b[0]}`);
             if (b[0] >= 80) {
-              throw $stringPanic(`drop ${b[0]}`);
+              throw $stringPanic(
+                `drop ${b[0]}`,
+                "test/corpus/closure_captures_dropped_after_a_sum_abort.rs:13:13",
+              );
             }
           }, error);
           throw error;
         }
         console.log(`drop ${b[0]}`);
         if (b[0] >= 80) {
-          throw $stringPanic(`drop ${b[0]}`);
+          throw $stringPanic(
+            `drop ${b[0]}`,
+            "test/corpus/closure_captures_dropped_after_a_sum_abort.rs:13:13",
+          );
         }
       },
       "after",

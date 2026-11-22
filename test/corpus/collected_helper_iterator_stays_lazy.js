@@ -7,6 +7,7 @@ import {
   $isAlphabetic,
   $matchesBy,
   $splitTerminator,
+  $stdSites,
   $toUppercase,
 } from "@rust-js/std";
 
@@ -26,6 +27,7 @@ function main() {
           console.log(`test ${x.value}`);
           return x.value % 2 === 1;
         },
+        $stdSites.vecExtractIf[0],
         true,
       ),
     ).map((x) => {

@@ -8,6 +8,7 @@ import {
   $foldBack,
   $iter,
   $live,
+  $panic,
   $range,
   $rev,
   $skipping,
@@ -31,7 +32,7 @@ function main() {
       (n, [i, d]) => {
         try {
           if (d[0] === 3) {
-            throw new Error("fold");
+            throw $panic("fold", "test/corpus/skip_rfold_closes_as_it_unwinds.rs:20:17");
           }
           return (((n + i) >>> 0) + d[0]) >>> 0;
         } catch (error) {

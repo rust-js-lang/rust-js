@@ -70,9 +70,11 @@ function main() {
       f("c");
     });
     try {
-      const shared = $rcClone($index(made$1, 0));
+      const shared = $rcClone($index(made$1, 0, "test/corpus/rc_fn_made_of_a_counted_rc.rs:56:33"));
       try {
-        console.log(`${shared.value("y")} ${$index(made$1, 0).value("z")}`);
+        console.log(
+          `${shared.value("y")} ${$index(made$1, 0, "test/corpus/rc_fn_made_of_a_counted_rc.rs:57:40").value("z")}`,
+        );
         console.log(`${chunk.seen}`);
       } finally {
         $rcDrop(shared);

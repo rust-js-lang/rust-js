@@ -12,6 +12,7 @@ import {
   $lock,
   $lockRead,
   $next,
+  $panic,
   $panicking,
   $poison,
   $rcClone,
@@ -40,7 +41,7 @@ function main() {
   try {
     const other = $rcClone(shared);
     try {
-      const value = $lock(other.value);
+      const value = $lock(other.value, "test/corpus/one_thread_sync.rs:28:18");
       try {
         value.value.push(2);
       } catch (error) {
@@ -49,7 +50,7 @@ function main() {
       } finally {
         $unborrow(value);
       }
-      const value$1 = $lock(shared.value);
+      const value$1 = $lock(shared.value, "test/corpus/one_thread_sync.rs:29:39");
       try {
         console.log(`[${value$1.value.join(", ")}] ${shared.strong}`);
       } catch (error) {
@@ -70,10 +71,10 @@ function main() {
         }
       }
       const rw = { value: 5 };
-      const value$2 = $lock(rw);
+      const value$2 = $lock(rw, "test/corpus/one_thread_sync.rs:34:17");
       value$2.value = (value$2.value + 1) | 0;
       $unlock(value$2);
-      const value$3 = $lockRead(rw);
+      const value$3 = $lockRead(rw, "test/corpus/one_thread_sync.rs:35:34");
       try {
         const tryWrite = $tryLock(rw, true);
         console.log(`${value$3.value} ${tryWrite.TAG === "Ok"}`);
@@ -117,7 +118,12 @@ function main() {
       );
       const [tx, rx] = $channel();
       try {
-        $unwrapOk($send(tx, 1), undefined, (e) => "SendError { .. }");
+        $unwrapOk(
+          $send(tx, 1),
+          "test/corpus/one_thread_sync.rs:48:16",
+          undefined,
+          (e) => "SendError { .. }",
+        );
       } catch (error) {
         $cleanup(() => {
           $dropReceiver(rx);
@@ -136,7 +142,12 @@ function main() {
         throw error;
       }
       try {
-        $unwrapOk($send(tmp, 2), undefined, (e) => "SendError { .. }");
+        $unwrapOk(
+          $send(tmp, 2),
+          "test/corpus/one_thread_sync.rs:49:24",
+          undefined,
+          (e) => "SendError { .. }",
+        );
       } catch (error) {
         $cleanup(() => {
           $dropSender(tmp);
@@ -183,7 +194,12 @@ function main() {
       const tx$1 = tmp$1[0];
       const rx$1 = tmp$1[1];
       try {
-        $unwrapOk($send(tx$1, 3), undefined, (e) => "SendError { .. }");
+        $unwrapOk(
+          $send(tx$1, 3),
+          "test/corpus/one_thread_sync.rs:53:16",
+          undefined,
+          (e) => "SendError { .. }",
+        );
       } catch (error) {
         $cleanup(() => {
           $dropReceiver(rx$1);
@@ -193,7 +209,12 @@ function main() {
         throw error;
       }
       try {
-        $unwrapOk($send(tx$1, 4), undefined, (e) => "SendError { .. }");
+        $unwrapOk(
+          $send(tx$1, 4),
+          "test/corpus/one_thread_sync.rs:54:16",
+          undefined,
+          (e) => "SendError { .. }",
+        );
       } catch (error) {
         $cleanup(() => {
           $dropReceiver(rx$1);
@@ -214,7 +235,12 @@ function main() {
         throw error;
       }
       try {
-        $unwrapOk($send(tx$1, 5), undefined, (e) => "SendError { .. }");
+        $unwrapOk(
+          $send(tx$1, 5),
+          "test/corpus/one_thread_sync.rs:56:16",
+          undefined,
+          (e) => "SendError { .. }",
+        );
       } catch (error) {
         $cleanup(() => {
           $dropReceiver(rx$1);
@@ -357,7 +383,12 @@ function main() {
       const got = { TAG: "Ok", _0: count };
       let tmp$2;
       try {
-        tmp$2 = $unwrapOk(got, undefined, (e) => "AccessError");
+        tmp$2 = $unwrapOk(
+          got,
+          "test/corpus/one_thread_sync.rs:65:29",
+          undefined,
+          (e) => "AccessError",
+        );
       } catch (error) {
         $cleanup(() => {
           $dropReceiver(rx$1);
@@ -409,7 +440,7 @@ function main() {
       const caught = $catchUnwind(() => {
         const n = "inner";
         try {
-          throw new Error("boom");
+          throw $panic("boom", "test/corpus/one_thread_sync.rs:69:9");
         } catch (error) {
           $cleanup(() => {
             console.log(`drop ${n} panicking=${$panicking()}`);

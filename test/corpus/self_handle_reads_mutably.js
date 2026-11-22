@@ -43,14 +43,25 @@ function hook() {
         if (n === 0) {
           return 0;
         }
-        const _held = $borrowMut(this$$1.value, true);
+        const _held = $borrowMut(
+          this$$1.value,
+          "test/corpus/self_handle_reads_mutably.rs:19:30",
+          true,
+        );
         let result;
         try {
-          const borrow = $borrow(this$$1.value, true);
+          const borrow = $borrow(
+            this$$1.value,
+            "test/corpus/self_handle_reads_mutably.rs:20:29",
+            true,
+          );
           const weak = borrow.value;
           let hook;
           try {
-            hook = $unwrap(weak != null ? $upgrade(weak) : undefined);
+            hook = $unwrap(
+              weak != null ? $upgrade(weak) : undefined,
+              "test/corpus/self_handle_reads_mutably.rs:20:71",
+            );
           } finally {
             $unborrow(borrow);
           }
@@ -91,7 +102,7 @@ function hook() {
     }
     let borrowMut;
     try {
-      borrowMut = $borrowMut(this$.value, true);
+      borrowMut = $borrowMut(this$.value, "test/corpus/self_handle_reads_mutably.rs:24:11", true);
     } catch (error) {
       $cleanup(() => {
         if (tmp != null) {

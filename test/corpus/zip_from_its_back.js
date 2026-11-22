@@ -16,6 +16,7 @@ import {
   $next,
   $nextBack,
   $nthBack,
+  $panic,
   $print,
   $range,
   $rangeLen,
@@ -56,7 +57,7 @@ function boomIterator_sizeHint(boom) {
 
 function boomDoubleEndedIterator_nextBack(boom) {
   if (boom.left === 3) {
-    throw new Error("back");
+    throw $panic("back", "test/corpus/zip_from_its_back.rs:45:9");
   }
   return boomIterator_next(boom);
 }

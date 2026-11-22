@@ -3,9 +3,10 @@
 // `drop`, where it has a destructor, as std's `unwrap_failed(msg, &e)`
 // panics while `e` is a local of `unwrap`'s frame, which drops it as the
 // panic unwinds, caught or not; a drop that panics then aborts (#1505).
-function $unwrapOk(result, message = "called `Result::unwrap()` on an `Err` value", debug = $debug, drop) {
+// Raised where it was called, `raisedAt` (#2292).
+function $unwrapOk(result, raisedAt, message = "called `Result::unwrap()` on an `Err` value", debug = $debug, drop) {
   if (result.TAG === "Err") {
-    const panic = $stringPanic(message + ": " + debug(result._0));
+    const panic = $stringPanic(message + ": " + debug(result._0), raisedAt);
     if (drop !== undefined) $dropsUnwinding([() => drop(result._0)]);
     throw panic;
   }

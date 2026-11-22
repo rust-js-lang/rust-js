@@ -92,7 +92,7 @@ function clicksTouch_fresh() {
   return { n: 99 };
 }
 function clicksTouch_lastOf(items) {
-  return $unwrap(items.at(-1));
+  return $unwrap(items.at(-1), "test/corpus/copied_default_through_its_entry.rs:87:26");
 }
 function clicksTouch_firstOf(items) {
   return items[0];
@@ -157,7 +157,7 @@ function u32Touch_fresh() {
   return 99;
 }
 function u32Touch_lastOf(items) {
-  return $unwrap($mutAt(items, -1));
+  return $unwrap($mutAt(items, -1), "test/corpus/copied_default_through_its_entry.rs:114:26");
 }
 function u32Touch_firstOf(items) {
   return $mutAt(items, 0);
@@ -290,7 +290,7 @@ function holderTouch_fresh(TTouch) {
   return { t: TTouch.fresh() };
 }
 function holderTouch_lastOf(items, TTouch) {
-  return $unwrap(items.at(-1));
+  return $unwrap(items.at(-1), "test/corpus/copied_default_through_its_entry.rs:143:26");
 }
 function holderTouch_firstOf(items, TTouch) {
   return items[0];

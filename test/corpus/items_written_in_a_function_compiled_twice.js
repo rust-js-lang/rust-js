@@ -60,7 +60,7 @@ function main() {
     [4, 40],
   ];
   const e = Array.from(evensRevealed(ps));
-  $index(e, 0)[1] = 7;
+  $index(e, 0, "test/corpus/items_written_in_a_function_compiled_twice.rs:26:6")[1] = 7;
   const o = Array.from(oddsRevealed(ps));
   console.log(
     `[${e.map((item) => pDebug_fmt(item)).join(", ")}] [${o.map((item) => pDebug_fmt(item)).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}]`,

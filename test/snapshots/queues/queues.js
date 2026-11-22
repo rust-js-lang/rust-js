@@ -48,7 +48,7 @@ export const Stack = {
 
 export const gridIndex_usize__usize_ = { index: gridIndex_usize__usize__index };
 function gridIndex_usize__usize__index(grid, [r, c]) {
-  return $index(grid.cells, ((Math.imul(r, grid.w) >>> 0) + c) >>> 0);
+  return $index(grid.cells, ((Math.imul(r, grid.w) >>> 0) + c) >>> 0, "examples/queues.rs:38:20");
 }
 
 const $labeledDisplay = new WeakMap();
@@ -87,25 +87,25 @@ export function dijkstra(edges, n, src) {
   const adj = Array.from({ length: n }, () => item.slice());
   for (let i = 0; i < edges.length; i++) {
     const [a, b, w] = edges[i];
-    $index(adj, a).push([b, w]);
-    $index(adj, b).push([a, w]);
+    $index(adj, a, "examples/queues.rs:69:12").push([b, w]);
+    $index(adj, b, "examples/queues.rs:70:12").push([a, w]);
   }
   $roomFor(n, 8);
   const dist = new Array(n).fill(undefined);
   const heap = [];
-  dist[$at(dist, src)] = 0;
+  dist[$at(dist, src, "examples/queues.rs:74:9")] = 0;
   $heapPush(heap, [[0, src]], reversePartialOrd);
   let pop;
   while ((pop = $heapPop(heap, reversePartialOrd)) != null) {
     const d = pop[0][0];
     const u = pop[0][1];
-    const best = $index(dist, u);
+    const best = $index(dist, u, "examples/queues.rs:77:16");
     if (best != null && d > best) {
       continue;
     }
     for (const [v, w] of adj[u]) {
       const nd = (d + w) >>> 0;
-      const best = $index(dist, v);
+      const best = $index(dist, v, "examples/queues.rs:82:20");
       if (best == null || nd < best) {
         dist[v] = nd;
         $heapPush(heap, [[nd, v]], reversePartialOrd);
@@ -121,13 +121,13 @@ export function bfsOrder(n, edges) {
   const q = [];
   const order = [];
   q.push(0);
-  seen[$at(seen, 0)] = true;
+  seen[$at(seen, 0, "examples/queues.rs:96:9")] = true;
   let u;
   while ((u = q.shift()) != null) {
     order.push(u);
     for (let i = 0; i < edges.length; i++) {
       const [a, b] = edges[i];
-      if (a === u && !$index(seen, b)) {
+      if (a === u && !$index(seen, b, "examples/queues.rs:100:31")) {
         seen[b] = true;
         q.push(b);
       }
@@ -169,7 +169,7 @@ export function heaps() {
   out += `peek ${name == null ? "None" : `Some(${$debugStr(name, "'")})`} len ${h.length}\n`;
   let popped = "";
   for (let i = 0; i < 4; i++) {
-    popped += $unwrap($heapPop(h, taskPartialOrd)).name;
+    popped += $unwrap($heapPop(h, taskPartialOrd), "examples/queues.rs:140:29").name;
     popped += Array.from(Iterator.from(h).map((t) => t.name)).join("") + " ";
   }
   out += `${popped}\n`;
@@ -281,7 +281,7 @@ export function report() {
   }
   const lens = Array.from(words.keys());
   $sortUnstable(lens, (a, b) => $cmp(b, a) < 0, "network");
-  const arg = $unwrap(words.get(5), "no entry found for key");
+  const arg = $unwrap(words.get(5), "examples/queues.rs:224:45", "no entry found for key");
   out += `[${lens.join(", ")}] [${arg.map((item) => $debugStr(item)).join(", ")}]\n`;
   out += heaps();
   const value$2 = deques();

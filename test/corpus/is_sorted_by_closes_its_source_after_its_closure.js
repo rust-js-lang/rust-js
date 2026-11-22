@@ -24,7 +24,10 @@ const Counter = {
 
 function counterIterator_next(counter) {
   if (counter.panicsAt === counter.n) {
-    throw $stringPanic(`step ${counter.n}`);
+    throw $stringPanic(
+      `step ${counter.n}`,
+      "test/corpus/is_sorted_by_closes_its_source_after_its_closure.rs:33:13",
+    );
   }
   function value() {
     counter.n = (counter.n + 1) >>> 0;
@@ -146,7 +149,10 @@ function main() {
     const iter = Counter.new(4);
     function f(a, b) {
       if (b === 3) {
-        throw $stringPanic(`f at ${b}`);
+        throw $stringPanic(
+          `f at ${b}`,
+          "test/corpus/is_sorted_by_closes_its_source_after_its_closure.rs:84:17",
+        );
       }
       return a <= b;
     }

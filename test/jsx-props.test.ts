@@ -966,7 +966,7 @@ pub fn Keyed(props: &'static PanelProps<'static>) -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("<Panel {...props} wide />");
-  expect(jsx).toContain("but the index is 0`);\n  }\n  return <Panel {...posts[0]} />;");
+  expect(jsx).toContain("but the index is 0`,\n      \"lib.rs:22:22\",\n    );\n  }\n  return <Panel {...posts[0]} />;");
   expect(jsx).toContain("export function First(posts) {\n  return <Panel {...posts[0]} />;\n}");
   // The key MIR holds is named as it's given, `key`.
   expect(jsx).toContain("<Panel key={key} {...props} wide />");

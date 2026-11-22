@@ -20,12 +20,14 @@ import {
   $mapEnds,
   $mapFrom,
   $out,
+  $panic,
   $partiallyOrdered,
   $repeatingN,
   $reserveHint,
   $sink,
   $sortedKeys,
   $splicing,
+  $stdSites,
   $unwindsOn,
   $vecCollectWay,
 } from "@rust-js/std";
@@ -43,7 +45,7 @@ function ds() {
 function key(d) {
   try {
     if (d[0] === 2) {
-      throw new Error("at 2");
+      throw $panic("at 2", "test/corpus/consumer_closes_what_it_steps_on_a_panic.rs:22:9");
     }
     return d[0];
   } catch (error) {
@@ -113,14 +115,17 @@ function main() {
   console.log(`heap ${r.TAG === "Err"} [${$heapSorted(heap, $partiallyOrdered).join(", ")}]`);
   const v = [0, 9];
   r = $catchUnwind(() =>
-    $splicing(v, 0, 1, $mapEnds($closing($iter(ds()), $dropEach(dDrop_drop)), key)).reduce(
-      (n) => n + 1,
+    $splicing(
+      v,
       0,
-    ),
+      1,
+      $mapEnds($closing($iter(ds()), $dropEach(dDrop_drop)), key),
+      $stdSites.vecDrain[0],
+    ).reduce((n) => n + 1, 0),
   );
   console.log(`splice ${r.TAG === "Err"}`);
   const w = [0, 9];
-  $splicing(w, 1, 1, $sortedKeys(new $BTreeSet([4, 3]), $cmp)).return();
+  $splicing(w, 1, 1, $sortedKeys(new $BTreeSet([4, 3]), $cmp), $stdSites.vecDrain[0]).return();
   console.log(`[${w.join(", ")}]`);
   r = $catchUnwind(
     () =>

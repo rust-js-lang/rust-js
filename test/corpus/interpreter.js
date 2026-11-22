@@ -111,7 +111,9 @@ const Lexer = {
         }
         out.push({
           TAG: "Num",
-          _0: $unwrapOk($parseF64(text), undefined, (e) => $debugParseError(e, "ParseFloatError")),
+          _0: $unwrapOk($parseF64(text), "test/corpus/interpreter.rs:72:50", undefined, (e) =>
+            $debugParseError(e, "ParseFloatError"),
+          ),
         });
         continue;
       }
@@ -611,15 +613,22 @@ function main() {
   }
   const tokens = $unwrapOk(
     Lexer.tokens(Lexer.new("let x = fn(a) => a;")),
+    "test/corpus/interpreter.rs:422:61",
     undefined,
     lexErrorDebug_fmt,
   );
   console.log(`[${tokens.map((item) => tokenDebug_fmt(item)).join(", ")}]`);
   const e = $unwrapOk(
     Parser.expr({
-      tokens: $unwrapOk(Lexer.tokens(Lexer.new('f(1, "s") + 2')), undefined, lexErrorDebug_fmt),
+      tokens: $unwrapOk(
+        Lexer.tokens(Lexer.new('f(1, "s") + 2')),
+        "test/corpus/interpreter.rs:424:69",
+        undefined,
+        lexErrorDebug_fmt,
+      ),
       at: 0,
     }),
+    "test/corpus/interpreter.rs:424:94",
   );
   console.log(`${exprDebug_fmt(e)}`);
 }

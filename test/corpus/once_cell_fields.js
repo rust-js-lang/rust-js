@@ -166,7 +166,10 @@ function main() {
       owned.seen = value;
     },
   };
-  const value$4 = $unwrap(cell.value == null ? undefined : cell);
+  const value$4 = $unwrap(
+    cell.value == null ? undefined : cell,
+    "test/corpus/once_cell_fields.rs:107:27",
+  );
   value$4.value = (value$4.value + 1) & 255;
   console.log(`${owned.seen == null ? "None" : `Some(${owned.seen})`}`);
   drops();

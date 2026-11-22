@@ -9,16 +9,16 @@ export function entry() {
 function main() {
   const log = { items: [1, 2] };
   if (log.items.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_borrow_in_std_closure.rs:16:15");
   }
   log.items.push(3);
-  console.log(`${$borrow(log.items).length}`);
-  const borrow = $borrow(log.items, true);
+  console.log(`${$borrow(log.items, "test/corpus/refcell_borrow_in_std_closure.rs:17:30").length}`);
+  const borrow = $borrow(log.items, "test/corpus/refcell_borrow_in_std_closure.rs:18:27", true);
   let found;
   try {
     found = borrow.some((item) => {
       if (log.items.borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("test/corpus/refcell_borrow_in_std_closure.rs:19:19");
       }
       log.items.push(item);
       return false;

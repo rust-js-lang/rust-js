@@ -171,14 +171,22 @@ function show(name, inner) {
     const f = $writerSink(plain, piecesWrite_writeStr, piecesWrite_writeStr);
     $writingInto(f, wrappedDebug_fmt, wrapped);
   });
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/dyn_error_debug_written_piecewise.rs:58:34",
+  );
   console.log(`${name}: [${plain[0].map((item) => $debugStr(item)).join(", ")}]`);
   const pretty = [[]];
   const result$1 = $writeTry(() => {
     const f = $writerSink(pretty, piecesWrite_writeStr, piecesWrite_writeStr);
     $writeBy(f, wrapped.inner.impl.Debug(), wrapped.inner.value, { alternate: true });
   });
-  $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result$1,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/dyn_error_debug_written_piecewise.rs:61:44",
+  );
   console.log(`${name} pretty: [${pretty[0].map((item) => $debugStr(item)).join(", ")}]`);
   let text = "";
   try {
@@ -198,19 +206,30 @@ function main() {
   show("message", { value: 'bad "thing"\n', impl: $stringError() });
   show("string", { value: "owned", impl: $stringError() });
   show("parse int", {
-    value: $unwrapErr($parseInt("x", 0, 255)),
+    value: $unwrapErr(
+      $parseInt("x", 0, 255),
+      "test/corpus/dyn_error_debug_written_piecewise.rs:69:50",
+    ),
     impl: $parseErrorDyn("core::num::error::ParseIntError"),
   });
   show("parse float", {
-    value: $unwrapErr($parseF64("x"), undefined, $debugF64),
+    value: $unwrapErr(
+      $parseF64("x"),
+      "test/corpus/dyn_error_debug_written_piecewise.rs:70:53",
+      undefined,
+      $debugF64,
+    ),
     impl: $parseErrorDyn("core::num::float_parse::ParseFloatError"),
   });
   show("parse bool", {
-    value: $unwrapErr($parseBool("x")),
+    value: $unwrapErr($parseBool("x"), "test/corpus/dyn_error_debug_written_piecewise.rs:71:53"),
     impl: $parseErrorDyn("core::str::error::ParseBoolError"),
   });
   show("try from int", {
-    value: $unwrapErr($tryFromInt(300, 0, 255)),
+    value: $unwrapErr(
+      $tryFromInt(300, 0, 255),
+      "test/corpus/dyn_error_debug_written_piecewise.rs:72:56",
+    ),
     impl: $parseErrorDyn("core::num::error::TryFromIntError"),
   });
   show("mine", {
@@ -230,7 +249,12 @@ function main() {
     impl: $ioErrorDyn("core::io::error::Error"),
   });
   show("io os", {
-    value: $unwrapErr($fsRead("/no/such/file/at/all"), undefined, (e) => `[${e.join(", ")}]`),
+    value: $unwrapErr(
+      $fsRead("/no/such/file/at/all"),
+      "test/corpus/dyn_error_debug_written_piecewise.rs:86:66",
+      undefined,
+      (e) => `[${e.join(", ")}]`,
+    ),
     impl: $ioErrorDyn("core::io::error::Error"),
   });
 }

@@ -23,7 +23,7 @@ function tidy(s) {
       s.value = kept;
     },
   );
-  s.value = $insertStr(s.value, 0, "[");
+  s.value = $insertStr(s.value, 0, "[", "test/corpus/string_editing.rs:6:7");
   s.value += "]";
   const popped = $strPop(s.value);
   s.value = popped[0];
@@ -43,18 +43,18 @@ function main() {
   console.log(
     `${popped$1[1] == null ? "None" : `Some(${$debugStr(popped$1[1], "'")})`} ${$debugStr(s)}`,
   );
-  s = $insertStr(s, 0, "¡");
-  s = $insertStr(s, 3, "--");
+  s = $insertStr(s, 0, "¡", "test/corpus/string_editing.rs:16:7");
+  s = $insertStr(s, 3, "--", "test/corpus/string_editing.rs:17:7");
   console.log(`${s}`);
-  const removed = $strRemove(s, 2);
+  const removed = $strRemove(s, 2, "test/corpus/string_editing.rs:19:26");
   s = removed[0];
   console.log(`${removed[1]} ${s}`);
-  const removed$1 = $strRemove(s, 0);
+  const removed$1 = $strRemove(s, 0, "test/corpus/string_editing.rs:20:26");
   s = removed$1[0];
   console.log(`${removed$1[1]} ${s}`);
-  s = $strTruncate(s, 4);
+  s = $strTruncate(s, 4, "test/corpus/string_editing.rs:21:7");
   console.log(`${$debugStr(s)}`);
-  s = $strTruncate(s, 9);
+  s = $strTruncate(s, 9, "test/corpus/string_editing.rs:23:7");
   console.log(`${$debugStr(s)}`);
   s = Array.from(s)
     .filter((c) => c !== "-")
@@ -73,8 +73,17 @@ function main() {
   t = s$1.value;
   console.log(`${last == null ? "None" : `Some(${$debugStr(last, "'")})`} ${$debugStr(t)}`);
   const words = ["one", "two"];
-  words[$at(words, 1)] = $insertStr(words[1], 0, "2");
-  words[$at(words, 0)] = $strTruncate(words[0], 1);
+  words[$at(words, 1, "test/corpus/string_editing.rs:33:10")] = $insertStr(
+    words[1],
+    0,
+    "2",
+    "test/corpus/string_editing.rs:33:14",
+  );
+  words[$at(words, 0, "test/corpus/string_editing.rs:34:10")] = $strTruncate(
+    words[0],
+    1,
+    "test/corpus/string_editing.rs:34:14",
+  );
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

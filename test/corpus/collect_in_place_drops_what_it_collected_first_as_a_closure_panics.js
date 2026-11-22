@@ -9,6 +9,7 @@ import {
   $held,
   $iter,
   $jsIteratorSome,
+  $panic,
   $roomForHint,
   $stepsOf,
   iterator_filterMap,
@@ -28,7 +29,10 @@ function firsts(items, IInPlace, dropI) {
     (item) => {
       if (item == null) {
         try {
-          throw new Error("none");
+          throw $panic(
+            "none",
+            "test/corpus/collect_in_place_drops_what_it_collected_first_as_a_closure_panics.rs:17:17",
+          );
         } catch (error) {
           $cleanup(() => {
             if (item != null) {

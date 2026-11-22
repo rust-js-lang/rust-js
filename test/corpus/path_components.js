@@ -34,7 +34,7 @@ function kind(c) {
     return "parent";
   }
   if (c.TAG === "Normal") {
-    return `n:${$unwrap(c._0)}`;
+    return `n:${$unwrap(c._0, "test/corpus/path_components.rs:14:60")}`;
   }
   return "prefix";
 }
@@ -74,7 +74,7 @@ function main() {
     );
     const texts = $pathComponents(path)
       .toReversed()
-      .map((c) => $unwrap($componentText(c)));
+      .map((c) => $unwrap($componentText(c), "test/corpus/path_components.rs:34:87"));
     console.log(`${texts.join("|")}`);
     console.log(`${$pathComponents(path).filter((c) => c.TAG === "Normal").length}`);
     const value = $nextBack($iter($pathParts(path)));

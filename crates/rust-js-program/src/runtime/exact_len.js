@@ -5,7 +5,7 @@ function $exactLen(hint) {
   const [lower, upper] = hint;
   if (upper !== lower) {
     const shown = upper === undefined ? "None" : `Some(${upper})`;
-    throw $stringPanic(`assertion \`left == right\` failed\n  left: ${shown}\n right: Some(${lower})`);
+    throw $stringPanic(`assertion \`left == right\` failed\n  left: ${shown}\n right: Some(${lower})`, $stdSites.exactSizeLen[0]);
   }
   return lower;
 }

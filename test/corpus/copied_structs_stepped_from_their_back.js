@@ -156,7 +156,7 @@ function main() {
       () => makeCopied$3([it[0]]),
     );
   const c = makeCopied$3([items]);
-  const first = $unwrap($next(c));
+  const first = $unwrap($next(c), "test/corpus/copied_structs_stepped_from_their_back.rs:50:30");
   first.x = (first.x + 10) >>> 0;
   const nextBack = $nextBack(c);
   const nth = $nth($lent(c), 0);
@@ -211,7 +211,7 @@ function main() {
     );
   const e = makeCopied$5([items]);
   const f = $clone(e);
-  const g = $unwrap($next(e));
+  const g = $unwrap($next(e), "test/corpus/copied_structs_stepped_from_their_back.rs:57:26");
   g.x = (g.x + 10) >>> 0;
   const next = $next(f);
   const p = $nextBack(e);

@@ -24,7 +24,7 @@ function main() {
     [0, 0],
     [0, 0],
   ];
-  $index(rows, 1)[0] = 3;
+  $index(rows, 1, "test/corpus/nested_element_writes.rs:17:9")[0] = 3;
   console.log(`[${rows.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 
   const cells = [[{ value: 1 }, { value: 2 }]];

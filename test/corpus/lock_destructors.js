@@ -46,7 +46,7 @@ function main() {
   });
   const l = { value: [["a"], ["b"]] };
   try {
-    const value = $lock(l);
+    const value = $lock(l, "test/corpus/lock_destructors.rs:43:19");
     try {
       value.value.push(["c"]);
     } catch (error) {
@@ -55,7 +55,7 @@ function main() {
     } finally {
       $unborrow(value);
     }
-    const value$1 = $lockRead(l);
+    const value$1 = $lockRead(l, "test/corpus/lock_destructors.rs:44:38");
     console.log(`${value$1.value.length} held`);
     $unborrow(value$1);
   } catch (error) {
@@ -75,7 +75,7 @@ function main() {
   try {
     let tmp;
     try {
-      tmp = $lock(m);
+      tmp = $lock(m, "test/corpus/lock_destructors.rs:52:19");
     } catch (error) {
       $cleanup(() => {
         noisyDrop_drop(noisy);
@@ -91,7 +91,7 @@ function main() {
     try {
       let tmp;
       try {
-        tmp = $lock(w);
+        tmp = $lock(w, "test/corpus/lock_destructors.rs:55:20");
       } catch (error) {
         $cleanup(() => {
           noisyDrop_drop(value);
@@ -117,7 +117,7 @@ function main() {
     }
   }
   m = { value: ["taken"] };
-  const inner = $unpoisoned(m).value;
+  const inner = $unpoisoned(m, "test/corpus/lock_destructors.rs:60:36").value;
   console.log(`took ${inner[0]}`);
   noisyDrop_drop(inner);
   console.log("end");

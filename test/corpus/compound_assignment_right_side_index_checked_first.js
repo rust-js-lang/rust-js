@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function grow(v, i) {
-  const x = $index(v, i);
+  const x = $index(v, i, "test/corpus/compound_assignment_right_side_index_checked_first.rs:7:18");
   v.push(0);
   v[i] = (v[i] + x) | 0;
 }

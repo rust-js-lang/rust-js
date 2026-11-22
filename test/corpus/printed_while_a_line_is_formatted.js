@@ -7,6 +7,7 @@ import {
   $formatting,
   $live,
   $out,
+  $panic,
   $print,
   $printing,
   $roomFor,
@@ -83,7 +84,7 @@ function halfwayDisplay_fmt(halfway) {
   const f = $sink();
   f.write("half");
   $out("said\n");
-  throw new Error("in the middle");
+  throw $panic("in the middle", "test/corpus/printed_while_a_line_is_formatted.rs:77:9");
 }
 
 function shown(value, TDisplay) {

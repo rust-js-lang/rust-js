@@ -65,7 +65,10 @@ function unwinds() {
       try {
         try {
           if (h[0] !== "") {
-            throw $stringPanic(`boom ${h[0]}`);
+            throw $stringPanic(
+              `boom ${h[0]}`,
+              "test/corpus/called_once_closure_drops_after.rs:93:17",
+            );
           }
           console.log("not reached");
         } catch (error) {
@@ -94,7 +97,10 @@ function unwindsBare() {
       const h = held;
       try {
         if (h[0] !== "") {
-          throw $stringPanic(`bare ${h[0]}`);
+          throw $stringPanic(
+            `bare ${h[0]}`,
+            "test/corpus/called_once_closure_drops_after.rs:107:17",
+          );
         }
       } catch (error) {
         throw $unwindsOn(error);

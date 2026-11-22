@@ -18,7 +18,9 @@ function twoClearedFirst() {
     a.length = 0;
     b.push(7);
   });
-  return n > 2 ? $index(a, 2) : 0;
+  return n > 2
+    ? $index(a, 2, "test/corpus/closure_holding_several_vecs_given_to_calls.rs:20:17")
+    : 0;
 }
 
 function twoClearedLast() {
@@ -29,7 +31,9 @@ function twoClearedLast() {
     b.push(7);
     a.length = 0;
   });
-  return n > 2 ? $index(a, 2) : 0;
+  return n > 2
+    ? $index(a, 2, "test/corpus/closure_holding_several_vecs_given_to_calls.rs:31:17")
+    : 0;
 }
 
 function threeClearedFirst() {
@@ -42,7 +46,9 @@ function threeClearedFirst() {
     b.push(7);
     c.pop();
   });
-  return n > 2 ? $index(a, 2) : 0;
+  return n > 2
+    ? $index(a, 2, "test/corpus/closure_holding_several_vecs_given_to_calls.rs:44:17")
+    : 0;
 }
 
 function threeClearedLast() {
@@ -55,7 +61,9 @@ function threeClearedLast() {
     c.pop();
     a.length = 0;
   });
-  return n > 2 ? $index(a, 2) : 0;
+  return n > 2
+    ? $index(a, 2, "test/corpus/closure_holding_several_vecs_given_to_calls.rs:57:17")
+    : 0;
 }
 
 function calledItself() {
@@ -67,7 +75,9 @@ function calledItself() {
     b.push(7);
   }
   step();
-  return n > 2 ? $index(a, 2) : 0;
+  return n > 2
+    ? $index(a, 2, "test/corpus/closure_holding_several_vecs_given_to_calls.rs:69:17")
+    : 0;
 }
 
 function grown() {
@@ -78,7 +88,11 @@ function grown() {
     b.length = 0;
     a.push(4);
   });
-  return n > 2 ? ($index(a, 3) + b.length) >>> 0 : 0;
+  return n > 2
+    ? ($index(a, 3, "test/corpus/closure_holding_several_vecs_given_to_calls.rs:80:17") +
+        b.length) >>>
+        0
+    : 0;
 }
 
 function run(name, row) {

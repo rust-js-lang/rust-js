@@ -74,7 +74,9 @@ function marked(log, flags, f) {
 function held(log, flags, deps, f) {
   if (
     f & 1 ||
-    (f & 2 && (check(log, $unwrap(deps.value)) || ((flags.value = (f | 8) >>> 0), false)))
+    (f & 2 &&
+      (check(log, $unwrap(deps.value, "test/corpus/condition_block_sequence.rs:117:22")) ||
+        ((flags.value = (f | 8) >>> 0), false)))
   ) {
     flags.value = (flags.value + 100) >>> 0;
   }

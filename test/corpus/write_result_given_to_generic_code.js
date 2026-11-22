@@ -79,7 +79,7 @@ function shown(r, TDebug, EDebug) {
             tuple.field(() => EDebug.fmt(r._0));
             tuple.finish();
           }),
-    "a formatting trait implementation returned an error when the underlying stream did not: Error",
+    "format",
   );
 }
 
@@ -104,11 +104,7 @@ function retried(f, times) {
 
 const checkerCheck = { check: checkerCheck_check };
 function checkerCheck_check(checker, r, TDebug) {
-  const map = (t) =>
-    $fmtOrPanic(
-      () => TDebug.fmt(t),
-      "a formatting trait implementation returned an error when the underlying stream did not: Error",
-    );
+  const map = (t) => $fmtOrPanic(() => TDebug.fmt(t), "format");
   const value = r.TAG === "Ok" ? { TAG: "Ok", _0: map(r._0) } : r;
   return value.TAG === "Ok" ? `Ok(${$debugStr(value._0)})` : `Err(${$ioErrorDebug(value._0)})`;
 }

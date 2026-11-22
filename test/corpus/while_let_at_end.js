@@ -36,7 +36,7 @@ function chain(tags) {
       parent: last,
     };
   }
-  return $unwrap(last);
+  return $unwrap(last, "test/corpus/while_let_at_end.rs:50:10");
 }
 
 function labeled(fiber) {

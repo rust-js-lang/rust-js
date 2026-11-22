@@ -36,7 +36,11 @@ function loggerListener_count(logger) {
 function main() {
   const logger = { value: { seen: [] } };
   const listeners = [$dynCell(logger, loggerListener)];
-  const receiver = $borrowMut($index(listeners, 0), true);
+  const receiver = $borrowMut(
+    $index(listeners, 0, "test/corpus/rc_dyn_listeners.rs:36:14"),
+    "test/corpus/rc_dyn_listeners.rs:36:18",
+    true,
+  );
   try {
     receiver.impl.notify(receiver, "a");
   } finally {
@@ -49,7 +53,11 @@ function main() {
       const value = $downgrade(root);
       let borrowMut;
       try {
-        borrowMut = $borrowMut($fieldCell(leaf.value, "parent"), true);
+        borrowMut = $borrowMut(
+          $fieldCell(leaf.value, "parent"),
+          "test/corpus/rc_dyn_listeners.rs:39:18",
+          true,
+        );
       } catch (error) {
         $weakDrop(value);
         throw error;
@@ -57,7 +65,11 @@ function main() {
       $weakDrop(borrowMut.value);
       borrowMut.value = value;
       $unborrow(borrowMut);
-      const borrow = $borrow($fieldCell(leaf.value, "parent"), true);
+      const borrow = $borrow(
+        $fieldCell(leaf.value, "parent"),
+        "test/corpus/rc_dyn_listeners.rs:40:30",
+        true,
+      );
       let parent;
       try {
         const upgrade = $upgrade(borrow.value);
@@ -72,7 +84,9 @@ function main() {
       } finally {
         $unborrow(borrow);
       }
-      console.log(`${loggerListener_count($borrow(logger).value)} ${leaf.value.name} ${parent}`);
+      console.log(
+        `${loggerListener_count($borrow(logger, "test/corpus/rc_dyn_listeners.rs:41:33").value)} ${leaf.value.name} ${parent}`,
+      );
     } catch (error) {
       throw $unwindsOn(error);
     } finally {

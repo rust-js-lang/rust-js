@@ -78,11 +78,22 @@ function main() {
   );
 
   const held = 3;
-  const repeated = $repeatingN(1, $unwrap(held)).len();
-  const mapped = $unwrap(held);
-  const throughTake = $repeating(1).take($unwrap(held)).len();
+  const repeated = $repeatingN(
+    1,
+    $unwrap(held, "test/corpus/counted_where_made_runs_each_part_once.rs:35:60"),
+  ).len();
+  const mapped = $unwrap(held, "test/corpus/counted_where_made_runs_each_part_once.rs:36:58");
+  const throughTake = $repeating(1)
+    .take($unwrap(held, "test/corpus/counted_where_made_runs_each_part_once.rs:39:67"))
+    .len();
   const step = $exactLen(
-    $sizeHint(iterator_stepBy({ start: 0, end: 10 }, $unwrap(2), { next: $rangeNext })),
+    $sizeHint(
+      iterator_stepBy(
+        { start: 0, end: 10 },
+        $unwrap(2, "test/corpus/counted_where_made_runs_each_part_once.rs:40:50"),
+        { next: $rangeNext },
+      ),
+    ),
   );
   console.log(`read once: ${repeated} ${mapped} ${throughTake} ${step}`);
 }

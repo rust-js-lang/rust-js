@@ -295,14 +295,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
         }
         let arguments = of.is_some_and(|ty| self.is_lang_adt(ty.peel_refs(), LangItem::FormatArguments));
-        let message = match known {
-            Std::ToString if !arguments => "a Display implementation returned an error unexpectedly: Error",
-            _ => "a formatting trait implementation returned an error when the underlying stream did not: Error",
+        // std's `to_string()`'s panic, or `format!`'s, its message and its
+        // line (`$fmtFailed`, #2292).
+        let kind = match known {
+            Std::ToString if !arguments => "toString",
+            _ => "format",
         };
         body.push(StmtKind::Return(Some(value)).at(js_span));
         Expr::call(
             Expr::helper("$fmtOrPanic"),
-            vec![Expr::arrow(Vec::new(), body), Expr::str(message)],
+            vec![Expr::arrow(Vec::new(), body), Expr::str(kind)],
         )
     }
 

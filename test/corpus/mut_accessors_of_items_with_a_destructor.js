@@ -71,7 +71,14 @@ function main() {
     console.log(
       `${
         quiet(() => {
-          const insertMut = $insertMut(v, 5, [9], false, dDrop_drop);
+          const insertMut = $insertMut(
+            v,
+            5,
+            [9],
+            "test/corpus/mut_accessors_of_items_with_a_destructor.rs:23:35",
+            false,
+            dDrop_drop,
+          );
           insertMut[0] = (insertMut[0] + 1) >>> 0;
         }) == null
           ? "None"
@@ -88,7 +95,14 @@ function main() {
   }
   let tmp;
   try {
-    tmp = $insertMut(v, 1, [3], false, dDrop_drop);
+    tmp = $insertMut(
+      v,
+      1,
+      [3],
+      "test/corpus/mut_accessors_of_items_with_a_destructor.rs:24:7",
+      false,
+      dDrop_drop,
+    );
   } catch (error) {
     $cleanup(() => {
       for (const item of v) {
@@ -706,7 +720,10 @@ function main() {
       const items = [[1], [2], [3], [4], [5]];
       let c;
       try {
-        c = items.length >= 2 ? $view(items, 0, 2) : undefined;
+        c =
+          items.length >= 2
+            ? $view(items, 0, "test/corpus/mut_accessors_of_items_with_a_destructor.rs:54:28", 2)
+            : undefined;
       } catch (error) {
         $cleanup(() => {
           for (const item of items) {
@@ -731,7 +748,14 @@ function main() {
         c[0] = [10];
       }
       try {
-        iter = $iter($rchunksMut(items, 2, true));
+        iter = $iter(
+          $rchunksMut(
+            items,
+            2,
+            true,
+            "test/corpus/mut_accessors_of_items_with_a_destructor.rs:57:20",
+          ),
+        );
       } catch (error) {
         $cleanup(() => {
           for (const item of items) {
@@ -778,7 +802,7 @@ function main() {
           break;
         }
         try {
-          $swap(c, 0, 1);
+          $swap(c, 0, 1, "test/corpus/mut_accessors_of_items_with_a_destructor.rs:58:11");
         } catch (error) {
           $cleanup(() => {
             for (const item of items) {

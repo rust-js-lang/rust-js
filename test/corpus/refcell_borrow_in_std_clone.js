@@ -9,7 +9,7 @@ export function entry() {
 export const peekClone = { clone: peekClone_clone };
 function peekClone_clone(peek) {
   if (peek[0].borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_borrow_in_std_clone.rs:14:16");
   }
   peek[0].push(0);
   return [peek[0]];
@@ -19,9 +19,11 @@ function main() {
   const cell = [1];
   const peeks = [[cell]];
   const cloned = peeks.map((item) => peekClone_clone(item));
-  console.log(`${cloned.length} ${$borrow(cell).length}`);
+  console.log(
+    `${cloned.length} ${$borrow(cell, "test/corpus/refcell_borrow_in_std_clone.rs:28:42").length}`,
+  );
   const holders = [{ peek: [cell] }];
-  const borrow = $borrow(cell, true);
+  const borrow = $borrow(cell, "test/corpus/refcell_borrow_in_std_clone.rs:30:18", true);
   let n;
   try {
     n =

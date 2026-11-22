@@ -5,9 +5,11 @@
 
 use super::*;
 
+mod raised;
 mod rows;
 mod stored;
 
+pub(crate) use raised::raised_catalogue;
 pub(crate) use rows::Rows;
 pub(crate) use stored::catalogue;
 

@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function rest(items, from) {
-  return $copyOf(items, from);
+  return $copyOf(items, from, "test/corpus/slice_range_from_panic.rs:5:10");
 }
 
 function restTested(items, from) {

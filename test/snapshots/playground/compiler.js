@@ -183,7 +183,11 @@ function directoryOf(sources) {
         if (!folder.has(part)) {
           folder.set(part, new Directory(new Map()));
         }
-        folder = $unwrap(folder.get(part), "no entry found for key").contents;
+        folder = $unwrap(
+          folder.get(part),
+          "wasm/web/rust/compiler.rs:437:58",
+          "no entry found for key",
+        ).contents;
       }
     } else {
       name = path;
@@ -219,13 +223,13 @@ export async function compile(loaded, sources, rootFile, test) {
     new OpenFile(new File([])), // stdin
     ConsoleStdout.lineBuffered((line) => {
       if (stderr.borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("wasm/web/rust/compiler.rs:472:57");
       }
       stderr.push(line);
     }), // stdout
     ConsoleStdout.lineBuffered((line) => {
       if (stderr.borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("wasm/web/rust/compiler.rs:473:57");
       }
       stderr.push(line);
     }), // stderr
@@ -330,7 +334,7 @@ export async function compile(loaded, sources, rootFile, test) {
     }
   }
   const memory = instance.exports.memory.buffer;
-  const borrow = $borrow(stderr, true);
+  const borrow = $borrow(stderr, "wasm/web/rust/compiler.rs:596:24", true);
   let stderr$1;
   let instantiate;
   let run;

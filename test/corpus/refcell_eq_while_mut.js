@@ -9,7 +9,7 @@ export function entry() {
 function main() {
   const a = { value: 1 };
   const b = { value: 1 };
-  const writing = $borrowMut(a, true);
+  const writing = $borrowMut(a, "test/corpus/refcell_eq_while_mut.rs:10:21", true);
   try {
     console.log(`${$eq(a, b, true)}`);
     console.log(`${writing.value}`);

@@ -139,7 +139,7 @@ function main() {
     $lazyRange(1, 4).map((i) => ({ TAG: "Ok", _0: [i, (i * i) & 255] })),
     (values) => new Map(values),
   );
-  const pairs = Array.from($unwrapOk(m));
+  const pairs = Array.from($unwrapOk(m, "test/corpus/collect_fallible_into.rs:40:31"));
   pairs.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   const vecOk = $collectResults(
     ["1", "2"].values().map((s) => $parseInt(s, -2147483648, 2147483647)),

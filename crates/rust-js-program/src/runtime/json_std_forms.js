@@ -40,7 +40,7 @@ function $systemTimeOfJson(offset) {
 // Of one that's the object it holds (`itself`, ADR 0863), the cell.
 function $jsonBorrowed(cell, write, itself) {
   if (cell.borrows < 0) throw $jsonError("already mutably borrowed");
-  $withBorrow(cell, write, itself);
+  $withBorrow(cell, write, undefined, itself);
 }
 
 // A `Mutex`'s or an `RwLock`'s value written by `write` while it's locked,

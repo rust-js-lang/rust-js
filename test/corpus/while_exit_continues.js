@@ -56,7 +56,7 @@ function climbMarked(from, marked) {
       for (let i = 0; i < marked.length; i++) {
         const name = marked[i];
         if (node.name === name) {
-          const parent = $unwrap(node.return);
+          const parent = $unwrap(node.return, "test/corpus/while_exit_continues.rs:68:65");
           node = parent;
           continue up;
         }

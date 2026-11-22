@@ -74,6 +74,15 @@ react.dev's TopNav passes the same closure instead.
 
 ## Consequences
 
+- **A panic raised in std's own code names std's file under
+  `/rustc/<commit>/`**, the second case's, the user's decision
+  (2026-11-22, #2292): a site in std's code is a constant of the toolchain,
+  kept in the runtime, where native Rust names one in a body the caller's
+  crate compiles by the toolchain's local copy of std's source where
+  `rust-src` is installed. The line and column are the same; only the
+  prefix of std's own files differs, by how the toolchain was installed.
+  Listed in the guide's differences (`semantics.md`, 62)
+  ([1184](1184-a-binary-crate-runs-its-main-as-stds-runtime-does.md)).
 - **Each decision says which case it's in**, on a `Case:` line under its
   status, every case its parts are in, the first the main one; N where it
   decides no disagreement, tooling, bindings' shape or the output's
@@ -543,14 +552,13 @@ react.dev's TopNav passes the same closure instead.
   deadlock can't be preserved in one thread, and `Mutex::lock` says it
   "might panic or deadlock"; it's refused where it happens, as the
   program runs, as nothing at compile time can tell (`semantics.md`, 6).
-- **An uncaught panic's exit status is the calling host's**, the first
-  case's, as no disagreement rust-js makes: rust-js compiles every crate
-  as a library and nothing it emits calls `main`, so the process, and
-  the status it ends with, belong to the JS host that calls a Rust
-  function, which Node and Bun end with 1 of an `Error` it doesn't
-  catch. Whether rust-js should run a binary's `main` as Rust's runtime
-  does, exiting with 101, is a product question for the user (#2269)
-  (`semantics.md`, 10).
+- **A library's uncaught panic is its calling host's**, the first case's,
+  as no disagreement rust-js makes: a library's process, and the status
+  it ends with, belong to the JS host that calls a Rust function, which
+  Node and Bun end with 1 of an `Error` it doesn't catch. A binary, given
+  `--crate-type bin`, runs its `main` as std's runtime does, its status
+  and std's hook's text Rust's (#2269, #2292,
+  [1184](1184-a-binary-crate-runs-its-main-as-stds-runtime-does.md)).
 - **A panic is an `Error` JS catches, and `catch_unwind` catches what JS
   throws**, the first case's: native Rust has no JS to throw, so no native
   run differs. A panic's payload is a `&str` or a `String` as Rust's

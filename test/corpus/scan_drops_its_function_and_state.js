@@ -8,6 +8,7 @@ import {
   $lazyScan,
   $live,
   $next,
+  $panic,
   $unwindsOn,
   iterator_scan,
 } from "@rust-js/std";
@@ -147,7 +148,7 @@ function main() {
       ["st"],
       (_, x) => {
         if (x === 1) {
-          throw new Error("scan");
+          throw $panic("scan", "test/corpus/scan_drops_its_function_and_state.rs:75:17");
         }
         return (x + zero(g$3)) >>> 0;
       },

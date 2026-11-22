@@ -58,7 +58,10 @@ function captured(fiber, legacy) {
       }
       break;
   }
-  throw $stringPanic(`Unexpected tag (${fiber.tag})`);
+  throw $stringPanic(
+    `Unexpected tag (${fiber.tag})`,
+    "test/corpus/switch_guard_shares_next.rs:63:5",
+  );
 }
 
 // The same of a handler held in an `if let`, whose `match` tidy tests as
@@ -79,7 +82,10 @@ function held(handler, legacy) {
         }
         break;
     }
-    throw $stringPanic(`Unexpected tag (${handler.tag})`);
+    throw $stringPanic(
+      `Unexpected tag (${handler.tag})`,
+      "test/corpus/switch_guard_shares_next.rs:83:9",
+    );
   }
   return true;
 }

@@ -20,7 +20,10 @@ const Unit = {
 
 function callAndRef(x, f) {
   x.value = $some(f());
-  return $unwrap(x.value == null ? undefined : $someMut(x));
+  return $unwrap(
+    x.value == null ? undefined : $someMut(x),
+    "test/corpus/option_as_mut_generic.rs:25:16",
+  );
 }
 
 function replaceIn(x, with$) {

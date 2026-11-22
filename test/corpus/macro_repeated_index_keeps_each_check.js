@@ -7,7 +7,9 @@ export function entry() {
 }
 
 function pair(v, k) {
-  return k < v.length ? [v[k], $index(v, k + 1)] : [0, 0];
+  return k < v.length
+    ? [v[k], $index(v, k + 1, "test/corpus/macro_repeated_index_keeps_each_check.rs:14:22")]
+    : [0, 0];
 }
 
 function main() {

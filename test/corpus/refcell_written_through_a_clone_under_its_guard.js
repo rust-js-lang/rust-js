@@ -44,11 +44,19 @@ function check(what, f, TDebug) {
 
 /** Read under a `borrow()` past code the crate's own. */
 function readUnder(items, f, i) {
-  const held = $borrow(items, true);
+  const held = $borrow(
+    items,
+    "test/corpus/refcell_written_through_a_clone_under_its_guard.rs:33:22",
+    true,
+  );
   try {
     if (i < held.length) {
       f();
-      return $index(held, i);
+      return $index(
+        held,
+        i,
+        "test/corpus/refcell_written_through_a_clone_under_its_guard.rs:36:20",
+      );
     }
   } finally {
     $unborrow(held);
@@ -58,7 +66,11 @@ function readUnder(items, f, i) {
 
 /** Written under a `borrow_mut()` past code the crate's own. */
 function writeUnder(items, f, i) {
-  const held = $borrowMut(items, true);
+  const held = $borrowMut(
+    items,
+    "test/corpus/refcell_written_through_a_clone_under_its_guard.rs:43:26",
+    true,
+  );
   try {
     if (i < held.length) {
       f();
@@ -73,11 +85,19 @@ function writeUnder(items, f, i) {
 
 /** Read under a `borrow()` past code behind a `dyn`. */
 function readUnderDyn(items, f, i) {
-  const held = $borrow(items, true);
+  const held = $borrow(
+    items,
+    "test/corpus/refcell_written_through_a_clone_under_its_guard.rs:54:22",
+    true,
+  );
   try {
     if (i < held.length) {
       f();
-      return $index(held, i);
+      return $index(
+        held,
+        i,
+        "test/corpus/refcell_written_through_a_clone_under_its_guard.rs:57:20",
+      );
     }
   } finally {
     $unborrow(held);
@@ -92,20 +112,20 @@ function readUnderDyn(items, f, i) {
  */
 function afterADroppedGuard(items, f, i) {
   if (items.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_written_through_a_clone_under_its_guard.rs:66:19");
   }
   if (i >= items.length) {
     return 0;
   }
   if (items.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_written_through_a_clone_under_its_guard.rs:70:26");
   }
   const _length = items.length;
   f();
   if (items.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/refcell_written_through_a_clone_under_its_guard.rs:74:11");
   }
-  return $index(items, i);
+  return $index(items, i, "test/corpus/refcell_written_through_a_clone_under_its_guard.rs:74:19");
 }
 
 function main() {
@@ -118,7 +138,10 @@ function main() {
       readUnder(
         items,
         () => {
-          $borrowMut(items).length = 0;
+          $borrowMut(
+            items,
+            "test/corpus/refcell_written_through_a_clone_under_its_guard.rs:81:75",
+          ).length = 0;
         },
         2,
       ),
@@ -130,7 +153,9 @@ function main() {
       readUnder(
         items,
         () => {
-          console.log(`${$borrow(items).length}`);
+          console.log(
+            `${$borrow(items, "test/corpus/refcell_written_through_a_clone_under_its_guard.rs:82:87").length}`,
+          );
         },
         2,
       ),
@@ -158,7 +183,10 @@ function main() {
       writeUnder(
         items,
         () => {
-          $borrowMut(items).length = 0;
+          $borrowMut(
+            items,
+            "test/corpus/refcell_written_through_a_clone_under_its_guard.rs:84:77",
+          ).length = 0;
         },
         2,
       ),
@@ -170,14 +198,17 @@ function main() {
       readUnderDyn(
         items,
         () => {
-          $borrowMut(items).length = 0;
+          $borrowMut(
+            items,
+            "test/corpus/refcell_written_through_a_clone_under_its_guard.rs:85:84",
+          ).length = 0;
         },
         2,
       ),
     u32Debug,
   );
   if (items.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_written_through_a_clone_under_its_guard.rs:86:11");
   }
   items.push(4, 5, 6);
   check(
@@ -186,12 +217,17 @@ function main() {
       afterADroppedGuard(
         items,
         () => {
-          $borrowMut(items).length = 0;
+          $borrowMut(
+            items,
+            "test/corpus/refcell_written_through_a_clone_under_its_guard.rs:87:104",
+          ).length = 0;
         },
         1,
       ),
     u32Debug,
   );
-  console.log(`items: [${$borrow(items).join(", ")}]`);
+  console.log(
+    `items: [${$borrow(items, "test/corpus/refcell_written_through_a_clone_under_its_guard.rs:88:35").join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

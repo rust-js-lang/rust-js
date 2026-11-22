@@ -20,30 +20,38 @@ function pairDebug_fmt(pair) {
 function main() {
   const a = { a: 1, b: 2 };
   const cell = { ...a };
-  const before = { ...$borrow(cell) };
-  $take($borrowMut(cell), { a: 5, b: 6 });
+  const before = {
+    ...$borrow(cell, "test/corpus/ref_cell_contents_written_in_place_are_copied.rs:16:24"),
+  };
+  $take($borrowMut(cell, "test/corpus/ref_cell_contents_written_in_place_are_copied.rs:17:10"), {
+    a: 5,
+    b: 6,
+  });
   if (cell.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/ref_cell_contents_written_in_place_are_copied.rs:18:44");
   }
   console.log(`${pairDebug_fmt(a)} ${pairDebug_fmt(before)} ${pairDebug_fmt(cell)}`);
   const other = { a: 7, b: 8 };
-  const snapshot = { ...$borrow(other) };
+  const snapshot = {
+    ...$borrow(other, "test/corpus/ref_cell_contents_written_in_place_are_copied.rs:20:27"),
+  };
   $refCellSwap(cell, other, true);
   if (cell.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/ref_cell_contents_written_in_place_are_copied.rs:22:45");
   }
   if (other.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/ref_cell_contents_written_in_place_are_copied.rs:22:61");
   }
   console.log(`${pairDebug_fmt(snapshot)} ${pairDebug_fmt(cell)} ${pairDebug_fmt(other)}`);
   const taken = $replaceWith(
     cell,
     (old) => ({ a: (old.a + 1) | 0, b: (old.b + 1) | 0 }),
+    "test/corpus/ref_cell_contents_written_in_place_are_copied.rs:23:22",
     false,
     true,
   );
   if (cell.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/ref_cell_contents_written_in_place_are_copied.rs:24:50");
   }
   console.log(`${pairDebug_fmt(snapshot)} ${pairDebug_fmt(taken)} ${pairDebug_fmt(cell)}`);
 }

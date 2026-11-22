@@ -28,7 +28,7 @@ function once(what) {
   const old = panicked;
   panicked = true;
   if (!old) {
-    throw $stringPanic(what);
+    throw $stringPanic(what, "test/corpus/map_extend_unwinds_what_is_left.rs:16:9");
   }
 }
 

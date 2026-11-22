@@ -11,7 +11,7 @@ function tokenDebug_fmt(token) {
 }
 
 function decoded(bytes, n) {
-  const decoded = $copyOf(bytes, 0, n);
+  const decoded = $copyOf(bytes, 0, "test/corpus/slice_to_owned.rs:8:28", n);
   decoded.push(33);
   return decoded;
 }
@@ -20,8 +20,9 @@ function main() {
   const bytes = [97, 98, 99, 37, 50, 48];
   console.log(`[${decoded(bytes, 3).join(", ")}] [${bytes.join(", ")}]`);
   const tokens = [["a"], ["b"]];
-  const copied = $slice(tokens, 1).map((item) => [item[0]]);
-  $index(copied, 0)[0] += "!";
+  const copied = $slice(tokens, 1, "test/corpus/slice_to_owned.rs:17:28").map((item) => [item[0]]);
+  $index(copied, 0, "test/corpus/slice_to_owned.rs:18:11")[0] =
+    $index(copied, 0, "test/corpus/slice_to_owned.rs:18:11")[0] + "!";
   console.log(
     `[${tokens.map((item) => tokenDebug_fmt(item)).join(", ")}] [${copied.map((item) => tokenDebug_fmt(item)).join(", ")}]`,
   );

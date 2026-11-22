@@ -38,7 +38,7 @@ function main() {
   for (const bound of $mutItems(bounds)) {
     widen(bound);
   }
-  $index(bounds, 2);
+  $index(bounds, 2, "test/corpus/std_mixed_enum_mut.rs:28:22");
   const bound$4 = { value: bounds[2] };
   clear(bound$4);
   bounds[2] = bound$4.value;

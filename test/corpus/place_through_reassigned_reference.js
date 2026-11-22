@@ -9,20 +9,22 @@ export function entry() {
 function moved(s, o) {
   const s$1 = s;
   s = o;
-  s$1.v[$at(s$1.v, 0)] = (s$1.v[0] | 4) >>> 0;
-  s.v[$at(s.v, 1)] = (s.v[1] | 8) >>> 0;
+  s$1.v[$at(s$1.v, 0, "test/corpus/place_through_reassigned_reference.rs:13:8")] =
+    (s$1.v[0] | 4) >>> 0;
+  s.v[$at(s.v, 1, "test/corpus/place_through_reassigned_reference.rs:17:8")] = (s.v[1] | 8) >>> 0;
 }
 
 function movedField(s, o) {
   const s$1 = s;
   s = o;
-  s$1.v[$at(s$1.v, 1)] = (s$1.v[1] + 16) >>> 0;
-  s.v[$at(s.v, 0)] = (s.v[0] + 32) >>> 0;
+  s$1.v[$at(s$1.v, 1, "test/corpus/place_through_reassigned_reference.rs:21:8")] =
+    (s$1.v[1] + 16) >>> 0;
+  s.v[$at(s.v, 0, "test/corpus/place_through_reassigned_reference.rs:25:8")] = (s.v[0] + 32) >>> 0;
 }
 
 function writtenInValue(v, i) {
   i++;
-  v[$at(v, i)] = 7;
+  v[$at(v, i, "test/corpus/place_through_reassigned_reference.rs:29:5")] = 7;
   const value = i - 1;
   i++;
   v[value] = (v[value] + 3) >>> 0;
@@ -32,7 +34,7 @@ function writtenInValue(v, i) {
   }
   v[0] = next();
   const value$1 = next();
-  v[$at(v, i)] = value$1;
+  v[$at(v, i, "test/corpus/place_through_reassigned_reference.rs:43:5")] = value$1;
   return i;
 }
 

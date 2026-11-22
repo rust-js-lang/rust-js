@@ -29,6 +29,7 @@ import {
   $skipping,
   $sortedEntries,
   $sortedKeys,
+  $stdSites,
   $treeRange,
   $treeSetAlgebra,
   $zipEnds,
@@ -266,7 +267,7 @@ function exact(n) {
     8,
   );
   const hp = $grownVec($roomForHint($iter(heap), 4, false), (grown) => Array.from(grown));
-  const dr = $capacity($copyRange(dq, Math.min(dq.length, 2)), 4);
+  const dr = $capacity($copyRange(dq, Math.min(dq.length, 2), $stdSites.vecDequeRange[0]), 4);
   const he = $grownVec(
     $roomForHint(
       $mapExtractIf(hm, (k) => k % 2 === 0, hm, true, false),
@@ -330,8 +331,9 @@ function exact(n) {
   const hd = $grownVec($roomForHint($iter($drainAll(hm)), 8, false), (grown) => Array.from(grown));
   const hsd = $grownVec($roomForHint($iter($drainAll(hs)), 4, false), (grown) => Array.from(grown));
   $keepCapacity(dq);
-  const dd = $grownVec($roomForHint($iter($drain(dq, Math.min(dq.length, 3))), 4, false), (grown) =>
-    Array.from(grown),
+  const dd = $grownVec(
+    $roomForHint($iter($drain(dq, Math.min(dq.length, 3), $stdSites.vecDequeDrain[0])), 4, false),
+    (grown) => Array.from(grown),
   );
   const capacity = $capacity(heapEnumerated, 8);
   const value = $capacity(heapSkipped, 4);

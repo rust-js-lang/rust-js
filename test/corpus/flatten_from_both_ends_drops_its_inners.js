@@ -39,7 +39,10 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === boom) {
     boom = 0;
-    throw $stringPanic(`drop ${d[0]}`);
+    throw $stringPanic(
+      `drop ${d[0]}`,
+      "test/corpus/flatten_from_both_ends_drops_its_inners.rs:20:13",
+    );
   }
 }
 

@@ -12,9 +12,13 @@ function ring(lanes) {
     next: undefined,
   }));
   for (const [i, node] of nodes.entries()) {
-    node.next = $index(nodes, $rem(i + 1, nodes.length) >>> 0);
+    node.next = $index(
+      nodes,
+      $rem(i + 1, nodes.length, "test/corpus/do_while_advances.rs:28:57") >>> 0,
+      "test/corpus/do_while_advances.rs:28:56",
+    );
   }
-  return $index(nodes, 0);
+  return $index(nodes, 0, "test/corpus/do_while_advances.rs:30:21");
 }
 
 function sum(first, skip) {

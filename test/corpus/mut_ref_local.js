@@ -27,7 +27,7 @@ function main() {
   const v = [1, 2, 3];
   let i = 0;
   const index = i;
-  $index(v, index);
+  $index(v, index, "test/corpus/mut_ref_local.rs:39:19");
   const r = {
     get value() {
       return v[index];
@@ -67,11 +67,11 @@ function main() {
   let xs = [1, 2];
   let ys = [10, 20];
   let list = xs;
-  $index(list, 0);
+  $index(list, 0, "test/corpus/mut_ref_local.rs:75:26");
   const item = list;
   list = ys;
   item[0] = (item[0] + 1) | 0;
-  list[$at(list, 1)] = (list[1] + 1) | 0;
+  list[$at(list, 1, "test/corpus/mut_ref_local.rs:78:9")] = (list[1] + 1) | 0;
   console.log(`[${xs.join(", ")}] [${ys.join(", ")}]`);
 
   // Through a reference in a field that's assigned again: the same.
@@ -80,21 +80,21 @@ function main() {
   const na = { count: 1 };
   const nb = { count: 10 };
   const h = { list: xs, node: na };
-  $index(h.list, 0);
+  $index(h.list, 0, "test/corpus/mut_ref_local.rs:85:28");
   const list$1 = h.list;
   const node = h.node;
   h.list = ys;
   h.node = nb;
   list$1[0] = (list$1[0] + 1) | 0;
   node.count = (node.count + 1) | 0;
-  h.list[$at(h.list, 1)] = (h.list[1] + 1) | 0;
+  h.list[$at(h.list, 1, "test/corpus/mut_ref_local.rs:91:11")] = (h.list[1] + 1) | 0;
   console.log(`[${xs.join(", ")}] [${ys.join(", ")}] ${na.count} ${nb.count}`);
 
   // In an element, or behind another reference: the same.
   xs = [1, 2];
   ys = [10, 20];
   const refs = [xs];
-  $index(refs[0], 0);
+  $index(refs[0], 0, "test/corpus/mut_ref_local.rs:97:29");
   const item$1 = refs[0];
   refs[0] = ys;
   item$1[0] = (item$1[0] + 1) | 0;
@@ -102,7 +102,7 @@ function main() {
   xs = [1, 2];
   ys = [10, 20];
   list = xs;
-  $index(list, 0);
+  $index(list, 0, "test/corpus/mut_ref_local.rs:104:27");
   const item$2 = list;
   list = ys;
   item$2[0] = (item$2[0] + 1) | 0;
@@ -111,18 +111,20 @@ function main() {
   // A field of an element, and an element of an element.
   const nodes = [{ count: 1 }, { count: 2 }];
   let j = 1;
-  const item$3 = $index(nodes, j);
+  const item$3 = $index(nodes, j, "test/corpus/mut_ref_local.rs:112:23");
   j = 0;
   item$3.count = (item$3.count * 7) | 0;
-  console.log(`${$index(nodes, 0).count} ${$index(nodes, 1).count} ${j}`);
+  console.log(
+    `${$index(nodes, 0, "test/corpus/mut_ref_local.rs:115:32").count} ${$index(nodes, 1, "test/corpus/mut_ref_local.rs:115:48").count} ${j}`,
+  );
   const grid = [
     [1, 2],
     [3, 4],
   ];
   const row = 1;
   const col = 0;
-  const items = $index(grid, row);
-  items[$at(items, col)] = 30;
+  const items = $index(grid, row, "test/corpus/mut_ref_local.rs:118:22");
+  items[$at(items, col, "test/corpus/mut_ref_local.rs:118:27")] = 30;
   console.log(`[${grid.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 
   let z = 1;

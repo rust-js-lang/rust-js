@@ -15,7 +15,7 @@ function tupleAlts(t) {
 
 function sliceAlts(s) {
   return (
-    $index(s, 3) === 1 &&
+    $index(s, 3, "test/corpus/index_reads_in_written_order.rs:16:5") === 1 &&
     (s[0] === 2 || s[0] === 3) &&
     (s[1] === 4 || s[1] === 5) &&
     (s[2] === 6 || s[2] === 7)

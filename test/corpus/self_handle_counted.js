@@ -41,11 +41,14 @@ function counted(step) {
   const countdown = {
     value: $dropping(
       (n) => {
-        const borrow = $borrow(this$$1.value, true);
+        const borrow = $borrow(this$$1.value, "test/corpus/self_handle_counted.rs:18:34", true);
         const weak = borrow.value;
         let countdown;
         try {
-          countdown = $unwrap(weak != null ? $upgrade(weak) : undefined);
+          countdown = $unwrap(
+            weak != null ? $upgrade(weak) : undefined,
+            "test/corpus/self_handle_counted.rs:18:76",
+          );
         } finally {
           $unborrow(borrow);
         }
@@ -89,7 +92,7 @@ function counted(step) {
     }
     let borrowMut;
     try {
-      borrowMut = $borrowMut(this$.value, true);
+      borrowMut = $borrowMut(this$.value, "test/corpus/self_handle_counted.rs:22:11", true);
     } catch (error) {
       $cleanup(() => {
         if (tmp != null) {
@@ -147,7 +150,7 @@ function readApart() {
   const probe = {
     value: $dropping(
       () => {
-        const borrow = $borrow(this$$1.value, true);
+        const borrow = $borrow(this$$1.value, "test/corpus/self_handle_counted.rs:34:22", true);
         const weak = borrow.value;
         let result;
         try {
@@ -176,7 +179,7 @@ function readApart() {
     let borrow;
     try {
       if (this$.value.borrows < 0) {
-        $alreadyMutablyBorrowed();
+        $alreadyMutablyBorrowed("test/corpus/self_handle_counted.rs:36:23");
       }
       borrow = this$.value;
     } catch (error) {
@@ -197,7 +200,7 @@ function readApart() {
     }
     let borrowMut;
     try {
-      borrowMut = $borrowMut(this$.value, true);
+      borrowMut = $borrowMut(this$.value, "test/corpus/self_handle_counted.rs:37:11", true);
     } catch (error) {
       $cleanup(() => {
         if (tmp != null) {

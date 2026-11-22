@@ -26,7 +26,10 @@ function shortLived(n) {
   for (let i = 0; i < n; i++) {
     const v = Array.from(new TextEncoder().encode(`GET /${i % 97} HTTP/1.1\r\n`));
     const start = $addr($ptr(v, 0), 1);
-    const past = $addr($ptr($slice(v, 4), 0), 1);
+    const past = $addr(
+      $ptr($slice(v, 4, "test/corpus/addresses_of_short_lived_allocations.rs:13:21"), 0),
+      1,
+    );
     total = (total + ((past - start) >>> 0)) >>> 0;
   }
   return total;
@@ -43,8 +46,15 @@ function main() {
   $storedItems(spans, 8);
   spans.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   $storedItems(spans, 8);
-  const apart = $windows(spans, 2).every(
-    (w) => ($index(w, 0)[0] + w[0][1]) >>> 0 <= $index(w, 1)[0],
+  const apart = $windows(
+    spans,
+    2,
+    "test/corpus/addresses_of_short_lived_allocations.rs:24:23",
+  ).every(
+    (w) =>
+      ($index(w, 0, "test/corpus/addresses_of_short_lived_allocations.rs:24:42")[0] + w[0][1]) >>>
+        0 <=
+      $index(w, 1, "test/corpus/addresses_of_short_lived_allocations.rs:24:61")[0],
   );
   $storedItems(spans, 8);
   console.log(`${spans.length} ${apart}`);

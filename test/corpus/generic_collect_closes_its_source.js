@@ -12,6 +12,7 @@ import {
   $iter,
   $iterator,
   $jsIterator,
+  $panic,
   $stepsOf,
   iterator_map,
 } from "@rust-js/std";
@@ -27,7 +28,7 @@ function dDrop_drop(d) {
 function everyIterator_next(every) {
   every.at = (every.at + 1) >>> 0;
   if (every.at === every.boom) {
-    throw new Error("next");
+    throw $panic("next", "test/corpus/generic_collect_closes_its_source.rs:26:13");
   }
   return every.at <= 5 ? [every.at] : undefined;
 }

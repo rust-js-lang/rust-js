@@ -32,7 +32,9 @@ function main() {
   };
   console.log(`${n($mapEnds($repeatingN(0, 3), (x) => (x + 1) & 255))}`);
   const k = 2;
-  console.log(`${n($mapEnds($repeatingN(0, $unwrap(k)), (x) => (x + 1) & 255))}`);
+  console.log(
+    `${n($mapEnds($repeatingN(0, $unwrap(k, "test/corpus/map_of_a_map_given_for_its_len.rs:14:48")), (x) => (x + 1) & 255))}`,
+  );
   console.log(
     `${n(
       $mapEnds(

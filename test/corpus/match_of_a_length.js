@@ -31,12 +31,14 @@ function guarded(list, skip) {
       }
     // falls through
     default:
-      return $index(list, 1);
+      return $index(list, 1, "test/corpus/match_of_a_length.rs:23:14");
   }
 }
 
 function notNext(list) {
-  return list.length === 1 ? list[0] : $index(list, 0) + "!";
+  return list.length === 1
+    ? list[0]
+    : $index(list, 0, "test/corpus/match_of_a_length.rs:30:14") + "!";
 }
 
 function main() {

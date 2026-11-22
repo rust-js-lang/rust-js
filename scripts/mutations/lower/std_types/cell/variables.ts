@@ -1,8 +1,7 @@
 // Mutations of crates/rust-js-lower/src/std_types/cell/variables.rs (ADR 0093), split from cell.ts's list with its code (#1334).
 import type { Mutation } from "../../../../mutations";
 
-export const mutations: Mutation[] = [
-  {
+export const mutations: Mutation[] = [  {
     name: "internal-variable-unmade",
     breaks:
       "a library's private thread-local it makes its module's variable isn't listed as one, so a consumer reads its `.value` of the number it is (#2017)",
@@ -103,9 +102,9 @@ export const mutations: Mutation[] = [
     breaks:
       "another module's `with_borrow` of an exported variable stays `$withBorrow(label, ..)`, which counts borrows of a string (ADR 0270, amended)",
     file: "crates/rust-js-lower/src/std_types/cell/variables.rs",
-    find: '            if callee.helper_name() == Some("$withBorrow") && matches!(args.as_slice(), [key, _] if variable(key)) =>\n',
+    find: '                && matches!(args.as_slice(), [key, _, at] if variable(key) && matches!(at.kind, js::ExprKind::RaisedAt(_))) =>\n',
     replace:
-      '            if callee.helper_name() == Some("$withBorrow") && matches!(args.as_slice(), [key, _] if variable(key) && false) =>\n',
+      '                && matches!(args.as_slice(), [key, _, at] if variable(key) && matches!(at.kind, js::ExprKind::RaisedAt(_)) && false) =>\n',
     tests: [
       "test/lowering-module-variables.test.ts",
       "-t",

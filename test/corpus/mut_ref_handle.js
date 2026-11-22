@@ -11,7 +11,7 @@ function pick(takeFirst, a, b) {
 }
 
 function first(v) {
-  $index(v, 0);
+  $index(v, 0, "test/corpus/mut_ref_handle.rs:23:11");
   return {
     get value() {
       return v[0];

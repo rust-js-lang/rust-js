@@ -218,7 +218,10 @@ function main() {
     `${value$16 == null ? "None" : `Some(${value$16.TAG === "Ok" ? `Ok(${value$16._0})` : `Err(${$debugStr(value$16._0)})`})`} ${value$17 == null ? "None" : `Some(${value$17.TAG === "Ok" ? `Ok(${value$17._0})` : `Err(${$debugStr(value$17._0)})`})`}`,
   );
   const pointRef = { TAG: "Ok", _0: { x: 1 } };
-  const owned = $unwrapOk(pointRef.TAG === "Ok" ? { TAG: "Ok", _0: { ...pointRef._0 } } : pointRef);
+  const owned = $unwrapOk(
+    pointRef.TAG === "Ok" ? { TAG: "Ok", _0: { ...pointRef._0 } } : pointRef,
+    "test/corpus/option_result_methods.rs:57:40",
+  );
   owned.x = 9;
   const text = { TAG: "Ok", _0: "hey" };
   console.log(
@@ -226,7 +229,7 @@ function main() {
       result,
     ) => (result.TAG === "Ok" ? `Ok(${result._0})` : "Err(())"))({ TAG: "Ok", _0: 4 })}`,
   );
-  console.log(`${$unwrapOk(good)}`);
-  console.log(`${$unwrapErr(bad)}`);
+  console.log(`${$unwrapOk(good, "test/corpus/option_result_methods.rs:61:42")}`);
+  console.log(`${$unwrapErr(bad, "test/corpus/option_result_methods.rs:62:41")}`);
 }
 //# sourceMappingURL=case.js.map

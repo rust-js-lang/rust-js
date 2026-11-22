@@ -8,21 +8,26 @@ export function entry() {
 
 function bump(cell) {
   if (cell.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_bound_field_held.rs:13:11");
   }
   cell.value = (cell.value + 1) & 65535;
 }
 
 function main() {
   const wrap = { n: 1 };
-  const value = $borrowMut($fieldCell(wrap, "n"));
+  const value = $borrowMut($fieldCell(wrap, "n"), "test/corpus/refcell_bound_field_held.rs:18:13");
   value.value = (value.value + 1) & 65535;
   const lent = $fieldCell(wrap, "n");
   bump(lent);
-  console.log(`${$borrow($fieldCell(wrap, "n")).value}`);
-  const held = $borrow(lent, true);
+  console.log(
+    `${$borrow($fieldCell(wrap, "n"), "test/corpus/refcell_bound_field_held.rs:21:27").value}`,
+  );
+  const held = $borrow(lent, "test/corpus/refcell_bound_field_held.rs:22:21", true);
   try {
-    const borrowMut = $borrowMut($fieldCell(wrap, "n"));
+    const borrowMut = $borrowMut(
+      $fieldCell(wrap, "n"),
+      "test/corpus/refcell_bound_field_held.rs:23:13",
+    );
     borrowMut.value = (borrowMut.value + 1) & 65535;
     console.log(`${held.value}`);
   } finally {

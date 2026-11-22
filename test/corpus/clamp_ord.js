@@ -27,13 +27,19 @@ export function entry() {
 
 function main() {
   console.log(
-    `${$clampBy("m", "a", "f", $partiallyOrdered, (c) => $debugStr(c, "'"))} ${$clampBy("q", "b", "k", $partiallyOrdered)} ${$clampBy("a", "b", "k", $partiallyOrdered)}`,
+    `${$clampBy("m", "a", "f", $partiallyOrdered, "test/corpus/clamp_ord.rs:6:30", (c) => $debugStr(c, "'"))} ${$clampBy("q", "b", "k", $partiallyOrdered, "test/corpus/clamp_ord.rs:6:51")} ${$clampBy("a", "b", "k", $partiallyOrdered, "test/corpus/clamp_ord.rs:6:72")}`,
   );
   console.log(
-    `${$clampBy("L", "S", "M", sizePartialOrd)} ${$clampBy("S", "M", "L", sizePartialOrd)}`,
+    `${$clampBy("L", "S", "M", sizePartialOrd, "test/corpus/clamp_ord.rs:7:35")} ${$clampBy("S", "M", "L", sizePartialOrd, "test/corpus/clamp_ord.rs:7:68")}`,
   );
-  const clamp = $clampBy([3, "x"], [1, "a"], [3, "b"], tuplePartialOrd);
+  const clamp = $clampBy(
+    [3, "x"],
+    [1, "a"],
+    [3, "b"],
+    tuplePartialOrd,
+    "test/corpus/clamp_ord.rs:8:31",
+  );
   console.log(`(${clamp[0]}, ${$debugStr(clamp[1], "'")})`);
-  console.log(`${$clampBy("zz", "a", "m", $partiallyOrdered)}`);
+  console.log(`${$clampBy("zz", "a", "m", $partiallyOrdered, "test/corpus/clamp_ord.rs:9:39")}`);
 }
 //# sourceMappingURL=case.js.map

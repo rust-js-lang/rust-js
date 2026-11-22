@@ -359,6 +359,8 @@ function main() {
     console.log(`drop ${a$25[0]}`);
   }
   console.log(`get_or_insert_with ${slot}`);
-  console.log(`end ${$unwrap(counts.get("x"), "no entry found for key")}`);
+  console.log(
+    `end ${$unwrap(counts.get("x"), "test/corpus/unrun_function_drops.rs:85:30", "no entry found for key")}`,
+  );
 }
 //# sourceMappingURL=case.js.map

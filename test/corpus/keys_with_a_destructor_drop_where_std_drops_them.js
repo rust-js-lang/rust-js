@@ -17,6 +17,7 @@ import {
   $minBy,
   $minByKey,
   $ord,
+  $panic,
   $partialEq,
   $partialOrd,
   $unwindsOn,
@@ -33,7 +34,10 @@ function kDebug_fmt(k) {
 function kDrop_drop(k) {
   console.log(`drop key ${k[0]}`);
   if (k[0] === 13) {
-    throw new Error("key drop");
+    throw $panic(
+      "key drop",
+      "test/corpus/keys_with_a_destructor_drop_where_std_drops_them.rs:23:13",
+    );
   }
 }
 
@@ -49,7 +53,7 @@ function kPartialOrd_partialCmp(k, other) {
 export const kOrd = $ord({ PartialOrd: () => kPartialOrd, cmp: kOrd_cmp, $drop: kDrop_drop });
 function kOrd_cmp(k, other) {
   if (!(k[0] !== 99 && other[0] !== 99)) {
-    throw new Error("compare");
+    throw $panic("compare", "test/corpus/keys_with_a_destructor_drop_where_std_drops_them.rs:36:9");
   }
   return $cmp(k[0], other[0]);
 }
@@ -238,7 +242,10 @@ function main() {
       $iterator([0, 5], upIterator_next),
       (x) => {
         if (x === 3) {
-          throw new Error("key");
+          throw $panic(
+            "key",
+            "test/corpus/keys_with_a_destructor_drop_where_std_drops_them.rs:95:13",
+          );
         }
         return [x];
       },
@@ -310,7 +317,10 @@ function main() {
     const sorted = $isSortedBy(
       $iterator([0, 5], upIterator_next).map((x) => {
         if (x === 3) {
-          throw new Error("key");
+          throw $panic(
+            "key",
+            "test/corpus/keys_with_a_destructor_drop_where_std_drops_them.rs:114:13",
+          );
         }
         return [x];
       }),

@@ -53,15 +53,24 @@ function setHalves(wide) {
     ),
     wide.length,
   );
-  narrow[$at(narrow, 0)] = 7;
-  narrow[$at(narrow, 1)] = 1;
+  narrow[$at(narrow, 0, "test/corpus/integer_slices_read_as_another_width.rs:23:5")] = 7;
+  narrow[$at(narrow, 1, "test/corpus/integer_slices_read_as_another_width.rs:24:5")] = 1;
 }
 
 // block.rs:192: two `u32`s read as a `u64`.
 function readU64(results, index) {
   const ptr = $ptrRetyped(
     $ptrBytes(
-      $ptr($slice(results, index, index + 1 + 1, true), 0),
+      $ptr(
+        $slice(
+          results,
+          index,
+          "test/corpus/integer_slices_read_as_another_width.rs:29:34",
+          index + 1 + 1,
+          true,
+        ),
+        0,
+      ),
       4,
       (value) => $toBytes(value, 4, true),
       (bytes) => $fromBytes(bytes, 4, true, false),
@@ -108,7 +117,12 @@ function readU32Into(src, dst) {
   const length = src.length;
   const value = 4 * dst.length;
   if (length !== value) {
-    $assertFailed("Eq", String(length), String(value));
+    $assertFailed(
+      "Eq",
+      String(length),
+      String(value),
+      "test/corpus/integer_slices_read_as_another_width.rs:48:5",
+    );
   }
   $ptrCopy(
     $ptr(src, 0),
@@ -129,7 +143,12 @@ function readU64Into(src, dst) {
   const length = src.length;
   const value = 8 * dst.length;
   if (length !== value) {
-    $assertFailed("Eq", String(length), String(value));
+    $assertFailed(
+      "Eq",
+      String(length),
+      String(value),
+      "test/corpus/integer_slices_read_as_another_width.rs:56:5",
+    );
   }
   $ptrCopy(
     $ptr(src, 0),
@@ -177,7 +196,7 @@ function main() {
   readU32Into(src, buf);
   console.log(`0x${buf[0].toString(16)} 0x${buf[3].toString(16)}`);
   buf = [0, 0, 0];
-  readU32Into($slice(src, 1, 13), buf);
+  readU32Into($slice(src, 1, "test/corpus/integer_slices_read_as_another_width.rs:91:23", 13), buf);
   console.log(`0x${buf[0].toString(16)} 0x${buf[2].toString(16)}`);
   buf = [0n, 0n];
   readU64Into(src, buf);

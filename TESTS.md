@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-22 (#2292, ADR 1184): test/binaries.test.ts, thirteen tests, each a binary's run against native Rust's on Node and Bun read as one stream; test/std-sites.test.ts holds `bun run std`'s `$stdSites`; test/runtime-marks.test.ts, two tests, holds the runtime's marks every copy of it reads, and a library's copy's panic read by its app's against native Rust's. Every net that runs a program against native Rust (test/programs.ts) now compares where a panic was raised, `{ panic, at }`, but where a case's `//@ located-otherwise: #<issue>` says it waits (three cases, #2324 and #2335); the corpus's uncached run, 2 min 31 s in twelve parts here, against 2 min 33 s before. The inline JS tests' compiles leave their fixture's directory out of the files they name (test/child.ts `located`), so a location reads `lib.rs:6:5`.
+
 Changed on 2026-11-20 (#2112, Change A step 2b's paths): the paths table gains six paths, generic code given its iterator through a trait (of the adapter, a `Box` of it, a `&mut` of it) and the wrappers nested (`Box<Box<A>>`, `&mut Box<A>`, `Box<J>` of a type parameter), 5,125 cases, still all of them per push of the iterators' code.
 
 Changed on 2026-11-20 (#2112, Change A step 2a): the paths table, `ITERATOR_TABLE=paths` of test/iterator-matrix.test.ts (test/iterator-paths.ts), 2,869 cases, all of them in each push of the iterators' code (a step of `nets-iterators`) and in `check:fast`.

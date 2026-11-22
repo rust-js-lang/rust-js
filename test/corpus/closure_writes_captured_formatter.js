@@ -6,6 +6,7 @@ import {
   $iter,
   $next,
   $out,
+  $panic,
   $printing,
   $sink,
   $someValue,
@@ -28,7 +29,10 @@ function formatWithDisplay_fmt(formatWith, options, IIterator) {
   const t = formatWith.inner;
   formatWith.inner = undefined;
   if (t == null) {
-    throw new Error("FormatWith: was already formatted once");
+    throw $panic(
+      "FormatWith: was already formatted once",
+      "test/corpus/closure_writes_captured_formatter.rs:22:21",
+    );
   }
   const [iter, format] = t;
   const next = IIterator.next(iter);

@@ -128,8 +128,12 @@ function list(tags) {
 
 function main() {
   const [head, all] = list([5, 1, 5, 5, 2]);
-  console.log(`${count(head, $index(all, 2))}`);
-  console.log(`${count(head, $index(all, 4))}`);
+  console.log(
+    `${count(head, $index(all, 2, "test/corpus/while_let_binding_is_its_scrutinee.rs:135:44"))}`,
+  );
+  console.log(
+    `${count(head, $index(all, 4, "test/corpus/while_let_binding_is_its_scrutinee.rs:136:36"))}`,
+  );
   const value = firstAfter(list([1, 2, 3])[0], 2);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = firstAfter(list([1, 0, 3])[0], 2);

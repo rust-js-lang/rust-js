@@ -89,7 +89,7 @@ function main() {
     $sizeHint(
       iterator_zip(
         $iter(v),
-        $iter($slice(v, 2)),
+        $iter($slice(v, 2, "test/corpus/zip_size_hints.rs:21:24")),
         { next: $next },
         iterIntoIterator,
         true,

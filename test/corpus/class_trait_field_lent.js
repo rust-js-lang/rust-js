@@ -11,11 +11,11 @@ function Holder() {
 }
 
 Holder.prototype.read = function () {
-  return $borrow($fieldCell(this, "slot")).value;
+  return $borrow($fieldCell(this, "slot"), "test/corpus/class_trait_field_lent.rs:25:20").value;
 };
 
 function fill(cell, holder) {
-  const held = $borrowMut(cell, true);
+  const held = $borrowMut(cell, "test/corpus/class_trait_field_lent.rs:36:25", true);
   held.value = 2;
   try {
     const read = holder.read();

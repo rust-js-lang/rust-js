@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "helper-given-no-location",
+    breaks: "no helper call is given where its panic is raised, so each is refused as unlocated",
+    file: "crates/rust-js-program/src/js/make.rs",
+    find: "            args.insert(at, location);\n",
+    replace: "            let _ = location;\n",
+    tests: ["test/binaries.test.ts", "-t", "program's own code"],
+  },
+  {
     name: "some-where-a-plain-test",
     breaks: "a `Some` made where a test holds is a plain test, `t ? v : undefined`, which no pass knows is there, so `if let Some(o) = js::object_of(v)` is `const o = t ? v : undefined; if (o != null)`",
     file: "crates/rust-js-program/src/js/make.rs",

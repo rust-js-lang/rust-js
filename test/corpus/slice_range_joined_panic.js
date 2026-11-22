@@ -13,7 +13,9 @@ function forced(items, force) {
   } else {
     truncated = true;
   }
-  return truncated ? $copyOf(items, 0, 3) : items.slice();
+  return truncated
+    ? $copyOf(items, 0, "test/corpus/slice_range_joined_panic.rs:12:25", 3)
+    : items.slice();
 }
 
 function main() {

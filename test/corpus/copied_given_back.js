@@ -23,7 +23,7 @@ function bytes() {
 function main() {
   const all = Array.from(class$(false));
   const widths = Array.from(class$(true).map(([a, b]) => (b - a) & 255));
-  const first = $unwrap($next(class$(false)));
+  const first = $unwrap($next(class$(false)), "test/corpus/copied_given_back.rs:20:41");
   first[0] = 1;
   const arg = $next(class$(false));
   console.log(

@@ -9,6 +9,7 @@ import {
   $foldToArray,
   $folded,
   $next,
+  $panic,
   $vecCollectWay,
   iterator_map,
   iterator_skip,
@@ -53,7 +54,10 @@ function main() {
         iterator_skip([[[5], [6], [7]]], 1, { next: ownIterator_next }, ownDrop_drop),
         (d) => {
           if (d[0] === 6) {
-            throw new Error("map");
+            throw $panic(
+              "map",
+              "test/corpus/generic_collect_of_a_panicking_chain_drops_its_source.rs:36:13",
+            );
           }
           return String(d[0]);
         },
@@ -77,7 +81,10 @@ function main() {
         [[[1], [2], [3]]],
         (d) => {
           if (d[0] === 2) {
-            throw new Error("map");
+            throw $panic(
+              "map",
+              "test/corpus/generic_collect_of_a_panicking_chain_drops_its_source.rs:43:13",
+            );
           }
           return d[0];
         },

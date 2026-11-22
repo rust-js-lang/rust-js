@@ -16,18 +16,19 @@ function createLaneMap(initial) {
 
 function mark(root, index, lane) {
   const lanes = root.transitionLanes;
-  lanes[index] = (($index(lanes, index) ?? 0) | lane) >>> 0;
+  lanes[index] = (($index(lanes, index, "test/corpus/nullable_items.rs:24:30") ?? 0) | lane) >>> 0;
 }
 
 function clear(root, index) {
-  if ($index(root.transitionLanes, index) != null) {
-    root.transitionLanes[$at(root.transitionLanes, index)] = null;
+  if ($index(root.transitionLanes, index, "test/corpus/nullable_items.rs:28:38") != null) {
+    root.transitionLanes[$at(root.transitionLanes, index, "test/corpus/nullable_items.rs:29:43")] =
+      null;
   }
 }
 
 function hide(root, index, update) {
   const hidden = root.hiddenUpdates;
-  $index(hidden, index);
+  $index(hidden, index, "test/corpus/nullable_items.rs:35:22");
   if (hidden[index] != null) {
     const updates = hidden[index];
     updates.push(update);
@@ -38,7 +39,7 @@ function hide(root, index, update) {
 
 function takeHidden(root, index) {
   const hidden = root.hiddenUpdates;
-  $index(hidden, index);
+  $index(hidden, index, "test/corpus/nullable_items.rs:43:17");
   const updates = hidden[index];
   hidden[index] = null;
   return updates != null ? updates.length : 0;

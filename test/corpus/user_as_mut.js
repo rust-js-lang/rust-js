@@ -27,11 +27,11 @@ function gridAsMutU8Slice_asMut(grid) {
 function main() {
   const stack = { items: [3, 1, 2] };
   const value = stackAsMutI32Slice_asMut(stack);
-  value[$at(value, 0)] = 9;
+  value[$at(value, 0, "test/corpus/user_as_mut.rs:39:5")] = 9;
   console.log(`[${stack.items.join(", ")}]`);
   const slice = stackBorrowMutI32Slice_borrowMut(stack);
   slice.sort((a, b) => a - b);
-  slice[2] = (slice[$at(slice, 2)] + 1) | 0;
+  slice[2] = (slice[$at(slice, 2, "test/corpus/user_as_mut.rs:43:5")] + 1) | 0;
   console.log(`[${stack.items.join(", ")}]`);
   const all = stackAsMutI32Slice_asMut(stack);
   all.reverse();
@@ -41,7 +41,7 @@ function main() {
   for (const [i, cell] of $mutItems(gridAsMutU8Slice_asMut(grid)).entries()) {
     cell.value = ((i & 255) * 2) & 255;
   }
-  $swap(gridAsMutU8Slice_asMut(grid), 0, 3);
+  $swap(gridAsMutU8Slice_asMut(grid), 0, 3, "test/corpus/user_as_mut.rs:53:19");
   console.log(`[${grid[0].join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

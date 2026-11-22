@@ -6,6 +6,7 @@ import {
   $debugStruct,
   $debugTuple,
   $out,
+  $panic,
   $print,
   $printing,
   $sink,
@@ -21,7 +22,7 @@ function gridDebug_fmt(grid, options) {
   $out("!");
   f.write("Grid(\n");
   if (grid[0] > 2) {
-    throw new Error("too big");
+    throw $panic("too big", "test/corpus/printing_derived_debug_stopped_part_way.rs:19:13");
   }
   f.write(`${grid[0]})`);
   return f.done();

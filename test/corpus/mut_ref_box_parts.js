@@ -8,21 +8,31 @@ export function entry() {
 
 function number(o) {
   if (o.value !== 3) {
-    $assertFailed("Eq", String(o.value), "3");
+    $assertFailed("Eq", String(o.value), "3", "test/corpus/mut_ref_box_parts.rs:7:5");
   }
   o.value = (o.value + 1) | 0;
 }
 
 function text(o) {
   if (o.value !== "a") {
-    $assertFailed("Eq", $debugStr(o.value), $debugStr("a"));
+    $assertFailed(
+      "Eq",
+      $debugStr(o.value),
+      $debugStr("a"),
+      "test/corpus/mut_ref_box_parts.rs:12:5",
+    );
   }
   o.value += "b";
 }
 
 function generic(o, TPartialEq, TDebug) {
   if (o.value != undefined) {
-    $assertFailed("Eq", o.value == null ? "None" : `Some(${TDebug.fmt(o.value)})`, "None");
+    $assertFailed(
+      "Eq",
+      o.value == null ? "None" : `Some(${TDebug.fmt(o.value)})`,
+      "None",
+      "test/corpus/mut_ref_box_parts.rs:17:5",
+    );
   }
 }
 

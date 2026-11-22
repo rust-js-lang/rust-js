@@ -17,7 +17,11 @@ function find(name) {
 }
 
 function main() {
-  console.log(`${$unwrapOk(find("pen"), undefined, stockErrorDebug_fmt)}`);
-  console.log(`${$unwrapOk(find("ink"), undefined, stockErrorDebug_fmt)}`);
+  console.log(
+    `${$unwrapOk(find("pen"), "test/corpus/unwrap_typed_debug.rs:18:32", undefined, stockErrorDebug_fmt)}`,
+  );
+  console.log(
+    `${$unwrapOk(find("ink"), "test/corpus/unwrap_typed_debug.rs:19:32", undefined, stockErrorDebug_fmt)}`,
+  );
 }
 //# sourceMappingURL=case.js.map

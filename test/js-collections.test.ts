@@ -415,7 +415,7 @@ pub fn listed(set: &Set<str>) -> Vec<String> {
   // (#2111). A field's cell, `transitionLanes`, isn't one #2114's slots
   // take, a thread-local's or a local's: a struct's own is to come.
   expect(js).toContain(
-    "  const transitionLanesMap = $borrowMut(root.transitionLanes, true);\n  try {\n    const transitions = $index(transitionLanesMap, index) ?? new Set();\n    transitions.add(transition);\n",
+    "  const transitionLanesMap = $borrowMut(root.transitionLanes, \"lib.rs:13:58\", true);\n  try {\n    const transitions = $index(transitionLanesMap, index, \"lib.rs:14:43\") ?? new Set();\n    transitions.add(transition);\n",
   );
   expect(js).toContain("    transitions.forEach((transition) => {\n      transitionsForLanes.push(transition);\n    });\n");
   expect(dts).toContain("export function listed(set: Set<string>): string[];");

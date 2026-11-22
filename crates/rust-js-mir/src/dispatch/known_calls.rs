@@ -31,9 +31,9 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         // (ADR 1073).
         if let [Value::View(..)] = values.as_slice()
             && let Some(helper) = rust_js_lower::std_types::slice::ranged(known)
-            && let Some(Value::View(list, at)) = values.pop()
+            && let Some(Value::View(list, at, raised)) = values.pop()
         {
-            let ranged = Value::Expr(self.view_call(helper, list).or_at(at));
+            let ranged = Value::Expr(self.raised_view_call(helper, list, raised).or_at(at));
             return Ok(self.std_value_as(ranged, output, arg_tys));
         }
         // An iterator it takes by value, dropped after it (`consumed_by_std`).

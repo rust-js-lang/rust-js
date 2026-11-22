@@ -17,7 +17,7 @@ function main() {
         inspect(item);
         return item;
       })
-      .map((option) => $unwrap(option)),
+      .map((option) => $unwrap(option, "test/corpus/std_function_value_panic.rs:8:10")),
   );
   console.log(`[${seen.join(", ")}]`);
 }

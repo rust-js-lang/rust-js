@@ -7,6 +7,7 @@ import {
   $cellReplace,
   $cleanup,
   $panicking,
+  $stdSites,
   $take,
   $unborrow,
 } from "@rust-js/std";
@@ -28,11 +29,15 @@ function logDrop_drop(log) {
 function main() {
   const log = [1];
   const taken = $catchUnwind(() => {
-    const _held = $borrow(log, true);
+    const _held = $borrow(
+      log,
+      "test/corpus/ref_cell_replaced_while_borrowed_drops_what_it_was_given.rs:26:25",
+      true,
+    );
     const next = logDefault_default();
     try {
       const _again = $take(
-        $borrowMut(log, undefined, () => {
+        $borrowMut(log, $stdSites.refCellTake[0], undefined, () => {
           logDrop_drop(next);
         }),
         next,
@@ -44,13 +49,22 @@ function main() {
   });
   console.log(`take caught ${taken.TAG === "Err"}`);
   const replaced = $catchUnwind(() => {
-    const _held = $borrow(log, true);
+    const _held = $borrow(
+      log,
+      "test/corpus/ref_cell_replaced_while_borrowed_drops_what_it_was_given.rs:31:25",
+      true,
+    );
     const next = [2];
     try {
       const _old = $take(
-        $borrowMut(log, undefined, () => {
-          logDrop_drop(next);
-        }),
+        $borrowMut(
+          log,
+          "test/corpus/ref_cell_replaced_while_borrowed_drops_what_it_was_given.rs:32:24",
+          undefined,
+          () => {
+            logDrop_drop(next);
+          },
+        ),
         next,
       );
       logDrop_drop(_old);
@@ -63,9 +77,14 @@ function main() {
   let old;
   try {
     old = $take(
-      $borrowMut(log, undefined, () => {
-        logDrop_drop(next);
-      }),
+      $borrowMut(
+        log,
+        "test/corpus/ref_cell_replaced_while_borrowed_drops_what_it_was_given.rs:35:19",
+        undefined,
+        () => {
+          logDrop_drop(next);
+        },
+      ),
       next,
     );
   } catch (error) {
@@ -79,15 +98,24 @@ function main() {
   // Of an `Option`, which JS holds in the cell's `value`.
   const maybe = { value: [4] };
   const optional = $catchUnwind(() => {
-    const _held = $borrowMut(maybe, true);
+    const _held = $borrowMut(
+      maybe,
+      "test/corpus/ref_cell_replaced_while_borrowed_drops_what_it_was_given.rs:41:27",
+      true,
+    );
     const next = [5];
     try {
       const _old = $cellReplace(
-        $borrowMut(maybe, undefined, () => {
-          if (next != null) {
-            logDrop_drop(next);
-          }
-        }),
+        $borrowMut(
+          maybe,
+          "test/corpus/ref_cell_replaced_while_borrowed_drops_what_it_was_given.rs:42:26",
+          undefined,
+          () => {
+            if (next != null) {
+              logDrop_drop(next);
+            }
+          },
+        ),
         next,
       );
       if (_old != null) {

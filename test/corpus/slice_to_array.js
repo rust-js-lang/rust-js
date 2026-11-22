@@ -11,12 +11,14 @@ function main() {
   const slice = bytes.slice(0, 3);
   const fixed = $unwrapOk(
     slice.length === 3 ? { TAG: "Ok", _0: slice } : { TAG: "Err" },
+    "test/corpus/slice_to_array.rs:7:51",
     undefined,
     (e) => "TryFromSliceError(())",
   );
   const slice$1 = bytes.slice(1, 3);
   const owned = $unwrapOk(
     slice$1.length === 2 ? { TAG: "Ok", _0: slice$1 } : { TAG: "Err" },
+    "test/corpus/slice_to_array.rs:8:51",
     undefined,
     (e) => "TryFromSliceError(())",
   );
@@ -34,6 +36,7 @@ function main() {
   const words = ["a", "b"];
   const pair = $unwrapOk(
     words.length === 2 ? { TAG: "Ok", _0: words } : { TAG: "Err" },
+    "test/corpus/slice_to_array.rs:16:58",
     undefined,
     (e) => "TryFromSliceError(())",
   );

@@ -37,7 +37,7 @@ function main() {
   const items$1 = [1, 4, 2, 8, 5];
 
   function findLast(f) {
-    const borrow = $borrow(items$1, true);
+    const borrow = $borrow(items$1, "test/corpus/refcell_borrow_loops.rs:15:33", true);
     try {
       for (let i = borrow.length - 1; i >= 0; i--) {
         const item = borrow[i];
@@ -53,7 +53,7 @@ function main() {
   // A range over the borrow, which it changes: React Float's
   // hydrateHoistable, its `for (let i = 0; ..)` in one `try` (rd200).
   function takeFirst(f) {
-    const items = $borrowMut(items$1, true);
+    const items = $borrowMut(items$1, "test/corpus/refcell_borrow_loops.rs:26:36", true);
     try {
       const end = items.length;
       for (let i = 0; i < end; i++) {
@@ -74,7 +74,7 @@ function main() {
     let taken;
     get: {
       if (made > 0) {
-        const items = $borrowMut(items$1, true);
+        const items = $borrowMut(items$1, "test/corpus/refcell_borrow_loops.rs:43:44", true);
         try {
           const end = items.length;
           for (let i = 0; i < end; i++) {
@@ -89,7 +89,7 @@ function main() {
         }
       }
       if (items$1.borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("test/corpus/refcell_borrow_loops.rs:52:24");
       }
       items$1.push(made);
       taken = made;
@@ -98,7 +98,7 @@ function main() {
   }
 
   function any(f) {
-    const borrow = $borrow(items$1, true);
+    const borrow = $borrow(items$1, "test/corpus/refcell_borrow_loops.rs:59:33", true);
     try {
       for (let i = 0; i < borrow.length; i++) {
         const item = borrow[i];
@@ -123,20 +123,22 @@ function main() {
     `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
   if (items$1.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_borrow_loops.rs:104:16");
   }
   items$1.push(8);
   console.log(`${takeOrPush((x) => x === 8, 5)} ${takeOrPush((x) => x === 99, 6)}`);
   console.log(`${takeOrPush((x) => x === 6, 0)}`);
-  console.log(`${any((x) => x === 7 || $borrow(items$1).length > 9)}`);
+  console.log(
+    `${any((x) => x === 7 || $borrow(items$1, "test/corpus/refcell_borrow_loops.rs:107:55").length > 9)}`,
+  );
   if (items$1.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_borrow_loops.rs:108:16");
   }
   items$1.push(7);
   const pushed = $catchUnwind(() =>
     any((x) => {
       if (items$1.borrows) {
-        $alreadyBorrowed();
+        $alreadyBorrowed("test/corpus/refcell_borrow_loops.rs:111:24");
       }
       items$1.push(x);
       return false;
@@ -145,9 +147,9 @@ function main() {
   console.log(`pushed while borrowed: ${pushed.TAG === "Err"}`);
   // Released as the panic left the loop: it's borrowed again.
   if (items$1.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/refcell_borrow_loops.rs:117:16");
   }
   items$1.push(9);
-  console.log(`[${$borrow(items$1).join(", ")}]`);
+  console.log(`[${$borrow(items$1, "test/corpus/refcell_borrow_loops.rs:118:33").join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

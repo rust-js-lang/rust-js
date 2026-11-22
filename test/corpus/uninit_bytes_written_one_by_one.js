@@ -313,7 +313,7 @@ function main() {
   // A slice of one place, written through, and where the place is.
   const x = { value: 5 };
   const s = $ptrSliceMut($ptr(x, "value", 0), 1);
-  s[$at(s, 0)] = 9;
+  s[$at(s, 0, "test/corpus/uninit_bytes_written_one_by_one.rs:51:5")] = 9;
   const at = $ptrEq($ptr(s, 0), $ptr(x, "value", 0), 1);
   console.log(`${x.value} ${at}`);
 }

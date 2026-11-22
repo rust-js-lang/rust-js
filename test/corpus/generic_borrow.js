@@ -136,7 +136,7 @@ function main() {
 
   const id = hyphenatedBorrowUuid_borrow(ids[1]);
   const name = tagBorrowStr_borrow(tags[0]);
-  const text = $index(words, 0);
+  const text = $index(words, 0, "test/corpus/generic_borrow.rs:93:27");
   const items = [1, 2];
   const boxed = 3;
   const shared = "rc";
@@ -144,6 +144,8 @@ function main() {
 
   const labelled = [[{ name: "pear" }], [{ name: "fig" }]];
   $sortStable(labelled, (a, b) => labelledOrd_cmp(a, b, tagBorrowStr) < 0, "general8", 12);
-  console.log(`${$index(labelled, 0)[0].name} ${$index(labelled, 1)[0].name}`);
+  console.log(
+    `${$index(labelled, 0, "test/corpus/generic_borrow.rs:102:31")[0].name} ${$index(labelled, 1, "test/corpus/generic_borrow.rs:102:51")[0].name}`,
+  );
 }
 //# sourceMappingURL=case.js.map

@@ -989,6 +989,10 @@ pub enum ExprKind {
     /// `this`, and which of `eval` is an indirect eval, run in the global
     /// scope: a binding's path `(0, eval)`, `js::eval`'s (ADR 1033, amended).
     Unbound(Box<Expr>),
+    /// Where a panic a helper raises was raised, the location its call is
+    /// given, `raisedAt` (`Expr::raised_at`, #2292): printed as the location
+    /// itself; a call that holds one is given no other.
+    RaisedAt(Box<Expr>),
     /// `await p`: `.await` (ADR 0029).
     Await(Box<Expr>),
     /// `<div className="hero">..</div>`, `<Counter initial={1} />` or `<>..</>` (ADR 0040).

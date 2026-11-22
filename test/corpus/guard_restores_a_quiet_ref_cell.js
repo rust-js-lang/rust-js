@@ -7,6 +7,8 @@ import {
   $catchUnwind,
   $cellReplace,
   $cleanup,
+  $panic,
+  $stdSites,
   $withBorrow,
 } from "@rust-js/std";
 
@@ -19,13 +21,13 @@ const held = {};
 const loud = {};
 
 function active() {
-  return $withBorrow(ACTIVE, (a) => a?.name ?? "none");
+  return $withBorrow(ACTIVE, (a) => a?.name ?? "none", $stdSites.localKeyWithBorrow[0]);
 }
 
 function withActive(node, work) {
-  const prev = $cellReplace($borrowMut(ACTIVE), node);
+  const prev = $cellReplace($borrowMut(ACTIVE, $stdSites.localKeyReplace[0]), node);
   function restore() {
-    $cellReplace($borrowMut(ACTIVE), prev);
+    $cellReplace($borrowMut(ACTIVE, $stdSites.localKeySet[0]), prev);
   }
   try {
     work();
@@ -40,11 +42,11 @@ function withActive(node, work) {
 
 function withRead(work) {
   if (ACTIVE.borrows < 0) {
-    $alreadyMutablyBorrowed();
+    $alreadyMutablyBorrowed("test/corpus/guard_restores_a_quiet_ref_cell.rs:48:34");
   }
   const prev = ACTIVE.value;
   function restore() {
-    $cellReplace($borrowMut(ACTIVE), prev);
+    $cellReplace($borrowMut(ACTIVE, $stdSites.localKeySet[0]), prev);
   }
   try {
     work();
@@ -58,9 +60,9 @@ function withRead(work) {
 }
 
 function withHeld(node, work) {
-  const prev = $cellReplace($borrowMut(held), node);
+  const prev = $cellReplace($borrowMut(held, $stdSites.localKeyReplace[0]), node);
   function restore() {
-    $cellReplace($borrowMut(held), prev);
+    $cellReplace($borrowMut(held, $stdSites.localKeySet[0]), prev);
   }
   try {
     work();
@@ -95,8 +97,14 @@ function withLoud(name, work) {
 
 function checked(limit, work) {
   function restore() {
-    if ($withBorrow(ACTIVE, (a) => (a != null ? $byteLen(a.name) : 0)) > limit) {
-      throw new Error("too long");
+    if (
+      $withBorrow(
+        ACTIVE,
+        (a) => (a != null ? $byteLen(a.name) : 0),
+        $stdSites.localKeyWithBorrow[0],
+      ) > limit
+    ) {
+      throw $panic("too long", "test/corpus/guard_restores_a_quiet_ref_cell.rs:67:13");
     }
   }
   try {
@@ -121,15 +129,15 @@ function main() {
   console.log(`after ${active()}`);
   const thrown = $catchUnwind(() => {
     withActive({ name: "thrown" }, () => {
-      throw new Error("boom");
+      throw $panic("boom", "test/corpus/guard_restores_a_quiet_ref_cell.rs:81:58");
     });
   });
   console.log(`caught ${thrown.TAG === "Err"} at ${active()}`);
   withActive({ name: "read" }, () => {
     const read = $catchUnwind(() =>
       withRead(() => {
-        $cellReplace($borrowMut(ACTIVE));
-        throw new Error("cleared");
+        $cellReplace($borrowMut(ACTIVE, $stdSites.localKeySet[0]));
+        throw $panic("cleared", "test/corpus/guard_restores_a_quiet_ref_cell.rs:88:17");
       }),
     );
     console.log(`read ${read.TAG === "Err"} at ${active()}`);
@@ -137,12 +145,16 @@ function main() {
   // A borrow held while the guard's `set` runs: its cell's borrows are
   // checked, and the `set` panics, as it finds the cell borrowed.
   const borrowed = $catchUnwind(() => {
-    $withBorrow(held, (held) => {
-      console.log(`held ${held != null}`);
-      withHeld({ name: "held" }, () => {
-        console.log("holding");
-      });
-    });
+    $withBorrow(
+      held,
+      (held) => {
+        console.log(`held ${held != null}`);
+        withHeld({ name: "held" }, () => {
+          console.log("holding");
+        });
+      },
+      $stdSites.localKeyWithBorrow[0],
+    );
   });
   console.log(`borrowed ${borrowed.TAG === "Err"}`);
   withLoud("first", () => {

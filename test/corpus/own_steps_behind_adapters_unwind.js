@@ -16,6 +16,7 @@ import {
   $mapEnds,
   $next,
   $nextBack,
+  $panic,
   $rangeNext,
   $roomForHint,
   $sizeHint,
@@ -42,7 +43,7 @@ function dDrop_drop(d) {
 function numsIterator_next(nums) {
   const next = $next(nums.items);
   if (next === nums.at) {
-    throw new Error("boom");
+    throw $panic("boom", "test/corpus/own_steps_behind_adapters_unwind.rs:32:13");
   }
   return next;
 }
@@ -98,7 +99,7 @@ function numsDoubleEndedIterator_nextBack(nums) {
 function plainIterator_next(plain) {
   plain.n = (plain.n + 1) >>> 0;
   if (plain.n === plain.at) {
-    throw new Error("plain");
+    throw $panic("plain", "test/corpus/own_steps_behind_adapters_unwind.rs:71:13");
   }
   return plain.n < 6 ? plain.n : undefined;
 }

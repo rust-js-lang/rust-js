@@ -10,6 +10,7 @@ import {
   $iter,
   $lastDropping,
   $next,
+  $panic,
   $slicing,
   $some,
   $someValue,
@@ -23,7 +24,7 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 2) {
-    throw new Error("drop");
+    throw $panic("drop", "test/corpus/last_kept_drop_panics.rs:14:13");
   }
 }
 

@@ -15,7 +15,10 @@ function enter(n) {
   if (n > 4) {
     const previous$1 = (n * 2) >>> 0;
     try {
-      throw $stringPanic(`too deep ${previous$1}`);
+      throw $stringPanic(
+        `too deep ${previous$1}`,
+        "test/corpus/drop_guard_restores_on_panic.rs:29:9",
+      );
     } catch (error) {
       $cleanup(() => {
         console.log(`restored ${previous} (was ${depth})`);

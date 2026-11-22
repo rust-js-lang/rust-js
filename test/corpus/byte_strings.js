@@ -42,7 +42,9 @@ function main() {
   // A string's UTF-8 bytes: a multi-byte character is more than one.
   const word = "héllo €";
   const bytes = $utf8Bytes(word);
-  console.log(`${Array.from(word).length} ${bytes.length} [${$slice(bytes, 0, 3).join(", ")}]`);
+  console.log(
+    `${Array.from(word).length} ${bytes.length} [${$slice(bytes, 0, "test/corpus/byte_strings.rs:32:69", 3).join(", ")}]`,
+  );
   console.log(`${checksum($utf8Bytes("abc"))}`);
   console.log(`${method($utf8Bytes("GET"))}`);
 }

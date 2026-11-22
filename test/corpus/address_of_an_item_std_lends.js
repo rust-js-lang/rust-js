@@ -26,15 +26,21 @@ function main() {
   const base = $addr($ptr(v, 0), 12);
   const at = (r) => ($addr($ptr(r, "c", 8), 2) - base) >>> 0;
   $storedItems(v, 12);
-  console.log(`get ${at($unwrap(v[2]))}`);
+  console.log(`get ${at($unwrap(v[2], "test/corpus/address_of_an_item_std_lends.rs:21:36"))}`);
   $storedItems(v, 12);
   $storedItems(v, 12);
-  console.log(`first ${at($unwrap(v[0]))} last ${at($unwrap(v.at(-1)))}`);
+  console.log(
+    `first ${at($unwrap(v[0], "test/corpus/address_of_an_item_std_lends.rs:22:47"))} last ${at($unwrap(v.at(-1), "test/corpus/address_of_an_item_std_lends.rs:22:70"))}`,
+  );
   $storedItems(v, 12);
-  const [left, right] = $sliceSplitAt(v, 1);
-  console.log(`split ${at($index(left, 0))} ${at($index(right, 1))}`);
+  const [left, right] = $sliceSplitAt(v, 1, "test/corpus/address_of_an_item_std_lends.rs:23:27");
+  console.log(
+    `split ${at($index(left, 0, "test/corpus/address_of_an_item_std_lends.rs:24:33"))} ${at($index(right, 1, "test/corpus/address_of_an_item_std_lends.rs:24:47"))}`,
+  );
   $storedItems(v, 12);
-  const chunks = $chunks(v, 2).map((chunk) => at($index(chunk, 1)));
+  const chunks = $chunks(v, 2, "test/corpus/address_of_an_item_std_lends.rs:25:32").map((chunk) =>
+    at($index(chunk, 1, "test/corpus/address_of_an_item_std_lends.rs:25:58")),
+  );
   console.log(`chunks [${chunks.join(", ")}]`);
   const seen = [];
   $storedItems(v, 12);
@@ -44,7 +50,7 @@ function main() {
   }
   console.log(`iter_mut [${seen.join(", ")}]`);
   $storedItems(v, 12);
-  const got = $unwrap(v[3]);
+  const got = $unwrap(v[3], "test/corpus/address_of_an_item_std_lends.rs:33:28");
   got.a = 9;
   console.log(`get_mut ${($addr($ptr(got, "a", 0), 1) - base) >>> 0}`);
 
@@ -58,6 +64,8 @@ function main() {
   console.log(`captured ${(captured() - $addr($ptrTo(array), 24)) >>> 0}`);
   $storedItems(v, 12);
   $storedItems(v, 12);
-  console.log(`${$index(v, 3).a} ${$index(v, 0).b}`);
+  console.log(
+    `${$index(v, 3, "test/corpus/address_of_an_item_std_lends.rs:40:24").a} ${$index(v, 0, "test/corpus/address_of_an_item_std_lends.rs:40:32").b}`,
+  );
 }
 //# sourceMappingURL=case.js.map

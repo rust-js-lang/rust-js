@@ -13,13 +13,22 @@ function twice(f) {
 
 function main() {
   const cells = [[1], [2]];
-  const picked = cells != null ? $index(cells, 0) : undefined;
-  const held = $borrowMut($index(cells, 0), true);
+  const picked =
+    cells != null
+      ? $index(cells, 0, "test/corpus/refcell_flow_reaches_unseen.rs:16:49")
+      : undefined;
+  const held = $borrowMut(
+    $index(cells, 0, "test/corpus/refcell_flow_reaches_unseen.rs:17:21"),
+    "test/corpus/refcell_flow_reaches_unseen.rs:17:25",
+    true,
+  );
   console.log(`${held.length}`);
   try {
     twice(() => {
       if (picked != null) {
-        console.log(`${$borrow(picked).length}`);
+        console.log(
+          `${$borrow(picked, "test/corpus/refcell_flow_reaches_unseen.rs:21:33").length}`,
+        );
       }
     });
     console.log(`${held.length}`);

@@ -11,6 +11,7 @@ import {
   $intsOrdered,
   $iter,
   $mapEnds,
+  $panic,
   $sortStable,
 } from "@rust-js/std";
 
@@ -21,7 +22,7 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
   if (d[0] === 3) {
-    throw new Error("drop 3");
+    throw $panic("drop 3", "test/corpus/generic_from_iter_in_place.rs:13:13");
   }
 }
 

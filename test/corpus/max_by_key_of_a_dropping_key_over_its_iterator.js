@@ -7,6 +7,7 @@ import {
   $iterator,
   $maxByKey,
   $minByKey,
+  $panic,
   $print,
 } from "@rust-js/std";
 
@@ -99,7 +100,7 @@ function main() {
   let r = $catchUnwind(() => {
     function f(x) {
       if (x === 1) {
-        throw new Error("key");
+        throw $panic("key", "test/corpus/max_by_key_of_a_dropping_key_over_its_iterator.rs:57:13");
       }
       return (x + zero(k$4)) >>> 0;
     }
@@ -121,7 +122,10 @@ function main() {
   r = $catchUnwind(() => {
     function f(x) {
       if (x === 1) {
-        throw new Error("first key");
+        throw $panic(
+          "first key",
+          "test/corpus/max_by_key_of_a_dropping_key_over_its_iterator.rs:65:13",
+        );
       }
       return (x + zero(k$5)) >>> 0;
     }

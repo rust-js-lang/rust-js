@@ -350,7 +350,7 @@ pub fn shrinking(v: &[u32]) -> u32 {
   expect(js).toContain("    for (let i = 1; i < v.length; i++) {\n      const x = v[i];\n");
   expect(js).toContain("    for (let i = 0; i < 2; i++) {\n      const x = v[i];\n");
   expect(js).toContain("    for (let i = 1; i < 2; i++) {\n      const x = v[i];\n");
-  expect(js).toContain("  for (const x of $slice(v, start)) {\n");
+  expect(js).toContain("  for (const x of $slice(v, start, \"lib.rs:19:17\")) {\n");
   // An end the body changes, which Rust read once: the range's copy.
   expect(js).toContain("    for (const x of v.slice(0, end)) {\n");
   const lib = await import(join(dir, "lib.js"));
@@ -392,7 +392,7 @@ pub fn equal(next: &[u32], prev: &[u32]) -> bool {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // In a closure, its reads keep their checks: the parent's relations
   // aren't carried into a closure's captures yet (#1701).
-  expect(js).toContain("same($index(next, i), $index(prev, i))");
+  expect(js).toContain("same($index(next, i, \"lib.rs:15:33\"), $index(prev, i, \"lib.rs:15:43\"))");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.equal([1, 2, 3], [1, 2, 3])).toBe(true);
   expect(lib.equal([1, 2], [1, 2, 3])).toBe(true);

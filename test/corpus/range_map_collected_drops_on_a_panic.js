@@ -6,6 +6,7 @@ import {
   $collectDropping,
   $lazyRange,
   $live,
+  $panic,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -18,7 +19,7 @@ function cellDrop_drop(cell) {
 }
 function made(n) {
   if (n === 2) {
-    throw new Error("at 2");
+    throw $panic("at 2", "test/corpus/range_map_collected_drops_on_a_panic.rs:14:9");
   }
   return [n];
 }
@@ -28,7 +29,7 @@ function main() {
     const cells = $collectDropping(
       $lazyRange(0, w).map((n) => {
         if (n === 2) {
-          throw new Error("at 2");
+          throw $panic("at 2", "test/corpus/range_map_collected_drops_on_a_panic.rs:24:21");
         }
         return [n * 0 + 7];
       }),
@@ -56,7 +57,7 @@ function main() {
         .map((c) => {
           if (c[0] === 30) {
             try {
-              throw new Error("at 30");
+              throw $panic("at 30", "test/corpus/range_map_collected_drops_on_a_panic.rs:37:37");
             } catch (error) {
               $cleanup(() => {
                 cellDrop_drop(c);

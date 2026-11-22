@@ -8,7 +8,7 @@ export function entry() {
 
 function borrowed(items, keep) {
   let total = 0;
-  const borrow = $borrow(items, true);
+  const borrow = $borrow(items, "test/corpus/borrow_loop_inner_break_outer.rs:10:29", true);
   try {
     outer: for (let i = 0; i < borrow.length; i++) {
       const x = borrow[i];
@@ -39,15 +39,17 @@ function main() {
   console.log(
     `${borrowed(items, (x) => {
       if (items.borrows < 0) {
-        $alreadyMutablyBorrowed();
+        $alreadyMutablyBorrowed("test/corpus/borrow_loop_inner_break_outer.rs:34:48");
       }
       return items.length > x;
     })}`,
   );
   if (items.borrows) {
-    $alreadyBorrowed();
+    $alreadyBorrowed("test/corpus/borrow_loop_inner_break_outer.rs:35:11");
   }
   items.push(9);
-  console.log(`[${$borrow(items).join(", ")}]`);
+  console.log(
+    `[${$borrow(items, "test/corpus/borrow_loop_inner_break_outer.rs:36:28").join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

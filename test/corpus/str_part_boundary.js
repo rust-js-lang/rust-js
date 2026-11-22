@@ -18,6 +18,7 @@ function main() {
       },
     },
     0,
+    "test/corpus/str_part_boundary.rs:6:22",
     1,
   );
   console.log("made");

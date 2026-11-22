@@ -76,8 +76,14 @@ async function check(file: string): Promise<string[]> {
   if (typeof want === "string") return [want];
   const dir = fixture(`corpus-${basename(file, ".rs")}`);
   if (snapshotsAlone) return snapshotAlone(file, want, dir);
-  const native = timed("native run", () => runNative(file, dir, want.edition, want.native));
-  if (typeof native === "string") return [native];
+  const located = timed("native run", () => runNative(file, dir, want.edition, want.native, [], { located: true }));
+  if (typeof located === "string") return [located];
+  // Of one `located-otherwise` says panics elsewhere than native's, every
+  // run compared but for where (`same`), then that it still differs.
+  const native =
+    want.locatedOtherwise !== undefined && typeof located.outcome !== "string" && "panic" in located.outcome
+      ? { ...located, outcome: { panic: located.outcome.panic } }
+      : located;
   // Its runs, kept by what they ran (ADR 0567): the case, the JS, what
   // native Rust printed and how it ended, and what every case's share. The
   // same as a run verified before isn't run again.
@@ -88,7 +94,9 @@ async function check(file: string): Promise<string[]> {
   const message = want.kind === "run-fail" || want.kind === "ignore-rust-js" ? want.message : undefined;
   const nativeOutcome: Outcome =
     want.kind === "run-abort" ? aborted : message === undefined ? { value: null } : expected({ panic: message });
-  if (typeof native.outcome === "string" || !same(native.outcome, nativeOutcome)) {
+  // Of its message: a directive says no place (#2292).
+  const unplaced = (outcome: Outcome) => ("at" in outcome ? { panic: outcome.panic } : outcome);
+  if (typeof native.outcome === "string" || !same(unplaced(native.outcome), nativeOutcome)) {
     return [`native Rust ended ${show(native.outcome)}, but the directive says ${show(nativeOutcome)}`];
   }
 
@@ -138,6 +146,12 @@ async function check(file: string): Promise<string[]> {
     if (typeof run.outcome === "string" || !same(run.outcome, native.outcome as Outcome)) {
       problems.push(`${name} ended ${show(run.outcome)}, native Rust ${show(native.outcome)}`);
     }
+  }
+  // Where it panics, native's in every run now: its directive is wrong.
+  const nativeAt = typeof located.outcome !== "string" && "at" in located.outcome ? located.outcome.at : undefined;
+  // Of runs made now: one kept from a run verified before compares nothing here.
+  if (want.locatedOtherwise !== undefined && runs.length > 0 && runs.every(([, run]) => typeof run.outcome !== "string" && "at" in run.outcome && run.outcome.at === nativeAt)) {
+    problems.push(`its panic is raised where native Rust's is now: remove \`located-otherwise: ${want.locatedOtherwise}\``);
   }
   if (timesFile !== undefined) steps.push(["compare", performance.now() - compareBegan]);
   if (programKey !== undefined && !programVerified && problems.length === before) record(programKey, basename(file));
@@ -298,6 +312,19 @@ firstPart("a directive native Rust disagrees with is reported", async () => {
 firstPart("an ignored case that passes is reported, so the list only shrinks", async () => {
   const problems = await control("passes", '//@ ignore-rust-js: a reason\nfn main() { println!("fine"); }\n');
   expect(problems).toEqual(["it passes now: remove `ignore-rust-js: a reason`"]);
+}, underLoad(120_000));
+
+// Where a panic was raised, compared as native Rust's hook names it
+// (#2292): one raised elsewhere is reported; one a directive says waits,
+// once it's native's, so the list only shrinks.
+firstPart("a panic raised elsewhere than native Rust's is reported, and a located-otherwise case raised where it is", async () => {
+  const valued = readFileSync(join(corpus, "std_function_value_panic.rs"), "utf8").replace(/^\/\/@ located-otherwise: .*\n/m, "");
+  // A control has no snapshot of its JS, which isn't what's asked.
+  const unsnapshotted = (problems: string[]) => problems.filter((problem) => !problem.includes("no snapshot of its JS"));
+  const elsewhere = unsnapshotted(await control("located-elsewhere", valued));
+  expect(elsewhere).toContainEqual(expect.stringMatching(/^node ended \{"panic":.*"at":"[^"]*located-elsewhere\.rs:7:10"\}, native Rust \{"panic":.*"at":"\/rustc\//));
+  const now = unsnapshotted(await control("located-now", '//@ run-fail: no\n//@ located-otherwise: #1 a reason\nfn main() {\n    panic!("no")\n}\n'));
+  expect(now).toEqual(["its panic is raised where native Rust's is now: remove `located-otherwise: #1 a reason`"]);
 }, underLoad(120_000));
 
 // A trait's generic method a consumer may give a value with a destructor

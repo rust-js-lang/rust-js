@@ -110,7 +110,7 @@ function main() {
   // Each of a table's `fn` pointers boxed: only the first box is itself.
   const table = [double, triple, double];
   const boxes = table.map((f) => (arg0) => f(arg0));
-  const head = $index(boxes, 0);
+  const head = $index(boxes, 0, "test/corpus/dyn_fn_addresses_of_boxes.rs:81:23");
   const same = boxes.filter((b) => b === head).length;
   const arg = boxes.map((b) => b(1)).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`table ${same} ${arg}`);

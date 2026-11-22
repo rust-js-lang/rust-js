@@ -22,17 +22,22 @@ function main() {
   d.unshift(0);
   const two = [0, 0];
   const result = $writeTry(() => $dequeReader.readExact({ value: d }, two));
-  $writeExpect(result, "called `Result::unwrap()` on an `Err` value");
+  $writeExpect(
+    result,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/io_read_deque.rs:16:28",
+  );
   console.log(`[${two.join(", ")}] [${d.join(", ")}]`);
   const rest = [9];
   console.log(
-    `${$unwrapOk($dequeReader.readToEnd({ value: d }, rest), undefined, $ioErrorDebug)} [${rest.join(", ")}] [${d.join(", ")}]`,
+    `${$unwrapOk($dequeReader.readToEnd({ value: d }, rest), "test/corpus/io_read_deque.rs:19:62", undefined, $ioErrorDebug)} [${rest.join(", ")}] [${d.join(", ")}]`,
   );
 
   const short = [5].slice();
   let e = $writeExpectErr(
     $writeTry(() => $dequeReader.readExact({ value: short }, two)),
     "called `Result::unwrap_err()` on an `Ok` value",
+    "test/corpus/io_read_deque.rs:22:40",
   );
   console.log(`${$ioErrorDisplay(e)} ${e.kind} [${two.join(", ")}] [${short.join(", ")}]`);
 
@@ -51,6 +56,7 @@ function main() {
           },
         },
       ),
+      "test/corpus/io_read_deque.rs:27:63",
       undefined,
       $ioErrorDebug,
     )} ${s} [${text.join(", ")}]`,
@@ -69,13 +75,23 @@ function main() {
         },
       },
     ),
+    "test/corpus/io_read_deque.rs:30:43",
   );
   console.log(`${$ioErrorDisplay(e)} ${kept} [${bad.join(", ")}]`);
 
   const byRef = [7, 8, 9].slice();
   const through = byRef;
-  const result$1 = $writeTry(() => $dequeReader.readExact({ value: through }, $view(two, 0, 1)));
-  $writeExpect(result$1, "called `Result::unwrap()` on an `Err` value");
+  const result$1 = $writeTry(() =>
+    $dequeReader.readExact(
+      { value: through },
+      $view(two, 0, "test/corpus/io_read_deque.rs:35:32", 1),
+    ),
+  );
+  $writeExpect(
+    result$1,
+    "called `Result::unwrap()` on an `Err` value",
+    "test/corpus/io_read_deque.rs:35:39",
+  );
   $dequeReader.consume({ value: through }, 1);
   console.log(`[${two.join(", ")}] [${byRef.join(", ")}]`);
 

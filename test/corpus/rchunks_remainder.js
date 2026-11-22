@@ -8,20 +8,22 @@ export function entry() {
 
 function main() {
   const a = [1, 2, 3, 4, 5, 6, 7, 8];
-  console.log(`[${$rchunks(a, 3, true).remainder.join(", ")}]`);
-  const it = $iter($rchunks(a, 3, true));
+  console.log(
+    `[${$rchunks(a, 3, true, "test/corpus/rchunks_remainder.rs:5:24").remainder.join(", ")}]`,
+  );
+  const it = $iter($rchunks(a, 3, true, "test/corpus/rchunks_remainder.rs:6:20"));
   const next = $next(it);
   console.log(
     `${next == null ? "None" : `Some([${next.join(", ")}])`} [${it.items.remainder.join(", ")}]`,
   );
   const b = [1, 2, 3, 4, 5];
-  const m = $iter($rchunksMut(b, 2, true));
+  const m = $iter($rchunksMut(b, 2, true, "test/corpus/rchunks_remainder.rs:9:19"));
   const last = $next(m);
   if (last != null) {
-    last[$at(last, 0)] = 0;
+    last[$at(last, 0, "test/corpus/rchunks_remainder.rs:11:9")] = 0;
   }
   console.log(`[${m.items.remainder.join(", ")}]`);
-  const arg = $rchunks(a, 3, false);
+  const arg = $rchunks(a, 3, false, "test/corpus/rchunks_remainder.rs:14:30");
   console.log(`[${b.join(", ")}] [${arg.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

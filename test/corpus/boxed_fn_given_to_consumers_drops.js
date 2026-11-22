@@ -12,6 +12,7 @@ import {
   $lent,
   $mutGet,
   $orInsertWith,
+  $panic,
 } from "@rust-js/std";
 
 export function entry() {
@@ -218,7 +219,7 @@ function main() {
   const q = $dropping(
     (x) => {
       if (x === 3) {
-        throw new Error("three");
+        throw $panic("three", "test/corpus/boxed_fn_given_to_consumers_drops.rs:69:13");
       }
       return x > 5;
     },

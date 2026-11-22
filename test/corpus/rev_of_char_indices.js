@@ -22,7 +22,14 @@ function properPrefixes(s) {
 function longestBorder(needle) {
   for (const k of $rev($mapEnds($charIndices(needle), ([idx]) => idx)).filter((idx) => idx > 0)) {
     if (
-      $sliceStartsWith($utf8Bytes(needle), $slice($utf8Bytes(needle), ($byteLen(needle) - k) >>> 0))
+      $sliceStartsWith(
+        $utf8Bytes(needle),
+        $slice(
+          $utf8Bytes(needle),
+          ($byteLen(needle) - k) >>> 0,
+          "test/corpus/rev_of_char_indices.rs:11:60",
+        ),
+      )
     ) {
       return k;
     }

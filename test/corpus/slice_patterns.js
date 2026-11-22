@@ -118,10 +118,13 @@ function main() {
   // An item of the rest, a subslice JS holds a copy of, bounds-checked:
   // its length's borrow points through nothing.
   if (names.length >= 1) {
-    const rest = $view(names, 1);
+    const rest = $view(names, 1, "test/corpus/slice_patterns.rs:82:20");
     const length = rest.length;
     if (0 >= length) {
-      throw $stringPanic(`index out of bounds: the len is ${length} but the index is 0`);
+      throw $stringPanic(
+        `index out of bounds: the len is ${length} but the index is 0`,
+        "test/corpus/slice_patterns.rs:83:36",
+      );
     }
     [names[0], rest[0]] = [rest[0], names[0]];
   }

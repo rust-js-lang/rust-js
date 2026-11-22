@@ -41,10 +41,10 @@ function ids(v) {
 function main() {
   let v = [[3], [1], [2]];
   try {
-    $insertAt(v, 1, [4], noisyDrop_drop);
+    $insertAt(v, 1, [4], "test/corpus/vec_destructors.rs:21:7", noisyDrop_drop);
     console.log(`[${ids(v).join(", ")}]`);
     if (0 >= v.length) {
-      $removeOutOfBounds(v, 0);
+      $removeOutOfBounds(v, 0, "test/corpus/vec_destructors.rs:23:21");
     }
     const removed = v.splice(0, 1)[0];
     try {
@@ -74,7 +74,7 @@ function main() {
       $sortUnstable(v, (a, b) => key$1(a) < key$1(b), "general8");
       $rotateLeft(v, 1, "mid");
       console.log(`[${ids(v).join(", ")}]`);
-      const tail = $splitOff(v, 2);
+      const tail = $splitOff(v, 2, "test/corpus/vec_destructors.rs:39:18");
       let tmp;
       try {
         tmp = ids(v);

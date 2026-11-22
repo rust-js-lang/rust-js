@@ -74,6 +74,6 @@ function main() {
   s += " l " + `${two}\n`;
   $print(s);
   $print("e " + `${one}\n` + "tail\n");
-  throw $stringPanic("bad " + `${two}`);
+  throw $stringPanic("bad " + `${two}`, "test/corpus/format_concat_pieces.rs:82:5");
 }
 //# sourceMappingURL=case.js.map

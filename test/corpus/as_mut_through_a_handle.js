@@ -81,7 +81,9 @@ function main() {
   };
   console.log(`${Node.bumpChild(n, true)} ${Node.bumpChild(n, false)}`);
   Node.replaceChild(n, true, 7);
-  const left = $unwrap(n.left);
-  console.log(`${n.value} ${left.value} ${$unwrap(left.right).value}`);
+  const left = $unwrap(n.left, "test/corpus/as_mut_through_a_handle.rs:56:32");
+  console.log(
+    `${n.value} ${left.value} ${$unwrap(left.right, "test/corpus/as_mut_through_a_handle.rs:57:67").value}`,
+  );
 }
 //# sourceMappingURL=case.js.map

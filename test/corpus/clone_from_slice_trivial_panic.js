@@ -44,6 +44,7 @@ function refill(into, from, TClone, TTriviallyCloned) {
   $cloneFromSlice(
     into,
     from,
+    "test/corpus/clone_from_slice_trivial_panic.rs:43:10",
     (value) => TClone.clone(value),
     TClone.cloneFrom &&
       ((items, i, from) => {
@@ -58,6 +59,7 @@ function refillTagged(into, from, TU8TriviallyCloned) {
   $cloneFromSlice(
     into,
     from,
+    "test/corpus/clone_from_slice_trivial_panic.rs:47:10",
     (value) => [value[0], value[1]],
     undefined,
     undefined,
@@ -72,34 +74,44 @@ function relay(into, from, UTriviallyCloned) {
 function main() {
   const numbers = [1, 2, 3];
   check("numbers", () => {
-    $copyFromSlice(numbers, [4, 5]);
+    $copyFromSlice(numbers, [4, 5], "test/corpus/clone_from_slice_trivial_panic.rs:56:33");
   });
   const points = new Array(2).fill([0, 0]);
   check("points", () => {
-    $copyFromSlice(points, [[1, 2]]);
+    $copyFromSlice(points, [[1, 2]], "test/corpus/clone_from_slice_trivial_panic.rs:58:31");
   });
   const pairs = new Array(2).fill([1, "x"]);
   check("pairs", () => {
-    $copyFromSlice(pairs, [
-      [2, "y"],
-      [2, "y"],
-      [2, "y"],
-    ]);
+    $copyFromSlice(
+      pairs,
+      [
+        [2, "y"],
+        [2, "y"],
+        [2, "y"],
+      ],
+      "test/corpus/clone_from_slice_trivial_panic.rs:60:29",
+    );
   });
   const noisy = [[0]];
   check("noisy", () => {
-    $cloneFromSlice(noisy, [], (value) => noisyClone_clone(value));
+    $cloneFromSlice(noisy, [], "test/corpus/clone_from_slice_trivial_panic.rs:62:29", (value) =>
+      noisyClone_clone(value),
+    );
   });
   const words = ["a"];
   check("words", () => {
-    $cloneFromSlice(words, []);
+    $cloneFromSlice(words, [], "test/corpus/clone_from_slice_trivial_panic.rs:64:29");
   });
   const same = new Array(2).fill([0, 0]);
   check("same", () => {
-    $copyFromSlice(same, [
-      [3, 4],
-      [5, 6],
-    ]);
+    $copyFromSlice(
+      same,
+      [
+        [3, 4],
+        [5, 6],
+      ],
+      "test/corpus/clone_from_slice_trivial_panic.rs:66:27",
+    );
   });
   console.log(`[${same.map((item) => pointDebug_fmt(item)).join(", ")}]`);
   const generic = [1, 2];

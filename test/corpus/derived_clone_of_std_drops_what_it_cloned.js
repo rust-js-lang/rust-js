@@ -6,6 +6,7 @@ import {
   $count,
   $held,
   $live,
+  $panic,
   $peek,
   $unwindsOn,
   chainClone_clone,
@@ -37,7 +38,7 @@ function tick() {
 export const countdownClone = { clone: countdownClone_clone, $drop: countdownDrop_drop };
 function countdownClone_clone(countdown) {
   if (tick()) {
-    throw new Error("clone");
+    throw $panic("clone", "test/corpus/derived_clone_of_std_drops_what_it_cloned.rs:27:13");
   }
   return [(countdown[0] + 10) >>> 0];
 }
@@ -50,7 +51,7 @@ function itemDebug_fmt(item) {
 export const itemClone = { clone: itemClone_clone, $drop: itemDrop_drop };
 function itemClone_clone(item) {
   if (tick()) {
-    throw new Error("item clone");
+    throw $panic("item clone", "test/corpus/derived_clone_of_std_drops_what_it_cloned.rs:42:13");
   }
   return [(item[0] + 100) >>> 0];
 }

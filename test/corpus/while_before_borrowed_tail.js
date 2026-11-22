@@ -23,7 +23,7 @@ function describe(node, first, f) {
   if (childFiber != null) {
     content += "...";
   }
-  const tail = $borrow(node.tail, true);
+  const tail = $borrow(node.tail, "test/corpus/while_before_borrowed_tail.rs:39:26", true);
   try {
     for (let i = 0; i < tail.length; i++) {
       const item = tail[i];
@@ -65,7 +65,7 @@ function main() {
   root.children.push(leaf(c));
   console.log(`${describe(root, a, named)}`);
   // The tail's borrow given back: it's borrowed mutably after.
-  $borrowMut(root.tail).length = 0;
+  $borrowMut(root.tail, "test/corpus/while_before_borrowed_tail.rs:76:15").length = 0;
   console.log(`${describe(root, b, (n) => n.fiber.name)}`);
 }
 //# sourceMappingURL=case.js.map

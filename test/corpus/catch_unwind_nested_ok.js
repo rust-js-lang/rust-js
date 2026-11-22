@@ -10,7 +10,7 @@ let depth = 0;
 
 function pick(n) {
   if (n > 5) {
-    throw $stringPanic(`big ${n}`);
+    throw $stringPanic(`big ${n}`, "test/corpus/catch_unwind_nested_ok.rs:26:9");
   }
   if (n % 2 === 0) {
     return n * 10;
@@ -66,7 +66,7 @@ function checked(n) {
   }
   if (v != null) {
     if (v > 30) {
-      throw $stringPanic(`checked ${v}`);
+      throw $stringPanic(`checked ${v}`, "test/corpus/catch_unwind_nested_ok.rs:60:17");
     }
     return v;
   }

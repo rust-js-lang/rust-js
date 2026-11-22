@@ -17,7 +17,10 @@ function owned() {
   const n = v.length;
   v.push(3);
   v.push(4);
-  return (((v[n] * 10) >>> 0) + $index(v, n + 1)) >>> 0;
+  return (
+    (((v[n] * 10) >>> 0) + $index(v, n + 1, "test/corpus/length_shifted_past_a_push.rs:24:18")) >>>
+    0
+  );
 }
 
 function push(heap, n) {
@@ -64,43 +67,45 @@ function lastOfAtLeastOne(v, n) {
 function oneBefore(v) {
   const n = v.length;
   v.push(7);
-  return $index(v, (n - 1) >>> 0);
+  return $index(v, (n - 1) >>> 0, "test/corpus/length_shifted_past_a_push.rs:70:6");
 }
 
 function pastAPop(v) {
   const n = v.length;
   v.pop();
-  return $index(v, (n - 1) >>> 0);
+  return $index(v, (n - 1) >>> 0, "test/corpus/length_shifted_past_a_push.rs:76:6");
 }
 
 function pastAClear(v) {
   const n = v.length;
   v.push(7);
   v.length = 0;
-  return $index(v, n);
+  return $index(v, n, "test/corpus/length_shifted_past_a_push.rs:83:6");
 }
 
 function pastANewVector(v) {
   const n = v.length;
   v.push(7);
   $assign(v, []);
-  return $index(v, n);
+  return $index(v, n, "test/corpus/length_shifted_past_a_push.rs:90:6");
 }
 
 function anotherPushed(a, b) {
   const n = a.length;
   b.push(7);
-  return $index(a, n);
+  return $index(a, n, "test/corpus/length_shifted_past_a_push.rs:96:5");
 }
 
 function wrappingMore(v) {
   const n = (v.length + 1) >>> 0;
   v.push(7);
-  return $index(v, n);
+  return $index(v, n, "test/corpus/length_shifted_past_a_push.rs:102:6");
 }
 
 function lastOfMaybeNone(v, n) {
-  return n === v.length ? $index(v, (n - 1) >>> 0) : 0;
+  return n === v.length
+    ? $index(v, (n - 1) >>> 0, "test/corpus/length_shifted_past_a_push.rs:106:23")
+    : 0;
 }
 
 /** What was at most the length, below it past a push. */
@@ -115,14 +120,14 @@ function atMostPushed(v, i) {
 
 /** Equal to the length, which is no index. */
 function equalAt(v, n) {
-  return n === v.length ? $index(v, n) : 0;
+  return n === v.length ? $index(v, n, "test/corpus/length_shifted_past_a_push.rs:121:23") : 0;
 }
 
 /** Below another slice's length, pushed onto this one. */
 function belowAnother(a, b, i) {
   if (i < a.length) {
     b.push(7);
-    return $index(b, i);
+    return $index(b, i, "test/corpus/length_shifted_past_a_push.rs:128:10");
   } else {
     return 0;
   }

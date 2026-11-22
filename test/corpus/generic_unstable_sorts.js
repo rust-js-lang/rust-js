@@ -29,7 +29,7 @@ function sorted(items, compare, TSort) {
 
 function smallest(items, k, TOrd, TSort) {
   $selectNthUnstable(items, k, (a, b) => a < b, TSort, true);
-  return $slice(items, 0, k).map((item) => item);
+  return $slice(items, 0, "test/corpus/generic_unstable_sorts.rs:21:10", k).map((item) => item);
 }
 
 const $iSorted = new WeakMap();

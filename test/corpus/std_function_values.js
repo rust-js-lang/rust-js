@@ -34,7 +34,9 @@ function main() {
   // Conversions, and what an `Option` or a `Result` gives.
   const names = ["a", "b"].slice();
   const into = ["c"].slice();
-  const present = [1, 2].map((option) => $unwrap(option));
+  const present = [1, 2].map((option) =>
+    $unwrap(option, "test/corpus/std_function_values.rs:21:64"),
+  );
   const parsed = [
     { TAG: "Ok", _0: 3 },
     { TAG: "Err", _0: "no" },
@@ -77,7 +79,7 @@ function main() {
     groups.get(key).push(n);
   }
   console.log(
-    `[${$unwrap(groups.get(true), "no entry found for key").join(", ")}] [${$unwrap(groups.get(false), "no entry found for key").join(", ")}]`,
+    `[${$unwrap(groups.get(true), "test/corpus/std_function_values.rs:43:33", "no entry found for key").join(", ")}] [${$unwrap(groups.get(false), "test/corpus/std_function_values.rs:43:48", "no entry found for key").join(", ")}]`,
   );
 
   // Of two: a trait's method on numbers, as a fold's or a sort's.

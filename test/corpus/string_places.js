@@ -69,7 +69,7 @@ function extension(name) {
   if (dot == null) {
     return;
   }
-  return $strSlice(name, (dot + 1) >>> 0);
+  return $strSlice(name, (dot + 1) >>> 0, "test/corpus/string_places.rs:70:15");
 }
 
 function trimmed(s) {

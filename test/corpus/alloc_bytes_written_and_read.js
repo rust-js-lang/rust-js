@@ -24,13 +24,14 @@ export function entry() {
 
 function bytesForVarint(len) {
   const bits = (32 - Math.clz32(len)) >>> 0;
-  return $divCeil(bits, 7);
+  return $divCeil(bits, 7, "test/corpus/alloc_bytes_written_and_read.rs:12:10");
 }
 
 function make(text) {
   const len = $byteLen(text);
   const layout = $unwrapOk(
     $layout((bytesForVarint(len) + len) >>> 0, 2),
+    "test/corpus/alloc_bytes_written_and_read.rs:17:74",
     undefined,
     (e) => "LayoutError",
   );
@@ -49,7 +50,12 @@ function make(text) {
 function read(ptr, len) {
   const at = $ptrAdd(ptr, bytesForVarint(len));
   const bytes = $ptrSlice(at, len);
-  return $unwrapOk($fromUtf8(bytes), undefined, $debugUtf8Error);
+  return $unwrapOk(
+    $fromUtf8(bytes),
+    "test/corpus/alloc_bytes_written_and_read.rs:33:32",
+    undefined,
+    $debugUtf8Error,
+  );
 }
 
 function main() {
@@ -61,14 +67,19 @@ function main() {
   $ptrAdd(p, 1).value = 65;
   console.log(`${read(p, $byteLen(text))}`);
 
-  layout = $unwrapOk($layout(4, 1), undefined, (e) => "LayoutError");
+  layout = $unwrapOk(
+    $layout(4, 1),
+    "test/corpus/alloc_bytes_written_and_read.rs:46:48",
+    undefined,
+    (e) => "LayoutError",
+  );
   const q = $alloc(layout);
   for (let i = 0; i < 4; i++) {
     $ptrAdd(q, i).value = 119 + i;
   }
   const owned = $vecFromRaw(q, 4, 4);
   console.log(
-    `[${owned.join(", ")}] ${$unwrapOk($fromUtf8(owned, true), undefined, (e) => $debugUtf8Error(e, true))}`,
+    `[${owned.join(", ")}] ${$unwrapOk($fromUtf8(owned, true), "test/corpus/alloc_bytes_written_and_read.rs:52:65", undefined, (e) => $debugUtf8Error(e, true))}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -60,7 +60,7 @@ function main() {
   // An `f32`'s, rounded to one as its call is: squared, it isn't 2.
   const single = [2].map((n) => Math.fround(Math.sqrt(n)));
   console.log(
-    `${$displayF32(Math.fround($index(single, 0) * $index(single, 0)))} ${Math.fround($index(single, 0) * $index(single, 0)) === 2}`,
+    `${$displayF32(Math.fround($index(single, 0, "test/corpus/function_values.rs:54:29") * $index(single, 0, "test/corpus/function_values.rs:54:41")))} ${Math.fround($index(single, 0, "test/corpus/function_values.rs:54:52") * $index(single, 0, "test/corpus/function_values.rs:54:64")) === 2}`,
   );
 }
 //# sourceMappingURL=case.js.map

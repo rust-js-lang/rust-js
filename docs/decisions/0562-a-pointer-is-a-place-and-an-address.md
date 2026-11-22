@@ -1673,3 +1673,12 @@ writers are written a piece at a time (#1420). Mutations caught:
 `pointer-pretty-unread` (`lower/display/debug.ts`); and
 `pointer-placeholder-written-whole` and `pointer-given-written-whole`
 (`lower/display/sink_writes.ts`).
+
+
+## Amendment: a `usize`'s own line of std's is wasm32's (2026-11-22, #2292)
+
+A panic std raises at a line of its own that differs by type, a macro's
+expansion for each, `usize::next_multiple_of(0)`'s, names wasm32's std's
+line, the width rust-js models, not the 64-bit host's: the catalogue of
+std's sites walks wasm32's std, and its row is checked against native Rust
+built for `wasm32-wasip1` (ADR 1184).

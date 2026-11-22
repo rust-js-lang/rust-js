@@ -18,7 +18,7 @@ function main() {
   const s = "héllo wörld";
   console.log(`${$byteLen(s)}`);
   console.log(
-    `[${$strSlice(s, 0, 1)}] [${$strSlice(s, 1, 3)}] [${$strSlice(s, 7)}] [${$strSlice(s, 0, 6)}] [${s}]`,
+    `[${$strSlice(s, 0, "test/corpus/string_bytes.rs:15:44", 1)}] [${$strSlice(s, 1, "test/corpus/string_bytes.rs:15:54", 3)}] [${$strSlice(s, 7, "test/corpus/string_bytes.rs:15:64")}] [${$strSlice(s, 0, "test/corpus/string_bytes.rs:15:73", 6)}] [${s}]`,
   );
   console.log(`${firstWord(s)}`);
   const find = $find(s, "ö");
@@ -41,14 +41,16 @@ function main() {
     console.log(`${i} ${c}`);
   }
   const crab = "🦀🦀";
-  console.log(`${$strSlice(crab, 4)} ${$strSlice(crab, 0, 4, true)} ${$strSlice(crab, 8)}`);
+  console.log(
+    `${$strSlice(crab, 4, "test/corpus/string_bytes.rs:24:31")} ${$strSlice(crab, 0, "test/corpus/string_bytes.rs:24:43", 4, true)} ${$strSlice(crab, 8, "test/corpus/string_bytes.rs:24:56")}`,
+  );
   let text = "";
   while ($byteLen(text) < 9) {
     text += "é";
   }
   console.log(`${text} ${$byteLen(text)}`);
   const range = { start: 3, end: 5 };
-  console.log(`${$strSlice(s, range.start, range.end)}`);
+  console.log(`${$strSlice(s, range.start, "test/corpus/string_bytes.rs:31:22", range.end)}`);
   const at = s.indexOf("w");
   if (at !== -1) {
     const left = s.slice(0, at);

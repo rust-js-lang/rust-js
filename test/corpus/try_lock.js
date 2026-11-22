@@ -21,6 +21,7 @@ function main() {
   const m = { value: 5 };
   const g = $unwrapOk(
     $tryLock(m, true),
+    "test/corpus/try_lock.rs:9:34",
     undefined,
     (e) => (e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'),
     (tryLockError) => {
@@ -85,6 +86,7 @@ function main() {
   const l = { value: "a" };
   const r1 = $unwrapOk(
     $tryLock(l),
+    "test/corpus/try_lock.rs:24:31",
     undefined,
     (e) => (e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'),
     (tryLockError) => {
@@ -96,6 +98,7 @@ function main() {
   try {
     const r2 = $unwrapOk(
       $tryLock(l),
+      "test/corpus/try_lock.rs:25:31",
       undefined,
       (e) => (e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'),
       (tryLockError) => {
@@ -123,6 +126,7 @@ function main() {
   }
   const value$1 = $unwrapOk(
     $tryLock(l, true),
+    "test/corpus/try_lock.rs:28:19",
     undefined,
     (e) => (e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'),
     (tryLockError) => {
@@ -133,9 +137,15 @@ function main() {
   );
   value$1.value += "b";
   $unlock(value$1);
-  const w = $lock(l);
+  const w = $lock(l, "test/corpus/try_lock.rs:30:27");
   try {
-    const e = $unwrapErr($tryLock(l), undefined, (e) => $debugStr(e.value), $unborrow);
+    const e = $unwrapErr(
+      $tryLock(l),
+      "test/corpus/try_lock.rs:31:30",
+      undefined,
+      (e) => $debugStr(e.value),
+      $unborrow,
+    );
     console.log(
       `${e === "WouldBlock" ? "try_lock failed because the operation would block" : "poisoned lock: another task failed inside"} ${e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'} ${$byteLen(w.value)}`,
     );
@@ -148,7 +158,7 @@ function main() {
   } finally {
     $unborrow(w);
   }
-  const value$2 = $lockRead(l);
+  const value$2 = $lockRead(l, "test/corpus/try_lock.rs:34:29");
   console.log(`${value$2.value}`);
   $unborrow(value$2);
 }

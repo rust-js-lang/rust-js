@@ -91,13 +91,18 @@ function main() {
     { celsius: Math.fround(-3.2) },
     { celsius: Math.fround(0.1) },
   ];
-  console.log(`${readingDebug_fmt($index(readings, 0))}`);
+  console.log(`${readingDebug_fmt($index(readings, 0, "test/corpus/f32.rs:56:30"))}`);
   const temps = readings.map((r) => r.celsius);
   console.log(
     `${$displayF32(temps.reduce((a, b) => Math.fround(a + b), -0))} ${$displayF32(temps.reduce((a, b) => Math.fround(a * b), 1))}`,
   );
   const sorted = temps.slice();
-  $sortStable(sorted, (a, b) => $unwrap($partialCmp(a, b)) < 0, "general8", 4);
+  $sortStable(
+    sorted,
+    (a, b) => $unwrap($partialCmp(a, b), "test/corpus/f32.rs:60:44") < 0,
+    "general8",
+    4,
+  );
   console.log(`[${sorted.map((item) => $debugF32(item)).join(", ")}]`);
   console.log(
     `${$displayF32(total(temps, 0, { add: (a, b) => Math.fround(a + b) }))} ${$displayF64(total([0.1, 0.2], 0, { add: (a, b) => a + b }))}`,

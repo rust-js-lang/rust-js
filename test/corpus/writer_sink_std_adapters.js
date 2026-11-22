@@ -192,94 +192,106 @@ function main() {
   written(log, $iter([10, 20]), { next: $next }, clone, intoIterDebug, debug, true);
   // A slice's chunks and windows, their struct of what they have left
   // and their size (#2252).
-  partsWritten(log, $iter($chunks([1, 2, 3], 2)), { next: $next }, clone$1, {
-    fmt(value, options) {
-      return options?.alternate
-        ? $pretty(
-            "Chunks {",
+  partsWritten(
+    log,
+    $iter($chunks([1, 2, 3], 2, "test/corpus/writer_sink_std_adapters.rs:76:39")),
+    { next: $next },
+    clone$1,
+    {
+      fmt(value, options) {
+        return options?.alternate
+          ? $pretty(
+              "Chunks {",
+              [
+                `v: ${options?.alternate ? $pretty("[", $partsLeft(value), "]") : `[${$partsLeft(value).join(", ")}]`}`,
+                `chunk_size: ${$partsSize(value)}`,
+              ],
+              "}",
+            )
+          : `Chunks { v: ${options?.alternate ? $pretty("[", $partsLeft(value), "]") : `[${$partsLeft(value).join(", ")}]`}, chunk_size: ${$partsSize(value)} }`;
+      },
+      fmtInto(f, value, options) {
+        $writeDebugStruct(
+          f,
+          "Chunks",
+          [
             [
-              `v: ${options?.alternate ? $pretty("[", $partsLeft(value), "]") : `[${$partsLeft(value).join(", ")}]`}`,
-              `chunk_size: ${$partsSize(value)}`,
+              "v",
+              value,
+              (f, value) => {
+                $writeDebugList(
+                  f,
+                  $partsLeft(value),
+                  (f, value) => {
+                    $writeInteger(f, value, options);
+                  },
+                  options?.alternate,
+                );
+              },
             ],
-            "}",
-          )
-        : `Chunks { v: ${options?.alternate ? $pretty("[", $partsLeft(value), "]") : `[${$partsLeft(value).join(", ")}]`}, chunk_size: ${$partsSize(value)} }`;
-    },
-    fmtInto(f, value, options) {
-      $writeDebugStruct(
-        f,
-        "Chunks",
-        [
-          [
-            "v",
-            value,
-            (f, value) => {
-              $writeDebugList(
-                f,
-                $partsLeft(value),
-                (f, value) => {
-                  $writeInteger(f, value, options);
-                },
-                options?.alternate,
-              );
-            },
-          ],
-          [
-            "chunk_size",
-            $partsSize(value),
-            (f, value) => {
-              $writeInteger(f, value, options);
-            },
-          ],
-        ],
-        options?.alternate,
-      );
-    },
-  });
-  partsWritten(log, $iter($windows([4, 5, 6], 2)), { next: $next }, clone$1, {
-    fmt(value, options) {
-      return options?.alternate
-        ? $pretty(
-            "Windows {",
             [
-              `v: ${options?.alternate ? $pretty("[", $partsLeft(value), "]") : `[${$partsLeft(value).join(", ")}]`}`,
-              `size: ${$partsSize(value)}`,
+              "chunk_size",
+              $partsSize(value),
+              (f, value) => {
+                $writeInteger(f, value, options);
+              },
             ],
-            "}",
-          )
-        : `Windows { v: ${options?.alternate ? $pretty("[", $partsLeft(value), "]") : `[${$partsLeft(value).join(", ")}]`}, size: ${$partsSize(value)} }`;
-    },
-    fmtInto(f, value, options) {
-      $writeDebugStruct(
-        f,
-        "Windows",
-        [
-          [
-            "v",
-            value,
-            (f, value) => {
-              $writeDebugList(
-                f,
-                $partsLeft(value),
-                (f, value) => {
-                  $writeInteger(f, value, options);
-                },
-                options?.alternate,
-              );
-            },
           ],
-          [
-            "size",
-            $partsSize(value),
-            (f, value) => {
-              $writeInteger(f, value, options);
-            },
-          ],
-        ],
-        options?.alternate,
-      );
+          options?.alternate,
+        );
+      },
     },
-  });
+  );
+  partsWritten(
+    log,
+    $iter($windows([4, 5, 6], 2, "test/corpus/writer_sink_std_adapters.rs:77:39")),
+    { next: $next },
+    clone$1,
+    {
+      fmt(value, options) {
+        return options?.alternate
+          ? $pretty(
+              "Windows {",
+              [
+                `v: ${options?.alternate ? $pretty("[", $partsLeft(value), "]") : `[${$partsLeft(value).join(", ")}]`}`,
+                `size: ${$partsSize(value)}`,
+              ],
+              "}",
+            )
+          : `Windows { v: ${options?.alternate ? $pretty("[", $partsLeft(value), "]") : `[${$partsLeft(value).join(", ")}]`}, size: ${$partsSize(value)} }`;
+      },
+      fmtInto(f, value, options) {
+        $writeDebugStruct(
+          f,
+          "Windows",
+          [
+            [
+              "v",
+              value,
+              (f, value) => {
+                $writeDebugList(
+                  f,
+                  $partsLeft(value),
+                  (f, value) => {
+                    $writeInteger(f, value, options);
+                  },
+                  options?.alternate,
+                );
+              },
+            ],
+            [
+              "size",
+              $partsSize(value),
+              (f, value) => {
+                $writeInteger(f, value, options);
+              },
+            ],
+          ],
+          options?.alternate,
+        );
+      },
+    },
+  );
   // An iterator of one item at most, `Once { inner: IntoIter { inner:
   // Item { opt: .. } } }` (#2252).
   partsWritten(log, $iter([8]), { next: $next }, clone, {

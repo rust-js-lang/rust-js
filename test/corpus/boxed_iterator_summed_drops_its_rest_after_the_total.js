@@ -9,6 +9,7 @@ import {
   $foldDropping,
   $iter,
   $live,
+  $panic,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -64,7 +65,10 @@ function main() {
         calls = (calls + 1) | 0;
         try {
           if (calls === 2) {
-            throw new Error("map");
+            throw $panic(
+              "map",
+              "test/corpus/boxed_iterator_summed_drops_its_rest_after_the_total.rs:19:52",
+            );
           }
           return [(x[0] + 100) >>> 0];
         } catch (error) {

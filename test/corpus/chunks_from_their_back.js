@@ -19,13 +19,13 @@ export function entry() {
 
 function main() {
   const v = [1, 2, 3, 4, 5];
-  const c = $iter($chunks(v, 2));
+  const c = $iter($chunks(v, 2, "test/corpus/chunks_from_their_back.rs:5:19"));
   const nextBack = $nextBack(c);
   const next = $next(c);
   console.log(
     `${nextBack == null ? "None" : `Some([${nextBack.join(", ")}])`} ${next == null ? "None" : `Some([${next.join(", ")}])`} ${c.end - c.at}`,
   );
-  const w = $iter($windows(v, 3));
+  const w = $iter($windows(v, 3, "test/corpus/chunks_from_their_back.rs:7:19"));
   const value = $nextBack(w);
   const value$1 = $nextBack(w);
   console.log(
@@ -36,24 +36,27 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${$chunks(v, 2)
+    `[${$chunks(v, 2, "test/corpus/chunks_from_their_back.rs:11:11")
       .toReversed()
       .map((c) => c.reduce((a, b) => (a + b) | 0, 0))
       .join(", ")}]`,
   );
-  const rposition = $rposition($iter($windows(v, 2)), (w) => $index(w, 0) < 3);
-  const last = $chunks(v, 3).at(-1);
+  const rposition = $rposition(
+    $iter($windows(v, 2, "test/corpus/chunks_from_their_back.rs:13:29")),
+    (w) => $index(w, 0, "test/corpus/chunks_from_their_back.rs:13:54") < 3,
+  );
+  const last = $chunks(v, 3, "test/corpus/chunks_from_their_back.rs:13:67").at(-1);
   console.log(
     `${rposition == null ? "None" : `Some(${rposition})`} ${last == null ? "None" : `Some([${last.join(", ")}])`}`,
   );
   const m = [1, 2, 3, 4, 5];
-  for (const c of $chunksMut(m, 2).toReversed()) {
-    c[0] = (c[$at(c, 0)] * 10) | 0;
+  for (const c of $chunksMut(m, 2, "test/corpus/chunks_from_their_back.rs:15:16").toReversed()) {
+    c[0] = (c[$at(c, 0, "test/corpus/chunks_from_their_back.rs:16:9")] * 10) | 0;
   }
   console.log(`[${m.join(", ")}]`);
-  const value$2 = $nthBack($iter($chunks(v, 2)), 1);
+  const value$2 = $nthBack($iter($chunks(v, 2, "test/corpus/chunks_from_their_back.rs:19:24")), 1);
   console.log(`${value$2 == null ? "None" : `Some([${value$2.join(", ")}])`}`);
-  const e = $chunks([], 2);
+  const e = $chunks([], 2, "test/corpus/chunks_from_their_back.rs:20:36");
   console.log(`[${e.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

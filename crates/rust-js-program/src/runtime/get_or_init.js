@@ -3,7 +3,7 @@
 function $getOrInit(cell, f) {
   if (cell.value === undefined) {
     const value = f();
-    if (cell.value !== undefined) throw new Error("reentrant init");
+    if (cell.value !== undefined) throw $panic("reentrant init", $stdSites.onceCellReentrant[0]);
     cell.value = $some(value);
   }
   return $someValue(cell.value);

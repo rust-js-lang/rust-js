@@ -8,6 +8,7 @@ import {
   $foldToArray,
   $folded,
   $next,
+  $panic,
   $panicking,
   $removeOutOfBounds,
   iterator_map,
@@ -22,13 +23,20 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop D${d[0]}`);
   if (d[0] === 2 && !$panicking()) {
-    throw new Error("drop of 2");
+    throw $panic(
+      "drop of 2",
+      "test/corpus/collect_string_of_a_panicking_chain_drops_its_source.rs:11:13",
+    );
   }
 }
 function ownIterator_next(own) {
   const result = own[0];
   if (0 >= result.length) {
-    $removeOutOfBounds(result, 0);
+    $removeOutOfBounds(
+      result,
+      0,
+      "test/corpus/collect_string_of_a_panicking_chain_drops_its_source.rs:19:21",
+    );
   }
   return result.splice(0, 1)[0];
 }
@@ -95,7 +103,10 @@ function main() {
       (d) => {
         if (d[0] === 6) {
           try {
-            throw new Error("map");
+            throw $panic(
+              "map",
+              "test/corpus/collect_string_of_a_panicking_chain_drops_its_source.rs:41:17",
+            );
           } catch (error) {
             $cleanup(() => {
               dDrop_drop(d);

@@ -3,6 +3,7 @@
 import {
   $eq,
   $fromBytes,
+  $panic,
   $print,
   $ptr,
   $ptrAdd,
@@ -42,7 +43,10 @@ function isEqualRaw(x, y, n) {
           $ptrRetyped(y, 3, "bytes").value.slice(),
         );
       default:
-        throw new Error("internal error: entered unreachable code");
+        throw $panic(
+          "internal error: entered unreachable code",
+          "test/corpus/bytes_through_pointers.rs:24:18",
+        );
     }
   }
   const xend = $ptrAdd(x, (n - 4) >>> 0);

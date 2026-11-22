@@ -18,7 +18,11 @@ function marked(text, marks) {
   let next = 0;
   let last = 0;
   readAll(text, (at) => {
-    if (next < marks.length && $index(marks, next) === at) {
+    if (
+      next < marks.length &&
+      $index(marks, next, "test/corpus/integer_captured_by_a_closure_given_to_calls.rs:25:34") ===
+        at
+    ) {
       next++;
     }
     last = at;
@@ -48,7 +52,11 @@ function twice(text, marks) {
   const seen = new Array(n).fill(0);
   let next = 0;
   function step(at) {
-    if (next < marks.length && $index(marks, next) === at) {
+    if (
+      next < marks.length &&
+      $index(marks, next, "test/corpus/integer_captured_by_a_closure_given_to_calls.rs:42:34") ===
+        at
+    ) {
       next++;
     }
   }
@@ -102,7 +110,7 @@ function kept(v) {
   keeperKeep_keep(keeper, $ptr(i, "value", 0));
   if (i.value < v.length) {
     keeperKeep_write(keeper, 9);
-    return $index(v, i.value);
+    return $index(v, i.value, "test/corpus/integer_captured_by_a_closure_given_to_calls.rs:92:9");
   } else {
     return 0;
   }
@@ -120,7 +128,7 @@ function keptBy(keeper, v, KKeep) {
   });
   if (i < v.length) {
     KKeep.write(keeper.value, 9);
-    return $index(v, i);
+    return $index(v, i, "test/corpus/integer_captured_by_a_closure_given_to_calls.rs:103:9");
   } else {
     return 0;
   }

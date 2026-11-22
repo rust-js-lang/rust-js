@@ -21,6 +21,7 @@ import {
   $live,
   $next,
   $nextBack,
+  $panic,
   $position,
   $rev,
   $rposition,
@@ -106,7 +107,7 @@ function second(what, run) {
   function p(d) {
     n = (n + 1) | 0;
     if (n === 2) {
-      throw new Error("p");
+      throw $panic("p", "test/corpus/back_predicate_unwinds.rs:85:13");
     }
     return d[0] === 9;
   }
