@@ -55,7 +55,7 @@ export function filesIn(dir: Directory, prefix = "", found = new Map<string, Uin
 /**
  * Run rust-js.wasm on the crate of `sources` at `virtualDir`, its root
  * `lib.rs` and its JS `lib.js` beside it, with the react, webapi and js
- * crates, `args` its own besides: its exit, what it said, and the crate's
+ * crates, `args` its own besides, `rustc` rustc's: its exit, what it said, and the crate's
  * directory as it left it. Each run a fresh instance: rustc keeps global
  * state, and a failed compile ends in a trap.
  */
@@ -64,6 +64,7 @@ export async function runRustJs(
   sources: Map<string, Inode>,
   out = new PreopenDirectory("/out", new Map()),
   args: string[] = [],
+  rustc: string[] = [],
 ) {
   buildReactCrate();
   const crate = (name: string) => new File(readFileSync(join(cratesDir, name)), { readonly: true });
@@ -84,7 +85,7 @@ export async function runRustJs(
   ];
   const argv = [
     "rust-js", `${virtualDir}/lib.rs`, "-o", `${virtualDir}/lib.js`, ...args,
-    "--", "--target", target, "--sysroot", "/sysroot",
+    "--", ...rustc, "--target", target, "--sysroot", "/sysroot",
     ...reactLibs.flatMap((lib) => ["--extern", `${lib}=/crates/lib${lib}.rmeta`]), "-L", "/crates",
   ];
   // RUSTC_ICE=0: don't name a crash-report file after the process id (WASI has none).
@@ -115,7 +116,12 @@ export async function compileRust(job: { manifest?: string } = {}) {
   const virtualPath = (path: string) => path.startsWith(repository + "/") ? path.slice(repository.length) : path;
   const previous = existsSync(published) ? JSON.stringify(mapManifestPaths(parseManifest(readFileSync(published, "utf8")), virtualPath)) : undefined;
   const out = new PreopenDirectory("/out", new Map(previous ? [["manifest.json", new File(new TextEncoder().encode(previous))]] : []));
-  const { exit, stderr, crateDir } = await runRustJs(virtual, sourcesIn(rustDir), out, ["--manifest", "/out/manifest.json"]);
+  // The WASI file system's root left out of each file's name, as the native
+  // compiler run from the repository's root names `wasm/web/rust/lib.rs`, so
+  // a panic's location is the same in both, `wasm/web/rust/compiler.rs:437:58`
+  // (#2345); the manifest's paths are each file's own, which it leaves.
+  const remap = ["--remap-path-prefix=/="];
+  const { exit, stderr, crateDir } = await runRustJs(virtual, sourcesIn(rustDir), out, ["--manifest", "/out/manifest.json"], remap);
   if (exit !== 0) throw new Error(`rust-js failed on wasm/web/rust/lib.rs (exit ${exit}):\n${stderr.join("\n")}`);
   // Warnings, on success.
   if (stderr.length > 0) console.warn(stderr.join("\n"));
