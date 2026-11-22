@@ -281,11 +281,11 @@ export const mutations: Mutation[] = [
   {
     name: "dictionary-iterator-unmade",
     breaks:
-      "an impl's range for an associated type bound by `Iterator` is given to generic code as a range, which `for .. of` can't step",
+      "an impl's range for a trait method's `-> impl Iterator` is given to generic code as a range, which `for .. of` can't step (a trait's own associated iterator is its type's own value since #2330)",
     file: "crates/rust-js-lower/src/traits/impls.rs",
     find: "            && (self.range_kind(ty).is_some()\n                || self.is_user_iterator(ty)\n",
     replace: "            && (false\n                || self.is_user_iterator(ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "generic_associated_types"],
+    tests: ["test/corpus.test.ts", "-t", "^trait_method_impl_iterator_stepped_by_generic_code.rs$"],
   },
   {
     name: "impl-cache-ignores-facts",
