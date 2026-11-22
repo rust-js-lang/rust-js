@@ -9,6 +9,8 @@
 //   bun scripts/lower-graph.ts                    # index the crate, then report
 //   bun scripts/lower-graph.ts --index <file>     # an index already made
 //   bun scripts/lower-graph.ts --json <file>      # and write the graph as JSON
+//   bun scripts/lower-graph.ts --within mir       # mir/'s own submodules as the nodes
+//   bun scripts/lower-graph.ts --fncx             # and FnCx's methods: who writes, who calls
 //
 // The index is `rust-analyzer scip .` of the checkout (about 50 s on the
 // M1), kept in target/scip/; rerun after each cut to see what's left.
@@ -105,11 +107,18 @@ function documents(bytes: Uint8Array): Document[] {
   return found;
 }
 
-/** The top-level submodule of src/lower/ a file is of: `src/lower/mir.rs`
- * and `src/lower/mir/..` are `mir`; `src/lower.rs` is `lower` itself. */
+/** The folder whose submodules are the graph's nodes: src/lower/, or one
+ * of its submodules', `--within mir`'s src/lower/mir/. */
+const scope = flag("--within") === undefined ? "src/lower" : `src/lower/${flag("--within")}`;
+const rootName = scope.slice(scope.lastIndexOf("/") + 1);
+
+/** The submodule of `scope` a file is of: `src/lower/mir.rs` and
+ * `src/lower/mir/..` are `mir`; the scope's own file, `src/lower.rs`, is
+ * its root, `lower`. */
 function moduleOf(path: string): string | undefined {
-  if (path === "src/lower.rs") return "lower";
-  const m = /^src\/lower\/([^/]+?)(?:\.rs|\/.*)$/.exec(path);
+  if (path === `${scope}.rs`) return rootName;
+  if (!path.startsWith(`${scope}/`)) return undefined;
+  const m = /^([^/]+?)(?:\.rs|\/.*)$/.exec(path.slice(scope.length + 1));
   return m?.[1];
 }
 
@@ -122,7 +131,7 @@ if (flag("--index") === undefined) {
 if (!existsSync(indexPath)) throw new Error(`no index at ${indexPath}`);
 const docs = documents(new Uint8Array(readFileSync(indexPath)));
 
-// Where each of the crate's symbols is defined, of src/lower/'s alone.
+// Where each of the crate's symbols is defined, of the scope's alone.
 const definedIn = new Map<string, string>();
 const linesOf = new Map<string, number>();
 for (const doc of docs) {
@@ -248,7 +257,7 @@ const cuts: Cut[] = modules.map((m) => {
 
 // Report.
 const out: string[] = [];
-out.push(`# src/lower/'s dependency graph, by rust-analyzer's SCIP index`);
+out.push(`# ${scope}/'s dependency graph, by rust-analyzer's SCIP index`);
 out.push("");
 out.push(`${modules.length} top-level submodules, ${[...linesOf.values()].reduce((a, b) => a + b, 0)} lines; ${definedIn.size} items defined; ${[...edges.values()].reduce((n, out) => n + out.size, 0)} edges between submodules.`);
 out.push("");
@@ -265,7 +274,7 @@ const allRefs = [...edges.values()].flatMap((out) => [...out.values()]).reduce((
 out.push(`FnCx's methods are ${fnCxRefs} of the ${allRefs} references between submodules.`);
 const variants: [string, Map<string, Map<string, Edge>>, string[]][] = [
   ["without FnCx's methods", filtered(ofFnCx, new Set()), modules],
-  ["without FnCx's methods and the root", filtered(ofFnCx, new Set(["lower"])), modules.filter((m) => m !== "lower")],
+  ["without FnCx's methods and the root", filtered(ofFnCx, new Set([rootName])), modules.filter((m) => m !== rootName)],
 ];
 const lastVariant = variants[variants.length - 1];
 for (const [name, kept, mods] of variants) {
@@ -336,7 +345,7 @@ out.push("Below the root and FnCx's methods, each submodule placed so that as fe
   out.push("");
   out.push("| from the bottom, through | lines | breaks (items it names above) | exposes (items above name of it) | FnCx methods it calls above | FnCx methods above call of it |");
   out.push("|---|---|---|---|---|---|");
-  const fnCx = filtered((s) => !ofFnCx(s), new Set(["lower"]));
+  const fnCx = filtered((s) => !ofFnCx(s), new Set([rootName]));
   let lines = 0;
   for (let k = 0; k < order.length; k++) {
     lines += linesOf.get(order[k]) ?? 0;
@@ -389,6 +398,62 @@ out.push("| submodule | lines | on a cycle | items exposed | named by | names |"
 out.push("|---|---|---|---|---|---|");
 for (const c of [...cuts].sort((a, b) => a.exposes / Math.max(a.lines, 1) - b.exposes / Math.max(b.lines, 1))) {
   out.push(`| ${c.module} | ${c.lines} | ${c.onCycle ? "yes" : "no"} | ${c.exposes} | ${c.usedBy.length} | ${c.dependsOn.length} |`);
+}
+if (args.includes("--fncx")) {
+  out.push("");
+  out.push("## FnCx's methods: who writes them, who calls them");
+  // Each FnCx method the scope defines, its writer and its callers in
+  // other submodules, with their references.
+  const methods = new Map<string, { writer: string; callers: Map<string, number> }>();
+  for (const [symbol, writer] of definedIn) if (ofFnCx(symbol)) methods.set(symbol, { writer, callers: new Map() });
+  for (const [from, out] of edges) {
+    for (const e of out.values()) {
+      for (const [symbol, n] of e.items) {
+        const m = methods.get(symbol);
+        if (m !== undefined) m.callers.set(from, (m.callers.get(from) ?? 0) + n);
+      }
+    }
+  }
+  const shared = [...methods].filter(([, m]) => m.callers.size > 0);
+  out.push(`${methods.size} FnCx methods are written in ${scope}/; ${shared.length} of them are called from another submodule than their own, ${shared.reduce((n, [, m]) => n + [...m.callers.values()].reduce((a, b) => a + b, 0), 0)} references.`);
+  out.push("");
+  out.push("### By how many other submodules call each");
+  const buckets: [string, (n: number) => boolean][] = [["1", (n) => n === 1], ["2-3", (n) => n >= 2 && n <= 3], ["4-7", (n) => n >= 4 && n <= 7], ["8-15", (n) => n >= 8 && n <= 15], ["16+", (n) => n >= 16]];
+  out.push("| callers | methods |");
+  out.push("|---|---|");
+  for (const [name, test] of buckets) out.push(`| ${name} | ${shared.filter(([, m]) => test(m.callers.size)).length} |`);
+  out.push("");
+  out.push("### Each submodule: the methods it writes that others call, and the others' it calls");
+  out.push("| submodule | writes | of them called elsewhere | calls of others' | its methods' callers |");
+  out.push("|---|---|---|---|---|");
+  const rows = modules.map((mod) => {
+    const writes = [...methods.values()].filter((m) => m.writer === mod).length;
+    const calledElsewhere = shared.filter(([, m]) => m.writer === mod);
+    const calls = shared.filter(([, m]) => m.callers.has(mod)).length;
+    const callers = new Set(calledElsewhere.flatMap(([, m]) => [...m.callers.keys()]));
+    return { mod, writes, calledElsewhere: calledElsewhere.length, calls, callers: callers.size };
+  });
+  for (const r of rows.filter((r) => r.writes + r.calls > 0).sort((a, b) => b.calledElsewhere - a.calledElsewhere)) {
+    out.push(`| ${r.mod} | ${r.writes} | ${r.calledElsewhere} | ${r.calls} | ${r.callers} |`);
+  }
+  out.push("");
+  out.push("### The core: the methods most submodules call (8 or more)");
+  out.push("| method | written in | callers |");
+  out.push("|---|---|---|");
+  for (const [symbol, m] of shared.filter(([, m]) => m.callers.size >= 8).sort((a, b) => b[1].callers.size - a[1].callers.size)) {
+    out.push(`| \`${itemName(symbol).replace(/^.*\]/, "").replace(/\.$/, "")}\` | ${itemName(symbol).replace(/\/impl#.*$/, "")} | ${m.callers.size} |`);
+  }
+  out.push("");
+  out.push("### Concerns: each submodule's shared methods, and the few submodules that call them");
+  out.push("A submodule whose methods others call through a narrow set of callers is a concern a trait or a context of its own could carry: its methods, its callers.");
+  out.push("| writer | shared methods | callers (refs) |");
+  out.push("|---|---|---|");
+  for (const r of rows.filter((r) => r.calledElsewhere >= 3).sort((a, b) => a.callers - b.callers)) {
+    const byCaller = new Map<string, number>();
+    for (const [, m] of shared) if (m.writer === r.mod) for (const [c, n] of m.callers) byCaller.set(c, (byCaller.get(c) ?? 0) + n);
+    const top = [...byCaller].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([c, n]) => `${c} (${n})`).join(", ");
+    out.push(`| ${r.mod} | ${r.calledElsewhere} | ${r.callers}: ${top}${byCaller.size > 8 ? ", .." : ""} |`);
+  }
 }
 const report = out.join("\n");
 console.log(report);
