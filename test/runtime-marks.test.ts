@@ -33,7 +33,7 @@ test("the runtime's marks are registry symbols, declared in marks.js alone", () 
   }
   expect(made).toEqual([]);
   expect(registered.sort()).toEqual(
-    ["$arrayIterKey", "$cloneKey", "$countedKey", "$itemArray", "$itemIndex", "$partsOf", "$placeOfPart", "$raisedAt", "$slicedKey", "$stringPayload"].map((name) => `marks.js ${name} named`),
+    ["$arrayIterKey", "$cloneKey", "$countedKey", "$itemArray", "$itemIndex", "$partsOf", "$placeOfPart", "$raisedAt", "$slicedKey", "$stdoutKey", "$stringPayload"].map((name) => `marks.js ${name} named`),
   );
 });
 
@@ -420,5 +420,29 @@ drop 3
 nth_back Some(4)
 drop 4
 `);
+  expect([ran.stdout, ran.outcome]).toEqual([native.stdout, native.outcome]);
+});
+
+// What stdout holds of a line left unended is every copy's (#2320): a
+// library's copy holds its `print!`, its app's copy holds its own and ends
+// the line, and natively one `LineWriter` held both, in the order written.
+// Each copy's own queue wrote the app's first and the library's at exit.
+test("what a library's copy of the runtime holds of a line its app's copy ends comes first, as native Rust's", () => {
+  const { native, ran } = twoCopies(
+    "stdout_held",
+    'pub fn part(n: u32) {\n    print!("lib {n} ");\n}\n\npub fn line() {\n    println!("lib line");\n}\n',
+    `fn main() {
+    ${libraryCrate}::part(1);
+    print!("app ");
+    println!("end");
+    ${libraryCrate}::part(2);
+    ${libraryCrate}::line();
+    print!("app ");
+    ${libraryCrate}::part(3);
+    print!("at exit");
+}
+`,
+  );
+  expect(native.stdout).toBe("lib 1 app end\nlib 2 lib line\napp lib 3 at exit");
   expect([ran.stdout, ran.outcome]).toEqual([native.stdout, native.outcome]);
 });

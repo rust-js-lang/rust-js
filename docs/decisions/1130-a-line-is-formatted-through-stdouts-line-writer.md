@@ -721,3 +721,54 @@ against native Rust through `2>&1` and as a browser's console, and the corpus's 
 `stdout-unended-written-at-once`, `stdout-held-lost-at-exit`,
 `stopped-line-held-behind-whole-lines` (`runtime/print.ts`) and `stdout-flush-writes-nothing`
 (`lower/format_args.ts`).
+
+## Amendment: a crate's whole line while stdout holds text comes after it (2026-11-23, #2320, Tu's decision)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept.
+
+The amendment above left one order open. A library that never leaves a line
+unended prints its whole lines by `console.log` (ADR 0087), which the
+runtime never sees. So a library's line printed between its consumer's
+`print!("partial ")` and that line's newline came out before `partial`.
+Natively every crate writes one `LineWriter`, and the library's line ends
+the consumer's.
+
+**While, and only while, the runtime holds unended stdout text, it wraps
+`globalThis.console.log` (`$wrapLog`). A `console.log` of one string, every
+`println!` rust-js writes, has the held text joined to it, `held + line`,
+one `console.log` (`$heldLog`). The wrapper goes once nothing's held.**
+`println!` stays `console.log`. The held text is joined, never written
+apart before the line: Bun's `console.log` writes the descriptor itself,
+and a stream's write before it can come out after it through a pipe (6 of
+200 such lines, #2347). A one-string `console.log` isn't format-processed
+on Node or Bun, so the joined line is exactly the bytes.
+
+Where the held text can't be joined, there are two cases:
+- **Node**, a `console.log` of values or after held bytes that aren't
+  UTF-8: what's held is written by the stream first. Node's `console.log`
+  writes through the same stream, in order.
+- **Bun**, the same calls: refused, a run-time error:
+  - `rust-js: stdout holds a line left unended, and on this host a console.log of values can't follow it but apart, so a line printed now would come out before it`
+  - `rust-js: stdout holds a line left unended, and on this host what's held isn't text, which console.log can't write, so a line printed now would come out before it`
+
+  The same message, with "its console.log can't be wrapped", applies to a
+  host whose `console.log` can't be replaced. These refusals can't be
+  compile-time: which host runs the JS is decided only when it runs, and
+  the same output runs on Node, Bun and a browser. Rust compiled by
+  rust-js never makes these calls, since every `println!` is one string;
+  they're a JS caller's.
+
+What's held is every copy of the runtime's, `globalThis[$stdoutKey]`
+(marks.js, ADR 1184's rule): a bundled library's copy's `print!` is ended
+by its app's copy's line. Each copy holding its own wrote the app's line
+first and the library's text at exit. A browser's held text, the
+console's, is joined the same way.
+
+Held by:
+- `test/crates/pairs/library_line_inside_a_held_line` (two crates, against native);
+- `test/stream-order.test.ts`'s two crates through `2>&1` on Node and on Bun, with stderr between;
+- `test/runtime-marks.test.ts`'s two copies;
+- `test/stdout-hold.test.ts`: joined and unwrapped, a stream and a console recorded, Node's flush and Bun's refusals.
+
+Mutations: `hold-wrapper-never-installed`, `hold-wrapper-never-removed`, `held-text-written-apart`, `stdout-held-per-copy`, `held-values-logged-apart-on-bun` (`runtime/print.ts`).

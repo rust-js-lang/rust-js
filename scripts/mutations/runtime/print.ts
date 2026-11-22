@@ -3,6 +3,46 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "hold-wrapper-never-installed",
+    breaks: "while stdout holds a line left unended, `console.log` isn't wrapped, so a library's whole line comes out before its app's held text (#2320)",
+    file: "crates/rust-js-program/src/runtime/print.js",
+    find: "    $stdout().held.push(chunk);\n    $wrapLog();\n",
+    replace: "    $stdout().held.push(chunk);\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_line_inside_a_held_line"],
+  },
+  {
+    name: "hold-wrapper-never-removed",
+    breaks: "`console.log` stays wrapped once nothing's held, the host's own never given back (#2320)",
+    file: "crates/rust-js-program/src/runtime/print.js",
+    find: "  if (console.log === $stdout().wrapper) console.log = $stdout().log;\n",
+    replace: "",
+    tests: ["test/stdout-hold.test.ts"],
+  },
+  {
+    name: "held-text-written-apart",
+    breaks: "the held text is written by the stream apart from the line `console.log` prints, which Bun's `console.log` can overtake through a pipe (#2320, #2347)",
+    file: "crates/rust-js-program/src/runtime/print.js",
+    find: "  if (args.length === 1 && typeof args[0] === \"string\" && held !== undefined) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/stdout-hold.test.ts"],
+  },
+  {
+    name: "stdout-held-per-copy",
+    breaks: "each copy of the runtime holds stdout's unended text apart, so an app's copy ends its line before what a library's copy holds (#2320)",
+    file: "crates/rust-js-program/src/runtime/print.js",
+    find: "function $stdout() {\n  return (globalThis[$stdoutKey] ??= ",
+    replace: "const $stdoutOwn = {};\nfunction $stdout() {\n  return ($stdoutOwn.state ??= ",
+    tests: ["test/runtime-marks.test.ts", "-t", "what a library's copy of the runtime holds"],
+  },
+  {
+    name: "held-values-logged-apart-on-bun",
+    breaks: "on Bun, a `console.log` of values while text is held writes the held text apart, where the descriptor's write can overtake it, rather than refusing (#2320)",
+    file: "crates/rust-js-program/src/runtime/print.js",
+    find: "  if (!stream?.write || globalThis.Bun !== undefined) {\n",
+    replace: "  if (!stream?.write) {\n",
+    tests: ["test/stdout-hold.test.ts"],
+  },
+  {
     name: "stopped-line-held-behind-whole-lines",
     breaks:
       "what a line a caught panic stopped leaves unended is held, so a whole line `console.log` prints after it comes first (#2319)",
@@ -16,8 +56,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what `print!` leaves unended is written at once, so `print!(\"a\")` then `eprintln!(\"err\")` shows `a` first, where std's line writer holds it (#2319)",
     file: "crates/rust-js-program/src/runtime/print.js",
-    find: "  if (end < 0) {\n    if (chunk.length === 0) return;\n    $stdoutHeld.push(chunk);\n",
-    replace: "  if (end < 0) {\n    if (chunk.length === 0) return;\n    globalThis.process.stdout.write(chunk);\n    return;\n    $stdoutHeld.push(chunk);\n",
+    find: "  if (end < 0) {\n    if (chunk.length === 0) return;\n    $stdout().held.push(chunk);\n",
+    replace: "  if (end < 0) {\n    if (chunk.length === 0) return;\n    globalThis.process.stdout.write(chunk);\n    return;\n    $stdout().held.push(chunk);\n",
     tests: ["test/stream-order.test.ts", "-t", "stdout_held_past_stderr"],
   },
   {

@@ -1,5 +1,15 @@
 
-const $printed = ["", ""];
+// What stdout holds of a line left unended, every copy of the runtime's
+// one (`$stdoutKey`): `held`, what's written to a stream and held
+// (`$stdoutWrite`); `printed`, where there's no stream, each stream's
+// text since its last newline; `exits`, whether the process's exit writes
+// what's held; and while any is held, `log`, the host's `console.log`,
+// which `$heldLog` wraps.
+// Found when first asked, as marks.js, which declares its key, may come
+// after this in the runtime.
+function $stdout() {
+  return (globalThis[$stdoutKey] ??= { held: [], printed: ["", ""], exits: false, log: undefined, wrapper: undefined });
+}
 function $print(text) {
   $write(text, 0);
 }
@@ -14,35 +24,103 @@ function $write(text, error) {
     else $stdoutWrite(text);
     return;
   }
-  const log = error ? console.error : console.log;
-  const lines = ($printed[error] + text).split("\n");
+  const log = error ? console.error : ($stdout().log ?? console.log);
+  const lines = ($stdout().printed[error] + text).split("\n");
   const rest = lines.pop();
   for (const line of lines) log(line);
   // What's left unended is written when this task ends, so none is lost.
-  if (rest !== "" && $printed[error] === "") {
+  if (rest !== "" && $stdout().printed[error] === "") {
     queueMicrotask(() => {
-      if ($printed[error] !== "") log($printed[error]);
-      $printed[error] = "";
+      if ($stdout().printed[error] !== "") (error ? console.error : ($stdout().log ?? console.log))($stdout().printed[error]);
+      $stdout().printed[error] = "";
+      if (!error) $unwrapLog();
     });
   }
-  $printed[error] = rest;
+  $stdout().printed[error] = rest;
+  if (error) return;
+  if (rest === "") $unwrapLog();
+  else $wrapLog();
+}
+// While stdout holds a line left unended, the host's `console.log` is
+// wrapped, so a whole line any crate prints by it, `println!`'s
+// (ADR 0087), comes after what's held, as one `LineWriter` writes every
+// crate's natively: the held text joined to the line, one `console.log`,
+// never written apart, as Bun's `console.log` writes the descriptor itself
+// and a stream's write before it can come out after it through a pipe
+// (#2320, #2347). Unwrapped once nothing's held.
+function $wrapLog() {
+  if ($stdout().wrapper !== undefined) return;
+  const log = globalThis.console?.log;
+  if (typeof log !== "function") return;
+  const wrapper = function (...args) {
+    return $heldLog(log, this, args);
+  };
+  try {
+    console.log = wrapper;
+  } catch {}
+  if (console.log !== wrapper) throw $holdRefused("its console.log can't be wrapped");
+  $stdout().log = log;
+  $stdout().wrapper = wrapper;
+}
+function $unwrapLog() {
+  if ($stdout().wrapper === undefined) return;
+  // A spy put on it meanwhile, a test's, is left as it is.
+  if (console.log === $stdout().wrapper) console.log = $stdout().log;
+  $stdout().log = undefined;
+  $stdout().wrapper = undefined;
+}
+// A host that can't keep what's held before a line refuses, a run-time
+// error, as which host runs the JS is decided only when it runs.
+function $holdRefused(why) {
+  return new Error(`rust-js: stdout holds a line left unended, and on this host ${why}, so a line printed now would come out before it`);
+}
+// A `console.log` while stdout holds text: of one string, every `println!`
+// rust-js writes, the held text joined to it; of anything else, a JS
+// caller's values, what's held written first where the host's `console.log`
+// writes through the stream, Node's, and refused where it doesn't, Bun's;
+// as of held bytes that aren't text.
+function $heldLog(log, self, args) {
+  const stream = globalThis.process?.stdout;
+  const held = stream?.write ? $heldText() : $stdout().printed[0];
+  if (args.length === 1 && typeof args[0] === "string" && held !== undefined) {
+    if (stream?.write) $stdout().held = [];
+    else $stdout().printed[0] = "";
+    $unwrapLog();
+    return log.call(self, held + args[0]);
+  }
+  if (!stream?.write || globalThis.Bun !== undefined) {
+    throw $holdRefused(held === undefined ? "what's held isn't text, which console.log can't write" : "a console.log of values can't follow it but apart");
+  }
+  $flushStdout();
+  return log.apply(self, args);
+}
+// What's held, as text: each string, and each byte chunk's UTF-8, or none
+// where a chunk isn't UTF-8, or splits a character.
+function $heldText() {
+  let text = "";
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  try {
+    for (const held of $stdout().held) text += typeof held === "string" ? held : decoder.decode(held, { stream: true });
+    return text + decoder.decode();
+  } catch {
+    return undefined;
+  }
 }
 // What std's stdout `LineWriter` holds of a line left unended, a
 // `print!`'s or a `write_all`'s, text or bytes, as each was written, till
 // the line's newline, a `flush()` or the process's exit, std's cleanup at
 // its end, where it's written; standard error, written at once, comes
-// before it (#2319). Where there's no stream, `$printed` holds it so.
-let $stdoutHeld = [];
-let $stdoutExits = false;
+// before it (#2319). Where there's no stream, `$stdout().printed` holds it so.
 // `chunk`, text or bytes, to stdout: what's held and the chunk up to its
 // last newline written, what's after held.
 function $stdoutWrite(chunk) {
   const end = typeof chunk === "string" ? chunk.lastIndexOf("\n") : chunk.lastIndexOf(10);
   if (end < 0) {
     if (chunk.length === 0) return;
-    $stdoutHeld.push(chunk);
-    if (!$stdoutExits) {
-      $stdoutExits = true;
+    $stdout().held.push(chunk);
+    $wrapLog();
+    if (!$stdout().exits) {
+      $stdout().exits = true;
       globalThis.process.once("exit", () => {
         globalThis.process.stdout._handle?.setBlocking?.(true);
         $flushStdout();
@@ -51,8 +129,9 @@ function $stdoutWrite(chunk) {
     return;
   }
   const stream = globalThis.process.stdout;
-  for (const held of $stdoutHeld) stream.write(held);
-  $stdoutHeld = [];
+  for (const held of $stdout().held) stream.write(held);
+  $stdout().held = [];
+  $unwrapLog();
   stream.write(chunk.slice(0, end + 1));
   if (end + 1 < chunk.length) $stdoutWrite(chunk.slice(end + 1));
 }
@@ -70,8 +149,9 @@ function $printUnheld(text) {
 function $flushStdout() {
   const stream = globalThis.process?.stdout;
   if (!stream?.write) return;
-  for (const held of $stdoutHeld) stream.write(held);
-  $stdoutHeld = [];
+  for (const held of $stdout().held) stream.write(held);
+  $stdout().held = [];
+  $unwrapLog();
 }
 // std's stdout `LineWriter` (#1490, ADR 1130): what's written while a line
 // is formatted held till its newline, each whole line then written at once,

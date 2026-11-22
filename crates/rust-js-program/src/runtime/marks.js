@@ -50,3 +50,8 @@ const $countedKey = Symbol.for("rust-js: an Rc's box beside its instance");
 // see (#1185, the user's decision: always kept, at 1.2–1.3 times a slice's
 // cost to make).
 const $placeOfPart = Symbol.for("rust-js: where a part of a slice is");
+
+// What stdout holds of a line left unended, kept where every copy of the
+// runtime finds it, `globalThis` (print.js's `$stdoutState`): a library's
+// copy's `print!` held, its app's copy's line ends it (#2320).
+const $stdoutKey = Symbol.for("rust-js: what stdout holds of a line left unended");

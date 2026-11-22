@@ -288,6 +288,10 @@ What it leaves unended is held, as Rust's stdout, a line writer, holds it,
 till its newline, `io::stdout().flush()`, `$flushStdout()`, or the
 program's end, while stderr is written at once: `print!("a");
 eprintln!("err")` shows `err` first ([1130](../decisions/1130-a-line-is-formatted-through-stdouts-line-writer.md#amendment-what-print-leaves-unended-is-held-till-its-newline-a-flush-or-the-end-2026-11-22-2319), amended, #2319).
+A whole line another crate prints by `console.log` meanwhile, a
+library's `println!`, comes after what's held, as one line writer writes
+every crate's natively: while text is held, `console.log` is wrapped and
+the held text joined to the line (#2320).
 
 - **Every placeholder option is Rust's:** width, fill, alignment, sign, `#`,
   `0`, precision, `{:x}`, `{:b}`, `{:o}`, `{:e}`, positional and named
