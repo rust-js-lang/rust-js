@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, failingOf, testSetKey, testsMemory, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
+import { againstWholeCorpus, buildEnv, failingOf, testSetKey, testsMemory, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -71,6 +71,13 @@ test("every mutation's unit tests are there", () => {
 
 // A unit test's run, as libtest prints it, says whether its mutant is
 // caught: a filter that runs none says nothing of it.
+// Each compiler build runs at most its part of the run's cores (#2309), and
+// one built fresh has no incremental cache.
+test("a mutant build runs its part of the cores", () => {
+  expect(buildEnv(4, false)).toEqual({ CARGO_BUILD_JOBS: "4" });
+  expect(buildEnv(2, true)).toEqual({ CARGO_BUILD_JOBS: "2", CARGO_INCREMENTAL: "0" });
+});
+
 test("a unit-tested mutant is caught where its tests fail, and only then", () => {
   const exit = (code: number | null, stdout: string, more: Partial<Exit> = {}): Exit => ({ code, signal: null, timedOut: false, overflowed: false, stdout, stderr: "", bytes: { stdout: Buffer.alloc(0), stderr: Buffer.alloc(0) }, ...more });
   const ok = "running 1 test\ntest a::tests::b ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 900 filtered out; finished in 0.00s\n";

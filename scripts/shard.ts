@@ -464,6 +464,15 @@ export function compilerBuilds(cores: number, total = totalmem(), free = availab
   return Math.min(4, atOnce("compilerBuild", { cores, totalGB: total / 2 ** 30, freeGB: free / 2 ** 30 }, room));
 }
 
+/** The jobs each of `builds` compiler builds at once may run,
+ * `CARGO_BUILD_JOBS`: the run's share of the cores split between them, so
+ * together they fill the share and no more. Without it each took every
+ * core: a `--changed` run alone drove a 14-core M3 Max's load to 106, and
+ * an 8-core M1's to 12.7 (#2309). */
+export function buildJobs(share: number, builds: number): number {
+  return Math.max(1, Math.ceil(share / Math.max(1, builds)));
+}
+
 /** The builds a run makes at once of `asked`, its `--jobs`: as many as it
  * asks, never more than the memory holds (`compilerBuilds`), which an ask
  * lowers and never raises; with whether it was cut. `--jobs=12` on a Mac of

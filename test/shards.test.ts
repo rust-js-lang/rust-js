@@ -13,7 +13,7 @@ import { controlRuns, mutations, testsAsItIsRuns, testsAsItIsSeconds } from "../
 import { jobs } from "../scripts/checkFast";
 import { runs } from "../scripts/iteratorSlice";
 import { balancedByGroup, browsers, casePartCores, dealtByGroup, fewestShards, shardFacts, shareOfShard, slots, testFileSeconds, testShardFiles, timingsByShard } from "../scripts/shard";
-import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, compilerBuildsAsked, memoryBudget, nightly, parts, peakGB, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
+import { atOnce, buildJobs, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, compilerBuildsAsked, memoryBudget, nightly, parts, peakGB, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
 import { fixture, root } from "./support";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
@@ -293,6 +293,23 @@ test("a run's --jobs never builds more at once than the memory holds", () => {
   expect(compilerBuildsAsked(1, 12, 64 * gb, 60 * gb)).toEqual({ builds: 1, cut: false });
   expect(compilerBuildsAsked(4, 12, 64 * gb, 60 * gb)).toEqual({ builds: 4, cut: false });
   expect(compilerBuildsAsked(9, 12, 64 * gb, 60 * gb)).toEqual({ builds: 4, cut: true });
+});
+
+// The builds at once split the run's share of the cores, each a part of it,
+// where each took every core: a `--changed` run alone drove a 14-core
+// machine's load to 106 (#2309).
+test("the builds a run makes at once share its cores, not each take them all", () => {
+  expect(buildJobs(8, 2)).toBe(4);
+  expect(buildJobs(14, 4)).toBe(4);
+  expect(buildJobs(4, 2)).toBe(2);
+  // One alone takes the whole share; never fewer than one job each.
+  expect(buildJobs(8, 1)).toBe(8);
+  expect(buildJobs(1, 4)).toBe(1);
+  expect(buildJobs(8, 0)).toBe(8);
+  const code = readFileSync(join(root, "scripts/mutations.ts"), "utf8");
+  expect(code).toContain("const perBuild = buildJobs(ownShare(machine().cores), jobs);");
+  expect(code).toContain("await build(files, slot, unit, false, perBuild)");
+  expect(code).toContain("await build(files, slot, unit, true, perBuild)");
 });
 
 // How many of each kind of job a run starts at once, from the machine as

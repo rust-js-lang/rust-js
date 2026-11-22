@@ -25,7 +25,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
-import { caseParts, casePartCores, compilerBuilds, compilerBuildsAsked, drivesBrowser, machine, memoryBudget, peakGB, shardArg, shareOfShard, slots, timedShard } from "./shard";
+import { buildJobs, caseParts, casePartCores, compilerBuilds, compilerBuildsAsked, drivesBrowser, machine, memoryBudget, peakGB, shardArg, shareOfShard, slots, timedShard } from "./shard";
 import { casesReaching, ensureMap, noMap } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
@@ -769,8 +769,10 @@ export function syncTree(from: string, to: string, paths: string[]): string[] {
  * why it can't be built, `held` where the build isn't what it must be
  * (scripts/mutant-builds.ts). The crate is kept from the last build, what it
  * wrote put back: one built as it is is kept too, while the crate's sources
- * are what it was built from. `fresh`, with no incremental cache. */
-async function build(files?: Map<string, string>, slot = 0, unit = false, fresh = false): Promise<string | { problem: string; held?: true }> {
+ * are what it was built from. `fresh`, with no incremental cache. Of
+ * `jobs` jobs at once, the run's share of the cores alone, or its part of it
+ * among builds beside it (`buildJobs`). */
+async function build(files?: Map<string, string>, slot = 0, unit = false, fresh = false, jobs = ownShare(machine().cores)): Promise<string | { problem: string; held?: true }> {
   // Never past the disk's floor: the pruner leaves the run's store alone
   // while it holds its lock (`mutantsStore`, #2272), so the run stops
   // itself, a build's verdict, below it, saying nothing of any mutant.
@@ -799,7 +801,7 @@ async function build(files?: Map<string, string>, slot = 0, unit = false, fresh 
   const command = unit
     ? ["cargo", "test", "--no-run", "--quiet", "--locked", "--bin", "rust-js", "--message-format=json", "--target-dir", target]
     : ["cargo", "build", "--quiet", "--locked", "--message-format=json", "--target-dir", target];
-  const p = await run(command, crate, buildTimeout, fresh ? { CARGO_INCREMENTAL: "0" } : {});
+  const p = await run(command, crate, buildTimeout, buildEnv(jobs, fresh));
   if (p.code !== 0 || stopped(p, buildTimeout)) {
     const why = stopped(p, buildTimeout) ?? p.stderr.split("\n").find((line) => line.startsWith("error")) ?? `exited ${p.code}`;
     return { problem: `doesn't build: ${why}` };
@@ -813,6 +815,12 @@ async function build(files?: Map<string, string>, slot = 0, unit = false, fresh 
   cpSync(binary, kept);
   writeFileSync(stamp, built);
   return kept;
+}
+
+/** What a compiler build is run with: at most `jobs` jobs at once, and
+ * `fresh`, no incremental cache. */
+export function buildEnv(jobs: number, fresh: boolean): Record<string, string> {
+  return { CARGO_BUILD_JOBS: String(jobs), ...(fresh ? { CARGO_INCREMENTAL: "0" } : {}) };
 }
 
 /** What a run of unit tests says of a mutant: `caught` where one failed,
@@ -2185,6 +2193,7 @@ async function main() {
   const said = Number(args.find((arg) => arg.startsWith("--jobs="))?.slice("--jobs=".length));
   const asked = compilerBuildsAsked(said >= 1 ? said : undefined, ownShare(machine().cores));
   const jobs = asked.builds;
+  const perBuild = buildJobs(ownShare(machine().cores), jobs);
   if (asked.cut) console.log(`--jobs=${said}: ${jobs} at once, what the memory holds beside its tests (${memoryBudget().toFixed(1)} GB, ${peakGB.compilerBuild} GB a build, shard.ts)`);
   // And of up to `--batch` mutations each, every one chosen by name as the
   // compiler runs (ADR 1031): a build of each alone was 85% of a run's time.
@@ -2395,7 +2404,7 @@ async function main() {
     const began = performance.now();
     const files = schema(batch, read);
     const unit = batch[0].mutation.unitTests !== undefined;
-    const compiler = files instanceof Map ? await build(files, slot, unit) : files;
+    const compiler = files instanceof Map ? await build(files, slot, unit, false, perBuild) : files;
     const building = (performance.now() - began) / 1000;
     const names = batch.length === 1 ? batch[0].mutation.name : `${batch[0].mutation.name} and ${batch.length - 1} more`;
     if (typeof compiler !== "string") {
@@ -2428,7 +2437,7 @@ async function main() {
     // incremental cache, each of its mutations judged by both.
     let freshKept: string | undefined;
     if (files instanceof Map && Math.random() < freshly) {
-      const again = await build(files, slot, unit, true);
+      const again = await build(files, slot, unit, true, perBuild);
       if (typeof again === "string") freshKept = keep(again, `.fresh-${slot}-${builds}`);
       else freshDiffers.push(`${names}: built fresh, ${again.problem}`);
     }
