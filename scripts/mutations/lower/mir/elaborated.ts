@@ -94,14 +94,6 @@ export const mutations: Mutation[] = [
     tests: refused,
   },
   {
-    name: "shadow-elaborated-only-where-recorded",
-    breaks: "rustc's elaborated body is kept only where `--drops-shadow` records the comparison, so a compile without it compares nothing and never refuses a disagreement (#2112's change D (c))",
-    file: "src/lower/mir/elaborated.rs",
-    find: "    if !matches!(tcx.def_kind(local), DefKind::Fn | DefKind::AssocFn | DefKind::Closure)\n",
-    replace: "    if crate::lower::session::caches(tcx).drops_shadow.is_none()\n        || !matches!(tcx.def_kind(local), DefKind::Fn | DefKind::AssocFn | DefKind::Closure)\n",
-    tests: refused,
-  },
-  {
     name: "shadow-array-rest-whole",
     breaks: "the rest of an array whose elements moved isn't taken apart element by element, so `array_partial_moves.rs`' rest stays unmatched where it's compared, and an array of arrays bound by or-patterns is left uncompared (#2177)",
     file: "src/lower/mir/elaborated.rs",

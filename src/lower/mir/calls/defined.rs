@@ -4,8 +4,8 @@
 //! bindings both they and `js::method` read.
 
 use super::*;
+use crate::lower::analysis::mir_reads::user_variable::user_variable;
 use crate::lower::bindings::Asked;
-use crate::lower::mir::locals::user_variable;
 
 /// Whether the final member's native receiver is proved by the path, or
 /// asserted by the caller of the unsafe optional-call binding.

@@ -15,7 +15,6 @@ use crate::lower::FnCx;
 use crate::lower::analysis::Mir;
 use crate::lower::drops::Drops;
 use rust_js_program::collections::{IndexMap, IndexSet};
-use rustc_hir::def::DefKind;
 use rustc_middle::mir::{
     self, BasicBlock, Local, Operand, Place, ProjectionElem, Rvalue, StatementKind, TerminatorKind,
 };
@@ -23,25 +22,6 @@ use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_mir_dataflow::move_paths::{LookupResult, MovePathIndex};
 use rustc_span::Span;
-use rustc_span::def_id::LocalDefId;
-
-/// Keeps rustc's body of `local`, its drops elaborated, beside rust-js's
-/// own of it, which every compile compares them by: of a function or a
-/// closure, not a coroutine, whose elaborated body is its state machine's.
-/// rustc's query steals `local`'s built MIR alone, which `mir` is a copy of
-/// already; borrowck, which it runs first, only borrows the built MIR of the
-/// closures in it.
-pub(in crate::lower) fn with_elaborated<'tcx>(tcx: TyCtxt<'tcx>, local: LocalDefId, mir: &mut Mir<'tcx>) {
-    if !matches!(tcx.def_kind(local), DefKind::Fn | DefKind::AssocFn | DefKind::Closure)
-        || tcx.is_coroutine(local.to_def_id())
-    {
-        return;
-    }
-    let elaborated = tcx.mir_drops_elaborated_and_const_checked(local);
-    if !elaborated.is_stolen() {
-        mir.elaborated = Some(elaborated.borrow().clone());
-    }
-}
 
 /// When a drop drops a part of what it drops: never, always, or as a flag
 /// says.

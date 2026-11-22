@@ -312,7 +312,7 @@ impl<'tcx> Walk<'_, 'tcx> {
         }
         // A `?` of one, `Try::branch(o)`: the index its `Continue`'s.
         if let Some((callee, _)) = func.const_fn_def()
-            && crate::lower::mir::result_use::is_try_branch(self.tcx, callee)
+            && crate::lower::analysis::mir_reads::result_use::is_try_branch(self.tcx, callee)
             && let Some(&(slice, 1)) = (args.first())
                 .and_then(|arg| arg.node.place())
                 .and_then(|p| p.as_local())

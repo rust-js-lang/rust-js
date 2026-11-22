@@ -148,13 +148,12 @@ pub(super) fn only_read(stmts: &[Stmt], name: &js::Name) -> bool {
     all == read && !js::Writes::sets(&stmts, name)
 }
 
-/// A temporary MIR made, by its local's index, `_5`: the one spelling of
-/// one, which `is_temporary` knows, and no name the program gives has
-/// (`user_name`).
-pub(in crate::lower::mir) use crate::lower::temporary_names::temporary;
+// A temporary MIR made, by its local's index, `_5`, is spelled by
+// `temporary_names::temporary`: the one spelling of one, which
+// `is_temporary` knows, and no name the program gives has (`user_name`).
 
 use crate::js::Name;
-pub(in crate::lower::mir) use crate::lower::temporary_names::spelled_as_temporary;
+use crate::lower::temporary_names::spelled_as_temporary;
 
 /// A name the program gives a local, as JS's: one spelled as a temporary's,
 /// `let _5`, is `_5_`, so its JS reads as no temporary's.

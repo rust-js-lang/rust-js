@@ -110,12 +110,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             },
             receiver: match &state.body[state.at].terminator().kind {
-                mir::TerminatorKind::Call { args, .. } => {
-                    args.first().map_or(crate::lower::mir::Presence::Unknown, |arg| {
+                mir::TerminatorKind::Call { args, .. } => args
+                    .first()
+                    .map_or(crate::lower::analysis::mir_reads::presence::Presence::Unknown, |arg| {
                         self.presence(state, &arg.node)
-                    })
-                }
-                _ => crate::lower::mir::Presence::Unknown,
+                    }),
+                _ => crate::lower::analysis::mir_reads::presence::Presence::Unknown,
             },
         }
     }
@@ -259,7 +259,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of a literal's given on, a function of its text (#1565), called.
             Std::FmtAsStr => match this.arguments_made(_state.body, _state.at) {
                 Some((true, made)) => {
-                    let text = super::arguments_use::holds_text(&this.recognition(), _state.body, made);
+                    let text = crate::lower::analysis::mir_reads::arguments_use::holds_text(
+                        &this.recognition(),
+                        _state.body,
+                        made,
+                    );
                     lower(move |this, _, values, _| {
                         let value = values.next().expect("the arguments");
                         Ok(match text {

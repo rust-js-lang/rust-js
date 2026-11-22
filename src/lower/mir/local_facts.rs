@@ -825,7 +825,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // The thread-local `operand` is, `&KEY`: a promoted reference to
         // it, or one reborrowed, `&*r`.
         let local_key = |operand: &Operand<'tcx>| {
-            queries::referred_key(promoted, |local| assigned.get(&local).copied().flatten(), operand)
+            crate::lower::analysis::mir_reads::referred::referred_key(
+                promoted,
+                |local| assigned.get(&local).copied().flatten(),
+                operand,
+            )
         };
         let mut drops = Vec::new();
         for (block, data) in body.basic_blocks.iter_enumerated() {

@@ -4,6 +4,7 @@ mod accessors;
 mod awaits;
 pub(in crate::lower) mod cfg;
 mod fields_read;
+pub(in crate::lower) mod mir_reads;
 mod revealed;
 pub(in crate::lower) use revealed::revealed;
 pub(in crate::lower) mod prepared;

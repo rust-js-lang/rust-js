@@ -684,7 +684,9 @@ impl<'tcx> Graph<'_, '_, 'tcx> {
         let key = match uv.promoted {
             None => uv.def,
             Some(promoted) => {
-                let referred = crate::lower::mir::referred_constant(self.promoted.get(&def)?.get(promoted)?)?;
+                let referred = crate::lower::analysis::mir_reads::referred::referred_constant(
+                    self.promoted.get(&def)?.get(promoted)?,
+                )?;
                 let Const::Unevaluated(uv, _) = referred.const_ else {
                     return None;
                 };

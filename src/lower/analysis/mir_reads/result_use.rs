@@ -89,7 +89,7 @@ pub(in crate::lower) fn is_try_branch(tcx: rustc_middle::ty::TyCtxt<'_>, callee:
 /// the throw too. Else it's held as a value there and thrown at the
 /// `Return`, past those drops, as Rust gives it back after them (#1636):
 /// thrown where it's written, a drop no `finally` holds was left out.
-pub(super) fn thrown_where_written<'tcx>(
+pub(in crate::lower) fn thrown_where_written<'tcx>(
     tcx: ty::TyCtxt<'tcx>,
     body: &mir::Body<'tcx>,
     at: mir::BasicBlock,
@@ -120,7 +120,7 @@ pub(super) fn thrown_where_written<'tcx>(
 /// anywhere, an `Err` or a call's result written to its return place where
 /// it isn't thrown (`thrown_where_written`): each `Return` then throws it
 /// (#1636). An `Ok(())` written is nothing to throw.
-pub(super) fn write_held<'tcx>(
+pub(in crate::lower) fn write_held<'tcx>(
     tcx: ty::TyCtxt<'tcx>,
     body: &mir::Body<'tcx>,
     drop_may_panic: &dyn Fn(ty::Ty<'tcx>) -> bool,

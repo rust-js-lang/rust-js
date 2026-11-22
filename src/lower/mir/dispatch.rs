@@ -1052,8 +1052,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|v| self.value_expr(v, span))
             .collect::<R<Vec<_>>>()?;
         let used = match state.called_into {
-            Some(into) => super::result_use::result_use(&self.recognition(), state.body, into),
-            None => super::result_use::ResultUse::Inspected,
+            Some(into) => {
+                crate::lower::analysis::mir_reads::result_use::result_use(&self.recognition(), state.body, into)
+            }
+            None => crate::lower::analysis::mir_reads::result_use::ResultUse::Inspected,
         };
         Ok(Value::Expr(self.json_call_values(operation, exprs, used, span, out)?))
     }

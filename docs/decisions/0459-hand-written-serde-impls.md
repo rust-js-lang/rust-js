@@ -242,7 +242,7 @@ Ok(()) => seq.end(), Err(_) => Err(custom("caught")) }` gave serde_json's
 Agent-fable's first rule for the protocol layer (#1532): a protocol call's
 `Result` is a control-flow fact, decided at its use site.
 
-- **One owner, `mir::result_use`** (`src/lower/mir/result_use.rs`), moved
+- **One owner, `mir::result_use`** (`src/lower/analysis/mir_reads/result_use.rs`), moved
   from the writer's `given_on` (#1524), which a `write!` into a
   `Formatter` asks too: a call's `Result` is `Propagated` where it's the
   body's own result, or a local read once, by `?`'s `Try::branch`, in a

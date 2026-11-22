@@ -183,7 +183,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `eq` side an `impl Iterator` hides is asked as the opaque type, made of type parameters, so generic code's `eq` of one its caller gives is refused, where std's specialization sees the type it hides (#1229)",
     file: "src/lower/recognition/lengths.rs",
-    find: "            let ty = crate::lower::mir::revealed(self.tcx, ty);\n",
+    find: "            let ty = crate::lower::analysis::revealed(self.tcx, ty);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^eq_of_opaque_iterators.rs$"],
   },

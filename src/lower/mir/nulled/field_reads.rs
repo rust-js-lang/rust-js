@@ -136,7 +136,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return None;
         }
         let assigned = crate::lower::body_queries::assigned_once(state.body);
-        crate::lower::mir::referred_key(
+        crate::lower::analysis::mir_reads::referred::referred_key(
             state.facts.promoted(),
             |local| assigned.get(&local).copied().flatten(),
             key,

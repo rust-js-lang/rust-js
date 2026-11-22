@@ -316,8 +316,7 @@ fn written_into_writers<'tcx>(
             .filter(|&opaque| tcx.trait_of_assoc(tcx.local_parent(opaque).to_def_id()).is_none())
             .filter(|&opaque| reachable(opaque) || reachable(tcx.local_parent(opaque)))
             .flat_map(|opaque| {
-                let hides =
-                    crate::lower::mir::revealed(tcx, tcx.type_of(opaque).instantiate_identity().skip_normalization());
+                let hides = super::revealed(tcx, tcx.type_of(opaque).instantiate_identity().skip_normalization());
                 (hides.walk().filter_map(|part| part.as_type()))
                     .filter_map(|part| part.ty_adt_def().map(|adt| adt.did()))
                     .collect::<Vec<_>>()
@@ -530,7 +529,7 @@ pub(super) fn shown_by<'tcx>(
         .chain(unsized_in_mir(tcx, body))
         // Each `impl Display` the type it hides, anstyle's `render()`'s
         // `EffectsDisplay`, as its MIR is lowered.
-        .map(|ty| crate::lower::mir::revealed(tcx, ty))
+        .map(|ty| crate::lower::analysis::revealed(tcx, ty))
         .collect()
 }
 

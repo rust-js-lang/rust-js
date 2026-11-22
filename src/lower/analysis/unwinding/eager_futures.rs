@@ -60,7 +60,7 @@ pub(super) fn refuse_where_eagerness_shows<'tcx>(
             drops: &drops,
             // A `Drop` of what's moved out by then drops nothing (#717): a
             // future moved into what holds it.
-            dead: crate::lower::mir::dead_drops(tcx, mir, &drops),
+            dead: crate::lower::analysis::mir_reads::drop_flow::dead_drops(tcx, mir, &drops),
         };
         for (made, at, span) in follow.made() {
             let Some(fate) = follow.fate(made, at) else {

@@ -28,7 +28,7 @@
 //! nothing between the closure's `Rc` and the cell's setting, and in the
 //! closure, the cell captured read only by the chain that upgrades it.
 
-use crate::lower::mir::locals::user_variable;
+use crate::lower::analysis::mir_reads::user_variable::user_variable;
 use crate::lower::recognition::{HandleStep, handle_step, weak_pointee};
 use crate::lower::{Body, fn_def};
 use rust_js_program::collections::{IndexMap, IndexSet};

@@ -47,7 +47,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // decision, 2026-10-27).
         let returns_nullable = none_form(self.tcx, NonePlace::FnResult(body.source.def_id())).stores_null();
         // Each local assigned once, and what it's assigned: what a
-        // thread-local's key is read through (`queries::referred_key`).
+        // thread-local's key is read through (`crate::lower::analysis::mir_reads::referred::referred_key`).
         let assigned = crate::lower::body_queries::assigned_once(body);
         let statements = (body.basic_blocks.iter_enumerated())
             .flat_map(|(block, data)| data.statements.iter().enumerate().map(move |(i, s)| (block, i, s)));
@@ -143,8 +143,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && let [key, value] = &args[..]
                 && let Some(read) = value.node.place()
                 && read.projection.is_empty()
-                && let Some(key) =
-                    queries::referred_key(promoted, |local| assigned.get(&local).copied().flatten(), &key.node)
+                && let Some(key) = crate::lower::analysis::mir_reads::referred::referred_key(
+                    promoted,
+                    |local| assigned.get(&local).copied().flatten(),
+                    &key.node,
+                )
                 && none_form(self.tcx, NonePlace::Local(key)).stores_null()
             {
                 *given.entry(read.local).or_default() += 1;

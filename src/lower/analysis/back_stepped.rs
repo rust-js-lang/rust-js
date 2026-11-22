@@ -12,8 +12,8 @@
 //! type parameters, each of its callers' (#388). No type's set besides: the
 //! lowering asks the value (`stepped_from_its_back`).
 
+use crate::lower::analysis::mir_reads::user_variable::user_variable;
 use crate::lower::generic_facts::{GivenADrop, given_a_drop_of};
-use crate::lower::mir::locals::user_variable;
 use crate::lower::recognition::{
     Recognition, back_stepped_source, chained_sources, cloned_source, copied_source, counted_source, enumerated_source,
     enumerates_a_compiled_struct, filter_mapped_source, filtered_source, flattened_source, inspected_source,

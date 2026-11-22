@@ -645,12 +645,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let trusted = super::fact_trait(self.tcx, TypeFact::TrustedLen)?;
         let into_iterator = super::std_item(self.tcx, StdItem::IntoIterator);
         // Of what an `impl Iterator` hides, revealed first as a body's MIR
-        // is (`mir::revealed`, #1142), in any typing environment, as std's
+        // is (`analysis::revealed`, #1142), in any typing environment, as std's
         // specialization sees it: an opaque type is no projection, and the
         // type it hides is the side, a type parameter of the caller's or
         // one known here (#1229).
         let side = |ty: Ty<'tcx>| {
-            let ty = crate::lower::mir::revealed(self.tcx, ty);
+            let ty = crate::lower::analysis::revealed(self.tcx, ty);
             match *ty.kind() {
                 ty::Param(_) => Some(EqSide::Given(ty)),
                 // A projection's alone: an opaque one left unrevealed has

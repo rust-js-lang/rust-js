@@ -9,8 +9,8 @@
 //! the writer's, and called plainly it gives its text (#1652, step 6 of
 //! ADR 1135).
 
-use super::arguments_use::{ArgumentsUse, arguments_use, holds_text, std_formats_param};
 use super::*;
+use crate::lower::analysis::mir_reads::arguments_use::{ArgumentsUse, arguments_use, holds_text, std_formats_param};
 use crate::lower::display::SinkWrite;
 use rustc_middle::mir::{Local, Rvalue, StatementKind, TerminatorKind};
 

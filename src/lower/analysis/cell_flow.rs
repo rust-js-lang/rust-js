@@ -570,7 +570,7 @@ impl<'r, 'tcx> Flow<'r, 'tcx> {
     /// The constant a body's promoted constant `promoted` refers to, `&KEY`'s
     /// `KEY`.
     fn promoted(&self, at: usize, promoted: mir::Promoted) -> Option<mir::ConstOperand<'tcx>> {
-        crate::lower::mir::referred_constant(self.bodies[at].1.promoted.get(promoted)?)
+        crate::lower::analysis::mir_reads::referred::referred_constant(self.bodies[at].1.promoted.get(promoted)?)
     }
 
     /// A thread-local's key's node, the `LocalKey` that holds its storage:

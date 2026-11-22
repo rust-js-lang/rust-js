@@ -68,7 +68,7 @@ pub(super) struct Call<'c, 'tcx> {
     pub(super) found_index: bool,
     /// What MIR proves of its first argument where it's read
     /// (`Given::receiver`).
-    pub(super) receiver: crate::lower::mir::Presence,
+    pub(super) receiver: crate::lower::analysis::mir_reads::presence::Presence,
     /// The one `None` its first argument can be (`Given::receiver_none`).
     pub(super) receiver_none: Option<js::OnlyNone>,
     pub(super) span: Span,
@@ -96,7 +96,7 @@ pub(super) struct Given<'c> {
     pub(super) found_index: bool,
     /// What MIR proves of its first argument where it's read, an `Option`
     /// receiver's (`mir::Presence`, #2112 C S4).
-    pub(super) receiver: crate::lower::mir::Presence,
+    pub(super) receiver: crate::lower::analysis::mir_reads::presence::Presence,
     /// The one `None` its first argument, an `Option`, can be where it's
     /// read, `NoneForms::read`'s (#2112 C S5).
     pub(super) receiver_none: Option<js::OnlyNone>,

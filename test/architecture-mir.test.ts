@@ -13,31 +13,31 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
   .flatMap(entry => entry.isDirectory() ? files(`${directory}/${entry.name}`) : [`${directory}/${entry.name}`]);
 
 // Whether a body's local is a variable the program named is asked one way,
-// `mir::locals::user_variable`, which answers no of a body whose locals' kinds rustc
+// `analysis::user_variable` (in `mir::locals` until #2299), which answers no of a body whose locals' kinds rustc
 // cleared: rustc's own `LocalDecl::is_user_variable` panics of one, a `const
 // fn` evaluated for a const generic's argument (#1281), and `back_stepped`
 // asked it directly where `self_handles` asked it guarded.
-test("a body's local is asked if the program named it by `mir::locals::user_variable` alone", () => {
+test("a body's local is asked if the program named it by `analysis::user_variable` alone", () => {
   const asking = ["src/lower.rs", ...files("src/lower")]
-    .filter((file) => file.endsWith(".rs") && file !== "src/lower/mir/locals.rs")
+    .filter((file) => file.endsWith(".rs") && file !== "src/lower/analysis/mir_reads/user_variable.rs")
     .filter((file) => /\.is_user_variable\(\)/.test(read(file)));
   expect(asking).toEqual([]);
-  expect(read("src/lower/mir/locals.rs")).toContain("matches!(decl.local_info, mir::ClearCrossCrate::Set(_)) && decl.is_user_variable()");
+  expect(read("src/lower/analysis/mir_reads/user_variable.rs")).toContain("matches!(decl.local_info, mir::ClearCrossCrate::Set(_)) && decl.is_user_variable()");
 });
 
 // Whether a call's `Result` is only given on by `?`, so its error may be
-// thrown, is asked one way, `mir::result_use` (#1545, after #1524's
+// thrown, is asked one way, `analysis::result_use` (#1545, after #1524's
 // `given_on`): a `write!` into a `Formatter` and a serde protocol call ask
 // it. The files that read `?`'s `Try::branch` may only shrink; a new
 // reader of what a call's `Result` is given to asks `result_use`.
-test("what a call's Result is given to is asked of `mir::result_use` alone", () => {
+test("what a call's Result is given to is asked of `analysis::result_use` alone", () => {
   const reading = ["src/lower.rs", ...files("src/lower")]
     .filter((file) => file.endsWith(".rs") && read(file).includes("TryTraitBranch"));
   expect(reading).toEqual([
     "src/lower/analysis/fmt_failures.rs",
+    "src/lower/analysis/mir_reads/result_use.rs",
     "src/lower/mir/dispatch.rs",
     "src/lower/mir/patterns.rs",
-    "src/lower/mir/result_use.rs",
     "src/lower/recognition/types.rs",
   ]);
   expect(["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs") && /fn given_on\b/.test(read(file)))).toEqual([]);
@@ -72,16 +72,17 @@ test("a builder is streamed where the sink fact says, and the fact is `prints.rs
 test("an Arguments' text or function is `mir::arguments_use`'s answer alone", () => {
   const lower = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
   const asking = lower.filter((file) => /\barguments_use\(|\bholds_text\(/.test(read(file)));
-  expect(asking).toEqual(["src/lower/mir/arguments_use.rs", "src/lower/mir/given_arguments.rs", "src/lower/mir/std_calls/written_into.rs", "src/lower/mir/std_calls.rs"]);
+  expect(asking).toEqual(["src/lower/analysis/mir_reads/arguments_use.rs", "src/lower/mir/given_arguments.rs", "src/lower/mir/std_calls/written_into.rs", "src/lower/mir/std_calls.rs"]);
   expect(read("src/lower/mir/dispatch.rs")).toContain("self.makes_arguments_given_on(state, known, destination)");
 });
 
-// rustc's own drop elaboration of a body is read in one place,
-// `mir/elaborated.rs` (#2112's change D): the shadow that compares it
-// with rust-js's, `--drops-shadow`, and what will consume it.
-test("rustc's elaborated body is read by `mir/elaborated.rs` alone", () => {
+// rustc's own drop elaboration of a body is taken in one place,
+// `analysis/prepared.rs`' `with_elaborated` (#2112's change D), kept on the
+// body's `Mir` for the shadow that compares it with rust-js's,
+// `mir/elaborated.rs`' `--drops-shadow`, and what will consume it.
+test("rustc's elaborated body is taken by `analysis/prepared.rs` alone", () => {
   const reading = ["src/lower.rs", ...files("src/lower")]
-    .filter((file) => file.endsWith(".rs") && file !== "src/lower/mir/elaborated.rs")
+    .filter((file) => file.endsWith(".rs") && file !== "src/lower/analysis/prepared.rs")
     .filter((file) => /\bmir_drops_elaborated_and_const_checked\b/.test(read(file)));
   expect(reading).toEqual([]);
 });
@@ -101,4 +102,31 @@ test("only body_queries/values.rs answers a local's one write", () => {
   expect(answers.filter((found) => !found.startsWith("src/lower/body_queries/values.rs"))).toEqual([]);
   expect(answers).toContain("src/lower/body_queries/values.rs: assigned_once");
   expect(answers).toContain("src/lower/body_queries/values.rs: the_write");
+});
+
+// Each item of the lowering has one path (#2294's crate split, as #2297's
+// has no root re-exports): a module re-exports its own children's, never
+// another module's, which would name it twice, at its owner and at the
+// re-export. `mir` re-exported what #2299 moved to the base until its commit
+// 3; those before the split, of `recognition`'s answers and of
+// `representation::nones`', are listed, to go with it, and a new one fails.
+const reExports = (path: string, text: string): string[] =>
+  text.split("\n").flatMap((line) => /^\s*pub(\([^)]*\))? use (crate|super)::/.test(line) ? [`${path}:${line.trim()}`] : []);
+test("the lowering re-exports no other module's item, each item one path", () => {
+  expect(reExports("a.rs", "pub(in crate::lower) use crate::lower::analysis::Mir;\npub(super) use super::x::y;\npub use self::child::z;\nuse crate::lower::analysis::cfg;\nmod child;\npub use child::w;"))
+    .toEqual(["a.rs:pub(in crate::lower) use crate::lower::analysis::Mir;", "a.rs:pub(super) use super::x::y;"]);
+  const found = ["src/lower.rs", ...files("src/lower")]
+    .filter((file) => file.endsWith(".rs"))
+    .flatMap((file) => reExports(file, read(file)));
+  expect(found).toEqual([
+    "src/lower/analysis.rs:pub(super) use super::recognition::from_serde_derive;",
+    "src/lower/analysis.rs:pub(super) use super::recognition::serde_impl;",
+    "src/lower/representation/options.rs:pub(in crate::lower) use super::nones::{NoneForm, NonePlace, Writers, none_form, null_params};",
+    "src/lower/representation.rs:pub(super) use super::recognition::ordering_value;",
+    "src/lower/serde.rs:pub(super) use super::recognition::Json;",
+    "src/lower/serde.rs:pub(super) use super::recognition::serde_trait;",
+    "src/lower/traits.rs:pub(super) use super::recognition::operational;",
+    "src/lower/traits.rs:pub(super) use super::recognition::implementable;",
+    "src/lower/traits.rs:pub(super) use super::recognition::is_operator;",
+  ]);
 });

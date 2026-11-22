@@ -143,7 +143,7 @@ pub struct Body<'tcx> {
     expr: ExprId,
     facts: body_queries::BodyFacts<'tcx>,
     /// Its MIR, which the body is lowered from where it's read (ADR 0364).
-    mir: Option<mir::Mir<'tcx>>,
+    mir: Option<analysis::Mir<'tcx>>,
 }
 
 impl Body<'_> {

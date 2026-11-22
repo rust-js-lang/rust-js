@@ -19,7 +19,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn binding_values(
         &mut self,
         (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
-        (mut args, present): (Vec<Expr>, &[crate::lower::mir::ArgProof]),
+        (mut args, present): (Vec<Expr>, &[crate::lower::analysis::mir_reads::presence::ArgProof]),
         (fun_span, named): (js::Span, Span),
         span: Span,
         out: &mut Vec<js::Stmt>,
@@ -601,7 +601,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         mut value: Expr,
         named: Option<(DefId, usize)>,
-        (optionals, present): (&[(bool, bool)], &[crate::lower::mir::ArgProof]),
+        (optionals, present): (
+            &[(bool, bool)],
+            &[crate::lower::analysis::mir_reads::presence::ArgProof],
+        ),
         (at, out): (js::Span, &mut Vec<js::Stmt>),
     ) -> Expr {
         // Each count's call where the call is written, so a comment before

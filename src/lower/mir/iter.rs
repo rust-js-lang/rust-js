@@ -9,7 +9,6 @@
 // Its iterator half, collecting, consuming, closing, copying and the
 // sources an adapter steps, is the base's (`iterators::mir_steps`, #2299).
 use crate::lower::iterators::mir_steps::consumers;
-pub(in crate::lower::mir) use crate::lower::iterators::mir_steps::reversed_in_body;
 
 use crate::lower::iterators::was_made_knowing_its_back as knows_back;
 use crate::lower::recognition::{OwnStep, Reach};

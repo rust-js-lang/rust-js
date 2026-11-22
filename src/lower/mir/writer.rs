@@ -2,8 +2,8 @@
 //! the `Debug` builders it makes, what's refused of it, and a call that
 //! writes to it or steps a builder, whose JS `display.rs` writes.
 
-use super::result_use::{ResultUse, result_use};
 use super::*;
+use crate::lower::analysis::mir_reads::result_use::{ResultUse, result_use};
 use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {

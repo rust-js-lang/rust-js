@@ -16,7 +16,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// with its writer's (`$writingInto`), so each piece is a call of that
     /// writer's.
     pub(super) fn arguments_written(&self, state: &State<'_, 'tcx>) -> bool {
-        use super::super::arguments_use::{ArgumentsUse, arguments_use, written_into_a_formatter};
+        use crate::lower::analysis::mir_reads::arguments_use::{ArgumentsUse, arguments_use, written_into_a_formatter};
         (state.called_into.and_then(|place| place.as_local())).is_some_and(|local| {
             let recognition = self.recognition();
             arguments_use(&recognition, state.body, local) == ArgumentsUse::Written
@@ -582,7 +582,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let written: Vec<Stmt> = (writes.into_iter())
             .map(|write| write.written_into(&sink, js_span))
             .collect();
-        use super::super::result_use::{ResultUse, result_use};
+        use crate::lower::analysis::mir_reads::result_use::{ResultUse, result_use};
         if result_use(&self.recognition(), state.body, destination) == ResultUse::Inspected {
             return Ok(Value::Expr(self.fmt_try(written)));
         }
@@ -634,7 +634,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         given.extend(args);
         let sink = Expr::var(&state.writer.as_ref().expect("a writer").1);
         let written = vec![SinkWrite::Helper("$writingInto", given).written_into(&sink, self.js_span(span))];
-        use super::super::result_use::{ResultUse, result_use};
+        use crate::lower::analysis::mir_reads::result_use::{ResultUse, result_use};
         let inspected = result_use(&self.recognition(), state.body, destination) == ResultUse::Inspected;
         if inspected {
             return Ok(Value::Expr(self.fmt_try(written)));

@@ -31,15 +31,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
   },
   {
-    name: "mir-promoted-const-unseen",
-    breaks:
-      "a promoted `&HEADERS` is the constant's whole value, written where it's read, not `HEADERS[0]`",
-    file: "src/lower/mir/queries.rs",
-    find: "    (Some(local) == referred).then_some(c)\n",
-    replace: "    (Some(local) == referred).then_some(c).filter(|_| false)\n",
-    tests: ["test/compiler.test.ts", "-t", "the report's JS: function values"],
-  },
-  {
     name: "mir-early-exit-not-negated",
     breaks:
       "a branch that returns, written first, is taken when its test fails, not when it holds",

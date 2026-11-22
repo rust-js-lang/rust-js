@@ -387,7 +387,11 @@ fn key_method<'tcx>(
     receiver: &Operand<'tcx>,
 ) -> Option<(LocalKeyCellMethod, DefId)> {
     let method = local_key_cell_method(tcx, id)?;
-    let key = crate::lower::mir::referred_key(promoted, |local| assigned.get(&local).copied(), receiver)?;
+    let key = crate::lower::analysis::mir_reads::referred::referred_key(
+        promoted,
+        |local| assigned.get(&local).copied(),
+        receiver,
+    )?;
     Some((method, key))
 }
 
@@ -592,7 +596,7 @@ fn unwhole_key_writes<'tcx>(
     };
     for (&local, rvalue) in &assigned {
         if let Rvalue::Use(operand @ Operand::Constant(_), _) = rvalue
-            && let Some(key) = crate::lower::mir::referred_key(promoted, |_| None, operand)
+            && let Some(key) = crate::lower::analysis::mir_reads::referred::referred_key(promoted, |_| None, operand)
             && keys.contains(&key)
             && only_received.of(local)
         {

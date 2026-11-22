@@ -159,4 +159,12 @@ export const mutations: Mutation[] = [
     replace: "                        true\n",
     tests: ["test/corpus.test.ts", "-t", "^range_(inclusive_)?is_empty_of_a_panicking_order_unwinds.rs$"],
   },
+  {
+    name: "shadow-elaborated-only-where-recorded",
+    breaks: "rustc's elaborated body is kept only where `--drops-shadow` records the comparison, so a compile without it compares nothing and never refuses a disagreement (#2112's change D (c))",
+    file: "src/lower/analysis/prepared.rs",
+    find: "    if !matches!(tcx.def_kind(local), DefKind::Fn | DefKind::AssocFn | DefKind::Closure)\n",
+    replace: "    if crate::lower::session::caches(tcx).drops_shadow.is_none()\n        || !matches!(tcx.def_kind(local), DefKind::Fn | DefKind::AssocFn | DefKind::Closure)\n",
+    tests: ["test/drops-shadow.test.ts", "-t", "a normal path's drop that disagrees with rustc's elaboration is refused"],
+  },
 ];

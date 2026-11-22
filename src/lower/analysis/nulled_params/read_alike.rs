@@ -160,7 +160,7 @@ impl<'u, 'tcx> Uses<'u, 'tcx> {
         let (id, _) = fn_def(func.ty(self.body, self.recognition.tcx))?;
         local_key_access(self.recognition.tcx, id)?;
         let first = args.first()?;
-        crate::lower::mir::referred_key(
+        crate::lower::analysis::mir_reads::referred::referred_key(
             self.promoted,
             |local| self.assigned.get(&local).copied().flatten(),
             &first.node,

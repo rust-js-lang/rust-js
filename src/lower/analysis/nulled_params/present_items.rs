@@ -194,8 +194,11 @@ impl<'tcx> Scan<'_, 'tcx> {
     /// initializer has.
     fn key_of(&self, mir: &Mir<'tcx>, operand: &Operand<'tcx>) -> Option<DefId> {
         let assigned = crate::lower::body_queries::assigned_once(&mir.body);
-        let key =
-            crate::lower::mir::referred_key(&mir.promoted, |local| assigned.get(&local).copied().flatten(), operand)?;
+        let key = crate::lower::analysis::mir_reads::referred::referred_key(
+            &mir.promoted,
+            |local| assigned.get(&local).copied().flatten(),
+            operand,
+        )?;
         let held = crate::lower::bindings::thread_local_value(self.recognition.tcx, key)?;
         held.is_freeze(self.recognition.tcx, self.recognition.typing_env)
             .then_some(key)

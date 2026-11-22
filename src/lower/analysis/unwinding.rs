@@ -88,7 +88,8 @@ fn never_unwinding<'tcx>(
         .filter(|body| candidate(tcx, body.def_id))
         .filter_map(|body| {
             let mir = &body.mir.as_ref()?.body;
-            let mut dead = crate::lower::mir::dead_drops(tcx, mir, &|ty| runs(ty, body.def_id));
+            let mut dead =
+                crate::lower::analysis::mir_reads::drop_flow::dead_drops(tcx, mir, &|ty| runs(ty, body.def_id));
             // A closure of a generic function's: a drop of what's of its
             // type parameters may run anything, so none is dead.
             dead.retain(|&block| {
@@ -150,7 +151,8 @@ pub(super) fn quiet<'tcx>(
         .filter(|body| candidate(tcx, body.def_id) || (body.def_id.is_local() && tcx.is_coroutine(body.def_id)))
         .filter_map(|body| {
             let mir = &body.mir.as_ref()?.body;
-            let mut dead = crate::lower::mir::dead_drops(tcx, mir, &|ty| runs(ty, body.def_id));
+            let mut dead =
+                crate::lower::analysis::mir_reads::drop_flow::dead_drops(tcx, mir, &|ty| runs(ty, body.def_id));
             dead.retain(|&block| {
                 !matches!(&mir.basic_blocks[block].terminator().kind,
                     TerminatorKind::Drop { place, .. } if place.ty(mir, tcx).ty.has_param())
@@ -335,7 +337,7 @@ fn quiet_but_their_parameters<'tcx>(
                 return false;
             };
             let drops = |ty: Ty<'tcx>| !ty.has_param() && runs(ty, body.def_id);
-            let mut dead = crate::lower::mir::dead_drops(tcx, mir, &drops);
+            let mut dead = crate::lower::analysis::mir_reads::drop_flow::dead_drops(tcx, mir, &drops);
             // What's of a type parameter, its caller's to say.
             dead.extend((mir.basic_blocks.iter_enumerated()).filter(|(_, block)| {
                 matches!(&block.terminator().kind, TerminatorKind::Drop { place, .. } if place.ty(mir, tcx).ty.has_param())
@@ -686,7 +688,7 @@ impl<'tcx> Judged<'_, '_, 'tcx> {
         let prepared = mir.instantiated(tcx, args);
         let local = local_keys::Calls::new(&prepared);
         let mir = &prepared.body;
-        let mut dead = crate::lower::mir::dead_drops(tcx, mir, &self.drops);
+        let mut dead = crate::lower::analysis::mir_reads::drop_flow::dead_drops(tcx, mir, &self.drops);
         dead.extend(
             (mir.basic_blocks.iter_enumerated()).filter_map(|(at, block)| match &block.terminator().kind {
                 TerminatorKind::Drop { place, .. } => {

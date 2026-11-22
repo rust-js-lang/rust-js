@@ -11,13 +11,15 @@ use crate::lower::bindings;
 use crate::lower::recognition::{PureStd, is_unreachable_hint, pure_std};
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_abi::FieldIdx;
+use rustc_hir::def::DefKind;
 use rustc_index::IndexVec;
 use rustc_middle::mir::visit::{MutatingUseContext, PlaceContext, Visitor};
 use rustc_middle::mir::{
     self, BasicBlock, Local, Operand, Place, PlaceElem, Promoted, Rvalue, StatementKind, TerminatorKind, UnwindAction,
 };
-use rustc_middle::ty::{self};
+use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
+use rustc_span::def_id::LocalDefId;
 
 /// A body's MIR, as borrowck reads it (ADR 0364), and its promoted constants.
 #[derive(Clone)]
@@ -458,5 +460,23 @@ impl<'tcx> Visitor<'tcx> for ReadLocals {
         if !matches!(context, PlaceContext::MutatingUse(MutatingUseContext::Store)) && !self.0.contains(&local) {
             self.0.push(local);
         }
+    }
+}
+
+/// Keeps rustc's body of `local`, its drops elaborated, beside rust-js's
+/// own of it, which every compile compares them by: of a function or a
+/// closure, not a coroutine, whose elaborated body is its state machine's.
+/// rustc's query steals `local`'s built MIR alone, which `mir` is a copy of
+/// already; borrowck, which it runs first, only borrows the built MIR of the
+/// closures in it.
+pub(in crate::lower) fn with_elaborated<'tcx>(tcx: TyCtxt<'tcx>, local: LocalDefId, mir: &mut Mir<'tcx>) {
+    if !matches!(tcx.def_kind(local), DefKind::Fn | DefKind::AssocFn | DefKind::Closure)
+        || tcx.is_coroutine(local.to_def_id())
+    {
+        return;
+    }
+    let elaborated = tcx.mir_drops_elaborated_and_const_checked(local);
+    if !elaborated.is_stolen() {
+        mir.elaborated = Some(elaborated.borrow().clone());
     }
 }

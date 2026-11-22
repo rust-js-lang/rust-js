@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
     name: "refuse-lacked-opaque-unrevealed",
     breaks: "a library's type it gives out as an `impl Display`, which its contract doesn't list, written through a consumer's generic code, isn't refused, and throws `fmtInto is not a function` (#1743)",
     file: "src/lower/analysis/written_params.rs",
-    find: "    let ty = crate::lower::mir::revealed(tcx, ty);\n    let lacked",
+    find: "    let ty = crate::lower::analysis::revealed(tcx, ty);\n    let lacked",
     replace: "    let lacked",
     tests: ["test/writer-sink.test.ts", "-t", "a library's hidden types are written"],
   },

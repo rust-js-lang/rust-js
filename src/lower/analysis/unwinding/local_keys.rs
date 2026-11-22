@@ -37,7 +37,7 @@ impl<'a, 'tcx> Calls<'a, 'tcx> {
         }
         let [key, callback] = operands else { return None };
         let assigned = self.assigned.get_or_init(|| assigned_once(&self.mir.body));
-        let key = crate::lower::mir::referred_key(
+        let key = crate::lower::analysis::mir_reads::referred::referred_key(
             &self.mir.promoted,
             |local| assigned.get(&local).copied().flatten(),
             &key.node,

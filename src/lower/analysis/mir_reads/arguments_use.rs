@@ -239,7 +239,11 @@ fn mentions(rvalue: &Rvalue<'_>, local: Local) -> bool {
 /// (`ArgumentsUse::Written`). Any other place
 /// of an `Arguments`, a parameter's, a field's, or one given on, holds a
 /// function that makes its text.
-pub(super) fn holds_text<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &mir::Body<'tcx>, local: Local) -> bool {
+pub(in crate::lower) fn holds_text<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    body: &mir::Body<'tcx>,
+    local: Local,
+) -> bool {
     let tcx = recognition.tcx;
     let made = body.basic_blocks.iter().any(|data| {
         matches!(&data.terminator().kind, TerminatorKind::Call { func, destination, .. }
@@ -255,7 +259,7 @@ pub(super) fn holds_text<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &mir::
 /// function rust-js compiled: the method of an impl of the crate's, or of a
 /// library's, that defines it, not its trait's default. Of a type only a caller knows, its
 /// dictionary's entry says (`impl_entries`).
-pub(super) fn resolves_to_own<'tcx>(
+fn resolves_to_own<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     id: rustc_span::def_id::DefId,
     generic_args: ty::GenericArgsRef<'tcx>,

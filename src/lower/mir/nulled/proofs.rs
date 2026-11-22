@@ -405,7 +405,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 String::from_utf8(bytes.to_vec()).ok()
             }
             mir::Const::Unevaluated(uv, _) if depth < 2 => {
-                let referred = super::queries::referred_constant(&state.facts.promoted()[uv.promoted?])?;
+                let referred = crate::lower::analysis::mir_reads::referred::referred_constant(
+                    &state.facts.promoted()[uv.promoted?],
+                )?;
                 self.text_of(state, &referred, depth + 1)
             }
             _ => None,

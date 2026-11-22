@@ -8,7 +8,7 @@
 
 use crate::js::result;
 use crate::js::{Expr, StmtKind};
-use crate::lower::mir::result_use::ResultUse;
+use crate::lower::analysis::mir_reads::result_use::ResultUse;
 use crate::lower::recognition::{
     SerdeCompound, SerdeError, SerdeHint, SerdeNext, SerdeOp, SerdeScalar, VisitorMethod, visitor_methods,
 };

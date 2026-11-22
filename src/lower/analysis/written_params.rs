@@ -171,7 +171,7 @@ impl<'tcx> WrittenParams<'tcx> {
         let mut changed = false;
         // An `impl Display` a library gives out, as the type it hides, a
         // `Wrap<char>`, whose `char`'s dictionary its writer is given (#1743).
-        let revealed = crate::lower::mir::revealed(tcx, ty);
+        let revealed = crate::lower::analysis::revealed(tcx, ty);
         if revealed != ty {
             changed |= self.give(tcx, owner, revealed);
         }
@@ -190,7 +190,7 @@ impl<'tcx> WrittenParams<'tcx> {
     /// A library makes a `dyn` of `ty`, which a consumer may write so: it
     /// and what it's made of reach it best-effort (`best_effort`, #1797).
     fn give_made(&mut self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) {
-        let ty = crate::lower::mir::revealed(tcx, ty);
+        let ty = crate::lower::analysis::revealed(tcx, ty);
         let given = (ty.walk().filter_map(|part| part.as_type())).filter_map(|part| part.ty_adt_def());
         self.made_given.extend(given.map(|adt| adt.did()));
         reach(
@@ -353,7 +353,7 @@ pub(super) fn written_params<'tcx>(
     // none: said here.
     if library && !found.dyn_written {
         for made_of in made_fmt_dyns {
-            let revealed = crate::lower::mir::revealed(tcx, made_of);
+            let revealed = crate::lower::analysis::revealed(tcx, made_of);
             let lacked = (revealed.walk().filter_map(|part| part.as_type()))
                 .any(|part| part.ty_adt_def().is_some_and(|adt| foreign.lacks_fmt_into(adt.did())));
             match rustc_middle::ty::TypeVisitableExt::has_param(&revealed) || lacked {
@@ -474,7 +474,7 @@ fn refuse_arguments<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, span: Span) {
 /// of the contract, which no program reaches (#1688).
 fn refuse_lacked<'tcx>(tcx: TyCtxt<'tcx>, foreign: &Foreign<'_, 'tcx>, ty: Ty<'tcx>, span: Span) {
     // An `impl Display` a library gives out, as the type it hides (#1743).
-    let ty = crate::lower::mir::revealed(tcx, ty);
+    let ty = crate::lower::analysis::revealed(tcx, ty);
     let lacked = (ty.walk().filter_map(|part| part.as_type()))
         .find(|part| part.ty_adt_def().is_some_and(|adt| foreign.lacks_fmt_into(adt.did())));
     if let Some(lacked) = lacked {
@@ -831,7 +831,7 @@ fn kept_by_a_generic<'tcx>(
         recognition.classify(callee, generic_args),
         Some(Std::FmtDisplay | Std::FmtDebug | Std::FmtRadix(_) | Std::FmtExp(_) | Std::FmtPointer)
     );
-    if placeholder || crate::lower::mir::arguments_use::std_formats_param(recognition, callee, index) {
+    if placeholder || crate::lower::analysis::mir_reads::arguments_use::std_formats_param(recognition, callee, index) {
         return false;
     }
     if index == 0 && crate::lower::recognition::is_fmt_method(tcx, callee) {

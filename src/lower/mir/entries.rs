@@ -294,7 +294,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// held, and thrown at the `Return` (`held_write_thrown`).
     pub(super) fn write_thrown_here(&self, state: &State<'_, 'tcx>) -> bool {
         let at = state.location().block;
-        super::result_use::thrown_where_written(self.tcx, state.body, at, &|ty| self.drop_may_panic(ty))
+        crate::lower::analysis::mir_reads::result_use::thrown_where_written(self.tcx, state.body, at, &|ty| {
+            self.drop_may_panic(ty)
+        })
     }
 
     /// What a `Return` gives back, `value`: of a write's result held past
@@ -304,7 +306,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn held_write_thrown(&self, state: &State<'_, 'tcx>, value: Option<Expr>) -> Option<Expr> {
         let output = state.body.local_decls[mir::RETURN_PLACE].ty;
         let held = self.is_write_result(output)
-            && super::result_use::write_held(self.tcx, state.body, &|ty| self.drop_may_panic(ty));
+            && crate::lower::analysis::mir_reads::result_use::write_held(self.tcx, state.body, &|ty| {
+                self.drop_may_panic(ty)
+            });
         match held {
             true => value.map(|held| Expr::call_helper("$writeCheck", vec![held])),
             false => value,

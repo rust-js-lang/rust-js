@@ -5,8 +5,8 @@
 //! `"i"`nteger or `"f"`loat, as serde_json keeps one.
 
 use crate::js::{self, Expr, Op, Prop, StmtKind};
+use crate::lower::analysis::mir_reads::result_use::ResultUse;
 use crate::lower::display::Pretty;
-use crate::lower::mir::result_use::ResultUse;
 use crate::lower::recognition::{Json, JsonCall, JsonConversion, JsonMethod};
 use crate::lower::representation::Num;
 use crate::lower::temporary_names::Role;

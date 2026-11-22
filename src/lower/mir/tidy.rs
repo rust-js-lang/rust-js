@@ -39,7 +39,7 @@ mod value_chains;
 mod values;
 
 pub(super) use self::again::Again;
-pub(super) use self::bindings::{is_temporary, temporary, user_name};
+pub(super) use self::bindings::{is_temporary, user_name};
 pub(super) use self::destructuring::{copied_params, destructured_params};
 use self::stability::{plain_field, read_past_calls};
 pub(super) use self::values::writer_body;
@@ -517,9 +517,10 @@ mod tests {
 
     use super::{
         MoveFacts, decided_tests, inlined, is_temporary, paired_temporaries, settle_jumps, shared_tails,
-        spread_spreads, temporary, turned, user_name,
+        spread_spreads, turned, user_name,
     };
     use crate::js::{self, Expr, ExprKind, Op, Prop, Stmt, StmtKind, UnaryOp};
+    use crate::lower::temporary_names::{spelled_as_temporary, temporary};
 
     fn call(f: &str) -> js::Stmt {
         StmtKind::Expr(Expr::call(Expr::var(f), Vec::new())).at(js::Span::NONE)
@@ -1178,7 +1179,7 @@ mod tests {
             1
         ))));
         assert!(!is_temporary(&js::Name::from(user_name("_5"))));
-        assert!(!super::spelled_as_temporary(&user_name("_5")));
+        assert!(!spelled_as_temporary(&user_name("_5")));
         assert_eq!(user_name("total"), "total");
     }
 
