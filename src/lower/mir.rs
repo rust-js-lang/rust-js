@@ -154,7 +154,7 @@ enum Value<'tcx> {
 /// binds each name the pattern binds to.
 type ParamPattern = (usize, js::Pattern, Vec<(Local, js::Name)>);
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A writer's state, of `aliases`, the locals that are its `Formatter`,
     /// and `name`, its text: its builders, and what its `Formatter` is
     /// where it goes, the crate's generic `fmt::Write` code or a struct
@@ -428,7 +428,7 @@ enum Taken {
     Streamed(js::Name),
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     pub(super) fn lower_fn_mir(&mut self, body: &Body<'tcx>, mir: &Mir<'tcx>) -> R<LoweredFn> {
         let def_id = body.def_id;
         let span = self.tcx.def_span(def_id);
@@ -1081,7 +1081,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.last_params(mir_body, (&state.locals, options.is_some()), &mut params);
         let start = BasicBlock::from_usize(0);
         let given = self.writer_options(&state, options.as_ref());
-        let lowered = self.with_given(given, mir_body.source.def_id(), |cx| cx.mir_tree(&mut state, start))?;
+        let lowered = self.with_given(given, mir_body.source.def_id(), |cx| {
+            MirCx(cx).mir_tree(&mut state, start)
+        })?;
         out.extend(state.settled_lets().chain(lowered));
         // Its scope struct's methods, declared after its `let` (ADR 1043).
         self.declare_scope_functions(&state, captures.is_none(), &mut out)?;
@@ -1194,4 +1196,27 @@ fn drops_read(hoisted: Vec<Stmt>, body: &[Stmt]) -> Vec<Stmt> {
     (hoisted.into_iter())
         .filter(|def| name(def).is_none_or(|n| read.contains(&n)))
         .collect()
+}
+
+/// The lowering's context as MIR's lowering asks it: `FnCx`, the base's,
+/// which a crate of its own can't give inherent methods, held so its
+/// methods are `MirCx`'s, private ones still private, and the base's
+/// methods and fields reached through it (#2299's commit 7, ADR 1181). Where
+/// the base hands a closure `&mut FnCx`, or the driver and the hooks begin
+/// MIR's lowering, it's wrapped again, `MirCx(cx)`. A base method taking
+/// `&mut self` is given what it reads of the context first, a `let` before
+/// the call, as the borrow `DerefMut` takes is the whole context's.
+pub(in crate::lower) struct MirCx<'mcx, 'a, 'tcx>(pub(in crate::lower) &'mcx mut FnCx<'a, 'tcx>);
+
+impl<'a, 'tcx> std::ops::Deref for MirCx<'_, 'a, 'tcx> {
+    type Target = FnCx<'a, 'tcx>;
+    fn deref(&self) -> &FnCx<'a, 'tcx> {
+        self.0
+    }
+}
+
+impl<'a, 'tcx> std::ops::DerefMut for MirCx<'_, 'a, 'tcx> {
+    fn deref_mut(&mut self) -> &mut FnCx<'a, 'tcx> {
+        self.0
+    }
 }

@@ -7,7 +7,7 @@ use super::*;
 use crate::lower::lent::Within;
 use crate::lower::pointers::Offset;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Of `place`, which a reference or a raw pointer is made to, where each
     /// object it's in, or is, is stored, recorded, `$stored($ptr(other,
     /// 0, 0))`, of the types whose objects say so (`StoredPlaces`, #1113):

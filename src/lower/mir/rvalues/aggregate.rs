@@ -5,7 +5,7 @@
 use super::*;
 use crate::lower::aggregates::Given;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A struct's literal, its layout saying which fields MIR proved `null`
     /// or a value where it's made, `nulled` of each: an object's by key, an
     /// array's, a tuple struct's, by index. What a `Drop` guard's inlined

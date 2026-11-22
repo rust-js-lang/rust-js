@@ -5,7 +5,7 @@
 use super::*;
 use rust_js_program::collections::IndexMap;
 
-impl<'tcx> FnCx<'_, 'tcx> {
+impl<'tcx> MirCx<'_, '_, 'tcx> {
     /// Each temporary a call the source writes by its name makes, `_5` of
     /// `a.trailing_zeros()`, and what it calls: not one a macro writes,
     /// `vec![..]`'s, nor an operator's, `a[i]`'s, nor a closure's, `f(x)`'s

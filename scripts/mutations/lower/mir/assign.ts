@@ -525,9 +525,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a writer's last call that fails, `check(n)` of its `fmt::Result`, is ignored: `Ok(())`",
     file: "src/lower/mir/assign.rs",
-    find: "            self.fmt_check(value.clone(), self.js_span(span), out);\n            if state.writer.is_some() {\n",
-    replace:
-      "            out.push(StmtKind::Expr(value.clone()).at(self.js_span(span)));\n            if state.writer.is_some() {\n",
+    find: "            self.fmt_check(value.clone(), at, out);\n            if state.writer.is_some() {\n",
+    replace: "            out.push(StmtKind::Expr(value.clone()).at(at));\n            if state.writer.is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
   },
   {

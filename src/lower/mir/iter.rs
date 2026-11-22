@@ -9,6 +9,7 @@
 // Its iterator half, collecting, consuming, closing, copying and the
 // sources an adapter steps, is the base's (`iterators::mir_steps`, #2299).
 use crate::lower::iterators::mir_steps::consumers;
+use crate::lower::mir::MirCx;
 
 use crate::lower::iterators::was_made_knowing_its_back as knows_back;
 use crate::lower::recognition::{OwnStep, Reach};
@@ -18,11 +19,11 @@ use rustc_middle::ty::{self, Mutability, Ty, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
+use crate::lower::R;
 use crate::lower::recognition::{IterMethod, Parted, StdItem, is_std_def, std_item};
-use crate::lower::{FnCx, R};
 use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A call of an `Iterator`'s or an `IntoIterator`'s method, of a std
     /// iterator, from MIR: `None` if it's another.
     pub(in crate::lower) fn mir_iter_call(
@@ -394,7 +395,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `$mapEnds` and a filter `$filterEnds`, as one not cloned
                 // apart is (ADRs 0455, 0526, 0984), closed to drop what it
                 // holds as `as_double_ended` makes it.
-                let holding = |cx: &mut Self, adapter: Expr, f: Expr| match held {
+                let holding = |cx: &mut MirCx<'_, 'a, 'tcx>, adapter: Expr, f: Expr| match held {
                     Some(function) => cx.closing_function(adapter, output, (f, function), span),
                     None => Ok(adapter),
                 };
@@ -409,7 +410,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     } else {
                         "$filterEnds"
                     };
-                    return holding(cx, Expr::call_helper(ends, vec![source, callback]), b);
+                    return holding(
+                        &mut super::MirCx(cx),
+                        Expr::call_helper(ends, vec![source, callback]),
+                        b,
+                    );
                 }
                 let a_value = a.clone();
                 // Each source closed to drop what it holds, as the adapter not
@@ -421,7 +426,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // which has none, is `copied_cloned_apart`'s.
                     Parted::Map | Parted::Filter | Parted::Copied => {
                         let callback = cx.unary_callback(b.clone(), own);
-                        holding(cx, Expr::call(Expr::member(a, name.as_str()), vec![callback]), b)?
+                        holding(
+                            &mut super::MirCx(cx),
+                            Expr::call(Expr::member(a, name.as_str()), vec![callback]),
+                            b,
+                        )?
                     }
                     // Its sides made knowing theirs, as a chain not cloned apart
                     // is (#718, #739).

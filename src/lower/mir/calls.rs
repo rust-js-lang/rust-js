@@ -10,7 +10,7 @@ mod method_paths;
 
 use self::defined::value_first;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A call of what may read the `this` JS would give it
     /// (`may_read_this`): a JS function, a with_this function or a
     /// binding's a fn pointer holds, whose callee is read as a member,
@@ -275,12 +275,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some((state, output, out)) if !own => {
                 let call = self.called_unbound(state, (call, Called::Function(arg_tys[0], arg_tys[1], output)))?;
                 match (laddered, call) {
-                    (true, Value::Expr(call)) => Value::Expr(self.optional_ladder(
-                        call,
-                        None,
-                        (&optionals, &self.arg_proofs_in_a_tuple(state, &present)),
-                        (self.js_span(span), out),
-                    )),
+                    (true, Value::Expr(call)) => {
+                        let proofs = self.arg_proofs_in_a_tuple(state, &present);
+                        let at = self.js_span(span);
+                        Value::Expr(self.optional_ladder(call, None, (&optionals, &proofs), (at, out)))
+                    }
                     (_, call) => call,
                 }
             }

@@ -4,7 +4,7 @@
 
 use super::*;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A method std's impl for a `&mut W` passes on to `W`'s
     /// (`passed_through_mut_ref`): `W`'s, given the `&mut W` its receiver
     /// is of, `*self` (#1309), of `&self` the `&mut W` read as `W` itself

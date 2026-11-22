@@ -6,7 +6,7 @@ use super::*;
 use crate::lower::recognition::Lend;
 use crate::lower::temporary_names::Role;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// An iterator's call `mir_iter_call` leaves: a combinator, a step
     /// through a `Peekable`, a range's, a stream's (ADRs 0062, 0071).
     pub(in crate::lower::mir) fn mir_iter_std_call<'c>(

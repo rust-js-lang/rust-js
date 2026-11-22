@@ -19,7 +19,7 @@ pub(super) struct Alternatives {
     pub(super) unreached: IndexSet<BasicBlock>,
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Each switch's target whose alternative is an earlier target's in
     /// JS, and that target: their blocks, past empty ones, each statement
     /// alike but of a field of another variant at one JS place

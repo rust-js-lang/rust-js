@@ -105,9 +105,9 @@ export const mutations: Mutation[] = [
     name: "mir-failing-question-refused",
     breaks: "MIR's `write!(s, ..)?` that may fail is refused",
     file: "src/lower/mir/entries.rs",
-    find: "        self.fmt_check(tried, self.js_span(span), out);\n        Ok(Value::Branch(Expr::js_undefined(), ty))\n",
+    find: "        self.fmt_check(tried, at, out);\n        Ok(Value::Branch(Expr::js_undefined(), ty))\n",
     replace:
-      '        let _ = tried;\n        Err(self.unsupported(span, "`?` of a write\'s result that may fail, from its MIR"))\n',
+      '        let _ = (tried, at);\n        Err(self.unsupported(span, "`?` of a write\'s result that may fail, from its MIR"))\n',
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {

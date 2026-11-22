@@ -4,7 +4,7 @@
 
 use super::*;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// The byte offset of `place`'s last field in its struct, its tuple or
     /// its variant, rustc's layout for wasm32 (ADR 0562; #1114): where its address is in the JS
     /// object or array the field is on (#1081). `Unsaid` of a place that

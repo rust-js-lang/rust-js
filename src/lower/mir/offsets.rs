@@ -277,7 +277,7 @@ impl<'tcx> Visitor<'tcx> for Touched<'_> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// What `body`'s string offsets are (`Offsets`): of a closure given a
     /// place found, what it's told of it (`seed`).
     pub(super) fn mir_offsets(&self, body: &mir::Body<'tcx>, seed: Option<&Seed>) -> Offsets {

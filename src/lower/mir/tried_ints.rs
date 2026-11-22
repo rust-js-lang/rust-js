@@ -8,7 +8,7 @@ use super::*;
 use crate::lower::Num;
 use crate::lower::temporary_names::Role;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// The blocks `LocalFacts::tried_int` says: each that ends in a call of
     /// an integer's `try_from` whose `Result`, written there alone, is read
     /// only by its discriminant and its `Ok`'s number.

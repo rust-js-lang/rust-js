@@ -9,7 +9,7 @@
 use super::*;
 use rustc_middle::mir::visit::{PlaceContext, Visitor};
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether `lent`, borrowed `&mut` into `reference`, a local written
     /// once, keeps its `Some`: `lent` is a `Some`'s payload, or every use of
     /// `reference` reads the `Option` it lends, its discriminant or a
@@ -117,7 +117,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// How many times `local` is lent `&mut`, each a write the body's
     /// count of writes counts (`Locals::writes`), which `whole_writes`
     /// leaves out where each keeps its `Some` (`lend_keeps_some`).

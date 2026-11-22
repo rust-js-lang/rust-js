@@ -4,7 +4,7 @@
 use super::*;
 use crate::lower::temporary_names::{Base, Role};
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// `lower` in an evaluation of its own: none of what's around it made and
     /// not yet used, nor the cleanup that unwinds to, nor the copies back a
     /// call around it owes, which are the enclosing evaluation's again once
@@ -906,7 +906,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     // ── Statements ──────────────────────────────────────────────────────
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// The cell, box or handle whose `value` `place`, a `&mut`'s, is: one a
     /// call gives, `$strPart(..)`'s, one made there, or one a place holds,
     /// a reborrow's, `&mut **u` (`locals.mir.cells`). What a `&mut` to the
@@ -1020,7 +1020,7 @@ impl IterLocals {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether `place`, a `&mut`, is held as its place's own name, not the
     /// cell its type says: a closure's capture of it by name, or a local
     /// that aliases one (`Value::Ref`, ADR 0099).

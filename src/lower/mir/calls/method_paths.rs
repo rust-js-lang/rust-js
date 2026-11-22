@@ -6,7 +6,7 @@
 use super::defined::PathEnd;
 use super::*;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// `js::method`'s method a path from a value names, read as a value,
     /// the JS function itself: `(element, HTMLElement::focus)`'s
     /// `element.focus`, its value read as it's read in the path, each step

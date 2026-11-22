@@ -5,7 +5,7 @@
 use super::*;
 use rust_js_program::collections::{IndexMap, IndexSet};
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Of the function being lowered, the lowering of each of its scope
     /// structs' methods it declares: the one a call of it given the
     /// literal's type arguments calls, as this lowering takes its own (ADR
@@ -82,14 +82,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Its own typing environment, and no copy of its function's; its
         // names apart from every one of its function's, which it may read.
-        let typing_env = std::mem::replace(&mut self.typing_env, ty::TypingEnv::post_analysis(self.tcx, method));
+        let own = ty::TypingEnv::post_analysis(self.tcx, method);
+        let typing_env = std::mem::replace(&mut self.typing_env, own);
         let copy = self.copy.take();
         self.scope_self = Some(value.clone());
         let nested = super::super::Nested::Closure {
             names: self.names.borrow().clone(),
         };
         let mut stmts = Vec::new();
-        let lowered = self.lowered_in(body, method, nested, |cx| cx.mir_signature(body, mir, &mut stmts));
+        let lowered = self.lowered_in(body, method, nested, |cx| {
+            super::MirCx(cx).mir_signature(body, mir, &mut stmts)
+        });
         self.scope_self = None;
         self.typing_env = typing_env;
         self.copy = copy;

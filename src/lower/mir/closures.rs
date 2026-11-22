@@ -4,7 +4,7 @@
 use super::*;
 use crate::lower::temporary_names::{Base, Role};
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Of `local`, a closure that captures nothing held in a local optimized
     /// MIR never writes, its value being of no size, `&_2` of `make(x)`:
     /// the closure, made where it's first read, as its constant is, and kept

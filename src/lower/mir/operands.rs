@@ -5,7 +5,7 @@ use super::*;
 use crate::lower::temporary_names::{Base, Role};
 use rustc_middle::ty::consts::ConstExt as _;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     pub(super) fn mir_operand(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -564,7 +564,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .and_then(|v| self.const_value(v))
                     {
                         Some(value) => Ok(value),
-                        None => self.named_const(uv.def, uv.args, ty, c.span, self.stored_copied(ty)),
+                        None => {
+                            let copied = self.stored_copied(ty);
+                            self.named_const(uv.def, uv.args, ty, c.span, copied)
+                        }
                     };
                 }
                 _ => {}
@@ -583,7 +586,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 ty::ConstKind::Alias(_, alias) => {
                     let def_id = crate::lower::alias_const_def_id(alias.kind);
-                    return self.named_const(def_id, alias.args, ty, c.span, self.stored_copied(ty));
+                    let copied = self.stored_copied(ty);
+                    return self.named_const(def_id, alias.args, ty, c.span, copied);
                 }
                 _ => {}
             }

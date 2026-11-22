@@ -3,6 +3,7 @@
 //! before each, whether what it drops is there, isn't, or may be, which a
 //! flag of its own then says as the body runs, set where rustc sets it.
 
+use crate::lower::mir::MirCx;
 use crate::lower::temporary_names::Role;
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_abi::FieldIdx;
@@ -22,9 +23,9 @@ use rustc_span::Span;
 
 use super::State;
 use super::local_facts::QuietCells;
+use crate::lower::R;
 use crate::lower::analysis::mir_reads::drop_flow::{flowing, maybe_inits, quiet_drops};
 use crate::lower::drops::Drops;
-use crate::lower::{FnCx, R};
 use rust_js_program::js::{self, Expr, Stmt, StmtKind};
 
 /// How a drop drops what it drops, rustc's `DropStyle`: not at all, as
@@ -108,7 +109,7 @@ impl<'tcx> Elaboration<'tcx> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether `place`, a call's destination, is a local holding an iterator
     /// dropped by closing it that the body drops, a variable's or a
     /// temporary's: held, `$held(..)`, so its owner drops what it steps
@@ -426,7 +427,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// The flag that says whether `place` is there to drop: its variable's
     /// name, a part's by its field's, `pair$a$live`. A temporary's is MIR's
     /// local's until tidy names it for what its drop is of (`tidy/flags.rs`).
@@ -793,12 +794,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (true, true) => {
                 let mut whole = Vec::new();
                 let whole_ty = branch.as_ref().map_or(ty, |(_, tried_ty)| *tried_ty);
-                self.drop_value_of(
-                    (subject.clone(), self.place_none(state, place)),
-                    whole_ty,
-                    span,
-                    &mut whole,
-                )?;
+                let none = self.place_none(state, place);
+                self.drop_value_of((subject.clone(), none), whole_ty, span, &mut whole)?;
                 Some(match &state.naming.flags()[path] {
                     Some(flag) => vec![StmtKind::If(Expr::var(flag), whole, None).at(self.js_span(span))],
                     None => whole,
@@ -865,7 +862,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty = place.ty(&state.body.local_decls, self.tcx).ty;
         let value = self.mir_place(state, place, span, out)?;
         // Its `None`, where it's an `Option`, the one MIR says (`place_none`).
-        self.drop_value_of((value, self.place_none(state, place)), ty, span, out)
+        let none = self.place_none(state, place);
+        self.drop_value_of((value, none), ty, span, out)
     }
 
     /// Whether `place` is what `?` of a write's result made, its

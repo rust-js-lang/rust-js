@@ -5,7 +5,7 @@
 use super::*;
 use crate::lower::temporary_names::{Base, Role};
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// `node.kind = kind` of a field a keyed enum is flattened in: each key
     /// of a variant the value isn't deleted from the parent, then each of
     /// its own set, `delete node.currentValue; ..; node.value = undefined;

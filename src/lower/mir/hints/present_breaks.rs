@@ -3,7 +3,7 @@
 
 use super::*;
 
-impl FnCx<'_, '_> {
+impl MirCx<'_, '_, '_> {
     /// Each `let Some(x) = v.get(i) else { break; }` the body writes, of
     /// items that take up room (`body_queries::present_item_of_sized`):
     /// where it breaks, `i` is the slice's length or past it.

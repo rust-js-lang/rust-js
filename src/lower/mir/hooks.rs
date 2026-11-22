@@ -20,7 +20,7 @@ impl MirHooks for Hooks {
         mir: &Mir<'tcx>,
         into: &mut Vec<Stmt>,
     ) -> R<(Vec<js::Pattern>, bool)> {
-        cx.mir_signature(body, mir, into)
+        super::MirCx(cx).mir_signature(body, mir, into)
     }
 
     fn crate_const_as_code<'a, 'tcx>(
@@ -29,7 +29,7 @@ impl MirHooks for Hooks {
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
     ) -> R<Expr> {
-        cx.crate_const_as_code(def_id, args)
+        super::MirCx(cx).crate_const_as_code(def_id, args)
     }
 
     fn settle_unthrown_catches(&self, body: &mut Vec<Stmt>) {

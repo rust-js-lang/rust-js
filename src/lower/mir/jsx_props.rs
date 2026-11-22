@@ -4,7 +4,7 @@
 use super::*;
 use rust_js_program::collections::IndexSet;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// The locals each struct JSX gives a component as its props is made in,
     /// `<*>`'s second, and those of their flattened fields, made there.
     pub(super) fn mir_jsx_props(&self, body: &mir::Body<'tcx>) -> IndexSet<Local> {

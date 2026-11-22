@@ -6,7 +6,7 @@ use super::*;
 use crate::lower::analysis::mir_reads::result_use::{ResultUse, result_use};
 use crate::lower::temporary_names::Role;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A value a writer shows where it's made, a derived `Debug`'s field or
     /// a builder's step: a `&dyn Debug` made here, the string it shows, as
     /// pretty as this writer is (ADR 0137), and of a list, each; any other,
@@ -18,7 +18,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Printing(text, _) => Ok(text),
             Value::DynDebug(from, _, value) => {
                 let pretty = self.writer_pretty();
-                self.debug_string_with(value, self.pointee(from), span, &pretty)
+                let pointee = self.pointee(from);
+                self.debug_string_with(value, pointee, span, &pretty)
             }
             Value::List(items, at) => Ok(Expr::array(
                 items
@@ -428,7 +429,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// The locals of a writer's `body` that are the arguments' tuple of a
     /// writer callable given its `Formatter`, one of `aliases`, where that
     /// writes, `with_word(word, f)`'s `(word, f)`: each made once, of the
@@ -524,7 +525,7 @@ impl<'tcx> State<'_, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// The writer `body` is (ADR 0054), if it's one: of one given a
     /// `Formatter`, its parameter `formatter` and its name, the locals that are it, and
     /// the string it writes to; of a closure that captured its maker's,
@@ -698,7 +699,7 @@ impl<'tcx> Visitor<'tcx> for Mentions<'_> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// What's refused of a writer (ADR 0054), and where: a use of its
     /// `Formatter`, `param`, that isn't a write to it, `write!`, `{}` of a
     /// value, another writer given it, a question of it, a `Debug` builder's
@@ -826,7 +827,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Does the writer being lowered write its text through the line it
     /// formats into (#1490): its own, or, of a closure that writes its
     /// maker's, its maker's?
@@ -878,7 +879,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A call given a `format_args!`'s text whose formatting may print
     /// (#1490): `print!`'s or `println!`'s, each piece written through
     /// stdout's line as it's made, `$printing(..)`; `eprint!`'s or
@@ -904,16 +905,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (text, fails) = (text.clone(), *fails);
         if known == (Std::Print { error: false }) {
             self.flush(state, out)?;
-            return Ok(Some(Value::Expr(self.printed_through_the_line(
-                text,
-                fails,
-                self.js_span(span),
-            ))));
+            let at = self.js_span(span);
+            return Ok(Some(Value::Expr(self.printed_through_the_line(text, fails, at))));
         }
         // To stderr, unbuffered: each piece written as it's made (#1490).
         if known == (Std::Print { error: true }) {
             self.flush(state, out)?;
-            let written = self.written_to_stderr(text, fails, self.js_span(span));
+            let at = self.js_span(span);
+            let written = self.written_to_stderr(text, fails, at);
             out.extend(written);
             return Ok(Some(Value::Expr(Expr::js_undefined())));
         }
@@ -938,7 +937,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A writer's text declared, `let f = ""`, or of one that writes through
     /// a sink, `const f = $sink()`, first of its body.
     pub(super) fn writer_text_declared(&self, state: &State<'_, 'tcx>, out: &mut Vec<Stmt>) {

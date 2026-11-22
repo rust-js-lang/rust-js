@@ -6,7 +6,7 @@
 use super::*;
 use crate::lower::temporary_names;
 
-impl<'tcx> FnCx<'_, 'tcx> {
+impl<'tcx> MirCx<'_, '_, 'tcx> {
     /// Each temporary MIR made, `_5`, by the names a Rust developer's
     /// tooling suggests for it, rust-analyzer's, first to last (ADR 0569):
     /// the method or function that made it, `trailingZeros` of

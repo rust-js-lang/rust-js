@@ -9,7 +9,7 @@ use super::*;
 /// constants (`body_queries::pattern_places`).
 type Tested<'a, 'tcx> = Option<&'a [(Ty<'tcx>, Vec<crate::lower::body_queries::PatternStep>)]>;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// The test that `subject`, of type `ty`, is `value`: of an enum's
     /// discriminant, its variant. `tested` is where in what a pattern
     /// matches it is, of MIR's place of it (`body_queries::pattern_places`).
@@ -93,7 +93,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // === ImmediatePriority`.
                 let value_of = crate::lower::body_queries::PatternValue::Bits(ty, value);
                 if let Some(named) = (self.frame.facts.constant_patterns).named(self.tcx, &value_of, span, tested) {
-                    let named = self.named_const(named, ty::List::empty(), ty, span, self.stored_copied(ty))?;
+                    let copied = self.stored_copied(ty);
+                    let named = self.named_const(named, ty::List::empty(), ty, span, copied)?;
                     return Ok(Expr::bin(Op::Eq, subject, named));
                 }
                 if ty.is_char() {

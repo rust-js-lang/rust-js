@@ -213,7 +213,7 @@ pub(super) enum Constant {
 /// that's told (`body_queries::pattern_value`).
 type Valued<'tcx> = (Constant, Option<PatternValue<'tcx>>);
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Where the program writes what tidy reads the body's JS by, of the
     /// body THIR has.
     pub(super) fn written(&self) -> Written {

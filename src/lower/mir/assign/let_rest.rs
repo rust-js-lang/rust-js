@@ -4,7 +4,7 @@
 
 use super::*;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// `rest = p.rest` of a `let`'s pattern, `let P { href, rest, .. } = p`:
     /// what's left of the props, each of their other fields named,
     /// `const { href: _href, title: _title, ...rest } = p;`, whose names tidy

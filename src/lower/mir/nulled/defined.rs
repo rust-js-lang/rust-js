@@ -10,7 +10,7 @@
 
 use super::*;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether `local` is proved defined there where the block lowered now
     /// runs (`proved_by`): a read of it there is `Presence::Defined`, so
     /// a nullable place stores it as it is, no `?? null`.

@@ -8,7 +8,7 @@ use super::*;
 use crate::lower::representation::{NoneForm, Writers};
 use rust_js_program::collections::{IndexMap, IndexSet};
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// The locals that patterns bind in an enum's variant, by THIR's
     /// patterns: `if let`s', `match`es' and `let`s'.
     pub(super) fn mir_payloads(&self, body: &mir::Body<'tcx>, locals: &Locals) -> IndexSet<Local> {

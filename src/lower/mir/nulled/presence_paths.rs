@@ -2,7 +2,7 @@
 
 use super::*;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A path proves presence by taking the present edge of a test or by
     /// writing `Some` afterwards. No path may reach the entry or an unknown
     /// write without passing one of those points.

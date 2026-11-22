@@ -56,7 +56,7 @@ impl FoundIndexes {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// The `position`s `LocalFacts::found_indexes` says: each of a slice's
     /// `iter()`, made for it and stepped by nothing else, whose `Option`,
     /// written there alone, is read only by its discriminant and its

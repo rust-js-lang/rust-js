@@ -9,7 +9,7 @@ use crate::lower::copies::InPlaceWriter;
 use crate::lower::pointers::{Rewritten, within_items};
 use crate::lower::temporary_names::Role;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// `value` written to `place` where `rewritten` says how: written, none;
     /// the value back where it's written as any other write is.
     pub(super) fn rewritten_write(

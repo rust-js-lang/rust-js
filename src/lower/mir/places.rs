@@ -5,7 +5,7 @@ use super::*;
 use crate::lower::temporary_names::Role;
 use rustc_middle::ty::consts::ConstExt as _;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A place, for a read or a write.
     pub(super) fn mir_place(
         &mut self,
@@ -547,7 +547,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     // ── Values ──────────────────────────────────────────────────────────
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// `made`, a `&mut dyn` made of `operand`, a `&mut` of type `from` to a
     /// place JS can't share, a number's, made once of that place, `&mut s.n`:
     /// in a crate that asks an address, the pair given the place's handle,

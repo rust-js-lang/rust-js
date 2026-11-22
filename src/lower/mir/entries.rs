@@ -5,7 +5,7 @@ use super::*;
 use crate::lower::copies::InPlaceWriter;
 use crate::lower::temporary_names::Role;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// `m.entry(k).or_insert(v)`, `or_insert_with(f)` or `or_default()`, of
     /// its entry's and value's `values`: a value, or a handle on a number's
     /// or text's (ADRs 0152, 0321, 0467).
@@ -235,7 +235,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => state.thrown_writes = Some((ty, self.tried_conversion(ty, Some(output), span)?)),
             }
         }
-        self.fmt_check(tried, self.js_span(span), out);
+        let at = self.js_span(span);
+        self.fmt_check(tried, at, out);
         Ok(Value::Branch(Expr::js_undefined(), ty))
     }
 
@@ -667,11 +668,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => stored(a_stores, moved(self, 1, b)),
             false => b,
         };
-        let old = self.spill(
-            if b_place.is_some() { Role::T } else { Role::Old },
-            moved(self, 0, a.clone()),
-            out,
-        );
+        let moved_a = moved(self, 0, a.clone());
+        let old = self.spill(if b_place.is_some() { Role::T } else { Role::Old }, moved_a, out);
         out.push(StmtKind::Assign(a, b).at(js_span));
         Ok(Value::Expr(match b_place {
             Some(b) => {

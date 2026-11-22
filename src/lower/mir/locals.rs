@@ -4,7 +4,7 @@ use super::*;
 use crate::lower::temporary_names::{Base, Role};
 use rust_js_program::collections::IndexSet;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Each local `pin!` pins, and the local its `Pin` is.
     fn pinned_by(&self, body: &mir::Body<'tcx>) -> Vec<(Local, Local)> {
         // The local a `&mut` is to, through its reborrows, `&mut *r`.

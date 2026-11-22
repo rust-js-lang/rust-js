@@ -3,7 +3,7 @@
 
 use super::*;
 
-impl<'tcx> FnCx<'_, 'tcx> {
+impl<'tcx> MirCx<'_, '_, 'tcx> {
     /// Each constant `pattern` names, if it names constants alone: a literal,
     /// a `const` (ADR 0590), a variant of no field that JS tests as a value
     /// it's equal to, `k === "Function"` (ADR 0013), each of an or-pattern.

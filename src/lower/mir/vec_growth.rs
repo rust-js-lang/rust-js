@@ -5,7 +5,7 @@
 use super::*;
 use crate::lower::temporary_names::Role;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A std function rust-js knows, given what MIR made of its arguments,
     /// `mir_std_call`'s; of one that adds to a `Vec`, a `VecDeque` or a `BinaryHeap` of a
     /// crate that keeps capacities, `grows_vec`'s, and an `extend` that

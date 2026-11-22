@@ -5,7 +5,7 @@
 
 use super::*;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether `local`, an `Option`, is proved there where the block
     /// lowered now runs: every path to it takes the edge of a test of it
     /// that `None` never takes, and `local` is a parameter nothing writes or

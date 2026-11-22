@@ -8,7 +8,7 @@
 
 use super::*;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether `operand`, an `Option`, holds Rust's one `None`, `undefined`,
     /// where it's `None`, the one answer of it: not where it may hold a
     /// `None` JS gave, `null` (`nulled_params::JsNones`, #1840). A

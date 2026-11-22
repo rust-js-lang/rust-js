@@ -7,7 +7,7 @@ use crate::lower::combinators::Comb;
 use crate::lower::temporary_names::Role;
 use rustc_hir::attrs::lang_items::LangItem;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether an index's call is `index_call`'s: in bounds as
     /// `call_in_bounds` knows it, or through `index_mut`, `index_mut_place`.
     pub(super) fn index_call_taken(

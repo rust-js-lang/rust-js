@@ -8,7 +8,7 @@ use super::*;
 use crate::lower::display::SinkWrite;
 use rustc_span::def_id::DefId;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether the `format_args!` being lowered, which stores to
     /// `destination`, is written into such a writer (`ArgumentsUse::Written`).
     /// And one a writer that writes through a sink gives a `Formatter`, its
@@ -304,7 +304,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A call that writes to the `Formatter` of a writer that writes through
     /// a sink, `operation` of `def_id`, given `values`, its arguments but
     /// the `Formatter`: each piece written into the sink as std makes it,
@@ -591,7 +591,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A closure, or a writer through a `fn` pointer, given the `Formatter`
     /// of a writer shown into a writer, `call`, what it's called with but
     /// the `Formatter`, `w(n)`: called with this writer's sink armed for it,
@@ -623,7 +623,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A write, `def_id` of `generic_args`, through a `Formatter` held where
     /// it isn't its writer's, `handle`, of a writer that writes through a
     /// sink, which the handle is (#1652): `given`, a `write!`'s writes,
@@ -673,7 +673,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether `def_id` of `generic_args` resolves to a writer of the
     /// crate's own that writes through a sink, which a writer may arm.
     fn own_writer(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> bool {

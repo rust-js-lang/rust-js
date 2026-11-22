@@ -48,7 +48,7 @@ impl CellRead<'_> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether `local`, an `Option` read once from a struct's `RefCell`
     /// field, `node.sibling.borrow().clone()`, is proved there where the
     /// block lowered now runs: every path to it takes the edge of a test of

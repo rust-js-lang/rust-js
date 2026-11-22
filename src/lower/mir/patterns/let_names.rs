@@ -5,7 +5,7 @@
 
 use super::*;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// What the body's `let`s bind, by the names `state` gives them: a
     /// struct or tuple pattern's bindings (`let_pattern_bindings`); a name
     /// alone, `let init = lazy.init;`, a statement of its own, which no

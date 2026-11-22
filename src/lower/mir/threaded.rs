@@ -26,6 +26,7 @@
 //! same drops, and each field read is of the value its variant's last write
 //! gave, as no read of a variant's field is of a value of another variant.
 
+use crate::lower::mir::MirCx;
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_middle::mir::visit::{MutVisitor, PlaceContext, Visitor};
@@ -36,14 +37,13 @@ use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
 use super::Mir;
-use crate::lower::FnCx;
 use crate::lower::drops::Drops;
 
 /// The most blocks that may end the first `match` before the second, each
 /// copied to each arm: a borrow's drop, its temporaries', a `goto`.
 const MOST_BETWEEN: usize = 8;
 
-impl<'tcx> FnCx<'_, 'tcx> {
+impl<'tcx> MirCx<'_, '_, 'tcx> {
     /// `mir`, each enum one `match` makes and the next takes apart at once
     /// threaded: each arm going on to its variant's case. `None` where
     /// there's none.

@@ -8,7 +8,7 @@ use super::*;
 use crate::lower::pointers::pointer_may_keep;
 use crate::lower::temporary_names::{Base, Role};
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether a trait method's call of `def_id` gives a `&mut` std's
     /// dictionary can't take as it's given. One of `values` is a place's, a
     /// number's or text's, which std's own lowering takes as its place. Or

@@ -7,7 +7,7 @@
 
 use super::*;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether `place`, read in the closure lowered now, is what its one
     /// parameter, the `&` a `with` lends it, refers to, `*_2`, or a local
     /// that holds it, written once, `_3 = copy (*_2)`, of a thread-local

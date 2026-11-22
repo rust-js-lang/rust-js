@@ -3,7 +3,7 @@
 
 use super::*;
 
-impl FnCx<'_, '_> {
+impl MirCx<'_, '_, '_> {
     /// Each `!( .. )` of an `&&` or `||`: where `!(a && b)`'s `a && b` is,
     /// and whether it's an `&&`. An `if` of a `bool` whose `else` is
     /// `false`, `!(if let Some(n) = x { n > 3 } else { false })`, is its

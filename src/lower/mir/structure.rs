@@ -5,7 +5,7 @@
 use super::*;
 use crate::lower::temporary_names::Base;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// `block`, and what it dominates (Ramsey's `doTree`): a loop of it if
     /// an edge goes back to it.
     pub(super) fn mir_tree(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock) -> R<Vec<Stmt>> {
@@ -634,7 +634,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = match state.facts.awaits().contains(&block) {
                     true => self.mir_await(state, func, args, *destination, *fn_span, &mut called),
                     false => self.making_into((into, of), |cx| {
-                        cx.mir_call(state, func, args, *destination, *fn_span, &mut called)
+                        super::MirCx(cx).mir_call(state, func, args, *destination, *fn_span, &mut called)
                     }),
                 };
                 let value = value?;
@@ -1262,7 +1262,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// Whether what's at `place`, a box's, may be read once this body has
 /// unwound: anything but a variable of its own, or what one holds, `v[0]`;
 /// a captured one's, or what a reference reaches, may (#487).
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// `place`, of what a handle a variable holds is on where its root is
     /// that variable, `fiber.owner` of `place.value` (`Made::handles`).
     fn handled_place(&self, place: Expr) -> Expr {

@@ -8,13 +8,13 @@ use crate::lower::temporary_names::Role;
 
 /// One kind of std call's handler, `std_calls`': of what it reads alone, the
 /// call's lowering where it takes the call, else `None` (#191).
-type StdHandler<'a, 'tcx> = for<'s, 'c> fn(
-    &FnCx<'a, 'tcx>,
+type StdHandler<'mcx, 'a, 'tcx> = for<'s, 'c> fn(
+    &MirCx<'mcx, 'a, 'tcx>,
     &State<'s, 'tcx>,
     std_calls::StdCall<'c, 'tcx>,
 ) -> Option<std_calls::StdLowering<'c, 'a, 'tcx>>;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A std call, `mir_std_call`'s, its value as its `output` is held,
     /// `std_value_as`'s.
     pub(super) fn mir_std_value(
@@ -263,7 +263,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // The one kind that takes it, each asked of what it reads alone, so
         // none changes what's lowered before it's chosen (#191).
-        let handlers: [(&str, StdHandler<'a, 'tcx>); 7] = [
+        let handlers: [(&str, StdHandler<'mcx, 'a, 'tcx>); 7] = [
             ("mir_fmt_call", Self::mir_fmt_call),
             ("mir_text_call", Self::mir_text_call),
             ("mir_map_call", Self::mir_map_call),

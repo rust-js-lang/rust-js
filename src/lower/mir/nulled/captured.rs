@@ -8,7 +8,7 @@
 
 use super::*;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether `place`, read in the closure lowered now, is what its
     /// capture `k`, a shared reference to an `Option`, refers to,
     /// `*((*_1).k)`, or `*_7` of `_7 = copy ((*_1).k)`, where a test of the

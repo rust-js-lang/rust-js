@@ -45,7 +45,7 @@ impl NoneForms {
     }
 }
 
-impl<'tcx> FnCx<'_, 'tcx> {
+impl<'tcx> MirCx<'_, '_, 'tcx> {
     /// Whether `operand`, an `Option` written where `None` is `undefined`
     /// alone, gives no `null` as it is (#2112, Change C's third step), where
     /// the taint says it may hold one (`none_trusted`, which answers a
@@ -68,7 +68,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
     }
 }
 
-impl<'tcx> FnCx<'_, 'tcx> {
+impl<'tcx> MirCx<'_, '_, 'tcx> {
     /// What MIR proves of `operand`, an `Option`, where it's read: of a
     /// variable a test proved (`proved_present`), what a closure's `with`
     /// lends of a thread-local `Some` wherever it runs (`present_item_read`),

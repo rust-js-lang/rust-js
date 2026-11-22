@@ -19,7 +19,7 @@ mod proofs;
 
 pub(super) use proofs::WriteIndex;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether `operand`, an `Option`, is `null` or a value already, as a
     /// `#[rust_js::nullable]` field or binding parameter takes it as it is
     /// (ADR 0275): such a field, moved where it's read, or bound to a

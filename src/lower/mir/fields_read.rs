@@ -5,7 +5,7 @@
 
 use super::*;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A call of `callee`, given `values`, of a method of an untagged
     /// enum that reads the same field of each variant's value
     /// (`untagged::field_reads`), whose JS is that read of its parameter,

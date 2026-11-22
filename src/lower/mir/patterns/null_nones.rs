@@ -6,7 +6,7 @@ use super::*;
 use crate::lower::representation::{NonePlace, none_form};
 use rust_js_program::collections::{IndexMap, IndexSet};
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// The locals `OptionWrites::null_nones` says: each write a `Some(..)`, a
     /// `None` or a call, one that may give `None` at least, and each read a
     /// nullable field's or binding parameter's, or a `#[rust_js::nullable]`

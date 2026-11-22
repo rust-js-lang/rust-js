@@ -5,7 +5,7 @@
 use super::*;
 use rust_js_program::collections::IndexSet;
 
-impl<'tcx> FnCx<'_, 'tcx> {
+impl<'tcx> MirCx<'_, '_, 'tcx> {
     /// The names of the locals a `clone()` makes, `let resolved =
     /// payload.clone()`: where that's the value itself in JS, an uncounted
     /// `Rc`'s, tidy reads it by the name it's of (ADR 0846). And each a

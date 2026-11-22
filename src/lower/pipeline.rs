@@ -537,10 +537,10 @@ pub fn lower_crate<'tcx>(
             names,
             scope_functions,
         );
-        cx.nest_scope_copies();
+        super::mir::MirCx(&mut cx).nest_scope_copies();
         let result = match body {
             // Each body, a function's or an initializer's, from its MIR (ADR 0364).
-            Some(body) if let Some(mir) = &body.mir => cx.lower_fn_mir(body, mir),
+            Some(body) if let Some(mir) = &body.mir => super::mir::MirCx(&mut cx).lower_fn_mir(body, mir),
             Some(_) => Err(cx.unsupported(tcx.def_span(def_id), "this body, without its MIR")),
             None if codecs.contains(&def_id) => cx.lower_codec(def_id).map(|function| super::LoweredFn {
                 function,

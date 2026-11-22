@@ -8,7 +8,7 @@ use crate::lower::temporary_names::{Base, Role};
 mod aggregate;
 mod fields;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether `terminator` calls a `Cell`'s `get`, `set`, `replace` or
     /// `take` of `made`, a reference to it, which keeps nothing of `made`
     /// once it returns (ADR 0853).
@@ -1160,7 +1160,7 @@ fn reference_written<'tcx>(body: &mir::Body<'tcx>, local: mir::Local, holder: &[
     })
 }
 
-impl<'tcx> FnCx<'_, 'tcx> {
+impl<'tcx> MirCx<'_, '_, 'tcx> {
     /// Whether `place` is reached through a reference its local holds as
     /// its value, `*r` (`through_local_reference`), and the local is set
     /// again, `r = other`: a borrow through it is of what it is now, the

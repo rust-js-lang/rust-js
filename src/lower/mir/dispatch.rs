@@ -16,7 +16,7 @@ mod cells_compared;
 mod known_calls;
 mod passed_on;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A call of a function pointer, which may be JS's (ADR 0330): called
     /// with its arguments given to JS.
     fn mir_fn_pointer_call(
@@ -101,7 +101,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let call = self.called_unbound(state, (call, Called::Pointer(fn_ptr)))?;
         Ok(match (laddered, call) {
             (true, Value::Expr(call)) => {
-                Value::Expr(self.optional_ladder(call, None, (&optionals, &present), (self.js_span(span), out)))
+                let at = self.js_span(span);
+                Value::Expr(self.optional_ladder(call, None, (&optionals, &present), (at, out)))
             }
             (_, call) => call,
         })
@@ -1212,7 +1213,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         || (generic_args.types().next()).is_some_and(|t| known_by_a_dictionary(t.peel_refs())))))
         {
             let exprs = self.boxed_args(state, (def_id, generic_args), (values.clone(), &arg_tys), span, out)?;
-            if let Some(call) = self.trait_call(def_id, generic_args, exprs, self.same_nones(state), span, out)? {
+            let same_nones = self.same_nones(state);
+            if let Some(call) = self.trait_call(def_id, generic_args, exprs, same_nones, span, out)? {
                 // A generic `&mut T`'s box, the crate's `deref_mut`'s, of an
                 // object `T` here: what's in it.
                 let call = self.generic_result_values(self.callee(def_id, generic_args), call, span)?;
@@ -1284,7 +1286,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// The binding a call of `def_id` is, given `args`: itself, or the
     /// registry's symbol's read (ADR 0634); or, of a std trait's method, the
     /// binding a binding's impl of it declares, an index signature's
@@ -1328,7 +1330,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether std's impl of `def_id`, `known` as it's recognised, may go by
     /// the trait call: not `clone_from`, written in place where the crate's
     /// impl isn't known to have its own; nor a formatting trait's `fmt`,

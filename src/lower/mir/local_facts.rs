@@ -447,7 +447,7 @@ impl NamingFacts {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// `name`, a local of plain data of `ty`: its name, and each path to
     /// what it holds whose fields a getter may answer (`given_paths`).
     pub(super) fn note_plain(&mut self, name: &js::Name, ty: Ty<'tcx>) {

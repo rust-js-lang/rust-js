@@ -24,7 +24,7 @@ pub(super) enum Held {
     Value,
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// How an `Option` of type `ty`, or a reference to one, is held where
     /// it's held as its payload: by `undefined_payload`, `defined_payload`,
     /// else as an `Option` of an `Option`.

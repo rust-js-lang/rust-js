@@ -10,7 +10,7 @@
 use super::*;
 use rustc_span::def_id::DefId;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// `Std::CloneFrom`'s lowering, of `values`, the destination then the
     /// source, `arg_tys` theirs.
     pub(super) fn mir_clone_from(
@@ -109,7 +109,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some(sides) = self.result_sides(ty, to.clone(), source.clone(), span)? {
                 let mut replaced = Vec::new();
                 self.replace_with_clone(state, (dest, source), (ty, def_id), arg_tys, span, &mut replaced)?;
-                out.extend(Self::sides_or(sides, replaced));
+                out.extend(FnCx::sides_or(sides, replaced));
                 return Ok(Value::Expr(Expr::js_undefined()));
             }
             if self.forwards_clone_from(ty, span)? {

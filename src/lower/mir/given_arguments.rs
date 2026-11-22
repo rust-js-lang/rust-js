@@ -14,7 +14,7 @@ use crate::lower::analysis::mir_reads::arguments_use::{ArgumentsUse, arguments_u
 use crate::lower::display::SinkWrite;
 use rustc_middle::mir::{Local, Rvalue, StatementKind, TerminatorKind};
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether the call of `known` into `destination` makes an `Arguments`
     /// the body gives on, which is a function of its text.
     pub(super) fn makes_arguments_given_on(
@@ -201,7 +201,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether `local`, an `Arguments` the body makes and gives on, is given,
     /// as it is or through what it's copied to, to a parameter a call writes
     /// into a writer a piece at a time (`WrittenArguments::writes`): the

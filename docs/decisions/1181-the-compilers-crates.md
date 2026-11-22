@@ -205,3 +205,35 @@ tests), `rust-js-emit` 15.3 s and 0.7 s (13 tests), the binary 41.9 s
 after a change to `main.rs`. Cargo still builds the binary again after a
 change to either crate, as it depends on both; what the crates make
 possible is building and testing owned output and printing without rustc.
+
+## Amendment: MIR's lowering's methods on a newtype of its own (#2299, 2026-11-22)
+
+`src/lower/` cuts into a base crate, which holds `FnCx`, the lowering's
+context, and a crate of MIR's lowering, `mir`, which writes 565 methods
+on it: 232 private, 269 `pub(super)`, 59 `pub(in mir)`. A crate can't
+give a type of another inherent methods. #2299's plan wrote each `mir`
+file's methods as an extension trait instead, every signature twice, the
+trait's and the impl's, and every method as visible as its trait, the
+private ones too. They're a newtype's methods instead, `mir`'s own type:
+
+- **`MirCx<'mcx, 'a, 'tcx>(&'mcx mut FnCx<'a, 'tcx>)`**, `Deref` and
+  `DerefMut` to `FnCx`, so `mir`'s `impl MirCx` is an inherent impl of a
+  local type: each signature once, each method's visibility as it was,
+  and the base's methods and fields reached through it, as they were.
+- **Where `mir` begins** it's made: the driver's calls of
+  `lower_fn_mir` and `nest_scope_copies`, the hooks (`MirHooks`), and a
+  closure a base method hands `&mut FnCx` (`with_given`, `lowered_in`,
+  `making_into`): `MirCx(cx)`.
+- **A base method taking `&mut self`** whose arguments read the context,
+  `self.fmt_check(v, self.js_span(span), out)`, is given them first, a
+  `let` before the call: the borrow `DerefMut` takes is the whole
+  context's, so a call's two-phase borrow, which lets a plain `&mut self`
+  receiver's arguments read it, doesn't reach through it. Sixteen calls,
+  each a plain statement, nothing cloned; calls of `MirCx`'s own methods
+  keep their two-phase borrow.
+
+Measured on the tree before choosing: the conversion of all of `mir` is
+72 files, most a one-line impl head, and rustc's errors beyond the heads
+were those sixteen, seven re-wraps, a `fn` table's lifetime and a
+lifetime renamed; the trait shape, built for `mir/positions.rs`, was
+four signatures twice and a `use`, of 565 at scale. The JS is the same.

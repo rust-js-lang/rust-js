@@ -15,7 +15,7 @@ mod fmt_parts;
 mod iterators;
 mod written_into;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A std call's value as its `output` is held. A std iterator
     /// `mir_std_call` makes an array of, `bytes()`'s: a JS iterator, which
     /// MIR steps; not one that's the string it shows, an escape's, nor a `T`
@@ -150,7 +150,7 @@ pub(super) struct StdCall<'c, 'tcx> {
 /// anything's changed (#191, ADR 0791).
 pub(super) type StdLowering<'c, 'a, 'tcx> = Box<
     dyn for<'s> FnOnce(
-            &mut FnCx<'a, 'tcx>,
+            &mut MirCx<'_, 'a, 'tcx>,
             &mut State<'s, 'tcx>,
             &mut std::vec::IntoIter<Value<'tcx>>,
             &mut Vec<Stmt>,
@@ -161,7 +161,7 @@ pub(super) type StdLowering<'c, 'a, 'tcx> = Box<
 /// An arm's work, boxed: `StdLowering`.
 fn lower<'c, 'a, 'tcx>(
     f: impl for<'s> FnOnce(
-        &mut FnCx<'a, 'tcx>,
+        &mut MirCx<'_, 'a, 'tcx>,
         &mut State<'s, 'tcx>,
         &mut std::vec::IntoIter<Value<'tcx>>,
         &mut Vec<Stmt>,
@@ -171,7 +171,7 @@ fn lower<'c, 'a, 'tcx>(
     Box::new(f)
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// The place a std method that changes its receiver in place writes,
     /// given its `&mut self` as `value` (ADR 0149): a variable or a field,
     /// written as it is; a part another call gives, `$strGetMut(..)`'s,

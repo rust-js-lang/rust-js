@@ -11,7 +11,7 @@ mod boxed_args;
 mod let_rest;
 mod rewritten;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     pub(super) fn mir_assign(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -593,7 +593,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (state.writer.is_some() || self.write_thrown_here(state))
         {
             self.flush(state, out)?;
-            self.fmt_check(value.clone(), self.js_span(span), out);
+            let at = self.js_span(span);
+            self.fmt_check(value.clone(), at, out);
             if state.writer.is_some() {
                 return Ok(());
             }

@@ -6,7 +6,7 @@ use super::*;
 use crate::lower::recognition::OrderingCall;
 use crate::lower::refusal;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A comparison of cells, its value; `None` where it's no comparison
     /// of one, `values` left as they are. One that reads them through
     /// `&self`, `==` and `cmp`, is the pointee's, given what each points at.

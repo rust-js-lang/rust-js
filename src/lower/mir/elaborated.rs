@@ -11,9 +11,9 @@
 //! drop otherwise than Rust does. `--drops-shadow` writes each verdict.
 
 use super::drops::{Elaboration, Style};
-use crate::lower::FnCx;
 use crate::lower::analysis::Mir;
 use crate::lower::drops::Drops;
+use crate::lower::mir::MirCx;
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::mir::{
     self, BasicBlock, Local, Operand, Place, ProjectionElem, Rvalue, StatementKind, TerminatorKind,
@@ -333,7 +333,7 @@ fn spelled(body: &mir::Body<'_>, (local, steps): &PathKey) -> String {
     out
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Of each `Drop` of `mir`'s body that drops what JS drops, whether
     /// rust-js's `elaboration` drops each part of it when rustc's does:
     /// `agree`, `disagree` with each part that differs, or `unmatched` with

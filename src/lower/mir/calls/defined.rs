@@ -15,7 +15,7 @@ pub(super) enum PathEnd {
     UncheckedMethod,
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// `js::is_defined(binding)`: `typeof MessageChannel !== "undefined"`,
     /// of the global its argument names (ADR 0597), and `js::is_function`'s
     /// `typeof setTimeout === "function"` of the same (ADR 0942): a binding

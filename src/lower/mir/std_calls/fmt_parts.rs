@@ -4,7 +4,7 @@
 
 use super::*;
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
+impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Whether the template `bytes` formats `items` would evaluate one that
     /// does something after formatting that may run the program's code, a
     /// `Debug` of the crate's, where Rust evaluates it first. Of its parts
