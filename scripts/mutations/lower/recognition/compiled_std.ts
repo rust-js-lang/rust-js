@@ -329,4 +329,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
+  {
+    name: "private-debug-shown-uncompiled",
+    breaks: "a `Flatten`'s compiled `Debug` writes its private `FlattenCompat`, whose `Debug` the catalogue's walk leaves out, as the `&dyn Debug` it's given is no call: `@rust-js/std`'s build refuses it (#2252)",
+    file: "src/lower/recognition/compiled_std.rs",
+    find: "                found.push(shown);\n",
+    replace: "                let _ = shown;\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
 ];

@@ -939,6 +939,8 @@ const $scanClone = new WeakMap();
 const $scanDebug = new WeakMap();
 const $inspectClone = new WeakMap();
 const $inspectDebug = new WeakMap();
+const $flattenDebug = new WeakMap();
+const $flatMapDebug = new WeakMap();
 const $skipClone = new WeakMap();
 const $skipDebug = new WeakMap();
 const $takeClone = new WeakMap();
@@ -953,6 +955,7 @@ const $repeatClone = new WeakMap();
 const $repeatADebug = new WeakMap();
 const $cycleClone = new WeakMap();
 const $cycleDebug = new WeakMap();
+const $flattenCompatDebug = new WeakMap();
 
 export function peekableIterator_next(peekable, IIterator = { next: $next }, dropI, dropIItem) {
   const peeked = peekable.peeked;
@@ -6255,6 +6258,26 @@ export function flattenDoubleEndedIterator_advanceBackBy(
       );
 }
 
+export function flattenDebug_fmt(
+  flatten,
+  options,
+  IDebug,
+  IItemIntoIterator,
+  UDebug,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  const f = $sink();
+  const struct = $debugStruct(f, "Flatten", options?.alternate);
+  struct.fieldWith("inner", flatten.inner, (f, value) => {
+    $writingInto(f, flattenCompatDebug_fmt, value, options, IDebug, UDebug);
+  });
+  struct.finish();
+  return f.done();
+}
+
 export function flatMapIterator_next(
   flatMap,
   UIntoIterator,
@@ -7091,6 +7114,34 @@ export function flatMapDoubleEndedIterator_advanceBackBy(
         dropU,
         dropUItem,
       );
+}
+
+export function flatMapDebug_fmt(
+  flatMap,
+  options,
+  IDebug,
+  UIntoIterator,
+  UIntoIterDebug,
+  dropI,
+  dropU,
+  dropF,
+  dropUItem,
+  dropUIntoIter,
+) {
+  const f = $sink();
+  const struct = $debugStruct(f, "FlatMap", options?.alternate);
+  struct.fieldWith("inner", flatMap.inner, (f, value) => {
+    $writingInto(
+      f,
+      flattenCompatDebug_fmt,
+      value,
+      options,
+      mapDebug(IDebug, dropI, dropF),
+      UIntoIterDebug,
+    );
+  });
+  struct.finish();
+  return f.done();
 }
 
 export function skipIterator_next(skip, IIterator = { next: $next }, dropI, dropIItem) {
@@ -14068,6 +14119,53 @@ export function flattenCompatIUDoubleEndedIterator2_advanceBackBy(
   );
 }
 
+export function flattenCompatDebug_fmt(flattenCompat, options, IDebug, UDebug) {
+  const f = $sink();
+  $writeDebugStruct(
+    f,
+    "FlattenCompat",
+    [
+      [
+        "iter",
+        flattenCompat.iter,
+        (f, value) => {
+          $writingInto(f, fuseDebug_fmt, value, options, IDebug);
+        },
+      ],
+      [
+        "frontiter",
+        flattenCompat.frontiter,
+        (f, value) => {
+          $writeDebugOption(
+            f,
+            value,
+            (f, value) => {
+              $writeBy(f, UDebug, $someValue(value), options);
+            },
+            options?.alternate,
+          );
+        },
+      ],
+      [
+        "backiter",
+        flattenCompat.backiter,
+        (f, value) => {
+          $writeDebugOption(
+            f,
+            value,
+            (f, value) => {
+              $writeBy(f, UDebug, $someValue(value), options);
+            },
+            options?.alternate,
+          );
+        },
+      ],
+    ],
+    options?.alternate,
+  );
+  return f.done();
+}
+
 export function takeSpecTake_specFold(
   take,
   init,
@@ -16331,6 +16429,105 @@ export function inspectDebug(IDebug, dropI, dropF) {
   }));
 }
 
+export function flattenDebug(
+  IDebug,
+  IItemIntoIterator,
+  UDebug,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  return $traitImpl(
+    $flattenDebug,
+    [IDebug, IItemIntoIterator, UDebug, dropI, dropU, dropIItem, dropUItem],
+    () => ({
+      fmt(flatten, options) {
+        return flattenDebug_fmt(
+          flatten,
+          options,
+          IDebug,
+          IItemIntoIterator,
+          UDebug,
+          dropI,
+          dropU,
+          dropIItem,
+          dropUItem,
+        );
+      },
+      $drop(flatten) {
+        flatten.return();
+      },
+      fmtInto(f, value, options) {
+        return $writingInto(
+          f,
+          flattenDebug_fmt,
+          value,
+          options,
+          IDebug,
+          IItemIntoIterator,
+          UDebug,
+          dropI,
+          dropU,
+          dropIItem,
+          dropUItem,
+        );
+      },
+    }),
+  );
+}
+
+export function flatMapDebug(
+  IDebug,
+  UIntoIterator,
+  UIntoIterDebug,
+  dropI,
+  dropU,
+  dropF,
+  dropUItem,
+  dropUIntoIter,
+) {
+  return $traitImpl(
+    $flatMapDebug,
+    [IDebug, UIntoIterator, UIntoIterDebug, dropI, dropU, dropF, dropUItem, dropUIntoIter],
+    () => ({
+      fmt(flatMap, options) {
+        return flatMapDebug_fmt(
+          flatMap,
+          options,
+          IDebug,
+          UIntoIterator,
+          UIntoIterDebug,
+          dropI,
+          dropU,
+          dropF,
+          dropUItem,
+          dropUIntoIter,
+        );
+      },
+      $drop(flatMap) {
+        flatMap.return();
+      },
+      fmtInto(f, value, options) {
+        return $writingInto(
+          f,
+          flatMapDebug_fmt,
+          value,
+          options,
+          IDebug,
+          UIntoIterator,
+          UIntoIterDebug,
+          dropI,
+          dropU,
+          dropF,
+          dropUItem,
+          dropUIntoIter,
+        );
+      },
+    }),
+  );
+}
+
 export function skipClone(IClone, dropI) {
   return $traitImpl($skipClone, [IClone, dropI], () => ({
     clone(skip) {
@@ -16456,6 +16653,14 @@ export function cycleDebug(IDebug) {
   return $traitImpl($cycleDebug, [IDebug], () => ({
     fmt: (cycle, options) => cycleDebug_fmt(cycle, options, IDebug),
     fmtInto: (f, value, options) => $writingInto(f, cycleDebug_fmt, value, options, IDebug),
+  }));
+}
+
+export function flattenCompatDebug(IDebug, UDebug) {
+  return $traitImpl($flattenCompatDebug, [IDebug, UDebug], () => ({
+    fmt: (flattenCompat, options) => flattenCompatDebug_fmt(flattenCompat, options, IDebug, UDebug),
+    fmtInto: (f, value, options) =>
+      $writingInto(f, flattenCompatDebug_fmt, value, options, IDebug, UDebug),
   }));
 }
 //# sourceMappingURL=iter.js.map

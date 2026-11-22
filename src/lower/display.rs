@@ -325,9 +325,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Does `writer`, a function that writes, take its `Formatter`'s
     /// options after its arguments? Its crate's answer (ADR 0137), a
     /// library's in its manifest, but one the crate compiles itself, its own
-    /// (ADR 0914).
+    /// (ADR 0914): of `@rust-js/std`'s build, std's bodies it compiles,
+    /// `fuseDebug_fmt` a `FlattenCompat`'s writer calls (#2252).
     pub(super) fn takes_options(&self, writer: DefId) -> bool {
-        match writer.is_local() || self.krate.foreign.is_instance(writer) {
+        let compiled_here = writer.is_local()
+            || self.krate.foreign.is_instance(writer)
+            || (self.krate.compiled_once && crate::lower::recognition::is_compiled_std(self.tcx, writer));
+        match compiled_here {
             true => self.compiled_writer_takes_options(writer),
             false => {
                 let takes = self.krate.foreign.writers_take_options(writer.krate);

@@ -182,6 +182,7 @@ pub(super) const COMPILED_STD: &[(StdPath, Option<&str>, &str)] = &[
     (StdPath::IterFlatten, Some("DoubleEndedIterator"), "rfold"),
     (StdPath::IterFlatten, Some("DoubleEndedIterator"), "try_rfold"),
     (StdPath::IterFlatten, Some("DoubleEndedIterator"), "advance_back_by"),
+    (StdPath::IterFlatten, Some("Debug"), "fmt"),
     (StdPath::IterFlatMap, Some("Iterator"), "next"),
     (StdPath::IterFlatMap, Some("Iterator"), "size_hint"),
     (StdPath::IterFlatMap, Some("Iterator"), "fold"),
@@ -193,6 +194,7 @@ pub(super) const COMPILED_STD: &[(StdPath, Option<&str>, &str)] = &[
     (StdPath::IterFlatMap, Some("DoubleEndedIterator"), "rfold"),
     (StdPath::IterFlatMap, Some("DoubleEndedIterator"), "try_rfold"),
     (StdPath::IterFlatMap, Some("DoubleEndedIterator"), "advance_back_by"),
+    (StdPath::IterFlatMap, Some("Debug"), "fmt"),
     (StdPath::IterSkip, Some("Iterator"), "next"),
     (StdPath::IterSkip, Some("Iterator"), "__iterator_get_unchecked"),
     (StdPath::IterSkip, Some("Iterator"), "size_hint"),
@@ -890,6 +892,14 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
                 found.push(value);
             }
         }
+        // And the `Debug` of a type std keeps private that it shows through
+        // a builder, `.field("inner", &self.inner)` of a `Flatten`'s
+        // `FlattenCompat`, by the `&dyn Debug` it makes of it (#2252).
+        for shown in shown_private(tcx, typing_env, body) {
+            if !found.contains(&shown) {
+                found.push(shown);
+            }
+        }
         for block in crate::lower::std_coverage::reachable(tcx, body) {
             let Some(terminator) = &body.basic_blocks[block].terminator else {
                 continue;
@@ -969,6 +979,51 @@ fn named_fns<'tcx>(tcx: TyCtxt<'tcx>, body: &rustc_middle::mir::Body<'tcx>) -> V
         mir::visit::Visitor::visit_basic_block_data(&mut named, block, &body.basic_blocks[block]);
     }
     named.0
+}
+
+/// The `Debug::fmt` of each type std keeps private that `body` makes a
+/// `&dyn Debug` of where it runs, a builder's field's, `&self.inner` of a
+/// `FlattenCompat` (#2252): its impl's, as rustc selects it there.
+fn shown_private<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    body: &rustc_middle::mir::Body<'tcx>,
+) -> Vec<DefId> {
+    use rustc_middle::mir::{CastKind, Rvalue, StatementKind};
+    use rustc_middle::ty::adjustment::PointerCoercion;
+    let Some(debug) = tcx.get_diagnostic_item(Symbol::intern("Debug")) else {
+        return Vec::new();
+    };
+    let fmt = super::trait_method(tcx, debug, "fmt");
+    let mut shown = Vec::new();
+    for block in crate::lower::std_coverage::reachable(tcx, body) {
+        for statement in &body.basic_blocks[block].statements {
+            let StatementKind::Assign(assign) = &statement.kind else {
+                continue;
+            };
+            let Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize, _), operand, to) = &assign.1 else {
+                continue;
+            };
+            let to_debug = matches!(to.builtin_deref(true).map(|ty| ty.kind()),
+                Some(ty::Dynamic(preds, ..)) if preds.principal_def_id() == Some(debug));
+            let from = operand.ty(&body.local_decls, tcx).builtin_deref(true);
+            let Some(from @ ty) = from.filter(|_| to_debug) else {
+                continue;
+            };
+            let ty::Adt(adt, _) = ty.kind() else { continue };
+            if tcx.visibility(adt.did()).is_public() || !super::is_std_crate(tcx, adt.did()) {
+                continue;
+            }
+            if let Ok(Some(instance)) =
+                crate::lower::items::resolve_instance_in(tcx, typing_env, fmt, tcx.mk_args(&[from.into()]))
+                && let ty::InstanceKind::Item(id) = instance.def
+                && tcx.is_mir_available(id)
+            {
+                shown.push(id);
+            }
+        }
+    }
+    shown
 }
 
 /// Whether `id`, called to make `made`, is the `Iterator` method that makes

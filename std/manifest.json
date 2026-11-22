@@ -3260,6 +3260,91 @@
         ]
       },
       {
+        "key": "core::iter::adapters::flatten::{impl#2}",
+        "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::fmt::Debug>",
+        "module": [
+          "iter"
+        ],
+        "export": "flatMapDebug",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::flatten::{impl#2}::fmt",
+        "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::fmt::Debug>::fmt",
+        "module": [
+          "iter"
+        ],
+        "export": "flatMapDebug_fmt",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "written_into"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop",
+              "written_into"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop",
+              "written_into"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::flatten::{impl#4}::advance_back_by",
         "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::iter::DoubleEndedIterator>::advance_back_by",
         "module": [
@@ -3902,6 +3987,78 @@
             ],
             "facts": [
               "OneShot"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::flatten::{impl#9}",
+        "rust_path": "rust_js_std::<core::iter::Flatten<I> as core::fmt::Debug>",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenDebug",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::flatten::{impl#9}::fmt",
+        "rust_path": "rust_js_std::<core::iter::Flatten<I> as core::fmt::Debug>::fmt",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenDebug_fmt",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "written_into"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop",
+              "written_into"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
             ]
           }
         ]
@@ -11940,6 +12097,38 @@
         ]
       },
       {
+        "key": "core::iter::adapters::flatten::{impl#49}",
+        "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::fmt::Debug>",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenCompatDebug",
+        "member": null
+      },
+      {
+        "key": "core::iter::adapters::flatten::{impl#49}::fmt",
+        "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::fmt::Debug>::fmt",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenCompatDebug_fmt",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "written_into"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "written_into"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::flatten::{impl#21}::advance_back_by",
         "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::DoubleEndedIterator>::advance_back_by",
         "module": [
@@ -16216,10 +16405,13 @@
       "core::iter::adapters::flatten::{impl#12}",
       "core::iter::adapters::flatten::{impl#20}",
       "core::iter::adapters::flatten::{impl#21}",
+      "core::iter::adapters::flatten::{impl#2}",
       "core::iter::adapters::flatten::{impl#3}",
       "core::iter::adapters::flatten::{impl#46}",
       "core::iter::adapters::flatten::{impl#47}",
+      "core::iter::adapters::flatten::{impl#49}",
       "core::iter::adapters::flatten::{impl#4}",
+      "core::iter::adapters::flatten::{impl#9}",
       "core::iter::adapters::fuse::{impl#10}",
       "core::iter::adapters::fuse::{impl#11}",
       "core::iter::adapters::fuse::{impl#13}",
@@ -16356,6 +16548,9 @@
       "core::iter::adapters::enumerate::Enumerate",
       "core::iter::adapters::filter::Filter",
       "core::iter::adapters::filter_map::FilterMap",
+      "core::iter::adapters::flatten::FlatMap",
+      "core::iter::adapters::flatten::Flatten",
+      "core::iter::adapters::flatten::FlattenCompat",
       "core::iter::adapters::fuse::Fuse",
       "core::iter::adapters::inspect::Inspect",
       "core::iter::adapters::map::Map",
@@ -16659,6 +16854,7 @@
         "flattenDoubleEndedIterator_rfold",
         "flattenDoubleEndedIterator_tryRfold",
         "flattenDoubleEndedIterator_advanceBackBy",
+        "flattenDebug_fmt",
         "flatMapIterator_next",
         "flatMapIterator_sizeHint",
         "flatMapIterator_fold",
@@ -16670,6 +16866,7 @@
         "flatMapDoubleEndedIterator_rfold",
         "flatMapDoubleEndedIterator_tryRfold",
         "flatMapDoubleEndedIterator_advanceBackBy",
+        "flatMapDebug_fmt",
         "skipIterator_next",
         "skipIterator___iteratorGetUnchecked",
         "skipIterator_sizeHint",
@@ -16821,6 +17018,7 @@
         "flattenCompatIUDoubleEndedIterator2_tryRfold",
         "flattenCompatIUDoubleEndedIterator_advanceBackBy",
         "flattenCompatIUDoubleEndedIterator2_advanceBackBy",
+        "flattenCompatDebug_fmt",
         "takeSpecTake_specFold",
         "stepByStepByImplI_specNext",
         "stepByStepByImplI_specSizeHint",
@@ -16889,6 +17087,8 @@
         "scanDebug",
         "inspectClone",
         "inspectDebug",
+        "flattenDebug",
+        "flatMapDebug",
         "skipClone",
         "skipDebug",
         "takeClone",
@@ -16902,7 +17102,8 @@
         "repeatClone",
         "repeatADebug",
         "cycleClone",
-        "cycleDebug"
+        "cycleDebug",
+        "flattenCompatDebug"
       ],
       "links": [
         {
@@ -17076,7 +17277,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "2d8d267a1f6558fb"
+      "hash": "7918e53d0caea15e"
     },
     {
       "file": "iter.js.map",

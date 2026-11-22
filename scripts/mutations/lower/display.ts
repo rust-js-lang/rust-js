@@ -288,8 +288,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a writer a consumer compiles takes its Formatter's options as its library's do, not its crate's own, so `{:>9?}` of a `Label` isn't padded (ADRs 0137, 0914)",
     file: "src/lower/display.rs",
-    find: "        match writer.is_local() || self.krate.foreign.is_instance(writer) {\n",
-    replace: "        match writer.is_local() {\n",
+    find: "            || self.krate.foreign.is_instance(writer)\n",
+    replace: "            || false\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
@@ -432,5 +432,13 @@ export const mutations: Mutation[] = [
     find: "            ty::Adt(_, args) if self.shows_inside(ty) && !self.formats_itself(kind, ty) => {\n",
     replace: "            ty::Adt(_, args) if self.shows_inside(ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
+  },
+  {
+    name: "std-build-writer-options-by-contract",
+    breaks: "a std writer `@rust-js/std`'s build compiles, `fuseDebug_fmt`, is given no options where another it compiles calls it, as std's own build has no contract of core's, so its dictionaries shift into their place (#2252)",
+    file: "src/lower/display.rs",
+    find: "            || (self.krate.compiled_once && crate::lower::recognition::is_compiled_std(self.tcx, writer));\n",
+    replace: "            || false;\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
   },
 ];

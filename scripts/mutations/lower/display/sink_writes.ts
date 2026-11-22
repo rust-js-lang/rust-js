@@ -188,4 +188,12 @@ export const mutations: Mutation[] = [
     replace: "            // A pointer's address, by the options as it runs (#2282).\n            Std::FmtPointer | Std::FmtDebug if false => {\n",
     tests: ["test/crates.test.ts", "-t", "library_derived_debug_of_a_pointer_field"],
   },
+  {
+    name: "std-build-frames-by-old-contract",
+    breaks: "`@rust-js/std`'s build asks only the contract its previous build wrote whether it frames a std type's writer, which never lists one newly compiled, `FlattenCompat`'s: its `Flatten`'s `Debug` is refused (#2252)",
+    file: "src/lower/display/sink_writes.rs",
+    find: "            && (self.krate.foreign.lists_fmt_into(adt) || self.krate.prints.published.contains(&adt));\n",
+    replace: "            && self.krate.foreign.lists_fmt_into(adt);\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
 ];

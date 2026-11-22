@@ -249,3 +249,41 @@ destructor through `next`, `nth`, `take`, `skip` and a `zip`, `count`'s
 panic caught and `last`'s ending the run, against native Rust in both
 builds; the plain build's `$repeating` still refuses a `Repeat`'s back,
 which std's compiled one has. Mutation `repeat-nth-uncompiled`.
+
+## Amendment (2026-11-22, #2252): a `Flatten`'s and a `FlatMap`'s `Debug`, and what's private that std shows
+
+`Flatten` and `FlatMap` were held as std's structs (`HELD_COMPILED`), but
+their `Debug` wasn't compiled. std writes them `f.debug_struct("Flatten")
+.field("inner", &self.inner)`, a field of `FlattenCompat`, which std keeps
+private and whose `Debug` is derived. Compiling them took three changes,
+each to the one place that answers the question:
+
+- **What's compiled.** The catalogue's walk of what a compiled body calls
+  also takes the `Debug::fmt` of each type std keeps private that the body
+  makes a `&dyn Debug` of where it runs (`shown_private`):
+  `FlattenCompat`'s, as rustc selects its impl there. A builder's field is
+  given that way, and nothing else calls it.
+- **What `@rust-js/std`'s own build frames.** A std type's writer is
+  written a piece at a time where std's contract lists it
+  (`writes_into_a_writer`). The contract std's own build reads is the one
+  its previous build wrote, so a type newly compiled could never be listed.
+  Std's own build now also asks what it frames itself, `prints.published`,
+  the contract it writes.
+- **What a writer it compiles is given.** `takes_options` answered a std
+  writer by its library's contract, which std's own build hasn't, so
+  `FlattenCompat`'s call of `fuseDebug_fmt` gave no options and shifted its
+  dictionaries into their place. A std body std's own build compiles
+  (`compiled_once`) takes them by that build's rule, as the body itself
+  was compiled with them. No other call in `@rust-js/std` changed.
+
+Native's text, compared row by row in `debug_of_flatten_and_flat_map.rs`:
+fresh, stepped from both ends, `{:#?}`, through generic code, an `Option`
+and a derived struct's field. std's package builds to a fixed point: a
+second `bun run std` with the first's manifest built in changes nothing.
+`bun run std` now builds the compiler again after it writes the manifest,
+which the compiler builds in, so the binary it leaves reads it.
+
+A `StepBy` of an integer range stays refused (#2289): std's
+`SpecRangeSetup` keeps the range as a count, which ADR 0917 compiles
+apart. ADR 0262's case: results change (refused before), and Rust's text
+is kept.
