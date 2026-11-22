@@ -68,8 +68,8 @@ does, with rust-js as its `RUSTC_WRAPPER`
 ## What's refused
 
 A crate rust-js can't compile is still checked by rustc, its types alone:
-the app can name its types, and a call into it is refused, saying why the
-crate couldn't be compiled. Here `crossbeam-utils` can't be, and its
+the app can name its types, and a call into it, or an impl of one of its
+traits, is refused, saying why the crate couldn't be compiled. Here `crossbeam-utils` can't be, and its
 note says what in it stopped it
 ([the limitations](../limitations.md)):
 

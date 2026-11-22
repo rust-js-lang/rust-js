@@ -16,6 +16,8 @@ pub(crate) enum Refused<'a, 'tcx> {
     Call(DefId),
     /// Values, constants or statics of a type: "values of type `*const u8`".
     Type(&'a str, Ty<'tcx>),
+    /// An impl of a trait: "user implementations of `std::alloc::Allocator`".
+    Implementing(DefId),
     /// A feature, and why it's refused: "a component's `Clone`", "React
     /// gives a component no dictionary".
     Because(&'a str, &'a str),
@@ -49,7 +51,9 @@ pub(crate) fn refuse<'tcx>(tcx: TyCtxt<'tcx>, span: Span, refused: Refused<'_, '
     if of_memory(tcx, refused) {
         error = error.with_note(MEMORY);
     }
-    if let Refused::Call(id) = refused
+    // Of a call into, or an impl of a trait of, a crate rust-js couldn't
+    // compile, why (#1420).
+    if let Refused::Call(id) | Refused::Implementing(id) = refused
         && let Some(why) = uncompiled(tcx, id)
     {
         error = error.with_note(format!(
@@ -80,6 +84,7 @@ pub(crate) fn words<'tcx>(tcx: TyCtxt<'tcx>, refused: Refused<'_, 'tcx>) -> Stri
     let what = match refused {
         Refused::Feature(what) | Refused::Because(what, _) | Refused::Memory(what) => what.to_string(),
         Refused::Call(id) => calling(tcx, id),
+        Refused::Implementing(id) => implementing(tcx, id),
         Refused::Type(what, ty) => format!(
             "{what} of type `{ty}`{}",
             open_type(tcx, ty).map(issue_of).unwrap_or_default()
@@ -100,7 +105,7 @@ fn of_memory<'tcx>(tcx: TyCtxt<'tcx>, refused: Refused<'_, 'tcx>) -> bool {
         Refused::Call(id) => addresses_memory(tcx, id),
         Refused::Type(_, ty) => is_memory_type(tcx, ty),
         Refused::Memory(_) => true,
-        Refused::Feature(_) | Refused::Because(..) => false,
+        Refused::Feature(_) | Refused::Because(..) | Refused::Implementing(_) => false,
     }
 }
 
@@ -114,7 +119,7 @@ pub(crate) fn calling(tcx: TyCtxt<'_>, id: DefId) -> String {
 
 /// What a refused impl is called: "user implementations of
 /// `std::alloc::Allocator`", and where an open issue covers it, that issue.
-pub(crate) fn implementing(tcx: TyCtxt<'_>, trait_id: DefId) -> String {
+fn implementing(tcx: TyCtxt<'_>, trait_id: DefId) -> String {
     let issue = open_item(tcx, trait_id).map(issue_of);
     format!(
         "user implementations of `{}`{}",

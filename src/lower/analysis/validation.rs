@@ -107,8 +107,7 @@ pub(super) fn reject_unsupported(
                 {
                     continue;
                 }
-                let what = crate::lower::refusal::implementing(tcx, trait_id);
-                refuse(tcx, tcx.def_span(def_id), Refused::Feature(&what));
+                refuse(tcx, tcx.def_span(def_id), Refused::Implementing(trait_id));
                 valid = false;
                 continue;
             }

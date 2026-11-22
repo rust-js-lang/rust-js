@@ -94,3 +94,17 @@ my-app/
   of crates.io's that rust-js compiles.
 - **What rust-js can compile of crates.io grows** with `docs/crate-corpus.md`:
   raw memory stops 7 of its 16 crates.
+
+## Amendment: an impl of its trait says why too (2026-11-22, #1420)
+
+A call into a crate rust-js couldn't compile is refused with a note of why
+its crate wasn't compiled. Until now, an app's impl of one of that crate's
+traits was refused as "user implementations of `addr::Shown`" alone,
+without saying why. The same reason applied, so the person reading it had
+no way to tell that the trait itself was fine.
+
+The refusal is now `Refused::Implementing(trait)` (refusal.rs), and
+`refuse` adds the same note for it as for a call: "its crate is its types
+alone: rust-js couldn't compile it (ADR 0415): ..". test/registry-crates.test.ts's
+"types alone" case covers it. Mutation `impl-of-an-uncompiled-trait-unexplained`
+(`lower/refusal.ts`), caught.

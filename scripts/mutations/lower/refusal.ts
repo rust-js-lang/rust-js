@@ -65,4 +65,12 @@ export const mutations: Mutation[] = [
     replace: "        OpenCall::Thread => \"\",\n",
     tests: ["test/diagnostics.test.ts", "-t", "a thread.s spawn"],
   },
+  {
+    name: "impl-of-an-uncompiled-trait-unexplained",
+    breaks: "an impl of a trait of a crate rust-js couldn't compile is refused without saying why its crate isn't compiled, as a call into it says (#1420)",
+    file: "src/lower/refusal.rs",
+    find: "    if let Refused::Call(id) | Refused::Implementing(id) = refused\n",
+    replace: "    if let Refused::Call(id) = refused\n",
+    tests: ["test/registry-crates.test.ts", "-t", "types alone, and a call"],
+  },
 ];

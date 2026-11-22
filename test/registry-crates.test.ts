@@ -80,10 +80,11 @@ test("a crate of crates.io's upgraded is the new version's JS, the old one's gon
 // One rust-js can't compile, a `transmute_copy`, which addresses memory
 // (ADR 0390; an address read as a number no longer does, ADR 0562), is its
 // types alone, as rustc builds it: an app that uses its types builds, and a
-// call into it is refused, saying why its crate isn't compiled.
+// call into it, or an impl of its trait, is refused, saying why its crate
+// isn't compiled (#1420).
 test("a crate of crates.io's rust-js can't compile is its types alone, and a call into it is refused", () => {
   const dir = fixture("registry-refused");
-  const crate = gitCrate(dir, "addr", "0.1.0", "pub struct Byte(pub u8);\n\npub fn address(x: &Byte) -> u32 {\n    unsafe { std::mem::transmute_copy::<Byte, u8>(x) as u32 }\n}\n");
+  const crate = gitCrate(dir, "addr", "0.1.0", "pub struct Byte(pub u8);\n\npub trait Shown {\n    fn shown(&self) -> u32;\n}\n\npub fn address(x: &Byte) -> u32 {\n    unsafe { std::mem::transmute_copy::<Byte, u8>(x) as u32 }\n}\n");
   const typed = app(dir, { addr: crate }, "pub fn first(bytes: &[addr::Byte]) -> u8 {\n    bytes[0].0\n}\n");
   const built = build(typed);
   expect(built.stderr).toBe("");
@@ -94,6 +95,12 @@ test("a crate of crates.io's rust-js can't compile is its types alone, and a cal
   expect(called.code).not.toBe(0);
   expect(called.stderr).toContain("addr::address");
   expect(called.stderr).toContain("addressable memory");
+  writeFileSync(join(typed, "src", "lib.rs"), "pub struct Mine;\n\nimpl addr::Shown for Mine {\n    fn shown(&self) -> u32 {\n        1\n    }\n}\n");
+  const implemented = build(typed);
+  expect(implemented.code).not.toBe(0);
+  expect(implemented.stderr).toContain("user implementations of `addr::Shown`");
+  expect(implemented.stderr).toContain("its crate is its types alone: rust-js couldn't compile it (ADR 0415)");
+  expect(implemented.stderr).toContain("addressable memory");
 }, 600_000);
 
 // One rust-js reads as rustc builds it, by its name, hashbrown and indexmap,

@@ -94,7 +94,8 @@ error: aborting due to 1 previous error
 ### A crate rust-js couldn't compile
 
 A crate from crates.io that rust-js couldn't compile is its types alone. A
-call into it is refused, with a note of why its crate wasn't compiled:
+call into it, or an impl of one of its traits, is refused, with a note of
+why its crate wasn't compiled:
 
 ```
 error: rust-js does not support calling `once_cell::unsync::OnceCell::<T>::new` yet

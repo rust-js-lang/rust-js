@@ -160,8 +160,8 @@ my-app/
 - **`rust-js build --check` checks it** with the rest of your JS, so CI
   needs no compile.
 - **A crate rust-js can't compile is its types alone.** You can use its
-  types; a call into it is refused, saying why it wasn't compiled (ADR
-  0415):
+  types; a call into it, or an impl of one of its traits, is refused,
+  saying why it wasn't compiled (ADR 0415):
 
   ```
   error: rust-js does not support calling `once_cell::unsync::OnceCell::<T>::new` yet
