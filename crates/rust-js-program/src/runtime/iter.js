@@ -1,8 +1,4 @@
-// What marks an array's iterator, `$iter`'s, which a clone, `$iter` of its
-// items again, is too: the one answer of whether an iterator is one, so its
-// `items`, `at` and `end` may be read, never read of whether it has an
-// `items` field, as a crate's struct may (#2159).
-const $arrayIterKey = Symbol("rust-js.arrayIter");
+// `$arrayIterKey`, a mark every copy of the runtime reads, is marks.js's.
 function $arrayIter(it) {
   return it != null && it[$arrayIterKey] === true;
 }

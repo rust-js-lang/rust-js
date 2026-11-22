@@ -4,7 +4,7 @@
 // its box hidden beside it, `inst[$countedKey]`, whose `value` is the instance;
 // its `Weak`s are that box, tied to its allocation, so one of an instance
 // given back and counted anew never upgrades (#1228).
-const $countedKey = Symbol("rust-js.rc");
+// Its mark, `$countedKey`, every copy of the runtime reads, is marks.js's.
 
 // The box that counts an `Rc`: itself, or a class instance's hidden one.
 function $countedBox(rc) {

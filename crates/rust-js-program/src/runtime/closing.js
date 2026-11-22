@@ -268,12 +268,7 @@ function $advanceSlice(it, m, each, back = false) {
 // iterator. A `Drain`'s, a
 // B-tree's and a `BinaryHeap`'s aren't: theirs are std's defaults, each
 // dropped as it's passed, a panic stopping them (#703, #704).
-// What marks a `Vec`'s or an array's `IntoIter` given its slice's steps,
-// `$slicing`'s, which only a caller that knows its type asks, or a JS
-// iterator made of one that passes them on (`$given`): the one answer of
-// whether it's one, never read of which steps it has, as a flatten has an
-// `advanceBackBy` of its own too (#2154).
-const $slicedKey = Symbol("rust-js.sliced");
+// `$slicedKey`, a mark every copy of the runtime reads, is marks.js's.
 function $sliced(it) {
   return it[$slicedKey] === true;
 }

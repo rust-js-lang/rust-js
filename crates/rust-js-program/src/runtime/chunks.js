@@ -1,8 +1,4 @@
-// What a slice's chunks or windows were made of, kept on the array of them
-// `$chunks` and `$windows` make: its source, its size, and whether its
-// parts are windows. std's `Debug` of one shows what it has left as its own
-// struct holds it, `Chunks { v: [3], chunk_size: 2 }` (#2252).
-const $partsOf = Symbol("rust-js.partsOf");
+// `$partsOf`, a mark every copy of the runtime reads, is marks.js's.
 
 // `chunks(size)`: each `size` items, the last fewer, as `cut` cuts them:
 // copies, or views of `chunks_mut`'s (ADR 0335).

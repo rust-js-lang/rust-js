@@ -69,7 +69,8 @@ test("what a counted Rc is in JS is rc.rs's alone", () => {
   const readers = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs") && code(file).some((line) => fields.test(line)));
   expect(readers).toEqual(["crates/rust-js-lower/src/std_types/rc.rs"]);
   const key = files("crates/rust-js-program/src/runtime").filter((file) => /\$countedKey\b/.test(read(file)));
-  expect(key).toEqual(["crates/rust-js-program/src/runtime/rc.js"]);
+  // Declared with every mark every copy of the runtime reads (#2333).
+  expect(key).toEqual(["crates/rust-js-program/src/runtime/marks.js", "crates/rust-js-program/src/runtime/rc.js"]);
 });
 
 // A write in place, `$assign`, `$take`, `$exchange` or a `$cellOf` cell, is

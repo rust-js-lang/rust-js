@@ -258,12 +258,7 @@ function $part(items, start, end) {
   return $partPlaced(items.slice(start, end), items, from);
 }
 
-// A part's record of where it is, `{ of, start }`, of the array that holds
-// its items itself, under a symbol: a property `$ptr` reads, which JS's own
-// reads of an array, its items, its length, `for .. of` and `JSON`, never
-// see (#1185, the user's decision: always kept, at 1.2–1.3 times a slice's
-// cost to make).
-const $placeOfPart = Symbol("rust-js part");
+// `$placeOfPart`, a mark every copy of the runtime reads, is marks.js's.
 
 // `part`, made of `items` from its item `start`, recorded so; of a view of
 // another type's bytes or of one place, `{ first }`, its first item's

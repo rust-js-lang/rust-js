@@ -95,9 +95,16 @@ symbols, `Symbol.for("rust-js: ..")`, declared in `runtime/marks.js`
 alone. A bundled library and the app that uses it may each hold a copy of
 the runtime, and a panic one raises is caught, downcast or hooked by the
 other: a mark one copy made by `Symbol(..)` is unseen by the other, a
-`String` read as a `&str`, a location `<unknown>`. Each other `Symbol(..)`
-of the runtime is named, with why, in `test/runtime-marks.test.ts`, under
-#2333, until judged.
+`String` read as a `&str`, a location `<unknown>`. So is every mark of a
+value one copy makes and another reads (amended by #2333): an `Rc`'s box
+beside its class instance, `$countedKey`, whose count the other copy read
+as `NaN` and whose `Weak` upgraded after its last drop; an array's
+iterator, `$arrayIterKey`, its `size_hint` `(0, None)`; a part of a
+slice's place, `$placeOfPart`, `ptr::eq` false; and `$partsOf`,
+`$cloneKey`, `$itemArray`, `$itemIndex`, whose reads threw, and
+`$slicedKey`. `test/runtime-marks.test.ts` refuses any `Symbol(..)` of the
+runtime, and runs each against native Rust with a library on a copy of
+its own.
 
 **A `Location` is its text**, `"file:line:col"`
 ([0427](0427-track-caller.md), amended): `{}` the text, `{:?}` std's

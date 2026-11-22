@@ -1160,8 +1160,7 @@ export function $disposeIterator(it) {
   it[$disposeKey]();
 }
 
-// What a closure carries its clone under (ADR 0522).
-export const $cloneKey = Symbol("rust-js.clone");
+// `$cloneKey`, a mark every copy of the runtime reads, is marks.js's.
 
 // A closure cloned apart, carrying its clone, `clone`, which makes it again
 // of a clone of what it took (ADR 0522).
@@ -5491,12 +5490,7 @@ export function $advanceSlice(it, m, each, back = false) {
 // iterator. A `Drain`'s, a
 // B-tree's and a `BinaryHeap`'s aren't: theirs are std's defaults, each
 // dropped as it's passed, a panic stopping them (#703, #704).
-// What marks a `Vec`'s or an array's `IntoIter` given its slice's steps,
-// `$slicing`'s, which only a caller that knows its type asks, or a JS
-// iterator made of one that passes them on (`$given`): the one answer of
-// whether it's one, never read of which steps it has, as a flatten has an
-// `advanceBackBy` of its own too (#2154).
-export const $slicedKey = Symbol("rust-js.sliced");
+// `$slicedKey`, a mark every copy of the runtime reads, is marks.js's.
 export function $sliced(it) {
   return it[$slicedKey] === true;
 }
@@ -6087,11 +6081,7 @@ export function $removeOpt(items, index) {
   return index < items.length ? items.splice(index, 1)[0] : undefined;
 }
 
-// What marks an array's iterator, `$iter`'s, which a clone, `$iter` of its
-// items again, is too: the one answer of whether an iterator is one, so its
-// `items`, `at` and `end` may be read, never read of whether it has an
-// `items` field, as a crate's struct may (#2159).
-export const $arrayIterKey = Symbol("rust-js.arrayIter");
+// `$arrayIterKey`, a mark every copy of the runtime reads, is marks.js's.
 export function $arrayIter(it) {
   return it != null && it[$arrayIterKey] === true;
 }
@@ -7913,8 +7903,7 @@ export function $jsonErrorDyn(type) {
 // handle on each item, whose `value` reads and writes it (ADR 0152). Each
 // knows its slot, so a raw pointer to what it's to is the slot's,
 // `$ptrOfItem`'s (#1283).
-export const $itemArray = Symbol("rust-js item of");
-export const $itemIndex = Symbol("rust-js item at");
+// `$itemArray` and `$itemIndex`, marks every copy of the runtime reads, are marks.js's.
 
 export function $mutItems(v) {
   return Array.from(v, (_, i) => ({
@@ -9687,7 +9676,7 @@ export function $ptrTyped(view) {
 // its box hidden beside it, `inst[$countedKey]`, whose `value` is the instance;
 // its `Weak`s are that box, tied to its allocation, so one of an instance
 // given back and counted anew never upgrades (#1228).
-export const $countedKey = Symbol("rust-js.rc");
+// Its mark, `$countedKey`, every copy of the runtime reads, is marks.js's.
 
 // The box that counts an `Rc`: itself, or a class instance's hidden one.
 export function $countedBox(rc) {
@@ -10311,12 +10300,7 @@ export function $part(items, start, end) {
   return $partPlaced(items.slice(start, end), items, from);
 }
 
-// A part's record of where it is, `{ of, start }`, of the array that holds
-// its items itself, under a symbol: a property `$ptr` reads, which JS's own
-// reads of an array, its items, its length, `for .. of` and `JSON`, never
-// see (#1185, the user's decision: always kept, at 1.2–1.3 times a slice's
-// cost to make).
-export const $placeOfPart = Symbol("rust-js part");
+// `$placeOfPart`, a mark every copy of the runtime reads, is marks.js's.
 
 // `part`, made of `items` from its item `start`, recorded so; of a view of
 // another type's bytes or of one place, `{ first }`, its first item's
@@ -21715,11 +21699,7 @@ export function $windows(v, size, raisedAt) {
   return parts;
 }
 
-// What a slice's chunks or windows were made of, kept on the array of them
-// `$chunks` and `$windows` make: its source, its size, and whether its
-// parts are windows. std's `Debug` of one shows what it has left as its own
-// struct holds it, `Chunks { v: [3], chunk_size: 2 }` (#2252).
-export const $partsOf = Symbol("rust-js.partsOf");
+// `$partsOf`, a mark every copy of the runtime reads, is marks.js's.
 
 // `chunks(size)`: each `size` items, the last fewer, as `cut` cuts them:
 // copies, or views of `chunks_mut`'s (ADR 0335).
@@ -23425,11 +23405,11 @@ export class $InternalError extends Error {
 
 // The marks the runtime sets on what it makes, which every copy of the
 // runtime reads: a bundled library and the app that uses it may each hold
-// one, and a panic one raises is caught, hooked or downcast by the other
-// (ADR 1184). Each is a registry symbol, `Symbol.for`, named `rust-js: ..`:
-// a mark made by `Symbol(..)` is one copy's alone, which
-// `test/runtime-marks.test.ts` refuses except where it names why. Neither
-// is enumerable on what it marks, so a host shows it as it is.
+// one, and what one makes, a panic, an `Rc`, an iterator, a part of a
+// slice, is read by the other (ADR 1184, #2333). Each is a registry
+// symbol, `Symbol.for`, named `rust-js: ..`: a mark made by `Symbol(..)`
+// is one copy's alone, which `test/runtime-marks.test.ts` refuses. None is
+// enumerable on what it marks, so a host shows it as it is.
 
 // What marks a panic's `Error` as one whose payload is a `String`.
 export const $stringPayload = Symbol.for("rust-js: a panic whose payload is a String");
@@ -23437,6 +23417,44 @@ export const $stringPayload = Symbol.for("rust-js: a panic whose payload is a St
 // Where a panic was raised, `file:line:column` (#2292), which a binary's
 // hook names.
 export const $raisedAt = Symbol.for("rust-js: where a panic was raised");
+
+// What a slice's chunks or windows were made of, kept on the array of them
+// `$chunks` and `$windows` make: its source, its size, and whether its
+// parts are windows. std's `Debug` of one shows what it has left as its own
+// struct holds it, `Chunks { v: [3], chunk_size: 2 }` (#2252).
+export const $partsOf = Symbol.for("rust-js: what a slice's chunks or windows were made of");
+
+// What a closure carries its clone under (ADR 0522).
+export const $cloneKey = Symbol.for("rust-js: what a closure carries its clone under");
+
+// What marks a `Vec`'s or an array's `IntoIter` given its slice's steps,
+// `$slicing`'s, which only a caller that knows its type asks, or a JS
+// iterator made of one that passes them on (`$given`): the one answer of
+// whether it's one, never read of which steps it has, as a flatten has an
+// `advanceBackBy` of its own too (#2154).
+export const $slicedKey = Symbol.for("rust-js: an iterator that steps a slice's items");
+
+// What marks an array's iterator, `$iter`'s, which a clone, `$iter` of its
+// items again, is too: the one answer of whether an iterator is one, so its
+// `items`, `at` and `end` may be read, never read of whether it has an
+// `items` field, as a crate's struct may (#2159).
+export const $arrayIterKey = Symbol.for("rust-js: an array's iterator");
+
+// The array and the index of the item a `v.iter_mut()`'s handle is on, of
+// numbers or strings, whose slot a raw pointer to it is (mut_items.js, #1283).
+export const $itemArray = Symbol.for("rust-js: the array an item's handle is of");
+export const $itemIndex = Symbol.for("rust-js: the index an item's handle is at");
+
+// A `#[rust_js::class]` instance's counting box, hidden beside it (rc.js,
+// ADR 0320, #1228).
+export const $countedKey = Symbol.for("rust-js: an Rc's box beside its instance");
+
+// A part's record of where it is, `{ of, start }`, of the array that holds
+// its items itself, under a symbol: a property `$ptr` reads, which JS's own
+// reads of an array, its items, its length, `for .. of` and `JSON`, never
+// see (#1185, the user's decision: always kept, at 1.2–1.3 times a slice's
+// cost to make).
+export const $placeOfPart = Symbol.for("rust-js: where a part of a slice is");
 
 export function $settle(promise) {
   return promise.then((value) => ({ TAG: "Ok", _0: value }), (e) => ({ TAG: "Err", _0: e }));

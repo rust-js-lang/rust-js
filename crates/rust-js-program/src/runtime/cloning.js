@@ -1,5 +1,4 @@
-// What a closure carries its clone under (ADR 0522).
-const $cloneKey = Symbol("rust-js.clone");
+// `$cloneKey`, a mark every copy of the runtime reads, is marks.js's.
 
 // A closure cloned apart, carrying its clone, `clone`, which makes it again
 // of a clone of what it took (ADR 0522).
