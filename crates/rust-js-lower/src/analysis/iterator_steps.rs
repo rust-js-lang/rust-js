@@ -545,6 +545,19 @@ pub(crate) fn stepped_params<'tcx>(
                 .filter_map(|clause| clause.as_trait_clause())
                 .any(|p| p.def_id() == iterator);
             let value = tcx.type_of(item.def_id).instantiate_identity().skip_normalization();
+            // A method's `-> impl Iterator`, rustc's associated type of it:
+            // the type its body hides, `I` of `self.0.clone()` (#2342).
+            let value = match *value.kind() {
+                ty::Alias(
+                    _,
+                    ty::AliasTy {
+                        kind: ty::Opaque { def_id },
+                        args,
+                        ..
+                    },
+                ) if def_id.is_local() => tcx.type_of(def_id).instantiate(tcx, args).skip_normalization(),
+                _ => value,
+            };
             // The impl's own parameter, `type Iter = I`: its dictionary's
             // entries of the type's bounds are `I`'s, by each the trait
             // declares, `Iterator` and its extensions (ADR 0106, #972).

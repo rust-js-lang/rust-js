@@ -424,4 +424,13 @@ export const mutations: Mutation[] = [
     replace: "                let self_ty = self_ty.peel_refs();\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
   },
+  {
+    name: "impl-trait-method-iterator-hidden-unseen",
+    breaks:
+      "a trait method's `-> impl Iterator` giving back the impl's own type parameter held as it is isn't read for the type it hides, so the impl isn't given that parameter's `Iterator`, and its entry wraps the struct by `Iterator.from`: `undefined is not a function` (#2342)",
+    file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
+    find: "                ) if def_id.is_local() => tcx.type_of(def_id).instantiate(tcx, args).skip_normalization(),\n",
+    replace: "                ) if false => tcx.type_of(def_id).instantiate(tcx, args).skip_normalization(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^trait_method_impl_iterator_stepped_by_generic_code.rs$"],
+  },
 ];

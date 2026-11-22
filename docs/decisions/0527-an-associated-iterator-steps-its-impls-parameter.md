@@ -40,3 +40,34 @@ library, against native Rust.
   and a few of their own.
 - Mutations skip associated types, pass nothing on, or step nothing held
   in an adapter.
+
+## Amendment: a trait method's `-> impl Iterator` is read for the type it hides (#2342)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a run that threw
+now runs as Rust does.
+
+A trait method that gives `-> impl Iterator` has an associated type of the
+impl's, made by rustc: its value is the opaque type of the impl method's
+result, not the type that method's body gives. So `type_of` of it was never
+`I`, and the rule above never said the impl steps `I`. When the impl gave
+back its own `I` held as it is (`Clone` reads it), its dictionary entry
+made a JS iterator of the struct by `Iterator.from`, as it wasn't given
+`I`'s `Iterator`: native Rust's `18` became "undefined is not a function",
+in both builds.
+
+**The rule reads an opaque type of the crate's for the type it hides**,
+`I` of `self.0.clone()`. Then the impl takes `I`'s `Iterator`, and each
+extension the method's bounds declare, and its entry steps the value by
+them: `$given(givenSource_make(given, n, IClone), IIterator)`.
+
+Since #2330, a trait's own associated iterator is its type's own value, so
+this is the one path that still reaches `made_js_iterator`'s range,
+crate-iterator and as-is arms. Corpus case
+`trait_method_impl_iterator_stepped_by_generic_code` covers a range, the
+crate's own iterator, std's `take`, and the impl's own `I` given back,
+stepped by generic code's `for` and from its back by `DoubleEndedIterator`,
+each run as native Rust runs it, in both builds. Mutations:
+`impl-trait-method-iterator-hidden-unseen`; and
+`made-item-iterator-param-as-it-is` and `dictionary-iterator-unmade`
+retargeted to that case, as their earlier tests no longer reach these arms.
+

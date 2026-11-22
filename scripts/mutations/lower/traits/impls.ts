@@ -23,11 +23,11 @@ export const mutations: Mutation[] = [
   {
     name: "made-item-iterator-param-as-it-is",
     breaks:
-      "an impl's own type parameter given as it is, its associated type's, goes to generic code as it is, which steps it as a JS iterator: `it.next is not a function` (#972)",
+      "an impl's own type parameter given as it is, a trait method's `-> impl Iterator`, goes to generic code as it is, which steps it as a JS iterator: `it.next is not a function` (#972, #2342)",
     file: "crates/rust-js-lower/src/traits/impls.rs",
     find: "                || self.iterator_given_as_it_is(ty)\n                || crate::recognition::is_compiled_std_iterator(self.tcx, ty))\n",
     replace: "                || crate::recognition::is_compiled_std_iterator(self.tcx, ty))\n",
-    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_given_as_it_is.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^trait_method_impl_iterator_stepped_by_generic_code.rs$"],
   },
   {
     name: "made-item-iterator-backless",

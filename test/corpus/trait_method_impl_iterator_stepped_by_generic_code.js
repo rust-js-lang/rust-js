@@ -2,10 +2,15 @@
 
 import {
   $foldOf,
+  $given,
+  $iter,
   $iterator,
   $next,
+  $nextBack,
   $nth,
   $rangeNext,
+  $rangeNextBack,
+  $rangeNthBack,
   $traitImpl,
   iterator_take,
 } from "@rust-js/std";
@@ -50,6 +55,35 @@ function wrappedSource_make(wrapped, n, IIterator, IClone) {
   return iterator_take(IClone.clone(wrapped[0]), n, IIterator);
 }
 
+const $givenSource = new WeakMap();
+
+function givenSource(IIterator, IClone) {
+  return $traitImpl($givenSource, [IIterator, IClone], () => ({
+    MakeIterator: () => ({ next: $next }),
+    make: (given, n) => $given(givenSource_make(given, n, IClone), IIterator),
+  }));
+}
+function givenSource_make(given, n, IClone) {
+  return IClone.clone(given[0]);
+}
+
+const $givenEnds = new WeakMap();
+
+function givenEnds(IIterator, IDoubleEndedIterator, IClone) {
+  return $traitImpl($givenEnds, [IIterator, IDoubleEndedIterator, IClone], () => ({
+    EndsDoubleEndedIterator: () => ({ next_back: $nextBack }),
+    ends: (given) => $given(givenEnds_ends(given, IClone), IIterator, false, IDoubleEndedIterator),
+  }));
+}
+function givenEnds_ends(given, IClone) {
+  return IClone.clone(given[0]);
+}
+
+function lastFirst(e, EEnds) {
+  const it = EEnds.ends(e);
+  return [$nextBack(it), $next(it)];
+}
+
 function total(s, n, SSource) {
   let t = 0;
   for (const x of ((items) => items)(SSource.make(s, n))) {
@@ -59,17 +93,34 @@ function total(s, n, SSource) {
 }
 
 function main() {
+  const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
   console.log(`${total(undefined, 4, rangedSource)}`);
   console.log(`${total(undefined, 5, countedSource)}`);
   console.log(
-    `${total(
-      [{ start: 10, end: 20 }],
-      3,
-      wrappedSource(
-        { next: $rangeNext },
-        { clone: (value) => ({ start: value.start, end: value.end }) },
-      ),
-    )}`,
+    `${total([{ start: 10, end: 20 }], 3, wrappedSource({ next: $rangeNext }, rangeClone))}`,
+  );
+  console.log(`${total([{ start: 5, end: 8 }], 0, givenSource({ next: $rangeNext }, rangeClone))}`);
+  const value = lastFirst(
+    [{ start: 1, end: 4 }],
+    givenEnds(
+      { next: $rangeNext },
+      { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+      rangeClone,
+    ),
+  );
+  console.log(
+    `(${value[0] == null ? "None" : `Some(${value[0]})`}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
+  );
+  const value$1 = lastFirst(
+    [$iter([7, 8, 9])],
+    givenEnds(
+      { next: $next },
+      { next_back: $nextBack },
+      { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
+    ),
+  );
+  console.log(
+    `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
   );
 }
 //# sourceMappingURL=case.js.map
