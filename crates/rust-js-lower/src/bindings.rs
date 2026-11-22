@@ -307,7 +307,7 @@ pub fn variant_tag(tcx: TyCtxt<'_>, variant: &VariantDef) -> js::Expr {
         let adt = tcx.adt_def(tcx.parent(variant.def_id));
         if numbered(tcx, adt) {
             let index = adt.variant_index_with_id(variant.def_id);
-            return super::discriminants(tcx, adt)[index.as_usize()].1.expr(false);
+            return crate::discriminants::of(tcx, adt)[index.as_usize()].1.expr(false);
         }
     }
     match given_bool(tcx, variant.def_id) {

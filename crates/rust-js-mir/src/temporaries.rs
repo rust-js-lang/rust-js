@@ -804,15 +804,15 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         };
         // Each variant's discriminant, as its bits and as its value, a
         // signed one's sign-extended, `-1` of an `enum E { A = -1 }`.
-        let values: Vec<(u128, rust_js_lower::Discr)> = (adt.discriminants(self.tcx))
-            .map(|(_, d)| (d.val, rust_js_lower::Discr::of(self.tcx, d)))
+        let values: Vec<(u128, rust_js_lower::discriminants::Discr)> = (adt.discriminants(self.tcx))
+            .map(|(_, d)| (d.val, rust_js_lower::discriminants::Discr::of(self.tcx, d)))
             .collect();
         let Some((&(_, last), rest)) = values.split_last() else {
             return Err(self.unsupported(span, "a discriminant of an enum of no variant, read as a value"));
         };
         // Of a 64-bit `repr`, a BigInt, as its type's every value is (#1131).
         let big = rust_js_lower::Num::of(enum_ty.discriminant_ty(self.tcx)).is_some_and(rust_js_lower::Num::big);
-        let literal = |n: rust_js_lower::Discr| n.expr(big);
+        let literal = |n: rust_js_lower::discriminants::Discr| n.expr(big);
         let mut made = literal(last);
         for &(bits, number) in rest.iter().rev() {
             let test = self.switch_test(discriminant, enum_ty, bits, span, (None, None))?;

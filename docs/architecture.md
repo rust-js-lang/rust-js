@@ -553,7 +553,7 @@ area's sweep phrases it as one.
 | Function-value mutable arguments | `mut_refs.rs` | `unboxed_by_function` | | 2 |
 | What a type parameter is given for a `&mut` to a function or an iterator, the value itself where it's only called or stepped, read through each boxed `&mut` (#992, #1909) | `mut_refs/given.rs` | `given_as_the_value`, `called_value`, `called_box_escapes` | | 2 |
 | Body module placement | `lower.rs` | `body_module`, `located` | | 1 |
-| What does rustc say of an item or body: a function item type's function and generic args, a body's THIR root, an enum discriminant's value and whether it fits a type's range? | `lower.rs` | `fn_def`, `Body::root`, `Discr::as_i128`, `Discr::fits` | | 1 |
+| What does rustc say of an item or body: a function item type's function and generic args, a body's THIR root, an enum discriminant's value and whether it fits a type's range? | `lower.rs`; `discriminants.rs` | `fn_def`, `Body::root`, `Discr::as_i128`, `Discr::fits` | | 1 |
 | A crate's `#[test]`s, which module's test file registers each, and which module of tests is its parent's test file (ADR 1076); what each runner's `test` is imported from | `analysis/tests.rs`; `settings.rs` | `collect_tests`; `Runner` | | 1 |
 | Which `const`s written in a function's body are its, a `const` there, and what reads each (ADR 0031, amended) | `analysis/naming.rs` | `local_consts` | | 1 |
 | Which library functions a module's `use` marked `#[rust_js::require]` reads through `require(module)` where it reads them, each other `use` so marked refused (rd684, ADR 0305, amended); `fn_ref` reads them so | `analysis/naming.rs`; `items.rs` | `required_uses`; `fn_ref` | | 4: `fn_ref` (`held_as`) |

@@ -349,8 +349,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a 64-bit `repr`'s discriminant, as a derived `Hash` reads it, is a number, not a BigInt",
     file: "crates/rust-js-lower/src/representation.rs",
-    find: "        let literal = |n: super::Discr| n.expr(big);\n",
-    replace: "        let literal = |n: super::Discr| n.expr(false);\n",
+    find: "        let literal = |n: crate::discriminants::Discr| n.expr(big);\n",
+    replace: "        let literal = |n: crate::discriminants::Discr| n.expr(false);\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
   {

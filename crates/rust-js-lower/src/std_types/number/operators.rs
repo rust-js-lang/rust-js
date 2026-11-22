@@ -323,7 +323,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && is_fieldless_enum(*adt)
         {
             // A fieldless enum's discriminant, by its variant's name (ADR 0013).
-            let discriminants = discriminants(self.tcx, *adt);
+            let discriminants = discriminants::of(self.tcx, *adt);
             // Each one fits the target type, so there's nothing to wrap.
             let (lo, hi) = target.range();
             let fits = target.float() || discriminants.iter().all(|&(_, d)| d.fits(lo, hi));

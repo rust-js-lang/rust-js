@@ -616,7 +616,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A fieldless enum: by its discriminants, as the derive compares
             // them, `Low = 1` before `High = 2` however they're declared.
             ty::Adt(adt, _) if super::representation::is_string_enum(self.tcx, *adt) => {
-                let mut variants = super::discriminants(self.tcx, *adt);
+                let mut variants = crate::discriminants::of(self.tcx, *adt);
                 variants.sort_by_key(|&(_, value)| value);
                 let names = variants.into_iter().map(|(name, _)| Expr::str(name)).collect();
                 Ok(Expr::call(Expr::helper("$cmpIn"), vec![Expr::array(names), a, b]))
@@ -634,9 +634,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 // Of those a value can be, in their discriminants' order, a
                 // signed one's `-5` before `3` (#1131).
-                let mut variants: Vec<(VariantIdx, crate::Discr)> = (adt.discriminants(self.tcx))
+                let mut variants: Vec<(VariantIdx, crate::discriminants::Discr)> = (adt.discriminants(self.tcx))
                     .filter(|&(v, _)| !crate::recognition::never_made(self.tcx, adt.variant(v)))
-                    .map(|(v, d)| (v, crate::Discr::of(self.tcx, d)))
+                    .map(|(v, d)| (v, crate::discriminants::Discr::of(self.tcx, d)))
                     .collect();
                 variants.sort_by_key(|&(_, value)| value);
                 // Where each is among them, `a.TAG === "Rect" ? 1 : ..`.

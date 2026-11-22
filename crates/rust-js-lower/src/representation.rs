@@ -93,8 +93,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// last one's the rest. Of a type that's no enum, `0`, as Rust's is. Each
     /// a BigInt where `big`, a 64-bit `repr`'s as a derived `Hash` reads it.
     pub(crate) fn discriminant_value(&mut self, subject: Expr, ty: Ty<'tcx>, big: bool, out: &mut Vec<Stmt>) -> Expr {
-        let literal = |n: super::Discr| n.expr(big);
-        let zero = super::Discr::Signed(0);
+        let literal = |n: crate::discriminants::Discr| n.expr(big);
+        let zero = crate::discriminants::Discr::Signed(0);
         let ty::Adt(adt, _) = ty.kind() else {
             if subject.has_effects() {
                 out.push(StmtKind::Expr(subject).at(js::Span::NONE));
@@ -109,8 +109,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Ok(named) => return named,
             Err(subject) => *subject,
         };
-        let mut variants: Vec<(VariantIdx, super::Discr)> = (adt.variants().indices())
-            .zip(super::discriminants(self.tcx, adt))
+        let mut variants: Vec<(VariantIdx, crate::discriminants::Discr)> = (adt.variants().indices())
+            .zip(crate::discriminants::of(self.tcx, adt))
             .map(|(variant, (_, n))| (variant, n))
             .collect();
         let Some((_, last)) = variants.pop() else {
@@ -162,7 +162,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             return Err(Box::new(subject));
         };
-        let discriminants = super::discriminants(tcx, adt);
+        let discriminants = crate::discriminants::of(tcx, adt);
         let counting = (discriminants.iter().enumerate()).all(|(i, &(_, d))| d.as_i128() == Some(i as i128));
         if counting {
             let names = Expr::array(discriminants.into_iter().map(|(n, _)| Expr::str(n)).collect());

@@ -594,8 +594,8 @@ export const mutations: Mutation[] = [
     name: "discriminant-number-not-big",
     breaks: "a discriminant MIR reads as a value, a library's derived `Hash`'s, is a number where its `repr` is 64 bits wide, which `write_i64` can't take: `TypeError: Cannot convert -5 to a BigInt` (#1131)",
     file: "crates/rust-js-mir/src/temporaries.rs",
-    find: "        let literal = |n: rust_js_lower::Discr| n.expr(big);\n",
-    replace: "        let literal = |n: rust_js_lower::Discr| n.expr(big && false);\n",
+    find: "        let literal = |n: rust_js_lower::discriminants::Discr| n.expr(big);\n",
+    replace: "        let literal = |n: rust_js_lower::discriminants::Discr| n.expr(big && false);\n",
     tests: ["test/crates.test.ts", "-t", "two crates: wide_discriminants"],
   },
   {
