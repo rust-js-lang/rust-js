@@ -21,7 +21,7 @@ const jsUnder = (dir: string): string[] =>
   (readdirSync(join(root, dir), { recursive: true }) as string[]).filter((file) => file.endsWith(".js")).map((file) => join(dir, file));
 
 test("no committed JS rust-js wrote names a machine's own source", () => {
-  const files = [...jsUnder("std"), ...jsUnder("crates/rust-js-program/src/runtime"), ...jsUnder("test/corpus"), ...jsUnder("test/snapshots")];
+  const files = [...jsUnder("std"), ...jsUnder("crates/rust-js-program/src/runtime"), ...jsUnder("test/corpus"), ...jsUnder("test/snapshots"), ...jsUnder("wasm/web/rust")];
   expect(files.length).toBeGreaterThan(3000);
   expect(files.filter((file) => local.test(readFileSync(join(root, file), "utf8")))).toEqual([]);
 });

@@ -994,7 +994,8 @@ function generated(dir: string, declarations = false): string[] {
 /**
  * Compare the JS in `actual` with its snapshot in `snapshot`, file by file:
  * the same files, each with the same text. With `BLESS=1` (`bun run bless`),
- * write `actual` as the snapshot instead, unless `bless` is false: for a check
+ * write `actual` as the snapshot instead, its generated files replaced and
+ * nothing else of the folder touched, unless `bless` is false: for a check
  * against a snapshot another compile made. `normalize` evens out what may
  * differ without meaning anything, like where the compiler saw the source.
  * `declarations`: its `.d.ts` files too.
@@ -1011,7 +1012,10 @@ export function expectSnapshot(
 ) {
   const files = generated(actual, declarations);
   if (bless && process.env.BLESS) {
-    rmSync(snapshot, { recursive: true, force: true });
+    // The generated files it had, which this replaces: not the folder's
+    // others, an app's sources beside its committed JS, the playground's
+    // (`wasm/web/rust`, #2346's finding 2).
+    for (const path of existsSync(snapshot) ? generated(snapshot, declarations) : []) rmSync(join(snapshot, path), { force: true });
     for (const path of files) {
       mkdirSync(dirname(join(snapshot, path)), { recursive: true });
       writeFileSync(join(snapshot, path), normalize(readFileSync(join(actual, path), "utf8")));

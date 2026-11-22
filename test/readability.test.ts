@@ -23,12 +23,14 @@ import { root } from "./support";
 
 const baseline = join(root, "docs/readability.txt");
 
-/** The generated JS the repository commits: each corpus case's, and each
- * snapshot's, which their tests hold equal to what the compiler writes. */
+/** The generated JS the repository commits: each corpus case's, each
+ * snapshot's, and the playground's, its own snapshot (test/snapshots.test.ts),
+ * which their tests hold equal to what the compiler writes. */
 function committed(): string[] {
   const corpus = [...new Bun.Glob("test/corpus/*.js").scanSync(root)];
   const snapshots = [...new Bun.Glob("test/snapshots/**/*.js").scanSync(root)];
-  return [...corpus, ...snapshots].sort().map((file) => join(root, file));
+  const playground = [...new Bun.Glob("wasm/web/rust/**/*.js").scanSync(root)];
+  return [...corpus, ...snapshots, ...playground].sort().map((file) => join(root, file));
 }
 
 /** Of `before` and `now`, each shape that grew, and each that shrank by one

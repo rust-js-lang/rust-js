@@ -51,4 +51,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/support.test.ts", "-t", "a known list kept as a directory"],
   },
+  {
+    name: "bless-removes-the-whole-folder",
+    breaks: "a bless removes its snapshot's folder whole, so blessing the playground, whose snapshot is the JS its app commits beside its Rust, deletes the Rust (`wasm/web/rust`)",
+    file: "test/support.ts",
+    find: "    for (const path of existsSync(snapshot) ? generated(snapshot, declarations) : []) rmSync(join(snapshot, path), { force: true });\n",
+    replace: "    rmSync(snapshot, { recursive: true, force: true });\n",
+    tests: ["test/support.test.ts", "-t", "a bless replaces a snapshot's generated files"],
+  },
+  {
+    name: "bless-keeps-stale-generated",
+    breaks: "a bless keeps a generated file its compile no longer writes, so the snapshot keeps a module the program lost",
+    file: "test/support.ts",
+    find: "    for (const path of existsSync(snapshot) ? generated(snapshot, declarations) : []) rmSync(join(snapshot, path), { force: true });\n",
+    replace: "",
+    tests: ["test/support.test.ts", "-t", "a bless replaces a snapshot's generated files"],
+  },
 ];

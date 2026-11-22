@@ -119,3 +119,25 @@ site and serves it as GitHub Pages does. It:
   - Filled next: names, with `#![rust_js::camel_case]` (ADR 0046),
     methods (ADR 0047), so `projects.rs` is `impl Project`, and let
     chains (ADR 0048).
+
+## Amendment: the playground's committed JS is its snapshot (2026-11-23)
+
+The playground's JS was kept twice. `wasm/web/rust/*.js` sat beside its Rust,
+which the dev server and `main.ts` read. `test/snapshots/playground` held
+what both compilers must write. Only the second was checked, so the
+committed files went stale: last made by hand on 2026-10-30, they lacked
+#2345's file names and #2292's panic locations, 19 files in all.
+
+Now there's one copy, the app's own, as the pilot commits its JS:
+
+- test/snapshots.test.ts's `playground` case compares the native compile
+  with `wasm/web/rust`, and blesses there (`BLESS=1`, as before).
+- test/playground.test.ts compares rust-js.wasm's compile with the files
+  as committed, kept aside while compile-rust.ts writes over them, then
+  put back.
+- `test/snapshots/playground` is gone.
+- A bless now replaces a snapshot's generated files and nothing else of its
+  folder (`expectSnapshot`), as this one holds the app's sources. Mutations
+  `bless-removes-the-whole-folder` and `bless-keeps-stale-generated`.
+- Readability's baseline and std-sites read the files where they are; the
+  selector's baselines list them.

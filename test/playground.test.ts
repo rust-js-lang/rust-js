@@ -3,11 +3,11 @@
 // compiler it runs; without one, this is skipped.
 
 import { expect, test } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import { cpSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
 import { underLoad } from "../scripts/timing";
-import { expectSnapshot, root, run } from "./support";
+import { expectSnapshot, fixture, root, run } from "./support";
 import { decodeMappings, lookup } from "./sourcemap";
 import { partSetting } from "./part-settings";
 import { wasmPath } from "../wasm/web/site.ts";
@@ -17,15 +17,25 @@ if (partSetting("RUST_JS_REQUIRE_WASM") && !existsSync(wasm)) {
   throw new Error("WASM parity is required: build the compiler from the candidate sources with bun run wasm");
 }
 
-// The site is compiled by rust-js.wasm, and the snapshot by the native
-// compiler (test/snapshots.test.ts): the same source should give the same JS.
-// When it doesn't, the wasm was built from older code than the compiler's.
+// The site is compiled by rust-js.wasm, and the JS the app commits beside its
+// Rust is the native compiler's (test/snapshots.test.ts): the same source
+// should give the same JS. When it doesn't, the wasm was built from older
+// code than the compiler's. compile-rust.ts writes over the committed files,
+// so they're kept aside to compare with, and put back.
 test.skipIf(!existsSync(wasm))("rust-js.wasm compiles the playground as the native compiler does", () => {
-  run(["bun", "wasm/web/compile-rust.ts"]);
-  expectSnapshot(join(root, "wasm/web/rust"), join(root, "test/snapshots/playground"), {
-    hint: "rust-js.wasm writes other JS than test/snapshots/playground: if test/snapshots.test.ts passes, the wasm is out of date; rebuild it with `bun run wasm`",
-    bless: false,
-  });
+  const rust = join(root, "wasm/web/rust");
+  const committed = fixture("playground-committed");
+  const written = (dir: string) => [...new Bun.Glob("**/*.{js,jsx}").scanSync(dir)];
+  for (const path of written(rust)) cpSync(join(rust, path), join(committed, path));
+  try {
+    run(["bun", "wasm/web/compile-rust.ts"]);
+    expectSnapshot(rust, committed, {
+      hint: "rust-js.wasm writes other JS than the playground commits: if test/snapshots.test.ts passes, the wasm is out of date; rebuild it with `bun run wasm`",
+      bless: false,
+    });
+  } finally {
+    for (const path of written(committed)) cpSync(join(committed, path), join(rust, path));
+  }
   const file = join(root, "wasm/web/rust/components/status_line");
   const source = readFileSync(`${file}.rs`, "utf8");
   const js = readFileSync(`${file}.jsx`, "utf8").split("\n");

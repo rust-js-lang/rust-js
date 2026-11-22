@@ -19,7 +19,7 @@ import { pruneMaps } from "../scripts/testMap";
 import { keptSerdeFlags } from "./serde-kept";
 import { runSync } from "./child";
 import { cargoApp } from "./cargo-app";
-import { cargoArtifacts, contentDirectory, fixture, knownText, nativeBinary, nativeCrates, once, portable, root, run, seeded, writeKnown } from "./support";
+import { cargoArtifacts, contentDirectory, expectSnapshot, fixture, knownText, nativeBinary, nativeCrates, once, portable, root, run, seeded, writeKnown } from "./support";
 
 // Found in review: a file the case includes was changed, and the kept
 // binary, of the file before, answered for it.
@@ -708,4 +708,26 @@ test("a known list kept as a directory is read as one list and written back the 
   expect(knownText("metamorphic", dir)).toBe(read);
   writeKnown("metamorphic", "// the list\n\n#7 a bug\n\n#difference 2 decided\nstd b.rs\n", dir);
   expect(readdirSync(dir).sort()).toEqual(["README.txt", "difference-2.txt"]);
+});
+
+// A bless replaces a snapshot's generated files and nothing else of its
+// folder: the playground's snapshot is the JS its app commits beside its
+// Rust, `wasm/web/rust`, whose sources a bless that removed the whole folder
+// would have deleted. A generated file it no longer writes goes.
+test("a bless replaces a snapshot's generated files, keeping the folder's others", () => {
+  const [actual, snapshot] = [fixture("bless-actual"), fixture("bless-snapshot")];
+  writeFileSync(join(actual, "lib.js"), "new\n");
+  writeFileSync(join(snapshot, "lib.js"), "old\n");
+  writeFileSync(join(snapshot, "gone.jsx"), "stale\n");
+  writeFileSync(join(snapshot, "lib.rs"), "pub fn f() {}\n");
+  const was = process.env.BLESS;
+  process.env.BLESS = "1";
+  try {
+    expectSnapshot(actual, snapshot);
+  } finally {
+    if (was === undefined) delete process.env.BLESS;
+    else process.env.BLESS = was;
+  }
+  expect(readdirSync(snapshot).sort()).toEqual(["lib.js", "lib.rs"]);
+  expect(readFileSync(join(snapshot, "lib.js"), "utf8")).toBe("new\n");
 });

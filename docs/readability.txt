@@ -2840,14 +2840,6 @@ test/snapshots/modules/stats.js	15	0	0	0	0	0	0	0	0
 test/snapshots/modules/util.js	15	0	0	0	0	0	0	0	0
 test/snapshots/numbers/numbers.js	202	0	0	0	0	0	0	2	5
 test/snapshots/options/options.js	207	0	0	1	0	0	0	6	6
-test/snapshots/playground/codemirror.js	93	0	0	0	0	0	0	2	0
-test/snapshots/playground/compiler.js	371	0	0	0	0	0	0	6	2
-test/snapshots/playground/dark_mode.js	30	0	0	0	0	0	0	0	0
-test/snapshots/playground/listen.js	10	0	0	0	0	0	0	0	0
-test/snapshots/playground/programs.js	263	0	0	0	1	0	0	2	1
-test/snapshots/playground/projects.js	121	0	0	0	0	0	0	0	0
-test/snapshots/playground/styles.js	13	0	0	0	0	0	0	0	0
-test/snapshots/playground/tree.js	63	0	0	0	0	0	0	2	0
 test/snapshots/ports/scheduler/SchedulerFeatureFlags.js	18	0	0	0	0	0	0	0	0
 test/snapshots/ports/scheduler/SchedulerMinHeap.js	80	0	0	0	0	0	2	0	0
 test/snapshots/ports/scheduler/SchedulerPriorities.js	16	0	0	0	0	0	0	0	0
@@ -2870,3 +2862,11 @@ test/snapshots/web_forms/web_forms.js	294	0	0	0	0	2	0	0	0
 test/snapshots/webapi_events/webapi-events.js	354	0	0	0	0	0	0	3	0
 test/snapshots/wide/wide.js	258	0	0	0	0	0	0	3	6
 test/snapshots/wire/wire.js	525	0	0	0	0	0	0	2	0
+wasm/web/rust/codemirror.js	93	0	0	0	0	0	0	2	0
+wasm/web/rust/compiler.js	371	0	0	0	0	0	0	6	2
+wasm/web/rust/dark_mode.js	30	0	0	0	0	0	0	0	0
+wasm/web/rust/listen.js	10	0	0	0	0	0	0	0	0
+wasm/web/rust/programs.js	263	0	0	0	1	0	0	2	1
+wasm/web/rust/projects.js	121	0	0	0	0	0	0	0	0
+wasm/web/rust/styles.js	13	0	0	0	0	0	0	0	0
+wasm/web/rust/tree.js	63	0	0	0	0	0	0	2	0

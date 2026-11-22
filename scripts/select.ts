@@ -179,6 +179,8 @@ export const baselines: { path: string; owners: string[] }[] = [
   { path: "test/corpus/*.js", owners: ["test/readability.test.ts"] },
   // Each snapshot's files, by the snapshot's name.
   { path: "test/snapshots/**", owners: ["test/snapshots.test.ts", "test/readability.test.ts"] },
+  // The playground's committed JS, its snapshot (test/snapshots.test.ts).
+  { path: "wasm/web/rust/**/*.{js,jsx}", owners: ["test/snapshots.test.ts", "test/playground.test.ts", "test/readability.test.ts"] },
 ];
 
 const globs = (paths: string[]) => paths.map((path) => new Bun.Glob(path));

@@ -12,8 +12,10 @@ import { buildCompiler, buildReact, compiler, expectSnapshot, root, run, target 
 
 type Crate = "web" | "react" | "serde";
 
-// A name (its folder in test/snapshots/), the crate's root, and the crates it uses.
-const cases: [string, string, Crate[]][] = [
+// A name (its folder in test/snapshots/), the crate's root, the crates it
+// uses, and where its snapshot is, of one whose JS an app commits beside its
+// Rust, not under test/snapshots/.
+const cases: [string, string, Crate[], string?][] = [
   ["fib", "examples/fib.rs", []],
   ["structs", "examples/structs.rs", []],
   ["closures", "examples/closures.rs", []],
@@ -61,9 +63,10 @@ const cases: [string, string, Crate[]][] = [
   ["react_counter", "examples/react_counter.rs", ["web", "react"]],
   ["todomvc", "examples/todomvc/lib.rs", ["web", "react"]],
   ["apis", "test/apis.rs", ["react"]],
-  // The playground's own Rust (ADR 0044). test/playground.test.ts checks that
-  // rust-js.wasm, which compiles it for the site, writes the same.
-  ["playground", "wasm/web/rust/lib.rs", ["web", "react"]],
+  // The playground's own Rust (ADR 0044), whose snapshot is the JS the app
+  // commits beside it, `wasm/web/rust`, as the pilot's is: one copy, which
+  // test/playground.test.ts holds rust-js.wasm's compile to as well.
+  ["playground", "wasm/web/rust/lib.rs", ["web", "react"], "wasm/web/rust"],
 ];
 
 // Each crate a case uses, built before any case, whose own time is its
@@ -74,7 +77,7 @@ beforeAll(() => {
   buildSerde();
 }, 600_000);
 
-for (const [name, input, crates] of cases) {
+for (const [name, input, crates, committed] of cases) {
   test(`${name}: the generated JS is its snapshot`, () => {
     const out = join(target, "snapshots", name);
     rmSync(out, { recursive: true, force: true });
@@ -85,7 +88,7 @@ for (const [name, input, crates] of cases) {
     // From the repository's root, so each file's header names its source the
     // same way on every machine.
     run([compiler, input, "-o", join(out, `${basename(input, ".rs")}.js`), ...(flags.length > 0 ? ["--", ...flags] : [])]);
-    expectSnapshot(out, join(root, "test/snapshots", name));
+    expectSnapshot(out, join(root, committed ?? join("test/snapshots", name)));
     // A compile of a crate of serde's, `inbox`'s, takes past bun's 5 s on a
     // loaded machine, the wasm job's too: its compile's time, not a hang.
     // Beside `check:fast`'s rebuilds of a change's ten mutations, its 15 s
