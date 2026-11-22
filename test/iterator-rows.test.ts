@@ -5,7 +5,8 @@
 
 import { expect, test } from "bun:test";
 
-import { budgetOf, enclosingArm, entriesOf, entryAdapters, named, naming, outsideFunctions, pattern, pickedOf, reached, rowsPerPart, type Hunk } from "../scripts/iteratorRows";
+import { budgetOf, enclosingArm, entriesOf, entryAdapters, named, naming, outsideFunctions, pattern, pickedOf, pickedPerBatch, reached, rowsPerPart, type Hunk } from "../scripts/iteratorRows";
+import { tableOf } from "./matrix-tables";
 import { adapterCalls } from "./iterator-matrix";
 
 const adapters = new Set(["map", "filter", "skip", "take", "fuse", "enumerate", "chain", "rev", "step_by", "zip", "take_while", "copied", "cloned"]);
@@ -224,4 +225,17 @@ test("a list's string entry names its adapter whole, never its words", () => {
   expect([...reached(new Set(entryAdapters(entries, names)))]).toEqual(["filter_map"]);
   // One no adapter is named whole by, its words as before.
   expect(entryAdapters({ ...entries, added: ['"filter maps"'] }, names)).toBeUndefined();
+});
+
+// A compile's and rustc's start are paid once a program: a pick's programs
+// are of `pickedPerBatch` cases, the tables' own slices of 60, the batches
+// their known cases and kept runs are of (#2340).
+test("a change's rows run in programs of the rows' owner's size, the tables' slices in theirs", () => {
+  for (const table of ["matrix", "conformance"] as const) {
+    const of = tableOf(table);
+    const cases = of.cases().slice(0, pickedPerBatch * 2);
+    expect(of.batches(cases, true)[0].length).toBe(pickedPerBatch);
+    expect(of.batches(cases)[0].length).toBe(60);
+  }
+  expect(pickedPerBatch).toBeGreaterThan(60);
 });

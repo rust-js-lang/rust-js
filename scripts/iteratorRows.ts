@@ -82,6 +82,16 @@ const perPart: Record<Picking, number> = { matrix: 9.2, conformance: 10.8 };
  * cache of what ran here, keyed by nothing else: the machine's own. */
 export const ratesFile = join(root, "target", "iterator-rows-rates.json");
 
+/** The cases in each program of the rows a change picks, of the iterator
+ * matrix and the conformance table: a compile's start, some 90 ms, and
+ * rustc's, some 400 ms, paid once for this many (#2340). A quarter of the
+ * `take` rows in 6 parts beside 6 busy cores took 46 s in programs of 60,
+ * 36 s of 120, 31 s of 240 and 38 s of 480, whose parts ran out of
+ * programs unevenly; `pairs:32` 68 s and 64 s of 60 and 240. The tables'
+ * own programs, their slices', stay 60, the batches their known cases and
+ * kept runs are of. */
+export const pickedPerBatch = 240;
+
 type Rate = { table: Picking; rows: number; seconds: number; parts: number };
 
 /** The rows a part of this machine runs a second, of `table`: the median of

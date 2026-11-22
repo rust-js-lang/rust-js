@@ -26,6 +26,7 @@ import { numberCases, numberProgram, numberStrata, type NumberCase } from "./num
 import { refused, stdNetCases, stdNetProgram, stdNetStrata, type NetCase } from "./std-net";
 import { buildReact, target } from "./support";
 import { unwindCases, unwindProgram, unwindStrata, type UnwindCase } from "./unwind-points";
+import { pickedPerBatch } from "../scripts/iteratorRows";
 import { join } from "node:path";
 
 /** A table as test/iterator-matrix.test.ts runs it: its cases; a program
@@ -41,7 +42,9 @@ export type TableOf<C extends Row> = {
    * the refusal says, and its issue. */
   refused?: Record<string, [said: string, issue: number]>;
   program(cases: C[]): string;
-  batches(cases: C[]): C[][];
+  /** Its cases in programs: of a pick, the rows a change names, as many
+   * a program as the rows' owner says (`pickedPerBatch`). */
+  batches(cases: C[], picked?: boolean): C[][];
   slice(all: C[][]): number[];
   pairs?(cases: C[], perPair: number): C[];
   prepare?(): string[];
@@ -51,7 +54,7 @@ export type TableOf<C extends Row> = {
 const iteratorTable = (of: Table, cases: () => Case[]): TableOf<Case> => ({
   cases,
   program: (batch) => program(batch, of),
-  batches: (all) => batches(all, 60, aborts),
+  batches: (all, picked) => batches(all, picked ? pickedPerBatch : 60, aborts),
   slice: (all) => slice(all, strata),
   pairs,
 });

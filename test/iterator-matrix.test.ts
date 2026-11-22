@@ -84,12 +84,13 @@ const ofIssue = [...known]
 // cases as it names, where the batches holding them would be nearly all,
 // each of which holds every consumer (#818).
 // Of `pairs`, so many of each pairing of an adapter with a consumer, 60 of
-// the matrix's and 10 of the table's, that they're some 200 batches and
-// some 100 (#818).
+// the matrix's and 10 of the table's (#818). A pick's programs are of
+// `pickedPerBatch` cases, the rows' owner's (scripts/iteratorRows.ts,
+// #2340).
 const matching = rows === undefined ? every : every.filter((c) => new RegExp(rows).test(c.id));
 if (paired !== undefined && of.pairs === undefined) throw new Error(`ITERATOR_MATRIX=${which}: the ${table} table has no pairings of an adapter with a consumer`);
 const picked = paired !== undefined ? of.pairs!(matching, paired) : rows !== undefined ? matching : undefined;
-const run = picked === undefined ? all : of.batches(picked);
+const run = picked === undefined ? all : of.batches(picked, true);
 const chosen =
   which === "all" || picked !== undefined
     ? run.map((_, i) => i)
