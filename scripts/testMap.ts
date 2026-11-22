@@ -343,6 +343,68 @@ export function mappedFiles(): string[] {
  * sample, some 4 min on one core. */
 export const partedFiles = ["test/metamorphic.test.ts"];
 
+/** `path`'s code as readsOf reads it: its lines but its comments', which
+ * name what they're about. */
+function codeOf(path: string): string {
+  return readFileSync(path, "utf8")
+    .split("\n")
+    .filter((line) => !/^\s*(\/\/|\/?\*)/.test(line))
+    .join("\n");
+}
+
+/** An exported function whose path is a folder of the root's and its own
+ * parameter: `export const knownDir = (list: KnownList): string =>
+ * join(root, "test", "known", list)`, its name, its parameter, the folder's
+ * parts and the path's last argument. */
+const pathFunction = /export const (\w+) = \((\w+)\b[^)]*\)(?:\s*:\s*\w+)?\s*=>\s*join\(\s*root\s*,\s*((?:["'`][^"'`$\n]+["'`]\s*,\s*)+)(\w+)\s*\)/g;
+
+/** An exported function's signature, its name, its first parameter and the
+ * rest, `export function knownText(list: KnownList, dir = knownDir(list)) {`:
+ * a path function's gives its parameter on, its part, read where it's
+ * called, not here. */
+const relayedSignature = /export function (\w+)\((\w+)\b([^{]*)\{/g;
+
+let pathFunctionsFound: Map<string, string> | undefined;
+
+/** The checkout's path functions, each with its folder: one whose path is
+ * the folder and its parameter (`pathFunction`), `knownDir`'s
+ * `test/known`, and one that gives its parameter to another in its
+ * signature, `knownText(list, dir = knownDir(list))`. Each reads the folder
+ * of the part it's called with, `knownText("metamorphic")`
+ * `test/known/metamorphic`, where it's called, not in every module that
+ * imports the one that defines it: an edit of one known list ran every test
+ * that imports test/support.ts, all 402 (#2284). Of the test and script
+ * modules, read once. */
+export function pathFunctions(): Map<string, string> {
+  if (pathFunctionsFound !== undefined) return pathFunctionsFound;
+  const found = new Map<string, string>();
+  const texts = ["test", "scripts"].flatMap((folder) =>
+    readdirSync(join(root, folder))
+      .filter((name) => name.endsWith(".ts"))
+      .map((name) => codeOf(join(root, folder, name))),
+  );
+  for (const text of texts) {
+    for (const [, name, param, parts, last] of text.matchAll(pathFunction)) {
+      if (last === param) found.set(name, join(...[...parts.matchAll(/["'`]([^"'`$\n]+)["'`]/g)].map(([, part]) => part)));
+    }
+  }
+  for (let more = true; more; ) {
+    more = false;
+    for (const text of texts) {
+      for (const [, name, param, signature] of text.matchAll(relayedSignature)) {
+        if (found.has(name)) continue;
+        const given = [...found].find(([callee]) => new RegExp(`\\b${callee}\\(\\s*${param}\\s*\\)`).test(signature));
+        if (given !== undefined) {
+          found.set(name, given[1]);
+          more = true;
+        }
+      }
+    }
+  }
+  pathFunctionsFound = found;
+  return found;
+}
+
 /** What `file`, a test's module, reads of the checkout as text, as far as
  * its source and the source of each module of the checkout's it imports
  * say (what it imports is its code, not text it reads): each path it names, `"scripts/crate-corpus.ts"`, `join(root, "src",
@@ -357,11 +419,11 @@ export function readsOf(file: string, followed = true, seen = new Set<string>())
   const path = resolve(root, file);
   if (seen.has(path) || !existsSync(path) || !statSync(path).isFile()) return reads;
   seen.add(path);
-  // Its code, not its comments, which name what they're about.
-  const text = readFileSync(path, "utf8")
-    .split("\n")
-    .filter((line) => !/^\s*(\/\/|\/?\*)/.test(line))
-    .join("\n");
+  // Its code, not its comments, which name what they're about; a path
+  // function's own path read where it's called, not here (`pathFunctions`).
+  const text = codeOf(path)
+    .replace(pathFunction, (whole, name, param, _parts, last) => (last === param ? `export const ${name} = 0;` : whole))
+    .replace(relayedSignature, (whole, name) => (pathFunctions().has(name) ? `export function ${name}() {` : whole));
   // A folder only where it's the root's for sure, `join(root, "src")`: a
   // literal `"src/"` is as often an app's of a fixture's.
   const there = (candidate: string, folder = true) => {
@@ -400,6 +462,15 @@ export function readsOf(file: string, followed = true, seen = new Set<string>())
   for (const [, glob] of text.matchAll(/\bGlob\(\s*["'`]([\w.*/-]+)["'`]\s*\)/g)) {
     const first = glob.split("/")[0];
     if (glob.includes("/") && !first.includes("*") && tops.has(first)) reads.add(glob);
+  }
+  // A path function called with its part, `knownText("metamorphic")`:
+  // that path, `test/known/metamorphic`; called with what isn't a literal,
+  // `knownText(list)` of a helper or a loop's, its whole folder, as it may
+  // be any of its parts (an unselected reader turns main red after the push).
+  for (const [name, folder] of pathFunctions()) {
+    for (const [, part] of text.matchAll(new RegExp(`(?<!function )\\b${name}\\(\\s*(?:["'\`]([\\w.-]+)["'\`])?`, "g"))) {
+      there(part === undefined ? folder : join(folder, part));
+    }
   }
   // What each module of the checkout's it imports reads.
   if (followed) for (const [, spec] of text.matchAll(/\b(?:from|import)\s*\(?\s*["'](\.{1,2}\/[^"']+)["']/g)) {

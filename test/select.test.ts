@@ -5,16 +5,16 @@
 // and what `check:fast`, `bun run push` and CI's suite run of it.
 
 import { expect, test } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join, relative } from "node:path";
 
 import { jobs, ranKey, totalKey } from "../scripts/checkFast";
 import { onlyPushedFiles, phases as pushPhases } from "../scripts/push";
 import { ownsTimes, slowest, timesLine, whoRuns } from "../scripts/devTimes";
 import { failedIn, misses } from "../scripts/selector-audit";
 import { baselines, budgeted, capOf, type Costs, hunksAtMap, interaction, mapLine, movedUnits, osBranches, outcome, pushSelection, reachOf, type Reach, sanityRecord, select, type Selection, suiteFiles } from "../scripts/select";
-import { readsSources, type TestMap } from "../scripts/testMap";
-import { root } from "./support";
+import { pathFunctions, readsOf, readsSources, type TestMap } from "../scripts/testMap";
+import { fixture, root } from "./support";
 
 const bits = (...functions: number[]) => {
   const bytes = new Uint8Array(1);
@@ -280,6 +280,46 @@ test("the suite's tests are found by what they import and read", () => {
   expect(readers("test/setup.ts")).toEqual(suite);
   // A test file isn't its own reader: it runs as itself.
   expect(readers("test/ci.test.ts").filter((file) => file === "test/ci.test.ts")).toEqual(["test/ci.test.ts"]);
+});
+
+// A known list's edit runs what reads that list: its net, and push.test's
+// check of every list's form. test/support.ts's `knownDir`, `join(root,
+// "test", "known", list)`, is a path function, read where it's called with
+// a list, `knownText("metamorphic")`, not by each module that imports
+// support.ts, which ran all 402 test files on any list's edit (#2284).
+test("a known list's edit runs the tests that read that list, not every importer of its reader", () => {
+  const suite = suiteFiles();
+  const real = reachOf(suite);
+  const readers = (file: string) => select([{ file, hunks: [[1, 1]] }], { files: suite, cases: [], map: "no map", reach: real }).files;
+  const functions = pathFunctions();
+  expect(["knownDir", "knownText", "writeKnown"].map((name) => functions.get(name))).toEqual(["test/known", "test/known", "test/known"]);
+  const metamorphic = readers("test/known/metamorphic/2059.txt");
+  for (const reader of ["test/metamorphic.test.ts", "test/docs-differences.test.ts", "test/push.test.ts"]) expect(metamorphic).toContain(reader);
+  for (const other of ["test/neighbours.test.ts", "test/corpus.test.ts", "test/support.ts"]) expect(metamorphic).not.toContain(other);
+  expect(readers("test/known/neighbours/1038.txt")).toContain("test/neighbours.test.ts");
+  // The matrix's own test isn't the push suite's; what imports its rows is.
+  expect(readers("test/known/iterator-matrix/README.txt")).toContain("test/iterator-rows.test.ts");
+  expect(metamorphic.length).toBeLessThan(suite.length / 4);
+});
+
+// A path function called with what isn't a literal, `knownText(list)` of a
+// helper or a loop's, may be any of its parts: it reads its whole folder, so
+// any list's edit selects it, as under-selecting turns main red after the
+// push (#2284, the lead's soundness ask).
+test("a path function called with what isn't a literal reads its whole folder, so any list's edit selects it", () => {
+  const dir = fixture("path-function-variable");
+  const helper = join(dir, "helper.ts");
+  writeFileSync(helper, `import { knownText, type KnownList } from ${JSON.stringify(join(root, "test", "support"))};
+export const each = (list: KnownList) => knownText(list);
+export const one = () => knownText("neighbours");
+`);
+  const reads = readsOf(relative(root, helper), false);
+  expect([...reads].sort()).toEqual(["test/known", "test/known/neighbours"]);
+  const reach: Reach = new Map([["test/helper.test.ts", { modules: new Set<string>(), reads }]]);
+  for (const list of ["metamorphic", "neighbours", "iterator-matrix"]) {
+    const picked = select([{ file: `test/known/${list}/1022.txt`, hunks: [[1, 1]] }], { files: ["test/helper.test.ts"], cases: [], map: "no map", reach });
+    expect(picked.files).toEqual(["test/helper.test.ts"]);
+  }
 });
 
 // A test that reads the compiler's sources by their folders, as each
