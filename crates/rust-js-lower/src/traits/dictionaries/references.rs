@@ -14,17 +14,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// entry that gives one back, or a trait of another `&mut`, is refused.
     pub(super) fn through_box(&mut self, tr: ty::TraitRef<'tcx>, referent: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
         let tcx = self.tcx;
-        let what = format!(
-            "`{}` of a `{}` in generic code",
-            tcx.def_path_str(tr.def_id),
-            tr.self_ty()
-        );
+        let what = || {
+            format!(
+                "`{}` of a `{}` in generic code",
+                tcx.def_path_str(tr.def_id),
+                tr.self_ty()
+            )
+        };
         let names_mut = |ty: Ty<'tcx>| {
             ty.walk()
                 .any(|part| matches!(part.as_type().map(|t| *t.kind()), Some(ty::Ref(_, _, Mutability::Mut))))
         };
         if tr.args.types().skip(1).any(names_mut) {
-            return Err(self.unsupported(span, &what));
+            return Err(self.unsupported(span, &what()));
         }
         let this = tcx.types.self_param;
         let names_self = |ty: Ty<'tcx>| ty.walk().any(|part| part.as_type() == Some(this));
@@ -38,7 +40,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .skip_normalization()
                 .skip_binder();
             if names_self(sig.output()) {
-                return Err(self.unsupported(span, &what));
+                return Err(self.unsupported(span, &what()));
             }
             let mut given = Vec::new();
             for &input in sig.inputs() {
@@ -46,7 +48,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ if input == this => 1,
                     ty::Ref(_, inner, _) if inner == this => 1,
                     ty::Ref(_, inner, _) if matches!(*inner.kind(), ty::Slice(item) if item == this) => 2,
-                    _ if names_self(input) => return Err(self.unsupported(span, &what)),
+                    _ if names_self(input) => return Err(self.unsupported(span, &what())),
                     _ => 0,
                 });
             }

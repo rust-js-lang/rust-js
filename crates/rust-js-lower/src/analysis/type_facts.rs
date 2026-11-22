@@ -655,10 +655,16 @@ pub(super) fn type_fact_params<'tcx>(
     // Each one's built slots, after its associated types', in the order of
     // their types' names, which its callers read by index (`drop_slot`).
     let mut built_slots: BuiltSlots<'tcx> = IndexMap::default();
+    // A type's text only between two of one item, where the item's path
+    // ties: printing one asks rustc's walk of every crate, `visible_parent_map`
+    // (#2321).
     let mut each_built: Vec<_> = (built.into_iter())
-        .map(|((id, ty), asked)| ((tcx.def_path_hash(id), format!("{ty:?}")), id, ty, asked))
+        .map(|((id, ty), asked)| (tcx.def_path_hash(id), id, ty, asked))
         .collect();
-    each_built.sort_by(|a, b| a.0.cmp(&b.0));
+    each_built.sort_by(|a, b| {
+        a.0.cmp(&b.0)
+            .then_with(|| format!("{:?}", a.2).cmp(&format!("{:?}", b.2)))
+    });
     for (_, id, ty, facts) in each_built {
         let slots = built_slots.entry(id).or_default();
         let index = crate::traits::item_slot(tcx, id, drop_items(tcx, foreign, id).len() + slots.len());

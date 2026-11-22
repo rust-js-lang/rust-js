@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "        false.then(|| {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_given_for_a_bound.rs$"],
   },
+  {
+    name: "through-box-words-made-first",
+    breaks: "a dictionary through a reference makes its refusal words before it's known to refuse, printing the trait's path and its type in every compile that passes one, a walk of every crate's modules, about 37 ms (#2321)",
+    file: "crates/rust-js-lower/src/traits/dictionaries/references.rs",
+    find: "                tr.self_ty()\n            )\n        };\n",
+    replace: "                tr.self_ty()\n            )\n        };\n        let _ = what();\n",
+    tests: ["test/phase-times.test.ts", "-t", "a lowering forces no walk of every crate"],
+  },
 ];

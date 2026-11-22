@@ -34,11 +34,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !bound.args.types().any(|ty| holds_placed(self, ty)) {
             return Ok(None);
         }
-        let what = format!(
-            "`{}` of a `{}` generic code holds in a place of its own (#2255)",
-            tcx.def_path_str(bound.def_id),
-            bound.self_ty()
-        );
+        let what = || {
+            format!(
+                "`{}` of a `{}` generic code holds in a place of its own (#2255)",
+                tcx.def_path_str(bound.def_id),
+                bound.self_ty()
+            )
+        };
         let iterator_trait = crate::recognition::is_iterator_trait(tcx, bound.def_id);
         let there = ty::TypingEnv::new(tcx.param_env(def_id), ty::TypingMode::non_body_analysis());
         let normalized = |env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>| {
@@ -53,7 +55,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let Some(EntryShapes { holder, entry }) = shapes else {
                 match iterator_trait {
                     true => continue,
-                    false => return Err(self.unsupported(span, &what)),
+                    false => return Err(self.unsupported(span, &what())),
                 }
             };
             let name = bindings::trait_method_name(tcx, bound.def_id, tcx.item_name(method).as_str());

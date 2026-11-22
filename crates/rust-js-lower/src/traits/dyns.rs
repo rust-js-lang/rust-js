@@ -879,20 +879,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let key = Expr::str(self.tcx.def_path_str(to.def_id));
             return Ok(Expr::call_helper("$rcUpcast", vec![rc, key, dictionary]));
         }
-        let what = format!("a counted `{source}` made elsewhere as a `{target}`");
+        let what = || format!("a counted `{source}` made elsewhere as a `{target}`");
         let made_here = match (self.counted_rc(source), value.kind) {
             (Some(pointee), js::ExprKind::Object(props, ..)) => Some((pointee, props)),
             _ => None,
         };
         let Some((pointee, mut props)) = made_here else {
-            return Err(self.unsupported(span, &what));
+            return Err(self.unsupported(span, &what()));
         };
         let dictionary = self.dyn_dictionary(target, pointee, span)?;
         let Some(at) = props
             .iter()
             .position(|p| matches!(p, Prop::Field(name, _) if name == js::HELD))
         else {
-            return Err(self.unsupported(span, &what));
+            return Err(self.unsupported(span, &what()));
         };
         props.insert(at + 1, Prop::Field(js::DICTIONARY.into(), dictionary));
         Ok(Expr::object(props))

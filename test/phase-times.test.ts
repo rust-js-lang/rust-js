@@ -80,6 +80,14 @@ test("a lowering forces no walk of every crate's modules, and a timed compile sa
   const warned = join(dir, "warned.rs");
   writeFileSync(warned, `${readFileSync(input, "utf8")}\npub fn unused() {\n    let mut v = vec![1u8];\n    std::mem::take(&mut v);\n}\n`);
   expect(forced(["--without-mutated", "Forgotten", warned], ["-W", "unused_results"])).toEqual([[]]);
+  // Nor where a refusal's words were made before it was known to refuse,
+  // which printed a type or a path in compiles that refuse nothing: a
+  // trait's dictionary through a box, one generic code holds in a place of
+  // its own, a counted `Rc` made a `dyn`, two `Rc`s compared, and an item's
+  // built types ordered by their text where no two of one item tie (#2321).
+  for (const name of ["as_ref_and_borrow_through_a_mut", "copy_mutation", "dyn_any_counted_rc", "rc_eq_by_address_first", "clone_from_generic_std_own"]) {
+    expect([name, forced([join(root, "test/corpus", `${name}.rs`)], quiet)]).toEqual([name, [[]]]);
+  }
   const sources = (at: string): string[] =>
     readdirSync(at).flatMap((name) => (statSync(join(at, name)).isDirectory() ? sources(join(at, name)) : name.endsWith(".rs") ? [join(at, name)] : []));
   const asking = [...sources(join(root, "src")), ...sources(join(root, "crates"))].filter((file) => readFileSync(file, "utf8").includes("visible_parent_map(")).map((file) => file.slice(root.length + 1));

@@ -67,7 +67,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let eq = crate::recognition::std_item(self.tcx, crate::recognition::StdItem::Eq);
         match self.recognition().trait_holds(pointee, eq) {
             Some(true) => {
-                self.check_rc_allocations(&rc.to_string(), pointee, span)?;
+                self.check_rc_allocations(&rc, pointee, span)?;
                 Ok(Some(None))
             }
             Some(false) => Ok(None),
@@ -84,7 +84,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// first, but JS can't tell two apart: an `Rc` whose counts nothing
     /// reads is its value, whose `===` is its allocation's only where it's
     /// an object (#930). Of a caller's type, the `TEq` it gives (#931).
-    pub(crate) fn check_rc_allocations(&self, rc: &str, pointee: Ty<'tcx>, span: Span) -> R<()> {
+    pub(crate) fn check_rc_allocations(&self, rc: &dyn std::fmt::Display, pointee: Ty<'tcx>, span: Span) -> R<()> {
         if self.custom_eq(pointee)
             && !self.eq_is_identity(pointee)
             && !self.krate.counted.counts(self.tcx, pointee)

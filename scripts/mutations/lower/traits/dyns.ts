@@ -652,4 +652,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(tr) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_lent_iterator_steps_it.rs$"],
   },
+  {
+    name: "counted-unsized-words-made-first",
+    breaks: "a counted `Rc` made a `dyn` makes its refusal words before it's known to refuse, printing its types in every compile that makes one, a walk of every crate's modules, about 37 ms (#2321)",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
+    find: "        let what = || format!(\"a counted `{source}` made elsewhere as a `{target}`\");\n",
+    replace: "        let what = || format!(\"a counted `{source}` made elsewhere as a `{target}`\");\n        let _ = what();\n",
+    tests: ["test/phase-times.test.ts", "-t", "a lowering forces no walk of every crate"],
+  },
 ];

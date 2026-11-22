@@ -326,4 +326,12 @@ export const mutations: Mutation[] = [
     replace: "                    Some(_) => mapped,\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_map_gives_a_new_rc_and_drops_the_old\\.rs$"],
   },
+  {
+    name: "rc-eq-type-printed-first",
+    breaks: "`==` of two `Rc`s prints the `Rc`'s type for its refusal's words before it's known to refuse, a walk of every crate's modules in every compile that compares two, about 37 ms (#2321)",
+    file: "crates/rust-js-lower/src/std_types/rc.rs",
+    find: "self.check_rc_allocations(&rc, pointee, span)?;",
+    replace: "self.check_rc_allocations(&rc.to_string(), pointee, span)?;",
+    tests: ["test/phase-times.test.ts", "-t", "a lowering forces no walk of every crate"],
+  },
 ];

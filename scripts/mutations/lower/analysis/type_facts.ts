@@ -597,4 +597,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^size_of_self_in_a_traits_default\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "built-slots-ordered-by-every-text",
+    breaks: "an item's built types are each printed to order them, though their text decides only between two of one item, a walk of every crate's modules in every compile with one, about 37 ms (#2321)",
+    file: "crates/rust-js-lower/src/analysis/type_facts.rs",
+    find: "        .map(|((id, ty), asked)| (tcx.def_path_hash(id), id, ty, asked))\n",
+    replace: "        .map(|((id, ty), asked)| (tcx.def_path_hash(id), id, std::hint::black_box((ty, format!(\"{ty:?}\"))).0, asked))\n",
+    tests: ["test/phase-times.test.ts", "-t", "a lowering forces no walk of every crate"],
+  },
 ];

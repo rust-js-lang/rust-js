@@ -450,7 +450,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(holds) = self.recognition().trait_holds(of, eq)
         {
             if holds {
-                self.check_rc_allocations(&format!("std::rc::Rc<{of}>"), of, span)?;
+                self.check_rc_allocations(&format_args!("std::rc::Rc<{of}>"), of, span)?;
             }
             return Ok(Expr::bool(holds));
         }

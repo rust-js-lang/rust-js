@@ -271,7 +271,7 @@ export const mutations: Mutation[] = [
     name: "rc-eq-fact-unrefused",
     breaks: "a caller gives `TEq` of a fieldless enum with its own `eq`, whose `===` two allocations share, so a generic `==` of `Rc`s of it skips its `eq` (#931)",
     file: "crates/rust-js-lower/src/std_types/number/generic.rs",
-    find: "                self.check_rc_allocations(&format!(\"std::rc::Rc<{of}>\"), of, span)?;\n",
+    find: "                self.check_rc_allocations(&format_args!(\"std::rc::Rc<{of}>\"), of, span)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_eq_generic_of_a_fieldless_enum_refused.rs$"],
   },

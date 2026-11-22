@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "                true => self.call_callee(method, args_of(bound))?,\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code"],
   },
+  {
+    name: "placed-dictionary-words-made-first",
+    breaks: "a placed dictionary's refusal words are made before it's known to refuse, printing the trait's path and its type in every compile that holds an iterator in a place of its own, a walk of every crate's modules, about 37 ms (#2321)",
+    file: "crates/rust-js-lower/src/traits/dictionaries/placed.rs",
+    find: "                bound.self_ty()\n            )\n        };\n",
+    replace: "                bound.self_ty()\n            )\n        };\n        let _ = what();\n",
+    tests: ["test/phase-times.test.ts", "-t", "a lowering forces no walk of every crate"],
+  },
 ];
