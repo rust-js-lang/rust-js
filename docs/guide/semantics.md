@@ -2249,8 +2249,6 @@ React and JSX are [their own pages](README.md#react).
    differ. A NaN's sign and payload aren't kept.
 5. A `HashMap` iterates in insertion order.
 6. A lock locked again by its thread throws, where Rust deadlocks.
-7. A JS getter that calls back into Rust and borrows a held cell isn't
-   seen (for the user's decision, #1212).
 8. A future starts when it's made, and runs though no one awaits it.
 9. There's one thread: a channel's `recv()` that would wait forever is refused
    as the program runs.
@@ -2265,7 +2263,7 @@ React and JSX are [their own pages](README.md#react).
     `&JsError` thrown.
 12. A value with a destructor that JS holds is never dropped, a function
     handed to a binding too, even where JS gives it back to Rust (ADR
-    0873) (for the user's decision, #1212).
+    0873) (ADR 0262's exception, the user's decision, #1212).
 14. A generic iterator's `size_hint()` is its array's or its range's length
     ([0918](../decisions/0918-a-range-given-knows-how-many-it-has-left.md)), a range's
     `step_by`'s of it, a `rev()`'s of either
@@ -2275,8 +2273,10 @@ React and JSX are [their own pages](README.md#react).
     `take(n)`'s or a `filter(f)`'s generic code makes of either, and a std
     adapter its caller makes, which is made knowing its hint where generic
     code asks it, std's ([0170](../decisions/0170-size-hint.md), amended),
-    or `(0, None)`: of a JS iterator JS gives it. An endless `n..`'s is
-    Rust's, `(usize::MAX, None)` (for the user's decision, #1212).
+    or `(0, None)`: of what JS gives it, a JS iterator or an array alike.
+    An endless `n..`'s is
+    Rust's, `(usize::MAX, None)`
+    (ADR 0262's exception, the user's decision, #1212).
 15. Recursion deeper than about 10,000 calls overflows the JS engine's
     stack, where Rust's 8 MB wouldn't: Rust's abort, exit 134 (#1193),
     or, inside `js::catch_stack_overflow`, a panic, the catcher's `Err`
@@ -2287,21 +2287,23 @@ React and JSX are [their own pages](README.md#react).
 17. A `VecDeque`'s `as_slices()` gives all its items first and none second,
     where std's split is its ring buffer's.
 19. `unwrap()` of a throwing JS call's `Result` throws what JS threw, not
-    Rust's ``called `Result::unwrap()` on an `Err` value`` panic (for the
-    user's decision, #1212).
+    Rust's ``called `Result::unwrap()` on an `Err` value`` panic
+    (ADR 0262's exception, the user's decision, #1212).
 21. `Array.isArray(x)` of a revoked `Proxy`, which throws a `TypeError`,
     is taken to do nothing: a test of it that an earlier one decides is
-    left out (ADR 0743) (for the user's decision, #1212).
+    left out (ADR 0743) (ADR 0262's exception, the user's decision, #1212).
 22. A binding's method of a declared JS type, webapi's `Element` say, is
     taken to be its class's: `app.append(stepper(..), ..)` looks
     `append` up before its arguments run, where Rust runs them first, so a
     method that's a getter, or one an argument replaces, is told apart
     from Rust's only there. Of a `js::Unknown`, any value, the arguments
-    run first, as Rust runs them (ADR 0750) (for the user's decision, #1212).
+    run first, as Rust runs them (ADR 0750)
+    (ADR 0262's exception, the user's decision, #1212).
 23. Room asked for items whose size no caller can give, an impl's
     associated type its dictionary doesn't carry (#934), is checked by
     their count alone, as if they had none, where std checks their bytes
-    against `isize::MAX` (ADR 0774, amended) (for the user's decision, #1212).
+    against `isize::MAX` (ADR 0774, amended)
+    (ADR 0262's exception, the user's decision, #1212).
 24. A string's `repeat(n)` past `isize::MAX` bytes, a negative signed
     count's `as usize` too, throws the engine's `RangeError` where std
     panics `capacity overflow`; in Safari and Bun, of text not all ASCII

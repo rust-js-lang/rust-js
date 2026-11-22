@@ -584,6 +584,69 @@ react.dev's TopNav passes the same closure instead.
   first case's, as on wasm32: std's `LocalKey` makes only a best effort
   and leaves the main thread's to the platform, so no program can rely
   on it (#1453) (`semantics.md`, 58).
+- **A JS getter that calls back into Rust and borrows a held cell**,
+  which the guide listed for the user's decision (#1212), is no case now:
+  since ADR 1173 (9776c84a0, #2106, #2109) a property read runs nothing
+  only of a value a builtin made, so a getter of a JS object a caller
+  hands over may call back, and a cell held across its read is counted.
+  Its callback's borrow panics as Rust's does, a `Cell` read after it
+  sees what it set, and a `&mut` held across it sees what the object's
+  setter wrote. The guide's difference 7 is gone (the user's decision,
+  2026-11-22, #1212); `test/boundary-exceptions.test.ts` holds Rust's
+  answers.
+- **A value with a destructor that JS holds is never dropped**, the
+  second case's, a decided exception, the user's decision (2026-11-22,
+  #1212): a function handed to a binding is JS's from then, and carries
+  no drop (ADR 0873); where JS gives it back to Rust and Rust drops it,
+  what it holds isn't dropped, where native Rust, its binding giving back
+  the box it was handed, would drop it. JS's collector runs nothing a drop
+  could be ordered by, and only a binding that gives back what it was
+  handed tells them apart (`semantics.md`, 12)
+  ([0873](0873-a-function-handed-to-js-carries-no-drop.md)).
+- **Generic code's `size_hint()` of what JS gives is `(0, None)`**, the
+  second case's, a decided exception, the user's decision (2026-11-22,
+  #1212): a binding's iterator, a JS iterator or an array alike, has no
+  impl of Rust's to say its bounds, so generic code's hint of it is
+  `(0, None)`; Rust's would be its impl's. A hint is any bounds that
+  hold, and these do; only a program that takes a JS value's hint as
+  exact tells them apart (`semantics.md`, 14)
+  ([0170](0170-size-hint.md), amended).
+- **`unwrap()` of a throwing JS call's `Result` throws what JS threw**,
+  the second case's, a decided exception, the user's decision
+  (2026-11-22, #1212): `js::json::parse(text).unwrap()` of bad text throws
+  JS's `SyntaxError`, where Rust's `unwrap()` panics ``called
+  `Result::unwrap()` on an `Err` value``. Both unwind the call; only the
+  thrown value's class and message differ, which only a JS caller that
+  catches it reads (`semantics.md`, 19)
+  ([0644](0644-a-function-of-a-throwing-calls-result-throws.md)).
+- **`Array.isArray` of a revoked `Proxy` is taken to do nothing**, the
+  second case's, a decided exception, the user's decision (2026-11-22,
+  #1212): a chain of tests leaves out a test an earlier one decides
+  (ADR 0743), so `Array.isArray(value)` is asked once where Rust's
+  `classify` would ask it again; a revoked `Proxy`, which throws a
+  `TypeError` at each ask, is the only value it tells apart
+  (`semantics.md`, 21)
+  ([0743](0743-a-part-of-a-chain-a-test-decides-is-left-out.md)).
+- **A declared JS type's method is its class's**, the second case's, a
+  decided exception, the user's decision (2026-11-22, #1212):
+  `app.append(stepper(app))` of a declared binding type, webapi's
+  `Element` say, looks `append` up before its arguments run, where Rust
+  runs them first; only a getter answering the lookup, or an argument
+  replacing the method, tells them apart, and holding each argument
+  before every DOM call would make most DOM code read unlike what anyone
+  writes. A `js::Unknown`'s method is looked up after its arguments
+  (`semantics.md`, 22)
+  ([0750](0750-a-temporary-is-read-past-a-method-and-into-a-block.md),
+  amended).
+- **Room for items whose size no caller can give is checked by their
+  count alone**, the second case's, a decided exception, the user's
+  decision (2026-11-22, #1212): of an impl's associated type its
+  dictionary doesn't carry (#934), `Vec::<I::Item>::with_capacity(n)`
+  checks `n` as of items of no size, where std checks their bytes against
+  `isize::MAX` and panics `capacity overflow`; past it, growth runs until
+  JS's own allocation fails. Only a program asking room past `isize::MAX`
+  bytes of such items tells them apart (`semantics.md`, 23)
+  ([0774](0774-room-past-isize-max-bytes-panics.md), amended).
 
 ## Amendment: the stack's depth
 
