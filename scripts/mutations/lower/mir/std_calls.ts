@@ -34,16 +34,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "mir-radix-argument-unseen",
-    breaks:
-      "a `{:x}` argument from MIR isn't one `format_args!` shows by its spec",
-    file: "crates/rust-js-mir/src/std_calls.rs",
-    find: "            Std::FmtDisplay | Std::FmtDebug | Std::FmtRadix(_) | Std::FmtExp(_) | Std::FmtPointer | Std::FmtUsize => {\n",
-    replace:
-      "            Std::FmtDisplay | Std::FmtDebug | Std::FmtExp(_) | Std::FmtPointer | Std::FmtUsize => {\n",
-    tests: ["test/corpus.test.ts", "-t", "radix_negative"],
-  },
-  {
     name: "mir-sort-unsorted",
     breaks: "`v.sort()` from MIR leaves the items as they were",
     file: "crates/rust-js-mir/src/std_calls.rs",
@@ -320,15 +310,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
   },
   {
-    name: "mir-user-write-refused",
-    breaks:
-      "`writeln!(out, ..)` to a writer of the crate's own from MIR is refused",
-    file: "crates/rust-js-mir/src/std_calls.rs",
-    find: "            Std::UserWrite => lower(",
-    replace: "            Std::UserWrite if false => lower(",
-    tests: ["test/corpus.test.ts", "-t", "user_fmt_write"],
-  },
-  {
     name: "mir-split-off-unwritten",
     breaks: "MIR's `s.split_off(..n)` leaves `s` as it was",
     file: "crates/rust-js-mir/src/std_calls.rs",
@@ -425,16 +406,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "string_pushes"],
   },
   {
-    name: "mir-format-failing-unmarked",
-    breaks:
-      "`format!` of a `Display` that fails throws a `fmt::Error`, not std's panic",
-    file: "crates/rust-js-mir/src/std_calls.rs",
-    find: "                    if fails {\n                        return Ok(Value::Fmt(Std::FmtNew, output, joined));\n",
-    replace:
-      "                    if false && fails {\n                        return Ok(Value::Fmt(Std::FmtNew, output, joined));\n",
-    tests: ["test/corpus.test.ts", "-t", "fmt_error_format"],
-  },
-  {
     name: "mir-ptr-eq-refused",
     breaks: "MIR's `ptr::eq` of JS objects is refused",
     file: "crates/rust-js-mir/src/std_calls.rs",
@@ -442,25 +413,6 @@ export const mutations: Mutation[] = [
     replace:
       '                    _ => return Err(this.unsupported(span, if a.reads_same() && b.reads_same() { "ptr::eq" } else { "ptr::eq of these" })),\n',
     tests: ["test/lowering-bindings.test.ts", "-t", "ptr::eq of JS objects"],
-  },
-  {
-    name: "format-arguments-in-place",
-    breaks:
-      "a format string's argument that does something is evaluated where the template formats it, after a `Debug` of an earlier one that prints",
-    file: "crates/rust-js-mir/src/std_calls.rs",
-    find: "                    if this.formats_out_of_order(&items, &template, fails || prints, span)? {\n",
-    replace:
-      "                    if false && this.formats_out_of_order(&items, &template, fails || prints, span)? {\n",
-    tests: ["test/corpus.test.ts", "-t", "^format_arguments_first.rs$"],
-  },
-  {
-    name: "own-write-all-unwrapped",
-    breaks:
-      "std's `write_all` of the crate's writer that fails throws out of where its result is a value",
-    file: "crates/rust-js-mir/src/std_calls.rs",
-    find: "                    true => this.fmt_try(vec![StmtKind::Return(Some(call)).at(js::Span::NONE)]),\n",
-    replace: "                    true => call,\n",
-    tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
   {
     name: "extend-from-within-aliased",
@@ -499,16 +451,6 @@ export const mutations: Mutation[] = [
     replace:
       "                let pretty = rust_js_lower::display::Pretty::Always;\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_to_held_formatter.rs$"],
-  },
-  {
-    name: "fmt-arg-through-refs",
-    breaks:
-      "a `&mut` or a `Box` shown is shown as itself, not what it points at, so `{:>6}` of a `Box<dyn Display>` pads its pointer's text, and a `&mut` is a handle read as one",
-    file: "crates/rust-js-mir/src/std_calls.rs",
-    find: "                    _ => this.shown_through(value, ty, known),\n",
-    replace: "                    _ => (value, ty),\n",
-    tests: ["test/corpus.test.ts", "-t", "^(formatted_through_a_box_and_an_impl_display|boxed_mut_ref_shown).rs$"],
-    snapshots: true,
   },
   {
     name: "ptr-eq-of-handles-identity",
@@ -630,23 +572,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_mut_lent_by_std.rs$"],
   },
   {
-    name: "fmt-as-str-of-formatted",
-    breaks:
-      "`as_str()` of arguments made with a value to format is `Some` of their text, so `format_args!(\"{count} items\").as_str()` is `Some(\"3 items\")` where native Rust's is `None`, and anyhow's `format_err` takes the literal's way (#1091)",
-    file: "crates/rust-js-mir/src/std_calls.rs",
-    find: "                Some((false, _)) => lower(|_, _, _, _| Ok(Value::Expr(Expr::js_undefined()))),\n",
-    replace: "                Some((false, _)) => lower(|_, _, values, _| Ok(values.next().expect(\"the arguments\"))),\n",
-    tests: ["test/corpus.test.ts", "-t", "^fmt_arguments_as_str.rs$"],
-  },
-  {
-    name: "fmt-as-str-of-elsewhere-taken",
-    breaks: "`as_str()` of arguments made in another function, whose maker nothing here says, is `Some` of their text, `None` or not (#1091)",
-    file: "crates/rust-js-mir/src/std_calls.rs",
-    find: "            Std::FmtAsStr => match this.arguments_made(_state.body, _state.at) {\n",
-    replace: "            Std::FmtAsStr => match this.arguments_made(_state.body, _state.at).or(Some((true, rustc_middle::mir::RETURN_PLACE))) {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "as_str\\(\\) of arguments made elsewhere"],
-  },
-  {
     name: "lent-iterator-place-made-a-js-iterator",
     breaks:
       "a `&mut` to a `Range` that's a `Vec`'s item, `&mut items[1]`, is a new JS iterator of it, `Iterator.from($index(items, 1))`, which `r.next()` steps apart from the item (#638)",
@@ -750,15 +675,6 @@ export const mutations: Mutation[] = [
     find: "                        ty::Closure(id, _) => !this.krate.never_unwinding.contains(&id),\n",
     replace: "                        ty::Closure(..) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^edits_that_panic_keep_what_std_keeps.rs$"],
-  },
-  {
-    name: "placeholder-dyn-debug-made-a-pair",
-    breaks: "`{:#?}` of `&x as &dyn Debug`, shown where it's made, makes the pair and shows it through its `impl` (#1335)",
-    file: "crates/rust-js-mir/src/std_calls.rs",
-    find: "                        Value::DynDebug(from, _, value) if known == Std::FmtDebug => {\n",
-    replace: "                        Value::DynDebug(from, _, value) if false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(dyn_debug_shown_where_rust_calls_fmt|pretty_debug)\\.rs$"],
-    snapshots: true,
   },
   {
     name: "splice-own-into-iter-put-eagerly",

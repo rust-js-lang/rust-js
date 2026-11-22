@@ -72,7 +72,7 @@ test("a builder is streamed where the sink fact says, and the fact is `prints.rs
 test("an Arguments' text or function is `mir::arguments_use`'s answer alone", () => {
   const lower = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"));
   const asking = lower.filter((file) => /\barguments_use\(|\bholds_text\(/.test(read(file)));
-  expect(asking).toEqual(["crates/rust-js-lower/src/analysis/mir_reads/arguments_use.rs", "crates/rust-js-mir/src/given_arguments.rs", "crates/rust-js-mir/src/std_calls/written_into.rs", "crates/rust-js-mir/src/std_calls.rs"]);
+  expect(asking).toEqual(["crates/rust-js-lower/src/analysis/mir_reads/arguments_use.rs", "crates/rust-js-mir/src/given_arguments.rs", "crates/rust-js-mir/src/std_calls/fmt_calls.rs", "crates/rust-js-mir/src/std_calls/written_into.rs"]);
   expect(read("crates/rust-js-mir/src/dispatch.rs")).toContain("self.makes_arguments_given_on(state, known, destination)");
 });
 
