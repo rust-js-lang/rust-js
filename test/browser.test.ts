@@ -1,8 +1,8 @@
 import { beforeAll, expect, test } from "bun:test";
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { stripVTControlCharacters } from "node:util";
-import { root, target, run, buildCompiler, buildReact, compiler } from "./support";
+import { root, target, run, buildCompiler, buildReact, compiler, fixture } from "./support";
 import { counts } from "./rust-js-tests";
 import { underLoad } from "../scripts/timing";
 
@@ -121,4 +121,36 @@ test("in real browsers, with Vitest's browser mode", () => {
   // Files for another runner are refused, saying which they're for.
   const other = inBrowsers("vitest", [manifest("browser-tests", "counter")]);
   expect(other.output).toContain('its tests are for node: Vitest runs those of `[package.metadata.rust-js.test] runner = "vitest"`');
+}, underLoad(120_000));
+
+// Vite's dependency cache is keyed by the lockfile and the config, not by
+// what a package holds: a bundle of `@rust-js/std` made once was served
+// after `bun run std` changed its exports, "does not provide an export
+// named `$stringPanic`" (#2300). It's made where the link resolves into
+// node_modules, as it does where its realpath isn't found while std/ is
+// rewritten; `preserveSymlinks` resolves it so every time. The workspace's
+// own packages are never pre-bundled, so each run reads them as they are.
+test("Vitest's browser mode never pre-bundles the workspace's packages", () => {
+  const dir = fixture("vitest-workspace-packages");
+  const cacheDir = join(dir, "vite");
+  writeFileSync(join(dir, "vitest.config.ts"), `import { mergeConfig } from "vitest/config";
+import base from ${JSON.stringify(join(root, "browser/vitest.config.ts"))};
+export default mergeConfig(base, { resolve: { preserveSymlinks: true }, cacheDir: ${JSON.stringify(cacheDir)} });
+`);
+  const { JEST_WORKER_ID: _, ...env } = process.env;
+  const p = Bun.spawnSync(["bunx", "--bun", "vitest", "run", "-c", join(dir, "vitest.config.ts")], {
+    cwd: root,
+    env: { ...env, RUST_JS_TESTS: manifest("vitest-tests", "counter") },
+    stderr: "pipe",
+  });
+  const output = stripVTControlCharacters(p.stdout.toString() + p.stderr.toString());
+  expect([p.exitCode, output.match(/Tests\s+(\d+) passed/)?.[1]], output).toEqual([0, "3"]);
+  const caches = join(cacheDir, "vitest");
+  const metadata = readdirSync(caches).map((hash) => join(caches, hash, "deps/_metadata.json")).filter(existsSync);
+  expect(metadata.length).toBeGreaterThan(0);
+  for (const file of metadata) {
+    const optimized = Object.keys(JSON.parse(readFileSync(file, "utf8")).optimized);
+    expect(optimized.filter((name) => name.startsWith("@rust-js/")), file).toEqual([]);
+    expect(optimized).toContain("vitest");
+  }
 }, underLoad(120_000));

@@ -102,3 +102,26 @@ so it passes `--cfg browser` too.
 - Rust tests still create input with DOM calls (`click()`, `dispatchEvent`),
   not trusted input: that would need async tests. Playwright's and Vitest's
   own tests can use trusted input next to them.
+
+## Amendment: Vitest never pre-bundles the workspace's packages (#2300, 2026-11-22)
+
+After `bun run std` added `$stringPanic`, a local run of the Vitest tests
+failed, "does not provide an export named `$stringPanic`", until
+`node_modules/.vite/vitest` was removed. Vite pre-bundles a bare import
+whose resolved path is in node_modules, and serves that bundle on later
+runs while its cache key holds: the lockfile and the config, never what the
+package holds. `@rust-js/std` is a workspace link, `../../std`, which
+resolves outside node_modules, so it's served as source, but where its
+realpath isn't found, as while std/ is rewritten, it resolves inside, is
+pre-bundled once, and that bundle stays. CI starts fresh and never saw it.
+
+**browser/vitest.config.ts excludes the workspace's own packages from
+pre-bundling** (`optimizeDeps.exclude`), read from the root's
+`workspace:` dependencies, so every run reads them as they are; the
+change of config also drops a cache that holds one. Held by
+`test/browser.test.ts`, "Vitest's browser mode never pre-bundles the
+workspace's packages", which resolves the link inside node_modules every
+time (`preserveSymlinks`) and checks the cache holds no `@rust-js/*`: it
+fails without the exclusion, `@rust-js/std` pre-bundled. A mutation of the
+config can't run there: the source mutations' workspace has no Vitest of
+its own to resolve, nor serves test files outside it.

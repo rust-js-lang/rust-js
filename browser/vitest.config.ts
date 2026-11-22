@@ -41,8 +41,20 @@ const port = await new Promise<number>((done, failed) => {
   });
 });
 
+// The workspace's own packages, `@rust-js/std` among them, as their source,
+// never pre-bundled into Vite's dependency cache: that cache is keyed by the
+// lockfile and this config, not by what they hold, so a bundle of the
+// runtime made once, where its link resolved into node_modules, is served
+// after `bun run std` changes its exports, "does not provide an export named
+// `$stringPanic`" (#2300). Read from the root's `workspace:` dependencies.
+const { devDependencies = {}, dependencies = {} } = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
+const workspace = Object.entries({ ...dependencies, ...devDependencies })
+  .filter(([, version]) => String(version).startsWith("workspace:"))
+  .map(([name]) => name);
+
 export default defineConfig({
   root,
+  optimizeDeps: { exclude: workspace },
   test: {
     include: files,
     api: { port },
