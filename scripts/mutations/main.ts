@@ -90,6 +90,9 @@ export const mutations: Mutation[] = [
     find: "        let _ = rustc_interface::util::STACK_SIZE.set(STACK);\n",
     replace: "",
     tests: ["test/lowering-functions.test.ts", "-t", "a long function"],
+    // Its 3,000 statements' compile holds 5.4 GB, past a run's usual cap
+    // under a shard's builds: a stopgap until it holds less (#2310).
+    memory: 7,
   },
   {
     name: "stage-kept",

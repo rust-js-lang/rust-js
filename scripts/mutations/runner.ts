@@ -227,11 +227,19 @@ export const mutations: Mutation[] = [
     tests: ["test/mutations.test.ts", "-t", "judges nothing below the disk's floor"],
   },
   {
+    name: "tests-memory-allowance-ignored",
+    breaks: "a mutation's `memory` allowance isn't given to its tests' runs, so main-stack-default's control, whose compile holds 5.4 GB, is stopped under a shard's builds and judges nothing (#2310)",
+    file: "scripts/mutations.ts",
+    find: "export const testsMemory = (memory?: number) => Math.max(4, memoryBudget() / 2, memory ?? 0) * 2 ** 30;\n",
+    replace: "export const testsMemory = (memory?: number) => Math.max(4, memoryBudget() / 2) * 2 ** 30;\n",
+    tests: ["test/mutations.test.ts", "-t", "a failed control leaves its own mutations unjudged"],
+  },
+  {
     name: "control-settings-unset",
     breaks: "the control runs each set of tests without its mutation's `env`, so a test only `METAMORPHIC=all` runs matches nothing and every shard fails (check 44240449175)",
     file: "scripts/mutations.ts",
-    find: "        const { output, exit } = await test(args, run.compiler, run.snapshots, { bail: false, env: { ...run.env, ...(run.part ? { RUST_JS_CASES: run.part } : {}) } });\n",
-    replace: "        const { output, exit } = await test(args, run.compiler, run.snapshots, { bail: false, env: run.part ? { RUST_JS_CASES: run.part } : {} });\n",
+    find: "        const { output, exit } = await test(args, run.compiler, run.snapshots, { bail: false, env: { ...run.env, ...(run.part ? { RUST_JS_CASES: run.part } : {}) }, memory: run.memory });\n",
+    replace: "        const { output, exit } = await test(args, run.compiler, run.snapshots, { bail: false, env: run.part ? { RUST_JS_CASES: run.part } : {}, memory: run.memory });\n",
     tests: ["test/mutations.test.ts", "-t", "the control runs each set of tests with its mutation's settings"],
   },
   {
