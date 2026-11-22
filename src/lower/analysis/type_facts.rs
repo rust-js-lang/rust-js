@@ -1064,6 +1064,15 @@ impl<'tcx> Asking<'tcx> {
             if let Some(of) = args.types().last() {
                 self.ask_of_alias(tcx, foreign, caller, (of, measured(of)), fact);
             }
+            // Of a type built of its slots whose layout rustc can't say
+            // here, `size_of::<Self>()` of an `impl<T> for Wrap<T>` over
+            // `[T; 2]`: its callers', a built slot, as a collect's (#2287).
+            if let Some(of) = args.types().last()
+                && measured(of)
+                && let Some(each @ Asked::Built(..)) = asked_of(tcx, foreign, typing_env, caller, (of, fact))
+            {
+                self.ask(caller, each);
+            }
             // A flatten's items' constant size, of `I::Item`, a std
             // associated type of its caller's parameter (ADR 0899).
             if fact == TypeFact::ConstSize

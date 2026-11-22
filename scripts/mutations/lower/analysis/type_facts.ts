@@ -563,4 +563,12 @@ export const mutations: Mutation[] = [
     replace: "                    true => facts,\n",
     tests: ["test/crates.test.ts", "-t", "library_trait_method_fact_through_a_dictionary"],
   },
+  {
+    name: "size-of-built-type-unasked",
+    breaks: "`size_of::<Self>()` of an `impl<T> Sz for Wrap<T>` over `[T; 2]`, a type built of its parameters, asks its callers nothing, so it's refused as `size_of` of a type parameter (#2287)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                && let Some(each @ Asked::Built(..)) = asked_of(tcx, foreign, typing_env, caller, (of, fact))\n",
+    replace: "                && let Some(each @ Asked::Built(..)) = None::<Asked<'tcx>>\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_of_a_type_built_of_an_impls_parameters\\.rs$"],
+  },
 ];

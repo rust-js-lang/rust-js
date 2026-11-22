@@ -92,9 +92,13 @@ table](../../ROADMAP.md) lists the larger missing pieces.
   is the engine's
   ([0064](../decisions/0064-numbers.md)).
 - **`size_of`, `align_of`** are wasm32's: a pointer is 4 bytes
-  ([0145](../decisions/0145-type-facts.md)). Generic code asks them of an
-  associated type through its trait's dictionary, a library's trait's too,
-  `size_of::<Self::Item>()` of rand_core's `BlockRngCore`: a library's
+  ([0145](../decisions/0145-type-facts.md)). Generic code asks them of a
+  type built of its type parameters of its callers, as of a parameter:
+  `size_of::<[T; 2]>()`, and `size_of::<Self>()` of an `impl<T> for
+  Wrap<T>` over `[T; 2]`, whose dictionary is made with it (#2287). It
+  asks them of an associated type through its trait's dictionary, a
+  library's trait's too, `size_of::<Self::Item>()` of rand_core's
+  `BlockRngCore`: a library's
   trait carries them where each of its own impls can say its type's, and
   otherwise a consumer's `size_of` of it is refused at compile time. A
   library trait's generic method, `fn sized<X>(&self, x: X)`, is given,
