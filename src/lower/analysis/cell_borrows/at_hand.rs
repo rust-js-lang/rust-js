@@ -32,7 +32,7 @@ mod slots;
 /// crate's own or a library's that its contract says so of
 /// (`ItemFact::AtHand`).
 #[derive(Default)]
-pub(in crate::lower) struct AtHand {
+pub struct AtHand {
     vars: IndexSet<LocalVarId>,
     /// The crate's thread-locals no code but its own reaches every write of
     /// which is at hand, its slots (#2114): what they hold read back is.
@@ -321,7 +321,7 @@ impl AtHand {
 
     /// The crate's thread-locals whose value is at hand, which its contract
     /// says of them (`ItemFact::AtHand`).
-    pub(in crate::lower) fn keys(&self) -> impl Iterator<Item = DefId> + '_ {
+    pub fn keys(&self) -> impl Iterator<Item = DefId> + '_ {
         self.keys.iter().copied()
     }
 

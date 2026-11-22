@@ -14,12 +14,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The model of a `Debug` builder of `kind` written through `sink`,
     /// `$debugStruct(f, "P", options?.alternate)`, which writes its opening,
     /// and the role of the variable that holds it.
-    pub(in crate::lower) fn streamed_builder(
-        &self,
-        kind: DebugBuilder,
-        sink: Expr,
-        type_name: Option<Expr>,
-    ) -> (Expr, Role) {
+    pub fn streamed_builder(&self, kind: DebugBuilder, sink: Expr, type_name: Option<Expr>) -> (Expr, Role) {
         self.builder_of(kind, sink, type_name, &self.writer_pretty())
     }
 
@@ -51,7 +46,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// made only where the step is taken, as std's `field_with` makes it, or
     /// `finish`.
     #[allow(clippy::type_complexity)]
-    pub(in crate::lower) fn streamed_step(
+    pub fn streamed_step(
         &mut self,
         kind: DebugBuilder,
         builder: &js::Name,
@@ -102,7 +97,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Debug`, `fieldWith("x", x, (g, x) => ..)`, `entriesWith(items, (g,
     /// entry) => ..)`, so each piece is a call of that writer's (#1652).
     #[allow(clippy::type_complexity)]
-    pub(in crate::lower) fn streamed_step_written(
+    pub fn streamed_step_written(
         &mut self,
         kind: DebugBuilder,
         builder: &js::Name,
@@ -166,7 +161,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it's shown, as std's `debug_struct_field2_finish` writes it, so what
     /// a field wrote before a panic stopped it stays in the line (#1533,
     /// #1530). `None` of another write.
-    pub(in crate::lower) fn streamed_derived(
+    pub fn streamed_derived(
         &mut self,
         operation: WriteCall,
         sink: &js::Name,

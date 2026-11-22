@@ -17,7 +17,7 @@ use crate::lower::{Body, FnCx, R};
 use rust_js_program::js::{self, Expr, Stmt};
 
 /// MIR's lowering, as the base asks it.
-pub(in crate::lower) trait MirHooks {
+pub trait MirHooks {
     /// A trait method's default body's parameters, its MIR lowered in
     /// `cx` (`FnCx::mir_signature`): what `traits` writes a default's and
     /// an impl's call of it with, the parameters MIR's lowering binds.

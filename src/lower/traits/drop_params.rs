@@ -226,7 +226,7 @@ pub(in crate::lower) fn slot_index<'tcx>(
 /// crate's analysis's or a library's manifest's. Every caller gives it, as
 /// the collect's `Vec` grows by its size wherever it's called (#796).
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(in crate::lower) struct BuiltSlot<'tcx> {
+pub struct BuiltSlot<'tcx> {
     pub(in crate::lower) ty: Ty<'tcx>,
 }
 

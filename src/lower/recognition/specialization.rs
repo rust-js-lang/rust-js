@@ -64,7 +64,7 @@ fn specializing_impls(tcx: TyCtxt<'_>, trait_id: DefId, impl_id: DefId) -> Vec<D
 
 /// `callee`, a trait's method, called with `args` in `typing_env`, where
 /// rustc resolves it to no one impl: a `FactSpecialization`, or none.
-pub(crate) fn fact_specialization<'tcx>(
+pub fn fact_specialization<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     callee: DefId,
@@ -950,7 +950,7 @@ impl<'tcx> Recognition<'_, 'tcx> {
     /// one holding a type parameter too, `slice::IterMut<'_, T>`'s
     /// `TrustedRandomAccess`, which holds of any `T`. `None` where only a
     /// caller can say (ADR 0975).
-    pub(crate) fn trait_holds(&self, ty: Ty<'tcx>, trait_id: DefId) -> Option<bool> {
+    pub fn trait_holds(&self, ty: Ty<'tcx>, trait_id: DefId) -> Option<bool> {
         trait_holds_in(self.tcx, self.typing_env, ty, trait_id)
     }
 
@@ -959,7 +959,7 @@ impl<'tcx> Recognition<'_, 'tcx> {
     /// `DoubleEndedIterator` where `I` is bound by `Iterator` alone may
     /// not, whatever its callers give, so nothing it's given to uses it
     /// (#1240).
-    pub(crate) fn may_hold_by_bounds(&self, ty: Ty<'tcx>, trait_id: DefId) -> bool {
+    pub fn may_hold_by_bounds(&self, ty: Ty<'tcx>, trait_id: DefId) -> bool {
         use rustc_trait_selection::infer::TyCtxtInferExt;
         use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt;
         let infcx = self.tcx.infer_ctxt().build(ty::TypingMode::PostAnalysis);

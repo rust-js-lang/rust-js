@@ -19,7 +19,7 @@ use rustc_span::Span;
 
 /// A piece of a `format_args!` template.
 #[derive(Clone)]
-pub(super) enum Piece {
+pub enum Piece {
     Text(String),
     /// A placeholder: which of the arguments goes there, and its options.
     Argument(usize, Spec),
@@ -33,7 +33,7 @@ pub(super) enum Piece {
 /// a placeholder across pieces, `concat!("{", "}")`, is only one of the
 /// string they make, and a value rustc writes in the template, a literal's
 /// or a nested `format_args!`'s, is in none.
-pub(super) fn written_pieces(tcx: TyCtxt<'_>, span: Span, template: Vec<Piece>) -> Vec<(Vec<Piece>, bool)> {
+pub fn written_pieces(tcx: TyCtxt<'_>, span: Span, template: Vec<Piece>) -> Vec<(Vec<Piece>, bool)> {
     let written = super::literals::format_string(tcx, span).unwrap_or_default();
     let segments: Option<Vec<Vec<Segment>>> = written.iter().map(|piece| segments(&piece.text)).collect();
     if written.len() > 1
@@ -58,7 +58,7 @@ pub(super) fn written_pieces(tcx: TyCtxt<'_>, span: Span, template: Vec<Piece>) 
 /// of one the call gives, its code; `None` of one it captures, `{name}`.
 /// `None` where they aren't `template`'s: an argument rustc wrote in it, a
 /// literal's, or `{:.*}`'s two (ADR 0641, amended).
-pub(super) fn placeholder_arguments(tcx: TyCtxt<'_>, span: Span, template: &[Piece]) -> Option<Vec<Option<Span>>> {
+pub fn placeholder_arguments(tcx: TyCtxt<'_>, span: Span, template: &[Piece]) -> Option<Vec<Option<Span>>> {
     let text: String = (super::literals::format_string(tcx, span)?.iter())
         .map(|piece| piece.text.as_str())
         .collect();
@@ -167,7 +167,7 @@ fn split(template: Vec<Piece>, written: &[Vec<Segment>]) -> Option<Vec<Vec<Piece
 /// `fmt::Arguments`): literal pieces prefixed by their length, and a byte
 /// with the top two bits set for each placeholder, which names an argument by
 /// its place in the array of them. `None` if it isn't one.
-pub(super) fn decode_template(template: &[u8]) -> Option<Vec<Piece>> {
+pub fn decode_template(template: &[u8]) -> Option<Vec<Piece>> {
     let byte = |i: usize| template.get(i).copied();
     let u16_at = |i: usize| Some(u16::from_le_bytes([byte(i)?, byte(i + 1)?]) as usize);
     let piece = |from: usize, len: usize| {
@@ -234,13 +234,7 @@ pub(super) fn decode_template(template: &[u8]) -> Option<Vec<Piece>> {
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A standard stream's, of its arguments' values: it holds nothing JS
     /// needs, and a write to one is `print!`'s (ADR 0132).
-    pub(in crate::lower) fn stream_values(
-        &mut self,
-        op: StreamOp,
-        values: Vec<Expr>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> Expr {
+    pub fn stream_values(&mut self, op: StreamOp, values: Vec<Expr>, span: Span, out: &mut Vec<Stmt>) -> Expr {
         let mut values = values.into_iter();
         if op != StreamOp::Open
             && let Some(on) = values.next()
@@ -275,7 +269,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// writes, or `to_string()`'s string of an `of` (ADR 0364). std's
     /// `to_string()` of an `Arguments` is `fmt::format`'s, and panics as it
     /// does (#1565).
-    pub(in crate::lower) fn failing_values(
+    pub fn failing_values(
         &mut self,
         known: Std,
         of: Option<rustc_middle::ty::Ty<'tcx>>,

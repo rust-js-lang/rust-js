@@ -9,7 +9,7 @@ use rustc_span::{ErrorGuaranteed, Span};
 
 /// What's refused.
 #[derive(Clone, Copy)]
-pub(crate) enum Refused<'a, 'tcx> {
+pub enum Refused<'a, 'tcx> {
     /// A feature, as its words say: "a `&mut` to a union's field".
     Feature(&'a str),
     /// A call of a function: "calling `std::env::args`".
@@ -28,13 +28,13 @@ pub(crate) enum Refused<'a, 'tcx> {
 /// Why lowering stopped, a value the pipeline reads (ADR 1148, amended):
 /// an error emitted, which rustc counts. Made here alone.
 #[derive(Clone, Copy, Debug)]
-pub(crate) enum Refusal {
+pub enum Refusal {
     Emitted(ErrorGuaranteed),
 }
 
 /// The error `message` at `span`, emitted, of what isn't a refusal of a
 /// feature, `refuse`'s: a binding used as it can't be, a component's JSX.
-pub(crate) fn error(tcx: TyCtxt<'_>, span: Span, message: impl Into<String>) -> Refusal {
+pub fn error(tcx: TyCtxt<'_>, span: Span, message: impl Into<String>) -> Refusal {
     Refusal::Emitted(tcx.dcx().span_err(span, message.into()))
 }
 
@@ -46,7 +46,7 @@ pub(crate) fn emitted(error: ErrorGuaranteed) -> Refusal {
 
 /// The error that `refused` isn't supported, in its `words`: of
 /// addressable memory, with why.
-pub(crate) fn refuse<'tcx>(tcx: TyCtxt<'tcx>, span: Span, refused: Refused<'_, 'tcx>) -> Refusal {
+pub fn refuse<'tcx>(tcx: TyCtxt<'tcx>, span: Span, refused: Refused<'_, 'tcx>) -> Refusal {
     let mut error = tcx.dcx().struct_span_err(span, words(tcx, refused));
     if of_memory(tcx, refused) {
         error = error.with_note(MEMORY);
@@ -112,7 +112,7 @@ fn of_memory<'tcx>(tcx: TyCtxt<'tcx>, refused: Refused<'_, 'tcx>) -> bool {
 /// What a refused call is called: "calling `std::env::args`", and where
 /// an open issue covers it, that issue, "calling `std::hint::spin_loop`
 /// (#1285)", as a refusal names what's left to do (guide limitations.md).
-pub(crate) fn calling(tcx: TyCtxt<'_>, id: DefId) -> String {
+pub fn calling(tcx: TyCtxt<'_>, id: DefId) -> String {
     let issue = open_call(tcx, id).map(issue_of);
     format!("calling `{}`{}", tcx.def_path_str(id), issue.unwrap_or_default())
 }

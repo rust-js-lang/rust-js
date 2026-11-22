@@ -74,12 +74,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `through_calls`, a call of a function that returns its parameter
     /// (`returns_its_parameter`) given `l` there. `None` where any write is
     /// something else, or where `local` is written more than once.
-    pub(in crate::lower) fn reborrowed_from(
-        &self,
-        body: &mir::Body<'tcx>,
-        mut local: Local,
-        through_calls: bool,
-    ) -> Option<Local> {
+    pub fn reborrowed_from(&self, body: &mir::Body<'tcx>, mut local: Local, through_calls: bool) -> Option<Local> {
         for _ in 0..STEPS {
             if (1..=body.arg_count).contains(&local.as_usize()) {
                 return Some(local);

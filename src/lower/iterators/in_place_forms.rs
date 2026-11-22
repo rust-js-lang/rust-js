@@ -15,7 +15,7 @@ use crate::lower::recognition::{OwnStep, Reach};
 /// A form a std adapter, or a consumer of one, is made as in place, by
 /// the runtime's helpers or JS's own iterator methods.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(in crate::lower) enum InPlaceForm {
+pub enum InPlaceForm {
     /// `src.map(f)`, JS's own.
     StepsMap,
     /// `$mapEnds(src, f)`, of a source stepped from its back too.
@@ -376,7 +376,7 @@ pub(in crate::lower) fn table() -> String {
 /// its `next` is asked, a loop's: of an enumeration, JS's own map, which
 /// stands for `Enumerate` wherever nothing asks its `nth` (#2238); of
 /// another, itself.
-pub(in crate::lower) fn stepped_by_next_alone(form: InPlaceForm) -> InPlaceForm {
+pub fn stepped_by_next_alone(form: InPlaceForm) -> InPlaceForm {
     match form {
         InPlaceForm::Enumerate => InPlaceForm::StepsEnumerate,
         form => form,
@@ -390,7 +390,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// std's `Enumerate::nth` asks its source's whatever it knows of its
     /// back or its length (#2238). Of the source's type alone, each value
     /// of it alike: no fact chooses it.
-    pub(in crate::lower) fn enumeration_form(&self, source: Ty<'tcx>) -> InPlaceForm {
+    pub fn enumeration_form(&self, source: Ty<'tcx>) -> InPlaceForm {
         let form = match self.recognition().own_nth_within(source) {
             true => InPlaceForm::Enumerate,
             false => InPlaceForm::StepsEnumerate,
@@ -463,7 +463,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The form a std adapter of type `ty` is made as where it's made
     /// knowing its hint alone (`hint_knowing_of`), a flatten's of `Option`s
     /// told apart from another (`flattened_options`). `None` of another.
-    pub(in crate::lower) fn hint_knowing_form_of(&self, ty: Ty<'tcx>) -> Option<InPlaceForm> {
+    pub fn hint_knowing_form_of(&self, ty: Ty<'tcx>) -> Option<InPlaceForm> {
         let std = match hint_knowing_std(self.tcx, ty)? {
             "Flatten" if self.recognition().flattened_options(ty.peel_refs()).is_some() => "Flatten<Option>",
             "FlatMap" if self.recognition().flattened_options(ty.peel_refs()).is_some() => "FlatMap<Option>",

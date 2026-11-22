@@ -17,7 +17,7 @@ use rustc_span::def_id::DefId;
 /// `RefCell` of a discriminated union (`flattened_state`, ADR 1044): its
 /// object's keys, which tell it from another by the object they're on, so
 /// its `swap` counts no borrow (#687).
-pub(in crate::lower) fn is_flattened_state_field(tcx: TyCtxt<'_>, field: &ty::FieldDef) -> bool {
+pub fn is_flattened_state_field(tcx: TyCtxt<'_>, field: &ty::FieldDef) -> bool {
     is_flatten(tcx, field)
         && flattened_state(tcx, tcx.type_of(field.did).instantiate_identity().skip_normalization()).is_some()
 }
@@ -59,7 +59,7 @@ pub(in crate::lower) fn flattened_state<'tcx>(
 /// `undefined` too, and tells it, `'getter' in node`; one variant at most
 /// has none, `{}`, what the others aren't.
 #[derive(Clone, Debug)]
-pub(in crate::lower) struct Keyed {
+pub struct Keyed {
     /// The key that tells each variant, by its index: the field
     /// `#[rust_js::test]` marks, else its first no other variant has;
     /// `None` of the one without fields.
@@ -176,7 +176,7 @@ pub(in crate::lower) fn untagged_records(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -
 /// What the crate's flattened fields hold that's their parents' own keys,
 /// beside a struct's fields.
 #[derive(Default)]
-pub(in crate::lower) struct Flattened {
+pub struct Flattened {
     /// The enums its classes hold as a flattened state (`flattened_state`),
     /// each its object's own keys (rd380, ADR 1044): a `&mut` to one is a
     /// handle, whose setter writes each key there, wherever it's given,
@@ -215,12 +215,12 @@ impl Flattened {
 
     /// Whether a value of `ty` may be its parent's object, a flattened
     /// struct read whole somewhere (`projected`, #1820).
-    pub(in crate::lower) fn is_projected(&self, ty: Ty<'_>) -> bool {
+    pub fn is_projected(&self, ty: Ty<'_>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if self.projected.contains(&adt.did()))
     }
 
     /// `adt`'s keys, where its values are told by them.
-    pub(in crate::lower) fn keyed(&self, tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> Option<Keyed> {
+    pub fn keyed(&self, tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> Option<Keyed> {
         match self.keyed.contains(&adt.did()) {
             true => keyed_shape(tcx, adt),
             false => None,

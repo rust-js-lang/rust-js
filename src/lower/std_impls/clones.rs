@@ -23,7 +23,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// of them can change in place, like a `Vec`, a cell, or a type in
     /// `mutated` (ADR 0020), or if cloning runs code: a hand-written `clone`,
     /// or a `T`'s, which might be one.
-    pub(in crate::lower) fn needs_clone(&self, ty: Ty<'tcx>) -> bool {
+    pub fn needs_clone(&self, ty: Ty<'tcx>) -> bool {
         self.needs_clone_in(ty, &mut Vec::new())
     }
 
@@ -130,20 +130,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// itself, where its payload's clone is, or as `place == null ? place :
     /// some`, so a clone of what's `null` or a value already is too
     /// (`stored_given`).
-    pub(in crate::lower) fn clone_keeps_none(&self, ty: Ty<'tcx>) -> bool {
+    pub fn clone_keeps_none(&self, ty: Ty<'tcx>) -> bool {
         self.is_lang_adt(ty, LangItem::Option)
     }
 
     /// `Clone::clone` of the `ty` at `place`: the place itself when nothing
     /// could tell a clone from it, and otherwise a copy of the parts that
     /// could, calling each hand-written `clone` on the way.
-    pub(in crate::lower) fn clone_value(
-        &mut self,
-        place: Expr,
-        ty: Ty<'tcx>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
+    pub fn clone_value(&mut self, place: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         // What an `impl Trait` is arrives revealed, as MIR's types are
         // after analysis, a returned struct's or closure's, held or not
         // (`impl_trait_clone_held.rs`). A closure is its JS function, which shares what it captured: a
@@ -339,7 +333,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`copy_clone_runs_code` asks whether those are its clone). Where it
     /// doesn't, a clone made later can't be told from one made sooner: a
     /// `cycle()`'s of an array's items (#1630).
-    pub(in crate::lower) fn clone_shows(&self, ty: Ty<'tcx>) -> bool {
+    pub fn clone_shows(&self, ty: Ty<'tcx>) -> bool {
         self.clone_shows_in(ty, &mut IndexSet::default())
     }
 
@@ -822,7 +816,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A clone function of `ty`, for a helper that clones, or `undefined`
     /// where a clone is the value itself.
-    pub(in crate::lower) fn clone_arg(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn clone_arg(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         match self.needs_clone(ty) {
             true => self.clone_fn("value", ty, span),
             false => Ok(Expr::js_undefined()),
@@ -831,7 +825,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `(base) => <clone of base>`, its parameter a name not spelled yet
     /// (`FnCx::unspelled`, #1681 change 3, M2).
-    pub(in crate::lower) fn clone_fn(&mut self, base: &str, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn clone_fn(&mut self, base: &str, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let name = self.unspelled(base);
         // Its body's own names apart from its parameter's word, so the
         // parameter is spelled `value` where it can be, `const value$1 =

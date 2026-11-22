@@ -8,7 +8,7 @@ use super::*;
 /// `LazyCell`'s, a `Peekable`'s item it peeked at, and a `Result`'s `Ok` or
 /// `Err` payload; and the type fact of its offset there (#1478).
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-pub(crate) enum Lend {
+pub enum Lend {
     OnceCell,
     LazyCell,
     Peekable,
@@ -33,7 +33,7 @@ impl Lend {
 
 /// What `size_of`, `align_of` and `type_name` tell of a type (ADR 0145).
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-pub(crate) enum TypeFact {
+pub enum TypeFact {
     Size,
     Align,
     Name,

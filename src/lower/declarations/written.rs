@@ -146,7 +146,7 @@ fn path() -> [Symbol; 2] {
 /// What `did`'s `#[rust_js::types]` says it is to TypeScript, where it has
 /// one: one it can't read, which its own crate's compile refuses
 /// (`validate_types`), is an error here too, and none.
-pub(in crate::lower) fn written_types(tcx: TyCtxt<'_>, did: DefId) -> Option<Written> {
+pub fn written_types(tcx: TyCtxt<'_>, did: DefId) -> Option<Written> {
     let declared = tcx.get_attrs_by_path(did, &path()).next()?.value_str()?;
     match read(declared.as_str()) {
         Ok(written) => Some(written),

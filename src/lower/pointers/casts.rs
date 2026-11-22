@@ -15,7 +15,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// pointer made a number or one made of a number, isn't JS's: refused.
     /// `None` of a cast of no pointer. What it reads twice is spilled into
     /// `out` first.
-    pub(in crate::lower) fn pointer_cast(
+    pub fn pointer_cast(
         &mut self,
         kind: mir::CastKind,
         value: Expr,
@@ -302,7 +302,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An array's pointer as its first item's, `arr.as_ptr()` or `&arr as
     /// *const T`: `$ptr(arr, 0)`.
-    pub(in crate::lower) fn first_item_pointer(&self, pointer: Expr) -> Expr {
+    pub fn first_item_pointer(&self, pointer: Expr) -> Expr {
         let array = self.pointee_place(pointer);
         Expr::call(Expr::helper("$ptr"), vec![array, Expr::int(0)])
     }

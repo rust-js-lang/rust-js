@@ -15,7 +15,7 @@ use rustc_span::def_id::DefId;
 
 /// What's asked of a `Backtrace`.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum BacktraceOp {
+pub enum BacktraceOp {
     /// `Backtrace::capture()`: disabled, as it is unless the environment asks.
     Capture,
     /// `Backtrace::force_capture()`: JS's stack.

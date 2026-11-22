@@ -16,7 +16,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// known as it runs: a leaf's writes, or a builder's of each part.
     /// `None` of a value whose split isn't followed yet (#1652): a generic
     /// or `dyn` value's, and another std type's.
-    pub(in crate::lower) fn debug_sink_writes(
+    pub fn debug_sink_writes(
         &mut self,
         value: Expr,
         ty: Ty<'tcx>,
@@ -318,10 +318,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A writing function of a value, `(g, value) => { .. }`, its writes
     /// `write` makes of the value, each into `g`, the sink a builder's step
     /// gives it. `None` where `write` has none.
-    pub(in crate::lower) fn writing_fn(
-        &mut self,
-        write: impl FnOnce(&mut Self, Expr) -> R<Option<Vec<SinkWrite>>>,
-    ) -> R<Option<Expr>> {
+    pub fn writing_fn(&mut self, write: impl FnOnce(&mut Self, Expr) -> R<Option<Vec<SinkWrite>>>) -> R<Option<Expr>> {
         let (sink, value) = (self.fresh(Role::F), self.fresh(Role::Value));
         let Some(writes) = write(self, Expr::var(&value))? else {
             return Ok(None);

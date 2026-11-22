@@ -14,7 +14,7 @@ use rustc_span::def_id::DefId;
 /// set, `this.props = props;`. A method's `self` is `this` already, made
 /// so before tidy (`receiver_as_this`). `Err` of a constructor that
 /// returns what's no struct literal.
-pub(in crate::lower) fn as_member(
+pub fn as_member(
     tcx: TyCtxt<'_>,
     def_id: DefId,
     class: &str,
@@ -76,7 +76,7 @@ pub(in crate::lower) fn as_member(
 /// Where `name`, a class's `member`, is in `class`: a prototype's method
 /// that's the function it passes its parameters on to, `forwarding`, that
 /// function where its JS is that call alone (`js::Class::forwarded`, rd715).
-pub(in crate::lower) fn place((member, forwarding): (Member, bool), class: &mut js::Class, name: &str) {
+pub fn place((member, forwarding): (Member, bool), class: &mut js::Class, name: &str) {
     if forwarding && member == Member::Method {
         class.forwarding.push(name.to_owned());
     }
@@ -106,7 +106,7 @@ fn instance_outside_accessors(class: &str, body: &mut Vec<Stmt>) {
 /// `complexNumber` too, would be `this = ..`. And the paths of `booleans`
 /// through it, `comparator.lessThan()`'s `this.lessThan()`, which tidy
 /// reads `this`'s by.
-pub(in crate::lower) fn receiver_as_this(
+pub fn receiver_as_this(
     tcx: TyCtxt<'_>,
     function: DefId,
     params: &mut Vec<Pattern>,

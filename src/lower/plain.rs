@@ -101,7 +101,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, a `from`, as a `to` of the same bytes: itself, of a type
     /// that differs only in its lifetimes, else of plain data, its parts;
     /// bytes as text, `Box<[u8]>` as `Box<str>`, decoded (ADR 0562).
-    pub(in crate::lower) fn transmute(
+    pub fn transmute(
         &mut self,
         value: Expr,
         (from, to): (Ty<'tcx>, Ty<'tcx>),

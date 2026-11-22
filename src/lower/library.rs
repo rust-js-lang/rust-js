@@ -117,7 +117,7 @@ fn crate_name(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> String {
 /// generic code may ask a consumer that instantiates it for an impl of a
 /// type of its own it can't name, base64's `Utf8SingleCodeUnitWriter`'s
 /// `io::Write`, by a bound (ADR 0100).
-pub(super) fn reachable(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub fn reachable(tcx: TyCtxt<'_>, id: DefId) -> bool {
     // A std body compiled into `@rust-js/std` is what its consumers call.
     if super::recognition::is_compiled_std(tcx, id) {
         return true;
@@ -150,114 +150,114 @@ pub(in crate::lower) fn seen_outside(tcx: TyCtxt<'_>, library: bool, id: DefId) 
 /// from its types: the drops it takes (ADR 0098), whether it may fail
 /// (ADR 0187), the drops it takes none of (ADR 0190), and what it asks of
 /// its type parameters (ADR 0145).
-pub(super) struct Contracts<'a, 'tcx> {
-    pub(super) drop_params: &'a IndexMap<DefId, Vec<u32>>,
+pub struct Contracts<'a, 'tcx> {
+    pub drop_params: &'a IndexMap<DefId, Vec<u32>>,
     /// Each function's elided copies, its own and its callees' (#2112's
     /// change D): `elided_through_calls`'.
-    pub(super) elided: &'a IndexMap<DefId, std::collections::BTreeSet<RcShape>>,
+    pub elided: &'a IndexMap<DefId, std::collections::BTreeSet<RcShape>>,
     /// The type parameters each function shows pretty or in hex (#1331).
-    pub(super) shown_params: &'a IndexMap<DefId, IndexMap<u32, super::analysis::Shown>>,
+    pub shown_params: &'a IndexMap<DefId, IndexMap<u32, super::analysis::Shown>>,
     /// What it, and the libraries it uses, show of a `dyn Debug` they're
     /// given (#1335).
-    pub(super) dyn_debug_shown: super::analysis::Shown,
+    pub dyn_debug_shown: super::analysis::Shown,
     /// The type parameters each function writes into a writer through
     /// their formatting dictionaries, and the types whose dictionaries carry
     /// `fmtInto` (#1652).
-    pub(super) written: &'a super::analysis::WrittenParams<'tcx>,
+    pub written: &'a super::analysis::WrittenParams<'tcx>,
     /// Whether it makes a `dyn` of a formatting trait (#1652).
-    pub(super) makes_fmt_dyns: bool,
+    pub makes_fmt_dyns: bool,
     /// The type parameters whose `Copy` bound takes a copy function (ADRs
     /// 0289, 0914), whose `Clone` bound takes its dictionary (ADR 0914,
     /// amended), and which are stepped by a trait (ADR 0548).
-    pub(super) given: super::traits::Given<'a>,
-    pub(super) failing: &'a IndexSet<DefId>,
+    pub given: super::traits::Given<'a>,
+    pub failing: &'a IndexSet<DefId>,
     /// Whether any write of its may fail, of a function whatever it
     /// returns, a writer's `write` too (#1072).
-    pub(super) writes_may_fail: bool,
-    pub(super) no_drops: &'a IndexMap<DefId, BTreeSet<u32>>,
-    pub(super) type_facts: &'a IndexMap<DefId, Vec<(u32, super::recognition::TypeFact)>>,
+    pub writes_may_fail: bool,
+    pub no_drops: &'a IndexMap<DefId, BTreeSet<u32>>,
+    pub type_facts: &'a IndexMap<DefId, Vec<(u32, super::recognition::TypeFact)>>,
     /// What its consumers' impls of its traits carry of a std supertrait's
     /// associated types (#990).
-    pub(super) carried_super: &'a super::analysis::type_facts::CarriedSuper,
+    pub carried_super: &'a super::analysis::type_facts::CarriedSuper,
     /// The types built of each one's slots it asks the layout of, which
     /// its manifest says by a template of them (#737).
-    pub(super) built_slots: (&'a Foreign<'a, 'tcx>, &'a super::traits::BuiltSlots<'tcx>),
+    pub built_slots: (&'a Foreign<'a, 'tcx>, &'a super::traits::BuiltSlots<'tcx>),
     /// Those that take their caller's location (ADR 0427).
-    pub(super) caller_locations: &'a IndexSet<DefId>,
+    pub caller_locations: &'a IndexSet<DefId>,
     /// Those that read `js::arguments()` (rd332), and the parameters'
     /// tuples of its `function::with_this` functions that do (#553).
-    pub(super) reads_arguments: &'a super::analysis::arguments::ReadsArguments<'tcx>,
+    pub reads_arguments: &'a super::analysis::arguments::ReadsArguments<'tcx>,
     /// Whether it keeps a `Vec`'s capacity, which its consumers then do
     /// too, as what they give it may be asked (ADR 0419).
-    pub(super) keeps_capacity: bool,
+    pub keeps_capacity: bool,
     /// Whether its writers take their `Formatter`'s options (ADR 0137).
-    pub(super) writers_take_options: bool,
+    pub writers_take_options: bool,
     /// Whether an integer's `{:?}` its writers write may be hex (ADR 0559).
-    pub(super) debug_hex: bool,
+    pub debug_hex: bool,
     /// Its functions that read a `Formatter`'s options (#1026).
-    pub(super) reads_formatter_options: &'a IndexSet<DefId>,
+    pub reads_formatter_options: &'a IndexSet<DefId>,
     /// Its functions whose JS may merge what Rust keeps apart, each that
     /// calls one among them (`merging`, #1052).
-    pub(super) merges_identities: &'a IndexSet<DefId>,
+    pub merges_identities: &'a IndexSet<DefId>,
     /// The npm packages its JS imports through bindings, its libraries' too
     /// (#1799).
-    pub(super) bound: &'a [rust_js_program::library::Bound],
+    pub bound: &'a [rust_js_program::library::Bound],
     /// Whether it makes a `dyn Any` of what drops (ADR 0691, amended).
-    pub(super) makes_dropping_anys: bool,
+    pub makes_dropping_anys: bool,
     /// Whether it makes a `dyn Error` of what drops (ADR 0462, amended).
-    pub(super) makes_dropping_errors: bool,
+    pub makes_dropping_errors: bool,
     /// Whether it makes a `dyn Fn` of what drops (ADR 0626, amended).
-    pub(super) makes_dropping_fn_dyns: bool,
+    pub makes_dropping_fn_dyns: bool,
     /// Whether it boxes what drops a `dyn Iterator` (ADR 0521, #1420).
-    pub(super) makes_dropping_iterators: bool,
+    pub makes_dropping_iterators: bool,
     /// Whether any of its own values drops (ADR 0451, amended, #1591).
-    pub(super) drops_any: bool,
+    pub drops_any: bool,
     /// What its writers and prints do to a line (#1608).
-    pub(super) prints: &'a super::analysis::prints::Prints,
+    pub prints: &'a super::analysis::prints::Prints,
     /// A program's, `--tested`'s (#597): the trait constants its
     /// dictionaries carry, its generic code's, a library's every one; and its
     /// own traits whose `dyn`s drop nothing, none of a library's.
-    pub(super) program: Option<(&'a IndexSet<DefId>, Vec<DefId>)>,
+    pub program: Option<(&'a IndexSet<DefId>, Vec<DefId>)>,
     /// What the `Rc`s it counts point at (ADR 0852).
-    pub(super) counted: &'a super::analysis::Counted<'tcx>,
+    pub counted: &'a super::analysis::Counted<'tcx>,
     /// What it changes in place, which its JS copies (ADR 0914, amended).
-    pub(super) changed: super::copies::Changed<'a, 'tcx>,
+    pub changed: super::copies::Changed<'a, 'tcx>,
     /// What it does with its `RefCell`s (ADR 0863).
-    pub(super) ref_cells: rust_js_program::library::RefCellFacts,
+    pub ref_cells: rust_js_program::library::RefCellFacts,
     /// What it says of its structs' fields (ADRs 0863, amended, 0906).
-    pub(super) fields: Vec<rust_js_program::library::Field>,
+    pub fields: Vec<rust_js_program::library::Field>,
     /// The thread-locals made where they're first used (ADR 0037, amended).
-    pub(super) lazy_locals: &'a IndexSet<rustc_span::def_id::LocalDefId>,
+    pub lazy_locals: &'a IndexSet<rustc_span::def_id::LocalDefId>,
     /// The thread-locals whose value a builtin made, never replaced
     /// (`AtHand`, #2111).
-    pub(super) at_hand_keys: &'a IndexSet<DefId>,
+    pub at_hand_keys: &'a IndexSet<DefId>,
     /// The exported thread-locals and `static mut`s that are their module's
     /// variables (ADRs 0270, 0096, amended).
-    pub(super) variables: &'a IndexSet<DefId>,
+    pub variables: &'a IndexSet<DefId>,
     /// Its types equal only to themselves (ADR 0864).
-    pub(super) identities: &'a [DefId],
+    pub identities: &'a [DefId],
     /// Its enums told apart by their keys (`bindings::flattened`, ADR 1071).
-    pub(super) keyed: &'a IndexSet<DefId>,
+    pub keyed: &'a IndexSet<DefId>,
     /// Its types whose `==` is their address's, whatever their `Hash` (ADR
     /// 0864, amended).
-    pub(super) eq_by_address: &'a [DefId],
+    pub eq_by_address: &'a [DefId],
     /// Its functions each call of which is what it's given (ADR 0584,
     /// amended).
-    pub(super) gives_argument: &'a [DefId],
+    pub gives_argument: &'a [DefId],
     /// Its untagged enums whose `Display` writes each variant's value as
     /// it is (#557, rd730).
-    pub(super) displays_value: &'a [DefId],
+    pub displays_value: &'a [DefId],
     /// The structs its code makes values of (ADR 1022, amended).
-    pub(super) built: Vec<DefId>,
+    pub built: Vec<DefId>,
     /// The closures it clones, or gives to clone, and whether each is
     /// cloned apart (ADR 0522, amended; #1202).
-    pub(super) cloned_closures: Vec<(DefId, bool)>,
+    pub cloned_closures: Vec<(DefId, bool)>,
     /// What each function's return alone owns of what it's given (ADR
     /// 0317, amended).
-    pub(super) owned_by_return: &'a super::analysis::owned_by_return::OwnedByReturn,
+    pub owned_by_return: &'a super::analysis::owned_by_return::OwnedByReturn,
     /// The own nullable parameters each call gives `null` or a value
     /// (`analysis/nulled_params.rs`, ADR 0861, amended).
-    pub(super) nulled_params: &'a IndexSet<(DefId, usize)>,
+    pub nulled_params: &'a IndexSet<(DefId, usize)>,
 }
 
 /// What `id` asks of each of its type parameters that it asks anything of,
@@ -371,11 +371,7 @@ pub(super) type Exported = IndexSet<(Vec<String>, String)>;
 /// A library's trait method without a default whose entries take its
 /// caller's location, refused: its manifest, of functions, can't say so to
 /// its consumers' calls through them (ADR 0427).
-pub(super) fn refuse_unsaid_locations(
-    tcx: TyCtxt<'_>,
-    caller_locations: &IndexSet<DefId>,
-    fns: &IndexMap<DefId, FnInfo>,
-) {
+pub fn refuse_unsaid_locations(tcx: TyCtxt<'_>, caller_locations: &IndexSet<DefId>, fns: &IndexMap<DefId, FnInfo>) {
     let mut unsaid: Vec<DefId> = (caller_locations.iter())
         .filter(|&&id| tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))
         .filter(|&&id| reachable(tcx, id))
@@ -399,7 +395,7 @@ fn exported_as(name: &rust_js_program::js::Name) -> &str {
     name.word() // word: an item's export name, what its consumers import
 }
 
-pub(super) fn exported_names(modules: &[rust_js_program::program::UnlinkedModule]) -> Exported {
+pub fn exported_names(modules: &[rust_js_program::program::UnlinkedModule]) -> Exported {
     let mut exported = IndexSet::default();
     for module in modules.iter().map(|unlinked| &unlinked.module) {
         let mut export = |name: &str| exported.insert((module.path.clone(), name.to_string()));
@@ -440,7 +436,7 @@ pub(in crate::lower) fn item_key(tcx: TyCtxt<'_>, id: DefId) -> String {
 /// owner, sorted by key (ADR 0906): those `ref_cells` says are quiet (ADR
 /// 0863, amended), and those whose fn pointers may only be Rust functions,
 /// `pointers`' (ADR 0330, amended).
-pub(super) fn fields(
+pub fn fields(
     tcx: TyCtxt<'_>,
     ref_cells: Option<&super::drops::RefCells<'_>>,
     pointers: &super::analysis::FnPointers<'_>,
@@ -580,7 +576,7 @@ pub(super) struct Reached<'tcx> {
     pub(super) uncounted_rcs: Vec<(rustc_middle::ty::Ty<'tcx>, String)>,
 }
 
-pub(super) struct Foreign<'a, 'tcx> {
+pub struct Foreign<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     dependencies: &'a Dependencies,
     /// The libraries' functions the crate compiles itself (ADR 0914), which
@@ -602,7 +598,7 @@ pub(super) struct Foreign<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> Foreign<'a, 'tcx> {
-    pub(super) fn new(
+    pub fn new(
         tcx: TyCtxt<'tcx>,
         dependencies: &'a Dependencies,
         instances: &'a super::instances::Instances,
@@ -622,7 +618,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
 
     /// Itself, of a crate that reads a `Vec`'s capacity, `asks_capacity`
     /// (`keeps_more`, #1180's (5)).
-    pub(super) fn asking_capacity(self, asks_capacity: bool) -> Self {
+    pub fn asking_capacity(self, asks_capacity: bool) -> Self {
         Foreign { asks_capacity, ..self }
     }
 
@@ -647,7 +643,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
 
     /// Whether `id`, a library's function or a closure of one, is compiled
     /// in this crate (ADR 0914).
-    pub(super) fn is_instance(&self, id: DefId) -> bool {
+    pub fn is_instance(&self, id: DefId) -> bool {
         self.instances.contains(self.tcx, id)
     }
 
@@ -694,7 +690,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// is compiled now: the one answer of which items are, never
     /// `id.is_local()` alone, which a library's own compile and its
     /// consumer's answer apart. Any other is std's.
-    pub(in crate::lower) fn compiled_by_rust_js(&self, id: DefId) -> bool {
+    pub fn compiled_by_rust_js(&self, id: DefId) -> bool {
         id.is_local() || self.in_library(id)
     }
 
@@ -783,7 +779,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// amended); by the file of the library's module the Rust names it
     /// through first, where that module re-exports it, as its contract says
     /// (rd704, ADR 0874, amended); else by its module's file.
-    pub(super) fn import_key(&self, id: DefId, module: LocalModId) -> Option<(String, String)> {
+    pub fn import_key(&self, id: DefId, module: LocalModId) -> Option<(String, String)> {
         let item = self.item(id)?;
         let paths = self.paths.get_or_init(|| library_paths(self.tcx));
         if let Some(by_package) = &item.rooted
@@ -806,7 +802,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         self.library(id.krate)?.modules.get(&key(self.tcx, id))
     }
 
-    pub(super) fn item(&self, id: DefId) -> Option<&'a Imported> {
+    pub fn item(&self, id: DefId) -> Option<&'a Imported> {
         // An instance is the crate's own (ADR 0914); a std body this build
         // doesn't compile, a `MEANING_ONLY` adapter's, no library's (ADR
         // 0932).
@@ -909,7 +905,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
 
     /// Does a library's `id` take any parameter as `null` or a value only
     /// (ADR 0861, amended)?
-    pub(super) fn has_nulled_params(&self, id: DefId) -> bool {
+    pub fn has_nulled_params(&self, id: DefId) -> bool {
         self.item(id).is_some_and(|item| !item.calling.nulled_params.is_empty())
     }
 
@@ -932,7 +928,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// Does `id`, a library's function, read more of its call than its
     /// parameters, `js::arguments()` or `js::this()`, as its contract says,
     /// so no closure that forwards to it is it (rd332, rd683)?
-    pub(super) fn reads_its_call(&self, id: DefId) -> bool {
+    pub fn reads_its_call(&self, id: DefId) -> bool {
         self.reads_arguments(id) || self.reads_this(id)
     }
 
@@ -1015,7 +1011,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// what the crate gives it may be asked? Not `@rust-js/std`, which
     /// keeps what its own bodies grow for every program (#1339), and asks
     /// no consumer to.
-    pub(super) fn keeps_capacity(&self) -> bool {
+    pub fn keeps_capacity(&self) -> bool {
         (self.dependencies.libraries.values()).any(|library| !library.builtin && library.keeps_capacity)
     }
 
@@ -1234,7 +1230,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     }
 
     /// Every item the dependencies export, as the imports they'd be.
-    pub(super) fn all(&self) -> impl Iterator<Item = &'a Imported> {
+    pub fn all(&self) -> impl Iterator<Item = &'a Imported> {
         self.dependencies
             .libraries
             .values()

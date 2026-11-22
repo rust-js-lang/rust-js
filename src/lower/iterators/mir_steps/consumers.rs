@@ -11,7 +11,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `it.sum()`, or `product()`, `sum`, into an `output` of `item`s: of a
     /// number, `reduce` by its operation; of a type parameter's, its
     /// dictionary's, `SSum.sum(it)`, its caller's (ADR 0476).
-    pub(in crate::lower) fn accumulated(
+    pub fn accumulated(
         &mut self,
         (it, method): (Expr, DefId),
         (output, item): (Ty<'tcx>, Option<Ty<'tcx>>),
@@ -79,7 +79,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// items by `fold`, `for_each` or `reduce`: what calls the crate's own
     /// `fold`, which takes the iterator and drops it (#162).
     // helper: asked by `mir::iter` alone, the entry it was beneath before #2299 moved it
-    pub(in crate::lower) fn consumes_by_fold(&self, method: DefId, output: Ty<'tcx>) -> bool {
+    pub fn consumes_by_fold(&self, method: DefId, output: Ty<'tcx>) -> bool {
         let recognition = self.recognition();
         recognition.folds_what_it_consumes(method)
             || recognition.rfolds_what_it_consumes(method)
@@ -96,7 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// with a destructor, the fold drops the iterator before `let (_, x)`
     /// drops the kept key (#1649). So its drop is the consumer's, there.
     // helper: asked by `mir::iter` alone, the entry it was beneath before #2299 moved it
-    pub(in crate::lower) fn keyed_consumer_closes(&self, method: Option<IterMethod>, arg_tys: &[Ty<'tcx>]) -> bool {
+    pub fn keyed_consumer_closes(&self, method: Option<IterMethod>, arg_tys: &[Ty<'tcx>]) -> bool {
         let (Some(IterMethod::MaxByKey(_)), [iter, f, ..]) = (method, arg_tys) else {
             return false;
         };
@@ -132,7 +132,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `skip_while`'s first step, `f` first, where std's own fold holds the
     /// accumulator in its body, it first (#768). `arg_tys` are the call's,
     /// the iterator's first, `f`'s last, the accumulator's second.
-    pub(in crate::lower) fn consumed_function(&self, method: Option<IterMethod>, arg_tys: &[Ty<'tcx>]) -> bool {
+    pub fn consumed_function(&self, method: Option<IterMethod>, arg_tys: &[Ty<'tcx>]) -> bool {
         let (Some(&iter_ty), Some(&f)) = (arg_tys.first(), arg_tys.last()) else {
             return false;
         };
@@ -222,7 +222,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// called from the back as Rust's is, of a `$iter` lent as it is, which
     /// it steps from its back. Of a lazy chain, whose closures would run in
     /// another order, refused.
-    pub(in crate::lower) fn positioned(
+    pub fn positioned(
         &mut self,
         it: Expr,
         f: Expr,
@@ -265,7 +265,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// starts from. JS's `reduce` counts its arguments: a start of
     /// `undefined`, a `fold(None, ..)`'s, is given, or it starts from the
     /// first item (ADR 0330).
-    pub(in crate::lower) fn folded(
+    pub fn folded(
         &mut self,
         (it, method): (Expr, DefId),
         (init, f): (Option<Expr>, Expr),
@@ -323,13 +323,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `it.for_each(f)`, `it.forEach(f)`; of a function it moves into its
     /// fold, `$consume`'s, a fold of `f` of each, which drops it before
     /// what's left (#734).
-    pub(in crate::lower) fn for_each_called(
-        &mut self,
-        it: Expr,
-        (f, own): (Expr, bool),
-        arg_tys: &[Ty<'tcx>],
-        span: Span,
-    ) -> R<Expr> {
+    pub fn for_each_called(&mut self, it: Expr, (f, own): (Expr, bool), arg_tys: &[Ty<'tcx>], span: Span) -> R<Expr> {
         let Some(ends) = self.consumed_ends(Some(IterMethod::ForEach), arg_tys, &f, span)? else {
             let f = self.unary_callback(f, own);
             return Ok(Expr::call(Expr::member(it, "forEach"), vec![f]));
@@ -356,7 +350,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `self.map(f).is_sorted()`, `$isSortedBy(it.map(f), ..)` of each
     /// key, the type `f` gives, by its `PartialOrd` (#763), given its drop
     /// where it has a destructor (#776).
-    pub(in crate::lower) fn sorted_called(
+    pub fn sorted_called(
         &mut self,
         it: Expr,
         (method, arg, own): (IterMethod, &mut dyn FnMut() -> Expr, bool),
@@ -404,7 +398,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// kind, `method`, of `item`s, `$maxBy`'s, of a function its `reduce`
     /// moves into its fold given what drops with it, which drops before
     /// what's left (#734); of a `_key` form, its key the type `f` gives.
-    pub(in crate::lower) fn extreme_called(
+    pub fn extreme_called(
         &mut self,
         it: Expr,
         (method, arg): (IterMethod, &mut dyn FnMut() -> Expr),
@@ -473,7 +467,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `it.try_fold(init, f)` into `output`, an `Option` or a `Result`: each
     /// item folded in till `f` gives a `None` or an `Err`, the rest left to
     /// step, `$tryFoldSome` or `$tryFoldOk` (ADR 0458).
-    pub(in crate::lower) fn try_folded(
+    pub fn try_folded(
         &mut self,
         it: Expr,
         method: IterMethod,
@@ -552,7 +546,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// `const iter = chain(..)` gone, where `made` ends in it and it's the
 /// first `result` evaluates, the first argument of calls of what does
 /// nothing, so it's made when it was (#1154).
-pub(in crate::lower) fn unheld(held: Expr, result: Expr, made: &mut Vec<Stmt>) -> Expr {
+pub fn unheld(held: Expr, result: Expr, made: &mut Vec<Stmt>) -> Expr {
     let js::ExprKind::Var(name) = &held.kind else {
         return result;
     };

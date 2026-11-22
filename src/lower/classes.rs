@@ -54,7 +54,7 @@ const CONSTRUCTOR: &str = "new";
 
 /// What an item of a class's impl is of the class.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(crate) enum Member {
+pub enum Member {
     /// `fn new(..) -> Self`: the constructor function, `function
     /// Component(props) { this.props = props; }`, called `new Component(..)`.
     Constructor,
@@ -116,7 +116,7 @@ pub(crate) fn is_namespace(tcx: TyCtxt<'_>, adt: DefId) -> bool {
 /// gives them (ADR 0051) and nothing to copy or drop, where the call needs
 /// one apart: given what may look like `None` (`nullish`), whose `Some` it
 /// leaves out, or a value to copy or drop (ADRs 0914, 1037, rd311).
-pub(crate) fn refuse_through(tcx: TyCtxt<'_>, id: DefId, span: rustc_span::Span, nullish: bool) {
+pub fn refuse_through(tcx: TyCtxt<'_>, id: DefId, span: rustc_span::Span, nullish: bool) {
     let message = match nullish {
         true => format!(
             "rust-js: `{}` is called through a namespace's value, the module's own function, which takes its type parameters as JS gives them, but this call gives one what may look like `None`, an `Option`, which that function reads apart from Rust's (ADRs 0051, 1037): call it on the namespace as Rust names it, give it what's no `Option`, or `.flatten()` its result where the function only makes its `Option` and returns it",
@@ -162,7 +162,7 @@ pub(crate) fn value_namespace_exports(tcx: TyCtxt<'_>, key: DefId) -> Option<Vec
 /// A namespace thread-local's exports, `names`, each where its struct
 /// declares it, and where the struct is: where the map places each in the
 /// export list, `span` each's in the JS (rd610, ADR 1037, amended).
-pub(crate) fn exported_fields(
+pub fn exported_fields(
     tcx: TyCtxt<'_>,
     key: DefId,
     names: Vec<String>,
@@ -189,7 +189,7 @@ pub(crate) fn exported_fields(
 
 /// A namespace thread-local's exports, `value_namespace_exports`'s, or
 /// none of any other `const`.
-pub(crate) fn namespace_fields(tcx: TyCtxt<'_>, key: DefId) -> Vec<String> {
+pub fn namespace_fields(tcx: TyCtxt<'_>, key: DefId) -> Vec<String> {
     (is_value_namespace(tcx, key)
         .then(|| value_namespace_exports(tcx, key))
         .flatten())
@@ -242,7 +242,7 @@ pub(crate) fn property(tcx: TyCtxt<'_>, def_id: DefId) -> String {
 /// its constructor or a static: a class whose `new` isn't `pub` is its
 /// type alone, `export type { ReactTestInstance }`, its instances' methods
 /// their prototype's (ADR 0761, amended, the user's decision).
-pub(crate) fn exports_its_type(tcx: TyCtxt<'_>, method: DefId, exported: bool, elsewhere: bool) -> bool {
+pub fn exports_its_type(tcx: TyCtxt<'_>, method: DefId, exported: bool, elsewhere: bool) -> bool {
     let public = (tcx.impl_of_assoc(method))
         .and_then(|imp| {
             tcx.type_of(imp)
@@ -367,7 +367,7 @@ pub(crate) fn is_class_trait(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
 }
 
 /// The class `imp` is an impl of a trait of classes of (rd283).
-pub(crate) fn trait_impl_class(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
+pub fn trait_impl_class(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
     let DefKind::Impl { of_trait: true } = tcx.def_kind(imp) else {
         return None;
     };
@@ -426,7 +426,7 @@ fn class_of_impl(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
 
 /// What `def_id`, an item of a class's inherent impl, is of the class;
 /// `None` of any other item.
-pub(crate) fn member(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Member> {
+pub fn member(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Member> {
     if !matches!(tcx.def_kind(def_id), DefKind::AssocFn | DefKind::AssocConst) {
         return None;
     }
@@ -466,7 +466,7 @@ pub(crate) fn member(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Member> {
 
 /// The class `def_id`, an item of a class's inherent impl, is of; `None`
 /// of any other item.
-pub(crate) fn class_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<DefId> {
+pub fn class_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<DefId> {
     member(tcx, def_id)?;
     (shown_class(tcx, def_id).or_else(|| trait_member_class(tcx, def_id)))
         .or_else(|| class_of_impl(tcx, tcx.inherent_impl_of_assoc(def_id)?))
@@ -474,7 +474,7 @@ pub(crate) fn class_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<DefId> {
 
 /// The constructor of `adt`, a class: its `fn new(..) -> Self`; `None` of
 /// what's no class.
-pub(crate) fn constructor_of(tcx: TyCtxt<'_>, adt: DefId) -> Option<DefId> {
+pub fn constructor_of(tcx: TyCtxt<'_>, adt: DefId) -> Option<DefId> {
     if !is_class(tcx, adt) {
         return None;
     }

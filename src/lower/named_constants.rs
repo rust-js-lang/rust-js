@@ -12,7 +12,7 @@ use rustc_span::Span;
 /// A text a pattern names by a `const`, where MIR's test of it reads it
 /// (`FnCx::named_text`): the literal's place, its text, and that `const`
 /// read.
-pub(in crate::lower) type NamedText = (js::Span, String, Expr);
+pub type NamedText = (js::Span, String, Expr);
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The registry's symbol of `text`: the `const` the patterns tested at
@@ -61,7 +61,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// Each literal of `body` a pattern names by a `const`, that `const`
 /// (`FnCx::named_text`), tidy's last pass: each copy tidy made of it too,
 /// a `switch`'s `case INITIALIZED:`.
-pub(in crate::lower) fn name_texts(body: &mut [Stmt], named: &[NamedText]) {
+pub fn name_texts(body: &mut [Stmt], named: &[NamedText]) {
     if named.is_empty() {
         return;
     }

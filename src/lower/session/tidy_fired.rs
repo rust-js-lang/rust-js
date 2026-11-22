@@ -27,13 +27,13 @@ pub(in crate::lower) fn record() {
 
 /// `body` as it is before a pass, where this compile records: a build that
 /// doesn't records nothing, at the cost of one read a pass.
-pub(in crate::lower) fn before(body: &[Stmt]) -> Option<Vec<Stmt>> {
+pub fn before(body: &[Stmt]) -> Option<Vec<Stmt>> {
     RECORDS.load(Ordering::Relaxed).then(|| body.to_vec())
 }
 
 /// The pass `name` names changed `body`, which `was` before it, where it
 /// did.
-pub(in crate::lower) fn after(was: Option<Vec<Stmt>>, body: &[Stmt], name: impl FnOnce() -> String) {
+pub fn after(was: Option<Vec<Stmt>>, body: &[Stmt], name: impl FnOnce() -> String) {
     if was.is_some_and(|was| was != body) {
         *FIRED
             .lock()

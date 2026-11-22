@@ -49,7 +49,7 @@ const HELD_ELSEWHERE: [StdItem; 6] = [
 
 /// Where in a value of a type the object its JS is sits.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum Within {
+pub enum Within {
     /// This many bytes into it: 0 of most, which are their own; an
     /// `Option`'s payload's offset, of one that's its payload.
     At(u64),
@@ -139,7 +139,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the object's less that (#1114). Of a type parameter's, in a crate
     /// that asks an address, so in each instance of it, refused where they
     /// differ (`known_within`).
-    pub(in crate::lower) fn object_pointer(&self, object: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn object_pointer(&self, object: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
         let within = match self.object_within(pointee) {
             Within::At(at) => at,
             Within::Unknown if self.krate.stored_places.asks() => {
@@ -156,7 +156,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Where a record of an object stored in a slot of type `ty` says it is
     /// in the slot, `known_within`'s: `None`, held elsewhere, which no
     /// record is made of.
-    pub(in crate::lower) fn stored_within(&self, ty: Ty<'tcx>, span: Span) -> R<Option<u64>> {
+    pub fn stored_within(&self, ty: Ty<'tcx>, span: Span) -> R<Option<u64>> {
         self.known_within(ty, span, "a borrow of where an object is stored, in generic code")
     }
 
@@ -304,7 +304,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// references too, whose lifetimes, erased, look the same as the
     /// receiver's (#1199); a `Cell<*const T>`'s `get()` copies a pointer
     /// out, lending nothing of the cell's.
-    pub(in crate::lower) fn lent_from_receiver(
+    pub fn lent_from_receiver(
         &self,
         (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
     ) -> Option<(Ty<'tcx>, Vec<(Ty<'tcx>, bool)>)> {
@@ -356,11 +356,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Option`'s `get_or_insert` or `insert`'s; or elsewhere, an `Rc`'s
     /// or an `Arc`'s `deref`'s. Its JS reads the receiver's place, where a
     /// pointer to what it refers to isn't (#1114).
-    pub(in crate::lower) fn lent_from_a_holder(
-        &self,
-        body: &rustc_middle::mir::Body<'tcx>,
-        local: rustc_middle::mir::Local,
-    ) -> bool {
+    pub fn lent_from_a_holder(&self, body: &rustc_middle::mir::Body<'tcx>, local: rustc_middle::mir::Local) -> bool {
         body.basic_blocks.iter().any(|block| {
             let rustc_middle::mir::TerminatorKind::Call { func, destination, .. } = &block.terminator().kind else {
                 return false;
@@ -447,7 +443,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `field` the field's offset in its struct, `$storedIn(x, "f", 8, 4)`,
     /// so a pointer to what it lends, which is the property's, is there
     /// (#1114). `None` of another, and of a field whose offset isn't known.
-    pub(in crate::lower) fn property_record(
+    pub fn property_record(
         &mut self,
         container: Ty<'tcx>,
         cell: &Expr,
@@ -477,7 +473,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// isn't the object it holds, a lock's, a `Cell`'s or an atomic's: what
     /// it holds, and where, its offset in it (`HELD_INLINE`). `None` of
     /// another type, or of one whose layout its caller says.
-    pub(in crate::lower) fn held_inline(&self, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, u64)> {
+    pub fn held_inline(&self, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, u64)> {
         if self.is_std_type(ty, StdItem::Atomic) {
             return self.along(ty, None);
         }
@@ -495,7 +491,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// holds, its value's (`transparent`); an untagged enum's variant's,
     /// where each is at one; elsewhere, a box's, an `Rc`'s, a reference's or
     /// a collection's, whose object is an allocation of its own.
-    pub(in crate::lower) fn object_within(&self, ty: Ty<'tcx>) -> Within {
+    pub fn object_within(&self, ty: Ty<'tcx>) -> Within {
         if let Some(inner) = self.transparent(ty) {
             return self.object_within(inner);
         }
@@ -560,7 +556,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The byte offset of `field` of a place of type `ty`, a struct's, a
     /// tuple's or a variant's, rustc's layout; `None` of a type its caller
     /// lays out.
-    pub(in crate::lower) fn place_field_offset(&self, ty: PlaceTy<'tcx>, field: FieldIdx) -> Option<u64> {
+    pub fn place_field_offset(&self, ty: PlaceTy<'tcx>, field: FieldIdx) -> Option<u64> {
         match ty.variant_index {
             Some(variant) => self.variant_field_offset(ty.ty, variant, field),
             None => Some(self.layout(ty.ty)?.fields.offset(field.as_usize()).bytes()),
@@ -658,7 +654,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is wrapped in, `$lentFrom(once, "value", 4, 0, once.value)`, after it
     /// since `get_or_init` and `peek` fill their slot as they're called. Its
     /// receiver, `values`' first, held first where it reads otherwise twice.
-    pub(in crate::lower) fn lent_record(
+    pub fn lent_record(
         &mut self,
         (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
         values: &mut [Expr],
@@ -734,11 +730,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// address (`lend_placed`): the lending call's own value, or the
     /// payload of the `Option` or `Result` it gives, `Some(x)`, `Ok(x)`.
     /// A raw pointer made of it is that handle (#1474).
-    pub(in crate::lower) fn placed_by_lend(
-        &self,
-        body: &rustc_middle::mir::Body<'tcx>,
-        local: rustc_middle::mir::Local,
-    ) -> bool {
+    pub fn placed_by_lend(&self, body: &rustc_middle::mir::Body<'tcx>, local: rustc_middle::mir::Local) -> bool {
         use rustc_middle::mir::{Operand, PlaceElem, Rvalue, StatementKind, TerminatorKind};
         if !self.krate.stored_places.asks() {
             return false;
@@ -785,7 +777,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// like `None` is (ADR 0051): of generic code's, in any instance its
     /// callers give, or where they can't all be seen. A handle on the slot
     /// would read the box.
-    pub(in crate::lower) fn boxed_lent(&self, receiver: Ty<'tcx>, lent: Lend) -> bool {
+    pub fn boxed_lent(&self, receiver: Ty<'tcx>, lent: Lend) -> bool {
         let boxed = |receiver: Ty<'tcx>| {
             self.lent_payload_in(receiver, lent)
                 .is_none_or(|t| self.boxed_payload(t))
@@ -845,12 +837,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// payload's offset is its variant's, that variant's as it is,
     /// `ok` a test that it's an `Ok`. `None` in a crate that asks no
     /// address, which reads the handle the lowering makes otherwise.
-    pub(in crate::lower) fn lent_place(
-        &self,
-        (receiver, receiver_ty): (Expr, Ty<'tcx>),
-        lent: Lend,
-        ok: Option<Expr>,
-    ) -> Option<Expr> {
+    pub fn lent_place(&self, (receiver, receiver_ty): (Expr, Ty<'tcx>), lent: Lend, ok: Option<Expr>) -> Option<Expr> {
         if !self.krate.stored_places.asks() {
             return None;
         }
@@ -888,7 +875,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is, an object's too, which `pointer_to` gives as itself: where it's
     /// stored, its container, key and offset, which `$stored` records of
     /// what's there (#1113). `None` of a place that's no field or item.
-    pub(in crate::lower) fn stored_handle(&self, place: Expr, offset: Offset) -> Option<Expr> {
+    pub fn stored_handle(&self, place: Expr, offset: Offset) -> Option<Expr> {
         let (object, key) = match place.kind {
             _ if let Some(args) = checked_item(&place) => (args[0].clone(), args[1].clone()),
             js::ExprKind::Index(object, index) => (*object, *index),

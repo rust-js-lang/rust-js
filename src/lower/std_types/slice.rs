@@ -16,7 +16,7 @@ use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 /// given the slice and where the part starts and ends, `(v, start, end?)`,
 /// where it has one: JS has no method over part of an array, so a view's
 /// is the slice's own, in place, no view made (ADR 1073).
-pub(in crate::lower) fn ranged(known: Std) -> Option<&'static str> {
+pub fn ranged(known: Std) -> Option<&'static str> {
     match known {
         Std::Method("reverse") => Some("$reverseRange"),
         _ => None,
@@ -26,7 +26,7 @@ pub(in crate::lower) fn ranged(known: Std) -> Option<&'static str> {
 /// What a sort orders by: its items' own order, a comparator (`_by`), or a
 /// key (`_by_key`).
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum SortWith {
+pub enum SortWith {
     Order,
     By,
     Key,
@@ -34,7 +34,7 @@ pub(in crate::lower) enum SortWith {
 
 /// A slice's own methods, of those ADR 0324 takes.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum SliceOp {
+pub enum SliceOp {
     /// `v[i]` or `&mut v[i]` of a type parameter's index, `I: SliceIndex<[T]>`:
     /// its dictionary's `index(i, v)` or `index_mut(i, v)` (ADR 0418).
     GenericIndex {
@@ -256,7 +256,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A call of one of the views' helpers (ADR 0335).
-    pub(in crate::lower) fn view_call(&mut self, name: &'static str, list: Vec<Expr>) -> Expr {
+    pub fn view_call(&mut self, name: &'static str, list: Vec<Expr>) -> Expr {
         Expr::call(Expr::helper(name), list)
     }
 
@@ -322,7 +322,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `v.extract_if(range, f)`: the items `f` holds of, from `start` to `end`,
     /// taken out (`$extractIf`), each in a box where an `Option` of it would
     /// look like `None`, of `item`.
-    pub(in crate::lower) fn extract_if_values(
+    pub fn extract_if_values(
         &mut self,
         items: Expr,
         (start, end, inclusive): (Expr, Option<Expr>, Option<Expr>),
@@ -341,7 +341,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `slots.write_copy_of_slice(src)`, of `values`, the slots and the
     /// source: `$copyFromSlice(slots, src)`, then `slots`; a clone of each
     /// from `$writeCloneOfSlice`, whose `assert_eq!` says why it panics.
-    pub(in crate::lower) fn uninit_write_values(
+    pub fn uninit_write_values(
         &mut self,
         clone: bool,
         values: Vec<Expr>,
@@ -372,7 +372,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// range's bounds, or `split_off_first`'s or `last`'s, `end`: a `const`
     /// of what's left, `[0]`, which the slice's place is given, and what it
     /// takes, `[1]` (ADR 0338).
-    pub(in crate::lower) fn split_off_values(
+    pub fn split_off_values(
         &mut self,
         (end, mutable): (Option<bool>, bool),
         read: Expr,
@@ -406,7 +406,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `v.copy_within(start..end, dest)`: `$copyWithin`.
-    pub(in crate::lower) fn copy_within_values(
+    pub fn copy_within_values(
         &mut self,
         items: Expr,
         (start, end, inclusive): (Expr, Option<Expr>, Option<Expr>),
@@ -419,7 +419,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// One of `SliceOp`'s that its operands, as JS, say all of, `values`;
     /// `stepping`, of `Remainder`, whether what it's called on is stepped
     /// through a `&mut`, a `$iter`.
-    pub(in crate::lower) fn slice_values(
+    pub fn slice_values(
         &mut self,
         op: SliceOp,
         values: Vec<Expr>,

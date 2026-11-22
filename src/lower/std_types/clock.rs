@@ -7,7 +7,7 @@ use rust_js_program::js::{Expr, Op, Stmt};
 
 /// A clock's method or operator.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum ClockOp {
+pub enum ClockOp {
     /// `SystemTime::now()`, `Instant::now()`.
     Now,
     /// `a.duration_since(b)`, `a - b` of two `Instant`s: a `SystemTime`'s a

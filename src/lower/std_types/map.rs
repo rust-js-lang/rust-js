@@ -13,7 +13,7 @@ use rustc_span::Span;
 
 /// A `HashMap` or `HashSet` method rust-js knows.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum MapOp {
+pub enum MapOp {
     /// indexmap's, by an entry's place (ADR 0424).
     ByPlace(PlaceOp),
     /// `HashMap::new()`, `new Map()`, and `HashSet::new()`, `new Set()`;
@@ -142,7 +142,7 @@ pub(in crate::lower) enum MapOp {
 /// table's of its entries, std's and hashbrown's own map's; or indexmap's,
 /// that table's of each entry's place, then a `Vec`'s of its entries.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum Table {
+pub enum Table {
     Hashed,
     Indexed,
 }
@@ -150,7 +150,7 @@ pub(in crate::lower) enum Table {
 /// What indexmap's `IndexMap` and `IndexSet` do by an entry's place, which
 /// std's maps haven't (ADR 0424).
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum PlaceOp {
+pub enum PlaceOp {
     /// `get_index_of(key)`: `$indexOf(m, key)`.
     Of,
     /// `get_index(i)`: `$atIndex(m, i)`.
@@ -303,7 +303,7 @@ pub(in crate::lower) fn map_method(name: &str, of: MapOwner) -> Option<MapOp> {
 
 /// What an iterator of a map goes over.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum Part {
+pub enum Part {
     Entries,
     Keys,
     Values,
@@ -313,7 +313,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// An entry, `or_insert`'s and the rest's: of `and_modify(f)` first,
     /// `$andModify($entry(m, k), f)`, that a statement, and the entry it
     /// was of, whose map and key they're of then (ADR 0325).
-    pub(in crate::lower) fn after_and_modify(&self, entry: Expr, span: Span, out: &mut Vec<Stmt>) -> Expr {
+    pub fn after_and_modify(&self, entry: Expr, span: Span, out: &mut Vec<Stmt>) -> Expr {
         let of = match &entry.kind {
             js::ExprKind::Call(callee, parts) if callee.helper_name() == Some("$andModify") => parts.first(),
             _ => None,
@@ -1176,7 +1176,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// gives, the old value or whether it was new (ADR 0059). Of the module's
 /// JS once it's lowered, a closure inlined into it too, and its code that
 /// runs where it loads, a closure `js::on_load!` sets (ADR 0951).
-pub(in crate::lower) fn discarded_calls(items: &mut [js::Item]) {
+pub fn discarded_calls(items: &mut [js::Item]) {
     js::each_item_block_mut(items, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::Expr(e) = &mut stmt.kind

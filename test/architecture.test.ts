@@ -354,7 +354,7 @@ test("library recognition cannot access function emission state", () => {
     // must not mutate their shared recognition context.
     expect(read(file), file).not.toMatch(/\bfn\s+(?!visit_)\w+\s*\([^)]*&mut\s+self/);
   }
-  expect(read("src/lower/recognition.rs")).toContain("pub(super) struct Recognition");
+  expect(read("src/lower/recognition.rs")).toContain("pub struct Recognition");
 });
 
 // Which of a body's string offsets are places in JS's units is a question
@@ -638,7 +638,7 @@ test("shortcuts to recognition are in shortcuts.rs, and only shorten", () => {
 // too long to read at once (the second review): its cap is its length now,
 // which the test holds exactly, so a split says so here.
 const dispatchers: [string, string, number][] = [
-  ["src/lower/recognition/calls.rs", "    pub(in crate::lower) fn classify(", 2], // What it was, `classified`, which every answer goes through it by (ADR 1128).
+  ["src/lower/recognition/calls.rs", "    pub fn classify(", 2], // What it was, `classified`, which every answer goes through it by (ADR 1128).
   ["src/lower/recognition/calls.rs", "    fn classified(", 8],
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 92], // What reads its argument through, `flatten()` and `unwrap()`, in `reads_through` (ADR 0747). Whether a variable holding a function is called as it, `called_as_held` (#581). A method std's impl for a `&mut W` passes on, `W`'s, in `passed_through` (#1309).
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 203], // A trait call's `same_nones` read before it, a `let` (#2299's `MirCx`). A comparison of `&mut`s to cells, `cells_compared` (#2188). A serde_json call, `mir_json_call` (#1545). Whether `?` is written as it is, `tried_as_written` (ADR 0913). A method std's impl for a `Box<I>` passes on, `I`'s, `passed_through_box`'s, called again of `I` (#1278).

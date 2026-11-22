@@ -21,7 +21,7 @@ fn marked(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 
 /// Report each of the crate's CSS Module bindings that its file doesn't
 /// bear out, as rustc errors: whether any was.
-pub(in crate::lower) fn refuse_unverified(tcx: TyCtxt<'_>, js_modules: &dyn JsModules) -> bool {
+pub fn refuse_unverified(tcx: TyCtxt<'_>, js_modules: &dyn JsModules) -> bool {
     let mut refused = false;
     let mut refuse = |span, message: String| {
         tcx.dcx().span_err(span, message);

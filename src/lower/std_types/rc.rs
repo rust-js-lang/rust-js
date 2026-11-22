@@ -39,7 +39,7 @@ pub(in crate::lower) enum RcCount {
 
 /// What only a counted `Rc` or its `Weak` answers.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum RcOp {
+pub enum RcOp {
     StrongCount,
     WeakCount,
     PtrEq,
@@ -138,7 +138,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What a counted `Rc` points at, if `ty` is one.
-    pub(in crate::lower) fn counted_rc(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn counted_rc(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         rc_pointee(self.tcx, ty).filter(|&pointee| self.krate.counted.counts(self.tcx, pointee))
     }
 
@@ -255,13 +255,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `Rc::make_mut(&mut place)` of an `Rc` of `item`: the place given the
     /// one `$makeMut` gives, and what it points to (ADR 0364).
-    pub(in crate::lower) fn make_mut_values(
-        &mut self,
-        place: Expr,
-        item: Ty<'tcx>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
+    pub fn make_mut_values(&mut self, place: Expr, item: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let mut given = vec![place.clone(), self.clone_arg(item, span)?];
         given.extend(self.drop_function(item, span)?);
         let made = Expr::call(Expr::helper("$makeMut"), given);
@@ -271,7 +265,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An `Rc`'s or a `Weak`'s function, of its arguments' values, `tys`
     /// their types, giving an `output` (ADR 0364).
-    pub(in crate::lower) fn rc_values(
+    pub fn rc_values(
         &mut self,
         op: RcOp,
         (values, tys, output): (Vec<Expr>, &[Ty<'tcx>], Ty<'tcx>),
@@ -479,7 +473,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `through_boxes_until`'s; not past a layer with an impl of its
     /// formatting trait of its own, `impl Display for &ByRef`, which shows
     /// it (#1798).
-    pub(in crate::lower) fn shown_through(&self, value: Expr, ty: Ty<'tcx>, kind: Std) -> (Expr, Ty<'tcx>) {
+    pub fn shown_through(&self, value: Expr, ty: Ty<'tcx>, kind: Std) -> (Expr, Ty<'tcx>) {
         let own = |ty: Ty<'tcx>| self.formats_itself(kind, ty);
         let (value, ty) = self.through_refs_until(value, ty, &own);
         self.through_boxes_until(value, ty, &own)
@@ -495,7 +489,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `ty` through its references as `kind` shows it, `through_refs_until`'s
     /// type: not past one with an impl of its own (#1798).
-    pub(in crate::lower) fn shown_ref_type(&self, kind: Std, ty: Ty<'tcx>) -> Ty<'tcx> {
+    pub fn shown_ref_type(&self, kind: Std, ty: Ty<'tcx>) -> Ty<'tcx> {
         match self.fmt_trait_of(kind) {
             Some(tr) => self.recognition().refs_shown_by(tr, ty),
             None => ty.peel_refs(),

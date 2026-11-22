@@ -11,7 +11,7 @@ use rustc_span::def_id::LocalModId;
 
 use rust_js_program::program::{JsModules, ModuleAt};
 
-pub(super) struct ModuleImports {
+pub struct ModuleImports {
     edges: IndexMap<LocalModId, IndexSet<LocalModId>>,
 }
 
@@ -21,7 +21,7 @@ impl ModuleImports {
     /// imports, as its binding names it, `./src/hook.js`, `react`, which
     /// imports what `js_modules` says it does; one it can't say may import
     /// any.
-    pub(super) fn new<'s>(
+    pub fn new<'s>(
         modules: &[(LocalModId, ModuleAt<'_>)],
         direct: impl IntoIterator<Item = (LocalModId, LocalModId)>,
         bound: impl IntoIterator<Item = (LocalModId, &'s str)>,
@@ -53,7 +53,7 @@ impl ModuleImports {
     /// has are, which its lowering asked of the imports it makes (ADR 0031,
     /// amended): it's not taken. One taken is an edge of the graph, so the
     /// next is asked of it.
-    pub(super) fn imports_without_cycle(&mut self, from: LocalModId, to: LocalModId) -> bool {
+    pub fn imports_without_cycle(&mut self, from: LocalModId, to: LocalModId) -> bool {
         if from == to || self.reaches(to, from) {
             return false;
         }
@@ -62,7 +62,7 @@ impl ModuleImports {
     }
 
     /// Whether `from`'s JS imports `to`'s, or imports what does.
-    pub(super) fn reaches(&self, from: LocalModId, to: LocalModId) -> bool {
+    pub fn reaches(&self, from: LocalModId, to: LocalModId) -> bool {
         let mut seen = IndexSet::from_iter([from]);
         let mut pending = vec![from];
         while let Some(at) = pending.pop() {

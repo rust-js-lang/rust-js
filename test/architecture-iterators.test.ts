@@ -749,11 +749,12 @@ test("in-place adapters are decided in two stages, then read", () => {
   expect(reads.filter((read) => !read.endsWith(": made_at") && !ofOwner.has(read))).toEqual([]);
   expect(reads.filter((read) => read.endsWith(": ground_made_at"))).toEqual(["src/lower/analysis/back_stepped.rs: ground_made_at"]);
   const source = read("src/lower/body_queries.rs");
-  expect(source).toMatch(/pub\(in crate::lower\) struct InPlace \{\n    ground: Option<IndexSet<ExprId>>,\n    held: std::cell::OnceCell<IndexSet<ExprId>>,\n\}/);
+  expect(source).toMatch(/pub struct InPlace \{\n    ground: Option<IndexSet<ExprId>>,\n    held: std::cell::OnceCell<IndexSet<ExprId>>,\n\}/);
   expect(source).toMatch(/\n    fn decided\(set: IndexSet<ExprId>\) -> Self \{/);
   // Its one join, each THIR call at MIR's span, and no reader of a node alone.
-  const in_place = source.slice(source.indexOf("impl InPlace {"), source.indexOf("pub(super) fn strip("));
-  expect(in_place.match(/pub\(in crate::lower\) fn \w+/g)).toEqual(["pub(in crate::lower) fn made_at", "pub(in crate::lower) fn ground_made_at", "pub(in crate::lower) fn makes_in_place"]);
+  const in_place = source.slice(source.indexOf("impl InPlace {"), source.search(/pub(?:\([^)]*\))? fn strip\(/));
+  // Its API, whatever the crate cut widens it to (#2299): these three.
+  expect([...in_place.matchAll(/pub(?:\([^)]*\))? fn (\w+)/g)].map((m) => m[1])).toEqual(["made_at", "ground_made_at", "makes_in_place"]);
   expect(in_place.match(/each_call_at\(thir, span, /g)?.length).toBe(2);
   const deciding = lowering.filter((file) => /decide_in_place\(/.test(read(file)));
   expect(deciding).toEqual(["src/lower/pipeline.rs"]);
@@ -775,7 +776,7 @@ test("in-place adapters are decided in two stages, then read", () => {
 // alone, `is_held_compiled_def`, was the name's answer for every value.
 test("the compiled std catalogue is asked of a type, not a definition", () => {
   const source = read("src/lower/recognition/compiled_std.rs");
-  const signature = (name: string) => source.match(new RegExp(`pub\\(crate\\) fn ${name}\\b[^{]*`))?.[0];
+  const signature = (name: string) => source.match(new RegExp(`pub(?:\\([^)]*\\))? fn ${name}\\b[^{]*`))?.[0];
   for (const name of ["makes_held_compiled", "sized_in_place", "is_compiled_std_type", "is_held_compiled", "compiled_instance"]) {
     expect([name, /\bTy<|GenericArgsRef/.test(signature(name) ?? "")]).toEqual([name, true]);
   }

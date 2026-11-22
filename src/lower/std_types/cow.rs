@@ -11,7 +11,7 @@ use rust_js_program::js::{Expr, Op, Stmt, StmtKind};
 
 /// A `Cow`'s own methods.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum CowOp {
+pub enum CowOp {
     /// `Deref`: what it borrows or owns, one JS value.
     Deref,
     IntoOwned,
@@ -26,7 +26,7 @@ pub(in crate::lower) enum CowOp {
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `Cow`'s method, of the `Cow`'s value, its place for `to_mut()`,
     /// and its type; or of what `Cow::from` is given, and the `Cow`'s type.
-    pub(in crate::lower) fn cow_values(
+    pub fn cow_values(
         &mut self,
         op: CowOp,
         cow: Expr,

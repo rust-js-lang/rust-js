@@ -31,7 +31,7 @@ impl FieldKey {
     }
 
     /// Its text, of a field named by text.
-    pub(crate) fn name(&self) -> Option<&str> {
+    pub fn name(&self) -> Option<&str> {
         match &self.0 {
             Key::Name(name) => Some(name),
             Key::Symbol(..) => None,
@@ -40,7 +40,7 @@ impl FieldKey {
 
     /// The item holding the symbol that names it, and where its path is
     /// written, which `item_read` reads it as.
-    pub(crate) fn symbol_item(&self) -> Option<(DefId, Span)> {
+    pub fn symbol_item(&self) -> Option<(DefId, Span)> {
         match &self.0 {
             Key::Name(_) => None,
             Key::Symbol(item, span) => Some((*item, *span)),
@@ -49,7 +49,7 @@ impl FieldKey {
 
     /// Its text, of a field `validate` lets be named by text alone: an enum
     /// variant's, a union's, a class's or a props struct's (ADR 1051).
-    pub(crate) fn text(&self) -> &str {
+    pub fn text(&self) -> &str {
         self.name().expect("`bindings::validate` refuses a symbol name here")
     }
 }

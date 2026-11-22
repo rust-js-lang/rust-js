@@ -15,7 +15,7 @@ use rustc_middle::ty::consts::ConstExt as _;
 
 /// What's asked of a `MaybeUninit` or a `Box` of one.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum UninitOp {
+pub enum UninitOp {
     /// `MaybeUninit::uninit()`, `Box::new_uninit()` (`boxed`): nothing yet.
     Uninit { boxed: bool },
     /// `MaybeUninit::zeroed()`, `Box::new_zeroed()`: its type's zero.
@@ -153,7 +153,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// to it, nor a reference given to anything else, which might write it
     /// an item at a time. Such a one is written whole, as JS writes it,
     /// not its slots.
-    pub(in crate::lower) fn uninit_written_whole(&self, body: &mir::Body<'tcx>, at: mir::BasicBlock) -> bool {
+    pub fn uninit_written_whole(&self, body: &mir::Body<'tcx>, at: mir::BasicBlock) -> bool {
         let TerminatorKind::Call { func, destination, .. } = &body[at].terminator().kind else {
             return false;
         };

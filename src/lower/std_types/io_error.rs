@@ -9,7 +9,7 @@ use rust_js_program::js::Expr;
 
 /// What's asked of an `io::Error`.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum IoErrorOp {
+pub enum IoErrorOp {
     /// `io::Error::new(kind, error)`: of `error`, a message or an error.
     New,
     /// `io::Error::other(error)`: `New` of `Other`.

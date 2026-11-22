@@ -252,11 +252,7 @@ fn named_by<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<Named<'tcx>> {
 /// The function a `function::bind`, `bind`, of `generic_args` binds each
 /// parameter of, its tuple as many as it has: `bind(complete_root, None,
 /// (root, lanes))` of `complete_root(root, lanes)` (rd632).
-pub(in crate::lower) fn bound_all<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    bind: DefId,
-    generic_args: ty::GenericArgsRef<'tcx>,
-) -> Option<DefId> {
+pub fn bound_all<'tcx>(tcx: TyCtxt<'tcx>, bind: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> Option<DefId> {
     if !crate::lower::recognition::is_function_bind(tcx, bind) {
         return None;
     }

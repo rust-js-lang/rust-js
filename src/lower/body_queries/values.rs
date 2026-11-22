@@ -16,7 +16,7 @@ use rustc_middle::ty::{Ty, TyCtxt};
 /// value: what a box holds, through its deref. The one answer of whether a
 /// step through a box is the value itself, which each question here and
 /// `FnCx::through_values` take it from.
-pub(in crate::lower) fn through_box<'tcx>(elem: PlaceElem<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+pub fn through_box<'tcx>(elem: PlaceElem<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match elem {
         PlaceElem::Deref => ty.boxed_ty(),
         _ => None,
@@ -26,7 +26,7 @@ pub(in crate::lower) fn through_box<'tcx>(elem: PlaceElem<'tcx>, ty: Ty<'tcx>) -
 /// The local `place` is the value of: itself, `_1`, or what its box holds,
 /// `(*_1)` of a `Box<T>`, through boxes of boxes too. `None` of a part of
 /// it, a field's, an item's, or what a reference points to.
-pub(in crate::lower) fn value_local<'tcx>(decls: &mir::LocalDecls<'tcx>, place: &Place<'tcx>) -> Option<Local> {
+pub fn value_local<'tcx>(decls: &mir::LocalDecls<'tcx>, place: &Place<'tcx>) -> Option<Local> {
     let mut ty = decls[place.local].ty;
     for elem in place.projection {
         ty = through_box(elem, ty)?;
@@ -40,7 +40,7 @@ pub(in crate::lower) fn value_local<'tcx>(decls: &mir::LocalDecls<'tcx>, place: 
 /// content is its local's, `*w.0` of a `W(Box<i32>)` and `(*b).0` of a
 /// `Box<V>`, whose writes left the local alike, a read of it moved past
 /// them (#1033).
-pub(in crate::lower) fn indirect<'tcx>(tcx: TyCtxt<'tcx>, decls: &mir::LocalDecls<'tcx>, place: &Place<'tcx>) -> bool {
+pub fn indirect<'tcx>(tcx: TyCtxt<'tcx>, decls: &mir::LocalDecls<'tcx>, place: &Place<'tcx>) -> bool {
     (place.iter_projections())
         .any(|(base, elem)| elem == PlaceElem::Deref && through_box(elem, base.ty(decls, tcx).ty).is_none())
 }
@@ -50,9 +50,7 @@ pub(in crate::lower) fn indirect<'tcx>(tcx: TyCtxt<'tcx>, decls: &mir::LocalDecl
 /// v`, which assigns it as `b = v` does. Not a call's result, a
 /// terminator's: this asks what value a statement builds a local of;
 /// whether one write alone, a call's too, makes a local is `made_once`'s.
-pub(in crate::lower) fn assigned_once<'b, 'tcx>(
-    body: &'b mir::Body<'tcx>,
-) -> IndexMap<Local, Option<&'b Rvalue<'tcx>>> {
+pub fn assigned_once<'b, 'tcx>(body: &'b mir::Body<'tcx>) -> IndexMap<Local, Option<&'b Rvalue<'tcx>>> {
     let mut assigned: IndexMap<Local, Option<&'b Rvalue<'tcx>>> = IndexMap::default();
     for statement in body.basic_blocks.iter().flat_map(|data| &data.statements) {
         let StatementKind::Assign(assign) = &statement.kind else {
@@ -111,14 +109,14 @@ pub(in crate::lower) fn made_once(body: &mir::Body<'_>) -> IndexSet<Local> {
 }
 
 /// What writes a local: a statement's rvalue or a call.
-pub(in crate::lower) enum Write<'b, 'tcx> {
+pub enum Write<'b, 'tcx> {
     Statement(&'b Rvalue<'tcx>),
     Call(&'b mir::Operand<'tcx>, &'b [rustc_span::Spanned<mir::Operand<'tcx>>]),
 }
 
 /// Which borrows of a local `the_write` takes for a write it can't see.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub(in crate::lower) enum Borrowed {
+pub enum Borrowed {
     /// Any, shared too: what `pointers/returned.rs` follows takes none.
     Any,
     /// Only one that may write it, `&mut l` or `&raw mut l`.
@@ -129,11 +127,7 @@ pub(in crate::lower) enum Borrowed {
 /// what it was made of (#2211, moved from pointers/returned.rs): `None` where it's written
 /// more than once, in part, or by anything but an assignment or a call,
 /// or where it's borrowed itself as `borrowed` says.
-pub(in crate::lower) fn the_write<'b, 'tcx>(
-    body: &'b mir::Body<'tcx>,
-    local: Local,
-    borrowed: Borrowed,
-) -> Option<Write<'b, 'tcx>> {
+pub fn the_write<'b, 'tcx>(body: &'b mir::Body<'tcx>, local: Local, borrowed: Borrowed) -> Option<Write<'b, 'tcx>> {
     let mut found = None;
     for data in body.basic_blocks.iter() {
         for statement in &data.statements {

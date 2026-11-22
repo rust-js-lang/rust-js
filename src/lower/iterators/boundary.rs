@@ -131,7 +131,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
     /// say, `$iterator(range, $rangeNext, .., $rangeNextBack, len)` of a
     /// range's `{ start, end }`; spread by `[...it]`, its `back()` and
     /// `len()` public API (#1999).
-    pub(in crate::lower) fn returned_to_js(&mut self, value: Expr, span: Span) -> R<Expr> {
+    pub fn returned_to_js(&mut self, value: Expr, span: Span) -> R<Expr> {
         let Some(Returned { boundary, revealed }) = returned(self.tcx, self.item) else {
             return Ok(value);
         };

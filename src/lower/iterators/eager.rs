@@ -142,7 +142,7 @@ pub(super) fn fresh(items: &Expr) -> bool {
 /// (ADR 0055), where the order its closures run in can't be told from
 /// Rust's by what takes it. One that's lent, `$lent(…).some(f)`, made for
 /// this call alone, no one else steps.
-pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
+pub fn eager_chains(stmts: &mut [Stmt]) {
     js::each_expr_mut(stmts, &mut |e| {
         // `nth(n)`'s, `Array.from(chain.drop(n).take(1))[0]`: of an array
         // whose stages do nothing, `xs[n]`.
@@ -338,7 +338,7 @@ fn set_of(items: &Expr, f: &Expr) -> Option<Expr> {
 /// spread, `const newLogs = $iter(xs).filter(f).map(g); const all =
 /// [...a, ...newLogs];`, of stages that do nothing else: an array,
 /// `xs.filter(f).map(g)`, which spreads alike.
-pub(in crate::lower) fn eager_spreads(stmts: &mut [Stmt]) {
+pub fn eager_spreads(stmts: &mut [Stmt]) {
     for i in 0..stmts.len().saturating_sub(1) {
         let (head, rest) = stmts.split_at_mut(i + 1);
         let StmtKind::Const(name, value) = &mut head[i].kind else {
@@ -555,7 +555,7 @@ fn is_iterator_from(e: &Expr) -> bool {
 /// iterator as its caller has it (ADR 0061): `$intoIter(items)`, of an
 /// array the `$iter` concrete code has, which knows where it is; of one a
 /// JS iterator already, itself (ADR 0475).
-pub(in crate::lower) fn given_into_iter(items: Expr) -> Expr {
+pub fn given_into_iter(items: Expr) -> Expr {
     match is_js_iterator(&items) {
         true => items,
         false => Expr::call_helper("$intoIter", vec![items]),
@@ -565,7 +565,7 @@ pub(in crate::lower) fn given_into_iter(items: Expr) -> Expr {
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `Iterator::fuse`'s compiled body is called in this module, where
     /// the module imports it: `consumed_into_iters`'s `fuse`.
-    pub(in crate::lower) fn fuse_import(&self) -> Option<String> {
+    pub fn fuse_import(&self) -> Option<String> {
         let id = crate::lower::recognition::compiled_provided_method(self.tcx, "Iterator", "fuse");
         (self.krate.foreign.import_key(id, self.module))
             .and_then(|export| self.krate.imports.get(&self.module)?.get(&export))
@@ -579,7 +579,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// `stepped_in_place`'s (ADRs 0475, 0561). Each statement's: a `for`'s
 /// iterable, and each expression's. `fuse` is what `Iterator::fuse`'s
 /// compiled body is called here, where it's imported.
-pub(in crate::lower) fn consumed_into_iters(body: &mut Vec<Stmt>, fuse: Option<&str>) {
+pub fn consumed_into_iters(body: &mut Vec<Stmt>, fuse: Option<&str>) {
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::ForOf {

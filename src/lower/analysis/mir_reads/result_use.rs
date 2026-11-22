@@ -14,7 +14,7 @@ use rustc_middle::ty;
 
 /// What a body does with a call's `Result`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum ResultUse {
+pub enum ResultUse {
     /// Returned, or given on by `?` as it is: its error may be thrown.
     Propagated,
     /// Looked at, `match`ed, asked `is_err()`, mapped, dropped, kept: a value.
@@ -25,7 +25,7 @@ pub(in crate::lower) enum ResultUse {
 /// `Propagated` where it's the body's own result, or a local read once, by
 /// `?`'s `Try::branch`, in a body whose own result's error is the call's,
 /// so `?`'s `From` changes nothing; else `Inspected`.
-pub(in crate::lower) fn result_use<'tcx>(
+pub fn result_use<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     body: &mir::Body<'tcx>,
     destination: Place<'tcx>,
@@ -89,7 +89,7 @@ pub(in crate::lower) fn is_try_branch(tcx: rustc_middle::ty::TyCtxt<'_>, callee:
 /// the throw too. Else it's held as a value there and thrown at the
 /// `Return`, past those drops, as Rust gives it back after them (#1636):
 /// thrown where it's written, a drop no `finally` holds was left out.
-pub(in crate::lower) fn thrown_where_written<'tcx>(
+pub fn thrown_where_written<'tcx>(
     tcx: ty::TyCtxt<'tcx>,
     body: &mir::Body<'tcx>,
     at: mir::BasicBlock,
@@ -120,7 +120,7 @@ pub(in crate::lower) fn thrown_where_written<'tcx>(
 /// anywhere, an `Err` or a call's result written to its return place where
 /// it isn't thrown (`thrown_where_written`): each `Return` then throws it
 /// (#1636). An `Ok(())` written is nothing to throw.
-pub(in crate::lower) fn write_held<'tcx>(
+pub fn write_held<'tcx>(
     tcx: ty::TyCtxt<'tcx>,
     body: &mir::Body<'tcx>,
     drop_may_panic: &dyn Fn(ty::Ty<'tcx>) -> bool,

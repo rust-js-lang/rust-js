@@ -52,7 +52,7 @@ impl Kind {
 /// made, `Settled`'s, which the pipeline settles each body's into
 /// (`settle`), never a body itself (#1671 change 4, M2).
 #[derive(Default)]
-pub(super) struct ModuleFns<'tcx> {
+pub struct ModuleFns<'tcx> {
     made: IndexMap<Key<'tcx>, Made<'tcx>>,
 }
 
@@ -60,7 +60,7 @@ pub(super) struct ModuleFns<'tcx> {
 /// settled before it: its own, given back, which the pipeline settles
 /// (`ModuleFns::settle`, ADR 1148).
 #[derive(Default)]
-pub(super) struct MadeHere<'tcx> {
+pub struct MadeHere<'tcx> {
     made: IndexMap<Key<'tcx>, Made<'tcx>>,
     /// Those whose bodies are being lowered, the innermost last.
     building: Vec<Key<'tcx>>,
@@ -91,14 +91,14 @@ struct Made<'tcx> {
 /// What `written_before` gives an item to write before it: its module's
 /// functions, and its dictionaries' `const`s, which no load runs.
 #[derive(Default)]
-pub(super) struct WrittenBefore {
-    pub(super) functions: Vec<js::Function>,
-    pub(super) consts: Vec<js::Const>,
+pub struct WrittenBefore {
+    pub functions: Vec<js::Function>,
+    pub consts: Vec<js::Const>,
 }
 
 impl WrittenBefore {
     /// Its `const`s' names, each a dictionary's.
-    pub(super) fn const_names(&self) -> impl Iterator<Item = rust_js_program::js::Name> + '_ {
+    pub fn const_names(&self) -> impl Iterator<Item = rust_js_program::js::Name> + '_ {
         self.consts.iter().map(|c| c.name.clone())
     }
 }
@@ -106,7 +106,7 @@ impl WrittenBefore {
 impl<'tcx> ModuleFns<'tcx> {
     /// What a body made and called, `here`, settled: each it made, in the
     /// order it made them, then each call, in the order it made them.
-    pub(super) fn settle(&mut self, here: MadeHere<'tcx>) {
+    pub fn settle(&mut self, here: MadeHere<'tcx>) {
         debug_assert!(
             here.building.is_empty(),
             "a module's function is settled while it's made"
@@ -224,13 +224,13 @@ impl<'tcx> ModuleFns<'tcx> {
 
     /// The names `module`'s functions have, which no other name of its may
     /// be.
-    pub(super) fn names(&self, module: LocalModId) -> impl Iterator<Item = &str> {
+    pub fn names(&self, module: LocalModId) -> impl Iterator<Item = &str> {
         names(&self.made, module)
     }
 
     /// The functions `item` calls not yet written, each then written: its
     /// module's, before `item`.
-    pub(super) fn written_before(&mut self, item: DefId) -> WrittenBefore {
+    pub fn written_before(&mut self, item: DefId) -> WrittenBefore {
         let mut first: Vec<_> = (self.made.values_mut())
             .filter(|made| !made.written && made.used_by.contains(&item))
             .filter_map(|made| {
@@ -277,7 +277,7 @@ fn names<'m>(made: &'m IndexMap<Key<'_>, Made<'_>>, module: LocalModId) -> impl 
 /// The functions a type only a caller knows has, being made: each by its
 /// kind and type, its name, which one inside it calls.
 #[derive(Default)]
-pub(super) struct Making<'tcx>(Vec<(Kind, Ty<'tcx>, js::Name)>);
+pub struct Making<'tcx>(Vec<(Kind, Ty<'tcx>, js::Name)>);
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The names this body's module's functions have, those the bodies

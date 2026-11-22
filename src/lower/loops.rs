@@ -13,7 +13,7 @@ use rustc_middle::ty::{self, TypeVisitableExt};
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `IntoIterator::into_iter` of `ty`, if it's an impl of the crate's: a
     /// collection of its own, whose items are what that gives (ADR 0160).
-    pub(super) fn user_into_iter(&self, ty: ty::Ty<'tcx>) -> Option<(hir::def_id::DefId, ty::GenericArgsRef<'tcx>)> {
+    pub fn user_into_iter(&self, ty: ty::Ty<'tcx>) -> Option<(hir::def_id::DefId, ty::GenericArgsRef<'tcx>)> {
         let trait_id = std_item(self.tcx, StdItem::IntoIterator);
         let into_iter = trait_method(self.tcx, trait_id, "into_iter");
         if ty.has_escaping_bound_vars() {

@@ -11,13 +11,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// fold closure's result, as `$kept` says, never JS's own, which drops
     /// it inside the test, where no consumer can tell its panic from the
     /// test's: `$filterDropping(it, test, drop)` (#651).
-    pub(in crate::lower) fn filtered(
-        &mut self,
-        it: Expr,
-        test: Expr,
-        dropping: Option<ty::Ty<'tcx>>,
-        span: Span,
-    ) -> R<Expr> {
+    pub fn filtered(&mut self, it: Expr, test: Expr, dropping: Option<ty::Ty<'tcx>>, span: Span) -> R<Expr> {
         let drop = match dropping {
             Some(item) => self.std_drop_function(item, span)?,
             None => None,
@@ -33,12 +27,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// each it skips or the one it stops at, which `$lazySkipWhile` and
     /// `$lazyTakeWhile` run as `$kept` says, the runtime's one answer of what
     /// a discarding stage drops as its test panics (#651, #817).
-    pub(in crate::lower) fn dropping_discarded(
-        &mut self,
-        item: ty::Ty<'tcx>,
-        exprs: &mut Vec<Expr>,
-        span: Span,
-    ) -> R<()> {
+    pub fn dropping_discarded(&mut self, item: ty::Ty<'tcx>, exprs: &mut Vec<Expr>, span: Span) -> R<()> {
         exprs.extend(self.std_drop_function(item, span)?);
         Ok(())
     }
@@ -156,7 +145,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// value. JS's `sort()` compares as strings: right for `bool`s, and
     /// numbers need `a - b`, strings `$cmp`, by code point (ADR 0183).
     /// Where its calls can be seen, std's own, `$sortStable` (#925).
-    pub(in crate::lower) fn sort_values(
+    pub fn sort_values(
         &mut self,
         key: Option<Expr>,
         items: Expr,

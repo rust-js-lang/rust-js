@@ -6,23 +6,23 @@
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::mir::{BasicBlock, Body, TerminatorKind};
 
-pub(in crate::lower) struct Graph {
+pub struct Graph {
     /// Each block's successors, in the order its terminator names them.
-    pub(in crate::lower) succ: Vec<Vec<BasicBlock>>,
+    pub succ: Vec<Vec<BasicBlock>>,
     /// The blocks reached from the start, in reverse postorder.
-    pub(in crate::lower) rpo: Vec<BasicBlock>,
+    pub rpo: Vec<BasicBlock>,
     /// Each block's place in `rpo`, `usize::MAX` for one never reached.
     pub(in crate::lower) order: Vec<usize>,
     /// Each block's immediate dominator; the start's is itself.
     pub(in crate::lower) idom: Vec<Option<BasicBlock>>,
     /// The targets of edges back to a block that dominates their source.
-    pub(in crate::lower) headers: IndexSet<BasicBlock>,
+    pub headers: IndexSet<BasicBlock>,
     /// The blocks more than one forward edge reaches.
-    pub(in crate::lower) merges: IndexSet<BasicBlock>,
+    pub merges: IndexSet<BasicBlock>,
 }
 
 /// What `block` goes on to when nothing panics.
-pub(in crate::lower) fn successors(body: &Body<'_>, block: BasicBlock) -> Vec<BasicBlock> {
+pub fn successors(body: &Body<'_>, block: BasicBlock) -> Vec<BasicBlock> {
     use TerminatorKind::*;
     let mut next = match &body.basic_blocks[block].terminator().kind {
         Goto { target } => vec![*target],
@@ -44,7 +44,7 @@ impl Graph {
     /// leads instead: a guard's that holds, to its arm (`held_arms`); and
     /// each block of `tested` going on where its block there does: an
     /// `Option`'s test that's its payload's (`mir_payload_tests`).
-    pub(in crate::lower) fn of(
+    pub fn of(
         body: &Body<'_>,
         through: &IndexMap<BasicBlock, BasicBlock>,
         tested: &IndexMap<BasicBlock, BasicBlock>,
@@ -149,7 +149,7 @@ impl Graph {
 
     /// Whether `a` dominates `b`: every way from the start to `b` passes it.
     // helper: a body's control-flow graph, asked by `mir`'s loops and facts, the base's since #2299 moved it with `awaits`
-    pub(in crate::lower) fn dominates(&self, a: BasicBlock, mut b: BasicBlock) -> bool {
+    pub fn dominates(&self, a: BasicBlock, mut b: BasicBlock) -> bool {
         loop {
             if a == b {
                 return true;
@@ -168,7 +168,7 @@ impl Graph {
     /// a forward one, writes its target's tree in place, and never ends
     /// (#1383).
     // helper: a body's control-flow graph, asked by `mir`'s loops and facts, the base's since #2299 moved it with `awaits`
-    pub(in crate::lower) fn entered_mid_loop(&self) -> Option<BasicBlock> {
+    pub fn entered_mid_loop(&self) -> Option<BasicBlock> {
         self.rpo.iter().copied().find(|&b| {
             (self.succ[b.as_usize()].iter())
                 .any(|&s| self.order[s.as_usize()] <= self.order[b.as_usize()] && !self.dominates(s, b))
@@ -177,14 +177,14 @@ impl Graph {
 
     /// Whether the edge `from` to `to` goes back to a loop's header.
     // helper: a body's control-flow graph, asked by `mir`'s loops and facts, the base's since #2299 moved it with `awaits`
-    pub(in crate::lower) fn backward(&self, from: BasicBlock, to: BasicBlock) -> bool {
+    pub fn backward(&self, from: BasicBlock, to: BasicBlock) -> bool {
         self.headers.contains(&to) && self.dominates(to, from)
     }
 
     /// The blocks `block` immediately dominates that more than one forward
     /// edge reaches, the latest first: each is what follows a labeled
     /// block, the latest the outermost (Ramsey's "Beyond Relooper").
-    pub(in crate::lower) fn merge_children(&self, block: BasicBlock) -> Vec<BasicBlock> {
+    pub fn merge_children(&self, block: BasicBlock) -> Vec<BasicBlock> {
         let mut children: Vec<BasicBlock> = self
             .rpo
             .iter()

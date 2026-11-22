@@ -25,7 +25,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`named_fn_ref`, rd114a): a thread-local made where it's first used,
     /// the crate's or a library's, is its call, `START()` (ADR 0037,
     /// amended); anything else, its name.
-    pub(super) fn item_read(&self, def_id: DefId, named: Span) -> Expr {
+    pub fn item_read(&self, def_id: DefId, named: Span) -> Expr {
         let place = self.named_fn_ref(def_id, None, named);
         match self.made_where_used(def_id) {
             true => Expr {
@@ -60,7 +60,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .is_some_and(|item| item.calling.has(rust_js_program::library::ItemFact::Lazy))
     }
 
-    pub(super) fn fn_ref(&self, def_id: DefId) -> Expr {
+    pub fn fn_ref(&self, def_id: DefId) -> Expr {
         // A library's its JS doesn't export, or whose JS may share what it
         // copies that the crate changes in place, compiled here: asked for,
         // and the crate lowered again with it, which this lowering's JS
@@ -173,7 +173,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// that has it where the path names it so, `plugin::extract_events(..)`
     /// and `fiber::CURRENT`, read through its namespace,
     /// `Plugin.extractEvents` and `Fiber.current` (rd114, rd114a, ADR 1018).
-    pub(super) fn named_fn_ref(&self, def_id: DefId, copy: Option<usize>, named: Span) -> Expr {
+    pub fn named_fn_ref(&self, def_id: DefId, copy: Option<usize>, named: Span) -> Expr {
         let path = (self.krate.module_paths.get(&named)).filter(|through| through.function == def_id);
         let through = path.is_some();
         // The crate's function a module re-exports, called through that
@@ -317,11 +317,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `args` here calls, as this lowering takes its own type parameters
     /// (ADR 0051, amended): its own JS, `None`, or a copy its callers need
     /// besides, which the crate's analysis made of each call it found.
-    pub(super) fn called_copy(
-        &self,
-        (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
-        span: Span,
-    ) -> R<Option<usize>> {
+    pub fn called_copy(&self, (callee, args): (DefId, ty::GenericArgsRef<'tcx>), span: Span) -> R<Option<usize>> {
         // Its type parameters as `args` names them, in a default copied
         // into an impl the impl's terms (`declared_param`, #2273).
         let params = self.lowered_params().unwrap_or_else(|| super::analysis::Params {
@@ -344,7 +340,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A JS global (`console.log`) or an explicit package import
     /// (`node:path#posix.join` is `posix.join`, ADR 0028).
-    pub(super) fn js_ref(&self, path: &str) -> Expr {
+    pub fn js_ref(&self, path: &str) -> Expr {
         super::path_read(path, self.krate.required, |export| {
             self.dependencies
                 .borrow_mut()
@@ -358,7 +354,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `named` (ADR 0633): through the module that holds it, where the
     /// caller names it through that module, that module's export, imported;
     /// else in place, as `js_ref` reads it.
-    pub(super) fn binding_ref(&self, path: &str, named: Span) -> Expr {
+    pub fn binding_ref(&self, path: &str, named: Span) -> Expr {
         let Some(read) = self.krate.held_reads.get(&named) else {
             return self.js_ref(path);
         };
@@ -497,7 +493,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// only passes its parameters on; else that arrow. What hands a `fn` to
     /// JS gives it no more than Rust does, `.map((item) => f(item))`. It's
     /// read where it's `named`, through the module that holds it (ADR 0633).
-    pub(super) fn binding_fn_pointer(
+    pub fn binding_fn_pointer(
         &mut self,
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
@@ -528,7 +524,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a binding's (ADR 0602) or a std function that's `Math`'s, `Math.log`
     /// of `f64::ln` (ADR 0887). `None` of any other, whose pointer is its
     /// value. The one answer both forms of pointer ask (#1812).
-    pub(super) fn fn_item_pointer(
+    pub fn fn_item_pointer(
         &mut self,
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
@@ -542,7 +538,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The JS component binding `def_id` names, if it names one.
-    pub(super) fn binding_component_of(&self, def_id: DefId) -> Option<Expr> {
+    pub fn binding_component_of(&self, def_id: DefId) -> Option<Expr> {
         match js_form(self.tcx, def_id) {
             JsForm::Call(name) if is_binding(self.tcx, def_id) && !is_method(self.tcx, def_id) => {
                 Some(self.js_ref(&name))
@@ -556,7 +552,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Is `def_id` a Rust function, `const` or `static` rust-js compiled, read
     /// by its name: the crate's own, one a library exports (ADRs 0100,
     /// 0770), or a library's the crate compiles itself (ADR 0914, amended)?
-    pub(super) fn is_rust_fn(&self, def_id: DefId) -> bool {
+    pub fn is_rust_fn(&self, def_id: DefId) -> bool {
         self.krate.fns.contains_key(&def_id) || self.krate.foreign.compiled(def_id)
     }
 
@@ -607,7 +603,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `TryInto` as `TryFrom`, if that's a hand-written impl, or a bound's
     /// this function has of a type parameter, `U: From<T>`, its
     /// dictionary's; not where it's bound `T: Into<U>`, that one's.
-    pub(super) fn resolve_into(
+    pub fn resolve_into(
         &self,
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
@@ -623,7 +619,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The function a call runs: the crate's impl a trait method resolves to,
     /// or the `From` an `Into` does, else the one named.
-    pub(super) fn callee(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> (DefId, ty::GenericArgsRef<'tcx>) {
+    pub fn callee(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> (DefId, ty::GenericArgsRef<'tcx>) {
         self.impl_method(def_id, args)
             .ok()
             .flatten()
@@ -710,7 +706,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What an arrow's one parameter of `input` is called: `(s) => ..` of a
     /// string, `c` of a `char`, `n` of a number.
-    pub(super) fn parameter_name(&self, input: Ty<'tcx>) -> Role {
+    pub fn parameter_name(&self, input: Ty<'tcx>) -> Role {
         if input.is_char() {
             Role::C
         } else if self.is_string_like(input) {
@@ -747,7 +743,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its impl calls it, `self.next()` of a `Self` that's the crate's
     /// iterator, its own `next` (ADRs 0049, 0492). The one answer, of what's
     /// std's and what's the crate's.
-    pub(super) fn resolves_to_crate(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> R<bool> {
+    pub fn resolves_to_crate(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> R<bool> {
         // Not `Iterator`'s of a compiled std iterator, `Peekable`'s `next` or
         // `count`: its struct is a JS iterator, stepped as one, and sized by
         // the hint it carries; but a provided method compiled, `fuse()`'s,
@@ -779,7 +775,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `ty`, of a function's own generics, in a call of it, `generic_args`.
-    pub(super) fn instantiated(&self, ty: Ty<'tcx>, generic_args: ty::GenericArgsRef<'tcx>) -> Ty<'tcx> {
+    pub fn instantiated(&self, ty: Ty<'tcx>, generic_args: ty::GenericArgsRef<'tcx>) -> Ty<'tcx> {
         let ty = ty::EarlyBinder::bind(self.tcx, ty)
             .instantiate(self.tcx, generic_args)
             .skip_normalization();
@@ -795,7 +791,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// resolution panics on arguments it can't normalize. The one way the
 /// front end finds what a call or a constant is, in whichever environment
 /// its asker is.
-pub(super) fn resolve_instance_in<'tcx>(
+pub fn resolve_instance_in<'tcx>(
     tcx: ty::TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     def_id: DefId,
@@ -822,7 +818,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is its `&mut`, and of std's (`boxed_args`). Each question of what a
     /// call is given asks it, `lent_as_pointers` too (ADR 1114).
     // helper: asked by `mir` and the base alike, the base's since #2299 moved it from `mir::assign`
-    pub(in crate::lower) fn call_callee(
+    pub fn call_callee(
         &self,
         def_id: rustc_span::def_id::DefId,
         generic_args: ty::GenericArgsRef<'tcx>,

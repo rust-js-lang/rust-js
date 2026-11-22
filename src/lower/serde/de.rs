@@ -104,7 +104,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `serde_json::from_str::<T>(s)`: `$fromJson(s, read)`, with `read` the
     /// function that reads a `T`.
-    pub(in crate::lower) fn json_value(&mut self, text: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn json_value(&mut self, text: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         self.refuse_dropping_read(ty, span)?;
         let read = self.json_reader(ty, span)?;
         self.use_reader();

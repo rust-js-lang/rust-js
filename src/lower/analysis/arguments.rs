@@ -35,7 +35,7 @@ use rustc_span::def_id::DefId;
 /// `function::with_this` makes, each the tuple of its parameters, which
 /// the `dyn Fn` a call of one calls takes (rd509).
 #[derive(Default)]
-pub(in crate::lower) struct ReadsArguments<'tcx> {
+pub struct ReadsArguments<'tcx> {
     pub functions: IndexSet<DefId>,
     pub with_this: IndexSet<ty::Ty<'tcx>>,
     /// Each closure `function::with_this` makes that reads it.
@@ -49,7 +49,7 @@ impl<'tcx> ReadsArguments<'tcx> {
     /// `args`, its arguments' tuple, may call one that reads it: one the
     /// crate makes, or one a library does, as its contract says, which it
     /// may hand the crate (ADR 1048, amended, #553).
-    pub(in crate::lower) fn may_call(
+    pub fn may_call(
         &self,
         tcx: TyCtxt<'tcx>,
         foreign: &crate::lower::library::Foreign<'_, 'tcx>,
@@ -62,7 +62,7 @@ impl<'tcx> ReadsArguments<'tcx> {
     /// parameters, `js::arguments()` or `js::this()`, so no closure that
     /// forwards to it is it, which its JS caller would give them (rd332,
     /// rd683).
-    pub(in crate::lower) fn reads_its_call(&self, def_id: DefId) -> bool {
+    pub fn reads_its_call(&self, def_id: DefId) -> bool {
         self.functions.contains(&def_id) || self.this.contains(&def_id)
     }
 }
@@ -72,7 +72,7 @@ impl<'tcx> ReadsArguments<'tcx> {
 /// constant's of `initializers` too, and each use of one that reads
 /// `this` but to call it, or of another crate's that does, as its contract
 /// says (`foreign`'s).
-pub(in crate::lower) fn reads_arguments<'tcx>(
+pub fn reads_arguments<'tcx>(
     tcx: TyCtxt<'tcx>,
     (all_bodies, initializers): (&[&Body<'tcx>], &[Body<'tcx>]),
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,

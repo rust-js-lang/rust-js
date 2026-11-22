@@ -84,7 +84,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `Default::default()` of `ty`: `0`, `""`, `[]`, a struct of its fields'
     /// defaults, or a call of a hand-written `default`.
-    pub(in crate::lower) fn default_value(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn default_value(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let default = std_item(self.tcx, StdItem::Default);
         // What a bound gave this function for it, a type parameter's or
         // a where clause's of one made of them, `[Self::Item; N]: Default`:

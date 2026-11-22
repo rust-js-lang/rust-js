@@ -16,7 +16,7 @@ use rustc_span::{RemapPathScopeComponents, Span};
 
 /// What's asked of a `Location`.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum LocationOp {
+pub enum LocationOp {
     /// `Location::caller()`: where this function was called, if it tracks
     /// its caller, or where it's written.
     Caller,

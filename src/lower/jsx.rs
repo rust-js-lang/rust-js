@@ -15,7 +15,7 @@ use rustc_span::{BytePos, Span};
 /// How a closure's body is its one call whose JS gives `undefined`
 /// (`closure_calls_for_nothing`): as the program wrote it.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(super) enum OneCall {
+pub enum OneCall {
     /// The body's value, `|| f()` or `|| { f() }`, with no `;`: `() =>
     /// f()` (ADR 0883).
     Value,
@@ -35,7 +35,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Element construction is inert (ADR 0040). Capture its inputs at the
     /// original evaluation point while leaving the element in the JSX tree.
-    pub(super) fn capture_jsx(&mut self, value: &mut Expr, out: &mut Vec<Stmt>) -> bool {
+    pub fn capture_jsx(&mut self, value: &mut Expr, out: &mut Vec<Stmt>) -> bool {
         match &mut value.kind {
             js::ExprKind::Jsx(jsx) => {
                 if let js::JsxTag::Component(tag) = &mut jsx.tag {
@@ -95,7 +95,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// An object being made, which a field may still be given, a style's
     /// `CSSProperties::new().opacity(..)`: what it's made of read now, as an
     /// element's is (`capture_jsx`), the object made where it's used.
-    pub(super) fn capture_object(&mut self, value: &mut Expr, out: &mut Vec<Stmt>) -> bool {
+    pub fn capture_object(&mut self, value: &mut Expr, out: &mut Vec<Stmt>) -> bool {
         let js::ExprKind::Object(props, ..) = &mut value.kind else {
             return false;
         };
@@ -231,13 +231,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     // ── JSX (ADR 0040) ──────────────────────────────────────────────────
 
     /// A JSX element, of what its binding is given.
-    pub(super) fn jsx_values(
-        &mut self,
-        tag: &str,
-        args: Vec<JsxArg<'tcx>>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
+    pub fn jsx_values(&mut self, tag: &str, args: Vec<JsxArg<'tcx>>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         self.jsx = true;
         let mut args = args.into_iter();
         let (tag, props, children) = match (tag, args.len()) {
@@ -541,7 +535,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// or written in place, returns it, `onSubmit={() => submit(false)}`:
     /// it reads what Rust's gives, `undefined`; and any closure whose body
     /// is its call's value, `|| f()`, is `() => f()` (ADR 0883).
-    pub(super) fn closure_calls_for_nothing(&self, body: &super::Body<'tcx>) -> Option<OneCall> {
+    pub fn closure_calls_for_nothing(&self, body: &super::Body<'tcx>) -> Option<OneCall> {
         let thir = &body.thir;
         let root = body.root()?;
         let mut call = super::body_queries::strip(thir, root);
@@ -750,7 +744,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `<el {...props}>` spreads: a struct's fields, or a JS value's own
     /// properties, a `Rest`'s or a `js::Unknown` read from JSON say, or
     /// none, `undefined`, which JS spreads as nothing (ADR 0268).
-    pub(super) fn jsx_spread_checked(&self, name: &str, ty: Ty<'tcx>, span: Span) -> R<()> {
+    pub fn jsx_spread_checked(&self, name: &str, ty: Ty<'tcx>, span: Span) -> R<()> {
         let js_object = |ty: Ty<'tcx>| self.recognition().is_js_object(ty.peel_refs());
         // Through a reference, the struct itself, which JS spreads alike.
         let spread = ty.peel_refs();
@@ -765,7 +759,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// An attribute set on what isn't an element being made.
-    pub(super) fn one_expression(&self, span: Span) -> crate::lower::refusal::Refusal {
+    pub fn one_expression(&self, span: Span) -> crate::lower::refusal::Refusal {
         let message = "rust-js makes JSX from one expression: set an element's props in the chain that makes it";
         crate::lower::refusal::error(self.tcx, span, message)
     }
@@ -779,7 +773,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An element's attribute, `name`, given: the element made, its value,
     /// what that needs done first, and whether it's simple.
-    pub(super) fn jsx_prop_values(
+    pub fn jsx_prop_values(
         &mut self,
         name: String,
         mut element: Expr,
@@ -890,11 +884,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// A JSX binding's argument: its value, its type, and its THIR expression
 /// where there's one, for its shape, and its span.
-pub(super) struct JsxArg<'tcx> {
-    pub(super) value: Expr,
-    pub(super) ty: Ty<'tcx>,
-    pub(super) expr: Option<ExprId>,
-    pub(super) span: Span,
+pub struct JsxArg<'tcx> {
+    pub value: Expr,
+    pub ty: Ty<'tcx>,
+    pub expr: Option<ExprId>,
+    pub span: Span,
 }
 
 /// JSX syntax evaluated here, rather than inside a callback passed elsewhere.

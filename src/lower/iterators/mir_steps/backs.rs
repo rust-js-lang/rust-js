@@ -52,7 +52,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// made in place, as `rev`, `def_id`, is at `span` (`adapter_in_place`),
     /// is marked so first, which what makes it knowing its back asks of it
     /// (`made_in_place`).
-    pub(in crate::lower) fn rev_called(
+    pub fn rev_called(
         &mut self,
         receiver: Expr,
         (iter_ty, receiver_ty, output): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
@@ -184,7 +184,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// with a clone of each, as a closure cloned apart is (ADR 0522). Its
     /// sources' positions are all its state, a JS iterator helper's, so a
     /// clone of it is where it is.
-    pub(in crate::lower) fn cloned_apart_adapter(
+    pub fn cloned_apart_adapter(
         &mut self,
         (name, parts, names): (&str, Vec<Expr>, &[Role]),
         (part_tys, output): (Vec<Ty<'tcx>>, Ty<'tcx>),
@@ -247,7 +247,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the adapter holds it (ADR 0465), where it's owned, not through a
     /// `&mut` (#749): no arm makes a source it leaves unclosed (#2152).
     /// `None` of another.
-    pub(in crate::lower) fn back_kept(
+    pub fn back_kept(
         &mut self,
         method: Option<IterMethod>,
         receiver: &Expr,
@@ -499,7 +499,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// what's made in place (`made_as_growth_asks`, #1795, #1744, #2041).
     /// Each write of a local's value reads it: an assignment's, and a
     /// pending temporary's made a `const` (`flush`). Another as it is.
-    pub(in crate::lower) fn written_as_asked(
+    pub fn written_as_asked(
         &mut self,
         local: rustc_middle::mir::Local,
         (value, ty): (Expr, Ty<'tcx>),
@@ -557,7 +557,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// destructor, what `nth_back` and `rfind` pass over is dropped, as
     /// std's are; `rfold` gives each to its function. Of items that could
     /// look like `None`, what's found is their `Some` (ADR 0051).
-    pub(in crate::lower) fn back_step(
+    pub fn back_step(
         &mut self,
         method: IterMethod,
         values: Vec<Expr>,
@@ -731,7 +731,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// compiled struct of a type stepped from its back elsewhere is none
     /// (#856).
     // helper: asked by `mir::iter` alone, the entry it was beneath before #2299 moved it
-    pub(in crate::lower) fn has_a_back(&self, iter_ty: Ty<'tcx>, value: &Expr) -> bool {
+    pub fn has_a_back(&self, iter_ty: Ty<'tcx>, value: &Expr) -> bool {
         // Of a value made before: whether its type knows its back by its
         // structure, not whether what's being made is to be made so (#851).
         let structural = || {
@@ -766,7 +766,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// Each `rev()` of `b` read in place, `reversed_in_place`'s, but one a
 /// step from its back is given, `$foldBack($rev(c))`, whose chain
 /// reversed inward would have no back (#1855).
-pub(in crate::lower) fn reversed_in_body(b: &mut [js::Stmt]) {
+pub fn reversed_in_body(b: &mut [js::Stmt]) {
     let mut stepped: Vec<*const Expr> = Vec::new();
     js::each_expr_mut(b, &mut |e| {
         if let Some(it) = stepped_from_its_back(e) {

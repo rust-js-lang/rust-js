@@ -36,7 +36,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `variants_test`, of the tag `tag` where it's given, read once where
     /// JS may have made the value (`held_tag`, #2208).
     #[track_caller]
-    pub(in crate::lower) fn variants_test_by(
+    pub fn variants_test_by(
         &self,
         (subject, tag): (Expr, Option<&Expr>),
         ty: Ty<'tcx>,
@@ -81,7 +81,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// untagged one `present`, `classify(Some(value))`'s, is never
     /// `undefined` nor `null`, which no test leaves out then (ADR 0676).
     #[track_caller]
-    pub(in crate::lower) fn variant_test(
+    pub fn variant_test(
         &self,
         subject: Expr,
         ty: Ty<'tcx>,
@@ -112,21 +112,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// an enum told by one; none of one told otherwise, an `Option`'s
     /// presence, an untagged one's kind, a keyed one's keys, an
     /// `Ordering`'s number, a write's result.
-    pub(in crate::lower) fn held_tag(&self, subject: &Expr, ty: Ty<'tcx>, adt: ty::AdtDef<'tcx>) -> Option<Expr> {
+    pub fn held_tag(&self, subject: &Expr, ty: Ty<'tcx>, adt: ty::AdtDef<'tcx>) -> Option<Expr> {
         (self.tag_held(ty, adt)).then(|| Expr::member(subject.clone(), bindings::tag_key(self.tcx, adt.did())))
     }
 
     /// Whether the test that a value is `variant` of `adt` reads its tag:
     /// a variant of fields's, or any of an enum whose tag is declared; not
     /// one without fields, the value itself its name (`unit_variant`).
-    pub(in crate::lower) fn test_reads_tag(&self, adt: ty::AdtDef<'tcx>, variant: VariantIdx) -> bool {
+    pub fn test_reads_tag(&self, adt: ty::AdtDef<'tcx>, variant: VariantIdx) -> bool {
         !adt.variant(variant).fields.is_empty() || bindings::declared_tag(self.tcx, adt.did()).is_some()
     }
 
     /// Whether a switch over a value of the enum `ty` reads its tag once
     /// (`held_tag`): of an enum told by an object's tag that JS may have
     /// made or given.
-    pub(in crate::lower) fn tag_held(&self, ty: Ty<'tcx>, adt: ty::AdtDef<'tcx>) -> bool {
+    pub fn tag_held(&self, ty: Ty<'tcx>, adt: ty::AdtDef<'tcx>) -> bool {
         let told_by_tag = !self.tcx.is_lang_item(adt.did(), LangItem::Option)
             && !self.is_write_result(ty)
             && !bindings::is_untagged(self.tcx, adt.did())

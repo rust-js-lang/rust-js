@@ -338,7 +338,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is its module's `const` (ADR 0592); given its type parameters' and
     /// consts', a function of them, and its cache's value, made where its
     /// module is: a `WeakMap` of what it's given, or a `Map` of numbers.
-    pub(in crate::lower) fn lower_dictionary(&mut self, id: DefId, cache: &str) -> R<(js::Function, Option<Expr>)> {
+    pub fn lower_dictionary(&mut self, id: DefId, cache: &str) -> R<(js::Function, Option<Expr>)> {
         let span = self.tcx.def_span(id);
         // An impl of a generic trait, `Convert<f64>`, or of a std one,
         // `PartialEq<Rhs>`, is for its arguments: a dictionary of its own.

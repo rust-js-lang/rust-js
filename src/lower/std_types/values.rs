@@ -28,13 +28,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// do. Another might drop it, which JS wouldn't (ADR 0098); one of a type
     /// parameter's only is one its callers give none of (ADR 0190). `tys`:
     /// its arguments' types.
-    pub(in crate::lower) fn check_takes_drops(
-        &mut self,
-        known: Std,
-        def_id: DefId,
-        tys: &[Ty<'tcx>],
-        span: Span,
-    ) -> R<()> {
+    pub fn check_takes_drops(&mut self, known: Std, def_id: DefId, tys: &[Ty<'tcx>], span: Span) -> R<()> {
         // A function or a value it's given is dropped where std drops it,
         // where it's `handled_argument`'s (ADRs 0469, 0470, 0490): nothing
         // taken here.
@@ -383,7 +377,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `known` gives an `Option` whose `Some` is boxed where it looks
     /// like `None` (ADR 0051), and isn't one of those that make one boxed.
-    pub(in crate::lower) fn refuses_boxed_option(&self, known: Std, output: Ty<'tcx>) -> bool {
+    pub fn refuses_boxed_option(&self, known: Std, output: Ty<'tcx>) -> bool {
         self.option_of(output).is_some_and(|inner| self.boxed_payload(inner))
             && !matches!(
                 known,
@@ -453,7 +447,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0364). `boxed`: whether the `Option` it gives boxes its `Some`
     /// (ADR 0051); `output`, what it gives. One that lends an object from
     /// inside its receiver, recorded as stored there once it's made (#1475).
-    pub(in crate::lower) fn std_values(
+    pub fn std_values(
         &mut self,
         known: Std,
         call: Call<'_, 'tcx>,
@@ -860,7 +854,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A std function of its arguments' values, lowered once they're values
     /// (`std_values`).
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::lower) fn std_by_values(
+    pub fn std_by_values(
         &mut self,
         known: Std,
         def_id: rustc_span::def_id::DefId,

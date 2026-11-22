@@ -172,14 +172,14 @@ impl IterValue {
 /// Whether `e` is a string's iterator made here: JS's own,
 /// `s[Symbol.iterator]()`, or the runtime's, `$chars(s)` or
 /// `$charIndices(s)`, none of which has a `return()`.
-pub(in crate::lower) fn made_string_iterator(e: &Expr) -> bool {
+pub fn made_string_iterator(e: &Expr) -> bool {
     super::string_iterated(e).is_some()
         || matches!(&e.kind, js::ExprKind::Call(callee, _) if matches!(callee.helper_name(), Some("$chars" | "$charIndices")))
 }
 
 /// Of the runtime's `chars()` made here, `$chars(s)` as `e` is, the
 /// string, whose JS iteration steps the same `char`s (#1186).
-pub(in crate::lower) fn chars_made_of(e: &Expr) -> Option<&Expr> {
+pub fn chars_made_of(e: &Expr) -> Option<&Expr> {
     match &e.kind {
         js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$chars") && args.len() == 1 => args.first(),
         _ => None,
@@ -190,7 +190,7 @@ pub(in crate::lower) fn chars_made_of(e: &Expr) -> Option<&Expr> {
 /// as `e` is, the iterator: which has no `return()` a lending keeps from
 /// being called, and which nothing else holds, so it's lent as it is
 /// (#1186).
-pub(in crate::lower) fn lent_string_iterator(e: &Expr) -> Option<&Expr> {
+pub fn lent_string_iterator(e: &Expr) -> Option<&Expr> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };
@@ -199,7 +199,7 @@ pub(in crate::lower) fn lent_string_iterator(e: &Expr) -> Option<&Expr> {
 }
 
 /// Of a variable lent, `$lent(v)` as `e` is, `v` (#1955).
-pub(in crate::lower) fn lent_variable(e: &Expr) -> Option<&js::Name> {
+pub fn lent_variable(e: &Expr) -> Option<&js::Name> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };
@@ -232,7 +232,7 @@ const VALUE_FACTS: [Known; 13] = [
 /// Of `facts`, those `emit` marked a value's JS with: what a value made
 /// again of the same call keeps, `for (x of e)`'s `e` without what else was
 /// known of it (`iterated`).
-pub(in crate::lower) fn its_facts(facts: js::Facts) -> js::Facts {
+pub fn its_facts(facts: js::Facts) -> js::Facts {
     (VALUE_FACTS.into_iter())
         .filter(|&fact| facts.has(fact))
         .fold(js::Facts::NONE, js::Facts::with)
@@ -286,7 +286,7 @@ pub(in crate::lower) fn closed_parts(e: &Expr) -> Option<(&Expr, &Expr)> {
 
 /// What `e`, a value `emit()` lent (`Known::IterLent`), `$lent(it)`, lends:
 /// `it`, made for this call alone, which no one else steps; or `e` itself.
-pub(in crate::lower) fn unlent(e: &Expr) -> &Expr {
+pub fn unlent(e: &Expr) -> &Expr {
     match &e.kind {
         js::ExprKind::Call(_, of) if e.facts.has(Known::IterLent) && matches!(of.len(), 1 | 2) => &of[0],
         _ => e,
@@ -331,7 +331,7 @@ pub(in crate::lower) fn stepped_value(e: &Expr) -> Option<Expr> {
 /// `e`, an adapter MIR made of a JS iterator `method_source` made one,
 /// `it.map(f)`: lazy, a JS iterator itself, said so (`Known::Iterator`), so
 /// one nothing reads is no statement (tidy's `unread_maps`, #805).
-pub(in crate::lower) fn lazily_made(mut e: Expr) -> Expr {
+pub fn lazily_made(mut e: Expr) -> Expr {
     e.facts = e.facts.with(Known::Iterator);
     e
 }
@@ -356,7 +356,7 @@ fn enumerating() -> Expr {
 /// An enumeration of `it` made in place in `form`, as the in-place forms
 /// owner chooses it (`enumeration_form`, `stepped_by_next_alone`):
 /// `$enumerate`, which passes its source's `nth` on, or JS's own map.
-pub(in crate::lower) fn enumerated_in(form: InPlaceForm, it: Expr) -> Expr {
+pub fn enumerated_in(form: InPlaceForm, it: Expr) -> Expr {
     match form {
         InPlaceForm::Enumerate => enumerated_passing(it),
         _ => enumerated(it),
@@ -387,7 +387,7 @@ pub(in crate::lower) fn enumerated_knowing(it: Expr) -> Expr {
 /// node alone; or knowing its back and its length, `$enumerate(src)`
 /// (`enumerated_knowing`).
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub(in crate::lower) enum EnumeratedForm {
+pub enum EnumeratedForm {
     Mapped,
     Passing,
     Made,
@@ -395,14 +395,14 @@ pub(in crate::lower) enum EnumeratedForm {
 
 /// An enumeration made here: what it enumerates, and how it's written.
 pub(in crate::lower) struct Enumerated<'e> {
-    pub(in crate::lower) source: &'e Expr,
-    pub(in crate::lower) form: EnumeratedForm,
+    pub source: &'e Expr,
+    pub form: EnumeratedForm,
 }
 
 /// What `e`, an enumeration made here, `enumerated`'s or
 /// `enumerated_knowing`'s, enumerates, and in which form: the one reader of
 /// either (#764).
-pub(in crate::lower) fn enumerated_of(e: &Expr) -> Option<Enumerated<'_>> {
+pub fn enumerated_of(e: &Expr) -> Option<Enumerated<'_>> {
     match &e.kind {
         js::ExprKind::Call(callee, args)
             if let js::ExprKind::Member(source, method) = &callee.kind
@@ -437,7 +437,7 @@ pub(in crate::lower) fn reversed_by(it: Expr) -> Expr {
 }
 
 /// What `e`, a `reversed_by` one, steps from its back: `it`.
-pub(in crate::lower) fn reversed_of(e: &Expr) -> Option<&Expr> {
+pub fn reversed_of(e: &Expr) -> Option<&Expr> {
     match &e.kind {
         js::ExprKind::Call(_, args) if e.facts.has(Known::IterRev) && args.len() == 1 => args.first(),
         _ => None,
@@ -683,7 +683,7 @@ pub(in crate::lower) fn is_range_stepped(e: &Expr) -> bool {
 /// `map(|x| Some(x))`'s, is as it was (`mir/iter.rs`), said so, so what
 /// makes the map knowing its back or its length makes its source so
 /// (`is_mapped_as_it_is`, #1342).
-pub(in crate::lower) fn mapped_as_it_is(mut source: Expr) -> Expr {
+pub fn mapped_as_it_is(mut source: Expr) -> Expr {
     source.facts = source.facts.with(Known::IterMappedAsItIs);
     source
 }
@@ -692,7 +692,7 @@ pub(in crate::lower) fn mapped_as_it_is(mut source: Expr) -> Expr {
 /// the map was given it: not the marks its maker gave the map, made in
 /// place (`Known::InPlace`), which a map's own call holds where it's
 /// written, `src.map(f)`.
-pub(in crate::lower) fn source_mapped_as_it_is(e: &Expr) -> Option<Expr> {
+pub fn source_mapped_as_it_is(e: &Expr) -> Option<Expr> {
     let mut source = e.clone();
     source.facts = (source.facts.without(Known::IterMappedAsItIs)).without(Known::InPlace);
     e.facts.has(Known::IterMappedAsItIs).then_some(source)
@@ -714,7 +714,7 @@ pub(in crate::lower) fn knows_its_given_length(e: &Expr) -> bool {
 /// `e`, a `rev()` its maker made knowing its back (`reversed_knowing`),
 /// marked so: what's asked of it past its maker reads the mark, not the
 /// type's set (back_stepped, ADR 0545).
-pub(in crate::lower) fn made_knowing_its_back(mut e: Expr) -> Expr {
+pub fn made_knowing_its_back(mut e: Expr) -> Expr {
     e.facts = e.facts.with(Known::IterKnowsBack);
     e
 }
@@ -723,7 +723,7 @@ pub(in crate::lower) fn made_knowing_its_back(mut e: Expr) -> Expr {
 /// so what's known of its value, not of its JS's form, is kept on it, made
 /// knowing its back (`made_knowing_its_back`) or its length
 /// (`made_knowing_its_length`) and made in place (`made_in_place`).
-pub(in crate::lower) fn held_by_its_owner(e: Expr) -> Expr {
+pub fn held_by_its_owner(e: Expr) -> Expr {
     let (knows_back, in_place) = (was_made_knowing_its_back(&e), super::made_in_place(&e));
     let knows_length = was_made_knowing_its_length(&e);
     let held = Expr::call_helper("$held", vec![e]);
@@ -750,20 +750,20 @@ pub(in crate::lower) fn held_of(e: &Expr) -> Option<&Expr> {
 }
 
 /// Whether `e` was made knowing its back (`made_knowing_its_back`).
-pub(in crate::lower) fn was_made_knowing_its_back(e: &Expr) -> bool {
+pub fn was_made_knowing_its_back(e: &Expr) -> bool {
     e.facts.has(Known::IterKnowsBack)
 }
 
 /// `e`, a map its maker made knowing its length, of what knows it, marked
 /// so: what's asked of it past its maker, its `len()` of a variable that
 /// holds it, reads the mark, not the type (#851).
-pub(in crate::lower) fn made_knowing_its_length(mut e: Expr) -> Expr {
+pub fn made_knowing_its_length(mut e: Expr) -> Expr {
     e.facts = e.facts.with(Known::IterKnowsLength);
     e
 }
 
 /// Whether `e` was made knowing its length (`made_knowing_its_length`).
-pub(in crate::lower) fn was_made_knowing_its_length(e: &Expr) -> bool {
+pub fn was_made_knowing_its_length(e: &Expr) -> bool {
     e.facts.has(Known::IterKnowsLength)
 }
 
@@ -891,18 +891,18 @@ pub(in crate::lower) fn form_lacks_a_back(e: &Expr) -> bool {
 pub(in crate::lower) struct SteppedRange<'e> {
     /// The range itself, `{ start: a, end: b }`.
     pub(in crate::lower) range: &'e Expr,
-    pub(in crate::lower) start: &'e Expr,
-    pub(in crate::lower) end: &'e Expr,
+    pub start: &'e Expr,
+    pub end: &'e Expr,
     pub(in crate::lower) step: &'e Expr,
-    pub(in crate::lower) inclusive: bool,
-    pub(in crate::lower) back: bool,
+    pub inclusive: bool,
+    pub back: bool,
 }
 
 /// `e`'s range, where it's a range's numbers its maker wrote
 /// (`Known::IterRange`), of an `a..b` or an `a..=b` made there, stepped from
 /// either end by its kind's step (`RangeKind::step`). `None` of another, or
 /// of a range a variable holds.
-pub(in crate::lower) fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
+pub fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
     if !e.facts.has(Known::IterRange) {
         return None;
     }
@@ -958,7 +958,7 @@ pub(in crate::lower) fn bounds_read(e: &Expr) -> Option<SteppedRange<'_>> {
 /// start: s }, $rangeFromStep(..)), n)`: `s` and `n`, a whole number from
 /// 1 up, which every step adds (rd260); of `s..` itself, `$iterator({
 /// start: s }, $rangeFromStep(..))`, `s` and 1.
-pub(in crate::lower) fn stepped_from(e: &Expr) -> Option<(&Expr, i128)> {
+pub fn stepped_from(e: &Expr) -> Option<(&Expr, i128)> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };

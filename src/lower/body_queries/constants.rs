@@ -12,7 +12,7 @@ use rustc_span::def_id::DefId;
 /// symbol's, `js::SymbolFor`'s, by its key (ADR 0634); or a string's, by
 /// its text, which tells two string patterns apart (#389c, rd112).
 #[derive(Clone, PartialEq, Eq, Hash)]
-pub(in crate::lower) enum PatternValue<'tcx> {
+pub enum PatternValue<'tcx> {
     Bits(ty::Ty<'tcx>, u128),
     Key(String),
     Text(String),
@@ -22,7 +22,7 @@ pub(in crate::lower) enum PatternValue<'tcx> {
 /// tests of it (`ConstantPatterns`): a field, a variant, an element; MIR's
 /// place of it is the same steps, its derefs left out (`pattern_places`).
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub(in crate::lower) enum PatternStep {
+pub enum PatternStep {
     Field(rustc_abi::FieldIdx),
     Variant(rustc_abi::VariantIdx),
     Element,
@@ -32,7 +32,7 @@ pub(in crate::lower) enum PatternStep {
 /// test reads, may be (`ConstantPatterns::named`): of each part of `place`
 /// that may be what's matched, its type and the steps from it to `place`,
 /// its derefs left out, as a pattern's are.
-pub(in crate::lower) fn pattern_places<'tcx>(
+pub fn pattern_places<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &rustc_middle::mir::Body<'tcx>,
     place: rustc_middle::mir::Place<'tcx>,
@@ -74,7 +74,7 @@ type Matched<'tcx> = (Span, ty::Ty<'tcx>, Vec<Tested<'tcx>>);
 /// constants of one value, `SUSPENDED_ON_INSTANCE_AND_READY_TO_CONTINUE`
 /// and `HOST_COMPONENT`, each name it where it's written.
 #[derive(Default, Clone)]
-pub(in crate::lower) struct ConstantPatterns<'tcx> {
+pub struct ConstantPatterns<'tcx> {
     matched: Vec<Matched<'tcx>>,
 }
 
@@ -85,7 +85,7 @@ impl<'tcx> ConstantPatterns<'tcx> {
     /// another way, a literal, another constant or a trait's. `places` is
     /// where in what's matched the test may be (`pattern_places`); of none
     /// given, a test of the whole value, its patterns' anywhere.
-    pub(in crate::lower) fn named(
+    pub fn named(
         &self,
         tcx: TyCtxt<'tcx>,
         value: &PatternValue<'tcx>,
@@ -99,7 +99,7 @@ impl<'tcx> ConstantPatterns<'tcx> {
 
     /// Whether a pattern of the `match` or `let` written around `at` tests
     /// `value` at `places`, as `named` finds it: `Some(false)`'s `false`.
-    pub(in crate::lower) fn tests(
+    pub fn tests(
         &self,
         tcx: TyCtxt<'tcx>,
         value: &PatternValue<'tcx>,
@@ -237,7 +237,7 @@ fn tested_constants<'tcx>(
 /// The value `pat` tests, of a number, a `char`, a string or the
 /// registry's symbol, itself, not what's in it: the one answer to which value a constant
 /// pattern is (`PatternValue`).
-pub(in crate::lower) fn pattern_value<'tcx>(tcx: TyCtxt<'tcx>, pat: &Pat<'tcx>) -> Option<PatternValue<'tcx>> {
+pub fn pattern_value<'tcx>(tcx: TyCtxt<'tcx>, pat: &Pat<'tcx>) -> Option<PatternValue<'tcx>> {
     match &pat.kind {
         PatKind::Constant { value } if pat.ty.is_integral() || pat.ty.is_char() || pat.ty.is_bool() => value
             .valtree
@@ -264,10 +264,7 @@ pub(in crate::lower) fn pattern_value<'tcx>(tcx: TyCtxt<'tcx>, pat: &Pat<'tcx>) 
 /// The pattern of the field a `#[repr(transparent)]` struct's pattern is in
 /// JS, as the struct is its field (ADR 0584): a constant's, `EventPriority(2)`
 /// of `DISCRETE_EVENT_PRIORITY =>`, its `2`.
-pub(in crate::lower) fn transparent_subpattern<'p, 'tcx>(
-    tcx: TyCtxt<'tcx>,
-    pat: &'p Pat<'tcx>,
-) -> Option<&'p Pat<'tcx>> {
+pub fn transparent_subpattern<'p, 'tcx>(tcx: TyCtxt<'tcx>, pat: &'p Pat<'tcx>) -> Option<&'p Pat<'tcx>> {
     let (PatKind::Leaf { subpatterns }, ty::Adt(adt, _)) = (&pat.kind, pat.ty.kind()) else {
         return None;
     };

@@ -20,7 +20,7 @@ use rustc_span::def_id::DefId;
 /// What MIR tells of the value a struct literal's field is given, which a
 /// nullable field stores by (ADRs 0275, 0810).
 #[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
-pub(super) enum Given {
+pub enum Given {
     /// What may be `undefined`.
     #[default]
     Unknown,
@@ -64,7 +64,7 @@ fn literal_layout(tcx: ty::TyCtxt<'_>, span: Span) -> js::ObjectLayout {
 /// 0444, amended), as React's prototype object documents `isPersistent`.
 /// Of the crate's own structs: std's `Range`, `a..b`'s, documents its
 /// fields for Rust's readers, not for any object a program writes.
-pub(super) fn struct_literals(tcx: ty::TyCtxt<'_>) -> IndexMap<DefId, usize> {
+pub fn struct_literals(tcx: ty::TyCtxt<'_>) -> IndexMap<DefId, usize> {
     let mut counts = IndexMap::default();
     each_struct_literal(tcx, |typeck, e| {
         if let Some(ty) = typeck.expr_ty_opt(e)
@@ -116,7 +116,7 @@ pub(super) fn each_struct_literal<'tcx>(
 /// struct literal is written, as one written in place is (ADR 0835); its
 /// objects within, as rustc's value has no literal of theirs, on one line
 /// where they fit.
-pub(super) fn const_object(tcx: ty::TyCtxt<'_>, def_id: rustc_span::def_id::LocalDefId, mut value: Expr) -> Expr {
+pub fn const_object(tcx: ty::TyCtxt<'_>, def_id: rustc_span::def_id::LocalDefId, mut value: Expr) -> Expr {
     if let js::ExprKind::Object(_, layout) = &mut value.kind
         && let Some(body) = tcx.hir_maybe_body_owned_by(def_id)
         && let rustc_hir::ExprKind::Struct(..) = body.value.kind
@@ -136,7 +136,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `made`, a struct with a flattened field's object, as JS has it: the
     /// flattened field's own fields, of a struct made there, or its spread,
     /// `{ ...item, severity }`, where it's declared (ADR 0204).
-    pub(super) fn flattened_object(&self, made: Expr, ty: Ty<'tcx>) -> Expr {
+    pub fn flattened_object(&self, made: Expr, ty: Ty<'tcx>) -> Expr {
         let js::ExprKind::Object(props, mut layout) = made.kind else {
             return made;
         };
@@ -178,7 +178,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// of `struct P { a, b, c }` is `[2, 0, 1]`. As declared, of a tuple
     /// struct's or variant's, an array of them in place, and where THIR
     /// says nothing of it.
-    pub(super) fn written_order(&self, adt: &ty::AdtDef<'tcx>, variant_index: VariantIdx, span: Span) -> Vec<usize> {
+    pub fn written_order(&self, adt: &ty::AdtDef<'tcx>, variant_index: VariantIdx, span: Span) -> Vec<usize> {
         let variant = adt.variant(variant_index);
         let declared: Vec<usize> = (0..variant.fields.len()).collect();
         if variant.ctor_kind().is_some() || declared.len() < 2 {
@@ -279,12 +279,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// How the struct or variant literal made at `span` is written, which
     /// its object is written as (`literal_layout`); on one line where THIR
     /// has no literal of it there, of a tuple struct or variant.
-    pub(super) fn object_layout(
-        &self,
-        adt: &ty::AdtDef<'tcx>,
-        variant_index: VariantIdx,
-        span: Span,
-    ) -> js::ObjectLayout {
+    pub fn object_layout(&self, adt: &ty::AdtDef<'tcx>, variant_index: VariantIdx, span: Span) -> js::ObjectLayout {
         match self.written_literal(adt, variant_index, span) {
             true => literal_layout(self.tcx, span),
             false => js::ObjectLayout::default(),
@@ -307,7 +302,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `order`, each a declared field's index, as written
     /// (`written_order`), or as declared where it's `None`. Each field is
     /// `given` what MIR tells of its value, nothing where it's left out.
-    pub(super) fn adt_value(
+    pub fn adt_value(
         &mut self,
         ty: Ty<'tcx>,
         variant_index: VariantIdx,
@@ -554,7 +549,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The fields of `ty`, a struct whose `Default` is derived, when `base`
     /// is its `Default::default()`: what an update's base is made of.
-    pub(super) fn derived_default_fields(&self, base: ExprId, ty: Ty<'tcx>) -> Option<Vec<(String, Ty<'tcx>)>> {
+    pub fn derived_default_fields(&self, base: ExprId, ty: Ty<'tcx>) -> Option<Vec<(String, Ty<'tcx>)>> {
         let thir::ExprKind::Call { fun, args, .. } =
             &self.frame.thir[super::body_queries::strip(self.frame.thir, base)].kind
         else {
@@ -651,7 +646,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`field_default`), but none for a field the update gives
     /// where making it does nothing, as a `ReactNode`'s does (ADR 0201). And
     /// whether one the update gives is made still, for its effects.
-    pub(super) fn update_default(
+    pub fn update_default(
         &mut self,
         ty: Ty<'tcx>,
         fields: Vec<(String, Ty<'tcx>)>,
@@ -692,7 +687,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A constructor as a value, `.map(Some)` or `.map(Shape::Circle)`: an
     /// arrow of its fields, making what a call of it makes (ADR 0125).
-    pub(super) fn constructor_value(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Expr> {
+    pub fn constructor_value(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Expr> {
         // `js::SymbolFor` is `Symbol.for`, which `symbolFor(key)` calls as
         // it is (ADR 0964).
         if super::recognition::is_symbol_for_constructor(self.tcx, def_id) {

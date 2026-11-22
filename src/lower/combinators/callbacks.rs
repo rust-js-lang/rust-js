@@ -9,7 +9,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a function or a value it may leave unused, of arguments of types
     /// `tys`, by its argument, with where it's dropped, `handled_argument`'s.
     /// A function what it gives holds, `map(f)`'s, is refused.
-    pub(in crate::lower) fn given_unused(
+    pub fn given_unused(
         &self,
         known: Option<crate::lower::recognition::Std>,
         (tys, output): (&[Ty<'tcx>], Ty<'tcx>),
@@ -122,7 +122,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// dropped there, as `get_or_insert_with`'s is (ADR 0469).
     /// Or a boxed one's, `Box<dyn FnOnce()>`'s, whose kind its type doesn't
     /// say, which such a call takes as an `F: FnOnce` (#1220).
-    pub(in crate::lower) fn drops_unrun(&self, ty: Ty<'tcx>) -> bool {
+    pub fn drops_unrun(&self, ty: Ty<'tcx>) -> bool {
         let kind = crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty);
         (kind == Some(ty::ClosureKind::FnOnce) || kind.is_none() && self.boxed_function_kind(ty).is_some())
             && self.drops_function(ty)
@@ -137,7 +137,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// call of its JS function doesn't, so it's given as one that does,
     /// `$droppingOnce` (#2033). A closure's own call by value is refused
     /// where it's made (`ClosureFacts::called_by_value`, #2031).
-    pub(in crate::lower) fn boxes_called_once(
+    pub fn boxes_called_once(
         &self,
         (callee, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
         tys: &[Ty<'tcx>],
@@ -206,11 +206,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `when` none, a function it calls by `&mut` or `&`, a fold's
     /// (`handled_argument`), which std's call took and drops as it unwinds
     /// (#719); not one called by `FnOnce`, whose body drops what it took.
-    pub(in crate::lower) fn dropped_unwinding(
-        &mut self,
-        given: &[(Option<Unused>, Expr, Ty<'tcx>)],
-        span: Span,
-    ) -> R<Vec<Stmt>> {
+    pub fn dropped_unwinding(&mut self, given: &[(Option<Unused>, Expr, Ty<'tcx>)], span: Span) -> R<Vec<Stmt>> {
         let always = given.iter().filter(|(when, ..)| when.is_none()).cloned().collect();
         let mut dropped = Vec::new();
         self.dropped_given(None, always, span, &mut dropped)?;
@@ -221,7 +217,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// std drops it: as it returns, or where it's left unused, by the
     /// variant of its `subject` it's left on: `if (option == null) {
     /// loudDrop_drop(a); }`.
-    pub(in crate::lower) fn dropped_given(
+    pub fn dropped_given(
         &mut self,
         subject: Option<Expr>,
         given: Vec<(Option<Unused>, Expr, Ty<'tcx>)>,
@@ -299,7 +295,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// gives where what it's of is `None`, `null` (`calls::and_then_given`,
     /// #2112 S4d).
     // helper: asked by `mir` and the base alike, the base's since #2299 moved it from `mir::nulled`
-    pub(in crate::lower) fn returns_null_or_value(&self, def_id: rustc_span::def_id::DefId) -> bool {
+    pub fn returns_null_or_value(&self, def_id: rustc_span::def_id::DefId) -> bool {
         crate::lower::calls::gives_null_for_none(self.tcx, def_id)
             || (crate::lower::analysis::nulled_params::may_return_nulled(self.tcx, def_id)
                 && (self.settled.nulled).returns_nulled(&mut self.nulled_seen.borrow_mut(), self.item, def_id))
@@ -334,7 +330,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// says, as JS's own search of the array `it` is, lent, which its
     /// `iter()` gave as it is (`found_index_items`): `items.indexOf(x)`
     /// where `f` is `(c) => c === x`, else `items.findIndex(f)`.
-    pub(in crate::lower) fn found_index(&self, call: Expr, span: Span) -> R<Expr> {
+    pub fn found_index(&self, call: Expr, span: Span) -> R<Expr> {
         let searched = match &call.kind {
             js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$position") => match &args[..] {
                 [it, f] => Some((crate::lower::iterators::unlent(it).clone(), f.clone())),

@@ -23,9 +23,9 @@ use rustc_span::Span;
 /// moved out, those a part moved out of is changed in place, or given to
 /// the crate's own code, which may.
 #[derive(Default)]
-pub(in crate::lower) struct KeptCopies {
+pub struct KeptCopies {
     pub(in crate::lower) at_start: IndexSet<mir::Local>,
-    pub(in crate::lower) at_moves: IndexSet<mir::Local>,
+    pub at_moves: IndexSet<mir::Local>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -33,7 +33,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// kept: of a function `given_again` names, given by value, not a
     /// reference, which Rust changes nothing through but a `&mut`, which
     /// React gives none of. A closure's environment, its first, isn't.
-    pub(in crate::lower) fn kept_param(&self, body: &mir::Body<'tcx>, local: mir::Local) -> bool {
+    pub fn kept_param(&self, body: &mir::Body<'tcx>, local: mir::Local) -> bool {
         let id = body.source.def_id();
         let first = 1 + usize::from(self.tcx.is_closure_like(id));
         (first..=body.arg_count).contains(&local.as_usize())
@@ -49,7 +49,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// function of the crate's own, not JS's, which owns it and may change
     /// it, where it's moved out. A `Copy` value is copied where it's read
     /// (`copy_if_needed`).
-    pub(in crate::lower) fn kept_copies(&self, body: &mir::Body<'tcx>) -> KeptCopies {
+    pub fn kept_copies(&self, body: &mir::Body<'tcx>) -> KeptCopies {
         let mut copies = KeptCopies::default();
         let kept: Vec<mir::Local> = body.args_iter().filter(|&l| self.kept_param(body, l)).collect();
         if kept.is_empty() {
@@ -118,7 +118,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// { ...props, at: { ...props.at } }`, by the name `name_of` gives; of
     /// one a pattern takes apart, `({ at })`, each part's, `at = { ...at }`,
     /// `parts` its parts, as the pattern moves each out where it's given.
-    pub(in crate::lower) fn kept_starts(
+    pub fn kept_starts(
         &mut self,
         body: &mir::Body<'tcx>,
         parts: &IndexMap<mir::Local, mir::Local>,
@@ -197,13 +197,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// module that calls itself for the ones inside, `copyRow(row)`, as its
     /// clone is (`recursive_fns`): expanded in place, it never ended
     /// (#2096). Never its clone, which may run the program's `Clone`.
-    pub(in crate::lower) fn kept_copy(
-        &mut self,
-        place: Expr,
-        ty: Ty<'tcx>,
-        span: Span,
-        out: &mut Vec<js::Stmt>,
-    ) -> R<Expr> {
+    pub fn kept_copy(&mut self, place: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<js::Stmt>) -> R<Expr> {
         if !self.kept_may_change(ty) {
             return Ok(place);
         }

@@ -11,7 +11,7 @@ use rust_js_program::js::{Expr, Op, Prop, Stmt, StmtKind, result};
 
 /// A `OnceCell`'s or `OnceLock`'s own methods.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum OnceOp {
+pub enum OnceOp {
     New,
     /// `get()` and `into_inner()`: the `Option` it holds.
     Get,
@@ -99,7 +99,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `payload._ioInfo = ioInfo`, and `Ok`; else where it's empty, `if
     /// (payload._ioInfo === undefined) { .. }`, and where its `Result` is
     /// `read`, `Err` of it where it wasn't (ADR 0847).
-    pub(in crate::lower) fn once_set(
+    pub fn once_set(
         &mut self,
         (cell, value): (Expr, Expr),
         item: rustc_middle::ty::Ty<'tcx>,

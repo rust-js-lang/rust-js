@@ -42,7 +42,7 @@ pub(crate) fn std_crate(tcx: TyCtxt<'_>, krate: CrateNum) -> Option<StdCrate> {
 }
 
 /// Whether `id` is std's: of `std`, `core` or `alloc` (`std_crate`).
-pub(crate) fn is_std_crate(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub fn is_std_crate(tcx: TyCtxt<'_>, id: DefId) -> bool {
     std_crate(tcx, id.krate).is_some()
 }
 

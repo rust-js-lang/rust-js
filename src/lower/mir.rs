@@ -30,7 +30,7 @@ mod entries;
 mod fields_read;
 mod given_arguments;
 mod hints;
-pub(in crate::lower) mod hooks;
+pub mod hooks;
 mod iter;
 mod jsx_props;
 mod keyed_writes;
@@ -429,7 +429,7 @@ enum Taken {
 }
 
 impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
-    pub(super) fn lower_fn_mir(&mut self, body: &Body<'tcx>, mir: &Mir<'tcx>) -> R<LoweredFn> {
+    pub fn lower_fn_mir(&mut self, body: &Body<'tcx>, mir: &Mir<'tcx>) -> R<LoweredFn> {
         let def_id = body.def_id;
         let span = self.tcx.def_span(def_id);
         if self.krate.fns.get(&def_id).is_none() {
@@ -1206,7 +1206,7 @@ fn drops_read(hoisted: Vec<Stmt>, body: &[Stmt]) -> Vec<Stmt> {
 /// MIR's lowering, it's wrapped again, `MirCx(cx)`. A base method taking
 /// `&mut self` is given what it reads of the context first, a `let` before
 /// the call, as the borrow `DerefMut` takes is the whole context's.
-pub(in crate::lower) struct MirCx<'mcx, 'a, 'tcx>(pub(in crate::lower) &'mcx mut FnCx<'a, 'tcx>);
+pub struct MirCx<'mcx, 'a, 'tcx>(pub(in crate::lower) &'mcx mut FnCx<'a, 'tcx>);
 
 impl<'a, 'tcx> std::ops::Deref for MirCx<'_, 'a, 'tcx> {
     type Target = FnCx<'a, 'tcx>;

@@ -20,12 +20,12 @@ pub(in crate::lower) fn held_name(value: &Expr) -> Option<&js::Held> {
 
 /// What made `value` suggests a `const` of it is named, its call's name,
 /// `pullTwo` of `RangePull.pullTwo(..)` (`held_name`).
-pub(in crate::lower) fn held_names(value: &Expr) -> Vec<String> {
+pub fn held_names(value: &Expr) -> Vec<String> {
     held_name(value).into_iter().map(|held| held.name.clone()).collect()
 }
 
 // helper: asked by `mir` and the base alike, the base's since #2299 moved it from `mir::queries`
-pub(in crate::lower) fn fixed_place(place: &Expr) -> bool {
+pub fn fixed_place(place: &Expr) -> bool {
     match &place.kind {
         js::ExprKind::Var(_) => true,
         js::ExprKind::Member(object, _) => fixed_place(object),
@@ -41,7 +41,7 @@ pub(in crate::lower) fn fixed_place(place: &Expr) -> bool {
 /// a slice pattern's suffix: `object`'s length can't change while an item
 /// of it is borrowed.
 // helper: asked by `mir` and the base alike, the base's since #2299 moved it from `mir::queries`
-pub(in crate::lower) fn from_end(object: &Expr, index: &Expr) -> bool {
+pub fn from_end(object: &Expr, index: &Expr) -> bool {
     matches!(&index.kind, js::ExprKind::Binary(Op::Sub, length, back)
         if back.is_constant()
             && matches!(&length.kind, js::ExprKind::Member(of, field) if field == "length" && of.written_alike(object)))
@@ -81,12 +81,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a temporary of MIR's lowering's (`Made::fixed`), which tidy reads in
     /// place where it's read once: a place fixed (`fixed_place_of`), or an
     /// `Option` its items read twice (`option_items`, #588).
-    pub(in crate::lower) fn held_in_place<'b>(
-        &mut self,
-        name: impl Into<Base<'b>>,
-        value: Expr,
-        out: &mut Vec<Stmt>,
-    ) -> Expr {
+    pub fn held_in_place<'b>(&mut self, name: impl Into<Base<'b>>, value: Expr, out: &mut Vec<Stmt>) -> Expr {
         let held = self.spill(name, value, out);
         if let js::ExprKind::Var(name) = &held.kind {
             self.locals.mir.made.fixed.insert(name.clone());
@@ -101,7 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// now, as Rust's borrow keeps the place it was made of (#968). A
     /// variable that's the place itself, `n`, is the place. A handle on a
     /// place, a `Cell` a field is's, is one on it fixed so (#1034).
-    pub(in crate::lower) fn place_where_made(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
+    pub fn place_where_made(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
         let (span, facts) = (place.span, place.facts);
         let fixed = match place.kind {
             js::ExprKind::Handle(on, storage) => Expr::stored_handle(self.place_where_made(*on, out), storage),
@@ -137,7 +132,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `name` is an item of the module's, which reads the same
     /// anywhere: by its word, as a module's item's is its identity till each
     /// has one `Name` (#2035).
-    pub(in crate::lower) fn module_name(&self, name: &js::Name) -> bool {
+    pub fn module_name(&self, name: &js::Name) -> bool {
         self.module_names.contains(name.word()) // word: a module's item's name, till #2035
     }
 }
@@ -146,7 +141,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `place`, a field or an item, fixed: what holds it named, where it
     /// isn't fixed, an object that's the same however it's reached, and an
     /// index that isn't a constant or a name named too.
-    pub(in crate::lower) fn fixed_place_of(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
+    pub fn fixed_place_of(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
         let (span, facts) = (place.span, place.facts);
         // What holds it, named, a temporary of MIR's lowering's, which tidy
         // reads in place where it's read once.

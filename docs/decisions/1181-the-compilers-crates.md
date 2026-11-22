@@ -237,3 +237,38 @@ Measured on the tree before choosing: the conversion of all of `mir` is
 were those sixteen, seven re-wraps, a `fn` table's lifetime and a
 lifetime renamed; the trait shape, built for `mir/positions.rs`, was
 four signatures twice and a `use`, of 565 at scale. The JS is the same.
+
+## Amendment: what crosses the lowering's crate lines is `pub` (#2299's commit 8, 2026-11-22)
+
+Each item of `src/lower/` another of its crates will name, `mir`'s of the
+base, the driver's of the base and of `mir`, is `pub` a commit before the
+cut, which a single crate compiles whatever their visibility, so the cut
+moves files and rewrites paths alone:
+
+- **Which items:** every symbol an occurrence in one future crate names of
+  another's, from rust-analyzer's SCIP index of the tree: 2,256, of which
+  442 are an enum's variants, `pub` with their enum, and 122 were `pub`
+  already. Then each type a `pub` item's signature names that's still
+  narrower, which rustc's `private_interfaces` lint lists whole: two
+  rounds to none. Where rustc permits no visibility, a trait impl's
+  method or a variant's field, none is written.
+- **No owner-table change.** ADR 1175's rule reads a function as visible
+  outside its module by its declared visibility, and a `pub` one is.
+  Widening reaches only items another module already names, which Rust
+  requires to be visible to it already: each was a candidate before, and
+  classified. On the widened tree the rule finds 1,787 answers visible
+  outside their modules, every one a row's or a helper's, none
+  unclassified; the amendment planned for #2299's commit 8, reading a
+  `pub` item's visibility from its callers, wasn't needed. Its measure
+  stays as a note: of the 572 `pub` answers, a name's textual matches
+  outside its parent flag no answer SCIP's references don't, and miss one,
+  a function re-exported `as` another name, which a rule by callers would
+  have had to follow.
+- **The rules that read visibility:** architecture tests that pinned a
+  visibility as text, `pub(super) struct Recognition`, a field
+  `pub(in crate::lower)`, now match any, and keep what they assert of
+  writers, readers and an exact API.
+- **The root's facade:** the modules its `pub use`s re-export are `pub`,
+  as `mir` names them; the driver's files still name each item by the
+  facade alone, never `lower::<module>::`, which
+  test/architecture-mir.test.ts holds.

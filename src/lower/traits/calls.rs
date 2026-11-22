@@ -100,12 +100,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What's refused of a call of `def_id`: a type taken as what its own
     /// `Borrow` gives (ADR 0167), and a `&mut &mut` of an object given to
     /// generic code (ADR 0454).
-    pub(in crate::lower) fn check_call_takes(
-        &self,
-        def_id: DefId,
-        generic_args: ty::GenericArgsRef<'tcx>,
-        span: Span,
-    ) -> R<()> {
+    pub fn check_call_takes(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>, span: Span) -> R<()> {
         if let Some(ty) = self.borrowed_by_user(def_id, generic_args)? {
             let path = self.tcx.def_path_str(def_id);
             return Err(self.unsupported(span, &format!("`{path}` of a `{ty}` as what its own `Borrow` gives")));
@@ -140,12 +135,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
-    pub(in crate::lower) fn evidence_args(
-        &mut self,
-        id: DefId,
-        args: ty::GenericArgsRef<'tcx>,
-        span: Span,
-    ) -> R<Vec<Expr>> {
+    pub fn evidence_args(&mut self, id: DefId, args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Vec<Expr>> {
         let location = self.caller_location(span);
         self.evidence_args_with(id, args, location, span)
     }
@@ -400,7 +390,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Told of a `==` whether its two `Option`s' `None` MIR says is the
     /// same one alone (`same_none`, `eq_value`); `false` where no call of
     /// MIR's is asked.
-    pub(in crate::lower) fn trait_call(
+    pub fn trait_call(
         &mut self,
         id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,

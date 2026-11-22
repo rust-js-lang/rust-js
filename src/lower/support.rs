@@ -13,7 +13,7 @@ use rustc_middle::ty::Ty;
 use rustc_span::Span;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    pub(super) fn check_value_ty(&self, ty: Ty<'tcx>, span: Span) -> R<()> {
+    pub fn check_value_ty(&self, ty: Ty<'tcx>, span: Span) -> R<()> {
         match self.unsupported_part(ty) {
             None => Ok(()),
             Some(part) => Err(refuse(self.tcx, span, Refused::Type("values", part))),

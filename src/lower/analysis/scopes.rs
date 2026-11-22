@@ -74,18 +74,18 @@ use rustc_span::def_id::DefId;
 /// A function's scope struct.
 pub(crate) struct Scope<'tcx> {
     /// The function whose scope it is.
-    pub(crate) function: DefId,
+    pub function: DefId,
     /// The struct.
     pub(crate) adt: DefId,
     /// The function's variable holding its value, or its `Rc`.
-    pub(crate) local: Local,
+    pub local: Local,
     /// Its methods, in the order they're written.
-    pub(crate) methods: Vec<DefId>,
+    pub methods: Vec<DefId>,
     /// Its literal's type arguments, in its function's terms, which each of
     /// its methods is called with: each impl of it is of its own parameters.
-    pub(crate) args: ty::GenericArgsRef<'tcx>,
+    pub args: ty::GenericArgsRef<'tcx>,
     /// The `let` of its value, which its methods' functions are declared after.
-    pub(crate) written: Span,
+    pub written: Span,
 }
 
 /// The crate's scope structs.
@@ -109,7 +109,7 @@ impl<'tcx> Scopes<'tcx> {
     }
 
     /// The scopes `function` makes, in the order their structs are written.
-    pub(crate) fn of_function(&self, function: DefId) -> impl Iterator<Item = &Scope<'tcx>> {
+    pub fn of_function(&self, function: DefId) -> impl Iterator<Item = &Scope<'tcx>> {
         self.scopes.iter().filter(move |s| s.function == function)
     }
 
@@ -119,7 +119,7 @@ impl<'tcx> Scopes<'tcx> {
     /// so none of its variables hides it; its word in `taken`, the table of
     /// words lowering picks a local's apart from, so none takes it, which
     /// the program's would then push apart (#2048).
-    pub(crate) fn function_names(
+    pub fn function_names(
         &self,
         function: DefId,
         name_of: impl Fn(DefId) -> String,
@@ -136,7 +136,7 @@ impl<'tcx> Scopes<'tcx> {
     }
 
     /// The scope `method` is a method of, if any.
-    pub(crate) fn of_method(&self, method: DefId) -> Option<&Scope<'tcx>> {
+    pub fn of_method(&self, method: DefId) -> Option<&Scope<'tcx>> {
         self.scopes.iter().find(|s| s.methods.contains(&method))
     }
 

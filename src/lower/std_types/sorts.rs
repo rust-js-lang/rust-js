@@ -209,7 +209,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// An unstable sort or a selection, `v.sort_unstable_by(f)`, of its
     /// operands as JS: JS's stable sort where ties can't be told apart, else
     /// std's own, picked by the item's type (ADR 0342).
-    pub(in crate::lower) fn unstable_sort_values(
+    pub fn unstable_sort_values(
         &mut self,
         op: SliceOp,
         with: SortWith,

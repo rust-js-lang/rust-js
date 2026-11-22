@@ -12,7 +12,7 @@ use rust_js_program::js::{self, Expr, Stmt};
 
 /// What's asked of a `CStr` or a `CString`.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum CStrOp {
+pub enum CStrOp {
     /// `CStr::from_bytes_with_nul(bytes)`: `Ok` of the bytes, or `Err` of a
     /// `FromBytesWithNulError`.
     WithNul,

@@ -6,7 +6,7 @@
 
 mod generic;
 pub(in crate::lower) use generic::{duration_as, duration_subsec};
-pub(in crate::lower) mod math;
+pub mod math;
 mod operators;
 
 use self::generic::*;
@@ -31,7 +31,7 @@ use rustc_span::Span;
 /// A `Duration`'s own, of its nanoseconds, a BigInt (ADR 0188): each unit
 /// by how many nanoseconds it has.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum DurationOp {
+pub enum DurationOp {
     /// `Duration::new(secs, nanos)`, which panics past `MAX`.
     New,
     /// `from_secs` and the like.
@@ -53,7 +53,7 @@ pub(in crate::lower) enum DurationOp {
 /// How an operation past its type's range answers: none, wrapped, kept to
 /// the range, or wrapped and whether it was past.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum SignMode {
+pub enum SignMode {
     Checked,
     Wrapping,
     Saturating,
@@ -61,7 +61,7 @@ pub(in crate::lower) enum SignMode {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum NumOp {
+pub enum NumOp {
     /// The same in JS: `Math.floor(x)`, `Math.atan2(y, x)`.
     Math(&'static str),
     Abs,
@@ -348,7 +348,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `Wrapping`'s or a `Saturating`'s operator's value, `[a[0] op
     /// rhs]`, of its type, read the same each time, and the operand, of its
     /// type.
-    pub(in crate::lower) fn newtype_value(
+    pub fn newtype_value(
         &mut self,
         op: Result<BinOp, UnOp>,
         newtype: Ty<'tcx>,
@@ -408,7 +408,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `Saturating`'s own method `op` of its arguments' `values`, of their
     /// types, its number's (`newtype_inherent`): each of its type read,
     /// `s[0]`, and a result of its type, `output`, its `[x]` (#1434).
-    pub(in crate::lower) fn newtype_method_call(
+    pub fn newtype_method_call(
         &mut self,
         op: NumOp,
         values: Vec<(Expr, Ty<'tcx>)>,
@@ -599,7 +599,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A number's method, of its arguments' values.
-    pub(in crate::lower) fn number_call(
+    pub fn number_call(
         &mut self,
         op: NumOp,
         values: Vec<Expr>,

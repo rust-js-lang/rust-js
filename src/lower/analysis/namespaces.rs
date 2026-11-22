@@ -21,7 +21,7 @@ use rustc_span::def_id::{DefId, LocalModId};
 /// namespace is imported by, the module the path is written in, and the
 /// name the path calls it, `register_events` of `plugin::register_events`.
 #[derive(Clone, PartialEq, Eq)]
-pub(in crate::lower) struct Through {
+pub struct Through {
     pub(in crate::lower) function: DefId,
     pub(in crate::lower) module: DefId,
     pub(in crate::lower) namespace: String,
@@ -61,7 +61,7 @@ pub(in crate::lower) fn namespace_of(tcx: TyCtxt<'_>, module: LocalModId) -> Str
 /// crate::react_fiber_config_noop::ReactFiberConfigNoop as DefaultConfig`,
 /// `import * as DefaultConfig`, as a `use` names any import (ADR 0202,
 /// amended; rd292b); else its file's (`namespace_of`).
-pub(in crate::lower) fn namespace_in(tcx: TyCtxt<'_>, module: LocalModId, target: LocalModId) -> String {
+pub fn namespace_in(tcx: TyCtxt<'_>, module: LocalModId, target: LocalModId) -> String {
     let named = |id: DefId| {
         matches!(
             tcx.def_kind(id),

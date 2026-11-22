@@ -907,7 +907,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `a < b` and the rest, `a.cmp(&b)`, `a.partial_cmp(&b)`, `a.max(b)`
     /// and `a.min(b)`. `None` for numbers, which std's operators already are.
-    pub(super) fn ordering_call(
+    pub fn ordering_call(
         &mut self,
         id: DefId,
         tr: ty::TraitRef<'tcx>,

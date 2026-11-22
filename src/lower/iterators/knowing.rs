@@ -120,7 +120,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// std's: an array's items' `$iter`, or what `adapted_hint_known` finds.
     /// What `size_hint()` asks of what it's called on, and what a crate
     /// that asks a `dyn Iterator`'s asks of each value made one (#1476).
-    pub(in crate::lower) fn hint_known_as_made(&self, ty: ty::Ty<'tcx>) -> bool {
+    pub fn hint_known_as_made(&self, ty: ty::Ty<'tcx>) -> bool {
         self.array_source(ty).is_some() || self.adapted_hint_known(ty)
     }
 
@@ -130,7 +130,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// asks a `dyn Iterator`'s, a filter's `$filterEnds`, a `skip(n)`'s
     /// `$skipping` (`made_knowing_its_hint`), or made knowing its back,
     /// which knows it too (`stepped_from_its_back`).
-    pub(in crate::lower) fn hint_known_made_dyn(&self, ty: ty::Ty<'tcx>) -> bool {
+    pub fn hint_known_made_dyn(&self, ty: ty::Ty<'tcx>) -> bool {
         self.hint_known_as_made(ty)
             || self.stepped_from_its_back(ty)
             || self.made_knowing_its_hint(ty)
@@ -196,7 +196,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a compiled std iterator of type `ty` knows its hint, its
     /// struct's own, of what it holds: where each iterator it holds is one
     /// whose size `held_hint_known` finds.
-    pub(in crate::lower) fn struct_hint_known(&self, ty: ty::Ty<'tcx>) -> bool {
+    pub fn struct_hint_known(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty::Adt(_, args) = ty.peel_refs().kind() else {
             return false;
         };
@@ -211,7 +211,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// bound by one, given a JS iterator (ADR 0061), not as it is (ADR 0411).
     /// The one answer, of what generic code steps from its back and of what
     /// its callers give it.
-    pub(in crate::lower) fn knows_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
+    pub fn knows_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         // What an `impl` hides, as it's made.
         let ty = ty.peel_refs();
         // A map of one, made one that knows its back too, `$mapEnds` (ADR
@@ -296,7 +296,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether this function holds what `ty` makes as an `IntoIterator` as
     /// it is, `into_iter_held_as_it_is` of it (ADR 0552).
-    pub(in crate::lower) fn holds_into_iter(&self, ty: Ty<'tcx>) -> bool {
+    pub fn holds_into_iter(&self, ty: Ty<'tcx>) -> bool {
         into_iter_held_as_it_is(self.tcx, self.generics_fn(), self.declared_ty(ty))
     }
 
@@ -406,7 +406,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// one that knows its length (`knows_its_length`), or a `repeat_n`'s, a
     /// `take(n)` of a `repeat`'s or a `rev()` of one, whose runtime form
     /// knows what it has left, as an array's `$iter` does (#1139).
-    pub(in crate::lower) fn len_of_its_own(&self, ty: ty::Ty<'tcx>) -> bool {
+    pub fn len_of_its_own(&self, ty: ty::Ty<'tcx>) -> bool {
         self.knows_its_length(ty) || crate::lower::recognition::steps_back_as_front(self.tcx, ty.peel_refs())
     }
 
@@ -746,7 +746,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (lent && steps.iter().all(|&step| wrapper.passes(step) == Passed::Own)).then_some(held)
     }
 
-    pub(in crate::lower) fn as_double_ended(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn as_double_ended(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
         // A `rev()` made in place, knowing its back where it's made, as its
         // maker marked it (`made_knowing_its_back`): itself, wherever MIR
         // holds it, the mark carried by its local. Its maker makes none a
@@ -1025,13 +1025,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `exact_len`'s, of the iterator's value and its type `ty`.
-    pub(in crate::lower) fn exact_len_of(
-        &mut self,
-        value: Expr,
-        ty: Ty<'tcx>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
+    pub fn exact_len_of(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         // A compiled std iterator's, `Peekable`'s, whose `len` isn't: its
         // struct's hint, which it knows as it knows its `next` (ADR 0561),
         // of what it holds; else refused.

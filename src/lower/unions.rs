@@ -29,12 +29,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `ty` is a union, whose fields are read and written as this
     /// module has them.
-    pub(super) fn is_union(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_union(&self, ty: Ty<'tcx>) -> bool {
         self.union_of(ty).is_some()
     }
 
     /// A union made holding `field`, `U { a: 10 }`: `{ a: 10 }`.
-    pub(super) fn union_value(&self, ty: Ty<'tcx>, field: FieldIdx, value: Expr) -> Expr {
+    pub fn union_value(&self, ty: Ty<'tcx>, field: FieldIdx, value: Expr) -> Expr {
         let (adt, _) = self.union_of(ty).expect("a union");
         let key = field_key(self.tcx, &adt.non_enum_variant().fields[field])
             .text()
@@ -48,7 +48,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// field's decoder as `transmute` reads them (ADRs 0408, 0562). A field
     /// of no bytes, `()`, reads nothing, whatever the union holds: its one
     /// value, `undefined`, as a `{:?}` of it reads it (#1063).
-    pub(super) fn union_read(&mut self, union: Expr, ty: Ty<'tcx>, field: FieldIdx, span: Span) -> R<Expr> {
+    pub fn union_read(&mut self, union: Expr, ty: Ty<'tcx>, field: FieldIdx, span: Span) -> R<Expr> {
         let (adt, args) = self.union_of(ty).expect("a union");
         let fields = &adt.non_enum_variant().fields;
         let read_ty = self.field_ty(&fields[field], args);
@@ -89,7 +89,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `u.field = value`: `$unionSet(u, "a", value)`, the field it holds now.
-    pub(super) fn union_write(&self, union: Expr, ty: Ty<'tcx>, field: FieldIdx, value: Expr) -> Expr {
+    pub fn union_write(&self, union: Expr, ty: Ty<'tcx>, field: FieldIdx, value: Expr) -> Expr {
         let (adt, _) = self.union_of(ty).expect("a union");
         let key = field_key(self.tcx, &adt.non_enum_variant().fields[field])
             .text()
@@ -129,7 +129,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A `&mut` to a union's field, which a write through would make the
     /// one it holds without saying so: not yet.
-    pub(super) fn union_field_borrowed(&self, span: Span) -> R<Expr> {
+    pub fn union_field_borrowed(&self, span: Span) -> R<Expr> {
         Err(refuse(self.tcx, span, Refused::Feature("a `&mut` to a union's field")))
     }
 }

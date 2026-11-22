@@ -10,7 +10,7 @@ use rust_js_program::js::{Expr, Op, Stmt, StmtKind};
 use rustc_middle::ty;
 
 /// Whether `known` reads an item, which `flatten` makes the JS read itself.
-pub(in crate::lower) fn reads_flattened(known: Std) -> bool {
+pub fn reads_flattened(known: Std) -> bool {
     matches!(
         known,
         Std::Method("pop" | "shift") | Std::First | Std::SliceGet | Std::SliceLast
@@ -19,7 +19,7 @@ pub(in crate::lower) fn reads_flattened(known: Std) -> bool {
 
 /// The JS read `known` is of its arguments' values, `items.shift()` or
 /// `items[0]`, whose `undefined` is both no item and a `None` one (ADR 0311).
-pub(in crate::lower) fn flattened_read_values(known: Std, values: Vec<Expr>) -> Expr {
+pub fn flattened_read_values(known: Std, values: Vec<Expr>) -> Expr {
     let mut values = values.into_iter();
     let mut value = || values.next().expect("rustc checked the arguments");
     match known {
@@ -317,7 +317,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// string `repeat` makes, which is JS's own: a JS string is less than
     /// `isize::MAX` bytes, so the engine refuses it first (ADR 0774,
     /// amended).
-    pub(in crate::lower) fn room_for(
+    pub fn room_for(
         &mut self,
         (len, count): (Option<Expr>, Expr),
         size: Expr,
@@ -394,7 +394,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `items[index]` of a `Vec`, a slice or a `VecDeque` of type `items_ty`,
     /// checked: `$index(items, index)`, which panics as a slice's index does,
     /// and of a `VecDeque`, with its own message, `out of bounds access`.
-    pub(in crate::lower) fn index_checked(&self, items: Expr, index: Expr, items_ty: ty::Ty<'tcx>) -> Expr {
+    pub fn index_checked(&self, items: Expr, index: Expr, items_ty: ty::Ty<'tcx>) -> Expr {
         let mut args = vec![items, index];
         if self.is_std_type(items_ty.peel_refs(), crate::lower::recognition::StdItem::VecDeque) {
             args.push(Expr::str("out of bounds access"));

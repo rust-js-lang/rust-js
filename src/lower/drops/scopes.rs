@@ -35,13 +35,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Declare drop functions once, at the top of the body that's starting:
     /// what the enclosing one had, to give back to `end_hoisting`.
     // helper: the enclosing body's state, handed back to `end_hoisting`.
-    pub(in crate::lower) fn begin_hoisting(&mut self) -> Option<Hoisted<'tcx>> {
+    pub fn begin_hoisting(&mut self) -> Option<Hoisted<'tcx>> {
         self.drop_state.hoisted.replace(Hoisted::default())
     }
 
     /// The drop functions the body that's ending declared, for its top, and
     /// the enclosing body's back.
-    pub(in crate::lower) fn end_hoisting(&mut self, enclosing: Option<Hoisted<'tcx>>) -> Vec<Stmt> {
+    pub fn end_hoisting(&mut self, enclosing: Option<Hoisted<'tcx>>) -> Vec<Stmt> {
         std::mem::replace(&mut self.drop_state.hoisted, enclosing).map_or_else(Vec::new, |hoisted| hoisted.defs)
     }
 
@@ -73,7 +73,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type parameters' values, is written with drops this function is
     /// given: each type parameter it holds is given one, a closure's of what
     /// it took (ADR 0485).
-    pub(in crate::lower) fn holds_given_drops(&self, ty: Ty<'tcx>) -> bool {
+    pub fn holds_given_drops(&self, ty: Ty<'tcx>) -> bool {
         let held = match crate::lower::recognition::held_types(ty) {
             Some((_, held)) => Ty::new_tup(self.tcx, held),
             None => ty,
@@ -86,7 +86,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The slot this function is given a drop for of a `ty`, a type
     /// parameter or an associated type of one, if it's given one: keyed by
     /// its type, its slot's, alone.
-    pub(in crate::lower) fn given_drop(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn given_drop(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         (crate::lower::recognition::known_by_bounds(ty) && self.drop_state.param_drops.contains_key(&ty)).then_some(ty)
     }
 
@@ -180,7 +180,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type's dictionary's (`item_drop`), which drops what that made a JS
     /// iterator of (#978). What a consumer of it closes it with, or drops
     /// it by after.
-    pub(in crate::lower) fn has_generic_drop(&self, ty: Ty<'tcx>) -> bool {
+    pub fn has_generic_drop(&self, ty: Ty<'tcx>) -> bool {
         self.given_drop(ty).is_some() || matches!(ty.kind(), ty::Alias(..)) && self.item_drop(ty).is_some()
     }
 

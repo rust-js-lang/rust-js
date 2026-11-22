@@ -18,7 +18,7 @@ use rustc_span::Span;
 
 /// What's asked of the process.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum ProcessOp {
+pub enum ProcessOp {
     /// `env::args()`: its arguments, its program's path first, an array.
     Args,
     /// `env::var(key)`: `Ok` of its environment's variable, or `Err` of

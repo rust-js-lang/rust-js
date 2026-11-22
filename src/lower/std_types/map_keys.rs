@@ -70,12 +70,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// 1120), a type parameter's included, whose `hash` std's entry calls
     /// once (#1362). Another's searches ask what nothing sees, and
     /// `$orInsert(m, k, v)` is what JS writes (ADR 0262, no difference).
-    pub(in crate::lower) fn entry_searched_once(
-        &self,
-        entry: Ty<'tcx>,
-        key: Ty<'tcx>,
-        value: Option<Ty<'tcx>>,
-    ) -> bool {
+    pub fn entry_searched_once(&self, entry: Ty<'tcx>, key: Ty<'tcx>, value: Option<Ty<'tcx>>) -> bool {
         let entry = entry.peel_refs();
         if self.is_std_type(entry, crate::lower::recognition::StdItem::BTreeEntry) {
             return self.tree_of_nodes(key, value);

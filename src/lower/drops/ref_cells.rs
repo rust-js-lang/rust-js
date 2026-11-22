@@ -25,7 +25,7 @@ use places::{
 /// each of a struct's no borrow of which can meet another (ADR 0863,
 /// amended), a field being a place of its own whatever its type.
 #[derive(Default)]
-pub(in crate::lower) struct RefCells<'tcx> {
+pub struct RefCells<'tcx> {
     /// Each `RefCell` field of the crate's structs that's never lent, bound
     /// or moved, and whose every borrow is held only where nothing that may
     /// borrow it runs: none of its borrows can meet another.
@@ -138,7 +138,7 @@ impl<'tcx> RefCells<'tcx> {
     /// object it boxes, those it counts, those it borrows unchecked, its
     /// fields no borrow of which can meet another, and those it shares
     /// with consumers.
-    pub(in crate::lower) fn facts(
+    pub fn facts(
         &self,
         recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
         borrows: &crate::lower::analysis::CellBorrows<'tcx>,
@@ -339,12 +339,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// 0147), and which counts its borrows itself where they're counted.
     /// Not one generic code may have of any value, nor one made a
     /// `RefCell<dyn T>` (`RefCells::boxes`).
-    pub(in crate::lower) fn is_value_cell(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_value_cell(&self, ty: Ty<'tcx>) -> bool {
         self.ref_cells().is_value_cell(self.tcx, ty)
     }
 
     /// The `RefCell<T>` of a `held`, `T`.
-    pub(in crate::lower) fn ref_cell_of(&self, held: Ty<'tcx>) -> Ty<'tcx> {
+    pub fn ref_cell_of(&self, held: Ty<'tcx>) -> Ty<'tcx> {
         let ref_cell = self
             .tcx
             .adt_def(crate::lower::recognition::std_item(self.tcx, StdItem::RefCell));
@@ -362,7 +362,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What the crate does with its `RefCell`s (`RefCells`), found the first
     /// time it's asked (`Lazy`, ADR 1148).
-    pub(in crate::lower) fn ref_cells(&self) -> &'a RefCells<'tcx> {
+    pub fn ref_cells(&self) -> &'a RefCells<'tcx> {
         self.krate.ref_cells.get_or_find(|| self.find_ref_cells())
     }
 
@@ -378,7 +378,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `field`, a struct's `RefCell` field, is one no borrow of
     /// which can meet another (`RefCells::quiet_field`), so none is checked
     /// (ADR 0863, amended).
-    pub(in crate::lower) fn quiet_field(&self, field: DefId) -> bool {
+    pub fn quiet_field(&self, field: DefId) -> bool {
         self.ref_cells().quiet_field(self.tcx, field)
     }
 
@@ -392,7 +392,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `callee` at `span` makes, ending `block` of its MIR, is of a cell no
     /// borrow of which can meet another, by its flow (`RefCells::quiet_class`,
     /// ADR 0863, amended): one `counted_in` read, of a class it found.
-    pub(in crate::lower) fn quiet_cell_borrow(
+    pub fn quiet_cell_borrow(
         &self,
         (body, block): (DefId, rustc_middle::mir::BasicBlock),
         (span, callee): (rustc_span::Span, DefId),

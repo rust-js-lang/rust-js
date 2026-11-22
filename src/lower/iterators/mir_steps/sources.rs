@@ -8,7 +8,7 @@ use crate::lower::temporary_names::Role;
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, an iterator of type `ty`, as a JS iterator: a range stepped
     /// by its `next`, the crate's by its impl's, a JS one as it is.
-    pub(in crate::lower) fn as_js_iterator(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn as_js_iterator(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         self.js_iterator_of(value, ty, false, span)
     }
 
@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `&mut dyn I`, whose steps std's impl passes on only in part, its
     /// `try_fold` and `try_rfold` the traits' defaults (`Wrapper::lending`,
     /// #2180), so whatever branch steps it steps those.
-    pub(in crate::lower) fn unsized_self_lent(&mut self, mut values: Vec<Expr>, receiver_ty: Ty<'tcx>) -> Vec<Expr> {
+    pub fn unsized_self_lent(&mut self, mut values: Vec<Expr>, receiver_ty: Ty<'tcx>) -> Vec<Expr> {
         let lent = matches!(receiver_ty.kind(), ty::Ref(_, through, Mutability::Mut) if through.is_mutable_ptr())
             && Wrapper::lending(self.tcx, self.typing_env, receiver_ty) == Wrapper::MutRefUnsized;
         if lent && !values.is_empty() {
@@ -104,7 +104,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         values
     }
 
-    pub(in crate::lower) fn method_source(
+    pub fn method_source(
         &mut self,
         value: Expr,
         receiver_ty: Ty<'tcx>,
@@ -130,7 +130,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `v.length`; else `it.end - it.at`, `it` held if it's made here. Of
     /// what `steps_an_array` says is one, never of another that has a back
     /// (`has_a_back`, #851).
-    pub(in crate::lower) fn items_left(&mut self, it: Expr, made: &mut Vec<Stmt>) -> Expr {
+    pub fn items_left(&mut self, it: Expr, made: &mut Vec<Stmt>) -> Expr {
         if crate::lower::iterators::is_stepped_items(&it)
             && let js::ExprKind::Call(_, items) = &it.kind
         {
@@ -152,7 +152,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// range of numbers', its count, and its `step_by(s)`'s, that many `s`
     /// apart; a `repeat_n(x, n)`'s, `n`; a generic one's, its own (#246).
     /// `None` of another form, which is refused.
-    pub(in crate::lower) fn len_in_place(&mut self, it: &Expr, ty: Ty<'tcx>, made: &mut Vec<Stmt>) -> Option<Expr> {
+    pub fn len_in_place(&mut self, it: &Expr, ty: Ty<'tcx>, made: &mut Vec<Stmt>) -> Option<Expr> {
         self.counted_in_place(it, ty, made, true).ok()
     }
 
@@ -387,7 +387,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `bytes()` or `split`, a `VecDeque`'s, a slice's `iter_mut()`, a
     /// `BTreeMap`'s, its `range()`'s too: one that steps from its back and
     /// knows its length. The one list.
-    pub(in crate::lower) fn steps_an_array(&self, ty: Ty<'tcx>) -> bool {
+    pub fn steps_an_array(&self, ty: Ty<'tcx>) -> bool {
         self.array_source(ty).is_some()
             || self.recognition().iterates_items(ty)
             // A `rev()` of one, its array reversed (ADR 0530).
@@ -421,7 +421,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A std iterator of type `ty` made of `value`, an array or a text, as
     /// MIR steps it: over an array, a `$iter`, which knows where it is, so a
     /// clone of it does (ADR 0181); another, the JS iterator of `value`.
-    pub(in crate::lower) fn std_iterator(&mut self, value: Expr, ty: Ty<'tcx>) -> Expr {
+    pub fn std_iterator(&mut self, value: Expr, ty: Ty<'tcx>) -> Expr {
         self.std_iterator_of(value, ty, true)
     }
 
@@ -587,7 +587,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `ty` is an iterator: one whose `Item` rustc says, a type or
     /// another trait's associated type, smallvec's `A::Item`, not one of
     /// std's iterator traits' still.
-    pub(in crate::lower) fn implements_iterator(&self, ty: Ty<'tcx>) -> bool {
+    pub fn implements_iterator(&self, ty: Ty<'tcx>) -> bool {
         let iterator_traits = [StdItem::Iterator, StdItem::IntoIterator].map(|item| std_item(self.tcx, item));
         let said = |item: Ty<'tcx>| match item.kind() {
             ty::Alias(
@@ -609,7 +609,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A function JS's helpers give an item, and its index too, as one
     /// that takes the item alone: an arrow of one parameter as it is,
     /// anything else called with the item alone.
-    pub(in crate::lower) fn unary_callback(&mut self, f: Expr, own: bool) -> Expr {
+    pub fn unary_callback(&mut self, f: Expr, own: bool) -> Expr {
         match &f.kind {
             js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,
             _ if own => f,
@@ -630,7 +630,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `measureClonedInstance` (rd648, ADR 0605, amended, the user's
     /// decision).
     // helper: asked by `mir::iter` alone, the entry it was beneath before #2299 moved it
-    pub(in crate::lower) fn is_called_as_written(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_called_as_written(&self, ty: Ty<'tcx>) -> bool {
         match *ty.kind() {
             ty::FnDef(def_id, _) if bindings::is_binding(self.tcx, def_id) => {
                 bindings::reads_only_its_parameters(self.tcx, def_id)
@@ -682,7 +682,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// `counted_chain`'s `$iter(xs).drop(1).take(2)`: the array it steps,
 /// `xs.slice(1).slice(0, 2)`; a `for…of`'s too (ADR 0748).
-pub(in crate::lower) fn sliced(e: &Expr) -> Expr {
+pub fn sliced(e: &Expr) -> Expr {
     match &e.kind {
         js::ExprKind::Call(callee, args)
             if let js::ExprKind::Member(source, name) = &callee.kind
@@ -700,7 +700,7 @@ pub(in crate::lower) fn sliced(e: &Expr) -> Expr {
 
 /// Whether `e` is an array's items made there, `$iter(xs)`, skipped or taken
 /// from, `.drop(1)`, by a count that does nothing (`len()`'s).
-pub(in crate::lower) fn counted_chain(e: &Expr) -> bool {
+pub fn counted_chain(e: &Expr) -> bool {
     let mut at = e;
     let mut stages = 0;
     while let js::ExprKind::Call(callee, args) = &at.kind

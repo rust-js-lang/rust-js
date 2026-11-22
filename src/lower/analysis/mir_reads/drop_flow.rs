@@ -10,7 +10,7 @@ use rustc_mir_dataflow::{Analysis, on_all_children_bits};
 
 /// The blocks whose `Drop` would unwind to a cleanup but drops what JS
 /// drops nothing of, so runs nothing and can't panic.
-pub(in crate::lower) fn quiet_drops<'tcx>(
+pub fn quiet_drops<'tcx>(
     tcx: ty::TyCtxt<'tcx>,
     body: &mir::Body<'tcx>,
     drops: &impl Fn(Ty<'tcx>) -> bool,
@@ -26,7 +26,7 @@ pub(in crate::lower) fn quiet_drops<'tcx>(
 
 /// rustc's dataflow of what `flow` may have there before each location, of
 /// `move_data`'s paths, as its `ElaborateDrops` asks it.
-pub(in crate::lower) fn maybe_inits<'a, 'tcx>(
+pub fn maybe_inits<'a, 'tcx>(
     tcx: ty::TyCtxt<'tcx>,
     flow: &'a mir::Body<'tcx>,
     move_data: &'a MoveData<'tcx>,
@@ -93,7 +93,7 @@ pub(in crate::lower) fn dead_drops<'tcx>(
 /// `falseUnwind`, which `CleanupPostBorrowck` makes the `goto`s they are
 /// (#2112's change D). Followed, they asked a flag of what's always there,
 /// or never: never taken, they made no other drop, but a flag more.
-pub(in crate::lower) fn flowing<'tcx>(body: &mir::Body<'tcx>, quiet: &IndexSet<BasicBlock>) -> mir::Body<'tcx> {
+pub fn flowing<'tcx>(body: &mir::Body<'tcx>, quiet: &IndexSet<BasicBlock>) -> mir::Body<'tcx> {
     let mut body = body.clone();
     for (block, data) in body.basic_blocks.as_mut().iter_enumerated_mut() {
         let kind = &mut data.terminator_mut().kind;

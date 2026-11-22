@@ -16,7 +16,7 @@ use rustc_span::def_id::DefId;
 /// How a place holds an `Option`'s `None`. Each match of it is exhaustive,
 /// so a form added is a compile error wherever one is read.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
-pub(in crate::lower) enum NoneForm {
+pub enum NoneForm {
     /// `undefined`, a plain `Option`'s: its `Some` its value, or `$some` of
     /// one that may look like `None` (`boxed_payload`).
     #[default]
@@ -42,7 +42,7 @@ pub(in crate::lower) enum NoneForm {
 /// Who writes a place a reader reads, and so what it may trust of its
 /// `None` (`NoneForm::trust`).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum Writers {
+pub enum Writers {
     /// The crate's own, each storing by the place's form (`storage()`):
     /// a nullable one's `None` one thing, `null` (`?? null`), any other's
     /// as it's given.
@@ -60,7 +60,7 @@ impl NoneForm {
     /// How a write of the place stores what's written: a nullable place's
     /// `None` `null`, `made ?? null` where it may be `undefined`
     /// (`Storage::written`); any other as it's given.
-    pub(in crate::lower) fn storage(self) -> js::Storage {
+    pub fn storage(self) -> js::Storage {
         match self.stores_null() {
             true => js::Storage::NullForNone,
             false => js::Storage::AsGiven,
@@ -69,7 +69,7 @@ impl NoneForm {
 
     /// Whether a write of the place stores a `None` `null`
     /// (`Storage::NullForNone`).
-    pub(in crate::lower) fn stores_null(self) -> bool {
+    pub fn stores_null(self) -> bool {
         match self {
             NoneForm::Null | NoneForm::Optional => true,
             NoneForm::Undefined | NoneForm::Nested | NoneForm::Value | NoneForm::Either => false,
@@ -78,7 +78,7 @@ impl NoneForm {
 
     /// The form of the `Option` a `Some` of this place holds: of a nested
     /// one, `null` (ADR 1017), of any other, none of its own.
-    pub(in crate::lower) fn of_some(self) -> NoneForm {
+    pub fn of_some(self) -> NoneForm {
         match self {
             NoneForm::Nested => NoneForm::Null,
             NoneForm::Undefined | NoneForm::Null | NoneForm::Optional | NoneForm::Value | NoneForm::Either => {
@@ -95,7 +95,7 @@ impl NoneForm {
     /// exactly so, as a plain write stores what it's given; an optional
     /// one's may be left out, and a held one, nested or of a value, is
     /// read through its own form (ADRs 1017, rd645).
-    pub(in crate::lower) fn trust(self, writers: Writers) -> Option<js::OnlyNone> {
+    pub fn trust(self, writers: Writers) -> Option<js::OnlyNone> {
         match (self, writers) {
             (_, Writers::Loose) => None,
             (NoneForm::Null, Writers::Crate | Writers::Exact) => Some(js::OnlyNone::Null),
@@ -116,7 +116,7 @@ impl NoneForm {
 /// A place an `Option` is written to, of each kind `none_form` answers: a
 /// new kind is a variant its match can't miss.
 #[derive(Clone, Copy)]
-pub(in crate::lower) enum NonePlace<'p, 'tcx> {
+pub enum NonePlace<'p, 'tcx> {
     /// A struct's field, of an `Option` or a cell of one, its type there
     /// where that's asked.
     Field(&'p FieldDef, Option<Ty<'tcx>>),
@@ -174,7 +174,7 @@ pub(in crate::lower) enum NonePlace<'p, 'tcx> {
 ///   any shape (ADR 0275), and the values of entries it's given (ADR 0884,
 ///   amended);
 /// - another crate's function's parameter, as its manifest says (ADR 0861).
-pub(in crate::lower) fn none_form<'tcx>(tcx: TyCtxt<'tcx>, place: NonePlace<'_, 'tcx>) -> NoneForm {
+pub fn none_form<'tcx>(tcx: TyCtxt<'tcx>, place: NonePlace<'_, 'tcx>) -> NoneForm {
     match place {
         NonePlace::Field(field, field_ty) => {
             if bindings::holds_value(tcx, field) {
@@ -218,7 +218,7 @@ pub(in crate::lower) fn none_form<'tcx>(tcx: TyCtxt<'tcx>, place: NonePlace<'_, 
 /// answer, `bindings::takes_nullable`'s, a type parameter it names too,
 /// `set(key, value: V)` of a `Map<K, V>` (ADR 0884, amended): of a
 /// function that names none, none, asking nothing of its parameters.
-pub(in crate::lower) fn null_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<usize> {
+pub fn null_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<usize> {
     if bindings::nullable_params(tcx, def_id).is_empty() && !bindings::is_binding(tcx, def_id) {
         return Vec::new();
     }

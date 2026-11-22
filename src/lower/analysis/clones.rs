@@ -16,7 +16,7 @@ use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 /// The types the crate clones (`cloned_types`), and who calls each function
 /// with what, by which generic code's types are told apart, each its
 /// callers' instances (`instances_of`, #1119).
-pub(in crate::lower) struct Cloned<'tcx> {
+pub struct Cloned<'tcx> {
     types: IndexSet<Ty<'tcx>>,
     /// What a library's functions the crate compiles itself, of MIR alone
     /// (ADR 0914), clone: the library's own closures, whose clones its

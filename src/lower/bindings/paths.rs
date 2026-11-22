@@ -8,7 +8,7 @@ use rust_js_program::js::Expr;
 
 /// A property a path reads, after the name it starts from.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum Step<'a> {
+pub enum Step<'a> {
     /// `.log`: by its name, a JS name, which a minifier may rename.
     Named(&'a str),
     /// `['$RT']`: by a quoted key, which a minifier keeps.
@@ -17,7 +17,7 @@ pub(in crate::lower) enum Step<'a> {
 
 impl Step<'_> {
     /// What it reads of `object`: `object.log`, or `object[key]` of a quoted key.
-    pub(in crate::lower) fn of(self, object: Expr) -> Expr {
+    pub fn of(self, object: Expr) -> Expr {
         match self {
             Step::Named(name) => Expr::member(object, name),
             Step::Quoted(key) => Expr::index(object, Expr::str(key)),
@@ -27,7 +27,7 @@ impl Step<'_> {
 
 /// The name `path` starts from, `window` of `window['$RT']` and of
 /// `window.$RT`.
-pub(in crate::lower) fn first_name(path: &str) -> &str {
+pub fn first_name(path: &str) -> &str {
     &path[..path.find(['.', '[']).unwrap_or(path.len())]
 }
 
@@ -38,7 +38,7 @@ pub(in crate::lower) fn has_steps(path: &str) -> bool {
 
 /// Each property `rest`, a path past its first name, reads, `.log` then
 /// `['$RT']`; or why it isn't a path's.
-pub(in crate::lower) fn steps(rest: &str) -> Result<Vec<Step<'_>>, String> {
+pub fn steps(rest: &str) -> Result<Vec<Step<'_>>, String> {
     let mut steps = Vec::new();
     let mut rest = rest;
     while !rest.is_empty() {

@@ -30,7 +30,7 @@ pub(in crate::lower) fn is_made(lazy: Expr) -> Expr {
 
 /// A `LazyCell`'s or `LazyLock`'s own functions, and its `Deref`.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum LazyOp {
+pub enum LazyOp {
     New,
     /// `force()` and `Deref`: its value, made if it isn't yet.
     Force,

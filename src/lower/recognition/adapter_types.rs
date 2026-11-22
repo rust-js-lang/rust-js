@@ -20,7 +20,7 @@ pub(crate) fn cloned_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<
 
 /// What std's `Map` adapter of type `ty` maps, `I` of `Map<I, F>`, which a
 /// map steps from either end where it knows its back (ADR 0455).
-pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+pub fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     adapter_source(tcx, ty, StdPath::IterMap)
 }
 
@@ -34,7 +34,7 @@ pub(crate) fn inspected_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<
 /// Of std's `Flatten<I>` or `FlatMap<I, U, F>` of type `ty`, its source,
 /// and, of a `FlatMap`, what its function makes, `U`: a `Flatten`'s is its
 /// source's item.
-pub(crate) fn flattened_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Option<Ty<'tcx>>)> {
+pub fn flattened_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Option<Ty<'tcx>>)> {
     match ty.kind() {
         ty::Adt(adt, args) if is_std_path(tcx, adt.did(), StdPath::IterFlatten) => Some((args.type_at(0), None)),
         ty::Adt(adt, args) if is_std_path(tcx, adt.did(), StdPath::IterFlatMap) => {
@@ -121,7 +121,7 @@ pub(crate) fn counted_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(T
 /// (#382). What it keeps besides is where they are, a JS iterator's state
 /// being its sources' (ADR 0525), and a chain's, which half it's on, which
 /// an ended first half says (#181).
-pub(crate) fn cloned_parts<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Parted, Ty<'tcx>, Option<Ty<'tcx>>)> {
+pub fn cloned_parts<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Parted, Ty<'tcx>, Option<Ty<'tcx>>)> {
     let ty::Adt(adt, args) = ty.kind() else { return None };
     let parted = match std_path_item(tcx, adt.did()) {
         Some(StdPath::IterMap) => Parted::Map,
@@ -135,7 +135,7 @@ pub(crate) fn cloned_parts<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Par
 
 /// Which of the adapters made of their parts alone, `cloned_parts`', one is.
 #[derive(Clone, Copy, PartialEq)]
-pub(crate) enum Parted {
+pub enum Parted {
     Map,
     Filter,
     Chain,
@@ -150,7 +150,7 @@ pub(crate) fn reversed_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<T
 }
 
 /// What std's `Filter` adapter of type `ty` filters, `I` of `Filter<I, P>`.
-pub(crate) fn filtered_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+pub fn filtered_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     adapter_source(tcx, ty, StdPath::IterFilter)
 }
 
@@ -253,7 +253,7 @@ pub(crate) fn stepped_as_js_iterator<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, arg
 /// stepped as one.
 /// Whether `ty` is std's `FromFn`, what `iter::from_fn(f)` makes, which
 /// std's own bodies make inlined, `FromFn(f)` (ADR 0917).
-pub(crate) fn is_from_fn(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+pub fn is_from_fn(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(tcx, adt.did(), StdPath::IterFromFn))
 }
 
@@ -273,7 +273,7 @@ pub(crate) fn source_hint_kept(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// Whether std's struct of type `ty` is an iterator in `typing_env`, so
 /// the JS iterator it is can be made there, given its steps: not in
 /// `StepBy::new`, whose `I` no bound makes one (ADR 0917).
-pub(crate) fn std_struct_steps_in<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
+pub fn std_struct_steps_in<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
     let iterator = std_item(tcx, StdItem::Iterator);
     let tr = tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, iterator, [ty]));
     crate::lower::traits::select(tcx, typing_env, tr).is_ok()
@@ -282,7 +282,7 @@ pub(crate) fn std_struct_steps_in<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::Typin
 /// Whether `callee`, a compiled std function, gives back std's struct it
 /// made where it's no iterator, `StepBy::new`: its caller makes it the JS
 /// iterator it is, where it's one (ADR 0917).
-pub(crate) fn makes_no_iterator(tcx: TyCtxt<'_>, callee: DefId) -> bool {
+pub fn makes_no_iterator(tcx: TyCtxt<'_>, callee: DefId) -> bool {
     let made = tcx
         .fn_sig(callee)
         .instantiate_identity()
@@ -294,7 +294,7 @@ pub(crate) fn makes_no_iterator(tcx: TyCtxt<'_>, callee: DefId) -> bool {
         && !std_struct_steps_in(tcx, ty::TypingEnv::post_analysis(tcx, callee), made)
 }
 
-pub(crate) fn is_compiled_std_iterator<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+pub fn is_compiled_std_iterator<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_compiled_std_type(tcx, ty)
     && COMPILED_STD.iter().any(|&(of, tr, name)| {
         tr == Some("Iterator") && name == "next" && is_std_path(tcx, adt.did(), of)
@@ -331,7 +331,7 @@ pub(crate) fn adapted_iterators<'tcx>(
 }
 
 /// What std's `Enumerate` adapter of type `ty` counts, `I` of `Enumerate<I>`.
-pub(crate) fn enumerated_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+pub fn enumerated_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     counted_adapter(tcx, ty).and_then(|(kind, _, source)| (kind == Counted::Enumerate).then_some(source))
 }
 

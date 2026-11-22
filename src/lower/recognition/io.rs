@@ -356,7 +356,7 @@ pub(crate) fn makes_empty_string<'tcx>(tcx: TyCtxt<'tcx>, callee: DefId, args: t
 
 /// Whether `id` is `io::Read::read_to_string`, whose `String` the analysis
 /// may prove fresh-empty, its argument 1 (#1297).
-pub(crate) fn reads_to_string(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub fn reads_to_string(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.trait_of_assoc(id)
         .is_some_and(|tr| is_std_def(tcx, tr, StdItem::IoRead))
         && tcx.item_name(id).as_str() == "read_to_string"

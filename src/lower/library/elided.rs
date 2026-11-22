@@ -14,10 +14,7 @@ use std::collections::BTreeSet;
 /// their calls in turn: a consumer that compiles a function itself
 /// compiles the private ones it calls too (ADR 0914), so what any of them
 /// leaves out is the function's to say.
-pub(in crate::lower) fn elided_through_calls(
-    tcx: TyCtxt<'_>,
-    bodies: &[crate::lower::Body<'_>],
-) -> IndexMap<DefId, BTreeSet<RcShape>> {
+pub fn elided_through_calls(tcx: TyCtxt<'_>, bodies: &[crate::lower::Body<'_>]) -> IndexMap<DefId, BTreeSet<RcShape>> {
     // What each function calls or names, its closures' too.
     let mut callees: IndexMap<DefId, IndexSet<DefId>> = IndexMap::default();
     for body in bodies {

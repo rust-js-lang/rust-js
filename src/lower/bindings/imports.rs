@@ -6,7 +6,7 @@ use rust_js_program::js::{self, Expr};
 
 /// What a JS module exports under a name, `("node:path", "join")`, or
 /// `"default"` or `"*"` for its default export or the module itself.
-pub(in crate::lower) type Export = (String, String);
+pub type Export = (String, String);
 
 /// An import from a JS module (ADR 0028): `"@codemirror/state#EditorState.create"`
 /// is the export `("@codemirror/state", "EditorState")`, then the rest of

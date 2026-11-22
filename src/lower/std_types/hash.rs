@@ -15,14 +15,14 @@ use rustc_span::Span;
 /// Which of std's hashers: `DefaultHasher`, SipHash-1-3 of zero keys, or
 /// the deprecated `SipHasher`, SipHash-2-4.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum StdHasher {
+pub enum StdHasher {
     Default,
     Sip,
 }
 
 /// What's asked of hashing.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum HashOp {
+pub enum HashOp {
     /// `DefaultHasher::new()` or `SipHasher::new()`.
     New(StdHasher),
     /// `SipHasher::new_with_keys(k0, k1)`.

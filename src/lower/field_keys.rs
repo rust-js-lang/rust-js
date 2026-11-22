@@ -14,7 +14,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as JS's global it names, `Symbol.asyncIterator`, the crate's or a
     /// library's as its item's read, a thread-local's made by then, as
     /// the path at `named` names it.
-    pub(super) fn field_symbol(&self, item: DefId, named: Span) -> Expr {
+    pub fn field_symbol(&self, item: DefId, named: Span) -> Expr {
         match self.tcx.is_foreign_item(item) {
             true => self.binding_ref(&bindings::js_name(self.tcx, item), named),
             false => self.item_read(item, named),

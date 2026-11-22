@@ -8,19 +8,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `{:?}` of a `ty` value (ADR 0060), as Rust shows it: `Some(1)`,
     /// `(1, "a")`, `[1.0, 2.5]`, a call of a `Debug` impl of the crate's own,
     /// derived or not, or `TDebug.fmt(x)` in generic code.
-    pub(in crate::lower) fn debug_string(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn debug_string(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         self.debug_string_with(value, ty, span, &Pretty::Plain)
     }
 
     /// `debug_string`, plain or pretty, `{:#?}` (ADR 0137): a part of a
     /// value is shown as the value is.
-    pub(in crate::lower) fn debug_string_with(
-        &mut self,
-        value: Expr,
-        ty: Ty<'tcx>,
-        span: Span,
-        pretty: &Pretty,
-    ) -> R<Expr> {
+    pub fn debug_string_with(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let evaluated = value.has_effects().then(|| value.clone());
         let shown = self.debug_shown(value, ty, span, pretty)?;
         Ok(evaluated_first(evaluated, shown))

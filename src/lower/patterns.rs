@@ -19,7 +19,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// destructuring: `[count, setCount]`, `{ initial, label }`. Binds the
     /// variables, and says whether one is `mut`. `None`, binding nothing, if a
     /// part is anything else, or needs a copy of its own (ADR 0020).
-    pub(super) fn js_pattern(&mut self, pat: &Pat<'tcx>) -> Option<(js::Pattern, bool)> {
+    pub fn js_pattern(&mut self, pat: &Pat<'tcx>) -> Option<(js::Pattern, bool)> {
         // A struct's or a tuple's fields, or an array's first items, `[a, b,
         // ..]`, which are `const [a, b] = xs` (ADR 0123): each by where it is.
         let fields: Vec<(usize, &Pat<'tcx>)> = match &pat.kind {
@@ -139,7 +139,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Field `i`'s default, of `ty`, a props struct, where JS takes it
     /// apart, `{ size = "md" }` (ADR 0212): its type's `Default`, which is
     /// a literal, or the literal its `#[rust_js::default]` says, of its type.
-    pub(super) fn prop_default(&mut self, ty: Ty<'tcx>, i: usize, span: Span) -> Option<Expr> {
+    pub fn prop_default(&mut self, ty: Ty<'tcx>, i: usize, span: Span) -> Option<Expr> {
         let ty::Adt(adt, args) = ty.kind() else { return None };
         let field = adt.non_enum_variant().fields.iter().nth(i)?;
         let field_ty = field.ty(self.tcx, args).skip_normalization();
@@ -204,7 +204,7 @@ fn is_literal(value: &Expr) -> bool {
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Is each call of `def_id` what it's given, in JS (`gives_its_argument`)?
     /// A library's, as its contract says.
-    pub(super) fn gives_its_argument(&self, def_id: DefId) -> bool {
+    pub fn gives_its_argument(&self, def_id: DefId) -> bool {
         gives_its_argument(self.tcx, self.krate.bodies, def_id) || self.krate.foreign.gives_its_argument(def_id)
     }
 }
@@ -221,7 +221,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// amended). Or a `From` into an untagged enum that's the variant of its
 /// argument, `Src::Text(s)` (`untagged::gives_its_variant`, ADR 0214,
 /// amended).
-pub(super) fn gives_its_argument<'tcx>(
+pub fn gives_its_argument<'tcx>(
     tcx: rustc_middle::ty::TyCtxt<'tcx>,
     bodies: &IndexMap<DefId, &super::Body<'tcx>>,
     def_id: DefId,

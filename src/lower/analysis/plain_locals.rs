@@ -119,7 +119,7 @@ pub(super) fn quiet_library_keys<'tcx>(
 /// `RefCell` of what isn't the object it holds (ADR 0863). A thread-local
 /// `RefCell` of an array or an object is that object, changed in place, as
 /// any module may change an object it imports.
-pub(in crate::lower) fn holds_a_value(tcx: TyCtxt<'_>, key: DefId) -> bool {
+pub fn holds_a_value(tcx: TyCtxt<'_>, key: DefId) -> bool {
     if tcx.is_mutable_static(key) {
         return !tcx.is_foreign_item(key);
     }
@@ -142,7 +142,7 @@ pub(in crate::lower) fn holds_a_value(tcx: TyCtxt<'_>, key: DefId) -> bool {
 
 /// `module`'s `static mut`s, of the crate's `consts`: each its module's
 /// variable, as a thread-local of a value is (ADR 0096, amended).
-pub(in crate::lower) fn module_statics(tcx: TyCtxt<'_>, consts: &[LocalDefId], module: LocalModId) -> Vec<LocalDefId> {
+pub fn module_statics(tcx: TyCtxt<'_>, consts: &[LocalDefId], module: LocalModId) -> Vec<LocalDefId> {
     (consts.iter().copied())
         .filter(|&key| {
             tcx.parent_module_from_def_id(key) == module
@@ -155,7 +155,7 @@ pub(in crate::lower) fn module_statics(tcx: TyCtxt<'_>, consts: &[LocalDefId], m
 /// Refuse `key`, which its module exports, where `plain_statics` left it its
 /// `{ value }`, as its module needs the box: a JS module importing it would
 /// read the box, not what it holds (ADRs 0270, 0096, amended).
-pub(in crate::lower) fn refuse_boxed_export(tcx: TyCtxt<'_>, key: DefId) {
+pub fn refuse_boxed_export(tcx: TyCtxt<'_>, key: DefId) {
     let span = tcx.def_ident_span(key).unwrap_or_else(|| tcx.def_span(key));
     let name = tcx.item_name(key);
     let message = match tcx.is_mutable_static(key) {

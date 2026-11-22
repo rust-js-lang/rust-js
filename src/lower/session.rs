@@ -23,8 +23,8 @@ use crate::lower::mir_hooks::MirHooks;
 // The compile's reports, which `mir` records into as it lowers: the labels
 // each body keeps (`--label-census`) and the tidy passes that fired
 // (`--tidy-fired`), the session's since #2299 moved them from `mir`.
-pub(in crate::lower) mod label_census;
-pub(in crate::lower) mod tidy_fired;
+pub mod label_census;
+pub mod tidy_fired;
 
 /// What a lowering session finds once, and the flags of its run.
 pub(crate) struct Caches {
@@ -116,7 +116,7 @@ thread_local! {
 /// The std functions a recogniser took in the session `tcx` is, a line
 /// each, in the order each first was: what `--recognizers-found` writes
 /// (ADR 1128); nothing of a session that records none.
-pub(crate) fn recognized(tcx: TyCtxt<'_>) -> String {
+pub fn recognized(tcx: TyCtxt<'_>) -> String {
     let caches = caches(tcx);
     let Some(recognized) = &caches.recognized else {
         return String::new();
@@ -126,13 +126,13 @@ pub(crate) fn recognized(tcx: TyCtxt<'_>) -> String {
 
 /// Each check THIR's ranges leave out that MIR's intervals don't prove, a
 /// line each: what `--intervals-shadow` writes (#1672).
-pub(crate) fn intervals_shadow(tcx: TyCtxt<'_>) -> String {
+pub fn intervals_shadow(tcx: TyCtxt<'_>) -> String {
     super::analysis::intervals_shadow_report(tcx)
 }
 
 /// Each `Drop` of the crate's bodies compared with rustc's elaboration, a
 /// line each: what `--drops-shadow` writes (#2112's change D).
-pub(crate) fn drops_shadow(tcx: TyCtxt<'_>) -> String {
+pub fn drops_shadow(tcx: TyCtxt<'_>) -> String {
     let caches = caches(tcx);
     let Some(lines) = &caches.drops_shadow else {
         return String::new();
@@ -144,7 +144,7 @@ pub(crate) fn drops_shadow(tcx: TyCtxt<'_>) -> String {
 
 /// Records which of tidy's passes change a body, for the rest of the
 /// compile: `--tidy-fired`'s (#1461).
-pub(crate) fn record_tidy_fired() {
+pub fn record_tidy_fired() {
     tidy_fired::record();
 }
 
@@ -153,13 +153,13 @@ pub(crate) fn record_tidy_fired() {
 /// `--tidy-fired` writes; nothing of a compile that records none. Of
 /// `names`, tidy's passes in the order they run, which the driver gives
 /// (`lower::tidy_pass_names`), tidy being `mir`'s.
-pub(crate) fn tidy_fired(names: &[String]) -> String {
+pub fn tidy_fired(names: &[String]) -> String {
     tidy_fired::report(names)
 }
 
 /// Forgets, for the rest of the compile, where the program writes its
 /// constructs, which tidy reads its JS by: `--no-thir-hints` (ADR 1144).
-pub(crate) fn forget_thir_hints() {
+pub fn forget_thir_hints() {
     NO_THIR_HINTS.store(true, std::sync::atomic::Ordering::Relaxed);
 }
 
@@ -171,25 +171,25 @@ static NO_THIR_HINTS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicB
 
 /// Whether tidy is told where the program writes its constructs.
 // helper: the compile's `--no-thir-hints` switch, asked by `mir::hints`, the session's since #2299 moved it there with the other switches
-pub(in crate::lower) fn thir_hints() -> bool {
+pub fn thir_hints() -> bool {
     !NO_THIR_HINTS.load(std::sync::atomic::Ordering::Relaxed)
 }
 
 /// Resolves std's paths before any body is lowered, for the rest of the
 /// compile: `--std-paths-first`'s (ADR 0879, amended).
-pub(crate) fn ask_std_paths_first() {
+pub fn ask_std_paths_first() {
     super::recognition::ask_std_paths_first();
 }
 
 /// Records which compiler-made labels each body keeps after tidy, by the
 /// MIR shape that left it: `--label-census`'s (#1461).
-pub(crate) fn record_label_census() {
+pub fn record_label_census() {
     label_census::record();
 }
 
 /// Each shape of a label kept and how many, a line each, `count<TAB>shape`,
 /// the most first: what `--label-census` writes.
-pub(crate) fn label_census() -> String {
+pub fn label_census() -> String {
     label_census::report()
 }
 
@@ -200,7 +200,7 @@ fn gcx_of(tcx: TyCtxt<'_>) -> usize {
 
 /// The flags a session's run is given as it starts.
 #[derive(Clone, Default)]
-pub(crate) struct Flags {
+pub struct Flags {
     pub meaning: bool,
     pub every_outside_struct: bool,
     /// The std paths of the functions whose recognisers are left out.
@@ -223,7 +223,7 @@ pub(crate) struct Flags {
 
 /// Holds a session's caches in place; dropped, it takes them away, as the
 /// session ends.
-pub(crate) struct Session(());
+pub struct Session(());
 
 impl Drop for Session {
     fn drop(&mut self) {
@@ -235,7 +235,7 @@ impl Drop for Session {
 /// `flags`, until the guard it gives is dropped. One at a time: a session
 /// started inside another is a bug, which it says.
 #[must_use = "the session ends when its guard is dropped"]
-pub(in crate::lower) fn start(tcx: TyCtxt<'_>, flags: Flags, hooks: &'static dyn MirHooks) -> Session {
+pub fn start(tcx: TyCtxt<'_>, flags: Flags, hooks: &'static dyn MirHooks) -> Session {
     start_keyed(gcx_of(tcx), flags, hooks)
 }
 
@@ -281,7 +281,7 @@ fn start_keyed(gcx: usize, flags: Flags, hooks: &'static dyn MirHooks) -> Sessio
 /// The caches of the session `tcx` is, which must be the one running: asked
 /// outside a session, or with another session's `tcx`, it's a bug, which it
 /// says.
-pub(crate) fn caches(tcx: TyCtxt<'_>) -> Rc<Caches> {
+pub fn caches(tcx: TyCtxt<'_>) -> Rc<Caches> {
     caches_keyed(gcx_of(tcx))
 }
 

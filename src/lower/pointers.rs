@@ -45,7 +45,7 @@ const COPIED: &str = "a pointer into what JS may hold a copy of";
 
 /// What std does with a raw pointer, of the ones JS has.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum PointerOp {
+pub enum PointerOp {
     /// `ptr::null()`, `null_mut()`: `null`.
     Null,
     IsNull,
@@ -171,7 +171,7 @@ pub(in crate::lower) enum PointerOp {
 /// Where a raw pointer's place is in the allocation that holds it, as its
 /// place says (ADR 0562): what `$ptr`'s third argument is.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum Offset {
+pub enum Offset {
     /// No field's: an array's item, at its index times its size, a cell's
     /// one field, an object's own start.
     Unsaid,
@@ -185,7 +185,7 @@ pub(in crate::lower) enum Offset {
     LaidOutByCaller,
 }
 
-pub(in crate::lower) fn raw_pointee<'tcx>(tcx: ty::TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, ty::Mutability)> {
+pub fn raw_pointee<'tcx>(tcx: ty::TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, ty::Mutability)> {
     match ty.kind() {
         ty::RawPtr(pointee, mutability) => Some((*pointee, *mutability)),
         ty::Adt(adt, args) if super::recognition::is_std_def(tcx, adt.did(), super::recognition::StdItem::NonNull) => {
@@ -235,19 +235,19 @@ pub(in crate::lower) fn mir_addresses_memory<'tcx>(
 /// are cells, so the pointer has a place; each reference made once of a
 /// whole local, `r = &x`, whose `&raw const *r` is a pointer to `x`; and
 /// each local read back out through a reference to it.
-pub(super) struct Pointed {
-    pub(super) locals: IndexSet<Local>,
-    pub(super) refs: IndexMap<Local, Local>,
+pub struct Pointed {
+    pub locals: IndexSet<Local>,
+    pub refs: IndexMap<Local, Local>,
     /// Each local read back out through a reference to it, `copy (*r)` of
     /// `r = &m`, or reached through it, `&(*(*r))`, a match guard's
     /// binding's: a `&mut` that's a value of its own then, its handle, not
     /// the place it refers to named where it's used.
-    pub(super) borrowed: IndexSet<Local>,
+    pub borrowed: IndexSet<Local>,
     /// Each reference made of a subslice, `&a[1..3]`, or of a place through
     /// one, or a copy of one: a copy of those items in JS (ADR 0063), whose
     /// places aren't the array's; and a named constant, each use of which
     /// is a value of its own, where Rust's may be one place.
-    pub(super) copies: IndexSet<Local>,
+    pub copies: IndexSet<Local>,
     /// Of `copies`, each a call lends, text's bytes, `s.as_bytes()`, or a
     /// copy or reborrow of one: its `as_ptr()` a copy's place too (#1183).
     pub(super) lent_copies: IndexSet<Local>,
@@ -256,13 +256,13 @@ pub(super) struct Pointed {
     /// never compared, kept or written through, so a cell of what `r`
     /// refers to reads the same, as Rust's aliasing rules let nothing
     /// change it till the pointer's last read.
-    pub(super) read_only: IndexSet<Local>,
+    pub read_only: IndexSet<Local>,
     /// Each reference made once and given to a call that's given the
     /// pointer to its place for it (`given_its_pointer`), made as that
     /// pointer, `&raw mut` of its place (ADR 1114).
-    pub(super) lent_as_pointers: IndexSet<Local>,
+    pub lent_as_pointers: IndexSet<Local>,
     /// Each call one of those is given to, by its block.
-    pub(super) lent_calls: IndexSet<mir::BasicBlock>,
+    pub lent_calls: IndexSet<mir::BasicBlock>,
 }
 
 /// `lent_copies`, each reference a call gives that's a copy in JS, `s.as_bytes()`'s.
@@ -390,7 +390,7 @@ pub(super) fn pointed_locals_of(body: &mir::Body<'_>, lent_copies: IndexSet<Loca
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `body` takes raw pointers to, of what isn't an object, whose
     /// pointer is the object's: its cells.
-    pub(super) fn pointed_locals(&self, body: &mir::Body<'tcx>) -> Pointed {
+    pub fn pointed_locals(&self, body: &mir::Body<'tcx>) -> Pointed {
         let mut pointed = pointed_locals_of(body, self.lent_copies(body));
         pointed.locals.retain(|&local| {
             let ty = body.local_decls[local].ty;
@@ -590,7 +590,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a raw pointer of type `ty` is a handle on its place, as all
     /// are but a pointer to a JS object, which is the object (ADR 0285),
     /// and one to what is its own pointer, `pointee_is_itself`.
-    pub(super) fn is_handle_pointer(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_handle_pointer(&self, ty: Ty<'tcx>) -> bool {
         raw_pointee(self.tcx, ty)
             .is_some_and(|(pointee, _)| !self.is_js_object(pointee) && !self.pointee_is_itself(pointee))
     }
@@ -607,7 +607,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// arrayvec's `ptr::read(elt as *const _)` of a slice's item
     /// (`Pointed::read_only`): `pointer_to`'s, or of a value with no place
     /// JS names, a cell of it, as a constant's is, which reads the same.
-    pub(super) fn read_only_pointer_to(&self, place: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn read_only_pointer_to(&self, place: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
         let named = matches!(&place.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))
             || matches!(&place.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$index"));
         match named || self.pointee_is_itself(pointee) || self.mut_ref_form(pointee).is_the_object() {
@@ -621,7 +621,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// in its struct where the struct's layout is known here (ADR 0562),
     /// `$ptr(items, i)` of an item, a cell of a constant. Any other place,
     /// one JS has no name for, is refused.
-    pub(super) fn pointer_to(&self, place: Expr, pointee: Ty<'tcx>, offset: Offset, span: Span) -> R<Expr> {
+    pub fn pointer_to(&self, place: Expr, pointee: Ty<'tcx>, offset: Offset, span: Span) -> R<Expr> {
         let handle = |object: Expr, key: Expr, offset: Offset| {
             let mut args = vec![object, key];
             match offset {
@@ -725,7 +725,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// closure's that captures nothing, whose JS value is the function, its
     /// pointer `$ptrTo` of it (ADR 0562, amended). The one answer a pointer
     /// made and one made a `dyn` ask.
-    pub(super) fn has_no_place(&self, pointee: Ty<'tcx>) -> bool {
+    pub fn has_no_place(&self, pointee: Ty<'tcx>) -> bool {
         self.has_one_value(pointee) && !self.is_function_of_no_size(pointee)
     }
 
@@ -739,7 +739,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// place, or the same address, `$ptrEq`, given the pointee's size, which
     /// an empty array's address is of; of two `dyn`'s pairs, the same value,
     /// `$dynPtrEq`, as `ptr::addr_eq` asks too. The one place it's written.
-    pub(super) fn pointers_equal(&mut self, a: Expr, b: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn pointers_equal(&mut self, a: Expr, b: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
         // Two slices' pointers, which are the slices: where each starts and
         // how long each is, not which array JS holds it as (#1185), a part's
         // never the same object as another of the same items.
@@ -773,7 +773,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// or address (ADR 0562): a handle on its place, a `dyn`'s pair, or a
     /// slice's, by where it starts and its length (#1185). The
     /// one answer both `==`s ask, MIR's and a derived `PartialEq`'s.
-    pub(super) fn compared_by_address(&self, ty: Ty<'tcx>) -> bool {
+    pub fn compared_by_address(&self, ty: Ty<'tcx>) -> bool {
         self.is_handle_pointer(ty)
             || raw_pointee(self.tcx, ty)
                 .is_some_and(|(pointee, _)| self.is_pair_dyn_pointee(pointee) || pointee.is_slice())
@@ -822,7 +822,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `*p`, the place a pointer is a handle on: `object[key]` of one made
     /// here, `$ptr(object, key)`, `object` of `$ptrTo(object)`, `x` of a
     /// cell `{ value: x }`, else its `value`.
-    pub(super) fn pointee_place(&self, pointer: Expr) -> Expr {
+    pub fn pointee_place(&self, pointer: Expr) -> Expr {
         if let js::ExprKind::Call(callee, args) = &pointer.kind {
             match (callee.helper_name(), args.as_slice()) {
                 (Some("$ptr"), [object, key] | [object, key, _]) => {
@@ -864,13 +864,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`Known::HandledObject`), the handle's own write, the object's in
     /// place, as `*r = v`'s is (ADR 0147), so each name for it sees it, not
     /// the name given another (#1352).
-    pub(in crate::lower) fn written_through(
-        &self,
-        place: Expr,
-        value: Expr,
-        written: Ty<'tcx>,
-        span: Span,
-    ) -> R<StmtKind> {
+    pub fn written_through(&self, place: Expr, value: Expr, written: Ty<'tcx>, span: Span) -> R<StmtKind> {
         Ok(match place.facts.has(js::Known::HandledObject) {
             true => StmtKind::Expr(self.in_place(InPlaceWriter::Assign, written, vec![place, value], span)?),
             false => StmtKind::Assign(place, value),
@@ -1157,7 +1151,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The size of a `pointee`, which an address is asked with (ADR 0562):
     /// rustc's for wasm32, or a type parameter's as its caller gives it
     /// (ADR 0145). One answer, `size_of`'s.
-    pub(super) fn pointee_size(&mut self, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn pointee_size(&mut self, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
         self.type_fact_value(pointee, TypeFact::Size, span)
     }
 
@@ -1232,7 +1226,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A pointer to an item of a slice, `&s[0] as *const T`, or into what a
     /// subslice's reference refers to, `copies`, into an array JS may hold
     /// a copy of: refused.
-    pub(super) fn check_slice_item_pointer(
+    pub fn check_slice_item_pointer(
         &self,
         (body, copies): (&mir::Body<'tcx>, &IndexSet<Local>),
         place: mir::Place<'tcx>,
@@ -1339,7 +1333,7 @@ pub(in crate::lower) fn same_object(a: &Expr, b: &Expr, items: bool) -> Option<E
 /// `$ptrEq(p, q, size)`, whose pointee's size is known, so never a type
 /// parameter's, its `$ptrTo` an object's: `x === y` where `same_object`
 /// says so, once what each was made of is read in place.
-pub(in crate::lower) fn same_object_in_place(e: &mut Expr) {
+pub fn same_object_in_place(e: &mut Expr) {
     if let js::ExprKind::Call(callee, args) = &e.kind
         && callee.helper_name() == Some("$ptrEq")
         && let [a, b, _] = args.as_slice()

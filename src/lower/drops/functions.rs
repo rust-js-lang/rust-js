@@ -9,7 +9,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// items or `insert`'s old value: of a type parameter whose drop this
     /// function isn't given, none, one its callers give none with a
     /// destructor (ADR 0190).
-    pub(in crate::lower) fn std_drop_function(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+    pub fn std_drop_function(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let drop = self.drop_function(ty, span)?;
         if drop.is_none() {
             self.require_no_drops(ty);
@@ -21,7 +21,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its type parameter: its `drop` itself, when that's all its drop is,
     /// `noisyDrop_drop`, or an arrow; a type parameter's is the one this
     /// function was given. None for a type with nothing to drop.
-    pub(in crate::lower) fn drop_function(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+    pub fn drop_function(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         self.drop_function_of(ty, None, span)
     }
 
@@ -158,7 +158,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `value`, which `drop_value` may read more than once, in a `const`
     /// first unless it reads the same each time, or is read once.
-    pub(in crate::lower) fn droppable(&mut self, value: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>) -> Expr {
+    pub fn droppable(&mut self, value: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>) -> Expr {
         if value.reads_same() || self.drops_once(ty) {
             value
         } else {

@@ -19,7 +19,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// knowing its back for it, which a hint asks nothing of: a flatten's
     /// inner iterators, the crate's that have none, were stepped by it
     /// (#2209). One the crate steps from its back is `as_double_ended`'s.
-    pub(in crate::lower) fn as_hint_knowing(&mut self, value: Expr, ty: Ty<'tcx>) -> Expr {
+    pub fn as_hint_knowing(&mut self, value: Expr, ty: Ty<'tcx>) -> Expr {
         let ty = ty.peel_refs();
         // One made knowing its back already, which knows its hint too.
         if was_made_knowing_its_back(&value) || crate::lower::iterators::knows_its_back_by_form(&value) {

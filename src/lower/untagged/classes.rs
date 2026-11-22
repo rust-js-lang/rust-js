@@ -107,7 +107,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a variant by `instanceof` of a JS object type's class
     /// (`untold_class`): `false` of another realm's object, and a
     /// `ReferenceError` where the host lacks the global (#555).
-    pub(in crate::lower) fn untold_class(&self, ty: Ty<'tcx>, variants: &[&VariantDef]) -> Option<String> {
+    pub fn untold_class(&self, ty: Ty<'tcx>, variants: &[&VariantDef]) -> Option<String> {
         let (adt, args) = self.untagged(ty)?;
         let recognition = self.recognition();
         // Two classes of one member, an `HTMLElement` and an `SVGElement`,

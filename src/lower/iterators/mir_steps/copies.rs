@@ -11,7 +11,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is (ADR 0547), where it asks the crate's own steps as its source
     /// does (`asks_as_its_source`). The one answer, of what's made and
     /// what's dropped.
-    pub(in crate::lower) fn is_its_source(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_its_source(&self, ty: Ty<'tcx>) -> bool {
         (crate::lower::recognition::copied_source(self.tcx, ty))
             .or_else(|| crate::lower::recognition::cloned_source(self.tcx, ty))
             .is_some_and(|source| self.copies_its_items_as_they_are(ty) && self.asks_as_its_source(ty, source))
@@ -64,7 +64,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as `copied_items` copies it (ADR 0525, #1181). Never of the JS
     /// iterator made of it, which its clone would take for the value
     /// (#2130).
-    pub(in crate::lower) fn copied_cloned_apart(
+    pub fn copied_cloned_apart(
         &mut self,
         (it, method, item): (Expr, IterMethod, Ty<'tcx>),
         (iter_ty, receiver_ty, output): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
@@ -124,7 +124,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Its source made knowing its back where it's to know its own, as a
     /// map's is: a `step_by(n)`'s, `$stepByEnds` (#851); or its hint alone,
     /// where it's made knowing that, never asked its back for it (#2209).
-    pub(in crate::lower) fn copied_items(&mut self, it: Expr, item: Ty<'tcx>, output: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn copied_items(&mut self, it: Expr, item: Ty<'tcx>, output: Ty<'tcx>, span: Span) -> R<Expr> {
         let back = self.knows_its_back(output);
         let hint = !back && self.made_knowing_its_hint(output);
         self.copied_items_knowing(it, item, output, (back, hint), span)

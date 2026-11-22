@@ -124,7 +124,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// A trait whose `dyn` is a pair, its value and its dictionary (ADR
     /// 0049): one rust-js compiled, or std's `Display`, `ToString`, `Error`,
     /// `io::Write`, `fmt::Write` or `Any` (ADRs 0141, 0331, 0446).
-    pub(in crate::lower) fn is_pair_trait(&self, id: DefId) -> bool {
+    pub fn is_pair_trait(&self, id: DefId) -> bool {
         self.foreign.compiled_by_rust_js(id) || self.is_std_pair_trait(id)
     }
 
@@ -243,7 +243,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// an iterator by them: a `T: Iterator`'s, a subtrait's, or an
     /// associated type bounded so, `IntoIterator::IntoIter`. What it is
     /// then is its caller's, which may be one dropped by closing (#392).
-    pub(in crate::lower) fn bounded_iterator(&self, ty: Ty<'tcx>) -> bool {
+    pub fn bounded_iterator(&self, ty: Ty<'tcx>) -> bool {
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let bound = |clause: ty::Clause<'tcx>, of: Ty<'tcx>| {
             clause
@@ -279,7 +279,7 @@ pub(crate) fn known_by_bounds(ty: Ty<'_>) -> bool {
 /// bounds, or a `dyn`'s, its pair's `impl`, `d.impl.read_to_string(d, s)`
 /// of a `dyn Read` given a `&mut String` too, or a `Box` of one's, a `Box`
 /// of that's too, std's `impl Read for Box<R>`'s, `$dynReader` (#1489).
-pub(crate) fn known_by_a_dictionary(ty: Ty<'_>) -> bool {
+pub fn known_by_a_dictionary(ty: Ty<'_>) -> bool {
     let mut held = ty;
     while let Some(inner) = held.boxed_ty() {
         held = inner;
@@ -288,14 +288,14 @@ pub(crate) fn known_by_a_dictionary(ty: Ty<'_>) -> bool {
 }
 
 /// How an explicitly fallible JavaScript binding delivers its result.
-pub(in crate::lower) enum Catching {
+pub enum Catching {
     Direct,
     Result,
     PromiseResult,
 }
 
 #[derive(Clone, Copy)]
-pub(in crate::lower) enum OrderingCall {
+pub enum OrderingCall {
     Compare,
     Lt,
     Le,
@@ -343,7 +343,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
-    pub(in crate::lower) fn ordering_call(&self, id: DefId, tr: ty::TraitRef<'tcx>) -> Option<(OrderingCall, bool)> {
+    pub fn ordering_call(&self, id: DefId, tr: ty::TraitRef<'tcx>) -> Option<(OrderingCall, bool)> {
         let partial = self.tcx.is_lang_item(tr.def_id, LangItem::PartialOrd);
         if !partial && !self.tcx.is_diagnostic_item(sym::Ord, tr.def_id) {
             return None;
@@ -377,11 +377,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 /// Is `id` a trait whose impls are passed as dictionaries (ADR 0049)? One of
 /// the crate's own, or a library's (ADR 0100), which its consumers must pass
 /// as it takes them, and the std traits rust-js calls.
-pub(in crate::lower) fn operational(
-    tcx: TyCtxt<'_>,
-    foreign: &crate::lower::library::Foreign<'_, '_>,
-    id: DefId,
-) -> bool {
+pub fn operational(tcx: TyCtxt<'_>, foreign: &crate::lower::library::Foreign<'_, '_>, id: DefId) -> bool {
     foreign.compiled_by_rust_js(id)
         || tcx.is_lang_item(id, LangItem::Copy)
         || tcx.is_lang_item(id, LangItem::Clone)
@@ -599,7 +595,7 @@ pub(crate) fn conversion_target<'tcx>(
 }
 
 /// An operator that assigns, `a += b`: the operation it does.
-pub(in crate::lower) fn assign_operator(tcx: TyCtxt<'_>, id: DefId) -> Option<BinOp> {
+pub fn assign_operator(tcx: TyCtxt<'_>, id: DefId) -> Option<BinOp> {
     [
         (LangItem::AddAssign, BinOp::Add),
         (LangItem::SubAssign, BinOp::Sub),
@@ -687,7 +683,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 }
 
-pub(in crate::lower) enum TraitCall {
+pub enum TraitCall {
     Clone,
     Default,
     Equality { negate: bool },
@@ -695,7 +691,7 @@ pub(in crate::lower) enum TraitCall {
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
-    pub(in crate::lower) fn trait_call(&self, method: DefId, trait_id: DefId) -> Option<TraitCall> {
+    pub fn trait_call(&self, method: DefId, trait_id: DefId) -> Option<TraitCall> {
         if self.tcx.is_lang_item(method, LangItem::CloneFn) {
             Some(TraitCall::Clone)
         } else if self.tcx.is_diagnostic_item(Symbol::intern("Default"), trait_id) {
@@ -950,7 +946,7 @@ pub(crate) fn bound_by_any(tcx: TyCtxt<'_>, owner: DefId, index: u32) -> bool {
 
 /// `cmp::max`, `Some(true)`, or `cmp::min`, `Some(false)`: `core`'s, which
 /// `std` re-exports.
-pub(crate) fn cmp_extreme(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
+pub fn cmp_extreme(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
     if !of_std_crate(tcx, def_id, StdCrate::Core) {
         return None;
     }

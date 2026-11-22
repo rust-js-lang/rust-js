@@ -57,7 +57,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The trait of a `RefCell<dyn T>` that `ty` is or points at: the
     /// crate's own `T` (ADR 0397).
-    pub(in crate::lower) fn dyn_cell_trait(&self, ty: Ty<'tcx>) -> Option<DefId> {
+    pub fn dyn_cell_trait(&self, ty: Ty<'tcx>) -> Option<DefId> {
         let cell = self.pointee(ty);
         if !self.is_std_type(cell, StdItem::RefCell) {
             return None;
@@ -107,11 +107,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// dictionaries it makes (ADR 0141). A `dyn Debug` is a string instead.
     /// Is `ty`, through its pointer, a `dyn` that's a pair, its value and
     /// its dictionary: of a pair trait, or of none, `dyn Send`.
-    pub(in crate::lower) fn is_pair_dyn(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_pair_dyn(&self, ty: Ty<'tcx>) -> bool {
         matches!(self.pointee(ty).kind(), ty::Dynamic(predicates, ..) if self.recognition().is_pair_dyn(predicates))
     }
 
-    pub(in crate::lower) fn dynamic_trait(&self, ty: Ty<'tcx>) -> Option<DefId> {
+    pub fn dynamic_trait(&self, ty: Ty<'tcx>) -> Option<DefId> {
         let inner = self.pointee(ty);
         match inner.kind() {
             ty::Dynamic(predicates, ..) => predicates
@@ -151,18 +151,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What `From::from` or `Into::into` makes, and from what
     /// (`recognition::conversion`).
-    pub(in crate::lower) fn converted(
-        &self,
-        def_id: DefId,
-        args: ty::GenericArgsRef<'tcx>,
-    ) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+    pub fn converted(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
         crate::lower::recognition::conversion(self.tcx, def_id, args)
     }
 
     /// The dictionary of a `Box<dyn Error>`, `to`, made from a `from` by std's
     /// `From` (ADR 0141): the error's own `Error`, or a message's,
     /// `$stringError()`. None if `to` isn't one.
-    pub(in crate::lower) fn dyn_error_from(&mut self, to: Ty<'tcx>, from: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+    pub fn dyn_error_from(&mut self, to: Ty<'tcx>, from: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let is_error = |id: DefId| is_std_def(self.tcx, id, StdItem::Error);
         let Some(inner) = to.boxed_ty() else {
             return Ok(None);
@@ -220,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    pub(in crate::lower) fn pointee(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
+    pub fn pointee(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
         match ty.kind() {
             ty::Ref(_, inner, _) => *inner,
             _ if let Some((inner, _)) = crate::lower::pointers::raw_pointee(self.tcx, ty) => inner,
@@ -266,7 +262,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `dyn` that's a pair: the type that field is in `source`, and the `dyn`
     /// (ADRs 0409, 0436). Not a `dyn FnMut`, the JS function: the same struct
     /// either way.
-    pub(in crate::lower) fn dyn_tail(&self, source: Ty<'tcx>, target: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+    pub fn dyn_tail(&self, source: Ty<'tcx>, target: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
         let (from, to) = (self.tail_holder(source), self.tail_holder(target));
         if !self.holds_a_dyn_tail(target) || !self.is_own_struct(to) {
             return None;
@@ -450,7 +446,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An unsizing JS can't make: of a pointer of the crate's own, or to a
     /// struct whose last field is a `dyn`.
-    pub(in crate::lower) fn check_unsize(&self, target: Ty<'tcx>, span: Span) -> R<()> {
+    pub fn check_unsize(&self, target: Ty<'tcx>, span: Span) -> R<()> {
         // A pointer of the crate's own, as `#[derive(CoercePointee)]` makes
         // one, would hold a `dyn`'s value and impl where it holds the value.
         if let ty::Adt(adt, _) = target.kind()
@@ -489,7 +485,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `x as &dyn Trait`: `{ value, impl }`, or for a trait object, the same
     /// value with its supertrait's dictionary. `out` gets a value computed once.
-    pub(in crate::lower) fn unsize_trait(
+    pub fn unsize_trait(
         &mut self,
         source: Ty<'tcx>,
         target: Ty<'tcx>,

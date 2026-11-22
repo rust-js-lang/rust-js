@@ -35,7 +35,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// Whether `method` is `DoubleEndedIterator::rfold`, the one of its
     /// methods that takes what it steps by value, as `fold` does (#423).
-    pub(in crate::lower) fn rfolds_what_it_consumes(&self, method: DefId) -> bool {
+    pub fn rfolds_what_it_consumes(&self, method: DefId) -> bool {
         self.tcx
             .trait_of_assoc(method)
             .is_some_and(|tr| is_double_ended(self.tcx, tr))
@@ -85,13 +85,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// A `dyn Iterator`, boxed or lent: a JS iterator, whatever made it; of
     /// a `dyn DoubleEndedIterator`, one that knows its back (ADR 0429).
-    pub(in crate::lower) fn is_dyn_iter(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_dyn_iter(&self, ty: Ty<'tcx>) -> bool {
         is_dyn_iter(self.tcx, ty)
     }
 
     /// core's `DoubleEndedIterator`, found among the traits, as it has no
     /// diagnostic item.
-    pub(in crate::lower) fn double_ended_iterator(&self) -> Option<DefId> {
+    pub fn double_ended_iterator(&self) -> Option<DefId> {
         self.tcx
             .all_traits_including_private()
             .find(|&id| is_double_ended(self.tcx, id))
@@ -124,7 +124,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// a B-tree's or a `BinaryHeap`'s, drops each as it's passed (#234);
     /// and whose `last` is its own, `next_back()`, what it has left then
     /// dropped as it's dropped, where the default folds it (#648).
-    pub(in crate::lower) fn drops_passed_as_slice(&self, ty: Ty<'tcx>) -> bool {
+    pub fn drops_passed_as_slice(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
         let ty::Adt(adt, _) = ty.kind() else { return false };
         matches!(
@@ -261,13 +261,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// (ADRs 0485, 0991): `map`'s, `filter`'s, `filter_map`'s,
     /// `take_while`'s, `skip_while`'s, `map_while`'s, `inspect`'s and
     /// `flat_map`'s, whose `F` is after what it flattens, `FlatMap<I, U, F>`.
-    pub(crate) fn held_function(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn held_function(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         self.held(ty).map(|(function, _)| function)
     }
 
     /// Where std's fold of an adapter that holds a function,
     /// `held_function`'s, drops it, as each writes its `fold` (#710).
-    pub(crate) fn held_function_folded(&self, ty: Ty<'tcx>) -> Option<HeldFolded> {
+    pub fn held_function_folded(&self, ty: Ty<'tcx>) -> Option<HeldFolded> {
         self.held(ty).map(|(_, folded)| folded)
     }
 
@@ -307,7 +307,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// items given it as `$closing`, whose closing drops what it hasn't given,
     /// or one that holds nothing, a slice's or a range's. The one list of
     /// what's closed to drop.
-    pub(in crate::lower) fn closed_on_drop(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn closed_on_drop(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, args) = ty.kind() else { return None };
         let mut sources = args.types();
@@ -566,7 +566,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// What an iterator of type `iterator` gives, its `Item`, normalized:
     /// the one place that works it out.
-    pub(crate) fn iterator_item(&self, iterator: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn iterator_item(&self, iterator: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let item = trait_method(self.tcx, std_item(self.tcx, StdItem::Iterator), "Item");
         let projection = Ty::new_projection(self.tcx, ty::IsRigid::No, item, [iterator]);
         (self.tcx)
@@ -613,7 +613,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `$somes`', is its fold too since #2199, so this decides how it reads,
     /// not what it asks. The one answer, of a count where it's made and of
     /// generic code's dictionary.
-    pub(in crate::lower) fn counts_by_its_own(&self, ty: Ty<'tcx>) -> bool {
+    pub fn counts_by_its_own(&self, ty: Ty<'tcx>) -> bool {
         self.flattened_options(ty).is_none() && self.reaches_its_own(ty, OwnStep::Count, Reach::Sure)
     }
 
@@ -689,7 +689,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// The method of std's iterator traits `def_id` is: `Iterator`'s,
     /// `DoubleEndedIterator`'s `next_back`, `ExactSizeIterator`'s `len`,
     /// `IntoIterator`'s `into_iter` or `FromIterator`'s `from_iter`.
-    pub(in crate::lower) fn iterator_method(&self, def_id: DefId) -> Option<IterMethod> {
+    pub fn iterator_method(&self, def_id: DefId) -> Option<IterMethod> {
         let trait_id = self.tcx.trait_of_assoc(def_id)?;
         let name = self.tcx.item_name(def_id);
         Some(match name.as_str() {
@@ -846,7 +846,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// Whether `ty`'s `IntoIterator` is std's of every iterator, `impl<I:
     /// Iterator> IntoIterator for I`: its `into_iter()` is itself (ADR 0552).
-    pub(in crate::lower) fn iterates_as_itself(&self, ty: Ty<'tcx>) -> bool {
+    pub fn iterates_as_itself(&self, ty: Ty<'tcx>) -> bool {
         let into_iterator = std_item(self.tcx, StdItem::IntoIterator);
         let tr = ty::TraitRef::new(self.tcx, into_iterator, [self.tcx.erase_and_anonymize_regions(ty)]);
         matches!(crate::lower::traits::select(self.tcx, self.typing_env, tr),
@@ -867,7 +867,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 /// a `skip_while`'s kept, whose fold is its `try_fold` by `&mut self`,
 /// dropped with it after its source, `Kept`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum HeldFolded {
+pub enum HeldFolded {
     After,
     Before,
     Alone,
@@ -876,7 +876,7 @@ pub(crate) enum HeldFolded {
 
 impl HeldFolded {
     /// `$holding`'s `moved`, which says so at run time; none of one kept.
-    pub(crate) fn moved(self) -> Option<&'static str> {
+    pub fn moved(self) -> Option<&'static str> {
         match self {
             HeldFolded::After => Some("after"),
             HeldFolded::Before => Some("before"),
@@ -934,7 +934,7 @@ pub(crate) fn is_double_ended(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// Is `method` `Iterator::position`, where the first item a test finds
 /// is (rd316)?
-pub(in crate::lower) fn is_iterator_position(tcx: TyCtxt<'_>, method: DefId) -> bool {
+pub fn is_iterator_position(tcx: TyCtxt<'_>, method: DefId) -> bool {
     tcx.trait_of_assoc(method)
         .is_some_and(|t| is_std_def(tcx, t, StdItem::Iterator))
         && tcx.item_name(method).as_str() == "position"
@@ -942,7 +942,7 @@ pub(in crate::lower) fn is_iterator_position(tcx: TyCtxt<'_>, method: DefId) -> 
 
 /// Is `method` a slice's `iter()` or `iter_mut()`, an iterator of each of
 /// its items, no more (#363)?
-pub(in crate::lower) fn is_slice_items(tcx: TyCtxt<'_>, method: DefId) -> bool {
+pub fn is_slice_items(tcx: TyCtxt<'_>, method: DefId) -> bool {
     matches!(tcx.item_name(method).as_str(), "iter" | "iter_mut")
         && tcx.inherent_impl_of_assoc(method).is_some_and(|imp| {
             matches!(
@@ -1009,7 +1009,7 @@ pub(crate) fn index_by_slice_index<'tcx>(tcx: TyCtxt<'tcx>, tr: ty::TraitRef<'tc
     Some(ty::TraitRef::new(tcx, slice_index, [index, Ty::new_slice(tcx, item)]))
 }
 
-pub(crate) fn is_iterator_extension(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub fn is_iterator_extension(tcx: TyCtxt<'_>, id: DefId) -> bool {
     of_std_crate(tcx, id, StdCrate::Core)
         && tcx.def_kind(id) == DefKind::Trait
         && [
@@ -1030,7 +1030,7 @@ pub(crate) fn into_iter_by_dictionary(tcx: TyCtxt<'_>, trait_id: DefId, self_ty:
         && matches!(self_ty.kind(), ty::Ref(_, inner, _) if known_by_bounds(*inner))
 }
 
-pub(in crate::lower) fn is_extend(tcx: rustc_middle::ty::TyCtxt<'_>, trait_id: rustc_span::def_id::DefId) -> bool {
+pub fn is_extend(tcx: rustc_middle::ty::TyCtxt<'_>, trait_id: rustc_span::def_id::DefId) -> bool {
     of_std_crate(tcx, trait_id, StdCrate::Core) && tcx.item_name(trait_id) == Symbol::intern("Extend")
 }
 
@@ -1039,7 +1039,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// which `Iterator.from` steps either of (ADR 0061). An associated type
     /// bound by `IntoIterator`, `H::Item`, is given that bound's dictionary
     /// (ADR 0976).
-    pub(in crate::lower) fn is_given_iterable(&self, ty: ty::Ty<'tcx>) -> bool {
+    pub fn is_given_iterable(&self, ty: ty::Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Param(_))
     }
 
@@ -1082,7 +1082,7 @@ pub(in crate::lower) enum SteppingWork<'tcx> {
 /// A method of std's iterator traits that lowering from MIR writes as JS's
 /// own (ADRs 0036, 0139, 0364): `iterator_method`'s answer.
 #[derive(Clone, Copy, PartialEq)]
-pub(crate) enum IterMethod {
+pub enum IterMethod {
     /// `__iterator_get_unchecked(i)`: a `TrustedRandomAccess`'s item at
     /// `i` past where it is, unstepped, which std's zip by index reads (ADR
     /// 0975).
@@ -1167,7 +1167,7 @@ pub(crate) enum IterMethod {
 impl IterMethod {
     /// Whether it steps what it's given from its back alone, `back_step`'s:
     /// `nth_back`, `rfold`, `rfind` and `try_rfold` (ADRs 0455, 0531).
-    pub(crate) fn steps_from_its_back(self) -> bool {
+    pub fn steps_from_its_back(self) -> bool {
         matches!(
             self,
             IterMethod::NthBack
@@ -1181,18 +1181,18 @@ impl IterMethod {
     /// Whether it's a fold that may stop early, stepping what it's given
     /// with its `next()` and closing nothing: `try_fold` and `try_for_each`
     /// (ADRs 0458, 0539).
-    pub(crate) fn tries(self) -> bool {
+    pub fn tries(self) -> bool {
         matches!(self, IterMethod::TryFold | IterMethod::TryForEach)
     }
 
     /// `max()` or `min()`, or one by a function, `max_by`'s kind.
-    pub(crate) fn extreme(self) -> bool {
+    pub fn extreme(self) -> bool {
         use IterMethod::*;
         matches!(self, Max | Min | MaxBy(_) | MaxByKey(_))
     }
 
     /// One comparing two iterators by their items' `Ordering`.
-    pub(crate) fn compares(self) -> bool {
+    pub fn compares(self) -> bool {
         use IterMethod::*;
         matches!(self, Cmp | PartialCmp | Lt | Le | Gt | Ge)
     }

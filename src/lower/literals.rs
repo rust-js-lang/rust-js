@@ -18,7 +18,7 @@ use rust_js_program::js::{self, Expr, StrPiece};
 /// it's written there: `concat!`'s pieces where it's what `concat!` made of
 /// literals, each where `at` says it's written, and otherwise the one
 /// literal it is.
-pub(super) fn string_literal(tcx: TyCtxt<'_>, text: &str, span: Span, at: &dyn Fn(Span) -> js::Span) -> Expr {
+pub fn string_literal(tcx: TyCtxt<'_>, text: &str, span: Span, at: &dyn Fn(Span) -> js::Span) -> Expr {
     let pieces = match recognition::from_concat(tcx, span) {
         true => concat_pieces(tcx, text, span, at),
         false => None,
@@ -42,7 +42,7 @@ pub(super) fn string_literal(tcx: TyCtxt<'_>, text: &str, span: Span, at: &dyn F
 /// number where its literal is (ADR 0627), and an array's items each
 /// where it's written, so a line comment after one on its line is after
 /// it, `"Parallel\u200b", // Padded ..` (rd344a).
-pub(super) fn const_placed(tcx: TyCtxt<'_>, def_id: LocalDefId, value: Expr, at: &dyn Fn(Span) -> js::Span) -> Expr {
+pub fn const_placed(tcx: TyCtxt<'_>, def_id: LocalDefId, value: Expr, at: &dyn Fn(Span) -> js::Span) -> Expr {
     let Some(body) = tcx.hir_maybe_body_owned_by(def_id) else {
         return value;
     };
@@ -67,7 +67,7 @@ pub(super) fn const_placed(tcx: TyCtxt<'_>, def_id: LocalDefId, value: Expr, at:
 /// A `const`'s or a `static`'s string, `const PAGE: &str = r#"<main>..`
 /// or one of `concat!`'s, as its literal is written, as one written in
 /// place is.
-pub(super) fn const_string(tcx: TyCtxt<'_>, def_id: LocalDefId, value: Expr, at: &dyn Fn(Span) -> js::Span) -> Expr {
+pub fn const_string(tcx: TyCtxt<'_>, def_id: LocalDefId, value: Expr, at: &dyn Fn(Span) -> js::Span) -> Expr {
     let js::ExprKind::Str(text) = &value.kind else {
         return value;
     };

@@ -16,7 +16,7 @@ use rustc_middle::ty;
 
 /// What a body does with the `fmt::Arguments` it makes into a local.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum ArgumentsUse {
+pub enum ArgumentsUse {
     /// Given by value to std's formatting alone, or asked `as_str()`: its
     /// text, made where it's made.
     InPlace,
@@ -29,11 +29,7 @@ pub(in crate::lower) enum ArgumentsUse {
 }
 
 /// What `body` does with the `fmt::Arguments` it makes into `local`.
-pub(in crate::lower) fn arguments_use<'tcx>(
-    recognition: &Recognition<'_, 'tcx>,
-    body: &mir::Body<'tcx>,
-    local: Local,
-) -> ArgumentsUse {
+pub fn arguments_use<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &mir::Body<'tcx>, local: Local) -> ArgumentsUse {
     match formatted_by_std(recognition, body, local, 2) {
         true if written_into_writer(recognition, body, local) => ArgumentsUse::Written,
         true => ArgumentsUse::InPlace,
@@ -67,7 +63,7 @@ fn written_into_writer<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &mir::Bo
 /// `write_fmt`, the writer's own or one a struct holds, `held.0`: of a
 /// writer shown into a writer, which writes through its sink, each piece a
 /// call of that writer's (#1652, ADR 1135).
-pub(in crate::lower) fn written_into_a_formatter<'tcx>(
+pub fn written_into_a_formatter<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     body: &mir::Body<'tcx>,
     local: Local,
@@ -182,11 +178,7 @@ fn formatted_by_std<'tcx>(
 /// `Arguments` or what holds one as it declares it, `_print(args)`,
 /// `assert_failed`'s `Option<Arguments>`; not its generic `T`, which it may
 /// keep, `Box::new(args)`, `v.push(args)` (#1726).
-pub(in crate::lower) fn std_formats_param(
-    recognition: &Recognition<'_, '_>,
-    id: rustc_span::def_id::DefId,
-    at: usize,
-) -> bool {
+pub fn std_formats_param(recognition: &Recognition<'_, '_>, id: rustc_span::def_id::DefId, at: usize) -> bool {
     use rustc_middle::ty::TypeVisitableExt;
     let inputs = recognition.tcx.fn_sig(id).skip_binder().skip_binder().inputs();
     inputs.get(at).is_some_and(|input| !input.has_non_region_param())
@@ -239,11 +231,7 @@ fn mentions(rvalue: &Rvalue<'_>, local: Local) -> bool {
 /// (`ArgumentsUse::Written`). Any other place
 /// of an `Arguments`, a parameter's, a field's, or one given on, holds a
 /// function that makes its text.
-pub(in crate::lower) fn holds_text<'tcx>(
-    recognition: &Recognition<'_, 'tcx>,
-    body: &mir::Body<'tcx>,
-    local: Local,
-) -> bool {
+pub fn holds_text<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &mir::Body<'tcx>, local: Local) -> bool {
     let tcx = recognition.tcx;
     let made = body.basic_blocks.iter().any(|data| {
         matches!(&data.terminator().kind, TerminatorKind::Call { func, destination, .. }

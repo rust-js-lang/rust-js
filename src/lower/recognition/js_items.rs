@@ -6,7 +6,7 @@ use super::*;
 
 /// Whether `ty` is a React context's `Provider` or `Consumer`, which
 /// `react::provider` gives of a context, and React never changes.
-pub(crate) fn is_context_member(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+pub fn is_context_member(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _)
         if tcx.crate_name(adt.did().krate).as_str() == "react"
             && matches!(tcx.item_name(adt.did()).as_str(), "Provider" | "Consumer"))
@@ -39,7 +39,7 @@ pub(in crate::lower) fn is_symbol_for_def(tcx: TyCtxt<'_>, did: DefId) -> bool {
 
 /// Whether `did` is `js::SymbolFor`'s constructor, which is `Symbol.for`
 /// as a value, and called as it is where a variable holds it (ADR 0964).
-pub(in crate::lower) fn is_symbol_for_constructor(tcx: TyCtxt<'_>, did: DefId) -> bool {
+pub fn is_symbol_for_constructor(tcx: TyCtxt<'_>, did: DefId) -> bool {
     matches!(tcx.def_kind(did), rustc_hir::def::DefKind::Ctor(..)) && is_symbol_for_def(tcx, did)
 }
 
@@ -53,7 +53,7 @@ pub(super) fn is_catch_stack_overflow(tcx: TyCtxt<'_>, did: DefId) -> bool {
 
 /// Whether `did` is `js::any_of`, a type parameter's value as any value
 /// (ADR 0909): the builtins crate's.
-pub(in crate::lower) fn is_any_of(tcx: TyCtxt<'_>, did: DefId) -> bool {
+pub fn is_any_of(tcx: TyCtxt<'_>, did: DefId) -> bool {
     tcx.crate_name(did.krate).as_str() == "js"
         && tcx.item_name(did).as_str() == "any_of"
         && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
@@ -72,25 +72,25 @@ pub(in crate::lower) fn js_root_fn(tcx: TyCtxt<'_>, did: DefId) -> Option<rustc_
 /// Whether `did` is `js::truthy`, or `js::is_function`, JS's `typeof value
 /// === "function"`: a test `None`, `null` or `undefined`, never passes
 /// (#1902, #1933).
-pub(in crate::lower) fn is_js_presence_test(tcx: TyCtxt<'_>, did: DefId) -> bool {
+pub fn is_js_presence_test(tcx: TyCtxt<'_>, did: DefId) -> bool {
     js_root_fn(tcx, did).is_some_and(|name| matches!(name.as_str(), "truthy" | "is_function"))
 }
 
 /// Whether `did` is `js::classify`, a value's `Kind`, `Kind::Undefined` of
 /// `undefined` alone (#1933 step 4 (D)).
-pub(in crate::lower) fn is_js_classify(tcx: TyCtxt<'_>, did: DefId) -> bool {
+pub fn is_js_classify(tcx: TyCtxt<'_>, did: DefId) -> bool {
     js_root_fn(tcx, did).is_some_and(|name| name.as_str() == "classify")
 }
 
 /// Whether `did` is `js::strict_equals`, JS's `===`, of which `x === None`
 /// is `x === undefined` (#1933 step 4 (D)).
-pub(in crate::lower) fn is_js_strict_equals(tcx: TyCtxt<'_>, did: DefId) -> bool {
+pub fn is_js_strict_equals(tcx: TyCtxt<'_>, did: DefId) -> bool {
     js_root_fn(tcx, did).is_some_and(|name| name.as_str() == "strict_equals")
 }
 
 /// Whether `did` is `js::type_of`, JS's `typeof value`, `"undefined"` of
 /// `None` (#1933).
-pub(in crate::lower) fn is_js_type_of(tcx: TyCtxt<'_>, did: DefId) -> bool {
+pub fn is_js_type_of(tcx: TyCtxt<'_>, did: DefId) -> bool {
     js_root_fn(tcx, did).is_some_and(|name| name.as_str() == "type_of")
 }
 
@@ -150,7 +150,7 @@ pub(in crate::lower) fn is_class_of(tcx: TyCtxt<'_>, did: DefId) -> bool {
 
 /// Whether `did` is `js::function::bind`, `f.bind(thisArg, ...args)` (ADR
 /// 0907, amended).
-pub(in crate::lower) fn is_function_bind(tcx: TyCtxt<'_>, did: DefId) -> bool {
+pub fn is_function_bind(tcx: TyCtxt<'_>, did: DefId) -> bool {
     of_function_module(tcx, did, "bind")
 }
 
@@ -187,7 +187,7 @@ pub(in crate::lower) fn is_function_value_trait(tcx: TyCtxt<'_>, did: DefId) -> 
 
 /// Whether `did` is `js::SymbolFor::from_value`, a value of any shape read
 /// as the registry's symbol (ADR 0634).
-pub(in crate::lower) fn is_symbol_for_read(tcx: TyCtxt<'_>, did: DefId) -> bool {
+pub fn is_symbol_for_read(tcx: TyCtxt<'_>, did: DefId) -> bool {
     tcx.crate_name(did.krate).as_str() == "js"
         && tcx.item_name(did).as_str() == "from_value"
         && tcx.opt_parent(did).is_some_and(|imp| {

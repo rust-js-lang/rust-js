@@ -13,7 +13,7 @@ use rustc_span::def_id::DefId;
 
 /// The one call of `thir` whose `fn_span` is `span`, MIR's call there,
 /// or none: none there, or more than one, of a macro's expansion.
-pub(in crate::lower) fn the_call_at(thir: &Thir<'_>, span: Span) -> Option<ExprId> {
+pub fn the_call_at(thir: &Thir<'_>, span: Span) -> Option<ExprId> {
     the_one((thir.exprs.iter_enumerated()).filter_map(|(id, e)| match e.kind {
         rustc_middle::thir::ExprKind::Call { fn_span, .. } if fn_span == span => Some(id),
         _ => None,
@@ -37,7 +37,7 @@ pub(in crate::lower) fn the_call_of_at(thir: &Thir<'_>, callee: DefId, span: Spa
 
 /// The MIR local THIR's variable `var` is bound to: the one whole local
 /// `mir`'s debug info names at its binding's span, or none (#2158).
-pub(in crate::lower) fn var_local(tcx: TyCtxt<'_>, mir: &mir::Body<'_>, var: LocalVarId) -> Option<mir::Local> {
+pub fn var_local(tcx: TyCtxt<'_>, mir: &mir::Body<'_>, var: LocalVarId) -> Option<mir::Local> {
     let span = tcx.hir_span(var.0);
     the_one(mir.var_debug_info.iter().filter_map(|info| match info.value {
         mir::VarDebugInfoContents::Place(place) if place.projection.is_empty() && info.source_info.span == span => {
@@ -53,7 +53,7 @@ pub(in crate::lower) fn var_local(tcx: TyCtxt<'_>, mir: &mir::Body<'_>, var: Loc
 /// the call's whichever it is; of two apart, neither's is taken of the
 /// other (#1671 change 3 M5). A fact that licenses a form, never one
 /// that's of a call alone, which `the_call_at` joins.
-pub(in crate::lower) fn each_call_at(thir: &Thir<'_>, span: Span, holds: impl Fn(ExprId) -> bool) -> bool {
+pub fn each_call_at(thir: &Thir<'_>, span: Span, holds: impl Fn(ExprId) -> bool) -> bool {
     let mut at = (thir.exprs.iter_enumerated()).filter_map(|(id, e)| match e.kind {
         rustc_middle::thir::ExprKind::Call { fn_span, .. } if fn_span == span => Some(id),
         _ => None,
@@ -63,7 +63,7 @@ pub(in crate::lower) fn each_call_at(thir: &Thir<'_>, span: Span, holds: impl Fn
 }
 
 /// The one of `found`, or none: none found, or more than one.
-pub(in crate::lower) fn the_one<T>(mut found: impl Iterator<Item = T>) -> Option<T> {
+pub fn the_one<T>(mut found: impl Iterator<Item = T>) -> Option<T> {
     let one = found.next()?;
     found.next().is_none().then_some(one)
 }

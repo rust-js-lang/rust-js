@@ -8,7 +8,7 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 
 /// How a call to a JS function is written, from its `#[link_name]` (ADR 0024).
-pub(in crate::lower) enum JsForm {
+pub enum JsForm {
     /// `name(..)`, or `this.name(..)` for a method.
     Call(String),
     /// `[Symbol.asyncIterator]`: `this[Symbol.asyncIterator](..)`, a
@@ -131,7 +131,7 @@ pub(in crate::lower) enum JsForm {
 /// "number"` (ADR 0269), or an object, `typeof navigation === "object"`
 /// (rd282).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum Asked {
+pub enum Asked {
     Defined,
     Function,
     Number,
@@ -140,7 +140,7 @@ pub(in crate::lower) enum Asked {
 
 impl Asked {
     /// The function that asks it, as a program writes it.
-    pub(in crate::lower) fn function(self) -> &'static str {
+    pub fn function(self) -> &'static str {
         match self {
             Asked::Defined => "js::is_defined",
             Asked::Function => "js::is_function",
@@ -151,7 +151,7 @@ impl Asked {
 
     /// The `typeof` it's of, `"function"`; `None` of whether it's there,
     /// `!== "undefined"`.
-    pub(in crate::lower) fn type_of(self) -> Option<&'static str> {
+    pub fn type_of(self) -> Option<&'static str> {
         match self {
             Asked::Defined => None,
             Asked::Function => Some("function"),
@@ -161,7 +161,7 @@ impl Asked {
     }
 }
 
-pub(in crate::lower) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
+pub fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
     let name = js_name(tcx, def_id);
     match name.as_str() {
         "this" => return JsForm::This,

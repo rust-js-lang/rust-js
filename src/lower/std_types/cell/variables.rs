@@ -29,7 +29,7 @@ fn item_word(name: &js::Name) -> &str {
 /// where something counts its borrows, is a cell that stores `null` for
 /// `None` however it's written, `$nullableCell(null)`, as its reads take it
 /// (#541).
-pub(in crate::lower) fn plain_statics(
+pub fn plain_statics(
     items: &mut [js::Item],
     (quiet, internal): (&IndexSet<&str>, &IndexSet<&str>),
     held_values: &IndexSet<&str>,
@@ -361,7 +361,7 @@ fn binds_name(items: &mut [js::Item], name: &str) -> bool {
 /// `RefCell::new(None)`: its `None` `null`, `{ value: null }`, its module's
 /// variable `let current = null` (ADR 0586, amended). One that holds the
 /// `Option` itself is made so by its `init` (`null_result`).
-pub(in crate::lower) fn nullable_made(made: Expr) -> Expr {
+pub fn nullable_made(made: Expr) -> Expr {
     match made.kind {
         js::ExprKind::Object(mut props, layout) if matches!(props.as_slice(), [Prop::Field(key, _)] if key == js::HELD) =>
         {
@@ -418,7 +418,7 @@ pub(in crate::lower) fn imported_variables(items: &mut [js::Item], variable: &dy
 /// `imported_variables` of each variable `named` says of, by its name, and
 /// each read through its module's namespace, `Fiber.current`, which
 /// `through` says of the namespace and the member (rd114a, ADR 1018).
-pub(in crate::lower) fn imported_variables_through(
+pub fn imported_variables_through(
     items: &mut [js::Item],
     named: &dyn Fn(&Expr) -> bool,
     through: &dyn Fn(&Expr, &str) -> bool,
@@ -434,7 +434,7 @@ pub(in crate::lower) fn imported_variables_through(
 /// amended): by their names, `Symbol`s of their modules, or through their
 /// modules' namespaces by what those export them as, `Fiber.current`
 /// (rd114a, ADR 1018).
-pub(in crate::lower) fn crate_imported_variables(
+pub fn crate_imported_variables(
     tcx: rustc_middle::ty::TyCtxt<'_>,
     fns: &IndexMap<rustc_span::def_id::DefId, crate::lower::FnInfo>,
     variables: &IndexSet<rustc_span::def_id::DefId>,

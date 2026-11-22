@@ -67,7 +67,7 @@ pub(in crate::lower) use whole::{whole_output, whole_range};
 /// What a JS function or global declared in an `extern` block is called:
 /// its `#[link_name]`, or its Rust name. A dotted name (`console.log`) is
 /// a path from a global.
-pub(super) fn js_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
+pub fn js_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
     if let Some(name) = tool_link_name(tcx, def_id) {
         return name.to_string();
     }
@@ -136,7 +136,7 @@ pub(in crate::lower) fn undefined_is_absent(tcx: TyCtxt<'_>, def_id: DefId) -> b
 
 /// Is this function or static JS's: in an `extern` block, or a
 /// `#[rust_js::link_name]` function?
-pub(in crate::lower) fn is_binding(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_binding(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.is_foreign_item(def_id) || tool_link_name(tcx, def_id).is_some()
 }
 
@@ -163,7 +163,7 @@ pub(super) fn reads_a_key(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// A JS function whose first parameter is named `this` is a method:
 /// `f(x, a)` calls `x.f(a)`, a type's own as well, `Mouse::widen(this)`.
 /// So is a Rust method's `self`.
-pub(super) fn is_method(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_method(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let named_this = || matches!(tcx.fn_arg_idents(def_id).first(), Some(Some(ident)) if ident.name.as_str() == "this");
     match tcx.def_kind(def_id) {
         DefKind::Fn => named_this(),
@@ -196,7 +196,7 @@ pub(super) fn bound_methods(tcx: TyCtxt<'_>, adt: DefId) -> Vec<(DefId, String)>
 /// The path a JS item is reached by, if it isn't a method or a property:
 /// `document`, `console.log`, `Event` for `new Event`, or an import like
 /// `node:path#join`.
-pub(super) fn js_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
+pub fn js_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     match tcx.def_kind(def_id) {
         DefKind::Static { .. } => Some(js_name(tcx, def_id)),
         DefKind::Fn | DefKind::AssocFn => match js_form(tcx, def_id) {
@@ -291,7 +291,7 @@ impl UnitValue {
     }
 }
 
-pub(super) fn variant_name(tcx: TyCtxt<'_>, variant: &VariantDef) -> String {
+pub fn variant_name(tcx: TyCtxt<'_>, variant: &VariantDef) -> String {
     (given_name(tcx, variant.def_id))
         .or_else(|| given_bool(tcx, variant.def_id).map(|b| b.to_string()))
         .unwrap_or_else(|| default_name(tcx, variant.def_id))
@@ -302,7 +302,7 @@ pub(super) fn variant_name(tcx: TyCtxt<'_>, variant: &VariantDef) -> String {
 /// `ArrayKind::Empty` `0` (`numbered`, ADR 0722); or a discriminated
 /// union's `true` or `false`, `#[rust_js::name = true]`, react-dom's
 /// `FormStatus`'s `pending` (ADR 0284).
-pub(super) fn variant_tag(tcx: TyCtxt<'_>, variant: &VariantDef) -> js::Expr {
+pub fn variant_tag(tcx: TyCtxt<'_>, variant: &VariantDef) -> js::Expr {
     if let DefKind::Variant = tcx.def_kind(variant.def_id) {
         let adt = tcx.adt_def(tcx.parent(variant.def_id));
         if numbered(tcx, adt) {
@@ -381,7 +381,7 @@ pub(super) fn unit_variant(tcx: TyCtxt<'_>, adt: DefId, variant: &VariantDef) ->
 
 /// Whether an enum is untagged, `#[rust_js::untagged]`: a value is its
 /// payload, as TS's `string | Blob` is (ADR 0214).
-pub(super) fn is_untagged(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_untagged(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("untagged")];
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
@@ -557,7 +557,7 @@ pub(super) fn class_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
 /// A module's `js::import!`: each a `const _` with
 /// the attribute of rust-js's tool its macro writes, `#[rust_js::import]`,
 /// as stable Rust has no inner one of a tool (ADR 0110).
-pub(super) fn marks<'tcx>(
+pub fn marks<'tcx>(
     tcx: TyCtxt<'tcx>,
     module: LocalModId,
     name: &str,
@@ -606,7 +606,7 @@ pub(super) fn directives_of(tcx: TyCtxt<'_>, owner: LocalDefId) -> Vec<(Option<S
 /// a body that's no function's nor closure's, an `async` block's or a
 /// constant's, which has none: one in a body is its function's or its
 /// closure's (ADR 0349).
-pub(super) fn module_directives(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<String> {
+pub fn module_directives(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<String> {
     let mut directives = Vec::new();
     for (directive, span) in directives_of(tcx, module.to_local_def_id()) {
         match directive {
@@ -640,7 +640,7 @@ pub(super) fn module_directives(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<Stri
 
 /// Is `def_id` a `js::on_load!`'s function, whose body is what its module
 /// runs when it's loaded (ADR 0267)?
-pub(super) fn is_on_load(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_on_load(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     (tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern("on_load")]))
         .next()
         .is_some()
@@ -693,7 +693,7 @@ pub(crate) fn is_component(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 
 /// Whether `ty` is react's `Rest`, the props a component's struct doesn't
 /// name: `...rest` of its destructured props (ADR 0195).
-pub(super) fn is_rest(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+pub fn is_rest(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("rest_props")];
     matches!(ty.kind(), ty::TyKind::Adt(adt, _) if tcx.get_attrs_by_path(adt.did(), &path).next().is_some())
 }
@@ -707,7 +707,7 @@ pub(super) fn is_flatten(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
 
 /// Whether `def_id` is react's `__omitted`, what `jsx!` gives a prop it isn't
 /// given: `undefined` (ADR 0213).
-pub(super) fn is_omitted(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_omitted(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("omitted")];
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
@@ -729,7 +729,7 @@ pub(super) fn lazy_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<Symbol> {
 /// last (ADR 0443). Not one whose `None` is `null`, `#[rust_js::nullable]`,
 /// nor a setter's value, which JS is given as it is, `undefined` too:
 /// `Error.prepareStackTrace = undefined` (ADR 0648).
-pub(super) fn is_optional_param(tcx: TyCtxt<'_>, def_id: DefId, index: usize) -> bool {
+pub fn is_optional_param(tcx: TyCtxt<'_>, def_id: DefId, index: usize) -> bool {
     if matches!(js_form(tcx, def_id), JsForm::Set(_)) {
         return false;
     }
@@ -769,14 +769,14 @@ pub(super) fn field_default_const(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<S
 }
 
 /// Whether field `i` of `ty`, a struct, is flattened (ADR 0204).
-pub(in crate::lower) fn is_flatten_field(tcx: TyCtxt<'_>, ty: Ty<'_>, i: usize) -> bool {
+pub fn is_flatten_field(tcx: TyCtxt<'_>, ty: Ty<'_>, i: usize) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct()
         && adt.non_enum_variant().fields.iter().nth(i).is_some_and(|field| is_flatten(tcx, field)))
 }
 
 /// Whether field `i` of `ty`, a struct, holds what JS's `...rest` does: a
 /// `Rest` (ADR 0195), or a flattened struct, typed (ADR 0204).
-pub(super) fn is_rest_field<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, i: usize) -> bool {
+pub fn is_rest_field<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, i: usize) -> bool {
     let ty::Adt(adt, args) = ty.kind() else { return false };
     if !adt.is_struct() {
         return false;
@@ -790,7 +790,7 @@ pub(super) fn is_rest_field<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, i: usize) -> 
 
 /// Whether `ty` is a struct with a flattened field, which JS holds flat:
 /// made only as JSX's props, which flatten it (ADR 0204).
-pub(super) fn has_flatten(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+pub fn has_flatten(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.iter().any(|f| is_flatten(tcx, f)))
 }
 
@@ -1026,14 +1026,14 @@ pub fn given_names_differ(tcx: TyCtxt<'_>) -> bool {
 }
 
 /// A function's or `const`'s JS name.
-pub(crate) fn fn_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
+pub fn fn_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
     name_in_js(tcx, def_id)
 }
 
 /// What trait `trait_id`'s method `name` is called in JS, its key in a
 /// dictionary: its `fn_name`, `asRef` of `AsRef::as_ref`. A dictionary
 /// std's impl makes, or the runtime's, is keyed so, as the crate's are.
-pub(super) fn trait_method_name(tcx: TyCtxt<'_>, trait_id: DefId, name: &str) -> String {
+pub fn trait_method_name(tcx: TyCtxt<'_>, trait_id: DefId, name: &str) -> String {
     fn_name(tcx, super::recognition::trait_method(tcx, trait_id, name))
 }
 
@@ -1044,7 +1044,7 @@ pub(super) fn trait_method_name(tcx: TyCtxt<'_>, trait_id: DefId, name: &str) ->
 ///
 /// A field `#[rust_js::name(SYMBOL)]` names by a symbol is that symbol's
 /// key, `object[SYMBOL]` (ADR 1051).
-pub(crate) fn field_key(tcx: TyCtxt<'_>, field: &FieldDef) -> FieldKey {
+pub fn field_key(tcx: TyCtxt<'_>, field: &FieldDef) -> FieldKey {
     if let Some((item, span)) = symbol_name(tcx, field) {
         return FieldKey::symbol(item, span);
     }

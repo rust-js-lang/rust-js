@@ -98,7 +98,7 @@ use rustc_span::{Symbol, sym};
 /// Only immutable analysis inputs: recognition cannot record dependencies,
 /// allocate names, register helpers, or lower an expression.
 #[derive(Clone, Copy)]
-pub(super) struct Recognition<'a, 'tcx> {
+pub struct Recognition<'a, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
     pub typing_env: ty::TypingEnv<'tcx>,
     pub trait_impls: &'a [DefId],
@@ -108,7 +108,7 @@ pub(super) struct Recognition<'a, 'tcx> {
 
 /// What a channel does (ADR 0142).
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum ChannelOp {
+pub enum ChannelOp {
     New,
     Send,
     Recv,
@@ -141,7 +141,7 @@ pub(super) enum ChannelError {
 /// or a `char`, `$stripPrefix`'s; a `char`'s predicate or a set of them,
 /// `$stripBy`'s; or a slice's items, `$sliceStrip`'s.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(super) enum TrimFixBy {
+pub enum TrimFixBy {
     Text,
     Predicate,
     Items,
@@ -149,7 +149,7 @@ pub(super) enum TrimFixBy {
 
 /// The std functions whose JS meaning rust-js knows (ADRs 0023, 0025).
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum Std {
+pub enum Std {
     /// A `Vec`'s capacity's (ADR 0419).
     Capacity(CapacityOp),
     /// The allocator's, or a `Layout`'s (ADR 0417).
@@ -627,7 +627,7 @@ pub(super) enum Std {
 
 /// What a call does with a standard stream (ADR 0132).
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(super) enum StreamOp {
+pub enum StreamOp {
     /// `io::stdout()` and `io::stderr()`: `undefined`.
     Open,
     /// `stdout.lock()`, `out.flush()` and `write.unwrap()`: what it's called
@@ -651,7 +651,7 @@ impl Std {
     /// the writes std's impl makes, whatever references optimized MIR has
     /// (ADR 0463); and a byte source's own method, its dictionary's, given
     /// the source in a box as generic code gives it (#1156).
-    pub(in crate::lower) fn never_through_a_trait_call(self) -> bool {
+    pub fn never_through_a_trait_call(self) -> bool {
         matches!(
             self,
             Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_) | Std::Io(_)
@@ -662,14 +662,14 @@ impl Std {
     /// value of `mem::replace` and `mem::take`, whatever form its type's is,
     /// std's iterator struct or a `$iter`, never one std made of an array,
     /// which `std_value_as` would make an iterator again (#1238).
-    pub(super) fn gives_back_held(self) -> bool {
+    pub fn gives_back_held(self) -> bool {
         matches!(self, Std::Replace | Std::MemTake)
     }
 
     /// Does it give its `&mut` to a number or text as a cell already: its
     /// receiver, the `{ value }` box that is (ADRs 0317, 0318, 0320), or one it
     /// makes (ADR 0327): no handle (ADR 0152) to make.
-    pub(super) fn gives_its_cell(self) -> bool {
+    pub fn gives_its_cell(self) -> bool {
         matches!(
             self,
             Std::Once(OnceOp::GetMut)

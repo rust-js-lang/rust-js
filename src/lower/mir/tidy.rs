@@ -226,7 +226,7 @@ pub(in crate::lower) fn settle_unthrown_catches(body: &mut Vec<Stmt>) {
     }
 }
 
-pub(crate) fn pass_names() -> Vec<String> {
+pub fn pass_names() -> Vec<String> {
     let mut names = Vec::new();
     for stage in stages::STAGES {
         names.extend(stage.passes.iter().map(|pass| pass_name(stage.name, pass)));

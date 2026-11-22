@@ -139,7 +139,7 @@ pub fn attributes(tcx: TyCtxt<'_>) -> SerdeAttributes {
 /// derive of it writes inherent functions of a remote type's stand-in,
 /// which no codec of rust-js's reads, so a field's `with` of it found none
 /// and the compiler panicked (#1541). Whether any was.
-pub(super) fn refuse_unread(tcx: TyCtxt<'_>, attrs: &SerdeAttributes) -> bool {
+pub fn refuse_unread(tcx: TyCtxt<'_>, attrs: &SerdeAttributes) -> bool {
     let mut refused = false;
     for item in attrs.values().flatten().filter(|item| item.name == "remote") {
         let what = super::refusal::Refused::Feature("`#[serde(remote = ..)]` (#1615)");
@@ -360,7 +360,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A derived `serialize` or `deserialize`.
-    pub(super) fn lower_codec(&mut self, method: DefId) -> R<js::Function> {
+    pub fn lower_codec(&mut self, method: DefId) -> R<js::Function> {
         match super::analysis::serde_impl(self.tcx, self.tcx.parent(method)) {
             Some(true) => self.lower_serialize(method),
             _ => self.lower_deserialize(method),
@@ -399,7 +399,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `serde_json::to_string(&v)` and `to_string_pretty`: `$toJson((json) =>
     /// { .. }, pretty)`, the steps for `v` in a function the writer calls.
-    pub(super) fn json_text(&mut self, value: Expr, ty: Ty<'tcx>, pretty: bool, span: Span) -> R<Expr> {
+    pub fn json_text(&mut self, value: Expr, ty: Ty<'tcx>, pretty: bool, span: Span) -> R<Expr> {
         let write = self.json_writer(ty, span)?;
         Ok(Expr::call(
             Expr::helper("$toJson"),

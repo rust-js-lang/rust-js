@@ -32,7 +32,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// with fields, a binding's dictionary, a tuple's, an array's, `Some`'s;
     /// never std's own value of a form of its own, `fmt::Arguments`'
     /// function?
-    pub(in crate::lower) fn stored_copied(&self, ty: Ty<'tcx>) -> bool {
+    pub fn stored_copied(&self, ty: Ty<'tcx>) -> bool {
         self.krate.library
             && !self.krate.compiled_once
             && !self.is_callable(ty)
@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A copy of what a library stores, each part that may be an object too.
-    pub(in crate::lower) fn copy_stored(&self, place: js::Expr, ty: Ty<'tcx>) -> js::Expr {
+    pub fn copy_stored(&self, place: js::Expr, ty: Ty<'tcx>) -> js::Expr {
         rust_js_program::decisions::record_typed(
             "copy-if-needed",
             "stored",
@@ -76,12 +76,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `RefCell`'s guard's, an `Rc`'s, or a function's result, which may
     /// be any; not a parameter's, a closure's capture's, nor a local's,
     /// whose owner decides.
-    pub(in crate::lower) fn reads_stored(
-        &self,
-        body: &mir::Body<'tcx>,
-        promoted: &Promoted<'tcx>,
-        place: mir::Place<'tcx>,
-    ) -> bool {
+    pub fn reads_stored(&self, body: &mir::Body<'tcx>, promoted: &Promoted<'tcx>, place: mir::Place<'tcx>) -> bool {
         matches!(place.projection.first(), Some(mir::ProjectionElem::Deref))
             && self.points_at_stored((body, promoted), place.local, 0)
     }
@@ -253,7 +248,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// read: returned, given to a call, stored, captured or borrowed; not
     /// a local whose parts alone that aren't objects are read, nor what a
     /// WebIDL operation's dictionary parameter is given.
-    pub(in crate::lower) fn stored_read_escapes(
+    pub fn stored_read_escapes(
         &self,
         body: &mir::Body<'tcx>,
         location: mir::Location,
@@ -547,7 +542,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The static a constant points to the start of: `&LOG`, a promoted
     /// `&STATIC`, `&raw mut COUNT`.
     // helper: asked by `mir` and the base alike, the base's since #2299 moved it from `mir::operands`
-    pub(in crate::lower) fn const_static(&self, c: &ConstOperand<'tcx>) -> Option<rustc_span::def_id::DefId> {
+    pub fn const_static(&self, c: &ConstOperand<'tcx>) -> Option<rustc_span::def_id::DefId> {
         let value = match c.const_ {
             Const::Val(value, _) => value,
             Const::Unevaluated(uv, _) if uv.promoted.is_some() => {

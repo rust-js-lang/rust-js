@@ -17,12 +17,7 @@ use rustc_middle::ty::{TyCtxt, TypeVisitableExt};
 /// below the slice's length, at most `isize`'s most (ADR 0701), so `i + n`
 /// stays in `usize` for any `n` up to it, and where it's `None`, `i` is the
 /// length or past it (rd260).
-pub(in crate::lower) fn present_item_of_sized<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    thir: &Thir<'tcx>,
-    pattern: &Pat<'tcx>,
-    init: ExprId,
-) -> bool {
+pub fn present_item_of_sized<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, pattern: &Pat<'tcx>, init: ExprId) -> bool {
     if !some_pattern(tcx, pattern) {
         return false;
     }

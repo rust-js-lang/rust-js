@@ -272,7 +272,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type parameter's given as it is, by its dictionaries; given its
     /// drop, of one with a destructor, which drops each it replaces, and
     /// both it holds as it's closed.
-    pub(in crate::lower) fn cycled(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn cycled(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let made_iterator = self.unspelled("iterator");
         let (next, boxed) = match self.range_kind(ty) {
             Some(_) => match self.range_stepper(ty, false) {

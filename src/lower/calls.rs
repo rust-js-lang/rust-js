@@ -17,7 +17,7 @@ use rustc_span::def_id::DefId;
 /// A call being lowered: what's called, which function that is, its
 /// arguments, and whether its value is used.
 #[derive(Clone, Copy)]
-pub(super) struct Call<'c, 'tcx> {
+pub struct Call<'c, 'tcx> {
     pub(super) def_id: DefId,
     pub(super) generic_args: ty::GenericArgsRef<'tcx>,
     /// Each argument's type.
@@ -79,33 +79,33 @@ pub(super) struct Call<'c, 'tcx> {
 /// `read_alike`, `flattened`, `lent` and `fresh_string`; and of what it
 /// gives, `unread` and `written_whole`.
 #[derive(Clone, Copy, Default)]
-pub(super) struct Given<'c> {
-    pub(super) nulled: &'c [bool],
-    pub(super) quiet: bool,
-    pub(super) momentary: bool,
-    pub(super) none_form: super::representation::NoneForm,
-    pub(super) read_alike: bool,
-    pub(super) unread: bool,
-    pub(super) flattened: [bool; 2],
-    pub(super) lent: bool,
-    pub(super) written_whole: bool,
-    pub(super) fresh_string: bool,
+pub struct Given<'c> {
+    pub nulled: &'c [bool],
+    pub quiet: bool,
+    pub momentary: bool,
+    pub none_form: super::representation::NoneForm,
+    pub read_alike: bool,
+    pub unread: bool,
+    pub flattened: [bool; 2],
+    pub lent: bool,
+    pub written_whole: bool,
+    pub fresh_string: bool,
     /// Whether MIR proves the call's indexes in bounds (`call_bounds_proved`).
-    pub(super) in_bounds: bool,
+    pub in_bounds: bool,
     /// Whether it's an `and_then` whose `Option` is a found index.
-    pub(super) found_index: bool,
+    pub found_index: bool,
     /// What MIR proves of its first argument where it's read, an `Option`
     /// receiver's (`mir::Presence`, #2112 C S4).
-    pub(super) receiver: crate::lower::analysis::mir_reads::presence::Presence,
+    pub receiver: crate::lower::analysis::mir_reads::presence::Presence,
     /// The one `None` its first argument, an `Option`, can be where it's
     /// read, `NoneForms::read`'s (#2112 C S5).
-    pub(super) receiver_none: Option<js::OnlyNone>,
+    pub receiver_none: Option<js::OnlyNone>,
 }
 
 impl<'c, 'tcx> Call<'c, 'tcx> {
     /// The call of `def_id` with `generic_args`, of arguments of `tys`,
     /// MIR's `given`.
-    pub(super) fn given(
+    pub fn given(
         (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
         tys: &'c [Ty<'tcx>],
         given: Given<'c>,
@@ -152,7 +152,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
 
 /// A call of `exprs`' first, a function value, of the rest, given to JS
 /// (`given_to_js`): a function a variable holds, `js::import!(f)`'s.
-pub(super) fn called_given_to_js(mut exprs: Vec<Expr>) -> Expr {
+pub fn called_given_to_js(mut exprs: Vec<Expr>) -> Expr {
     let callee = exprs.remove(0);
     given_to_js(&mut exprs);
     Expr::call(callee, exprs)
@@ -161,7 +161,7 @@ pub(super) fn called_given_to_js(mut exprs: Vec<Expr>) -> Expr {
 /// Arguments given to JS: a trailing `undefined` is one it's given,
 /// `GivenUndefined`, which no pass leaves out, as what it calls may count
 /// its arguments, `Math.max(1, undefined)` (ADR 0330).
-pub(super) fn given_to_js(args: &mut Vec<Expr>) {
+pub fn given_to_js(args: &mut Vec<Expr>) {
     given_to_js_but(args, |_, _| false);
 }
 
@@ -170,7 +170,7 @@ pub(super) fn given_to_js(args: &mut Vec<Expr>) {
 /// `x?` leaves out or a `()` (`absent`), `Undefined` marked so,
 /// `Known::Absent`, which the one rule, `undefined_arguments::left_out`,
 /// leaves out, `cb()` of `cb(None)` (ADR 0313, amended).
-pub(super) fn given_to_js_but(args: &mut Vec<Expr>, absent: impl Fn(usize, &Expr) -> bool) {
+pub fn given_to_js_but(args: &mut Vec<Expr>, absent: impl Fn(usize, &Expr) -> bool) {
     marked_absent(args, absent, true);
 }
 
@@ -179,7 +179,7 @@ pub(super) fn given_to_js_but(args: &mut Vec<Expr>, absent: impl Fn(usize, &Expr
 /// `own(None)`, marked `Known::Absent`, which prepare leaves out, alone too
 /// (ADRs 0443, 0441); any other `undefined` it leaves out only after
 /// another argument (ADR 0313).
-pub(super) fn own_absent(args: &mut Vec<Expr>, absent: impl Fn(usize, &Expr) -> bool) {
+pub fn own_absent(args: &mut Vec<Expr>, absent: impl Fn(usize, &Expr) -> bool) {
     marked_absent(args, absent, false);
 }
 
@@ -222,7 +222,7 @@ fn marked_absent(args: &mut Vec<Expr>, absent: impl Fn(usize, &Expr) -> bool, to
 /// but of a pointer that may be one of `bindings`, whose parameter there
 /// isn't optional, which is given it, `max(1, undefined)` of `Math.max`'s
 /// (ADR 0330). Only `arguments.length` tells.
-pub(super) fn absent(tcx: ty::TyCtxt<'_>, tys: &[Ty<'_>], bindings: &[DefId], i: usize, arg: &Expr) -> bool {
+pub fn absent(tcx: ty::TyCtxt<'_>, tys: &[Ty<'_>], bindings: &[DefId], i: usize, arg: &Expr) -> bool {
     let Some(ty) = tys.get(i) else {
         return false;
     };
@@ -238,7 +238,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// returning a `Promise<Result<..>>` settles either way, `$settle(p)`;
     /// a binding by its declared result, and a throwing function of the
     /// crate's, as `analysis::call_throws` says (ADR 0644).
-    pub(super) fn catching(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, value: Expr) -> Expr {
+    pub fn catching(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, value: Expr) -> Expr {
         match super::analysis::call_throws(&self.recognition(), self.krate.throwing, def_id, args) {
             Catching::Result => Expr::tried(value),
             Catching::PromiseResult => Expr::call(Expr::helper("$settle"), vec![value]),
@@ -249,7 +249,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `def_id`, the crate's or a library's, takes JS's rest
     /// arguments: its last parameter a slice marked `#[rust_js::rest]`
     /// (ADR 0664), which its calls spread (`spread_rest`).
-    pub(super) fn takes_rest(&self, def_id: DefId) -> bool {
+    pub fn takes_rest(&self, def_id: DefId) -> bool {
         super::bindings::takes_rest(self.tcx, def_id) || self.krate.foreign.takes_rest(def_id)
     }
 
@@ -276,7 +276,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// nothing, so no copy of it is made for it (`instances::
     /// read_by_js_alone`, #565). `None` of any other, a class's member or
     /// one whose call converts what it's given, which keeps its arrow.
-    pub(super) fn rest_function_itself(
+    pub fn rest_function_itself(
         &mut self,
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
@@ -300,14 +300,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `js::arguments()`: each call of it gives every argument the Rust
     /// does, `given_to_js`'s, and no closure that forwards to it is it, as
     /// its JS caller's arguments would be its (rd332).
-    pub(super) fn reads_arguments(&self, def_id: DefId) -> bool {
+    pub fn reads_arguments(&self, def_id: DefId) -> bool {
         self.krate.reads_arguments.functions.contains(&def_id) || self.krate.foreign.reads_arguments(def_id)
     }
 
     /// Whether `def_id`, the crate's function or a library's, reads
     /// `js::this()`: each call of it gives none, so one through a member,
     /// a module's namespace's, is `(0, M.f)()` (rd683).
-    pub(super) fn reads_this(&self, def_id: DefId) -> bool {
+    pub fn reads_this(&self, def_id: DefId) -> bool {
         self.krate.reads_arguments.this.contains(&def_id) || self.krate.foreign.reads_this(def_id)
     }
 
@@ -326,7 +326,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Rc` or a boxed `RefCell` given to a binding (`std_types/rc.rs`),
     /// and std's lending from inside its receiver where rust-js doesn't
     /// know it, in a crate that asks an address (`lent.rs`, #1114).
-    pub(super) fn check_call(
+    pub fn check_call(
         &self,
         body: &rustc_middle::mir::Body<'tcx>,
         (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
@@ -363,7 +363,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A call of `def_id`'s arguments, its rest's spread where it takes
     /// one: `f(code, ...args)` (ADR 0664).
-    pub(super) fn rest_given(&self, def_id: DefId, args: &mut Vec<Expr>) {
+    pub fn rest_given(&self, def_id: DefId, args: &mut Vec<Expr>) {
         if self.takes_rest(def_id) {
             spread_rest(args);
         }
@@ -376,7 +376,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// any other value, an array held, spread, `f(...items)`. Of a call of a
 /// function taking a rest, a variadic binding, and a `fn` pointer whose
 /// last parameter is a `&dyn js::Rest<T>`.
-pub(super) fn spread_rest(args: &mut Vec<Expr>) {
+pub fn spread_rest(args: &mut Vec<Expr>) {
     match args.pop() {
         Some(Expr {
             kind: js::ExprKind::Array(items, ..),
@@ -392,7 +392,7 @@ pub(super) fn spread_rest(args: &mut Vec<Expr>) {
 /// arguments that read the same however often they're read; of what
 /// lowering knows, which can't tell what changes later, not into a
 /// closure inside (`applied`).
-pub(super) fn apply(f: Expr, args: Vec<Expr>) -> Expr {
+pub fn apply(f: Expr, args: Vec<Expr>) -> Expr {
     applied(f, args, &|_| false)
 }
 
@@ -404,7 +404,7 @@ pub(super) fn apply(f: Expr, args: Vec<Expr>) -> Expr {
 /// whenever it runs, it reads the value the parameter was given (the
 /// vercel-ui SDK's port, G6; ADR 0705, amended). Else not, as one that
 /// runs later would read what the variable holds then.
-pub(super) fn applied(f: Expr, args: Vec<Expr>, unchanging: &dyn Fn(&js::Name) -> bool) -> Expr {
+pub fn applied(f: Expr, args: Vec<Expr>, unchanging: &dyn Fn(&js::Name) -> bool) -> Expr {
     if let js::ExprKind::Arrow(params, body) = &f.kind
         && let [
             js::Stmt {
@@ -484,7 +484,7 @@ fn inlined(
 /// a function, a binding too, whose result is `#[rust_js::nullable]`, its
 /// body writing it so (ADRs 0578, 0638). Not a trait's method, whose impl
 /// the call may run, which says nothing of it (ADR 0841, amended).
-pub(super) fn gives_null_for_none(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rustc_span::def_id::DefId) -> bool {
+pub fn gives_null_for_none(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rustc_span::def_id::DefId) -> bool {
     use super::representation::{NonePlace, none_form};
     none_form(tcx, NonePlace::FnResult(def_id)).stores_null() && tcx.trait_of_assoc(def_id).is_none()
 }
@@ -497,10 +497,7 @@ pub(super) fn gives_null_for_none(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rus
 /// `gives_null_for_none` isn't; nor the crate's own nullable function's,
 /// which may give back as it is a nullable field's value that an object
 /// JS made holds `undefined` in.
-pub(super) fn none_given_by(
-    tcx: rustc_middle::ty::TyCtxt<'_>,
-    def_id: rustc_span::def_id::DefId,
-) -> Option<js::OnlyNone> {
+pub fn none_given_by(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rustc_span::def_id::DefId) -> Option<js::OnlyNone> {
     use super::representation::{NonePlace, Writers, none_form};
     none_form(tcx, NonePlace::CallResult(def_id)).trust(Writers::Exact)
 }
@@ -548,7 +545,7 @@ pub(super) fn and_then_given<'tcx>(
 /// (`none_given_by`), which its test says (ADR 0298, amended); of a `bool`,
 /// that it's one. That an `f64` a `#[rust_js::whole]` binding gives is whole
 /// is `whole_locals`' to say, of the local it's given to (ADR 0994, amended).
-pub(super) fn given_by<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, value: Expr) -> Expr {
+pub fn given_by<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, value: Expr) -> Expr {
     let ty::FnDef(def_id, _) = *f.kind() else {
         return value;
     };
@@ -576,7 +573,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `crate_called`'s, of its own JS or of a copy its callers need (ADR
     /// 0051, amended), as the path at `named`, the call's, names it, which
     /// may be through the module that has it (rd114, ADR 1018).
-    pub(in crate::lower) fn crate_called_copy(
+    pub fn crate_called_copy(
         &self,
         (def_id, copy, named): (rustc_span::def_id::DefId, Option<usize>, Option<Span>),
         receiver_named: Option<(bool, bool)>,

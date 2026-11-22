@@ -41,7 +41,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Note which drops `id`, which takes only those it uses, used, and the
     /// names it took them by (ADR 0300).
-    pub(in crate::lower) fn note_drop_uses(&self, id: DefId) {
+    pub fn note_drop_uses(&self, id: DefId) {
         if !self.krate.takes_used_drops.contains(id) {
             return;
         }
@@ -80,14 +80,14 @@ pub(in crate::lower) fn owned_params<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> V
 
 /// The functions given drops that take only those they use (ADR 0300):
 /// what the crate knows before it lowers any, which lowering asks.
-pub(in crate::lower) struct TakesUsed(IndexSet<DefId>);
+pub struct TakesUsed(IndexSet<DefId>);
 
 impl TakesUsed {
     /// Each function given drops that's called where it's named, whose
     /// callers are all seen or told by its manifest: not a trait's method,
     /// which a dictionary's callers call, nor an impl's. The crate's own,
     /// and a library's it compiles itself (ADR 0914).
-    pub(in crate::lower) fn new(
+    pub fn new(
         tcx: TyCtxt<'_>,
         foreign: &crate::lower::library::Foreign<'_, '_>,
         drop_params: &IndexMap<DefId, Vec<u32>>,
@@ -118,9 +118,9 @@ impl TakesUsed {
 /// the drops they use, those they used, those they passed on as another's,
 /// and the names they took them by.
 #[derive(Default)]
-pub(in crate::lower) struct DropsObserved {
-    pub(in crate::lower) no_drops: IndexMap<DefId, BTreeSet<u32>>,
-    pub(in crate::lower) checks: Vec<DropCheck>,
+pub struct DropsObserved {
+    pub no_drops: IndexMap<DefId, BTreeSet<u32>>,
+    pub checks: Vec<DropCheck>,
     used: IndexSet<(DefId, u32)>,
     passed: Vec<((DefId, u32), (DefId, u32))>,
     names: IndexMap<DefId, Vec<(u32, js::Name)>>,
@@ -129,7 +129,7 @@ pub(in crate::lower) struct DropsObserved {
 impl DropsObserved {
     /// `other`'s too, a function's after those before it, in the order
     /// they're lowered.
-    pub(in crate::lower) fn gather(&mut self, other: DropsObserved) {
+    pub fn gather(&mut self, other: DropsObserved) {
         for (id, params) in other.no_drops {
             self.no_drops.entry(id).or_default().extend(params);
         }
@@ -147,7 +147,7 @@ impl DropsObserved {
     /// passes on to one that keeps it, given back; and the lowered
     /// functions with only those, as parameters and arguments. What the
     /// bodies were lowered with, `drop_params`, is as it was.
-    pub(in crate::lower) fn keep<'l>(
+    pub fn keep<'l>(
         self,
         takes_used: &TakesUsed,
         drop_params: &IndexMap<DefId, Vec<u32>>,

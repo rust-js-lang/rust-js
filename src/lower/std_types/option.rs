@@ -25,7 +25,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `closure_gives_its_argument`); of neither boxed. The one answer, of
     /// the map's lowering and of what a nullable place stores of it as
     /// given (the port's gap rd94).
-    pub(in crate::lower) fn maps_to_itself(&self, f: Ty<'tcx>, (from, to): (Ty<'tcx>, Ty<'tcx>)) -> bool {
+    pub fn maps_to_itself(&self, f: Ty<'tcx>, (from, to): (Ty<'tcx>, Ty<'tcx>)) -> bool {
         // An untagged enum's variant of a payload that never looks like
         // `None`, `map(Maybe::Root)` of an `Rc`: its value, which `$some`
         // never boxes, even where the enum's other values are (ADR 0051).
@@ -606,7 +606,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `Some(value)` of what could look like `None` (ADR 0051): `$some(value)`,
     /// or a literal itself where it can't, as `$some(4)` is `4`.
-    pub(in crate::lower) fn some(&self, value: Expr) -> Expr {
+    pub fn some(&self, value: Expr) -> Expr {
         let nullish = matches!(value.kind, js::ExprKind::Undefined | js::ExprKind::Null);
         let literal = matches!(
             value.kind,
@@ -678,7 +678,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What's in an `Option` of a generic `T` (ADR 0051): `$someValue(option)`.
-    pub(in crate::lower) fn some_value(&mut self, option: Expr) -> Expr {
+    pub fn some_value(&mut self, option: Expr) -> Expr {
         // What a `Some` just made holds, `$some(x)`'s `x`; and of `t ?
         // $some(x) : undefined`, a `then`'s, `flatten()` say, `t ? x :
         // undefined`, as `None` is `undefined` either way (ADR 0647).
@@ -721,7 +721,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 /// What `$someValue(option)` reads, of an `Option` of a generic `T`.
-pub(in crate::lower) fn some_value_of(e: &Expr) -> Option<&Expr> {
+pub fn some_value_of(e: &Expr) -> Option<&Expr> {
     match &e.kind {
         js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$someValue") => match args.as_slice() {
             [option] => Some(option),
@@ -735,7 +735,7 @@ pub(in crate::lower) fn some_value_of(e: &Expr) -> Option<&Expr> {
 /// or an `expect(..)`'s of a `Some` that's its value: the test that it
 /// panics, `option == null`, as `$unwrap`'s is, the option, its value
 /// where it doesn't, and the panic it throws where it does.
-pub(in crate::lower) fn unwrap_tested(e: &Expr) -> Option<(Expr, &Expr, Expr)> {
+pub fn unwrap_tested(e: &Expr) -> Option<(Expr, &Expr, Expr)> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };
@@ -948,7 +948,7 @@ pub(in crate::lower) fn or_fallback(option: Expr, fallback: Expr) -> Expr {
 
 /// An `Option`'s methods that write its place (ADR 0326).
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum OptionPlaceOp {
+pub enum OptionPlaceOp {
     /// `get_or_insert(v)`, `get_or_insert_with(f)` and
     /// `get_or_insert_default()`: what it holds, made where it holds none.
     GetOrInsert,
@@ -962,7 +962,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// An `Option`'s method that writes its place, of the place, a variable
     /// or a field, its item's type and what's given, of types `given_tys`.
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::lower) fn option_place_values(
+    pub fn option_place_values(
         &mut self,
         op: OptionPlaceOp,
         place: Expr,

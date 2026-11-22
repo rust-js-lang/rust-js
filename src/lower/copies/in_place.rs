@@ -13,7 +13,7 @@ use rustc_span::Span;
 /// value)`, `$exchange(a, b)`, or a cell on an object, `$cellOf(object)`,
 /// whose `value` written writes the object.
 #[derive(Clone, Copy, Debug)]
-pub(in crate::lower) enum InPlaceWriter {
+pub enum InPlaceWriter {
     Assign,
     Take,
     Exchange,
@@ -37,13 +37,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as nothing it knows changes one in place, a write in place would
     /// change every name sharing the value, `a` of `let mut b = a`: refused,
     /// in release too, as rust-js's own error, never a wrong answer.
-    pub(in crate::lower) fn in_place(
-        &self,
-        writer: InPlaceWriter,
-        written: Ty<'tcx>,
-        args: Vec<Expr>,
-        span: Span,
-    ) -> R<Expr> {
+    pub fn in_place(&self, writer: InPlaceWriter, written: Ty<'tcx>, args: Vec<Expr>, span: Span) -> R<Expr> {
         if self.copies_left_out(written) {
             let what = format!("writing a `{written}` in place, `{}`", writer.helper());
             let why = "rust-js leaves out its copies, as it doesn't know the type is changed in place: an internal error (#1665)";

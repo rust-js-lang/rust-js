@@ -16,8 +16,8 @@ use rustc_middle::ty::{self, AdtDef, GenericArgsRef, Ty, TyCtxt, VariantDef, con
 use rustc_span::def_id::DefId;
 
 mod classes;
-pub(in crate::lower) mod displayed;
-pub(in crate::lower) mod field_reads;
+pub mod displayed;
+pub mod field_reads;
 mod froms;
 mod validated;
 pub use froms::binding_froms_give_their_variants;
@@ -190,7 +190,7 @@ enum Lengths {
 /// before the `switch`; or `null`'s, which is in `case "object"`, its
 /// test, `value === null`, an `if` in it (ADR 0676).
 #[derive(Clone)]
-pub(super) enum TypeofCase {
+pub enum TypeofCase {
     Typeof(&'static str, Vec<Expr>),
     Tested(Expr),
     Inside(&'static str, Expr),
@@ -276,19 +276,19 @@ fn unit_kind(tcx: TyCtxt<'_>, variant: &VariantDef) -> Option<Kind> {
 /// Whether `variant` of an untagged enum is told by what it is, its
 /// payload's kind, `undefined` or `null`, not compared to its string as a
 /// literal's is (ADR 0676).
-pub(super) fn told_by_kind(tcx: TyCtxt<'_>, variant: &VariantDef) -> bool {
+pub fn told_by_kind(tcx: TyCtxt<'_>, variant: &VariantDef) -> bool {
     !matches!(unit_kind(tcx, variant), Some(Kind::Literal(_)))
 }
 
 /// Whether `variant` of an untagged enum is `undefined` or `null`, which
 /// an `Option`'s `None` is one of (ADR 0676).
-pub(super) fn is_nullish(tcx: TyCtxt<'_>, variant: &VariantDef) -> bool {
+pub fn is_nullish(tcx: TyCtxt<'_>, variant: &VariantDef) -> bool {
     matches!(unit_kind(tcx, variant), Some(Kind::Null | Kind::Undefined))
 }
 
 /// Whether `variant` of an untagged enum is `undefined`,
 /// `#[rust_js::undefined]`'s, `js::Kind::Undefined` (ADR 0676).
-pub(super) fn is_undefined(tcx: TyCtxt<'_>, variant: &VariantDef) -> bool {
+pub fn is_undefined(tcx: TyCtxt<'_>, variant: &VariantDef) -> bool {
     unit_kind(tcx, variant) == Some(Kind::Undefined)
 }
 
@@ -594,7 +594,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// global's, `js::class::<AbortController>()`'s (ADR 0911). None of a
     /// type TypeScript names otherwise, `object` or `unknown`, or doesn't,
     /// `JsError`, what JS threw, of no one class.
-    pub(super) fn class_value(&self, ty: Ty<'tcx>) -> Option<String> {
+    pub fn class_value(&self, ty: Ty<'tcx>) -> Option<String> {
         // A class `untagged_kind` found of a global TypeScript names, the
         // only one it finds of a binding's type, not `Map`'s of std's.
         match self.untagged_kind(ty) {
@@ -682,7 +682,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// The classes the JS object type `def_id` extends, nearest first: what
     /// its `Deref` goes to, and on, as the webapi crate's types say theirs.
-    pub(super) fn superclasses(&self, def_id: DefId) -> Vec<DefId> {
+    pub fn superclasses(&self, def_id: DefId) -> Vec<DefId> {
         let tcx = self.tcx;
         let Some(deref) = tcx.lang_items().get(LangItem::Deref) else {
             return Vec::new();
@@ -904,7 +904,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// a member's, whose test leaves a class out by `instanceof` too. A
     /// class told by its member, a DOM node's `nodeType`, is a class here
     /// too: `Element | string` still tests the string's `typeof` alone.
-    pub(super) fn lone_class_variant(&self, adt: AdtDef<'tcx>, args: GenericArgsRef<'tcx>) -> Option<VariantIdx> {
+    pub fn lone_class_variant(&self, adt: AdtDef<'tcx>, args: GenericArgsRef<'tcx>) -> Option<VariantIdx> {
         let mut class = None;
         for (index, variant) in adt.variants().iter_enumerated() {
             if bindings::is_otherwise(self.tcx, variant.def_id) {
@@ -1089,7 +1089,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// 0676); none of a class, a test function's or a literal, which it
     /// doesn't, nor of an `otherwise` that's none of more kinds. Of a value
     /// `present`, an object's case leaves out no `null`.
-    pub(super) fn untagged_cases(
+    pub fn untagged_cases(
         &self,
         adt: AdtDef<'tcx>,
         args: GenericArgsRef<'tcx>,
@@ -1183,7 +1183,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// length, a tuple's, a tuple struct's or a `[T; N]`'s; of an untagged
     /// enum each of whose values is one it holds itself, its longest
     /// variant's (rd490). None of a `Vec`'s, or what isn't an array.
-    pub(super) fn most_items(&self, ty: Ty<'tcx>) -> Option<usize> {
+    pub fn most_items(&self, ty: Ty<'tcx>) -> Option<usize> {
         if let ty::Array(_, len) = ty.kind() {
             return len.try_to_target_usize(self.tcx).map(|len| len as usize);
         }
@@ -1249,7 +1249,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a class told by its member, what both are, `an object whose
     /// `nodeType` is the number 1`, an `HTMLElement`'s and an
     /// `SVGElement`'s (#555).
-    pub(super) fn untagged_alike(&self, ty: Ty<'tcx>, variant: &VariantDef) -> Option<(String, Option<String>)> {
+    pub fn untagged_alike(&self, ty: Ty<'tcx>, variant: &VariantDef) -> Option<(String, Option<String>)> {
         let (adt, args) = self.untagged(ty)?;
         let recognition = self.recognition();
         let kind_of = |v: &VariantDef| recognition.untagged_variant_kind(v, args);

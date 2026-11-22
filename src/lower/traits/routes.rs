@@ -153,7 +153,7 @@ pub(super) fn std_written_in_place(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: Ty
 /// `From`'s (ADR 0477), a `TryFrom`'s (#1284), and a `BorrowMut`'s (ADR
 /// 0483). Where the type is known, the impl's method is called as it is, so
 /// a crate's impl's dictionary is written only where it's reached.
-pub(in crate::lower) fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
+pub fn read_only_generically(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
     crate::lower::recognition::value_operator(tcx, trait_id).is_some()
         || crate::lower::recognition::assign_operator(tcx, trait_id).is_some()
         || tcx.is_lang_item(trait_id, LangItem::Deref)

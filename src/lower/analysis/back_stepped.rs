@@ -529,7 +529,7 @@ pub(in crate::lower) type SteppedField = (rustc_span::def_id::DefId, rustc_abi::
 /// How a local the crate steps from its back holds its value
 /// (`stepped_locals`).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum SteppedLocal {
+pub enum SteppedLocal {
     /// A temporary given to what steps it, lent, `nth_back(&mut _11)`'s,
     /// or whole, `rfold(move _11, ..)`'s, which MIR holds in a variable to
     /// lend it or while an argument's statement runs: its value made in

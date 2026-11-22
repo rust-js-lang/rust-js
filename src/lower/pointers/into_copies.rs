@@ -241,7 +241,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it's of, as the runtime's parts are, so a pointer into it is one
     /// into that (#1185). Neither is an array made here alone, which a
     /// part with its record isn't: one that's owned is copied.
-    pub(in crate::lower) fn slice_part(&self, items: Expr, from: Expr, to: Option<Expr>) -> Expr {
+    pub fn slice_part(&self, items: Expr, from: Expr, to: Option<Expr>) -> Expr {
         let range = std::iter::once(from).chain(to).collect();
         if self.krate.stored_places.takes_slice_addresses() {
             return Expr::call(Expr::helper("$part"), std::iter::once(items).chain(range).collect());

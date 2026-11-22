@@ -11,14 +11,14 @@ use crate::lower::generic_facts::GivenADrop;
 use crate::lower::recognition::Recognition;
 use rustc_middle::ty::{Ty, TyCtxt};
 
-pub(in crate::lower) struct IteratorFacts<'tcx> {
+pub struct IteratorFacts<'tcx> {
     /// The map and filter types the crate steps from their back, each made
     /// knowing its back (ADR 0545).
     pub(in crate::lower) back_stepped: BackStepped<'tcx>,
     /// The `take(n)`s, `skip(n)`s and `step_by(n)`s whose hint generic
     /// code asks of what its callers give, each made `$taking`, `$skipping`
     /// or `$stepBy` where it's made (`hint_asked.rs`, #1236).
-    pub(in crate::lower) hinted: Hinted<'tcx>,
+    pub hinted: Hinted<'tcx>,
 }
 
 /// Of `all_bodies`, what they step from their back (ADR 0545, #814, #851),

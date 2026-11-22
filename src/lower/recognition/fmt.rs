@@ -59,18 +59,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// A write's result, `fmt::Result` or `io::Result<()>` (`is_write_result_type`).
-    pub(in crate::lower) fn is_write_result(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_write_result(&self, ty: Ty<'tcx>) -> bool {
         is_write_result_type(self.tcx, ty)
     }
 
     /// `io::Result<()>`, a write's result (`is_write_result_type`).
-    pub(in crate::lower) fn is_io_unit_result(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_io_unit_result(&self, ty: Ty<'tcx>) -> bool {
         is_io_unit_result_type(self.tcx, ty)
     }
 
     /// The `fmt` trait a placeholder of `kind` calls, `{:x}`'s `LowerHex`,
     /// where it's one of `OTHER_FMT_TRAITS`.
-    pub(in crate::lower) fn other_fmt_trait(&self, kind: Std) -> Option<DefId> {
+    pub fn other_fmt_trait(&self, kind: Std) -> Option<DefId> {
         let name = match kind {
             Std::FmtRadix(Radix::LowerHex) => "LowerHex",
             Std::FmtRadix(Radix::UpperHex) => "UpperHex",
@@ -88,7 +88,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(crate) enum WriteCall {
+pub enum WriteCall {
     Text,
     /// `f.pad(s)`: `s`, given the `Formatter`'s options (ADR 0143).
     Pad,
@@ -157,11 +157,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether a call of `def_id` of `generic_args` is a `write_fmt` into a
     /// writer std writes a piece at a time (`writes_through_write_str`):
     /// `w.write_fmt(args)`, or `fmt::write(w, args)`, which is it.
-    pub(in crate::lower) fn writes_arguments_piecewise(
-        &self,
-        def_id: DefId,
-        generic_args: ty::GenericArgsRef<'tcx>,
-    ) -> bool {
+    pub fn writes_arguments_piecewise(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
         if self.is_fmt_write(def_id) || self.writes_through_a_dictionary(def_id, generic_args) {
             return true;
         }
@@ -178,11 +174,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// dictionary's `writeFmt` takes, recognised or not (#1891). Not
     /// `fmt::write`, std's own `write_fmt`, which writes through the
     /// writer's `write_str` whatever its own `write_fmt` (#1697).
-    pub(in crate::lower) fn writes_through_a_dictionary(
-        &self,
-        def_id: DefId,
-        generic_args: ty::GenericArgsRef<'tcx>,
-    ) -> bool {
+    pub fn writes_through_a_dictionary(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
         super::is_write_fmt(self.tcx, def_id)
             && (generic_args.types().next()).is_some_and(|writer| super::known_by_a_dictionary(writer.peel_refs()))
     }
@@ -190,7 +182,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `&mut Formatter<'_>`.
     /// `fmt::Write`'s `write_str(f, s)` of a `Formatter`, called through the
     /// trait: its `&mut Self` is the `Formatter`, as `f.write_str(s)`'s is.
-    pub(in crate::lower) fn fmt_write_on_formatter(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    pub fn fmt_write_on_formatter(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
         self.tcx
             .trait_of_assoc(def_id)
             .is_some_and(|t| self.tcx.is_diagnostic_item(Symbol::intern("FmtWrite"), t))
@@ -214,12 +206,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// `write!(f, ..)` of a `Formatter`, inherent or `fmt::Write`'s.
-    pub(in crate::lower) fn formatter_write_fmt(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    pub fn formatter_write_fmt(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
         self.tcx.item_name(def_id).as_str() == "write_fmt" && self.formatter_write(def_id, args)
     }
 
     /// Is `def_id` a `write_char`, a `Formatter`'s or `fmt::Write`'s?
-    pub(in crate::lower) fn is_write_char(&self, def_id: DefId) -> bool {
+    pub fn is_write_char(&self, def_id: DefId) -> bool {
         self.tcx.item_name(def_id).as_str() == "write_char"
     }
 
@@ -241,7 +233,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// A `Formatter`, whose text is a string in JS (ADR 0054).
-    pub(in crate::lower) fn is_formatter_type(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_formatter_type(&self, ty: Ty<'tcx>) -> bool {
         self.is_std_type(ty, StdItem::Formatter)
     }
 
@@ -264,7 +256,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
     /// Whether `def_id`, a function or a closure, writes (ADR 0054): which
     /// of its parameters is its `Formatter`, given it returns a `fmt::Result`.
-    pub(in crate::lower) fn formatter_param(&self, def_id: DefId) -> Option<usize> {
+    pub fn formatter_param(&self, def_id: DefId) -> Option<usize> {
         if self.tcx.def_kind(def_id) == DefKind::Closure {
             let ty = self.tcx.type_of(def_id).instantiate_identity().skip_normalization();
             let ty::Closure(_, args) = ty.kind() else { return None };
@@ -278,12 +270,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Of a call of a callable, `Fn::call(&g, (s, f))` given its result's
     /// type: which of its arguments is the `Formatter` it writes to, where
     /// it's a writer, as a writer function's is (ADR 0054).
-    pub(in crate::lower) fn callable_formatter(
-        &self,
-        def_id: DefId,
-        args: ty::GenericArgsRef<'tcx>,
-        output: Ty<'tcx>,
-    ) -> Option<usize> {
+    pub fn callable_formatter(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, output: Ty<'tcx>) -> Option<usize> {
         let fn_trait = self.tcx.trait_of_assoc(def_id)?;
         self.tcx.fn_trait_kind_from_def_id(fn_trait)?;
         let ty::Tuple(given) = args.type_at(1).kind() else {
@@ -295,7 +282,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// A call through a `fn` pointer, `callee`, that writes to a
     /// `Formatter` it's given, `cb(x, f)` of a `cb: fn(&u32, &mut
     /// Formatter) -> fmt::Result`: which argument it is (ADR 0538).
-    pub(in crate::lower) fn pointer_formatter(&self, callee: Ty<'tcx>) -> Option<usize> {
+    pub fn pointer_formatter(&self, callee: Ty<'tcx>) -> Option<usize> {
         let ty::FnPtr(..) = callee.kind() else { return None };
         let sig = self.tcx.instantiate_bound_regions_with_erased(callee.fn_sig(self.tcx));
         self.writes_to(sig.inputs(), sig.output())
@@ -310,7 +297,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         inputs.iter().position(|&t| self.is_formatter(t))
     }
 
-    pub(in crate::lower) fn write_call(&self, def_id: DefId, known_function: bool) -> WriteCall {
+    pub fn write_call(&self, def_id: DefId, known_function: bool) -> WriteCall {
         let tcx = self.tcx;
         let trait_id = tcx.trait_of_assoc(def_id);
         let is_trait = |name: &str| trait_id.is_some_and(|t| tcx.is_diagnostic_item(Symbol::intern(name), t));
@@ -376,7 +363,7 @@ const OTHER_FMT_TRAITS: [&str; 7] = [
 /// Is `id` a formatting trait's `fmt`, `Display`'s, `Debug`'s or one of
 /// `OTHER_FMT_TRAITS`'? Its dictionary's entry isn't the method: it takes
 /// the value and gives its text, no `Formatter` (#1477).
-pub(crate) fn is_fmt_method(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub fn is_fmt_method(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.item_name(id).as_str() == "fmt" && tcx.trait_of_assoc(id).is_some_and(|tr| is_fmt_trait(tcx, tr))
 }
 
@@ -619,7 +606,7 @@ pub(crate) fn fmt_trait_called(tcx: TyCtxt<'_>, def_id: DefId) -> Option<DefId> 
 
 /// What a writer asks its `Formatter` (ADRs 0137, 0143).
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum FormatterQuery {
+pub enum FormatterQuery {
     Alternate,
     Width,
     Precision,
@@ -632,7 +619,7 @@ pub(in crate::lower) enum FormatterQuery {
 /// What a `fmt::Result`'s method gives (ADR 0148), of an `Ok` and, where
 /// it may be one, of an `Err` (ADR 0187).
 #[derive(Clone, Copy)]
-pub(in crate::lower) enum FmtResultAnswer {
+pub enum FmtResultAnswer {
     /// `unwrap()`: `()`, or a panic.
     Unwrap,
     /// `expect(..)`: `()`, or a panic with its message.
@@ -655,7 +642,7 @@ pub(in crate::lower) enum FmtResultAnswer {
 }
 
 /// The answer of the `fmt::Result` method `def_id`, if it's one of these.
-pub(in crate::lower) fn fmt_result_answer(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FmtResultAnswer> {
+pub fn fmt_result_answer(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FmtResultAnswer> {
     Some(match tcx.item_name(def_id).as_str() {
         "unwrap" => FmtResultAnswer::Unwrap,
         "expect" => FmtResultAnswer::Expect,
@@ -673,7 +660,7 @@ pub(in crate::lower) fn fmt_result_answer(tcx: TyCtxt<'_>, def_id: DefId) -> Opt
 /// A `Debug` builder of std's, by its type, which a `Formatter`'s
 /// `debug_struct(..)` and the like make (ADR 0136).
 #[derive(Clone, Copy, PartialEq)]
-pub(crate) enum DebugBuilder {
+pub enum DebugBuilder {
     Struct,
     Tuple,
     List,
@@ -684,7 +671,7 @@ pub(crate) enum DebugBuilder {
 /// A step of a `Debug` builder, by its method: what it's given, then what
 /// it writes.
 #[derive(Clone, Copy, PartialEq)]
-pub(crate) enum BuilderStep {
+pub enum BuilderStep {
     Field,
     Entry,
     Entries,
@@ -692,7 +679,7 @@ pub(crate) enum BuilderStep {
 }
 
 /// The `Debug` builder `did`, a type, is: std's `DebugStruct` and the like.
-pub(in crate::lower) fn debug_builder(tcx: TyCtxt<'_>, did: DefId) -> Option<DebugBuilder> {
+pub fn debug_builder(tcx: TyCtxt<'_>, did: DefId) -> Option<DebugBuilder> {
     if !std_path_under(tcx, did, StdPath::FmtMod) {
         return None;
     }
@@ -707,7 +694,7 @@ pub(in crate::lower) fn debug_builder(tcx: TyCtxt<'_>, did: DefId) -> Option<Deb
 }
 
 /// The step of a `Debug` builder `def_id`, a method, is.
-pub(in crate::lower) fn builder_step(tcx: TyCtxt<'_>, def_id: DefId) -> Option<BuilderStep> {
+pub fn builder_step(tcx: TyCtxt<'_>, def_id: DefId) -> Option<BuilderStep> {
     let owner = tcx
         .type_of(tcx.inherent_impl_of_assoc(def_id)?)
         .instantiate_identity()
@@ -729,7 +716,7 @@ pub(in crate::lower) fn builder_step(tcx: TyCtxt<'_>, def_id: DefId) -> Option<B
 /// Whether `def_id`, a `Formatter`'s method, makes a `Debug` builder:
 /// `debug_struct(..)` and the like, not what writes one whole,
 /// `debug_struct_field1_finish`.
-pub(in crate::lower) fn makes_debug_builder(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn makes_debug_builder(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let name = tcx.item_name(def_id);
     name.as_str().starts_with("debug_") && !name.as_str().ends_with("_finish")
 }
@@ -750,7 +737,7 @@ fn is_formatter_method(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 }
 
 /// The question `def_id` asks of a `Formatter`: `f.width()` and the like.
-pub(in crate::lower) fn formatter_query(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FormatterQuery> {
+pub fn formatter_query(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FormatterQuery> {
     if !is_formatter_method(tcx, def_id) {
         return None;
     }

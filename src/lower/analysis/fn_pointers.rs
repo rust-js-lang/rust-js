@@ -32,7 +32,7 @@ use rustc_span::def_id::DefId;
 /// which types a value of which may come from outside its code, which
 /// may be any function.
 #[derive(Default)]
-pub(in crate::lower) struct FnPointers<'tcx> {
+pub struct FnPointers<'tcx> {
     made: IndexMap<Ty<'tcx>, Vec<(DefId, ty::GenericArgsRef<'tcx>)>>,
     open: IndexSet<Ty<'tcx>>,
     /// A value of a type rustc can't normalize may come from outside,
@@ -233,11 +233,7 @@ impl<'tcx> FnPointers<'tcx> {
     /// What a value of `ptr`, a fn pointer type, may be: each function or
     /// closure, of its generic arguments, the crate makes one of; `None`,
     /// anything.
-    pub(in crate::lower) fn may_be(
-        &self,
-        tcx: TyCtxt<'tcx>,
-        ptr: Ty<'tcx>,
-    ) -> Option<&[(DefId, ty::GenericArgsRef<'tcx>)]> {
+    pub fn may_be(&self, tcx: TyCtxt<'tcx>, ptr: Ty<'tcx>) -> Option<&[(DefId, ty::GenericArgsRef<'tcx>)]> {
         let key = key(tcx, ptr)?;
         if self.all_open || self.open.contains(&key) || self.library_rust.contains(&key) {
             return None;
@@ -251,7 +247,7 @@ impl<'tcx> FnPointers<'tcx> {
     /// other may only be a library's own, of a field its contract says
     /// holds only those (ADR 0330, amended). A call of it is one of
     /// rust-js's own.
-    pub(in crate::lower) fn rust_only(&self, tcx: TyCtxt<'tcx>, ptr: Ty<'tcx>) -> bool {
+    pub fn rust_only(&self, tcx: TyCtxt<'tcx>, ptr: Ty<'tcx>) -> bool {
         let Some(key) = key(tcx, ptr) else { return false };
         !self.all_open
             && !self.open.contains(&key)
@@ -283,14 +279,14 @@ impl<'tcx> FnPointers<'tcx> {
     /// Read apart from its holder, `const { f } = s;`, it's called as it
     /// was (ADR 0610, amended, #533). Not one of an object JS made, its own
     /// method, which may read it.
-    pub(in crate::lower) fn call_facts(&self, holder: Holder) -> rust_js_program::js::Facts {
+    pub fn call_facts(&self, holder: Holder) -> rust_js_program::js::Facts {
         match matches!(holder, Holder::Field(field) if self.own_fields.get(&field) == Some(&true)) {
             true => rust_js_program::js::Facts::of(rust_js_program::js::Known::ThisUnread),
             false => rust_js_program::js::Facts::NONE,
         }
     }
 
-    pub(in crate::lower) fn may_read_this(&self, tcx: TyCtxt<'tcx>, called: Called<'tcx>, holder: Holder) -> bool {
+    pub fn may_read_this(&self, tcx: TyCtxt<'tcx>, called: Called<'tcx>, holder: Holder) -> bool {
         // A field the crate fills with its own functions alone (#405, #427).
         if let Holder::Field(field) = holder
             && self.own_fields.get(&field) == Some(&true)
@@ -327,13 +323,7 @@ impl<'tcx> FnPointers<'tcx> {
     /// `dyn Fn` of a signature a value of which may be one; a generic one,
     /// which its caller may give one, where the crate's code may hold any;
     /// and a binding's function.
-    pub(in crate::lower) fn may_be_js(
-        &self,
-        tcx: TyCtxt<'tcx>,
-        callee: Ty<'tcx>,
-        args: Ty<'tcx>,
-        output: Ty<'tcx>,
-    ) -> bool {
+    pub fn may_be_js(&self, tcx: TyCtxt<'tcx>, callee: Ty<'tcx>, args: Ty<'tcx>, output: Ty<'tcx>) -> bool {
         match *callee.peel_refs().kind() {
             ty::Dynamic(..) => self.all_open || self.js_dyns.contains(&signature(tcx, args, output)),
             ty::FnDef(f, _) => is_binding(tcx, f),
@@ -427,14 +417,14 @@ impl<'tcx> FnPointers<'tcx> {
     /// one (`js_may_make`), and JS gives none, to an exported function or
     /// a function a binding calls (`js_given`, #519), which may leave a
     /// field out (rd647).
-    pub(in crate::lower) fn only_the_crate_makes(&self, adt: DefId) -> bool {
+    pub fn only_the_crate_makes(&self, adt: DefId) -> bool {
         self.built.contains(&adt) && !self.js_may_make(adt) && !self.js_given.contains(&adt)
     }
 
     /// The structs the crate's code makes a value of (`built`), which its
     /// contract says, so a consumer takes them as the program's own data,
     /// as the crate does (rd221; ADR 1022, amended).
-    pub(in crate::lower) fn built(&self) -> impl Iterator<Item = DefId> + '_ {
+    pub fn built(&self) -> impl Iterator<Item = DefId> + '_ {
         self.built.iter().copied()
     }
 
@@ -614,7 +604,7 @@ impl JsMade {
 /// What a function called through what holds it, `(s.f)()`, is held by,
 /// which `may_read_this` asks of (rd579).
 #[derive(Clone, Copy)]
-pub(in crate::lower) enum Holder {
+pub enum Holder {
     /// A field of the crate's struct, `s.f`.
     Field(DefId),
     /// An item of a tuple, an array or a collection, `fs[i]`.
@@ -627,7 +617,7 @@ pub(in crate::lower) enum Holder {
 /// of: a function of the tuple it's called with and what it gives, a `dyn
 /// Fn`'s or a generic one's, or a fn pointer of its type.
 #[derive(Clone, Copy)]
-pub(in crate::lower) enum Called<'tcx> {
+pub enum Called<'tcx> {
     /// What's called, `&dyn Fn()`, `&F`; the tuple it's called with; and
     /// what it gives.
     Function(Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),

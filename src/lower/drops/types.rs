@@ -15,7 +15,7 @@ use rustc_span::def_id::DefId;
 
 /// What dropping a type runs.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum Drops<'tcx> {
+pub enum Drops<'tcx> {
     /// Nothing JS can see: no user `Drop` anywhere in it.
     Nothing,
     /// A user `Drop`, its own or a part's.
@@ -110,7 +110,7 @@ impl<'tcx> TypeDrops<'tcx> {
 /// crate's facts and the function's (ADRs 0098, 0178): which of its type
 /// parameters have drops, and the bounds of the dictionaries it's given.
 /// Nothing it emits, nor emission's state.
-pub(in crate::lower) struct DropQuery<'a, 'tcx> {
+pub struct DropQuery<'a, 'tcx> {
     pub(in crate::lower) recognition: Recognition<'a, 'tcx>,
     pub(in crate::lower) evidence: EvidenceQuery<'a, 'tcx>,
     /// A library's: its consumers may have destructors (ADR 0163).
@@ -159,7 +159,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
 
     /// Does making a `from` a `to` lose a drop: what owns it, `target`, a
     /// `dyn` of it that keeps none, or of what rust-js can't drop?
-    pub(in crate::lower) fn dyn_drop_lost(&self, target: Ty<'tcx>, from: Ty<'tcx>, to: Ty<'tcx>) -> bool {
+    pub fn dyn_drop_lost(&self, target: Ty<'tcx>, from: Ty<'tcx>, to: Ty<'tcx>) -> bool {
         let ty::Dynamic(predicates, ..) = to.kind() else {
             return false;
         };
@@ -254,7 +254,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
 
     /// What `ty` drops of its own, its type parameters, and what only their
     /// caller knows, dropping nothing (ADR 0190).
-    pub(in crate::lower) fn drops_but_params(&self, ty: Ty<'tcx>) -> Drops<'tcx> {
+    pub fn drops_but_params(&self, ty: Ty<'tcx>) -> Drops<'tcx> {
         self.drops_in(
             ty,
             &mut Walk {
@@ -732,10 +732,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
 
 /// The crate's own traits a `dyn` may be of whose `dyn`s drop nothing,
 /// which a program's contract lists for its tests (#597).
-pub(in crate::lower) fn own_traits_dropping_nothing<'tcx>(
-    tcx: ty::TyCtxt<'tcx>,
-    mut drops: impl FnMut(Ty<'tcx>) -> bool,
-) -> Vec<DefId> {
+pub fn own_traits_dropping_nothing<'tcx>(tcx: ty::TyCtxt<'tcx>, mut drops: impl FnMut(Ty<'tcx>) -> bool) -> Vec<DefId> {
     (tcx.hir_crate_items(()).definitions())
         .map(|id| id.to_def_id())
         .filter(|&id| tcx.def_kind(id) == rustc_hir::def::DefKind::Trait && tcx.is_dyn_compatible(id))

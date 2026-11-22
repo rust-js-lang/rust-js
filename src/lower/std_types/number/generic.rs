@@ -352,7 +352,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A fact of `of` (ADR 0145): its size or alignment, as rustc works it out
     /// for the wasm32 target, or its name; of a type parameter, the one this
     /// function was given for it.
-    pub(in crate::lower) fn type_fact_value(&mut self, of: Ty<'tcx>, fact: TypeFact, span: Span) -> R<Expr> {
+    pub fn type_fact_value(&mut self, of: Ty<'tcx>, fact: TypeFact, span: Span) -> R<Expr> {
         let what = fact.described();
         // The size std grows a `Vec` by, or `undefined` of #934's case
         // (`room_value`); else, not given, as `Size` refuses it.
@@ -644,7 +644,7 @@ pub(super) fn ilog(x: Expr, base: u32, checked: bool) -> Expr {
 
 /// Whether `n`, a `from`, is out of `to`'s range: of each bound `from` can
 /// pass, `n < 0` of an `i32` into a `usize`; `false` of none.
-pub(in crate::lower) fn int_out_of(n: &Expr, from: Num, to: Num) -> Expr {
+pub fn int_out_of(n: &Expr, from: Num, to: Num) -> Expr {
     let ((from_lo, from_hi), (lo, hi)) = (from.range(), to.range());
     let compared = |op, bound| {
         let mut test = Expr::bin(op, n.clone(), from.literal(bound));
@@ -663,7 +663,7 @@ pub(in crate::lower) fn int_out_of(n: &Expr, from: Num, to: Num) -> Expr {
 /// `n`, a `from` in `to`'s range, as a `to`: a BigInt or a number where
 /// they differ, as `$tryFromInt` makes it: an integer's `try_from` only
 /// tested, its `Ok`'s (#366, `mir::std_calls`).
-pub(in crate::lower) fn int_as(n: Expr, from: Num, to: Num) -> Expr {
+pub fn int_as(n: Expr, from: Num, to: Num) -> Expr {
     match (from.big(), to.big()) {
         (false, true) => Expr::converted(js::Conversion::BigInt, n),
         (true, false) => Expr::converted(js::Conversion::Number, n),

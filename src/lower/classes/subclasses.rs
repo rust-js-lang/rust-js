@@ -193,7 +193,7 @@ pub(super) fn impl_misuse(tcx: TyCtxt<'_>, imp: DefId, class: DefId) -> Vec<(rus
 /// extends nothing; and whether it's an ES class, as one that extends a
 /// binding's is, or one whose struct says so (rd682), or a constructor
 /// function.
-pub(crate) fn js_class(
+pub fn js_class(
     tcx: TyCtxt<'_>,
     member: DefId,
     imports: &IndexMap<(String, String), String>,

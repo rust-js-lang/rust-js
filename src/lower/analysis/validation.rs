@@ -192,7 +192,7 @@ pub(super) fn reject_namespace_value_reads(tcx: TyCtxt<'_>, all_bodies: &[&Body<
 /// `thread_local!` (ADR 0037) is a `const NAME: LocalKey<T>` whose block holds
 /// `fn __rust_std_internal_init_fn() -> T { init }`, then std's storage for
 /// it. In JS, it's a variable of its module, made from `init`.
-pub(in crate::lower) fn is_thread_local(tcx: TyCtxt<'_>, d: LocalDefId) -> bool {
+pub fn is_thread_local(tcx: TyCtxt<'_>, d: LocalDefId) -> bool {
     matches!(tcx.def_kind(d), DefKind::Const)
         && matches!(tcx.type_of(d).instantiate_identity().skip_normalization().kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::LocalKey))
 }

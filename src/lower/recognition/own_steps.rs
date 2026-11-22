@@ -13,7 +13,7 @@ use rustc_middle::ty::elaborate::supertrait_def_ids;
 /// what it does: `Take::fold` is its source's `try_fold`, and
 /// `Skip::try_fold` asks its source's `nth(n - 1)` (#2195).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum OwnStep {
+pub enum OwnStep {
     Fold,
     TryFold,
     Rfold,
@@ -47,7 +47,7 @@ fn asked_at(of: &str) -> usize {
 /// double-ended one's `nth_back`'s (#496, #505, #2134); `May`, of what asks the iterator itself at run time, `$foldOf`
 /// and `$foldBack`, which says yes of each (#521, #649).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum Reach {
+pub enum Reach {
     Sure,
     May,
 }
@@ -166,7 +166,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// aren't seen, a `dyn`'s, whose `nth` a `&mut dyn Iterator` passes on
     /// to the crate's (#2218), as `reach` says. The one answer, each
     /// step's (ADR 1089).
-    pub(in crate::lower) fn reaches_its_own(&self, ty: Ty<'tcx>, step: OwnStep, reach: Reach) -> bool {
+    pub fn reaches_its_own(&self, ty: Ty<'tcx>, step: OwnStep, reach: Reach) -> bool {
         let ty = self.reveal(ty);
         if let ty::Ref(_, inner, ty::Mutability::Mut) = ty.kind() {
             return step.through_a_mut_ref() && self.reaches_its_own(*inner, step, reach);
@@ -297,7 +297,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// own `nth`, `last`, `nth_back` or `count`, each of which an adapter
     /// that passes it on gives, a `fuse()`'s `count` its source's, and a
     /// `map` doesn't, its `count` its `fold`'s (#235, #1240).
-    pub(in crate::lower) fn reaches_own_steps(&self, ty: Ty<'tcx>) -> bool {
+    pub fn reaches_own_steps(&self, ty: Ty<'tcx>) -> bool {
         [OwnStep::Nth, OwnStep::Last, OwnStep::NthBack, OwnStep::Count]
             .into_iter()
             .any(|step| self.reaches_its_own(ty, step, Reach::Sure))

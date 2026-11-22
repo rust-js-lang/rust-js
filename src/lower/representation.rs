@@ -71,7 +71,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A value rustc computed, as a body writes it: `const_js`'s, each
     /// variant without fields `unit_variant`'s.
-    pub(in crate::lower) fn const_value(&self, value: ty::Value<'tcx>) -> Option<Expr> {
+    pub fn const_value(&self, value: ty::Value<'tcx>) -> Option<Expr> {
         // A module's namespace, `&ReactFiberReconciler` too (ADR 1037).
         if let ty::Adt(adt, _) = value.ty.peel_refs().kind()
             && super::classes::is_namespace(self.tcx, adt.did())
@@ -193,7 +193,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Does a `ty` have one value, as a zero-sized type does: `()`, a unit
     /// struct, `[S; 1]` of one? Then no write to one changes what a program
     /// sees.
-    pub(super) fn has_one_value(&self, ty: Ty<'tcx>) -> bool {
+    pub fn has_one_value(&self, ty: Ty<'tcx>) -> bool {
         self.layout(ty).is_some_and(|layout| layout.is_zst())
     }
 
@@ -209,7 +209,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type parameter bound by one of them, an `impl FnMut` too. A `&mut` to
     /// one is the function (ADR 0099): calling it changes what it captured,
     /// as calling it through the `&mut` does.
-    pub(super) fn is_callable(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_callable(&self, ty: Ty<'tcx>) -> bool {
         let fn_trait = |id: DefId| self.tcx.fn_trait_kind_from_def_id(id).is_some();
         match ty.kind() {
             ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..) => true,
@@ -223,7 +223,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// be the object itself: changes through it change the one object (ADR 0025).
     /// A value that a `&mut` to must be a box to change (ADR 0072): one that
     /// isn't a JS object, as a `String`, a number or a fieldless enum is.
-    pub(super) fn is_object(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_object(&self, ty: Ty<'tcx>) -> bool {
         // An `impl Trait` a function returns is the value it stands for: a
         // `&mut` to an `impl Iterator`'s array is the array.
         let ty = self.reveal(ty);
@@ -306,7 +306,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// std enum (#1289). An `Option`'s `Some`'s value; a write's result's
     /// `Ok`'s, `()` (ADRs 0187, 0462); else its property, a `Cell` a handle
     /// on it, as a struct's (ADR 0288).
-    pub(in crate::lower) fn field_of_variant(
+    pub fn field_of_variant(
         &mut self,
         base: Expr,
         ty: Ty<'tcx>,
@@ -347,7 +347,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// How a struct or tuple type looks in JS.
-    pub(super) fn shape(&self, ty: Ty<'tcx>) -> Shape<'tcx> {
+    pub fn shape(&self, ty: Ty<'tcx>) -> Shape<'tcx> {
         if let Some(held) = self.always_holds(ty) {
             return self.shape(held);
         }
@@ -383,7 +383,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Field `i` of `ty`, a struct, as rustc declares it, which `shape`
     /// lists in its order: what `held` and `holding` ask of a struct's
     /// field. `None` of a tuple's, or an enum's variant's.
-    pub(super) fn struct_field_def(&self, ty: Ty<'tcx>, i: usize) -> Option<&'tcx ty::FieldDef> {
+    pub fn struct_field_def(&self, ty: Ty<'tcx>, i: usize) -> Option<&'tcx ty::FieldDef> {
         match ty.kind() {
             ty::Adt(adt, _) if adt.is_struct() => adt.non_enum_variant().fields.get(rustc_abi::FieldIdx::from_usize(i)),
             _ => None,
@@ -394,7 +394,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// answer: of a struct JS may have made, not the program's (rd204, ADR
     /// 1022). What `project` says of each read of one, and a pattern's
     /// subject asks, read once where it's tested (#430).
-    pub(super) fn fields_answered_by_getters(&self, ty: Ty<'tcx>) -> bool {
+    pub fn fields_answered_by_getters(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if self.krate.cell_borrows.pointers().js_may_make(adt.did()))
     }
 
@@ -406,13 +406,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// narrowing rd204's, ADR 1022, amended). Each read of it isn't a
     /// getter's (`fields_answered_by_getters`): one Rust makes twice is
     /// made twice, as before.
-    pub(super) fn fields_read_once(&self, ty: Ty<'tcx>) -> bool {
+    pub fn fields_read_once(&self, ty: Ty<'tcx>) -> bool {
         self.fields_answered_by_getters(ty)
             || matches!(ty.kind(), ty::Adt(adt, _) if self.krate.cell_borrows.pointers().js_may_give(adt.did()))
     }
 
     /// Field `i` of a `ty` value: `base.x`, or `base[0]` for tuples.
-    pub(super) fn project(&self, base: Expr, ty: Ty<'tcx>, i: usize) -> Expr {
+    pub fn project(&self, base: Expr, ty: Ty<'tcx>, i: usize) -> Expr {
         // What's the value it holds: that field is it, a marker beside it
         // nothing (ADR 0584).
         if self.always_holds(ty).is_some() {
@@ -501,7 +501,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    pub(super) fn num(&self, ty: Ty<'tcx>, span: Span) -> R<Num> {
+    pub fn num(&self, ty: Ty<'tcx>, span: Span) -> R<Num> {
         Num::of(ty).ok_or_else(|| super::refusal::refuse(self.tcx, span, super::refusal::Refused::Type("values", ty)))
     }
 }
@@ -510,7 +510,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// and `i64` and `u64`, a BigInt (ADR 0086); the difference is how results
 /// are wrapped back into range, or for an `f32`, rounded to one (ADR 0122).
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum Num {
+pub enum Num {
     I8,
     I16,
     I32,
@@ -558,7 +558,7 @@ pub(super) fn f32_literal(v: f32) -> Expr {
 }
 
 impl Num {
-    pub(super) fn of(ty: Ty<'_>) -> Option<Num> {
+    pub fn of(ty: Ty<'_>) -> Option<Num> {
         Some(match ty.kind() {
             ty::Int(ty::IntTy::I8) => Num::I8,
             ty::Int(ty::IntTy::I16) => Num::I16,
@@ -591,7 +591,7 @@ impl Num {
         })
     }
 
-    pub(super) fn bits(self) -> u32 {
+    pub fn bits(self) -> u32 {
         match self {
             Num::I8 | Num::U8 => 8,
             Num::I16 | Num::U16 => 16,
@@ -602,23 +602,23 @@ impl Num {
     }
 
     /// An `f32` or an `f64`: a JS number, not an integer (ADR 0122).
-    pub(super) fn float(self) -> bool {
+    pub fn float(self) -> bool {
         matches!(self, Num::F32 | Num::F64)
     }
 
-    pub(super) fn signed(self) -> bool {
+    pub fn signed(self) -> bool {
         matches!(self, Num::I8 | Num::I16 | Num::I32 | Num::I64 | Num::I128)
     }
 
     /// A 64-bit or a 128-bit integer: a JS BigInt, which mixes only with
     /// another (ADRs 0086, 0171).
-    pub(super) fn big(self) -> bool {
+    pub fn big(self) -> bool {
         matches!(self, Num::I64 | Num::U64 | Num::I128 | Num::U128)
     }
 
     /// `n` as a literal of this type: `5`, or `5n`. A `u128`'s `n` is its
     /// bits, as an `i128` holds them: `-1` is `u128::MAX`.
-    pub(super) fn literal(self, n: i128) -> Expr {
+    pub fn literal(self, n: i128) -> Expr {
         match self {
             Num::U128 => Expr::biguint(n as u128),
             _ if self.big() => Expr::bigint(n),
@@ -778,7 +778,7 @@ pub(super) fn is_string_enum(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> bool {
 /// `const_eval_global_id_for_typeck`, which reports a constant too large
 /// for a value tree as rustc's own error where rust-js reports it as
 /// unsupported.
-pub(super) fn valtree<'tcx>(
+pub fn valtree<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     def_id: DefId,
@@ -826,7 +826,7 @@ fn const_uninit<'tcx>(
 
 /// A `const`'s value as JS writes it, where it can: what rustc computed
 /// (ADRs 0031, 0127), or `undefined` of one with no byte written.
-pub(super) fn const_value_js<'tcx>(
+pub fn const_value_js<'tcx>(
     tcx: TyCtxt<'tcx>,
     keyed: &IndexSet<DefId>,
     typing_env: ty::TypingEnv<'tcx>,
@@ -873,7 +873,7 @@ pub(super) fn eval_const<'tcx>(
 /// rustc makes value trees only of constants, since a static is a place, so
 /// this reads one out of the static's memory. None for a value no value tree
 /// holds: a reference to another static, a pointer, a `dyn`.
-pub(super) fn static_value<'tcx>(tcx: TyCtxt<'tcx>, def_id: LocalDefId) -> Option<ty::Value<'tcx>> {
+pub fn static_value<'tcx>(tcx: TyCtxt<'tcx>, def_id: LocalDefId) -> Option<ty::Value<'tcx>> {
     let memory = tcx.eval_static_initializer(def_id).ok()?;
     let ty = tcx.type_of(def_id).instantiate_identity().skip_normalization();
     let valtree = valtree_at(tcx, Pointer::from(unchanging(tcx, memory)), ty)?;
@@ -984,13 +984,13 @@ fn large_bytes<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Opti
 /// one's literal is, each time it's read, as that literal is made (#1096).
 /// The one place that form is written: a constant a body names in place,
 /// `include_bytes!`'s, and a `const` item's.
-pub(in crate::lower) fn byte_constant_js<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Option<Expr> {
+pub fn byte_constant_js<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Option<Expr> {
     let bytes = large_bytes(tcx, value, ty)?;
     Some(Expr::call(Expr::helper("$bytes"), vec![Expr::str(base64(&bytes))]).never_throws())
 }
 
 /// Whether `ty` is a `&[u8; N]` or a `&[u8]`, a byte constant's type.
-pub(in crate::lower) fn is_byte_ref<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+pub fn is_byte_ref<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Ref(_, inner, _) if matches!(inner.kind(), ty::Array(item, _) | ty::Slice(item) if *item == tcx.types.u8))
 }
 
@@ -1121,7 +1121,7 @@ pub(super) fn marks_js_object<'tcx>(tcx: TyCtxt<'tcx>, adt: ty::AdtDef<'tcx>, ar
 
 /// The JS property for field `i` of an enum variant (ADR 0033): `_0` in a
 /// tuple variant, as in ReScript, and its name in a struct variant.
-pub(super) fn variant_field(tcx: TyCtxt<'_>, variant: &ty::VariantDef, i: usize) -> String {
+pub fn variant_field(tcx: TyCtxt<'_>, variant: &ty::VariantDef, i: usize) -> String {
     match variant.ctor_kind() {
         Some(CtorKind::Fn) => js::positional(i),
         // An enum variant's field a symbol never names (`validate`, ADR 1051).

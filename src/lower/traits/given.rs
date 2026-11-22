@@ -20,7 +20,7 @@ pub(in crate::lower) struct GivenScope<'tcx> {
 /// impl's evidence and arguments for its trait's parameters, its const
 /// parameters, the location its caller gives, and the facts of its own
 /// type parameters, after the item's.
-pub(in crate::lower) struct DefaultGiven<'tcx> {
+pub struct DefaultGiven<'tcx> {
     pub(in crate::lower) evidence: Vec<(ty::TraitRef<'tcx>, Expr)>,
     pub(in crate::lower) self_args: ty::GenericArgsRef<'tcx>,
     pub(in crate::lower) const_params: Vec<(u32, Expr)>,
@@ -147,7 +147,7 @@ pub(in crate::lower) fn default_typing_env<'tcx>(
 /// impl it's copied into, `args` of them (`default_args`), each type
 /// normalized where `typing_env` says what it is,
 /// `<Enumerated<P> as Pull>::Out` its impl's `(usize, P::Out)` (#803).
-pub(in crate::lower) fn default_mir<'tcx>(
+pub fn default_mir<'tcx>(
     tcx: TyCtxt<'tcx>,
     mir: &crate::lower::analysis::Mir<'tcx>,
     args: ty::GenericArgsRef<'tcx>,
@@ -178,7 +178,7 @@ pub(in crate::lower) fn default_mir<'tcx>(
 /// closure's own generics past them, its kind, signature and captures, as
 /// they are, which its MIR and THIR may name, `minmax_by`'s `|_| ()` in
 /// itertools (#828).
-pub(in crate::lower) fn default_body_args<'tcx>(
+pub fn default_body_args<'tcx>(
     tcx: TyCtxt<'tcx>,
     args: ty::GenericArgsRef<'tcx>,
     body: DefId,
@@ -254,7 +254,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `resolve_instance` of a call whose arguments a copied default's
     /// `Self` was replaced in (ADR 0049): they're the impl's, which resolve in
     /// the impl's typing environment, as its own body's types don't.
-    pub(in crate::lower) fn resolve_self_instance(
+    pub fn resolve_self_instance(
         &self,
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
@@ -278,7 +278,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// In a trait's default copied into an impl, the arguments it's copied
     /// with (`default_args`), which its body and each closure in it are in
     /// the terms of.
-    pub(in crate::lower) fn copied_default_args(&self) -> Option<ty::GenericArgsRef<'tcx>> {
+    pub fn copied_default_args(&self) -> Option<ty::GenericArgsRef<'tcx>> {
         self.given.self_args
     }
 
@@ -570,7 +570,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a fact of a type parameter, `TSize` (ADR 0145); and a drop function,
     /// `dropT` (ADR 0098), `dropIIntoIter` of a std trait's associated type
     /// (ADR 0421).
-    pub(in crate::lower) fn evidence_params(&mut self, id: DefId) -> Vec<js::Pattern> {
+    pub fn evidence_params(&mut self, id: DefId) -> Vec<js::Pattern> {
         self.give_drop_slots(drop_items(self.tcx, self.krate.foreign, id));
         let mut params: Vec<js::Pattern> = Vec::new();
         for slot in self.evidence_slots(id, Scope::Whole) {
@@ -615,7 +615,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A const argument's value (ADR 0107): `3`, or the caller's own `N`.
-    pub(in crate::lower) fn const_arg(&self, c: ty::Const<'tcx>, span: Span) -> R<Expr> {
+    pub fn const_arg(&self, c: ty::Const<'tcx>, span: Span) -> R<Expr> {
         let c = self
             .tcx
             .normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(c));

@@ -412,7 +412,7 @@ pub(super) fn char_pattern(name: &str) -> Option<TextOp> {
 /// which gives back the one it stops at (#180). Not `take`'s, of what it
 /// leaves; an adapter that holds its source, `filter_map`'s, is
 /// `holds_its_sources`' (ADR 0518).
-pub(in crate::lower) fn keeps_each(name: &str) -> bool {
+pub fn keeps_each(name: &str) -> bool {
     matches!(
         name,
         "map"

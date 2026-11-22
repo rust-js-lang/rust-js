@@ -22,7 +22,7 @@ use rustc_middle::ty;
 
 /// What's asked of std's files.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum FsOp {
+pub enum FsOp {
     /// `File::open(path)`: `$fileOpen(path)`, `Ok` of the file or `Err` of
     /// the OS's error.
     Open,

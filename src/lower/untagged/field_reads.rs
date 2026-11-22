@@ -21,7 +21,7 @@ use rust_js_program::js::{self, Expr};
 /// `&instance.children`. What it gives is the field of whichever variant
 /// the value is, which JS reads of the value itself, as an untagged
 /// enum's value is its variant's (ADR 0214).
-pub(in crate::lower) fn reads_each_variants_field<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> bool {
+pub fn reads_each_variants_field<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> bool {
     let (def_id, thir) = (body.def_id, &body.thir);
     let Some(imp) = tcx.inherent_impl_of_assoc(def_id) else {
         return false;
@@ -153,7 +153,7 @@ pub(in crate::lower) fn reads_each_variants_field<'tcx>(tcx: TyCtxt<'tcx>, body:
 /// the same where it's called of the value given, once (rd317). Made anew,
 /// of what's known of the function's own reads nothing, so its caller's
 /// lowering takes it as any read of its value.
-pub(in crate::lower) fn read_of_its_parameter(function: &js::Function) -> Option<(js::Name, Expr)> {
+pub fn read_of_its_parameter(function: &js::Function) -> Option<(js::Name, Expr)> {
     let [js::Pattern::Name(param)] = &function.params[..] else {
         return None;
     };

@@ -34,7 +34,7 @@ fn innermost(mut value: ty::Value<'_>) -> Option<ty::Value<'_>> {
 /// `()` or a unit struct, `[]` of `[T; 0]`, as `const_js` writes a constant
 /// of it (ADR 0562). `None` of a type with a size, or one `const_js` can't
 /// write.
-pub(in crate::lower) fn zero_sized_js<'tcx>(tcx: TyCtxt<'tcx>, keyed: &IndexSet<DefId>, ty: Ty<'tcx>) -> Option<Expr> {
+pub fn zero_sized_js<'tcx>(tcx: TyCtxt<'tcx>, keyed: &IndexSet<DefId>, ty: Ty<'tcx>) -> Option<Expr> {
     fn tree<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<ty::ValTree<'tcx>> {
         let part = |t: Ty<'tcx>| Some(ty::Const::new_value(tcx, tree(tcx, t)?, t));
         let parts: Vec<ty::Const<'tcx>> = match ty.kind() {
@@ -71,11 +71,7 @@ pub(in crate::lower) fn zero_sized_js<'tcx>(tcx: TyCtxt<'tcx>, keyed: &IndexSet<
 /// it loads, which reads no other, nor a numbered enum's `const` of a
 /// variant another module may not have made yet (ADR 0722, amended). A
 /// body's is `FnCx::const_value`'s, each variant as it writes one.
-pub(in crate::lower) fn const_js<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    keyed: &IndexSet<DefId>,
-    value: ty::Value<'tcx>,
-) -> Option<Expr> {
+pub fn const_js<'tcx>(tcx: TyCtxt<'tcx>, keyed: &IndexSet<DefId>, value: ty::Value<'tcx>) -> Option<Expr> {
     let unit = |adt, variant: &ty::VariantDef| match keyed.contains(&adt) {
         true => Expr::object(Vec::new()),
         false => bindings::unit_variant(tcx, adt, variant),

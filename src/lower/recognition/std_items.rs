@@ -7,7 +7,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `a += b` of a number whose `+` is its type's own, a `Duration`'s or
     /// a clock's, not its number's: `a = a + b`, of that `+`. The operator's
     /// method, its arguments, and what it is (ADRs 0188, 0447).
-    pub(in crate::lower) fn assigned_by(
+    pub fn assigned_by(
         &self,
         assign_trait: DefId,
         ty: Ty<'tcx>,
@@ -35,7 +35,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// through its `write_str` and `write_char`, never its own `write_fmt`,
     /// which a writer's own `write_fmt` calls it to write (#1697). Another
     /// is itself.
-    pub(in crate::lower) fn call_it_is(
+    pub fn call_it_is(
         &self,
         def_id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
@@ -53,7 +53,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// Whether `def_id` is `fmt::write`, std's own `write_fmt` (`call_it_is`).
-    pub(in crate::lower) fn is_fmt_write(&self, def_id: DefId) -> bool {
+    pub fn is_fmt_write(&self, def_id: DefId) -> bool {
         is_fmt_write_fn(self.tcx, def_id)
     }
 
@@ -76,7 +76,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// whose receiver, a `&&mut I`, the lowering reads as it is. (`impl Write for &mut [u8]`, of a type
     /// of std's own, writes the slice, which has no `Write` to call, so its
     /// call stays refused.)
-    pub(in crate::lower) fn passed_through_mut_ref(
+    pub fn passed_through_mut_ref(
         &self,
         def_id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
@@ -142,7 +142,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// methods as `H`'s, `(**self).write_u8(i)`: `b.write_u8(2)` of a `b:
     /// Box<DefaultHasher>` is the hasher's own (#1493). A `Box<dyn
     /// Hasher>`'s, of an unsized `H`, stays its `dyn`'s.
-    pub(in crate::lower) fn passed_through_box(
+    pub fn passed_through_box(
         &self,
         def_id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
@@ -259,7 +259,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// Is `id` the standard library's: std, core, alloc, or a crate rustc's
     /// sysroot holds beside them, as `hashbrown`, which std's maps are made of?
-    pub(in crate::lower) fn in_sysroot(&self, id: DefId) -> bool {
+    pub fn in_sysroot(&self, id: DefId) -> bool {
         self.is_std(id) || from_sysroot(self.tcx, id)
     }
 }
@@ -337,7 +337,7 @@ pub(crate) fn tracks_caller(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// Whether `def_id` is a C-variadic function, `extern "C" fn f(mut args:
 /// ...)`, whose last parameter gathers what it's given past the rest
 /// (ADR 0428).
-pub(crate) fn is_c_variadic(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_c_variadic(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     matches!(tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)
         && tcx.fn_sig(def_id).skip_binder().skip_binder().c_variadic()
 }
@@ -346,7 +346,7 @@ pub(crate) fn is_c_variadic(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// place, by rust-js too, and written `/** @noinline */`, Closure Compiler's
 /// same meaning (ADR 0649). `#[inline]` and `#[inline(always)]` say
 /// nothing: a JS engine decides.
-pub(crate) fn is_noinline(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_noinline(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     rustc_hir::find_attr!(tcx, def_id, Inline(rustc_hir::attrs::InlineAttr::Never, _))
 }
 
@@ -395,12 +395,7 @@ pub(crate) fn is_trusted_len<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<
 /// `cloned()`'s clone. It pairs while both have an item left, so `a` is
 /// never stepped once `b` has none, where the general impl steps `a` first
 /// (ADR 0973).
-pub(crate) fn zips_by_index<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    typing_env: ty::TypingEnv<'tcx>,
-    a: Ty<'tcx>,
-    b: Ty<'tcx>,
-) -> bool {
+pub fn zips_by_index<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, a: Ty<'tcx>, b: Ty<'tcx>) -> bool {
     let [a, b] = [a, b].map(|ty| iterator_type_of(tcx, typing_env, ty));
     let Some(random_access) = super::fact_trait(tcx, TypeFact::RandomAccess) else {
         return false;
@@ -414,7 +409,7 @@ pub(crate) fn zips_by_index<'tcx>(
 
 /// `<ty as IntoIterator>::IntoIter`, what `ty` is stepped as, `zip`'s
 /// argument's: an iterator's, itself.
-pub(crate) fn iterator_type_of<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx> {
+pub fn iterator_type_of<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx> {
     let into_iterator = std_item(tcx, StdItem::IntoIterator);
     let into_iter = trait_method(tcx, into_iterator, "IntoIter");
     let projection = Ty::new_projection(tcx, ty::IsRigid::No, into_iter, [ty]);
@@ -465,7 +460,7 @@ pub(crate) fn is_flat_map(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// Of `id`, `Option::is_some`, `Some(true)`, or `Option::is_none`,
 /// `Some(false)`: a test of whether an `Option` is there (#1933).
-pub(crate) fn option_presence_test(tcx: TyCtxt<'_>, id: DefId) -> Option<bool> {
+pub fn option_presence_test(tcx: TyCtxt<'_>, id: DefId) -> Option<bool> {
     let imp = tcx.impl_of_assoc(id)?;
     let ty::Adt(adt, _) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind() else {
         return None;
@@ -481,7 +476,7 @@ pub(crate) fn option_presence_test(tcx: TyCtxt<'_>, id: DefId) -> Option<bool> {
 }
 
 /// Whether `id` is `PartialEq::eq`, `==`, of any types.
-pub(crate) fn is_partial_eq(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub fn is_partial_eq(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.trait_of_assoc(id)
         .is_some_and(|tr| tcx.is_lang_item(tr, LangItem::PartialEq))
         && tcx.item_name(id).as_str() == "eq"
@@ -565,7 +560,7 @@ pub(crate) fn from_concat(tcx: TyCtxt<'_>, span: rustc_span::Span) -> bool {
 }
 
 /// `pin!`'s `Pin::new_unchecked` of the variable it pins.
-pub(crate) fn is_pin_macro_fn(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_pin_macro_fn(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     is_std_path(tcx, def_id, StdPath::PinNewUncheckedInHelperFn)
 }
 
@@ -687,7 +682,7 @@ pub(crate) fn linked_twice(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// A std item another module asks about by name: only recognition spells
 /// std's names, as its diagnostic items, which the rest ask by this.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum StdItem {
+pub enum StdItem {
     Any,
     Arc,
     /// `hash::BuildHasherDefault<H>`, which holds nothing, building an
@@ -898,7 +893,7 @@ pub(crate) fn conversion<'tcx>(
     }
 }
 
-pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
+pub fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
     match item {
         // Known by its crate and name: `core`'s `OnceCell` and `LazyCell`,
         // `std`'s `OnceLock` and `LazyLock`.
@@ -963,7 +958,7 @@ pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
 
 /// Std's `item`, which every std has: one of `core`'s, which a `#![no_std]`
 /// crate has too. One of `alloc`'s or `std`'s may not be loaded.
-pub(crate) fn std_item(tcx: TyCtxt<'_>, item: StdItem) -> DefId {
+pub fn std_item(tcx: TyCtxt<'_>, item: StdItem) -> DefId {
     tcx.get_diagnostic_item(item.name()).expect("std has it")
 }
 
@@ -974,7 +969,7 @@ pub(crate) fn opt_std_item(tcx: TyCtxt<'_>, item: StdItem) -> Option<DefId> {
 }
 
 /// The method of `trait_id` named `name`, which it has.
-pub(crate) fn trait_method(tcx: TyCtxt<'_>, trait_id: DefId, name: &str) -> DefId {
+pub fn trait_method(tcx: TyCtxt<'_>, trait_id: DefId, name: &str) -> DefId {
     tcx.associated_item_def_ids(trait_id)
         .iter()
         .copied()

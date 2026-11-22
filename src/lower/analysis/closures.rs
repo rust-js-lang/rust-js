@@ -229,7 +229,7 @@ impl<'tcx> ClosureFacts<'tcx> {
     /// clone behind an `impl .. + Clone`, with whether it's cloned apart:
     /// of its own, what its library's contract says, which its consumers'
     /// clones of each ask (`Foreign::closure_cloned_apart`, #1202).
-    pub(in crate::lower) fn clones(&self) -> Vec<(DefId, bool)> {
+    pub fn clones(&self) -> Vec<(DefId, bool)> {
         (self.cloned.iter())
             .map(|&id| (id, self.cloned_apart.contains(&id)))
             .collect()
@@ -239,7 +239,7 @@ impl<'tcx> ClosureFacts<'tcx> {
     /// one its maker gives back, the type its `impl Fn` hides (ADR 0484),
     /// one made a `dyn Fn` (ADR 0521), or one cloned apart (ADR 0522),
     /// each dropped where its maker's variables it took aren't seen.
-    pub(in crate::lower) fn carries_its_drop(&self, tcx: TyCtxt<'_>, closure: DefId) -> bool {
+    pub fn carries_its_drop(&self, tcx: TyCtxt<'_>, closure: DefId) -> bool {
         self.made_fn_dyns.contains(&closure) || self.cloned_apart.contains(&closure) || given_back(tcx, closure)
     }
 
@@ -247,7 +247,7 @@ impl<'tcx> ClosureFacts<'tcx> {
     /// a `let`'s moved once, its only use, into a parameter its callee calls
     /// by `FnOnce` alone: its body is its `call_once`'s where it drops
     /// something, as one a binding calls once is (#995).
-    pub(in crate::lower) fn moved_once(&self, closure: DefId) -> bool {
+    pub fn moved_once(&self, closure: DefId) -> bool {
         self.moved_once.contains(&closure)
     }
 
@@ -301,7 +301,7 @@ impl<'tcx> ClosureFacts<'tcx> {
     /// made where it's given to a binding that calls it once, which then
     /// drops what it took: its body is its `call_once`'s, `Mir::called_once`
     /// (ADR 1020).
-    pub(in crate::lower) fn called_once(&self, closure: DefId) -> bool {
+    pub fn called_once(&self, closure: DefId) -> bool {
         self.called_once.contains(&closure)
     }
 
@@ -322,7 +322,7 @@ impl<'tcx> ClosureFacts<'tcx> {
     /// Whether the closure `closure` is cloned apart: made by a function of
     /// what it holds, `$cloning(f, clone)`, which `$clone(f)` makes again of
     /// a clone of it (ADR 0522).
-    pub(in crate::lower) fn clones_apart(&self, closure: DefId) -> bool {
+    pub fn clones_apart(&self, closure: DefId) -> bool {
         self.cloned_apart.contains(&closure)
     }
 
@@ -384,7 +384,7 @@ pub(in crate::lower) fn writes_what_it_took<'tcx>(
 /// one that isn't `mut`, `self` of a method among them, read through
 /// shared references alone, which nothing can give another value (ADRs
 /// 0846, 0879, amended, rd515). None of a closure of another crate's.
-pub(in crate::lower) fn borrowed_fixed_bindings(tcx: TyCtxt<'_>, closure: DefId) -> Vec<bool> {
+pub fn borrowed_fixed_bindings(tcx: TyCtxt<'_>, closure: DefId) -> Vec<bool> {
     use rustc_hir::{BindingMode, ByRef, Mutability, Node, PatKind};
     let Some(local) = closure.as_local().filter(|_| tcx.is_closure_like(closure)) else {
         return Vec::new();
@@ -413,7 +413,7 @@ pub(in crate::lower) fn borrowed_fixed_bindings(tcx: TyCtxt<'_>, closure: DefId)
 /// its value, a `move` closure's or one that consumes it, not a borrow: what
 /// a `bind` may bind (`passed_on::binds`, ADR 0605, amended). None of a
 /// closure of another crate's.
-pub(in crate::lower) fn taken_by_value(tcx: TyCtxt<'_>, closure: DefId) -> Vec<bool> {
+pub fn taken_by_value(tcx: TyCtxt<'_>, closure: DefId) -> Vec<bool> {
     let Some(local) = closure.as_local().filter(|_| tcx.is_closure_like(closure)) else {
         return Vec::new();
     };

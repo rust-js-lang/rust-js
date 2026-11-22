@@ -20,12 +20,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// call it, move it and drop it, so no write through the `&mut` is
     /// lost, where `F` is in none of its other parameters and not in what
     /// it returns, which could give the `&mut` back.
-    pub(in crate::lower) fn given_as_the_value(
-        &self,
-        def_id: DefId,
-        declared: Ty<'tcx>,
-        instantiated: Ty<'tcx>,
-    ) -> bool {
+    pub fn given_as_the_value(&self, def_id: DefId, declared: Ty<'tcx>, instantiated: Ty<'tcx>) -> bool {
         let ty::Ref(_, pointee, Mutability::Mut) = *instantiated.kind() else {
             return false;
         };
@@ -54,12 +49,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// would be given it as generic code's box, which its call can't call:
     /// where `F` is in another parameter or what it returns, the `&mut` is
     /// both what's called and a place a write through may change (#1909).
-    pub(in crate::lower) fn called_box_escapes(
-        &self,
-        def_id: DefId,
-        declared: Ty<'tcx>,
-        instantiated: Ty<'tcx>,
-    ) -> bool {
+    pub fn called_box_escapes(&self, def_id: DefId, declared: Ty<'tcx>, instantiated: Ty<'tcx>) -> bool {
         let ty::Ref(_, pointee, Mutability::Mut) = *instantiated.kind() else {
             return false;
         };
@@ -74,7 +64,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, of `ty`, a function through references and boxes, as the
     /// function it calls: each `&mut` held in a box read through,
     /// `lent.value`, a shared one or a `Box` the value itself (#1909).
-    pub(in crate::lower) fn called_value(&self, value: Expr, ty: Ty<'tcx>) -> Expr {
+    pub fn called_value(&self, value: Expr, ty: Ty<'tcx>) -> Expr {
         match ty.kind() {
             ty::Ref(_, inner, Mutability::Mut) if self.mut_ref_form(*inner).is_cell() => {
                 self.called_value(Expr::member(value, js::HELD), *inner)

@@ -41,7 +41,7 @@ pub(crate) fn capacity_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<CapacityOp> 
 /// Whether `def_id`, a `Vec`'s, a `VecDeque`'s or a `BinaryHeap`'s, may shorten it, which
 /// keeps its capacity (ADR 0419): the array it's given first, or its
 /// second, `append`'s.
-pub(crate) fn shortens_vec(tcx: TyCtxt<'_>, def_id: DefId) -> Option<usize> {
+pub fn shortens_vec(tcx: TyCtxt<'_>, def_id: DefId) -> Option<usize> {
     match array_collection_method(tcx, def_id)?.as_str() {
         "append" => Some(1),
         "clear" | "truncate" | "set_len" | "pop" | "pop_if" | "pop_front" | "pop_back" | "pop_front_if"
@@ -54,7 +54,7 @@ pub(crate) fn shortens_vec(tcx: TyCtxt<'_>, def_id: DefId) -> Option<usize> {
 /// Whether `def_id`, a `Vec`'s, a `VecDeque`'s or a `BinaryHeap`'s, may add to it, which
 /// std does by reserving as many as it adds, `grow_amortized` (#1180): the
 /// array it's given first.
-pub(crate) fn grows_vec(tcx: TyCtxt<'_>, def_id: DefId) -> Option<usize> {
+pub fn grows_vec(tcx: TyCtxt<'_>, def_id: DefId) -> Option<usize> {
     match array_collection_method(tcx, def_id)?.as_str() {
         "push" | "push_back" | "push_front" | "insert" | "append" | "extend_from_slice" | "extend_from_within"
         | "resize" | "resize_with" => Some(0),
@@ -88,7 +88,7 @@ fn set_operator(op: BinOp) -> Option<&'static str> {
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// What std function `def_id` of `args` is, which rust-js lowers by
     /// its own model of it: every recogniser's answer goes through here.
-    pub(in crate::lower) fn classify(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
+    pub fn classify(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
         unrecognized::left(self.tcx, def_id, self.classified(def_id, args))
     }
 
@@ -1235,7 +1235,7 @@ pub(in crate::lower) fn print_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool>
 /// Which of unwinding's functions `def_id` is, `catch_unwind` or
 /// `resume_unwind` (ADR 0660), or the js crate's `catch_stack_overflow`
 /// (ADR 1140).
-pub(in crate::lower) fn unwind_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<UnwindOp> {
+pub fn unwind_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<UnwindOp> {
     if super::js_items::is_catch_stack_overflow(tcx, def_id) {
         return Some(UnwindOp::CatchStackOverflow);
     }

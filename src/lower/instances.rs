@@ -70,7 +70,7 @@ impl Instances {
 /// whose initializers it lowers where rustc can't compute them, `CAPACITY
 /// = CAP` of arrayvec's `impl<T, const CAP: usize> ArrayVecImpl for
 /// ArrayVec<T, CAP>` (ADR 0176, amended).
-pub(super) fn asked(tcx: TyCtxt<'_>, asked: Vec<(DefId, LocalModId)>) -> Vec<(DefId, LocalModId)> {
+pub fn asked(tcx: TyCtxt<'_>, asked: Vec<(DefId, LocalModId)>) -> Vec<(DefId, LocalModId)> {
     let mut more: Vec<(DefId, LocalModId)> = Vec::new();
     for (id, module) in asked {
         let id = tcx.trait_impl_of_assoc(id).unwrap_or(id);
@@ -121,7 +121,7 @@ fn supertrait_impls(tcx: TyCtxt<'_>, imp: DefId) -> Vec<DefId> {
 /// its own of each it uses (ADR 0914, amended). As its library's contract
 /// says, which names the types each leaves copies of out (`Library::elided`,
 /// #2112's change D). Asked of each once.
-pub(super) struct Copying<'a, 'tcx> {
+pub struct Copying<'a, 'tcx> {
     recognition: super::recognition::Recognition<'a, 'tcx>,
     changed: super::copies::Changed<'a, 'tcx>,
     known: std::cell::RefCell<IndexMap<DefId, bool>>,
@@ -130,7 +130,7 @@ pub(super) struct Copying<'a, 'tcx> {
 impl<'a, 'tcx> Copying<'a, 'tcx> {
     /// Of the crate's impls and libraries, `trait_impls` and `foreign`, and
     /// what it changes in place.
-    pub(super) fn new(
+    pub fn new(
         (trait_impls, foreign): (&'a [DefId], &'a super::library::Foreign<'a, 'tcx>),
         changed: super::copies::Changed<'a, 'tcx>,
     ) -> Self {
@@ -240,7 +240,7 @@ pub(super) fn given_calls_of<'tcx>(
 /// type parameters anything, `()` here, that would need a copy of it
 /// (`FnCx::rest_function_itself`, #565). alien-signals' `isSignal` compares
 /// `signalOper`'s name with what `signal` binds, its own JS.
-pub(in crate::lower) fn read_by_js_alone<'tcx>(
+pub fn read_by_js_alone<'tcx>(
     tcx: TyCtxt<'tcx>,
     thir: Option<&rustc_middle::thir::Thir<'tcx>>,
     mir: Option<&mir::Body<'tcx>>,

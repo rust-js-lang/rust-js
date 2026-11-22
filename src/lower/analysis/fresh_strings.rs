@@ -18,12 +18,7 @@ use rustc_middle::ty::{self, TyCtxt};
 
 /// Whether the call ending `at` gives, as its argument `arg`, a `&mut` to a
 /// `String` provably fresh-empty there.
-pub(in crate::lower) fn fresh_string_given<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    body: &mir::Body<'tcx>,
-    at: BasicBlock,
-    arg: usize,
-) -> bool {
+pub fn fresh_string_given<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, at: BasicBlock, arg: usize) -> bool {
     let TerminatorKind::Call { args, .. } = &body[at].terminator().kind else {
         return false;
     };

@@ -139,7 +139,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// The place a reference `local` is made of, where `body` makes it once,
 /// `r = &mut s.n`: `s.n`. None of one made more than once, or otherwise.
-pub(in crate::lower) fn made_once_of<'tcx>(body: &mir::Body<'tcx>, local: Local) -> Option<mir::Place<'tcx>> {
+pub fn made_once_of<'tcx>(body: &mir::Body<'tcx>, local: Local) -> Option<mir::Place<'tcx>> {
     let mut made =
         (body.basic_blocks.iter())
             .flat_map(|data| &data.statements)
@@ -162,7 +162,7 @@ pub(in crate::lower) fn made_once_of<'tcx>(body: &mir::Body<'tcx>, local: Local)
 /// "value", 4)` that `Option::as_mut` of a cell local lends (#1502), through
 /// `unwrap` and the `undefined` of a `None`: whose pointer is
 /// that handle (ADR 0562, #1479).
-pub(in crate::lower) fn lends_a_place_handle(lent: &rust_js_program::js::Expr) -> bool {
+pub fn lends_a_place_handle(lent: &rust_js_program::js::Expr) -> bool {
     use rust_js_program::js::ExprKind;
     match &lent.kind {
         ExprKind::Call(callee, args) => match callee.helper_name() {

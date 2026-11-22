@@ -96,8 +96,8 @@ fn held_by_ref_cells<'tcx>(tcx: TyCtxt<'tcx>, mir: &rustc_middle::mir::Body<'tcx
 /// caller holding what it gives unchanged through the call gives uncopied
 /// (`copies::given_uncopied`, #1801).
 #[derive(Default)]
-pub(in crate::lower) struct Mutated<'tcx> {
-    pub(in crate::lower) types: IndexSet<Ty<'tcx>>,
+pub struct Mutated<'tcx> {
+    pub types: IndexSet<Ty<'tcx>>,
     pub(in crate::lower) params_only_read: IndexMap<DefId, IndexSet<usize>>,
 }
 

@@ -13,7 +13,7 @@ use rust_js_program::js::{Expr, Prop, Stmt, StmtKind};
 
 /// What's asked of the allocator, or of a `Layout`.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum AllocOp {
+pub enum AllocOp {
     /// `alloc(layout)`: a new allocation, a pointer to its bytes.
     Alloc,
     /// `realloc(p, layout, size)`: the same allocation, which grows.

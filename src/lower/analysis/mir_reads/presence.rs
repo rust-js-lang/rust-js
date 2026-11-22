@@ -8,7 +8,7 @@
 /// `undefined` there, though maybe `null`; or nothing. The one answer of
 /// each use, asked where the use is lowered, never carried on its JS.
 #[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum Presence {
+pub enum Presence {
     #[default]
     Unknown,
     Present,
@@ -20,6 +20,6 @@ pub(in crate::lower) enum Presence {
 /// (`optional_ladder`, #2178): that it's never `undefined` there,
 /// `Present` or `Defined` (`presence`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub(in crate::lower) struct ArgProof {
-    pub(in crate::lower) present: bool,
+pub struct ArgProof {
+    pub present: bool,
 }

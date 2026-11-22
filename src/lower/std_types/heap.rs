@@ -10,7 +10,7 @@ use rust_js_program::js::Expr;
 /// A `BinaryHeap`'s: a JS array kept in the order Rust's heap keeps it,
 /// by the same steps, so `{:?}` and `into_vec()` show what Rust's do.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum HeapOp {
+pub enum HeapOp {
     Push,
     Pop,
     IntoSorted,
@@ -34,7 +34,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `BinaryHeap`'s method, of its arguments' values, the heap's type
     /// `heap_ty` as it's given, and whether an `Option` it gives is of what
     /// could look like `None`, its `Some` boxed (ADR 0051).
-    pub(in crate::lower) fn heap_values(
+    pub fn heap_values(
         &mut self,
         op: HeapOp,
         mut values: Vec<Expr>,

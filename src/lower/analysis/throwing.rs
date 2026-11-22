@@ -17,7 +17,7 @@ use rustc_span::def_id::DefId;
 /// How a call of `id`, given `args`, delivers its result: a binding's by
 /// the result it's declared with (ADR 0588), a throwing function's as a
 /// `Result` of what it threw.
-pub(in crate::lower) fn call_throws<'tcx>(
+pub fn call_throws<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     throwing: &IndexSet<DefId>,
     id: DefId,

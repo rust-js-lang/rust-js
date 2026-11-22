@@ -3,7 +3,7 @@
 use super::*;
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
-    pub(in crate::lower) fn is_string_like(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_string_like(&self, ty: Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
         ty.is_str() || ty.is_char() || self.is_lang_adt(ty, LangItem::String)
     }
@@ -204,7 +204,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// Is `ty` std's `item`?
-    pub(in crate::lower) fn is_std_type(&self, ty: Ty<'tcx>, item: StdItem) -> bool {
+    pub fn is_std_type(&self, ty: Ty<'tcx>, item: StdItem) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if is_std_def(self.tcx, adt.did(), item))
     }
 
@@ -234,19 +234,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// `std::str::Chars`, what a string's `chars()` gives.
-    pub(in crate::lower) fn is_str_chars(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_str_chars(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)
             && self.tcx.item_name(adt.did()).as_str() == "Chars")
     }
 
     /// A string's `drain(range)`, the `char`s it took out, which steps as
     /// `chars()`' do, an array of them (#118).
-    pub(in crate::lower) fn is_string_drain(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_string_drain(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::StringDrain))
     }
 
     /// A string's `char_indices()`, an array of `[byte, char]` (#118).
-    pub(in crate::lower) fn is_char_indices(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_char_indices(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::StrCharIndices))
     }
 
@@ -262,7 +262,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// `js::SymbolFor`, the registry's symbol of a key (ADR 0634).
-    pub(in crate::lower) fn is_symbol_for(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_symbol_for(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if is_symbol_for_def(self.tcx, adt.did()))
     }
 
@@ -423,7 +423,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// A `Path`, a `PathBuf`, what `display()` shows of one, or an `OsStr` or
     /// `OsString`: its text, a JS string (ADR 0173). Not a string otherwise: a
     /// path's `==` compares its components, `a/b` and `a//b` equal.
-    pub(in crate::lower) fn is_path_like(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_path_like(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if matches!(std_path_item(self.tcx, adt.did()), Some(StdPath::Path | StdPath::PathBuf | StdPath::PathDisplay | StdPath::FfiOsStr | StdPath::FfiOsString)))
     }
 
@@ -473,7 +473,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `cmp::max`'s name, `"max"`, or `cmp::min`'s, `"min"`: of what isn't a
     /// number, `Ord`'s method of that name's call (ADR 0136).
     /// A `Result`.
-    pub(in crate::lower) fn is_result(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_result(&self, ty: Ty<'tcx>) -> bool {
         self.is_std_type(ty, StdItem::Result)
     }
 
@@ -718,7 +718,7 @@ pub(crate) fn is_duration_ty(ty: Ty<'_>) -> bool {
 /// Whether `ty`'s arithmetic is its number's, `a += b` its JS number's
 /// `+`, checked as Rust's is: not a `Duration`'s (ADR 0188) or a clock's
 /// (ADR 0447), numbers whose `+` std writes, which is compiled.
-pub(crate) fn has_number_arithmetic(ty: Ty<'_>) -> bool {
+pub fn has_number_arithmetic(ty: Ty<'_>) -> bool {
     Num::of(ty).is_some() && !is_duration_ty(ty) && clock_type_of(ty).is_none()
 }
 
@@ -880,7 +880,7 @@ pub(crate) fn is_try_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// whose `FromResidual::from_residual` it returns, never std's bodies of
 /// them; another `Try`'s, std's generic code's, is its dictionary's (ADR
 /// 0913).
-pub(crate) fn tried_as_written<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+pub fn tried_as_written<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _)
         if tcx.is_lang_item(adt.did(), LangItem::Option) || is_std_def(tcx, adt.did(), StdItem::Result))
 }
@@ -897,7 +897,7 @@ pub(super) fn is_question_mark_written<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args:
     given.is_some_and(|ty| tried_as_written(tcx, ty))
 }
 
-pub(crate) fn is_non_zero_ty(ty: Ty<'_>) -> bool {
+pub fn is_non_zero_ty(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if is_non_zero(adt.did()))
 }
 
@@ -1052,7 +1052,7 @@ pub(in crate::lower) enum PresentItem {
 /// Whether `def_id` is an `Option`'s or a `Result`'s own method, an
 /// inherent one, `as_deref`, `filter`, `map_or_else`, which gives back the
 /// option it had (#784).
-pub(in crate::lower) fn is_option_or_result_method(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_option_or_result_method(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.inherent_impl_of_assoc(def_id).is_some_and(|imp| {
         matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(), ty::Adt(adt, _)
             if [sym::Option, sym::Result].into_iter().any(|name| tcx.is_diagnostic_item(name, adt.did())))
@@ -1085,7 +1085,7 @@ pub(in crate::lower) fn present_item<'tcx>(
 /// `s.encode_utf16().count()` calls, which is its JS `length` (ADR 0632).
 /// The one answer, of what it's written as and of what the integer ranges
 /// know of it.
-pub(in crate::lower) fn counts_utf16_units<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, iter_ty: Ty<'tcx>) -> bool {
+pub fn counts_utf16_units<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, iter_ty: Ty<'tcx>) -> bool {
     tcx.trait_of_assoc(def_id)
         .is_some_and(|trait_| tcx.is_diagnostic_item(sym::Iterator, trait_))
         && tcx.item_name(def_id).as_str() == "count"
@@ -1117,7 +1117,7 @@ fn is_str_utf16<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
 
 /// Whether `ty` is a `RefCell`'s guard, `Ref` or `RefMut`, whose drop
 /// gives the borrow back and drops nothing of what it's of.
-pub(in crate::lower) fn is_cell_guard<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+pub fn is_cell_guard<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _)
         if is_std_def(tcx, adt.did(), StdItem::RefCellRef) || is_std_def(tcx, adt.did(), StdItem::RefCellRefMut))
 }
@@ -1152,7 +1152,7 @@ pub(crate) fn range_bounds(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<(RangeBound, R
 
 /// Whether `def_id` is a std collection a JS array is, `VEC_LIKE`'s: the
 /// one list, of what's an array and what a change makes one apart.
-pub(in crate::lower) fn is_vec_like_def(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_vec_like_def(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     VEC_LIKE.iter().any(|&item| is_std_def(tcx, def_id, item))
 }
 
@@ -1177,7 +1177,7 @@ const GROWS_AS_VEC: &[StdItem] = &[
 /// by type, what it took, and whose it is: the one answer of each place
 /// that drops, reads or lays out what one of them took. `None` of another
 /// type.
-pub(crate) fn held_types<'tcx>(ty: Ty<'tcx>) -> Option<(DefId, &'tcx ty::List<Ty<'tcx>>)> {
+pub fn held_types<'tcx>(ty: Ty<'tcx>) -> Option<(DefId, &'tcx ty::List<Ty<'tcx>>)> {
     Some(match *ty.kind() {
         ty::Closure(def_id, args) => (def_id, args.as_closure().upvar_tys()),
         ty::CoroutineClosure(def_id, args) => (def_id, args.as_coroutine_closure().upvar_tys()),

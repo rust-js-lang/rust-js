@@ -11,7 +11,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it as: of one JS holds as no object given by value, a place of its
     /// own, `{ value: x }`, as its `&mut self` steps take a cell (#2255); a
     /// `&mut` to one is its cell already; any other as it is.
-    pub(in crate::lower) fn own_steps_place(&self, value: Expr, ty: ty::Ty<'tcx>) -> Expr {
+    pub fn own_steps_place(&self, value: Expr, ty: ty::Ty<'tcx>) -> Expr {
         match !ty.is_ref() && self.is_user_iterator(ty) && self.mut_ref_form(ty).is_cell() {
             true => Expr::object(vec![js::Prop::Field(js::HELD.into(), value)]),
             false => value,
@@ -169,7 +169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// made, `$stdIterator`'s `steps` (ADR 0561): its `next`, the compiled
     /// impl's, and its `hint`, its `size_hint`, the compiled impl's, or the
     /// rewrite of one whose body reaches memory, `$peekableHint`.
-    pub(in crate::lower) fn std_iterator_steps(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn std_iterator_steps(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
         let made_iterator = self.unspelled("iterator");
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let (next, _) = self.user_next(ty, iterator, "next", span)?;
@@ -341,7 +341,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `ty`, a compiled std iterator, has `trait_id`'s `method`
     /// compiled, `Fuse`'s `next_back`, and is a `trait_id` here, so a
     /// use site can give what steps it by that (ADR 0561).
-    pub(in crate::lower) fn compiled_step(&self, ty: ty::Ty<'tcx>, trait_id: DefId, method: &str) -> bool {
+    pub fn compiled_step(&self, ty: ty::Ty<'tcx>, trait_id: DefId, method: &str) -> bool {
         debug_assert!(
             crate::lower::recognition::is_read_step(self.tcx, trait_id, method),
             "`{method}` is a step `type_facts` reads too (`STRUCT_STEPS`, `KNOWING_STEPS`)"
@@ -608,7 +608,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// given as it is, of its bound `trait_id`: `Iterator`'s (ADR 0411), or
     /// an extension's, `DoubleEndedIterator`'s or `ExactSizeIterator`'s
     /// (ADR 0487).
-    pub(in crate::lower) fn iterator_evidence(&self, ty: ty::Ty<'tcx>, trait_id: DefId) -> Option<Expr> {
+    pub fn iterator_evidence(&self, ty: ty::Ty<'tcx>, trait_id: DefId) -> Option<Expr> {
         // A `&mut`'s, of an extension: what std's `&mut I` passes on of
         // `I`'s (`Wrapper::passes`), never its own `rfold` (#2104), as the
         // dictionary of a `&mut R` a caller gives is (ADR 0937).

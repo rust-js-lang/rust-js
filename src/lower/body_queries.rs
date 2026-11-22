@@ -115,25 +115,25 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
 /// Context-independent facts collected once, before borrowck steals the body.
 /// Type/representation facts depend on the current instantiation and stay elsewhere.
 #[derive(Default, Clone)]
-pub(super) struct BodyFacts<'tcx> {
+pub struct BodyFacts<'tcx> {
     /// The closures a `let` names that a hook's function is, each written
     /// there, named (`named_callbacks`).
-    pub(super) named_callbacks: IndexSet<LocalVarId>,
+    pub named_callbacks: IndexSet<LocalVarId>,
     /// The casts whose value is what they cast as it is: of an `f64` known
     /// to be a whole number in the integer's range (`whole_casts`), and of a
     /// signed one that's the count of text's `repeat` (`repeat_counts`).
-    pub(super) kept_casts: IndexSet<ExprId>,
+    pub kept_casts: IndexSet<ExprId>,
     /// Where each read of a registered symbol is that's only tested against
     /// the registry's, `registered_reads`'s (ADR 0634).
-    pub(super) registered_reads: IndexSet<ExprId>,
+    pub registered_reads: IndexSet<ExprId>,
     /// Where each `==` or `!=` of such a read and a `Some(..)` is,
     /// `registered_equalities`'s (ADR 0771).
-    pub(super) registered_equalities: IndexSet<ExprId>,
+    pub registered_equalities: IndexSet<ExprId>,
     /// Where each guard is that holds where its arm matched,
     /// `held_guards`'s.
-    pub(super) held_guards: IndexSet<ExprId>,
+    pub held_guards: IndexSet<ExprId>,
     /// Where each call is whose value is told present, `present_calls`'s.
-    pub(super) present_calls: IndexSet<ExprId>,
+    pub present_calls: IndexSet<ExprId>,
     /// Where each `resume_unwind(x)` is of a payload as it was given,
     /// `resumed_as_given`'s (rd550).
     pub(super) resumed_as_given: IndexSet<ExprId>,
@@ -148,23 +148,23 @@ pub(super) struct BodyFacts<'tcx> {
     /// `this` is the path's value, the method's call, and where each such
     /// `js::method` is, `method_calls`'s (rd334).
     pub(super) method_calls: IndexSet<ExprId>,
-    pub(super) called_methods: IndexSet<ExprId>,
+    pub called_methods: IndexSet<ExprId>,
     /// Where each `rev()`, `enumerate()` or `map()` is whose adapter a std
     /// iterator's method steps where it's made, `in_place_adapters`'s: its
     /// maker marks what it makes so (`made_in_place`, #730). Decided once the
     /// crate's `Recognition` exists (`decide_in_place`), none reads it before.
-    pub(super) in_place_adapters: InPlace,
+    pub in_place_adapters: InPlace,
     /// The `Vec` each `collect()` std may make in place is made of, by the
     /// call's THIR node, `in_place_collect_sources`'s (#1259, ADR 1151),
     /// decided with the in-place adapters (`decide_in_place`), once each
     /// body's MIR is the crate's (#1934).
-    pub(super) in_place_collect_sources: IndexMap<ExprId, collect_sources::CollectSource<'tcx>>,
+    pub in_place_collect_sources: IndexMap<ExprId, collect_sources::CollectSource<'tcx>>,
     /// Each `collect()` whose `Vec` the body asks its capacity, by the
     /// call's span, `capacity_read_collects`'s (#1926).
     pub(super) capacity_read_collects: IndexSet<Span>,
     /// Each value the body's patterns test and the `const` they name it by,
     /// where it's tested, `constant_patterns`'s (ADRs 0590, 0634).
-    pub(super) constant_patterns: ConstantPatterns<'tcx>,
+    pub constant_patterns: ConstantPatterns<'tcx>,
     /// The props given to the crate's components, and what's a base of
     /// them, `jsx_given_props`'s.
     pub(super) jsx_given: IndexSet<ExprId>,
@@ -408,7 +408,7 @@ pub(super) fn across_bodies<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'
 /// one, and where one is held, std's struct, both are, never one given the
 /// other's in-place form (#1791; #1671 change 3 M5).
 #[derive(Default, Clone)]
-pub(in crate::lower) struct InPlace {
+pub struct InPlace {
     ground: Option<IndexSet<ExprId>>,
     held: std::cell::OnceCell<IndexSet<ExprId>>,
 }
@@ -439,7 +439,7 @@ impl InPlace {
 
     /// Whether the adapter MIR's call at `span` makes, of `thir`, is made in
     /// place, of both stages: of each THIR call there, and there's one.
-    pub(in crate::lower) fn made_at(&self, thir: &Thir<'_>, span: Span) -> bool {
+    pub fn made_at(&self, thir: &Thir<'_>, span: Span) -> bool {
         let Some(held) = self.held.get() else {
             panic!("rust-js: a body's in-place adapters read before the held ones are decided (decide_held)");
         };
@@ -475,7 +475,7 @@ impl InPlace {
     }
 }
 
-pub(super) fn strip(thir: &Thir<'_>, mut e: ExprId) -> ExprId {
+pub fn strip(thir: &Thir<'_>, mut e: ExprId) -> ExprId {
     loop {
         match thir[e].kind {
             ExprKind::Scope { value: inner, .. }
@@ -689,7 +689,7 @@ pub(super) fn null_written_fields(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId
 /// value (ADR 0031, amended). A call `in_place` says is written as the value
 /// it gives, `js::null()`'s `null`, is such a constant, which rustc's value
 /// would leave out (ADR 0935, amended).
-pub(super) fn written_of_constants(
+pub fn written_of_constants(
     thir: &Thir<'_>,
     by_name: &dyn Fn(DefId) -> bool,
     in_place: &dyn Fn(DefId) -> bool,
@@ -711,7 +711,7 @@ pub(super) fn written_of_constants(
 /// value, made where its module loads, may not be there yet where another's
 /// initializer is (ADR 0096)? Another module's is an import, which JS makes
 /// first (ADR 0234).
-pub(super) fn reads_statics(tcx: TyCtxt<'_>, thir: &Thir<'_>, module: LocalModId) -> bool {
+pub fn reads_statics(tcx: TyCtxt<'_>, thir: &Thir<'_>, module: LocalModId) -> bool {
     let own = |def_id: DefId| {
         def_id
             .as_local()
@@ -841,7 +841,7 @@ pub(super) fn consts_named(thir: &Thir<'_>) -> IndexSet<DefId> {
 /// untagged enum of a `Some(..)`, `js::classify(Some(value))`: that call.
 /// What it gives is there, never `undefined` nor `null`, so no
 /// variant's test leaves those out (ADR 0676).
-pub(super) fn given_present<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: ExprId) -> Option<ExprId> {
+pub fn given_present<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: ExprId) -> Option<ExprId> {
     let through = |mut e: ExprId| {
         while let ExprKind::Scope { value: inner, .. } | ExprKind::ValueExpr { source: inner } = thir[e].kind {
             e = inner;

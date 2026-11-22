@@ -19,7 +19,7 @@ pub(in crate::lower) fn is_nullable(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
 /// box code that doesn't hold it so reads: a nested one
 /// (`holds_nested`), or one of a value never `null` that may be
 /// `undefined` (`holds_value`).
-pub(in crate::lower) fn is_held(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
+pub fn is_held(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     holds_nested(tcx, field) || holds_value(tcx, field)
 }
 
@@ -85,7 +85,7 @@ fn nested_option<'tcx>(tcx: TyCtxt<'tcx>, field: &FieldDef) -> bool {
 }
 
 /// Whether a nullable field is absent until set, `#[rust_js::optional]`, `field?: T | null` (ADR 0810).
-pub(in crate::lower) fn is_optional(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
+pub fn is_optional(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("optional")];
     tcx.get_attrs_by_path(field.did, &path).next().is_some()
 }
@@ -155,7 +155,7 @@ pub(in crate::lower) fn of_type_parameter(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// is, a `Vec<Option<T>>`'s or a `Cell`'s or a `RefCell`'s of one, whose
 /// `None` is `null` in JS, upstream's `createLaneMap(null)` (ADR 0586,
 /// amended). `None` of any other type.
-pub(in crate::lower) fn nullable_items<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+pub fn nullable_items<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     let ty::Adt(adt, args) = ty.kind() else { return None };
     let std = |item| adt.did() == crate::lower::recognition::std_item(tcx, item);
     if std(crate::lower::recognition::StdItem::Cell) || std(crate::lower::recognition::StdItem::RefCell) {
@@ -185,10 +185,7 @@ pub(in crate::lower) fn nullable_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<S
 /// (..)`, as a closure takes no attribute of its own. Its name and its
 /// pattern's span, which MIR's debug info has. Read from the body, as a
 /// parameter's `#[rust_js::name]` is.
-pub(in crate::lower) fn nullable_bindings(
-    tcx: TyCtxt<'_>,
-    owner: rustc_span::def_id::LocalDefId,
-) -> Vec<(Symbol, rustc_span::Span)> {
+pub fn nullable_bindings(tcx: TyCtxt<'_>, owner: rustc_span::def_id::LocalDefId) -> Vec<(Symbol, rustc_span::Span)> {
     let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
     let params = tcx.hir_maybe_body_owned_by(owner).map_or(&[][..], |body| body.params);
     let mut found = Vec::new();
@@ -218,12 +215,7 @@ pub(in crate::lower) fn nullable_bindings(
 /// binding that attribute names: what the closure's body binds it of, the
 /// tuple's item, is `null` or a value, as it's declared (ADR 0861,
 /// amended), not a `None` the body sets.
-pub(in crate::lower) fn nullable_tuple_item(
-    tcx: TyCtxt<'_>,
-    owner: rustc_span::def_id::LocalDefId,
-    param: usize,
-    item: usize,
-) -> bool {
+pub fn nullable_tuple_item(tcx: TyCtxt<'_>, owner: rustc_span::def_id::LocalDefId, param: usize, item: usize) -> bool {
     let Some(body) = tcx.hir_maybe_body_owned_by(owner) else {
         return false;
     };
@@ -317,7 +309,7 @@ pub(in crate::lower) fn nullable_result(tcx: TyCtxt<'_>, def_id: DefId) -> bool 
 /// (ADR 0298, amended; ADR 1161 named it apart from a field's key). Of
 /// the crate's own functions it says nothing: their `None` is `undefined`
 /// where they make it, but what they return may be a value JS gave.
-pub(in crate::lower) fn none_undefined_result(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn none_undefined_result(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("none_undefined")];
     super::is_binding(tcx, def_id) && tcx.get_attrs_by_path(def_id, &path).any(|attr| attr.is_word())
 }
@@ -452,7 +444,7 @@ fn nullable_alone(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// Is this `js::null()`, written as the `null` it gives, `link_name =
 /// "null"` (ADR 0935, amended)? A constant written of it is its
 /// initializer's, not rustc's value, whose `None` would be left out.
-pub(in crate::lower) fn is_js_null(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn is_js_null(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     super::is_binding(tcx, def_id) && matches!(super::js_form(tcx, def_id), super::JsForm::Null)
 }
 
@@ -553,11 +545,7 @@ fn holds_in_a_tuple(ty: Ty<'_>, params: &[u32]) -> bool {
 /// reference to it, being one `#[rust_js::nullable(..)]` names: JS's read
 /// alone tells a key it lacks, `undefined`, from one whose value is
 /// `None`, `null` (ADR 0884, amended).
-pub(in crate::lower) fn reads_a_nullable_value<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-    generic_args: ty::GenericArgsRef<'tcx>,
-) -> bool {
+pub fn reads_a_nullable_value<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
     if !super::reads_a_key(tcx, def_id) {
         return false;
     }

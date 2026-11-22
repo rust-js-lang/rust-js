@@ -8,9 +8,9 @@ mod backs;
 pub(in crate::lower) use backs::reversed_in_body;
 mod closing;
 mod collect;
-pub(in crate::lower) mod consumers;
+pub mod consumers;
 mod copies;
-pub(in crate::lower) mod sources;
+pub mod sources;
 
 use self::sources::*;
 use crate::lower::recognition::{OwnStep, Reach};
@@ -38,7 +38,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`makes_held_compiled`), each its THIR call, asked of each at the
     /// span (`each_call_at`, #1671 change 3 M5).
     // helper: asked by `mir::iter` alone, the entry it was beneath before #2299 moved it
-    pub(in crate::lower) fn adapter_in_place(&self, _def_id: rustc_span::def_id::DefId, span: Span) -> bool {
+    pub fn adapter_in_place(&self, _def_id: rustc_span::def_id::DefId, span: Span) -> bool {
         self.frame.facts.in_place_adapters.made_at(self.frame.thir, span)
     }
 }

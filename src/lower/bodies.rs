@@ -26,7 +26,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The directives of a function's or a closure's body, `"use cache";`,
     /// its first statements (ADR 0349); a std body, read from its MIR, has none.
-    pub(super) fn directives(&self, owner: DefId) -> Vec<Stmt> {
+    pub fn directives(&self, owner: DefId) -> Vec<Stmt> {
         let Some(owner) = owner.as_local() else {
             return Vec::new();
         };
@@ -41,7 +41,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `nested` says and left whatever `lower` gives, an error too: what it
     /// gives, and the drop functions the body declares, for its top. The
     /// one way into a nested body and out of it.
-    pub(super) fn lowered_in<T>(
+    pub fn lowered_in<T>(
         &mut self,
         body: &'a Body<'tcx>,
         owner: DefId,
@@ -134,7 +134,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// component's props of type `ty` taken whole, `pat` their pattern, would
     /// have none, but where they're passed on as given or read of a field
     /// with none.
-    pub(super) fn check_props_taken_apart(&self, ty: ty::Ty<'tcx>, pat: Option<&Pat<'tcx>>, span: Span) -> R<()> {
+    pub fn check_props_taken_apart(&self, ty: ty::Ty<'tcx>, pat: Option<&Pat<'tcx>>, span: Span) -> R<()> {
         if super::bindings::is_component(self.tcx, self.frame.owner)
             && let ty::Adt(adt, _) = ty.kind()
             && adt.is_struct()

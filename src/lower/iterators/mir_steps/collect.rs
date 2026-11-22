@@ -17,7 +17,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// items as they are, a map's or a set's in its order, collected into
     /// `C` as `collect` collects, with no iterator of them to drop. `None`
     /// of another, `into_iter()` then `collect()` (`collected_from_iter`).
-    pub(in crate::lower) fn collected_as_they_are(
+    pub fn collected_as_they_are(
         &mut self,
         items: &Expr,
         given: Ty<'tcx>,
@@ -72,7 +72,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// .for_each(..)`, where its `collect` gathers a `Vec` by `next` first)
     /// and a list's; not a `Vec`'s, a deque's or a heap's, which step it by
     /// `next` (#1509).
-    pub(in crate::lower) fn extends_by_fold(&self, collection: Ty<'tcx>) -> bool {
+    pub fn extends_by_fold(&self, collection: Ty<'tcx>) -> bool {
         let collection = collection.peel_refs();
         self.collects_by_fold(collection) || self.is_map(collection)
     }
@@ -100,7 +100,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// that drops what it holds, the room its hint asks (#1044).
     /// `receiver`, the type `collect` is given, an inclusive range lent,
     /// `&mut r`, is what's collected as that, by its `fold` (#414).
-    pub(in crate::lower) fn collected_counted(
+    pub fn collected_counted(
         &mut self,
         it: Expr,
         (output, item): (Ty<'tcx>, Option<Ty<'tcx>>),
@@ -469,7 +469,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .is_some_and(|held| held.into_iter().any(|part| self.holds_callers_iterator(part)))
     }
 
-    pub(in crate::lower) fn steps_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
+    pub fn steps_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
         self.panicking_steps(iter_ty) > 0 || self.unseen_steps_may_panic(iter_ty) || self.std_work_may_panic(iter_ty)
     }
 
@@ -546,7 +546,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// any but one of the crate's that never unwinds (ADR 0902) or a
     /// constructor; of another, a `dyn Fn`'s or a type parameter's,
     /// anyone's. The one answer what a call holds across asks (#903).
-    pub(in crate::lower) fn call_may_unwind(&self, f: Ty<'tcx>) -> bool {
+    pub fn call_may_unwind(&self, f: Ty<'tcx>) -> bool {
         match *f.kind() {
             ty::Closure(def_id, _) | ty::FnDef(def_id, _) => {
                 !self.krate.never_unwinding.contains(&def_id)
@@ -1166,7 +1166,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// holds, and std's `GenericShunt` of `iter_ty`, which `try_process`
     /// gives that `from_iter`, whose it is to drop then (#1588). `None` of
     /// another `collect()`.
-    pub(in crate::lower) fn try_processed_into(
+    pub fn try_processed_into(
         &mut self,
         target: Ty<'tcx>,
         iter_ty: Ty<'tcx>,

@@ -14,7 +14,7 @@ use rust_js_program::js::{self, Expr, Stmt, StmtKind};
 /// `or_insert(v)`'s `$orInsert(m, k, v)` too where `v` only reads
 /// variables, which Rust evaluates whether or not it's put in: tidy's step
 /// of a map's (`mir::tidy`).
-pub(in crate::lower) fn inserted_entries(stmts: &mut Vec<Stmt>) {
+pub fn inserted_entries(stmts: &mut Vec<Stmt>) {
     // What a statement does first, where it's an expression's: a call's
     // callee, a member's object, an operator's first operand.
     fn first(e: &mut Expr) -> &mut Expr {
@@ -158,7 +158,7 @@ fn missing_set(map: Expr, key: Expr, made: Expr, span: js::Span) -> Stmt {
 /// MIR's `*m.entry(k).or_insert(0) += 1`, the handle read nowhere else: the
 /// value there or put in, then set, `const current = $orInsert(m, k, 0);
 /// m.set(k, f(current));`: tidy's step of a map's (`mir::tidy`).
-pub(in crate::lower) fn counted_entries(stmts: &mut Vec<Stmt>) {
+pub fn counted_entries(stmts: &mut Vec<Stmt>) {
     let call_of = |e: &Expr, helper: &str| match &e.kind {
         js::ExprKind::Call(callee, args) if matches!(&callee.kind, js::ExprKind::Var(f) if f.is(helper)) => {
             Some(args.clone())

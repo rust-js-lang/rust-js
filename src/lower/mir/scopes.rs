@@ -12,7 +12,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// 0051, amended, #500). The function's own JS declares the methods'
     /// own; a copy of it, their copies its calls need. One whose call needs
     /// a copy none was made of is called nowhere it can be (`scope_called`).
-    pub(in crate::lower) fn nest_scope_copies(&mut self) {
+    pub fn nest_scope_copies(&mut self) {
         let params = self.krate.given.js_given.params(self.tcx, self.item, self.copy);
         let recognition = self.recognition();
         let mut copies = IndexMap::default();

@@ -14,7 +14,7 @@ use rustc_span::def_id::DefId;
 /// constant, through what MIR holds it in, or the `self` of the namespace's
 /// own method `body` is. The one answer of both the lowering and which
 /// library functions the crate compiles (ADR 0914, rd311).
-pub(crate) fn names_namespace<'tcx>(
+pub fn names_namespace<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &rustc_middle::mir::Body<'tcx>,
     receiver: &rustc_middle::mir::Operand<'tcx>,
@@ -105,7 +105,7 @@ fn namespace_held_in<'tcx>(
 /// library's namespace nothing reads is never imported, React DOM's
 /// `ReactFiberReconciler.attempt_synchronous_hydration(fiber)` only
 /// `attemptSynchronousHydration(fiber)` (rd310, ADR 1037).
-pub(crate) fn unread_namespaces<'tcx>(
+pub fn unread_namespaces<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &rustc_middle::mir::Body<'tcx>,
 ) -> impl Iterator<Item = rustc_middle::mir::Location> {
@@ -166,7 +166,7 @@ pub(crate) fn unread_namespaces<'tcx>(
 /// nowhere else: JS's destructuring reads the same properties of the same
 /// value in the same order, once each, a getter's too. A value with fields
 /// left to drop, whose drops are statements, isn't one.
-pub(crate) fn taken_apart(fields: &[String], body: &[rust_js_program::js::Stmt]) -> Option<rust_js_program::js::Expr> {
+pub fn taken_apart(fields: &[String], body: &[rust_js_program::js::Stmt]) -> Option<rust_js_program::js::Expr> {
     use rust_js_program::js::{ExprKind, Prop, Stmt, StmtKind};
     let [
         Stmt {
@@ -206,7 +206,7 @@ pub(crate) fn taken_apart(fields: &[String], body: &[rust_js_program::js::Stmt])
 /// (#585, ADR 0262's "can't be preserved" case). Not one that's the
 /// function it passes its parameters on to, `forwarded`, which that
 /// function is (#566). `false` where one is refused.
-pub(in crate::lower) fn exported_by_property(
+pub fn exported_by_property(
     tcx: TyCtxt<'_>,
     fns: &IndexMap<DefId, crate::lower::FnInfo>,
     forwarded: &IndexMap<DefId, DefId>,

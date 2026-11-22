@@ -58,7 +58,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 /// A call of serde's data model a hand-written `Serialize` or `Deserialize`
 /// makes, over the JSON writer and reader (ADR 0459).
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(in crate::lower) enum SerdeOp {
+pub enum SerdeOp {
     /// `s.serialize_bool(b)` and the like: a value the writer writes itself.
     Write(SerdeScalar),
     /// `serialize_some(&v)` and `serialize_newtype_struct(name, &v)`: `v`, as
@@ -112,7 +112,7 @@ pub(in crate::lower) enum SerdeOp {
 
 /// serde's `de::Error`s but `custom`, each its message.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(in crate::lower) enum SerdeError {
+pub enum SerdeError {
     InvalidType,
     InvalidValue,
     InvalidLength,
@@ -124,7 +124,7 @@ pub(in crate::lower) enum SerdeError {
 
 /// What a writer writes itself, of serde's scalars.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(in crate::lower) enum SerdeScalar {
+pub enum SerdeScalar {
     Bool,
     /// An integer: of 128 bits, `wide`, `i128` or `u128`, which a `Value`
     /// holds only where it fits in an `i64` or a `u64`, and serde's own
@@ -144,7 +144,7 @@ pub(in crate::lower) enum SerdeScalar {
 /// What a `deserialize_*` hint takes, of the kinds a JSON value is: any
 /// of them, a `bool`, a number, a string, or `null`.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(in crate::lower) enum SerdeHint {
+pub enum SerdeHint {
     Any,
     Bool,
     Number,
@@ -161,7 +161,7 @@ pub(in crate::lower) enum SerdeHint {
 
 /// What a `SeqAccess` or a `MapAccess` reads next.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(in crate::lower) enum SerdeNext {
+pub enum SerdeNext {
     Element,
     Key,
     Value,
@@ -218,7 +218,7 @@ pub(in crate::lower) fn visitor_methods(tcx: TyCtxt<'_>, imp: DefId) -> Vec<(Vis
 /// What a `serialize_*` begins: a sequence, a tuple, a tuple struct, a map
 /// or a struct.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(in crate::lower) enum SerdeCompound {
+pub enum SerdeCompound {
     Seq,
     Tuple,
     TupleStruct,
@@ -356,7 +356,7 @@ pub(in crate::lower) fn serde_trait(tcx: TyCtxt<'_>, trait_id: DefId) -> Option<
 /// rust-js's (ADR 0077). rustc tells which macro wrote only this crate's,
 /// the one compiled here: another's, core's `IntErrorKind`'s `Debug`, is as
 /// it says.
-pub(crate) fn known_derive(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub fn known_derive(tcx: TyCtxt<'_>, id: DefId) -> bool {
     match id.is_local() {
         true => tcx.is_builtin_derived(id),
         false => tcx.is_automatically_derived(id),

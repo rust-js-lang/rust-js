@@ -24,7 +24,7 @@ pub(crate) const LAZY_RANGE_BACK: &str = "$lazyRangeBack";
 
 /// Which of std's ranges a type is.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum RangeKind {
+pub enum RangeKind {
     /// `a..b`
     Exclusive,
     /// `a..=b`
@@ -55,7 +55,7 @@ impl RangeKind {
     /// `None` of one JS doesn't step, or a `RangeFrom` from its end, which
     /// it hasn't. The one table, which `stepped_by` and `next()` ask, and
     /// `stepped_range` reads back.
-    pub(in crate::lower) fn step(self, back: bool) -> Option<&'static str> {
+    pub fn step(self, back: bool) -> Option<&'static str> {
         Some(match (self, back) {
             (RangeKind::Exclusive, false) => "$rangeNext",
             (RangeKind::Exclusive, true) => "$rangeNextBack",
@@ -77,7 +77,7 @@ impl RangeKind {
 
 /// A range method rust-js knows.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum RangeOp {
+pub enum RangeOp {
     /// `RangeInclusive::new(a, b)`, which `a..=b` is: `{ start: a, end: b }`.
     New,
     /// `r.contains(&x)`: `r.start <= x && x < r.end`.
@@ -109,7 +109,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// count of BigInts, which isn't a `usize`. Of one `lent`, `by_ref()`'s,
     /// a `count()` and a `last()` use it up, its start moved to its end, as
     /// std's `fold` of a `&mut` leaves it: `$rangeCountOut` (#414).
-    pub(in crate::lower) fn range_own_step(
+    pub fn range_own_step(
         &self,
         method: Option<IterMethod>,
         (range, lent): (Ty<'tcx>, bool),
@@ -179,7 +179,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `next_back()`: its step, `RangeKind::step`'s, called, an `a..`'s of
     /// integers given its type's bounds, `$rangeFromNext(r, 0, 255)`.
     /// `None` of one JS doesn't step.
-    pub(in crate::lower) fn range_next(&self, range: Ty<'tcx>, back: bool, receiver: Expr) -> Option<Expr> {
+    pub fn range_next(&self, range: Ty<'tcx>, back: bool, receiver: Expr) -> Option<Expr> {
         let kind = self.range_kind(range)?;
         let mut args = vec![receiver];
         args.extend(self.range_from_bounds(range, kind));
@@ -684,7 +684,7 @@ fn stepper(step: &'static str, bounds: Vec<Expr>) -> Expr {
 /// given what it's given after `r`, its bounds: the step as a value,
 /// `range_stepper`'s, `$rangeFromStep(0, 255)`, which a `for` of the range
 /// steps it by, `$iterator(r, $rangeFromStep(0, 255))` (rd260).
-pub(in crate::lower) fn range_from_stepper(bounds: &[Expr]) -> Expr {
+pub fn range_from_stepper(bounds: &[Expr]) -> Expr {
     stepper(RangeKind::From.step(false).expect("an `a..` steps"), bounds.to_vec())
 }
 
@@ -710,7 +710,7 @@ pub(in crate::lower) fn range_count(start: Expr, end: Expr, kind: RangeKind) -> 
 /// they're stepped, `$lazyRange(0, n)`, so `.find(f)` stops where Rust's
 /// does; of `a..=b`, `$lazyRange(a, b + 1)`. Of a number it starts at, as a
 /// `char`'s range starts at text.
-pub(in crate::lower) fn range_items(e: &mut Expr) {
+pub fn range_items(e: &mut Expr) {
     if let Some(made) = lazy_range(crate::lower::iterators::unlent(e)) {
         *e = made;
     }
@@ -721,7 +721,7 @@ pub(in crate::lower) fn range_items(e: &mut Expr) {
 /// 0)`, is `$lazyRange(a, b, n)`, and `skip(n)`, `.drop(n)`, starts it `n`
 /// steps on; a range's own `count()` and `last()` are `range_own_step`'s.
 /// Run after `range_items`, each of its source first.
-pub(in crate::lower) fn range_steps(e: &mut Expr) {
+pub fn range_steps(e: &mut Expr) {
     while let Some(folded) = range_step(e).or_else(|| reversed_step(e)) {
         *e = folded;
     }

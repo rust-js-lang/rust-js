@@ -32,7 +32,7 @@ type Called<'tcx> = (DefId, ty::GenericArgsRef<'tcx>, usize);
 /// a `Vec`'s collect or extend, whose capacity is its iterator's hint's
 /// lower bound, which JS's own `flatMap` hasn't (`grows_vec_by`, #1528). Of
 /// the build of std's iterator structs, none (ADR 0908).
-pub(in crate::lower) fn decide<'tcx>(
+pub fn decide<'tcx>(
     recognition: crate::lower::recognition::Recognition<'_, 'tcx>,
     bodies: &mut [crate::lower::Body<'tcx>],
     (cloned, keeps_capacity): (&crate::lower::analysis::Cloned<'tcx>, bool),

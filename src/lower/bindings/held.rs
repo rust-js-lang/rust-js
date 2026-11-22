@@ -8,24 +8,24 @@ use super::*;
 /// use`: its `const`, the JS its path reads, `const assign =
 /// Object.assign;` (ADRs 0622, 0633).
 #[derive(Clone)]
-pub(in crate::lower) struct HeldBinding {
+pub struct HeldBinding {
     pub(in crate::lower) binding: DefId,
     /// Its name in the module in Rust, which a caller's path names.
     pub(in crate::lower) ident: Symbol,
     /// Its name in the module's JS, the `use`'s.
-    pub(in crate::lower) name: String,
+    pub name: String,
     /// What it reads, `Object.assign`.
-    pub(in crate::lower) path: String,
+    pub path: String,
     /// Whether a `pub use` names it, so the module exports it by its name.
     pub(in crate::lower) export: bool,
     /// Whether it's the module's default.
     pub(in crate::lower) default: bool,
     /// The `use` that names it.
-    pub(in crate::lower) span: Option<Span>,
+    pub span: Option<Span>,
     /// Where it names the binding through another of the crate's modules
     /// that holds it: that module's, re-exported (ADR 0633), not a
     /// `const` of its own.
-    pub(in crate::lower) through: Option<HeldRead>,
+    pub through: Option<HeldRead>,
 }
 
 impl HeldBinding {
@@ -33,7 +33,7 @@ impl HeldBinding {
     /// and it isn't the module's default, which is how every caller reads
     /// it, in the crate and in another, as upstream's `shared/assign` has
     /// it alone (ADR 0773).
-    pub(in crate::lower) fn exported_by_name(&self) -> bool {
+    pub fn exported_by_name(&self) -> bool {
         self.export && !self.default
     }
 
@@ -53,7 +53,7 @@ impl HeldBinding {
 /// 0622); or a static, a global or a path in an import,
 /// `react#*.__CLIENT_INTERNALS..` (ADR 0633). A JS module's export itself,
 /// `react#useState`, is that module's, re-exported (ADR 0240).
-pub(in crate::lower) fn held_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
+pub fn held_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     match tcx.def_kind(def_id) {
         DefKind::Static { .. } if is_binding(tcx, def_id) => {
             let path = js_name(tcx, def_id);
@@ -76,7 +76,7 @@ pub(in crate::lower) fn held_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Stri
 /// (ADR 0633): the module, what the caller imports of it, the default or
 /// a name, and its `const`'s name there.
 #[derive(Clone)]
-pub(in crate::lower) struct HeldRead {
+pub struct HeldRead {
     pub(in crate::lower) holder: Holder,
     pub(in crate::lower) import: String,
     pub(in crate::lower) name: String,
@@ -97,9 +97,9 @@ pub(in crate::lower) enum Holder {
 /// 0633). Asked once, of every module and body; each read, a call, a `fn`
 /// taken, a static's, asks `reads`.
 #[derive(Default)]
-pub(in crate::lower) struct Held {
-    pub(in crate::lower) modules: IndexMap<LocalModId, Vec<HeldBinding>>,
-    pub(in crate::lower) reads: IndexMap<Span, HeldRead>,
+pub struct Held {
+    pub modules: IndexMap<LocalModId, Vec<HeldBinding>>,
+    pub reads: IndexMap<Span, HeldRead>,
 }
 
 pub(in crate::lower) fn held<'tcx>(tcx: TyCtxt<'tcx>, foreign: &crate::lower::library::Foreign<'_, 'tcx>) -> Held {

@@ -6,7 +6,7 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 use rustc_span::def_id::LocalDefId;
 
-pub(super) struct CapturedSources {
+pub struct CapturedSources {
     offsets: Vec<(u32, u32, u32)>,
     pub output: Sources,
 }
@@ -82,7 +82,7 @@ impl CapturedSources {
 /// arena: at its `}`, which its comments are printed before (ADRs 0753,
 /// 0862). Not a block whose code is last, or of nothing, or one a macro
 /// wrote.
-pub(super) fn comments_end(tcx: TyCtxt<'_>, sources: &CapturedSources, span: Span) -> Option<js::Span> {
+pub fn comments_end(tcx: TyCtxt<'_>, sources: &CapturedSources, span: Span) -> Option<js::Span> {
     use rustc_lexer::TokenKind;
     if span.from_expansion() {
         return None;
@@ -302,7 +302,7 @@ pub(super) fn commented_arms(
 /// anything\n None`, where a comment is right before it, nothing but
 /// whitespace and other comments between: the comment's place, once the
 /// `return;` of nothing it is goes (ADR 0862).
-pub(super) fn commented(sources: &CapturedSources, span: Span) -> Option<js::Span> {
+pub fn commented(sources: &CapturedSources, span: Span) -> Option<js::Span> {
     if span.from_expansion() {
         return None;
     }
@@ -335,7 +335,7 @@ pub(super) fn commented(sources: &CapturedSources, span: Span) -> Option<js::Spa
 /// 3;` of `i += 3; // Skip it.\n continue;`, nothing but whitespace, a `;`
 /// and the comments between (rd109). The jump the branch is, as nothing
 /// else runs between.
-pub(super) fn commented_jump(sources: &CapturedSources, done: js::Span) -> Option<js::Span> {
+pub fn commented_jump(sources: &CapturedSources, done: js::Span) -> Option<js::Span> {
     if done.is_none() {
         return None;
     }
@@ -461,7 +461,7 @@ fn comments(text: &str, start: u32) -> Vec<Comment> {
 
 impl<'tcx> super::FnCx<'_, 'tcx> {
     /// What `body` says of what does nothing, its sources this crate's.
-    pub(super) fn commented(&self, body: rustc_span::def_id::DefId) -> Commented {
+    pub fn commented(&self, body: rustc_span::def_id::DefId) -> Commented {
         let (arms, continues) = commented_arms(self.tcx, self.krate.sources, body);
         Commented {
             jumps: tail_if_comments(self.tcx, self.krate.sources, body),
@@ -476,10 +476,10 @@ impl<'tcx> super::FnCx<'_, 'tcx> {
 /// jumps with comments before them, found as it's made (rd109); and each
 /// arm that does nothing with comments above it (`commented_arms`, #508),
 /// and each `continue` that's an arm with comments above it (#610).
-pub(super) struct Commented {
-    pub(super) jumps: Vec<(js::Span, js::Span)>,
-    pub(super) arms: Vec<(js::Span, js::Span)>,
-    pub(super) continues: Vec<js::Span>,
+pub struct Commented {
+    pub jumps: Vec<(js::Span, js::Span)>,
+    pub arms: Vec<(js::Span, js::Span)>,
+    pub continues: Vec<js::Span>,
 }
 
 /// Where each of `module`'s type declarations is, the whole item: a struct,
@@ -487,7 +487,7 @@ pub(super) struct Commented {
 /// written but where a statement of its own starts in it, a class's (#643);
 /// and each `use` statement of types alone, `pub use Size as Measure;`,
 /// whose comments are its declarations' `export type`'s (#1869).
-pub(super) fn declarations(tcx: TyCtxt<'_>, module: rustc_span::def_id::LocalModId) -> impl Iterator<Item = Span> + '_ {
+pub fn declarations(tcx: TyCtxt<'_>, module: rustc_span::def_id::LocalModId) -> impl Iterator<Item = Span> + '_ {
     use rustc_hir::def::DefKind;
     (tcx.hir_module_free_items(module))
         .map(|item| item.owner_id.def_id)

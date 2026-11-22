@@ -32,10 +32,7 @@ const TRUSTED_REFUSED: &str = "rust-js: `js::Is::assert` guards an unchanged par
 /// guards; `None` where it calls none; `Err` where one guards no parameter
 /// of the function's own, declared `unknown` and never changed, or two
 /// guard two, with where.
-pub(in crate::lower) fn guarded<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    body: &Body<'tcx>,
-) -> Result<Option<usize>, (Span, &'static str)> {
+pub fn guarded<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Result<Option<usize>, (Span, &'static str)> {
     let mut guarded = None;
     for data in body.basic_blocks.iter() {
         let TerminatorKind::Call {

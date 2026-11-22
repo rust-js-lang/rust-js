@@ -60,7 +60,7 @@ pub(in crate::lower) fn named_lets<'tcx>(
 
 /// The JS name `#[rust_js::name = ".."]` gives each of `owner`'s `let`s that
 /// binds a name, by its binding's span, which its MIR's debug info has.
-pub(in crate::lower) fn given_let_names(tcx: TyCtxt<'_>, owner: LocalDefId) -> Vec<(rustc_span::Span, String)> {
+pub fn given_let_names(tcx: TyCtxt<'_>, owner: LocalDefId) -> Vec<(rustc_span::Span, String)> {
     (named_lets(tcx, owner).into_iter())
         .filter_map(|(local, attr)| match local.pat.kind {
             rustc_hir::PatKind::Binding(_, _, _, None) => Some((local.pat.span, attr.value_str()?.to_string())),

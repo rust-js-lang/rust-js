@@ -7,7 +7,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What a call that writes to a formatter, `operation` of `def_id`,
     /// writes, given its arguments but the formatter, `values`.
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::lower) fn written_of(
+    pub fn written_of(
         &mut self,
         operation: WriteCall,
         def_id: DefId,
@@ -171,7 +171,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What a writer function of `def_id`, given this writer's
     /// `Formatter`, is given: `values`, this writer's options where it
     /// takes them, and its evidence.
-    pub(in crate::lower) fn writer_function_given(
+    pub fn writer_function_given(
         &mut self,
         def_id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
@@ -203,7 +203,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `entry` or `entries`, of its arguments but the builder, and their
     /// types, as pretty as this writer is (ADR 0137).
     #[allow(clippy::type_complexity)]
-    pub(in crate::lower) fn builder_written(
+    pub fn builder_written(
         &mut self,
         kind: DebugBuilder,
         type_name: Option<Expr>,
@@ -222,7 +222,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What one step of a `Debug` builder of `kind` adds, as it's taken:
     /// a field's or an entry's text, or of `entries`, an array of them.
     #[allow(clippy::type_complexity)]
-    pub(in crate::lower) fn builder_part(
+    pub fn builder_part(
         &mut self,
         kind: DebugBuilder,
         (step, values, generic_args): (BuilderStep, Vec<(Expr, Ty<'tcx>)>, ty::GenericArgsRef<'tcx>),
@@ -339,7 +339,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `finish`: its type's name, then the parts, as pretty as this writer
     /// is (ADR 0137). Of one held in a variable, its parts are an array, as
     /// many as its steps took, none perhaps (ADR 0532).
-    pub(in crate::lower) fn builder_assembled(
+    pub fn builder_assembled(
         &mut self,
         kind: DebugBuilder,
         type_name: Option<Expr>,
@@ -474,7 +474,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `{}` of a `ty` value: the string itself, `String(x)`, `$displayF64(x)`,
     /// a hand-written `fmt`'s string, or `TDisplay.fmt(x)` in generic code.
-    pub(in crate::lower) fn display_string(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn display_string(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         self.display_string_with(value, ty, span, &Pretty::Plain)
     }
 

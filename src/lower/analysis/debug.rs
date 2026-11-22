@@ -268,19 +268,19 @@ pub(super) fn writer_facts<'tcx>(
 /// What a crate's writers take beyond their arguments, its own answer of
 /// what its code formats, and which of its functions read a `Formatter`'s
 /// options, which a library's manifest says (ADRs 0058, 0137, 0559).
-pub(in crate::lower) struct WriterFacts {
+pub struct WriterFacts {
     /// Whether it shows anything with `{:#?}`, or asks a `Formatter` if
     /// it's alternate: then its `Debug` functions take whether (ADR 0137).
     /// `@rust-js/std`'s do: its consumers are every program.
-    pub(in crate::lower) pretty_debug: bool,
+    pub pretty_debug: bool,
     /// Whether it gives a placeholder's options to a value it doesn't apply
     /// them to itself: then its writers take them (ADR 0058).
-    pub(in crate::lower) format_options: bool,
+    pub format_options: bool,
     /// Whether it asks `{:x?}` of anything (ADR 0559).
-    pub(in crate::lower) debug_hex: bool,
+    pub debug_hex: bool,
     /// Its functions, closures' by their own, that read a `Formatter`'s
     /// options (`reads_formatter_options`, #1026).
-    pub(in crate::lower) reads_options: IndexSet<DefId>,
+    pub reads_options: IndexSet<DefId>,
 }
 
 impl WriterFacts {
@@ -315,7 +315,7 @@ impl WriterFacts {
 
     /// What its writers take, which a library's writer it reaches is
     /// compiled here to take where its library's doesn't (#1026).
-    pub(in crate::lower) fn writes(&self) -> Writes {
+    pub fn writes(&self) -> Writes {
         Writes {
             options: self.pretty_debug || self.format_options,
             hex: self.debug_hex,
@@ -328,7 +328,7 @@ impl WriterFacts {
 /// whether an integer's `{:?}` may be hex (ADR 0559). A crate's own answer,
 /// `WriterFacts::writes`; a library's in its manifest.
 #[derive(Clone, Copy, Default)]
-pub(in crate::lower) struct Writes {
+pub struct Writes {
     pub(in crate::lower) options: bool,
     pub(in crate::lower) hex: bool,
 }

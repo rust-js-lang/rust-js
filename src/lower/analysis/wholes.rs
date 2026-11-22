@@ -34,7 +34,7 @@ use crate::lower::recognition::{
 /// The crate's functions whose result is always whole, and the fields of
 /// its structs and closures each write of which is (`of_crate`).
 #[derive(Default)]
-pub(in crate::lower) struct Wholes {
+pub struct Wholes {
     returns: IndexSet<DefId>,
     fields: IndexSet<Field>,
 }
@@ -415,7 +415,7 @@ fn whole_operand<'tcx>(tcx: TyCtxt<'tcx>, operand: &Operand<'tcx>, locals: &Inde
 /// a parameter, which its caller gives first, nor one written any other
 /// way, in part, through a `&mut` or a pointer; each write counted, as
 /// `writes` counts them (ADR 0994, amended). Its result's too.
-pub(in crate::lower) fn whole_locals<'tcx>(
+pub fn whole_locals<'tcx>(
     tcx: TyCtxt<'tcx>,
     (body, promoted): (&mir::Body<'tcx>, &IndexVec<mir::Promoted, mir::Body<'tcx>>),
     wholes: &Wholes,

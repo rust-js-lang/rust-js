@@ -13,7 +13,7 @@ use rustc_span::Span;
 
 /// What a `TypeId` or a `dyn Any` is asked.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum AnyOp {
+pub enum AnyOp {
     /// `TypeId::of::<T>()`.
     TypeIdOf,
     /// `x.type_id()`: its type's, a `dyn Any`'s its dictionary's.
@@ -266,7 +266,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// thrown, always `Some` (ADR 0710): to a `&JsError`, of a `dyn Any +
     /// Send`, which holds no `&JsError` of its own, so an unwind's payload,
     /// each of which is one, `$Unwinding` a typed payload's.
-    pub(in crate::lower) fn finds_thrown(&self, any: Ty<'tcx>, of: Ty<'tcx>) -> bool {
+    pub fn finds_thrown(&self, any: Ty<'tcx>, of: Ty<'tcx>) -> bool {
         matches!(of.kind(), ty::Ref(_, inner, _) if self.recognition().is_js_error(*inner))
             && self.recognition().is_dyn_any_send(any)
     }

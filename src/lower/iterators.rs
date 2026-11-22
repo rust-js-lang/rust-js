@@ -12,9 +12,9 @@ mod ends;
 mod hint_asks;
 mod hint_knowing;
 mod in_place;
-pub(in crate::lower) mod in_place_forms;
+pub mod in_place_forms;
 mod knowing;
-pub(in crate::lower) mod mir_steps;
+pub mod mir_steps;
 mod source_iter;
 mod stepping;
 mod transparent;
@@ -55,7 +55,7 @@ use rustc_span::def_id::DefId;
 /// boxed (ADR 0051), `boxed`, unboxed; given `back`, its `next_back`, one
 /// that knows its back, which `$nextBack` steps (ADR 0429). The one JS form
 /// of it.
-pub(in crate::lower) fn stepped(value: Expr, next: Expr, boxed: bool, back: Option<Expr>) -> Expr {
+pub fn stepped(value: Expr, next: Expr, boxed: bool, back: Option<Expr>) -> Expr {
     stepped_ends(value, next, boxed, back, None, None, OwnMethods::default())
 }
 
@@ -136,7 +136,7 @@ pub(in crate::lower) fn stepped_ends(
 
 /// `$iterator(range, step)`: a range's numbers, its bounds stepped by
 /// `step`, its kind's (`range_stepper`).
-pub(in crate::lower) fn stepped_range_by(range: Expr, step: Expr) -> Expr {
+pub fn stepped_range_by(range: Expr, step: Expr) -> Expr {
     IterValue::of(Form::Range { range, step }).emit()
 }
 
@@ -656,7 +656,7 @@ pub(super) fn made_array(e: &Expr) -> bool {
 /// Whether `e` is `$iter(items)`, `stepped_items`'s.
 /// `$iter(v).map(f)`, a map of an array's items, made and not yet stepped:
 /// nothing runs till it is.
-pub(in crate::lower) fn is_items_map(e: &Expr) -> bool {
+pub fn is_items_map(e: &Expr) -> bool {
     if let js::ExprKind::Call(callee, args) = &e.kind
         && let [f] = args.as_slice()
         && let js::ExprKind::Member(source, method) = &callee.kind
@@ -675,7 +675,7 @@ pub(in crate::lower) fn is_items_map(e: &Expr) -> bool {
 /// map of what `method_source` made one), of an `f` that reads only
 /// variables: lazy, nothing run till it's stepped, never an array's eager
 /// `map` (#805).
-pub(in crate::lower) fn lazily_mapped(e: &Expr) -> bool {
+pub fn lazily_mapped(e: &Expr) -> bool {
     if let js::ExprKind::Call(callee, args) = &e.kind
         && let [f] = args.as_slice()
         && let js::ExprKind::Member(_, method) = &callee.kind
@@ -688,7 +688,7 @@ pub(in crate::lower) fn lazily_mapped(e: &Expr) -> bool {
 
 /// `it.map(f)`, a map of what a variable holds, made and not yet stepped:
 /// the variable.
-pub(in crate::lower) fn mapped_var(e: &Expr) -> Option<&js::Name> {
+pub fn mapped_var(e: &Expr) -> Option<&js::Name> {
     match &e.kind {
         js::ExprKind::Call(callee, args)
             if let [f] = args.as_slice()
@@ -706,7 +706,7 @@ pub(in crate::lower) fn mapped_var(e: &Expr) -> Option<&js::Name> {
 /// `$iter($iter(items))`, an array's iterator made one again where a name
 /// that held one was read in place: the one, as the runtime's `$iter` gives
 /// one back as it is, an outer `lowerless` unread (#1152).
-pub(in crate::lower) fn stepped_once(e: &mut Expr) {
+pub fn stepped_once(e: &mut Expr) {
     while let js::ExprKind::Call(callee, args) = &mut e.kind
         && callee.helper_name() == Some("$iter")
         && args.first().is_some_and(is_stepped_items)
@@ -715,7 +715,7 @@ pub(in crate::lower) fn stepped_once(e: &mut Expr) {
     }
 }
 
-pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
+pub fn is_stepped_items(e: &Expr) -> bool {
     fresh_iter_source(e).is_some()
 }
 
@@ -811,7 +811,7 @@ pub(crate) const ITERATOR_HELPERS: [&str; 62] = [
 /// What a binding's call made, `made`, of type `output`: of a `dyn
 /// Iterator`, boxed or lent, marked JS's own (`Known::BindingIterator`,
 /// #1359).
-pub(in crate::lower) fn made_by_a_binding(made: Expr, output: Ty<'_>) -> Expr {
+pub fn made_by_a_binding(made: Expr, output: Ty<'_>) -> Expr {
     let held = output.peel_refs();
     match held.boxed_ty().unwrap_or(held).kind() {
         ty::Dynamic(..) => Expr {
@@ -827,7 +827,7 @@ pub(in crate::lower) fn made_by_a_binding(made: Expr, output: Ty<'_>) -> Expr {
 /// made of it, `.map(f)`, `.filter(f)`, `.take(n)`, `.drop(n)`, whose hint
 /// is of that source's. Not a `flatMap`'s, whose inner iterators may be
 /// what Rust made.
-pub(in crate::lower) fn binding_made(e: &Expr) -> bool {
+pub fn binding_made(e: &Expr) -> bool {
     if e.facts.has(js::Known::BindingIterator) {
         return true;
     }
@@ -961,7 +961,7 @@ fn hintless(e: &Expr) -> bool {
 /// What a variable that holds `value` keeps of it, a spill's or a MIR
 /// local's: its marks (`held_marks`), and whether it's JS's own iterator,
 /// which knows no hint (`hintless`, #1792).
-pub(in crate::lower) fn marks_kept(value: &Expr) -> js::Facts {
+pub fn marks_kept(value: &Expr) -> js::Facts {
     let marks = held_marks(value.facts);
     match hintless(value) {
         true => marks.with(js::Known::IterHintless),
@@ -969,7 +969,7 @@ pub(in crate::lower) fn marks_kept(value: &Expr) -> js::Facts {
     }
 }
 
-pub(super) fn is_js_iterator(e: &Expr) -> bool {
+pub fn is_js_iterator(e: &Expr) -> bool {
     if e.facts.has(js::Known::Iterator) {
         return true;
     }
@@ -1003,7 +1003,7 @@ pub(in crate::lower) fn string_iterator(s: Expr) -> Expr {
 }
 
 /// Of `string_iterator(s)`, as `e` is, `s`.
-pub(in crate::lower) fn string_iterated(e: &Expr) -> Option<&Expr> {
+pub fn string_iterated(e: &Expr) -> Option<&Expr> {
     match &e.kind {
         js::ExprKind::Call(callee, args)
             if args.is_empty()
@@ -1101,7 +1101,7 @@ pub(in crate::lower) fn reversal<'e>(e: &'e Expr, range_back: Option<&str>) -> O
 
 /// Of `it.step_by(n)`, made where it's stepped, `$stepBy(it, n)`: `it`
 /// and `n`, a whole number from 1 up to `2^31`, which every step adds.
-pub(in crate::lower) fn stepped_by(e: &Expr) -> Option<(&Expr, i128)> {
+pub fn stepped_by(e: &Expr) -> Option<(&Expr, i128)> {
     let [it, n] = stepped_every_parts(e)? else {
         return None;
     };
@@ -1111,7 +1111,7 @@ pub(in crate::lower) fn stepped_by(e: &Expr) -> Option<(&Expr, i128)> {
 
 /// What `for (x of e)` steps through of `e`, `$iter(xs)`'s or
 /// `Iterator.from(xs)`'s: `xs` itself.
-pub(in crate::lower) fn iterated(e: Expr) -> Expr {
+pub fn iterated(e: Expr) -> Expr {
     let from = iterator_from(&e).is_some();
     match e.kind {
         js::ExprKind::Call(_, args) if from || is_stepped_items(&e) => args.into_iter().next().expect("one"),
@@ -1140,7 +1140,7 @@ pub(in crate::lower) fn reversed(items: Expr) -> Expr {
 /// What `e`, a `reversed` one, reverses: `items` of `items.toReversed()`.
 /// The one reader of its form: a `for` that reads them from the end
 /// instead, by index (ADR 0904).
-pub(in crate::lower) fn reversed_source(e: &Expr) -> Option<&Expr> {
+pub fn reversed_source(e: &Expr) -> Option<&Expr> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };
@@ -1152,7 +1152,7 @@ pub(in crate::lower) fn reversed_source(e: &Expr) -> Option<&Expr> {
 
 /// What `e`, a `keys_in` one, steps the keys of: `object` of
 /// `$keysIn(object)`. The one reader of its form.
-pub(in crate::lower) fn keys_in_source(e: &Expr) -> Option<&Expr> {
+pub fn keys_in_source(e: &Expr) -> Option<&Expr> {
     match &e.kind {
         js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$keysIn") && args.len() == 1 => args.first(),
         _ => None,
@@ -1162,7 +1162,7 @@ pub(in crate::lower) fn keys_in_source(e: &Expr) -> Option<&Expr> {
 /// What `it`, an iterator made here of an array, `$iter(v)`, steps: `v`,
 /// all of it left. Or `$iter(v, true)`, of what std hints no lower bound
 /// of, whose hint is std's (#1215).
-pub(in crate::lower) fn fresh_iter_source(it: &Expr) -> Option<&Expr> {
+pub fn fresh_iter_source(it: &Expr) -> Option<&Expr> {
     match &it.kind {
         js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$iter") => match args.as_slice() {
             [items] => Some(items),
@@ -1179,7 +1179,7 @@ pub(in crate::lower) fn fresh_iter_source(it: &Expr) -> Option<&Expr> {
 /// `it.next().value`, `undefined` at its end as `$next`'s is: React DOM's
 /// Fizz runtime's stylesheet descriptor read part by part, with no helper
 /// (rd270). Not of a name declared twice, which one read may be another's.
-pub(in crate::lower) fn stepped_slices(body: &mut Vec<Stmt>) {
+pub fn stepped_slices(body: &mut Vec<Stmt>) {
     let mut made = Vec::new();
     js::each_list(body, &mut |stmts| {
         for stmt in stmts.iter() {
@@ -1243,7 +1243,7 @@ pub(super) fn array_stepped(items: Expr) -> Expr {
 /// of a JS iterator, `it.map(f)`, which only the recognizers make, though
 /// it carries no mark, a map's source asked on its own (`is_js_adapter`,
 /// #1491). The one answer.
-pub(in crate::lower) fn made_in_place(e: &Expr) -> bool {
+pub fn made_in_place(e: &Expr) -> bool {
     e.facts.has(js::Known::InPlace) || is_js_adapter(e)
 }
 
@@ -1265,7 +1265,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// place, as its maker marked it (`made_in_place`, #730), which is what
     /// the recognizers make of it, a JS iterator that closes as it ends (ADR
     /// 0871).
-    pub(in crate::lower) fn compiled_struct(&self, ty: Ty<'tcx>, value: &Expr) -> bool {
+    pub fn compiled_struct(&self, ty: Ty<'tcx>, value: &Expr) -> bool {
         crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
             && !(crate::lower::recognition::is_held_compiled(self.tcx, ty)
                 && crate::lower::iterators::made_in_place(value))
@@ -1278,7 +1278,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// lowers none of it and a std combinator does. `None` of another, or of
     /// one lent (#1120).
     // helper: asked by `mir` and the base alike, the base's since #2299 moved it from `mir::iter`
-    pub(in crate::lower) fn consumed_at(&self, def_id: DefId, arg_tys: &[Ty<'tcx>]) -> Option<usize> {
+    pub fn consumed_at(&self, def_id: DefId, arg_tys: &[Ty<'tcx>]) -> Option<usize> {
         let tr = self.tcx.trait_of_assoc(def_id)?;
         let at = match crate::lower::recognition::is_extend(self.tcx, tr) {
             true => 1,

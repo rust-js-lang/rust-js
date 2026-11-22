@@ -54,7 +54,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// (`writes_each_value`), and that impl: every plain `{}` of it is the
 /// value in place, so the impl is written only where something else
 /// reaches it, and its contract lists the type (rd730).
-pub(in crate::lower) fn displaying_impls<'tcx>(
+pub fn displaying_impls<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     bodies: &IndexMap<DefId, &Body<'tcx>>,
 ) -> Vec<(DefId, DefId)> {

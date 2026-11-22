@@ -77,7 +77,7 @@ struct Summary<'tcx> {
 /// What each body of the crate may borrow, its calls' and its closures'
 /// with it; `None`, anything.
 #[derive(Default)]
-pub(in crate::lower) struct CellBorrows<'tcx> {
+pub struct CellBorrows<'tcx> {
     of: IndexMap<DefId, Option<Summary<'tcx>>>,
     /// Each of the crate's types' impls of a trait, by the type: what std's
     /// code bounding one by the trait may run of it.
@@ -672,7 +672,7 @@ impl<'tcx> CellBorrows<'tcx> {
     }
 
     /// What of the crate is a value at hand, a builtin's (#2106, #2111).
-    pub(in crate::lower) fn at_hand(&self) -> &AtHand {
+    pub fn at_hand(&self) -> &AtHand {
         &self.at_hand
     }
 
@@ -698,7 +698,7 @@ impl<'tcx> CellBorrows<'tcx> {
 
     /// What each fn pointer the crate calls may be (ADR 0907), its owner's
     /// answers, for another analysis to ask.
-    pub(in crate::lower) fn pointers(&self) -> &super::fn_pointers::FnPointers<'tcx> {
+    pub fn pointers(&self) -> &super::fn_pointers::FnPointers<'tcx> {
         &self.pointers
     }
 

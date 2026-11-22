@@ -41,7 +41,7 @@ struct HintAsked<'tcx> {
 // Flags, not a state: `dyn_asked` and `dyn_unseen` are two facts of the
 // crate, either with the other (#1476).
 #[derive(Default)]
-pub(in crate::lower) struct Hinted<'tcx> {
+pub struct Hinted<'tcx> {
     /// The adapters, and the sources that aren't adapters, made knowing
     /// their hint wherever they're made: each in what generic code or a
     /// library may be given where its hint is asked, of an array's items,
@@ -79,10 +79,10 @@ pub(in crate::lower) struct Hinted<'tcx> {
     /// made knowing its hint where it's made (`mark_given`), as what's
     /// given a library's function is, so the JS iterator a `dyn Iterator`
     /// is gives std's hint, its value's.
-    pub(in crate::lower) dyn_asked: bool,
+    pub dyn_asked: bool,
     /// Whether a `dyn Iterator` reaches the crate where it can't see it
     /// made: a library's or a binding's function gives one back (#1476).
-    pub(in crate::lower) dyn_unseen: bool,
+    pub dyn_unseen: bool,
 }
 
 /// What `all_bodies` ask the hint of, through generic code and libraries.

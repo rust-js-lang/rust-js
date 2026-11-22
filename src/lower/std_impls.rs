@@ -25,7 +25,7 @@ use rustc_span::def_id::DefId;
 /// How JS compares a value as Rust's `==` does (`FnCx::js_eq`): by `===`
 /// only, a float's; or by SameValueZero too, `includes`' and a `Map`'s.
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum JsEq {
+pub enum JsEq {
     Strict,
     SameValue,
 }
@@ -36,7 +36,7 @@ pub(super) enum JsEq {
 /// itself, as JS's `===` of an object is (ADR 0864). Of a value JS holds as
 /// an object: a struct of fields or a JS object's binding. The one answer
 /// a set's and a map's keys ask, and a library's contract lists.
-pub(super) fn equal_only_to_itself<'tcx>(
+pub fn equal_only_to_itself<'tcx>(
     recognition: &super::recognition::Recognition<'_, 'tcx>,
     bodies: &IndexMap<DefId, &super::Body<'tcx>>,
     ty: Ty<'tcx>,
@@ -49,7 +49,7 @@ pub(super) fn equal_only_to_itself<'tcx>(
 /// of two is `===`, and its `PartialEq`'s dictionary is written only where
 /// it's reached (ADR 0864, amended). The one answer `==` and the pipeline
 /// ask.
-pub(super) fn eq_by_address<'tcx>(
+pub fn eq_by_address<'tcx>(
     recognition: &super::recognition::Recognition<'_, 'tcx>,
     bodies: &IndexMap<DefId, &super::Body<'tcx>>,
     ty: Ty<'tcx>,
@@ -148,7 +148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// SameValueZero, `includes`' and a `Map`'s, does too but of a float,
     /// whose `NaN` it finds where `==` doesn't. The one answer, which `==`,
     /// `contains` and a map's keys ask.
-    pub(super) fn js_eq(&self, ty: Ty<'tcx>) -> Option<JsEq> {
+    pub fn js_eq(&self, ty: Ty<'tcx>) -> Option<JsEq> {
         // A `&mut` to a number is a cell, an object (ADR 0099).
         if self.has_cell_layer(ty) {
             return None;
@@ -232,7 +232,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `==` of `ty`, through its references, is `===` (ADR 0864,
     /// amended), as `eq_by_address` answers.
-    pub(super) fn eq_by_address(&self, ty: Ty<'tcx>) -> bool {
+    pub fn eq_by_address(&self, ty: Ty<'tcx>) -> bool {
         !self.has_cell_layer(ty) && eq_by_address(&self.recognition(), self.krate.bodies, ty.peel_refs())
     }
 
@@ -395,7 +395,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// whose `None` MIR says is the same one alone (`same_none`,
     /// `NoneForms::same_nones`): two such compared by `===` (rd117); `false`
     /// where no call of MIR's is asked.
-    pub(super) fn eq_value(
+    pub fn eq_value(
         &mut self,
         a: Expr,
         b: Expr,

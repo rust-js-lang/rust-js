@@ -41,7 +41,7 @@ pub(super) fn held_by_default(tcx: TyCtxt<'_>, def: DefId) -> bool {
 /// it, `pub use self::get_current_time as unstable_now;`'s `unstable_now`,
 /// as its module exports it by that alone (`own_aliases`); else `name`, its
 /// name there (ADRs 0251, 0596, 0611, 0773).
-pub(super) fn exported_as(tcx: TyCtxt<'_>, item: DefId, name: &str) -> String {
+pub fn exported_as(tcx: TyCtxt<'_>, item: DefId, name: &str) -> String {
     if is_own_default(tcx, item) {
         return "default".to_string();
     }
@@ -119,7 +119,7 @@ fn is_own_default(tcx: TyCtxt<'_>, item: DefId) -> bool {
 /// what it's given (`only_called`); and, of another module's function,
 /// what that module exports for the default's `export { twice as default }
 /// from` to read (`exported_across_modules`), whoever else calls it.
-pub(super) fn defaults(tcx: TyCtxt<'_>) -> Vec<(LocalModId, DefId)> {
+pub fn defaults(tcx: TyCtxt<'_>) -> Vec<(LocalModId, DefId)> {
     let mut modules = Vec::new();
     tcx.hir_for_each_module(|module| modules.push(module));
     (modules.into_iter())
@@ -188,13 +188,13 @@ pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(Optio
 /// names one held through another module, re-exported. Any other is
 /// refused.
 #[derive(Default)]
-pub(super) struct ModuleDefault {
-    pub(super) export: Option<DefId>,
-    pub(super) declared: bool,
-    pub(super) from: Option<(DefId, Span)>,
+pub struct ModuleDefault {
+    pub export: Option<DefId>,
+    pub declared: bool,
+    pub from: Option<(DefId, Span)>,
 }
 
-pub(super) fn module_default(
+pub fn module_default(
     tcx: TyCtxt<'_>,
     module: LocalModId,
     fns: &IndexMap<DefId, super::FnInfo>,
@@ -238,7 +238,7 @@ pub(super) fn module_default(
 /// as unstable_now };`, each `(local, exported)` and the item, in the order
 /// its `pub use`s are written: by those alone, not by its own name (ADR
 /// 0596, amended; `own_aliases`).
-pub(super) fn aliases(
+pub fn aliases(
     tcx: TyCtxt<'_>,
     module: LocalModId,
     fns: &IndexMap<DefId, super::FnInfo>,

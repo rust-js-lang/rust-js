@@ -24,7 +24,7 @@ const cellsLeft: string[] = [];
 
 test("the crate's facts are read alike by each body: no cell but those still to move", () => {
   const source = read("src/lower/crate_facts.rs");
-  const start = source.indexOf("pub(in crate::lower) struct CrateFacts");
+  const start = source.indexOf("pub struct CrateFacts");
   const struct = source.slice(start, source.indexOf("\n}\n", start));
   const cells = [...struct.matchAll(/pub\(in crate::lower\) (\w+): [^\n]*\b(?:Cell|RefCell|OnceCell)</g)].map((m) => m[1]);
   expect(cells).toEqual(cellsLeft);
@@ -36,14 +36,14 @@ test("each of the crate's facts a body finds the first time it asks is a Lazy, o
   const finders = lowering.filter((file) => /\.get_or_find\(/.test(read(file)));
   expect(finders).toEqual(["src/lower/drops/ref_cells.rs"]);
   const source = read("src/lower/crate_facts.rs");
-  const start = source.indexOf("pub(in crate::lower) struct CrateFacts");
+  const start = source.indexOf("pub struct CrateFacts");
   const struct = source.slice(start, source.indexOf("\n}\n", start));
-  expect([...struct.matchAll(/pub\(in crate::lower\) (\w+): &'a Lazy</g)].map((m) => m[1])).toEqual(["ref_cells"]);
+  expect([...struct.matchAll(/pub (\w+): &'a Lazy</g)].map((m) => m[1])).toEqual(["ref_cells"]);
 });
 
 test("what the bodies lowered before settled is the pipeline's to write, a body's to read", () => {
   // A body holds it by a shared reference alone.
-  expect(read("src/lower.rs")).toContain("    settled: &'a Settled<'tcx>,\n");
+  expect(read("src/lower.rs")).toContain("    pub settled: &'a Settled<'tcx>,\n");
   const writers = lowering
     .filter((file) => /\bsettled\.\w+\.(?:insert|extend|push|remove|clear)\(/.test(read(file)));
   expect(writers).toEqual(["src/lower/pipeline.rs"]);

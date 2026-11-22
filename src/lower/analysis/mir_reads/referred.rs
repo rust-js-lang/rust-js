@@ -5,7 +5,7 @@ use rustc_middle::mir::{self, BorrowKind, ConstOperand, Local, Operand, PlaceEle
 
 /// The constant a promoted body refers to, `_1 = const LOG; _0 = &_1`, if
 /// that's all it is.
-pub(in crate::lower) fn referred_constant<'tcx>(body: &mir::Body<'tcx>) -> Option<ConstOperand<'tcx>> {
+pub fn referred_constant<'tcx>(body: &mir::Body<'tcx>) -> Option<ConstOperand<'tcx>> {
     if body.basic_blocks.len() != 1 {
         return None;
     }
@@ -38,7 +38,7 @@ pub(in crate::lower) fn referred_constant<'tcx>(body: &mir::Body<'tcx>) -> Optio
 /// once, or one reborrowed, `&*r`, of a body whose promoted constants are
 /// `promoted`. `assigned` says what a local is assigned, where it's
 /// assigned once.
-pub(in crate::lower) fn referred_key<'a, 'tcx: 'a>(
+pub fn referred_key<'a, 'tcx: 'a>(
     promoted: &IndexVec<mir::Promoted, mir::Body<'tcx>>,
     assigned: impl Fn(Local) -> Option<&'a Rvalue<'tcx>>,
     operand: &Operand<'tcx>,

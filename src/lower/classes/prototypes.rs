@@ -64,16 +64,16 @@ pub(crate) fn with_prototype_members(tcx: TyCtxt<'_>) -> Vec<DefId> {
 /// replaces (#448), and each ES class's a function reads as a value,
 /// `js::class::<T>().prototype()`, whose fields are then undeclared (#568).
 #[derive(Default)]
-pub(crate) struct Prototypes {
+pub struct Prototypes {
     pub(crate) set: Vec<PrototypeSet>,
-    pub(crate) read: IndexSet<DefId>,
+    pub read: IndexSet<DefId>,
 }
 
 impl Prototypes {
     /// Of a `js::on_load!` body lowered, `body`, which replaces `set`'s
     /// class's prototype, that statement, set right after its constructor
     /// (`set_alone`).
-    pub(crate) fn set_alone(
+    pub fn set_alone(
         &mut self,
         tcx: TyCtxt<'_>,
         module: LocalModId,
@@ -87,7 +87,7 @@ impl Prototypes {
 /// Of `module`'s items, each class's prototype its load replaces set
 /// right after its constructor (`set_prototypes`), and each ES class's
 /// fields declared where that changes nothing (`fields::declare_fields`).
-pub(crate) fn place_prototypes(
+pub fn place_prototypes(
     tcx: TyCtxt<'_>,
     items: &mut Vec<js::Item>,
     module: LocalModId,

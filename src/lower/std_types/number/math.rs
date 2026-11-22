@@ -58,7 +58,7 @@ pub(in crate::lower) fn constant(tcx: TyCtxt<'_>, id: DefId) -> Option<Expr> {
 /// What a constant's initializer is, where it's written as one of `Math`'s
 /// constants, `const LN2: f64 = std::f64::consts::LN_2`: `Math.LN2`, where
 /// a literal, or any other expression, is what rustc computed.
-pub(in crate::lower) fn written_constant<'tcx>(
+pub fn written_constant<'tcx>(
     tcx: TyCtxt<'tcx>,
     thir: &rustc_middle::thir::Thir<'tcx>,
     expr: rustc_middle::thir::ExprId,
@@ -72,7 +72,7 @@ pub(in crate::lower) fn written_constant<'tcx>(
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The `Math` function a std function is, by `function`: `Math.clz32`
     /// of `u32::leading_zeros`. `None` of one that isn't.
-    pub(in crate::lower) fn math_function(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Expr> {
+    pub fn math_function(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Expr> {
         let Some(Std::Number(op)) = self.recognition().classify(def_id, args) else {
             return None;
         };

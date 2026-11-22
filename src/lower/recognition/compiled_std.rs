@@ -1084,7 +1084,7 @@ pub(crate) fn is_compiled_std_type<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) ->
 
 /// Whether `ty` is one of `HELD_COMPILED`'s adapters, a `Rev<I>`, std's
 /// struct where it's held, of a type compiled for this build.
-pub(crate) fn is_held_compiled<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
+pub fn is_held_compiled<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
     matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_compiled_std_type(tcx, ty)
         && std_path_item(tcx, adt.did()).is_some_and(|item| HELD_COMPILED.iter().any(|&(of, ..)| of == item)))
 }

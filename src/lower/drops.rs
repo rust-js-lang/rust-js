@@ -56,7 +56,7 @@ use types::{DropQuery, TypeDrops, describe};
 /// Whether dropping `ty`, a type the crate knows, runs a destructor, of the
 /// `Rc`s `counted` and no dictionaries (ADR 0320): an `Rc` of one is
 /// counted, as its last drops it.
-pub(super) fn drop_runs<'tcx>(
+pub fn drop_runs<'tcx>(
     recognition: super::recognition::Recognition<'_, 'tcx>,
     (library, closure_facts): (bool, &super::analysis::ClosureFacts<'tcx>),
     counted: &super::analysis::Counted<'tcx>,
@@ -177,7 +177,7 @@ pub(super) type DefaultDrops<'tcx> = (IndexMap<Ty<'tcx>, GivenDrop>, IndexSet<ty
 /// entry's method's own or a copied default's (#887: one derivation of a
 /// slot, its type's, where three numberings had met).
 #[derive(Clone, Debug)]
-pub(in crate::lower) struct GivenDrop {
+pub struct GivenDrop {
     index: Option<u32>,
     name: rust_js_program::js::Name,
 }
@@ -230,7 +230,7 @@ pub(super) struct LentDrop<'tcx> {
 
 /// A function's drops, as its bodies are lowered.
 #[derive(Default)]
-pub(super) struct DropState<'tcx> {
+pub struct DropState<'tcx> {
     /// What a type drops depends on, beside its types (ADR 0098).
     types: TypeDrops<'tcx>,
     sizes: RefCell<IndexMap<Ty<'tcx>, usize>>,
@@ -260,14 +260,14 @@ pub(super) struct DropState<'tcx> {
 /// A body's drop functions, each of a type inside itself or with a long
 /// drop: its name, and its `const`.
 #[derive(Default)]
-pub(super) struct Hoisted<'tcx> {
+pub struct Hoisted<'tcx> {
     functions: Vec<(Ty<'tcx>, js::Name)>,
     defs: Vec<Stmt>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What a type drops, asked of types and this function's facts alone.
-    pub(super) fn drop_query(&self) -> DropQuery<'_, 'tcx> {
+    pub fn drop_query(&self) -> DropQuery<'_, 'tcx> {
         DropQuery {
             recognition: self.recognition(),
             evidence: self.evidence_query(),
@@ -283,7 +283,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What dropping a `ty` runs. Of a copied default's type, the impl's,
     /// as its MIR is in the impl's terms (ADR 0176, #803).
-    pub(in crate::lower) fn drops(&self, ty: Ty<'tcx>) -> Drops<'tcx> {
+    pub fn drops(&self, ty: Ty<'tcx>) -> Drops<'tcx> {
         self.drop_query().drops(ty)
     }
 
@@ -292,7 +292,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the crate's types, a type argument's of std's, a tuple's, an array's
     /// or a closure's capture's; of a type parameter, a `dyn` or an alias,
     /// anyone's. The one answer, which what drops items it passes over asks.
-    pub(in crate::lower) fn drop_may_panic(&self, ty: Ty<'tcx>) -> bool {
+    pub fn drop_may_panic(&self, ty: Ty<'tcx>) -> bool {
         self.drop_may_panic_in(ty, &mut IndexSet::default())
     }
 
@@ -363,7 +363,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         never
     }
 
-    pub(in crate::lower) fn has_drops(&self, ty: Ty<'tcx>) -> bool {
+    pub fn has_drops(&self, ty: Ty<'tcx>) -> bool {
         self.drop_query().has_drops(ty)
     }
 
@@ -470,7 +470,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it's done, which JS doesn't: one its callers give none with a
     /// destructor (ADR 0190). Not one what it makes, `output`, holds, and is
     /// closed to drop, `take(n)` of a `repeat`, whose drop it is (ADR 0422).
-    pub(in crate::lower) fn require_consumed_drops_none(&self, receiver: Ty<'tcx>, output: Ty<'tcx>) {
+    pub fn require_consumed_drops_none(&self, receiver: Ty<'tcx>, output: Ty<'tcx>) {
         if self.recognition().closed_on_drop(output).is_none() {
             self.require_no_drops(receiver);
         }
@@ -482,7 +482,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A closure, at `closure`, made here: the places its drop drops.
-    pub(super) fn closure_made(&mut self, closure: DefId, places: Vec<(Expr, Ty<'tcx>)>) {
+    pub fn closure_made(&mut self, closure: DefId, places: Vec<(Expr, Ty<'tcx>)>) {
         self.drop_state.closures.insert(closure, (self.frame.owner, places));
     }
 
@@ -510,7 +510,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The drop a closure that carries its drop carries, `$dropping`'s:
     /// what it took dropped, where it's made (ADR 0484).
-    pub(super) fn carried_drop(&mut self, closure: DefId, span: Span) -> R<Vec<Stmt>> {
+    pub fn carried_drop(&mut self, closure: DefId, span: Span) -> R<Vec<Stmt>> {
         let mut made = Made::default();
         let mut code = Vec::new();
         self.drop_taken(closure, span, &mut made, &mut code)?;
@@ -518,20 +518,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What the closure `closure` holds, `closure_made`'s, where it's made.
-    pub(super) fn closure_held(&self, closure: DefId) -> Vec<(Expr, Ty<'tcx>)> {
+    pub fn closure_held(&self, closure: DefId) -> Vec<(Expr, Ty<'tcx>)> {
         (self.drop_state.closures.get(&closure)).map_or_else(Vec::new, |(_, held)| held.clone())
     }
 
     /// Drop `value`, a `ty`: its own `drop`, then each part's, in Rust's
     /// order. `value` is read more than once, so it must read the same.
-    pub(super) fn drop_value(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<()> {
+    pub fn drop_value(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<()> {
         self.drop_value_of((value, None), ty, span, out)
     }
 
     /// `drop_value`, of `value` an `Option` whose `None` is only the one
     /// `none` says where MIR drops it (`NoneForms::place_none`), which its
     /// drop glue's test of its variant is of (#2112 C S5).
-    pub(super) fn drop_value_of(
+    pub fn drop_value_of(
         &mut self,
         (value, none): (Expr, Option<js::OnlyNone>),
         ty: Ty<'tcx>,
@@ -594,7 +594,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A variable's of `ty`, refused where what it holds drops as JS can't
     /// drop it (ADR 0321).
-    pub(in crate::lower) fn check_held_drops(&self, ty: Ty<'tcx>, span: Span) -> R<()> {
+    pub fn check_held_drops(&self, ty: Ty<'tcx>, span: Span) -> R<()> {
         match self.drops(self.reveal(ty)) {
             Drops::Unsupported(t, what) => Err(self.unsupported(span, &describe(t, what))),
             Drops::Nothing | Drops::Runs => Ok(()),
@@ -684,7 +684,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// A call of one of the crate's functions, given what each of its type
 /// parameters is given: `None` of a value with a destructor of its own,
 /// else the caller's type parameters it holds (ADR 0190).
-pub(super) struct DropCheck {
+pub struct DropCheck {
     caller: DefId,
     callee: DefId,
     /// A call of a trait's method rustc resolves to no one impl, generic
@@ -698,11 +698,7 @@ pub(super) struct DropCheck {
 /// the function takes none: an error at the call. One given a caller's type
 /// parameter makes the caller take none of that either (ADR 0190). Whether
 /// any was an error.
-pub(super) fn check_no_drops(
-    tcx: TyCtxt<'_>,
-    no_drops: &mut IndexMap<DefId, BTreeSet<u32>>,
-    checks: &[DropCheck],
-) -> bool {
+pub fn check_no_drops(tcx: TyCtxt<'_>, no_drops: &mut IndexMap<DefId, BTreeSet<u32>>, checks: &[DropCheck]) -> bool {
     let mut reported = IndexSet::default();
     let mut changed = true;
     while changed {

@@ -100,7 +100,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What a slice, an array or a `Vec` holds.
-    pub(in crate::lower) fn slice_item(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn slice_item(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty = ty.peel_refs();
         match ty.kind() {
             ty::Slice(item) | ty::Array(item, _) => Some(*item),
@@ -110,7 +110,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Does `includes` find a `ty` as `==` does, `js_eq`'s SameValueZero?
-    pub(in crate::lower) fn eq_is_identity(&self, ty: Ty<'tcx>) -> bool {
+    pub fn eq_is_identity(&self, ty: Ty<'tcx>) -> bool {
         self.js_eq(ty) == Some(crate::lower::std_impls::JsEq::SameValue)
     }
 
@@ -349,7 +349,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// One of `IterComb`'s, on `items`, a JS iterator (ADR 0517).
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::lower) fn iter_comb(
+    pub fn iter_comb(
         &mut self,
         comb: IterComb,
         items: Expr,
@@ -737,7 +737,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// `v.splice(at, 0, value)`; else `$insertAt`, which refuses an index past
 /// the end, dropping `value` by its item's `drop` as it panics, as Rust's
 /// `insert` drops what it took (#1171).
-pub(in crate::lower) fn inserted(subject: Expr, at: Expr, value: Expr, in_bounds: bool, drop: Option<Expr>) -> Expr {
+pub fn inserted(subject: Expr, at: Expr, value: Expr, in_bounds: bool, drop: Option<Expr>) -> Expr {
     // An item, never left out, as `splice` counts them (ADR 0330, amended).
     let value = value.given_item();
     match at.as_int() {

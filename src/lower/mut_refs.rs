@@ -28,7 +28,7 @@ mod given;
 /// Whether a value of `ty` may hold a `part`: `part` is in it, not only in
 /// a projection, `<I as Iterator>::Item`, which names `I` but holds an
 /// item, not an `I`.
-pub(in crate::lower) fn holds_outside_projections<'tcx>(ty: Ty<'tcx>, part: Ty<'tcx>) -> bool {
+pub fn holds_outside_projections<'tcx>(ty: Ty<'tcx>, part: Ty<'tcx>) -> bool {
     let mut walk = ty.walk();
     while let Some(arg) = walk.next() {
         match arg.as_type() {
@@ -42,7 +42,7 @@ pub(in crate::lower) fn holds_outside_projections<'tcx>(ty: Ty<'tcx>, part: Ty<'
 
 /// A box of `place`, `{ value: place }`: a `&mut` to a value JS can't change
 /// in place, given to a call, which reads and writes its `value` (ADR 0074).
-pub(super) fn boxed(place: Expr) -> Expr {
+pub fn boxed(place: Expr) -> Expr {
     Expr::object(vec![Prop::Field(js::HELD.into(), place)])
 }
 
@@ -219,19 +219,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// returns (ADR 0074): the place, and what's copied back to it, the box's
 /// `value`, or what that holds in the caller's form, the `&mut` an in-place
 /// cell of generic code's holds (#1300).
-pub(super) type CopyBack = (Expr, Expr);
+pub type CopyBack = (Expr, Expr);
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What a box of a number, `boxed`, the call it was given to returned,
     /// writes back to its `place`, `place = box.value` (ADR 0074). An
     /// object's `&mut` given where generic code has its box is an in-place
     /// cell, never copied back (ADR 1115).
-    pub(super) fn copied_back(&mut self, place: Expr, back: Expr, at: js::Span) -> Stmt {
+    pub fn copied_back(&mut self, place: Expr, back: Expr, at: js::Span) -> Stmt {
         StmtKind::Assign(place, back).at(at)
     }
 
     /// `p` of `&mut p`, a reborrow's `&mut *&mut v[0]` too: `v[0]`.
-    pub(super) fn mut_borrowed(&self, arg: ExprId) -> Option<ExprId> {
+    pub fn mut_borrowed(&self, arg: ExprId) -> Option<ExprId> {
         let ExprKind::Borrow {
             borrow_kind: rustc_middle::mir::BorrowKind::Mut { .. },
             arg: place,
@@ -256,7 +256,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// one it takes as an `IntoIterator`, a `&mut [T]`'s `&mut T` that
     /// `zip(b)` steps, made where it's made into its iterator (ADR 0926);
     /// not `into_iter`'s own `self`, which makes them.
-    pub(in crate::lower) fn makes_items_of(
+    pub fn makes_items_of(
         &self,
         callee: DefId,
         output: Ty<'tcx>,
@@ -317,7 +317,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A handle on each item `known` gives a `&mut` to, of its arguments'
     /// values and its receiver's type: `$mutAt(v, 0)` and the like (ADR
     /// 0152); `None` of what's given no handle.
-    pub(in crate::lower) fn item_handles_of(
+    pub fn item_handles_of(
         &mut self,
         known: Std,
         mut values: Vec<Expr>,
@@ -360,7 +360,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `None` where none is. A function value takes its callers' forms
     /// (#1324); where generic code's are its own, the function itself is
     /// given (`takes_forms_given`).
-    pub(super) fn unboxed_by_function(
+    pub fn unboxed_by_function(
         &self,
         def_id: DefId,
         i: usize,
@@ -430,7 +430,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// JS function, generic code's own, takes each form generic code gives
     /// and gives back the form generic code takes back, so it's given
     /// itself, `apply_mut(.., replace_with)` (#975).
-    pub(in crate::lower) fn takes_forms_given(
+    pub fn takes_forms_given(
         &self,
         (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
         (params, back): &FormsGiven<'tcx>,
@@ -459,7 +459,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Not a trait's method, whose value is its impl's or its copied
     /// default's, of the instance's own types; a function of the crate's or
     /// a library's, whose JS rust-js wrote.
-    pub(in crate::lower) fn reified_takes_generic_forms(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    pub fn reified_takes_generic_forms(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
         if self.tcx.trait_of_assoc(def_id).is_some()
             || !(self.is_rust_fn(def_id) || self.krate.foreign.item(def_id).is_some())
         {
@@ -741,7 +741,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// another parameter or the result that names that type parameter,
     /// `Self::IntoIter`, which may hold it (#973).
     /// `lets_pointers_out_of` of the function `fn_id`.
-    pub(in crate::lower) fn lets_pointers_out(&self, fn_id: DefId, i: usize) -> bool {
+    pub fn lets_pointers_out(&self, fn_id: DefId, i: usize) -> bool {
         let (inputs, output) = self.signature_of(fn_id);
         lets_pointers_out_of(self.tcx, (&inputs, output), i)
     }
@@ -752,7 +752,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the parameter is a box, a number's or generic code's (ADR 1114). A
     /// parameter that's the object is given the object, whose pointer,
     /// `$ptrTo(object)`, is one for the object.
-    pub(in crate::lower) fn given_its_pointer(&self, fn_id: DefId, i: usize) -> bool {
+    pub fn given_its_pointer(&self, fn_id: DefId, i: usize) -> bool {
         self.lets_pointers_out(fn_id, i) && self.param_is_box(fn_id, i)
     }
 
@@ -796,7 +796,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `local` is a parameter of the function or closure `body`
     /// is, given the pointer to its place (`given_its_pointer`); a closure's
     /// parameters numbered after what it captures.
-    pub(in crate::lower) fn given_its_pointer_here(
+    pub fn given_its_pointer_here(
         &self,
         body: &rustc_middle::mir::Body<'tcx>,
         local: rustc_middle::mir::Local,
@@ -819,7 +819,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
     }
 
-    pub(super) fn borrow_outlives_call(&self, fn_id: DefId, i: usize) -> bool {
+    pub fn borrow_outlives_call(&self, fn_id: DefId, i: usize) -> bool {
         let sig = self
             .tcx
             .fn_sig(fn_id)
@@ -891,7 +891,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its caller has it: a `&mut` generic code boxes, its `value` (ADR 0099).
     /// A trait's method, called through a dictionary, by the trait's
     /// signature, which its dictionary's entry gives (ADR 0454).
-    pub(in crate::lower) fn generic_result_values(
+    pub fn generic_result_values(
         &self,
         (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
         value: Expr,

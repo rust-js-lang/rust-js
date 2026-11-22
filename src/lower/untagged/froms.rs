@@ -16,7 +16,7 @@ impl<'tcx> Recognition<'_, 'tcx> {
     /// (`from_gives_its_argument`): `Src::from(s)`, the impl's `from` it
     /// resolves to, or `s.into()`, the `from` its `Into` runs, a binding
     /// crate's too, `BlobPart::from(chunk)`, whose body rust-js has none of.
-    pub(in crate::lower) fn calls_from_giving_its_argument(&self, def_id: DefId, args: GenericArgsRef<'tcx>) -> bool {
+    pub fn calls_from_giving_its_argument(&self, def_id: DefId, args: GenericArgsRef<'tcx>) -> bool {
         let from = match self.resolve_into(def_id, args) {
             Some((_, _, implementation)) => Some(implementation),
             None => (super::super::items::resolve_instance_in(self.tcx, self.typing_env, def_id, args)

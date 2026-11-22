@@ -10,11 +10,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of `made`, a body's dictionaries and their names, each that `body`
     /// writes twice or more: named there, and declared, for its top, each
     /// before what names it (ADR 0979).
-    pub(in crate::lower) fn declare_repeated(
-        &mut self,
-        mut made: Vec<(String, Expr)>,
-        body: &mut [js::Stmt],
-    ) -> Vec<js::Stmt> {
+    pub fn declare_repeated(&mut self, mut made: Vec<(String, Expr)>, body: &mut [js::Stmt]) -> Vec<js::Stmt> {
         // The largest first, so one inside another is counted in its `const`.
         made.sort_by_key(|(_, e)| std::cmp::Reverse(size(e)));
         let mut declared: Vec<js::Stmt> = Vec::new();
@@ -50,7 +46,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// amended, #1355), through `declare_repeated` as the kept are. Only of a
     /// dictionary always given (`always_given`): read at the top, ahead of
     /// a branch that tests one that may be `undefined`, its call would throw.
-    pub(in crate::lower) fn given_entries(&self, body: &mut [js::Stmt]) -> Vec<(String, Expr)> {
+    pub fn given_entries(&self, body: &mut [js::Stmt]) -> Vec<(String, Expr)> {
         let present = self.given_dictionaries(|tr| super::always_given(self.tcx, tr));
         entries_to_declare(body, &self.given_names(), &present)
     }

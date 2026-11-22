@@ -185,7 +185,7 @@ impl<'tcx> SelfHandles<'tcx> {
 
     /// What the crate's functions' returns alone own, which its contract
     /// says (ADR 0317, amended).
-    pub(crate) fn owned_by_return(&self) -> &OwnedByReturn {
+    pub fn owned_by_return(&self) -> &OwnedByReturn {
         &self.owned
     }
 
@@ -217,7 +217,7 @@ impl<'tcx> SelfHandles<'tcx> {
     /// the closure's own, or its owner's the cell is the variable of; none
     /// where `body` isn't the maker, but a closure its maker gave the name
     /// to, a value cell's readers' (`value_cells`).
-    pub(crate) fn made_of(&self, body: DefId, closure: DefId) -> Option<(usize, Option<Local>)> {
+    pub fn made_of(&self, body: DefId, closure: DefId) -> Option<(usize, Option<Local>)> {
         let own = (self.handles.iter()).find(|h| h.maker == body && h.closure == closure);
         own.map(|h| (h.capture, Some(h.handle))).or_else(|| {
             self.owners.iter().find_map(|o| {
@@ -229,7 +229,7 @@ impl<'tcx> SelfHandles<'tcx> {
 
     /// Each block of `closure` whose call gives the `Rc` its handle names,
     /// its own or its owner's, to the local it gives it to, if any.
-    pub(crate) fn read_by(&self, closure: DefId) -> Option<&IndexMap<BasicBlock, Local>> {
+    pub fn read_by(&self, closure: DefId) -> Option<&IndexMap<BasicBlock, Local>> {
         let own = self.handles.iter().find(|h| h.closure == closure);
         own.map(|h| &h.own).or_else(|| {
             self.owners
@@ -240,7 +240,7 @@ impl<'tcx> SelfHandles<'tcx> {
 
     /// The blocks of `body` whose call makes an owner handle's cell, each
     /// the `let` of the local of the `Rc` it's the variable of.
-    pub(crate) fn declared(&self, body: DefId) -> IndexMap<BasicBlock, Local> {
+    pub fn declared(&self, body: DefId) -> IndexMap<BasicBlock, Local> {
         (self.owners.iter())
             .filter(|o| o.maker == body)
             .filter_map(|o| Some((o.declared?, o.handle)))
@@ -249,7 +249,7 @@ impl<'tcx> SelfHandles<'tcx> {
 
     /// The locals of `body` of no value, which a tuple holds where the
     /// clone of a value cell it's given is no JS (`value_cells`, #641).
-    pub(crate) fn unwritten(&self, body: DefId) -> IndexSet<Local> {
+    pub fn unwritten(&self, body: DefId) -> IndexSet<Local> {
         (self.owners.iter())
             .flat_map(|o| &o.unwritten)
             .filter(|&&(of, _)| of == body)
@@ -259,7 +259,7 @@ impl<'tcx> SelfHandles<'tcx> {
 
     /// What `body` writes nothing of: its handles' cells' making and
     /// setting, and its reads of its own.
-    pub(crate) fn unlowered(&self, body: DefId) -> IndexSet<Location> {
+    pub fn unlowered(&self, body: DefId) -> IndexSet<Location> {
         let mut at = IndexSet::default();
         for h in &self.handles {
             if h.maker == body {

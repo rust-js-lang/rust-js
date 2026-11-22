@@ -114,11 +114,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// Whether `def_id` is an `extend` std's collection asks its hint of as
     /// it fills: a `Vec`'s, a `VecDeque`'s or a `BinaryHeap`'s.
-    pub(in crate::lower) fn extend_grows(
-        &self,
-        def_id: rustc_span::def_id::DefId,
-        generic_args: ty::GenericArgsRef<'tcx>,
-    ) -> bool {
+    pub fn extend_grows(&self, def_id: rustc_span::def_id::DefId, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
         self.tcx
             .trait_of_assoc(def_id)
             .is_some_and(|t| crate::lower::recognition::is_extend(self.tcx, t))
@@ -266,7 +262,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// (`extend_grows`), or reserves room in, whose size std grows it by,
     /// or asks the capacity of, `usize::MAX` of items of no size (#1180):
     /// of a type parameter's, its caller's (`capacity_item_size`).
-    pub(in crate::lower) fn grown_vec_item(
+    pub fn grown_vec_item(
         &self,
         callee: rustc_span::def_id::DefId,
         args: ty::GenericArgsRef<'tcx>,
@@ -834,7 +830,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// kept (`mir_std_call`).
     /// A `dyn`'s too, of one Rust made, not a binding, `binding_made`
     /// (#1377).
-    pub(in crate::lower) fn extend_fills(&self, into: Ty<'tcx>, (iterable, binding_made): (Ty<'tcx>, bool)) -> bool {
+    pub fn extend_fills(&self, into: Ty<'tcx>, (iterable, binding_made): (Ty<'tcx>, bool)) -> bool {
         let iter_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
         self.recognition().grows_as_it_extends(into)
             && (self.recognition().hint_reaches_own_where(iter_ty, !binding_made)
@@ -973,7 +969,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    pub(in crate::lower) fn capacity_item_size(&self, item: Ty<'tcx>) -> Option<Expr> {
+    pub fn capacity_item_size(&self, item: Ty<'tcx>) -> Option<Expr> {
         self.room_value(item)
     }
 
@@ -1080,7 +1076,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// what `of`, the collection, holds. `it` as it is of another, which
     /// asks none first, a `String` by strings, a B-tree's; a `Vec`'s and a
     /// `VecDeque`'s, which ask it as they grow, are their own.
-    pub(in crate::lower) fn extended_reserved(&self, it: Expr, into: Ty<'tcx>, iterable: Ty<'tcx>, of: Expr) -> Expr {
+    pub fn extended_reserved(&self, it: Expr, into: Ty<'tcx>, iterable: Ty<'tcx>, of: Expr) -> Expr {
         match self.recognition().extend_room(into, iterable) {
             Some((iter_ty, room)) => self.reserved_by_hint(it, Some(iter_ty), room, Some(of)),
             None => it,

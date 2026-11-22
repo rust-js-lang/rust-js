@@ -27,7 +27,7 @@ use rustc_span::Span;
 /// given unused: a function unrun, `map`'s of a `None`, `unwrap_or_else`'s
 /// of a `Some`; a value unkept, `unwrap_or`'s of a `Some`.
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum Unused {
+pub enum Unused {
     None,
     Some,
     Ok,
@@ -38,7 +38,7 @@ pub(super) enum Unused {
 
 impl Unused {
     /// What its subject's called, held to be tested.
-    pub(super) fn subject(self) -> Role {
+    pub fn subject(self) -> Role {
         match self {
             Unused::None | Unused::Some => Role::Option,
             Unused::Ok | Unused::Err => Role::Result,
@@ -79,7 +79,7 @@ pub(super) fn unused_arguments(known: super::recognition::Std) -> &'static [(usi
 
 /// An `Option`, `Result` or `Vec` method (ADR 0062).
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum Comb {
+pub enum Comb {
     UnwrapOrElse,
     UnwrapOrDefault,
     MapOr,
@@ -177,7 +177,7 @@ pub(super) enum Comb {
 
 /// An iterator adapter or consumer (ADR 0062), over an array or a JS iterator.
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum IterComb {
+pub enum IterComb {
     FilterMap,
     /// `map_while(f)`: `map(f)`, then its `Some`s till the first `None`,
     /// as `take_while` takes them (ADR 0515).
@@ -210,7 +210,7 @@ impl IterComb {
     /// and it drops each it discards as it discards it (ADR 0465); and
     /// `flat_map`'s and `flatten`'s, which hold the inner one they step too,
     /// closed as well (ADR 0510); and `filter_map`'s (ADR 0518).
-    pub(in crate::lower) fn holds_its_sources(self) -> bool {
+    pub fn holds_its_sources(self) -> bool {
         matches!(
             self,
             IterComb::Zip
@@ -231,7 +231,7 @@ impl IterComb {
 /// One of std's iterator sources (ADR 0128): `once` and `empty` are
 /// arrays, and the rest, which may never end, JS iterators.
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum IterSource {
+pub enum IterSource {
     Once,
     Empty,
     Repeat,
@@ -249,7 +249,7 @@ pub(super) enum IterSource {
 /// `{ iter, peeked }`, a JS iterator, whose own methods are rewritten over
 /// it (ADR 0561).
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum StepOp {
+pub enum StepOp {
     Next,
     Peek,
     /// A `Peekable`'s `peek_mut`: the item, or a handle on it (ADR 0513).

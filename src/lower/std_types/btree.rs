@@ -54,7 +54,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its range, its bounds start then end, as std's `ExtractIf` drops its
     /// `pred` then its `range` where its owner drops it (#945,
     /// `closed_on_drop`).
-    pub(in crate::lower) fn map_extract_if_values(
+    pub fn map_extract_if_values(
         &mut self,
         (m, receiver): (Expr, Ty<'tcx>),
         range: Option<(Expr, Ty<'tcx>)>,
@@ -104,7 +104,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A B-tree's range of its keys (ADR 0325), of the tree's value and
     /// type, and the range's.
-    pub(in crate::lower) fn tree_range_values(
+    pub fn tree_range_values(
         &mut self,
         (m, receiver): (Expr, Ty<'tcx>),
         (range, bounds): (Expr, Ty<'tcx>),

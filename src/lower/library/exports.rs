@@ -9,7 +9,7 @@ use super::*;
 /// bindings its modules hold, which a consumer naming one through its
 /// module reads through it (ADR 0633). What a consumer reaches that it
 /// doesn't export, the consumer compiles (ADR 0914, amended).
-pub(in crate::lower) fn exports<'tcx>(
+pub fn exports<'tcx>(
     tcx: TyCtxt<'tcx>,
     (functions, exported, internal): (&IndexMap<DefId, FnInfo>, &Exported, &[super::internal::InternalExport]),
     contracts: &Contracts<'_, 'tcx>,

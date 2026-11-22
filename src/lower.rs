@@ -32,75 +32,75 @@ use rustc_span::{SourceFile, Span};
 
 use rust_js_program::js::{self, Expr, Prop, Stmt, StmtKind};
 
-mod aggregates;
-mod analysis;
-mod binding_calls;
-mod bindings;
+pub mod aggregates;
+pub mod analysis;
+pub mod binding_calls;
+pub mod bindings;
 mod bodies;
-mod body_queries;
-mod call_graph;
-mod calls;
+pub mod body_queries;
+pub mod call_graph;
+pub mod calls;
 mod casing;
-mod classes;
-mod combinators;
-mod copies;
-mod crate_facts;
-mod declarations;
-mod default_exports;
-mod display;
-mod drops;
+pub mod classes;
+pub mod combinators;
+pub mod copies;
+pub mod crate_facts;
+pub mod declarations;
+pub mod default_exports;
+pub mod display;
+pub mod drops;
 mod field_keys;
-mod format_args;
+pub mod format_args;
 mod format_spec;
-mod generic_facts;
-mod held;
-mod instances;
-mod items;
-mod iterators;
-mod jsx;
+pub mod generic_facts;
+pub mod held;
+pub mod instances;
+pub mod items;
+pub mod iterators;
+pub mod jsx;
 mod jsx_api;
-mod lent;
-mod library;
-mod literals;
-pub(crate) mod liveness;
-mod load_order;
+pub mod lent;
+pub mod library;
+pub mod literals;
+pub mod liveness;
+pub mod load_order;
 mod loops;
-mod mir;
-mod mir_hooks;
-mod mut_refs;
-mod named_constants;
-mod noted;
+pub mod mir;
+pub mod mir_hooks;
+pub mod mut_refs;
+pub mod named_constants;
+pub mod noted;
 mod ordering;
 mod parameter_names;
-mod passed_on;
-mod patterns;
+pub mod passed_on;
+pub mod patterns;
 // The driver's side, which names `mir`: what main.rs, worker.rs and
 // command.rs ask of the lowering beyond the root's facade (#2299).
 pub(crate) mod pipeline;
 mod places;
 mod plain;
-mod pointers;
-mod predicates;
-mod recognition;
+pub mod pointers;
+pub mod predicates;
+pub mod recognition;
 mod recursive_fns;
-mod reexports;
-mod refusal;
-mod representation;
-mod serde;
-pub(crate) mod session;
+pub mod reexports;
+pub mod refusal;
+pub mod representation;
+pub mod serde;
+pub mod session;
 mod shipped;
 mod shortcuts;
-mod signatures;
-mod sources;
+pub mod signatures;
+pub mod sources;
 pub mod std_coverage;
-mod std_impls;
-mod std_types;
+pub mod std_impls;
+pub mod std_types;
 mod support;
-mod temporary_names;
+pub mod temporary_names;
 use temporary_names::{Base, Role};
-mod traits;
+pub mod traits;
 mod unions;
-mod untagged;
+pub mod untagged;
 mod uses;
 
 pub use analysis::{
@@ -131,19 +131,19 @@ use body_queries::strip;
 use crate_facts::{CrateFacts, Settled};
 use parameter_names::{default_parameter_name, parameter_name, written_parameter_name};
 
-type R<T> = Result<T, refusal::Refusal>;
+pub type R<T> = Result<T, refusal::Refusal>;
 
 /// A function's THIR, copied out of rustc before borrowck steals it: read
 /// for the shape and facts its MIR is lowered with. Cloned for each build
 /// of a case one rustc session compiles (#2301).
 #[derive(Clone)]
 pub struct Body<'tcx> {
-    def_id: DefId,
-    thir: Thir<'tcx>,
-    expr: ExprId,
-    facts: body_queries::BodyFacts<'tcx>,
+    pub def_id: DefId,
+    pub thir: Thir<'tcx>,
+    pub expr: ExprId,
+    pub facts: body_queries::BodyFacts<'tcx>,
     /// Its MIR, which the body is lowered from where it's read (ADR 0364).
-    mir: Option<analysis::Mir<'tcx>>,
+    pub mir: Option<analysis::Mir<'tcx>>,
 }
 
 impl Body<'_> {
@@ -156,11 +156,11 @@ impl Body<'_> {
 
 /// Where a function or a `const` ends up in the JS: its module's file,
 /// under this name.
-struct FnInfo {
-    module: LocalModId,
-    name: String,
+pub struct FnInfo {
+    pub module: LocalModId,
+    pub name: String,
     /// A method's type's object of methods (ADR 0047): `Counter` for `Counter.tick`.
-    owner: Option<String>,
+    pub owner: Option<String>,
     /// What its module exports it by where its module names it apart: its
     /// own name, `delete` of `delete$`, a word JS keeps, or `fetch` of
     /// `fetch$1`, a global its module may read, `export { delete$ as
@@ -171,7 +171,7 @@ struct FnInfo {
 impl FnInfo {
     /// The name its module exports it by, where it exports it by its own
     /// (`default_exports::exported_as` asks it of an alias first).
-    fn exported(&self) -> &str {
+    pub fn exported(&self) -> &str {
         self.export.as_deref().unwrap_or(&self.name)
     }
 }
@@ -235,7 +235,7 @@ fn module_path(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<String> {
 
 /// The `.rs` file a module's code lives in: its own file for `mod foo;`,
 /// the parent's file for an inline `mod foo { .. }`.
-fn module_file(tcx: TyCtxt<'_>, module: LocalModId) -> Arc<SourceFile> {
+pub fn module_file(tcx: TyCtxt<'_>, module: LocalModId) -> Arc<SourceFile> {
     let inner = tcx.hir_get_module(module).0.spans.inner_span;
     tcx.sess.source_map().lookup_source_file(inner.lo())
 }
@@ -244,7 +244,7 @@ fn module_file(tcx: TyCtxt<'_>, module: LocalModId) -> Arc<SourceFile> {
 /// enclosing module's, `sandpack-rsc/bridge.rs` of `#[path = "sandpack-rsc"]
 /// mod sandpack_rsc { mod bridge; }`: where no module path can name it. Not
 /// an inline module's, which is its parent's file.
-pub(super) fn located(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
+pub fn located(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
     if module == CRATE_MOD_ID {
         return false;
     }
@@ -267,7 +267,7 @@ pub(super) fn located(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
 /// A function item's type: the function, and its generic args. rustc 1.99
 /// binds the args; a body's never have bound vars, as rustc's own MIR
 /// building reads them.
-pub(crate) fn fn_def<'tcx>(ty: Ty<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+pub fn fn_def<'tcx>(ty: Ty<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)> {
     match *ty.kind() {
         ty::FnDef(def_id, args) => Some((def_id, args.no_bound_vars().expect("a body's function item, unbound"))),
         _ => None,
@@ -277,7 +277,7 @@ pub(crate) fn fn_def<'tcx>(ty: Ty<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)
 /// The constant a constant alias names: an associated const of a trait or
 /// of an impl, a free one or an anonymous one. Each of 1.100's kinds, none
 /// by a wildcard, so a kind a release adds is asked here first.
-pub(crate) fn alias_const_def_id(kind: ty::AliasConstKind<'_>) -> DefId {
+pub fn alias_const_def_id(kind: ty::AliasConstKind<'_>) -> DefId {
     match kind {
         ty::AliasConstKind::Projection { def_id }
         | ty::AliasConstKind::InherentSelf { def_id }
@@ -290,14 +290,14 @@ pub(crate) fn alias_const_def_id(kind: ty::AliasConstKind<'_>) -> DefId {
 pub struct LoweredFn {
     pub function: js::Function,
     pub jsx: bool,
-    dependencies: Dependencies,
+    pub dependencies: Dependencies,
 }
 
-struct Var {
+pub struct Var {
     /// Usually the variable's JS name. An immutable binding into a pattern
     /// can instead just name the place it matched: `let (q, r) = t` makes
     /// `q` mean `t[0]`, with no JS variable at all.
-    place: Expr,
+    pub place: Expr,
     mutable: bool,
 }
 
@@ -307,18 +307,18 @@ struct Var {
 /// copied into an impl, has its own (`enter_body`). Something known of a
 /// variable, by its `LocalVarId`, goes here, and so goes with it.
 #[derive(Default)]
-struct Locals {
-    vars: IndexMap<LocalVarId, Var>,
+pub struct Locals {
+    pub vars: IndexMap<LocalVarId, Var>,
     /// A props pattern's rest, JS's `...props`, by its name: the keys the
     /// pattern names, which it never holds (ADRs 0195, 0205).
     rests: IndexMap<js::Name, Vec<String>>,
     /// What lowering a body from its MIR found of its variables (ADR 0364),
     /// mir.rs's, which the rest ask of it.
-    mir: noted::Found,
+    pub mir: noted::Found,
 }
 
 /// How a Rust struct or tuple type is represented in JS (ADR 0020).
-enum Shape<'tcx> {
+pub enum Shape<'tcx> {
     /// A struct with named fields: `{ x: 1, y: 2 }`.
     /// A struct's fields, by their keys: a name, or a symbol (ADR 1051).
     Object(Vec<(bindings::FieldKey, Ty<'tcx>)>),
@@ -331,7 +331,7 @@ enum Shape<'tcx> {
 /// A body lowered inside the one being lowered, and what it starts from
 /// (`enter_body`). Each has its own THIR and owner; what
 /// else isn't said here, it shares with the enclosing body.
-enum Nested<'tcx> {
+pub enum Nested<'tcx> {
     /// A closure's, an arrow: the enclosing `Locals` and captures, and
     /// these names to start from.
     Closure { names: IndexSet<String> },
@@ -377,37 +377,37 @@ struct ItemScope<'tcx> {
 /// Dependencies recorded by one function (including copied trait bodies and
 /// closures), returned with its JS. They never mutate the crate's inputs.
 #[derive(Default)]
-struct Dependencies {
-    references: IndexSet<(LocalModId, DefId)>,
+pub struct Dependencies {
+    pub references: IndexSet<(LocalModId, DefId)>,
     /// Each copy of a function another module's calls name, by its index
     /// (ADR 0051, amended).
-    copy_references: IndexSet<(LocalModId, DefId, usize)>,
+    pub copy_references: IndexSet<(LocalModId, DefId, usize)>,
     /// Each call of a namespace's method through a value whose call needs a
     /// copy of it, which calls the value's function, the module's own JS:
     /// refused where that copy isn't alike it (rd311, ADRs 0051, 1037).
     through_copies: Vec<(DefId, usize, rustc_span::Span)>,
-    package_uses: IndexSet<(LocalModId, Export)>,
+    pub package_uses: IndexSet<(LocalModId, Export)>,
     /// Each import read whose fields change in place, a library's static
     /// of a type that does, an atomic's `{ value }`, which a read of moves
     /// past no write (#1028).
-    changing_imports: IndexSet<String>,
-    uses: Vec<(DefId, DefId)>,
+    pub changing_imports: IndexSet<String>,
+    pub uses: Vec<(DefId, DefId)>,
     /// Each binding a module reads through another of the crate's that
     /// holds it, by its `const`'s name there and whether it's that
     /// module's default (ADR 0633).
-    held: IndexSet<(LocalModId, LocalModId, String, bool, DefId)>,
+    pub held: IndexSet<(LocalModId, LocalModId, String, bool, DefId)>,
     /// Each of the crate's modules a module reads a function through the
     /// namespace of, which re-exports it, `Plugin.registerEvents` (rd137):
     /// an import of that module, where the function's own is another's.
-    reexporters: IndexSet<(LocalModId, LocalModId)>,
+    pub reexporters: IndexSet<(LocalModId, LocalModId)>,
     /// The class a `js::on_load!` body replaces the prototype of, where:
     /// set right after its constructor, before its methods (#448, ADR
     /// 0761 amended).
-    prototype_set: Option<(DefId, rustc_span::Span)>,
+    pub prototype_set: Option<(DefId, rustc_span::Span)>,
     /// Each ES class whose prototype it reads as a value,
     /// `js::class::<T>().prototype()`, where an accessor may be defined of
     /// a field's name: its fields undeclared (#568).
-    prototypes_read: IndexSet<DefId>,
+    pub prototypes_read: IndexSet<DefId>,
     /// Whether it left a dictionary of a value a library makes a `dyn` of
     /// without `fmtInto`, its writes not followed: what lowering found, which
     /// the library's contract says (`makes_fmt_dyns`, #1797, ADR 1148).
@@ -416,122 +416,122 @@ struct Dependencies {
     /// closure the function, only as the crate reads no function's
     /// identity: one where Rust has two, which a library's consumer that
     /// compares them compiles its own of (ADR 0605, amended; #1052).
-    merges_identities: bool,
+    pub merges_identities: bool,
 }
 
-struct FnCx<'a, 'tcx> {
-    krate: &'a CrateFacts<'a, 'tcx>,
+pub struct FnCx<'a, 'tcx> {
+    pub krate: &'a CrateFacts<'a, 'tcx>,
     /// What the crate's bodies lowered before it settled (`Settled`).
-    settled: &'a Settled<'tcx>,
-    dependencies: RefCell<Dependencies>,
+    pub settled: &'a Settled<'tcx>,
+    pub dependencies: RefCell<Dependencies>,
     /// What lowering this function found of drops, which the pipeline
     /// gathers, of each function lowered or not, and resolves (ADRs 0190,
     /// 0300).
-    drops_observed: RefCell<drops::DropsObserved>,
+    pub drops_observed: RefCell<drops::DropsObserved>,
     /// The library items this function's lowering found the crate must
     /// compile itself, which their libraries' JS doesn't export, each with
     /// the module that asked, which the pipeline gathers: the crate is
     /// lowered again with them (ADR 0914, amended; ADR 1148).
-    asked_of_libraries: RefCell<Vec<(DefId, LocalModId)>>,
+    pub asked_of_libraries: RefCell<Vec<(DefId, LocalModId)>>,
     /// The module's functions this body made and called, beside those
     /// `settled` holds, which the pipeline settles after it (ADR 1148).
-    module_fns_made: RefCell<recursive_fns::MadeHere<'tcx>>,
+    pub module_fns_made: RefCell<recursive_fns::MadeHere<'tcx>>,
     /// What this body saw of the calls and returns of the crate's functions
     /// with own nullable parameters, which the pipeline settles after it
     /// (ADR 1148).
-    nulled_seen: RefCell<analysis::nulled_params::NulledSeen>,
-    tcx: TyCtxt<'tcx>,
-    typing_env: ty::TypingEnv<'tcx>,
+    pub nulled_seen: RefCell<analysis::nulled_params::NulledSeen>,
+    pub tcx: TyCtxt<'tcx>,
+    pub typing_env: ty::TypingEnv<'tcx>,
     /// What the generic item being lowered is given, besides its arguments.
-    given: Given<'tcx>,
+    pub given: Given<'tcx>,
     /// In a generic type's derived `serialize` or `deserialize` (ADR
     /// 0080): each type parameter, and the parameter that writes or reads it.
-    codecs: Vec<(Ty<'tcx>, js::Name)>,
+    pub codecs: Vec<(Ty<'tcx>, js::Name)>,
     /// The body being lowered: its own, or a nested one's (`lowered_in`).
-    frame: BodyFrame<'a, 'tcx>,
+    pub frame: BodyFrame<'a, 'tcx>,
     /// The module receiving this function and its recorded dependencies.
-    module: LocalModId,
+    pub module: LocalModId,
     /// What this body knows of its variables.
-    locals: Locals,
+    pub locals: Locals,
     /// JS names already taken in this function, its item's: given out of
     /// `&self` too, so each name a body declares is the item's own
     /// wherever it's made (#1681 change 3, M2).
-    names: std::cell::RefCell<IndexSet<String>>,
+    pub names: std::cell::RefCell<IndexSet<String>>,
     /// Of each word `fresh` gives out as a base, the first name made of it
     /// in the item: what a name given apart from that base is of, by its
     /// id (`js::Name::given_apart_from`, ADR 1150).
-    first_of: std::cell::RefCell<IndexMap<String, js::Name>>,
+    pub first_of: std::cell::RefCell<IndexMap<String, js::Name>>,
     /// Those taken by the module: its functions, imports and globals.
-    module_names: &'a IndexSet<String>,
+    pub module_names: &'a IndexSet<String>,
     /// Whether this function makes JSX.
-    jsx: bool,
+    pub jsx: bool,
     /// What writing to a `Formatter` knows (ADRs 0054, 0137).
-    writing: display::Writing,
+    pub writing: display::Writing,
     /// The functions of recursive types only a caller knows being made
     /// here, which one inside calls (`recursive_fns`).
-    recursive: recursive_fns::Making<'tcx>,
+    pub recursive: recursive_fns::Making<'tcx>,
     /// The item being lowered: what `fn_ref` records as using its target.
-    item: DefId,
+    pub item: DefId,
     /// Which copy of it, where it's one its callers need besides its own JS
     /// (`analysis::JsGiven`, ADR 0051, amended).
-    copy: Option<usize>,
+    pub copy: Option<usize>,
     /// What walks of types found, each walked once, under each typing
     /// environment: what a type holds depends on the bounds in force, as a
     /// copied default's `T::Item` is a number and its sibling's a `Vec`.
-    walks: RefCell<IndexMap<ty::TypingEnv<'tcx>, Rc<TypeWalks<'tcx>>>>,
+    pub walks: RefCell<IndexMap<ty::TypingEnv<'tcx>, Rc<TypeWalks<'tcx>>>>,
     /// What's dropped, and where (ADR 0098).
-    drop_state: drops::DropState<'tcx>,
+    pub drop_state: drops::DropState<'tcx>,
     /// Of a function whose scope struct's methods are functions declared
     /// in it, each method's function's name, which calls of it call (ADR
     /// 1043).
-    scope_functions: IndexMap<DefId, js::Name>,
+    pub scope_functions: IndexMap<DefId, js::Name>,
     /// And the lowering of each this one declares, a copy or none (#500).
-    scope_copies: IndexMap<DefId, Option<usize>>,
+    pub scope_copies: IndexMap<DefId, Option<usize>>,
     /// While one of them is lowered, the name of the variable it closes
     /// over, its `self`'s.
-    scope_self: Option<js::Name>,
+    pub scope_self: Option<js::Name>,
     /// Once a function's body is lowered, the variable of each of its
     /// scope structs' values, by the function, whose fields are then its
     /// variables (ADR 1043, amended).
-    scope_values: Vec<(DefId, js::Name, rust_js_program::collections::IndexSet<js::Name>)>,
+    pub scope_values: Vec<(DefId, js::Name, rust_js_program::collections::IndexSet<js::Name>)>,
     /// While a `match`'s tests of its arms are made, which it refuses
     /// itself where they'd tell a variant by `instanceof` of a JS object
     /// type's class, once it knows its arms differ (#555): no test of them
     /// refuses it then.
-    telling_arms: Cell<bool>,
+    pub telling_arms: Cell<bool>,
     /// The local a std iterator method's call being lowered makes its value
     /// into, where it's a whole local, and its type, regions erased: its
     /// maker's MIR identity (#814, #851).
-    made_into: Option<(rustc_middle::mir::Local, Ty<'tcx>)>,
+    pub made_into: Option<(rustc_middle::mir::Local, Ty<'tcx>)>,
     /// The whole locals that call is given, and their types, regions
     /// erased: what an adapter made in place where it's stepped is held in
     /// (#851).
-    made_from: Vec<(rustc_middle::mir::Local, Ty<'tcx>)>,
+    pub made_from: Vec<(rustc_middle::mir::Local, Ty<'tcx>)>,
     /// While what's asked is whether a value made before has a back, its
     /// form's or its mark's, not whether what's made is to be made knowing
     /// it (`has_a_back`'s, #851).
-    asking_made: Cell<bool>,
+    pub asking_made: Cell<bool>,
     /// While the crate's iterator is made the JS iterator behind a `dyn`
     /// wrapper, `Box<dyn Iterator>` or `&mut dyn Iterator`, that wrapper:
     /// what `own_methods` gives what's made there is what the wrapper passes
     /// on as its own, std's catalog's (`seen_through`, #2217).
-    seen_through: Cell<Option<crate::lower::recognition::Wrapper>>,
+    pub seen_through: Cell<Option<crate::lower::recognition::Wrapper>>,
 }
 
 /// What a body being lowered has of its own, which a nested one, a
 /// closure's or a copied default's, takes whole and gives back
 /// (`lowered_in`): its THIR, the facts asked of it, and whose it is. A
 /// field every body has of its own goes here, and is swapped with it.
-struct BodyFrame<'a, 'tcx> {
-    thir: &'a Thir<'tcx>,
-    facts: &'a body_queries::BodyFacts<'tcx>,
+pub struct BodyFrame<'a, 'tcx> {
+    pub thir: &'a Thir<'tcx>,
+    pub facts: &'a body_queries::BodyFacts<'tcx>,
     /// Whose body `thir` is: its scope tree says where temporaries end.
-    owner: DefId,
+    pub owner: DefId,
 }
 
 /// What the generic item being lowered is given, besides its arguments.
 #[derive(Default)]
-struct Given<'tcx> {
+pub struct Given<'tcx> {
     /// Its dictionaries, for its bounds (ADR 0049).
     evidence: Vec<(ty::TraitRef<'tcx>, Expr)>,
     /// Each const parameter it's given, by its index: `N` (ADR 0107).
@@ -554,7 +554,7 @@ struct Given<'tcx> {
 /// in place, and the types it found unchanged on the way (#2204).
 type Walked<'tcx> = (bool, Rc<[Ty<'tcx>]>);
 
-struct TypeWalks<'tcx> {
+pub struct TypeWalks<'tcx> {
     /// What `unsupported_in` found of each struct and enum it looked into.
     representable: RefCell<IndexMap<Ty<'tcx>, Option<Ty<'tcx>>>>,
     /// While `unsupported_in` walks a type: how far out, among the types it's
@@ -643,11 +643,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     // ── Helpers ─────────────────────────────────────────────────────────
 
     /// Map the original callsite into the compiler-owned source arena.
-    fn js_span(&self, span: Span) -> js::Span {
+    pub fn js_span(&self, span: Span) -> js::Span {
         self.krate.sources.span(span)
     }
 
-    fn strip(&self, e: ExprId) -> ExprId {
+    pub fn strip(&self, e: ExprId) -> ExprId {
         strip(self.frame.thir, e)
     }
 
@@ -661,7 +661,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// temporary, `_24$1` of `_24`, a temporary's still (#1681 change 3,
     /// S4); a variable of its own, whose reads are made of it ("names are
     /// ids", ADR 1150).
-    fn fresh<'b>(&self, base: impl Into<Base<'b>>) -> js::Name {
+    pub fn fresh<'b>(&self, base: impl Into<Base<'b>>) -> js::Name {
         let base = base.into();
         match base {
             Base::Derived(source) => return self.derived(source),
@@ -709,21 +709,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The first of `made`'s names, its `k`th, that the item has none of
     /// yet: an unspelled name (`unspelled`), or a holder's (`derived`).
-    fn unspelled_as(&self, made: impl Fn(usize) -> js::Name) -> js::Name {
+    pub fn unspelled_as(&self, made: impl Fn(usize) -> js::Name) -> js::Name {
         let mut names = self.names.borrow_mut();
         (1..).map(made).find(|name| name.reserve_in(&mut names)).unwrap()
     }
 
     /// A `catch`'s parameter each time it's asked, of the item's names,
     /// each its own (#1681 change 3, M2), as preparation spells it.
-    fn catch_names(&self) -> impl FnMut() -> js::Name + '_ {
+    pub fn catch_names(&self) -> impl FnMut() -> js::Name + '_ {
         move || self.fresh(Role::Error)
     }
 
     /// The names a pattern gives the fields it leaves out, so the rest
     /// after them holds only the others (ADR 0205), each `_field`: one left
     /// out is `_` once it's known, as preparation names it.
-    fn left_out(&mut self, keys: &[&str]) -> Vec<js::Name> {
+    pub fn left_out(&mut self, keys: &[&str]) -> Vec<js::Name> {
         (keys.iter())
             .map(|key| {
                 self.fresh(Base::Named(&format!(
@@ -759,7 +759,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// trait's in generic code, `S::SIDES`, is its impl's dictionary's (ADR 0106).
     /// A use a library hands out what it stores by, `stored`, is a copy of
     /// its own, its objects' too (`copies::stored`, #1907).
-    fn named_const(
+    pub fn named_const(
         &mut self,
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
@@ -879,7 +879,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// among them, which the arrow of its call as MIR's is, its import by
     /// name where that's all it is (ADR 0100), and one of the crate's that
     /// takes rest arguments, whose arrow spreads them (ADR 0664).
-    fn fn_item_value(
+    pub fn fn_item_value(
         &mut self,
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
@@ -1045,7 +1045,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `[item; count]`, the count a caller's `N` or a number (ADR 0107);
     /// `constant`, whether the item is a named constant's value.
-    fn repeat(
+    pub fn repeat(
         &mut self,
         (item, item_ty): (Expr, Ty<'tcx>),
         count: ty::Const<'tcx>,
@@ -1121,7 +1121,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of a role that says nothing of it, `value`, the name its call gives
     /// first, `pullTwo`, which preparation spells where its scope lets it be
     /// (`Name::suggested`, #890).
-    fn spill<'b>(&mut self, base: impl Into<Base<'b>>, value: Expr, out: &mut Vec<Stmt>) -> Expr {
+    pub fn spill<'b>(&mut self, base: impl Into<Base<'b>>, value: Expr, out: &mut Vec<Stmt>) -> Expr {
         let base = base.into();
         let name = match base {
             // A holder's, and a held argument's, of their form (ADR 1150).
@@ -1139,7 +1139,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         held
     }
 
-    fn unsupported(&self, span: Span, what: &str) -> crate::lower::refusal::Refusal {
+    pub fn unsupported(&self, span: Span, what: &str) -> crate::lower::refusal::Refusal {
         refusal::refuse(self.tcx, span, refusal::Refused::Feature(what))
     }
 
@@ -1163,7 +1163,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// of `react#*.__CLIENT_INTERNALS..` by `import`'s name of the export it's
 /// in, or `require("eslint-plugin-react-hooks").rules` of one required
 /// (ADRs 0028, 0305).
-fn path_read(path: &str, required: &IndexSet<Export>, import: impl FnOnce(&Export) -> String) -> Expr {
+pub fn path_read(path: &str, required: &IndexSet<Export>, import: impl FnOnce(&Export) -> String) -> Expr {
     match bindings::js_import(path) {
         Some((export, rest)) if required.contains(&export) => bindings::read_path(bindings::required(&export), rest),
         // The import's name, which its declaration declares.
@@ -1197,13 +1197,13 @@ fn discriminants<'tcx>(tcx: TyCtxt<'tcx>, adt: ty::AdtDef<'tcx>) -> Vec<(String,
 /// `i128` would wrap negative (#1131). One enum's are all one kind, so their
 /// order is their values'.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub(in crate::lower) enum Discr {
+pub enum Discr {
     Signed(i128),
     Unsigned(u128),
 }
 
 impl Discr {
-    pub(in crate::lower) fn of<'tcx>(tcx: TyCtxt<'tcx>, d: ty::util::Discr<'tcx>) -> Discr {
+    pub fn of<'tcx>(tcx: TyCtxt<'tcx>, d: ty::util::Discr<'tcx>) -> Discr {
         match d.ty.is_signed() {
             true => {
                 let bits = d.ty.primitive_size(tcx).bits();
@@ -1215,7 +1215,7 @@ impl Discr {
 
     /// Its value as JS has it: a BigInt where `big`, a 64-bit or wider
     /// `repr`'s, else a number.
-    pub(in crate::lower) fn expr(self, big: bool) -> Expr {
+    pub fn expr(self, big: bool) -> Expr {
         match (self, big) {
             (Discr::Signed(n), true) => Expr::bigint(n),
             (Discr::Unsigned(n), true) => Expr::biguint(n),
@@ -1291,7 +1291,7 @@ fn without_refs<'p, 'tcx>(mut pat: &'p Pat<'tcx>) -> &'p Pat<'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    fn recognition(&self) -> recognition::Recognition<'_, 'tcx> {
+    pub fn recognition(&self) -> recognition::Recognition<'_, 'tcx> {
         recognition::Recognition {
             tcx: self.tcx,
             typing_env: self.typing_env,
@@ -1302,7 +1302,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 /// Translate a frontend module identity into an owned link symbol.
-fn module_symbol(module: LocalModId, export: &str) -> rust_js_program::js::Symbol {
+pub fn module_symbol(module: LocalModId, export: &str) -> rust_js_program::js::Symbol {
     rust_js_program::js::Symbol {
         module: module.to_def_id().index.as_u32(),
         export: export.to_owned(),
@@ -1311,6 +1311,6 @@ fn module_symbol(module: LocalModId, export: &str) -> rust_js_program::js::Symbo
 
 /// The catalogue of std's bodies `@rust-js/std` compiles, walked, which
 /// `bun run std` keeps (`--std-catalogue`, #2305).
-pub(crate) fn compiled_std_catalogue(tcx: TyCtxt<'_>) -> String {
+pub fn compiled_std_catalogue(tcx: TyCtxt<'_>) -> String {
     recognition::catalogue(tcx)
 }

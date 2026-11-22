@@ -27,7 +27,7 @@ use crate::lower::recognition::Recognition;
 /// indices: those a `Some` of which is the value, and of those, those JS
 /// gives, which may be `undefined` or `null` as they're given.
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub(in crate::lower) struct Params {
+pub struct Params {
     pub unboxed: BTreeSet<u32>,
     pub js: BTreeSet<u32>,
     /// Whether it gives back its `impl Iterator` as the JS iterator a JS
@@ -40,7 +40,7 @@ pub(in crate::lower) struct Params {
 /// Each function's lowerings: the one its module names it by, its JS's,
 /// and the copies its callers need besides, each named apart.
 #[derive(Default)]
-pub(in crate::lower) struct JsGiven {
+pub struct JsGiven {
     /// The generic functions only their callers call, whose calls each
     /// call the lowering that takes what they give as they give it.
     routed: IndexSet<DefId>,
@@ -139,7 +139,7 @@ impl JsGiven {
     /// What `id`'s own JS, the one its module names it by, takes its type
     /// parameters as: of one JS calls, each as JS gives it; of any other,
     /// as its crate's calls give them.
-    pub(in crate::lower) fn main(&self, tcx: TyCtxt<'_>, id: DefId) -> Params {
+    pub fn main(&self, tcx: TyCtxt<'_>, id: DefId) -> Params {
         let all: BTreeSet<u32> = super::mutation::type_params(tcx, id).into_iter().collect();
         match self.facing.contains(&id) {
             true => Params {
@@ -160,7 +160,7 @@ impl JsGiven {
 
     /// What lowering `copy` of `id` takes its type parameters as: its own
     /// JS's (`main`) where it's none.
-    pub(in crate::lower) fn params(&self, tcx: TyCtxt<'_>, id: DefId, copy: Option<usize>) -> Params {
+    pub fn params(&self, tcx: TyCtxt<'_>, id: DefId, copy: Option<usize>) -> Params {
         match copy {
             Some(at) => self.copies[&id][at].0.clone(),
             None => self.main(tcx, id),
@@ -168,12 +168,12 @@ impl JsGiven {
     }
 
     /// Each copy of `id`'s, by its index, and its name.
-    pub(in crate::lower) fn copies(&self, id: DefId) -> impl Iterator<Item = (usize, &str)> {
+    pub fn copies(&self, id: DefId) -> impl Iterator<Item = (usize, &str)> {
         (self.copies.get(&id).into_iter().flatten().enumerate()).map(|(at, (_, name))| (at, name.as_str()))
     }
 
     /// The name of `id`'s copy `at`.
-    pub(in crate::lower) fn name(&self, id: DefId, at: usize) -> &str {
+    pub fn name(&self, id: DefId, at: usize) -> &str {
         &self.copies[&id][at].1
     }
 
@@ -186,7 +186,7 @@ impl JsGiven {
     /// parameters as `params` calls, given `args`: its own JS where that
     /// takes what the call gives as it gives it, `None`; else the copy
     /// that does, by its index, or `Err` where none was made.
-    pub(in crate::lower) fn called<'tcx>(
+    pub fn called<'tcx>(
         &self,
         recognition: &Recognition<'_, 'tcx>,
         params: &Params,
@@ -254,11 +254,7 @@ fn given_as<'tcx>(recognition: &Recognition<'_, 'tcx>, params: &Params, given: T
 /// function, or an inherent impl's method, that's `pub`, and no library's
 /// function the crate compiles itself (ADR 0914), which no other crate or
 /// JS calls.
-pub(in crate::lower) fn js_facing(
-    tcx: TyCtxt<'_>,
-    foreign: &crate::lower::library::Foreign<'_, '_>,
-    id: DefId,
-) -> bool {
+pub fn js_facing(tcx: TyCtxt<'_>, foreign: &crate::lower::library::Foreign<'_, '_>, id: DefId) -> bool {
     !foreign.is_instance(id) && exported_function(tcx, id)
 }
 
@@ -282,7 +278,7 @@ pub(in crate::lower) fn exported_function(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// noop renderer's `noop_renderer.flush_sync_from_reconciler(f).flatten()`
 /// calls the reconciler's function through the value it's given (rd311, the
 /// user's decision; ADRs 0051, 1037).
-pub(in crate::lower) fn flattened_alike<'tcx>(
+pub fn flattened_alike<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
 ) -> Option<u32> {
@@ -302,7 +298,7 @@ pub(in crate::lower) fn flattened_alike<'tcx>(
 /// read by `.flatten()` alone and it's named nowhere else, so its library's
 /// JS is called, as through a value (rd311, rd324). The one answer the
 /// instances it needs and its call's lowering ask.
-pub(in crate::lower) fn flattened_by_name<'tcx>(
+pub fn flattened_by_name<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     body: &rustc_middle::mir::Body<'tcx>,
     called: (DefId, ty::GenericArgsRef<'tcx>),
@@ -343,7 +339,7 @@ pub(in crate::lower) fn flattened_by_name<'tcx>(
 }
 
 /// Whether `local` of `body` is read once, by a `.flatten()` it's moved to.
-pub(in crate::lower) fn read_by_flatten<'tcx>(
+pub fn read_by_flatten<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     body: &rustc_middle::mir::Body<'tcx>,
     local: rustc_middle::mir::Local,

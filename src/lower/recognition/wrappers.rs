@@ -203,7 +203,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// A `Pin<P>`'s `P`, the pointer it is in JS (ADR 0329): `pin_pointer`'s.
-    pub(in crate::lower) fn pinned(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn pinned(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         pin_pointer(self.tcx, ty)
     }
 
@@ -244,17 +244,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// A type whose `IntoFuture` is the crate's own (ADR 0571), awaited as
     /// what its `into_future` makes, not as the promise it isn't.
-    pub(in crate::lower) fn own_into_future(&self, ty: Ty<'tcx>) -> bool {
+    pub fn own_into_future(&self, ty: Ty<'tcx>) -> bool {
         self.own_impl_of(LangItem::IntoFutureIntoFuture, ty)
     }
 
     /// A type with an `own_into_future` that calling `def_id` of `args`
     /// asks an `IntoFuture` of, among its bounds, other than `into_future`
     /// itself: generic code, which awaits what it's given as a promise.
-    pub(in crate::lower) fn own_into_future_given(
-        &self,
-        (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
-    ) -> Option<Ty<'tcx>> {
+    pub fn own_into_future_given(&self, (def_id, args): (DefId, ty::GenericArgsRef<'tcx>)) -> Option<Ty<'tcx>> {
         if self.tcx.is_lang_item(def_id, LangItem::IntoFutureIntoFuture) {
             return None;
         }
@@ -285,17 +282,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// The `unlowered_future` that unsizing `from` to `to` makes a `dyn
     /// Future` of, as `Box::pin(f)` as a `Pin<Box<dyn Future>>` does.
-    pub(in crate::lower) fn unsized_unlowered_future(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn unsized_unlowered_future(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> Option<Ty<'tcx>> {
         (self.is_dyn_future(self.future_pointee(to)) && self.unlowered_future(from)).then(|| self.future_pointee(from))
     }
 
     /// The `unlowered_future` that calling `def_id` of `args` asks a
     /// `Future` or an `IntoFuture` of, among its bounds: `.await`'s
     /// `into_future(x)`, or a generic function's `F: Future`.
-    pub(in crate::lower) fn awaited_unlowered_future(
-        &self,
-        (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
-    ) -> Option<Ty<'tcx>> {
+    pub fn awaited_unlowered_future(&self, (def_id, args): (DefId, ty::GenericArgsRef<'tcx>)) -> Option<Ty<'tcx>> {
         self.tcx
             .clauses_of(def_id)
             .instantiate(self.tcx, args)
@@ -480,7 +474,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// A guard of a `RefCell` or a lock: what it guards (ADR 0025).
-    pub(in crate::lower) fn is_guard(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_guard(&self, ty: Ty<'tcx>) -> bool {
         [
             StdItem::RefCellRef,
             StdItem::RefCellRefMut,
@@ -568,7 +562,7 @@ pub(crate) fn is_as_deref(tcx: TyCtxt<'_>, id: DefId) -> bool {
         })
 }
 
-pub(crate) fn rc_pointee<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+pub fn rc_pointee<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args)
             if tcx.is_diagnostic_item(sym::Rc, adt.did()) || tcx.is_diagnostic_item(sym::Arc, adt.did()) =>
@@ -752,7 +746,7 @@ pub(crate) fn compares_fn_identity<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: 
 /// One of a `Cell`'s own methods, as what holds a function in it asks:
 /// what it writes, and what it reads (#427).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum CellMethod {
+pub enum CellMethod {
     /// `Cell::new(value)`.
     New,
     /// `cell.get()`.
@@ -764,7 +758,7 @@ pub(crate) enum CellMethod {
 }
 
 /// Which of a `Cell`'s own methods `id` is, if it's one.
-pub(crate) fn cell_own_method(tcx: TyCtxt<'_>, id: DefId) -> Option<CellMethod> {
+pub fn cell_own_method(tcx: TyCtxt<'_>, id: DefId) -> Option<CellMethod> {
     let imp = tcx.inherent_impl_of_assoc(id)?;
     let ty::Adt(adt, _) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind() else {
         return None;
@@ -780,7 +774,7 @@ pub(crate) fn cell_own_method(tcx: TyCtxt<'_>, id: DefId) -> Option<CellMethod> 
     })
 }
 
-pub(crate) fn is_rc_new(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub fn is_rc_new(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.item_name(id).as_str() == "new" && is_rc_method(tcx, id)
 }
 
@@ -814,7 +808,7 @@ pub(in crate::lower) fn local_key_access(tcx: TyCtxt<'_>, id: DefId) -> Option<b
 
 /// Which of a thread-local's `Cell` methods `id` is, its key's own: `get`,
 /// `take`, `set` or `replace` (rd707). Of any other, `None`.
-pub(in crate::lower) fn local_key_cell_method(tcx: TyCtxt<'_>, id: DefId) -> Option<LocalKeyCellMethod> {
+pub fn local_key_cell_method(tcx: TyCtxt<'_>, id: DefId) -> Option<LocalKeyCellMethod> {
     local_key_access(tcx, id)?;
     match tcx.item_name(id).as_str() {
         "get" => Some(LocalKeyCellMethod::Get),
@@ -826,7 +820,7 @@ pub(in crate::lower) fn local_key_cell_method(tcx: TyCtxt<'_>, id: DefId) -> Opt
 
 /// A thread-local's `Cell` method, `local_key_cell_method`'s.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum LocalKeyCellMethod {
+pub enum LocalKeyCellMethod {
     /// `KEY.get()`.
     Get,
     /// `KEY.take()`: it gives what it held, and leaves its default.
@@ -873,7 +867,7 @@ pub(in crate::lower) fn cell_of_key<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Ty
 }
 
 /// `std::panic::AssertUnwindSafe`, the value it holds (ADR 0660).
-pub(in crate::lower) fn is_assert_unwind_safe(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub fn is_assert_unwind_safe(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_std_path(tcx, id, StdPath::PanicAssertUnwindSafe)
 }
 
@@ -894,7 +888,7 @@ fn holds_value(tcx: TyCtxt<'_>, field: &ty::FieldDef) -> bool {
     !ty.is_unit() && !matches!(ty.kind(), ty::Adt(held, _) if tcx.is_lang_item(held.did(), LangItem::PhantomData))
 }
 
-pub(in crate::lower) fn transparent_field(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> Option<usize> {
+pub fn transparent_field(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> Option<usize> {
     if !adt.is_struct() || !adt.repr().transparent() || super::std_crates::is_std_crate(tcx, adt.did()) {
         return None;
     }
@@ -906,7 +900,7 @@ pub(in crate::lower) fn transparent_field(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) 
 
 /// Is `ty` an `Rc`, an `Arc` or a `Box` of a function, a closure or a
 /// `dyn Fn`: a function held as a value (`js::Known::Valued`)?
-pub(crate) fn holds_a_function<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+pub fn holds_a_function<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     let held = match ty.kind() {
         ty::Adt(adt, _) if adt.is_box() => ty.boxed_ty(),
         _ => rc_pointee(tcx, ty),

@@ -24,7 +24,7 @@ pub(super) type TypeReexport = (rustc_span::Span, Option<js::ImportFrom>, (Strin
 /// One name a module re-exports, where it's written: the statement, which
 /// its names of one module share; where it's from; and `(export, alias)`,
 /// what that exports it as and the name it's re-exported by.
-pub(super) type Named = (Written, js::ImportFrom, (String, String));
+pub type Named = (Written, js::ImportFrom, (String, String));
 
 /// Where one name a module re-exports is written: the statement, which its
 /// names of one module share and its comments are before, and its `Leaf`.
@@ -35,7 +35,7 @@ pub(super) type Written = (rustc_span::Span, Leaf);
 /// gives and the name it re-exports it by, `act` and `act`, `a` and `b` of
 /// `a as b`; none of a forwarder's; a glob's, which writes no name (#593).
 #[derive(Clone, Copy)]
-pub(super) enum Leaf {
+pub enum Leaf {
     Written(rustc_span::Span, rustc_span::Span),
     Unwritten,
     Glob,
@@ -54,7 +54,7 @@ const NO_LEAF: Leaf = Leaf::Unwritten;
 /// module's function its `js::export_default!` names, where that's
 /// written. What a `pub use` names that has JS but can't be said is
 /// refused, never left out.
-pub(super) fn reexports(
+pub fn reexports(
     tcx: TyCtxt<'_>,
     module: LocalModId,
     (fns, foreign, forwarded): (
@@ -458,7 +458,7 @@ fn statement_of(leaf: &super::uses::UseLeaf<'_>) -> rustc_span::Span {
 /// run of them from one module, nothing but attributes between, one too.
 /// Each with the statement it's first written by, whose comments are
 /// before it, its declaration's too (`use_written_at`, #1880).
-pub(super) fn assembled(
+pub fn assembled(
     mut found: Vec<Named>,
     sources: &super::sources::CapturedSources,
     foreign: &super::library::Foreign<'_, '_>,
@@ -860,11 +860,11 @@ fn through_reexport(
 
 /// Where a module imports an item from: the crate's module its path names
 /// it through, which re-exports it, by what that module exports it as.
-pub(super) struct Through {
-    pub(super) module: LocalModId,
-    pub(super) export: String,
+pub struct Through {
+    pub module: LocalModId,
+    pub export: String,
     /// The path that names it so, the first written.
-    pub(super) at: rustc_span::Span,
+    pub at: rustc_span::Span,
 }
 
 /// Each item a module of the crate's `use` names through another of its
@@ -878,7 +878,7 @@ pub(super) struct Through {
 /// 1018), no import of the item. Whether the import is taken from there is
 /// the load order's to say (`load_order::ModuleImports::imports_without_cycle`),
 /// as one that makes a load cycle stays its home's.
-pub(super) fn imported_through<'tcx>(
+pub fn imported_through<'tcx>(
     tcx: TyCtxt<'tcx>,
     (fns, foreign): (&IndexMap<DefId, FnInfo>, &super::library::Foreign<'_, 'tcx>),
 ) -> IndexMap<(LocalModId, DefId), Through> {
@@ -958,7 +958,7 @@ pub(super) fn reexporting_use(tcx: TyCtxt<'_>, module: LocalModId, name: Symbol,
 /// a crate's root whose only job is re-exporting, which writes no JS of its
 /// own where its package's entry re-exports each from the same module
 /// (the user's decision, ADR 1008, amended).
-pub(super) fn reexports_alone(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
+pub fn reexports_alone(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
     tcx.hir_module_free_items(module).all(|id| {
         let item = tcx.hir_item(id);
         match item.kind {
@@ -1063,7 +1063,7 @@ fn forwarded_methods(
 /// library's from its file, as a `pub use` of it is (ADR 0874). A run of
 /// them from one module, nothing but whitespace and attributes between,
 /// one statement, as a namespace's forwarded methods are (rd292b).
-pub(super) fn forwarded_functions(
+pub fn forwarded_functions(
     tcx: TyCtxt<'_>,
     module: LocalModId,
     forwarders: &IndexMap<DefId, DefId>,
@@ -1110,7 +1110,7 @@ pub(super) fn forwarded_functions(
 /// Where `module` re-exports `target`, a forwarder's function, from, and
 /// what that exports it as (`forwarded_functions`): the crate's from its
 /// module, a library's from its file; `None` where it's neither.
-pub(super) fn forwarded_from(
+pub fn forwarded_from(
     tcx: TyCtxt<'_>,
     module: LocalModId,
     target: DefId,
@@ -1137,7 +1137,7 @@ pub(super) fn forwarded_from(
 /// } from`, or a forwarder's (rd575), at the `use` of its module or of
 /// what's in it, the reconciler's `use crate::react_portal;`, where one is
 /// before it; `written`, a source span's place in the module's JS.
-pub(super) fn place(
+pub fn place(
     tcx: TyCtxt<'_>,
     reexports: &mut [Reexport],
     uses: &super::analysis::UsesWritten,

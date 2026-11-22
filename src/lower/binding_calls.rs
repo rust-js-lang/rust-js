@@ -19,7 +19,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `def_id`'s call, given `args`, each as JS is given it: `fun_span`,
     /// where its name is written, and `named`, rustc's span of the path
     /// that names it, which says where it's read (ADR 0633).
-    pub(in crate::lower) fn binding_values(
+    pub fn binding_values(
         &mut self,
         (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
         (mut args, present): (Vec<Expr>, &[crate::lower::analysis::mir_reads::presence::ArgProof]),
@@ -600,7 +600,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// that may reach JS of trailing `Option`s known where it runs: a
     /// binding's, and a function value's that may be JS's (#1876,
     /// `mir::dispatch`, `mir::calls`).
-    pub(in crate::lower) fn optional_ladder(
+    pub fn optional_ladder(
         &mut self,
         mut value: Expr,
         named: Option<(DefId, usize)>,
@@ -801,7 +801,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// getter is as a value, `() => version`, which a call of it reads
     /// again; of its namespace, `get ./dialog.js#*`, the module itself
     /// (#581).
-    pub(super) fn dynamic_import_of(&mut self, id: DefId, module: bool, span: Span) -> R<Expr> {
+    pub fn dynamic_import_of(&mut self, id: DefId, module: bool, span: Span) -> R<Expr> {
         let tcx = self.tcx;
         // What holds it is called with its slice whole, where it takes
         // JS's rest arguments (ADR 0664).
@@ -868,7 +868,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// `map.get(key) === null` reads it (ADR 0884, amended). Its box,
 /// `$someGet(map, key)`, is what reads it anywhere else, which tells the
 /// two by `has`.
-pub(in crate::lower) fn held_read(boxed: Expr) -> Expr {
+pub fn held_read(boxed: Expr) -> Expr {
     match &boxed.kind {
         js::ExprKind::Call(callee, args)
             if callee.helper_name() == Some("$someGet")
@@ -882,7 +882,7 @@ pub(in crate::lower) fn held_read(boxed: Expr) -> Expr {
 
 /// `this[key]`, or `this.name` of a key written that's a name, as a person
 /// writes it (ADR 0225): `js::get(value, "name")` is `value.name`.
-pub(super) fn keyed(this: Expr, key: Expr) -> Expr {
+pub fn keyed(this: Expr, key: Expr) -> Expr {
     match &key.kind {
         js::ExprKind::Str(name)
             if name.starts_with(|c: char| c.is_alphabetic() || c == '_' || c == '$')
@@ -939,7 +939,7 @@ pub(in crate::lower) enum Itself {
 /// #188). A receiver of a declared type, webapi's `Element` say, has its
 /// class's method, which nothing the program does changes (ADR 0750). The
 /// one answer, of the lookup's `js::Known` and of what's read past it.
-pub(in crate::lower) fn method_may_be_a_getters(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub fn method_may_be_a_getters(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let receiver = || {
         let inputs = tcx.fn_sig(def_id).instantiate_identity().skip_normalization();
         inputs.skip_binder().inputs().first().copied()
@@ -1145,7 +1145,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `ty`, as JS takes it: of its call and of its arrow as a value alike
     /// (ADR 0604); `nulled` where it's an `Option` `null` or a value
     /// already, a `Some(..)` (`nulled`'s).
-    pub(in crate::lower) fn binding_arg(
+    pub fn binding_arg(
         &self,
         def_id: rustc_span::def_id::DefId,
         (i, nulled): (usize, bool),
@@ -1303,7 +1303,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the one (`span_join::the_call_of_at`): its function and its
     /// arguments.
     // helper: span_join's `the_call_of_at`, taken apart (#2175)
-    pub(in crate::lower) fn thir_call(
+    pub fn thir_call(
         &self,
         def_id: rustc_span::def_id::DefId,
         fn_span: Span,

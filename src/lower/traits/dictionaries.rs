@@ -142,7 +142,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// named as a bound's dictionary is, `HolderTouch` (ADR 0979, amended,
     /// #691). An entry of a given one, called, is the body's own
     /// (`given_entries`).
-    pub(in crate::lower) fn dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
+    pub fn dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
         let made = self.dictionary_made(tr, span)?;
         let named = if is_impl_call(&made) {
             let word = bound_word(self.tcx, tr);

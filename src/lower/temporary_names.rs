@@ -15,7 +15,7 @@ use rustc_span::def_id::DefId;
 /// binding. Each is one word, `word()`'s, given apart where another has it;
 /// lowering names nothing by a word of its own (#890).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(in crate::lower) enum Role {
+pub enum Role {
     A,
     AKey,
     Any,
@@ -169,7 +169,7 @@ impl Role {
     }
 
     /// The word a name of this role is.
-    pub(in crate::lower) fn text(self) -> &'static str {
+    pub fn text(self) -> &'static str {
         match self {
             Role::A => "a",
             Role::AKey => "aKey",
@@ -313,7 +313,7 @@ impl Role {
 pub(in crate::lower) const HELD_ARG: &str = "_arg";
 
 /// A MIR local's name until tidy names it, `_12`.
-pub(in crate::lower) fn temporary(local: usize) -> String {
+pub fn temporary(local: usize) -> String {
     format!("_{local}")
 }
 
@@ -321,7 +321,7 @@ pub(in crate::lower) fn temporary(local: usize) -> String {
 /// Asked of a name as it's made (`Base::name`), of a positional field's,
 /// `_0`, and of a drop flag's base; tidy asks a variable's name its form
 /// (S4b).
-pub(in crate::lower) fn spelled_as_temporary(word: &str) -> bool {
+pub fn spelled_as_temporary(word: &str) -> bool {
     word.strip_prefix('_')
         .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit() || c == '$'))
 }
@@ -335,7 +335,7 @@ pub(in crate::lower) fn spelled_as_temporary(word: &str) -> bool {
 /// kind, `Temporary`, or an argument held, `HeldArg`. The one thing `spill` and `fresh` take, so
 /// lowering writes no word of its own (#890).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(in crate::lower) enum Base<'a> {
+pub enum Base<'a> {
     Role(Role),
     Numbered(Role, usize),
     Prefixed(Role, &'a str),
@@ -369,7 +369,7 @@ impl Base<'_> {
     /// `_$1` of an unread parameter's `_` given apart; a held argument's is
     /// one by its base, `HeldArg`, never by its word: its form is decided
     /// once, here, as it's made, and tidy asks that (#1681 change 3, S4).
-    pub(in crate::lower) fn name(&self, word: String) -> rust_js_program::js::Name {
+    pub fn name(&self, word: String) -> rust_js_program::js::Name {
         match self {
             Base::Local(_) | Base::Temporary => rust_js_program::js::Name::temporary(word),
             Base::HeldArg => rust_js_program::js::Name::held_arg(word),
@@ -408,7 +408,7 @@ impl Base<'_> {
 /// prefix, `config` of `from_config`; and none of a name that's no noun of
 /// what it gives, `new`, `default`, `str`. Rust's spelling, before
 /// `suggested` makes it a JS variable's.
-pub(in crate::lower) fn call_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
+pub fn call_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     const USELESS_METHODS: &[&str] = &[
         "to_string",
         "as_str",
@@ -457,14 +457,14 @@ pub(in crate::lower) fn call_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Stri
 
 /// What a call names its result as a JS variable, `trailingZeros` of
 /// `a.trailing_zeros()`: `call_name`'s, `suggested`.
-pub(in crate::lower) fn call_suggestion(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
+pub fn call_suggestion(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     suggested(&call_name(tcx, def_id)?)
 }
 
 /// A name rust-analyzer suggests, Rust's spelling or a type's, as a JS
 /// variable's, lower camel case: `trailingZeros` of `trailing_zeros`,
 /// `httpServer` of `HTTPServer`; none where that's no JS identifier.
-pub(in crate::lower) fn suggested(name: &str) -> Option<String> {
+pub fn suggested(name: &str) -> Option<String> {
     let name = variable_name(&crate::lower::camel_case(name));
     (rust_js_program::names::js_ident(&name) == name).then_some(name)
 }
@@ -476,7 +476,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
     /// value itself: of the program's own or a library's type, `None` of
     /// std's. Not a `Result`'s `Ok`, as rust-analyzer's is: JS holds a
     /// `Result` as `{ TAG, _0 }`, which `order.TAG` would misname.
-    pub(in crate::lower) fn held_type_name(&self, ty: Ty<'tcx>) -> Option<String> {
+    pub fn held_type_name(&self, ty: Ty<'tcx>) -> Option<String> {
         let mut ty = ty.peel_refs();
         loop {
             ty = match ty.kind() {

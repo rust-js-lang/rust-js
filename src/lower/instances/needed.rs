@@ -11,21 +11,21 @@ use super::*;
 /// library's functions: whose impls' dictionaries there are, what drops,
 /// the drops and copies its own functions' type parameters are given, and
 /// its bodies, its own and the instances it has.
-pub(in crate::lower) struct Analyzed<'a, 'tcx> {
-    pub(in crate::lower) trait_impls: &'a [DefId],
-    pub(in crate::lower) drops: (
+pub struct Analyzed<'a, 'tcx> {
+    pub trait_impls: &'a [DefId],
+    pub drops: (
         bool,
         &'a crate::lower::analysis::ClosureFacts<'tcx>,
         &'a crate::lower::analysis::Counted<'tcx>,
     ),
-    pub(in crate::lower) drop_params: &'a IndexMap<DefId, Vec<u32>>,
+    pub drop_params: &'a IndexMap<DefId, Vec<u32>>,
     /// The type parameters of its own functions given a copy, and a
     /// `Clone` dictionary (ADR 0914, amended).
-    pub(in crate::lower) given: crate::lower::traits::Given<'a>,
+    pub given: crate::lower::traits::Given<'a>,
     /// Its functions that may give back a write's error, and whether any
     /// of its writes may (ADR 0187).
-    pub(in crate::lower) failing: crate::lower::analysis::Failing<'a>,
-    pub(in crate::lower) bodies: Vec<&'a Body<'tcx>>,
+    pub failing: crate::lower::analysis::Failing<'a>,
+    pub bodies: Vec<&'a Body<'tcx>>,
 }
 
 /// What the analyzed crate asks of its calls of a library's functions.
@@ -58,7 +58,7 @@ struct Calls<'a, 'tcx> {
 /// an instance calls, which aren't yet instances, each with the module of
 /// the crate's it's placed in, its first caller's (ADR 0914); refused,
 /// where one reads its library's private state.
-pub(in crate::lower) fn needed<'tcx>(
+pub fn needed<'tcx>(
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     instances: &Instances,
     analyzed: Analyzed<'_, 'tcx>,

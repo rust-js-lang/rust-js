@@ -33,7 +33,7 @@ use rustc_span::def_id::DefId;
 
 /// What writing to a `Formatter` knows (ADRs 0054, 0137).
 #[derive(Default)]
-pub(super) struct Writing {
+pub struct Writing {
     /// In such a function of a crate that gives a `Formatter` options (ADRs
     /// 0058, 0137): the parameter that has them, `{ alternate: true }`.
     given: Option<Expr>,
@@ -48,7 +48,7 @@ pub(super) struct Writing {
 /// writer's own, which say at run time, or a placeholder's, `{ width: 6 }`,
 /// which say whether it's pretty.
 #[derive(Clone, Default)]
-pub(super) enum Pretty {
+pub enum Pretty {
     #[default]
     Plain,
     Always,
@@ -69,7 +69,7 @@ impl Pretty {
 
     /// The JS value that says whether it's pretty: `false`, `true`, or
     /// `options?.alternate`.
-    pub(super) fn alternate(&self) -> Expr {
+    pub fn alternate(&self) -> Expr {
         match (self, self.known()) {
             (Pretty::When(options), _) => Expr::optional_member(options.clone(), "alternate"),
             (_, known) => Expr::bool(known == Some(true)),
@@ -99,7 +99,7 @@ impl Pretty {
 /// What a step of a `Debug` builder adds: one text, or an array of them,
 /// as `entries` may give none (ADR 0136).
 #[derive(Clone)]
-pub(super) enum BuilderPart {
+pub enum BuilderPart {
     One(Expr),
     Many(Expr),
 }
@@ -123,14 +123,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// May calling `def_id` of `args` return `Err(fmt::Error)` (ADR 0187):
     /// the crate's or a library's function that may, or a dictionary's,
     /// which may be any, where any of the crate's or its libraries' may.
-    pub(super) fn call_may_fail(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    pub fn call_may_fail(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
         let at = (self.typing_env, self.item);
         super::analysis::call_may_fail(self.tcx, at, self.krate.foreign, self.krate.failing, (def_id, args))
     }
 
     /// May formatting a `ty` by `fmt_trait` fail: its impl's `fmt`, or that of
     /// a type it holds, as std's `Vec<T>` calls `T`'s (ADR 0187)?
-    pub(super) fn fmt_may_fail(&self, fmt_trait: DefId, ty: Ty<'tcx>) -> bool {
+    pub fn fmt_may_fail(&self, fmt_trait: DefId, ty: Ty<'tcx>) -> bool {
         if !self.krate.failing.any {
             return false;
         }
@@ -146,7 +146,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// fail, the crate's or a library's: `$writeTry(() => show(s, h))`, the
     /// `fmt::Error` it threw caught (ADR 0187). A writer's write, given its
     /// `Formatter`, is its writer's to pass on.
-    pub(super) fn fmt_result_value(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, value: Expr) -> Expr {
+    pub fn fmt_result_value(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, value: Expr) -> Expr {
         // One whose generic code holds it as a value, `same<T>(t: T) -> T`'s
         // or a trait's `fn is(self) -> T` through a dictionary,
         // `Form::Valued`'s (#1410): its error thrown, as a call of the
@@ -182,7 +182,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `?` of a `fmt::Result`: its error, on, thrown (ADR 0187). What
     /// `$writeTry` would catch runs as it is; another may be the error.
-    pub(super) fn fmt_check(&mut self, value: Expr, js_span: js::Span, out: &mut Vec<Stmt>) {
+    pub fn fmt_check(&mut self, value: Expr, js_span: js::Span, out: &mut Vec<Stmt>) {
         if matches!(value.kind, js::ExprKind::Undefined) {
             return;
         }
@@ -211,7 +211,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// an `Err` (ADR 0187): of what `$writeTry` caught, or a variable it's in,
     /// tested against `undefined`; another's, its constant answer. `message`
     /// is `expect`'s, or `map`'s or `map_err`'s function.
-    pub(in crate::lower) fn fmt_result_values(
+    pub fn fmt_result_values(
         &mut self,
         answer: FmtResultAnswer,
         result: Expr,
@@ -286,7 +286,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `$writeTry(() => { .. })`: what `body` writes, as a `fmt::Result`,
     /// `undefined` or the `fmt::Error` it failed with (ADR 0187).
-    pub(super) fn fmt_try(&mut self, body: Vec<Stmt>) -> Expr {
+    pub fn fmt_try(&mut self, body: Vec<Stmt>) -> Expr {
         Expr::call(Expr::helper("$writeTry"), vec![Expr::arrow(Vec::new(), body)])
     }
 
@@ -297,14 +297,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Is the function being lowered one that may return `Err(fmt::Error)`
     /// (ADR 0187)?
-    pub(super) fn writer_fails(&self) -> bool {
+    pub fn writer_fails(&self) -> bool {
         self.krate.failing.fns.contains(&self.item)
     }
 
     /// In a writer given options (ADRs 0137, 0143): what `f.alternate()`,
     /// `f.width()` and the like answer, `options?.alternate === true` and
     /// `options?.width`, which is `None` where it's not given.
-    pub(super) fn formatter_answer(&self, query: FormatterQuery) -> Option<Expr> {
+    pub fn formatter_answer(&self, query: FormatterQuery) -> Option<Expr> {
         let options = self.writing.given.clone()?;
         let member = |name: &str| Expr::optional_member(options.clone(), name);
         let is_true = |name: &str| Expr::bin(Op::Eq, member(name), Expr::bool(true));
@@ -327,7 +327,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// library's in its manifest, but one the crate compiles itself, its own
     /// (ADR 0914): of `@rust-js/std`'s build, std's bodies it compiles,
     /// `fuseDebug_fmt` a `FlattenCompat`'s writer calls (#2252).
-    pub(super) fn takes_options(&self, writer: DefId) -> bool {
+    pub fn takes_options(&self, writer: DefId) -> bool {
         let compiled_here = writer.is_local()
             || self.krate.foreign.is_instance(writer)
             || (self.krate.compiled_once && crate::lower::recognition::is_compiled_std(self.tcx, writer));
@@ -345,7 +345,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// arguments: this one's `Formatter`'s options where it takes them,
     /// `undefined` where this one has none. A callable, `None`, any writer,
     /// is given this one's.
-    pub(super) fn given_to_writer(&self, writer: Option<DefId>) -> Option<Expr> {
+    pub fn given_to_writer(&self, writer: Option<DefId>) -> Option<Expr> {
         match writer {
             Some(writer) if !self.takes_options(writer) => None,
             Some(_) => Some(self.writing.given.clone().unwrap_or_else(Expr::js_undefined)),
@@ -387,7 +387,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The parameter of `writer`'s `Formatter`'s options, where it has a
     /// `Formatter` and takes them (`compiled_writer_takes_options`).
-    pub(super) fn options_param(&mut self, writer: DefId, formatter: bool) -> Option<js::Name> {
+    pub fn options_param(&mut self, writer: DefId, formatter: bool) -> Option<js::Name> {
         (formatter && self.compiled_writer_takes_options(writer)).then(|| self.fresh(Role::Options))
     }
 
@@ -395,12 +395,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the parameter that has them, where the crate gives any (ADR 0137),
     /// and what's shown so of its type, which a library's function shows
     /// with options (#1331).
-    pub(super) fn with_given<T>(
-        &mut self,
-        given: Option<Expr>,
-        writer: DefId,
-        lower: impl FnOnce(&mut Self) -> T,
-    ) -> T {
+    pub fn with_given<T>(&mut self, given: Option<Expr>, writer: DefId, lower: impl FnOnce(&mut Self) -> T) -> T {
         let shown = self.krate.shown.of_writer(self.tcx, writer);
         let outer = std::mem::replace(&mut self.writing.given, given);
         let outer_shown = std::mem::replace(&mut self.writing.shown, shown);
@@ -548,14 +543,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether std's `LowerExp`, `false`, or `UpperExp`, `true`, is
     /// `trait_id`.
-    pub(super) fn exp_trait(&self, trait_id: DefId) -> Option<bool> {
+    pub fn exp_trait(&self, trait_id: DefId) -> Option<bool> {
         [false, true]
             .into_iter()
             .find(|&upper| self.recognition().other_fmt_trait(Std::FmtExp(upper)) == Some(trait_id))
     }
 
     /// The radix std's `LowerHex`, `UpperHex`, `Octal` or `Binary` shows.
-    pub(super) fn radix_trait(&self, trait_id: DefId) -> Option<Radix> {
+    pub fn radix_trait(&self, trait_id: DefId) -> Option<Radix> {
         [Radix::LowerHex, Radix::UpperHex, Radix::Octal, Radix::Binary]
             .into_iter()
             .find(|&radix| self.recognition().other_fmt_trait(Std::FmtRadix(radix)) == Some(trait_id))
@@ -600,7 +595,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         opt_std_item(self.tcx, StdItem::ToString)
     }
 
-    pub(super) fn debug_trait(&self) -> DefId {
+    pub fn debug_trait(&self) -> DefId {
         std_item(self.tcx, StdItem::Debug)
     }
 
@@ -608,7 +603,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0060), behind a reference, a `Box` or an uncounted `Rc`, each
     /// its value (ADR 0023)? A derived `Debug` hands its fields to the
     /// formatter so.
-    pub(super) fn is_dyn_debug(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_dyn_debug(&self, ty: Ty<'tcx>) -> bool {
         self.dyn_debug_of(ty).is_some()
     }
 
@@ -627,7 +622,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// How pretty what this writer shows is (ADR 0137): as its `alternate`
     /// says, or plain where the crate's writers don't take one.
-    pub(super) fn writer_pretty(&self) -> Pretty {
+    pub fn writer_pretty(&self) -> Pretty {
         match &self.writing.given {
             Some(options) => Pretty::When(options.clone()),
             None => Pretty::Plain,
@@ -802,7 +797,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// not a template of values alone, \`${x}\`, `shown_text`'s, whose values
 /// only a template makes text of, which makes what it's in a template,
 /// \`${x}${s}\` (ADR 0066).
-pub(super) fn join(parts: Vec<Expr>) -> Expr {
+pub fn join(parts: Vec<Expr>) -> Expr {
     joined(parts.into_iter().map(|part| (part, false)).collect(), false)
 }
 
@@ -855,14 +850,14 @@ fn is_shown_text(e: &Expr) -> bool {
 /// A format string's pieces as it's written, each its parts, each one and
 /// whether it's an argument written across lines, and whether the piece is
 /// (`join_written`).
-pub(super) type WrittenParts = Vec<(Vec<(Expr, bool)>, bool)>;
+pub type WrittenParts = Vec<(Vec<(Expr, bool)>, bool)>;
 
 /// Strings joined as their format string is written, `pieces` of it, each
 /// its parts and whether it's written across lines: one, as `join` joins
 /// it; `concat!`'s, each a template where it holds a value and otherwise
 /// a string, joined by `+` (ADR 0641). `separable`, of what's written
 /// piece by piece, as `joined` says.
-pub(super) fn join_written(mut pieces: WrittenParts, separable: bool) -> Expr {
+pub fn join_written(mut pieces: WrittenParts, separable: bool) -> Expr {
     if pieces.len() == 1 {
         let (parts, lines) = pieces.pop().expect("a piece");
         return joined(parts, separable).with_lines(lines);
@@ -965,13 +960,7 @@ fn shown_number(value: Expr) -> Expr {
 
 /// `target += written`: piece by piece, `pieces`, where what it writes may
 /// fail, so what came before it is written (ADR 0187).
-pub(in crate::lower) fn append_written(
-    target: &Expr,
-    written: Expr,
-    pieces: bool,
-    js_span: js::Span,
-    out: &mut Vec<Stmt>,
-) {
+pub fn append_written(target: &Expr, written: Expr, pieces: bool, js_span: js::Span, out: &mut Vec<Stmt>) {
     let parts = match pieces {
         true => printing::line_parts(written),
         false => vec![written],
@@ -1002,7 +991,7 @@ fn var_error_shown(value: Expr, (present, before, after): (&str, &str, &str)) ->
 /// call of a function `fmt_result_value` didn't catch, which can't fail;
 /// what `$writeTry` caught, and one read where it's held, a variable's, a
 /// field's, a `Some`'s or a cell's, `let r = Err(fmt::Error)` (#1011).
-pub(in crate::lower) fn may_be_write_error(result: &Expr) -> bool {
+pub fn may_be_write_error(result: &Expr) -> bool {
     match &result.kind {
         js::ExprKind::Undefined => false,
         js::ExprKind::Call(callee, _) => callee.helper_name().is_some(),

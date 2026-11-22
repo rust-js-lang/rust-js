@@ -4,7 +4,7 @@ use super::*;
 
 /// serde_json's own types, by name.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum Json {
+pub enum Json {
     Value,
     Number,
     Map,
@@ -41,7 +41,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 }
 
 /// Recognized serde_json calls carry type facts, never lowered operands.
-pub(in crate::lower) enum JsonCall<'tcx> {
+pub enum JsonCall<'tcx> {
     ToValue(Ty<'tcx>),
     FromValue(Ty<'tcx>),
     Index,
@@ -67,11 +67,7 @@ pub(in crate::lower) enum JsonCall<'tcx> {
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
-    pub(in crate::lower) fn json_call(
-        &self,
-        def_id: DefId,
-        generic_args: ty::GenericArgsRef<'tcx>,
-    ) -> Option<JsonCall<'tcx>> {
+    pub fn json_call(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> Option<JsonCall<'tcx>> {
         let tcx = self.tcx;
         if let Some(op) = serde_op(tcx, def_id) {
             return Some(JsonCall::Serde(op, generic_args));
@@ -139,7 +135,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 }
 
 /// Inherent Value/Number operations, selected before operand emission.
-pub(in crate::lower) enum JsonMethod {
+pub enum JsonMethod {
     NumberFromF64,
     NumberAsF64,
     /// `as_u64()` and `as_i64()`: `"u64"` or `"i64"`, a BigInt (ADR 0086).

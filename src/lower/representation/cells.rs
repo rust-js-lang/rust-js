@@ -53,7 +53,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// read is `defined()` so (`project`), and the nulled owner gives what
     /// it holds, read whole, on as it is (`cell_field_held`, ADRs 0620 and
     /// 0810, amended; #1933).
-    pub(in crate::lower) fn cell_field_read_defined(&self, ty: Ty<'tcx>, i: usize) -> bool {
+    pub fn cell_field_read_defined(&self, ty: Ty<'tcx>, i: usize) -> bool {
         self.field_none_form(ty, i) == super::NoneForm::Null && !self.fields_answered_by_getters(ty)
     }
 
@@ -152,7 +152,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// amended), but of a generic one made of an object, the object, which
     /// the cell is, and a `OnceCell`'s or `OnceLock`'s `Option<T>`, absent
     /// until it's set (ADR 0847). `None` of a field that's itself.
-    pub(in crate::lower) fn property_cell(&self, field: Option<&ty::FieldDef>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn property_cell(&self, field: Option<&ty::FieldDef>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty::Adt(_, args) = ty.kind() else { return None };
         if self.is_std_type(ty, StdItem::Cell)
             || field.is_some_and(|field| self.holds_value(field)) && !self.is_value_cell(ty)
@@ -194,7 +194,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// made: of a cell that's the property (`property_cell`), what the
     /// cell holds; of one held in a place of its own (`placed_field`,
     /// #2255), that place, `{ value: "A" }`.
-    pub(in crate::lower) fn holding(&self, value: Expr, field: Option<&ty::FieldDef>, ty: Ty<'tcx>) -> Expr {
+    pub fn holding(&self, value: Expr, field: Option<&ty::FieldDef>, ty: Ty<'tcx>) -> Expr {
         if field.is_some_and(|field| self.placed_field(field, ty)) {
             return Expr::object(vec![js::Prop::Field(js::HELD.into(), value)]);
         }

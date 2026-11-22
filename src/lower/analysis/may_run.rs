@@ -27,7 +27,7 @@ use crate::lower::Body;
 /// (`may_run`): the bodies by their ids, each thread-local's initializer by
 /// its key, the crate's impls, and the owners' answers it asks of what a fn
 /// pointer may be, what std runs, and whether a drop runs a destructor.
-pub(in crate::lower) struct Runs<'a, 'tcx> {
+pub struct Runs<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     bodies: IndexMap<DefId, &'a Body<'tcx>>,
     made_of: IndexMap<DefId, DefId>,

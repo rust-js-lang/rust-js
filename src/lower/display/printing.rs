@@ -19,7 +19,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// May showing a value of `ty` print as it's formatted?
-    pub(in crate::lower) fn shown_may_print(&self, ty: Ty<'tcx>) -> bool {
+    pub fn shown_may_print(&self, ty: Ty<'tcx>) -> bool {
         // An `fmt::Arguments` given on may hold any value (#1565).
         let arguments = |did| self.tcx.is_lang_item(did, LangItem::FormatArguments);
         self.krate.prints.shown_may_print(ty, arguments)
@@ -30,21 +30,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// string of its own, as a builder's step may fail (#1557)? Or the
     /// crate's own of a library's writer function, framed as its library
     /// frames it (`Foreign::frames_writer_fn`, #1652).
-    pub(in crate::lower) fn writes_through_sink(&self, writer: DefId) -> bool {
+    pub fn writes_through_sink(&self, writer: DefId) -> bool {
         self.krate.prints.writes_through_sink(writer) || self.library_writer_framed(writer)
     }
 
     /// Is `writer` a library's writer function, given a `Formatter`, which
     /// its library frames, the crate's own of it too
     /// (`Foreign::frames_writer_fn`, #1652)?
-    pub(in crate::lower) fn library_writer_framed(&self, writer: DefId) -> bool {
+    pub fn library_writer_framed(&self, writer: DefId) -> bool {
         self.krate.foreign.frames_writer_fn(writer) && self.recognition().formatter_param(writer).is_some()
     }
 
     /// `text`, a `format_args!`'s whose formatting may print, made for
     /// anything but stdout's line: as it is, or, where a line may be
     /// formatted meanwhile, apart from it, `$formatting(() => text)`.
-    pub(in crate::lower) fn made_apart_from_the_line(&self, text: Expr) -> Expr {
+    pub fn made_apart_from_the_line(&self, text: Expr) -> Expr {
         match self.runs_while_formatting() {
             true => Expr::call_helper(
                 "$formatting",
@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// $out("a "); $out(noisyDisplay_fmt(n)); $out(" b\n"); })`. Of what
     /// may `fails`, in a `try`, whose `fmt::Error` is std's panic, what was
     /// written before it in the line (ADR 0187).
-    pub(in crate::lower) fn printed_through_the_line(&mut self, text: Expr, fails: bool, js_span: js::Span) -> Expr {
+    pub fn printed_through_the_line(&mut self, text: Expr, fails: bool, js_span: js::Span) -> Expr {
         let mut body: Vec<Stmt> = (line_parts(text).into_iter())
             .map(|part| StmtKind::Expr(Expr::call_helper("$out", vec![part])).at(js_span))
             .collect();
@@ -84,7 +84,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// after the text written before it (#1490). Each value made apart from
     /// stdout's line, as `eprint!`'s whole text was; of what may `fails`, in
     /// a `try`, std's panic after what was written (ADR 0187).
-    pub(in crate::lower) fn written_to_stderr(&mut self, text: Expr, fails: bool, js_span: js::Span) -> Vec<Stmt> {
+    pub fn written_to_stderr(&mut self, text: Expr, fails: bool, js_span: js::Span) -> Vec<Stmt> {
         let mut body: Vec<Stmt> = (line_parts(text).into_iter())
             .map(|part| {
                 let part = match part.kind {
@@ -135,13 +135,7 @@ pub(super) fn line_parts(written: Expr) -> Vec<Expr> {
 
 /// A writer's text as it writes it, `written`, to `target`, the sink it
 /// writes through (`$sink()`): `f.write(x)` of each piece, or of it whole.
-pub(in crate::lower) fn write_to_sink(
-    target: &Expr,
-    written: Expr,
-    pieces: bool,
-    js_span: js::Span,
-    out: &mut Vec<Stmt>,
-) {
+pub fn write_to_sink(target: &Expr, written: Expr, pieces: bool, js_span: js::Span, out: &mut Vec<Stmt>) {
     let parts = match pieces {
         true => line_parts(written),
         false => vec![written],

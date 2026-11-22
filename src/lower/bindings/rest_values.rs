@@ -9,7 +9,7 @@ use rustc_span::{DUMMY_SP, Symbol};
 /// Whether `ty` is rest arguments as a value, `&dyn js::Rest<T>`, of the
 /// trait marked `#[rust_js::rest]` (ADR 0667): spread where it's given, to
 /// a variadic binding or to a `fn` pointer whose last parameter it is.
-pub(in crate::lower) fn is_rest_value(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+pub fn is_rest_value(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("rest")];
     match ty.kind() {
         ty::Ref(_, inner, _) => match inner.kind() {

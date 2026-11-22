@@ -25,7 +25,7 @@ use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 /// compiles one (`Foreign::compiles`, `Copying`), as any it compiles is one
 /// it can call, and wide: where no consumer reads one, it's an export spent,
 /// where the narrower answer's miss is a refusal (the user's decision).
-pub(in crate::lower) fn internal_state(tcx: TyCtxt<'_>, library: bool) -> IndexSet<LocalDefId> {
+pub fn internal_state(tcx: TyCtxt<'_>, library: bool) -> IndexSet<LocalDefId> {
     let function = |id: DefId| matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn | DefKind::Closure);
     let mut todo: Vec<DefId> = (tcx.hir_body_owners())
         .map(LocalDefId::to_def_id)
@@ -75,7 +75,7 @@ pub(in crate::lower) struct InternalExport {
 /// refused, as before. `made`: those its module made its variables, a
 /// thread-local's or a `static mut`'s, whose sets a consumer refuses (ADR
 /// 0270).
-pub(in crate::lower) fn internal_exports(
+pub fn internal_exports(
     tcx: TyCtxt<'_>,
     (module, lowered): (LocalModId, &mut LoweredModule),
     (internal, fns, made): (&IndexSet<LocalDefId>, &IndexMap<DefId, FnInfo>, &IndexSet<DefId>),

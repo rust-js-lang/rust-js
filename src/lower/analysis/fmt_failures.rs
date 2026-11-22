@@ -44,10 +44,10 @@ enum Callee {
 /// any's, but in a library, not where only what no consumer compiles may,
 /// a `dyn`'s or a trait method's own type parameter's (#1392).
 #[derive(Clone, Copy)]
-pub(in crate::lower) struct Failing<'a> {
-    pub(in crate::lower) fns: &'a IndexSet<DefId>,
-    pub(in crate::lower) any: bool,
-    pub(in crate::lower) dictionaries: bool,
+pub struct Failing<'a> {
+    pub fns: &'a IndexSet<DefId>,
+    pub any: bool,
+    pub dictionaries: bool,
 }
 
 /// The functions that return a write's result and may give its `Err`;

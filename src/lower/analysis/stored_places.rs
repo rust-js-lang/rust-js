@@ -17,7 +17,7 @@ use rustc_span::def_id::DefId;
 /// definitions, a struct's, an enum's or a union's, and whether any is, so
 /// a type parameter's value, which may be one, is too.
 #[derive(Default)]
-pub(in crate::lower) struct StoredPlaces<'tcx> {
+pub struct StoredPlaces<'tcx> {
     recorded: IndexSet<DefId>,
     /// Whether the crate asks an address (`asks_addresses`).
     asks: bool,
@@ -36,7 +36,7 @@ impl<'tcx> StoredPlaces<'tcx> {
     /// Whether the crate asks an address, `p as usize`, `{:p}`: where
     /// std keeps what it lends inline is then recorded where it lends it
     /// (#1114).
-    pub(in crate::lower) fn asks(&self) -> bool {
+    pub fn asks(&self) -> bool {
         self.asks
     }
 
@@ -71,7 +71,7 @@ impl<'tcx> StoredPlaces<'tcx> {
     /// recorded types', a tuple or an array that holds one; or a type
     /// parameter's, which may be one, where any is recorded. Not a `Vec`,
     /// whose items are an allocation of their own.
-    pub(in crate::lower) fn records(&self, ty: Ty<'tcx>) -> bool {
+    pub fn records(&self, ty: Ty<'tcx>) -> bool {
         // A tuple or an array, an object of no definition a record could
         // name, is recorded in any crate that records any: its fields'
         // addresses are its container's as a struct's are.

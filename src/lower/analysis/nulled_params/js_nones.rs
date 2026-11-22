@@ -47,7 +47,7 @@ use rustc_span::def_id::DefId;
 /// found: each body's locals, by its def and local, and each field, by
 /// its struct's, closure's or coroutine's def and index.
 #[derive(Default)]
-pub(in crate::lower) struct JsNones {
+pub struct JsNones {
     locals: IndexMap<(DefId, Local), u8>,
     fields: IndexMap<(DefId, FieldIdx), u8>,
     /// Each body found, whose locals are answered; any other's may hold one.
@@ -61,23 +61,13 @@ impl JsNones {
     /// Whether `place`, read in `body`, may hold a `None` JS gave: its local,
     /// or a field of a struct, a closure or a coroutine it reads through
     /// (`read_nodes`), may; and any place of a body not found.
-    pub(in crate::lower) fn may_hold_null<'tcx>(
-        &self,
-        tcx: TyCtxt<'tcx>,
-        body: &mir::Body<'tcx>,
-        place: Place<'tcx>,
-    ) -> bool {
+    pub fn may_hold_null<'tcx>(&self, tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, place: Place<'tcx>) -> bool {
         self.sources_of(tcx, body, place) != 0
     }
 
     /// Every possible `null` was explicitly written as `js::null()`.
     /// Other writes may contribute `undefined` or a value.
-    pub(in crate::lower) fn holds_written_null<'tcx>(
-        &self,
-        tcx: TyCtxt<'tcx>,
-        body: &mir::Body<'tcx>,
-        place: Place<'tcx>,
-    ) -> bool {
+    pub fn holds_written_null<'tcx>(&self, tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, place: Place<'tcx>) -> bool {
         self.sources_of(tcx, body, place) == Source::WrittenNull as u8
     }
 
@@ -85,12 +75,7 @@ impl JsNones {
     /// JS's `null`, a `None` JS gave: what JS threw, a `JsError`, of a
     /// caught `null` (ADR 0030, #1939). A payload of another type is no
     /// `None`, whatever `None`s it holds.
-    pub(in crate::lower) fn payload_may_be_null<'tcx>(
-        &self,
-        tcx: TyCtxt<'tcx>,
-        body: &mir::Body<'tcx>,
-        place: Place<'tcx>,
-    ) -> bool {
+    pub fn payload_may_be_null<'tcx>(&self, tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, place: Place<'tcx>) -> bool {
         let ty = crate::lower::representation::payload_through(tcx, place.ty(body, tcx).ty);
         matches!(ty.kind(), ty::Adt(adt, _) if crate::lower::recognition::is_js_error_type(tcx, adt.did()))
             && self.may_hold_null(tcx, body, place)
@@ -145,7 +130,7 @@ pub(in crate::lower) enum Source {
 /// which JS gives no `null` for; nor one of a value of any shape,
 /// `Option<&Unknown>` or `Option<&dyn IntoUnknown>`, whose `undefined` and
 /// `null` are each a value of JS's own, passed on as given (rd275, #443).
-pub(in crate::lower) fn one_none<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+pub fn one_none<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     let ty::Adt(adt, args) = ty.kind() else { return false };
     if !tcx.is_lang_item(adt.did(), LangItem::Option) {
         return false;
@@ -195,11 +180,7 @@ pub(in crate::lower) enum AnyValue {
 /// nullable one's, whose `None` is `null` (ADR 0841), nor an `async`
 /// one's, whose promise its body's coroutine settles. Each write of its
 /// result is given `?? undefined` where it may hold `null`.
-pub(in crate::lower) fn returns_one_none(
-    tcx: TyCtxt<'_>,
-    foreign: &crate::lower::library::Foreign<'_, '_>,
-    def: DefId,
-) -> bool {
+pub fn returns_one_none(tcx: TyCtxt<'_>, foreign: &crate::lower::library::Foreign<'_, '_>, def: DefId) -> bool {
     def.is_local()
         && crate::lower::analysis::js_facing(tcx, foreign, def)
         && none_form(tcx, NonePlace::Result(def)) == NoneForm::Undefined
@@ -221,12 +202,7 @@ impl JsNones {
     /// dictionary; not std's, nor a private one, a guard's, which only Rust
     /// reads, nor the props of the crate's component, which React gives the
     /// component alone, each read of its own an exit asks of.
-    pub(in crate::lower) fn field_takes_one_none<'tcx>(
-        &self,
-        tcx: TyCtxt<'tcx>,
-        field: &ty::FieldDef,
-        ty: Ty<'tcx>,
-    ) -> bool {
+    pub fn field_takes_one_none<'tcx>(&self, tcx: TyCtxt<'tcx>, field: &ty::FieldDef, ty: Ty<'tcx>) -> bool {
         let of = tcx.parent(field.did);
         !self.props.contains(&of) && field_takes_one_none(tcx, field, ty)
     }

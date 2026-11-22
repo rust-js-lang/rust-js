@@ -21,19 +21,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What an iterator of type `iterator` yields: its `Item`.
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn iterator_item(&self, iterator: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn iterator_item(&self, iterator: Ty<'tcx>) -> Option<Ty<'tcx>> {
         self.recognition().iterator_item(iterator)
     }
 
     /// Is `ty` a `Peekable`, which is always a `$iter` (ADR 0071)?
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn is_peekable(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_peekable(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().is_peekable(ty)
     }
 
     /// `ty`'s layout for wasm32, `Recognition::laid_out`'s.
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn layout(&self, ty: Ty<'tcx>) -> Option<rustc_middle::ty::layout::TyAndLayout<'tcx>> {
+    pub fn layout(&self, ty: Ty<'tcx>) -> Option<rustc_middle::ty::layout::TyAndLayout<'tcx>> {
         self.recognition().laid_out(ty)
     }
 
@@ -41,7 +41,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// enum, rustc's layout of that variant; `None` of a type its caller
     /// lays out.
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn variant_field_offset(
+    pub fn variant_field_offset(
         &self,
         ty: Ty<'tcx>,
         variant: rustc_abi::VariantIdx,
@@ -57,23 +57,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn range_kind(&self, ty: Ty<'tcx>) -> Option<RangeKind> {
+    pub fn range_kind(&self, ty: Ty<'tcx>) -> Option<RangeKind> {
         self.recognition().range_kind(ty)
     }
 
-    pub(super) fn display_trait(&self) -> DefId {
+    pub fn display_trait(&self) -> DefId {
         self.recognition().display_trait()
     }
 
     /// `fmt::Result`, as `Display::fmt` returns it.
     /// A write's result, `fmt::Result` or `io::Result<()>` (ADR 0462).
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn is_write_result(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_write_result(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().is_write_result(ty)
     }
 
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn is_fmt_result(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_fmt_result(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().is_fmt_result(ty)
     }
 
@@ -81,7 +81,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// takes one and returns a `fmt::Result`. In JS it returns the string
     /// instead, and takes no formatter.
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn formatter_param(&self, def_id: DefId) -> Option<usize> {
+    pub fn formatter_param(&self, def_id: DefId) -> Option<usize> {
         self.recognition().formatter_param(def_id)
     }
 
@@ -113,13 +113,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A `BTreeMap` or `BTreeSet`, whose order is its keys' (ADR 0059).
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(in crate::lower) fn is_sorted(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_sorted(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().is_sorted(ty)
     }
 
     /// The trait's arguments for `Self = ty`, with `ty` for any others too:
     /// `PartialEq`'s `Rhs` is `Self` unless it says otherwise.
-    pub(super) fn args_of(&self, trait_id: DefId, ty: Ty<'tcx>) -> ty::GenericArgsRef<'tcx> {
+    pub fn args_of(&self, trait_id: DefId, ty: Ty<'tcx>) -> ty::GenericArgsRef<'tcx> {
         self.recognition().args_of(trait_id, ty)
     }
 
@@ -148,7 +148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `str`, `String`, `char`, or a reference to one: all JS strings.
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn is_string_like(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_string_like(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().is_string_like(ty)
     }
 
@@ -156,7 +156,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `split` or `chars` of a string, and the adapters on them.
     /// std's iterator over an array: `Some(owns)` its items (ADR 0181).
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn array_source(&self, ty: Ty<'tcx>) -> Option<bool> {
+    pub fn array_source(&self, ty: Ty<'tcx>) -> Option<bool> {
         self.recognition().array_source(ty)
     }
 
@@ -173,18 +173,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An `Rc` or an `Arc`.
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn is_rc(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_rc(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().is_rc(ty)
     }
 
     /// A guard of a `RefCell` or a lock.
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn is_guard(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_guard(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().is_guard(ty)
     }
 
     /// A field's type, given `args`, with its projections normalized.
-    pub(super) fn field_ty(&self, field: &ty::FieldDef, args: ty::GenericArgsRef<'tcx>) -> Ty<'tcx> {
+    pub fn field_ty(&self, field: &ty::FieldDef, args: ty::GenericArgsRef<'tcx>) -> Ty<'tcx> {
         self.recognition().field_ty(field, args)
     }
 
@@ -196,14 +196,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `T`, for an `Option<T>`.
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn option_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn option_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         self.recognition().option_of(ty)
     }
 
     /// A type only a caller knows: a type parameter, or an associated type
     /// of one that isn't a type here (ADR 0106).
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn is_unknown(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_unknown(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().is_unknown(ty)
     }
 
@@ -214,30 +214,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn is_std_type(&self, ty: Ty<'tcx>, item: StdItem) -> bool {
+    pub fn is_std_type(&self, ty: Ty<'tcx>, item: StdItem) -> bool {
         self.recognition().is_std_type(ty, item)
     }
 
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn is_lang_adt(&self, ty: Ty<'tcx>, item: LangItem) -> bool {
+    pub fn is_lang_adt(&self, ty: Ty<'tcx>, item: LangItem) -> bool {
         self.recognition().is_lang_adt(ty, item)
     }
 
     /// What `ty` is in JS through each type that's the value it holds.
-    pub(super) fn unwrapped(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
+    pub fn unwrapped(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
         self.recognition().unwrapped(ty)
     }
 
     /// A pinned reference, a `&mut` to which is the pin (ADR 0329).
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn mut_is_the_pin(&self, ty: Ty<'tcx>) -> bool {
+    pub fn mut_is_the_pin(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().mut_is_the_pin(ty)
     }
 
     /// A type that.s the value it holds in JS: a `MaybeUninit`, a
     /// `ManuallyDrop`, a `MaybeDangling`.
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn transparent(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn transparent(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         self.recognition().transparent(ty)
     }
 
@@ -253,7 +253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `Vec`, a `VecDeque` or a `BinaryHeap`: a JS array (ADR 0068). A
     /// heap's array is in the order Rust's own heap keeps it.
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn is_vec_like(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_vec_like(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().is_vec_like(ty)
     }
 
@@ -261,13 +261,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its only field is `PhantomData` of an extern type. Rust never builds
     /// one; it only holds references to them, which are the JS objects.
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn is_js_object(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_js_object(&self, ty: Ty<'tcx>) -> bool {
         self.recognition().is_js_object(ty)
     }
 
     /// Is `ty` an iterator of the crate's own (ADR 0055)? `&mut` of one is too.
     // helper: recognition's answer, shortened; one form per answer is #2172's
-    pub(super) fn is_user_iterator(&self, ty: ty::Ty<'tcx>) -> bool {
+    pub fn is_user_iterator(&self, ty: ty::Ty<'tcx>) -> bool {
         self.recognition().is_user_iterator(ty)
     }
 

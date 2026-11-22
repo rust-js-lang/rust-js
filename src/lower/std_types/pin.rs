@@ -10,7 +10,7 @@ use rustc_middle::ty::{self, Ty};
 
 /// A `Pin`'s functions, and its `Deref` and `DerefMut`.
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum PinOp {
+pub enum PinOp {
     /// `as_mut()`, `get_mut()` and `DerefMut`: its pointer, which a `&mut`
     /// to what it points at is, a box for a number or text (ADR 0074).
     Mut,

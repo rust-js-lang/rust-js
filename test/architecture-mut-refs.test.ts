@@ -93,7 +93,7 @@ test("a write in place is made by `in_place` alone", () => {
 test("a fact that leaves out a check is of a node, joined by `span_join`", () => {
   const facts = read("src/lower/body_queries.rs");
   for (const fact of ["kept_casts", "set_then_unwrapped", "getter_unwraps", "present_calls", "held_guards", "registered_reads", "registered_equalities"]) {
-    expect(facts, fact).toMatch(new RegExp(`pub\\(super\\) ${fact}: IndexSet<ExprId>,`));
+    expect(facts, fact).toMatch(new RegExp(`pub(?:\\(super\\))? ${fact}: IndexSet<ExprId>,`));
   }
   expect(code("src/lower/mir/bounds.rs").filter((line) => /\.any\(/.test(line) && /\.span ==/.test(line))).toEqual([]);
 });

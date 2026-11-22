@@ -35,7 +35,7 @@ pub(super) fn gives_instance<'tcx>(tcx: TyCtxt<'tcx>, output: Ty<'tcx>, own: Ty<
 /// `#[rust_js::optional]`, absent until it's set (ADR 0810), is its
 /// readers' to leave out: `NoneForm::trust` of its form, `Optional`,
 /// and a `Cell` field's `get()`, which asks `is_optional` first.
-pub(crate) fn set_where_constructed<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> IndexSet<DefId> {
+pub fn set_where_constructed<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> IndexSet<DefId> {
     let of_id: IndexMap<DefId, &Body<'tcx>> = bodies.iter().map(|body| (body.def_id, *body)).collect();
     // Of each struct, the fields every constructor of it sets first.
     let mut set: IndexMap<DefId, IndexSet<DefId>> = IndexMap::default();

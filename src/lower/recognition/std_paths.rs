@@ -586,7 +586,7 @@ pub(crate) fn std_path_id(tcx: TyCtxt<'_>, item: StdPath) -> Option<DefId> {
 }
 
 /// Whether `id` is std's `item`.
-pub(crate) fn is_std_path(tcx: TyCtxt<'_>, id: DefId, item: StdPath) -> bool {
+pub fn is_std_path(tcx: TyCtxt<'_>, id: DefId, item: StdPath) -> bool {
     std_path_item(tcx, id) == Some(item)
 }
 

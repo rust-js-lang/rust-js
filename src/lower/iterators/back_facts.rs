@@ -18,7 +18,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// what's asked of a value made before, never: its mark says, carried by
     /// its local, `has_a_back`'s. Never because its hint is asked, which
     /// asks no back of what it holds: `made_knowing_its_hint`'s (#2209).
-    pub(in crate::lower) fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
+    pub fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
         let answer = if self.krate.iterators.back_stepped.typed.contains(&ty) {
             "typed"
@@ -61,7 +61,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// steps it from its back makes it so where it's made, `$zipEnds`,
     /// `$taking`, `$skipping`, `$stepByEnds` (ADR 0542), or it's std's struct
     /// where MIR holds it (#718); nor the crate's own iterator.
-    pub(in crate::lower) fn made_knowing_its_back_by_its_maker(&self, ty: ty::Ty<'tcx>) -> bool {
+    pub fn made_knowing_its_back_by_its_maker(&self, ty: ty::Ty<'tcx>) -> bool {
         use crate::lower::recognition as r;
         r::mapped_source(self.tcx, ty).is_some()
             || r::filtered_source(self.tcx, ty).is_some()
@@ -88,7 +88,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// MIR identity of what holds a value, not its type, which another value
     /// of it need not share. The one answer of a counted adapter's, a
     /// `skip(n)`'s, a `take(n)`'s or a `step_by(n)`'s.
-    pub(in crate::lower) fn local_stepped_from_its_back(
+    pub fn local_stepped_from_its_back(
         &self,
         local: rustc_middle::mir::Local,
     ) -> Option<crate::lower::analysis::SteppedLocal> {
@@ -107,7 +107,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// by its maker (`SteppedLocal::Given`).
     /// `make`, a call's lowering, told where it makes its value, `into`, its
     /// maker's MIR identity, which `made_stepped_from_its_back` asks (#814).
-    pub(in crate::lower) fn making_into<T>(
+    pub fn making_into<T>(
         &mut self,
         (into, of): (Option<MadeLocal<'tcx>>, Vec<MadeLocal<'tcx>>),
         make: impl FnOnce(&mut Self) -> T,
@@ -155,7 +155,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// answer, which never says it's stepped from its back
     /// (`stepped_from_its_back`), as a form that knows its back asks one of
     /// everything beneath it, where a hint asks none (#2209).
-    pub(in crate::lower) fn made_knowing_its_hint(&self, ty: ty::Ty<'tcx>) -> bool {
+    pub fn made_knowing_its_hint(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
         let owner = self.tcx.typeck_root_def_id(self.frame.owner);
         let hinted = &self.krate.iterators.hinted;

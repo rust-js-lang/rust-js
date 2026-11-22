@@ -18,7 +18,7 @@ use rust_js_program::js::{self, Expr, ExprKind, Item, Pattern, Prop, Stmt, StmtK
 ///   currentPriorityLevel = previousPriorityLevel;
 /// }
 /// ```
-pub(in crate::lower) fn inlined_drops(items: &mut Vec<Item>, drops: &IndexSet<String>) {
+pub fn inlined_drops(items: &mut Vec<Item>, drops: &IndexSet<String>) {
     // Each in turn, one no other drop left calls first, so a `Drop` impl's
     // body is where its value's dropped before the drops it calls are, each
     // guard taken apart where it's made; among those, in the module's order,

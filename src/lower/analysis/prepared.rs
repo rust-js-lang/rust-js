@@ -24,24 +24,24 @@ use rustc_span::def_id::LocalDefId;
 /// A body's MIR, as borrowck reads it (ADR 0364), and its promoted constants.
 #[derive(Clone)]
 pub struct Mir<'tcx> {
-    pub(in crate::lower) body: mir::Body<'tcx>,
-    pub(in crate::lower) promoted: IndexVec<Promoted, mir::Body<'tcx>>,
+    pub body: mir::Body<'tcx>,
+    pub promoted: IndexVec<Promoted, mir::Body<'tcx>>,
     /// Of a coroutine's, an `async` body's: the blocks whose call is an
     /// `.await` (`awaits.rs`).
-    pub(in crate::lower) awaits: IndexSet<BasicBlock>,
+    pub awaits: IndexSet<BasicBlock>,
     /// Of each `match` of an enum its arms' `match` made (`threaded.rs`):
     /// each block an arm goes on to its case through, and where the
     /// `match` is written, whose comments are before the case.
-    pub(in crate::lower) cases: IndexMap<BasicBlock, Span>,
+    pub cases: IndexMap<BasicBlock, Span>,
     /// rustc's own body of it, its drops elaborated, where the session
     /// compares them with rust-js's (`--drops-shadow`, `elaborated.rs`).
-    pub(in crate::lower) elaborated: Option<mir::Body<'tcx>>,
+    pub elaborated: Option<mir::Body<'tcx>>,
 }
 
 impl<'tcx> Mir<'tcx> {
     /// It, of a function's generics, in another's terms, `args` of them: a
     /// closure's whose function rustc's MIR inlined (ADR 0899).
-    pub(in crate::lower) fn instantiated(&self, tcx: ty::TyCtxt<'tcx>, args: ty::GenericArgsRef<'tcx>) -> Self {
+    pub fn instantiated(&self, tcx: ty::TyCtxt<'tcx>, args: ty::GenericArgsRef<'tcx>) -> Self {
         let of = |body: &mir::Body<'tcx>| {
             ty::EarlyBinder::bind(tcx, body.clone())
                 .instantiate(tcx, args)
@@ -58,7 +58,7 @@ impl<'tcx> Mir<'tcx> {
 
     /// `body`, its `.await`s each one call, and what can't throw never
     /// unwinding.
-    pub(in crate::lower) fn new(
+    pub fn new(
         tcx: ty::TyCtxt<'tcx>,
         mut body: mir::Body<'tcx>,
         mut promoted: IndexVec<Promoted, mir::Body<'tcx>>,
@@ -164,7 +164,7 @@ impl<'tcx> Mir<'tcx> {
     /// returns, or as it unwinds, after what its own body drops. A closure
     /// a binding calls once is called so (ADR 1020). `None` where its body
     /// reads itself other than through the reference, as its fields.
-    pub(in crate::lower) fn called_once(&self, tcx: ty::TyCtxt<'tcx>) -> Option<Self> {
+    pub fn called_once(&self, tcx: ty::TyCtxt<'tcx>) -> Option<Self> {
         use rustc_middle::mir::visit::MutVisitor;
         struct ByValue<'tcx> {
             tcx: ty::TyCtxt<'tcx>,

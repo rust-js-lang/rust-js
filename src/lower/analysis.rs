@@ -2,14 +2,14 @@
 
 mod accessors;
 mod awaits;
-pub(in crate::lower) mod cfg;
+pub mod cfg;
 mod fields_read;
-pub(in crate::lower) mod mir_reads;
+pub mod mir_reads;
 mod revealed;
 pub(in crate::lower) use revealed::revealed;
 pub(in crate::lower) mod prepared;
 pub use prepared::Mir;
-pub(super) mod arguments;
+pub mod arguments;
 mod back_stepped;
 pub(in crate::lower) mod read_bounds;
 
@@ -62,7 +62,7 @@ pub(super) use namespaces::{Through, module_paths, namespace_in, namespace_of};
 mod naming;
 mod once_empty;
 pub(in crate::lower) use once_empty::{drop_runs_code, empty_sets};
-pub(super) mod nulled_params;
+pub mod nulled_params;
 pub(super) mod only_called;
 pub(super) mod owned_by_return;
 mod plain_locals;
@@ -143,7 +143,7 @@ pub(super) use written_params::{WrittenParams, given_to_a_write, holds_arguments
 
 /// The `const`s written in a function's body, each a `const` there (ADR
 /// 0031, amended): by each, the block it's in and the bodies that read it.
-pub(in crate::lower) type LocalConsts = IndexMap<DefId, (rustc_span::Span, IndexSet<DefId>)>;
+pub type LocalConsts = IndexMap<DefId, (rustc_span::Span, IndexSet<DefId>)>;
 
 /// Made by serde's `#[derive(Serialize)]` or `#[derive(Deserialize)]`, or
 /// inside what they made (its `const _: () = { .. }`): left out, since
@@ -182,7 +182,7 @@ pub struct BoundFacts {
 
 impl BoundFacts {
     /// What a lowering reads of them, with what each function's JS takes.
-    pub(super) fn given<'a>(&'a self, js_given: &'a JsGiven) -> crate::lower::traits::Given<'a> {
+    pub fn given<'a>(&'a self, js_given: &'a JsGiven) -> crate::lower::traits::Given<'a> {
         crate::lower::traits::Given {
             copied: &self.copied,
             clones: &self.clones,
@@ -197,7 +197,7 @@ impl BoundFacts {
 
 /// Crate-wide facts collected before function emission. Body references point
 /// into the captured THIR; all collections are owned by this analysis result.
-pub(super) struct AnalyzedCrate<'a, 'tcx> {
+pub struct AnalyzedCrate<'a, 'tcx> {
     pub bodies: Vec<&'a Body<'tcx>>,
     /// What its flattened fields hold as their parents' own keys
     /// (`bindings::flattened`).
@@ -357,7 +357,7 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub named_as_values: IndexMap<DefId, Vec<rustc_span::Span>>,
 }
 
-pub(super) fn analyze_crate<'a, 'tcx>(
+pub fn analyze_crate<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
     ground: Ground<'a, 'tcx>,
     all_bodies: &'a [Body<'tcx>],

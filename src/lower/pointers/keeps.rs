@@ -14,14 +14,14 @@ use rustc_span::def_id::DefId;
 /// traits another crate may implement, and its libraries, whose functions
 /// it can't look into.
 #[derive(Clone, Copy)]
-pub(in crate::lower) struct Libraries<'a, 'tcx> {
+pub struct Libraries<'a, 'tcx> {
     pub(in crate::lower) library: bool,
     pub(in crate::lower) foreign: &'a Foreign<'a, 'tcx>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The crate's, as `pointer_may_keep` asks them.
-    pub(in crate::lower) fn libraries(&self) -> Libraries<'a, 'tcx> {
+    pub fn libraries(&self) -> Libraries<'a, 'tcx> {
         Libraries {
             library: self.krate.library,
             foreign: self.krate.foreign,
@@ -47,7 +47,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// `given` is the parameter as the call instantiates it, and each
 /// function walked as the call instantiates it: of generic code, `&mut
 /// impl GetMut<u32>`, a raw pointer to the `u32` it gives is one to it.
-pub(in crate::lower) fn pointer_may_keep<'tcx>(
+pub fn pointer_may_keep<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     libraries: &Libraries<'_, 'tcx>,

@@ -13,7 +13,7 @@ use crate::lower::representation::Num;
 
 /// One write into a writer's sink, `f` (`$writerSink`), as std makes it.
 #[derive(Clone)]
-pub(in crate::lower) enum SinkWrite {
+pub enum SinkWrite {
     /// `f.write(text)`: one `write_str`.
     Str(Expr),
     /// `f.writeChar(c)`: one `write_char`.
@@ -34,7 +34,7 @@ pub(in crate::lower) enum SinkWrite {
 
 impl SinkWrite {
     /// Its statement, written into `sink`.
-    pub(in crate::lower) fn written_into(self, sink: &Expr, js_span: js::Span) -> Stmt {
+    pub fn written_into(self, sink: &Expr, js_span: js::Span) -> Stmt {
         let call = match self {
             SinkWrite::If(test, writes, otherwise) => {
                 let written = |writes: Vec<SinkWrite>| -> Vec<Stmt> {
@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// each piece as std's `fmt` of it writes it. `None` of a value whose
     /// split isn't followed yet (#1652): a composite's, a generic or `dyn`
     /// value's.
-    pub(in crate::lower) fn sink_writes(
+    pub fn sink_writes(
         &mut self,
         value: Expr,
         (kind, ty): (Std, Ty<'tcx>),
@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `None` of a value whose split isn't followed yet (#1652): a float's,
     /// a `Debug` of text, a composite's, an integer's `Debug` where a
     /// placeholder may ask it in hex.
-    pub(in crate::lower) fn sink_writes_given(
+    pub fn sink_writes_given(
         &mut self,
         value: Expr,
         (kind, ty): (Std, Ty<'tcx>),
@@ -403,7 +403,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `writer`, a writer of the crate's own that writes through a sink,
     /// given `values`, called with the sink armed for it. `None` of one
     /// called through a value, a class's.
-    pub(in crate::lower) fn writer_armed(&self, writer: DefId, values: Vec<Expr>) -> Option<SinkWrite> {
+    pub fn writer_armed(&self, writer: DefId, values: Vec<Expr>) -> Option<SinkWrite> {
         let mut given = vec![self.crate_callee(writer)?];
         given.extend(values);
         Some(SinkWrite::Helper("$writingInto", given))

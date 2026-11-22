@@ -85,7 +85,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `hint_reaches_own`, #733). The one answer, of the count itself and of
     /// a `Map` over it that gives each item as it is, whose `count`, its
     /// fold, asks none, so it isn't dropped (#2210).
-    pub(in crate::lower) fn filter_count_asks_own_hint(&self, ty: ty::Ty<'tcx>) -> bool {
+    pub fn filter_count_asks_own_hint(&self, ty: ty::Ty<'tcx>) -> bool {
         filtered_source(self.tcx, self.reveal(ty)).is_some_and(|source| self.hint_reaches_own(source))
     }
 

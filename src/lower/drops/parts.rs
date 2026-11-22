@@ -9,7 +9,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// one closed to drop what it holds (ADR 0422), or an adapter holding a
     /// function with a destructor, made closing to drop it (ADR 0485). The
     /// one answer, of its drop and of what its owner holds (#206).
-    pub(in crate::lower) fn dropped_by_closing(&self, ty: Ty<'tcx>) -> bool {
+    pub fn dropped_by_closing(&self, ty: Ty<'tcx>) -> bool {
         let recognition = self.recognition();
         recognition.closed_on_drop(ty).is_some()
             || (recognition.held_function(ty)).is_some_and(|function| self.drops(function) != Drops::Nothing)
@@ -395,7 +395,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// cell is borrowed (ADR 0328), a temporary's or a `let`'s to its
     /// block's end (ADR 0863, amended, #1815), of the facts found already,
     /// which MIR's lowering asks, found here where they aren't yet.
-    pub(in crate::lower) fn momentary_borrows(&self) -> IndexSet<Span> {
+    pub fn momentary_borrows(&self) -> IndexSet<Span> {
         let key = std::ptr::from_ref(self.frame.thir) as usize;
         let spans = |facts: &Facts| -> IndexSet<Span> {
             (facts.momentary.iter().chain(&facts.let_momentary))
@@ -442,7 +442,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// what it took, given away uncalled, or assigned. A variable whose drop
     /// rust-js can't run, MIR's lowering refuses (`check_held_drops`), and a
     /// part moved, it follows (#1337).
-    pub(in crate::lower) fn check_drop_facts(&self) -> R<()> {
+    pub fn check_drop_facts(&self) -> R<()> {
         let facts = find_facts(
             &self.drop_query(),
             self.krate.cell_borrows,
@@ -470,11 +470,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// as it is, `try { a } catch (error) { b; c; throw error; } try { b } ..`,
 /// so the JS grows as the square of its parts, never twice for each (#865:
 /// num-traits' 20-tuple `Bounded`, 240 MB).
-pub(in crate::lower) fn each_dropped(
-    parts: Vec<Vec<Stmt>>,
-    js_span: js::Span,
-    error: &mut dyn FnMut() -> js::Name,
-) -> Vec<Stmt> {
+pub fn each_dropped(parts: Vec<Vec<Stmt>>, js_span: js::Span, error: &mut dyn FnMut() -> js::Name) -> Vec<Stmt> {
     let parts: Vec<Vec<Stmt>> = parts.into_iter().filter(|part| !part.is_empty()).collect();
     let mut rest: Vec<Stmt> = Vec::new();
     for (at, part) in parts.iter().enumerate().rev() {
@@ -500,7 +496,7 @@ pub(in crate::lower) fn each_dropped(
 /// after a body as it ends either way, of what's dropped where it's emitted.
 /// Each `catch`'s parameter is `error`'s, the item's name for it, each its
 /// own (#1681 change 3, M2), as preparation spells it (ADR 0352).
-pub(in crate::lower) fn dropped_after(
+pub fn dropped_after(
     body: Vec<Stmt>,
     dropped: Vec<Stmt>,
     js_span: js::Span,
@@ -589,7 +585,7 @@ pub(in crate::lower) fn dropped_unwinding(
 /// program sees (`unseen`), which `$cleanup` aborts before. And in
 /// `$cleanup` where it asks whether a panic unwinds, which only `$cleanup`
 /// tells: a lock's guard's drop, which poisons it then (#1438).
-pub(in crate::lower) fn cleanup(cleanup: Vec<Stmt>, error: Option<&js::Name>, js_span: js::Span) -> Vec<Stmt> {
+pub fn cleanup(cleanup: Vec<Stmt>, error: Option<&js::Name>, js_span: js::Span) -> Vec<Stmt> {
     let seen = error.is_some() && !unseen(&cleanup);
     if !may_throw(&cleanup) && !seen && !asks_unwinding(&cleanup) {
         return cleanup;
@@ -607,7 +603,7 @@ pub(in crate::lower) fn cleanup(cleanup: Vec<Stmt>, error: Option<&js::Name>, js
 /// unwinds (#1193): the last of what's done to a body, as
 /// `guarded_cleanups` is, once no pass reads a scope's `try`. A `try` whose
 /// body is one such `try`/`catch` is printed as one `try`/`catch`/`finally`.
-pub(in crate::lower) fn aborting_finally(stmt: &mut Stmt) {
+pub fn aborting_finally(stmt: &mut Stmt) {
     let StmtKind::Try(body, dropped) = &mut stmt.kind else {
         return;
     };
@@ -689,7 +685,7 @@ pub(in crate::lower) fn emptied_scopes(stmts: &mut Vec<Stmt>) {
 
 /// Whether `body` begins with a `catch_unwind`, `$catchUnwind(f)` or what's
 /// made of it, whose catch aborts on a stack overflow (`$catchable`).
-pub(in crate::lower) fn catches_unwind(body: &[Stmt]) -> bool {
+pub fn catches_unwind(body: &[Stmt]) -> bool {
     let unwinds =
         |e: &Expr| matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$catchUnwind"));
     matches!(body.first().map(|s| &s.kind),
@@ -697,7 +693,7 @@ pub(in crate::lower) fn catches_unwind(body: &[Stmt]) -> bool {
 }
 
 /// Whether `dropped` is `if ($live()) { .. }` (`aborting_finally`'s).
-pub(in crate::lower) fn live_guarded(dropped: &[Stmt]) -> bool {
+pub fn live_guarded(dropped: &[Stmt]) -> bool {
     matches!(dropped, [Stmt { kind: StmtKind::If(test, _, None), .. }]
         if matches!(&test.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$live")))
 }
@@ -705,7 +701,7 @@ pub(in crate::lower) fn live_guarded(dropped: &[Stmt]) -> bool {
 /// Whether `body` is one `try { .. } catch (error) { throw
 /// $unwindsOn(error); }` (`aborting_finally`'s), whose `finally` is `if
 /// ($live()) { .. }`.
-pub(in crate::lower) fn is_aborting(body: &[Stmt]) -> bool {
+pub fn is_aborting(body: &[Stmt]) -> bool {
     matches!(body, [Stmt { kind: StmtKind::TryCatch(_, Some(error), handler), .. }]
         if matches!(handler.as_slice(), [Stmt { kind: StmtKind::Throw(Expr { kind: js::ExprKind::Call(callee, given), .. }), .. }]
             if callee.helper_name() == Some("$unwindsOn")
@@ -716,7 +712,7 @@ pub(in crate::lower) fn is_aborting(body: &[Stmt]) -> bool {
 /// apart, may hold `dropped`: what can't throw, as a drop's panic as a
 /// panic unwinds aborts (#847), and asks nothing of whether one unwinds
 /// (#1438). The one answer of what a `finally` may hold.
-pub(in crate::lower) fn finally_holds(dropped: &[Stmt]) -> bool {
+pub fn finally_holds(dropped: &[Stmt]) -> bool {
     !may_throw(dropped) && !asks_unwinding(dropped)
 }
 
@@ -726,7 +722,7 @@ pub(in crate::lower) fn finally_holds(dropped: &[Stmt]) -> bool {
 /// release on every way out (#1438). Neither throws, nor runs what a
 /// program sees as a stack overflow aborts, `$unborrow`'s way. The one
 /// reader of `$unlock`'s form, which `drop_in` makes.
-pub(in crate::lower) fn poisoned_and_released(drop: &Stmt) -> Option<(Stmt, Stmt)> {
+pub fn poisoned_and_released(drop: &Stmt) -> Option<(Stmt, Stmt)> {
     let StmtKind::Expr(call) = &drop.kind else {
         return None;
     };
@@ -760,7 +756,7 @@ fn asks_unwinding(stmts: &[Stmt]) -> bool {
 /// each a call so marked, or under a drop flag's `if`. What a stack
 /// overflow, which Rust aborts on with no drop run, may run past unguarded
 /// (#1193).
-pub(in crate::lower) fn unseen(stmts: &[Stmt]) -> bool {
+pub fn unseen(stmts: &[Stmt]) -> bool {
     stmts.iter().all(|stmt| match &stmt.kind {
         StmtKind::Expr(e) => e.facts.has(js::Known::Unseen),
         StmtKind::If(_, then, otherwise) => unseen(then) && otherwise.as_deref().is_none_or(unseen),
@@ -771,7 +767,7 @@ pub(in crate::lower) fn unseen(stmts: &[Stmt]) -> bool {
 /// Of a cleanup as `cleanup` writes it, `$cleanup(() => { .. }, ..)`, its
 /// drops, which run there and then, as a panic unwinds: what tidy reads
 /// as it reads any statements in place (#1606).
-pub(in crate::lower) fn cleanup_drops(call: &mut Expr) -> Option<&mut Vec<Stmt>> {
+pub fn cleanup_drops(call: &mut Expr) -> Option<&mut Vec<Stmt>> {
     let js::ExprKind::Call(callee, args) = &mut call.kind else {
         return None;
     };
@@ -787,7 +783,7 @@ pub(in crate::lower) fn cleanup_drops(call: &mut Expr) -> Option<&mut Vec<Stmt>>
 /// Whether `stmts` are a cleanup as `cleanup` leaves it, of what's caught
 /// and thrown on: what can't throw and runs nothing a program sees, or one
 /// `$cleanup(..)`.
-pub(in crate::lower) fn is_cleanup(stmts: &[Stmt]) -> bool {
+pub fn is_cleanup(stmts: &[Stmt]) -> bool {
     let guarded = |stmt: &Stmt| {
         matches!(&stmt.kind, StmtKind::Expr(call)
             if matches!(&call.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$cleanup")))
@@ -845,7 +841,7 @@ fn loop_dropped(items: Expr, pattern: js::Pattern, body: Vec<Stmt>, js_span: js:
 
 /// Whether a drop's `stmts` may throw: a statement that may, or a branch's,
 /// a loop's over what's made, or a `try`'s.
-pub(in crate::lower) fn may_throw(stmts: &[Stmt]) -> bool {
+pub fn may_throw(stmts: &[Stmt]) -> bool {
     stmts.iter().any(|stmt| match &stmt.kind {
         StmtKind::If(test, then, otherwise) => {
             test.may_throw() || may_throw(then) || otherwise.as_deref().is_some_and(may_throw)

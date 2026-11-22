@@ -9,14 +9,14 @@ use rustc_middle::ty::{self, Ty};
 
 /// How `?` makes an error the function's: a `From` of the crate's own,
 /// called on it, or for a `Box<dyn Error>`, its dictionary (ADR 0141).
-pub(in crate::lower) enum Conversion {
+pub enum Conversion {
     From(Expr),
     Dyn(Expr),
 }
 
 impl Conversion {
     /// `error`, converted.
-    pub(in crate::lower) fn of(self, error: Expr) -> Expr {
+    pub fn of(self, error: Expr) -> Expr {
         match self {
             Conversion::From(from) => Expr::call(from, vec![error]),
             Conversion::Dyn(dictionary) => Expr::object(vec![
@@ -30,7 +30,7 @@ impl Conversion {
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `?` of `subject`, an `Option` or a `Result`, returns early:
     /// it's `None`, `o == null` (ADR 0298), or an `Err`.
-    pub(in crate::lower) fn tried_failed(&self, subject: Expr, ty: Ty<'tcx>) -> Expr {
+    pub fn tried_failed(&self, subject: Expr, ty: Ty<'tcx>) -> Expr {
         match self.option_of(ty) {
             Some(_) => Expr::presence(subject, false, None),
             None => is(subject, false),
@@ -38,7 +38,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What `?` of `subject` gives when it doesn't return: what's inside.
-    pub(in crate::lower) fn tried_value(&mut self, subject: Expr, ty: Ty<'tcx>) -> Expr {
+    pub fn tried_value(&mut self, subject: Expr, ty: Ty<'tcx>) -> Expr {
         match self.option_of(ty) {
             Some(inner) if self.boxed_payload(inner) => self.some_value(subject),
             Some(_) => subject,
@@ -48,7 +48,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What `?` of `subject` returns: `undefined` for a `None`; the `Err`
     /// as it is, or `converted`, its error made the function's.
-    pub(in crate::lower) fn tried_returned(&self, subject: Expr, ty: Ty<'tcx>, converted: Option<Expr>) -> Expr {
+    pub fn tried_returned(&self, subject: Expr, ty: Ty<'tcx>, converted: Option<Expr>) -> Expr {
         if self.option_of(ty).is_some() {
             return Expr::js_undefined();
         }
@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `returned`'s, given `subject`'s `_0`: nothing if it's the same, or a
     /// `&str` to a `String`, the same JS string; a `From` of the crate's own;
     /// or for a `Box<dyn Error>`, the error and its dictionary (ADR 0141).
-    pub(in crate::lower) fn tried_conversion(
+    pub fn tried_conversion(
         &mut self,
         ty: Ty<'tcx>,
         returned: Option<Ty<'tcx>>,

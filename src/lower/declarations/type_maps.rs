@@ -69,7 +69,7 @@ pub(super) fn aliases(tcx: TyCtxt<'_>, trait_id: DefId) -> Vec<String> {
 }
 
 /// Whether this trait owns a declaration type map.
-pub(in crate::lower) fn is_type_map(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
+pub fn is_type_map(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
     matches!(names(tcx, trait_id), Some(Ok(_)))
 }
 

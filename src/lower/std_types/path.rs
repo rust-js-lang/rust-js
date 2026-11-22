@@ -11,7 +11,7 @@ use rustc_span::def_id::DefId;
 
 /// What reads a path.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum PathOp {
+pub enum PathOp {
     /// `base.join(path)`: `path` itself if it's absolute.
     Join,
     /// `p.parent()`, `p.file_name()`, `p.file_stem()`, `p.extension()`:
@@ -81,7 +81,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// which a path, a string or an `OsStr` is (ADR 0173), or of another
     /// type its impl's `as_ref()`, through its dictionary: a `Component`'s,
     /// `$componentText`, or the crate's own type's (#1388).
-    pub(in crate::lower) fn path_given(
+    pub fn path_given(
         &mut self,
         value: Expr,
         ty: rustc_middle::ty::Ty<'tcx>,
@@ -119,7 +119,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// closed as it unwinds (#1640). A part is its text, a path's, a
     /// string's or an `OsStr`'s (ADR 0173), or another type's `as_ref()`;
     /// one taken by value is dropped after its push, as the closure's `p`.
-    pub(in crate::lower) fn extended_path(
+    pub fn extended_path(
         &mut self,
         place: &Expr,
         parts: Expr,

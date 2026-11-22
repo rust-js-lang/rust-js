@@ -50,7 +50,7 @@ pub(in crate::lower) fn given_parameters<'tcx>(
 /// A body's lowering begun: its proofs, and where the session records the
 /// shadow, of each span its operators are written at whether each is
 /// proved, until the guard it gives drops.
-pub(in crate::lower) fn body_proofs<'tcx>(
+pub fn body_proofs<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     body: &Body<'tcx>,
@@ -128,7 +128,7 @@ impl Drop for ProofsScope<'_> {
 
 /// A check MIR's intervals may prove: a bounds check, by the block its
 /// `assert` ends, or a wrap.
-pub(in crate::lower) enum Proof {
+pub enum Proof {
     Bounds(BasicBlock),
     Wrap,
     /// An integer cast, by its statement's location.
@@ -144,7 +144,7 @@ pub(in crate::lower) enum Proof {
 /// the intervals that takes proofs away, or gives them, shows in what it
 /// counts (`scripts/ablate.ts`). THIR's ranges, which the shadow compared
 /// MIR's proofs with until #1672's step 5, are gone (M4).
-pub(in crate::lower) fn shadow_check(
+pub fn shadow_check(
     tcx: TyCtxt<'_>,
     owner: rustc_span::def_id::DefId,
     span: Span,
@@ -209,7 +209,7 @@ pub(super) fn closure_result(tcx: TyCtxt<'_>, closure: rustc_span::def_id::DefId
 /// Whether MIR proves the bounds check `block`'s `assert` makes, of
 /// `body`, never fails (#1672 M3): none of a body not the one being
 /// lowered, whose proofs aren't these.
-pub(in crate::lower) fn bounds_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: BasicBlock) -> bool {
+pub fn bounds_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: BasicBlock) -> bool {
     let caches = crate::lower::session::caches(tcx);
     let intervals = caches.intervals.borrow();
     intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
@@ -220,7 +220,7 @@ pub(in crate::lower) fn bounds_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: B
 /// are in bounds, a `Vec`'s `v[i]`, `remove(i)` or `insert(i, x)`, a
 /// range's `&v[a..b]` or `drain(a..b)`, a map's `m[k]` of a key held
 /// (#1672 M3, step 5): none of a body not the one being lowered.
-pub(in crate::lower) fn call_bounds_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: BasicBlock) -> bool {
+pub fn call_bounds_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: BasicBlock) -> bool {
     let caches = crate::lower::session::caches(tcx);
     let intervals = caches.intervals.borrow();
     intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
@@ -230,7 +230,7 @@ pub(in crate::lower) fn call_bounds_proved(tcx: TyCtxt<'_>, body: &Body<'_>, blo
 /// Whether MIR proves the `first()` or `last()` ending `block` of `body` is
 /// of a slice not empty there, so `Some` (#1860): none of a body not the one
 /// being lowered.
-pub(in crate::lower) fn present_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: BasicBlock) -> bool {
+pub fn present_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: BasicBlock) -> bool {
     let caches = crate::lower::session::caches(tcx);
     let intervals = caches.intervals.borrow();
     intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
@@ -239,7 +239,7 @@ pub(in crate::lower) fn present_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: 
 
 /// Whether MIR proves the `OnceCell` the `set` ending `block` of `body` sets
 /// is still empty there (#1672 M3): none of a body not the one being lowered.
-pub(in crate::lower) fn empty_set_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: BasicBlock) -> bool {
+pub fn empty_set_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: BasicBlock) -> bool {
     let caches = crate::lower::session::caches(tcx);
     let intervals = caches.intervals.borrow();
     intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
@@ -249,7 +249,7 @@ pub(in crate::lower) fn empty_set_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block
 /// Whether MIR proves the integer cast at `location` of `body` is of a
 /// value in its target's range, the same number (#1672 M3): none of a body
 /// not the one being lowered.
-pub(in crate::lower) fn cast_proved(tcx: TyCtxt<'_>, body: &Body<'_>, location: Location) -> bool {
+pub fn cast_proved(tcx: TyCtxt<'_>, body: &Body<'_>, location: Location) -> bool {
     let caches = crate::lower::session::caches(tcx);
     let intervals = caches.intervals.borrow();
     intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
@@ -259,7 +259,7 @@ pub(in crate::lower) fn cast_proved(tcx: TyCtxt<'_>, body: &Body<'_>, location: 
 /// Whether MIR proves the `+`, `-` or `*` at `location` of `body` stays in
 /// its type's range, JS's own operator its value (#1672 M3): none of a body
 /// not the one being lowered.
-pub(in crate::lower) fn exact_proved(tcx: TyCtxt<'_>, body: &Body<'_>, location: Location) -> bool {
+pub fn exact_proved(tcx: TyCtxt<'_>, body: &Body<'_>, location: Location) -> bool {
     let caches = crate::lower::session::caches(tcx);
     let intervals = caches.intervals.borrow();
     intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())

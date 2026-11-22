@@ -22,7 +22,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `operation`, a serde_json call, of its arguments' `values` (ADR 0083).
-    pub(in crate::lower) fn json_call_values(
+    pub fn json_call_values(
         &mut self,
         operation: JsonCall<'tcx>,
         mut values: Vec<Expr>,

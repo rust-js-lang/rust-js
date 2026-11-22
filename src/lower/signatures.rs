@@ -21,7 +21,7 @@ use super::classes::Receiver;
 use super::traits::{Scope, Slot};
 
 /// What a function's JS takes, in order, and gives.
-pub(in crate::lower) struct JsSignature<'tcx> {
+pub struct JsSignature<'tcx> {
     /// What a JS caller gives it: its Rust parameters, but a `self` its JS
     /// takes as `this` or not at all (`classes::receiver`), then what it
     /// takes after them.
@@ -141,7 +141,7 @@ pub(in crate::lower) fn js_parameter_name<'tcx>(
 /// push_str`'s `string` beside its `string`, or of std's that its type
 /// names none of, `u8::is_ascii_lowercase`'s, no program's `self`: each
 /// the caller names, by its type where it can, `(n) => ..`.
-pub(in crate::lower) fn own_parameter_names(tcx: TyCtxt<'_>, function: DefId) -> Vec<Option<String>> {
+pub fn own_parameter_names(tcx: TyCtxt<'_>, function: DefId) -> Vec<Option<String>> {
     let inputs = super::traits::erased_sig(tcx, function).inputs().to_vec();
     let idents = tcx.fn_arg_idents(function);
     let names: Vec<Option<String>> = (inputs.iter().enumerate())
@@ -232,10 +232,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// parameter read anywhere else isn't one, as its `None` would be the
     /// default there. The one answer both its parameter's pattern and the
     /// call's lowering ask (`mir_param`, `defaulted_present`).
-    pub(in crate::lower) fn literal_defaults(
-        &self,
-        body: &mir::Body<'tcx>,
-    ) -> IndexMap<mir::Local, mir::ConstOperand<'tcx>> {
+    pub fn literal_defaults(&self, body: &mir::Body<'tcx>) -> IndexMap<mir::Local, mir::ConstOperand<'tcx>> {
         let mut found = IndexMap::default();
         let marked = super::bindings::undefined_params(self.tcx, body.source.def_id());
         if marked.is_empty() {
@@ -340,7 +337,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `local` of `body` is a parameter a literal default made a
     /// value (`literal_defaults`), read by its `unwrap_or` alone, so it's
     /// present there, its `unwrap_or` the value (`proved_present`, #2081).
-    pub(in crate::lower) fn defaulted_present(&self, body: &mir::Body<'tcx>, local: mir::Local) -> bool {
+    pub fn defaulted_present(&self, body: &mir::Body<'tcx>, local: mir::Local) -> bool {
         self.literal_defaults(body).contains_key(&local)
     }
 
@@ -379,7 +376,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// parameters, is what `declared_arity` says, which a dictionary's entry
     /// passes a caller's arguments on to: each compile in a debug build
     /// holds the two equal (#801).
-    pub(in crate::lower) fn holds_declared_arity(&self, def_id: DefId, count: usize) {
+    pub fn holds_declared_arity(&self, def_id: DefId, count: usize) {
         if let Some(declared) = self.declared_arity(def_id) {
             debug_assert_eq!(
                 declared,
@@ -391,7 +388,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What `function`'s JS takes and gives, as a JS caller calls it.
-    pub(in crate::lower) fn js_signature(&self, function: DefId) -> JsSignature<'tcx> {
+    pub fn js_signature(&self, function: DefId) -> JsSignature<'tcx> {
         let tcx = self.tcx;
         let sig = (tcx.fn_sig(function).instantiate_identity())
             .skip_normalization()

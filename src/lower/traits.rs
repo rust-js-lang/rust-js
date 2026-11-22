@@ -169,7 +169,7 @@ pub(super) fn const_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<&ty::GenericParamD
 /// or an extension of it, is given its dictionary (ADRs 0411, 0487), by
 /// their indices, with the trait's.
 #[derive(Clone, Copy)]
-pub(super) struct Given<'a> {
+pub struct Given<'a> {
     pub copied: &'a IndexSet<(DefId, u32)>,
     pub clones: &'a IndexSet<(DefId, u32)>,
     pub stepped: &'a IndexSet<(DefId, u32, DefId)>,
@@ -221,7 +221,7 @@ pub(in crate::lower) fn select<'tcx>(
 /// -> impl DoubleEndedIterator + '_`, which resolution can't take, erased,
 /// as codegen's are; one a binder of types or consts binds, an internal
 /// error, loud.
-pub(in crate::lower) fn resolve<'tcx>(
+pub fn resolve<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     def_id: DefId,
@@ -266,7 +266,7 @@ pub(super) fn evidence_impl<'tcx>(
     }
 }
 
-pub(super) fn bounds<'tcx>(
+pub fn bounds<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &super::library::Foreign<'_, 'tcx>,
     given: Given<'_>,
@@ -431,7 +431,7 @@ pub(super) fn has_dictionary_of<'tcx>(
 /// passes no dictionary, as nothing would read it: `named<T: Marker>(value)`
 /// is `named(value)`. A `dyn` of it still carries its impl's, whose `$drop`
 /// drops it (ADR 0098). `Copy` isn't one: its dictionary copies.
-pub(super) fn is_marker(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '_>, id: DefId) -> bool {
+pub fn is_marker(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '_>, id: DefId) -> bool {
     foreign.compiled_by_rust_js(id)
         && (tcx.associated_items(id).in_definition_order()).all(|item| bindings::is_binding(tcx, item.def_id))
         && supertraits(tcx, id, ty::GenericArgs::identity_for_item(tcx, id))

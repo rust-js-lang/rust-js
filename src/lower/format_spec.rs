@@ -21,7 +21,7 @@ pub(super) struct Options {
 
 /// A placeholder's options, as core's `FormattingOptions` encodes them.
 #[derive(Clone, Copy, PartialEq, Default)]
-pub(super) struct Spec {
+pub struct Spec {
     pub(super) fill: char,
     /// `<`, `>`, `^`, or none.
     pub(super) align: Option<char>,
@@ -30,11 +30,11 @@ pub(super) struct Spec {
     pub(super) zero: bool,
     /// `{:x?}` or `{:X?}`: `Debug` with its integers in hex (ADR 0559).
     pub(super) debug_hex: Option<Radix>,
-    pub(super) width: Option<u16>,
-    pub(super) precision: Option<u16>,
+    pub width: Option<u16>,
+    pub precision: Option<u16>,
     /// `{:>w$}`, `{:.*}`: the width or precision is this argument's value.
-    pub(super) width_from: Option<usize>,
-    pub(super) precision_from: Option<usize>,
+    pub width_from: Option<usize>,
+    pub precision_from: Option<usize>,
 }
 
 impl Spec {
@@ -74,7 +74,7 @@ impl Spec {
 
 /// `{:x}`, `{:X}`, `{:b}` and `{:o}`: a number's digits in another base.
 #[derive(Clone, Copy, PartialEq)]
-pub(super) enum Radix {
+pub enum Radix {
     LowerHex,
     UpperHex,
     Binary,
@@ -141,7 +141,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// One placeholder's string: `value` shown as `kind` says, with `spec`'s
     /// options, and its `width` and `precision`: numbers, or other arguments.
-    pub(super) fn format_value(
+    pub fn format_value(
         &mut self,
         value: Expr,
         (kind, ty): (Std, Ty<'tcx>),

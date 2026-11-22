@@ -50,7 +50,7 @@ fn fresh_array(array: &Expr) -> bool {
 /// `x.slice()`, or of `x == null ? x : <either>`; else nothing. What a
 /// temporary holding it is named by, as it would be holding `x` (ADR 0569,
 /// #1923): `at` of `marks.at`'s copy, not `value`.
-pub(in crate::lower) fn copied_source(copy: &Expr) -> Option<&Expr> {
+pub fn copied_source(copy: &Expr) -> Option<&Expr> {
     match &copy.kind {
         js::ExprKind::Object(props, _) => match &props[..] {
             [Prop::Spread(source)] => Some(source),
@@ -451,7 +451,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// std's types, which JS holds in a form of its own, a `Map`. None of
     /// one moved whole, a `Vec` JS holds as one object with its items,
     /// whose copy would be another's (#1551).
-    pub(super) fn moved_apart(&self, place: Expr, ty: Ty<'tcx>) -> Option<Expr> {
+    pub fn moved_apart(&self, place: Expr, ty: Ty<'tcx>) -> Option<Expr> {
         // Of the crate's types, or a library's, a tuple or an array: held as
         // its fields, which `shape` lists, as a std type isn't.
         let own = |t: Ty<'tcx>| match t.kind() {
@@ -540,7 +540,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// one, not through a reference nor a static's, which the caller never
     /// borrows `&mut` or raw, by a closure it gives the call too,
     /// `incidence_at(c, || c.y += 1)` (#1801).
-    pub(super) fn given_uncopied(
+    pub fn given_uncopied(
         &self,
         body: &rustc_middle::mir::Body<'tcx>,
         (callee, args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
@@ -637,7 +637,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// max: r.max, step: r.step }`, each field copied in turn where it's
     /// changed in place, and its own flattened fields' keys, which are
     /// `place`'s too. Read once where it's read more than once.
-    pub(in crate::lower) fn projection(&self, place: Expr, ty: Ty<'tcx>) -> Expr {
+    pub fn projection(&self, place: Expr, ty: Ty<'tcx>) -> Expr {
         if !place.reads_same() {
             let param = self.unspelled("value");
             let body = self.projection(Expr::var(&param), ty);
@@ -696,7 +696,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    pub(super) fn copy_if_needed(&self, place: Expr, ty: Ty<'tcx>) -> Expr {
+    pub fn copy_if_needed(&self, place: Expr, ty: Ty<'tcx>) -> Expr {
         // An array made here, which nothing else holds, of items that need
         // no copy of their own: itself.
         let fresh = fresh_array(&place);
@@ -822,7 +822,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// array, a struct's or an enum's field or another closure's capture,
     /// `Some(counter())` too, that changes what it captured, which the crate
     /// doesn't clone apart (#1211)? Such a copy is refused.
-    pub(super) fn copies_own_captures(&self, ty: Ty<'tcx>) -> bool {
+    pub fn copies_own_captures(&self, ty: Ty<'tcx>) -> bool {
         self.holds_by_value(ty, &|t| self.own_captures_copied(t) == Some(false), 0)
     }
 
@@ -848,7 +848,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    pub(super) fn is_copy(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_copy(&self, ty: Ty<'tcx>) -> bool {
         is_copy(self.tcx, self.typing_env, ty)
     }
 
@@ -886,7 +886,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// crate's code or another crate's: the question, which records
     /// nothing (#2204). A copy decision asks it and records what it leaves
     /// out: `contains_mutated`, `mutated_itself`, `vec_changed`.
-    pub(super) fn changed_in_place(&self, ty: Ty<'tcx>) -> bool {
+    pub fn changed_in_place(&self, ty: Ty<'tcx>) -> bool {
         self.walks().unchanged.borrow_mut().push(Vec::new());
         let mutated = self.contains_mutated(ty);
         self.walks().unchanged.borrow_mut().pop();
@@ -897,7 +897,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a copy decision: where a copy of it, or of a part of it, is left
     /// out, the types its walk found unchanged recorded (`elided`), the
     /// same whoever asked first (#2204).
-    pub(super) fn contains_mutated(&self, ty: Ty<'tcx>) -> bool {
+    pub fn contains_mutated(&self, ty: Ty<'tcx>) -> bool {
         // Each type once: a type met along two paths isn't walked twice. It
         // ends at a `Box`, which is `Other`, so no answer depends on another.
         // What the walk found unchanged is kept with it, so an answer read
@@ -1229,9 +1229,9 @@ pub(in crate::lower) fn is_copy<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingE
 /// What the crate changes in place (ADR 0052): the types whose objects it
 /// changes, and the `Vec`s.
 #[derive(Clone, Copy)]
-pub(super) struct Changed<'a, 'tcx> {
-    pub(super) mutated: &'a IndexSet<Ty<'tcx>>,
-    pub(super) vecs: &'a IndexSet<Ty<'tcx>>,
+pub struct Changed<'a, 'tcx> {
+    pub mutated: &'a IndexSet<Ty<'tcx>>,
+    pub vecs: &'a IndexSet<Ty<'tcx>>,
 }
 
 /// Can one JS value be every use of a constant of `ty`, which Rust makes
@@ -1240,7 +1240,7 @@ pub(super) struct Changed<'a, 'tcx> {
 /// tuple, an `Option` and the crate's own struct or enum of those, or a
 /// library's, can, and is copied where it's read if something changes one,
 /// as any value is.
-pub(super) fn shareable<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+pub fn shareable<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     fn walk<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
         if !seen.insert(ty) {
             return true;

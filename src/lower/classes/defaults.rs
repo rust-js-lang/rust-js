@@ -9,7 +9,7 @@ use rust_js_program::js::{self, Expr, ExprKind, Pattern, Prop, Stmt, StmtKind};
 /// impl's own methods are its prototype's already, whatever their entries
 /// are, an arrow that boxes a `&mut self` among them (rd283, ADR 1035,
 /// #1074).
-pub(in crate::lower) fn prototype_defaults(
+pub fn prototype_defaults(
     tcx: rustc_middle::ty::TyCtxt<'_>,
     imp: rustc_span::def_id::DefId,
     mut body: Vec<Stmt>,
@@ -64,11 +64,7 @@ pub(in crate::lower) fn prototype_defaults(
 /// takes, its prototype's method beside its own; or, where a class of the
 /// module took one alike before, that class's function, assigned to each
 /// (rd283, ADR 1035). `Err` of one named as a method the class has.
-pub(in crate::lower) fn take_default(
-    namespaces: &mut [js::Namespace],
-    owner: &str,
-    function: js::Function,
-) -> Result<(), String> {
+pub fn take_default(namespaces: &mut [js::Namespace], owner: &str, function: js::Function) -> Result<(), String> {
     let Some(at) = namespaces.iter().position(|n| n.name.is(owner)) else {
         return Ok(());
     };

@@ -59,7 +59,7 @@ pub(super) use written::{Written, written_types};
 /// What a module's `.d.ts` declares, but its header: `None` where it
 /// exports nothing.
 #[allow(clippy::too_many_arguments)]
-pub(super) fn module<'tcx>(
+pub fn module<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &super::library::Foreign<'_, 'tcx>,
     module: LocalModId,
@@ -382,7 +382,7 @@ pub(super) fn param_word(name: &str) -> String {
 /// Whether `did` is a JS value of any shape, TypeScript's `unknown` or
 /// `any`, `js::Unknown`: what may be `0` or `""`, compared by `===` (ADR
 /// 0612).
-pub(in crate::lower) fn any_shape(tcx: TyCtxt<'_>, did: DefId) -> bool {
+pub fn any_shape(tcx: TyCtxt<'_>, did: DefId) -> bool {
     matches!(
         written_types(tcx, did).as_ref().and_then(Written::keyword),
         Some("unknown" | "any")

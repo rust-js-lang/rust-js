@@ -16,7 +16,7 @@ use rustc_span::def_id::DefId;
 /// that names one, by what each lowered function names (`uses`): its JS
 /// calls reach them, so a consumer that compares a function's identity
 /// compiles its own of each (#1052).
-pub(in crate::lower) fn merging<'f>(
+pub fn merging<'f>(
     rcs: &IndexSet<DefId>,
     lowered: impl Iterator<Item = (DefId, &'f crate::lower::LoweredFn)> + Clone,
 ) -> IndexSet<DefId> {
@@ -115,7 +115,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// (`unkept_by`), and a copy of it can't reach what it reads or calls,
     /// its library's private state (`instances::out_of_reach`), so it's its
     /// library's, called as before.
-    pub(in crate::lower) fn leaves_capacity_unknown(&self, id: DefId) -> bool {
+    pub fn leaves_capacity_unknown(&self, id: DefId) -> bool {
         self.unkept_by(id) && !self.copy_reaches(id)
     }
 

@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     name: "primitive-eq-on-cells",
     breaks: "`==` of what holds `&mut`s to numbers is JS's `===` of the cells",
     file: "src/lower/std_impls.rs",
-    find: "    pub(super) fn js_eq(&self, ty: Ty<'tcx>) -> Option<JsEq> {\n        // A `&mut` to a number is a cell, an object (ADR 0099).\n        if self.has_cell_layer(ty) {",
+    find: "    pub fn js_eq(&self, ty: Ty<'tcx>) -> Option<JsEq> {\n        // A `&mut` to a number is a cell, an object (ADR 0099).\n        if self.has_cell_layer(ty) {",
     replace:
       "    pub(super) fn js_eq(&self, ty: Ty<'tcx>) -> Option<JsEq> {\n        // A `&mut` to a number is a cell, an object (ADR 0099).\n        if false && self.has_cell_layer(ty) {",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],

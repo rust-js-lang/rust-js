@@ -8,7 +8,7 @@ use rustc_middle::ty::{self, Ty};
 
 /// What's asked of `std::future`.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum FutureOp {
+pub enum FutureOp {
     /// `future::ready(v)`: `Promise.resolve(v)`.
     Ready,
 }
@@ -52,7 +52,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// or a class's or an object's method's (#1071); or a type only a
     /// caller knows. What resolves one gives `$settled(value)`, and its `.await`
     /// takes `$unsettled(..)` of it: the one answer, of both.
-    pub(in crate::lower) fn may_be_thenable(&self, ty: Ty<'tcx>) -> bool {
+    pub fn may_be_thenable(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
         if self.is_unknown(ty) || self.recognition().is_dyn_future(ty) {
             return true;

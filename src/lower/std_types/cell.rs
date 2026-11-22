@@ -19,7 +19,7 @@ pub(in crate::lower) use variables::{
 
 /// Which of a `RefCell` guard's own functions maps it (#1275).
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum GuardMapOp {
+pub enum GuardMapOp {
     /// `map(orig, f)`: a guard of what `f` gives.
     Map,
     /// `filter_map(orig, f)`: `Ok` of a guard of what `f` gives, or `Err`
@@ -1004,7 +1004,7 @@ pub(in crate::lower) fn unwrapped_lock(result: &Expr, message: Option<&Expr>) ->
 /// 0147): of an array emptied, `target.splice(0)`, its items, the array
 /// itself left empty (rd264); of others, `$take(target, value)`, a copy,
 /// a write of a `written` in place (#1665).
-pub(in crate::lower) fn taken<'tcx>(
+pub fn taken<'tcx>(
     cx: &FnCx<'_, 'tcx>,
     (target, value): (Expr, Expr),
     written: Ty<'tcx>,

@@ -34,7 +34,7 @@ use rustc_span::def_id::DefId;
 /// reaches one, or a `dyn` written so.
 // Flags, not a state: two facts of the crate apart, what it writes and what it makes.
 #[derive(Default)]
-pub(in crate::lower) struct WrittenParams<'tcx> {
+pub struct WrittenParams<'tcx> {
     pub(in crate::lower) params: IndexMap<DefId, IndexSet<u32>>,
     types: IndexSet<Ty<'tcx>>,
     adts: IndexSet<DefId>,
@@ -63,7 +63,7 @@ pub(in crate::lower) struct WrittenParams<'tcx> {
     /// that holds a type parameter, or a library's type its contract doesn't
     /// list. Of another, the lowering gives back whether its dictionary was
     /// left without (the lowering's `fmt_into_left`, #1797).
-    pub(in crate::lower) makes_dyns: bool,
+    pub makes_dyns: bool,
     /// Of a library that writes no `dyn` so itself, the types reached only
     /// by a value it makes a pair `dyn` of, which a consumer may write a
     /// piece at a time (`made_types`, `made_adts`), and those values' own
@@ -74,7 +74,7 @@ pub(in crate::lower) struct WrittenParams<'tcx> {
     made_given: IndexSet<DefId>,
     /// Each function's `fmt::Arguments` parameters it writes into a
     /// writer a piece at a time (step 6).
-    pub(in crate::lower) arguments: WrittenArguments,
+    pub arguments: WrittenArguments,
 }
 
 impl<'tcx> WrittenParams<'tcx> {
@@ -157,7 +157,7 @@ impl<'tcx> WrittenParams<'tcx> {
     /// writer through its dictionaries: the input there, as it's declared,
     /// holds a type parameter written so, `own`'s `t: &T`, the crate's
     /// (`of_fn`) or a library's, as its manifest says (#1745).
-    pub(in crate::lower) fn writes_at(&self, recognition: &Recognition<'_, 'tcx>, callee: DefId, at: usize) -> bool {
+    pub fn writes_at(&self, recognition: &Recognition<'_, 'tcx>, callee: DefId, at: usize) -> bool {
         let written: Vec<u32> = match callee.is_local() {
             true => self.of_fn(callee).collect(),
             false => recognition.foreign.written_marks(callee),
@@ -432,7 +432,7 @@ fn dyn_given_to_a_writing_library<'tcx>(
 }
 
 /// Whether `ty` holds an `fmt::Arguments`.
-pub(in crate::lower) fn holds_arguments<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+pub fn holds_arguments<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     use rustc_hir::attrs::lang_items::LangItem;
     (ty.walk().filter_map(|part| part.as_type()))
         .any(|part| matches!(part.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::FormatArguments)))
@@ -502,12 +502,12 @@ fn refuse_lacked<'tcx>(tcx: TyCtxt<'tcx>, foreign: &Foreign<'_, 'tcx>, ty: Ty<'t
 /// parameter so, so a call through a dictionary or a `dyn`, which may run
 /// that impl's, gives what it writes.
 #[derive(Default)]
-pub(in crate::lower) struct WrittenArguments {
+pub struct WrittenArguments {
     params: IndexMap<DefId, IndexSet<u32>>,
     /// Whether anything of the program may write an `Arguments` into a
     /// writer's sink (`arms_sinks`): where nothing does, each one's only use
     /// is its text, and each is its template, `() => `<${value}>``.
-    pub(in crate::lower) arms: bool,
+    pub arms: bool,
 }
 
 impl WrittenArguments {
@@ -522,7 +522,7 @@ impl WrittenArguments {
     /// its second; a `Formatter`'s `write_fmt`; or a function's parameter
     /// written so, of the impl a trait's method resolves to, else of the
     /// trait's, a library's as its contract says.
-    pub(in crate::lower) fn writes<'tcx>(
+    pub fn writes<'tcx>(
         &self,
         recognition: &Recognition<'_, 'tcx>,
         (callee, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
@@ -552,7 +552,7 @@ impl WrittenArguments {
     /// crate's function or a library's it compiles itself, an impl's
     /// method, which its contract doesn't list; and of a library's, as its
     /// contract says.
-    pub(in crate::lower) fn marks(&self, recognition: &Recognition<'_, '_>, id: DefId) -> Vec<u32> {
+    pub fn marks(&self, recognition: &Recognition<'_, '_>, id: DefId) -> Vec<u32> {
         let mut marks: Vec<u32> = self.of_fn(id).collect();
         if !id.is_local() {
             marks.extend(recognition.foreign.written_arguments(id));
@@ -739,7 +739,7 @@ pub(super) fn written_arguments<'tcx>(
 /// to a type parameter a call writes so through its dictionary,
 /// `own(w, &args)`'s `T`, where the analysis knows them (`written`, at
 /// lowering; #1745).
-pub(in crate::lower) fn given_to_a_write<'tcx>(
+pub fn given_to_a_write<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     (marks, written): (&WrittenArguments, Option<&WrittenParams<'tcx>>),
     body: &mir::Body<'tcx>,

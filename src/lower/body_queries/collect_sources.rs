@@ -17,8 +17,8 @@ use rustc_span::Span;
 /// fields under it the place reads, each by the type it's of, outermost
 /// first; a `Box`'s deref none, as a `Box` is its value (ADR 0023).
 #[derive(Clone, Debug, PartialEq)]
-pub(in crate::lower) struct CollectSource<'tcx> {
-    pub(in crate::lower) var: LocalVarId,
+pub struct CollectSource<'tcx> {
+    pub var: LocalVarId,
     pub(in crate::lower) fields: Vec<(Ty<'tcx>, usize)>,
 }
 

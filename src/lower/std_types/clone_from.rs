@@ -111,7 +111,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// and the box generic code has of it, which is its value's too, as a
     /// `Some` of it is the value. `None` where its value isn't written in
     /// place.
-    pub(in crate::lower) fn option_clone_over(
+    pub fn option_clone_over(
         &mut self,
         ty: ty::Ty<'tcx>,
         (to, pointer): (Expr, Expr),
@@ -226,13 +226,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// itself, asking the copy policy as each write in place does
     /// (`in_place`, #2028). `None` of another type, or where neither side is
     /// written in place.
-    pub(in crate::lower) fn result_sides(
-        &mut self,
-        ty: ty::Ty<'tcx>,
-        to: Expr,
-        from: Expr,
-        span: Span,
-    ) -> R<Option<Vec<Side>>> {
+    pub fn result_sides(&mut self, ty: ty::Ty<'tcx>, to: Expr, from: Expr, span: Span) -> R<Option<Vec<Side>>> {
         if !self.is_std_type(ty, crate::lower::recognition::StdItem::Result) {
             return Ok(None);
         }
@@ -285,7 +279,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `sides`' tests, each its write, the last's `else` `otherwise`.
-    pub(in crate::lower) fn sides_or(sides: Vec<Side>, otherwise: Vec<Stmt>) -> Vec<Stmt> {
+    pub fn sides_or(sides: Vec<Side>, otherwise: Vec<Stmt>) -> Vec<Stmt> {
         let mut otherwise = otherwise;
         for (test, body) in sides.into_iter().rev() {
             otherwise = vec![StmtKind::If(test, body, Some(otherwise)).at(js::Span::NONE)];
@@ -301,7 +295,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is its own (`dictionary_clone_from`), so the JS asks it first (#928):
     /// what's asked, and the call. `None` where it's `*place =
     /// from.clone()` here.
-    pub(in crate::lower) fn written_over(
+    pub fn written_over(
         &mut self,
         held: ty::Ty<'tcx>,
         (place, pointer): (Expr, Expr),
@@ -546,7 +540,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `*dest = source.clone()` isn't (#922), or may be, a type only a
     /// caller knows (#928).
     // helper: asked by `mir` and the base alike, the base's since #2299 moved it from `mir::entries`
-    pub(in crate::lower) fn forwards_clone_from(&mut self, ty: Ty<'tcx>, span: Span) -> R<bool> {
+    pub fn forwards_clone_from(&mut self, ty: Ty<'tcx>, span: Span) -> R<bool> {
         let ty::Adt(_, args) = ty.kind() else { return Ok(false) };
         let forwards = ty.is_box()
             || self.option_of(ty).is_some()

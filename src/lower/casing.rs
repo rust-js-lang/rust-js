@@ -26,7 +26,7 @@ pub(in crate::lower) fn unhyphenated(name: &str) -> String {
 /// and so does a name with no lowercase letter, a component's `H2` say.
 /// The one place a `snake_case` name is made camelCase; a thread-local's
 /// `SCREAMING_SNAKE` one is `variable_case`'s.
-pub(in crate::lower) fn camel_case(name: &str) -> String {
+pub fn camel_case(name: &str) -> String {
     let core = name.trim_matches('_');
     if !core.contains('_') || !core.contains(|c: char| c.is_ascii_lowercase()) {
         return name.to_string();

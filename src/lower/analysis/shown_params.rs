@@ -19,7 +19,7 @@ use rustc_span::def_id::DefId;
 /// What a value is shown with: whether pretty, `{:#?}`, and in hex,
 /// `{:x?}`.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub(in crate::lower) struct Shown {
+pub struct Shown {
     pub(in crate::lower) pretty: bool,
     pub(in crate::lower) hex: bool,
 }
@@ -40,8 +40,8 @@ impl Shown {
 /// Of each of the crate's functions, its type parameters shown with
 /// options, by index; and what's shown so of each type it gives one.
 #[derive(Default)]
-pub(in crate::lower) struct ShownParams<'tcx> {
-    pub(in crate::lower) params: IndexMap<DefId, IndexMap<u32, Shown>>,
+pub struct ShownParams<'tcx> {
+    pub params: IndexMap<DefId, IndexMap<u32, Shown>>,
     types: IndexMap<Ty<'tcx>, Shown>,
     adts: IndexMap<DefId, Shown>,
     /// What the libraries the crate uses show of a `dyn Debug` they're
@@ -59,7 +59,7 @@ impl<'tcx> ShownParams<'tcx> {
 
     /// What the crate shows of a `dyn Debug` it's given, and the libraries
     /// it uses do, which its manifest says (#1335).
-    pub(in crate::lower) fn dyn_debug(&self, tcx: TyCtxt<'tcx>) -> Shown {
+    pub fn dyn_debug(&self, tcx: TyCtxt<'tcx>) -> Shown {
         let debug = std_item(tcx, StdItem::Debug);
         (self.types.iter())
             .filter(|(ty, _)| matches!(ty.kind(), ty::Dynamic(traits, ..) if traits.principal_def_id() == Some(debug)))

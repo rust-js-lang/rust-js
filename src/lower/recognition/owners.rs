@@ -85,7 +85,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// items (`owned_items`), a `Copied`'s or a `Cloned`'s, a copy made as
     /// each is given, or those an `Enumerate`, a `Rev`, a `Skip`, a `Take`,
     /// a `StepBy` or a `Fuse` of one gives on (#141).
-    pub(in crate::lower) fn gives_owned_items(&self, ty: Ty<'tcx>) -> bool {
+    pub fn gives_owned_items(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
         let ty::Adt(adt, args) = ty.kind() else { return false };
         self.owned_items(ty).is_some()

@@ -22,7 +22,7 @@ use rustc_span::Span;
 /// A `String` changed in place, its place given the new string, as JS
 /// strings don't change (ADR 0149).
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum StringEdit {
+pub enum StringEdit {
     /// `s.pop()`: the last `char`, or `None`.
     Pop,
     /// `s.remove(at)`: the `char` at a byte offset.
@@ -50,7 +50,7 @@ pub(in crate::lower) enum StringEdit {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum TextOp {
+pub enum TextOp {
     /// A `char` question, as a regular expression it matches.
     Is(&'static str),
     /// A `char` question Unicode's tables answer, by Rust's own tables, the
@@ -252,7 +252,7 @@ pub(in crate::lower) enum TextOp {
 /// place, `$encodeUtf16(s)`, a JS iterator of it or not, counted:
 /// `s.length`, which counts them, as JS reads a string's length (ADR
 /// 0632). `None` of what's held, which a `next()` may have stepped.
-pub(in crate::lower) fn utf16_length(units: &Expr) -> Option<Expr> {
+pub fn utf16_length(units: &Expr) -> Option<Expr> {
     let units = crate::lower::iterators::from_iterator(units.clone()).unwrap_or_else(|units| *units);
     let ExprKind::Call(callee, args) = &units.kind else {
         return None;
@@ -287,14 +287,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// unwinds, which `Array.from` doesn't, its source never dropped (#1126);
     /// else its text joined and appended once (`joined_text`), as nothing
     /// tells the two apart.
-    pub(in crate::lower) fn extended_text(
-        &mut self,
-        place: &Expr,
-        items: Expr,
-        ty: Ty<'tcx>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<()> {
+    pub fn extended_text(&mut self, place: &Expr, items: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<()> {
         let js_span = self.js_span(span);
         let stepped = self.implements_iterator(ty)
             && (self.steps_may_panic(ty) || self.drops(ty) != crate::lower::drops::Drops::Nothing);
@@ -328,7 +321,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its new text, and what it took out, if it takes anything (ADR 0364).
     /// Of a closure it's given that may unwind, `unwinds`, what it leaves
     /// where that panics is written to `current` first (`$retainText`, #1171).
-    pub(in crate::lower) fn string_edit_values(
+    pub fn string_edit_values(
         &mut self,
         edit: StringEdit,
         (current, unwinds): (Expr, bool),
@@ -392,7 +385,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A string's or a slice's method of its arguments' values, `tys`
     /// their types (ADR 0364).
-    pub(in crate::lower) fn text_values(
+    pub fn text_values(
         &mut self,
         op: TextOp,
         mut values: Vec<Expr>,
@@ -759,7 +752,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// ...$copyRange(v, a, b))` (ADR 0315), each a clone, by `clone`, where
     /// a clone is more than the value (ADR 0507). Of all of it, `..`,
     /// `range` is the `Vec` itself.
-    pub(in crate::lower) fn range_edit(
+    pub fn range_edit(
         &mut self,
         op: TextOp,
         range: Expr,
@@ -809,7 +802,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `&s[range]` of places of `s` in JS's units, `range` a `range_ty`:
     /// `s.slice(a, b)`, which can't panic, as each is in bounds and on a
     /// boundary, and the range's end isn't before its start (ADR 0642).
-    pub(in crate::lower) fn sliced_in_units(
+    pub fn sliced_in_units(
         &mut self,
         s: Expr,
         (range, range_ty): (Expr, Ty<'tcx>),
@@ -829,7 +822,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `items` in `range`, a `range_ty`, as `op` takes them, of their
     /// values (ADR 0364); `in_bounds` where the body's ranges show it is
     /// (ADR 0806).
-    pub(in crate::lower) fn slice_range_values(
+    pub fn slice_range_values(
         &mut self,
         (op, in_bounds): (TextOp, bool),
         items: Expr,
@@ -896,7 +889,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Of `cell`, a `&mut str`'s, and what's `given`, a range's bounds or a
     /// `split_at_mut`'s index: the part.
-    pub(in crate::lower) fn str_part_values(&mut self, op: TextOp, cell: Expr, given: Vec<Expr>) -> Expr {
+    pub fn str_part_values(&mut self, op: TextOp, cell: Expr, given: Vec<Expr>) -> Expr {
         let mut list = vec![cell];
         list.extend(given);
         let name = match op {
@@ -913,7 +906,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `range_bounds`'s, of a range's value, a `range_ty`.
-    pub(in crate::lower) fn range_value_bounds(
+    pub fn range_value_bounds(
         &mut self,
         value: Expr,
         range_ty: Ty<'tcx>,
@@ -1147,7 +1140,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// in JS's units (ADR 0642): JS's own, `s.indexOf(p)`, `s.lastIndexOf(p)`
 /// and `length`, an `Option` found `-1` where it's `None` (`found`).
 /// `None` of another `op`.
-pub(in crate::lower) fn of_places(op: TextOp, mut values: Vec<Expr>) -> Option<Expr> {
+pub fn of_places(op: TextOp, mut values: Vec<Expr>) -> Option<Expr> {
     let of = values.remove(0);
     Some(match op {
         TextOp::Find(last) => Expr::call(Expr::member(of, if last { "lastIndexOf" } else { "indexOf" }), values),
@@ -1158,7 +1151,7 @@ pub(in crate::lower) fn of_places(op: TextOp, mut values: Vec<Expr>) -> Option<E
 
 /// That `at`, a place found in units, is one, its `Option`'s `Some`: `at
 /// !== -1`, as `indexOf` says none (ADR 0642).
-pub(in crate::lower) fn found(at: Expr) -> Expr {
+pub fn found(at: Expr) -> Expr {
     Expr::bin(Op::Ne, at, Expr::int(-1))
 }
 
@@ -1167,7 +1160,7 @@ pub(in crate::lower) fn found(at: Expr) -> Expr {
 /// `n` the pattern's length in units, a literal's, or `p.length`; of a
 /// suffix, `s.endsWith(p)` and `s.slice(0, -n)`. Neither counts anything
 /// a program can see.
-pub(in crate::lower) fn cut(s: Expr, p: Expr, units: Option<usize>, prefix: bool) -> (Expr, Expr) {
+pub fn cut(s: Expr, p: Expr, units: Option<usize>, prefix: bool) -> (Expr, Expr) {
     let test = Expr::call(
         Expr::member(s.clone(), if prefix { "startsWith" } else { "endsWith" }),
         vec![p.clone()],
@@ -1199,7 +1192,7 @@ fn replacement(to: Expr) -> Expr {
 
 /// What a `Vec`'s range is read as for `range_edit`: `splice`'s taken out,
 /// as `drain`'s, `extend_from_within`'s copied, as `&v[a..b]`'s.
-pub(in crate::lower) fn range_read(op: TextOp) -> TextOp {
+pub fn range_read(op: TextOp) -> TextOp {
     match op {
         TextOp::Splice => TextOp::Drain,
         _ => TextOp::Slice,
@@ -1225,7 +1218,7 @@ pub(in crate::lower) fn utf8_bytes(text: Expr) -> Expr {
 /// throws. Nothing else can see `s` before it's appended to: Rust lends it
 /// to nothing while it's changed. Two pieces of text written out are one,
 /// `t += "!?"`.
-pub(in crate::lower) fn appended(stmts: &mut Vec<Stmt>, text: &IndexSet<js::Name>) {
+pub fn appended(stmts: &mut Vec<Stmt>, text: &IndexSet<js::Name>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         if let Some((s, a)) = append_of(&stmts[i], text)

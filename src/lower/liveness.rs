@@ -40,7 +40,7 @@ static RUSTC_BODY_LIVENESS: OnceLock<BodyLiveness> = OnceLock::new();
 
 /// rustc's providers, with liveness that counts what JS reads, and no
 /// check of a binding's body, which never runs.
-pub(crate) fn provide(providers: &mut Providers) {
+pub fn provide(providers: &mut Providers) {
     RUSTC_LIVENESS.get_or_init(|| providers.queries.live_symbols_and_ignored_derived_traits);
     providers.queries.live_symbols_and_ignored_derived_traits = live_symbols;
     RUSTC_BODY_LIVENESS.get_or_init(|| providers.queries.check_liveness);

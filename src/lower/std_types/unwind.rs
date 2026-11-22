@@ -14,7 +14,7 @@ use rust_js_program::js::{Expr, Known, Stmt, StmtKind};
 
 /// What's asked of unwinding.
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(in crate::lower) enum UnwindOp {
+pub enum UnwindOp {
     /// `panic::catch_unwind(f)`.
     Catch,
     /// `panic::resume_unwind(payload)`.

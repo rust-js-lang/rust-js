@@ -14,15 +14,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `known` is `r`'s value, when rustc knows it and the JS doesn't show
     /// it: a named `const` (ADR 0031).
-    pub(in crate::lower) fn binary(
-        &mut self,
-        op: BinOp,
-        l: Expr,
-        r: Expr,
-        known: Option<i128>,
-        ty: Ty<'tcx>,
-        span: Span,
-    ) -> R<Expr> {
+    pub fn binary(&mut self, op: BinOp, l: Expr, r: Expr, known: Option<i128>, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         // Of an operation MIR's intervals don't walk, a call's, `+=` of a
         // trait's or an atomic's: none proved, as THIR's ranges are gone
         // (#1672 M4).
@@ -32,7 +24,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `binary`, of a `+`, `-` or `*` MIR's intervals prove stays in its
     /// type's range where `proved`, the MIR statement's it lowers (ADR 1137).
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::lower) fn binary_proved(
+    pub fn binary_proved(
         &mut self,
         op: BinOp,
         l: Expr,
@@ -249,7 +241,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `NonZero::new(n)`: `n`, or `None` of zero.
-    pub(in crate::lower) fn non_zero_new(&mut self, n: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+    pub fn non_zero_new(&mut self, n: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let num = self.num(ty, span)?;
         // Of a constant, `NonZero::new(7)`: its answer.
         if let Some(value) = n.as_int().or_else(|| n.as_bigint()) {
@@ -271,7 +263,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if num == Num::U32 && !masked { num.wrap(e) } else { e }
     }
 
-    pub(in crate::lower) fn unary(&mut self, op: UnOp, a: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn unary(&mut self, op: UnOp, a: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         match op {
             UnOp::Not if ty.is_bool() => Ok(Expr::unary(UnaryOp::Not, a)),
             UnOp::Not => {
@@ -309,7 +301,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.cast(v, from, to, span)
     }
 
-    pub(in crate::lower) fn cast(&mut self, v: Expr, from: Ty<'tcx>, to: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub fn cast(&mut self, v: Expr, from: Ty<'tcx>, to: Ty<'tcx>, span: Span) -> R<Expr> {
         let target = self.num(to, span)?;
         if from.is_bool() && !target.float() {
             return Ok(Expr::cond(v, target.literal(1), target.literal(0)));
@@ -431,7 +423,7 @@ pub(in crate::lower) fn mask_shift(r: Expr, num: Num) -> Expr {
 
 /// `shift_amount`, by the two types: a trait's, `Shl<i64>` of a `u32`, where
 /// there are no expressions, as in a dictionary (ADR 0108).
-pub(in crate::lower) fn shift_amount_of<'tcx>(op: BinOp, r: Expr, lhs: Ty<'tcx>, rhs: Ty<'tcx>) -> Expr {
+pub fn shift_amount_of<'tcx>(op: BinOp, r: Expr, lhs: Ty<'tcx>, rhs: Ty<'tcx>) -> Expr {
     let big = |ty: Ty<'tcx>| Num::of(ty.peel_refs()).is_some_and(Num::big);
     if !matches!(op, BinOp::Shl | BinOp::Shr) || big(lhs) || !big(rhs) {
         return r;

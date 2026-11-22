@@ -30,7 +30,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// An `Option<T>` whose `T` might look like `None`: a type parameter, or
     /// a `()` or an `Option` itself. `Some` of it is boxed when it does
     /// (ADR 0051).
-    pub(in crate::lower) fn boxed_payload(&self, ty: Ty<'tcx>) -> bool {
+    pub fn boxed_payload(&self, ty: Ty<'tcx>) -> bool {
         let payload = self.payload(ty);
         // One JS gives is unboxed (ADR 0051, amended): `Params::js` is of
         // `Params::unboxed`, which `defined_by_its_bounds` reads.
@@ -49,7 +49,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// only where it's held is its payload then (`OptionWrites::nested`):
     /// its `None` `undefined`, its `Some(None)` `null` and its
     /// `Some(Some(v))` `v` (ADR 1017).
-    pub(in crate::lower) fn nested_payload(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn nested_payload(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let some = self.option_of(ty)?;
         if self.is_cell(some) || !self.boxed_payload(some) {
             return None;
@@ -69,7 +69,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// local MIR makes and reads only where it's held is its `V` then, its
     /// `None` `undefined`, as upstream's `Map<string, null | Promise>`'s
     /// read is, `chunkCache.get(chunkId) === undefined` (ADR 1017, amended).
-    pub(in crate::lower) fn defined_payload(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn defined_payload(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let some = self.option_of(ty)?;
         if !self.boxed_payload(some) {
             return None;
@@ -88,7 +88,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// literals and `undefined`: its `V`. A nullable field holds one as
     /// `V` itself, its `None` `null`, and so does a local MIR makes and
     /// reads only where it's held (rd645, the user's (B)).
-    pub(in crate::lower) fn undefined_payload(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn undefined_payload(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let some = self.option_of(ty)?;
         if !self.boxed_payload(some) {
             return None;

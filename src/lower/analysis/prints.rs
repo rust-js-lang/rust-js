@@ -29,7 +29,7 @@ use super::written_params::WrittenArguments;
 
 /// What `prints` found of a crate.
 #[derive(Default)]
-pub(in crate::lower) struct Prints {
+pub struct Prints {
     /// The writers whose text is written through a sink (`$sink()`), piece
     /// by piece: those that may print to stdout as they format, through the
     /// line they're formatting into; and those whose `Debug` builder's step
@@ -87,7 +87,7 @@ impl Prints {
 
     /// Is `writer` shown into a writer by `write!`, so it writes a piece
     /// at a time, each a call of that writer's (#1652)?
-    pub(in crate::lower) fn writes_into_writers(&self, writer: DefId) -> bool {
+    pub fn writes_into_writers(&self, writer: DefId) -> bool {
         self.framed.contains(&writer)
     }
 
@@ -104,7 +104,7 @@ impl Prints {
 
     /// May any writer of the crate's print as it formats: what may run in
     /// an `fmt::Arguments` given on, which may hold any value, may (#1565).
-    pub(in crate::lower) fn any_writer_prints(&self) -> bool {
+    pub fn any_writer_prints(&self) -> bool {
         !self.types.is_empty()
     }
 

@@ -10,7 +10,7 @@
 use super::*;
 
 /// What `of` makes of the crate.
-pub(in crate::lower) struct Ground<'a, 'tcx> {
+pub struct Ground<'a, 'tcx> {
     /// rustc's test harness, which the JS runner takes the place of.
     pub(super) harness: Harness,
     pub(super) writer_facts: WriterFacts,
@@ -20,7 +20,7 @@ pub(in crate::lower) struct Ground<'a, 'tcx> {
     pub(super) trait_impls: Vec<DefId>,
     /// The types the crate clones (ADRs 0522, 0525), in place or in
     /// generic code.
-    pub(in crate::lower) cloned: Cloned<'tcx>,
+    pub cloned: Cloned<'tcx>,
     /// Whether the crate asks a `Vec`'s capacity, which is kept as std grows
     /// it (ADR 0419).
     pub(super) asks_capacity: bool,
@@ -33,12 +33,12 @@ impl<'a, 'tcx> Ground<'a, 'tcx> {
     /// it, or a library it uses does, which what the crate gives it may be
     /// asked (ADR 0419). The one answer, read before the bodies are told
     /// which adapters each makes in place (#1528) and by the analysis.
-    pub(in crate::lower) fn keeps_capacity(&self) -> bool {
+    pub fn keeps_capacity(&self) -> bool {
         self.asks_capacity || self.foreign.keeps_capacity()
     }
 
     /// The crate's `Recognition`, of its trait impls and libraries.
-    pub(in crate::lower) fn recognition(&self, tcx: TyCtxt<'tcx>) -> Recognition<'_, 'tcx> {
+    pub fn recognition(&self, tcx: TyCtxt<'tcx>) -> Recognition<'_, 'tcx> {
         Recognition {
             tcx,
             typing_env: ty::TypingEnv::fully_monomorphized(),
@@ -67,7 +67,7 @@ impl Harness {
 }
 
 /// What the crate's analysis stands on (`Ground`).
-pub(in crate::lower) fn of<'a, 'tcx>(
+pub fn of<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[Body<'tcx>],
     dependencies: &'a rust_js_program::library::Dependencies,

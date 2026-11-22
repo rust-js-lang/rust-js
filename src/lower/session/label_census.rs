@@ -27,7 +27,7 @@ pub(in crate::lower) fn record() {
 
 /// Each `bbN` label `body`'s JS, `stmts`, keeps, noted by its shape: of
 /// its own statements alone, not a closure's, which its own body notes.
-pub(in crate::lower) fn note(body: &Body<'_>, stmts: &[Stmt]) {
+pub fn note(body: &Body<'_>, stmts: &[Stmt]) {
     if !RECORDS.load(Ordering::Relaxed) {
         return;
     }

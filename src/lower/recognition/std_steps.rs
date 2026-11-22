@@ -132,7 +132,7 @@ pub(in crate::lower) fn asks(name: &str, step: &str) -> Vec<Asked> {
 /// A wrapper std's impls step the iterator it holds through: a `&mut I` of
 /// a sized `I` or of an unsized one, a `dyn`'s, and a `Box<I>` of each.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum Wrapper {
+pub enum Wrapper {
     MutRefSized,
     MutRefUnsized,
     BoxSized,
@@ -173,11 +173,7 @@ const WRAPPER_STEPS: [&str; 15] = [
 impl Wrapper {
     /// The wrapper `ty` is of the iterator it holds, a `&mut` or a `Box`, or
     /// none.
-    pub(in crate::lower) fn of<'tcx>(
-        tcx: TyCtxt<'tcx>,
-        typing_env: ty::TypingEnv<'tcx>,
-        ty: Ty<'tcx>,
-    ) -> Option<Wrapper> {
+    pub fn of<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> Option<Wrapper> {
         Self::holding(tcx, typing_env, ty).map(|(wrapper, _)| wrapper)
     }
 
@@ -220,7 +216,7 @@ impl Wrapper {
     /// as that's own (`passes`), what it holds; `ty` itself where none
     /// does. A `len()` of a `&mut Box<I>` is `I`'s, as std's `&mut I` and
     /// `Box<I>` each pass `len` on (#2189).
-    pub(in crate::lower) fn passed_through<'tcx>(
+    pub fn passed_through<'tcx>(
         tcx: TyCtxt<'tcx>,
         typing_env: ty::TypingEnv<'tcx>,
         ty: Ty<'tcx>,

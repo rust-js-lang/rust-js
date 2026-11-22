@@ -8,7 +8,7 @@ use crate::lower::temporary_names::Role;
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Iterator.from(value)`: a JS iterator of an array or of one, which
     /// steps either (ADR 0061); one already, as it is.
-    pub(in crate::lower) fn js_iterator(&self, value: Expr) -> Expr {
+    pub fn js_iterator(&self, value: Expr) -> Expr {
         if is_lent(&value) || is_js_iterator(&value) {
             return value;
         }
@@ -224,7 +224,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as `by` lends it, of a sized iterator or not (`Wrapper::lending`,
     /// #1991, #2180); of one already lent, `by_ref()`'s, itself, a JS
     /// iterator nothing closes.
-    pub(in crate::lower) fn lent_iterator(&mut self, it: Expr, by: Ty<'tcx>) -> Expr {
+    pub fn lent_iterator(&mut self, it: Expr, by: Ty<'tcx>) -> Expr {
         if is_lent(&it) {
             return it;
         }
@@ -276,7 +276,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// that's lent already or hides steps of its own (#2186). Of one that's
     /// a `dyn Iterator` already, a `Box`'s made another's, none: it's the
     /// box's.
-    pub(in crate::lower) fn unsized_box_lends(&self, iterator: ty::Ty<'tcx>) -> Vec<Wrapper> {
+    pub fn unsized_box_lends(&self, iterator: ty::Ty<'tcx>) -> Vec<Wrapper> {
         let mut lends = self.wrapper_lends(iterator);
         let hides = match Wrapper::holding(self.tcx, self.typing_env, iterator) {
             Some(_) => !lends.is_empty(),
@@ -305,7 +305,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `it`, the JS iterator a value holds, lent as each of `lends` lends
     /// it, innermost first (`wrapper_lends`).
-    pub(in crate::lower) fn lent_through(&self, it: Expr, lends: &[Wrapper]) -> Expr {
+    pub fn lent_through(&self, it: Expr, lends: &[Wrapper]) -> Expr {
         (lends.iter()).fold(it, |it, &how| IterValue::js(it).lent(how).emit())
     }
 
@@ -336,7 +336,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `items = Array.isArray(items) ? $iter(items) : items;`, an array a
     /// JS caller gives made its `$iter`, which knows both, and what the
     /// crate's own Rust gives as it is (#1993).
-    pub(in crate::lower) fn js_given_iterators<'n>(
+    pub fn js_given_iterators<'n>(
         &self,
         function: DefId,
         params: impl Iterator<Item = (ty::Ty<'tcx>, &'n js::Name)>,
@@ -355,7 +355,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `$iter(items)`: a JS iterator of an array that knows where it is
     /// (ADR 0071).
-    pub(in crate::lower) fn stepped_items(&mut self, items: Expr) -> Expr {
+    pub fn stepped_items(&mut self, items: Expr) -> Expr {
         array_stepped(items)
     }
 
@@ -384,7 +384,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type `ty`: `it.items.slice(it.at, it.end)`, copies of the items it
     /// `owns` that need one (ADR 0181). Of one just made, `$iter(items)`,
     /// nothing's stepped: `items`, which Rust lends it or it owns.
-    pub(in crate::lower) fn stepped_left(&mut self, it: Expr, ty: ty::Ty<'tcx>, owns: bool, span: Span) -> R<Expr> {
+    pub fn stepped_left(&mut self, it: Expr, ty: ty::Ty<'tcx>, owns: bool, span: Span) -> R<Expr> {
         // A slice's chunks or windows: what they were cut of kept, of what's
         // left, which std's `Debug` of one shows (`$partsStepped`, #2252).
         let parts = (self.recognition().shows_its_slice(ty))
@@ -834,13 +834,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// iterator's or a type parameter's given as it is, its JS iterator; a
     /// B-tree's, in order; an array's or a JS iterator's, itself. The one
     /// answer (ADR 0528).
-    pub(in crate::lower) fn iterable_items(
-        &mut self,
-        value: Expr,
-        ty: ty::Ty<'tcx>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
+    pub fn iterable_items(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         // An associated type's, `I::Item`'s, its dictionary's `into_iter`
         // (#278).
         if let Some(items) = self.items_by_dictionary(value.clone(), ty, span)? {
@@ -900,12 +894,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `I::Item`'s (ADR 0552, #278), `impl Is<I>`'s `I` (#966): its
     /// dictionary's `into_iter`, stepped by the `Iterator` that carries,
     /// `$given(IItemIntoIterator.intoIter(item), ..)`.
-    pub(in crate::lower) fn items_by_dictionary(
-        &mut self,
-        value: Expr,
-        ty: ty::Ty<'tcx>,
-        span: Span,
-    ) -> R<Option<Expr>> {
+    pub fn items_by_dictionary(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         // Or a reference whose `IntoIterator` is a bound of this function's,
         // `&'a I: IntoIterator`, which no caller makes a JS iterator of, as
         // it does of a type parameter it gives: its dictionary's
@@ -994,11 +983,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `own_methods` gives what's made there is what the wrapper passes on,
     /// as nothing reaches the rest through it (#2217). Restored as `make`
     /// ends, a panic too, so it never reaches a make after it.
-    pub(in crate::lower) fn seen_through<T>(
-        &mut self,
-        wrapper: Option<Wrapper>,
-        make: impl FnOnce(&mut Self) -> T,
-    ) -> T {
+    pub fn seen_through<T>(&mut self, wrapper: Option<Wrapper>, make: impl FnOnce(&mut Self) -> T) -> T {
         let outer = self.seen_through.replace(wrapper);
         let made = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| make(&mut *self)));
         self.seen_through.set(outer);
@@ -1123,7 +1108,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`is_its_source`), numbers, as it's made: a copy cloned apart is one
     /// made of a map of each item's copy, a struct's or generic code's
     /// (#1181).
-    pub(in crate::lower) fn iterator_cloned_apart(&self, ty: ty::Ty<'tcx>) -> bool {
+    pub fn iterator_cloned_apart(&self, ty: ty::Ty<'tcx>) -> bool {
         self.iterator_cloned(ty) && !self.is_its_source(ty) && !self.copied_given(ty)
     }
 

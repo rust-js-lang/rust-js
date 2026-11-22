@@ -19,7 +19,7 @@ use rust_js_program::js::{self, Expr, Stmt, StmtKind};
 /// Where an arrow is given, which says whether it may be the function it
 /// passes on to, and what it must pass on to.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(in crate::lower) enum Taker {
+pub enum Taker {
     /// An array method's callback, `xs.map(f)` (ADR 0279): the method
     /// gives the index and the array too, which a function of the crate's,
     /// or a closure, has no parameter for, and the callback's value is
@@ -72,7 +72,7 @@ pub(in crate::lower) enum Taker {
 /// What a closure MIR makes passes its call on to, where it's written: its
 /// fact, which each taker reads (`forwarded_to`).
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(in crate::lower) struct Forwarding {
+pub struct Forwarding {
     pub(in crate::lower) span: js::Span,
     pub(in crate::lower) callee: Callee,
     /// Whether what it calls has a signature of its own, not the
@@ -87,7 +87,7 @@ pub(in crate::lower) struct Forwarding {
     /// Whether its arrow, as it's made, is that function bound to what it
     /// captured by value (`binds`), which `bound` writes once the body is
     /// tidied, where nothing calls the arrow in place any more.
-    pub(in crate::lower) binds: bool,
+    pub binds: bool,
     /// Whether it ignores what it's given, reading none of its parameters,
     /// and calls, with nothing, a function that reads no `this` and none
     /// of what it's given more (`Callee::Own`), giving what that gives:
@@ -148,7 +148,7 @@ pub(in crate::lower) enum Callee {
 
 impl Taker {
     /// The taker of array method `name`'s callback.
-    pub(in crate::lower) fn array_method(name: &str) -> Option<Taker> {
+    pub fn array_method(name: &str) -> Option<Taker> {
         ["map", "filter", "some", "every", "find", "forEach"]
             .contains(&name)
             .then_some(Taker::ArrayMethod)
@@ -169,7 +169,7 @@ impl Taker {
     /// `FnMut`'s, a listener's, which JS may keep and compare,
     /// `removeEventListener`'s, is a `Closure`'s, which takes only a closure
     /// that's the function it calls wherever it's given.
-    pub(in crate::lower) fn parameter(tcx: TyCtxt<'_>, def_id: DefId, i: usize) -> Option<Taker> {
+    pub fn parameter(tcx: TyCtxt<'_>, def_id: DefId, i: usize) -> Option<Taker> {
         let ty = *tcx.fn_sig(def_id).skip_binder().skip_binder().inputs().get(i)?;
         let only_once = |id: DefId| tcx.fn_trait_kind_from_def_id(id) == Some(ty::ClosureKind::FnOnce);
         let once = match *ty.kind() {
@@ -201,7 +201,7 @@ impl Taker {
 /// `g` of `f`, an arrow that passes on what it's given, in order, to `g`,
 /// where `taker` may take `g` in its place: of a closure the program
 /// writes, as its MIR fact in `forwarding` says what `g` is.
-pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwarding]) -> Option<Expr> {
+pub fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwarding]) -> Option<Expr> {
     if taker == Taker::Handler
         && let Some(handler) = optional_handler(f)
     {
@@ -298,7 +298,7 @@ pub(in crate::lower) fn passed_on_first(f: &Expr) -> Option<(Expr, usize)> {
 /// `ReactDOMHydrationRoot.prototype.unstable_scheduleHydration =
 /// scheduleHydration;`, where its JS is that call alone (rd715,
 /// `pipeline::reached::passed_on_methods`).
-pub(in crate::lower) fn forwarded_function<'tcx>(
+pub fn forwarded_function<'tcx>(
     tcx: TyCtxt<'tcx>,
     method: DefId,
     thir: &rustc_middle::thir::Thir<'tcx>,
@@ -358,7 +358,7 @@ pub(in crate::lower) fn forwarded_function<'tcx>(
 /// re-export of that function where its JS is that call alone, of the
 /// function's own JS, which takes no more (`pipeline::forwarders::found`,
 /// `forwarded_call`).
-pub(in crate::lower) fn forwarder<'tcx>(
+pub fn forwarder<'tcx>(
     tcx: TyCtxt<'tcx>,
     function: DefId,
     thir: &rustc_middle::thir::Thir<'tcx>,
@@ -394,7 +394,7 @@ pub(in crate::lower) fn forwarder<'tcx>(
 /// and one its module doesn't export (rd575, ADR 1064). One with comments
 /// is the re-export too, its comments before it (`reached::taken_into`,
 /// ADR 1064, amended, the user's decision of 2026-11-04).
-pub(in crate::lower) fn forwarded_call(function: &js::Function, statement: bool) -> Option<&Expr> {
+pub fn forwarded_call(function: &js::Function, statement: bool) -> Option<&Expr> {
     if !function.export || function.noinline {
         return None;
     }
@@ -407,7 +407,7 @@ pub(in crate::lower) fn forwarded_call(function: &js::Function, statement: bool)
 /// the function, read where the variable is, the variable gone, as a `let`
 /// names nothing more (rd284, ADR 0605, amended). A function of the
 /// program's, a declaration or an import, is never assigned.
-pub(in crate::lower) fn held_functions(body: &mut Vec<Stmt>, forwarding: &[Forwarding]) {
+pub fn held_functions(body: &mut Vec<Stmt>, forwarding: &[Forwarding]) {
     js::statement_lists(body, &mut |stmts| {
         let mut i = 0;
         while i < stmts.len() {
@@ -465,7 +465,7 @@ fn left_out(tcx: TyCtxt<'_>, thir: &rustc_middle::thir::Thir<'_>, e: rustc_middl
 /// callback, which JS writes in place, Fizz's `scheduleWork(() =>
 /// performWork(request))`, or one of parameters JS leaves out, `move |_|
 /// ping_task(&request, task)`, which ignores what it's given.
-pub(in crate::lower) fn binds(f: &Expr, fact: &Forwarding, moved: &[js::Name], kept: bool) -> bool {
+pub fn binds(f: &Expr, fact: &Forwarding, moved: &[js::Name], kept: bool) -> bool {
     let taken = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if moved.contains(v));
     fact.item
         && fact.callee == Callee::Own
@@ -477,7 +477,7 @@ pub(in crate::lower) fn binds(f: &Expr, fact: &Forwarding, moved: &[js::Name], k
 
 /// `g.bind(null, a, ..)` of arrow `f`, `(x, ..) => g(a, .., x, ..)`, where
 /// its fact in `forwarding` says it `binds`, and it's still of that shape.
-pub(in crate::lower) fn bound(f: &Expr, forwarding: &[Forwarding]) -> Option<Expr> {
+pub fn bound(f: &Expr, forwarding: &[Forwarding]) -> Option<Expr> {
     (forwarding.iter()).find(|fact| fact.binds && !f.span.is_none() && fact.span == f.span)?;
     let (callee, bound) = bound_parts(f)?;
     let values = std::iter::once(Expr::null()).chain(bound.iter().cloned()).collect();
@@ -601,13 +601,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// compares none, nothing asks an uncounted one's identity, and it's
     /// the function it passes on to, as a `Box`'s is; a counted one's is
     /// its box's.
-    pub(in crate::lower) fn counted_closure(&self, span: rustc_span::Span) -> bool {
+    pub fn counted_closure(&self, span: rustc_span::Span) -> bool {
         self.krate.counted.compared_uncounted && self.given_rc_new(span)
     }
 
     /// Whether the closure written at `span` is given `Rc::new` or
     /// `Arc::new` as it's made (`counted_closure`).
-    pub(in crate::lower) fn given_rc_new(&self, span: rustc_span::Span) -> bool {
+    pub fn given_rc_new(&self, span: rustc_span::Span) -> bool {
         let thir = self.frame.thir;
         thir.exprs.iter().any(|e| {
             let ExprKind::Call { fun, ref args, .. } = e.kind else {
@@ -635,7 +635,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Arc` is made of, a function its holders share, React's Flight
     /// client's `close.bind(null, response)`, nor one returned or held as
     /// it is, alien-signals' `computedOper.bind(node)`.
-    pub(in crate::lower) fn handed_on(&self, span: rustc_span::Span) -> bool {
+    pub fn handed_on(&self, span: rustc_span::Span) -> bool {
         let thir = self.frame.thir;
         // What's given, a block's value too, `Box::new({ let container =
         // Rc::clone(&container); move || get_children(Some(&container)) })`,
@@ -666,7 +666,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `adapts`): a function of the crate's whose signature isn't the
     /// closure's; and whether it's a function item (`item`). The closure is
     /// written at `span`, made at `made_at`.
-    pub(in crate::lower) fn forwarded_to(
+    pub fn forwarded_to(
         &self,
         body: &crate::lower::Body<'tcx>,
         (span, made_at): (js::Span, rustc_span::Span),
@@ -1028,7 +1028,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The parameters `own_callbacks` are, found of the crate's facts.
-    pub(in crate::lower) fn find_own_callbacks(&self) -> IndexSet<rustc_hir::HirId> {
+    pub fn find_own_callbacks(&self) -> IndexSet<rustc_hir::HirId> {
         use rustc_hir as hir;
         let tcx = self.tcx;
         let callback = |ty: ty::Ty<'tcx>| {

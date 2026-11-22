@@ -20,11 +20,7 @@ use rustc_mir_dataflow::move_paths::{LookupResult, MoveData};
 /// items, `s.f` or `a[0].f`, and the contents of each `Box` so reached,
 /// `(*s.b).f`, which are the `Box`'s own as a local's fields are its own:
 /// nothing a pointer or a reference reads through.
-pub(in crate::lower) fn within_items<'tcx>(
-    tcx: ty::TyCtxt<'tcx>,
-    body: &mir::Body<'tcx>,
-    place: &mir::Place<'tcx>,
-) -> bool {
+pub fn within_items<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mir::Body<'tcx>, place: &mir::Place<'tcx>) -> bool {
     (place.iter_projections()).all(|(base, elem)| match elem {
         PlaceElem::Deref => base.ty(body, tcx).ty.is_box(),
         _ => a_field_or_an_item(&elem),
@@ -52,7 +48,7 @@ fn reaches_into<'tcx>(inner: &[PlaceElem<'tcx>], outer: &[PlaceElem<'tcx>]) -> b
 /// same place each time, so its pointers, its fields' too, keep reading it;
 /// JS's `p = v` would make the variable another object, at another address.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum Rewritten {
+pub enum Rewritten {
     /// Over what it holds, `$assign(p, v)`, where it surely holds a value:
     /// the object is the place.
     InPlace,
@@ -100,7 +96,7 @@ pub(in crate::lower) fn rewritten_places<'tcx>(
 /// `&raw const items[i]`: one whose objects are its places, so what writes
 /// it whole, a `mem::replace`'s `&mut` to it too, writes over them, never
 /// rebinding it (#1616).
-pub(in crate::lower) fn addressed_locals<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> IndexSet<Local> {
+pub fn addressed_locals<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> IndexSet<Local> {
     pointed_places(tcx, body).iter().map(|place| place.local).collect()
 }
 
@@ -433,7 +429,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `rewritten` of `body`'s places `rewritten_places` says, each an object
     /// JS holds as itself: a local that isn't is a cell already
     /// (`pointed_locals`), and a field's a property its pointer is on.
-    pub(in crate::lower) fn rewritten_writes(
+    pub fn rewritten_writes(
         &self,
         body: &mir::Body<'tcx>,
     ) -> IndexMap<mir::Location, (Rewritten, Vec<mir::Place<'tcx>>)> {
@@ -449,10 +445,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `moved_apart_places` of objects JS holds as themselves.
-    pub(in crate::lower) fn moved_apart_moves(
-        &self,
-        body: &mir::Body<'tcx>,
-    ) -> IndexSet<(mir::Location, mir::Place<'tcx>)> {
+    pub fn moved_apart_moves(&self, body: &mir::Body<'tcx>) -> IndexSet<(mir::Location, mir::Place<'tcx>)> {
         let object = |place: &mir::Place<'tcx>| {
             let ty = place.ty(&body.local_decls, self.tcx).ty;
             self.is_object(ty) && !self.mut_ref_form(ty).is_cell()

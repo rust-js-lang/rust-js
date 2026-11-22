@@ -512,7 +512,7 @@ fn binds_itself(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// A `use` of a name the item's module exports it by, `use
 /// crate::scheduler::unstable_now;`, names it so, as it's exported, not
 /// camelCase (`default_exports::own_aliases`, ADR 0596, amended).
-pub(in crate::lower) fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> IndexMap<DefId, String> {
+pub fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> IndexMap<DefId, String> {
     let mut renamed: IndexMap<DefId, String> = IndexMap::default();
     for (def_id, alias, _) in use_renames(tcx, module) {
         // Of two, the first written: one import has one name in a file,
@@ -528,7 +528,7 @@ pub(in crate::lower) fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> Index
 /// (rd92), the first of those naming what it imports; and each `pub use`,
 /// which makes one where no other `use` does, `pub use shapes::area;`'s
 /// for the module's own code too (rd620).
-pub(in crate::lower) struct UsesWritten {
+pub struct UsesWritten {
     module: LocalModId,
     /// Each, and whether it's a `pub use`, a re-export.
     uses: Vec<(rustc_span::Span, Vec<DefId>, Vec<NamedThrough>, bool)>,
@@ -556,7 +556,7 @@ impl UsesWritten {
     /// of a tree's leaves shares. `through`: the module of the crate's an
     /// item is imported from that re-exports it (rd650), whose import its
     /// `use` makes.
-    pub(in crate::lower) fn of(
+    pub fn of(
         tcx: TyCtxt<'_>,
         module: LocalModId,
         (foreign, held): (&crate::lower::library::Foreign<'_, '_>, &bindings::Held),
@@ -623,7 +623,7 @@ impl UsesWritten {
     }
 
     /// Where each binding the module declares is written, the whole item.
-    pub(in crate::lower) fn bindings(&self) -> impl Iterator<Item = rustc_span::Span> + '_ {
+    pub fn bindings(&self) -> impl Iterator<Item = rustc_span::Span> + '_ {
         self.declared.iter().map(|&(span, _)| span)
     }
 
@@ -686,7 +686,7 @@ impl UsesWritten {
 
     /// The `use` of the import from the JS file `from`: of a library's item
     /// a consumer imports from it (ADR 0100), or a binding's.
-    pub(in crate::lower) fn package_at(
+    pub fn package_at(
         &self,
         tcx: TyCtxt<'_>,
         foreign: &crate::lower::library::Foreign<'_, '_>,
@@ -698,7 +698,7 @@ impl UsesWritten {
     /// The `use` of the import of `export` from its JS file (`written_at`,
     /// rd649): of the first naming it, itself or through a module that
     /// holds it.
-    pub(in crate::lower) fn export_at(
+    pub fn export_at(
         &self,
         tcx: TyCtxt<'_>,
         foreign: &crate::lower::library::Foreign<'_, '_>,
@@ -720,7 +720,7 @@ impl UsesWritten {
     /// binding of the module's own declared of it, the reconciler's
     /// `#[link_name = "./ReactFiberConfig.js#.."] fn ..`, whichever is
     /// written first.
-    pub(in crate::lower) fn package_named_at(
+    pub fn package_named_at(
         &self,
         tcx: TyCtxt<'_>,
         foreign: &crate::lower::library::Foreign<'_, '_>,
@@ -787,7 +787,7 @@ impl UsesWritten {
     /// The `use` of the import from the crate's module `target` of what a
     /// `use` names, `named` (`written_at`, rd649); of what none names, or
     /// the module, `module_at`'s.
-    pub(in crate::lower) fn module_import_at(
+    pub fn module_import_at(
         &self,
         tcx: TyCtxt<'_>,
         fns: &IndexMap<DefId, FnInfo>,
@@ -1384,7 +1384,7 @@ pub(crate) fn self_box_name<'tcx>(tcx: TyCtxt<'tcx>, receiver: ty::Ty<'tcx>) -> 
 /// `Pin<&mut Self>`, as `&self`'s (ADR 0047, rd345): the name its body
 /// gives it, and its declaration's (#507). `None` of a `self` of no
 /// struct, enum or union, which keeps its name.
-pub(crate) fn receiver_name<'tcx>(tcx: TyCtxt<'tcx>, receiver: ty::Ty<'tcx>) -> Option<String> {
+pub fn receiver_name<'tcx>(tcx: TyCtxt<'tcx>, receiver: ty::Ty<'tcx>) -> Option<String> {
     use crate::lower::recognition::{StdItem, is_std_def};
     let mut ty = receiver.peel_refs();
     while let ty::Adt(adt, args) = ty.kind()

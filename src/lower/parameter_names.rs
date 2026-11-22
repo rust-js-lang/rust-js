@@ -11,7 +11,7 @@ use super::{bindings, camel_case};
 /// `Context` of React's `useContext` (ADR 0855); else camelCase, without
 /// the leading `_` that tells Rust it's unused (ADR 0678). The one place a
 /// parameter's JS name is made, the name its declaration says too.
-pub(super) fn parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &str) -> String {
+pub fn parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &str) -> String {
     let given = function
         .as_local()
         .and_then(|local| bindings::given_parameter_name(tcx, local, name));

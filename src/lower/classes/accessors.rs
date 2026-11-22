@@ -16,7 +16,7 @@ use super::{implementations, is_class_trait, trait_impl_class};
 /// of its prototype (rd304, ADR 1035 amended): of the crate's, as its HIR
 /// reads; of a library's, its library's, as its MIR does, which is all its
 /// consumer has of it (#1032, #1073). `None` of any other.
-pub(crate) fn field_accessor(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Vec<(rustc_abi::FieldIdx, DefId)>> {
+pub fn field_accessor(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Vec<(rustc_abi::FieldIdx, DefId)>> {
     use rustc_middle::ty::adjustment::{Adjust, DerefAdjustKind};
     trait_impl_class(tcx, tcx.trait_impl_of_assoc(def_id)?)?;
     let Some(local) = def_id.as_local() else {

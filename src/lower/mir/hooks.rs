@@ -10,7 +10,7 @@ use crate::lower::{Body, FnCx, R};
 use rust_js_program::js::{self, Expr, Stmt};
 
 /// MIR's lowering's hooks, which the driver gives each session.
-pub(in crate::lower) struct Hooks;
+pub struct Hooks;
 
 impl MirHooks for Hooks {
     fn mir_signature<'a, 'tcx>(

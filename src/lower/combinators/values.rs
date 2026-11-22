@@ -73,7 +73,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `vec![item; n]`, of their values (ADR 0364), `n`'s value where
     /// rustc knows it, a constant's.
-    pub(in crate::lower) fn copies_values(
+    pub fn copies_values(
         &mut self,
         (item, item_ty): (Expr, Ty<'tcx>),
         (n, known): (Expr, Option<u64>),
@@ -127,7 +127,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `f(args)`, with a closure that only returns written in place. One of
     /// statements gets a name first: `const f = (x) => { .. }; f(o)`.
-    pub(in crate::lower) fn call_with(&mut self, f: Expr, args: Vec<Expr>, name: Role, out: &mut Vec<Stmt>) -> Expr {
+    pub fn call_with(&mut self, f: Expr, args: Vec<Expr>, name: Role, out: &mut Vec<Stmt>) -> Expr {
         let args: Vec<Expr> = args
             .into_iter()
             .map(|a| {

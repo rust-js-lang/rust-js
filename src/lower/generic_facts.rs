@@ -60,12 +60,12 @@ use rustc_span::def_id::{CRATE_DEF_ID, DefId};
 /// Where a value crosses into generic code or back: the generic function,
 /// whose bounds say what its type parameters are, a type of its signature
 /// as it's written, and its caller's type for it.
-pub(in crate::lower) type Crossing<'tcx> = (DefId, Ty<'tcx>, Ty<'tcx>);
+pub type Crossing<'tcx> = (DefId, Ty<'tcx>, Ty<'tcx>);
 
 /// A value's form that generic code has one of, whatever its instance, and
 /// its caller adapts at the boundary (ADR 1115).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum Form {
+pub enum Form {
     /// A raw pointer whose pointee is a type parameter: a handle on its
     /// place, whose `value` is the referent, as ADR 0454's box is (ADR
     /// 1114). A caller whose pointer is the value itself, a slice's, a pair
@@ -188,7 +188,7 @@ impl Placed {
 /// read each from its place, a trait method's by its impl or dictionary;
 /// `FormedOf` the direct call's, of the caller's types `given` (#2264).
 #[derive(Clone, Copy)]
-pub(in crate::lower) enum Arguments<'g, 'tcx> {
+pub enum Arguments<'g, 'tcx> {
     Raw,
     Formed,
     FormedOf { given: &'g [Ty<'tcx>] },
@@ -219,7 +219,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `IntoIterator`'s `into_iter` and a writer's `fmt`, so none gives the
     /// crate's iterator bare where generic code steps a JS iterator, as a
     /// conversion's dictionary did (#2264).
-    pub(in crate::lower) fn crossing_into(
+    pub fn crossing_into(
         &mut self,
         (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
         values: &mut [Expr],
@@ -275,7 +275,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a value of generic code's `declared` type, `def_id`'s, its
     /// caller's type for it `instantiated`, has another form there than the
     /// caller's, adapted where it's given and given back.
-    pub(in crate::lower) fn form_differs(&self, form: Form, (def_id, declared, instantiated): Crossing<'tcx>) -> bool {
+    pub fn form_differs(&self, form: Form, (def_id, declared, instantiated): Crossing<'tcx>) -> bool {
         match form {
             Form::Handle => {
                 let pointee = |ty| super::pointers::raw_pointee(self.tcx, ty).map(|(pointee, _)| pointee);
@@ -513,11 +513,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// an iterator generic code holds in a place of its own is inside what
     /// it takes or gives, a `Vec<I>`'s, which its caller holds as it is
     /// (`placed_within`, #2255): each route of a call asks it.
-    pub(in crate::lower) fn refuse_placed_within(
-        &self,
-        (id, args): (DefId, ty::GenericArgsRef<'tcx>),
-        span: Span,
-    ) -> R<()> {
+    pub fn refuse_placed_within(&self, (id, args): (DefId, ty::GenericArgsRef<'tcx>), span: Span) -> R<()> {
         let sig = (self.tcx)
             .instantiate_bound_regions_with_erased(self.tcx.fn_sig(id).instantiate_identity().skip_normalization());
         for declared in sig.inputs_and_output.iter() {
@@ -640,10 +636,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// items generic code reads as `{ TAG }` and its caller holds as
     /// `undefined` or the error, refused (#1416). A type parameter holds
     /// what it's given as it is, whatever it is.
-    pub(in crate::lower) fn write_result_inside(
-        &self,
-        (_, declared, instantiated): Crossing<'tcx>,
-    ) -> Option<Ty<'tcx>> {
+    pub fn write_result_inside(&self, (_, declared, instantiated): Crossing<'tcx>) -> Option<Ty<'tcx>> {
         let (declared, instantiated) = past_shared_refs(declared, instantiated);
         if self.tagged_where(declared, instantiated) {
             return None;
@@ -656,10 +649,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `def_id`'s reads as a `Result` of its type parameters, `r: &impl
     /// AsRef<Result<T, E>>`: generic code reads it as `{ TAG }` through its
     /// bound, where it has the value as it is, refused (#1416).
-    pub(in crate::lower) fn write_result_through_bound(
-        &self,
-        (def_id, declared, instantiated): Crossing<'tcx>,
-    ) -> bool {
+    pub fn write_result_through_bound(&self, (def_id, declared, instantiated): Crossing<'tcx>) -> bool {
         let (declared, instantiated) = past_shared_refs(declared, instantiated);
         if !matches!(declared.kind(), ty::Param(_)) || !self.is_write_result(instantiated) {
             return false;
@@ -772,7 +762,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// what's generic over the type hold it (#2255). `None` where this code
     /// holds the field as it's declared, a number's cell or generic code's
     /// own box.
-    pub(in crate::lower) fn field_crossing(
+    pub fn field_crossing(
         &self,
         ty: Ty<'tcx>,
         variant: rustc_abi::VariantIdx,
@@ -794,7 +784,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its type is, `{ value: "A" }` (`field_crossing`'s `Form::Placed`,
     /// #2255): what reads, copies, clones, compares or makes that type by
     /// its shape reads and makes the field so (`held`, `holding`).
-    pub(in crate::lower) fn placed_field(&self, field: &ty::FieldDef, ty: Ty<'tcx>) -> bool {
+    pub fn placed_field(&self, field: &ty::FieldDef, ty: Ty<'tcx>) -> bool {
         let tcx = self.tcx;
         let owner = tcx.parent(field.did);
         let owner = match tcx.def_kind(owner) {
@@ -839,7 +829,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The form generic code has of `declared` where its caller's type is
     /// `instantiated`, if it's another than the caller's.
-    pub(in crate::lower) fn form_of(&self, crossing: Crossing<'tcx>) -> Option<Form> {
+    pub fn form_of(&self, crossing: Crossing<'tcx>) -> Option<Form> {
         let form = [Form::Handle, Form::Box, Form::HeldBox, Form::Tagged, Form::Placed]
             .into_iter()
             .find(|&form| self.form_differs(form, crossing));
@@ -868,7 +858,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Formatter` none of its JS takes (ADR 0054), which a call through
     /// the pointer gives none of either (ADR 0538): not a parameter of the
     /// arrow (#1710).
-    pub(in crate::lower) fn reified_pointer(
+    pub fn reified_pointer(
         &mut self,
         (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
         (function, fn_def_ty): (Expr, Ty<'tcx>),
@@ -928,7 +918,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// in its callers' forms, `made`: its module's `const`, so two pointers
     /// to it are one, as a generic function's value is (ADR 0395); of an
     /// instance of the caller's own type parameters, the arrow made there.
-    pub(in crate::lower) fn reified_const(
+    pub fn reified_const(
         &mut self,
         (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
         fn_def_ty: Ty<'tcx>,
@@ -947,7 +937,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// JS holds it as itself, a number, so a pointer generic code made of it
     /// would be of a copy (ADR 1114): not an object's or a slice's, whose
     /// pointer is theirs, nor a type only generic callers know.
-    pub(in crate::lower) fn copied_referent(&self, declared: Ty<'tcx>, instantiated: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub fn copied_referent(&self, declared: Ty<'tcx>, instantiated: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty::Ref(_, pointee, ty::Mutability::Not) = *declared.kind() else {
             return None;
         };
@@ -965,13 +955,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// on it, `$ptrTo(array)`, whose `value` is it (ADR 1114).
     /// Generic code's box of an object is an in-place cell of it, a write in
     /// place of the caller's referent (`in_place`, #1665).
-    pub(in crate::lower) fn form_given(
-        &self,
-        form: Form,
-        crossing: Crossing<'tcx>,
-        value: Expr,
-        span: Span,
-    ) -> R<Expr> {
+    pub fn form_given(&self, form: Form, crossing: Crossing<'tcx>, value: Expr, span: Span) -> R<Expr> {
         if !self.form_differs(form, crossing) {
             return Ok(value);
         }
@@ -993,7 +977,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its caller's type is `instantiated`: in the caller's form, a
     /// handle's `value` (ADR 1114), a held box's box of the object
     /// (#1303).
-    pub(in crate::lower) fn form_back(&self, form: Form, crossing: Crossing<'tcx>, value: Expr) -> Expr {
+    pub fn form_back(&self, form: Form, crossing: Crossing<'tcx>, value: Expr) -> Expr {
         if !self.form_differs(form, crossing) {
             return value;
         }
@@ -1023,7 +1007,7 @@ pub(in crate::lower) fn valued_where<'tcx>(
 
 /// What's refused of a write's result held inside what generic code has as
 /// a `Result` of its type parameters (#1416).
-pub(in crate::lower) fn held_write_result(held: Ty<'_>) -> String {
+pub fn held_write_result(held: Ty<'_>) -> String {
     format!(
         "a write's result, `{held}`, held inside what generic code has as a `Result` of its type parameters, `{{ TAG }}` there (#1416)"
     )
