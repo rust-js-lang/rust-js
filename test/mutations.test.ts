@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, failingOf, testSetKey, testsMemory, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
+import { againstWholeCorpus, buildEnv, jobPool, failingOf, testSetKey, testsMemory, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -71,6 +71,31 @@ test("every mutation's unit tests are there", () => {
 
 // A unit test's run, as libtest prints it, says whether its mutant is
 // caught: a filter that runs none says nothing of it.
+// A run's builds share one pool of jobs, its share of the cores (#2309): a
+// FIFO of `share - 1` tokens, each build its client, and removed as the
+// run ends.
+test("a run's builds draw their jobs from one pool, its share of the cores", () => {
+  const dir = fixture("mutations-job-pool");
+  const path = join(dir, "jobs");
+  const pool = jobPool(path, 4);
+  expect(pool.env).toEqual({ CARGO_MAKEFLAGS: `-j --jobserver-auth=fifo:${path}` });
+  expect(buildEnv(pool.env, false)).toEqual(pool.env);
+  expect(buildEnv(pool.env, true)).toEqual({ ...pool.env, CARGO_INCREMENTAL: "0" });
+  const fs = require("node:fs");
+  const reader = fs.openSync(path, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK);
+  const tokens = Buffer.alloc(16);
+  expect(fs.readSync(reader, tokens)).toBe(3);
+  fs.closeSync(reader);
+  pool.close();
+  expect(existsSync(path)).toBe(false);
+  // One core: no tokens past each build's own.
+  const one = jobPool(path, 1);
+  const empty = fs.openSync(path, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK);
+  expect(() => fs.readSync(empty, tokens)).toThrow("EAGAIN");
+  fs.closeSync(empty);
+  one.close();
+});
+
 test("a unit-tested mutant is caught where its tests fail, and only then", () => {
   const exit = (code: number | null, stdout: string, more: Partial<Exit> = {}): Exit => ({ code, signal: null, timedOut: false, overflowed: false, stdout, stderr: "", bytes: { stdout: Buffer.alloc(0), stderr: Buffer.alloc(0) }, ...more });
   const ok = "running 1 test\ntest a::tests::b ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 900 filtered out; finished in 0.00s\n";

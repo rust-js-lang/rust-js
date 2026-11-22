@@ -18,7 +18,7 @@
 // (AGENTS.md).
 
 import { createHash } from "node:crypto";
-import { chmodSync, cpSync, existsSync, linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, closeSync, constants, cpSync, existsSync, linkSync, mkdirSync, mkdtempSync, openSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync, writeSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 
@@ -432,6 +432,33 @@ const testTimeout = 20 * 60_000;
  * while a run goes on is the next run's, never half of this one's. */
 let crateSource = root;
 
+/** The run's builds' one pool of jobs (#2309): a FIFO holding `share - 1`
+ * tokens, each build a client of it as of `make`'s jobserver, Cargo and
+ * rustc's codegen taking one for each job past their own. The builds at
+ * once share the run's cores, and one building alone takes all of them,
+ * where each took every core; a fixed part each, `-j` of the share split,
+ * left one alone half of them, 8% slower (#2309's measurement). A build
+ * stopped holding tokens leaves the rest fewer, never none: each keeps
+ * its own. `close` removes it, as the run ends. */
+export function jobPool(path: string, share: number): { env: Record<string, string>; close: () => void } {
+  rmSync(path, { force: true });
+  const made = Bun.spawnSync(["mkfifo", path]);
+  if (made.exitCode !== 0) throw new Error(`mkfifo ${path}: ${made.stderr.toString()}`);
+  // Read and written by the run itself too, so it's open while no build is.
+  const fd = openSync(path, constants.O_RDWR);
+  if (share > 1) writeSync(fd, "+".repeat(share - 1));
+  return {
+    env: { CARGO_MAKEFLAGS: `-j --jobserver-auth=fifo:${path}` },
+    close: () => {
+      closeSync(fd);
+      rmSync(path, { force: true });
+    },
+  };
+}
+
+/** What each compiler build is run with: the run's pool of jobs, `jobPool`'s. */
+let pooled: Record<string, string> = {};
+
 /** The crate's files as they are now, `crateFiles` of `from`, the
  * checkout, into `to`, writing only what differs, and every build and
  * mutation's site of the run read from there. */
@@ -799,7 +826,7 @@ async function build(files?: Map<string, string>, slot = 0, unit = false, fresh 
   const command = unit
     ? ["cargo", "test", "--no-run", "--quiet", "--locked", "--bin", "rust-js", "--message-format=json", "--target-dir", target]
     : ["cargo", "build", "--quiet", "--locked", "--message-format=json", "--target-dir", target];
-  const p = await run(command, crate, buildTimeout, fresh ? { CARGO_INCREMENTAL: "0" } : {});
+  const p = await run(command, crate, buildTimeout, buildEnv(pooled, fresh));
   if (p.code !== 0 || stopped(p, buildTimeout)) {
     const why = stopped(p, buildTimeout) ?? p.stderr.split("\n").find((line) => line.startsWith("error")) ?? `exited ${p.code}`;
     return { problem: `doesn't build: ${why}` };
@@ -813,6 +840,12 @@ async function build(files?: Map<string, string>, slot = 0, unit = false, fresh 
   cpSync(binary, kept);
   writeFileSync(stamp, built);
   return kept;
+}
+
+/** What a compiler build is run with: the run's pool of jobs, and `fresh`,
+ * no incremental cache. */
+export function buildEnv(pool: Record<string, string>, fresh: boolean): Record<string, string> {
+  return { ...pool, ...(fresh ? { CARGO_INCREMENTAL: "0" } : {}) };
 }
 
 /** What a run of unit tests says of a mutant: `caught` where one failed,
@@ -2045,7 +2078,11 @@ async function main() {
   if (!released) throw new Error("this checkout's other mutation run held target/mutants for 6 hours");
   const sourceWorkspaces = join(work, "sources");
   rmSync(sourceWorkspaces, {recursive: true, force: true});
+  mkdirSync(work, { recursive: true });
+  const pool = jobPool(join(work, "jobs"), ownShare(machine().cores));
+  pooled = pool.env;
   process.on("exit", () => {
+    pool.close();
     rmSync(sourceWorkspaces, {recursive: true, force: true});
     released();
   });
