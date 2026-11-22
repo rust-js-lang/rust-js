@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
+import { againstWholeCorpus, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -257,6 +257,25 @@ test("each mutation's test pattern names a test of its file", () => {
   // mutation's tests as the compiler is first and refuse one that runs
   // nothing (scripts/mutations.ts), on a push, CI's run and each night's.
   expect(unmatched).toEqual([]);
+});
+
+// A test failing as the compiler is leaves its own mutations unjudged, and
+// only those: nightly 44963035271's shards 5, 9, 10 and 12 judged none of
+// their 950 each, `match-trees.test.ts` failing on main and a Vite watcher
+// slow under load (#2304). A mutation sharing the test with other settings,
+// or none, runs.
+test("a failed control leaves its own mutations unjudged, not the shard's", () => {
+  const failing = { tests: ["test/match-trees.test.ts", "-t", "seed 2"] };
+  const same = { tests: ["test/match-trees.test.ts", "-t", "seed 2"] };
+  const snapshots = { tests: ["test/match-trees.test.ts", "-t", "seed 2"], snapshots: true };
+  const other = { tests: ["test/lowering.test.ts"] };
+  const unit = { unitTests: "in_place_forms" };
+  const failedSets = new Map([[testSetKey(failing), "INCONCLUSIVE: its tests don't pass as the compiler is"]]);
+  const failedUnits = new Map([["in_place_forms", "INCONCLUSIVE: its unit tests don't run and pass as the crate is"]]);
+  const unjudged = unjudgedBy([failing, same, snapshots, other, unit], failedSets, failedUnits);
+  expect([...unjudged.keys()]).toEqual([failing, same, unit]);
+  expect(unjudged.get(unit)).toContain("unit tests");
+  expect(unjudgedBy([other], failedSets, new Map()).size).toBe(0);
 });
 
 // `bun test` reads one `-t`, the last: a mutation of two ran its first

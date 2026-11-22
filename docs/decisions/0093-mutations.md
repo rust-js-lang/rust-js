@@ -1311,3 +1311,23 @@ runtime it's given. `some-items-back-by-its-filter` and
 alone. Any other test that holds runtime code imports it the same way.
 test/std-fresh.test.ts reads the checkout's on purpose: it checks the
 checkout.
+
+## Amendment: a failed control leaves its own mutations unjudged, not the shard's (2026-11-22, #2304)
+
+Nightly 44963035271's 16 mutation shards all failed, and 4 of them, 5, 9,
+10 and 12, judged none of their ~950 mutations each, a quarter of the
+night's: the runner checks each mutation's tests as the compiler is first,
+and one set that didn't pass threw, ending the shard. Shards 5, 9 and 10's
+was `test/match-trees.test.ts`, failing on the night's commit itself
+(`match-trees-labeled.txt` behind what main labeled; main's own check was
+red with it), and shard 12's a Vite watcher test slower than its 44 s
+under the shard's load. **A test set that fails as the compiler is, runs
+nothing, or passes with a compiler that compiles nothing, and a unit-test
+filter that doesn't run and pass, now leaves only its own mutations
+unjudged** (`unjudgedBy`, by `testSetKey`): each is `INCONCLUSIVE`, said
+with what its tests printed, and every other mutation is still built and
+judged. An inconclusive mutation is missed, so the run still fails, as
+loudly; only a run with nothing left to judge throws, as before. Held by
+`test/mutations.test.ts`, "a failed control leaves its own mutations
+unjudged, not the shard's"; mutations `failed-control-unjudges-all` and
+`failed-unit-control-unread` (scripts/mutations/runner.ts).

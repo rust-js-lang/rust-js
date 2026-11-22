@@ -1146,6 +1146,37 @@ export function testResults(junit: string): Map<string, boolean> {
 
 /** Whether a set's tests pass, of `ran`, what each of its files' tests did
  * by name; `undefined` where none of them ran. */
+/** A mutation's test set, as the controls run it: its snapshots or not,
+ * its settings, and its tests; mutations of one key share one control. */
+export function testSetKey(m: { snapshots?: boolean; env?: Record<string, string>; tests: string[] }): string {
+  return [m.snapshots ? "snapshots" : "", envKey(m.env), ...m.tests].join("\0");
+}
+
+/** A mutation's settings, `env`, as one key, whatever their order. */
+function envKey(env: Record<string, string> | undefined): string {
+  return JSON.stringify(Object.entries(env ?? {}).sort());
+}
+
+/** Of `chosen`, each a failed control leaves unjudged, and why: one whose
+ * test set (`testSetKey`) failed as the compiler is, `failedSets`, or whose
+ * unit tests' filter did, `failedUnits`. Only those: the rest are still
+ * built and judged, so one test failing on the commit, a stale list or a
+ * flake under a shard's load, doesn't leave a nightly shard's 950
+ * mutations unjudged (#2304); they're inconclusive, so the run still
+ * fails. */
+export function unjudgedBy<M extends Pick<Mutation, "tests" | "snapshots" | "env" | "unitTests">>(
+  chosen: M[],
+  failedSets: ReadonlyMap<string, string>,
+  failedUnits: ReadonlyMap<string, string>,
+): Map<M, string> {
+  const unjudged = new Map<M, string>();
+  for (const m of chosen) {
+    const why = (m.tests && failedSets.get(testSetKey({ ...m, tests: m.tests }))) || (m.unitTests !== undefined && failedUnits.get(m.unitTests));
+    if (why) unjudged.set(m, why);
+  }
+  return unjudged;
+}
+
 export function setPasses(set: { files: string[]; pattern?: string }, ran: Map<string, Map<string, boolean>>): boolean | undefined {
   // As `bun test -t` reads a name: with each `describe`'s before it.
   const named = (name: string) => set.pattern === undefined || new RegExp(set.pattern).test(name);
@@ -1959,8 +1990,7 @@ async function main() {
   // A mutation's own settings, `env`, are its tests' as the compiler is
   // too, `METAMORPHIC=all` of a case the push's sample leaves out: a set
   // and its runs are of one mode, its snapshots and its settings.
-  const envKey = (env: Record<string, string> | undefined) => JSON.stringify(Object.entries(env ?? {}).sort());
-  const sets = [...new Map(chosen.filter((m) => m.tests && !sources.has(m)).map((m) => [[m.snapshots ? "snapshots" : "", envKey(m.env), ...m.tests!].join("\0"), m])).values()].map((m) => ({
+  const sets = [...new Map(chosen.filter((m) => m.tests && !sources.has(m)).map((m) => [testSetKey({ ...m, tests: m.tests! }), m])).values()].map((m) => ({
     snapshots: m.snapshots === true,
     env: m.env ?? {},
     tests: m.tests!,
@@ -2013,13 +2043,21 @@ async function main() {
     ),
   );
   const problems: string[] = [];
+  // Each mutation whose tests can't judge it, as the compiler is, and why:
+  // only its own are left unjudged, inconclusive, and the rest still run, so
+  // one test that fails on the commit, a stale list or a flake under load,
+  // doesn't leave a nightly shard's 950 mutations unjudged (#2304).
+  const failedSets = new Map<string, string>();
+  const failedUnits = new Map<string, string>();
   for (const set of sets) {
     const as = setPasses(set, ran.get(ranOf({ compiler: unmutated, ...set })) ?? new Map());
     if (as !== true) {
       const printed = set.files.map((file) => printedBy.get(`${set.snapshots}\0${envKey(set.env)}\0${file}`) ?? "").join("\n");
       problems.push(`\`bun test ${set.tests.join(" ")}\` ${as === undefined ? "runs nothing" : "doesn't pass"} as the compiler is:\n${printed.slice(-1500)}`);
+      failedSets.set(testSetKey(set), `INCONCLUSIVE: its tests ${as === undefined ? "run nothing" : "don't pass"} as the compiler is`);
     } else if (setPasses(set, ran.get(ranOf({ compiler: broken, ...set })) ?? new Map()) === true) {
       problems.push(`\`bun test ${set.tests.join(" ")}\` passes with a compiler that compiles nothing: it isn't using the one it's given`);
+      failedSets.set(testSetKey(set), "INCONCLUSIVE: its tests pass with a compiler that compiles nothing");
     }
   }
   // And each unit tests' filter, as the crate is: some run, and pass.
@@ -2028,10 +2066,18 @@ async function main() {
     const unitTests = await build(undefined, 0, true);
     if (typeof unitTests !== "string") throw new Error(`the unit tests as the crate is ${unitTests.problem}`);
     for (const [filter, p] of await Promise.all(filters.map(async (filter) => [filter, await unitTest(unitTests, filter)] as const))) {
-      if (judgeUnit(p) !== "survived") problems.push(`\`cargo test ${filter}\` doesn't run and pass as the crate is:\n${(p.stdout + p.stderr).slice(-1500)}`);
+      if (judgeUnit(p) !== "survived") {
+        problems.push(`\`cargo test ${filter}\` doesn't run and pass as the crate is:\n${(p.stdout + p.stderr).slice(-1500)}`);
+        failedUnits.set(filter, "INCONCLUSIVE: its unit tests don't run and pass as the crate is");
+      }
     }
   }
-  if (problems.length > 0) throw new Error(problems.join("\n\n"));
+  const unjudged = unjudgedBy(chosen.filter((m) => !sources.has(m)), failedSets, failedUnits);
+  if (problems.length > 0) {
+    // Nothing left to judge: the run itself is broken.
+    if (unjudged.size === chosen.length) throw new Error(problems.join("\n\n"));
+    console.error(`${unjudged.size} of ${chosen.length} mutations can't be judged, their tests as the compiler is:\n\n${problems.join("\n\n")}`);
+  }
   phaseEnded("each mutation's tests as the compiler is");
   // Each build by one of `--jobs` workers, each building in a crate of its
   // own, as many as the cores and the memory hold (`compilerBuilds`): two
@@ -2053,7 +2099,9 @@ async function main() {
   // One whose build wouldn't lex is said so by name, not built: a build of
   // many with it in splits down to it, twenty minutes of a shard (#479).
   const sited: Sited[] = [];
+  for (const [mutation, why] of unjudged) results.set(mutation, why);
   for (const mutation of chosen) {
+    if (unjudged.has(mutation)) continue;
     if (sources.has(mutation)) { sited.push({mutation}); continue; }
     const at = size > 1 ? site(mutation, read) : undefined;
     const problem = unparsed(mutation, at, read);

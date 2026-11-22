@@ -290,4 +290,20 @@ export const mutations: Mutation[] = [
     replace: "  return undefined;\n",
     tests: ["test/mutation-snapshot.test.ts", "-t", "loses names"],
   },
+  {
+    name: "failed-control-unjudges-all",
+    breaks: "one test failing as the compiler is leaves every mutation of the shard unjudged, as nightly 44963035271's shards 5, 9, 10 and 12 judged none of their 950 each (#2304)",
+    file: "scripts/mutations.ts",
+    find: "    if (why) unjudged.set(m, why);\n",
+    replace: "    if (why || failedSets.size > 0) unjudged.set(m, why || \"INCONCLUSIVE\");\n",
+    tests: ["test/mutations.test.ts", "-t", "a failed control leaves its own mutations unjudged"],
+  },
+  {
+    name: "failed-unit-control-unread",
+    breaks: "a unit-test filter that fails as the crate is leaves its mutations to be built and judged by tests that can't judge them (#2304)",
+    file: "scripts/mutations.ts",
+    find: "    const why = (m.tests && failedSets.get(testSetKey({ ...m, tests: m.tests }))) || (m.unitTests !== undefined && failedUnits.get(m.unitTests));\n",
+    replace: "    const why = m.tests && failedSets.get(testSetKey({ ...m, tests: m.tests }));\n",
+    tests: ["test/mutations.test.ts", "-t", "a failed control leaves its own mutations unjudged"],
+  },
 ];
