@@ -131,11 +131,14 @@ export function attributesFrom(lines: string[], at: number): number {
 }
 
 /** An item of a Rust source, by a scan of its text: a `fn`'s or a `mod`'s
- * name, or an `impl` (of no name), the lines its attributes start and its body ends, from 1, and
- * whether it's a `#[test]` or `#[cfg(test)]`. Strings, characters and
- * comments are skipped for their braces; a raw string's aren't. */
+ * name, an `impl` (of no name), or a macro's invocation where an item goes,
+ * `generic_test!(k_smallest_sort, u8);`, by the macro's path (no
+ * `macro_rules!`, whose body is no item of the file); the lines its
+ * attributes start and its body ends, from 1, and whether it's a `#[test]`
+ * or `#[cfg(test)]`. Strings, characters and comments are skipped for their
+ * braces; a raw string's aren't. */
 export type Item = {
-  kind: "fn" | "mod" | "impl";
+  kind: "fn" | "mod" | "impl" | "macro";
   name: string;
   from: number;
   to: number;
@@ -160,6 +163,24 @@ export function items(text: string): Item[] {
   // The brackets open since `pending`'s keyword: a `;` in them is an
   // array type's, `[u8; 4]`, no end of a `mod` of a file.
   let brackets = 0;
+  // A macro's invocation of `(..)` or `[..]` where an item goes, its
+  // delimiters open: it ends where they close (one of `{..}` is `pending`'s);
+  // what's in it is scanned as ever.
+  let invoked: { item: Item; open: string; close: string; depth: number } | undefined;
+  // Each attribute's start of `from`, as an item's are found.
+  const itemOf = (kind: Item["kind"], name: string, at: number): Item => {
+    const from = attributesFrom(lines, lineAt[at]);
+    const attributes = lines.slice(from - 1, lineAt[at]).join("\n");
+    return {
+      kind,
+      name,
+      from,
+      to: 0,
+      test: /#\[(?:\w+::)*test\b/.test(attributes),
+      cfgTest: cfgsOf(attributes).some(onlyForTests),
+      cfgs: cfgsOf(attributes),
+    };
+  };
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     if (c === "/" && text[i + 1] === "/") {
@@ -184,6 +205,35 @@ export function items(text: string): Item[] {
         (text[i + 1] === "\\" && text.indexOf("'", i + 2) - i <= 10))
     ) {
       i = text.indexOf("'", i + 2);
+      continue;
+    }
+    if (invoked) {
+      if (c === invoked.open) invoked.depth++;
+      else if (c === invoked.close && --invoked.depth === 0) {
+        invoked.item.to = lineAt[i];
+        found.push(invoked.item);
+        invoked = undefined;
+      }
+    }
+    // A macro's invocation where an item goes: no item open around it but
+    // modules, and none pending, after an item's end or an attribute's. A
+    // `macro_rules!` is none: its macro's name, not a delimiter, follows it.
+    const call = pending || invoked ? null : /^((?:::)?[A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*)\s*!\s*([({[])/.exec(text.slice(i, i + 120));
+    if (
+      call &&
+      !/[A-Za-z0-9_:$]/.test(text[i - 1] ?? " ") &&
+      open.every((o) => o.item?.kind === "mod") &&
+      /(?:^|[;{}\]])\s*$/.test(text.slice(0, i).replace(/\/\/[^\n]*$/gm, ""))
+    ) {
+      const delimiter = call[2];
+      i += call[0].length - 1;
+      if (delimiter === "{") {
+        pending = { kind: "macro", name: call[1], at: i - call[0].length + 1 };
+        brackets = 0;
+        i--;
+      } else {
+        invoked = { item: itemOf("macro", call[1], i - call[0].length + 1), open: delimiter, close: delimiter === "(" ? ")" : "]", depth: 1 };
+      }
       continue;
     }
     const word = /^(fn|mod)\s+([A-Za-z_][A-Za-z0-9_]*)/.exec(
@@ -231,17 +281,7 @@ export function items(text: string): Item[] {
       let item: Item | undefined;
       if (pending) {
         // Its attributes: those just above it (`attributesFrom`).
-        const from = attributesFrom(lines, lineAt[pending.at]);
-        const attributes = lines.slice(from - 1, lineAt[pending.at]).join("\n");
-        item = {
-          kind: pending.kind,
-          name: pending.name,
-          from,
-          to: 0,
-          test: /#\[(?:\w+::)*test\b/.test(attributes),
-          cfgTest: cfgsOf(attributes).some(onlyForTests),
-          cfgs: cfgsOf(attributes),
-        };
+        item = itemOf(pending.kind, pending.name, pending.at);
         pending = undefined;
       }
       open.push({ item });
@@ -310,12 +350,13 @@ export function testOnlyFile(file: string, read: (path: string) => string | unde
 /** What to cut of the test build for an error at `line` of `file`, whose
  * text is `text`: the `#[test]` it's in, by its path, `tests::t`, or a
  * function or an impl only tests reach, one inside a `#[cfg(test)]` module or a file
- * only tests build, `testOnly`, each its attributes' first line; or
+ * only tests build, `testOnly`, or such a macro invocation where an item
+ * goes, each its attributes' first line; or
  * nothing, where it's the library's own code. `path` is its module's, of an
  * integration test's crate `testModulePath`'s. `why` is the error's: an
  * unresolved import of names of a `use` of several only tests build is
  * those names taken off its line, `drop`, not the whole `use`. */
-export function cutFor(file: string, text: string, line: number, testOnly = false, path = modulePath(file), why = ""): { from: number; test?: string; item?: string; drop?: string[] } | undefined {
+export function cutFor(file: string, text: string, line: number, testOnly = false, path = modulePath(file), why = ""): { from: number; test?: string; item?: string; invocation?: true; drop?: string[] } | undefined {
   const all = items(text);
   const around = all
     .filter((item) => item.from <= line && line <= item.to)
@@ -339,12 +380,18 @@ export function cutFor(file: string, text: string, line: number, testOnly = fals
     };
   // The outermost function or impl around it, inside a module only tests
   // build: base64's `impl Distribution<..> for Standard` of its tests.
-  const outer = around.filter((item) => item.kind !== "mod").at(-1);
+  const outer = around.filter((item) => item.kind === "fn" || item.kind === "impl").at(-1);
   // A function's path too, `item`: the tests a macro of its makes, rstest's
   // `#[apply(..)]` or `#[rstest]`'s `engine::tests::f::case_1`, are cut with it.
   if (outer && (testOnly || mods(outer).some((m) => m.cfgTest))) {
     return { from: outer.from, ...(outer.kind === "fn" ? { item: [...path, ...mods(outer).map((m) => m.name), outer.name].join("::") } : {}) };
   }
+  // A macro's invocation where an item goes, in no function or impl, only
+  // tests build: itertools' `generic_test!(k_smallest_sort, u8, ..)` of a
+  // helper an earlier round cut (#1420). The tests it makes no name of its
+  // says: `invocation`, which the expanded crate tells exactly.
+  const invocation = around.find((item) => item.kind === "macro");
+  if (!outer && invocation && (testOnly || mods(invocation).some((m) => m.cfgTest))) return { from: invocation.from, invocation: true };
   // A `use` only tests build, of what an earlier round cut: base64's
   // `use crate::tests::random_config;` in its test files (#1174). Its
   // first line, where the error is in it, of one of several lines too. Of
@@ -367,6 +414,44 @@ export function cutFor(file: string, text: string, line: number, testOnly = fals
     }
   }
   return undefined;
+}
+
+/** Each test an expanded crate holds, by its path in it, `tests::t`: of
+ * rustc's `--test -Zunpretty=expanded`, the harness's
+ * `#[rustc_test_marker = "tests::t"]` of each, the macros' tests too,
+ * `k_smallest_sort_u8` of `generic_test!(k_smallest_sort, u8)`, which no
+ * scan of the source can name (#1420). rustc writes it whole of a crate
+ * whose names don't all resolve, a helper an earlier round cut; a long
+ * path's marker on two lines, its name on the second, httparse's
+ * `simd::neon::neon_code_matches_header_value_chars_table`. */
+export function testsOfExpanded(expanded: string): Set<string> {
+  return new Set([...expanded.matchAll(/^\s*#\[rustc_test_marker\s*=\s*("(?:[^"\\]|\\.)*")\s*\]/gm)].map((m) => JSON.parse(m[1]) as string));
+}
+
+/** What `followed` puts between a cut's reason and the round's error it
+ * follows, which the ranking leaves off. */
+export const leftByCut = "; its cut left: ";
+
+/** The reason of a cut for `why`, a round's error at a place of module
+ * `path`: rustc's "cannot find" of a function an earlier round cut, of
+ * `items`, is that function's own reason, the round's error kept after
+ * `leftByCut`, so the ranking names what refused, not what its cut left
+ * unresolved: itertools' 86 tests of `generic_test!(k_smallest_sort, ..)`,
+ * "cannot find function `k_smallest_sort`" (#1420). Of several functions
+ * of that name cut, the one of the most of `path`'s modules. */
+export function followed(why: string, items: Record<string, string>, path: string[]): string {
+  const name = /^cannot find [a-z ]+ `(\w+)`/.exec(why)?.[1];
+  if (name === undefined) return why;
+  const shared = (item: string) => {
+    const modules = item.split("::").slice(0, -1);
+    let n = 0;
+    while (n < modules.length && modules[n] === path[n]) n++;
+    return n;
+  };
+  const cut = Object.keys(items)
+    .filter((item) => item.split("::").at(-1) === name)
+    .sort((a, b) => shared(b) - shared(a))[0];
+  return cut === undefined ? why : `${items[cut].split(leftByCut)[0]}${leftByCut}${why}`;
 }
 
 /** Each of `names`, tests, under a function `items` names, cut with it:

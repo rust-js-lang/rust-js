@@ -269,3 +269,66 @@ native Rust ran, has ppv-lite86 0.2.17 and no zerocopy, so a refusal was
 reported of a crate native Rust never built. Each JS build now starts from
 the crate's own lock again, so a dependency named again comes back at the
 release native Rust ran.
+
+## Amendment: which tests a cut took, read of the expanded crate (2026-11-22, #1420)
+
+itertools' `tests/test_std.rs` made 16 tests with a macro invoked where an
+item goes, `generic_test!(k_smallest_sort, u8, ..)`, through paste and
+`quickcheck!`. Its helper `k_smallest_sort` was refused and cut, and the
+next round's error was at the invocation. No cut covered an invocation,
+so all 86 tests of the file counted as refused, with "cannot find
+function `k_smallest_sort`" as their reason. The tests an invocation
+makes have names no scan of the source can give, `k_smallest_sort_u8`.
+Matching names by the macro's argument could take a test it didn't make,
+`k_smallest_sort_alone`, and hide that test's refusal. `cascaded` made
+that kind of guess for every crate: a native test that passed and that
+the JS didn't run was put down to the nearest cut. That held only for a
+run with no dead file, and it would also have hidden a test that was
+built and then lost.
+
+- **The expanded crate is the one authority on which tests a cut copy
+  holds** (`expanded`, `testsOfExpanded`). Each build's copy, its library's
+  or one integration test's, is expanded natively with `cargo rustc
+  --profile test -- -Zunpretty=expanded`, and its tests are read from
+  rustc's test harness, `#[rustc_test_marker = "path::name"]`, the
+  macro-made tests included. rustc writes the whole expansion even when
+  some names don't resolve because a helper was cut. A long path's marker
+  is printed across two lines. Every marker must be read, or the copy is
+  not asked: a marker missed would make its test look taken by a cut. The
+  first whole run missed httparse's two and chrono's 20 for this reason. A native test that
+  passed, ran as no JS and no cut names is one a cut took only when its
+  build's copy no longer holds it. It is then refused for the cut nearest
+  it by module path, as before. A test the copy still holds and didn't
+  run is a difference, and so is a test of a build that wasn't expanded:
+  nothing is guessed.
+- **A macro invoked where an item goes is an item** (`items`, kind
+  `macro`, by the macro's path). It is cut as a function is, where only
+  tests build it, when no function or impl is around the error. A
+  `macro_rules!` and an invocation in a function's body are not items,
+  and a function inside an invocation, `quickcheck! { fn prop .. }`, is
+  still cut by itself. The tests an invocation's cut makes are known
+  exactly (`testsMadeBy`): those the expansion holds without its cut and
+  loses with that cut alone.
+- **A cut for a function an earlier round cut is said with that
+  function's reason** (`followed`). rustc's "cannot find" of a function
+  of `items` is replaced by the reason of the cut function nearest it by
+  module path, which is the chain's root for a chain of helpers. The
+  round's own error is kept after `; its cut left: `, which the ranking
+  leaves off (`reasonOf`), so the ranking names what refused.
+- `-Zunpretty` is rustc's unstable printing. `RUSTC_BOOTSTRAP=1` is set
+  for that one command alone: the expansion is native dev tooling and is
+  never part of a build of rust-js's. It has a target of its own,
+  `target/crater/expand`, because the setting rebuilds what the native
+  build built. A copy whose expansion can't be read is not asked, and the
+  verdict says why. `asking` is 16.
+
+All 100 crates on the Mac mini (2026-11-22, compiler at cc5e1deb0), old
+code against new, kept verdicts cleared: each crate's counts are the same
+(as native, cut, not of wasm32, at run time, 0 differences).
+byteorder's 390 cut tests, 388 of them made by macros, are still cut,
+read now from its expansion. itertools stays at 130 of 415. Its
+`tests/test_std.rs` gets past the invocation, and its 86 tests stop at the
+library's own refusal as that file uses it: "stepping `I`"
+(src/powerset.rs:65), now 143 tests, not "cannot find function
+`k_smallest_sort`". The run took 15 min 34 s, against 18 min 36 s for the
+old code's.

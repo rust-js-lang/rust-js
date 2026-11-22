@@ -52,7 +52,7 @@ import { currentBuild } from "../test/compiles";
 import { floorBytes } from "../test/bounded";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { corpusRows, type Crate } from "./crate-corpus";
-import { cut, cutFor, dropped, errorsAt, items, modulePath, offTarget, placeOf, testModulePath, testOnlyFile, underItems } from "./crater-cuts";
+import { cut, cutFor, dropped, errorsAt, followed, items, leftByCut, modulePath, offTarget, placeOf, testModulePath, testOnlyFile, testsOfExpanded, underItems } from "./crater-cuts";
 import { atOnce } from "./shard";
 
 const root = join(import.meta.dir, "..");
@@ -312,8 +312,11 @@ async function source(crate: Crate): Promise<string | { problem: string }> {
  * serde_json's own tests bringing another serde_json left ambiguous. 14: a
  * test file's tests a dead process left unreported each run again alone
  * (`afterDeaths`), httparse's after an out of memory. 15: a `#[should_panic]`
- * test, said with its note, `- should panic`, natively too (#1431). */
-const asking = 15;
+ * test, said with its note, `- should panic`, natively too (#1431). 16:
+ * which tests a cut took read of the cut copy's expansion, a macro
+ * invocation cut with the tests it makes, and a cut for a function cut
+ * before said with that function's reason (#1420). */
+const asking = 16;
 
 /** What a crate's kept verdict is of, beside its release and the
  * compiler's build: the features its row names, how the Crater asks, and
@@ -446,6 +449,9 @@ async function askedAsJs(
 ): Promise<Verdict> {
   const js: Outcomes = {};
   const cutTests: Record<string, string> = { ...first };
+  // The tests each build's cut copy holds, by its tests' prefix: "" of
+  // the library's, `tests/version.rs::` of an integration test's.
+  const held = new Map<string, Set<string>>();
   // Its library's tests, as natively: no integration test built, nor a
   // dev-dependency only they name.
   if (Object.keys(nativeRan).some((name) => !name.startsWith("tests/"))) {
@@ -453,6 +459,7 @@ async function askedAsJs(
     if ("refused" in ran) return { native: nativeRan, refused: ran.refused };
     if ("problem" in ran) return { problem: ran.problem };
     Object.assign(js, ran.js);
+    held.set("", ran.held);
     Object.assign(cutTests, underItems(Object.keys(nativeRan).filter((name) => !name.startsWith("tests/")), ran.items), ran.cut);
   }
   // Each integration test's file by itself, its library as `rust-js build`
@@ -470,10 +477,11 @@ async function askedAsJs(
       continue;
     }
     for (const [name, how] of Object.entries(ran.js)) js[`${file}::${name}`] = how;
+    held.set(`${file}::`, new Set([...ran.held].map((name) => `${file}::${name}`)));
     const inFile = its.map((name) => name.slice(file.length + 2));
     for (const [name, why] of Object.entries({ ...underItems(inFile, ran.items), ...ran.cut })) cutTests[`${file}::${name}`] = why;
   }
-  return judged(nativeRan, js, cutTests, jsDir);
+  return judged(nativeRan, js, cutTests, jsDir, held);
 }
 
 /** `cutUntilBuilt` of `manifest`, its Cargo.toml; of one getrandom doesn't
@@ -522,9 +530,15 @@ async function cutUntilBuilt(
   target: string,
   featured: string[],
   rootFile?: string,
-): Promise<{ js: Outcomes; cut: Record<string, string>; items: Record<string, string> } | { refused: string[] } | { problem: string; uncompiled: string[] }> {
+): Promise<{ js: Outcomes; cut: Record<string, string>; items: Record<string, string>; held: Set<string> } | { refused: string[] } | { problem: string; uncompiled: string[] }> {
   const cutTests: Record<string, string> = {};
   const items: Record<string, string> = {};
+  // What it ran, with the tests its cut copy holds: of its expansion, the
+  // one authority of which a cut took (`cascaded`).
+  const ended = async (jsRan: Outcomes) => {
+    const held = await expanded(jsDir, featured);
+    return "problem" in held ? { problem: held.problem, uncompiled: [] } : { js: jsRan, cut: cutTests, items, held: held.tests };
+  };
   // Its first round's first error: what the rest of its cuts follow from.
   let first: string | undefined;
   for (let round = 0; round < rounds; round++) {
@@ -539,10 +553,10 @@ async function cutUntilBuilt(
       1200,
     );
     const jsRan = await afterDeaths(jsOutcomes(js.said), jsDir);
-    if (Object.keys(jsRan).length > 0) return { js: jsRan, cut: cutTests, items };
+    if (Object.keys(jsRan).length > 0) return ended(jsRan);
     const errors = errorsAt(js.said).filter((e) => e.file.startsWith("src/") || (rootFile !== undefined && e.file.startsWith("tests/")));
     // Each of its tests cut: none left to run.
-    if (errors.length === 0 && js.code === 0 && Object.keys(cutTests).length + Object.keys(items).length > 0) return { js: jsRan, cut: cutTests, items };
+    if (errors.length === 0 && js.code === 0 && Object.keys(cutTests).length + Object.keys(items).length > 0) return ended(jsRan);
     if (errors.length === 0) {
       return {
         // Each crate Cargo said it couldn't compile, the one fact `built`
@@ -556,27 +570,37 @@ async function cutUntilBuilt(
     const byFile = new Map<string, number[]>();
     // Each name of a `use` of several to take off its line, by file.
     const drops = new Map<string, { line: number; name: string }[]>();
+    // Each macro invocation cut, with its reason.
+    const invocations: { file: string; from: number; why: string }[] = [];
     const library: string[] = [];
     for (const error of errors) {
       const text = readFileSync(join(jsDir, error.file), "utf8");
       const read = (path: string) => (existsSync(join(jsDir, path)) ? readFileSync(join(jsDir, path), "utf8") : undefined);
       // An integration test's file is its crate's; the library's own code,
       // as that test uses it, is never cut.
+      const path = error.file.startsWith("tests/") ? testModulePath(error.file, rootFile ?? "") : modulePath(error.file);
       const at = error.file.startsWith("tests/")
-        ? cutFor(error.file, text, error.line, true, testModulePath(error.file, rootFile ?? ""), error.why)
+        ? cutFor(error.file, text, error.line, true, path, error.why)
         : rootFile === undefined
-          ? cutFor(error.file, text, error.line, testOnlyFile(error.file, read), modulePath(error.file), error.why)
+          ? cutFor(error.file, text, error.line, testOnlyFile(error.file, read), path, error.why)
           : undefined;
       if (!at) {
         library.push(`${error.why} (${error.file}:${error.line})`);
         continue;
       }
-      if (at.test && !(at.test in cutTests)) cutTests[at.test] = error.why;
-      if (at.item && !(at.item in items)) items[at.item] = error.why;
+      const why = followed(error.why, items, path);
+      if (at.test && !(at.test in cutTests)) cutTests[at.test] = why;
+      if (at.item && !(at.item in items)) items[at.item] = why;
+      if (at.invocation) invocations.push({ file: error.file, from: at.from, why });
       if (at.drop) drops.set(error.file, [...(drops.get(error.file) ?? []), ...at.drop.map((name) => ({ line: at.from, name }))]);
       else byFile.set(error.file, [...(byFile.get(error.file) ?? []), at.from]);
     }
     if (library.length > 0) return { refused: [...new Set(library)] };
+    if (invocations.length > 0) {
+      const made = await testsMadeBy(jsDir, invocations, () => expanded(jsDir, featured));
+      if ("problem" in made) return { problem: made.problem, uncompiled: [] };
+      for (const [name, why] of Object.entries(made)) if (!(name in cutTests)) cutTests[name] = why;
+    }
     // Names taken off their lines first, which moves none, then the cuts.
     for (const [file, names] of drops) {
       writeFileSync(join(jsDir, file), names.reduce((text, { line, name }) => dropped(text, line, name), readFileSync(join(jsDir, file), "utf8")));
@@ -587,6 +611,65 @@ async function cutUntilBuilt(
   // how many rounds it took: base64's `rand` `Distribution` of its test
   // helpers, which each rstest test reaches, one a round (#1174).
   return { uncompiled: [], problem: `its JS tests still didn't build after ${rounds} rounds of cuts${first ? `, the first for: ${reasonOf(first)}` : ""}` };
+}
+
+/** The tests each of `invocations` makes, macro invocations in the crate in
+ * `dir` a round cuts, by its cut's reason, exactly: those `expand`, the
+ * tests the crate holds as it is, says without its cut and not with it
+ * alone, each a name only the expansion knows, `k_smallest_sort_u8` of
+ * `generic_test!(k_smallest_sort, u8, ..)` (#1420); never a guess of its
+ * names, which could take a test it didn't make and hide its refusal. Each
+ * file is left as it was. */
+export async function testsMadeBy(
+  dir: string,
+  invocations: { file: string; from: number; why: string }[],
+  expand: () => Promise<{ tests: Set<string> } | { problem: string }>,
+): Promise<Record<string, string> | { problem: string }> {
+  const made: Record<string, string> = {};
+  const before = await expand();
+  if ("problem" in before) return before;
+  for (const { file, from, why } of invocations) {
+    const text = readFileSync(join(dir, file), "utf8");
+    writeFileSync(join(dir, file), cut(text, [from]));
+    const after = await expand();
+    writeFileSync(join(dir, file), text);
+    if ("problem" in after) return after;
+    for (const name of before.tests) if (!after.tests.has(name) && !(name in made)) made[name] = why;
+  }
+  return made;
+}
+
+/** The tests the crate in `jsDir` holds, as its manifest builds them, its
+ * library's or its one integration test's (`oneIntegrationTest`): of
+ * rustc's expansion of it, natively (`testsOfExpanded`), the one authority
+ * of which tests a cut took (#1420). `-Zunpretty` is rustc's unstable
+ * printing, `RUSTC_BOOTSTRAP` set for this one command alone: native dev
+ * tooling, never a build of rust-js's. A target of its own, as that setting
+ * builds anew what the native build built. */
+async function expanded(jsDir: string, featured: string[]): Promise<{ tests: Set<string> } | { problem: string }> {
+  const manifest = readFileSync(join(jsDir, "Cargo.toml"), "utf8");
+  const test = /^\[\[test\]\]\n(?:(?!\[)[^\n]*\n)*?name\s*=\s*"([^"]+)"/m.exec(manifest)?.[1];
+  // Beside the copy, not in it, where no scan of its source reads it; in
+  // a folder of its own, gone after, as rustc writes its dep-info by it.
+  const folder = `${jsDir}-expanded`;
+  const out = join(folder, "expanded.rs");
+  rmSync(folder, { recursive: true, force: true });
+  mkdirSync(folder);
+  const ran = await spawned(
+    ["cargo", "rustc", ...(test === undefined ? ["--lib"] : ["--test", test]), "--profile", "test", ...featured, "--", "-Zunpretty=expanded", "-o", out],
+    jsDir,
+    { CARGO_TARGET_DIR: join(work, "expand"), RUSTC_BOOTSTRAP: "1", RUSTFLAGS: "--cap-lints=warn" },
+    600,
+  );
+  const text = existsSync(out) ? readFileSync(out, "utf8") : "";
+  rmSync(folder, { recursive: true, force: true });
+  if (text === "") return { problem: `its cut copy's tests couldn't be read of its expansion: ${firstError(ran.said)}` };
+  // Each marker read, or none trusted: one missed would be a test taken
+  // for a cut's.
+  const tests = testsOfExpanded(text);
+  const markers = (text.match(/#\[rustc_test_marker\b/g) ?? []).length;
+  if (tests.size !== markers) return { problem: `its cut copy's expansion has ${markers} test markers, of which ${tests.size} were read` };
+  return { tests };
 }
 
 /** The time zone both runs have, so a test of local time, chrono's
@@ -719,9 +802,9 @@ export function undecided(crate: string, differ: { name: string; js: string }[],
 
 /** A crate's verdict of its tests' outcomes: each native one not run as
  * JS of a module a cfg leaves off wasm32 apart from those that differ. */
-export function judged(native: Outcomes, js: Outcomes, given: Record<string, string>, dir: string): Verdict {
+export function judged(native: Outcomes, js: Outcomes, given: Record<string, string>, dir: string, held: Map<string, Set<string>>): Verdict {
   const read = (path: string) => (existsSync(join(dir, path)) ? readFileSync(join(dir, path), "utf8") : undefined);
-  const cut = cascaded(native, js, given, read);
+  const cut = cascaded(native, js, given, held);
   const all = differences(native, js, cut);
   const off = all.filter((d) => d.js === "not run" && offTarget(d.name, read)).map((d) => d.name);
   // A refusal at run time is no wrong answer: a column of its own (#1192).
@@ -732,18 +815,22 @@ export function judged(native: Outcomes, js: Outcomes, given: Record<string, str
   return { native, js, cut, differ, refusedAtRun, offTarget: off };
 }
 
-/** `cut`, and each test it took with it: of a JS run that ran whole, no
- * file of it dead, a native test it never ran was cut from its build, by a
- * cut a round before made a rustc error of, byteorder's `impl Arbitrary`
- * whose cut left 388 macro-made tests unbuilt, refused for the cut nearest
- * it by module path (the Crater's fidelity). */
-export function cascaded(native: Outcomes, js: Outcomes, cut: Record<string, string>, read: (path: string) => string | undefined): Record<string, string> {
+/** `cut`, and each test it took with it: a native test that passed, that
+ * no cut names and the JS didn't run, which its build's cut copy no longer
+ * holds, `held` of its expansion (`expanded`), each build's by its tests'
+ * prefix, "" of the library's, `tests/version.rs::` of an integration
+ * test's: byteorder's `impl Arbitrary`, whose cut left 388 macro-made tests
+ * unbuilt; refused for the cut nearest it by module path. One the copy
+ * still holds is no cut's, and stays a difference: it was built and lost
+ * (#1420); so does one of a build not expanded. */
+export function cascaded(native: Outcomes, js: Outcomes, cut: Record<string, string>, held: Map<string, Set<string>>): Record<string, string> {
   const reasons = Object.entries(cut);
-  const ran = Object.keys(js);
-  if (reasons.length === 0 || ran.length === 0 || ran.some((name) => name.endsWith(".test.js"))) return cut;
+  if (reasons.length === 0) return cut;
   const result = { ...cut };
   for (const [name, how] of Object.entries(native)) {
-    if (how !== "ok" || name in js || name in cut || offTarget(name, read)) continue;
+    if (how !== "ok" || name in js || name in cut) continue;
+    const holds = held.get(/^tests\/[^/]+\.rs::/.exec(name)?.[0] ?? "");
+    if (holds === undefined || holds.has(name)) continue;
     const parts = name.split("::");
     const shared = (other: string) => {
       const theirs = other.split("::");
@@ -759,7 +846,7 @@ export function cascaded(native: Outcomes, js: Outcomes, cut: Record<string, str
 /** A refusal's reason, its place taken off, `(src/lib.rs:12)`: one reason
  * of every place it's said (#1174). */
 export function reasonOf(why: string): string {
-  return why.replace(/ \([^()\s]+\.rs:\d+\)$/, "");
+  return why.split(leftByCut)[0].replace(/ \([^()\s]+\.rs:\d+\)$/, "");
 }
 
 /** What stops the crates' tests, each reason ranked by the crates it

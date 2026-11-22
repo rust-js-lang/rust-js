@@ -2,11 +2,12 @@
 // and its cut of a refused test from the JS's copy of a crate (#1087,
 // scripts/crater.ts). The net itself runs each night.
 import { expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterDeaths, boundCrater, cascaded, cutFirst, decidedOf, differences, firstError, executables, forTheJs, integrationFiles, jsOutcomes, inShard, judged, knownOf, libraryTestsOnly, listedButSame, merged, nativeOutcomes, oneIntegrationTest, ranked, reasonOf, said, undecided } from "../scripts/crater";
-import { attributesFrom, cut, cutFor, declaredIn, dropped, errorsAt, innerAttributes, items, modulePath, offTarget, onlyForTests, placeOf, testModulePath, testOnlyFile, underItems } from "../scripts/crater-cuts";
+import { afterDeaths, boundCrater, cascaded, cutFirst, decidedOf, differences, firstError, executables, forTheJs, integrationFiles, jsOutcomes, inShard, judged, knownOf, libraryTestsOnly, listedButSame, merged, nativeOutcomes, oneIntegrationTest, ranked, reasonOf, said, testsMadeBy, undecided } from "../scripts/crater";
+import { attributesFrom, cut, cutFor, declaredIn, dropped, errorsAt, followed, innerAttributes, items, modulePath, offTarget, onlyForTests, placeOf, testModulePath, testOnlyFile, testsOfExpanded, underItems } from "../scripts/crater-cuts";
 
 test("each test's outcome is read of cargo test's lines and of Node's runner's", () => {
   expect(nativeOutcomes("running 3 tests\ntest a::t1 ... ok\ntest a::t2 ... FAILED\ntest t3 ... ignored, slow\n")).toEqual({
@@ -47,7 +48,7 @@ test("a test that fails with rust-js's refusal at run time is refused, with its 
     "a::ok": "ok",
   });
   const crate = { name: "c", version: "1.0.0" } as Parameters<typeof said>[0];
-  const verdict = judged({ "a::refused": "ok", "a::wrong": "ok", "a::ok": "ok" }, js, {}, "/nonexistent");
+  const verdict = judged({ "a::refused": "ok", "a::wrong": "ok", "a::ok": "ok" }, js, {}, "/nonexistent", new Map());
   expect(said(crate, verdict)).toBe(
     "c 1.0.0: 1 of 3 as native, 0 refused, 1 refused at run time: a::refused (rust-js does not support a pointer read as another type's, which reads memory by where it is), 1 WRONG: a::wrong (failed)",
   );
@@ -318,7 +319,7 @@ test("a `use` only tests build is cut, and only tests that passed natively count
   const inModule = ["pub fn f() {}", "", "#[cfg(test)]", "mod tests {", "    use crate::gone;", "}"].join("\n");
   expect(cutFor("src/lib.rs", inModule, 5)).toEqual({ from: 5 });
   const crate = { name: "c", version: "1.0.0" } as Parameters<typeof said>[0];
-  const verdict = judged({ a: "ok", b: "ok", c: "failed" }, { a: "ok" }, { b: "refused", c: "refused" }, "/nonexistent");
+  const verdict = judged({ a: "ok", b: "ok", c: "failed" }, { a: "ok" }, { b: "refused", c: "refused" }, "/nonexistent", new Map());
   expect(said(crate, verdict)).toBe("c 1.0.0: 1 of 2 as native, 1 refused");
 });
 
@@ -334,7 +335,7 @@ test("a difference listed under an open issue is a known wrong answer, and a lis
   expect(knownOf("c", differ, decided)).toEqual([{ name: "tests::a", js: "failed" }]);
   expect(undecided("c", differ, decided)).toEqual([]);
   const crate = { name: "c", version: "1.0.0" } as Parameters<typeof said>[0];
-  const verdict = judged({ "tests::a": "ok", "tests::b": "ok", "tests::d": "ok" }, { "tests::d": "ok" }, {}, "/nonexistent");
+  const verdict = judged({ "tests::a": "ok", "tests::b": "ok", "tests::d": "ok" }, { "tests::d": "ok" }, {}, "/nonexistent", new Map());
   expect(said(crate, verdict, decided)).toBe("c 1.0.0: 1 of 3 as native, 0 refused, 1 decided, 1 WRONG known (#1264)");
   expect(listedButSame("c", verdict, decided)).toEqual(["tests::d"]);
 });
@@ -407,18 +408,23 @@ test("the Crater's store is held to its cap, its kept verdicts never", () => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-// A JS run that ran whole never ran a native test only a cut took with it,
-// byteorder's macro-made tests of an `impl Arbitrary` cut a round before:
-// refused for the cut nearest it by module path, not a wrong answer; of a
-// run whose file died, not so.
-test("a test a cut took with it is refused for that cut", () => {
-  const native = { "a::b": "ok", "stdtests::prop_i16::big": "ok", "other::c": "ok" } as const;
+// A native test a cut took with it, byteorder's macro-made tests of an
+// `impl Arbitrary` cut a round before, is refused for the cut nearest it by
+// module path: one its build's cut copy, expanded, no longer holds. One the
+// copy still holds was built and lost, a difference, as is one of a build
+// not expanded; a dead file changes neither (#1420).
+test("a test a cut took with it is refused for that cut, of what its cut copy's expansion no longer holds", () => {
+  const native = { "a::b": "ok", "stdtests::prop_i16::big": "ok", "other::c": "ok", "tests/t.rs::gone": "ok", "tests/t.rs::lost": "ok", "tests/u.rs::x": "ok" } as const;
   const js = { "a::b": "ok" } as const;
-  const cut = { "stdtests::big": "user impl of Arbitrary", "a::z": "another" };
-  const none = () => undefined;
-  expect(cascaded(native, js, cut, none)).toEqual({ ...cut, "stdtests::prop_i16::big": "user impl of Arbitrary", "other::c": "user impl of Arbitrary" });
-  expect(cascaded(native, { ...js, "/t/lib.test.js": "failed" }, cut, none)).toEqual(cut);
-  expect(cascaded(native, js, {}, none)).toEqual({});
+  const cut = { "stdtests::big": "user impl of Arbitrary", "a::z": "another", "tests/t.rs::helper_user": "refused in t" };
+  const held = new Map([
+    ["", new Set(["a::b", "other::c"])],
+    ["tests/t.rs::", new Set(["tests/t.rs::lost"])],
+  ]);
+  const taken = { ...cut, "stdtests::prop_i16::big": "user impl of Arbitrary", "tests/t.rs::gone": "refused in t" };
+  expect(cascaded(native, js, cut, held)).toEqual(taken);
+  expect(cascaded(native, { ...js, "/t/lib.test.js": "failed" }, cut, held)).toEqual(taken);
+  expect(cascaded(native, js, {}, held)).toEqual({});
 });
 
 // A test file whose process died: each test it hadn't reported run again
@@ -448,4 +454,102 @@ test("a should-panic test is a native outcome", () => {
     "a::panics": "ok",
     "a::bad": "failed",
   });
+});
+
+// itertools' `generic_test!(k_smallest_sort, u8, ..)`, a macro invoked where
+// an item goes, makes the tests of a helper an earlier round cut: the
+// invocation is an item, cut as a function is where only tests build it; a
+// function in one, quickcheck!'s, is still cut alone; no `macro_rules!` and
+// no invocation in a function body is one (#1420).
+test("a macro's invocation where an item goes is an item, cut where only tests build it", () => {
+  const invoking = [
+    "macro_rules! generic_test {",
+    "    ($f:ident) => { fn x() {} };",
+    "}",
+    "",
+    "#[cfg(not(miri))]",
+    "generic_test!(k_smallest_sort, u8);",
+    "qc::quickcheck! {",
+    "    fn prop(a: u8) -> bool {",
+    "        true",
+    "    }",
+    "}",
+    "fn f() {",
+    "    vec![1];",
+    '    println!("{}", 1);',
+    "}",
+    "",
+  ].join("\n");
+  expect(items(invoking).map(({ kind, name, from, to }) => [kind, name, from, to])).toEqual([
+    ["fn", "x", 2, 2],
+    ["macro", "generic_test", 5, 6],
+    ["fn", "prop", 8, 10],
+    ["macro", "qc::quickcheck", 7, 11],
+    ["fn", "f", 12, 15],
+  ]);
+  expect(cutFor("tests/test_std.rs", invoking, 6, true, [])).toEqual({ from: 5, invocation: true });
+  expect(cutFor("tests/test_std.rs", invoking, 9, true, [])).toEqual({ from: 8, item: "prop" });
+  expect(cutFor("src/lib.rs", invoking, 6)).toBeUndefined();
+});
+
+// The tests an invocation makes are known exactly, of rustc's expansion
+// without its cut and with it, even of a crate whose helper is cut and so
+// doesn't resolve; never by its names, which `k_smallest_sort_alone` shares
+// and no invocation made (#1420).
+test("the tests a cut macro invocation made are those the expansion loses with its cut", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "crater-expanded-"));
+  mkdirSync(join(dir, "tests"));
+  const file = [
+    "macro_rules! generic_test {",
+    "    ($f:ident, $($t:ident),+) => {",
+    "        mod $f {",
+    "            $(",
+    "                #[test]",
+    "                fn $t() {",
+    "                    super::$f::<$t>();",
+    "                }",
+    "            )+",
+    "        }",
+    "    };",
+    "}",
+    "",
+    "#[cfg(not(miri))]",
+    "generic_test!(k_smallest_sort, u8, i8);",
+    "",
+    "#[test]",
+    "fn k_smallest_sort_alone() {}",
+    "",
+  ].join("\n");
+  writeFileSync(join(dir, "tests/t.rs"), file);
+  const at = cutFor("tests/t.rs", file, 15, true, []);
+  expect(at).toEqual({ from: 14, invocation: true });
+  const expand = async () => {
+    const out = join(dir, "expanded.rs");
+    rmSync(out, { force: true });
+    spawnSync("rustc", ["--edition=2021", "--test", "-Zunpretty=expanded", join(dir, "tests/t.rs"), "-o", out], { env: { ...process.env, RUSTC_BOOTSTRAP: "1" } });
+    return { tests: testsOfExpanded(readFileSync(out, "utf8")) };
+  };
+  expect([...(await expand()).tests].sort()).toEqual(["k_smallest_sort::i8", "k_smallest_sort::u8", "k_smallest_sort_alone"]);
+  // rustc's printer puts a long path's name on a line of its own.
+  expect([...testsOfExpanded('    #[rustc_test_marker =\n    "simd::neon::neon_code_matches_header_value_chars_table"]\n    pub const x: () = ();\n    #[rustc_test_marker = "a::b"]\n')]).toEqual(["simd::neon::neon_code_matches_header_value_chars_table", "a::b"]);
+  const why = "rust-js does not support it; its cut left: cannot find function `k_smallest_sort` in this scope";
+  expect(await testsMadeBy(dir, [{ file: "tests/t.rs", from: at!.from, why }], expand)).toEqual({ "k_smallest_sort::u8": why, "k_smallest_sort::i8": why });
+  expect(readFileSync(join(dir, "tests/t.rs"), "utf8")).toBe(file);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+// A test whose helper an earlier round cut is refused for the helper's own
+// reason, not for rustc's "cannot find" of it, which is kept as a note the
+// ranking leaves off: the ranking names what refused (#1420).
+test("a cut for a function an earlier round cut is refused for that function's reason", () => {
+  const items = { k_smallest_sort: "rust-js does not support X", "a::h": "first", "b::h": "second" };
+  const lost = "cannot find function `k_smallest_sort` in this scope";
+  expect(followed(lost, items, [])).toBe(`rust-js does not support X; its cut left: ${lost}`);
+  expect(followed("cannot find function `h` in this scope", items, ["b", "c"])).toBe("second; its cut left: cannot find function `h` in this scope");
+  expect(followed("cannot find value `h` in this scope", items, ["a"])).toBe("first; its cut left: cannot find value `h` in this scope");
+  expect(followed("mismatched types", items, [])).toBe("mismatched types");
+  expect(followed("cannot find function `g` in this scope", items, [])).toBe("cannot find function `g` in this scope");
+  // A chain: the root's reason, the round's own error after it.
+  expect(followed("cannot find function `g` in this scope", { g: `root; its cut left: ${lost}` }, [])).toBe("root; its cut left: cannot find function `g` in this scope");
+  expect(reasonOf(`root; its cut left: ${lost}`)).toBe("root");
 });

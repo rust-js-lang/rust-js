@@ -1,4 +1,5 @@
-// Mutations of Crater's store (scripts/crater.ts): a sweep that skips what another run removed.
+// Mutations of the small Crater (scripts/crater.ts): its store's sweep, and
+// which tests its cuts took, known of the expanded crate (#1420).
 import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
@@ -9,5 +10,37 @@ export const mutations: Mutation[] = [
     find: "      const seen = statSync(path, { throwIfNoEntry: false });\n",
     replace: "      const seen = statSync(path);\n",
     tests: ["test/support.test.ts", "-t", "a store's sweep skips an entry gone since it was listed"],
+  },
+  {
+    name: "crater-made-by-every-test",
+    breaks: "the Crater counts every test of a crate as made by a cut invocation, not those the expansion loses with its cut",
+    file: "scripts/crater.ts",
+    find: "    for (const name of before.tests) if (!after.tests.has(name) && !(name in made)) made[name] = why;\n",
+    replace: "    for (const name of before.tests) if (!(name in made)) made[name] = why;\n",
+    tests: ["test/crater.test.ts", "-t", "the tests a cut macro invocation made"],
+  },
+  {
+    name: "crater-cascade-ignores-expansion",
+    breaks: "the Crater takes a test its cut copy still holds and never ran for one a cut took, hiding a lost test",
+    file: "scripts/crater.ts",
+    find: "    if (holds === undefined || holds.has(name)) continue;\n",
+    replace: "    if (holds === undefined) continue;\n",
+    tests: ["test/crater.test.ts", "-t", "a test a cut took with it is refused for that cut"],
+  },
+  {
+    name: "crater-cascade-unexpanded-build",
+    breaks: "the Crater takes a test of a build it never expanded for one a cut took",
+    file: "scripts/crater.ts",
+    find: "    if (holds === undefined || holds.has(name)) continue;\n",
+    replace: "    if (holds?.has(name)) continue;\n",
+    tests: ["test/crater.test.ts", "-t", "a test a cut took with it is refused for that cut"],
+  },
+  {
+    name: "crater-reason-keeps-note",
+    breaks: "the ranking splits one refusal by each round's note of what its cut left",
+    file: "scripts/crater.ts",
+    find: "  return why.split(leftByCut)[0].replace(",
+    replace: "  return why.replace(",
+    tests: ["test/crater.test.ts", "-t", "a cut for a function an earlier round cut is refused for that function's reason"],
   },
 ];
