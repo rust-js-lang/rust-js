@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "clone-from-slice-trivial-fact-ungiven",
+    breaks:
+      "a generic `clone_from_slice` gives `$cloneFromSlice` no `TTriviallyCloned`, so of integers it panics with its own assertion's message (#2318)",
+    file: "src/lower/std_types/slice.rs",
+    find: "                    Some(trivial) if self.recognition().trait_holds(item(), trivial).is_none() => {\n",
+    replace: "                    Some(trivial) if false && self.recognition().trait_holds(item(), trivial).is_none() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "clone_from_slice_trivial_panic"],
+  },
+  {
     name: "clone-from-slice-trivial-cloned",
     breaks:
       "`clone_from_slice` of integers of another length panics with its own assertion's message, not std's specialization's `copy_from_slice` one (#2318)",

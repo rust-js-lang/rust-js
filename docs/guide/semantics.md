@@ -1895,6 +1895,14 @@ missing key, `unreachable!`, `todo!` ([0012](../decisions/0012-panics-and-runtim
   `console::create_task().unwrap()(name)` is `console.createTask(name)`,
   and of a host without it the call's `TypeError` is what's thrown, where
   Rust panics (46 below, [1066](../decisions/1066-a-getters-function-unwrapped-where-its-called-is-the-read.md)).
+- **A panic's message is std's specialization's:** `clone_from_slice` of
+  another length, of items std clones as their bits (integers, a
+  `#[derive(Clone, Copy)]` type, tuples of them), panics with
+  `copy_from_slice`'s message, as std's is `copy_from_slice` there; of
+  others, a hand-written `Clone` of a `Copy` type too, with its own. In
+  generic code the caller says which, a type fact, `$cloneFromSlice(into,
+  from, .., TTriviallyCloned)`
+  ([0324](../decisions/0324-slice-methods.md), amended, #2318).
 
 Differences:
 

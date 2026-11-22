@@ -80,6 +80,10 @@ pub(crate) enum TypeFact {
     /// Whether it's `Eq`, by which std's `==` of two `Rc`s or `Arc`s of it
     /// asks whether they're one allocation first, `RcEqIdent` (#931).
     Eq,
+    /// Whether std clones it as its bits, `TrivialClone`, by which std's
+    /// `clone_from_slice` of it is `copy_from_slice`, its panic's message
+    /// too (#2318).
+    TriviallyCloned,
     /// Of what generic code's `eq` compares, an `Iterator` or an
     /// `IntoIterator` its caller gives: whether std's `SpecIterEq` compares
     /// its length first, a `TrustedLen`'s, and how JS counts it, `true`
@@ -110,7 +114,7 @@ pub(crate) enum TypeFact {
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 28] = [
+    pub(crate) const ALL: [TypeFact; 29] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -130,6 +134,7 @@ impl TypeFact {
         TypeFact::TrustedLen,
         TypeFact::InPlace,
         TypeFact::Eq,
+        TypeFact::TriviallyCloned,
         TypeFact::LengthFirst,
         TypeFact::VecCollect,
         TypeFact::Instance,
@@ -164,6 +169,7 @@ impl TypeFact {
             TypeFact::Instance => "whether a counted `Rc` of it is its class's instance",
             TypeFact::InPlace => "the buffer std collects an iterator in place in",
             TypeFact::Eq => "whether it's `Eq`, which std's `==` of two `Rc`s of it asks",
+            TypeFact::TriviallyCloned => "whether std clones it as its bits, which `clone_from_slice` asks",
             TypeFact::LengthFirst => "whether `eq` compares its length first",
             TypeFact::LentOffset(_) => "the offset of what std lends a `&mut` to from inside it",
         }
@@ -210,6 +216,7 @@ impl TypeFact {
             TypeFact::Instance => "Instance",
             TypeFact::InPlace => "InPlace",
             TypeFact::Eq => "Eq",
+            TypeFact::TriviallyCloned => "TriviallyCloned",
             TypeFact::LengthFirst => "LengthFirst",
             TypeFact::LentOffset(Lend::OnceCell) => "OnceCellOffset",
             TypeFact::LentOffset(Lend::LazyCell) => "LazyCellOffset",

@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "clone-from-slice-trivial-message-dropped",
+    breaks:
+      "`clone_from_slice` of a generic caller's items std clones as their bits panics with its own assertion's message, not `copy_from_slice`'s (#2318)",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
+    find: "    if (trivial) $copyFromSlice(v, src);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "clone_from_slice_trivial_panic"],
+  },
+  {
     name: "is-sorted-by-steps-armed",
     breaks:
       "`$isSortedBy` of keys with a destructor steps `Iterator.from(items)`, which arms a `$Steps` to close at its end, so the source is dropped before the last key (#2027)",

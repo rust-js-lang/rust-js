@@ -533,6 +533,22 @@ pub(crate) fn rc_eq_asked<'tcx>(
         .collect()
 }
 
+/// The items of a slice's `clone_from_slice`, std's `def_id` given `args`:
+/// its `T`, whose caller's type says whether std's specialization copies
+/// them, `copy_from_slice`'s, its message too, `TTriviallyCloned` (#2318).
+pub(crate) fn clone_from_slice_items<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<Ty<'tcx>> {
+    let imp = tcx.impl_of_assoc(def_id)?;
+    (super::is_std_crate(tcx, def_id)
+        && tcx.type_of(imp).skip_binder().is_slice()
+        && tcx.item_name(def_id).as_str() == "clone_from_slice")
+        .then(|| args.types().next())
+        .flatten()
+}
+
 /// Whether `def_id` is `TrustedRandomAccessNoCoerce`'s `MAY_HAVE_SIDE_EFFECT`,
 /// whether reading an item of a type may run code, by which std's zip of it
 /// reads the items it passes over (ADR 0975).
@@ -554,6 +570,7 @@ pub(crate) fn fact_trait(tcx: TyCtxt<'_>, fact: TypeFact) -> Option<DefId> {
         }
         TypeFact::TrustedLen => registry::by_path(tcx, StdCrate::Core, &["iter", "TrustedLen"]),
         TypeFact::Eq => Some(super::std_item(tcx, StdItem::Eq)),
+        TypeFact::TriviallyCloned => tcx.lang_items().get(LangItem::TrivialClone),
         _ => None,
     }
 }

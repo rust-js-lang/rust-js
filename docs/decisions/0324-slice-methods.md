@@ -108,9 +108,22 @@ latter, so a payload `catch_unwind` reads was wrong (P0). Of items
 rustc's answer of `TrivialClone` holds of, `trivially_cloned` in
 `std_impls/clones.rs`, `slice_values` lowers it as `copy_from_slice`,
 `$copyFromSlice` with its bits' copy; others keep `$cloneFromSlice`. Of a
-type parameter's items, a generic body's, whether they're `TrivialClone`
-is its caller's answer, which its `Clone` dictionary doesn't carry: they
-keep `$cloneFromSlice`'s message, #2318's remainder. Case "Results change"
-of [0262](0262-when-rust-and-js-disagree.md). Held by
-`test/corpus/clone_from_slice_trivial_panic.rs`, against native Rust;
-mutation `clone-from-slice-trivial-cloned` (`lower/std_types/slice.ts`).
+type parameter's items, a generic body's, or a type built of one, `(T,
+u8)`, whether they're `TrivialClone` is its caller's answer: a type fact,
+`TypeFact::TriviallyCloned` (ADR 0145), which the body asks of its callers
+(`std_call_asks`), each answering it of its own type from rustc's
+`TrivialClone`, a generic caller relaying its own, and a library's
+contract listing it as it lists the size facts; given to `$cloneFromSlice`
+last, `$cloneFromSlice(into, from, TClone.clone, .., TTriviallyCloned)`,
+which then panics as `$copyFromSlice` does. Not the `Clone` dictionary,
+which every impl would carry for one specialization, and not a refusal of
+generic code, arrayvec's `clone_from`. Case "Results change" of
+[0262](0262-when-rust-and-js-disagree.md). Held by
+`test/corpus/clone_from_slice_trivial_panic.rs` and
+`test/crates/pairs/library_clone_from_slice_trivially_cloned/`, against
+native Rust; mutations `clone-from-slice-trivial-cloned` and
+`clone-from-slice-trivial-fact-ungiven` (`lower/std_types/slice.ts`),
+`clone-from-slice-trivially-cloned-unasked`
+(`lower/analysis/type_facts.ts`), `trivially-cloned-built-unasked`
+(`lower/analysis/type_facts/relay.ts`) and
+`clone-from-slice-trivial-message-dropped` (`runtime/slice_ops.ts`).

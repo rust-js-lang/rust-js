@@ -517,14 +517,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Each by its type's `clone_from` where it may have one, as std's
             // calls it, else a clone of each; of items with a destructor,
-            // each it replaces dropped (ADR 0507).
+            // each it replaces dropped (ADR 0507). Of items only the caller
+            // says std clones as their bits, its `TTriviallyCloned`, which
+            // picks `copy_from_slice`'s message (#2318).
             SliceOp::CloneFromSlice => {
                 let (items, source) = (arg(), arg());
                 let (clone, clone_from) = self.clone_over(item(), "clone_from_slice", span)?;
                 let drop = self.std_drop_function(item(), span)?;
+                let fact = TypeFact::TriviallyCloned;
+                let trivial = match crate::lower::recognition::fact_trait(self.tcx, fact) {
+                    Some(trivial) if self.recognition().trait_holds(item(), trivial).is_none() => {
+                        Some(self.type_fact_value(item(), fact, span)?)
+                    }
+                    _ => None,
+                };
                 helper(
                     "$cloneFromSlice",
-                    Expr::optional_args(vec![items, source], vec![clone, clone_from, drop]),
+                    Expr::optional_args(vec![items, source], vec![clone, clone_from, drop, trivial]),
                 )
             }
             SliceOp::SwapWithSlice => helper("$swapWithSlice", vec![arg(), arg()]),

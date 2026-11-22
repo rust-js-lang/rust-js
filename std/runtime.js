@@ -10101,8 +10101,13 @@ export function $writeCloneOfSlice(v, src, clone) {
 // `v.clone_from_slice(src)`: each item its type's `clone_from` of the
 // source's (`cloneFrom`), or a clone of it, the one it replaces dropped by
 // `drop`, as std's assignment drops it (ADR 0507).
-export function $cloneFromSlice(v, src, clone, cloneFrom, drop) {
-  if (v.length !== src.length) throw new Error("destination and source slices have different lengths");
+export function $cloneFromSlice(v, src, clone, cloneFrom, drop, trivial) {
+  if (v.length !== src.length) {
+    // Of items a generic caller says std clones as their bits, std's
+    // specialization's, `copy_from_slice`'s (#2318).
+    if (trivial) $copyFromSlice(v, src);
+    throw new Error("destination and source slices have different lengths");
+  }
   for (let i = 0; i < v.length; i++) {
     if (cloneFrom) {
       cloneFrom(v, i, src[i]);

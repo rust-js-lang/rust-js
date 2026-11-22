@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "clone-from-slice-trivially-cloned-unasked",
+    breaks:
+      "a generic `clone_from_slice` asks no caller whether std clones its items as their bits, so it's refused as one no caller gives (#2318)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        if let Some(items) = crate::lower::recognition::clone_from_slice_items(tcx, callee, args)\n",
+    replace: "        if let Some(items) = crate::lower::recognition::clone_from_slice_items(tcx, callee, args).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "clone_from_slice_trivial_panic"],
+  },
+  {
     name: "struct-steps-own-params-unfilled",
     breaks:
       "a held struct's `fold`, whose own `B` and `F` its resolution needs, isn't followed: a `Zip`'s `fold` asks its sides' `TrustedLen` of no caller, refused (ADR 0975)",

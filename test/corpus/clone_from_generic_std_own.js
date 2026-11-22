@@ -84,7 +84,7 @@ function assignBox(dest, source, TClone, dropT) {
   }
 }
 
-function assignItems(dest, source, TClone, dropT) {
+function assignItems(dest, source, TClone, OptionTriviallyCloned, dropT) {
   $cloneFromSlice(
     dest,
     source,
@@ -105,6 +105,7 @@ function assignItems(dest, source, TClone, dropT) {
         dropT?.(option);
       }
     },
+    OptionTriviallyCloned,
   );
 }
 
@@ -476,6 +477,7 @@ function main() {
                 $cloneIntoVec(to.value, from, (item) => dClone_clone(item), undefined, dDrop_drop);
               },
             },
+            false,
             $dropEach(dDrop_drop),
           );
         } catch (error) {
@@ -551,7 +553,7 @@ function main() {
   assignBox(dest$1, [6], countedClone);
   b = dest$1.value;
   const items = [[7]];
-  assignItems(items, [[8]], countedClone);
+  assignItems(items, [[8]], countedClone, false);
   assignLocal([9], [10], countedClone, countedDebug);
   // A `None` written over: what the dictionary writes, given back.
   const value = [[11]];
@@ -620,7 +622,7 @@ function main() {
   n = dest$2.value;
   // Of a `T` whose `clone_from` is std's provided: a clone written over.
   const numbers = [3, undefined];
-  assignItems(numbers, [4, 5], i32Clone);
+  assignItems(numbers, [4, 5], i32Clone, true);
   console.log(
     `${n == null ? "None" : `Some(${n})`} [${numbers.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}]`,
   );

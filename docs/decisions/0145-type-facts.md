@@ -854,3 +854,22 @@ covers the refusal. Mutations caught:
 `own-facts-through-a-library-dictionary-reanalyzed` and
 `std-method-facts-unrelayed`, whose code moved, were re-pointed and are
 still caught.
+
+## Amendment: whether std clones a type as its bits, `TTriviallyCloned` (2026-11-22, #2318)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept.
+
+std's `clone_from_slice` is specialized on `TrivialClone`: of items std
+clones as their bits it's `copy_from_slice`, whose panic of another length
+has its own message, which `catch_unwind` reads. A generic body's items are
+its caller's to say, so **whether a type is `TrivialClone` is a type fact,
+`TypeFact::TriviallyCloned`, `TTriviallyCloned`**, whose trait is the lang
+item (`fact_trait`): a body's `clone_from_slice` of a type parameter's
+items, or a type built of one, asks it of its callers (`std_call_asks`,
+`clone_from_slice_items`), each answers it of its own type from rustc's
+`TrivialClone`, a generic caller relays its own, and a library's contract
+lists it as it lists every other fact. A type built of a slot is asked as
+the other trait facts are, where rustc can't say it there (`built_of`).
+Not the `Clone` dictionary, which every impl would carry for one
+specialization, and not a refusal: ADR 0324's amendment says the rest.

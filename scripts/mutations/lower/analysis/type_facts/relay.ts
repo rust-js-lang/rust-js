@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "trivially-cloned-built-unasked",
+    breaks:
+      "whether std clones a type built of a caller's, `(T, u8)`, as its bits isn't asked of the caller, so a generic `clone_from_slice` of it is refused (#2318)",
+    file: "src/lower/analysis/type_facts/relay.rs",
+    find: "TypeFact::TrustedLen | TypeFact::TriviallyCloned\n",
+    replace: "TypeFact::TrustedLen\n",
+    tests: ["test/corpus.test.ts", "-t", "clone_from_slice_trivial_panic"],
+  },
+  {
     name: "library-fact-of-alias-not-asked",
     breaks:
       "a library function's fact of a std associated type of a caller's parameter, `I::IntoIter`'s `IFused`, isn't asked",

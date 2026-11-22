@@ -916,6 +916,13 @@ impl<'tcx> Asking<'tcx> {
                 self.asked.insert((caller, index, fact));
             }
         }
+        // `clone_from_slice` of items only the caller says std clones as
+        // their bits, whose message is then `copy_from_slice`'s (#2318).
+        if let Some(items) = crate::lower::recognition::clone_from_slice_items(tcx, callee, args)
+            && let Some(each) = asked_of(tcx, foreign, typing_env, caller, (items, TypeFact::TriviallyCloned))
+        {
+            self.ask(caller, each);
+        }
         false
     }
 

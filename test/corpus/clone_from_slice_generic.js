@@ -24,7 +24,7 @@ function countedClone_cloneFrom(counted, source) {
   counted[0] = source[0];
 }
 
-function refill(into, from, TClone) {
+function refill(into, from, TClone, TTriviallyCloned) {
   $cloneFromSlice(
     into,
     from,
@@ -33,13 +33,17 @@ function refill(into, from, TClone) {
       ((items, i, from) => {
         TClone.cloneFrom($ptr(items, i), from);
       }),
+    undefined,
+    TTriviallyCloned,
   );
 }
 
 const $_T__N_Array = new Map();
 
-function _T__N_Array(N) {
-  return $traitImpl($_T__N_Array, [N], () => ({}));
+function _T__N_Array(N, TTriviallyCloned) {
+  return $traitImpl($_T__N_Array, [N, TTriviallyCloned], () => ({
+    ItemTriviallyCloned: TTriviallyCloned,
+  }));
 }
 
 /** Of an associated type's items, smallvec's `A::Item`: the same. */
@@ -52,18 +56,20 @@ function refillItems(into, from, AArray, AItemClone) {
       ((items, i, from) => {
         AItemClone.cloneFrom($ptr(items, i), from);
       }),
+    undefined,
+    AArray.ItemTriviallyCloned,
   );
 }
 
 function main() {
   const clone = { clone: (value) => value };
   const a = [[1], [2]];
-  refill(a, [[3], [4]], countedClone);
+  refill(a, [[3], [4]], countedClone, false);
   const b = [[1]];
-  refill(b, [[5]], clone);
+  refill(b, [[5]], clone, false);
   const n = [1, 2];
-  refill(n, [7, 8], clone);
-  refillItems($view(a, 0, 1), [[6]], _T__N_Array(1), countedClone);
+  refill(n, [7, 8], clone, true);
+  refillItems($view(a, 0, 1), [[6]], _T__N_Array(1, false), countedClone);
   console.log(
     `[${a.map((item) => countedDebug_fmt(item)).join(", ")}] ${b[0][0]} [${n.join(", ")}]`,
   );
