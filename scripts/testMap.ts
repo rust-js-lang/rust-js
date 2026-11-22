@@ -59,7 +59,7 @@ import { bytesOf, evict, freeBytes } from "../tooling/bounded.js";
 import { floorBytes, machineStore } from "../test/bounded";
 import { machineVerifiedRuns } from "../test/kept";
 import { downloaded } from "./artifacts";
-import { compilerSourceDirs } from "./compiler-crates";
+import { compilerCrates, compilerSourceDirs, crateOf, isCompilerSource } from "./compiler-crates";
 import { readJobTimes } from "./jobTimes";
 import { type ItemLayer, implBodyAt, inUnitTests, itemLayer, scipIndex, touchedByItem, touchedByNewFile } from "./testMapItems";
 import { balanced, caseShardParts, machine, pushSuiteFiles, shard, shardArg } from "./shard";
@@ -220,7 +220,7 @@ export function sourcesAt(commit: string): Sources {
       return p.exitCode === 0 ? p.stdout.toString() : undefined;
     },
     naming: (word) =>
-      git(["grep", "-n", "-w", "-e", word, commit, "--", "src"])
+      git(["grep", "-n", "-w", "-e", word, commit, "--", ...compilerSourceDirs()])
         .stdout.toString()
         .split("\n")
         .flatMap((line) => {
@@ -592,7 +592,8 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
   // The files a private item of `file` is seen in: its module's, and the
   // modules' in it, `src/a/b.rs` and `src/a/b/**`; the crate's of main.rs.
   const moduleOf = (file: string) => {
-    const under = /^src\/(?:main|lib)\.rs$/.test(file) ? "src/" : file.replace(/(?:\/mod)?\.rs$/, "/");
+    const crate = crateOf(file);
+    const under = crate?.rootFile === file ? `${crate.src}/` : file.replace(/(?:\/mod)?\.rs$/, "/");
     return (at: string) => at === file || at.startsWith(under);
   };
   const texts = new Map<string, string[]>();
@@ -754,7 +755,7 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
       }
       continue;
     }
-    if (!file.startsWith("src/") || !file.endsWith(".rs")) return { kind: "all", why: `${file} isn't the compiler's code` };
+    if (!isCompilerSource(file) || !file.endsWith(".rs")) return { kind: "all", why: `${file} isn't the compiler's code` };
     if (hunks === "new") {
       // A new module of items nothing referred to: its `mod` line, a pure
       // addition, and the functions changed to use it select its tests.
@@ -1188,8 +1189,8 @@ function llvmTools(): { profdata: string; cov: string } {
   return tools;
 }
 
-/** Each file `include_str!` or `include_bytes!` reads in `src/`, and the
- * line that reads it. */
+/** Each file `include_str!` or `include_bytes!` reads in the compiler's
+ * crates' sources, and the line that reads it. */
 function includes(): TestMap["includes"] {
   const found: TestMap["includes"] = {};
   const walk = (dir: string) => {
@@ -1208,7 +1209,7 @@ function includes(): TestMap["includes"] {
       }
     }
   };
-  walk(join(root, "src"));
+  for (const dir of compilerSourceDirs()) walk(join(root, dir));
   return found;
 }
 
@@ -1448,9 +1449,15 @@ async function build(shards: number, carry?: (names: string[], files: string[], 
   writeFileSync(join(mapDir, "lost.c"), lostObject(join(mapDir, "lost", "%p.profraw")));
   if (Bun.spawnSync(["cc", "-c", join(mapDir, "lost.c"), "-o", join(mapDir, "lost.o")], { stdout: "inherit", stderr: "inherit" }).exitCode !== 0) process.exit(1);
   const { CARGO_TARGET_DIR: _, ...env } = process.env;
+  // Each of the compiler's crates counts its runs, the binary's and each
+  // other's (ADR 1181), by scripts/counting-rustc.sh, and no dependency's;
+  // those still built by the machine's cache.
+  const counting = join(root, "scripts", "counting-rustc.sh");
+  const cache = process.env.RUSTC_WRAPPER ?? Bun.which("sccache") ?? "";
+  const counted = compilerCrates().map((crate) => crate.name).join(" ");
   const built = Bun.spawnSync(
-    ["cargo", "rustc", "--locked", "--quiet", "--target-dir", build, "--bin", "rust-js", "--", "-C", "instrument-coverage", "-C", `link-arg=${join(mapDir, "lost.o")}`],
-    { cwd: root, env, stdout: "inherit", stderr: "inherit" },
+    ["cargo", "rustc", "--locked", "--quiet", "--target-dir", build, "--bin", "rust-js", "--", "-C", `link-arg=${join(mapDir, "lost.o")}`],
+    { cwd: root, env: { ...env, RUSTC_WRAPPER: counting, RUST_JS_COUNTED_CRATES: counted, RUST_JS_CACHE_WRAPPER: cache }, stdout: "inherit", stderr: "inherit" },
   );
   if (built.exitCode !== 0) process.exit(1);
   console.log(`the counting build: ${((Date.now() - started) / 1000).toFixed(0)} s`);

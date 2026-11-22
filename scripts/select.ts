@@ -22,7 +22,9 @@
 // (`Selection.allOwn`), which every push's line and CI's summary count.
 //
 // The rules, by the changed file's path:
-//   src/**                 the map: the tests and cases whose functions it touches
+//   src/**, crates/*/src/** the map: the tests and cases whose functions it
+//                          touches, the compiler's crates' (scripts/compiler-crates.ts);
+//                          everything of a crate the map counted none of (`counted`)
 //   std/**, src/runtime/** the runtime: its package tests, the whole corpus, every file the map saw compile
 //   test/<x>.test.ts       itself (the corpus's file: every case)
 //   test/corpus/<case>.*   the case, and the tests that read the corpus's files
@@ -43,8 +45,19 @@ import { importsOf } from "./iteratorSlice";
 import { expected, type JobTimes, readJobTimes } from "./jobTimes";
 import { machine, pushSuiteFiles } from "./shard";
 import { type Change, caseFiles, caseUnit, functionsOf, type Hunk, hunksOf, mapStore, nearestMap, noMap, pick, reachOfFunctions, readsOf, type TestMap, toolchainOf, unitsReaching } from "./testMap";
+import { crateOf, isCompilerSource } from "./compiler-crates";
 
 const root = join(import.meta.dir, "..");
+
+/** Whether `map` counted the functions of `file`'s crate: the binary's, and
+ * each other of the compiler's crates' (ADR 1181) where it records one of
+ * theirs. A map whose counting build counted the binary alone records none
+ * of another crate's, and a change to it, outside every function it knows,
+ * would select what the map can't say. */
+export function counted(map: TestMap, file: string): boolean {
+  const crate = crateOf(file);
+  return crate === undefined || crate.dir === "" || map.functions.some((f) => f.file.startsWith(`${crate.src}/`));
+}
 
 /** What the last `check:fast` selected, its outcome (`outcome`), which
  * `bun run push` says on each run's line. */
@@ -251,8 +264,9 @@ export function select(changes: Change[], context: Context): Selection {
       continue;
     }
     // The compiler's sources, and what `include_str!` reads: the map's.
-    if (file.startsWith("src/") || (typeof map !== "string" && map.includes[file] !== undefined)) {
+    if (isCompilerSource(file) || (typeof map !== "string" && map.includes[file] !== undefined)) {
       if (typeof map === "string") return whole(`${file} is the compiler's, and ${map}`, file);
+      if (!counted(map, file)) return whole(`${file} is of a crate the map at ${map.commit} counted no function of`, file);
       srcChanges.push(change);
       ran(readers(file));
       continue;
@@ -405,14 +419,14 @@ function selectOf(map: TestMap | undefined, base: string, sanity: string | undef
     // by the change's own functions: those it changes, or of its files.
     const changed = Bun.spawnSync(["git", "diff", "--name-only", now], { cwd: root, stdout: "pipe" }).stdout.toString().split("\n").filter(Boolean);
     const said = both.all ? capOf(changed, files, cases, map) : both;
-    const functions = said.functions ?? functionsOf(map, changed.filter((file) => file.startsWith("src/")));
+    const functions = said.functions ?? functionsOf(map, changed.filter((file) => isCompilerSource(file)));
     return { ...budgeted({ ...said, functions }, reachOfFunctions(map, functions), costsOf(readJobTimes(), cases.length), machine().cores), map: map.commit, behind };
   }
   const since = rule === "push" ? mergeBase(base) : undefined;
   if (since !== undefined) {
     const mine = sideSelection(changesBetween(since), since, { files, cases, map, reach, own: () => true });
     const theirs = sideSelection(changesBetween(map.commit, since), map.commit, { files, cases, map, reach, own: () => false });
-    return { ...pushSelection(mine, theirs, [...own].some((file) => file.startsWith("src/"))), map: map.commit, behind };
+    return { ...pushSelection(mine, theirs, [...own].some((file) => isCompilerSource(file))), map: map.commit, behind };
   }
   const selection = fullSelection(map, (file) => own.has(file), { files, cases, reach });
   return { ...selection, map: map.commit, behind };
@@ -523,7 +537,7 @@ function diffHunks(a: string, b: string, file: string): [number, number, number,
  * own change, src/output.rs, selected 291 files where the map at
  * 7fe40bde3 placed it in one function, 7. */
 export function sideSelection(changes: Change[], from: string, context: { files: string[]; cases: string[]; map: TestMap; reach: Reach; own: (file: string) => boolean }): Selection {
-  const differing = changes.filter((change) => change.file.startsWith("src/") && change.hunks !== "new" && differs(context.map.commit, from, change.file));
+  const differing = changes.filter((change) => isCompilerSource(change.file) && change.hunks !== "new" && differs(context.map.commit, from, change.file));
   const placed = new Map(differing.flatMap((change) => {
     const at = hunksAtMap(change, diffHunks(context.map.commit, from, change.file));
     return at === undefined ? [] : [[change.file, at] as const];
@@ -662,7 +676,7 @@ function differs(from: string, to: string, file: string): boolean {
 export function capOf(changed: string[], files: string[], cases: string[], map?: TestMap): Selection {
   const ownFiles = files.filter((file) => changed.includes(file));
   const ownCases = cases.filter((name) => changed.some((file) => file.startsWith(`test/corpus/${name.replace(/\.rs$/, "")}.`)));
-  const sources = changed.filter((file) => file.startsWith("src/"));
+  const sources = changed.filter((file) => isCompilerSource(file));
   const result = (picked: string[], picks: string[], capped: string): Selection => ({
     all: false,
     files: picked,

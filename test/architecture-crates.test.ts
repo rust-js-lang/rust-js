@@ -5,12 +5,13 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { compilerCrates, compilerRustFiles, crateOf, crateOfModule, isCompilerSource, modulePath, topModules } from "../scripts/compiler-crates";
+import { binaryCrate, compilerCrates, compilerRustFiles, crateOf, crateOfModule, isBinarySource, isCompilerSource, modulePath, topModules } from "../scripts/compiler-crates";
 import { root } from "./support";
 
 type Manifest = { package?: { name: string }; dependencies?: Record<string, unknown>; workspace?: { members?: string[]; exclude?: string[] } };
 const manifest = (dir: string): Manifest => Bun.TOML.parse(readFileSync(join(root, dir, "Cargo.toml"), "utf8")) as Manifest;
-const [binary, ...members] = compilerCrates();
+const binary = binaryCrate();
+const members = compilerCrates().filter((crate) => crate !== binary);
 
 // Each crate of the workspace, by the compiler's crates it may depend on:
 // owned output on none. A crate added names its place here.
@@ -59,7 +60,9 @@ test("each Cargo package of the checkout is the workspace's or its own", () => {
 });
 
 test("which crate a file and a module are of is the layout's answer", () => {
-  expect(binary!.package).toBe("rust-js");
+  expect(binary.package).toBe("rust-js");
+  expect(isBinarySource("src/lower/copies.rs")).toBe(true);
+  expect(isBinarySource("crates/rust-js-program/src/lines.rs")).toBe(false);
   expect(crateOf("src/lower/copies.rs")).toBe(binary);
   expect(crateOf("crates/rust-js-program/src/collections.rs")?.name).toBe("rust_js_program");
   expect(crateOf("crates/rust-js-program/Cargo.toml")).toBeUndefined();

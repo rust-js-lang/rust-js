@@ -52,6 +52,17 @@ export function crateOf(file: string, at = checkout): CompilerCrate | undefined 
   return compilerCrates(at).find((crate) => file.startsWith(`${crate.src}/`));
 }
 
+/** The binary's crate, the root's package, `rust-js`: the driver and the
+ * front end, rustc's. */
+export function binaryCrate(at = checkout): CompilerCrate {
+  return compilerCrates(at).find((crate) => crate.dir === "")!;
+}
+
+/** Whether `file`, a path from the checkout, is the binary's source. */
+export function isBinarySource(file: string, at = checkout): boolean {
+  return crateOf(file, at)?.dir === "";
+}
+
 /** Whether `file`, a path from the checkout, is one of the compiler's
  * sources: under a crate's `src/`, its Rust and what it includes. */
 export function isCompilerSource(file: string, at = checkout): boolean {

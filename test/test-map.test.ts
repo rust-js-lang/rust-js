@@ -667,3 +667,31 @@ test("a function's signature changed is its body's change and each that names it
   text[8] = "pub fn f(x: &str) -> u32 {";
   expect(pick(map, [public_], files, cases, sources([{ file: "src/c.rs", line: 9 }])).kind).toBe("all");
 });
+
+// The counting build counts each of the compiler's crates, and no
+// dependency (ADR 1181): Cargo runs scripts/counting-rustc.sh as its
+// `RUSTC_WRAPPER`, `<it> rustc ..`; a compile of a crate it's told to
+// count is counted, any other's goes to the machine's cache.
+test("the counting build's rustc counts the compiler's crates, and hands any other's to the cache", () => {
+  const counting = join(root, "scripts", "counting-rustc.sh");
+  const run = (args: string[], cache = "") =>
+    Bun.spawnSync([counting, ...args], { env: { ...process.env, RUST_JS_COUNTED_CRATES: "rust_js rust_js_program", RUST_JS_CACHE_WRAPPER: cache } }).stdout.toString().trim();
+  expect(run(["echo", "--edition=2024", "--crate-name", "rust_js_program"])).toBe("--edition=2024 --crate-name rust_js_program -C instrument-coverage");
+  expect(run(["echo", "--crate-name", "rust_js", "--crate-type", "bin"])).toBe("--crate-name rust_js --crate-type bin -C instrument-coverage");
+  // A question of rustc, `-vV`, isn't a compile; nor a build script's,
+  // which Cargo runs where it'd leave its counts, a dependency's either.
+  expect(run(["echo", "-vV"])).toBe("-vV");
+  expect(run(["echo", "--crate-name", "build_script_build"])).toBe("--crate-name build_script_build");
+  expect(run(["echo", "--crate-name", "indexmap"])).toBe("--crate-name indexmap");
+  expect(run(["--crate-name", "indexmap"], "echo")).toBe("--crate-name indexmap");
+  // A name that ends one counted isn't it.
+  expect(run(["echo", "--crate-name", "js"])).toBe("--crate-name js");
+});
+
+// A test that lists the compiler's files by scripts/compiler-crates.ts
+// reads every crate's sources, as one of `join(root, "src")` read the one.
+test("a test listing the compiler's files reads each crate's sources", () => {
+  const reads = readsOf("test/architecture-maps.test.ts");
+  expect(reads.has("src") && reads.has("crates/rust-js-program/src")).toBe(true);
+  expect(readsSources("test/architecture-maps.test.ts")).toBe(true);
+});

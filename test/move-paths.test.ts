@@ -3,11 +3,11 @@
 // crate's root named it, `crate::collections` as `rust_js_program::
 // collections` (ADR 1181), however it was written.
 import { expect, test } from "bun:test";
-import { compilerCrates, type CompilerCrate } from "../scripts/compiler-crates";
+import { binaryCrate, compilerCrates, type CompilerCrate } from "../scripts/compiler-crates";
 import { rustPathsRewritten } from "../scripts/move-paths";
 
 const crates = compilerCrates();
-const binary = crates[0]!;
+const binary = binaryCrate();
 const program = crates.find((crate) => crate.package === "rust-js-program")!;
 // A layout of the test's own: `collections` and `js` of the program's
 // crate, `lower` and `output` of the binary's.

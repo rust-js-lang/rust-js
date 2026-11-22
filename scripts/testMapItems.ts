@@ -15,6 +15,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { isBinarySource, isCompilerSource } from "./compiler-crates";
 
 /** An item outside any function, by the lines its definition spans. */
 export type ItemRecord = {
@@ -140,7 +141,7 @@ export function scipIndex(root: string, dir: string, channel: string, timeout = 
   if (ran.status !== 0 || !existsSync(output)) return `rust-analyzer scip exited ${ran.status ?? ran.signal}: ${(ran.stderr ?? "").trim().split("\n").slice(-3).join(" ")}`;
   try {
     const documents = readScip(new Uint8Array(readFileSync(output)));
-    if (!documents.some((d) => d.path.startsWith("src/"))) return "its index holds none of src/";
+    if (!documents.some((d) => isBinarySource(d.path))) return "its index holds none of the binary's sources";
     return documents;
   } catch (error) {
     return `its index couldn't be read: ${error instanceof Error ? error.message : error}`;
@@ -195,7 +196,8 @@ export function itemLayer(documents: Document[], functions: { file: string; span
       }
     }
   });
-  const src = documents.filter((d) => d.path.startsWith("src/") && d.path.endsWith(".rs"));
+  // The compiler's sources, each of its crates' (ADR 1181).
+  const src = documents.filter((d) => isCompilerSource(d.path) && d.path.endsWith(".rs"));
   // Each referenced symbol, the functions referencing it.
   const referencing = new Map<string, Set<number>>();
   for (const document of src) {

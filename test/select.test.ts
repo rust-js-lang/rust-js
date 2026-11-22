@@ -92,6 +92,16 @@ test("a change the map can't say of runs everything, and says whose change it wa
   // A new file of the compiler's, and no map at all.
   expect(select([{ file: "src/b.rs", hunks: "new" }], context).all).toBe(true);
   expect(select([{ file: "src/a.rs", hunks: [[12, 1]] }], { ...context, map: "no test map" }).all).toBe(true);
+  // A file of another of the compiler's crates (ADR 1181), of a map that
+  // counted none of its functions, as one made before it counted the
+  // crates; and of one that did, by its functions.
+  const program = "crates/rust-js-program/src/js.rs";
+  const uncounted = select([{ file: program, hunks: [[12, 1]] }], context);
+  expect(uncounted.all).toBe(true);
+  expect(uncounted.why).toContain("counted no function of");
+  // a.rs's second function, lines 30-40, as the crate's, lines 10-20.
+  const counting = { ...map, functions: [map.functions[0]!, { file: program, spans: [[10, 20]] as [number, number][] }, map.functions[2]!] };
+  expect(picked(select([{ file: program, hunks: [[12, 1]] }], { ...context, map: counting }))).toEqual(picked(select([{ file: "src/a.rs", hunks: [[32, 1]] }], context)));
 });
 
 // Four agents push to main every 15–30 min: the map's diff holds others'

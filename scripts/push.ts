@@ -119,7 +119,7 @@ export function fastAgain(incoming: string[] | undefined, named: ReadonlySet<str
 
 export function mutantsAgain(incoming: string[] | undefined): boolean {
   if (incoming === undefined) return true;
-  return incoming.some((file) => /^src\/.*\.rs$/.test(file) || file.startsWith("scripts/mutations") || /^(?:Cargo\.(?:toml|lock)|rust-toolchain\.toml|build\.rs)$/.test(file));
+  return incoming.some((file) => (isCompilerSource(file) && file.endsWith(".rs")) || file.startsWith("scripts/mutations") || /^(?:Cargo\.(?:toml|lock)|rust-toolchain\.toml|build\.rs)$/.test(file));
 }
 
 /** Why a round past a rebase checks nothing, where the selector's

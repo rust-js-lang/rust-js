@@ -38,7 +38,7 @@ import { resultsFile, verdictOf, type Result as CrateResult, type Verdict } from
 import { devTimes, ownsTimes } from "./devTimes";
 import { floorBytes } from "../test/bounded";
 import { freeBytes } from "../tooling/bounded.js";
-import { crateOf } from "./compiler-crates";
+import { binaryCrate, compilerCrates, crateOf, isBinarySource } from "./compiler-crates";
 
 const root = join(import.meta.dir, "..");
 
@@ -242,9 +242,10 @@ export async function harnessChangedSince(base: string): Promise<boolean> {
  * isn't the crate's Rust: the binary's, whose unit tests a mutation runs
  * (`--bin rust-js`), not another of the compiler's crates' (ADR 1181). */
 export function unitTestsModule(file: string): string | undefined {
-  if (!file.startsWith("src/") || !file.endsWith(".rs")) return undefined;
-  const path = file.slice("src/".length, -".rs".length).replace(/(?:^|\/)mod$/, "");
-  return path === "main" ? "" : path.split("/").join("::");
+  if (!isBinarySource(file) || !file.endsWith(".rs")) return undefined;
+  const binary = binaryCrate();
+  if (file === binary.rootFile) return "";
+  return file.slice(binary.src.length + 1, -".rs".length).replace(/(?:^|\/)mod$/, "").split("/").join("::");
 }
 
 /** The lines of `source`, the crate's `file`, that its unit tests are: a
@@ -405,9 +406,9 @@ export const crateFiles = [
   "Cargo.lock",
   "build.rs",
   "rust-toolchain.toml",
-  "src",
-  // The compiler's other crates, its workspace's (ADR 1181).
-  "crates",
+  // The compiler's crates (ADR 1181): the binary's sources and each other
+  // crate's directory, its manifest with its sources.
+  ...compilerCrates().map((crate) => (crate.dir === "" ? crate.src : crate.dir)),
   "std",
   "vendor",
   "test/vec-collect-ways.txt",

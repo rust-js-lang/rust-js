@@ -93,10 +93,17 @@ the full WASI build, minutes of rustc's front end, stays CI's `wasm` job.
 
 - A crate other than the binary builds and tests without rustc, on any
   target.
-- The test map's coverage build instruments the binary alone (`cargo
-  rustc --bin rust-js`), so a change to another crate's file selects every
-  test, as a file outside `src/` did, until the map records the crates'
-  functions too (the follow-up to M1, before M2 moves `js`).
+- The test map counts every crate's functions: its counting build runs
+  rustc through `scripts/counting-rustc.sh`, its `RUSTC_WRAPPER`, which
+  instruments a compile whose `--crate-name` is one of the compiler's
+  crates' (`RUST_JS_COUNTED_CRATES`, of compiler-crates.ts) and hands any
+  other, a dependency's or a build script's, to the machine's cache; a
+  counted crate's build is never cached, as a cache keyed on what it's told
+  would hand back one that counts nothing. Not Cargo's workspace wrapper,
+  which ADR 0414 keeps out of the checkout. The selector reads a crate's file by the map
+  where the map counted one of its functions (`select.ts`'s `counted`),
+  and selects everything of one it counted none of, a map made before
+  (amended after M1).
 - A mutation's unit tests are the binary's (`--bin rust-js`); another
   crate's run by a mutation is M2's, when `js`'s unit-tested mutations move.
 - Each move is pushed alone, byte-identical in the corpus, std and the
