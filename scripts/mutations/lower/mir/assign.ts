@@ -80,15 +80,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-arrows.test.ts", "-t", "a let of an Rc or a Box"],
   },
   {
-    name: "compiled-std-maker-callee-unseen",
-    breaks:
-      "a function given to std's compiled `scan`, of a state that's an object here, isn't given generic code's box of it, so `*pair = (..)` writes the box's `value`, `Cannot convert NaN to a BigInt` (ADR 0933)",
-    file: "src/lower/mir/assign.rs",
-    find: "            Some(_) if compiled_std(def_id) => Some((def_id, generic_args)),\n",
-    replace: "",
-    tests: ["test/iterator-forms.test.ts", "-t", "^scan_object_state with"],
-  },
-  {
     name: "place-ref-written-in-place",
     breaks:
       "`*r = p` of a `&mut` that's `v[i]`'s place is `$assign(v[i], p)`, the old object made `p`",
@@ -579,24 +570,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "hash-dictionary-hasher-unboxed",
-    breaks:
-      "a hasher given through a `T: Hash`'s dictionary isn't boxed, where its `Hasher`'s reads a box's `value`",
-    file: "src/lower/mir/assign.rs",
-    find: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash)\n                    || crate::lower::recognition::is_extend(self.tcx, trait_id))\n",
-    replace: "                    || false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
-  },
-  {
-    name: "extend-of-unknown-unboxed",
-    breaks:
-      "`a.extend(b)` of an `I::Item` that's an `IntoIterator` gives its dictionary `a`, where it reads a box",
-    file: "src/lower/mir/assign.rs",
-    find: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash)\n                    || crate::lower::recognition::is_extend(self.tcx, trait_id))\n                    && !matches!(",
-    replace: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash))\n                    && !matches!(",
-    tests: ["test/corpus.test.ts", "-t", "^nested_item_drops.rs$"],
-  },
-  {
     name: "nullable-result-undefined",
     breaks:
       "a `#[rust_js::nullable]` function's `None` it didn't make is `undefined`, which a JS caller's `!== null` takes for a value",
@@ -763,19 +736,6 @@ export const mutations: Mutation[] = [
       "            if !reached.is_empty() || !matches!(target.kind, js::ExprKind::Var(_)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^item_written_of_its_own_read.rs$"],
     snapshots: true,
-  },
-  {
-    name: "fixed-place-facts-dropped",
-    breaks:
-      "a place made once, a cell's taken, forgets what's known of it, so `claimed ?? null`",
-    file: "src/lower/mir/assign.rs",
-    find: "        Expr { facts, ..fixed }\n",
-    replace: "        Expr { facts: js::Facts::NONE, ..fixed }\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "a nullable field's value a variable holds",
-    ],
   },
   {
     name: "whole-cell-written-as-cell",
@@ -971,14 +931,6 @@ export const mutations: Mutation[] = [
     find: "                || of_held_items()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^move_closure_adapter_from_its_back.rs$"],
-  },
-  {
-    name: "compiled-impl-method-not-the-callee",
-    breaks: "a known `Chain`'s `read_until`, which std's compiled impl writes itself, is given the provided method's box of a `Self`, `$cellOf(c)`, where its body takes the object, and throws (#1156)",
-    file: "src/lower/mir/assign.rs",
-    find: "                    && instance.def_id() != def_id\n                    && compiled_std(instance.def_id())\n",
-    replace: "                    && instance.def_id() != def_id\n                    && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
   },
   {
     name: "pointer-deref-write-names-another",

@@ -855,3 +855,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 }
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A std function of its arguments' values, lowered once they're values
+    /// (`std_values`).
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::lower) fn std_by_values(
+        &mut self,
+        known: Std,
+        def_id: rustc_span::def_id::DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        (arg_tys, given): (&[Ty<'tcx>], crate::lower::calls::Given<'_>),
+        values: Vec<Expr>,
+        output: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let boxed = self.option_of(output).is_some_and(|inner| self.boxed_payload(inner));
+        let call = crate::lower::calls::Call::given((def_id, generic_args), arg_tys, given, span);
+        self.std_values(known, call, values, boxed, output, out)
+    }
+}

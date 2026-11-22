@@ -1146,6 +1146,7 @@ test("an arrow that passes on what it's given is passed_on's alone", () => {
   const asking = sources.filter((file) => file !== "src/lower/passed_on.rs" && /\bpassed_on\(/.test(read(file).replace(/fn passed_on\(/g, "")));
   expect(asking.sort()).toEqual([
     "src/lower.rs",
+    "src/lower/binding_calls.rs",
     "src/lower/display.rs",
     "src/lower/drops/uses.rs",
     "src/lower/items.rs",

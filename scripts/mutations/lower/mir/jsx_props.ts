@@ -3,23 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "mir-jsx-shapeless",
-    breaks:
-      "a JSX call from MIR has no THIR call for its shape: props in the struct's order",
-    file: "src/lower/mir/jsx_props.rs",
-    find: "        let call = crate::lower::body_queries::the_call_of_at(thir, def_id, fn_span)?;\n",
-    replace: "        let call = crate::lower::body_queries::the_call_of_at(thir, def_id, fn_span).filter(|_| false)?;\n",
-    tests: [
-      "test/jsx-children.test.ts",
-      "test/jsx-evaluation-order.test.ts",
-      "test/jsx-events.test.ts",
-      "test/jsx-props.test.ts",
-      "test/jsx-react-dev.test.ts",
-      "test/jsx-types.test.ts",
-      "test/jsx.test.ts",
-    ],
-  },
-  {
     name: "mir-written-base-unread-only",
     breaks:
       "a struct update reading one field of its base from MIR is each field, `{ title, level: props.level }`, dropping what JS's object held besides",

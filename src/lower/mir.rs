@@ -12,6 +12,7 @@
 //!
 //! The function's THIR is beside it, for its shape: names and spans.
 
+use crate::lower::held::fixed_place;
 use crate::lower::noted::Made;
 use crate::lower::temporary_names::{Base, Role};
 use rust_js_program::collections::{IndexMap, IndexSet};
@@ -844,21 +845,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.locals.mir.declaring = false;
         let declared = self.declare_repeated(made, out);
         out.splice(0..0, declared);
-    }
-
-    /// Keep `made`, a dictionary of a type known whole, of the body being
-    /// lowered from its MIR, as `name`, or `shared` where another type's is
-    /// the same: one it writes twice or more is declared once at its top
-    /// (`declare_repeated`, ADR 0979). None of another body.
-    pub(super) fn keep_dictionary(&mut self, made: &Expr, name: String, shared: String) {
-        if !self.locals.mir.declaring {
-            return;
-        }
-        match (self.locals.mir.dictionaries.iter_mut()).find(|(_, kept)| js::scopes::alpha_eq(kept, made)) {
-            Some((kept, _)) if *kept != name => *kept = shared,
-            Some(_) => {}
-            None => self.locals.mir.dictionaries.push((name, made.clone())),
-        }
     }
 
     /// `lowered_from_mir`'s, in the body it starts: of a closure, what's

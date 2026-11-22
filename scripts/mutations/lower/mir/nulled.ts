@@ -93,19 +93,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable parameter, a nullable thread-local"],
   },
   {
-    name: "nullable-result-not-nulled",
-    breaks:
-      "a nullable getter's result kept in a `let`, `prevTransition`, is written to a nullable setter `?? null`, as if it may be `undefined` (ADR 0841, amended)",
-    file: "src/lower/mir/nulled.rs",
-    find: "        crate::lower::calls::gives_null_for_none(self.tcx, def_id)\n            || (",
-    replace: "        false\n            || (",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "result is written to a nullable place",
-    ],
-  },
-  {
     name: "mir-nullable-field-coalesced",
     breaks:
       "a `#[rust_js::nullable]` field moved into another, `p.code`, is `p.code ?? null`",
@@ -283,14 +270,6 @@ export const mutations: Mutation[] = [
     find: "            !exit || self.none_trusted(state, &given)\n",
     replace: "            true\n",
     tests: ["test/corpus.test.ts", "-t", "nulled_return_of_a_pub_fn_given_on"],
-  },
-  {
-    name: "returns-nulled-unasked",
-    breaks: "a call of a function found to return `null` or a value isn't taken as giving so, so the nullable parameter it's given is tested `!= null` (rd632)",
-    file: "src/lower/mir/nulled.rs",
-    find: "                && (self.settled.nulled).returns_nulled(&mut self.nulled_seen.borrow_mut(), self.item, def_id))\n",
-    replace: "                && false)\n",
-    tests: rd632,
   },
   {
     name: "returns-own-param-nulled",

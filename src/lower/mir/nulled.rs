@@ -546,18 +546,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// Whether what a call of `def_id` gives is `null` or a value: a
-    /// `#[rust_js::nullable]` function's, a binding's too, its `None` `null`
-    /// (ADRs 0578, 0638), or one of the crate's, or a closure, that returns
-    /// so at each return (rd632, rd16): what an `and_then` of a closure
-    /// gives where what it's of is `None`, `null` (`calls::and_then_given`,
-    /// #2112 S4d).
-    pub(in crate::lower) fn returns_null_or_value(&self, def_id: rustc_span::def_id::DefId) -> bool {
-        crate::lower::calls::gives_null_for_none(self.tcx, def_id)
-            || (crate::lower::analysis::nulled_params::may_return_nulled(self.tcx, def_id)
-                && (self.settled.nulled).returns_nulled(&mut self.nulled_seen.borrow_mut(), self.item, def_id))
-    }
-
     /// The function or closure that `catch_unwind` calls whose result
     /// `local` is, written once: `catch_unwind(f)`'s `f`, in an
     /// `AssertUnwindSafe` or not (ADR 0660).

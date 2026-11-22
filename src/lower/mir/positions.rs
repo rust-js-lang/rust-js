@@ -140,31 +140,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// `f`, an `and_then`'s closure `FoundIndexes::through` says gives a
-    /// slice's `position`, `(e) => $position(DAYS, (d) => d === e)`: its
-    /// value JS's own search of the array, `(e) => DAYS.indexOf(e)`, whose
-    /// `-1` is its `None` (#2074).
-    pub(in crate::lower) fn found_index_closure(&self, f: Expr, span: Span) -> R<Expr> {
-        let js::ExprKind::Arrow(params, body) = f.kind else {
-            return Err(self.unsupported(span, "this `and_then`'s closure of a slice's `position`, from its MIR"));
-        };
-        let [
-            js::Stmt {
-                kind: StmtKind::Return(Some(value)),
-                span: at,
-                ..
-            },
-        ] = body.as_slice()
-        else {
-            return Err(self.unsupported(span, "this `and_then`'s closure of a slice's `position`, from its MIR"));
-        };
-        let searched = self.found_index(value.clone(), span)?;
-        Ok(Expr {
-            kind: js::ExprKind::Arrow(params, vec![StmtKind::Return(Some(searched)).at(*at)]),
-            ..f
-        })
-    }
-
     /// Whether `receiver`, a `&mut` an iterator's method is given, is to a
     /// slice's `iter()` made for it: written once, `&mut it`, of an `it` a
     /// slice's `iter()` writes and nothing else reads. The block of that
@@ -212,26 +187,5 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(items) => Ok(items.clone()),
             None => Err(self.unsupported(span, "this `iter()` of a slice a `position` searches, from its MIR")),
         }
-    }
-
-    /// `call`, `$position(it, f)` of a `position` `FoundIndexes::call`
-    /// says, as JS's own search of the array `it` is, lent, which its
-    /// `iter()` gave as it is (`found_index_items`): `items.indexOf(x)`
-    /// where `f` is `(c) => c === x`, else `items.findIndex(f)`.
-    pub(in crate::lower) fn found_index(&self, call: Expr, span: Span) -> R<Expr> {
-        let searched = match &call.kind {
-            js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$position") => match &args[..] {
-                [it, f] => Some((crate::lower::iterators::unlent(it).clone(), f.clone())),
-                _ => None,
-            },
-            _ => None,
-        };
-        let Some((items, f)) = searched else {
-            return Err(self.unsupported(span, "this `position` of a slice's items, from its MIR"));
-        };
-        Ok(match crate::lower::iterators::sought(&f) {
-            Some(x) => Expr::builtin(items, "indexOf", vec![x]),
-            None => Expr::call(Expr::member(items, "findIndex"), vec![f]),
-        })
     }
 }

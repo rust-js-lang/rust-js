@@ -20,6 +20,7 @@ use super::super::{FnCx, bindings};
 use crate::lower::recognition::StdItem;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::{self, Operand, Rvalue, StatementKind, TerminatorKind};
+use rustc_middle::mir::{Const, ConstOperand};
 use rustc_middle::ty::{self, Ty};
 
 /// A body's promoted constants, whose bodies a promoted reference reads.
@@ -541,3 +542,26 @@ fn ty_args<'tcx>(ty: Ty<'tcx>) -> ty::GenericArgsRef<'tcx> {
 }
 
 use crate::js;
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The static a constant points to the start of: `&LOG`, a promoted
+    /// `&STATIC`, `&raw mut COUNT`.
+    // helper: asked by `mir` and the base alike, the base's since #2299 moved it from `mir::operands`
+    pub(in crate::lower) fn const_static(&self, c: &ConstOperand<'tcx>) -> Option<rustc_span::def_id::DefId> {
+        let value = match c.const_ {
+            Const::Val(value, _) => value,
+            Const::Unevaluated(uv, _) if uv.promoted.is_some() => {
+                self.tcx.const_eval_resolve(self.typing_env, uv, c.span).ok()?
+            }
+            _ => return None,
+        };
+        let mir::ConstValue::Scalar(mir::interpret::Scalar::Ptr(ptr, _)) = value else {
+            return None;
+        };
+        let (provenance, offset) = ptr.into_raw_parts();
+        match self.tcx.global_alloc(provenance.alloc_id()) {
+            mir::interpret::GlobalAlloc::Static(def_id) if offset.bytes() == 0 => Some(def_id),
+            _ => None,
+        }
+    }
+}

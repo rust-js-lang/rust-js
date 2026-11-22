@@ -1,11 +1,12 @@
 //! A value MIR's lowering holds in a `const`, named by what reads it: a
 //! subject read more than once (`spill_subject`), one tidy reads in place
 //! (`held_in_place`), and the place a `dyn`'s pair is made of, fixed as it
-//! is there (`place_where_made`); and the name a value read in place knows
-//! its temporary is given (`held_name`). The base's since #2299 moved them
-//! from `mir::temporaries`, which, and the rest, ask them.
+//! is there (`place_where_made`), and a place read once fixed so where it's
+//! read more than once (`fixed_place_of`, `fixed_place`); and the name a
+//! value read in place knows its temporary is given (`held_name`). The
+//! base's since #2299 moved them from `mir`, which, and the rest, ask them.
 
-use crate::js::{self, Expr, Stmt};
+use crate::js::{self, Expr, Op, Stmt};
 use crate::lower::FnCx;
 use crate::lower::temporary_names::{Base, Role};
 
@@ -21,6 +22,29 @@ pub(in crate::lower) fn held_name(value: &Expr) -> Option<&js::Held> {
 /// `pullTwo` of `RangePull.pullTwo(..)` (`held_name`).
 pub(in crate::lower) fn held_names(value: &Expr) -> Vec<String> {
     held_name(value).into_iter().map(|held| held.name.clone()).collect()
+}
+
+// helper: asked by `mir` and the base alike, the base's since #2299 moved it from `mir::queries`
+pub(in crate::lower) fn fixed_place(place: &Expr) -> bool {
+    match &place.kind {
+        js::ExprKind::Var(_) => true,
+        js::ExprKind::Member(object, _) => fixed_place(object),
+        js::ExprKind::Index(object, index) => {
+            fixed_place(object)
+                && (index.is_constant() || matches!(index.kind, js::ExprKind::Var(_)) || from_end(object, index))
+        }
+        _ => false,
+    }
+}
+
+/// Whether `index` counts back from the end of `object`, `xs.length - 1`,
+/// a slice pattern's suffix: `object`'s length can't change while an item
+/// of it is borrowed.
+// helper: asked by `mir` and the base alike, the base's since #2299 moved it from `mir::queries`
+pub(in crate::lower) fn from_end(object: &Expr, index: &Expr) -> bool {
+    matches!(&index.kind, js::ExprKind::Binary(Op::Sub, length, back)
+        if back.is_constant()
+            && matches!(&length.kind, js::ExprKind::Member(of, field) if field == "length" && of.written_alike(object)))
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -115,5 +139,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// has one `Name` (#2035).
     pub(in crate::lower) fn module_name(&self, name: &js::Name) -> bool {
         self.module_names.contains(name.word()) // word: a module's item's name, till #2035
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `place`, a field or an item, fixed: what holds it named, where it
+    /// isn't fixed, an object that's the same however it's reached, and an
+    /// index that isn't a constant or a name named too.
+    pub(in crate::lower) fn fixed_place_of(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
+        let (span, facts) = (place.span, place.facts);
+        // What holds it, named, a temporary of MIR's lowering's, which tidy
+        // reads in place where it's read once.
+        let mut fixed = |e: Expr, name: Base<'_>, this: &mut Self| match fixed_place(&e) {
+            true => e,
+            false => this.held_in_place(name, e, out),
+        };
+        // The same place, what's known of it kept: a nullable field's read
+        // never `undefined` (ADR 0620, amended).
+        let fixed = match place.kind {
+            js::ExprKind::Member(object, field) => {
+                Expr::member(fixed(*object, Role::Item.into(), self), &field).or_at(span)
+            }
+            js::ExprKind::Index(object, index) => {
+                let object = fixed(*object, Role::Items.into(), self);
+                let index = match index.is_constant() || matches!(index.kind, js::ExprKind::Var(_)) {
+                    true => *index,
+                    false => self.spill(Role::At, *index, out),
+                };
+                Expr::index(object, index).or_at(span)
+            }
+            kind => return Expr { kind, ..place },
+        };
+        Expr { facts, ..fixed }
     }
 }

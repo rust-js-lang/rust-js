@@ -476,15 +476,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.closing_function(adapter, output, (f, function), span).map(Some)
     }
 
-    /// What `$holding(adapter, drop)`, `closing_function`'s, holds: its
-    /// adapter, of its own type (#851).
-    pub(in crate::lower) fn held_by_holding(e: &Expr) -> Option<&Expr> {
-        match &e.kind {
-            js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$holding") => args.first(),
-            _ => None,
-        }
-    }
-
     /// `adapter`, of type `ty`, which holds `f`, a function of type
     /// `function` with a destructor, closed to drop it: `$holding(adapter,
     /// () => drop(f))`, its source closed, then its function dropped, as
@@ -511,22 +502,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => crate::lower::iterators::made_knowing_its_length(holding),
             false => holding,
         })
-    }
-
-    /// Which argument of a std call of `def_id`, given `arg_tys`, is an
-    /// iterator it takes by value and drops as it's done: `Extend::extend`'s
-    /// items, `v.extend(it)`'s, or the receiver of an `Iterator` method that
-    /// consumes it, `unzip`'s or `partition`'s, where `mir_iter_method`
-    /// lowers none of it and a std combinator does. `None` of another, or of
-    /// one lent (#1120).
-    pub(in crate::lower) fn consumed_at(&self, def_id: DefId, arg_tys: &[Ty<'tcx>]) -> Option<usize> {
-        let tr = self.tcx.trait_of_assoc(def_id)?;
-        let at = match crate::lower::recognition::is_extend(self.tcx, tr) {
-            true => 1,
-            false if self.recognition().folds_what_it_consumes(def_id) => 0,
-            false => return None,
-        };
-        arg_tys.get(at).filter(|ty| !ty.is_ref()).map(|_| at)
     }
 
     /// A std call of `def_id`, `known`, that takes an iterator by value and
@@ -727,16 +702,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && receiver.is_some_and(crate::lower::iterators::made_in_place)
     }
 
-    /// Whether `value`, of `ty`, is std's compiled struct, a compiled std
-    /// iterator's (ADR 0561): not a `Rev`, an `Enumerate` or a `Map` made in
-    /// place, as its maker marked it (`made_in_place`, #730), which is what
-    /// the recognizers make of it, a JS iterator that closes as it ends (ADR
-    /// 0871).
-    pub(in crate::lower) fn compiled_struct(&self, ty: Ty<'tcx>, value: &Expr) -> bool {
-        crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
-            && !(crate::lower::recognition::is_held_compiled(self.tcx, ty)
-                && crate::lower::iterators::made_in_place(value))
-    }
     /// Whether an iterator taken by value, `items.fold(..)`'s, of a
     /// `receiver` with something to drop, is dropped after its method, as
     /// the method's end drops it and JS doesn't: consumed, `collect()`, then

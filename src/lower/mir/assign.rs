@@ -1124,56 +1124,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.held_cell(place)
     }
 
-    /// What a call of `def_id` given `generic_args` calls, whose parameters
-    /// say what it's given: a trait's method resolved to its impl's, or the
-    /// crate's trait's own, a dictionary's; `None` of a `dyn`'s, whose pair
-    /// is its `&mut`, and of std's (`boxed_args`). Each question of what a
-    /// call is given asks it, `lent_as_pointers` too (ADR 1114).
-    pub(in crate::lower) fn call_callee(
-        &self,
-        def_id: rustc_span::def_id::DefId,
-        generic_args: ty::GenericArgsRef<'tcx>,
-    ) -> R<Option<(rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>)>> {
-        // What's called: a trait's method resolved to its impl's, whose
-        // parameters say which are boxes, or the crate's trait's own, a
-        // dictionary's, and `Hash`'s with no impl here, a type only a
-        // caller knows (a known type's std impl is a std call, lowered or
-        // refused before), whose hasher is a `&mut H` of its own (ADR
-        // 0463), and `Extend`'s, whose
-        // `&mut Self` its dictionary takes in a box, an `I::Item`'s that's an
-        // `IntoIterator` too (ADR 0478); not a `dyn`'s, whose pair is its
-        // `&mut`, nor std's, but a provided method std's body is compiled
-        // of, `scan`'s, whose function it gives its state's box (ADR 0933);
-        // but where a std impl whose body is compiled writes the method
-        // itself, `Chain`'s `read_until`, that one, which takes its `&mut
-        // self` as its own body does, the object, not the provided method's
-        // box of a `Self` (#1156).
-        let compiled_std = |id| crate::lower::recognition::is_compiled_std(self.tcx, id);
-        Ok(match self.tcx.trait_of_assoc(def_id) {
-            None => Some((def_id, generic_args)),
-            Some(_)
-                if let Some(instance) = self.resolve_instance(def_id, generic_args)?
-                    && instance.def_id() != def_id
-                    && compiled_std(instance.def_id())
-                    && self.tcx.trait_of_assoc(instance.def_id()).is_none() =>
-            {
-                Some((instance.def_id(), instance.args))
-            }
-            Some(_) if compiled_std(def_id) => Some((def_id, generic_args)),
-            Some(trait_id) => match self.impl_method(def_id, generic_args)? {
-                Some(method) => Some(method),
-                None if (self.krate.foreign.compiled_by_rust_js(trait_id)
-                    || is_std_def(self.tcx, trait_id, StdItem::Hash)
-                    || crate::lower::recognition::is_extend(self.tcx, trait_id))
-                    && !matches!(generic_args.type_at(0).kind(), ty::Dynamic(..)) =>
-                {
-                    Some((def_id, generic_args))
-                }
-                None => None,
-            },
-        })
-    }
-
     /// A variable the program declares, refused: of what drops as JS can't drop
     /// it, or of a type JS can't hold. Not std's MIR put in the body,
     /// nor a JS iterator.
@@ -1243,38 +1193,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Ok(field) => Expr::member(object, field),
             Err(index) => Expr::index(object, index),
         })
-    }
-}
-
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// `place`, a field or an item, fixed: what holds it named, where it
-    /// isn't fixed, an object that's the same however it's reached, and an
-    /// index that isn't a constant or a name named too.
-    pub(in crate::lower) fn fixed_place_of(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
-        let (span, facts) = (place.span, place.facts);
-        // What holds it, named, a temporary of MIR's lowering's, which tidy
-        // reads in place where it's read once.
-        let mut fixed = |e: Expr, name: Base<'_>, this: &mut Self| match fixed_place(&e) {
-            true => e,
-            false => this.held_in_place(name, e, out),
-        };
-        // The same place, what's known of it kept: a nullable field's read
-        // never `undefined` (ADR 0620, amended).
-        let fixed = match place.kind {
-            js::ExprKind::Member(object, field) => {
-                Expr::member(fixed(*object, Role::Item.into(), self), &field).or_at(span)
-            }
-            js::ExprKind::Index(object, index) => {
-                let object = fixed(*object, Role::Items.into(), self);
-                let index = match index.is_constant() || matches!(index.kind, js::ExprKind::Var(_)) {
-                    true => *index,
-                    false => self.spill(Role::At, *index, out),
-                };
-                Expr::index(object, index).or_at(span)
-            }
-            kind => return Expr { kind, ..place },
-        };
-        Expr { facts, ..fixed }
     }
 }
 

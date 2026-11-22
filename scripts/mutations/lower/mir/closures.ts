@@ -343,13 +343,4 @@ export const mutations: Mutation[] = [
     replace: "        if let ty::Closure(_, args) = self.tcx.type_of(def_id).skip_binder().kind()\n            && written.is_empty()\n            && directives.is_empty()\n            && args.as_closure().sig().output().skip_binder().is_unit()\n            && let [\n                Stmt {\n                    kind: StmtKind::Expr(call),\n                    ..\n                },\n            ] = stmts.as_slice()\n            && let js::ExprKind::Call(callee, given) = &call.kind\n            && given.is_empty()\n            && let js::ExprKind::AsyncArrow(inner, spawned) = &callee.kind\n            && inner.is_empty()\n        {\n            return Ok(Expr::async_arrow(params, spawned.clone()));\n        }\n        self.place_written(written, &mut stmts);\n        stmts.splice(0..0, directives);\n        let made_at = span;\n",
     tests: ["test/lowering-async.test.ts", "-t", "only spawns an async block gives back undefined"],
   },
-  {
-    name: "closure-returned-callee-unknown",
-    breaks: "the call a closure gives back isn't known, so `and_then(|labels| labels.item(0))` of a binding that types its result `T | null` gives `null` where what it's of is `None`, not JS's `labels?.item(0)` (#2112 C S5)",
-    file: "src/lower/mir/closures.rs",
-    find: "        let mut at = mir::RETURN_PLACE;\n",
-    replace: "        let mut at = mir::RETURN_PLACE;\n        if !body.basic_blocks.is_empty() {\n            return None;\n        }\n",
-    tests: ["test/snapshots.test.ts", "-t", "^web_forms: the generated JS is its snapshot$"],
-    snapshots: true,
-  },
 ];

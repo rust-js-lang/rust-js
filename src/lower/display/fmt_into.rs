@@ -321,3 +321,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         )))
     }
 }
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The refusal of `what`, written by a writer that writes through a
+    /// sink a `write!` into a writer may arm, where its split isn't
+    /// followed yet (#1652).
+    pub(in crate::lower) fn refused_in_a_writer(&self, what: &str, span: Span) -> crate::lower::refusal::Refusal {
+        self.refused_piecewise(span, &format!("{what} in a writer shown into a writer by `write!`"))
+    }
+
+    /// The refusal of `what`, written into a writer, whose split into
+    /// pieces isn't followed yet: `what`, and why, std writes it a piece at
+    /// a time, naming #1652.
+    pub(in crate::lower) fn refused_piecewise(&self, span: Span, what: &str) -> crate::lower::refusal::Refusal {
+        crate::lower::refusal::refuse(
+            self.tcx,
+            span,
+            crate::lower::refusal::Refused::Because(
+                what,
+                "std writes it a piece at a time, each a call of the writer's, which isn't followed for it (#1652)",
+            ),
+        )
+    }
+}

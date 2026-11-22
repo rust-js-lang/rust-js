@@ -6,7 +6,9 @@
 //! 0863). Each offset is rustc's layout of the instance, for wasm32, never
 //! a number written here.
 
+use crate::js;
 use crate::js::{Expr, Stmt, StmtKind};
+use crate::lower::pointers::checked_item;
 use crate::lower::pointers::{Offset, raw_pointee};
 use crate::lower::recognition::{Lend, StdItem, is_std_crate, is_vec_like_def};
 use crate::lower::refusal::{Refused, refuse};
@@ -878,5 +880,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return None;
         }
         self.known_fact_of(receiver, crate::lower::recognition::TypeFact::LentOffset(lent))
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The handle on `place`, a field's or an item's, whatever its value
+    /// is, an object's too, which `pointer_to` gives as itself: where it's
+    /// stored, its container, key and offset, which `$stored` records of
+    /// what's there (#1113). `None` of a place that's no field or item.
+    pub(in crate::lower) fn stored_handle(&self, place: Expr, offset: Offset) -> Option<Expr> {
+        let (object, key) = match place.kind {
+            _ if let Some(args) = checked_item(&place) => (args[0].clone(), args[1].clone()),
+            js::ExprKind::Index(object, index) => (*object, *index),
+            js::ExprKind::Member(object, key) => (*object, Expr::str(key)),
+            _ => return None,
+        };
+        let mut args = vec![object, key];
+        if let Offset::At(offset) = offset {
+            args.push(Expr::int(i128::from(offset)));
+        }
+        Some(Expr::call(Expr::helper("$ptr"), args))
     }
 }

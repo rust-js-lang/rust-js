@@ -2,6 +2,7 @@
 //! what's dropped of what it isn't run on.
 
 use super::*;
+use rustc_middle::mir;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Each argument a std call `known` is given by value with a destructor,
@@ -246,5 +247,107 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.push(StmtKind::If(test, dropped, None).at(js_span));
         }
         Ok(())
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The function whose call the closure `def_id` gives back, MIR's:
+    /// its return place's one write a call's, `|i| try_hydrate_activity(fiber,
+    /// i)`'s, or a copy of one; `None` of anything else.
+    // helper: what a closure gives back the call of, `and_then_given`'s
+    pub(in crate::lower) fn closure_returned_callee(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+    ) -> Option<rustc_span::def_id::DefId> {
+        let body = &(self.krate.closures.get(&def_id)?.mir.as_ref())?.body;
+        let mut at = mir::RETURN_PLACE;
+        for _ in 0..4 {
+            let mut calls = (body.basic_blocks.iter()).filter_map(|data| match &data.terminator().kind {
+                mir::TerminatorKind::Call { func, destination, .. }
+                    if destination.local == at && destination.projection.is_empty() =>
+                {
+                    Some(func)
+                }
+                _ => None,
+            });
+            let mut assigns = (body.basic_blocks.iter())
+                .flat_map(|data| &data.statements)
+                .filter_map(|statement| match &statement.kind {
+                    mir::StatementKind::Assign(assign) if assign.0.local == at => Some(assign),
+                    _ => None,
+                });
+            match (calls.next(), calls.next(), assigns.next()) {
+                (Some(func), None, None) => return func.const_fn_def().map(|(callee, _)| callee),
+                (None, None, Some(assign))
+                    if assigns.next().is_none()
+                        && assign.0.projection.is_empty()
+                        && let mir::Rvalue::Use(mir::Operand::Copy(from) | mir::Operand::Move(from), _) = &assign.1
+                        && from.projection.is_empty() =>
+                {
+                    at = from.local;
+                }
+                _ => return None,
+            }
+        }
+        None
+    }
+
+    /// Whether what a call of `def_id` gives is `null` or a value: a
+    /// `#[rust_js::nullable]` function's, a binding's too, its `None` `null`
+    /// (ADRs 0578, 0638), or one of the crate's, or a closure, that returns
+    /// so at each return (rd632, rd16): what an `and_then` of a closure
+    /// gives where what it's of is `None`, `null` (`calls::and_then_given`,
+    /// #2112 S4d).
+    // helper: asked by `mir` and the base alike, the base's since #2299 moved it from `mir::nulled`
+    pub(in crate::lower) fn returns_null_or_value(&self, def_id: rustc_span::def_id::DefId) -> bool {
+        crate::lower::calls::gives_null_for_none(self.tcx, def_id)
+            || (crate::lower::analysis::nulled_params::may_return_nulled(self.tcx, def_id)
+                && (self.settled.nulled).returns_nulled(&mut self.nulled_seen.borrow_mut(), self.item, def_id))
+    }
+
+    /// `f`, an `and_then`'s closure `FoundIndexes::through` says gives a
+    /// slice's `position`, `(e) => $position(DAYS, (d) => d === e)`: its
+    /// value JS's own search of the array, `(e) => DAYS.indexOf(e)`, whose
+    /// `-1` is its `None` (#2074).
+    pub(in crate::lower) fn found_index_closure(&self, f: Expr, span: Span) -> R<Expr> {
+        let js::ExprKind::Arrow(params, body) = f.kind else {
+            return Err(self.unsupported(span, "this `and_then`'s closure of a slice's `position`, from its MIR"));
+        };
+        let [
+            js::Stmt {
+                kind: StmtKind::Return(Some(value)),
+                span: at,
+                ..
+            },
+        ] = body.as_slice()
+        else {
+            return Err(self.unsupported(span, "this `and_then`'s closure of a slice's `position`, from its MIR"));
+        };
+        let searched = self.found_index(value.clone(), span)?;
+        Ok(Expr {
+            kind: js::ExprKind::Arrow(params, vec![StmtKind::Return(Some(searched)).at(*at)]),
+            ..f
+        })
+    }
+
+    /// `call`, `$position(it, f)` of a `position` `FoundIndexes::call`
+    /// says, as JS's own search of the array `it` is, lent, which its
+    /// `iter()` gave as it is (`found_index_items`): `items.indexOf(x)`
+    /// where `f` is `(c) => c === x`, else `items.findIndex(f)`.
+    pub(in crate::lower) fn found_index(&self, call: Expr, span: Span) -> R<Expr> {
+        let searched = match &call.kind {
+            js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$position") => match &args[..] {
+                [it, f] => Some((crate::lower::iterators::unlent(it).clone(), f.clone())),
+                _ => None,
+            },
+            _ => None,
+        };
+        let Some((items, f)) = searched else {
+            return Err(self.unsupported(span, "this `position` of a slice's items, from its MIR"));
+        };
+        Ok(match crate::lower::iterators::sought(&f) {
+            Some(x) => Expr::builtin(items, "indexOf", vec![x]),
+            None => Expr::call(Expr::member(items, "findIndex"), vec![f]),
+        })
     }
 }

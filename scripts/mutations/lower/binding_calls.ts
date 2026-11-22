@@ -1150,4 +1150,154 @@ export const mutations: Mutation[] = [
     replace: "                || ((!arg.may_be_undefined() || false)\n",
     tests: ["test/none-given.test.ts"],
   },
+  {
+    name: "any-value-entries-nulled",
+    breaks:
+      "a map of any value's entries written where they're given write a `None` `null`, `new Map([[\"none\", null]])` (#443)",
+    file: "src/lower/binding_calls.rs",
+    find: "                    !self.boxed_payload(payload)\n                        && crate::lower::representation::none_form(\n                            self.tcx,\n                            crate::lower::representation::NonePlace::CollectionValue(payload),\n                        ) == crate::lower::representation::NoneForm::Null\n",
+    replace: "                    !self.boxed_payload(payload)\n",
+    tests: [
+      "test/js-collections.test.ts",
+      "-t",
+      "a Map of any value holds undefined as it is",
+    ],
+  },
+  {
+    name: "nullable-any-given-its-pair",
+    breaks:
+      "a `Some(&frames)` given to a binding's `#[rust_js::nullable]` `Option<&dyn Any>`, webapi's `animate`'s, is the pair that downcasts it, `{value, impl}`, not `frames` (rd170)",
+    file: "src/lower/binding_calls.rs",
+    find: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::never_if(nulled))\n",
+    replace: "                    .written(value, js::Undefined::never_if(nulled))\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^any_given_to_a_nullable_parameter.rs$",
+    ],
+  },
+  {
+    name: "nullable-param-some-coalesced",
+    breaks:
+      "what's `null` or a value already given to a binding's nullable parameter, a nullable function's result or a nullable field's read, is `value ?? null`, `JSON.stringify(items, chosen(all) ?? null, 0)`",
+    file: "src/lower/binding_calls.rs",
+    find: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::never_if(nulled))\n",
+    replace: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::ByForm)\n",
+    // A nullable function's result and a nullable field's read, `null` or a
+    // value already, given as they are; a `Some(..)`'s value is there by its
+    // own fact (#1932).
+    tests: ["test/lowering-nullable-binding-params.test.ts"],
+  },
+  {
+    name: "unit-given-binding-array",
+    breaks:
+      "a `()` given a binding as any value is its tuple's `[]`, never `===` anything: `x === []` of `js::strict_equals(x, ())` (ADR 0775)",
+    file: "src/lower/binding_calls.rs",
+    find: "                    .unwrap_or(value)\n            }\n",
+    replace:
+      "                    .unwrap_or(Expr::array(Vec::new()))\n            }\n",
+    tests: ["test/corpus.test.ts", "-t", "^unit_given_to_js.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "lazy-never-its-value",
+    breaks:
+      "`use_state(|| 0)` is `useState(() => 0)`, the closure, where it's `useState(0)`",
+    file: "src/lower/binding_calls.rs",
+    find: "            () if named(bindings::lazy_params(tcx, def_id)) => self.lazy_value(value, ty),\n",
+    replace:
+      "            () if named(bindings::lazy_params(tcx, def_id)) => value,\n",
+    tests: ["test/react.test.ts", "-t", "use_state's first state"],
+  },
+  {
+    name: "lazy-call-its-value",
+    breaks:
+      "`use_state(|| load().len())` is `useState(load().length)`, which calls `load` every render",
+    file: "src/lower/binding_calls.rs",
+    find: "                    ] if !given.has_effects() => given.clone(),\n",
+    replace: "                    ] => given.clone(),\n",
+    tests: ["test/react.test.ts", "-t", "use_state's first state"],
+  },
+  {
+    name: "lazy-item-never-its-value",
+    breaks: "`use_state(String::new)` is `useState(() => \"\")`, the arrow std writes, where it's `useState(\"\")` (#1494)",
+    file: "src/lower/binding_calls.rs",
+    find: "            ty::FnDef(def_id, args) =>",
+    replace: "            ty::FnDef(def_id, args) if false =>",
+    tests: ["test/react.test.ts", "-t", "what its function item gives"],
+  },
+  {
+    name: "lazy-function-its-value",
+    breaks:
+      "state that's a function, `use_state(|| |n| n + 1)`, is `useState((n) => ..)`, which React calls for the state",
+    file: "src/lower/binding_calls.rs",
+    find: "                if params.is_empty() && !self.is_callable(gives) && !self.is_unknown(gives) =>\n",
+    replace:
+      "                if params.is_empty() && !self.is_unknown(gives) =>\n",
+    tests: ["test/react.test.ts", "-t", "use_state's first state"],
+  },
+  {
+    name: "nullable-type-parameter-of-any",
+    breaks:
+      "a binding's nullable type parameter given an `Option` is given `undefined` for `None`, `createCursor(undefined)`, and any other value `?? null` (ADR 0586, amended)",
+    file: "src/lower/binding_calls.rs",
+    find: "            () if let Some(payload) = self.option_of(ty)\n",
+    replace: "            () if let Some(payload) = self.option_of(ty).xor(Some(ty))\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "nullable type parameter",
+    ],
+  },
+  {
+    name: "nullable-entries-undefined",
+    breaks:
+      'entries written where they\'re given of a map of `Option` values keep `undefined` for `None`, `new Map([["none", undefined]])`, which `get` reads as a key it lacks (ADR 0884, amended)',
+    file: "src/lower/binding_calls.rs",
+    find: "            () if crate::lower::representation::none_form(\n                tcx,\n                crate::lower::representation::NonePlace::BindingEntries(def_id, i),\n",
+    replace: "            () if false && crate::lower::representation::none_form(\n                tcx,\n                crate::lower::representation::NonePlace::BindingEntries(def_id, i),\n",
+    tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
+  },
+  {
+    name: "nullable-any-given-as-optional",
+    breaks: "a nullable parameter's `Option<&dyn Any>` is given as an optional one's, `?.value`, its `None` `undefined` (#1581)",
+    file: "src/lower/binding_calls.rs",
+    find: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::never_if(nulled))\n",
+    replace: "                    .written(self.any_given_to_js(value, ty, false), js::Undefined::never_if(nulled))\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^any_mapped_to_a_nullable_parameter.rs$"
+    ]
+  },
+  {
+    name: "any-none-made-null-unsaid",
+    breaks: "a nullable parameter's `Option<&dyn Any>`, made `null` for `None` already, is written `?? null` again, which would make a `Some` of what's `undefined` `null` (#1581)",
+    file: "src/lower/binding_calls.rs",
+    find: "                let nulled = nulled || self.any_none_made_null(ty);\n",
+    replace: "                let nulled = nulled;\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^any_mapped_to_a_nullable_parameter.rs$"
+    ],
+    snapshots: true
+  },
+  {
+    name: "mir-jsx-shapeless",
+    breaks:
+      "a JSX call from MIR has no THIR call for its shape: props in the struct's order",
+    file: "src/lower/binding_calls.rs",
+    find: "        let call = crate::lower::body_queries::the_call_of_at(thir, def_id, fn_span)?;\n",
+    replace: "        let call = crate::lower::body_queries::the_call_of_at(thir, def_id, fn_span).filter(|_| false)?;\n",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
+  },
 ];

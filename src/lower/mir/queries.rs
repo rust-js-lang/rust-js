@@ -2,6 +2,7 @@
 //! body alone.
 
 use super::*;
+use crate::lower::held::from_end;
 use rust_js_program::collections::IndexSet;
 
 mod reads;
@@ -938,27 +939,6 @@ pub(super) fn steady_place(place: &Expr) -> bool {
         js::ExprKind::Call(..) => crate::lower::std_types::option::some_value_of(place).is_some_and(steady_place),
         _ => false,
     }
-}
-
-pub(super) fn fixed_place(place: &Expr) -> bool {
-    match &place.kind {
-        js::ExprKind::Var(_) => true,
-        js::ExprKind::Member(object, _) => fixed_place(object),
-        js::ExprKind::Index(object, index) => {
-            fixed_place(object)
-                && (index.is_constant() || matches!(index.kind, js::ExprKind::Var(_)) || from_end(object, index))
-        }
-        _ => false,
-    }
-}
-
-/// Whether `index` counts back from the end of `object`, `xs.length - 1`,
-/// a slice pattern's suffix: `object`'s length can't change while an item
-/// of it is borrowed.
-fn from_end(object: &Expr, index: &Expr) -> bool {
-    matches!(&index.kind, js::ExprKind::Binary(Op::Sub, length, back)
-        if back.is_constant()
-            && matches!(&length.kind, js::ExprKind::Member(of, field) if field == "length" && of.written_alike(object)))
 }
 
 /// Whether a closure's `body` writes what it captured `i`th: assigns it,

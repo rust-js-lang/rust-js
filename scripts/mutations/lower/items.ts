@@ -525,4 +525,39 @@ export const mutations: Mutation[] = [
     replace: "                    super::traits::Declared::Own(owner, _) => self.krate.given.unboxed.contains(&(owner, index)),\n",
     tests: ["test/corpus.test.ts", "-t", "^default_copied_reads_its_own_params.rs$"],
   },
+  {
+    name: "compiled-std-maker-callee-unseen",
+    breaks:
+      "a function given to std's compiled `scan`, of a state that's an object here, isn't given generic code's box of it, so `*pair = (..)` writes the box's `value`, `Cannot convert NaN to a BigInt` (ADR 0933)",
+    file: "src/lower/items.rs",
+    find: "            Some(_) if compiled_std(def_id) => Some((def_id, generic_args)),\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^scan_object_state with"],
+  },
+  {
+    name: "hash-dictionary-hasher-unboxed",
+    breaks:
+      "a hasher given through a `T: Hash`'s dictionary isn't boxed, where its `Hasher`'s reads a box's `value`",
+    file: "src/lower/items.rs",
+    find: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash)\n                    || crate::lower::recognition::is_extend(self.tcx, trait_id))\n",
+    replace: "                    || false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
+  },
+  {
+    name: "extend-of-unknown-unboxed",
+    breaks:
+      "`a.extend(b)` of an `I::Item` that's an `IntoIterator` gives its dictionary `a`, where it reads a box",
+    file: "src/lower/items.rs",
+    find: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash)\n                    || crate::lower::recognition::is_extend(self.tcx, trait_id))\n                    && !matches!(",
+    replace: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash))\n                    && !matches!(",
+    tests: ["test/corpus.test.ts", "-t", "^nested_item_drops.rs$"],
+  },
+  {
+    name: "compiled-impl-method-not-the-callee",
+    breaks: "a known `Chain`'s `read_until`, which std's compiled impl writes itself, is given the provided method's box of a `Self`, `$cellOf(c)`, where its body takes the object, and throws (#1156)",
+    file: "src/lower/items.rs",
+    find: "                    && instance.def_id() != def_id\n                    && compiled_std(instance.def_id())\n",
+    replace: "                    && instance.def_id() != def_id\n                    && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
+  },
 ];

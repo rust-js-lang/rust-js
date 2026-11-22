@@ -1,6 +1,8 @@
 // Mutations of src/lower/combinators/callbacks.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
+const rd632 = ["test/lowering-nullable-reads.test.ts", "-t", "returns null or a value"];
+
 export const mutations: Mutation[] = [
   {
     name: "unrun-function-undropped",
@@ -178,5 +180,45 @@ export const mutations: Mutation[] = [
     find: "            self.boxed_function_kind(tys[at])\n",
     replace: "            crate::lower::recognition::function_kind(self.tcx, callee, *inputs.get(at)?)\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_fn_through_a_call_drops.rs$"],
+  },
+  {
+    name: "closure-returned-callee-unknown",
+    breaks: "the call a closure gives back isn't known, so `and_then(|labels| labels.item(0))` of a binding that types its result `T | null` gives `null` where what it's of is `None`, not JS's `labels?.item(0)` (#2112 C S5)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "        let mut at = mir::RETURN_PLACE;\n",
+    replace: "        let mut at = mir::RETURN_PLACE;\n        if !body.basic_blocks.is_empty() {\n            return None;\n        }\n",
+    tests: ["test/snapshots.test.ts", "-t", "^web_forms: the generated JS is its snapshot$"],
+    snapshots: true,
+  },
+  {
+    name: "nullable-result-not-nulled",
+    breaks:
+      "a nullable getter's result kept in a `let`, `prevTransition`, is written to a nullable setter `?? null`, as if it may be `undefined` (ADR 0841, amended)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "        crate::lower::calls::gives_null_for_none(self.tcx, def_id)\n            || (",
+    replace: "        false\n            || (",
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "result is written to a nullable place",
+    ],
+  },
+  {
+    name: "returns-nulled-unasked",
+    breaks: "a call of a function found to return `null` or a value isn't taken as giving so, so the nullable parameter it's given is tested `!= null` (rd632)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "                && (self.settled.nulled).returns_nulled(&mut self.nulled_seen.borrow_mut(), self.item, def_id))\n",
+    replace: "                && false)\n",
+    tests: rd632,
+  },
+  {
+    name: "found-index-never-index-of",
+    breaks:
+      "a `position` by `===` is `children.findIndex((c) => c === child)`, not `children.indexOf(child)` as a person writes it",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "            Some(x) => Expr::builtin(items, \"indexOf\", vec![x]),\n",
+    replace: "            Some(_) => Expr::call(Expr::member(items, \"findIndex\"), vec![f]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^position_index_of.rs$"],
+    snapshots: true,
   },
 ];

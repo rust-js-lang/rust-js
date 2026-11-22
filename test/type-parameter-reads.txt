@@ -28,7 +28,7 @@ src/lower/analysis/type_facts/collects.rs	1
 src/lower/analysis/type_facts/relay.rs	1
 src/lower/analysis/unwinding.rs	7
 src/lower/analysis/validation.rs	2
-src/lower/binding_calls.rs	1
+src/lower/binding_calls.rs	2
 src/lower/bindings/flattened.rs	2
 src/lower/bindings/nullable.rs	6
 src/lower/bindings/rest_values.rs	1
@@ -60,7 +60,6 @@ src/lower/iterators/stepping.rs	9
 src/lower/lent.rs	1
 src/lower/library/built_types.rs	1
 src/lower/mir/assign.rs	1
-src/lower/mir/calls.rs	1
 src/lower/mir/entries.rs	1
 src/lower/mir/iter.rs	2
 src/lower/iterators/mir_steps/backs.rs	3

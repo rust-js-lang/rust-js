@@ -35,47 +35,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// variable may change after. Of its type `ty` as this body makes it, in
     /// this body's terms: one std's MIR inlines, `map_fold`'s in `Map`'s
     /// `fold`, holds `F` and `G` of the `fold`, not of `map_fold`.
-    /// The function whose call the closure `def_id` gives back, MIR's:
-    /// its return place's one write a call's, `|i| try_hydrate_activity(fiber,
-    /// i)`'s, or a copy of one; `None` of anything else.
-    // helper: what a closure gives back the call of, `and_then_given`'s
-    pub(in crate::lower) fn closure_returned_callee(
-        &self,
-        def_id: rustc_span::def_id::DefId,
-    ) -> Option<rustc_span::def_id::DefId> {
-        let body = &(self.krate.closures.get(&def_id)?.mir.as_ref())?.body;
-        let mut at = mir::RETURN_PLACE;
-        for _ in 0..4 {
-            let mut calls = (body.basic_blocks.iter()).filter_map(|data| match &data.terminator().kind {
-                mir::TerminatorKind::Call { func, destination, .. }
-                    if destination.local == at && destination.projection.is_empty() =>
-                {
-                    Some(func)
-                }
-                _ => None,
-            });
-            let mut assigns = (body.basic_blocks.iter())
-                .flat_map(|data| &data.statements)
-                .filter_map(|statement| match &statement.kind {
-                    mir::StatementKind::Assign(assign) if assign.0.local == at => Some(assign),
-                    _ => None,
-                });
-            match (calls.next(), calls.next(), assigns.next()) {
-                (Some(func), None, None) => return func.const_fn_def().map(|(callee, _)| callee),
-                (None, None, Some(assign))
-                    if assigns.next().is_none()
-                        && assign.0.projection.is_empty()
-                        && let mir::Rvalue::Use(mir::Operand::Copy(from) | mir::Operand::Move(from), _) = &assign.1
-                        && from.projection.is_empty() =>
-                {
-                    at = from.local;
-                }
-                _ => return None,
-            }
-        }
-        None
-    }
-
     pub(super) fn mir_closure(
         &mut self,
         state: &mut State<'_, 'tcx>,

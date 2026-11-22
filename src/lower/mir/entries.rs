@@ -433,32 +433,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// Whether std's `clone_from` of `ty` is its value's, an `Option`'s, a
-    /// `Result`'s, a `Box`'s or a `Reverse`'s, where that value's is the
-    /// crate's own or one std writes in place (`clone_into`), which
-    /// `*dest = source.clone()` isn't (#922), or may be, a type only a
-    /// caller knows (#928).
-    pub(in crate::lower) fn forwards_clone_from(&mut self, ty: Ty<'tcx>, span: Span) -> R<bool> {
-        let ty::Adt(_, args) = ty.kind() else { return Ok(false) };
-        let forwards = ty.is_box()
-            || self.option_of(ty).is_some()
-            || self.is_std_type(ty, crate::lower::recognition::StdItem::Result)
-            || self.is_reverse(ty);
-        if !forwards {
-            return Ok(false);
-        }
-        for value in args.types() {
-            if self.recognition().own_clone_from(value)
-                || self.clone_given(value)
-                || self.clone_into(value, span)?.is_some()
-                || self.forwards_clone_from(value, span)?
-            {
-                return Ok(true);
-            }
-        }
-        Ok(false)
-    }
-
     /// `*dest = source.clone()`, std's provided `clone_from`: a clone of
     /// `source` written through `dest` as `mem::replace` writes, then what it
     /// held dropped (ADR 0147).

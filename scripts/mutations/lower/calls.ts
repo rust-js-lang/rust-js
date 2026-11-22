@@ -311,4 +311,124 @@ export const mutations: Mutation[] = [
     replace: "js::ExprKind::Var(_));\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_applied_into_its_callbacks\\.rs$"],
   },
+  {
+    name: "class-constructor-called",
+    breaks:
+      "a class's `Component::new(..)` is `Component(..)`, called, not constructed, so its `this` is `undefined` (ADR 0761)",
+    file: "src/lower/calls.rs",
+    find: "                    _ => Expr::new_(*class, args),\n",
+    replace: "                    _ => Expr::call(*class, args),\n",
+    tests: [
+      "test/classes.test.ts",
+      "-t",
+      "React's Component is a constructor function",
+    ],
+  },
+  {
+    name: "class-method-called-as-a-function",
+    breaks:
+      "a class's `component.force_update(..)` is `Component.forceUpdate(component, ..)`, of a method the constructor doesn't have (ADR 0761)",
+    file: "src/lower/calls.rs",
+    find: "            (Some(crate::lower::classes::Member::Method), js::ExprKind::Member(_, name)) if !args.is_empty() => {\n",
+    replace:
+      "            (Some(crate::lower::classes::Member::Method), js::ExprKind::Member(_, name)) if false => {\n",
+    tests: [
+      "test/classes.test.ts",
+      "-t",
+      "React's Component is a constructor function",
+    ],
+  },
+  {
+    name: "getter-called",
+    breaks:
+      "a class's getter's Rust call is a call, `a.leftDiagonal()` of a property that's its value (#357)",
+    file: "src/lower/calls.rs",
+    find: "            (Some(crate::lower::classes::Member::Getter), js::ExprKind::Member(_, name)) if args.len() == 1 => {\n",
+    replace:
+      "            (Some(crate::lower::classes::Member::Getter), js::ExprKind::Member(_, name)) if false => {\n",
+    tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
+  },
+  {
+    name: "object-method-called-as-a-function",
+    breaks:
+      "a call of an object's method is a call of its module's function, `containsNode(scope, fiber)`, whose `this` is then nothing (ADR 0943)",
+    file: "src/lower/calls.rs",
+    find: "            (Some(crate::lower::classes::Member::Own), _) if !args.is_empty() => {\n",
+    replace:
+      "            (Some(crate::lower::classes::Member::Own), _) if false => {\n",
+    tests: [
+      "test/classes.test.ts",
+      "-t",
+      "an object's methods are its literal's own",
+    ],
+  },
+  {
+    name: "forwarded-called-in-its-module-by-its-name",
+    breaks:
+      "a namespace's own module calls its method that's another module's function by the method's name, which that module re-exports but doesn't declare (rd292b)",
+    file: "src/lower/calls.rs",
+    find: "            Some(&target) if module_of(def_id) == Some(self.module) || module_of(target) == module_of(def_id) => target,\n",
+    replace: "            Some(&target) if module_of(target) == module_of(def_id) => target,\n",
+    tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
+  },
+  {
+    name: "namespace-fn-shim-by-name",
+    breaks:
+      "a namespace's method as a `fn`, whose `self` is its parameter, calls the module's own function, `(a, b) => updateContainer(a, b)`, not `a.updateContainer(b)` (ADR 1037)",
+    file: "src/lower/calls.rs",
+    find: "            let (by_name, flattened) = receiver_named.unwrap_or((false, false));\n",
+    replace: "            let (by_name, flattened) = receiver_named.unwrap_or((true, false));\n",
+    tests: ["test/namespaces.test.ts", "-t", "a namespace's methods are its module's functions"],
+  },
+  {
+    name: "namespace-value-called-by-name",
+    breaks:
+      "a namespace's method called through a value JS gives, another instance of the module, calls the module's own function, `createContainer(4)` (ADR 1037)",
+    file: "src/lower/calls.rs",
+    find: "            if !by_name {\n",
+    replace: "            if false {\n",
+    tests: ["test/namespaces.test.ts", "-t", "a namespace's methods are its module's functions"],
+  },
+  {
+    name: "flattened-state-given-whole",
+    breaks: "`new` of a class whose constructor takes its flattened state's keys is given the state's object, `new ReactPromise({ status })`, the keys shifted (rd380)",
+    file: "src/lower/calls.rs",
+    find: "                        crate::lower::classes::new_of_state(*class, args, (at, &keys), &own)\n",
+    replace: "                        Expr::new_(*class, args)\n",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
+  },
+  {
+    name: "getter-read-moved",
+    breaks: "a class's getter's read is taken for a field's, moved past a call after it, so its body's `println!` comes after that call's (rd679)",
+    file: "src/lower/calls.rs",
+    find: "                Expr::member(args.remove(0), name).answered_by_a_getter()\n",
+    replace: "                Expr::member(args.remove(0), name)\n",
+    tests: ["test/corpus.test.ts", "-t", "^class_getters.rs$"],
+  },
+  {
+    name: "namespace-through-this-read",
+    breaks:
+      "a namespace's method through a value is taken for one that may read its `this`, so the noop Flight client's thread-local stays `NOOP.createContainer(..)`, not taken apart (#561)",
+    file: "src/lower/calls.rs",
+    find: "                    facts: js::Facts::of(js::Known::ThisUnread).with(js::Known::NamespaceMethod),\n                    ..Expr::call(\n                        Expr::member(receiver,",
+    replace: "                    facts: js::Facts::NONE,\n                    ..Expr::call(\n                        Expr::member(receiver,",
+    tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
+  },
+  {
+    name: "namespace-method-unmarked",
+    breaks: "a namespace's method through a value isn't marked one, so a thread-local of a namespace read only for its methods keeps its member calls (#561, #584)",
+    file: "src/lower/calls.rs",
+    find: "                    facts: js::Facts::of(js::Known::ThisUnread).with(js::Known::NamespaceMethod),\n",
+    replace: "                    facts: js::Facts::of(js::Known::ThisUnread),\n",
+    tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
+  },
+  {
+    name: "own-module-forwarded-call-own",
+    breaks:
+      "a call by name of a namespace's method that's its own module's function, in another module, imports the method's name, `close`, beside the function's alias, `closeFlight` (#566)",
+    file: "src/lower/calls.rs",
+    find: "            Some(&target) if module_of(def_id) == Some(self.module) || module_of(target) == module_of(def_id) => target,\n",
+    replace: "            Some(&target) if module_of(def_id) == Some(self.module) => target,\n",
+    tests: ["test/method-forwarding.test.ts", "-t", "a namespace's method that only passes its parameters on to its module's function"],
+  },
 ];

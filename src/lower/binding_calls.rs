@@ -7,7 +7,10 @@ use super::recognition::StdItem;
 use super::{FnCx, R};
 use crate::js;
 use crate::js::{Expr, Name, Op, StmtKind, UnaryOp};
+use crate::lower::bindings;
 use crate::lower::temporary_names::{Base, Role};
+use rustc_middle::thir;
+use rustc_middle::ty::Ty;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -1133,5 +1136,182 @@ fn static_member<'tcx>(tcx: TyCtxt<'tcx>, generic_args: ty::GenericArgsRef<'tcx>
         }
         JsForm::New(name) if !name.contains('#') => Some((f, None)),
         _ => None,
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What binding `def_id` is given as its `i`th argument, `value` of
+    /// `ty`, as JS takes it: of its call and of its arrow as a value alike
+    /// (ADR 0604); `nulled` where it's an `Option` `null` or a value
+    /// already, a `Some(..)` (`nulled`'s).
+    pub(in crate::lower) fn binding_arg(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+        (i, nulled): (usize, bool),
+        value: Expr,
+        ty: Ty<'tcx>,
+    ) -> Expr {
+        let tcx = self.tcx;
+        let named = |names: Vec<rustc_span::Symbol>| {
+            (tcx.fn_arg_idents(def_id).get(i).copied().flatten()).is_some_and(|ident| names.contains(&ident.name))
+        };
+        let given = match () {
+            // A `()` is `undefined`, given as it is, or a list of none,
+            // `[]`, where it's a list's (ADR 0775).
+            () if ty.is_unit() => {
+                crate::lower::representation::unit_given(tcx, crate::lower::representation::UnitTo::Param(def_id, i))
+                    .unwrap_or(value)
+            }
+            // A parameter it names `#[rust_js::nullable(..)]`: its
+            // `None` is `null`, and a `Some(..)` its value (ADR 0275); of a
+            // type parameter, where it's given an `Option` (ADR 0586,
+            // amended); a `Some` of a `&dyn Any` its value, as below (rd170).
+            () if let Some(payload) = self.option_of(ty)
+                && let form = crate::lower::representation::none_form(
+                    tcx,
+                    crate::lower::representation::NonePlace::BindingArg(def_id, i, Some(payload)),
+                )
+                && form == crate::lower::representation::NoneForm::Null =>
+            {
+                let nulled = nulled || self.any_none_made_null(ty);
+                form.storage()
+                    .written(self.any_given_to_js(value, ty, true), js::Undefined::never_if(nulled))
+            }
+            // Entries written where they're given of such a value, an
+            // `Option` of what never looks like `None`: each `null` for
+            // `None`, `new Map([[key, null]])`, as `set` writes it (ADR
+            // 0884, amended); `bindings::reject_nullable_held` refuses
+            // entries made before.
+            () if crate::lower::representation::none_form(
+                tcx,
+                crate::lower::representation::NonePlace::BindingEntries(def_id, i),
+            ) == crate::lower::representation::NoneForm::Null
+                && self.entries_of_options(ty) =>
+            {
+                self.nulled_entries(self.any_given_to_js(value, ty, true))
+            }
+            // A parameter it names `#[rust_js::lazy(..)]`, a function JS
+            // calls once for the value: a closure whose body does nothing
+            // and gives no function is its value, `useState(0)` (ADR 0593).
+            () if named(bindings::lazy_params(tcx, def_id)) => self.lazy_value(value, ty),
+            // A `&dyn Any` given to JS is its value (ADR 0331).
+            () => self.any_given_to_js(value, ty, false),
+        };
+        // A callback JS calls once that only passes on what it's given is
+        // the function it passes on to, `p.then(ping)` (ADR 0262's
+        // exception).
+        match crate::lower::passed_on::Taker::parameter(tcx, def_id, i) {
+            Some(taker) => crate::lower::passed_on::passed_on(&given, taker, self.forwarding()).unwrap_or(given),
+            None => given,
+        }
+    }
+
+    /// Whether `ty`, entries given a binding, holds pairs whose value is an
+    /// `Option` of what never looks like `None`.
+    fn entries_of_options(&self, ty: Ty<'tcx>) -> bool {
+        ty.walk().any(|part| {
+            part.as_type().is_some_and(|t| match t.kind() {
+                ty::Tuple(items) if items.len() == 2 => self.option_of(items[1]).is_some_and(|payload| {
+                    !self.boxed_payload(payload)
+                        && crate::lower::representation::none_form(
+                            self.tcx,
+                            crate::lower::representation::NonePlace::CollectionValue(payload),
+                        ) == crate::lower::representation::NoneForm::Null
+                }),
+                _ => false,
+            })
+        })
+    }
+
+    /// Entries written where they're given, `[[key, value], ..]`, each
+    /// value `null` for `None`; `undefined`, of none, as it is. Any other
+    /// is refused before (`bindings::reject_nullable_held`).
+    fn nulled_entries(&self, entries: Expr) -> Expr {
+        match entries.kind {
+            js::ExprKind::Array(items, layout) => {
+                let items = (items.into_iter())
+                    .map(|item| match item.kind {
+                        js::ExprKind::Array(mut pair, pair_layout) if pair.len() == 2 => {
+                            let value = pair.pop().expect("a pair's value");
+                            pair.push(
+                                crate::lower::representation::NoneForm::Null
+                                    .storage()
+                                    .written(value, js::Undefined::ByForm),
+                            );
+                            Expr {
+                                kind: js::ExprKind::Array(pair, pair_layout),
+                                ..item
+                            }
+                        }
+                        kind => Expr { kind, ..item },
+                    })
+                    .collect();
+                Expr {
+                    kind: js::ExprKind::Array(items, layout),
+                    ..entries
+                }
+            }
+            js::ExprKind::Undefined => entries,
+            _ => {
+                self.tcx.dcx().err("rust-js: entries of `Option` values, which a collection holds as `null`, not written where they're given (ADR 0884, amended)");
+                entries
+            }
+        }
+    }
+
+    /// A lazy parameter's argument (`bindings::lazy_params`): `() => 0` is
+    /// `0`, its body's value, where its body does nothing and what it gives
+    /// isn't a function, which JS would call for the value in its place:
+    /// `useState([])` too, as React's docs write it. Of a closure or a
+    /// function item std's lowering writes as an arrow, `String::new` as
+    /// `() => ""` (#1494).
+    fn lazy_value(&self, value: Expr, ty: Ty<'tcx>) -> Expr {
+        let gives = match ty.kind() {
+            ty::Closure(_, args) => args.as_closure().sig().output().skip_binder(),
+            ty::FnDef(def_id, args) => {
+                // Its late-bound lifetimes erased, as `traits::erased_sig`'s.
+                let args = args.skip_binder();
+                let sig = self
+                    .tcx
+                    .fn_sig(*def_id)
+                    .instantiate(self.tcx, args)
+                    .skip_normalization();
+                self.tcx.instantiate_bound_regions_with_erased(sig).output()
+            }
+            _ => return value,
+        };
+        match &value.kind {
+            js::ExprKind::Arrow(params, body)
+                if params.is_empty() && !self.is_callable(gives) && !self.is_unknown(gives) =>
+            {
+                match body.as_slice() {
+                    [
+                        js::Stmt {
+                            kind: StmtKind::Return(Some(given)),
+                            ..
+                        },
+                    ] if !given.has_effects() => given.clone(),
+                    _ => value,
+                }
+            }
+            _ => value,
+        }
+    }
+
+    /// THIR's call of `def_id` at `fn_span`, MIR's call there, where it's
+    /// the one (`span_join::the_call_of_at`): its function and its
+    /// arguments.
+    // helper: span_join's `the_call_of_at`, taken apart (#2175)
+    pub(in crate::lower) fn thir_call(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+        fn_span: Span,
+    ) -> Option<(thir::ExprId, Vec<thir::ExprId>)> {
+        let thir = self.frame.thir;
+        let call = crate::lower::body_queries::the_call_of_at(thir, def_id, fn_span)?;
+        match &thir[call].kind {
+            thir::ExprKind::Call { fun, args, .. } => Some((*fun, args.to_vec())),
+            _ => None,
+        }
     }
 }

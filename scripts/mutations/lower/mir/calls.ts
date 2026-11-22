@@ -22,32 +22,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-inside.test.ts", "-t", "a comment before a dyn Fn call's argument is before it"],
   },
   {
-    name: "any-value-entries-nulled",
-    breaks:
-      "a map of any value's entries written where they're given write a `None` `null`, `new Map([[\"none\", null]])` (#443)",
-    file: "src/lower/mir/calls.rs",
-    find: "                    !self.boxed_payload(payload)\n                        && crate::lower::representation::none_form(\n                            self.tcx,\n                            crate::lower::representation::NonePlace::CollectionValue(payload),\n                        ) == crate::lower::representation::NoneForm::Null\n",
-    replace: "                    !self.boxed_payload(payload)\n",
-    tests: [
-      "test/js-collections.test.ts",
-      "-t",
-      "a Map of any value holds undefined as it is",
-    ],
-  },
-  {
-    name: "nullable-any-given-its-pair",
-    breaks:
-      "a `Some(&frames)` given to a binding's `#[rust_js::nullable]` `Option<&dyn Any>`, webapi's `animate`'s, is the pair that downcasts it, `{value, impl}`, not `frames` (rd170)",
-    file: "src/lower/mir/calls.rs",
-    find: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::never_if(nulled))\n",
-    replace: "                    .written(value, js::Undefined::never_if(nulled))\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^any_given_to_a_nullable_parameter.rs$",
-    ],
-  },
-  {
     name: "bool-assign-by-ref-refused",
     breaks:
       "a `bool`'s `op=` given a `&bool` from MIR, `*s ^= c`, is refused (#319)",
@@ -56,33 +30,6 @@ export const mutations: Mutation[] = [
     replace:
       "            } else if crate::lower::recognition::has_number_arithmetic(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^bool_ops_by_ref.rs$"],
-  },
-  {
-    name: "class-constructor-called",
-    breaks:
-      "a class's `Component::new(..)` is `Component(..)`, called, not constructed, so its `this` is `undefined` (ADR 0761)",
-    file: "src/lower/mir/calls.rs",
-    find: "                    _ => Expr::new_(*class, args),\n",
-    replace: "                    _ => Expr::call(*class, args),\n",
-    tests: [
-      "test/classes.test.ts",
-      "-t",
-      "React's Component is a constructor function",
-    ],
-  },
-  {
-    name: "class-method-called-as-a-function",
-    breaks:
-      "a class's `component.force_update(..)` is `Component.forceUpdate(component, ..)`, of a method the constructor doesn't have (ADR 0761)",
-    file: "src/lower/mir/calls.rs",
-    find: "            (Some(crate::lower::classes::Member::Method), js::ExprKind::Member(_, name)) if !args.is_empty() => {\n",
-    replace:
-      "            (Some(crate::lower::classes::Member::Method), js::ExprKind::Member(_, name)) if false => {\n",
-    tests: [
-      "test/classes.test.ts",
-      "-t",
-      "React's Component is a constructor function",
-    ],
   },
   {
     name: "held-call-named-at-call",
@@ -130,18 +77,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "generic_trait_methods"],
   },
   {
-    name: "nullable-param-some-coalesced",
-    breaks:
-      "what's `null` or a value already given to a binding's nullable parameter, a nullable function's result or a nullable field's read, is `value ?? null`, `JSON.stringify(items, chosen(all) ?? null, 0)`",
-    file: "src/lower/mir/calls.rs",
-    find: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::never_if(nulled))\n",
-    replace: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::ByForm)\n",
-    // A nullable function's result and a nullable field's read, `null` or a
-    // value already, given as they are; a `Some(..)`'s value is there by its
-    // own fact (#1932).
-    tests: ["test/lowering-nullable-binding-params.test.ts"],
-  },
-  {
     name: "mir-assign-shift-amount-bigint",
     breaks: "`c <<= &3i64` of a `u32` shifts a number by a BigInt",
     file: "src/lower/mir/calls.rs",
@@ -157,17 +92,6 @@ export const mutations: Mutation[] = [
     find: "            && (self.is_lang_adt(ty, LangItem::String)\n                || crate::lower::representation::Num::of(ty).is_some()\n                || ty.is_bool())\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_compound_assign.rs$"],
-  },
-  {
-    name: "unit-given-binding-array",
-    breaks:
-      "a `()` given a binding as any value is its tuple's `[]`, never `===` anything: `x === []` of `js::strict_equals(x, ())` (ADR 0775)",
-    file: "src/lower/mir/calls.rs",
-    find: "                    .unwrap_or(value)\n            }\n",
-    replace:
-      "                    .unwrap_or(Expr::array(Vec::new()))\n            }\n",
-    tests: ["test/corpus.test.ts", "-t", "^unit_given_to_js.rs$"],
-    snapshots: true,
   },
   {
     name: "duration-assign-number",
@@ -196,43 +120,6 @@ export const mutations: Mutation[] = [
     find: "        if writes.is_some() {\n            exprs.extend(self.given_to_writer(None));\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
-  },
-  {
-    name: "lazy-never-its-value",
-    breaks:
-      "`use_state(|| 0)` is `useState(() => 0)`, the closure, where it's `useState(0)`",
-    file: "src/lower/mir/calls.rs",
-    find: "            () if named(bindings::lazy_params(tcx, def_id)) => self.lazy_value(value, ty),\n",
-    replace:
-      "            () if named(bindings::lazy_params(tcx, def_id)) => value,\n",
-    tests: ["test/react.test.ts", "-t", "use_state's first state"],
-  },
-  {
-    name: "lazy-call-its-value",
-    breaks:
-      "`use_state(|| load().len())` is `useState(load().length)`, which calls `load` every render",
-    file: "src/lower/mir/calls.rs",
-    find: "                    ] if !given.has_effects() => given.clone(),\n",
-    replace: "                    ] => given.clone(),\n",
-    tests: ["test/react.test.ts", "-t", "use_state's first state"],
-  },
-  {
-    name: "lazy-item-never-its-value",
-    breaks: "`use_state(String::new)` is `useState(() => \"\")`, the arrow std writes, where it's `useState(\"\")` (#1494)",
-    file: "src/lower/mir/calls.rs",
-    find: "            ty::FnDef(def_id, args) =>",
-    replace: "            ty::FnDef(def_id, args) if false =>",
-    tests: ["test/react.test.ts", "-t", "what its function item gives"],
-  },
-  {
-    name: "lazy-function-its-value",
-    breaks:
-      "state that's a function, `use_state(|| |n| n + 1)`, is `useState((n) => ..)`, which React calls for the state",
-    file: "src/lower/mir/calls.rs",
-    find: "                if params.is_empty() && !self.is_callable(gives) && !self.is_unknown(gives) =>\n",
-    replace:
-      "                if params.is_empty() && !self.is_unknown(gives) =>\n",
-    tests: ["test/react.test.ts", "-t", "use_state's first state"],
   },
   {
     name: "assign-impl-on-number-skipped",
@@ -303,43 +190,6 @@ export const mutations: Mutation[] = [
       "test/rest-parameters.test.ts",
       "-t",
       "spreads them, through any type",
-    ],
-  },
-  {
-    name: "nullable-type-parameter-of-any",
-    breaks:
-      "a binding's nullable type parameter given an `Option` is given `undefined` for `None`, `createCursor(undefined)`, and any other value `?? null` (ADR 0586, amended)",
-    file: "src/lower/mir/calls.rs",
-    find: "            () if let Some(payload) = self.option_of(ty)\n",
-    replace: "            () if let Some(payload) = self.option_of(ty).xor(Some(ty))\n",
-    tests: [
-      "test/lowering-module-variables.test.ts",
-      "-t",
-      "nullable type parameter",
-    ],
-  },
-  {
-    name: "getter-called",
-    breaks:
-      "a class's getter's Rust call is a call, `a.leftDiagonal()` of a property that's its value (#357)",
-    file: "src/lower/mir/calls.rs",
-    find: "            (Some(crate::lower::classes::Member::Getter), js::ExprKind::Member(_, name)) if args.len() == 1 => {\n",
-    replace:
-      "            (Some(crate::lower::classes::Member::Getter), js::ExprKind::Member(_, name)) if false => {\n",
-    tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
-  },
-  {
-    name: "object-method-called-as-a-function",
-    breaks:
-      "a call of an object's method is a call of its module's function, `containsNode(scope, fiber)`, whose `this` is then nothing (ADR 0943)",
-    file: "src/lower/mir/calls.rs",
-    find: "            (Some(crate::lower::classes::Member::Own), _) if !args.is_empty() => {\n",
-    replace:
-      "            (Some(crate::lower::classes::Member::Own), _) if false => {\n",
-    tests: [
-      "test/classes.test.ts",
-      "-t",
-      "an object's methods are its literal's own",
     ],
   },
   {
@@ -439,7 +289,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`*first(&mut v) += &five` is `first(v).value = (first(v).value + five) | 0`: the call that gives the place runs twice, a wrong answer",
     file: "src/lower/mir/calls.rs",
-    find: "            let place = match !super::queries::fixed_place(place) && place.has_effects() {\n",
+    find: "            let place = match !crate::lower::held::fixed_place(place) && place.has_effects() {\n",
     replace: "            let place = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^assign_op_through_a_call.rs$"],
   },
@@ -543,24 +393,6 @@ export const mutations: Mutation[] = [
     tests: ["test/js-any-values.test.ts", "-t", "an object spread, a splice"],
   },
   {
-    name: "nullable-entries-undefined",
-    breaks:
-      'entries written where they\'re given of a map of `Option` values keep `undefined` for `None`, `new Map([["none", undefined]])`, which `get` reads as a key it lacks (ADR 0884, amended)',
-    file: "src/lower/mir/calls.rs",
-    find: "            () if crate::lower::representation::none_form(\n                tcx,\n                crate::lower::representation::NonePlace::BindingEntries(def_id, i),\n",
-    replace: "            () if false && crate::lower::representation::none_form(\n                tcx,\n                crate::lower::representation::NonePlace::BindingEntries(def_id, i),\n",
-    tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
-  },
-  {
-    name: "forwarded-called-in-its-module-by-its-name",
-    breaks:
-      "a namespace's own module calls its method that's another module's function by the method's name, which that module re-exports but doesn't declare (rd292b)",
-    file: "src/lower/mir/calls.rs",
-    find: "            Some(&target) if module_of(def_id) == Some(self.module) || module_of(target) == module_of(def_id) => target,\n",
-    replace: "            Some(&target) if module_of(target) == module_of(def_id) => target,\n",
-    tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
-  },
-  {
     name: "through-flattened-unmarked",
     breaks:
       "a namespace's method's result through a value that only `.flatten()` reads is flattened again, `$someValue(renderer.flushSync(f))`, a `Some(None)` it gives read as `None` (rd311)",
@@ -577,24 +409,6 @@ export const mutations: Mutation[] = [
     find: "        copied.js.is_subset(&own.js)\n",
     replace: "        copied.js == own.js\n",
     tests: ["test/namespaces.test.ts", "-t", "unlike its own JS"],
-  },
-  {
-    name: "namespace-fn-shim-by-name",
-    breaks:
-      "a namespace's method as a `fn`, whose `self` is its parameter, calls the module's own function, `(a, b) => updateContainer(a, b)`, not `a.updateContainer(b)` (ADR 1037)",
-    file: "src/lower/mir/calls.rs",
-    find: "            let (by_name, flattened) = receiver_named.unwrap_or((false, false));\n",
-    replace: "            let (by_name, flattened) = receiver_named.unwrap_or((true, false));\n",
-    tests: ["test/namespaces.test.ts", "-t", "a namespace's methods are its module's functions"],
-  },
-  {
-    name: "namespace-value-called-by-name",
-    breaks:
-      "a namespace's method called through a value JS gives, another instance of the module, calls the module's own function, `createContainer(4)` (ADR 1037)",
-    file: "src/lower/mir/calls.rs",
-    find: "            if !by_name {\n",
-    replace: "            if false {\n",
-    tests: ["test/namespaces.test.ts", "-t", "a namespace's methods are its module's functions"],
   },
   {
     name: "flattened-by-name-boxed",
@@ -648,14 +462,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
     snapshots: true,
   },
-  {
-    name: "flattened-state-given-whole",
-    breaks: "`new` of a class whose constructor takes its flattened state's keys is given the state's object, `new ReactPromise({ status })`, the keys shifted (rd380)",
-    file: "src/lower/mir/calls.rs",
-    find: "                        crate::lower::classes::new_of_state(*class, args, (at, &keys), &own)\n",
-    replace: "                        Expr::new_(*class, args)\n",
-    tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
-  },
 
   {
     name: "arguments-own-call-left-out",
@@ -705,31 +511,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "getter-read-moved",
-    breaks: "a class's getter's read is taken for a field's, moved past a call after it, so its body's `println!` comes after that call's (rd679)",
-    file: "src/lower/mir/calls.rs",
-    find: "                Expr::member(args.remove(0), name).answered_by_a_getter()\n",
-    replace: "                Expr::member(args.remove(0), name)\n",
-    tests: ["test/corpus.test.ts", "-t", "^class_getters.rs$"],
-  },
-  {
-    name: "namespace-through-this-read",
-    breaks:
-      "a namespace's method through a value is taken for one that may read its `this`, so the noop Flight client's thread-local stays `NOOP.createContainer(..)`, not taken apart (#561)",
-    file: "src/lower/mir/calls.rs",
-    find: "                    facts: js::Facts::of(js::Known::ThisUnread).with(js::Known::NamespaceMethod),\n                    ..Expr::call(\n                        Expr::member(receiver,",
-    replace: "                    facts: js::Facts::NONE,\n                    ..Expr::call(\n                        Expr::member(receiver,",
-    tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
-  },
-  {
-    name: "namespace-method-unmarked",
-    breaks: "a namespace's method through a value isn't marked one, so a thread-local of a namespace read only for its methods keeps its member calls (#561, #584)",
-    file: "src/lower/mir/calls.rs",
-    find: "                    facts: js::Facts::of(js::Known::ThisUnread).with(js::Known::NamespaceMethod),\n",
-    replace: "                    facts: js::Facts::of(js::Known::ThisUnread),\n",
-    tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
-  },
-  {
     name: "held-getter-read-as-import",
     breaks:
       "a getter's function a variable holds, `js::import!(version).await`'s, is called as the getter, read through an import nothing made, which panics rustc (#581)",
@@ -737,15 +518,6 @@ export const mutations: Mutation[] = [
     find: "                    crate::lower::bindings::JsForm::Call(_) | crate::lower::bindings::JsForm::Get(_)\n",
     replace: "                    crate::lower::bindings::JsForm::Call(_)\n",
     tests: ["test/bindings.test.ts", "-t", "js::import! of a getter reads its export"],
-  },
-  {
-    name: "own-module-forwarded-call-own",
-    breaks:
-      "a call by name of a namespace's method that's its own module's function, in another module, imports the method's name, `close`, beside the function's alias, `closeFlight` (#566)",
-    file: "src/lower/mir/calls.rs",
-    find: "            Some(&target) if module_of(def_id) == Some(self.module) || module_of(target) == module_of(def_id) => target,\n",
-    replace: "            Some(&target) if module_of(def_id) == Some(self.module) => target,\n",
-    tests: ["test/method-forwarding.test.ts", "-t", "a namespace's method that only passes its parameters on to its module's function"],
   },
   {
     name: "this-namespace-call-bound",
@@ -788,31 +560,6 @@ export const mutations: Mutation[] = [
     find: "            ty::Dynamic(bounds, ..) => match bounds.projection_bounds().find_map(|p| p.skip_binder().term.as_type()) {\n",
     replace: "            ty::Dynamic(bounds, ..) => match bounds.projection_bounds().find_map(|p| p.skip_binder().term.as_type()).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
-  },
-  {
-    name: "nullable-any-given-as-optional",
-    breaks: "a nullable parameter's `Option<&dyn Any>` is given as an optional one's, `?.value`, its `None` `undefined` (#1581)",
-    file: "src/lower/mir/calls.rs",
-    find: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::never_if(nulled))\n",
-    replace: "                    .written(self.any_given_to_js(value, ty, false), js::Undefined::never_if(nulled))\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^any_mapped_to_a_nullable_parameter.rs$"
-    ]
-  },
-  {
-    name: "any-none-made-null-unsaid",
-    breaks: "a nullable parameter's `Option<&dyn Any>`, made `null` for `None` already, is written `?? null` again, which would make a `Some` of what's `undefined` `null` (#1581)",
-    file: "src/lower/mir/calls.rs",
-    find: "                let nulled = nulled || self.any_none_made_null(ty);\n",
-    replace: "                let nulled = nulled;\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^any_mapped_to_a_nullable_parameter.rs$"
-    ],
-    snapshots: true
   },
   {
     name: "callback-arguments-given-as-they-are",

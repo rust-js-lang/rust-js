@@ -275,23 +275,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         crate::lower::body_queries::the_one(casts).is_some_and(|(id, _)| of.contains(&id))
     }
 
-    /// THIR's call of `def_id` at `fn_span`, MIR's call there, where it's
-    /// the one (`span_join::the_call_of_at`): its function and its
-    /// arguments.
-    // helper: span_join's `the_call_of_at`, taken apart (#2175)
-    pub(in crate::lower) fn thir_call(
-        &self,
-        def_id: rustc_span::def_id::DefId,
-        fn_span: Span,
-    ) -> Option<(thir::ExprId, Vec<thir::ExprId>)> {
-        let thir = self.frame.thir;
-        let call = crate::lower::body_queries::the_call_of_at(thir, def_id, fn_span)?;
-        match &thir[call].kind {
-            thir::ExprKind::Call { fun, args, .. } => Some((*fun, args.to_vec())),
-            _ => None,
-        }
-    }
-
     /// Where each argument of the closure call at `span` is written, `a`
     /// and `b` of `(f)(a, b)`: THIR's arguments' tuple's fields, of the one
     /// call there; none where there's no such call.

@@ -562,3 +562,118 @@ pub(super) fn given_by<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, value: Expr) ->
     }
     Expr { facts, ..value }
 }
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The call of the crate's function `def_id`, given `args`: of a class's
+    /// constructor, `new Component(..)`, and of its method, a call of the
+    /// prototype's, `component.setState(..)` (ADR 0761); of an object's
+    /// method, its own property's, `scope.containsNode(..)` (ADR 0943); of
+    /// any other, `f(..)`.
+    pub(in crate::lower) fn crate_called(&self, def_id: rustc_span::def_id::DefId, args: Vec<Expr>) -> Expr {
+        self.crate_called_copy((def_id, None, None), None, args)
+    }
+
+    /// `crate_called`'s, of its own JS or of a copy its callers need (ADR
+    /// 0051, amended), as the path at `named`, the call's, names it, which
+    /// may be through the module that has it (rd114, ADR 1018).
+    pub(in crate::lower) fn crate_called_copy(
+        &self,
+        (def_id, copy, named): (rustc_span::def_id::DefId, Option<usize>, Option<Span>),
+        receiver_named: Option<(bool, bool)>,
+        mut args: Vec<Expr>,
+    ) -> Expr {
+        // A namespace's method (ADR 1037): through the value it's called on,
+        // `NoopRenderer.createContainer(..)`, one JS may have made of
+        // another instance of its module; of the namespace named, or its own
+        // method's `self` (`classes::names_namespace`), its `self` left out,
+        // the function itself, `createContainer(..)`. One whose MIR no call
+        // gives, a method's as a `fn`, `(a, b) => a.updateContainer(b)`, is
+        // of its parameter, a value.
+        if crate::lower::classes::member(self.tcx, def_id) == Some(crate::lower::classes::Member::Namespace)
+            && !args.is_empty()
+        {
+            let (by_name, flattened) = receiver_named.unwrap_or((false, false));
+            let receiver = args.remove(0);
+            if !by_name {
+                // Of a copy its call needs, the value's function, the
+                // module's own JS, only where that copy is alike it
+                // (`pipeline::copies::settle`), or its result is that JS's
+                // flattened (rd311).
+                if let (Some(at), Some(span), false) = (copy, named, flattened) {
+                    (self.dependencies.borrow_mut().through_copies).push((def_id, at, span));
+                }
+                // Its module's function, which reads no `this` (ADR 1037):
+                // read apart from the value, it's called as it was (#561).
+                return Expr {
+                    facts: js::Facts::of(js::Known::ThisUnread).with(js::Known::NamespaceMethod),
+                    ..Expr::call(
+                        Expr::member(receiver, crate::lower::classes::property(self.tcx, def_id)),
+                        args,
+                    )
+                };
+            }
+        }
+        // One that's the function it passes its parameters on to, which its
+        // module re-exports by its name (rd292b, ADR 1037 amended): in that
+        // module, which has no name of its own for it, that function's call;
+        // of its own module's function, which is what its module exports by
+        // that name, that function's anywhere, by the name a module imports
+        // it by, `closeFlight` (#566).
+        let def_id = self.forwarded_fn(def_id);
+        let callee = match (copy, named) {
+            (_, Some(named)) => self.named_fn_ref(def_id, copy, named),
+            (Some(_), None) => self.own_fn_ref(def_id, copy),
+            (None, None) => self.fn_ref(def_id),
+        };
+        match (crate::lower::classes::member(self.tcx, def_id), callee.kind) {
+            (Some(crate::lower::classes::Member::Constructor), js::ExprKind::Member(class, _)) => {
+                match crate::lower::classes::flattened_parameter(self.tcx, def_id) {
+                    Some((at, keys)) if at < args.len() => {
+                        let own = crate::lower::signatures::own_parameter_names(self.tcx, def_id);
+                        crate::lower::classes::new_of_state(*class, args, (at, &keys), &own)
+                    }
+                    _ => Expr::new_(*class, args),
+                }
+            }
+            (Some(crate::lower::classes::Member::Method), js::ExprKind::Member(_, name)) if !args.is_empty() => {
+                let this = args.remove(0);
+                Expr::call(Expr::member(this, name), args)
+            }
+            // A getter's, its read, `position.leftDiagonal` (#357), which
+            // runs its body: never moved past what else runs (rd679).
+            (Some(crate::lower::classes::Member::Getter), js::ExprKind::Member(_, name)) if args.len() == 1 => {
+                Expr::member(args.remove(0), name).answered_by_a_getter()
+            }
+            // An object's method, its own property's (ADR 0943).
+            (Some(crate::lower::classes::Member::Own), _) if !args.is_empty() => {
+                let this = args.remove(0);
+                Expr::call(
+                    Expr::member(this, crate::lower::classes::property(self.tcx, def_id)),
+                    args,
+                )
+            }
+            (_, kind) => Expr::call(Expr { kind, ..callee }, args),
+        }
+    }
+
+    /// `def_id`, or the function it passes its parameters on to, which its
+    /// module re-exports by its name, where a call is of that.
+    fn forwarded_fn(&self, def_id: rustc_span::def_id::DefId) -> rustc_span::def_id::DefId {
+        let module_of = |id| self.krate.fns.get(&id).map(|info: &crate::lower::FnInfo| info.module);
+        match self.krate.forwarded.get(&def_id) {
+            Some(&target) if module_of(def_id) == Some(self.module) || module_of(target) == module_of(def_id) => target,
+            _ => def_id,
+        }
+    }
+
+    /// The function `crate_called` calls of `def_id`, given its arguments
+    /// apart: of a plain function, the one it forwards to where that's
+    /// what its module has (`forwarded_fn`); `None` of a class's or a
+    /// namespace's member, called through its value.
+    pub(in crate::lower) fn crate_callee(&self, def_id: rustc_span::def_id::DefId) -> Option<Expr> {
+        if crate::lower::classes::member(self.tcx, def_id).is_some() {
+            return None;
+        }
+        Some(self.fn_ref(self.forwarded_fn(def_id)))
+    }
+}

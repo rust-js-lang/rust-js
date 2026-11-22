@@ -439,22 +439,6 @@ impl NamingFacts {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Of `name`, a variable, each path to what it holds whose fields a
-    /// getter may answer (`given_paths`).
-    pub(in crate::lower) fn given_of(&self, name: &js::Name) -> rust_js_program::collections::IndexSet<js::Path> {
-        let mut found: rust_js_program::collections::IndexSet<js::Path> = (self.locals.mir.given.iter())
-            .filter(|path| matches!(&path.root, js::PathRoot::Var(root) if root == name))
-            .cloned()
-            .collect();
-        for (id, var) in &self.locals.vars {
-            if matches!(&var.place.kind, js::ExprKind::Var(n) if n == name) {
-                let ty = self.tcx.typeck(id.0.owner.def_id).node_type(id.0);
-                self.given_paths(js::Path::var(name), ty, &mut Default::default(), &mut found);
-            }
-        }
-        found
-    }
-
     /// `name`, a local of plain data of `ty`: its name, and each path to
     /// what it holds whose fields a getter may answer (`given_paths`).
     pub(super) fn note_plain(&mut self, name: &js::Name, ty: Ty<'tcx>) {
@@ -462,37 +446,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut found = IndexSet::default();
         self.given_paths(js::Path::var(name), ty, &mut IndexSet::default(), &mut found);
         self.locals.mir.given.extend(found);
-    }
-
-    /// Of a value of `ty` at `path`, a variable's name, each path to what
-    /// it is or holds whose fields a getter may answer, a struct JS may give
-    /// or make (`fields_read_once`, #1908): `p.style` of a component's
-    /// props `p`, whose own fields are plain. `seen`, the structs on the
-    /// path, ends a recursive type's walk.
-    fn given_paths(
-        &self,
-        path: js::Path,
-        ty: Ty<'tcx>,
-        seen: &mut IndexSet<rustc_hir::def_id::DefId>,
-        found: &mut IndexSet<js::Path>,
-    ) {
-        let ty = ty.peel_refs();
-        if self.fields_read_once(ty) {
-            found.insert(path);
-            return;
-        }
-        if let ty::Adt(adt, _) = *ty.kind()
-            && adt.is_struct()
-            && seen.insert(adt.did())
-            && let Shape::Object(fields) = self.shape(ty)
-        {
-            for (field, ty) in fields {
-                if let Some(name) = field.name() {
-                    self.given_paths(path.clone().field(name), ty, seen, found);
-                }
-            }
-            seen.swap_remove(&adt.did());
-        }
     }
 
     /// `mir`'s facts, of its locals as named, and each variable a guard that
