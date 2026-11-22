@@ -346,4 +346,20 @@ export const mutations: Mutation[] = [
     replace: "      const header = undefined as { refs: number[] } | undefined;\n",
     tests: ["test/testMap-items.test.ts"],
   },
+  {
+    name: "map-behind-unsaid",
+    breaks: "a site the map can't place because its lines changed since the map's commit isn't said to be the map's behind, so the snapshot judge's test calls it refused on any machine whose map is behind (#2349)",
+    file: "scripts/testMap.ts",
+    find: "  if (typeof at === \"string\") return said(map, { kind: \"all\", why: `${file} ${at}`, mapBehind: true });\n",
+    replace: "  if (typeof at === \"string\") return said(map, { kind: \"all\", why: `${file} ${at}` });\n",
+    tests: ["test/test-map.test.ts", "-t", "a site the test map is behind says so"],
+  },
+  {
+    name: "said-drops-what-picked-says",
+    breaks: "saying which map answered drops what else an answer says, so a site the map is behind loses `mapBehind` (#2349)",
+    file: "scripts/testMap.ts",
+    find: "  return picked.kind === \"all\" ? { ...picked, why: `${of} can't say: ${picked.why}` } : { ...picked, why: `${of}: ${picked.why}` };\n",
+    replace: "  return picked.kind === \"all\" ? { kind: \"all\", why: `${of} can't say: ${picked.why}` } : { ...picked, why: `${of}: ${picked.why}` };\n",
+    tests: ["test/test-map.test.ts", "-t", "a site the test map is behind says so"],
+  },
 ];

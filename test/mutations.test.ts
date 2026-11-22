@@ -791,7 +791,7 @@ test("a readability owner's mutation the test map can't place names its case", (
     // the machine has, so each mutation judged gets one answer everywhere;
     // a staler map judges fewer, never turning a pass into a failure. A
     // hand-made map in the test instead would drift from the sources.
-    if (reached.kind === "all" && reached.why.endsWith("changed since the map's commit")) return [];
+    if (reached.kind === "all" && reached.mapBehind) return [];
     return reached.kind === "all" ? [`${m.name}: ${reached.why}`] : [];
   });
   expect(refused).toEqual([]);

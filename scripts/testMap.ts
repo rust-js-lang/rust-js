@@ -304,7 +304,12 @@ export type Change = { file: string; hunks: Hunk[] | "new"; now?: string; simila
 
 /** What a change runs: the files and cases it can affect, or all of them,
  * and why. */
-export type Picked = { kind: "picked"; files: string[]; cases: string[]; forms: string[]; functions: number[]; why: string } | { kind: "all"; why: string };
+export type Picked =
+  | { kind: "picked"; files: string[]; cases: string[]; forms: string[]; functions: number[]; why: string }
+  // `mapBehind`: the map can't place it as it is now, its lines changed
+  // since the map's commit, its file new or moved too far (`mapLines`),
+  // which a map recorded again answers; not a site it never could (#2349).
+  | { kind: "all"; why: string; mapBehind?: true };
 
 /** The test files of the corpus's cases, whose each case is a test of its
  * own: the corpus's, and the corpus built with std's iterator structs
@@ -1173,7 +1178,7 @@ function readHeadMap(): { map: TestMap; changes: Change[] } | string {
 /** `picked`, its reason saying which map said it. */
 function said(map: TestMap, picked: Picked): Picked {
   const of = `the test map of ${map.commit.slice(0, 9)}`;
-  return picked.kind === "all" ? { kind: "all", why: `${of} can't say: ${picked.why}` } : { ...picked, why: `${of}: ${picked.why}` };
+  return picked.kind === "all" ? { ...picked, why: `${of} can't say: ${picked.why}` } : { ...picked, why: `${of}: ${picked.why}` };
 }
 
 /** The corpus cases whose compiles ran `file`'s lines `first` to `last`,
@@ -1184,15 +1189,16 @@ function said(map: TestMap, picked: Picked): Picked {
  * stale answer. What else changed since, another file's code or its own
  * file's other lines, leaves the cases the map says reach the site's as
  * they were: the site is placed at its lines there, `mapLines`, under its
- * path there where its file moved (#2337; ADR 0093, amended). */
-export function casesReaching(file: string, first: number, last: number, cases: string[]): Picked {
-  const found = headMap();
+ * path there where its file moved (#2337; ADR 0093, amended). One it can't
+ * place for that, the map behind it, says so, `mapBehind` (#2349). `found`,
+ * the map and what changed since, a test's own where given. */
+export function casesReaching(file: string, first: number, last: number, cases: string[], found = headMap()): Picked {
   if (typeof found === "string") return { kind: "all", why: found };
   const { map, changes } = found;
   const change = changes.find((each) => (each.now ?? each.file) === file);
   if (change === undefined) return said(map, pick(map, [{ file, hunks: [[first, last - first + 1]] }], [], cases));
   const at = mapLines(change, first, last);
-  if (typeof at === "string") return said(map, { kind: "all", why: `${file} ${at}` });
+  if (typeof at === "string") return said(map, { kind: "all", why: `${file} ${at}`, mapBehind: true });
   return said(map, pick(map, [{ file: change.file, hunks: [[at[0], at[1] - at[0] + 1]] }], [], cases));
 }
 

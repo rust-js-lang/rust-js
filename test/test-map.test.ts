@@ -7,7 +7,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { changesDiff, ciMapOf, ciMapPrefix, hunksOf, mapLines, placedSimilarity, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, carriedUnits, carryOf, remapBits, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
+import { casesReaching, changesDiff, ciMapOf, ciMapPrefix, hunksOf, mapLines, placedSimilarity, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, carriedUnits, carryOf, remapBits, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
 
 import { shard } from "../scripts/shard";
 import { caseShard, fixture, root } from "./support";
@@ -253,6 +253,24 @@ test("a diff's hunks are the lines of the map's commit it changes", () => {
     },
     { file: "src/b.rs", hunks: "new" },
   ]);
+});
+
+// A site the map can't place because it's behind, its lines changed since
+// the map's commit, its file new or moved too far, says so by a field: the
+// judge that skips such a site matched the reason's last words, which #2337
+// reworded, so a machine whose map was behind failed it on six tidy
+// mutations (#2349). A site with no map at all isn't one.
+test("a site the test map is behind says so, apart from its reason's words", () => {
+  const map = { commit: "0123456789abcdef" } as TestMap;
+  const at = (change: Change) => casesReaching("src/a.rs", 3, 4, [], { map, changes: [change] });
+  const behind: Change[] = [
+    { file: "src/a.rs", hunks: [[3, 1, ["x"], ["y"], 3, 1]] },
+    { file: "src/a.rs", hunks: [[3, 1]] },
+    { file: "src/a.rs", hunks: "new" },
+    { file: "src/old.rs", now: "src/a.rs", similarity: 50, hunks: [] },
+  ];
+  for (const change of behind) expect(at(change)).toMatchObject({ kind: "all", mapBehind: true, why: expect.stringContaining("src/a.rs") });
+  expect(casesReaching("src/a.rs", 3, 4, [], "no test map")).toEqual({ kind: "all", why: "no test map" });
 });
 
 // A moved file is the map's at its path there (#2337): git's renames, `-M`,
