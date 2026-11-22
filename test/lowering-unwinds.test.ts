@@ -423,7 +423,7 @@ pub fn uncaught() {
 }
 
 pub fn text() {
-    panic::resume_unwind(Box::new(String::from("as text")));
+    panic::resume_unwind(Box::new("as text"));
 }
 
 fn made(n: u32) -> impl FnOnce() -> u32 {
