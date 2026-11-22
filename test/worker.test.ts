@@ -1,0 +1,121 @@
+// The worker's builds are their own compiles' (#2301, ADR 1182): a corpus
+// case's program and library builds, compiled in one rustc session by
+// `rust-js --worker`, in either order, write the same files and print the
+// same output, byte for byte, as each compiled in a process of its own;
+// where the session runs a build apart, the harness compiles it alone,
+// which is its own compile by construction, and the row counts it.
+//
+// A sample of the corpus here, spread over it, every `library-refused` case
+// among it; every case in the nightly's, `RUST_JS_WORKER_CASES=all`, in
+// parts, `RUST_JS_CASES=i/n`:
+//
+//   RUST_JS_WORKER_CASES=all RUST_JS_CASES=1/12 bun test test/worker.test.ts
+
+import { expect, test } from "bun:test";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, relative } from "node:path";
+
+import { spawnedSync, workerJob, type Exit } from "./child";
+import { cases, corpus, directives } from "./corpus-cases";
+import { partSetting } from "./part-settings";
+import { compileCommand } from "./programs";
+import { root } from "./support";
+
+const SAMPLE = 24;
+const [part, parts] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);
+
+/** The cases that run, each with its edition, and whether it's refused as
+ * a library. */
+const running = cases.flatMap((name) => {
+  const text = readFileSync(join(corpus, name), "utf8");
+  const want = directives(text);
+  if (typeof want === "string" || want.kind === "compile-fail" || want.kind === "ignore-rust-js") return [];
+  return [{ name, edition: want.edition, refused: want.libraryRefused !== undefined }];
+});
+const sampled =
+  partSetting("RUST_JS_WORKER_CASES") === "all"
+    ? running
+    : running.filter((c, i) => c.refused || i % Math.ceil(running.length / SAMPLE) === 0);
+const mine = sampled.filter((_, i) => i % parts === part - 1);
+
+// The cache neither keeps nor gives a compile here: each is compiled.
+const env = { RUST_JS_COMPILE_CACHE_MB: "0" };
+const timeout = 120_000;
+
+/** What a build did: its exit, its output, and every file the case's
+ * directory has after it, but the wrapper all builds read. */
+type Done = { code: number | null; stdout: string; stderr: string };
+function files(dir: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  const walk = (at: string) => {
+    for (const name of readdirSync(at)) {
+      const path = join(at, name);
+      if (statSync(path).isDirectory()) walk(path);
+      else if (name !== "lib.rs") out[relative(dir, path)] = readFileSync(path).toString("base64");
+    }
+  };
+  walk(dir);
+  return out;
+}
+const done = (p: Exit): Done => ({ code: p.code, stdout: p.stdout, stderr: p.stderr });
+function emptied(dir: string) {
+  for (const name of readdirSync(dir)) if (name !== "lib.rs") rmSync(join(dir, name), { recursive: true, force: true });
+}
+
+/** How often a build of a job was run apart, of those the rows compiled. */
+const apart = { builds: 0, of: 0 };
+
+test.each(mine.map((c) => [c.name, c] as const))("%s: a job's builds are their own compiles', in either order", (_, c) => {
+  const dir = mkdtempSync(join(tmpdir(), "rust-js-worker-"));
+  try {
+    const file = join(corpus, c.name);
+    const builds = [false, true].map((library) => compileCommand(file, dir, c.edition, library, []).cmd);
+    const alone = builds.map((cmd) => done(spawnedSync(cmd, root, timeout, env)));
+    const written = files(dir);
+    for (const order of [[0, 1], [1, 0]]) {
+      emptied(dir);
+      const answered = workerJob(order.map((i) => builds[i]), root, timeout, env);
+      apart.of += order.length;
+      order.forEach((build, k) => {
+        const answer = answered[k];
+        if (answer === undefined) {
+          apart.builds++;
+          return;
+        }
+        expect(done(answer)).toEqual(alone[build]);
+      });
+      // What a build run apart writes is its own compile's: written alone.
+      order.forEach((build, k) => {
+        if (answered[k] === undefined) spawnedSync(builds[build], root, timeout, env);
+      });
+      expect(files(dir)).toEqual(written);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("the worker's jobs ran apart only where a build before printed", () => {
+  // Of the sample, only a refused library, given first, prints: the
+  // program after it runs apart.
+  const refusedFirst = mine.filter((c) => c.refused).length;
+  expect(apart.builds).toBeLessThanOrEqual(refusedFirst);
+  if (apart.of > 0) console.log(`worker: ${apart.builds} of ${apart.of} builds ran apart`);
+});
+
+test("each build of a job is given the record of what the session read, as its own compile is", () => {
+  const dir = mkdtempSync(join(tmpdir(), "rust-js-worker-"));
+  try {
+    const c = running[0];
+    const builds = [false, true].map((library, i) => {
+      const { cmd } = compileCommand(join(corpus, c.name), dir, c.edition, library, []);
+      return [...cmd, `--emit=dep-info=${join(dir, `${i}.d`)}`];
+    });
+    const answered = workerJob(builds, root, timeout, env);
+    expect(answered.map((answer) => answer?.code)).toEqual([0, 0]);
+    for (const i of [0, 1]) expect(readFileSync(join(dir, `${i}.d`), "utf8")).toContain(c.name);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

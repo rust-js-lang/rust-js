@@ -15,7 +15,25 @@ use super::*;
 /// (`decide_in_place`).
 pub fn collect_bodies(tcx: TyCtxt<'_>, library: bool) -> Vec<Body<'_>> {
     crate::lower::recognition::std_paths_if_first(tcx);
-    let mut bodies = lowered_bodies(tcx);
+    let bodies = lowered_bodies(tcx);
+    bodies_of_build(tcx, bodies, library)
+}
+
+/// The THIR of every function and closure in the crate, copied before
+/// `analysis` steals it, as `collect_bodies` begins, of each build of a
+/// case one rustc session compiles, its program's and its library's, each
+/// of which takes it as `bodies_of_build` says, in a lowering session of
+/// its own (#2301).
+pub fn copied_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
+    crate::lower::recognition::std_paths_if_first(tcx);
+    lowered_bodies(tcx)
+}
+
+/// What a build lowers of `bodies`, the crate's THIR (`copied_bodies`), in
+/// its lowering session: of a `library`, each one only an unlowered impl
+/// reaches left out.
+pub fn bodies_of_build<'tcx>(tcx: TyCtxt<'tcx>, mut bodies: Vec<Body<'tcx>>, library: bool) -> Vec<Body<'tcx>> {
+    crate::lower::recognition::std_paths_if_first(tcx);
     // What `{:?}` shows of std's adapters compiled as their meaning alone,
     // before anything asks the catalogue (#1401).
     crate::lower::recognition::note_debug_shown(tcx, &bodies);

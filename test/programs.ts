@@ -8,7 +8,7 @@ import { dirname, join } from "node:path";
 import { runInNewContext } from "node:vm";
 
 import { machine, memoryBudget } from "../scripts/shard";
-import { compileFailure, run as runAsync, runSync, stopped, type Exit } from "./child";
+import { compileFailure, run as runAsync, runBuilds, runSync, stopped, type Exit } from "./child";
 import { decode, encode, same, type Outcome } from "./oracle";
 import { helpersModule, stdDir } from "./packages-of";
 import { directives } from "./corpus-cases";
@@ -309,6 +309,15 @@ export function compileJs(
   return compiled(runSync(cmd, root, compileTimeout, env), js);
 }
 
+/** `compileJs` of each of `libraries`' builds of `file`, the program's
+ * (`false`) and the library's (`true`): those not kept compiled together,
+ * in one rustc session (`runBuilds`, #2301). */
+export function compileBuilds(file: string, dir: string, edition: string, libraries: boolean[]): ({ js: string } | CompileError)[] {
+  const commands = libraries.map((library) => compileCommand(file, dir, edition, library, []));
+  const exits = runBuilds(commands.map(({ cmd }) => cmd), root, compileTimeout);
+  return exits.map((p, i) => compiled(p, commands[i].js));
+}
+
 /** `file`, a library crate `crate` another compile uses, compiled into
  * `dir/<crate>/lib.js`: the manifest and the metadata that compile is
  * given, `--dependency <manifest> -- --extern <crate>=<rmeta>`. */
@@ -344,7 +353,7 @@ export async function compileJsAsync(
 /** How `file` is compiled into `dir`, and where its JS goes: its wrapper
  * written, where it isn't already, so a compile that's reading it isn't
  * given it emptied by another's write. */
-function compileCommand(file: string, dir: string, edition: string, library: boolean, flags: string[], rustc: string[] = []): { cmd: string[]; js: string } {
+export function compileCommand(file: string, dir: string, edition: string, library: boolean, flags: string[], rustc: string[] = []): { cmd: string[]; js: string } {
   const wrapper = join(dir, "lib.rs");
   const text = `include!(${rustString(file)});\npub fn entry() {\n    main()\n}\n`;
   if (!existsSync(wrapper) || readFileSync(wrapper, "utf8") !== text) writeFileSync(wrapper, text);

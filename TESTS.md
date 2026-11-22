@@ -205,6 +205,14 @@ Added focused #1861 coverage on 2026-11-15: a seventh source-workspace case chec
 
 Added #1867 coverage on 2026-11-15: a dedicated real-WebAPI aggregate-argument test covers objects and arrays, getter evaluation order and every thrown-value boundary, plus generated-source shape. Native owner counterexamples reject getters, computed keys, spreads and closure-written values. Two mutations remove the fix or its safety predicate. The initial object regression fails on main after ten runtime rows pass. The expanded focused case passes 34 assertions and the native safety unit passes; all 18 moved/new owner mutations are caught. The first complete ec7990f gate finishes in 429 seconds with only a newly adopted snapshot mismatch and an improved readability baseline; both are regenerated and reviewed before the final suite check.
 
+Added on 2026-11-22 (#2301, ADR 1182): `test/worker.test.ts` compiles 26
+corpus cases (a sample, plus every `library-refused` one) each build alone
+and then as the worker's jobs, program-first and library-first, comparing
+exits, output and files byte for byte, in about 9 s; the nightly's
+determinism job runs every case. `test/architecture-statics.test.ts`
+classifies each of the compiler's 29 statics. The corpus compiles a case's
+two builds as one job.
+
 Added #1899 coverage on 2026-11-15: four optional-call cases prove the
 unchecked Node receiver, rustc's unsafe requirement, the safe helper's strict
 receiver and ordinary extraction's strict receiver. With the existing checked

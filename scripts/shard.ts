@@ -654,6 +654,13 @@ export const parts: Part[] = [
   { setting: "ITERATOR_MATRIX", value: "all", runs: "nightly", by: ".github/workflows/nightly.yml", why: "every case, about 4 CPU-hours: a push runs its slice" },
   { setting: "TIDY_STAGES", value: "corpus", runs: "nightly", by: ".github/workflows/nightly.yml", why: "every corpus case after each of tidy's stages: a push of tidy runs nine" },
   {
+    setting: "RUST_JS_WORKER_CASES",
+    value: "all",
+    runs: "nightly",
+    by: ".github/workflows/nightly.yml",
+    why: "every case that runs, its builds compiled alone and as the worker's jobs in both orders (ADR 1182): a push compiles a sample",
+  },
+  {
     setting: "DETERMINISM",
     value: "corpus",
     runs: "nightly",

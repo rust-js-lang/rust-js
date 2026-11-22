@@ -23,7 +23,7 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 //   driver ──► front end (rustc) ──► owned output ──► printing (oxc, TypeScript)
 const layers = {
   driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/clippy.rs", "src/std_sysroot.rs", "src/source_format.rs", "src/source_format/",
-    "src/phase_times.rs"],
+    "src/phase_times.rs", "src/worker.rs"],
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
   owned: ["src/library.rs", "src/library/", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs", "src/js/",
     "src/prepare.rs", "src/prepare/", "src/output.rs", "src/output/", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
@@ -60,8 +60,14 @@ const orchestration: Record<string, string[]> = {
 };
 // A top-level module of `crate`'s, as the file it is: `src/js.rs`, or a
 // folder's, `src/lower/`.
+// A name of no module is an item of the crate's root, its `main.rs`'s or
+// `lib.rs`'s: the driver's `finish_build`, which its worker calls (#2301).
 const moduleFile = (crate: CompilerCrate, name: string) =>
-  sources.includes(`${crate.src}/${name}.rs`) ? `${crate.src}/${name}.rs` : `${crate.src}/${name}/`;
+  sources.includes(`${crate.src}/${name}.rs`)
+    ? `${crate.src}/${name}.rs`
+    : sources.some(path => path.startsWith(`${crate.src}/${name}/`))
+      ? `${crate.src}/${name}/`
+      : crate.rootFile;
 // The first names after a path's base: `x` of `x::y`, or each of a
 // group's, `{js::{self, Expr}, program}`'s `js` and `program`.
 const firstNames = (rest: string): string[] => {
@@ -148,6 +154,7 @@ test("the layer check finds a module however a file names it", () => {
     ["src/lower/drops/types.rs", "use super::*;", []],
     ["src/lower/drops/types.rs", "use rust_js_program::{collections::IndexMap, lines};", ["crates/rust-js-program/src/collections.rs", "crates/rust-js-program/src/lines.rs"]],
     ["crates/rust-js-program/src/decisions.rs", "use crate::collections::IndexMap;", ["crates/rust-js-program/src/collections.rs"]],
+    ["src/worker.rs", "use crate::{finish_build, lower, js};", ["src/js.rs", "src/lower.rs", "src/main.rs"]],
   ];
   for (const [file, text, expected] of cases) expect(usedModules(file, text), text).toEqual(expected);
 });
@@ -325,7 +332,8 @@ test("only the publisher and the driver write files", () => {
   // And `rust-js fmt`, which writes the Rust it formats (ADR 1166); and
   // the unit tests that bless a table made of an owner, `BLESS=1 cargo
   // test`: the library contract's and the in-place forms' (ADR 1176).
-  const writers = ["src/publish.rs", "src/main.rs", "src/std_sysroot.rs", "src/library/scopes.rs", "src/source_format.rs", "src/lower/iterators/in_place_forms.rs"];
+  // And the worker, which redirects a build's output to its files (#2301).
+  const writers = ["src/publish.rs", "src/main.rs", "src/worker.rs", "src/std_sysroot.rs", "src/library/scopes.rs", "src/source_format.rs", "src/lower/iterators/in_place_forms.rs"];
   // Its code alone: a lowering of std's files names them in its comments
   // and in the paths it recognizes, `"std::fs::write"` (#1156).
   const code = (file: string) => read(file).replace(/\/\/.*$/gm, "").replace(/"(?:[^"\\\n]|\\.)*"/g, '""');

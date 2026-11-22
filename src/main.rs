@@ -77,6 +77,8 @@ mod source_format;
 mod std_sysroot;
 mod to_oxc;
 mod typescript;
+#[cfg(not(target_os = "wasi"))]
+mod worker;
 
 use rust_js_program::collections::IndexSet;
 use std::io::Write;
@@ -337,35 +339,14 @@ impl Callbacks for RustJs {
 
     fn after_expansion<'tcx>(&mut self, compiler: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
         phase_times::mark("rustc: parse and expand");
-        // 0. `#[serde(..)]`, which only the expanded crate still has, read
-        // before props' resolution asks for its HIR, which takes the
-        // resolver's AST (ADR 0077).
-        let serde_attrs = lower::serde_attributes(tcx);
-        if Syntax.after_expansion(compiler, tcx) == Compilation::Stop {
+        let Some(serde_attrs) = front(compiler, tcx) else {
             return Compilation::Stop;
-        }
+        };
         // The lowering session, its caches its own, dropped as it ends (ADR
-        // 1111); and its flags: std's structs as their meaning, all of them,
-        // in std's own bodies' build and the differential one (ADR 0932);
-        // every struct the crate doesn't build, one JS may make, in the
-        // object model net's build (ADR 1105).
-        let _session = lower::session::start(
-            tcx,
-            lower::session::Flags {
-                meaning: self.std_bodies || self.std_iterators,
-                every_outside_struct: self.js_made_all,
-                without_recognizers: std::mem::take(&mut self.without_recognizers),
-                without_mutated: std::mem::take(&mut self.without_mutated),
-                without_intervals: self.without_intervals,
-                without_moves: self.without_moves,
-                intervals_by_effects: self.intervals_by_effects,
-                records_recognized: self.recognizers_found.is_some(),
-                records_intervals_shadow: self.intervals_shadow.is_some(),
-                records_drops_shadow: self.drops_shadow.is_some(),
-            },
-        );
+        // 1111).
+        let _session = lower::session::start(tcx, self.session_flags());
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
-        let mut bodies = lower::collect_bodies(tcx, self.export_library && !self.program);
+        let mut bodies = lower::collect_bodies(tcx, self.library_filter());
         // `@rust-js/std`'s: std's own, from the MIR of a `core` built to
         // unwind (#424).
         if self.std_bodies {
@@ -385,13 +366,61 @@ impl Callbacks for RustJs {
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
+        self.lower_build(tcx, (&mut bodies, &mut initializers), &serde_attrs);
+        self.after_builds(tcx, self.lowered.is_some())
+    }
+}
 
-        // 3. Only a program rustc accepts becomes JavaScript. A library's
-        // function its calls give more than it takes is compiled here, from
-        // the MIR its library's metadata keeps, and the crate lowered again
-        // with it (ADR 0914); and so is one with a thread-local made as its
-        // module loads by a function of a module that may load after it,
-        // made where it's first used then (ADR 0037, amended).
+/// What every build of the crate reads of rustc's expanded crate before
+/// it's lowered, `#[serde(..)]`; `None` where the syntax pass stopped it.
+fn front(compiler: &Compiler, tcx: TyCtxt<'_>) -> Option<lower::SerdeAttributes> {
+    // 0. `#[serde(..)]`, which only the expanded crate still has, read
+    // before props' resolution asks for its HIR, which takes the
+    // resolver's AST (ADR 0077).
+    let serde_attrs = lower::serde_attributes(tcx);
+    (Syntax.after_expansion(compiler, tcx) != Compilation::Stop).then_some(serde_attrs)
+}
+
+impl RustJs {
+    /// Whether the build leaves out what only an unlowered impl reaches, as
+    /// a library does (`lower::bodies_of_build`).
+    fn library_filter(&self) -> bool {
+        self.export_library && !self.program
+    }
+
+    /// The flags of its lowering session: std's structs as their meaning,
+    /// all of them, in std's own bodies' build and the differential one
+    /// (ADR 0932); every struct the crate doesn't build, one JS may make, in
+    /// the object model net's build (ADR 1105).
+    fn session_flags(&mut self) -> lower::session::Flags {
+        lower::session::Flags {
+            meaning: self.std_bodies || self.std_iterators,
+            every_outside_struct: self.js_made_all,
+            without_recognizers: std::mem::take(&mut self.without_recognizers),
+            without_mutated: std::mem::take(&mut self.without_mutated),
+            without_intervals: self.without_intervals,
+            without_moves: self.without_moves,
+            intervals_by_effects: self.intervals_by_effects,
+            records_recognized: self.recognizers_found.is_some(),
+            records_intervals_shadow: self.intervals_shadow.is_some(),
+            records_drops_shadow: self.drops_shadow.is_some(),
+        }
+    }
+
+    /// The build's lowering, step 3, in its session, of what rustc accepted,
+    /// linked and kept for its publish (`lowered`). Only a program rustc
+    /// accepts becomes JavaScript. A library's function its calls give more
+    /// than it takes is compiled here, from the MIR its library's metadata
+    /// keeps, and the crate lowered again with it (ADR 0914); and so is one
+    /// with a thread-local made as its module loads by a function of a
+    /// module that may load after it, made where it's first used then (ADR
+    /// 0037, amended).
+    fn lower_build<'tcx>(
+        &mut self,
+        tcx: TyCtxt<'tcx>,
+        (bodies, initializers): (&mut Vec<lower::Body<'tcx>>, &mut Vec<lower::Body<'tcx>>),
+        serde_attrs: &lower::SerdeAttributes,
+    ) {
         let mut instances = lower::Instances::default();
         let mut made_where_used = IndexSet::default();
         let lowered = loop {
@@ -409,8 +438,8 @@ impl Callbacks for RustJs {
             };
             match lower::lower_crate(
                 tcx,
-                (&mut bodies, &mut initializers),
-                &serde_attrs,
+                (bodies, initializers),
+                serde_attrs,
                 (&self.dependencies, &instances, &made_where_used),
                 built,
             ) {
@@ -460,16 +489,19 @@ impl Callbacks for RustJs {
                 .collect();
             self.lowered = Some((linked, sources));
         }
+    }
 
-        // We never want rustc's own codegen, only, for a library, the metadata
-        // its consumers' rustc reads: that of the crate rust-js compiled, as it
-        // configured it, `cfg(rust_js)` and all.
+    /// Whether rustc goes on once the crate's builds are lowered, `lowered`
+    /// whether any was. We never want rustc's own codegen, only, for a
+    /// library, the metadata its consumers' rustc reads: that of the crate
+    /// rust-js compiled, as it configured it, `cfg(rust_js)` and all.
+    fn after_builds(&self, tcx: TyCtxt<'_>, lowered: bool) -> Compilation {
         if self.metadata && tcx.dcx().has_errors().is_none() {
             Compilation::Continue
         } else {
             // rustc's driver writes the record of what it read after this,
             // where it goes on: here, once all of it's read (ADR 1099).
-            if self.dep_info && self.lowered.is_some() {
+            if self.dep_info && lowered {
                 rustc_interface::passes::write_dep_info(tcx);
             }
             Compilation::Stop
@@ -563,6 +595,9 @@ fn run() -> ExitCode {
                 }
             };
         }
+        // The tests' harness's compiles, a job's builds in one session (#2301).
+        #[cfg(not(target_os = "wasi"))]
+        Ok(command::Command::Worker) => return worker::run(),
         Ok(command::Command::TidyPasses) => {
             for pass in lower::tidy_pass_names() {
                 println!("{pass}");
@@ -686,6 +721,41 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     // Where its time goes, where it's asked (#2296).
     phase_times::start();
     let timed = (build.input.display().to_string(), build.library);
+    let mut prepared = prepare_build(build)?;
+    let exit = run_resolving_props(&prepared.rustc_args, &mut prepared.callbacks);
+    phase_times::mark("rustc: the rest");
+    let exit = finish_build(prepared, exit)?;
+    append_phase_times(Some(&timed.0), timed.1);
+    Ok(exit)
+}
+
+/// A file rustc writes, staged and where it's published (`command::Staged`).
+type StagedPaths = (PathBuf, PathBuf);
+
+/// A build prepared to compile: rustc's arguments, the callbacks that
+/// lower it, and what its publish needs once rustc is done (`finish_build`). A
+/// compile's one build's, or each of a worker's job's (#2301).
+struct Prepared {
+    rustc_args: Vec<String>,
+    callbacks: RustJs,
+    plan: output::OutputPlan,
+    stage: Stage,
+    /// What Cargo is told of the build: its manifest and its metadata's
+    /// staged and published paths (ADR 0101).
+    recorded: Option<(Option<PathBuf>, Option<StagedPaths>)>,
+    dependency_paths: Vec<PathBuf>,
+    dep_info: Option<(PathBuf, PathBuf)>,
+    printer_reads: Option<Vec<PathBuf>>,
+    reports: Vec<PathBuf>,
+    knowns_found: Option<PathBuf>,
+    tidy_fired: Option<PathBuf>,
+    label_census: Option<PathBuf>,
+    props_replayed: Option<PathBuf>,
+    cargo: bool,
+}
+
+/// What `build` compiles with, before rustc runs.
+fn prepare_build(build: command::Build) -> Result<Prepared, String> {
     let read_settings = settings::read(&build.input, build.cargo)?;
     let mut dependencies = library::Dependencies::load(&build.dependencies, &build.output, &read_settings.dir)?;
     // Every crate's JS calls std's compiled bodies from `@rust-js/std`, but
@@ -808,7 +878,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     let recording = prepare_fired.is_some();
     plan.prepare = (prepare::Passes::without(&prepare_without, recording), prepare_fired);
     let (without_recognizers, recognizers_found) = (build_without_recognizers, build_recognizers_found);
-    let mut callbacks = RustJs {
+    let callbacks = RustJs {
         dependencies,
         export_library: library || tested,
         program: tested,
@@ -832,8 +902,43 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         local_js: output::LocalJs::new(&plan),
         dep_info: !cargo && dep_info.is_some(),
     };
-    let exit = run_resolving_props(&rustc_args, &mut callbacks);
-    phase_times::mark("rustc: the rest");
+    Ok(Prepared {
+        rustc_args,
+        callbacks,
+        plan,
+        stage,
+        recorded,
+        dependency_paths,
+        dep_info,
+        printer_reads,
+        reports,
+        knowns_found,
+        tidy_fired,
+        label_census,
+        props_replayed,
+        cargo,
+    })
+}
+
+/// What `prepared` publishes once rustc is done, which ended `exit`, and
+/// the crate's checks of it: the build's exit.
+fn finish_build(prepared: Prepared, exit: ExitCode) -> Result<ExitCode, String> {
+    let Prepared {
+        rustc_args: _,
+        mut callbacks,
+        mut plan,
+        stage,
+        recorded,
+        dependency_paths,
+        dep_info,
+        printer_reads,
+        reports,
+        knowns_found,
+        tidy_fired,
+        label_census,
+        props_replayed,
+        cargo,
+    } = prepared;
     if let Some(file) = &props_replayed {
         let replayed: String = jsx_syntax::resolved::replayed()
             .iter()
@@ -916,7 +1021,13 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         hooks::check(&plan.settings, &plan.written)?;
     }
     phase_times::mark("the crate's checks");
-    if let Some((path, line)) = phase_times::line(Some(&timed.0), timed.1) {
+    Ok(exit)
+}
+
+/// The phases' times a compile took, appended to the file
+/// `RUST_JS_PHASE_TIMES` names, where it names one (#2296).
+fn append_phase_times(input: Option<&str>, library: bool) {
+    if let Some((path, line)) = phase_times::line(input, library) {
         let appended = (std::fs::OpenOptions::new().create(true).append(true).open(&path))
             .and_then(|mut file| file.write_all(line.as_bytes()));
         if let Err(error) = appended {
@@ -926,7 +1037,6 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
             );
         }
     }
-    Ok(exit)
 }
 
 /// rustc run with `callbacks`, and once more where the first compile stopped

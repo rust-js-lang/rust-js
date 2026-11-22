@@ -141,40 +141,58 @@ export function corpusHarness(): string[] {
   return [...found].sort();
 }
 
+/** What a compile printed and how it ended. */
+type Wrapped = { code: number; stdout: string; stderr: string };
+
 /** The wrapper's run: the compiler, `compiler`, given `args`, as `mutant`. */
-async function wrap(mutant: CorpusMutant, compiler: string, args: string[]): Promise<number> {
+function wrap(mutant: CorpusMutant, compiler: string, args: string[]): Wrapped {
   const out = args.indexOf("-o") >= 0 ? args[args.indexOf("-o") + 1] : undefined;
   const library = args.includes("--library");
   const { edit } = mutant;
   // What isn't a compile, as `--runtime-module`, is the compiler's own.
   if (out !== undefined && "exit" in edit && (!("library" in edit && edit.library) || library)) {
-    if (edit.exit === "crashes") {
-      process.stderr.write("thread 'rustc' panicked at src/main.rs:1:1:\na mutant's crash\n");
-      return 101;
-    }
-    if (edit.exit === "refuses") {
-      process.stderr.write("error: a mutant's refusal\n");
-      return 1;
-    }
+    if (edit.exit === "crashes") return { code: 101, stdout: "", stderr: "thread 'rustc' panicked at src/main.rs:1:1:\na mutant's crash\n" };
+    if (edit.exit === "refuses") return { code: 1, stdout: "", stderr: "error: a mutant's refusal\n" };
     if (edit.exit === "compiles") {
       writeFileSync(out, "export function entry() {}\n");
-      return 0;
+      return { code: 0, stdout: "", stderr: "" };
     }
   }
-  const p = Bun.spawnSync([compiler, ...args], { stdout: "inherit", stderr: "pipe", stdin: "inherit" });
-  const stderr = p.stderr.toString();
-  if (out !== undefined && "exit" in edit && edit.exit === "refuses-otherwise" && p.exitCode !== 0) {
-    process.stderr.write(stderr.replace(/^error(\[E\d+\])?:.*$/gm, "error: a mutant's other error"));
-    return p.exitCode ?? 1;
+  const p = Bun.spawnSync([compiler, ...args], { stdout: "pipe", stderr: "pipe", stdin: "inherit" });
+  const [stdout, stderr, code] = [p.stdout.toString(), p.stderr.toString(), p.exitCode ?? 1];
+  if (out !== undefined && "exit" in edit && edit.exit === "refuses-otherwise" && code !== 0) {
+    return { code, stdout, stderr: stderr.replace(/^error(\[E\d+\])?:.*$/gm, "error: a mutant's other error") };
   }
-  process.stderr.write(stderr);
-  if (out !== undefined && "js" in edit && (!edit.library || library) && p.exitCode === 0) writeFileSync(out, `${readFileSync(out, "utf8")}\n${edit.js}\n`);
-  return p.exitCode ?? 1;
+  if (out !== undefined && "js" in edit && (!edit.library || library) && code === 0) writeFileSync(out, `${readFileSync(out, "utf8")}\n${edit.js}\n`);
+  return { code, stdout, stderr };
+}
+
+/** The worker's jobs, `--worker` (ADR 1182), each build compiled alone as
+ * `mutant`, so a mutant's wrong answer reaches the harness by its jobs as
+ * by its compiles. */
+function wrapJobs(mutant: CorpusMutant, compiler: string, input: string): string {
+  return input
+    .split("\n")
+    .filter((line) => line.trim() !== "")
+    .map((line) => {
+      const job = JSON.parse(line) as { builds: string[][] };
+      return `${JSON.stringify({ builds: job.builds.map((args) => wrap(mutant, compiler, args)) })}\n`;
+    })
+    .join("");
 }
 
 if (import.meta.main) {
   const [name, compiler, ...args] = process.argv.slice(2);
   const mutant = corpusMutants.find((m) => m.name === name);
   if (!mutant) throw new Error(`no corpus mutant ${name}`);
-  process.exit(await wrap(mutant, compiler, args));
+  // Written whole before it exits: a pipe's `write` may not be, and the
+  // runtime's module, `--runtime-module`, is long.
+  if (args.length === 1 && args[0] === "--worker") {
+    await Bun.write(Bun.stdout, wrapJobs(mutant, compiler, await Bun.stdin.text()));
+    process.exit(0);
+  }
+  const wrapped = wrap(mutant, compiler, args);
+  await Bun.write(Bun.stdout, wrapped.stdout);
+  await Bun.write(Bun.stderr, wrapped.stderr);
+  process.exit(wrapped.code);
 }

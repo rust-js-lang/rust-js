@@ -33,8 +33,10 @@ pub(in crate::lower) use hint_asked::asked_of_own;
 pub(in crate::lower) use iterator_facts::IteratorFacts;
 mod closures;
 mod collected;
+pub use collected::{
+    bodies_of_build, collect_bodies, collect_initializers, collect_mir, collect_std_bodies, copied_bodies,
+};
 use collected::{coded_inline_consts, lowered_derive};
-pub use collected::{collect_bodies, collect_initializers, collect_mir, collect_std_bodies};
 pub(in crate::lower) use collected::{exported_value_const, impl_const, is_type_system_const};
 mod debug;
 mod drops;

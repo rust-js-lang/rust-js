@@ -21,7 +21,7 @@ import { build } from "vite";
 import { excerpt } from "./child";
 import { cases, corpus, directives, type Directives } from "./corpus-cases";
 import { expected, same, type Outcome } from "./oracle";
-import { aborted, agree, compileJs, node, runJs, runNative, runtimes, show, type Run } from "./programs";
+import { aborted, agree, compileBuilds, compileJs, node, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, caseShard, compiler, firstPart, fixture, root, helpersModule } from "./support";
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
 import { underLoad } from "../scripts/timing";
@@ -92,7 +92,10 @@ async function check(file: string): Promise<string[]> {
     return [`native Rust ended ${show(native.outcome)}, but the directive says ${show(nativeOutcome)}`];
   }
 
-  const compiled = timed("compile", () => compileJs(file, dir, want.edition));
+  // A case that runs is built as a library too (below), its two builds
+  // compiled together, in one rustc session (#2301).
+  const alsoAsLibrary = want.kind !== "compile-fail" && want.kind !== "ignore-rust-js";
+  const [compiled, libraryBuild] = timed("compile", () => compileBuilds(file, dir, want.edition, alsoAsLibrary ? [false, true] : [false]));
   if (want.kind === "compile-fail") {
     if ("js" in compiled) return ["rust-js compiled it, but `compile-fail` says it can't"];
     // A rejection, not a crash, which may begin with the rejection it expects.
@@ -143,7 +146,8 @@ async function check(file: string): Promise<string[]> {
   // Every run builds every case so, each push's too (#1920), and says where
   // its `library-differs` is wrong: a change to what decides a library's JS
   // is seen where it's pushed, not by the next check's mutation shards.
-  const library = timed("compile as a library", () => compileJs(file, dir, want.edition, true));
+  const library = libraryBuild;
+  if (library === undefined) throw new Error("a case that runs is compiled as a library with its program");
   if ("error" in library) {
     if (!want.libraryRefused) problems.push(`rust-js can't compile it as a library:\n${library.error}`);
     else if (library.kind === "crashed" || !library.error.includes(want.libraryRefused)) {

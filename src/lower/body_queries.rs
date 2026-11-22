@@ -114,7 +114,7 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
 
 /// Context-independent facts collected once, before borrowck steals the body.
 /// Type/representation facts depend on the current instantiation and stay elsewhere.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub(super) struct BodyFacts<'tcx> {
     /// The closures a `let` names that a hook's function is, each written
     /// there, named (`named_callbacks`).
@@ -407,7 +407,7 @@ pub(super) fn across_bodies<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'
 /// THIR call there (`each_call_at`): two a macro's repetition writes share
 /// one, and where one is held, std's struct, both are, never one given the
 /// other's in-place form (#1791; #1671 change 3 M5).
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub(in crate::lower) struct InPlace {
     ground: Option<IndexSet<ExprId>>,
     held: std::cell::OnceCell<IndexSet<ExprId>>,

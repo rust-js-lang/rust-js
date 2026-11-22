@@ -31,6 +31,11 @@ pub(crate) enum Command {
     /// hash, or an empty line where none has one: what the tooling gives
     /// Cargo as `RUST_JS_LAYOUT`, once a build (ADR 1003, amended; #892).
     LayoutIdentity,
+    /// `--worker`: jobs on stdin, each a case's builds compiled in one rustc
+    /// session, answered on stdout: the tests' harness's way, dev-only (ADR
+    /// 1182, #2301).
+    #[cfg(not(target_os = "wasi"))]
+    Worker,
     /// `--tidy-passes`: each of tidy's passes, a line each, in the order
     /// they run, what `--tidy-until` may name (ADR 0659).
     TidyPasses,
@@ -179,6 +184,8 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         Some("--version") if args.len() == 1 => return Ok(Command::Version),
         Some("--layout-identity") if args.len() == 1 => return Ok(Command::LayoutIdentity),
         Some("--tidy-passes") if args.len() == 1 => return Ok(Command::TidyPasses),
+        #[cfg(not(target_os = "wasi"))]
+        Some("--worker") if args.len() == 1 => return Ok(Command::Worker),
         Some("--prepare-passes") if args.len() == 1 => return Ok(Command::PreparePasses),
         Some("--knowns") if args.len() == 1 => return Ok(Command::Knowns),
         Some("--rustc") => return Ok(Command::Rustc(args[1..].to_vec())),

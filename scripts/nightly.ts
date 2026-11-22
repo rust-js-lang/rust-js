@@ -84,6 +84,15 @@ export const jobs: Record<string, Part[]> = {
     cores: 3,
     timeout: 20 * minutes,
   })),
+  // Each case that runs, its builds compiled alone and as the worker's
+  // jobs, in both orders, byte for byte (ADR 1182, #2301).
+  worker: parts("worker", perCores(1), (i) => ({
+    cmd: ["bun", "test", "--timeout=900000", "test/worker.test.ts"],
+    env: { ...compiler, RUST_JS_WORKER_CASES: "all", RUST_JS_CASES: `${i}/${perCores(1)}` },
+    after: ["build"],
+    cores: 1,
+    timeout: 30 * minutes,
+  })),
   // React Compiler over the React tests' programs (ADR 1142).
   "react-compiler": parts("react-compiler", perCores(4), (i) => ({
     cmd: ["bun", "scripts/react-compiler-sweep.ts", `${i}/${perCores(4)}`],

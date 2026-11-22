@@ -73,7 +73,7 @@ type Matched<'tcx> = (Span, ty::Ty<'tcx>, Vec<Tested<'tcx>>);
 /// `let` and where in what it matches (ADRs 0590, 0634, amended): two
 /// constants of one value, `SUSPENDED_ON_INSTANCE_AND_READY_TO_CONTINUE`
 /// and `HOST_COMPONENT`, each name it where it's written.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub(in crate::lower) struct ConstantPatterns<'tcx> {
     matched: Vec<Matched<'tcx>>,
 }

@@ -217,7 +217,7 @@ binary uses rustc.
 
 | Layer | Modules | May depend on |
 | --- | --- | --- |
-| Driver | `main.rs`, `command.rs`, `cargo.rs`, `clippy.rs`, `std_sysroot.rs` | Every layer |
+| Driver | `main.rs`, `command.rs`, `cargo.rs`, `clippy.rs`, `std_sysroot.rs`, `worker.rs` (the tests' harness's compiles, a case's builds in one rustc session, [ADR 1182](decisions/1182-a-cases-builds-compile-in-one-rustc-session.md)) | Every layer |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | Front end and earlier-use owned data/utilities; no linking, preparation or publication |
 | Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `output/`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs`, `packages.rs`, `css_modules.rs`; the crate `rust-js-program` | Owned output; no rustc |
 | Printing | `to_oxc.rs`, `to_oxc/`, `format.rs`, `format/`, `typescript.rs`, `prettier.rs`, `node_session.rs` | Printing and owned output; no rustc |

@@ -20,6 +20,7 @@ use rustc_middle::ty::{self};
 use rustc_span::Span;
 
 /// A body's MIR, as borrowck reads it (ADR 0364), and its promoted constants.
+#[derive(Clone)]
 pub struct Mir<'tcx> {
     pub(in crate::lower) body: mir::Body<'tcx>,
     pub(in crate::lower) promoted: IndexVec<Promoted, mir::Body<'tcx>>,

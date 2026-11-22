@@ -99,7 +99,9 @@ mod untagged;
 mod uses;
 
 use crate::names::{fresh_in, js_ident};
-pub use analysis::{collect_bodies, collect_initializers, collect_mir, collect_std_bodies};
+pub use analysis::{
+    bodies_of_build, collect_bodies, collect_initializers, collect_mir, collect_std_bodies, copied_bodies,
+};
 /// Whether each `#[rust_js::name]` gives a name its item hasn't anyway, of
 /// a crate `--rustc` compiles for its metadata too (ADR 0573).
 pub use bindings::given_names_differ;
@@ -132,7 +134,9 @@ use parameter_names::{default_parameter_name, parameter_name, written_parameter_
 type R<T> = Result<T, refusal::Refusal>;
 
 /// A function's THIR, copied out of rustc before borrowck steals it: read
-/// for the shape and facts its MIR is lowered with.
+/// for the shape and facts its MIR is lowered with. Cloned for each build
+/// of a case one rustc session compiles (#2301).
+#[derive(Clone)]
 pub struct Body<'tcx> {
     def_id: DefId,
     thir: Thir<'tcx>,

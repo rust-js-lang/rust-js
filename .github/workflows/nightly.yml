@@ -266,6 +266,16 @@ jobs:
           RUST_JS_CASES: ${{ matrix.part }}/2
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun test --timeout=600000 test/determinism.test.ts
+      # And a case's builds compiled in one rustc session by the worker are
+      # their own compiles' (ADR 1182, #2301): every case that runs, each
+      # build alone, then one job program-first and one library-first, byte
+      # for byte; four parts of the part's cases at once, one a core.
+      - name: The worker's jobs, part ${{ matrix.part }} of 2
+        env:
+          RUST_JS_WORKER_CASES: all
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+          PART: ${{ matrix.part }}
+        run: bun scripts/parts.ts $(( (PART - 1) * 4 + 1 ))-$(( PART * 4 ))/8 test/worker.test.ts --timeout=900000
       - if: always()
         uses: ./.github/actions/decision-counts
         with:

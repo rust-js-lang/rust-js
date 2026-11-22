@@ -62,9 +62,11 @@ export function report(text: string): string {
     const phases = byName(these.map((c) => c.phases));
     const inside = sum(these.flatMap((c) => c.phases.map(([, ms]) => ms)));
     const step = library ? "compile as a library" : "compile";
-    const outside = sum(steps.get(step) ?? []) - inside;
-    phases.set("process start and exit", [outside]);
-    out.push(table(`${step}: its phases`, phases, sum(steps.get(step) ?? [inside])), "");
+    // Of the harness's step, where it timed one: a worker's job, both
+    // builds' phases in one line, is timed as `compile` (#2301).
+    const harness = steps.get(step);
+    if (harness !== undefined) phases.set("process start and exit", [sum(harness) - inside]);
+    out.push(table(`${step}: its phases`, phases, sum(harness ?? [inside])), "");
   }
   const slowest = [...cases].sort((a, b) => b.total - a.total).slice(0, 10);
   out.push("| slowest case | total ms | its steps, ms |", "|---|---:|---|");

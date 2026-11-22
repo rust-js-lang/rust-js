@@ -349,20 +349,42 @@ const unrecordableMark = ".unrecordable";
 
 /** `cmd` run by `compile`, through the cache where it's a compile it keeps. */
 export function keptCompile(cmd: string[], cwd: string, env: Record<string, string | undefined>, compile: Compile, free: Free = diskFree): Exit {
-  const planned = plan(cmd, cwd, env);
-  if (!planned) return compile(cmd);
-  if (existsSync(join(planned.dir, unrecordableMark))) return compile(cmd);
-  const hit = found(planned.dir, cwd, planned.manifest);
-  if (hit) return hit;
-  mkdirSync(join(store, ".records"), { recursive: true });
-  const p = compile(planned.recorded);
-  if (p.code !== 0 && p.stderr.includes(unrecordable)) {
-    mkdirSync(planned.dir, { recursive: true });
-    writeFileSync(join(planned.dir, unrecordableMark), "");
-    return compile(cmd);
-  }
-  settle(p, planned, cwd, free);
-  return p;
+  return keptBuilds([cmd], cwd, env, () => [], compile, free)[0];
+}
+
+/** What a job of builds answered (`rust-js --worker`, #2301): each build's
+ * exit, as its own compile's, or `undefined` of one it ran apart, or of
+ * every build, where the job gave no answer. */
+type Job = (cmds: string[][]) => (Exit | undefined)[];
+
+/** `cmds`, each a build of one case, its own compile's command: each found
+ * kept, and those that aren't compiled together by `job`, each given its
+ * own record and kept as its own compile would be; a build the job ran
+ * apart by `compile`, as a compile alone. One build is its own compile. */
+export function keptBuilds(cmds: string[][], cwd: string, env: Record<string, string | undefined>, job: Job, compile: Compile, free: Free = diskFree): Exit[] {
+  const planned = cmds.map((cmd) => {
+    const p = plan(cmd, cwd, env);
+    return p && !existsSync(join(p.dir, unrecordableMark)) ? p : undefined;
+  });
+  const exits: (Exit | undefined)[] = planned.map((p) => p && found(p.dir, cwd, p.manifest));
+  const left = exits.flatMap((exit, i) => (exit ? [] : [i]));
+  if (left.length === 0) return exits as Exit[];
+  if (planned.some(Boolean)) mkdirSync(join(store, ".records"), { recursive: true });
+  const given = left.map((i) => planned[i]?.recorded ?? cmds[i]);
+  const answered = left.length > 1 ? job(given) : [];
+  left.forEach((i, k) => {
+    const p = answered[k] ?? compile(given[k]);
+    const kept = planned[i];
+    if (kept && p.code !== 0 && p.stderr.includes(unrecordable)) {
+      mkdirSync(kept.dir, { recursive: true });
+      writeFileSync(join(kept.dir, unrecordableMark), "");
+      exits[i] = compile(cmds[i]);
+      return;
+    }
+    if (kept) settle(p, kept, cwd, free);
+    exits[i] = p;
+  });
+  return exits as Exit[];
 }
 
 /** `keptCompile`, without blocking the others running. */
