@@ -38,7 +38,9 @@ import { tableOf } from "./matrix-tables";
 import { builds, failures, fixedFile, knownCases, listedBuild, ofTable, readKnown, segments, table, twinHelpers, version, type Row } from "./iterator-matrix";
 import { same, type Outcome } from "./oracle";
 import { importedHelpers } from "./twin-net";
-import { aborted, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
+import { aborted, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, runtimes, show, type CompileError, type Run } from "./programs";
+import { runSync } from "./child";
+import { libraryCrate } from "./iterator-paths";
 import { buildCompiler, fixture, knownFileOf } from "./support";
 import { machine, shard } from "../scripts/shard";
 import { partSetting } from "./part-settings";
@@ -180,7 +182,21 @@ function judge(cases: Row[], native: Map<string, string>, dir: string, build: st
     const at = join(dir, `${build}-${round}`);
     writeFileSync(file, text);
     mkdirSync(at, { recursive: true });
-    const compiled = compileJs(file, at, "2024", false, {}, flags, rustc);
+    // Of cases whose consumer is a library's, that library compiled first,
+    // its JS and manifest, then the program against them, as a crate's
+    // dependency is (step 2b′).
+    const library = of.library?.(pending);
+    let compiled: { js: string } | CompileError;
+    if (library === undefined) {
+      compiled = compileJs(file, at, "2024", false, {}, flags, rustc);
+    } else {
+      const source = join(at, `${libraryCrate}.rs`);
+      writeFileSync(source, library);
+      const lib = compileJsLibrary(source, at, "2024", libraryCrate, flags);
+      compiled = "rmeta" in lib
+        ? compileJs(file, at, "2024", false, {}, [...flags, "--dependency", lib.manifest], [...rustc, "--extern", `${libraryCrate}=${lib.rmeta}`, "-L", at])
+        : lib;
+    }
     if ("error" in compiled) {
       const refused = compiled.kind === "rejected" ? refusedCases(compiled.error, text, pending, file) : new Map<Row, string>();
       if (refused.size === 0) {
@@ -277,7 +293,18 @@ for (const index of mine) {
     if (oracle === "std") return againstStd(batch, dir, index);
     const file = join(dir, "native.rs");
     writeFileSync(file, of.program(batch));
-    const native: Run | string = runNative(file, dir);
+    // Of cases whose consumer is a library's, that library built first.
+    const library = of.library?.(batch);
+    const linked: string[] = [];
+    if (library !== undefined) {
+      const source = join(dir, `${libraryCrate}.rs`);
+      const rlib = join(dir, `lib${libraryCrate}.rlib`);
+      writeFileSync(source, library);
+      const built = runSync(["rustc", ...nativeFlags("2024"), "--crate-type=rlib", `--crate-name=${libraryCrate}`, source, "-o", rlib], dir, 120_000);
+      if (built.code !== 0) throw new Error(`the matrix made a library rustc rejects:\n${built.stderr.slice(0, 4000)}`);
+      linked.push("--extern", `${libraryCrate}=${rlib}`);
+    }
+    const native: Run | string = runNative(file, dir, "2024", "host", linked);
     if (typeof native === "string") throw new Error(`the matrix made a program rustc rejects:\n${native.slice(0, 4000)}`);
     // A batch of one may abort, as Rust does where a drop panics as a panic
     // unwinds: what it printed till then is what the JS must print, then

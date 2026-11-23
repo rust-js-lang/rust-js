@@ -28,7 +28,7 @@ import { join } from "node:path";
 
 import { random } from "./generate";
 import { prelude } from "./iterator-matrix-prelude";
-import { isTrait, ownClone, pathFns, type Path } from "./iterator-paths";
+import { isTrait, libraryCrate, libraryMark, ownClone, pathFns, published, type Path } from "./iterator-paths";
 import { pointsRunner } from "./panic-points";
 import { nested, ownName, owns, sites, sources, type Item, type Nested, type Own, type Shape, type Site, type Source } from "./iterator-sources";
 import { casesOf, tableOf } from "./matrix-tables";
@@ -1152,6 +1152,38 @@ function withTwice(text: string): string {
   }, text);
 }
 
+/** Of `cases`' functions, each split where a path's library's begins
+ * (`libraryMark`): the program's, and the library's. */
+function splitLibrary(fns: string[]): [here: string[], library: string[]] {
+  const here: string[] = [];
+  const library: string[] = [];
+  for (const text of fns) {
+    const at = text.indexOf(libraryMark);
+    if (at < 0) {
+      here.push(text);
+      continue;
+    }
+    here.push(text.slice(0, at).trimEnd());
+    library.push(text.slice(at + libraryMark.length).trim());
+  }
+  return [here, library];
+}
+
+/** The prelude a program of `cases` runs on, of the table `of`. */
+function preludeOf(cases: Case[], of: Table): string {
+  if (cases.some((c) => c.site === "drop+drop")) return withTwice(prelude);
+  return of === "points" ? withPoints(prelude) + pointsRunner : prelude;
+}
+
+/** The library `cases`' `library` paths give their adapters to (#2112
+ * Change A, step 2b′): the prelude and their consumers, published, which
+ * the program uses whole; `undefined` of cases with none. */
+export function pathsLibrary(cases: Case[]): string | undefined {
+  const [, library] = splitLibrary(cases.map((c, n) => caseFn(c, n)));
+  if (library.length === 0) return undefined;
+  return published([preludeOf(cases, "paths"), ...library].join("\n\n")) + "\n";
+}
+
 /** A program of `cases`, which runs each in turn. */
 export function program(cases: Case[], of: Table = table): string {
   const used = new Set(cases.map((c) => ownName(c.source.name)));
@@ -1159,10 +1191,16 @@ export function program(cases: Case[], of: Table = table): string {
   const iterators = owns
     .filter((own) => used.has(`own ${own.name}`))
     .map((own) => ownIterator(own, of !== "matrix") + (of === "paths" ? `\n\n${ownClone(own.name)}` : ""));
-  const fns = cases.map((c, n) => caseFn(c, n));
+  const [fns, library] = splitLibrary(cases.map((c, n) => caseFn(c, n)));
   if (cases.some((c) => c.variant.kind === "path" && c.variant.path.startsWith("trait"))) fns.unshift(isTrait);
   const runner = of === "points" ? "run_points" : "run";
   const main = `fn main() {\n${cases.map((c, n) => `    ${runner}(${JSON.stringify(c.id)}, case_${n});`).join("\n")}\n}`;
+  // Of a library's cases, the prelude the library's, used whole, its
+  // imports the program's own too.
+  if (library.length > 0) {
+    const imports = preludeOf(cases, of).split("\n").filter((line) => line.startsWith("use "));
+    return [[...imports, `use ${libraryCrate}::*;`].join("\n"), ...iterators, ...fns, main].join("\n\n") + "\n";
+  }
   if (cases.some((c) => c.site === "drop+drop")) {
     return [withTwice(prelude), ...iterators, ...fns, main].join("\n\n") + "\n";
   }

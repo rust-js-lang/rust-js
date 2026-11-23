@@ -21,8 +21,46 @@ import { sources, type Site } from "./iterator-sources";
 import { stdRuns, stdWrites } from "./std-steps-catalog";
 
 /** How a case's iterator reaches its consumer. */
-export type Path = "&mut" | "&mut dyn" | "Box" | "Box dyn" | "generic" | "impl" | "clone" | "cycle" | "trait" | "trait Box" | "trait &mut" | "Box Box" | "&mut Box" | "Box J";
-export const paths: Path[] = ["&mut", "&mut dyn", "Box", "Box dyn", "generic", "impl", "clone", "cycle", "trait", "trait Box", "trait &mut", "Box Box", "&mut Box", "Box J"];
+export type Path = "&mut" | "&mut dyn" | "Box" | "Box dyn" | "generic" | "impl" | "clone" | "cycle" | "trait" | "trait Box" | "trait &mut" | "Box Box" | "&mut Box" | "Box J" | "library" | "library Box";
+export const paths: Path[] = ["&mut", "&mut dyn", "Box", "Box dyn", "generic", "impl", "clone", "cycle", "trait", "trait Box", "trait &mut", "Box Box", "&mut Box", "Box J", "library", "library Box"];
+
+/** The crate a `library` path's consumer is the generic code of, compiled
+ * apart, from its own JS and manifest, as a dependency's is (#2112 Change
+ * A, step 2b′): what its generic code asks of the dictionary the case's
+ * crate gives it. */
+export const libraryCrate = "paths_lib";
+
+/** What begins a function of a path case's that's the library's, not the
+ * program's (`pathFns`), as `program` splits them. */
+export const libraryMark = "// paths_lib's";
+
+/** Whether `path` gives the case's adapter to a library's generic code. */
+export const isLibraryPath = (path: Path) => path === "library" || path === "library Box";
+
+/** `text`, the prelude and the consumers a library holds, each item and
+ * each field of a struct public, so the program, which uses the library's
+ * every item, makes and reads them as it would its own. */
+export function published(text: string): string {
+  const out: string[] = [];
+  let fields = false;
+  for (const line of text.split("\n")) {
+    if (fields) {
+      if (line.startsWith("}")) fields = false;
+      else if (/^ {4}\w+: /.test(line)) {
+        out.push(line.replace(/^ {4}/, "    pub "));
+        continue;
+      }
+    }
+    const item = /^(fn|struct|enum|trait|static|const|type) /.test(line) ? `pub ${line}` : line;
+    // A tuple struct's fields, `struct D(u32);`.
+    const tupled = item.replace(/^pub struct (\w+)\(([^)]*)\)/, (_, name: string, parts: string) =>
+      `pub struct ${name}(${parts.split(",").map((part) => (part.trim() === "" ? part : `pub ${part.trim()}`)).join(", ")})`,
+    );
+    if (/^pub struct \w+(<[^>]*>)? \{$/.test(tupled)) fields = true;
+    out.push(tupled);
+  }
+  return out.join("\n");
+}
 
 /** The trait generic code is given its iterator through, so `I` comes with
  * its dictionary (`trait` paths, #2185). */
@@ -183,6 +221,14 @@ export function pathFns(c: Case & { variant: { kind: "path"; path: Path } }, nam
       return fn(`${name}()`, [...body, `let mut w = Box::new(${expr});`, `let ${lent ? "mut " : ""}r = &mut w;`, ...seen, consumed(reference("r"))]);
     case "Box J":
       return [fn(`${name}()`, [...body, `${name}_consume(${expr});`]), fn(`${name}_consume<J: ${bounds(c, shape, false)}>(j: J)`, [...seen, consumed("Box::new(j)")])].join("\n\n");
+    // The library's generic code given the adapter, or a `Box` of it: its
+    // consumer the library's, compiled apart (`libraryMark`).
+    case "library":
+    case "library Box": {
+      const given = path === "library" ? expr : `Box::new(${expr})`;
+      const consumer = `pub ${fn(`${name}_consume<I: ${bounds(c, shape, false)}>(${mut}it: I)`, [...seen, consumed("it")])}`;
+      return [fn(`${name}()`, [...body, `${libraryCrate}::${name}_consume(${given});`]), `${libraryMark}\n${consumer}`].join("\n\n");
+    }
   }
 }
 

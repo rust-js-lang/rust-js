@@ -20,8 +20,9 @@ import {
   strata,
   aborts,
   type Table,
+  pathsLibrary,
 } from "./iterator-matrix";
-import { pathsCases, pathStrata } from "./iterator-paths";
+import { isLibraryPath, pathsCases, pathStrata } from "./iterator-paths";
 import { numberCases, numberProgram, numberStrata, type NumberCase } from "./number-grid";
 import { refused, stdNetCases, stdNetProgram, stdNetStrata, type NetCase } from "./std-net";
 import { buildReact, target } from "./support";
@@ -42,6 +43,9 @@ export type TableOf<C extends Row> = {
    * the refusal says, and its issue. */
   refused?: Record<string, [said: string, issue: number]>;
   program(cases: C[]): string;
+  /** Of a table whose programs use a library of their own, the paths
+   * table's `library` paths', its text; `undefined` of a batch with none. */
+  library?(cases: C[]): string | undefined;
   /** Its cases in programs: of a pick, the rows a change names, as many
    * a program as the rows' owner says (`pickedPerBatch`). */
   batches(cases: C[], picked?: boolean): C[][];
@@ -135,7 +139,13 @@ const copiesTable: TableOf<CopyCase> = {
 const pathsTable: TableOf<Case> = {
   cases: pathsCases,
   program: (batch) => program(batch, "paths"),
-  batches: (all) => batches(all),
+  library: pathsLibrary,
+  // A `library` path's cases in programs of their own, each with its library,
+  // the others' programs one crate each (step 2b′).
+  batches: (all) => {
+    const library = (c: Case) => c.variant.kind === "path" && isLibraryPath(c.variant.path);
+    return [...batches(all.filter((c) => !library(c))), ...batches(all.filter(library))];
+  },
   slice: (all) => slice(all, pathStrata),
 };
 

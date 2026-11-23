@@ -239,7 +239,8 @@ jobs:
       # And the paths table, all of it (test/iterator-paths.ts, #2112): each
       # adapter through each step std's adapter writes, by each path generic
       # and boxed code reaches it, `&mut I`, `Box<dyn I>`, a clone and the
-      # rest. Its 48 batches take some 20 s in 4 parts on the Mac mini.
+      # rest, and a library's generic code given it, compiled apart (step
+      # 2b′). Its 99 batches take some 72 s in 2 parts on the M6.
       - name: iterator paths table
         id: paths
         if: needs.plan.outputs.iterators == 'true'

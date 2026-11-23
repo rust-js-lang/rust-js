@@ -2290,3 +2290,31 @@ of the box, then lends it. Corpus
 `box_of_an_adapter_given_to_generic_code_knows_its_length_and_back`, a box
 and a box of a box, holds it against native. Mutation:
 `boxed-given-unknowing`.
+
+## Amendment: the paths table's library paths (2026-11-24, #2112 Change A, step 2b′)
+
+The issue's path list names a library's generic code beside a generic
+function, a `&mut`, a `Box`, a `dyn` and a clone, and the table had every
+path but that one. So it gains two, made as the others are:
+
+- `library`, `library Box`: the case's adapter of the crate's own iterator,
+  or a `Box` of it, given to `paths_lib::case_N_consume<I: Bounds>(it: I)`,
+  a library's generic function compiled apart from its own JS and
+  manifest, as a dependency's is, then the case's crate against them. A
+  library-path batch is two crates: the library holds the prelude and its
+  batch's consumers, made public (`published`), and the program uses it
+  whole. Natively, the library is an rlib the program is given by
+  `--extern`. Their cases batch apart from the others, whose programs stay
+  one crate.
+- Not one a library makes: a case's sources are the crate's own iterator
+  types, which a library can't name; std's adapters a library makes are
+  the metamorphic net's `library` rewrite's.
+
+The table goes from 5,125 cases to 5,877, in 99 programs, still all of it
+per push of the iterators' code: 72 s in 2 parts on the M6, the 13 library
+batches some 15 s of it.
+
+**What its first run found.** Every `library` case ran as native; 188
+`library Box` cases didn't, in both builds: #2419, a `Box` given to
+generic code not made knowing its length and its back (above), the crate's
+own generic code alike. Fixed before the table landed, so no row is listed.
