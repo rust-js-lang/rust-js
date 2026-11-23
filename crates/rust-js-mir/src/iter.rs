@@ -423,9 +423,10 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 }
                 let a_value = a.clone();
                 // Each source closed to drop what it holds, as the adapter not
-                // cloned apart holds it (`closing`, ADR 0465, #1506).
+                // cloned apart holds it, where it's made: `as_js_iterator`
+                // closes the crate's iterator, and each maker its adapter
+                // (`closing`, ADR 0465, #1506).
                 let a = cx.as_js_iterator(a, receiver_ty, span)?;
-                let a = cx.closing(a, receiver_ty, span)?;
                 Ok(match parted {
                     // Its source given its function, `it.map(f)`; a copy's,
                     // which has none, is `copied_cloned_apart`'s.
@@ -451,10 +452,9 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                         };
                         Expr::call_helper("$lazyChain", vec![cx.closing(a, receiver_ty, span)?, b])
                     }
-                    Parted::Chain => {
-                        let b = cx.as_js_iterator(b, other_ty, span)?;
-                        Expr::call_helper("$lazyChain", vec![a, cx.closing(b, other_ty, span)?])
-                    }
+                    // Its other side closed where it's made, as `as_js_iterator`
+                    // closes the crate's iterator and each maker its adapter.
+                    Parted::Chain => Expr::call_helper("$lazyChain", vec![a, cx.as_js_iterator(b, other_ty, span)?]),
                 })
             },
         )?;

@@ -792,22 +792,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^extend_by_fold_drops_once.rs$"],
   },
   {
-    name: "cloned-apart-source-unclosed",
-    breaks: "a map, a filter or a chain cloned apart steps its first source unclosed, so the crate's iterator with a `Drop` it holds is never dropped (#1506)",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "                let a = cx.closing(a, receiver_ty, span)?;\n                Ok(match parted {",
-    replace: "                Ok(match parted {",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_apart_adapter_drops_its_sources.rs$"],
-  },
-  {
-    name: "cloned-apart-chain-side-unclosed",
-    breaks: "a chain cloned apart steps its other side unclosed, so `Countdown(2).chain(Countdown(1))`'s second is never dropped (#1506)",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "                        Expr::call_helper(\"$lazyChain\", vec![a, cx.closing(b, other_ty, span)?])\n",
-    replace: "                        Expr::call_helper(\"$lazyChain\", vec![a, b])\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_apart_adapter_drops_its_sources.rs$"],
-  },
-  {
     name: "cloned-apart-back-chain-unclosed",
     breaks: "a chain cloned apart stepped from its back steps its sides unclosed, so `Countdown(4).chain(Countdown(5)).next_back()` drops neither (#1506)",
     file: "crates/rust-js-mir/src/iter.rs",

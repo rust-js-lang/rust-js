@@ -1995,6 +1995,16 @@ made the form:
   adapter's marks (`iterators::holding`, the one constructor of the form
   `held_by_holding` reads), as `$held` does.
 - A `rev()` marked its own result already (`reversed_knowing`).
+- An adapter cloned apart has its sources closed once, where they're
+  made. `as_js_iterator` closes the crate's iterator, and each maker
+  closes the adapter it makes. `cloned_apart_call` closed its first source
+  again, and closed a forward chain's other side again. `closing` returns
+  a closed source unchanged, so neither call changed anything. Their
+  mutations, `cloned-apart-source-unclosed` and
+  `cloned-apart-chain-side-unclosed`, survived the whole corpus with its
+  snapshots. The calls and their mutations are gone. A chain stepped from
+  its back still closes both sides itself, since `as_double_ended` closes
+  neither.
 
 `made_knowing_its_back` is `pub(crate)` in rust-js-lower, so rust-js-mir
 can read the mark (`was_made_knowing_its_back`) and never write it. The
