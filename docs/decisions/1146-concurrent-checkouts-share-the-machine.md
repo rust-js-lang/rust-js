@@ -70,3 +70,5 @@ existing runner to isolated ECMAScript/TypeScript module inputs, with actual
 load evidence, unchanged-source controls, per-workspace package aliases and
 the same lease, lock and target isolation. Generator chains use existing
 build workers; pure module tests use existing test slots.
+
+Amended (#1767): a mutation run took its share of the cores (`ownShare`) but sized its builds and its tests' memory by the whole budget, so beside another run it planned for memory its neighbour held. Both now come from one part of the machine, `ownPart`: `ownShare` of the cores and `ownMemory` of the memory budget, which `compilerBuildsAsked` and `testsMemory` read.

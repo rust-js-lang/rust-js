@@ -281,7 +281,16 @@ test("the compiler's builds at once are as many as the cores and the memory hold
   expect(mutations.cmd).toContain(`--jobs=${compilerBuilds(8)}`);
   expect(mutations.memory).toBe(compilerBuilds(8) * peakGB.compilerBuild);
   expect(check.find((job) => job.name === "clippy")!.memory).toBe(peakGB.compilerCheck);
-  expect(readFileSync(join(root, "scripts/mutations.ts"), "utf8")).toContain("compilerBuildsAsked(said >= 1 ? said : undefined, ownShare(machine().cores));");
+  // A mutation run's builds of its own share of the cores and the memory
+  // alike, `ownPart`'s (#1767).
+  const mutationsSource = readFileSync(join(root, "scripts/mutations.ts"), "utf8");
+  expect(mutationsSource).toContain("const budget = ownMemory(memoryBudget());");
+  expect(mutationsSource).toContain("compilerBuildsAsked(said >= 1 ? said : undefined, ownShare(machine().cores), undefined, undefined, budget);");
+  expect(mutationsSource).toContain("Math.max(4, ownMemory(memoryBudget()) / 2)");
+  // Beside another run, on 16 GB with 14 free and 8 cores: of half the
+  // cores and the whole memory, two builds; of half of each, one.
+  expect(compilerBuilds(4, 16 * gb, 14 * gb)).toBe(2);
+  expect(compilerBuilds(4, 16 * gb, 14 * gb, memoryBudget(16 * gb, 14 * gb) / 2)).toBe(1);
 });
 
 // A run's `--jobs` lowers the builds the memory holds, never raises them:

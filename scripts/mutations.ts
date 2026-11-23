@@ -31,7 +31,7 @@ import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
 import { mutantsLock } from "./disk";
 import { ownCompiler } from "./own-compiler";
-import { acquire, holdLease, ownShare } from "./leases";
+import { acquire, holdLease, ownMemory, ownShare } from "./leases";
 import { makeSourceWorkspace, sourceMutation } from "./source-mutations";
 import { wasmPath } from "../wasm/web/site.ts";
 import { latentSurvivors, type Results } from "./latent-survivors";
@@ -1076,10 +1076,10 @@ export function failedTests(log: string): string[] {
 let testRuns = 0;
 
 /** The bytes one run of a mutant's tests may hold, it and every process it
- * starts: half the machine's budget, 4 GB at least. A run's peak is a
+ * starts: half the run's own memory (`ownMemory`), 4 GB at least. A run's peak is a
  * test file's compiles, under 2 GB; one past this is a compiler that runs
  * away, which took CI's runners of 16 GB down before (#1097). */
-const testsMemory = () => Math.max(4, memoryBudget() / 2) * 2 ** 30;
+const testsMemory = () => Math.max(4, ownMemory(memoryBudget()) / 2) * 2 ** 30;
 
 /** How `tests` do with `compiler`, what they printed, and how many ran:
  * to its first failure, or, `bail` false, each of them, with `env` besides. */
@@ -2443,9 +2443,10 @@ async function main() {
   // two of the hours its shard takes. `--jobs` lowers it, never raises it
   // (`compilerBuildsAsked`), said where it's cut.
   const said = Number(args.find((arg) => arg.startsWith("--jobs="))?.slice("--jobs=".length));
-  const asked = compilerBuildsAsked(said >= 1 ? said : undefined, ownShare(machine().cores));
+  const budget = ownMemory(memoryBudget());
+  const asked = compilerBuildsAsked(said >= 1 ? said : undefined, ownShare(machine().cores), undefined, undefined, budget);
   const jobs = asked.builds;
-  if (asked.cut) console.log(`--jobs=${said}: ${jobs} at once, what the memory holds beside its tests (${memoryBudget().toFixed(1)} GB, ${peakGB.compilerBuild} GB a build, shard.ts)`);
+  if (asked.cut) console.log(`--jobs=${said}: ${jobs} at once, what the memory holds beside its tests (${budget.toFixed(1)} GB its own, ${peakGB.compilerBuild} GB a build, shard.ts)`);
   // And of up to `--batch` mutations each, every one chosen by name as the
   // compiler runs (ADR 1031): a build of each alone was 85% of a run's time.
   // `--batch=1` builds each alone.

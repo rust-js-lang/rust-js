@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { readJobTimes } from "../scripts/jobTimes";
-import { acquire, fairShare, holdLease, leasedIn, liveLeases, lockState, ownShare, withLock } from "../scripts/leases";
+import { acquire, fairShare, holdLease, leasedIn, liveLeases, lockState, ownMemory, ownPart, ownShare, withLock } from "../scripts/leases";
 import { mutantsLock, mutantsStore } from "../scripts/disk";
 import { underLoad } from "../scripts/timing";
 import { fixture, root } from "./support";
@@ -46,6 +46,11 @@ test("a run's share is the machine divided by the live leases, and a lease of a 
   // What a pool started takes the whole it's given, the pool's share
   // holding it; and holds no lease of its own.
   expect(ownShare(14, { RUST_JS_LEASED: "1" })).toBe(14);
+  // Its cores and its memory one part of the machine, `ownPart`'s, so
+  // neither is sized for what other runs hold (#1767).
+  expect([ownPart({}, 2), ownShare(14, {}, 2), ownMemory(30, {}, 2)]).toEqual([0.5, 7, 15]);
+  expect([ownPart({ RUST_JS_LEASED: "1" }, 3), ownShare(14, { RUST_JS_LEASED: "1" }, 3), ownMemory(30, { RUST_JS_LEASED: "1" }, 3)]).toEqual([1, 14, 30]);
+  expect([ownShare(14, {}, 3), ownMemory(30, {}, 3)]).toEqual([4, 10]);
   const none = join(fixture("leases-held"), "leases");
   rmSync(none, { recursive: true, force: true });
   holdLease("check", { store: none, env: { RUST_JS_LEASED: "1" } });

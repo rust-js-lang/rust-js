@@ -81,11 +81,24 @@ export function fairShare(whole: number, leases = liveLeases().length): number {
   return whole / Math.max(1, leases);
 }
 
-/** What a run started by itself sizes by of `whole`: its `fairShare`; or
- * all of it, of one a pool started (`RUST_JS_LEASED`), the pool's share
- * holding it already. Whole cores, at least one. */
-export function ownShare(whole: number, env = process.env): number {
-  return Math.max(1, Math.floor(env.RUST_JS_LEASED ? whole : fairShare(whole)));
+/** The part of the machine a run started by itself sizes by, its cores
+ * and its memory alike: its `fairShare` of one; or all of it, of one a
+ * pool started (`RUST_JS_LEASED`), the pool's share holding it already. A
+ * run that took its cores' share and the whole memory budget, as mutation
+ * runs did, sized its builds and tests for memory its neighbours held too
+ * (#1767). */
+export function ownPart(env = process.env, leases?: number): number {
+  return env.RUST_JS_LEASED ? 1 : fairShare(1, leases);
+}
+
+/** A run's own whole cores of `whole`, at least one (`ownPart`). */
+export function ownShare(whole: number, env = process.env, leases?: number): number {
+  return Math.max(1, Math.floor(whole * ownPart(env, leases)));
+}
+
+/** A run's own GB of `budget`, the machine's memory budget (`ownPart`). */
+export function ownMemory(budget: number, env = process.env, leases?: number): number {
+  return budget * ownPart(env, leases);
 }
 
 /** Whether any live lease is of `dir`'s checkout: its stores are in use. */

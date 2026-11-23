@@ -485,8 +485,8 @@ export function atOnce(kind: keyof typeof jobKinds, on: Machine = machine(), roo
  * where it was 24 (2026-11-11). Two on CI's four cores and 16 GB, two on
  * 8 cores and 16 GB, where the cores alone said four; one there with 9 GB
  * of it free. */
-export function compilerBuilds(cores: number, total = totalmem(), free = availableMemory()): number {
-  const room = memoryBudget(total, free) - cores * peakGB.test;
+export function compilerBuilds(cores: number, total = totalmem(), free = availableMemory(), budget = memoryBudget(total, free)): number {
+  const room = budget - cores * peakGB.test;
   return Math.min(4, atOnce("compilerBuild", { cores, totalGB: total / 2 ** 30, freeGB: free / 2 ** 30 }, room));
 }
 
@@ -500,8 +500,9 @@ export function compilerBuildsAsked(
   cores: number,
   total = totalmem(),
   free = availableMemory(),
+  budget = memoryBudget(total, free),
 ): { builds: number; cut: boolean } {
-  const held = compilerBuilds(cores, total, free);
+  const held = compilerBuilds(cores, total, free, budget);
   if (asked === undefined || !(asked >= 1)) return { builds: held, cut: false };
   return { builds: Math.min(asked, held), cut: asked > held };
 }
