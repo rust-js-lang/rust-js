@@ -27,14 +27,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_where_its_object_is_stored.rs$"],
   },
   {
-    name: "stored-root-kept-after-move",
-    breaks: "a handle rooted where its object was, before a `swap` moved it, keeps that root, so its field's address is in the container it left, `4294963212` where native Rust's is `12` (#1113)",
-    file: "crates/rust-js-program/src/runtime/pointers.js",
-    find: "  if (pointer.root !== undefined && pointer.bytes === undefined && $rooted(pointer)) {\n",
-    replace: "  if (pointer.root !== undefined && pointer.bytes === undefined) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_where_its_object_is_stored.rs$"],
-  },
-  {
     name: "stored-record-unwritten",
     breaks: "`$stored` records nothing, so a field's address through a reference is its object's own allocation's (#1113)",
     file: "crates/rust-js-program/src/runtime/pointers.js",

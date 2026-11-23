@@ -615,9 +615,10 @@ function $addr(pointer, size, inner) {
   }
   // A place reached through more than one field or item: at its offset in
   // the root its projections start from, whose address is the root's
-  // allocation's (#1089).
-  // Not where the object it's on was moved out of its root since (#1113).
-  if (pointer.root !== undefined && pointer.bytes === undefined && $rooted(pointer)) {
+  // allocation's (#1089). An object a root holds stays in it: a swap
+  // exchanges contents (`$exchange`), a `mem::replace` takes them (`$take`),
+  // so none leaves its root while a pointer to it is rooted there (#1979).
+  if (pointer.root !== undefined && pointer.bytes === undefined) {
     const addr = $addr($ptrTo(pointer.root), 0, true) + pointer.rootAt;
     if (!inner) $exposePlace(addr, pointer);
     return addr;
