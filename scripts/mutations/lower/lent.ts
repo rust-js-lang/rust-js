@@ -195,4 +195,12 @@ export const mutations: Mutation[] = [
     replace: "        None\n",
     tests: ["test/corpus.test.ts","-t","^generic_lend_offsets_given_by_callers.rs$"],
   },
+  {
+    name: "too-many-instances-taken-for-the-start",
+    breaks: "generic code's pointer to a value of a type parameter given more types than the crate lists is taken for each holding its object at its start, where it was refused: unchecked, an instance whose object sits past its start would read another address (#2406)",
+    file: "crates/rust-js-lower/src/lent.rs",
+    find: "            crate::instances::Seen::Unseen => return Ok(Some(0)),\n",
+    replace: "            crate::instances::Seen::Unseen | crate::instances::Seen::Many => return Ok(Some(0)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_pointer_of_too_many_instances_refused.rs$"],
+  },
 ];

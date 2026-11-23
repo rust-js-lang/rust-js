@@ -439,6 +439,11 @@ does with each case:
 
 This is held by `test/corpus/hint_asked_of_more_instances_than_listed.rs`
 (65 callers, both builds) against native Rust, and by the mutations
-`many-instances-marked-as-none` and `parts-put-together`. The
+`many-instances-marked-as-none` and `parts-put-together`. `known_within`'s
+refusal is held by `test/corpus/generic_pointer_of_too_many_instances_refused.rs`:
+`fn address<T>(value: &T) -> usize` given 65 array types, in a crate that
+reads addresses. Native Rust prints `true` 65 times. The mutation
+`too-many-instances-taken-for-the-start` takes `Many` for 0, as `Unseen`
+is. The
 conformance table's `| hint given |` rows, picked and batched together,
 had failed this way. They pass now.
