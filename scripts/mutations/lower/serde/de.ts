@@ -138,4 +138,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/serde-std.test.ts", "-t", "a path, a Cow and a boxed str or slice"],
   },
+  {
+    name: "serde-variant-tagged-tag",
+    breaks: "an enum serde reads by its internal tag that rust-js tags by `#[rust_js::tag = \"type\"]` is read as `{ TAG: .. }`, the reader's own key, so a `match` on it takes another arm: a circle's area `NaN` (#2360)",
+    file: "crates/rust-js-lower/src/serde/de.rs",
+    find: "                crate::bindings::tag_key(self.tcx, adt.did()),\n",
+    replace: "                js::TAG.to_string(),\n",
+    tests: ["test/serde-attributes.test.ts", "-t", "an enum read by its internal tag"],
+  },
+  {
+    name: "serde-variant-tag-as-text",
+    breaks: "a variant serde reads whose rust-js tag is a boolean, `#[rust_js::name = true]`, is read tagged by the text `\"true\"`, so a `match` on it takes another arm (#2360)",
+    file: "crates/rust-js-lower/src/serde/de.rs",
+    find: "                crate::bindings::variant_tag(self.tcx, variant),\n",
+    replace: "                Expr::str(crate::bindings::variant_name(self.tcx, variant)),\n",
+    tests: ["test/serde-attributes.test.ts", "-t", "an enum read by its internal tag"],
+  },
 ];

@@ -21,7 +21,6 @@
 //! read first and kept (ADR 0079).
 
 use super::{Attrs, Rule, SerdeDefault, Tagging};
-use crate::bindings::variant_name;
 use crate::recognition::{StdItem, std_item};
 use crate::representation::Num;
 use crate::temporary_names::{Base, Role};
@@ -590,12 +589,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         items: Vec<Expr>,
     ) -> Expr {
         if adt.is_enum() {
-            let name = variant_name(self.tcx, variant);
             if variant.fields.is_empty() {
                 return self.unit_variant(adt.did(), variant);
             }
             let fields = self.field_keys(adt, variant, args).into_iter().zip(items);
-            let tag = Prop::Field(js::TAG.into(), Expr::str(name));
+            // Told by the enum's own property, `TAG` or its
+            // `#[rust_js::tag]`'s, of its variant's tag, as every variant
+            // a body makes is (ADR 0284).
+            let tag = Prop::Field(
+                crate::bindings::tag_key(self.tcx, adt.did()),
+                crate::bindings::variant_tag(self.tcx, variant),
+            );
             return Expr::object(
                 std::iter::once(tag)
                     .chain(fields.map(|(k, v)| Prop::Field(k, v)))

@@ -1,6 +1,7 @@
 // `#[serde(..)]` attributes as serde_derive reads them, at each place it
 // takes them: a field's own writer and reader, the container's default, a
-// skip predicate, and their spans under `-C incremental`. Native serde_json
+// skip predicate, their spans under `-C incremental`, and an internal tag
+// beside rust-js's own, `#[rust_js::tag]`. Native serde_json
 // is the oracle, the same source and dependency versions as the JavaScript
 // (split from serde.test.ts by concept, #1334).
 import { beforeAll, expect, test } from "bun:test";
@@ -345,6 +346,70 @@ pub fn report() -> String {
     write!(out, Adjacent::S { a: 0, b: 2 });
     write!(out, Adjacent::T(1, 2));
     write!(out, Untagged::S { a: 1, b: 0 });
+    out
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+});
+
+// An enum serde reads by its internal tag that rust-js tags by a property
+// of its own, `#[rust_js::tag = "type"]` (ADR 0284): each variant read is
+// the object every other variant made is, `{ type: "circle", radius }`, its
+// tag its own, a boolean one too, `{ done: true, .. }`, so a `match` on it
+// takes its arm. Read as `{ TAG: "circle", .. }`, the reader's own key, a
+// circle's area was `NaN`, its arm the square's (#2360).
+test("serde: an enum read by its internal tag is the object rust-js tags it by", async () => {
+  const dir = fixture("serde-rust-js-tag");
+  writeFileSync(join(dir, "cases.rs"), `#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(tag = "type", rename_all = "lowercase")]
+#[cfg_attr(rust_js, rust_js::tag = "type")]
+pub enum Shape {
+    #[cfg_attr(rust_js, rust_js::name = "circle")]
+    Circle { radius: f64 },
+    #[cfg_attr(rust_js, rust_js::name = "square")]
+    Square { side: f64 },
+    #[cfg_attr(rust_js, rust_js::name = "point")]
+    Point,
+}
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(tag = "done")]
+#[cfg_attr(rust_js, rust_js::tag = "done")]
+pub enum Task {
+    #[serde(rename = "yes")]
+    #[cfg_attr(rust_js, rust_js::name = true)]
+    Yes { at: u32 },
+    #[serde(rename = "no")]
+    #[cfg_attr(rust_js, rust_js::name = false)]
+    No { reason: String },
+}
+fn area(shape: &Shape) -> f64 {
+    match shape {
+        Shape::Circle { radius } => 3.0 * radius * radius,
+        Shape::Square { side } => side * side,
+        Shape::Point => 0.0,
+    }
+}
+fn when(task: &Task) -> String {
+    match task {
+        Task::Yes { at } => format!("done at {at}"),
+        Task::No { reason } => format!("not done: {reason}"),
+    }
+}
+pub fn report() -> String {
+    let mut out = String::new();
+    for text in [r#"{"type":"circle","radius":2}"#, r#"{"type":"square","side":3}"#, r#"{"type":"point"}"#] {
+        match serde_json::from_str::<Shape>(text) {
+            Ok(shape) => out.push_str(&format!("{} {:?} {}\\n", area(&shape), shape, serde_json::to_string(&shape).unwrap())),
+            Err(e) => out.push_str(&format!("err {e}\\n")),
+        }
+    }
+    for text in [r#"{"done":"yes","at":5}"#, r#"{"done":"no","reason":"later"}"#] {
+        match serde_json::from_str::<Task>(text) {
+            Ok(task) => out.push_str(&format!("{} {:?} {}\\n", when(&task), task, serde_json::to_string(&task).unwrap())),
+            Err(e) => out.push_str(&format!("err {e}\\n")),
+        }
+    }
     out
 }
 `);
