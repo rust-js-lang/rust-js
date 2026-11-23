@@ -2216,3 +2216,44 @@ against native Rust. Mutations `variant-rest-by-the-variants-state` and
 `rest-path-of-a-variant-its-own`.
 
 Case of [0262](0262-when-rust-and-js-disagree.md): none, no output changes.
+
+## Amendment: an unmatched drop on the normal path is refused, the comparison closed (2026-11-24, #2112's change D2)
+
+A drop on the normal path that the comparison can't find among rustc's
+elaborated drops, or can't tell apart from another written alike, is
+refused now, as a disagreement is: what can't be compared can't be said
+to drop as Rust does. Blind to moves (`--without-moves`), rust-js drops
+a moved value, `inner` given on, where rustc's elaboration left no drop
+at all. That reads as "no rustc drop where it's written", unmatched,
+which only a disagreement's refusal let through; drop_partial gives 13
+such drops beside its 4 disagreements.
+
+A body with no other side to compare is apart: `uncompared`, never
+refused. That's a body rust-js compiles but rustc keeps no elaborated
+body of here: a library's function the crate compiles, whose rustc body
+is its own crate's, or a constant's (a thread-local's `const`
+initializer). Those are compared nowhere, so a compile without
+`--drops-shadow` doesn't look at them, and one with it writes their
+lines. Counting them as unmatched refused 159 drops of the crate
+corpus's dependencies, which no compile compares.
+
+Refusing found one comparison gap first: the rest of an `async`
+closure called once (`report`'s `once` in test/lowering-async.test.ts),
+its one capture moved into its body's coroutine. `rest_drops` took
+apart a closure's captures but not an `async` closure's or a
+coroutine's, so it said a rest was left that rustc never drops. It
+takes each apart by `held_types` now, as the writer does. Mutation
+`rest-of-an-async-closure-unheld`.
+
+Measured on the commit that lands it, on the normal path: the corpus's
+8,125 drops, all agree; the crate corpus's 78,473, the React port's 890
+and rustc's drop/ tests' 910, with 598 of the skipped ones compiled
+alone, none unmatched, and every outcome as before; 600 generated
+programs (seeds 5000-5599), each the same as native. Tests drops-shadow
+"a normal path's drop that can't be compared with rustc's elaboration
+is refused" and "a drop of a body rustc keeps no elaborated body of is
+uncompared"; mutations `shadow-unmatched-unrefused` and
+`uncompared-said-unmatched`.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none. No output
+changes; a program the comparison can't stand behind is refused.

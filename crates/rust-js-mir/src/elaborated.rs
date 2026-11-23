@@ -8,7 +8,9 @@
 //! flag says, is compared. A `Drop` that can't be found again, or is found
 //! twice, is counted apart from a disagreement: `unmatched`. A disagreement
 //! on the normal path is refused (change D's (c), ADR 0364): the JS would
-//! drop otherwise than Rust does. `--drops-shadow` writes each verdict.
+//! drop otherwise than Rust does; and so is an unmatched drop there (D2):
+//! what can't be compared can't be said to drop as Rust does, so the
+//! comparison fails closed. `--drops-shadow` writes each verdict.
 
 use super::drops::{Elaboration, Style};
 use crate::MirCx;
@@ -309,8 +311,10 @@ fn theirs<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, js_drops: &dyn Fn(Ty<
 
 /// What the comparison says of a `Drop`: rust-js's elaboration drops each
 /// part of it as rustc's does, or one otherwise; only one side asks a flag
-/// where the other knows, which only running it says alike or not; or which
-/// of rustc's `Drop`s it is can't be said.
+/// where the other knows, which only running it says alike or not; which
+/// of rustc's `Drop`s it is can't be said; or there's no body of the other
+/// side's to compare it with: a library's body the crate compiles, whose
+/// elaborated body rustc keeps in its own crate, or a constant's.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum Verdict {
     Agree,
@@ -318,6 +322,7 @@ enum Verdict {
     FlagOurs,
     FlagTheirs,
     Unmatched,
+    Uncompared,
 }
 
 impl Verdict {
@@ -329,6 +334,7 @@ impl Verdict {
             Verdict::FlagOurs => "flag-ours",
             Verdict::FlagTheirs => "flag-theirs",
             Verdict::Unmatched => "unmatched",
+            Verdict::Uncompared => "uncompared",
         }
     }
 }
@@ -406,9 +412,10 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         quiet_guards: &IndexSet<Local>,
     ) {
         let tcx = self.tcx;
-        let caches = rust_js_lower::session::caches(tcx);
-        let recording = caches.drops_shadow.as_ref();
-        if recording.is_none() && (mir.elaborated.is_none() || elaboration.is_none()) {
+        // Nothing to compare: nothing refused, its lines written only where
+        // the session records them.
+        let recording = rust_js_lower::session::caches(tcx).drops_shadow.is_some();
+        if !recording && (mir.elaborated.is_none() || elaboration.is_none()) {
             return;
         }
         let body = &mir.body;
@@ -454,7 +461,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             out.extend(
                 sites
                     .iter()
-                    .map(|&(block, _)| (Verdict::Unmatched, block, why.to_string())),
+                    .map(|&(block, _)| (Verdict::Uncompared, block, why.to_string())),
             );
             self.say_shadowed(function, &out, &site_of, source_map);
             return;
@@ -636,13 +643,6 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         self.say_shadowed(function, &out, &site_of, source_map);
     }
 
-    /// Each of `function`'s verdicts said: a disagreement on the normal
-    /// path refused, as the JS would drop otherwise than Rust does; a
-    /// cleanup's apart, as rust-js's body has no unwinding of what can't
-    /// throw (ADR 0301), whose cleanups rustc's reaches. And each a line
-    /// where the session records them (`--drops-shadow`). The function's
-    /// path is printed only where one is said: printing a path walks every
-    /// crate's modules, 37 ms of a compile (#2314).
     /// Of a closure's body as `call_once` runs it, `body`, rustc's drops of
     /// the closure itself, `_1` whole, as its `ClosureOnce` shim makes them
     /// (`Instance::fn_once_adapter_instance`): one where the call returns
@@ -661,6 +661,15 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             .collect()
     }
 
+    /// Each of `function`'s verdicts said: on the normal path, a
+    /// disagreement refused, as the JS would drop otherwise than Rust does,
+    /// and an unmatched drop, which can't be said to drop as Rust does, so
+    /// the comparison fails closed (#2112's change D2); not one of a body
+    /// with no other side to compare, `uncompared`. A cleanup's apart, as rust-js's body has no unwinding of what can't
+    /// throw (ADR 0301), whose cleanups rustc's reaches. And each a line
+    /// where the session records them (`--drops-shadow`). The function's
+    /// path is printed only where one is said: printing a path walks every
+    /// crate's modules, 37 ms of a compile (#2314).
     fn say_shadowed(
         &self,
         function: DefId,
@@ -672,16 +681,22 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         let function = || path.get_or_init(|| self.tcx.def_path_str(function)).as_str();
         for (verdict, block, detail) in verdicts {
             let (span, _, cleanup) = site_of(*block);
-            if *verdict == Verdict::Disagree && !cleanup {
-                let function = function();
-                rust_js_lower::refusal::error(
-                    self.tcx,
-                    span,
-                    format!(
-                        "rust-js: this drop in `{function}` is elaborated otherwise than rustc's drop elaboration, so its JS would drop otherwise than Rust: {detail} (#2112's change D)"
-                    ),
-                );
-            }
+            let why = match verdict {
+                _ if cleanup => continue,
+                Verdict::Disagree => {
+                    "is elaborated otherwise than rustc's drop elaboration, so its JS would drop otherwise than Rust"
+                }
+                Verdict::Unmatched => {
+                    "can't be compared with rustc's drop elaboration, so its JS can't be said to drop as Rust does"
+                }
+                Verdict::Agree | Verdict::FlagOurs | Verdict::FlagTheirs | Verdict::Uncompared => continue,
+            };
+            let function = function();
+            rust_js_lower::refusal::error(
+                self.tcx,
+                span,
+                format!("rust-js: this drop in `{function}` {why}: {detail} (#2112's change D)"),
+            );
         }
         let caches = rust_js_lower::session::caches(self.tcx);
         let Some(lines) = &caches.drops_shadow else {
@@ -732,8 +747,10 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 (variant.fields.iter().enumerate()).any(|(index, f)| field(index, f.ty(tcx, args).skip_normalization()))
             }
             rustc_middle::ty::Tuple(items) => items.iter().enumerate().any(|(index, ty)| field(index, ty)),
-            rustc_middle::ty::Closure(_, args) => {
-                (args.as_closure().upvar_tys().iter().enumerate()).any(|(index, ty)| field(index, ty))
+            // What a closure, an `async` closure or block holds, its
+            // captures, as the writer takes it apart (`held_types`).
+            _ if let Some((_, held)) = rust_js_lower::recognition::held_types(at.ty) => {
+                held.iter().enumerate().any(|(index, ty)| field(index, ty))
             }
             // An array of a known length, each element in turn, as its
             // `ConstantIndex` paths take it apart.

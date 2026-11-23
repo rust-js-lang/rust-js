@@ -2,8 +2,8 @@
 // of a case's bodies, whether what rust-js's elaboration drops of each part
 // is what rustc's own elaborated body drops there, never, always or as a
 // flag says, `--drops-shadow`'s lines. On the normal path no case may
-// disagree; a cleanup's are apart, as rust-js's body has no unwinding of
-// what can't throw (ADR 0301).
+// disagree or be unmatched, either refused; a cleanup's are apart, as
+// rust-js's body has no unwinding of what can't throw (ADR 0301).
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -189,19 +189,44 @@ test("each normal-path verdict of the partial moves, behind a pointer and alike,
 // `--without-moves` makes rust-js's elaboration blind to moves, each drop
 // dropping all of what it drops, so a moved part's drop is one rustc's
 // never has; without it the case compiles.
-test("a normal path's drop that disagrees with rustc's elaboration is refused", () => {
+/** `drop_partial.rs` compiled, `--without-moves` or not. */
+function compilePartial(...knob: string[]) {
   const dir = fixture("drops-shadow-refused");
-  const compile = (...knob: string[]) =>
-    runSync([compiler, ...knob, join(root, "test/corpus/drop_partial.rs"), "-o", join(dir, "drop_partial.js"), "--", "--edition=2024"], dir, 120_000);
-  expect(compile().code).toBe(0);
-  const refused = compile("--without-moves");
+  return runSync([compiler, ...knob, join(root, "test/corpus/drop_partial.rs"), "-o", join(dir, "drop_partial.js"), "--", "--edition=2024"], dir, 120_000);
+}
+
+test("a normal path's drop that disagrees with rustc's elaboration is refused", () => {
+  expect(compilePartial().code).toBe(0);
+  const refused = compilePartial("--without-moves");
   expect(refused.code).not.toBe(0);
-  const errors = refused.stderr.split("\n").filter((line) => line.startsWith("error: rust-js: this drop"));
+  const errors = refused.stderr.split("\n").filter((line) => line.startsWith("error: rust-js: this drop") && line.includes("is elaborated otherwise"));
   expect(errors).toContain(
     "error: rust-js: this drop in `main` is elaborated otherwise than rustc's drop elaboration, so its JS would drop otherwise than Rust: `whole.0`: rust-js drops it always, rustc never (#2112's change D)",
   );
   expect(errors.length).toBe(4);
   expect(refused.stderr).toContain("drop_partial.rs:42:5");
+});
+
+// Change D2: the comparison fails closed. A normal path's drop it can't
+// compare, which can't be said to drop as Rust does, is refused too:
+// blind to moves, rust-js drops a moved value, `inner` given on, where
+// rustc's elaboration left no drop to find, which no disagreement says.
+test("a normal path's drop that can't be compared with rustc's elaboration is refused", () => {
+  const refused = compilePartial("--without-moves");
+  const errors = refused.stderr.split("\n").filter((line) => line.startsWith("error: rust-js: this drop") && line.includes("can't be compared"));
+  expect(errors).toContain(
+    "error: rust-js: this drop in `main` can't be compared with rustc's drop elaboration, so its JS can't be said to drop as Rust does: no rustc drop where it's written; `inner`: rust-js drops it always, rustc never (#2112's change D)",
+  );
+  expect(errors.length).toBe(13);
+});
+
+// A body with no other side to compare, a thread-local's constant
+// initializer, which rustc keeps no elaborated body of, is `uncompared`,
+// never refused, as a library's body the crate compiles is, whose rustc
+// body is its own crate's (#2112's change D2).
+test("a drop of a body rustc keeps no elaborated body of is uncompared", () => {
+  const lines = shadowOf("ref_cell_borrowed_by_a_thread_locals_clear.rs").filter(([, , owner]) => owner.endsWith("__RUST_STD_INTERNAL_INIT"));
+  expect(lines.map(([verdict, path, , , detail]) => `${verdict} ${path} ${detail}`)).toEqual(["uncompared cleanup no rustc body"]);
 });
 
 // A cleanup's disagreement is apart, never refused: rust-js's body has no
