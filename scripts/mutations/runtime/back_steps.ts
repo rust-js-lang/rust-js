@@ -568,7 +568,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/back_steps.js",
     find: "stepped.tryFold(init, f, () => false, unwind, ends), ends);\n    $closedAfter(ends, () => stepped.return());\n",
     replace: "stepped.tryFold(init, f, () => false, unwind, ends), ends);\n    stepped.return();\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^step_by_folded_drops_its_closure_before_its_source\\.rs$"],
   },
   {
     name: "flatten-ends-made-unstaged",
