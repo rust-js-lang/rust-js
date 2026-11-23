@@ -16958,6 +16958,7 @@ export class $JsonReader extends $JsonDecoder {
     // place's segment (`$jsonPathRead`, ADR 1188); and whether it reads a
     // key's number, whose digits are the key.
     this.chain = undefined;
+    // Flags, not a state: a key's number read, apart from `escaped`, which each string read sets whatever's read.
     this.keying = false;
     this.variantText = undefined;
   }
@@ -18124,6 +18125,7 @@ export class $JsonKey {
     if (!(c === 45 || (c >= 48 && c <= 57))) throw reader.error("invalid value: expected key to be a number in quotes");
     reader.keying = reader.chain !== undefined;
     const value = read(reader);
+    // Flags, not a state: a key's number read, apart from `first` and `escaped`, which change as they do whatever's read.
     reader.keying = false;
     if (reader.peek() !== 34) throw reader.peekError('expected `"`');
     reader.index++;

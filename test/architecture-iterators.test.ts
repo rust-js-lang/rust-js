@@ -294,6 +294,7 @@ const ownUnwinding: Record<string, string> = {
   "crates/rust-js-program/src/runtime/json_content.js": "serde's decoding error caught to become a `Result`, not a drop",
   "crates/rust-js-program/src/runtime/json_decoder.js": "serde's decoding error caught to become a `Result`, not a drop",
   "crates/rust-js-program/src/runtime/json_flat.js": "serde's decoding error caught to become a `Result`, not a drop",
+  "crates/rust-js-program/src/runtime/json_path.js": "serde's decoding error caught to become serde_path_to_error's `Result`, and the reader's place given back as the read ends, not a drop (ADR 1188)",
   "crates/rust-js-program/src/runtime/json_read.js": "JSON.parse's `SyntaxError` caught to become a `Result`, not a drop",
   "crates/rust-js-program/src/runtime/json_reader.js": "serde's decoding error caught to become a `Result`, not a drop",
   "crates/rust-js-program/src/runtime/json_value.js": "serde's encoding error caught to become a `Result`, not a drop",

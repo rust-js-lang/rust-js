@@ -349,6 +349,7 @@ class $JsonKey {
     if (!(c === 45 || (c >= 48 && c <= 57))) throw reader.error("invalid value: expected key to be a number in quotes");
     reader.keying = reader.chain !== undefined;
     const value = read(reader);
+    // Flags, not a state: a key's number read, apart from `first` and `escaped`, which change as they do whatever's read.
     reader.keying = false;
     if (reader.peek() !== 34) throw reader.peekError('expected `"`');
     reader.index++;

@@ -710,11 +710,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "serde-json-method-taken-for-its-function",
-    breaks: "`serde_json::Deserializer::from_str` is taken for `serde_json::from_str` by its name, and the compiler panics on its arguments (#1541)",
+    breaks: "`serde_json::Deserializer::from_str` is taken for `serde_json::from_str` by its name, not the reader serde_path_to_error reads (#1541, ADR 1188)",
     file: "crates/rust-js-lower/src/recognition/calls.rs",
     find: " && tcx.def_kind(def_id) == rustc_hir::def::DefKind::Fn\n",
     replace: "\n",
-    tests: ["test/diagnostics.test.ts", "-t", "Deserializer::from_str"],
+    tests: ["test/serde-path.test.ts", "-t", "says where"],
   },
   {
     name: "integer-min-max-intrinsics-unread",

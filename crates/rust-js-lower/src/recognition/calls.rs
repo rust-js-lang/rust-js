@@ -237,10 +237,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(op) = self.getrandom_op(def_id, args) {
             return Some(Some(Std::Getrandom(op)));
         }
-        // serde_path_to_error's, of a qualified one rustc builds (ADR 1188).
-        if let Some(op) = self.json_path_op(def_id, args) {
-            return Some(Some(Std::JsonPath(op)));
-        }
         // The process a program runs in, and its files, Node's (ADR 0391).
         match node_only(tcx, def_id) {
             Some(NodeOnly::Process(op)) => return Some(Some(Std::Process(op))),
@@ -480,6 +476,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 "from_str" => return Some(Some(Std::FromJson)),
                 _ => {}
             }
+        }
+        // serde_path_to_error's, of a qualified one rustc builds, and
+        // serde_json's reader of text it reads, a method, not the function
+        // of its name above (ADR 1188).
+        if let Some(op) = self.json_path_op(def_id, args) {
+            return Some(Some(Std::JsonPath(op)));
         }
         if is_vec_from_elem(tcx, def_id) {
             return Some(Some(Std::FromElem));
