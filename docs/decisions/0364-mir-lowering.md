@@ -2237,6 +2237,15 @@ initializer). Those are compared nowhere, so a compile without
 lines. Counting them as unmatched refused 159 drops of the crate
 corpus's dependencies, which no compile compares.
 
+That's the comparison's remaining blind spot: a library's body the crate
+compiles is lowered by the same elaboration, but nothing checks it
+against rustc's. What would close it is rustc's own MIR of it from the
+library's metadata, `optimized_mir`, which an rlib carries for its
+generic and `#[inline]` functions with their drops elaborated: compared
+where its optimizations (inlining, merged blocks, removed drops of what
+holds nothing) leave each drop's site findable, and the rest counted
+apart as uncompared is today.
+
 Refusing found one comparison gap first: the rest of an `async`
 closure called once (`report`'s `once` in test/lowering-async.test.ts),
 its one capture moved into its body's coroutine. `rest_drops` took
