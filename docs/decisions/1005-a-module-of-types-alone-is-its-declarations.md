@@ -1,6 +1,7 @@
 # 1005. A module of types alone is its declarations
 
-Status: Accepted. The user's decision. Amended: not the crate's root. Extends
+Status: Accepted. The user's decision. Amended: not the crate's root; a type it
+re-exports is a type it exports (#2399). Extends
 [0196](0196-typescript-declarations.md), whose `.d.ts` was written beside each
 module's JS.
 
@@ -99,3 +100,34 @@ module of nothing but types is to JS.
 
 Held by corpus `module_of_types_reexported`, against native Rust, rustc's
 `imports/use-mod.rs`, and the mutation `imported-types-module-unwritten`.
+
+## Amendment: a type it re-exports is a type it exports (#2399)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; what JS runs is as
+before, and TypeScript is given the types it was missing.
+
+A crate's root of nothing but its `mod`s and `pub use money::Money;` got no
+`.d.ts`: a type's `pub use` has no JS (ADR 0240), and the rule that gives a
+module of types alone its declarations asked only for types the module
+defines. The type's `export type { Money } from "./money.js"` was lost, so
+TypeScript couldn't import `Money` from where Rust callers `use` it. Found
+writing coming-from-typescript's chapter 20.
+
+**The rule's "a type it exports" is its own or one it re-exports**: a
+public `pub use` of a struct, an enum, a union or an alias, by name, by a
+glob or of a library's, as `module_children_local` lists each
+(`reexports::exports_types`, which `analysis.rs` asks). The same rule,
+not a case beside it. A root keeps its JS of nothing, as before; a
+module that isn't the root is its `.d.ts` alone.
+
+And a glob's types are re-exported in the declarations as one `use`'s are
+(`reexports::globbed_types`, beside `type_alone`): `pub use shapes::*;`
+of a module with `round` and `Kind` is `export { round } from
+"./shapes.js";` and now `export type { Kind } from "./shapes.js";` too,
+where it was the function's alone.
+
+Held by `test/declarations-type-reexports.test.ts`, a root that re-exports
+a type by name, by a glob of a function and a type, by a glob of types
+alone and of a library's, each `.d.ts` checked and a TypeScript caller
+type-checked against it, and the mutations `reexported-type-unexported`
+and `globbed-types-unexported` (`lower/reexports.rs`).

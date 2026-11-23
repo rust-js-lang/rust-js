@@ -1029,17 +1029,9 @@ pub fn analyze_crate<'a, 'tcx>(
         if (reexports || defaulted()) && seen_modules.insert(module) {
             modules.push(module);
         }
-        // Or a type it exports, of a module of types alone a `.d.ts` (the
-        // user's decision, ADR 1005).
-        let types = tcx.hir_module_free_items(module).any(|id| {
-            let def_id = id.owner_id.to_def_id();
-            matches!(
-                tcx.def_kind(def_id),
-                DefKind::TyAlias | DefKind::Struct | DefKind::Enum | DefKind::Union
-            ) && tcx.visibility(def_id).is_public()
-                && !is_binding(tcx, def_id)
-        });
-        if types && seen_modules.insert(module) {
+        // Or a type it exports, its own or one it re-exports, of a module of
+        // types alone a `.d.ts` (the user's decision, ADR 1005, amended #2399).
+        if super::reexports::exports_types(tcx, module) && seen_modules.insert(module) {
             modules.push(module);
         }
     }
