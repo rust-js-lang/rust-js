@@ -229,7 +229,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/back_steps.js",
     find: "    fold: iter.fold === undefined ? undefined : fold,\n    tryFold,\n",
     replace: "    fold: iter.fold === undefined ? undefined : fold,\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_skip_folds_by_its_own_nth\\.rs$"],
   },
   {
     name: "map-ends-rfold-by-next",

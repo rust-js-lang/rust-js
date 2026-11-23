@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     breaks: "a `BufReader`'s `fill_buf` asks its inner for half its buffer, where std's `read_buf` asks for all of it (#1156)",
     file: "crates/rust-js-program/src/runtime/readers.js",
     find: "        const read = R.read(inner(b), b.buf);\n",
-    replace: "        const read = R.read(inner(b), $view(b.buf, 0, Math.ceil(b.buf.length / 2)));\n",
+    replace: "        const read = R.read(inner(b), $view(b.buf, 0, undefined, Math.ceil(b.buf.length / 2)));\n",
     tests: bufReader,
   },
   {

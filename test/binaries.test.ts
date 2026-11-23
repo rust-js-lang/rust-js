@@ -464,8 +464,16 @@ test("a `Location` shows, splits and compares as native Rust's", () => {
   same("located", located);
 }, 300_000);
 
+// Its file named with a `:`, a module's own, which the remapped prefix
+// both gives leaves in its name: a directory's was remapped away, and the
+// split was never asked of one (#1979).
 test("a `Location` of a file whose path has a `:` splits as native Rust's", () => {
-  same("colon", located, join(fixture("colon"), "a:b"));
+  const dir = fixture("colon");
+  mkdirSync(dir, { recursive: true });
+  const body = located.slice(located.indexOf("#[track_caller]")).replace("fn main() {", "pub fn run() {");
+  writeFileSync(join(dir, "a:b.rs"), `use std::panic::Location;\n\n${body}`);
+  const out = same("colon", '#[path = "a:b.rs"]\nmod colon;\n\nfn main() {\n    colon::run();\n}\n', dir);
+  expect(out.out).toContain("a:b.rs 9 13");
 }, 300_000);
 
 test("an `Err` from main ends the process at once: a host's pending timer never runs", () => {
