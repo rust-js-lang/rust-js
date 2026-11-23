@@ -77,4 +77,20 @@ export const mutations: Mutation[] = [
     replace: "                vec![receiver.clone(), Expr::str(tag)],\n",
     tests: ["test/serde.test.ts", "-t", "changes to and from Null"],
   },
+  {
+    name: "json-key-site-of-an-index",
+    breaks: "`v[\"a\"] = ..` of what isn't an object is raised at serde_json's site of an index (#2325)",
+    file: "crates/rust-js-lower/src/serde/value.rs",
+    find: "                let key = self.is_string_like(index.peel_refs());\n",
+    replace: "                let key = !self.is_string_like(index.peel_refs());\n",
+    tests: ["test/binaries.test.ts", "-t", "a registry crate's panic names its own line"],
+  },
+  {
+    name: "json-bound-site-dropped",
+    breaks: "`v[5] = ..` past an array's end panics `<unknown>`, given no site of serde_json's bound (#2325)",
+    file: "crates/rust-js-lower/src/serde/value.rs",
+    find: "                values.extend(bound.map(Expr::str));\n",
+    replace: "",
+    tests: ["test/binaries.test.ts", "-t", "a registry crate's panic names its own line"],
+  },
 ];

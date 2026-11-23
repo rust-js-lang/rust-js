@@ -63,3 +63,9 @@ export const devTimesLog = process.env.RUST_JS_DEV_TIMES ?? join(homedir(), "rus
  * each run (#1213), is the loop's, bounded. Outside the checkout, as a
  * fixture made there is an app outside any checkout of rust-js. */
 export const tempRoot = join(process.env.RUST_JS_SYSTEM_TMPDIR ?? tmpdir(), "rust-js-dev");
+
+/** Where Cargo keeps what it downloads, its registry among it: the one
+ * place, which `bun run disk` bounds (scripts/disk.ts) and the tests name a
+ * registry crate's native files under (test/support.ts's `shippedStd`,
+ * #2325). */
+export const cargoHome = process.env.CARGO_HOME ?? join(homedir(), ".cargo");

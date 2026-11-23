@@ -123,3 +123,25 @@ walked by `get_mut`'s steps. serde_json's `Map`'s `retain` is a sorted
 map's, and its `map::Entry`, now one of serde_json's own types (`Json::
 Entry`), is a `BTreeMap` entry's. Case (ADR 0262): none observable, the
 same values, order and panics as serde_json's.
+
+## Amendment: `IndexMut`'s panics named where serde_json raises them (2026-11-23, #2325)
+
+`value[key] = ..` of what can't hold it panics where serde_json's
+`index_or_insert` does, of the version Cargo built: a key of what's no
+object, an index of what's no array, an index past an array's end, each its
+own line of `src/value/index.rs`. serde_json is read as rustc builds it, so
+its sites aren't walked of MIR, as std's are: Cargo's check of it through
+rust-js finds each in that version's source by its `panic!`'s message
+(`library::registry_sites`, the one finder and catalog, hashbrown's own
+map's `get_disjoint_mut` too) and notes them beside its metadata,
+`<rmeta>.rust-js-sites`, as the qualified fact beside a qualified crate's
+is. A consumer's lowering reads them (`recognition::registry_site`) and
+gives them, `$jsonIndexMut(cell, key, raisedAt, boundAt)`; the runtime
+holds no table. A file is named under `/cargo/registry/src/`, whatever the
+machine's `$CARGO_HOME` (ADR 0262's exception, the user's decision).
+`serde/build.sh` builds the tests' crates through rust-js's Cargo route
+(`serde/cargo.ts`), the one way a host builds, so its facts are written the
+same way. A crate whose build noted none, or whose source doesn't place a
+site, is refused where its panic would be raised, saying why.
+indexmap's `get_disjoint_mut` tracks its caller, so it names the caller's
+line, as native Rust does.

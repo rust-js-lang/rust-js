@@ -28,7 +28,7 @@ import { closeSync, existsSync, lstatSync, mkdirSync, openSync, readdirSync, rea
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
-import { checkout, floorBytes, machineStore, mainCheckoutOf, tempRoot } from "../test/bounded";
+import { cargoHome, checkout, floorBytes, machineStore, mainCheckoutOf, tempRoot } from "../test/bounded";
 import { checkLogsCap, checkLogsStore } from "./checkLogs";
 import { leasedIn, lockState } from "./leases";
 import { worktreeRoots } from "./strays";
@@ -161,7 +161,7 @@ export function unpinnedToolchains(names: string[], pins: Set<string>): string[]
 
 /** Cargo's home, its registry's downloads and sources: the crater reads
  * a crate's source there. */
-export const cargoHome = process.env.CARGO_HOME ?? join(homedir(), ".cargo");
+export { cargoHome };
 const rustupHome = process.env.RUSTUP_HOME ?? join(homedir(), ".rustup");
 const bunCache = process.env.BUN_INSTALL_CACHE_DIR ?? join(process.env.BUN_INSTALL ?? join(homedir(), ".bun"), "install", "cache");
 /** Cargo's downloads, its registry's crates and sources and its git

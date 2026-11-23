@@ -15,8 +15,8 @@ export const mutations: Mutation[] = [
     name: "json-index-mut-unrecognized",
     breaks: "`value[key] = ..` of a `Value` isn't recognized, so it's refused where serde_json writes through its `index_or_insert` (#1624)",
     file: "crates/rust-js-lower/src/recognition/json.rs",
-    find: "            if tcx.is_lang_item(trait_id, LangItem::IndexMut) && this_value {\n",
-    replace: "            if false && tcx.is_lang_item(trait_id, LangItem::IndexMut) && this_value {\n",
+    find: "            if tcx.is_lang_item(trait_id, LangItem::IndexMut)\n                && this_value\n",
+    replace: "            if false\n                && this_value\n",
     tests: ["test/serde-values.test.ts", "-t", "IndexMut is serde_json"],
   },
 ];

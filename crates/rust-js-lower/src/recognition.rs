@@ -38,6 +38,7 @@ mod owners;
 pub(super) mod registry;
 mod serde;
 mod shipped;
+pub(crate) use shipped::registry_site;
 mod slice_steps;
 mod sorts;
 mod specialization;

@@ -697,6 +697,9 @@ export const parts: Part[] = [
  * outcomes action sets (test/native-outcomes.ts). */
 export const harness = [
   "BLESS",
+  // Where Cargo keeps its registry, a native run's files named under it
+  // as rust-js names them (test/bounded.ts's `cargoHome`, #2325).
+  "CARGO_HOME",
   "BUN_TEST_WORKER_ID",
   "CHILD_LEFT_OUT",
   "FUZZ_REDUCE_BUDGET",

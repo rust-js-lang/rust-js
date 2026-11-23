@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "json-index-mut-past-end-unchecked",
     breaks: "`value[i] = ..` past an array's end grows it, where serde_json panics, `cannot access index 2 of JSON array of length 2` (#1624)",
     file: "crates/rust-js-program/src/runtime/json_value.js",
-    find: "  if (key >= items.length) throw $stringPanic(`cannot access index ${key} of JSON array of length ${items.length}`);\n",
+    find: "  if (key >= items.length) throw $stringPanic(`cannot access index ${key} of JSON array of length ${items.length}`, boundAt);\n",
     replace: "",
     tests: ["test/serde-values.test.ts", "-t", "IndexMut is serde_json"],
   },
@@ -89,5 +89,13 @@ export const mutations: Mutation[] = [
     find: '  cell.value = "Null";\n',
     replace: "",
     tests: ["test/serde-values.test.ts", "-t", "take, as_null, pointers"],
+  },
+  {
+    name: "json-index-panic-unlocated",
+    breaks: "`v[0] = ..` of what isn't an array panics `<unknown>` (#2325)",
+    file: "crates/rust-js-program/src/runtime/json_value.js",
+    find: "of JSON ${kind(value)}`, raisedAt);\n",
+    replace: "of JSON ${kind(value)}`);\n",
+    tests: ["test/binaries.test.ts", "-t", "a registry crate's panic names its own line"],
   },
 ];

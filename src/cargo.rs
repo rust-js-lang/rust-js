@@ -221,6 +221,7 @@ pub fn translate(args: Vec<String>) -> Invocation {
         Ok(Whose::Dependency) => {}
         Ok(Whose::Rustc(None)) => return rustc_itself(&rustc, given),
         Ok(Whose::Rustc(Some(qualified))) => return checked_qualified(&rustc, given, &flags, qualified),
+        Ok(Whose::Sited(name, dir)) => return checked_with_sites(&rustc, given, &flags, name, &dir),
         Ok(Whose::Unqualified(why)) => return refused(&rustc, given, &flags, why),
         Err(error) => {
             eprintln!("rust-js: {error}");
@@ -261,6 +262,10 @@ enum Whose {
     /// rustc: a binding crate, or one rust-js reads as rustc builds it, and
     /// of one whose API rust-js writes, the version it's qualified at.
     Rustc(Option<&'static Qualified>),
+    /// rustc: one rust-js reads as rustc builds it whose runtime model
+    /// raises panics in its place, serde_json, hashbrown, by its name and
+    /// where Cargo has it, whose sites are found as it's checked (#2325).
+    Sited(&'static str, PathBuf),
     /// A crate of the catalog's not at a version it's qualified at, or not
     /// crates.io's: its types alone, as rustc builds it, and why (ADR 0529).
     Unqualified(String),
@@ -275,7 +280,10 @@ fn whose() -> Result<Whose, String> {
     let name = std::env::var("CARGO_PKG_NAME").unwrap_or_default();
     if let Some(read) = READ_AS_RUSTC_BUILDS_THEM.iter().find(|read| read.name == name) {
         let Some(qualified) = read.qualified else {
-            return Ok(Whose::Rustc(None));
+            return Ok(match rust_js_program::library::registry_sites::has_sites(read.name) {
+                true => Whose::Sited(read.name, dir),
+                false => Whose::Rustc(None),
+            });
         };
         let version = std::env::var("CARGO_PKG_VERSION").unwrap_or_default();
         let crates_io =
@@ -392,6 +400,29 @@ fn checked_qualified(rustc: &str, given: &[String], flags: &[String], qualified:
             rust_js_program::library::qualified(&metadata),
             qualified.version.to_string(),
         ),
+        (checked, _) => checked,
+    }
+}
+
+/// A crate rust-js reads as rustc builds it whose runtime model raises
+/// panics in its place, `name` at `dir`, checked by rustc, and where it
+/// raises them, of the version Cargo built, kept beside its metadata
+/// (`library::sites`): each site's key and `file:line:column`, or, where
+/// they can't be found, `{ "unfound": why }`, which a consumer's lowering
+/// says where it needs one (#2325).
+fn checked_with_sites(rustc: &str, given: &[String], flags: &[String], name: &str, dir: &Path) -> Invocation {
+    match (rustc_itself(rustc, given), metadata_path(flags)) {
+        (Invocation::Rustc(exit), Some(metadata)) if exit == ExitCode::SUCCESS => {
+            let sites = match rust_js_program::library::registry_sites::find_sites(name, dir) {
+                Ok(sites) => serde_json::to_string(&sites),
+                Err(why) => serde_json::to_string(&serde_json::json!({ "unfound": why })),
+            };
+            Invocation::Noted(
+                exit,
+                rust_js_program::library::sites(&metadata),
+                sites.expect("sites serialize"),
+            )
+        }
         (checked, _) => checked,
     }
 }

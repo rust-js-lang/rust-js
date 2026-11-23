@@ -21,6 +21,31 @@ pub(crate) fn qualified_version(tcx: TyCtxt<'_>, krate: CrateNum) -> Option<Stri
     Some(text.trim().to_string())
 }
 
+/// Where the registry crate `krate` raises `site`, which rust-js's runtime
+/// model raises in its place, as its check noted beside its metadata, of
+/// the version Cargo built (`library::sites`, #2325): `file:line:column`
+/// under `/cargo/registry/src/`. `Err` why it can't say: a build that
+/// noted none, not Cargo's through rust-js, or one its source didn't
+/// place, not crates.io's or raising no such panic.
+pub(crate) fn registry_site(
+    tcx: TyCtxt<'_>,
+    krate: CrateNum,
+    site: rust_js_program::library::registry_sites::RegistrySite,
+) -> Result<String, String> {
+    let name = tcx.crate_name(krate);
+    let metadata = (tcx.used_crate_source(krate).rmeta.clone())
+        .ok_or_else(|| format!("{name} has no metadata whose sites rust-js reads"))?;
+    let noted = std::fs::read_to_string(rust_js_program::library::sites(&metadata)).map_err(|_| {
+        format!("{name}'s build noted no sites, as Cargo's check of it through rust-js notes them: build with `rust-js build`")
+    })?;
+    let sites: ::serde_json::Value =
+        ::serde_json::from_str(&noted).map_err(|error| format!("{name}'s sites: {error}"))?;
+    if let Some(why) = sites["unfound"].as_str() {
+        return Err(why.to_string());
+    }
+    (sites[site.key()].as_str().map(str::to_string)).ok_or_else(|| format!("{name}'s sites have no `{}`", site.key()))
+}
+
 /// The getrandom of `krate`, which of its APIs rust-js writes: of the
 /// version the catalog qualified it at. None of another crate, or of a
 /// getrandom no qualified check of the catalog's checked.

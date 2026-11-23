@@ -13,7 +13,7 @@ use crate::{FnCx, R};
 use rust_js_program::js::{self, Expr, Op, Prop, StmtKind};
 
 use rust_js_program::js::result;
-use rustc_middle::ty::Ty;
+use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -56,7 +56,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(Expr::call(Expr::helper("$fromJsonValue"), vec![value, reader]))
             }
             JsonCall::Index => Ok(Expr::call(Expr::helper("$jsonIndex"), values)),
-            JsonCall::IndexMut => Ok(Expr::call(Expr::helper("$jsonIndexMut"), values)),
+            JsonCall::IndexMut { value, index } => {
+                // Where serde_json raises its panics, of the version its
+                // build noted: a key's of what's no object; a number's of
+                // what's no array, and past an array's end (#2325).
+                use rust_js_program::library::registry_sites::RegistrySite;
+                let ty::Adt(of, _) = value.kind() else {
+                    unreachable!("a `Value` is serde_json's enum")
+                };
+                let site = |site| {
+                    crate::recognition::registry_site(self.tcx, of.did().krate, site).map_err(|why| {
+                        let what =
+                            "`value[key] = ..` of a serde_json `Value` not knowing where serde_json raises its panic";
+                        crate::refusal::refuse(self.tcx, span, crate::refusal::Refused::Because(what, &why))
+                    })
+                };
+                let key = self.is_string_like(index.peel_refs());
+                let (raised, bound) = match key {
+                    true => (site(RegistrySite::JsonIndexKey)?, None),
+                    false => (
+                        site(RegistrySite::JsonIndexIndex)?,
+                        Some(site(RegistrySite::JsonIndexBound)?),
+                    ),
+                };
+                values.extend(bound.map(Expr::str));
+                Ok(Expr::raised_at(Expr::str(raised), || {
+                    Expr::call(Expr::helper("$jsonIndexMut"), values)
+                }))
+            }
             JsonCall::Equal {
                 other,
                 value_first,

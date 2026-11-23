@@ -18936,22 +18936,24 @@ export function $jsonGetMut(cell, key) {
 // handle on the entry, as serde_json's `index_or_insert` (#1624). Of a key,
 // a `null` made an empty object first, then its entry, `null` inserted
 // where it isn't there; of an index, the array's item. Else serde_json's
-// panic, naming what the value is.
-export function $jsonIndexMut(cell, key) {
+// panic, naming what the value is, raised where serde_json raises it, of
+// the version its build noted: `raisedAt`, of a key or of an index of what's
+// no array; `boundAt`, of an index past an array's end (#2325).
+export function $jsonIndexMut(cell, key, raisedAt, boundAt) {
   const kinds = { Bool: "boolean", Number: "number", String: "string", Array: "array", Object: "object" };
   const kind = (value) => (value === "Null" ? "null" : kinds[value.TAG]);
   if (typeof key === "string") {
     if (cell.value === "Null") cell.value = { TAG: "Object", _0: new Map() };
     const value = cell.value;
-    if (value.TAG !== "Object") throw $stringPanic(`cannot access key ${$debugStr(key)} in JSON ${kind(value)}`);
+    if (value.TAG !== "Object") throw $stringPanic(`cannot access key ${$debugStr(key)} in JSON ${kind(value)}`, raisedAt);
     const entries = value._0;
     if (!entries.has(key)) entries.set(key, "Null");
     return { get value() { return entries.get(key); }, set value(next) { entries.set(key, next); } };
   }
   const value = cell.value;
-  if (value.TAG !== "Array") throw $stringPanic(`cannot access index ${key} of JSON ${kind(value)}`);
+  if (value.TAG !== "Array") throw $stringPanic(`cannot access index ${key} of JSON ${kind(value)}`, raisedAt);
   const items = value._0;
-  if (key >= items.length) throw $stringPanic(`cannot access index ${key} of JSON array of length ${items.length}`);
+  if (key >= items.length) throw $stringPanic(`cannot access index ${key} of JSON array of length ${items.length}`, boundAt);
   return { get value() { return items[key]; }, set value(next) { items[key] = next; } };
 }
 // A JSON Pointer's tokens, as serde_json's `pointer` splits it: none of `""`,

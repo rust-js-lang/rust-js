@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { cpSync, existsSync, linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
-import { tempRoot } from "./bounded";
+import { cargoHome, tempRoot } from "./bounded";
 import { type Exit, runSync, stopped } from "./child";
 import { keptApps, markUsed, mayKeep, nativeCache, pruneKeptApps } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
@@ -84,18 +84,21 @@ export function writeKnown(list: KnownList, text: string, dir = knownDir(list)):
 export { helpersModule, stdDir, target };
 export { compiler };
 
-let stdNames: { local: string; shipped: string } | undefined;
+let stdNames: { local: string; shipped: string; registry: string } | undefined;
 /** `text`, a native run's, std's files named as rust-js names them: where
  * the toolchain has its source (`rust-src`) and the caller's crate compiles
  * the panicking body, a generic or inlined one's, native Rust names its
  * local copy; rust-js names each `/rustc/<commit>/..`, as the shipped std
- * does, on every machine (ADR 0262's exception, difference 62, #2292). */
+ * does, on every machine (ADR 0262's exception, difference 62, #2292). And
+ * a registry crate's, serde_json's, under this machine's `$CARGO_HOME`,
+ * rust-js names under `/cargo/registry/src/` (difference 63, #2325). */
 export function shippedStd(text: string): string {
   stdNames ??= {
     local: `${run(["rustc", "--print", "sysroot"]).trim()}/lib/rustlib/src/rust/`,
     shipped: `/rustc/${/^commit-hash: (\S+)$/m.exec(run(["rustc", "-vV"]))?.[1]}/`,
+    registry: `${cargoHome}/registry/src/`,
   };
-  return text.replaceAll(stdNames.local, stdNames.shipped);
+  return text.replaceAll(stdNames.local, stdNames.shipped).replaceAll(stdNames.registry, "/cargo/registry/src/");
 }
 
 /** What `cmd` printed, with `env` added to its environment, or why it

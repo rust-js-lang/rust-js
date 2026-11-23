@@ -9,6 +9,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { compileJs, compileJsBinary, compileJsLibrary } from "./programs";
+import { buildSerde } from "./serde-crate";
 import { compiler, fixture, installStd, nativeBinary, programFlags, root, run, shippedStd } from "./support";
 
 const flags = programFlags("2024");
@@ -26,19 +27,19 @@ function ran(cmd: string[], cwd: string): Ran {
 // `source` as a binary, native and rust-js's, in `dir`, the same file
 // given to both, its directory left out of the name both give it, and each
 // run: native's, then Node's and Bun's.
-function both(name: string, source: string, dir = fixture(name)): { native: Ran; node: Ran; bun: Ran } {
+function both(name: string, source: string, dir = fixture(name), crates = { native: [] as string[], js: [] as string[] }): { native: Ran; node: Ran; bun: Ran } {
   mkdirSync(dir, { recursive: true });
   const named = [...flags, `--remap-path-prefix=${dir}/=`];
-  const built = nativeBinary(source, dir, named);
+  const built = nativeBinary(source, dir, [...named, ...crates.native]);
   if ("error" in built) throw new Error(built.error);
   const js = join(dir, "main.js");
-  run([compiler, join(dir, "native.rs"), "-o", js, "--", ...named, "--crate-type", "bin", "-Awarnings"]);
+  run([compiler, join(dir, "native.rs"), "-o", js, "--", ...named, ...crates.js, "--crate-type", "bin", "-Awarnings"]);
   installStd(dir);
   return { native: ran([built.binary], dir), node: ran(["node", js], dir), bun: ran(["bun", js], dir) };
 }
 
-function same(name: string, source: string, dir?: string) {
-  const { native, node, bun } = both(name, source, dir);
+function same(name: string, source: string, dir?: string, crates?: { native: string[]; js: string[] }) {
+  const { native, node, bun } = both(name, source, dir, crates);
   expect(node).toEqual(native);
   expect(bun).toEqual(native);
   return native;
@@ -250,6 +251,23 @@ test("a `Repeat`'s `count` and `last` name where they're called, through generic
   ];
   repeats.forEach((source, i) => {
     expect(same(`repeat${i}`, source).status).toBe(101);
+  });
+}, 300_000);
+
+test("a registry crate's panic names its own line, of the version Cargo built, under `/cargo`'s registry", () => {
+  // serde_json's `IndexMut` of a `Value`, and hashbrown's own map's
+  // `get_disjoint_mut`, each raised where its crate raises it, its build's
+  // noted site (#2325); indexmap's, which tracks its caller, the caller's.
+  const crates = { native: buildSerde("rlib"), js: buildSerde() };
+  const raised = [
+    "let mut v = serde_json::json!(3);\n    v[\"a\"] = serde_json::json!(1);",
+    "let mut v = serde_json::json!({\"a\": 1});\n    v[0] = serde_json::json!(1);",
+    "let mut v = serde_json::json!([1, 2]);\n    v[std::hint::black_box(5)] = serde_json::json!(1);",
+    "let mut m: hashbrown::HashMap<u8, u8> = [(1, 1)].into_iter().collect();\n    let _ = m.get_disjoint_mut([&1, &std::hint::black_box(1)]);",
+    "let mut m: indexmap::IndexMap<u8, u8> = [(1, 1)].into_iter().collect();\n    let _ = m.get_disjoint_mut([&1, &std::hint::black_box(1)]);",
+  ];
+  raised.forEach((body, i) => {
+    expect(same(`registry${i}`, `fn main() {\n    ${body}\n}\n`, undefined, crates).status).toBe(101);
   });
 }, 300_000);
 

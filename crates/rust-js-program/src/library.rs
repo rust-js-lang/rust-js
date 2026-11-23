@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::path::Path;
 mod dependencies;
+pub mod registry_sites;
 #[cfg(any(test, feature = "testing"))]
 pub mod scopes;
 pub use dependencies::Dependencies;
@@ -1237,6 +1238,14 @@ pub fn refusal(metadata: &std::path::Path) -> std::path::PathBuf {
 /// one is of the other.
 pub fn qualified(metadata: &std::path::Path) -> std::path::PathBuf {
     metadata.with_extension("rust-js-qualified")
+}
+
+/// Where the sites of the panics a registry crate's runtime model raises in
+/// its place are kept, beside the crate's metadata `metadata`, written as
+/// Cargo's check of it is made, of the version it built, a JSON object of
+/// each site's key and `file:line:column` (`registry_sites`, #2325).
+pub fn sites(metadata: &std::path::Path) -> std::path::PathBuf {
+    metadata.with_extension("rust-js-sites")
 }
 
 #[cfg(test)]

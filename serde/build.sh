@@ -15,11 +15,13 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 target=../target/serde
-# Each crate's file where Cargo's messages say it put it (`flags.ts`).
+# Each crate's file where Cargo's messages say it put it (`flags.ts`), of
+# Cargo run as `rust-js build` runs it, so each check notes beside its
+# metadata what a consumer's compile reads of it (`cargo.ts`, #2325).
 flags() {
   local profile=$1 extension=$2
   shift 2
-  cargo build --quiet --locked --message-format=json --target-dir "$target" "$@" | bun flags.ts "$target/$profile" "$extension"
+  bun cargo.ts build --quiet --locked --message-format=json --target-dir "$target" "$@" | bun flags.ts "$target/$profile" "$extension"
 }
 if [ "${1:-}" = "--rlib" ]; then
   flags debug rlib

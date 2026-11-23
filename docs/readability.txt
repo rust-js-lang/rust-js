@@ -1,6 +1,6 @@
 # shape	count	per 10,000 lines
 files	2873
-lines	396344
+lines	396355
 temporaries	0	0
 labeled blocks	0	0
 while (true)	242	6.1
@@ -57,7 +57,7 @@ test/corpus/an_index_is_no_pattern.js	87	0	0	0	0	0	0	0	1
 test/corpus/and_of_a_generic_option.js	35	0	0	0	0	0	0	8	5
 test/corpus/and_value_drops.js	159	0	0	0	0	0	0	23	10
 test/corpus/any_given_to_a_nullable_parameter.js	21	0	0	0	0	0	0	0	0
-test/corpus/any_mapped_to_a_nullable_parameter.js	43	0	0	0	0	0	0	0	0
+test/corpus/any_mapped_to_a_nullable_parameter.js	45	0	0	0	0	0	0	0	0
 test/corpus/any_of_one_value_is_includes.js	38	0	0	0	0	0	0	0	0
 test/corpus/app_errors.js	118	0	0	0	0	0	0	4	4
 test/corpus/applied_body_keeps_the_programs_name.js	45	0	0	0	0	0	0	4	0
@@ -272,7 +272,7 @@ test/corpus/catch_unwind_resumed_in_a_macro.js	87	0	0	0	0	0	0	0	0
 test/corpus/catch_unwind_rethrown.js	59	0	0	0	0	0	0	0	0
 test/corpus/catch_unwind_tested_last.js	98	0	0	0	0	0	0	4	4
 test/corpus/catch_unwind_thrown_named.js	217	0	0	0	0	0	2	29	3
-test/corpus/catch_unwind_typed_payloads.js	85	0	0	0	0	0	0	2	1
+test/corpus/catch_unwind_typed_payloads.js	87	0	0	0	0	0	0	2	1
 test/corpus/catch_unwind_unread_value.js	119	0	0	0	0	0	0	0	4
 test/corpus/catch_unwind_value_in_place.js	175	0	0	0	0	0	0	0	0
 test/corpus/catch_unwind_value_read_by_a_closure_of_statements.js	82	0	0	0	0	0	0	4	0
@@ -711,8 +711,8 @@ test/corpus/duration_by_mut.js	30	0	0	0	0	0	0	6	0
 test/corpus/duration_debug_options.js	73	0	0	0	0	0	0	0	0
 test/corpus/duration_overflow.js	15	0	0	0	0	0	0	0	0
 test/corpus/duration_sub_assign_panic.js	16	0	0	0	0	0	0	0	0
-test/corpus/dyn_any.js	102	0	0	0	0	0	0	4	3
-test/corpus/dyn_any_counted_rc.js	140	0	0	0	0	0	0	0	2
+test/corpus/dyn_any.js	105	0	0	0	0	0	0	4	3
+test/corpus/dyn_any_counted_rc.js	142	0	0	0	0	0	0	0	2
 test/corpus/dyn_any_drops_by_need.js	92	0	0	0	0	0	0	0	1
 test/corpus/dyn_any_generic.js	105	0	0	0	0	0	0	4	3
 test/corpus/dyn_auto_traits.js	148	0	0	0	0	0	0	0	0
@@ -721,7 +721,7 @@ test/corpus/dyn_debug_shown_where_rust_calls_fmt.js	504	0	0	0	0	0	0	9	2
 test/corpus/dyn_display.js	112	0	0	0	0	0	0	10	6
 test/corpus/dyn_drops.js	210	0	0	1	1	0	0	0	1
 test/corpus/dyn_error_debug_written_piecewise.js	262	0	0	0	0	0	0	2	2
-test/corpus/dyn_error_downcast.js	170	0	0	0	0	0	0	2	3
+test/corpus/dyn_error_downcast.js	172	0	0	0	0	0	0	2	3
 test/corpus/dyn_error_made_by_from_drops.js	50	0	0	0	0	0	0	0	0
 test/corpus/dyn_error_made_by_into_drops.js	50	0	0	0	0	0	0	0	0
 test/corpus/dyn_error_made_by_question_drops.js	64	0	0	0	0	0	0	0	2

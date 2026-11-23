@@ -131,10 +131,10 @@ its own.
   `/cargo/registry/25cdd57fae9f0462/hashbrown-0.17.1/src/raw.rs:1289:21`, a
   constant of the toolchain read of the shipped rlib by `bun run std`:
   native Rust's, no difference (#2325).
-- Some locations don't reach their helper yet, named `<unknown>`: a
-  registry crate's own sites, serde_json's `IndexMut` panics, and
-  hashbrown's own map's and indexmap's `get_disjoint_mut` (#2325). Each is
-  a P0.
+- A registry crate's own sites, serde_json's `IndexMut` panics and
+  hashbrown's own map's `get_disjoint_mut`, are found in the version Cargo
+  built and named under `/cargo/registry/src/`, difference 63 (ADR 0083,
+  #2325); indexmap's, which tracks its caller, names the caller's.
 - Held by `test/binaries.test.ts`, each row against native Rust on Node
   and Bun read as one stream, `2>&1`; and by every net that runs a
   program against native Rust (`test/programs.ts`): its native harness's

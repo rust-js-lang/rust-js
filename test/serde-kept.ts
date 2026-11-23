@@ -16,7 +16,15 @@ import { basename, dirname, join } from "node:path";
  * walk of it found one gone between listing it and reading it (#2311).
  * Listed by each entry's type, with no stat to race. */
 function read(path: string): string[] {
-  if (!statSync(path).isDirectory()) return [path];
+  // A crate's metadata and what rust-js noted beside it, `<stem>.rust-js-*`,
+  // which a compile reads with it: a registry crate's sites (#2325).
+  if (!statSync(path).isDirectory()) {
+    const stem = basename(path).replace(/\.rmeta$/, ".");
+    const noted = path.endsWith(".rmeta")
+      ? readdirSync(dirname(path)).filter((name) => name.startsWith(`${stem}rust-js-`)).sort().map((name) => join(dirname(path), name))
+      : [];
+    return [path, ...noted];
+  }
   return (readdirSync(path, { withFileTypes: true }))
     .filter((entry) => entry.isFile())
     .map((entry) => join(path, entry.name))
@@ -48,10 +56,15 @@ function hashed(hash: ReturnType<typeof createHash>, path: string, as: string) {
  * it was listed is left out, as `hashed` leaves it. */
 export function copied(from: string, to: string, copy = (a: string, b: string) => copyFileSync(a, b, constants.COPYFILE_FICLONE)) {
   const files = read(from);
-  mkdirSync(files.length === 1 && files[0] === from ? dirname(to) : to, { recursive: true });
+  const whole = files[0] === from;
+  mkdirSync(whole ? dirname(to) : to, { recursive: true });
+  // A file's, `to` itself, and what's noted beside it, beside `to` by its
+  // stem: `libserde_json-1a.rust-js-sites` of `to`'s `libserde_json-2b.rmeta`.
+  const placed = (file: string) =>
+    file === from ? to : whole ? join(dirname(to), basename(file).replace(basename(from).replace(/\.rmeta$/, ""), basename(to).replace(/\.rmeta$/, ""))) : join(to, basename(file));
   for (const file of files) {
     try {
-      copy(file, file === from ? to : join(to, basename(file)));
+      copy(file, placed(file));
     } catch (error) {
       if (file !== from && gone(error)) continue;
       throw error;

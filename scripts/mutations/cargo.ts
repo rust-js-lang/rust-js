@@ -283,4 +283,12 @@ export const mutations: Mutation[] = [
     replace: "        Some(\"out\") => Some(out_dir),\n",
     tests: ["test/libraries.test.ts", "-t", "imported by its package's subpath"],
   },
+  {
+    name: "sited-crate-unnoted",
+    breaks: "serde_json's check through rust-js notes no sites, so an app's `json[k] = v` is refused (#2325)",
+    file: "src/cargo.rs",
+    find: "                true => Whose::Sited(read.name, dir),\n",
+    replace: "                true => Whose::Rustc(None),\n",
+    tests: ["test/shipped-crates.test.ts", "-t", "serde_json's sites are noted"],
+  },
 ];

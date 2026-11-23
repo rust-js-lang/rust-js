@@ -2673,3 +2673,13 @@ React and JSX are [their own pages](README.md#react).
     A site in a crate std vendors, hashbrown's, is named as the shipped
     std names it, `/cargo/registry/<hash>/hashbrown-0.17.1/..`, exactly as
     native Rust does (#2325).
+63. A panic raised in a crates.io crate whose JS rust-js writes in its
+    place, serde_json's `value[key] = ..` of what can't hold it and
+    hashbrown's own map's `get_disjoint_mut` of two keys of one entry,
+    names the crate's file of the version Cargo built under
+    `/cargo/registry/src/<index>/<crate>-<version>/..`, on every machine;
+    native Rust names it under the machine's own `$CARGO_HOME`,
+    `~/.cargo/registry/src/..`. The line and column are the same, found in
+    that version's source as Cargo's check of it through rust-js is made
+    (ADR 0262, the user's decision, 2026-11-22, #2325;
+    [ADR 0083](../decisions/0083-serde-json-value.md)).

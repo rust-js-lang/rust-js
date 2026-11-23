@@ -28,4 +28,12 @@ export const mutations: Mutation[] = [
     replace: "                .filter(|_| false)\n",
     tests: ["test/shipped-crates.test.ts", "-t", "getrandom's API runs"],
   },
+  {
+    name: "registry-site-of-one-key",
+    breaks: "every registry site read is serde_json's key's, so `v[0] = ..` of an object names another line (#2325)",
+    file: "crates/rust-js-lower/src/recognition/shipped.rs",
+    find: "    (sites[site.key()].as_str().map(str::to_string))",
+    replace: "    (sites[\"jsonIndexKey\"].as_str().map(str::to_string))",
+    tests: ["test/binaries.test.ts", "-t", "a registry crate's panic names its own line"],
+  },
 ];

@@ -897,15 +897,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     list.push(Expr::bool(true));
                 }
                 // Where its crate raises its panic: std's, its vendored
-                // hashbrown's line; hashbrown's own map's and indexmap's,
-                // their crate's own, which #2325's registry sites will give,
-                // none yet.
-                let std =
-                    matches!(receiver.kind(), ty::Adt(map, _) if crate::recognition::is_std_crate(self.tcx, map.did()));
-                let at = match std {
+                // hashbrown's line; indexmap's, whose `get_disjoint_mut`
+                // tracks its caller, the caller's; hashbrown's own map's,
+                // its crate's line, of the version its build noted (#2325).
+                let ty::Adt(map, _) = receiver.kind() else {
+                    unreachable!("a hash map is a struct")
+                };
+                let at = if crate::recognition::is_std_crate(self.tcx, map.did()) {
                     // Its second, the `panic!`; its first `ptrs[..i]`'s bound.
-                    true => Expr::std_site("mapGetDisjointMut", 1),
-                    false => Expr::js_undefined(),
+                    Expr::std_site("mapGetDisjointMut", 1)
+                } else if crate::recognition::is_index_map(self.tcx, map.did()) {
+                    self.caller_location(span)
+                } else {
+                    use rust_js_program::library::registry_sites::RegistrySite;
+                    match crate::recognition::registry_site(self.tcx, map.did().krate, RegistrySite::MapGetDisjointMut)
+                    {
+                        Ok(site) => Expr::str(site),
+                        Err(why) => {
+                            let what = "hashbrown's `get_disjoint_mut` not knowing where hashbrown raises its panic";
+                            return Err(crate::refusal::refuse(
+                                self.tcx,
+                                span,
+                                crate::refusal::Refused::Because(what, &why),
+                            ));
+                        }
+                    }
                 };
                 Expr::raised_at(at, || map_ops("$mapGetDisjointMut", list))
             }

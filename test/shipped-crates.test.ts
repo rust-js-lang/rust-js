@@ -143,3 +143,21 @@ test("getrandom rust-js doesn't write, or doesn't know the version of, is refuse
   expect(direct.exitCode).not.toBe(0);
   expect(direct.stderr.toString()).toContain("rust-js does not support calling `getrandom::getrandom`");
 }, 1_200_000);
+
+// serde_json, read as rustc builds it, its `IndexMut`'s panics raised where
+// the version Cargo built raises them: Cargo's check of it through rust-js
+// finds them in that version's source and notes them beside its metadata,
+// which the app's compile reads (#2325).
+test("serde_json's sites are noted as Cargo's check of it through rust-js is made, and given where its panics are raised", () => {
+  const at = fixture("shipped-serde-json-sites");
+  mkdirSync(join(at, "src"), { recursive: true });
+  writeWhole(join(at, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[dependencies]\nserde_json = "=1.0.151"\n\n[workspace]\n');
+  writeWhole(join(at, "src", "lib.rs"), 'pub fn set(v: &mut serde_json::Value) {\n    v["a"] = serde_json::Value::Null;\n}\n');
+  expect(cargo(at, "fetch", "-q").code).toBe(0);
+  const built = build(at);
+  expect(built.stderr).toBe("");
+  expect(built.code).toBe(0);
+  expect(readFileSync(join(at, "src", "lib.js"), "utf8")).toContain(
+    '"/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_json-1.0.151/src/value/index.rs:102:18"',
+  );
+}, 600_000);

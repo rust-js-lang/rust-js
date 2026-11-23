@@ -83,6 +83,15 @@ react.dev's TopNav passes the same closure instead.
   prefix of std's own files differs, by how the toolchain was installed.
   Listed in the guide's differences (`semantics.md`, 62)
   ([1184](1184-a-binary-crate-runs-its-main-as-stds-runtime-does.md)).
+- **A panic raised in a crates.io crate whose JS rust-js writes names its
+  file under `/cargo/registry/src/`**, the second case's, the user's
+  decision (2026-11-22, #2325): serde_json's `IndexMut` panics and
+  hashbrown's own map's `get_disjoint_mut`, found in the version Cargo
+  built, where native Rust names them under the machine's `$CARGO_HOME`.
+  The line and column are the same; only the prefix differs, by where the
+  machine keeps its registry, as `/cargo` is the toolchain's own build's.
+  Tests write native's local prefix so, and nothing else. Listed in the
+  guide's differences (`semantics.md`, 63) ([0083](0083-serde-json-value.md)).
 - **Each decision says which case it's in**, on a `Case:` line under its
   status, every case its parts are in, the first the main one; N where it
   decides no disagreement, tooling, bindings' shape or the output's

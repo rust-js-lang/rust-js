@@ -47,8 +47,12 @@ pub enum JsonCall<'tcx> {
     Index,
     /// `value[key]` written, `IndexMut` of a `&mut Value`, a cell of it:
     /// a handle on its entry, serde_json's `index_or_insert`, `$jsonIndexMut`
-    /// (#1624).
-    IndexMut,
+    /// (#1624), of the `Value`, whose crate's sites its panics are raised
+    /// at, and of what indexes it, a key or a number (#2325).
+    IndexMut {
+        value: Ty<'tcx>,
+        index: Ty<'tcx>,
+    },
     Equal {
         other: Ty<'tcx>,
         value_first: bool,
@@ -97,8 +101,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             if tcx.is_lang_item(trait_id, LangItem::Index) && this_value {
                 return Some(JsonCall::Index);
             }
-            if tcx.is_lang_item(trait_id, LangItem::IndexMut) && this_value {
-                return Some(JsonCall::IndexMut);
+            if tcx.is_lang_item(trait_id, LangItem::IndexMut)
+                && this_value
+                && let Some(index) = other
+            {
+                return Some(JsonCall::IndexMut { value: this, index });
             }
             if tcx.is_lang_item(trait_id, LangItem::PartialEq)
                 && let Some(other) = other
