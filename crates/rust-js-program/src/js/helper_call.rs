@@ -90,9 +90,19 @@ impl<'e> HelperCall<'e> {
     }
 }
 
-impl HelperCallMut<'_> {
+impl<'e> HelperCallMut<'e> {
     /// What it gives for `param`, to write; `None` where it gives nothing.
+    /// It borrows the view, which reads others after it.
     pub fn arg_mut(&mut self, param: &str) -> Option<&mut Expr> {
+        let at = position(self.name, self.params, param);
+        self.args.get_mut(at).filter(|arg| !arg.facts.has(Known::Padded))
+    }
+
+    /// `arg_mut`'s, the view given up for it, so what it gives is the
+    /// call's to hold as long as the call is, as a function returns it: not
+    /// a second way to `arg_mut`, but the split std makes between
+    /// `OccupiedEntry::get_mut` and `into_mut` (ADR 1186).
+    pub fn into_arg_mut(self, param: &str) -> Option<&'e mut Expr> {
         let at = position(self.name, self.params, param);
         self.args.get_mut(at).filter(|arg| !arg.facts.has(Known::Padded))
     }
@@ -163,7 +173,13 @@ mod tests {
             let text = std::fs::read_to_string(file).expect("a source");
             let lines: Vec<&str> = text.lines().collect();
             for (at, line) in lines.iter().enumerate() {
-                for reader in [".arg(\"", ".given(\"", ".args_from(\"", ".arg_mut(\""] {
+                for reader in [
+                    ".arg(\"",
+                    ".given(\"",
+                    ".args_from(\"",
+                    ".arg_mut(\"",
+                    ".into_arg_mut(\"",
+                ] {
                     for (i, _) in line.match_indices(reader) {
                         let param = quoted(&line[i..]).into_iter().next().unwrap_or_default();
                         let named = (at.saturating_sub(30)..=at).rev().find_map(|j| {
@@ -206,6 +222,17 @@ mod tests {
         });
         let count = call.helper_call_of("$count").expect("a call of `$count`");
         assert!(!count.given("drop") && count.given("raisedAt"));
+    }
+
+    /// What `into_arg_mut` gives is the call's, written through after the
+    /// view is gone.
+    #[test]
+    fn an_argument_given_up_is_written_in_its_call() {
+        let mut call = Expr::call(Expr::helper("$cleanup"), vec![Expr::var("run"), Expr::var("e")]);
+        let run = (call.helper_call_of_mut("$cleanup")).and_then(|cleanup| cleanup.into_arg_mut("run"));
+        *run.expect("its `run`") = Expr::var("drops");
+        let cleanup = call.helper_call_of("$cleanup").expect("a call of `$cleanup`");
+        assert!(same_path(cleanup.arg("run").expect("its `run`"), &Expr::var("drops")));
     }
 
     #[test]

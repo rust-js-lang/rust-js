@@ -134,12 +134,7 @@ fn flagged_try(made: &Stmt, tested: &Stmt) -> Option<Stmt> {
     let StmtKind::Const(result, value) = &made.kind else {
         return None;
     };
-    let ExprKind::Call(callee, args) = &value.kind else {
-        return None;
-    };
-    let (Some("$catchUnwind"), [f]) = (callee.helper_name(), args.as_slice()) else {
-        return None;
-    };
+    let f = value.helper_call_of("$catchUnwind")?.arg("f")?;
     let ExprKind::Arrow(params, body) = &f.kind else {
         return None;
     };
@@ -1116,9 +1111,8 @@ fn read_as_thrown(binding: Option<Name>, handler: Vec<Stmt>) -> (Option<Name>, V
         return (binding, handler);
     };
     let unwound = |made: &Expr| {
-        matches!(&made.kind, ExprKind::Call(callee, args)
-            if callee.helper_name() == Some("$unwound")
-                && matches!(args.as_slice(), [arg] if matches!(&arg.kind, ExprKind::Var(v) if *v == thrown)))
+        (made.helper_call_of("$unwound").and_then(|call| call.arg("e")))
+            .is_some_and(|e| matches!(&e.kind, ExprKind::Var(v) if *v == thrown))
     };
     if let [
         Stmt {
@@ -1158,8 +1152,7 @@ fn read_as_thrown(binding: Option<Name>, handler: Vec<Stmt>) -> (Option<Name>, V
     // `e`.
     let resumed_as_given = |e: &Expr| {
         e.facts.has(js::Known::AsGiven)
-            && matches!(&e.kind, ExprKind::Call(callee, args)
-                if callee.helper_name() == Some("$unwinding") && matches!(args.as_slice(), [arg] if of_payload(arg)))
+            && (e.helper_call_of("$unwinding").and_then(|call| call.arg("payload"))).is_some_and(of_payload)
     };
     js::each_expr_mut(&mut rest, &mut |e| {
         if resumed_as_given(e) || e.thrown_error_of().is_some_and(of_payload) {

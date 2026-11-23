@@ -27,12 +27,7 @@ impl Expr {
 
     /// The call `$try(() => call)` tries, of one [`Expr::tried`] made.
     pub fn tried_call(&self) -> Option<&Expr> {
-        let ExprKind::Call(callee, args) = &self.kind else {
-            return None;
-        };
-        let (Some("$try"), [thunk]) = (callee.helper_name(), args.as_slice()) else {
-            return None;
-        };
+        let thunk = self.helper_call_of("$try")?.arg("f")?;
         match &thunk.kind {
             ExprKind::Arrow(params, body) if params.is_empty() => match body.as_slice() {
                 [
@@ -63,12 +58,8 @@ impl Expr {
 
     /// Of a panic `Expr::panic` made, what its message is made of.
     pub fn panic_message(&self) -> Option<&[Expr]> {
-        match &self.kind {
-            ExprKind::Call(callee, args) if matches!(callee.helper_name(), Some("$panic" | "$stringPanic")) => {
-                Some(&args[..1])
-            }
-            _ => None,
-        }
+        let panic = self.helper_call_of_any(&["$panic", "$stringPanic"])?;
+        panic.arg("message").map(std::slice::from_ref)
     }
 
     /// What was thrown of an unwind's payload `pair`, `pair.error`, which
@@ -101,12 +92,7 @@ impl Expr {
         if let Some(call) = self.tried_call() {
             return Some((call.clone(), Caught::Thrown));
         }
-        let ExprKind::Call(callee, args) = &self.kind else {
-            return None;
-        };
-        let (Some("$catchUnwind"), [f]) = (callee.helper_name(), args.as_slice()) else {
-            return None;
-        };
+        let f = self.helper_call_of("$catchUnwind")?.arg("f")?;
         // What makes `f` runs before it's caught, as Rust makes it before
         // `catch_unwind` is called: never in the `try`.
         if f.may_throw() {
@@ -126,15 +112,10 @@ impl Expr {
         let ExprKind::Await(settled) = &self.kind else {
             return None;
         };
-        let ExprKind::Call(callee, args) = &settled.kind else {
-            return None;
-        };
-        match (callee.helper_name(), args.as_slice()) {
-            (Some("$settle"), [promise]) => Some(Expr {
-                span: self.span,
-                ..Expr::await_(promise.clone())
-            }),
-            _ => None,
-        }
+        let promise = settled.helper_call_of("$settle")?.arg("promise")?;
+        Some(Expr {
+            span: self.span,
+            ..Expr::await_(promise.clone())
+        })
     }
 }

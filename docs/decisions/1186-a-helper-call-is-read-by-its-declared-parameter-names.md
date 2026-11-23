@@ -84,3 +84,24 @@ fact its producer sets, so `$count(it, undefined, "lib.rs:4:9")` gives no
 - A helper's JS is the one place its parameters are declared; the
   compiler's passes, its location argument and its exports read them
   there.
+
+
+## Amendment: an argument given up for the call's lifetime (2026-11-23, #2334)
+
+A reader that returns a reference into the call it reads, `drops::parts`'
+`cleanup_drops`, a `$cleanup(run, e)`'s `run` arrow's statements, can't
+take it of `arg_mut`, which borrows the view and gives what lives as long
+as that borrow. `HelperCallMut::into_arg_mut(self, param)` gives the view
+up for what it gives, held as long as the call: the split std makes
+between `OccupiedEntry::get_mut`, which borrows and reads on, and
+`into_mut`, which consumes for a reference that outlives the entry. Two
+jobs, not two ways to one: a reader that writes one argument in place
+and may read another borrows; one that returns it gives up. The
+contract test reads `.into_arg_mut("..")` as it reads every reader.
+
+With it, the unwinding helpers' readers are read by name, `$try`'s `f`,
+`$catchUnwind`'s `f`, `$cleanup`'s `run`, `$unwindsOn`'s and `$unwound`'s
+`e`, `$unwinding`'s `payload`, a panic's `message`, `$settle`'s
+`promise`, `$unlock`'s `cell`: `drops/parts.rs`, `prepare/catches.rs` and
+`js/make/unwinding.rs` read none by arity, and leave the ratchet.
+

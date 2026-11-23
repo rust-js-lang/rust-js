@@ -685,26 +685,26 @@ pub fn emptied_scopes(stmts: &mut Vec<Stmt>) {
 /// Whether `body` begins with a `catch_unwind`, `$catchUnwind(f)` or what's
 /// made of it, whose catch aborts on a stack overflow (`$catchable`).
 pub fn catches_unwind(body: &[Stmt]) -> bool {
-    let unwinds =
-        |e: &Expr| matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$catchUnwind"));
+    let unwinds = |e: &Expr| e.helper_call_of("$catchUnwind").is_some();
     matches!(body.first().map(|s| &s.kind),
         Some(StmtKind::Expr(e) | StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Assign(_, e)) if unwinds(e))
 }
 
 /// Whether `dropped` is `if ($live()) { .. }` (`aborting_finally`'s).
 pub fn live_guarded(dropped: &[Stmt]) -> bool {
-    matches!(dropped, [Stmt { kind: StmtKind::If(test, _, None), .. }]
-        if matches!(&test.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$live")))
+    matches!(dropped, [Stmt { kind: StmtKind::If(test, _, None), .. }] if test.helper_call_of("$live").is_some())
 }
 
 /// Whether `body` is one `try { .. } catch (error) { throw
 /// $unwindsOn(error); }` (`aborting_finally`'s), whose `finally` is `if
 /// ($live()) { .. }`.
 pub fn is_aborting(body: &[Stmt]) -> bool {
+    let rethrown = |thrown: &Expr, error: &js::Name| {
+        (thrown.helper_call_of("$unwindsOn").and_then(|call| call.arg("e")))
+            .is_some_and(|e| matches!(&e.kind, js::ExprKind::Var(v) if v == error))
+    };
     matches!(body, [Stmt { kind: StmtKind::TryCatch(_, Some(error), handler), .. }]
-        if matches!(handler.as_slice(), [Stmt { kind: StmtKind::Throw(Expr { kind: js::ExprKind::Call(callee, given), .. }), .. }]
-            if callee.helper_name() == Some("$unwindsOn")
-                && matches!(given.as_slice(), [Expr { kind: js::ExprKind::Var(v), .. }] if v == error)))
+        if matches!(handler.as_slice(), [Stmt { kind: StmtKind::Throw(thrown), .. }] if rethrown(thrown, error)))
 }
 
 /// Whether a `finally`, which runs on either path and can't tell them
@@ -725,20 +725,13 @@ pub fn poisoned_and_released(drop: &Stmt) -> Option<(Stmt, Stmt)> {
     let StmtKind::Expr(call) = &drop.kind else {
         return None;
     };
-    let js::ExprKind::Call(callee, given) = &call.kind else {
-        return None;
+    let guard = call.helper_call_of("$unlock")?.arg("cell")?;
+    let part = |helper| {
+        let mut call = Expr::call_helper(helper, vec![guard.clone()]);
+        call.facts = call.facts.with(js::Known::Unseen);
+        StmtKind::Expr(call).at(drop.span)
     };
-    let [guard] = given.as_slice() else {
-        return None;
-    };
-    (callee.helper_name() == Some("$unlock")).then(|| {
-        let part = |helper| {
-            let mut call = Expr::call_helper(helper, vec![guard.clone()]);
-            call.facts = call.facts.with(js::Known::Unseen);
-            StmtKind::Expr(call).at(drop.span)
-        };
-        (part("$poison"), part("$unborrow"))
-    })
+    Some((part("$poison"), part("$unborrow")))
 }
 
 /// Whether `stmts` call a helper that asks whether a panic unwinds, which
@@ -767,14 +760,8 @@ pub fn unseen(stmts: &[Stmt]) -> bool {
 /// drops, which run there and then, as a panic unwinds: what tidy reads
 /// as it reads any statements in place (#1606).
 pub fn cleanup_drops(call: &mut Expr) -> Option<&mut Vec<Stmt>> {
-    let js::ExprKind::Call(callee, args) = &mut call.kind else {
-        return None;
-    };
-    if callee.helper_name() != Some("$cleanup") {
-        return None;
-    }
-    match args.first_mut().map(|run| &mut run.kind) {
-        Some(js::ExprKind::Arrow(params, drops)) if params.is_empty() => Some(drops),
+    match &mut call.helper_call_of_mut("$cleanup")?.into_arg_mut("run")?.kind {
+        js::ExprKind::Arrow(params, drops) if params.is_empty() => Some(drops),
         _ => None,
     }
 }
@@ -783,10 +770,7 @@ pub fn cleanup_drops(call: &mut Expr) -> Option<&mut Vec<Stmt>> {
 /// and thrown on: what can't throw and runs nothing a program sees, or one
 /// `$cleanup(..)`.
 pub fn is_cleanup(stmts: &[Stmt]) -> bool {
-    let guarded = |stmt: &Stmt| {
-        matches!(&stmt.kind, StmtKind::Expr(call)
-            if matches!(&call.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$cleanup")))
-    };
+    let guarded = |stmt: &Stmt| matches!(&stmt.kind, StmtKind::Expr(call) if call.helper_call_of("$cleanup").is_some());
     matches!(stmts, [stmt] if guarded(stmt)) || !may_throw(stmts) && unseen(stmts)
 }
 
