@@ -125,11 +125,16 @@ its own.
   (`std_sysroot.rs`, #2343), so std/ is the same from any machine.
   Difference 62,
   the user's decision. Tests normalize native's local prefix.
-- Some locations don't reach their helper yet, named `<unknown>` or the
-  caller's: a registry crate's sites,
-  serde_json's `IndexMut` panics and std's vendored hashbrown's (#2325);
-  and a `#[track_caller]` std function given as a value, which native
-  Rust names by the `Fn` trait's shim (#2335). Each is a P0.
+- A site in a crate std's source vendors, a `HashMap`'s `get_disjoint_mut`
+  of two keys of one entry, hashbrown's, is named as the shipped std
+  names it, under its own build's registry,
+  `/cargo/registry/25cdd57fae9f0462/hashbrown-0.17.1/src/raw.rs:1289:21`, a
+  constant of the toolchain read of the shipped rlib by `bun run std`:
+  native Rust's, no difference (#2325).
+- Some locations don't reach their helper yet, named `<unknown>`: a
+  registry crate's own sites, serde_json's `IndexMut` panics, and
+  hashbrown's own map's and indexmap's `get_disjoint_mut` (#2325). Each is
+  a P0.
 - Held by `test/binaries.test.ts`, each row against native Rust on Node
   and Bun read as one stream, `2>&1`; and by every net that runs a
   program against native Rust (`test/programs.ts`): its native harness's

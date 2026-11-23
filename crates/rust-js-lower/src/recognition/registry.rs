@@ -182,7 +182,17 @@ pub(super) fn by_path(tcx: TyCtxt<'_>, krate: StdCrate, path: &[&str]) -> Option
 
 /// `by_path`'s item and its kind, as its module says of its child.
 pub(super) fn by_path_kind(tcx: TyCtxt<'_>, krate: StdCrate, path: &[&str]) -> Option<(DefKind, DefId)> {
-    let root = super::std_crate_num(tcx, krate)?;
+    by_path_in(tcx, super::std_crate_num(tcx, krate)?, path)
+}
+
+/// The item at `path` in the crate `root`, and its kind: of one of std's,
+/// `by_path_kind`'s; of a crate std's build vendors, hashbrown, reached
+/// through a std type's field (`compiled_std::raised`'s, #2325).
+pub(super) fn by_path_in(
+    tcx: TyCtxt<'_>,
+    root: rustc_span::def_id::CrateNum,
+    path: &[&str],
+) -> Option<(DefKind, DefId)> {
     let named = |module: DefId, part: &str| -> Vec<(DefKind, DefId)> {
         (tcx.module_children(module).iter())
             .filter_map(|child| match child.res {

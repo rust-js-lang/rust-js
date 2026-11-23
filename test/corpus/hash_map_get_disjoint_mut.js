@@ -11,6 +11,7 @@ import {
   $mapGetDisjointMut,
   $partialEq,
   $reserveHint,
+  $stdSites,
 } from "@rust-js/std";
 
 export function entry() {
@@ -45,7 +46,12 @@ function main() {
     ["b", 2],
     ["c", 3],
   ]);
-  const getDisjointMut = $mapGetDisjointMut(counts, ["a", "c"], true);
+  const getDisjointMut = $mapGetDisjointMut(
+    counts,
+    ["a", "c"],
+    $stdSites.mapGetDisjointMut[1],
+    true,
+  );
   if (getDisjointMut[0] != null && getDisjointMut[1] != null) {
     const a = getDisjointMut[0];
     const c = getDisjointMut[1];
@@ -57,12 +63,17 @@ function main() {
       .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
       .join(", ")}]`,
   );
-  const [x, y, z] = $mapGetDisjointMut(counts, ["z", "b", "z"], true);
+  const [x, y, z] = $mapGetDisjointMut(
+    counts,
+    ["z", "b", "z"],
+    $stdSites.mapGetDisjointMut[1],
+    true,
+  );
   console.log(
     `${x == null ? "None" : `Some(${x.value})`} ${y == null ? "None" : `Some(${y.value})`} ${z == null ? "None" : `Some(${z.value})`}`,
   );
   let r = $catchUnwind(() => {
-    const [p, q] = $mapGetDisjointMut(counts, ["a", "a"], true);
+    const [p, q] = $mapGetDisjointMut(counts, ["a", "a"], $stdSites.mapGetDisjointMut[1], true);
     console.log(
       `${p == null ? "None" : `Some(${p.value})`} ${q == null ? "None" : `Some(${q.value})`}`,
     );
@@ -81,7 +92,7 @@ function main() {
       4,
     ),
   );
-  const [one, three] = $mapGetDisjointMut(scores, [1, 3]);
+  const [one, three] = $mapGetDisjointMut(scores, [1, 3], $stdSites.mapGetDisjointMut[1]);
   if (one != null && three != null) {
     one.points = (one.points + three.points) >>> 0;
     three.points = 0;
@@ -96,10 +107,15 @@ function main() {
     [["pear"], 2],
   ]);
   r = $catchUnwind(() => {
-    $mapGetDisjointMut(words, [["APPLE"], ["apple"]], true);
+    $mapGetDisjointMut(words, [["APPLE"], ["apple"]], $stdSites.mapGetDisjointMut[1], true);
   });
   console.log(`${r.TAG === "Err"}`);
-  const value = $mapGetDisjointMut(words, [["PEAR"], ["plum"]], true);
+  const value = $mapGetDisjointMut(
+    words,
+    [["PEAR"], ["plum"]],
+    $stdSites.mapGetDisjointMut[1],
+    true,
+  );
   if (value[0] != null && value[1] == null) {
     const p = value[0];
     p.value = (p.value + 5) >>> 0;

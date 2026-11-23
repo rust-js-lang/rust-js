@@ -522,7 +522,7 @@ export const mutations: Mutation[] = [
     name: "disjoint-duplicates-unseen",
     breaks: "a hash map's `get_disjoint_mut` of two keys that find one entry gives it twice, where std panics `duplicate keys found` (#1276)",
     file: "crates/rust-js-program/src/runtime/map_ops.js",
-    find: "      throw new Error(\"duplicate keys found\");\n",
+    find: "      throw $panic(\"duplicate keys found\", raisedAt);\n",
     replace: "      void 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_map_get_disjoint_mut.rs$"],
   },
@@ -581,5 +581,13 @@ export const mutations: Mutation[] = [
     find: "    return [n, n + m];\n",
     replace: "    return [0, n + m];\n",
     tests: ["test/corpus.test.ts", "-t", "^set_merges_collected_where_capacity_is_read.rs$"],
+  },
+  {
+    name: "disjoint-panic-unlocated",
+    breaks: "`$mapGetDisjointMut`'s panic is raised nowhere, `<unknown>` (#2325)",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
+    find: "      throw $panic(\"duplicate keys found\", raisedAt);\n",
+    replace: "      throw $panic(\"duplicate keys found\");\n",
+    tests: ["test/binaries.test.ts", "-t", "each panic std raises in its own code"],
   },
 ];

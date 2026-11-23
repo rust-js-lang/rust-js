@@ -226,6 +226,8 @@ test("each panic std raises in its own code names std's line, as its hook does",
     "println!(\"{}\", 5u32.next_multiple_of(std::hint::black_box(0)));",
     "println!(\"{}\", 5u64.next_multiple_of(std::hint::black_box(0)));",
     "let mut s = String::from(\"héllo\");\n    let _ = s.split_at_mut(std::hint::black_box(2));",
+    // In std's vendored hashbrown, named under its own build's registry (#2325).
+    "let mut m = std::collections::HashMap::from([(1u8, 1u8)]);\n    let _ = m.get_disjoint_mut([&1, &std::hint::black_box(1)]);",
     "let mut a = [std::mem::MaybeUninit::<String>::uninit(), std::mem::MaybeUninit::uninit()];\n    a.write_clone_of_slice(std::hint::black_box(&[String::new()]));",
     "let mut a = [std::mem::MaybeUninit::<u8>::uninit(); 2];\n    a.write_copy_of_slice(std::hint::black_box(&[1]));",
     "let mut r = (std::hint::black_box(char::MAX))..;\n    r.next();\n    println!(\"{:?}\", r.next());",

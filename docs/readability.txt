@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
 files	2873
-lines	396327
+lines	396344
 temporaries	0	0
 labeled blocks	0	0
 while (true)	242	6.1
-$iter	3458	87.3
+$iter	3458	87.2
 Iterator.from	312	7.9
 return;	452	11.4
 renamed x$1	17530	442.3
-role fallbacks	9740	245.8
+role fallbacks	9740	245.7
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	51	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	60
@@ -1192,7 +1192,7 @@ test/corpus/handle_named_value.js	32	0	0	0	0	0	0	0	1
 test/corpus/hash_hashers.js	218	0	0	0	0	0	0	3	2
 test/corpus/hash_known_types_given_a_generic_hasher.js	100	0	0	0	0	0	0	3	3
 test/corpus/hash_map_drop_stops_at_a_panic.js	148	0	0	0	0	0	0	3	0
-test/corpus/hash_map_get_disjoint_mut.js	112	0	0	0	0	0	0	0	1
+test/corpus/hash_map_get_disjoint_mut.js	128	0	0	0	0	0	0	0	1
 test/corpus/hash_of_a_wrapping_in_generic_code.js	19	0	0	0	0	0	0	0	0
 test/corpus/hash_phantom_data.js	179	0	0	0	0	0	0	2	0
 test/corpus/hash_values.js	481	0	0	0	0	0	0	6	8
@@ -1531,7 +1531,7 @@ test/corpus/map_collect_drops.js	288	0	0	0	2	0	0	0	0
 test/corpus/map_collect_drops_what_it_filled_as_a_replaced_drop_panics.js	37	0	0	0	1	0	0	0	0
 test/corpus/map_drops.js	380	0	0	0	0	0	0	12	5
 test/corpus/map_ends_size_hint.js	182	0	0	0	4	0	0	0	1
-test/corpus/map_entry_hashes_its_key_once.js	342	0	0	0	0	0	0	5	5
+test/corpus/map_entry_hashes_its_key_once.js	343	0	0	0	0	0	0	5	5
 test/corpus/map_entry_held_drops_its_key.js	130	0	0	0	0	0	0	10	5
 test/corpus/map_entry_match.js	63	0	0	0	0	0	0	0	1
 test/corpus/map_eq.js	72	0	0	0	0	0	0	0	0

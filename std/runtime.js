@@ -11321,13 +11321,14 @@ export function $cloneIntoMap(m, from, make, drop) {
 // A hash map's `get_disjoint_mut(keys)`: each key's value, a handle on a
 // number or text (`handle`), or `None` where it isn't there; where two
 // find one entry, `duplicate keys found`, as std's does once it's found
-// them all (#1276). A handle is on what each search found, asking nothing
-// again (#1362).
-export function $mapGetDisjointMut(m, keys, handle) {
+// them all (#1276), a panic raised where its map's crate raises it,
+// `raisedAt`, std's in its vendored hashbrown's table (#2325). A handle is
+// on what each search found, asking nothing again (#1362).
+export function $mapGetDisjointMut(m, keys, raisedAt, handle) {
   const found = keys.map((key) => $found(m, key));
   found.forEach((each, i) => {
     if (each.there && found.slice(0, i).some((other) => other.there && other.key === each.key)) {
-      throw new Error("duplicate keys found");
+      throw $panic("duplicate keys found", raisedAt);
     }
   });
   const handleOf = (each, i) => (each.entry === undefined ? $mutGet(m, keys[i]) : $entryHandle(each.entry));
@@ -14871,6 +14872,10 @@ export const $stdSites = {
   ],
   "strSplitAt": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/str/mod.rs:861:21"
+  ],
+  "mapGetDisjointMut": [
+    "/cargo/registry/25cdd57fae9f0462/hashbrown-0.17.1/src/raw.rs:1288:41",
+    "/cargo/registry/25cdd57fae9f0462/hashbrown-0.17.1/src/raw.rs:1289:21"
   ],
   "strSplitAtMut": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/str/mod.rs:906:13"

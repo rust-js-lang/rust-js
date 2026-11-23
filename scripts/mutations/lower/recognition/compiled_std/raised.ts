@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "                None => Vec::new(),\n",
     tests: ["test/std-sites.test.ts"],
   },
+  {
+    name: "vendored-site-named-locally",
+    breaks: "a site in a crate std vendors, hashbrown's, Cargo's build took from the registry, is named by this machine's registry path, not the vendored crate's, so the runtime's sites name a machine's own source (#2325)",
+    file: "crates/rust-js-lower/src/recognition/compiled_std/raised.rs",
+    find: "    let file = match file.find(\"/registry/src/\") {\n",
+    replace: "    let file = match None::<usize> {\n",
+    tests: ["test/std-sites.test.ts", "-t", "the runtime's sites of std's panics are what std's MIR says"],
+  },
 ];

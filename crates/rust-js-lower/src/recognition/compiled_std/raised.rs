@@ -57,6 +57,13 @@ enum Owner {
     /// A trait's impl for a reference to a slice of bytes, `&[u8]`'s
     /// `BufRead`, the trait at its path.
     ForByteSlice(StdCrate, &'static [&'static str]),
+    /// A type's own of a crate std's build vendors, at its path there, the
+    /// crate the one a std type's field, the second, is of: hashbrown's
+    /// `RawTable`, through std `HashMap`'s `base` (#2325).
+    Vendored(
+        &'static [&'static str],
+        (StdCrate, &'static [&'static str], &'static str),
+    ),
 }
 
 /// Each site of std's panics a helper raises, by its name in `$stdSites`,
@@ -102,6 +109,17 @@ const RAISED: &[(&str, Option<&str>, Owner, &str)] = &[
         "",
     ),
     ("strSplitAt", None, Owner::Primitive(SimplifiedType::Str), "split_at"),
+    // A `HashMap`'s `get_disjoint_mut` of two keys of one entry: hashbrown's
+    // table's, vendored, named under its own build's registry (#2325).
+    (
+        "mapGetDisjointMut",
+        None,
+        Owner::Vendored(
+            &["raw", "RawTable"],
+            (StdCrate::Std, &["collections", "hash", "map", "HashMap"], "base"),
+        ),
+        "get_disjoint_mut",
+    ),
     (
         "strSplitAtMut",
         None,
@@ -579,6 +597,15 @@ fn function(tcx: TyCtxt<'_>, owner: Owner, name: &str) -> Option<DefId> {
                 .collect()
         }
         Owner::Primitive(kind) => tcx.incoherent_impls(kind).to_vec(),
+        Owner::Vendored(path, (krate, of, field)) => {
+            let of = registry::by_path(tcx, krate, of)?;
+            let field = (tcx.adt_def(of).all_fields()).find(|each| each.name.as_str() == field)?;
+            let ty::Adt(held, _) = tcx.type_of(field.did).skip_binder().kind() else {
+                return None;
+            };
+            let (_, ty) = registry::by_path_in(tcx, held.did().krate, path)?;
+            tcx.inherent_impls(ty).to_vec()
+        }
         Owner::Bounded(trait_, of, bound) => {
             let trait_ = registry::by_path(tcx, trait_.0, trait_.1)?;
             let of = match of {
@@ -672,10 +699,19 @@ fn site(tcx: TyCtxt<'_>, root: DefId, body: &mir::Body<'_>, info: mir::SourceInf
         .to_string_lossy()
         .into_owned();
     // Of std's source, from its `library/`, which `bun run std` places
-    // under the toolchain's `/rustc/<commit>/`, as its shipped std names it.
-    let file = file
-        .find("/library/")
-        .map_or(file.clone(), |at| file[at + 1..].to_string());
+    // under the toolchain's `/rustc/<commit>/`, as its shipped std names it;
+    // of a crate it vendors, `library/vendor/hashbrown-0.17.1/..`, which
+    // Cargo's build of std may take from the registry instead, the same
+    // crate, which `bun run std` places as the shipped std names it (#2325).
+    let file = match file.find("/registry/src/") {
+        Some(at) => match file[at + "/registry/src/".len()..].split_once('/') {
+            Some((_, crate_file)) => format!("library/vendor/{crate_file}"),
+            None => file.clone(),
+        },
+        None => file
+            .find("/library/")
+            .map_or(file.clone(), |at| file[at + 1..].to_string()),
+    };
     Some((file, at.line, at.col_display + 1))
 }
 

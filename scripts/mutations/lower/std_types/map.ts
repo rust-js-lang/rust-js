@@ -615,8 +615,8 @@ export const mutations: Mutation[] = [
     name: "disjoint-numbers-unhandled",
     breaks: "a hash map's `get_disjoint_mut` of numbers gives them, not handles, so what's written through them is lost (#1276)",
     file: "crates/rust-js-lower/src/std_types/map.rs",
-    find: "                if types.get(1).is_some_and(|&value| self.handles_mut(value)) {\n                    list.push(Expr::bool(true));\n                }\n                map_ops(\"$mapGetDisjointMut\", list)\n",
-    replace: "                map_ops(\"$mapGetDisjointMut\", list)\n",
+    find: "                if types.get(1).is_some_and(|&value| self.handles_mut(value)) {\n                    list.push(Expr::bool(true));\n                }\n                // Where its crate raises its panic",
+    replace: "                // Where its crate raises its panic",
     tests: ["test/corpus.test.ts", "-t", "^hash_map_get_disjoint_mut.rs$"],
   },
   {
@@ -707,5 +707,13 @@ export const mutations: Mutation[] = [
     find: '        "retain" if std_map || set || map && sorted => MapOp::Retain,\n',
     replace: '        "retain" if std_map || set => MapOp::Retain,\n',
     tests: ["test/serde-values.test.ts", "-t", "take, as_null, pointers"],
+  },
+  {
+    name: "std-disjoint-site-unknown",
+    breaks: "std's `HashMap::get_disjoint_mut` of two keys of one entry panics `<unknown>`, where native Rust names its vendored hashbrown's line (#2325)",
+    file: "crates/rust-js-lower/src/std_types/map.rs",
+    find: "                    true => Expr::std_site(\"mapGetDisjointMut\", 1),\n",
+    replace: "                    true => Expr::js_undefined(),\n",
+    tests: ["test/binaries.test.ts", "-t", "each panic std raises in its own code"],
   },
 ];

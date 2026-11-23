@@ -27,6 +27,7 @@ import {
   $range,
   $retainMap,
   $sortedEntries,
+  $stdSites,
   $strictlyEqual,
   $tableRoomFor,
   $toBytes,
@@ -194,7 +195,7 @@ function entries(
     console.log(`${TDebug.fmt(key)} ${$debugStr(get)}`);
   }
   hashed("an occupied entry's get_mut");
-  for (const name of $mapGetDisjointMut(names, [a, c], true)
+  for (const name of $mapGetDisjointMut(names, [a, c], $stdSites.mapGetDisjointMut[1], true)
     .values()
     .filter((item) => item != null)) {
     name.value += "1";

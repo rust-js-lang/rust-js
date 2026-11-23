@@ -2665,3 +2665,6 @@ React and JSX are [their own pages](README.md#react).
     `~/.rustup/toolchains/../lib/rustlib/src/rust/library/..`. The line and
     column are the same (ADR 0262, the user's decision, 2026-11-22, #2292;
     [ADR 1184](../decisions/1184-a-binary-crate-runs-its-main-as-stds-runtime-does.md)).
+    A site in a crate std vendors, hashbrown's, is named as the shipped
+    std names it, `/cargo/registry/<hash>/hashbrown-0.17.1/..`, exactly as
+    native Rust does (#2325).

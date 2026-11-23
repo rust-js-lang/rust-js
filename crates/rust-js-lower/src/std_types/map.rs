@@ -896,7 +896,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if types.get(1).is_some_and(|&value| self.handles_mut(value)) {
                     list.push(Expr::bool(true));
                 }
-                map_ops("$mapGetDisjointMut", list)
+                // Where its crate raises its panic: std's, its vendored
+                // hashbrown's line; hashbrown's own map's and indexmap's,
+                // their crate's own, which #2325's registry sites will give,
+                // none yet.
+                let std =
+                    matches!(receiver.kind(), ty::Adt(map, _) if crate::recognition::is_std_crate(self.tcx, map.did()));
+                let at = match std {
+                    // Its second, the `panic!`; its first `ptrs[..i]`'s bound.
+                    true => Expr::std_site("mapGetDisjointMut", 1),
+                    false => Expr::js_undefined(),
+                };
+                Expr::raised_at(at, || map_ops("$mapGetDisjointMut", list))
             }
             MapOp::TreeSplitOff => {
                 let (m, key) = (arg(), arg());
