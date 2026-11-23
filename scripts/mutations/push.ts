@@ -330,4 +330,12 @@ export const mutations: Mutation[] = [
     replace: "  if (untracked.length >= 0) return undefined;\n",
     tests: ["test/push.test.ts", "-t", "a push refuses to start with an untracked file"],
   },
+  {
+    name: "remade-uncarried-into-the-run-again",
+    breaks: "push run again from the rebased tree isn't given what its rebase resolved as main's, so std/ stays main's text, a helper the change added gone (#2417)",
+    file: "scripts/push.ts",
+    find: "  if (remade.length > 0) again.RUST_JS_PUSH_REMADE = remade.join(\"\\n\");\n",
+    replace: "",
+    tests: ["test/push.test.ts", "-t", "push run again makes again what its rebase resolved as main's"],
+  },
 ];

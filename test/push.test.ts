@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { changedWhileChecked, untrackedRefusal, movedWhilePushed, againEnv, appendedBoth, beside, FAST_TESTS, fastAgain, givenBefore, givenRound, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, portRegen, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
+import { changedWhileChecked, untrackedRefusal, movedWhilePushed, againEnv, appendedBoth, givenRemade, beside, FAST_TESTS, fastAgain, givenBefore, givenRound, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, portRegen, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
 import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
@@ -403,7 +403,7 @@ test("a rebase that changes what push has loaded runs it again, its line its own
   expect(againEnv({ RUST_JS_TIMED_BY: "push", RUST_JS_TIMED_OTHERS: "1", RUST_JS_AGENT: "a" })).toEqual({ RUST_JS_AGENT: "a" });
   // Asked right after each rebase, before anything it runs reads a module.
   const source = readFileSync(join(root, "scripts/push.ts"), "utf8");
-  const at = source.indexOf('      const remade = rebase();\n      phase("rebase");\n');
+  const at = source.indexOf('      const remade = [...new Set([...rebase(), ...carried])];\n      carried = [];\n      phase("rebase");\n');
   expect(at).toBeGreaterThan(0);
   expect(source.indexOf("staleModules(", at)).toBeLessThan(source.indexOf("fastAgain(since, named)", at));
 });
@@ -466,6 +466,23 @@ test("push run again carries on from its round only where the round is its own",
   const taken = source.indexOf("({ checked, base: checkedBase, react: reactBase } = given);");
   expect(taken).toBeGreaterThan(source.indexOf('      const remade = rebase();\n      phase("rebase");\n'));
   expect(taken).toBeLessThan(source.indexOf("const since = checkedBase"));
+});
+
+// What a rebase resolved as main's is carried into push run again from the
+// rebased tree, whose own rebase finds nothing left to resolve: std/ made
+// again there from the rebased tree, not main's text kept, which dropped a
+// helper the change added, `$provided` (#2417).
+test("push run again makes again what its rebase resolved as main's", () => {
+  const remade = ["std/runtime.js", "std/iter.js", "docs/readability.txt"];
+  expect(givenRemade(againEnv({}, undefined, undefined, remade))).toEqual(remade);
+  // Only what the run before it said: none carried from further back.
+  expect(givenRemade(againEnv({ RUST_JS_PUSH_REMADE: "std/runtime.js" }))).toEqual([]);
+  expect(givenRemade({})).toEqual([]);
+  // And push carries it: its first round makes them again with its own
+  // rebase's, and the run again is given them.
+  const source = readFileSync(join(root, "scripts/push.ts"), "utf8");
+  expect(source).toContain("const remade = [...new Set([...rebase(), ...carried])];");
+  expect(source).toContain("againEnv(process.env, round, took, remade)");
 });
 
 // Push run again writes the one line of the push, its parent's time and
@@ -532,6 +549,6 @@ test("a push refuses to start with an untracked file its check would read", () =
     "untracked test/corpus/new_case.rs, notes.txt would be tested but not pushed; commit it, delete it, or move it under target/",
   );
   const push = readFileSync(join(root, "scripts/push.ts"), "utf8");
-  expect(push.indexOf("untrackedRefusal([...filesWritten(untrackedArgs).keys()])")).toBeLessThan(push.indexOf("const remade = rebase();"));
+  expect(push.indexOf("untrackedRefusal([...filesWritten(untrackedArgs).keys()])")).toBeLessThan(push.indexOf("const remade = [...new Set([...rebase(), ...carried])];"));
 });
 

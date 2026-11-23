@@ -178,18 +178,30 @@ export type Round = { checked: string; base: string; react?: string };
 
 /** The environment push runs again in from the rebased tree: its own, but
  * that this run times it, which the run again does itself, its line the
- * one written (`ownsTimes`); and the round it passed, where it did, so
- * the run again checks only what the rebase brought, as a round past a
- * rebase does, not everything again (#2286). */
-export function againEnv(env: NodeJS.ProcessEnv, round?: Round, before?: Before): NodeJS.ProcessEnv {
+ * one written (`ownsTimes`); the round it passed, where it did, so the
+ * run again checks only what the rebase brought, as a round past a
+ * rebase does, not everything again (#2286); and the files the rebase
+ * resolved as main's, `remade`, which the run again makes again from the
+ * rebased tree, std/'s generated files and blessed baselines: its own
+ * rebase finds nothing left to resolve, and std/ stayed main's, a helper
+ * the change added gone (#2417). */
+export function againEnv(env: NodeJS.ProcessEnv, round?: Round, before?: Before, remade: string[] = []): NodeJS.ProcessEnv {
   const again = { ...env };
   delete again.RUST_JS_TIMED_BY;
   delete again.RUST_JS_TIMED_OTHERS;
   delete again.RUST_JS_PUSH_ROUND;
   delete again.RUST_JS_PUSH_BEFORE;
+  delete again.RUST_JS_PUSH_REMADE;
   if (round) again.RUST_JS_PUSH_ROUND = [round.checked, round.base, round.react ?? ""].join(":");
   if (before) again.RUST_JS_PUSH_BEFORE = JSON.stringify(before);
+  if (remade.length > 0) again.RUST_JS_PUSH_REMADE = remade.join("\n");
   return again;
+}
+
+/** The files the rebase of the push before push run again resolved as
+ * main's (`againEnv`), none where it resolved none. */
+export function givenRemade(env: NodeJS.ProcessEnv): string[] {
+  return (env.RUST_JS_PUSH_REMADE ?? "").split("\n").filter(Boolean);
 }
 
 /** What the push before push run again took, its seconds and its phases,
@@ -374,8 +386,12 @@ async function main() {
     let fetching: Beside | undefined;
     // The tree as the round checking it settled (#2415).
     let settled: Settled | undefined;
+    // What the push before it ran again resolved as main's, made again in
+    // its first round (#2417).
+    let carried = givenRemade(process.env);
     for (;;) {
-      const remade = rebase();
+      const remade = [...new Set([...rebase(), ...carried])];
+      carried = [];
       phase("rebase");
       if (given !== undefined) {
         const refused = roundRefused(given, git("rev-parse", "origin/main").out.trim(), git);
@@ -395,7 +411,7 @@ async function main() {
         regen?.stop();
         const round = checked === "" ? undefined : { checked, base: checkedBase, react: reactBase };
         const took = { seconds: before.seconds + (performance.now() - started) / 1000, phases: [...before.phases, ...timed] };
-        const again = spawnSync(process.execPath, [process.argv[1]!, ...process.argv.slice(2)], { stdio: "inherit", env: againEnv(process.env, round, took) });
+        const again = spawnSync(process.execPath, [process.argv[1]!, ...process.argv.slice(2)], { stdio: "inherit", env: againEnv(process.env, round, took, remade) });
         process.exit(again.status ?? 1);
       }
       // CI's map of the nearest commit of `main` it recorded, where it's

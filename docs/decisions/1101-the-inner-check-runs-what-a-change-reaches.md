@@ -1013,3 +1013,16 @@ runner's checkout build are links it makes in `target/<kind>/<pid>/`. A run
 gone without exiting leaves its folder, which the next run of that kind
 removes. test/push.test.ts holds this: a relink during a regen leaves the
 regen's compiler as it was, and no other script links the checkout's build.
+
+## Amendment: what a rebase resolved as main's is made again in push run again (2026-11-24, #2417)
+
+A rebase that changes what push has loaded runs push again from the
+rebased tree (#2275). That run's own rebase finds nothing left to
+resolve, so the files the first rebase resolved as main's, std/'s
+generated files and blessed baselines, weren't made again: m6-lily's push
+over 691b08b57 kept main's `std/runtime.js`, without the `$provided`
+helper her `std/iter.js` imports, and only test/mutations.test.ts caught
+it. `againEnv` now carries them, `RUST_JS_PUSH_REMADE`, and the run
+again's first round makes them again with what its own rebase resolved.
+test/push.test.ts' "push run again makes again what its rebase resolved
+as main's" holds it; mutation `remade-uncarried-into-the-run-again`.
