@@ -116,6 +116,7 @@ test("a closure called once, an async body and a box's rest are compared with ru
     ["fn_closure_moved_into_a_once_callee.rs", "main::{closure#3}", 1],
     ["future_size_unwinds.rs", "single::{closure#0}", 4],
     ["drop_held_across_an_await.rs", "held_twice::{closure#0}", 2],
+    ["drop_held_across_an_await.rs", "named_as_rustc_names_it::{closure#0}", 2],
     ["boxed_value_partly_moved_drops.rs", "main", 3],
     ["boxed_field_moved_out_drops_the_rest.rs", "main", 1],
   ];

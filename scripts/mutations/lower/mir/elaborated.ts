@@ -177,8 +177,8 @@ export const mutations: Mutation[] = [
     name: "awaited-future-compared",
     breaks: "rustc's drop of an awaited `async` block's future, which has returned and drops nothing, is compared with rust-js's, which drops nothing of what its promise's body dropped, so awaiting a block that took a value with a destructor is refused (#2177)",
     file: "crates/rust-js-mir/src/elaborated.rs",
-    find: "        .filter(|info| rust_js_lower::recognition::is_awaitee(info.name))\n",
-    replace: "        .filter(|info| false && rust_js_lower::recognition::is_awaitee(info.name))\n",
+    find: "        .filter(|info| rust_js_lower::recognition::is_awaitee(info))\n",
+    replace: "        .filter(|info| false && rust_js_lower::recognition::is_awaitee(info))\n",
     tests: ["test/lowering-async.test.ts", "-t", "an async block or closure drops what it took"],
   },
 ];

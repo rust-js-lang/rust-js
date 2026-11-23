@@ -66,6 +66,20 @@ export async function awaitedBlock() {
   }
 }
 
+export async function namedAsRustcNamesIt() {
+  const __awaitee = "named";
+  try {
+    const k = await take(["given"]);
+    return (k + $byteLen(__awaitee)) >>> 0;
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      console.log(`drop ${__awaitee}`);
+    }
+  }
+}
+
 function main() {
   console.log("compiled");
 }

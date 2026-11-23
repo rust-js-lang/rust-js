@@ -131,7 +131,7 @@ fn running(body: &mir::Body<'_>) -> rustc_index::bit_set::DenseBitSet<BasicBlock
 /// compared (#2177).
 fn awaited(body: &mir::Body<'_>) -> IndexSet<Local> {
     (body.var_debug_info.iter())
-        .filter(|info| rust_js_lower::recognition::is_awaitee(info.name))
+        .filter(|info| rust_js_lower::recognition::is_awaitee(info))
         .filter_map(|info| match info.value {
             mir::VarDebugInfoContents::Place(place) if place.projection.is_empty() => Some(place.local),
             _ => None,

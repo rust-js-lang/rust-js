@@ -1173,10 +1173,16 @@ pub fn held_types<'tcx>(ty: Ty<'tcx>) -> Option<(DefId, &'tcx ty::List<Ty<'tcx>>
     })
 }
 
-/// Whether `name` is a MIR local's that holds what an `.await` awaits,
-/// `__awaitee`, as rustc's lowering of `.await` names it.
-pub fn is_awaitee(name: rustc_span::Symbol) -> bool {
-    name == rustc_span::sym::__awaitee
+/// Whether `info` is of the MIR local that holds what an `.await` awaits:
+/// the binding rustc's lowering of `.await` makes, `__awaitee`, at its own
+/// desugaring's span. rustc reads it by that name, as debuggers do: its
+/// lowering keeps the name for them (`rustc_ast_lowering`'s
+/// `make_lowered_await`), and its layout of a coroutine names an awaited
+/// future's field by it (`rustc_ty_utils::layout`'s
+/// `variant_info_for_coroutine`). The span says it's the desugaring's, not
+/// a binding of the crate's own of that name.
+pub fn is_awaitee(info: &rustc_middle::mir::VarDebugInfo<'_>) -> bool {
+    info.name == rustc_span::sym::__awaitee && info.source_info.span.is_desugaring(rustc_span::DesugaringKind::Await)
 }
 
 /// Whether `def_id` is an `async` block's coroutine, `async move { .. }`:

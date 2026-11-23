@@ -486,4 +486,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(_, _) if self.is_result(ty) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "process_termination_reports"],
   },
+  {
+    name: "awaitee-by-name-alone",
+    breaks: "what an `.await` awaits is told by its name alone, not by rustc's own binding of it at the desugaring's span, so a variable of the crate's named `__awaitee` isn't compared with rustc's drop elaboration (#2177)",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
+    find: "    info.name == rustc_span::sym::__awaitee && info.source_info.span.is_desugaring(rustc_span::DesugaringKind::Await)\n",
+    replace: "    info.name == rustc_span::sym::__awaitee\n",
+    tests: ["test/drops-shadow.test.ts", "-t", "a closure called once, an async body and a box's rest are compared with rustc's"],
+  },
 ];

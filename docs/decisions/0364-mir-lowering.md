@@ -2155,3 +2155,18 @@ rustc's or-pattern-drop-order.rs' `let`-`else`.
 So D3 models these edges as unreachable in JS. A cleanup is compared only
 where a terminator that can throw in JS unwinds to it, and a flag only on
 those edges. They are not matched one by one.
+
+## Amendment: what an `.await` awaits, told by rustc's own binding (2026-11-24, #2177)
+
+`awaited` took a local named `__awaitee` to be what an `.await` awaits.
+That's rustc's own marker: its lowering of `.await` keeps the name for
+debuggers (`make_lowered_await`), and its layout of a coroutine names an
+awaited future's field by it (`variant_info_for_coroutine`). A name alone
+is still a guess, though: a variable of the crate's own may be called
+`__awaitee`. So recognition's `is_awaitee` takes the binding only at the
+`.await` desugaring's own span (`DesugaringKind::Await`). The crate's own
+variable of that name is compared as any other is. Corpus case
+drop_held_across_an_await's `named_as_rustc_names_it` holds it; mutation
+`awaitee-by-name-alone`, caught.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, no output changes.

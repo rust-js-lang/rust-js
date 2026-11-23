@@ -5,7 +5,8 @@
 // as a promise runs on to its end: that path isn't compared with rust-js's
 // drops, so neither is refused (#2177). Nor is rustc's drop of an awaited
 // `async` block, which has returned and drops nothing, where its promise's
-// body dropped what it took. The async table (test/async-points.ts) runs
+// body dropped what it took; told by rustc's own binding of it, not by the
+// name alone, so a variable of the crate's of that name is compared. The async table (test/async-points.ts) runs
 // such bodies against native Rust.
 struct Noisy(&'static str);
 
@@ -38,7 +39,13 @@ pub async fn awaited_block() -> usize {
     async move { n.0.len() }.await
 }
 
+pub async fn named_as_rustc_names_it() -> usize {
+    let __awaitee = Noisy("named");
+    let k = take(Noisy("given")).await;
+    k + __awaitee.0.len()
+}
+
 fn main() {
-    let _ = (held, held_twice, awaited_block);
+    let _ = (held, held_twice, awaited_block, named_as_rustc_names_it);
     println!("compiled");
 }
