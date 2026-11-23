@@ -2100,15 +2100,17 @@ What JS sees of a crate:
 - **A provided method an impl writes itself is that impl's, through
   generic code and a `dyn` too,** as Rust's dispatch picks: where any impl
   rustc loads writes its own, a std trait's provided method compiled into
-  `@rust-js/std` is `$provided(RBufRead, "readLine", bufRead_readLine,
-  [r, line], [r, line, RBufRead, RBufRead.Read()])`, the dictionary's own
+  `@rust-js/std` is `$provided(RBufRead, "readLine", [r, line], () =>
+  bufRead_readLine(r, line, RBufRead, RBufRead.Read()))`, the dictionary's own
   where its impl writes one, else std's default over `Self`; where none
   does, the default itself. A crate's own `read_line` or `rewind` runs as
   it's written, and a `Vec` side generic code's `unzip()` fills reserves
   by its own `reserve`, `extendReserve`
   ([1191](../decisions/1191-a-provided-method-an-impl-writes-is-its-own.md), #2414).
-  An `Iterator`'s provided method a crate's iterator writes, its own
-  `partition`, isn't yet: generic code runs std's (#2414).
+  A crate's iterator's own `partition` or `peekable` rides on its value,
+  `$provided(it, "ownPartition", [f, ..], () => $partition(..))`; one std's
+  lowering writes, its own `position` or `any`, isn't yet: generic code runs
+  std's (#2421).
 - **A `dyn Debug` stored or passed is `{ value, impl }` too,** shown as
   `d.impl.fmt(d.value)`, or `d.impl.fmt(d.value, { alternate: true })` for
   `{:#?}`, so its `fmt` runs each time it's shown, as Rust's does. One

@@ -29,7 +29,7 @@ function tapeSeek_rewind(tape) {
 }
 
 function reset(s, SSeek) {
-  const result = $writeTry(() => $provided(SSeek, "rewind", seek_rewind, [s], [s, SSeek]));
+  const result = $writeTry(() => $provided(SSeek, "rewind", [s], () => seek_rewind(s, SSeek)));
   $writeExpect(
     result,
     "called `Result::unwrap()` on an `Err` value",

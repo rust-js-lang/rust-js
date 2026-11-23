@@ -24,6 +24,18 @@ pub(crate) fn fewest_iterator_args(given: &mut Vec<Expr>) {
     }
 }
 
+/// The key a crate's iterator's own provided method of `Iterator`, `id`,
+/// rides on its value under (`OwnMethods::provided`), which generic code's
+/// `$provided` asks: `own<Name>` of the naming owner's name, as the
+/// runtime's `$ownStep` names `ownCount`, so it never meets a JS
+/// iterator's own `map` or `filter` (#2414).
+pub(crate) fn own_provided_key(tcx: rustc_middle::ty::TyCtxt<'_>, id: rustc_span::def_id::DefId) -> String {
+    format!(
+        "own{}",
+        rust_js_program::casing::upper_first(&crate::bindings::fn_name(tcx, id))
+    )
+}
+
 /// The methods the impl of a crate's iterator writes itself that std
 /// routes other calls through, each where it writes it: what `$iterator`
 /// is given, and its dictionary (#162, #182); its `rfold` and `nth_back`,
@@ -38,6 +50,10 @@ pub(crate) struct OwnMethods {
     /// Its own `count`, which a `skip`'s, a `fuse`'s, a `peekable`'s, a
     /// chain's and generic code's `count` call (#505).
     pub(crate) count: Option<Expr>,
+    /// Its own of `Iterator`'s provided methods an impl in reach overrides,
+    /// compiled into `@rust-js/std`, each by its key (`own_provided_key`):
+    /// what generic code's `$provided` asks of its value (#2414).
+    pub(crate) provided: Vec<(String, Expr)>,
 }
 
 /// `stepped`'s, given `len` too, its length, one that knows it, an
@@ -62,7 +78,16 @@ pub(crate) fn stepped_ends(
         rfold,
         nth_back,
         count,
+        provided,
     } = own;
+    let provided = (!provided.is_empty()).then(|| {
+        Expr::object(
+            provided
+                .into_iter()
+                .map(|(key, entry)| js::Prop::Field(key, entry))
+                .collect(),
+        )
+    });
     let given = [
         boxed.then(|| Expr::bool(true)),
         back,
@@ -75,6 +100,8 @@ pub(crate) fn stepped_ends(
         nth_back,
         None,
         count,
+        None,
+        provided,
     ];
     let last = given.iter().rposition(Option::is_some).map_or(0, |at| at + 1);
     let given = (given.into_iter().enumerate().take(last))

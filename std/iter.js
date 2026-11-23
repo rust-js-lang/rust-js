@@ -12470,12 +12470,8 @@ export function iterator_partition(
             left = value;
           },
         };
-        $provided(
-          BExtendSelfItem,
-          "extendOne",
-          extend_extendOne,
-          [arg, x],
-          [arg, x, BExtendSelfItem, dropB, dropSelfItem],
+        $provided(BExtendSelfItem, "extendOne", [arg, x], () =>
+          extend_extendOne(arg, x, BExtendSelfItem, dropB, dropSelfItem),
         );
       } else {
         const arg = {
@@ -12486,12 +12482,8 @@ export function iterator_partition(
             right = value;
           },
         };
-        $provided(
-          BExtendSelfItem,
-          "extendOne",
-          extend_extendOne,
-          [arg, x],
-          [arg, x, BExtendSelfItem, dropB, dropSelfItem],
+        $provided(BExtendSelfItem, "extendOne", [arg, x], () =>
+          extend_extendOne(arg, x, BExtendSelfItem, dropB, dropSelfItem),
         );
       }
     },
@@ -12620,12 +12612,8 @@ export function extend_extendOne(self, item, SelfExtendT, dropSelf, dropT) {
 export function extend_extendReserve(self, additional, SelfExtendT, dropSelf, dropT) {}
 
 export function extend_extendOneUnchecked(self, item, SelfExtendT, dropSelf, dropT) {
-  $provided(
-    SelfExtendT,
-    "extendOne",
-    extend_extendOne,
-    [self, item],
-    [self, item, SelfExtendT, dropSelf, dropT],
+  $provided(SelfExtendT, "extendOne", [self, item], () =>
+    extend_extendOne(self, item, SelfExtendT, dropSelf, dropT),
   );
 }
 
@@ -12699,12 +12687,8 @@ export function tuple2Extend_extendOne(
     },
   };
   try {
-    $provided(
-      ExAExtendA,
-      "extendOne",
-      extend_extendOne,
-      [arg, item[0]],
-      [arg, item[0], ExAExtendA, dropExA, dropA],
+    $provided(ExAExtendA, "extendOne", [arg, item[0]], () =>
+      extend_extendOne(arg, item[0], ExAExtendA, dropExA, dropA),
     );
   } catch (error) {
     $cleanup(() => {
@@ -12720,12 +12704,8 @@ export function tuple2Extend_extendOne(
       self[1] = value;
     },
   };
-  $provided(
-    ExBExtendB,
-    "extendOne",
-    extend_extendOne,
-    [arg$1, item[1]],
-    [arg$1, item[1], ExBExtendB, dropExB, dropB],
+  $provided(ExBExtendB, "extendOne", [arg$1, item[1]], () =>
+    extend_extendOne(arg$1, item[1], ExBExtendB, dropExB, dropB),
   );
 }
 
@@ -12747,12 +12727,8 @@ export function tuple2Extend_extendReserve(
       self[0] = value;
     },
   };
-  $provided(
-    ExAExtendA,
-    "extendReserve",
-    extend_extendReserve,
-    [arg, additional],
-    [arg, additional, ExAExtendA, dropExA, dropA],
+  $provided(ExAExtendA, "extendReserve", [arg, additional], () =>
+    extend_extendReserve(arg, additional, ExAExtendA, dropExA, dropA),
   );
   const arg$1 = {
     get value() {
@@ -12762,12 +12738,8 @@ export function tuple2Extend_extendReserve(
       self[1] = value;
     },
   };
-  $provided(
-    ExBExtendB,
-    "extendReserve",
-    extend_extendReserve,
-    [arg$1, additional],
-    [arg$1, additional, ExBExtendB, dropExB, dropB],
+  $provided(ExBExtendB, "extendReserve", [arg$1, additional], () =>
+    extend_extendReserve(arg$1, additional, ExBExtendB, dropExB, dropB),
   );
 }
 
@@ -12790,12 +12762,8 @@ export function tuple2Extend_extendOneUnchecked(
     },
   };
   try {
-    $provided(
-      ExAExtendA,
-      "extendOneUnchecked",
-      extend_extendOneUnchecked,
-      [arg, item[0]],
-      [arg, item[0], ExAExtendA, dropExA, dropA],
+    $provided(ExAExtendA, "extendOneUnchecked", [arg, item[0]], () =>
+      extend_extendOneUnchecked(arg, item[0], ExAExtendA, dropExA, dropA),
     );
   } catch (error) {
     $cleanup(() => {
@@ -12811,12 +12779,8 @@ export function tuple2Extend_extendOneUnchecked(
       self[1] = value;
     },
   };
-  $provided(
-    ExBExtendB,
-    "extendOneUnchecked",
-    extend_extendOneUnchecked,
-    [arg$1, item[1]],
-    [arg$1, item[1], ExBExtendB, dropExB, dropB],
+  $provided(ExBExtendB, "extendOneUnchecked", [arg$1, item[1]], () =>
+    extend_extendOneUnchecked(arg$1, item[1], ExBExtendB, dropExB, dropB),
   );
 }
 
@@ -16458,12 +16422,8 @@ export function extendTSpecExtendI_extend(self, iter, ExtendTExtendT, dropExtend
   }
   if (lowerBound > 0) {
     try {
-      $provided(
-        ExtendTExtendT,
-        "extendReserve",
-        extend_extendReserve,
-        [self, lowerBound],
-        [self, lowerBound, ExtendTExtendT, dropExtendT, dropT],
+      $provided(ExtendTExtendT, "extendReserve", [self, lowerBound], () =>
+        extend_extendReserve(self, lowerBound, ExtendTExtendT, dropExtendT, dropT),
       );
     } catch (error) {
       $cleanup(() => {
@@ -16478,13 +16438,11 @@ export function extendTSpecExtendI_extend(self, iter, ExtendTExtendT, dropExtend
       "fold",
       undefined,
       (_, x) => {
-        $provided(
-          ExtendTExtendT,
-          "extendOne",
-          extend_extendOne,
-          [self, x],
-          [self, x, ExtendTExtendT, dropExtendT, dropT],
-        );
+        ((item) => {
+          $provided(ExtendTExtendT, "extendOne", [self, item], () =>
+            extend_extendOne(self, item, ExtendTExtendT, dropExtendT, dropT),
+          );
+        })(x);
       },
       undefined,
       () => {},

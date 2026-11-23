@@ -220,10 +220,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let made = crate::recognition::is_iterator_extension(self.tcx, declared.def_id)
                         .then(|| self.made_into_iter_of(id, args, declared.self_ty()))
                         .flatten();
-                    match given
-                        .iter()
-                        .find(|(of, _)| self.tcx.erase_and_anonymize_regions(*of) == erased)
-                    {
+                    // The same bound however it's spelled, `B: Extend<Self::Item>`
+                    // of an impl's and `B: Extend<u32>` of its caller's (#2421).
+                    let normalized = |tr: ty::TraitRef<'tcx>| {
+                        let tr = self.tcx.erase_and_anonymize_regions(tr);
+                        (self
+                            .tcx
+                            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(tr)))
+                        .unwrap_or(tr)
+                    };
+                    let wanted = normalized(bound);
+                    match given.iter().find(|(of, _)| {
+                        self.tcx.erase_and_anonymize_regions(*of) == erased || normalized(*of) == wanted
+                    }) {
                         Some((_, dictionary)) => values.push(dictionary.clone()),
                         None if let Some(made) = made => {
                             values.push(self.made_iterator_extension_dictionary(bound.def_id, made))
@@ -541,6 +550,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => self.spill(Role::Arg, value, out),
                 })
                 .collect();
+            // An iterator generic code holds as a JS iterator, given no
+            // `Iterator` dictionary of its own (ADR 0061): its own provided
+            // methods ride on its value (`$iterator`'s, `own<Name>`), which
+            // is the dictionary asked, given what follows `self`, which the
+            // value binds (#2414).
+            let on_its_value =
+                !of_dyn && is_std_def(self.tcx, trait_id, StdItem::Iterator) && self.evidence_for(tr).is_none();
+            let key = match on_its_value {
+                true => crate::iterators::own_provided_key(self.tcx, id),
+                false => bindings::fn_name(self.tcx, id),
+            };
             let (dictionary, entry) = match of_dyn {
                 // A `&mut dyn`'s receiver, read for the default, which takes
                 // `&mut self` as a box of the pair (ADR 0099): the pair, its
@@ -552,6 +572,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     self.dyn_entry((id, generic_args), tr, given, span, out)?
                 }
+                false if on_its_value => {
+                    let mut entry = self.through_dictionary(id, generic_args, values.clone(), span, out)?;
+                    let receiver = values[0].clone();
+                    entry.remove(0);
+                    (receiver, entry)
+                }
                 false => {
                     let dictionary = self.dictionary(tr, span)?;
                     (
@@ -561,14 +587,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             };
             let default = self.compiled_default_args((id, generic_args), values, span, out)?;
-            let given = vec![
-                dictionary,
-                Expr::str(bindings::fn_name(self.tcx, id)),
-                self.fn_ref(id),
-                Expr::array(entry),
-                Expr::array(default),
-            ];
-            let called = Expr::call_helper("$provided", given);
+            let by_default = Expr::call(self.fn_ref(id), default);
+            let called = provided_call(dictionary, key, entry, by_default);
             return Ok(Some(self.fmt_result_value(id, generic_args, called)));
         }
         if compiled_provided && !overridden && (of_dyn || self.resolve_self_instance(id, generic_args)?.is_none()) {
@@ -779,6 +799,68 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(None)
     }
 
+    /// How a call of `Iterator`'s provided method `id` of an iterator of
+    /// type `iter_ty`, not `lent`, is Rust's dispatch, where an impl in reach
+    /// writes its own of `id` (`overridden_in_reach`) and generic code holds
+    /// it as a type parameter: by its dictionary, given one, whose entry is
+    /// its impl's own where it writes one (`iterator_dictionary`); else on
+    /// its value, which carries its own (`own_provided_key`). `None` of
+    /// another, which is std's: a `&mut I`'s lend and a `Box<I>` pass none on,
+    /// as std's don't (#2414). Asked first, so what's given is read once; and
+    /// by what drops the value after, which its own took (`provided_took`).
+    pub fn provided_dispatch(&self, id: DefId, (iter_ty, lent): (Ty<'tcx>, bool)) -> Option<Dispatch> {
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        let dispatches = !lent
+            && crate::generic_facts::is_type_parameter(iter_ty)
+            && self.tcx.trait_of_assoc(id) == Some(iterator)
+            && crate::recognition::is_compiled_std(self.tcx, id)
+            && crate::recognition::overridden_in_reach(self.tcx, id);
+        let tr = ty::TraitRef::new(self.tcx, iterator, [iter_ty]);
+        dispatches.then(|| match self.evidence_for(tr) {
+            Some(dictionary) => Dispatch::ByDictionary(dictionary),
+            None => Dispatch::OnItsValue,
+        })
+    }
+
+    /// `made`, std's lowering of a call of `Iterator`'s provided method
+    /// `id`, given `args`, of `receiver`, given `values`, what follows
+    /// `self`: Rust's dispatch, as `dispatch` says (`provided_dispatch`),
+    /// `$provided` of its dictionary or its value, given its own bounds'
+    /// evidence too, else `made`, made only then (#2414).
+    pub fn provided_on_value(
+        &mut self,
+        (id, args): (DefId, ty::GenericArgsRef<'tcx>),
+        dispatch: Dispatch,
+        (receiver, values): (Expr, Vec<Expr>),
+        made: Expr,
+        span: Span,
+    ) -> R<Expr> {
+        let location = self.caller_location(span);
+        let (dictionary, key, mut entry) = match dispatch {
+            Dispatch::ByDictionary(dictionary) => {
+                let entry = std::iter::once(receiver).chain(values).collect();
+                (dictionary, bindings::fn_name(self.tcx, id), entry)
+            }
+            Dispatch::OnItsValue => (receiver, crate::iterators::own_provided_key(self.tcx, id), values),
+        };
+        entry.extend(self.own_evidence(id, args, Some(location), None, span)?);
+        Ok(provided_call(dictionary, key, entry, made))
+    }
+
+    /// Whether the impl's own of `Iterator`'s provided method `id`, called
+    /// as `dispatch` says, took `held`, the value it consumed, which drops
+    /// it itself, so generic code drops it after only where it's `false`:
+    /// `$took` of its dictionary's entry, or its value's own (#2414).
+    pub fn provided_took(&self, id: DefId, dispatch: Dispatch, held: Expr) -> Expr {
+        match dispatch {
+            Dispatch::ByDictionary(dictionary) => {
+                let entry = Expr::member(dictionary, bindings::fn_name(self.tcx, id));
+                Expr::call_helper("$took", vec![entry, held])
+            }
+            Dispatch::OnItsValue => Expr::member(held, crate::iterators::own_provided_key(self.tcx, id)),
+        }
+    }
+
     /// What a std trait's provided method compiled into `@rust-js/std` is
     /// given, its function over `Self`: `values` crossed into it, then its
     /// evidence, `Self`'s dictionary, its own bounds' and its drops (ADR
@@ -874,7 +956,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<js::Stmt>,
     ) -> R<Vec<Expr>> {
+        // Its receiver is the impl's own value, as generic code holds it,
+        // which its entry takes: never the form a compiled body of the trait
+        // steps `self` in, `$given(w[0], LIterator)` (#2423).
+        let receiver = (self.tcx.associated_item(id).is_method() && !values.is_empty()).then(|| values[0].clone());
         self.crossing_into((id, generic_args), &mut values, Arguments::Formed, span, out)?;
+        if let Some(receiver) = receiver {
+            values[0] = receiver;
+        }
         let location = self.caller_location(span);
         values.extend(self.own_evidence(id, generic_args, Some(location), None, span)?);
         Ok(values)
@@ -1065,4 +1154,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 pub struct GivenEvidence<'g, 'tcx> {
     pub(crate) bounds: &'g [(ty::TraitRef<'tcx>, Expr)],
     pub(crate) drops: &'g [(u32, Expr)],
+}
+
+/// A provided method's call by Rust's dispatch, `$provided(dictionary, key,
+/// entry, () => default)`: `dictionary`'s entry `key` where its impl writes
+/// one, given `entry`; else `default`, std's, made only then (#2414). The
+/// one form of it, of a dictionary's call and of an iterator's value's.
+pub(crate) fn provided_call(dictionary: Expr, key: String, entry: Vec<Expr>, default: Expr) -> Expr {
+    let by_default = Expr::arrow(Vec::new(), vec![js::StmtKind::Return(Some(default)).at(js::Span::NONE)]);
+    Expr::call_helper(
+        "$provided",
+        vec![dictionary, Expr::str(key), Expr::array(entry), by_default],
+    )
+}
+
+/// How generic code's call of a provided method of `Iterator` an impl in
+/// reach writes itself is Rust's dispatch (`provided_dispatch`): by the
+/// dictionary it's given, or on its value (#2414).
+#[derive(Clone)]
+pub enum Dispatch {
+    ByDictionary(Expr),
+    OnItsValue,
 }

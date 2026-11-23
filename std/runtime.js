@@ -786,6 +786,7 @@ export function $iterator(
   tryRfold,
   count,
   advanceBackBy,
+  provided,
 ) {
   // A range's, stepped by its own step, has std's `Range::nth` (#231), and
   // from its back std's `Range::nth_back`, which a `rev()` of it is asked
@@ -856,7 +857,15 @@ export function $iterator(
   // Another of a value of its type, stepped as it is: a clone's (ADR 0525,
   // amended).
   it.with = (value) =>
-    $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count, advanceBackBy);
+    $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count, advanceBackBy, provided);
+  // The provided methods of `Iterator` its impl writes itself that an impl
+  // in reach overrides, `ownPartition`, each called of its value, as generic
+  // code's `$provided` asks it before std's default (#2414).
+  for (const key of provided === undefined ? [] : Object.keys(provided)) {
+    it[key] = function () {
+      return provided[key].apply(undefined, [iterator].concat(Array.from(arguments)));
+    };
+  }
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }
@@ -23567,13 +23576,15 @@ export function $partition(items, keep, drop) {
 }
 
 // A trait's provided method called through `dictionary`, a type parameter's
-// or a `dyn`'s (#2414): its impl's own where it writes one, `dictionary[key]`,
-// given `entry`, what that entry takes; else the trait's default over `Self`,
-// `provided`, given `byDefault`, what it takes, as Rust's dispatch picks. Each
-// list is names, dictionaries and drops, so building both runs nothing.
-export function $provided(dictionary, key, provided, entry, byDefault) {
+// or a `dyn`'s, or of a crate's iterator its value, which carries its own
+// (#2414): its impl's own where it writes one, `dictionary[key]`, given
+// `entry`, what that entry takes; else the trait's default over `Self`,
+// `byDefault`, its call, made only then, as what it converts may change what
+// it's given, `Iterator.from` arming a `$Steps` to close. As Rust's dispatch
+// picks.
+export function $provided(dictionary, key, entry, byDefault) {
   const written = dictionary[key];
-  return written === undefined ? provided.apply(undefined, byDefault) : written.apply(undefined, entry);
+  return written === undefined ? byDefault() : written.apply(undefined, entry);
 }
 
 // A stable sort by `compare` of items that may be `undefined`, a `None`:

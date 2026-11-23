@@ -11,7 +11,7 @@ mod impls;
 mod routes;
 mod words;
 
-pub use self::{calls::GivenEvidence, drop_params::*, given::*, routes::*};
+pub use self::{calls::Dispatch, calls::GivenEvidence, drop_params::*, given::*, routes::*};
 pub(crate) use self::{evidence::*, words::*};
 use rust_js_program::collections::{IndexMap, IndexSet};
 

@@ -110,12 +110,8 @@ export function linesIterator_next(lines, BBufRead, dropB) {
       buf = value;
     },
   };
-  const value = $provided(
-    BBufRead,
-    "readLine",
-    bufRead_readLine,
-    [arg, arg$1],
-    [arg, arg$1, BBufRead, BBufRead.Read(), dropB],
+  const value = $provided(BBufRead, "readLine", [arg, arg$1], () =>
+    bufRead_readLine(arg, arg$1, BBufRead, BBufRead.Read(), dropB),
   );
   if (value.TAG === "Ok") {
     if (value._0 !== 0) {
@@ -146,12 +142,8 @@ export function splitIterator_next(split, BBufRead, dropB) {
       split.buf = value;
     },
   };
-  const value = $provided(
-    BBufRead,
-    "readUntil",
-    bufRead_readUntil,
-    [arg, split.delim, buf],
-    [arg, split.delim, buf, BBufRead, BBufRead.Read(), dropB],
+  const value = $provided(BBufRead, "readUntil", [arg, split.delim, buf], () =>
+    bufRead_readUntil(arg, split.delim, buf, BBufRead, BBufRead.Read(), dropB),
   );
   if (value.TAG === "Ok") {
     if (value._0 !== 0) {
@@ -316,12 +308,8 @@ export function chainBufRead_readUntil(chain, byte, buf, TBufRead, UBufRead, dro
         chain.first = value;
       },
     };
-    const result = $provided(
-      TBufRead,
-      "readUntil",
-      bufRead_readUntil,
-      [arg, byte, buf],
-      [arg, byte, buf, TBufRead, TBufRead.Read(), dropT],
+    const result = $provided(TBufRead, "readUntil", [arg, byte, buf], () =>
+      bufRead_readUntil(arg, byte, buf, TBufRead, TBufRead.Read(), dropT),
     );
     if (result.TAG === "Err") {
       return result;
@@ -346,12 +334,8 @@ export function chainBufRead_readUntil(chain, byte, buf, TBufRead, UBufRead, dro
       chain.second = value;
     },
   };
-  const result = $provided(
-    UBufRead,
-    "readUntil",
-    bufRead_readUntil,
-    [arg, byte, buf],
-    [arg, byte, buf, UBufRead, UBufRead.Read(), dropU],
+  const result = $provided(UBufRead, "readUntil", [arg, byte, buf], () =>
+    bufRead_readUntil(arg, byte, buf, UBufRead, UBufRead.Read(), dropU),
   );
   if (result.TAG === "Err") {
     return result;

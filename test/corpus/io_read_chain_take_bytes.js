@@ -70,12 +70,8 @@ function linesOf(b, BBufRead) {
 function until(b, byte, BBufRead) {
   const v = [];
   $unwrapOk(
-    $provided(
-      BBufRead,
-      "readUntil",
-      bufRead_readUntil,
-      [b, byte, v],
-      [b, byte, v, BBufRead, BBufRead.Read()],
+    $provided(BBufRead, "readUntil", [b, byte, v], () =>
+      bufRead_readUntil(b, byte, v, BBufRead, BBufRead.Read()),
     ),
     "test/corpus/io_read_chain_take_bytes.rs:22:32",
     undefined,

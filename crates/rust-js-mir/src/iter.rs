@@ -672,6 +672,18 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 None => None,
             },
         };
+        // Of a provided method the impl's own of may run, Rust's dispatch,
+        // that took it too where it ran (`provided_took`, #2414).
+        let taken = match self.provided_dispatch(method, (receiver, false)) {
+            Some(dispatch) => {
+                let unowned = Expr::unary(js::UnaryOp::Not, self.provided_took(method, dispatch, held.clone()));
+                Some(match taken {
+                    Some(taken) => Expr::bin(Op::And, taken, unowned),
+                    None => unowned,
+                })
+            }
+            None => taken,
+        };
         let Some(unfolded) = taken else {
             return self.drop_value(held, receiver, span, made);
         };

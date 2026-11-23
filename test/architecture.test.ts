@@ -1145,6 +1145,7 @@ test("an arrow that passes on what it's given is passed_on's alone", () => {
     "crates/rust-js-lower/src/iterators/dictionaries.rs",
     "crates/rust-js-lower/src/jsx.rs",
     "crates/rust-js-lower/src/lib.rs",
+    "crates/rust-js-lower/src/traits/evidence.rs",
     "crates/rust-js-lower/src/traits/impls.rs",
     "crates/rust-js-mir/src/calls.rs",
     "crates/rust-js-mir/src/dispatch.rs",

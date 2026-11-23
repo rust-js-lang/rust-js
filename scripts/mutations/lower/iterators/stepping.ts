@@ -668,4 +668,12 @@ export const mutations: Mutation[] = [
     replace: "                Some(made) if false => *value = made,\n",
     tests: ["test/corpus.test.ts", "-t", "^provided_methods_of_a_dictionary_held_iterator_into_generic_sides.rs$"],
   },
+  {
+    name: "own-provided-uncarried",
+    breaks: "a crate's iterator's own `partition` and `peekable` aren't carried on its value, so generic code runs std's (#2414)",
+    file: "crates/rust-js-lower/src/iterators/stepping.rs",
+    find: "                    None => (self.own_provided(ty, span)?.into_iter())\n",
+    replace: "                    None => (Vec::<(DefId, Expr)>::new().into_iter())\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_provided_methods_a_type_writes_are_its_own.rs$"],
+  },
 ];

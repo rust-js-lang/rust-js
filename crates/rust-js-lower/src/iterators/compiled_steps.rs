@@ -133,6 +133,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             rfold: forward.fold,
             nth_back: forward.nth,
             count: None,
+            // A `rev()` passes none of them on, as std's `Rev` doesn't.
+            provided: Vec::new(),
         };
         Ok(stepped_ends(value, next, boxed, back, len, hint, own))
     }

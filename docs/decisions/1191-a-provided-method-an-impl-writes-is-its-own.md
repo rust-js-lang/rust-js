@@ -46,13 +46,14 @@ dispatch.**
   default, `extend(Some(item))`, does to it, so it carries none.
 - traits/calls.rs asks it too. Where it says no, the call is the default
   over `Self` as before. Where it says yes, `$provided(dictionary, key,
-  default, entry, byDefault)`: the dictionary's own where its impl writes
-  one, given `entry`, what that entry takes (`through_dictionary`'s, or a
-  `dyn`'s pair and its rest, `dyn_entry`'s); else the default, given
-  `byDefault`, what it takes (`compiled_default_args`, the one list of the
-  default's call). `key` is `bindings::fn_name`, the naming owner's name of
-  the entry. Each list is names, dictionaries and drops, built once, so
-  building both runs nothing.
+  entry, () => default)` (`provided_call`): the dictionary's own where its
+  impl writes one, given `entry`, what that entry takes
+  (`through_dictionary`'s, or a `dyn`'s pair and its rest, `dyn_entry`'s);
+  else the default's call, made only then, of what it takes
+  (`compiled_default_args`, the one list of it), as what it converts may
+  change what it's given: `Iterator.from` arms a `$Steps` to close (amended
+  below). `key` is `bindings::fn_name`, the naming owner's name of the
+  entry. The entry list is names, dictionaries and drops.
 - `DICTIONARY_METHODS` stays the one list of what a byte source writes;
   `$readerDefaults` and `$seekDefaults` are untouched.
 
@@ -107,3 +108,71 @@ carries each provided method `overridden_in_reach` names.
   `provided-dyn-receiver-its-box`, `provided-always-the-default`,
   `extend-reserve-entry-never`, `hash-extend-reserve-whole`,
   `hash-extend-reserve-unchecked`.
+
+## Amended: an iterator's own, on its value (2026-11-24, #2414, #2112 Change A step 3e)
+
+Generic code holds an iterator as a JS iterator (ADR 0061), with no
+`Iterator` dictionary, so an `Iterator` provided method a crate's iterator
+writes itself, `partition`, `peekable`, has no dictionary to ride on. Its
+value does: `$iterator(..)` carries the crate's own steps already
+(`OwnMethods`), and now, as its last argument, each provided method
+compiled into `@rust-js/std` that an impl in reach overrides and its impl
+writes (`own_provided`), under `own<Name>` (`own_provided_key`, of the
+naming owner's name, as `$ownStep` names `ownCount`, never JS's own `map`
+or `filter`), each bound to its value as `self`; and its `Iterator`
+dictionary carries each by its entry's name, `partition`, as it carries
+its own `fold` beside the value's `ownFold`. A call of one on a type
+parameter is Rust's dispatch, as `provided_dispatch` says (traits/calls.rs,
+the one owner): `$provided` of the dictionary it's given, given `self` and
+what follows; or, given none (`evidence_for` none), of the value, given
+what follows `self`. In traits/calls.rs, and where the recognizers lower a
+combinator, by `provided_on_value`, which spills what's given only there.
+Its own consumes and drops `self`, so generic code drops the value after
+only where it didn't run: `dropped_consumed` ands in `provided_took`,
+`!it.ownPartition` or `!$took(IIterator.partition, iter)`. A `&mut I` and
+a `Box<I>` pass none on, as std's don't, and their lends carry no `own*`
+key; a `rev()` and an adapter pass none on.
+
+Each entry, the value's and the dictionary's, is `provided_entry`'s
+(traits/evidence.rs, beside `own_evidence`, the one owner): a function of
+what the call gives, its values, then the trait method's own evidence
+(`own_slots_through`, `own_evidence`'s list, its bounds normalized to the
+type's terms, `B: Extend<u32>`), which gives the impl's function what it
+takes after its values by `evidence_args_given`: an impl with type
+parameters of its own its impl's evidence first, `(iterator, f, BDefault,
+BExtendU32) => wIterator_partition(iterator, f, counterIterator, BDefault,
+BExtendU32)` of a `W<Counter>`'s; an impl whose method asks fewer bounds
+than the trait's, `B: Default` alone, only those; `counterIterator_partition`
+itself where it's given just what the call gives. A const's or a fact's
+slot, which none of `Iterator`'s methods has, is refused. `evidence_args_given` matches a given bound to the impl's however each is spelled, normalized: `B: Extend<Self::Item>`, either's, is `B: Extend<u32>`. A call through
+a dictionary gives its entry its receiver as generic code holds it, the
+impl's own value, never the form std's compiled body steps `self` in
+(`through_dictionary`, #2423).
+
+`$provided`'s default is its call in a thunk, `() => default`, made only
+where it runs, one shape for every call, a dictionary's and a value's; the
+io cases and std's calls moved to it.
+
+Corpus `iterator_provided_methods_a_type_writes_are_its_own` (own
+`partition` and `peekable` through a type parameter, given no dictionary
+and given one, `impl Into2<I>`, each dropped once; std's through a `&mut`,
+a `&mut I` generic code holds, a `Box` and a `filter`) and
+`generic_iterator_writing_partition_given_to_generic_code` (a `W<L>`'s
+own of a range, a `W<Counter>` and a `W<W<Counter>>`, each forwarding to
+what it wraps; one given to generic code that never calls it; an impl's
+`partition` asking `B: Default` alone) agree with native.
+Mutations: `iterator-provided-unbound`, `own-provided-uncarried`,
+`own-provided-undictionaried`, `provided-never-on-the-value`,
+`provided-dictionary-taken-for-the-value`, `provided-on-a-lent-value`,
+`provided-took-dropped-again`, `provided-default-made-first`,
+`provided-entry-given-none-of-its-bounds`, `provided-entry-bounds-unnormalized`,
+`provided-entry-never-eta-reduced`, `entry-receiver-crossed`,
+`given-bound-matched-as-spelled`.
+
+Left (#2421, the lead's form): a provided method std's lowering writes
+itself (`position`, `any`, `find`, `max`..), which a crate's override
+never reaches through generic code; and a value crossing the two holdings,
+generic code given a dictionary handing it to generic code given none, or
+back, which runs std's. Both by one holding, a `provided` object
+`$iterator` and the dictionary carry and `$given` passes on, and one
+dispatch on the steps generic code holds.

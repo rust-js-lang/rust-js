@@ -66,12 +66,8 @@ function linesBufRead_readLine(lines, buf) {
 function firstLine(r, RBufRead) {
   let line = "";
   const buf = { value: line };
-  const readLine = $provided(
-    RBufRead,
-    "readLine",
-    bufRead_readLine,
-    [r, buf],
-    [r, buf, RBufRead, RBufRead.Read()],
+  const readLine = $provided(RBufRead, "readLine", [r, buf], () =>
+    bufRead_readLine(r, buf, RBufRead, RBufRead.Read()),
   );
   line = buf.value;
   $unwrapOk(
@@ -87,12 +83,8 @@ function dynLine(r) {
   let line = "";
   const arg = $cellOf(r);
   const buf = { value: line };
-  const readLine = $provided(
-    arg.value.impl,
-    "readLine",
-    bufRead_readLine,
-    [arg.value, buf],
-    [arg, buf, $dynReader, $dynReader],
+  const readLine = $provided(arg.value.impl, "readLine", [arg.value, buf], () =>
+    bufRead_readLine(arg, buf, $dynReader, $dynReader),
   );
   line = buf.value;
   $unwrapOk(

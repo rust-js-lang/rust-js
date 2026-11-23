@@ -84,6 +84,27 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                         .collect::<R<Vec<_>>>()?;
                     let mut exprs = exprs;
                     let receiver = this.own_steps_place(exprs.remove(0), arg_tys[0]);
+                    // Where its value may carry its own of the method, what
+                    // it's given, read once each, both for that and for std's
+                    // (`provided_on_value`, #2414).
+                    let dispatch = this.provided_dispatch(def_id, (iter_ty, lent));
+                    let (receiver, given) = match dispatch {
+                        Some(dispatch) => {
+                            let receiver = match receiver.reads_same() {
+                                true => receiver,
+                                false => this.spill(Role::Receiver, receiver, out),
+                            };
+                            exprs = exprs
+                                .into_iter()
+                                .map(|value| match value.reads_same() {
+                                    true => value,
+                                    false => this.spill(Role::Arg, value, out),
+                                })
+                                .collect();
+                            (receiver.clone(), Some((dispatch, receiver, exprs.clone())))
+                        }
+                        None => (receiver, None),
+                    };
                     let it = this.as_js_iterator(receiver, iter_ty, span)?;
                     // One that owns items with a destructor, given whole to a
                     // consumer that leaves none, `partition`'s or `max_by`'s,
@@ -197,8 +218,14 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                         }
                         false => made,
                     };
-                    match held {
+                    let made = match held {
                         Some(held) => this.closing_function(made, output, held, span)?,
+                        None => made,
+                    };
+                    match given {
+                        Some((dispatch, receiver, values)) => {
+                            this.provided_on_value((def_id, generic_args), dispatch, (receiver, values), made, span)?
+                        }
                         None => made,
                     }
                 }))

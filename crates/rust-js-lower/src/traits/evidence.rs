@@ -4,6 +4,7 @@
 //! it given by that consumer's own rule of its value.
 
 use super::*;
+use crate::temporary_names::{Base, Role};
 use rustc_span::def_id::DefId;
 
 /// One of what a function takes after its own parameters.
@@ -62,6 +63,102 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             None
         }
+    }
+
+    /// The entry of `ty`'s own of `id`, a provided method of a trait with no
+    /// parameters but `Self`, `Iterator::partition`, which a dictionary or a
+    /// value carries for generic code's `$provided` (#2414, #2421): a
+    /// function of what the call gives, its values, then the trait method's
+    /// own evidence (`own_slots_through`, `own_evidence`'s list), which gives
+    /// the impl's function what it takes after its values, `ty`'s impl's
+    /// own evidence, `LIterator` of a `W<L>`'s, then those of the given it
+    /// asks, by `evidence_args_given`: so an impl with type parameters of
+    /// its own, or whose method asks fewer bounds than the trait's, is
+    /// given what it takes. `counterIterator_partition` itself where that's
+    /// what it's given. A const's or a fact's slot, which none of
+    /// `Iterator`'s methods has, refused.
+    pub(crate) fn provided_entry(&mut self, id: DefId, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let tcx = self.tcx;
+        let trait_parent = tcx.generics_of(id).parent_count as u32;
+        if trait_parent != 1 {
+            return Err(self.unsupported(
+                span,
+                "an own provided method of a trait with parameters of its own (#2421)",
+            ));
+        }
+        let args = ty::GenericArgs::for_item(tcx, id, |param, _| match param.kind {
+            ty::GenericParamDefKind::Lifetime => tcx.lifetimes.re_erased.into(),
+            _ if param.index == 0 => ty.into(),
+            _ => tcx.mk_param_from_def(param),
+        });
+        let instance =
+            (self.resolve_instance(id, args)?).ok_or_else(|| self.unsupported(span, "this implementation"))?;
+        let method = instance.def_id();
+        let impl_parent = tcx.generics_of(method).parent_count as u32;
+        let names = crate::signatures::taken_parameter_names(tcx, id, None, false);
+        let mut params: Vec<js::Name> = (names.into_iter().enumerate())
+            .map(|(at, name)| match (at, name) {
+                (0, _) | (_, None) => self.fresh(Base::Named(if at == 0 { "iterator" } else { "arg" })),
+                (_, Some(name)) => self.fresh(Base::Named(&name)),
+            })
+            .collect();
+        let mut values: Vec<Expr> = params.iter().map(Expr::var).collect();
+        let (mut bounds, mut drops, mut location) = (Vec::new(), Vec::new(), None);
+        for slot in self.own_slots_through(id, args) {
+            let name = match slot {
+                Slot::Location => {
+                    let name = self.fresh(Role::Location);
+                    location = Some(Expr::var(&name));
+                    name
+                }
+                Slot::Bound(declared) => {
+                    // Of `ty`'s terms, `B: Extend<u32>`, as the impl's
+                    // method names it, not `Extend<Self::Item>`.
+                    let tr = ty::EarlyBinder::bind(tcx, declared)
+                        .instantiate(tcx, args)
+                        .skip_normalization();
+                    let tr = (tcx.try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(tr)))
+                        .unwrap_or(tr);
+                    let name = self.fresh(Base::Named(&bound_word(tcx, tr)));
+                    bounds.push((tr, Expr::var(&name)));
+                    name
+                }
+                // A drop of a type parameter of the method's own, which the
+                // impl's method names after its impl's own.
+                Slot::Drop(index) => {
+                    match crate::generic_facts::type_parameter_of(self.drop_slot_of(id, index, args)) {
+                        Some(of) if of >= trait_parent => {
+                            let dropped = self.drop_slot_of(id, index, args);
+                            let name = self.fresh(Base::Prefixed(Role::Drop, &drop_word(tcx, dropped)));
+                            drops.push((impl_parent + of - trait_parent, Expr::var(&name)));
+                            name
+                        }
+                        _ => {
+                            return Err(self.unsupported(
+                                span,
+                                "an own provided method's drop of what isn't its own type parameter (#2421)",
+                            ));
+                        }
+                    }
+                }
+                Slot::Const(_) | Slot::Fact(..) => {
+                    return Err(self.unsupported(span, "an own provided method given a const or a fact (#2421)"));
+                }
+            };
+            params.push(name);
+        }
+        let location = location.unwrap_or_else(|| self.location_at(tcx.def_span(method)));
+        let given = GivenEvidence {
+            bounds: &bounds,
+            drops: &drops,
+        };
+        values.extend(self.evidence_args_given(method, instance.args, location, given, span)?);
+        let call = Expr::call(self.fn_ref(method), values);
+        let entry = Expr::arrow(
+            params.into_iter().map(Into::into).collect(),
+            vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
+        );
+        Ok(crate::passed_on::passed_on(&entry, crate::passed_on::Taker::Made, &[]).unwrap_or(entry))
     }
 
     /// `facts_through_dictionary` of the lowering's.

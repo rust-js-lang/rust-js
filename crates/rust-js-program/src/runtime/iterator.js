@@ -31,6 +31,7 @@ function $iterator(
   tryRfold,
   count,
   advanceBackBy,
+  provided,
 ) {
   // A range's, stepped by its own step, has std's `Range::nth` (#231), and
   // from its back std's `Range::nth_back`, which a `rev()` of it is asked
@@ -101,7 +102,15 @@ function $iterator(
   // Another of a value of its type, stepped as it is: a clone's (ADR 0525,
   // amended).
   it.with = (value) =>
-    $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count, advanceBackBy);
+    $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count, advanceBackBy, provided);
+  // The provided methods of `Iterator` its impl writes itself that an impl
+  // in reach overrides, `ownPartition`, each called of its value, as generic
+  // code's `$provided` asks it before std's default (#2414).
+  for (const key of provided === undefined ? [] : Object.keys(provided)) {
+    it[key] = function () {
+      return provided[key].apply(undefined, [iterator].concat(Array.from(arguments)));
+    };
+  }
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }

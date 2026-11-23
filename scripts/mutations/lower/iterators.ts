@@ -111,16 +111,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "fresh-iter-sliced",
-    breaks:
-      "what's left of a just-made `$iter(items)` is `it.items.slice(it.at, it.end)`, not `items`",
-    file: "crates/rust-js-lower/src/iterators.rs",
-    find: '        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$iter") => match args.as_slice() {\n',
-    replace: '        js::ExprKind::Call(callee, args) if false && callee.helper_name() == Some("$iter") => match args.as_slice() {\n',
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
-  },
-  {
     name: "cycle-wrapped",
     breaks:
       "a `$cycle`'s generator is wrapped in `Iterator.from(..)`, though it's a JS iterator already",
@@ -521,5 +511,15 @@ export const mutations: Mutation[] = [
     find: "                    && adt.did().krate != id.krate =>\n",
     replace: "                    && true =>\n",
     tests: ["test/std-package.test.ts"],
+  },
+  {
+    name: "fresh-iter-sliced",
+    breaks:
+      "what's left of a just-made `$iter(items)` is `it.items.slice(it.at, it.end)`, not `items`",
+    file: "crates/rust-js-lower/src/iterators.rs",
+    find: '        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$iter") => match args.as_slice() {\n',
+    replace: '        js::ExprKind::Call(callee, args) if false && callee.helper_name() == Some("$iter") => match args.as_slice() {\n',
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
   },
 ];

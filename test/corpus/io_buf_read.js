@@ -40,12 +40,8 @@ function firstLine(r) {
   let s = "";
   const arg = $cellOf(r);
   const buf = { value: s };
-  const readLine = $provided(
-    arg.value.impl,
-    "readLine",
-    bufRead_readLine,
-    [arg.value, buf],
-    [arg, buf, $dynReader, $dynReader],
+  const readLine = $provided(arg.value.impl, "readLine", [arg.value, buf], () =>
+    bufRead_readLine(arg, buf, $dynReader, $dynReader),
   );
   s = buf.value;
   $unwrapOk(readLine, "test/corpus/io_buf_read.rs:15:25", undefined, $ioErrorDebug);
@@ -57,12 +53,8 @@ function fields(r, RBufRead) {
   const field = [];
   while (
     $unwrapOk(
-      $provided(
-        RBufRead,
-        "readUntil",
-        bufRead_readUntil,
-        [r, 59, field],
-        [r, 59, field, RBufRead, RBufRead.Read()],
+      $provided(RBufRead, "readUntil", [r, 59, field], () =>
+        bufRead_readUntil(r, 59, field, RBufRead, RBufRead.Read()),
       ),
       "test/corpus/io_buf_read.rs:22:42",
       undefined,

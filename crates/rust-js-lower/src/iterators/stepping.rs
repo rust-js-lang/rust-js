@@ -980,6 +980,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => self.own_method(ty, ("count", false), span)?,
                     false => None,
                 },
+                // Never through a wrapper, which passes none of them on, as
+                // std's `&mut I` and `Box<I>` don't (#2414).
+                provided: match through {
+                    None => (self.own_provided(ty, span)?.into_iter())
+                        .map(|(id, own)| (crate::iterators::own_provided_key(self.tcx, id), own))
+                        .collect(),
+                    Some(_) => Vec::new(),
+                },
             },
         })
     }
@@ -994,6 +1002,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             matches!(slot, crate::traits::Slot::Bound(tr)
                 if tr.def_id == iterator && crate::generic_facts::type_parameter_of(tr.self_ty()) == Some(index))
         })
+    }
+
+    /// The crate's iterator `ty`'s own of `Iterator`'s provided methods
+    /// compiled into `@rust-js/std` that an impl in reach overrides
+    /// (`overridden_in_reach`), each the provided method's id and its
+    /// impl's function, which its value carries, `own<Name>`, and its
+    /// dictionary, by its entry's name, for generic code's `$provided`
+    /// (#2414): each `provided_entry`'s, which gives an impl with type
+    /// parameters of its own their evidence too (#2421).
+    pub(crate) fn own_provided(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Vec<(DefId, Expr)>> {
+        let tcx = self.tcx;
+        let iterator = std_item(tcx, StdItem::Iterator);
+        let mut provided = Vec::new();
+        for item in tcx.associated_items(iterator).in_definition_order() {
+            let id = item.def_id;
+            if !matches!(item.kind, ty::AssocKind::Fn { .. })
+                || !crate::recognition::is_compiled_std(tcx, id)
+                || !crate::recognition::overridden_in_reach(tcx, id)
+            {
+                continue;
+            }
+            // Its own bounds' evidence the call gives, in what follows `self`
+            // (`$provided`'s entry), not the runtime, which gives a step none.
+            if self
+                .recognition()
+                .own_iterator_method(ty, item.name().as_str())
+                .is_none()
+            {
+                continue;
+            }
+            provided.push((id, self.provided_entry(id, ty, span)?));
+        }
+        Ok(provided)
     }
 
     /// `make`'s, the crate's iterator made the JS iterator behind a `dyn`

@@ -911,4 +911,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Expr::call_located(Expr::helper(\"$count\"), given, false && repeats));",
     tests: ["test/binaries.test.ts", "-t", "a `Repeat`'s `count` and `last` name where they're called"],
   },
+  {
+    name: "provided-took-dropped-again",
+    breaks: "a crate's iterator whose own `partition` took it and dropped it is dropped again by generic code after the call (#2414)",
+    file: "crates/rust-js-mir/src/iter.rs",
+    find: "        let taken = match self.provided_dispatch(method, (receiver, false)) {\n",
+    replace: "        let taken = match None::<rust_js_lower::traits::Dispatch> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_provided_methods_a_type_writes_are_its_own.rs$"],
+  },
 ];

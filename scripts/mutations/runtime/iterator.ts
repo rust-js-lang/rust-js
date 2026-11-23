@@ -322,4 +322,12 @@ export const mutations: Mutation[] = [
     replace: "        name === \"getUnchecked\" || name === \"lent\" || $askedStep(step, boxed) === name,\n",
     tests: ["test/corpus.test.ts", "-t", "^wrapper_given_by_a_dictionary_steps_as_std_does.rs$"],
   },
+  {
+    name: "iterator-provided-unbound",
+    breaks: "a crate's iterator's own provided methods aren't put on its value, so generic code's `partition` of it runs std's (#2414)",
+    file: "crates/rust-js-program/src/runtime/iterator.js",
+    find: "  for (const key of provided === undefined ? [] : Object.keys(provided)) {\n",
+    replace: "  for (const key of []) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_provided_methods_a_type_writes_are_its_own.rs$"],
+  },
 ];
