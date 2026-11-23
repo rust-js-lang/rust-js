@@ -282,7 +282,7 @@ for (const name of chosen.filter((name) => cases.includes(name))) {
     want.kind === "ignore-rust-js"
   )
     continue;
-  test(`${basename(name, ".rs")} with std's iterator structs`, () => {
+  test(`${basename(name, ".rs")} with std's iterator structs`, async () => {
     const dir = fixture(`forms-${basename(name, ".rs")}`);
     const native = runNative(file, dir, want.edition, want.native);
     if (typeof native === "string") throw new Error(native);
@@ -300,7 +300,7 @@ for (const name of chosen.filter((name) => cases.includes(name))) {
         native.bytes.stdout,
         native.bytes.stderr,
         show(native.outcome),
-        shared(),
+        await shared(compiled.js),
       ]);
       if (!verified(key)) {
         const [runtime, cmd] = runtimes[0];

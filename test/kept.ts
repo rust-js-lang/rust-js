@@ -40,6 +40,12 @@ export const rustlantisCap = 512 * 2 ** 20;
 export const machineVerifiedRuns = join(machineStore, "verified-runs");
 export const verifiedRuns = target === checkoutTarget ? machineVerifiedRuns : join(target, "corpus-cache");
 
+/** Where what of std a run's JS can run is kept, by std and the JS's files
+ * (test/verified-runs.ts' `reached`, #2352): the machine's, as verified
+ * runs are, but a target's own given one, a mutant's, so a mutant of how
+ * it's found keeps none another run reads. */
+export const stdReach = target === checkoutTarget ? join(machineStore, "std-reach") : join(target, "std-reach");
+
 /** The stores of what the tests keep, and the most each keeps past its
  * working set (`holdKept`), which is what the machine's runs measure
  * themselves: a `check:fast --all` from nothing keeps about 1 GB of native
@@ -54,6 +60,7 @@ export const keptStores = [
   { dir: nativeCache, cap: 10 * 2 ** 30 },
   { dir: join(checkoutTarget, "native-sources"), cap: 64 * 2 ** 20 },
   { dir: verifiedRuns, cap: 512 * 2 ** 20 },
+  { dir: stdReach, cap: 64 * 2 ** 20 },
   { dir: nativeOutcomes, cap: 256 * 2 ** 20 },
 ];
 

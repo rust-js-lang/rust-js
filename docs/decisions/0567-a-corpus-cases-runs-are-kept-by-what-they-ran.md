@@ -163,3 +163,73 @@ Measured on the Mac mini, quiet, as CI would run with them restored: the
 corpus's part 1/8, the native and verified-run stores cold and the
 outcomes kept, 43.1 s, not 236 s; with the verified runs kept too, 3.5 s.
 `test/crates.test.ts`, all cold 115.9 s, the outcomes kept 13.2 s.
+
+## Amendment: std by what the case's JS can run (#2352, the lead for Tu, 2026-11-23)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, as above.
+
+"A change to a runtime module … runs every case again" was most of what
+made the corpus cold. Of main's 902 commits from 2026-11-16 to 11-23, 92
+changed something every case's key held: 59 changed std/runtime.js, 17
+changed only std's `iter`, `io` or `net` modules, and 16 changed the
+harness. A cold part took 85 s against a warm part's 23 s on the MacBook
+Pro (part 4/10, 290 cases). The extra time was all JS runs and the Vite
+bundle. A new compiler binary voids nothing: its key isn't in a run's,
+and a part after a trivial compiler change took 25 s.
+
+So **a run's key holds the std code its JS can run, not all of std**
+(`reached`, `test/verified-runs.ts`; `shared(entry)`). That is one bundle,
+by Bun's bundler, of an entry that re-exports the JS and the std helpers
+the harness names (the oracle's `$isPanic`, `$raisedAt`, `$unwindsOn`,
+which a run calls besides the JS). Std's modules are served by their names
+in std, `/@rust-js-std/…`, not as the files they are. The bundle drops
+whitespace and comments and keeps every name. Where the JS can't be
+bundled, the key holds all of std, as before.
+
+**Why the bundle covers every std function the case can run.** A run
+loads the JS, which imports `@rust-js/std`. Its `index.js` re-exports
+every module, so loading it evaluates every module. The harness imports
+`runtime.js`. Code runs only when evaluation calls it, or when code that
+already runs reaches it.
+- **Evaluation:** the entry imports std as the run does, and no
+  `"sideEffects": false` applies, since the modules aren't bundled as
+  files. A top-level statement or initializer the bundler can't prove pure
+  is kept, in every module, even one the JS imports nothing from (test:
+  `b.js`'s registered function).
+- **Reaching:** code reaches other code by name: a call, a reference, an
+  object holding methods. That includes a dictionary, a vtable,
+  `$stdSites`, or a class's prototype. The bundler keeps each name kept
+  code mentions, transitively, and keeps an object whole once it's
+  mentioned: it doesn't drop properties. So dynamic dispatch, a property
+  read off a kept object, reaches only kept code. The other ways code can
+  be reached without a name are `eval`, `Function` and `import()`, and std
+  has none (`test/verified-runs.test.ts` holds that).
+
+The shipped run already depends on this: it runs Vite's tree-shaken
+bundle, and that bundle is a subset of this one, which also keeps every
+module's evaluation. Bun's version is in the key, so a bundler that shakes
+otherwise is another key. And the nightly re-runs 2% of the verified runs
+it's given, above.
+
+- **Kept by what it's made of**, `std-reach/<key>/reach.json`, the
+  machine's, held to 64 MB. The key is all of std's text, the harness's
+  names and the JS's text. Each other file the bundle read, by Bun's
+  metafile, is checked by its digest when the record is read again. A
+  bundle costs about 12 ms a case, a warm part's compile about 76 ms, so
+  it's made only when std or the JS changed. A warm part with the reach
+  kept took 3 s, its compiles kept too. A mutant keeps its reach in its
+  own target, as its runs are kept.
+- **Std's modules are its own folder's `.js` files**, not what a
+  `node_modules` of it links, which in a mutant's workspace links std
+  itself.
+
+Measured over those 92 commits, using 150 single-file corpus snapshots at
+each commit against std at the commit and its parent: before, each
+voided every case, so 92 whole-corpus re-runs; after, 37 (−60%).
+- runtime.js commits: a median of 14% of the cases, mean 28%;
+- `iter`/`io`/`net` commits: median 3%, mean 26%;
+- harness commits: all of them, until the harness is keyed by the code
+  that runs and compares (#2352's second part).
+
+A change to `$stdSites`, one object, reaches every case that panics at a
+std site, as does one on every program's print path.

@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "fn-value-hoisted-at-a-shim",
+    breaks: "a `#[track_caller]` function made a value a `Fn` trait calls is its module's one `const`, made with its first use's location, so a library's `here` given to `F: Fn` says where it's defined, not rustc's `Fn::call` shim (#2335)",
+    file: "crates/rust-js-lower/src/lib.rs",
+    find: "            let at_definition = location.kind == defined.kind;",
+    replace: "            let at_definition = true;",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
+  },
+  {
     name: "held-arg-spilled-as-a-word",
     breaks:
       "an argument MIR's lowering holds, spilled, is a name of its word, `_arg`, not a held argument's, so tidy never names it `arg`",
@@ -35,7 +43,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic function's instance taken as a value is a new arrow at each use, so `f == table[0]` of `double::<i32>` taken twice is false (#974)",
     file: "crates/rust-js-lower/src/lib.rs",
-    find: "            let whole = !args.has_non_region_param() && !args.has_aliases() && !self.in_copied_default();\n",
+    find: "            let whole =\n                at_definition && !args.has_non_region_param() && !args.has_aliases() && !self.in_copied_default();\n",
     replace: "            let whole = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_fn_value_is_one_function.rs$"],
   },

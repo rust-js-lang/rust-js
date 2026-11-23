@@ -69,7 +69,7 @@ const tally = (rewrite: Rewrite, name: string, what: string) => {
 /** What went wrong of `rewrite` of a case in each build, or nothing: its
  * JS run otherwise than native, or rust-js's crash. A refusal is safe, and
  * no wrong answer. */
-function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" | "wasm32"): { problems: Map<string, string>; program?: string } | undefined {
+async function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" | "wasm32"): Promise<{ problems: Map<string, string>; program?: string } | undefined> {
   const file = join(corpus, name);
   const dir = fixture(`metamorphic-${rewrite}-${name.replace(/\.rs$/, "")}`);
   const variant = join(dir, "variant.rs");
@@ -147,7 +147,7 @@ function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" |
       native.bytes.stdout,
       native.bytes.stderr,
       show(native.outcome),
-      shared(),
+      await shared(compiled.js),
       ...netHarness,
     ]);
     if (verified(key)) continue;
@@ -292,7 +292,7 @@ for (const { name, edition, native } of all.filter(({ name }) => chosen.has(name
     // (#1365).
     const failing: { at: number; reduction: Reduction }[] = [];
     for (const rewrite of rewritesRun) {
-      const found = wrong(rewrite, name, edition, native);
+      const found = await wrong(rewrite, name, edition, native);
       for (const [build] of builds) {
         const listedAs = known.find((k) => k.name === name && k.rewrite === rewrite && k.builds.includes(build));
         const problem = found?.problems.get(build);

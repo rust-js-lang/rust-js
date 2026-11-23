@@ -1,7 +1,7 @@
 // A corpus case's runs, kept by what they ran (ADR 0567): the JS rust-js
-// made of it, native Rust's output and end, the runtime modules the JS
-// imports, the harness that runs and compares them, and the runtimes'
-// versions. The same again, the runs would say the same, so they're not run
+// made of it, native Rust's output and end, the std code the JS can run
+// (`reached`, #2352), the harness that runs and compares them, and the
+// runtimes' versions. The same again, the runs would say the same, so they're not run
 // again; the compiles are, each time, as they're what's checked of the
 // compiler. Kept in the machine's `verified-runs/<key>/passed`, every
 // worktree's, as native programs are kept (`kept.ts`): each use marked, a
@@ -9,10 +9,12 @@
 
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { dirname, join, posix, relative, resolve } from "node:path";
+
+import type { BunPlugin } from "bun";
 
 import { freeBytes } from "../tooling/bounded.js";
-import { markUsed, mayKeep, verifiedRuns } from "./kept";
+import { markUsed, mayKeep, stdReach, verifiedRuns } from "./kept";
 import { node } from "./programs";
 import { rechecked } from "./native-outcomes";
 import { root, run, stdDir } from "./support";
@@ -69,22 +71,110 @@ export function generatedTexts(dir: string, except: string[] = []): string[] {
   );
 }
 
-/** What every case's runs share: `@rust-js/std`'s modules; the harness, from compiling to comparing; and
- * Node's version, Bun's, and Vite's, which bundles the JS as shipped.
- * Read once. */
+/** The harness, from compiling to comparing, each file named whole, which
+ * the test selector reads as what it reads. */
+const harness = ["test/corpus.test.ts", "test/corpus-cases.ts", "test/corpus-run.ts", "test/oracle.ts", "test/programs.ts", "test/child.ts", "test/native-outcomes.ts", "test/verified-runs.ts"].map((file) => join(root, file));
+
+/** What a run of the JS at `entry` shares with every case's, the harness
+ * and Node's version, Bun's, and Vite's, which bundles the JS as shipped;
+ * and the std code it can run (`reached`), not all of std, so a change to
+ * std a case can't run keeps its runs (#2352). The harness's read once. */
 let sharedKey: string | undefined;
-export function shared(): string {
+export async function shared(entry: string, std = stdDir): Promise<string> {
   if (sharedKey === undefined) {
-    // Each named whole, which the test selector reads as what it reads.
-    const harness = ["test/corpus.test.ts", "test/corpus-cases.ts", "test/corpus-run.ts", "test/oracle.ts", "test/programs.ts", "test/child.ts", "test/native-outcomes.ts", "test/verified-runs.ts"].map((file) => join(root, file));
-    const files = [...jsFiles(stdDir), ...harness];
     const vite = JSON.parse(readFileSync(join(root, "node_modules", "vite", "package.json"), "utf8")).version;
     sharedKey = runKey([
       `node ${run([node ?? "node", "--version"]).trim()}`,
       `bun ${Bun.version}`,
       `vite ${vite}`,
-      ...files.map((file) => `${relative(root, file)}\0${readFileSync(file, "utf8")}`),
+      ...harness.map((file) => `${relative(root, file)}\0${readFileSync(file, "utf8")}`),
     ]);
   }
-  return sharedKey;
+  return runKey([sharedKey, await reached(entry, std)]);
+}
+
+/** std's modules, its own folder's `.js` files, not what a `node_modules`
+ * of it links, which in a mutant's workspace links std itself. */
+const modules = (std: string) => (existsSync(std) ? readdirSync(std).filter((name) => name.endsWith(".js")).sort().map((name) => join(std, name)) : []);
+
+/** All of std, each module's path and text, once a process of each std:
+ * what a run's key has of std where what it can run can't be told. */
+const wholes = new Map<string, string>();
+function whole(std: string): string {
+  if (!wholes.has(std)) wholes.set(std, runKey(modules(std).map((file) => `${relative(std, file)}\0${readFileSync(file, "utf8")}`)));
+  return wholes.get(std)!;
+}
+
+/** Of std's exports, those the harness names, `$isPanic` of the oracle's:
+ * what a run calls of std besides the JS's own. */
+const harnessNames = new Map<string, string[]>();
+function namedByHarness(std: string): string[] {
+  if (!harnessNames.has(std)) {
+    const exported = new Set(modules(std).flatMap((file) => new Bun.Transpiler({ loader: "js" }).scan(readFileSync(file, "utf8")).exports));
+    const said = new Set(harness.flatMap((file) => readFileSync(file, "utf8").match(/\$[A-Za-z_][A-Za-z0-9_]*/g) ?? []));
+    harnessNames.set(std, [...said].filter((name) => exported.has(name)).sort());
+  }
+  return harnessNames.get(std)!;
+}
+
+const sha = (text: string) => new Bun.CryptoHasher("sha256").update(text).digest("hex");
+
+/** Where std's modules are, to the bundler: by their names in std, not as
+ * the files they are, so std's `"sideEffects": false` lets no module go
+ * whose evaluation the run's `import` of std makes. */
+const stdAt = "/@rust-js-std";
+
+/** The std code the JS at `entry` can run, as a key (#2352, ADR 0567,
+ * amended): of what the bundler keeps of `std`, in one bundle of the JS,
+ * what the harness calls of std (`namedByHarness`), and std's every module
+ * evaluated, as a run's `import` of it evaluates them, its code without
+ * comments or spaces; all of std where it can't be bundled. Kept in
+ * `store` by std and the JS's text, each other file the bundle read
+ * checked when it's read again. */
+export async function reached(entry: string, std = stdDir, store = stdReach): Promise<string> {
+  const names = namedByHarness(std);
+  const dir = dirname(entry);
+  const id = runKey([whole(std), names.join(" "), readFileSync(entry, "utf8")]);
+  const kept = join(store, id, "reach.json");
+  try {
+    const { inputs, reach } = JSON.parse(readFileSync(kept, "utf8")) as { inputs: [string, string][]; reach: string };
+    if (inputs.every(([file, hash]) => existsSync(join(dir, file)) && sha(readFileSync(join(dir, file), "utf8")) === hash)) {
+      markUsed(kept);
+      return reach;
+    }
+  } catch {}
+  const plugin: BunPlugin = {
+    name: "std reached",
+    setup(build) {
+      build.onResolve({ filter: /^rust-js-reached:entry$/ }, () => ({ path: "entry", namespace: "reached" }));
+      // The JS, and std imported, as the run's oracle imports it, every
+      // module evaluated: what the harness calls of it, or, of none, std.
+      build.onLoad({ filter: /.*/, namespace: "reached" }, () => ({
+        contents: [
+          `export * from ${JSON.stringify(entry)};`,
+          names.length > 0 ? `export { ${names.join(", ")} } from "@rust-js/std";` : `import "@rust-js/std";`,
+        ].join("\n"),
+        loader: "js",
+      }));
+      build.onResolve({ filter: /^@rust-js\/std$/ }, () => ({ path: `${stdAt}/index.js`, namespace: "std" }));
+      build.onResolve({ filter: /^\.\.?\// }, (args) =>
+        args.importer.startsWith(`${stdAt}/`) ? { path: posix.resolve(posix.dirname(args.importer), args.path), namespace: "std" } : undefined,
+      );
+      build.onLoad({ filter: /.*/, namespace: "std" }, (args) => ({ contents: readFileSync(join(std, args.path.slice(stdAt.length)), "utf8"), loader: "js" }));
+    },
+  };
+  const built = await Bun.build({ entrypoints: ["rust-js-reached:entry"], target: "node", minify: { whitespace: true }, plugins: [plugin], metafile: true, throw: false });
+  if (!built.success) return whole(std);
+  const reach = runKey([await built.outputs[0]!.text()]);
+  // The JS's files the bundle read, each by its text, its path from the
+  // working directory as the bundler says it.
+  const read = Object.keys(built.metafile?.inputs ?? {})
+    .map((input) => resolve(input))
+    .filter((file) => existsSync(file));
+  mkdirSync(store, { recursive: true });
+  if (mayKeep(store)) {
+    mkdirSync(dirname(kept), { recursive: true });
+    writeFileSync(kept, JSON.stringify({ inputs: read.map((file) => [relative(dir, file), sha(readFileSync(file, "utf8"))]), reach }));
+  }
+  return reach;
 }

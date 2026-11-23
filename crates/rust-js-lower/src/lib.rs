@@ -1012,9 +1012,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // One given its caller's location is called as the shim it's
             // called through gives it, a `Fn` trait's call (#2335), or, a
             // `fn` pointer's, where it's defined (ADR 0427).
-            let location = self
-                .value_location()
-                .unwrap_or_else(|| self.location_at(self.tcx.def_span(def_id)));
+            let defined = self.location_at(self.tcx.def_span(def_id));
+            let location = self.value_location().unwrap_or_else(|| defined.clone());
+            // Given where it's defined, it's the module's one function (ADR
+            // 0395, below); given a shim's location elsewhere, a `Fn` trait's
+            // call's (#2335), an arrow of its own, as a function item called
+            // through a trait has no pointer whose identity is seen.
+            let at_definition = location.kind == defined.kind;
             // Generic code's own forms, a `&mut T`'s box and a raw pointer's
             // handle, as generic code that calls it as an `F` gives them, not
             // its callers' (#975, ADR 1114): a `fn` pointer of an instance
@@ -1060,7 +1064,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // so each use is the one function, as Rust's pointer to it is
             // (ADR 0395, #974); of one given its caller's dictionaries, the
             // arrow of them, a function of the call that made it.
-            let whole = !args.has_non_region_param() && !args.has_aliases() && !self.in_copied_default();
+            let whole =
+                at_definition && !args.has_non_region_param() && !args.has_aliases() && !self.in_copied_default();
             if whole {
                 let base = traits::instance_name(self.tcx, &name, args);
                 return self.module_fn_value((ty, &base), made).map(Some);

@@ -337,7 +337,7 @@ async function differences(file: string, dir: string, edition: string, native: R
     // the corpus runs: of a case whose proofs left nothing out, no run.
     if (flags[0] === "--without-intervals" && code(compiled.js) === code(full.js)) continue;
     // The same JS, of any variant, runs the same: it's run once.
-    const key = runKey(["readability variant", code(compiled.js), native.bytes.stdout, native.bytes.stderr, show(native.outcome), shared()]);
+    const key = runKey(["readability variant", code(compiled.js), native.bytes.stdout, native.bytes.stderr, show(native.outcome), await shared(compiled.js)]);
     if (verified(key)) continue;
     const [runtime, cmd] = runtimes[0];
     const ran = runJs(cmd, compiled.js, dir, `${runtime}-${flags.join("-").replaceAll(/[^A-Za-z0-9]+/g, "_").slice(0, 80)}`, jsLimit(native));

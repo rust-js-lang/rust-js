@@ -85,10 +85,11 @@ async function check(file: string): Promise<string[]> {
       ? { ...located, outcome: { panic: located.outcome.panic } }
       : located;
   // Its runs, kept by what they ran (ADR 0567): the case, the JS, what
-  // native Rust printed and how it ended, and what every case's share. The
-  // same as a run verified before isn't run again.
-  const ranKey = (what: string, js: string[]) =>
-    runKey([what, text, ...js, native.bytes.stdout, native.bytes.stderr, show(native.outcome), shared()]);
+  // native Rust printed and how it ended, and what every case's share with
+  // the std code the JS at `entry` can run. The same as a run verified
+  // before isn't run again.
+  const ranKey = async (what: string, js: string[], entry: string) =>
+    runKey([what, text, ...js, native.bytes.stdout, native.bytes.stderr, show(native.outcome), await shared(entry)]);
 
   // The directive is checked against Rust itself, so it can't be wrong.
   const message = want.kind === "run-fail" || want.kind === "ignore-rust-js" ? want.message : undefined;
@@ -117,7 +118,7 @@ async function check(file: string): Promise<string[]> {
   // The program's runs, as compiled and as shipped: kept as verified once
   // they agree with native Rust, or, of a case rust-js gets wrong for now,
   // once they still don't.
-  const programKey = "js" in compiled ? ranKey("program", generatedTexts(dir, ["library", "production"])) : undefined;
+  const programKey = "js" in compiled ? await ranKey("program", generatedTexts(dir, ["library", "production"]), compiled.js) : undefined;
   const programVerified = programKey !== undefined && verified(programKey);
   if ("js" in compiled && !programVerified) {
     for (const [name, cmd] of runtimes) runs.push([name, timed(`JS run: ${name}`, () => runJs(cmd, compiled.js, dir, name))]);
@@ -176,7 +177,7 @@ async function check(file: string): Promise<string[]> {
       else if (differs) problems.push("its JS as a library isn't its program's: add `//@ library-differs`, or run `bun run bless`");
       else problems.push("its JS as a library is its program's now: remove `//@ library-differs`, or run `bun run bless`");
     }
-    const libraryKey = ranKey("library", generatedTexts(join(dir, "library")));
+    const libraryKey = await ranKey("library", generatedTexts(join(dir, "library")), library.js);
     if (differs && !verified(libraryKey)) {
       const run = timed("JS run: library", () => runJs([node ?? "node"], library.js, dir, "library"));
       if (!agree(run, native)) problems.push(`as a library, it ended ${show(run.outcome)}, native Rust ${show(native.outcome)}, or printed otherwise`);

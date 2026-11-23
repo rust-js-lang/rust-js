@@ -16,11 +16,21 @@ struct C {
     n: i32,
 }
 
+/// Its caller where a generic `Fn` calls it: rustc's `Fn::call` shim, not where it's defined (#2335).
+fn line_of<F: Fn() -> &'static Location<'static>>(f: F) -> (u32, u32) {
+    let at = f();
+    (at.line(), at.column())
+}
+
 pub fn main() {
     println!("{} {}", Counter::LIMIT, Counter::new().count);
     println!("{:?} {}", Upto(2).numbers(), summed(&Upto(4)));
     let pointer: fn() -> &'static Location<'static> = here;
     println!("{} {}", pointer().line(), pointer().column());
+    println!("{:?}", line_of(here));
+    // Each pointer to it the one function, as Rust's are (ADR 0395).
+    let again: fn() -> &'static Location<'static> = here;
+    println!("{}", std::ptr::fn_addr_eq(pointer, again));
     let mut tick = counter();
     let mut other = tick.clone();
     tick();

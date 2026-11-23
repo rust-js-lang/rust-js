@@ -293,6 +293,7 @@ test("a kept cache is held to its cap, the least recently used first, and to the
     ["native-cache", 10240],
     ["native-sources", 64],
     [basename(verifiedRuns), 512],
+    ["std-reach", 64],
     ["native-outcomes", 256],
   ]);
 });

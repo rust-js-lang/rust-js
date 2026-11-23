@@ -250,3 +250,13 @@ while `$count` or `$last` runs, in a slot of `globalThis` under a
 `Symbol.for` key of `runtime/marks.js`, which every copy of the runtime
 reads, and put back however the call ends, `$unwinds`'s on a panic.
 
+
+A library's function made a value at a shim was its module's one
+`const`, `hereValue`, made with its first use's location, so a `Fn` use
+after a `fn` pointer's said where it's defined (found by the survivor
+`library-located-fn-value-a-call-arrow`). Only a value given where it's
+defined is the module's one function now; one given a shim's location
+elsewhere is an arrow of its own, as a function item a trait calls has no
+pointer whose identity anything sees. The pair
+library_singles_across_crates holds both, and that two `fn` pointers to
+it are the same function.

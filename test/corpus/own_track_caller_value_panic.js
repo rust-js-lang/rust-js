@@ -2,8 +2,6 @@
 
 import { $panic, $stdSites } from "@rust-js/std";
 
-const firstValue = (v) => first(v, $stdSites.source + "/library/core/src/ops/function.rs:166:5");
-
 export function entry() {
   main();
 }
@@ -16,7 +14,9 @@ function first(v, location) {
 }
 
 function main() {
-  const seen = [1, undefined].map(firstValue);
+  const seen = [1, undefined].map((v) =>
+    first(v, $stdSites.source + "/library/core/src/ops/function.rs:166:5"),
+  );
   console.log(`[${seen.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map
