@@ -2951,3 +2951,40 @@ for hand-written JS. A JS caller gives each value in that shape:
 - **A library's manifest is for Rust, not JS.** A crate built as another
   crate's dependency writes `lib.manifest.json` beside its JS ([ADR 0100](../../decisions/0100-separate-crates.md)):
   what a Rust crate that uses it needs to know, which JS never reads.
+- **A value it takes by value is the function's**, as a Rust caller's is
+  once it's moved: the function may keep it or change it, and its JS
+  doesn't copy what a Rust caller can't reach again (#2391). A JS caller
+  mustn't use it after, which TypeScript can't check; it gives a copy,
+  `checkout([...cart])`, where it still needs its own. A `Vec` taken by
+  value is declared `T[]`, where a borrowed one is `readonly T[]`:
+
+```rust
+pub struct Order {
+    pub items: Vec<String>,
+    pub count: usize,
+}
+
+pub fn checkout(cart: Vec<String>) -> Order {
+    let count = cart.len();
+    Order { items: cart, count }
+}
+```
+
+```js
+export function checkout(cart) {
+  const count = cart.length;
+  return { items: cart, count };
+}
+```
+
+```ts
+export interface Order {
+    items: string[];
+    count: number;
+}
+
+export function checkout(cart: string[]): Order;
+```
+
+  A caller that pushes to `cart` after `checkout(cart)` pushes to the
+  order's `items`, which then hold two where its `count` says one.
