@@ -5,6 +5,19 @@ const given1840 = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
 
 export const mutations: Mutation[] = [
   {
+    name: "division-raised-at-its-assignment",
+    breaks:
+      "a division or remainder written to a place that's there already, `t.0 = t.1 / d`, `last = 17 % d`, panics naming where the assignment starts, not the division (#2366)",
+    file: "crates/rust-js-mir/src/structure.rs",
+    find: "                        .then(|| super::queries::division_check_span(state.body, at))\n",
+    replace: "                        .then(|| None::<Span>)\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(division_assigned_to_a_place_raises_at_the_division|remainder_assigned_in_a_closure_raises_at_the_remainder).rs$",
+    ],
+  },
+  {
     name: "call-raised-at-its-whole-span",
     breaks: "a method call's panic names where its expression starts, not its method's name, as codegen's `fn_span`",
     file: "crates/rust-js-mir/src/structure.rs",

@@ -212,10 +212,19 @@ export const mutations: Mutation[] = [
     breaks:
       "a division's check is left to its helper though a call runs between, `v[f()] = a % b`: `f` runs before a zero divisor panics",
     file: "crates/rust-js-mir/src/queries.rs",
-    find: "            TerminatorKind::Goto { target } => block = *target,\n            _ => return false,\n",
+    find: "            TerminatorKind::Goto { target } => block = *target,\n            _ => return None,\n",
     replace:
-      "            TerminatorKind::Goto { target } => block = *target,\n            _ => return true,\n",
+      "            TerminatorKind::Goto { target } => block = *target,\n            _ => return Some(mir::Location { block, statement_index: 0 }),\n",
     tests: ["test/corpus.test.ts", "-t", "division_check_order"],
+  },
+  {
+    name: "division-raised-at-anothers-check",
+    breaks:
+      "each division whose helper throws in its check's place is raised at the first such check of its body, `t.0 = t.1 / divisor(0)` naming `9 / divisor(3)`'s column (#2366)",
+    file: "crates/rust-js-mir/src/queries.rs",
+    find: "if checked_by_division(body, msg, *target) == Some(at) => {\n",
+    replace: "if checked_by_division(body, msg, *target).is_some() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^division_assigned_to_a_place_raises_at_the_division.rs$"],
   },
   {
     name: "pin-borrow-a-write",

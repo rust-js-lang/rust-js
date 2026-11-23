@@ -300,7 +300,12 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             match &statement.kind {
                 StatementKind::Assign(assign) => {
                     let (place, rvalue) = &**assign;
-                    let at = self.caller_location(span);
+                    // A division whose helper throws in its check's place is
+                    // raised where its check is (#2366).
+                    let raised = (matches!(rvalue, Rvalue::BinaryOp(BinOp::Div | BinOp::Rem, _)))
+                        .then(|| super::queries::division_check_span(state.body, at))
+                        .flatten();
+                    let at = self.caller_location(raised.unwrap_or(span));
                     Expr::raised_at(at, || self.mir_assign(state, place, rvalue, span, &mut made))?;
                 }
                 StatementKind::SetDiscriminant { .. } => {

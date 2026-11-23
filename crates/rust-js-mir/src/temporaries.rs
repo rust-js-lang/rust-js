@@ -779,7 +779,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         if drops::cleans_up(body, drops, *unwind).is_some() {
             return None;
         }
-        if checked_by_division(body, msg, *target) {
+        if checked_by_division(body, msg, *target).is_some() {
             return Some(Check::Unchecked);
         }
         deferred_check(body, msg, *target).map(|(index, write)| Check::Deferred(index, write))

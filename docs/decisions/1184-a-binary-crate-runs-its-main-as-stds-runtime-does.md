@@ -148,3 +148,19 @@ its own.
   the catalogue lacked; one case waits, under #2335 (#2324 placed the
   others, ADR 0427 amended). Mutations
   of each rule.
+
+## Amendment: a division is raised where its check is (2026-11-23, #2366)
+
+A division or remainder whose check its helper throws in place of,
+`$div`, `$rem`, `$bigDiv`, `$bigRem` (`queries::checked_by_division`), is
+given the span of that check, the `Assert`'s, which is the division's,
+`v / z`, as native Rust's panic names it; not its MIR statement's, which
+of a division written to a place that's there already, `v = v / z`,
+`t.0 = t.1 / d`, `*r = 9 / d`, is the whole assignment, as rustc writes
+the quotient straight to the place (`queries::division_check_span`, read
+by `structure.rs`'s located statements). Results change, so Rust's
+behaviour is kept (ADR 0262). Found by generated programs, seeds
+12467702, 12467723, 12467856 and 12467972; held by the corpus's
+`division_assigned_to_a_place_raises_at_the_division.rs` and
+`remainder_assigned_in_a_closure_raises_at_the_remainder.rs`, and a
+mutation of each rule.
