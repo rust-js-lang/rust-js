@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { checkedSince, jsonLines, latestRuns, MUTATION_SHARDS, mutationJobsPassed, NET_JOBS, nets, netsSummary, alwaysRun, resultsBase, wasmResults } from "../scripts/ci";
 import { readersOf } from "./part-settings";
+import { runSync } from "./child";
 import { downloaded } from "../scripts/artifacts";
 import { corpusRows, crashes, dependency, labelProblems, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
 import { judgedInTheWasmJob, mutations, refusedFlags } from "../scripts/mutations";
@@ -1124,3 +1125,22 @@ test("a React port that doesn't compile is told from one that differs", () => {
   expect(regen.indexOf("process.exit(PORT_DOES_NOT_COMPILE);", regen.indexOf("if (failed.length) {"))).toBeLessThan(regen.indexOf("if (changed.length) process.exit(1);"));
 });
 
+// A step that captures one of our scripts' stdout, `x=$(bun scripts/a.ts
+// mode)`, reads it as one value: a second line, a status said on stdout,
+// corrupts it, as #2346's wasm lines did `needed=` in `$GITHUB_OUTPUT`
+// (f10b9502f). Each such capture in .github, run as written with what CI
+// fills in (`${{ .. }}`, `$VAR`) left off, prints one line.
+test("each capture of a script's stdout in .github is one line", () => {
+  const ymls = [...new Bun.Glob(".github/**/*.{yml,yaml}").scanSync({ cwd: root })];
+  const captured = ymls.flatMap((file) =>
+    [...readFileSync(join(root, file), "utf8").matchAll(/\$\((bun scripts\/[^)]*)\)/g)].map((m) => ({
+      file,
+      args: m[1]!.replace(/\$\{\{[^}]*\}\}/g, "\0").split(/\s+/).filter((word) => word !== "" && !word.includes("\0") && !word.startsWith("$")),
+    })),
+  );
+  expect(new Set(captured.map((c) => c.args[1])).size).toBeGreaterThanOrEqual(2);
+  for (const { file, args } of new Map(captured.map((c) => [c.args.join(" "), c])).values()) {
+    const asked = runSync([process.execPath, ...args.slice(1)], root, 120_000);
+    expect([file, args.join(" "), asked.code, asked.stdout.split("\n").length]).toEqual([file, args.join(" "), 0, 2]);
+  }
+});
