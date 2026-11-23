@@ -391,17 +391,23 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         (parent.len() == self.tcx.generics_of(own).count()).then(|| self.tcx.mk_args(parent))
     }
 
-    /// The functions and `const`s written in `def_id`'s body, a function's
-    /// or a closure's, or in a closure of it (ADR 0308; ADR 0031, amended).
+    /// The functions and `const`s written in `def_id`'s body, a function's,
+    /// or in a closure of it (ADR 0308; ADR 0031, amended). Never a
+    /// closure's: a closure's are placed by `mir_closure`, where it's
+    /// lowered (#1979).
     pub(super) fn items_written_in(
         &self,
         def_id: rustc_span::def_id::DefId,
     ) -> impl Iterator<Item = rustc_span::def_id::DefId> {
+        debug_assert!(
+            !self.tcx.is_closure_like(def_id),
+            "a closure's items are `mir_closure`'s to place"
+        );
         (self.krate.local_functions.keys())
             .chain(self.krate.local_consts.keys())
             .filter(move |&&id| {
                 let mut parent = self.tcx.parent(id);
-                while parent != def_id && self.tcx.is_closure_like(parent) {
+                while self.tcx.is_closure_like(parent) {
                     parent = self.tcx.parent(parent);
                 }
                 parent == def_id
