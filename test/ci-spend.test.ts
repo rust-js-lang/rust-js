@@ -4,10 +4,12 @@
 // the comment.
 
 import { expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { comment, flags, historyOf, type Job, type Run, spend } from "../scripts/ci-spend";
+import { writeTimes } from "./lend-bench";
 import { root } from "./support";
 
 const at = (minute: number) => new Date(Date.UTC(2026, 10, 16, 0, minute)).toISOString().replace(/\.\d+Z$/, "Z");
@@ -81,4 +83,18 @@ test("a micro-benchmark past 1.5 times the night before's is flagged, and kept w
   const body = comment(day, [{ ...spend("2026-11-15", [], []), ...before }]);
   expect(body).toContain("| $lent each step, a JS iterator | 31 | 20 |");
   expect(historyOf(body).at(-1)?.bench).toEqual(day.bench);
+});
+
+// The nightly's `ci-spend` job runs the micro-benchmarks in a checkout that
+// built nothing, so the result's directory, `target/`, isn't there yet: the
+// benchmark makes it, where it threw `ENOENT` and the job failed (#2372).
+test("the micro-benchmarks write their times where no directory is made yet", () => {
+  const dir = mkdtempSync(join(tmpdir(), "lend-bench-"));
+  try {
+    const out = join(dir, "target", "bench.json");
+    writeTimes(out, { "$lent each step, a JS iterator": 28.6 });
+    expect(JSON.parse(readFileSync(out, "utf8"))).toEqual({ "$lent each step, a JS iterator": 28.6 });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

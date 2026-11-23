@@ -7,7 +7,8 @@
 //
 //   bun test/lend-bench.ts [out.json]   each benchmark's best of 5, in ms
 
-import { writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 
 import { $lent } from "../std/runtime.js";
 
@@ -45,8 +46,15 @@ export function measure(tries = 5): Record<string, number> {
   );
 }
 
+/** `times` written to `path`, into its directory, made where it isn't: the
+ * nightly's `ci-spend` job builds nothing, so it has no `target/` (#2372). */
+export function writeTimes(path: string, times: Record<string, number>) {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify(times));
+}
+
 if (import.meta.main) {
   const times = measure();
   for (const [name, ms] of Object.entries(times)) console.log(`${name}: ${ms} ms for ${steps} steps`);
-  if (process.argv[2]) writeFileSync(process.argv[2], JSON.stringify(times));
+  if (process.argv[2]) writeTimes(process.argv[2], times);
 }
