@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { movedWhilePushed, againEnv, appendedBoth, beside, FAST_TESTS, fastAgain, givenBefore, givenRound, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, portRegen, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
+import { changedWhileChecked, untrackedRefusal, movedWhilePushed, againEnv, appendedBoth, beside, FAST_TESTS, fastAgain, givenBefore, givenRound, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, portRegen, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
 import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
@@ -497,3 +497,41 @@ test("a push refused as main moved under it is checked again; any other refusal 
   expect(movedWhilePushed(1, lock, "66a035ec4", "66a035ec4")).toBe(false);
   expect(movedWhilePushed(0, lock, "66a035ec4", "2cd281abf")).toBe(false);
 });
+
+// A push pushes its commits, but its check saw the tree: a file written
+// while it ran, though put back, or one made meanwhile, was what it built
+// and tested, so it's refused (#2415).
+test("a push refuses a tree written while it was checked, though put back", () => {
+  const settled = { at: 1000, untracked: new Set(["notes.txt"]) };
+  const tracked = (at: number) => new Map([["src/a.rs", 900], ["crates/b.rs", at]]);
+  // Untouched since it settled: nothing.
+  expect(changedWhileChecked(settled, tracked(900), new Map([["notes.txt", 950]]))).toEqual([]);
+  // A tracked file written since, its content as it was or not.
+  expect(changedWhileChecked(settled, tracked(1001), new Map([["notes.txt", 950]]))).toEqual(["crates/b.rs"]);
+  // An untracked file made since, and one there before but written since.
+  expect(changedWhileChecked(settled, tracked(900), new Map([["notes.txt", 950], ["test/corpus/new_case.rs", 1200]]))).toEqual(["test/corpus/new_case.rs"]);
+  expect(changedWhileChecked(settled, tracked(900), new Map([["notes.txt", 1100]]))).toEqual(["notes.txt"]);
+  // One gone since is no change of this kind: `git status` says a tracked
+  // one's, and an untracked one left builds nothing.
+  expect(changedWhileChecked(settled, tracked(900), new Map())).toEqual([]);
+  // Push refuses with it before `git push`, the round's tree settled before
+  // its build.
+  const push = readFileSync(join(root, "scripts/push.ts"), "utf8");
+  const settles = push.indexOf("settled = { at: Date.now()");
+  expect(settles).toBeGreaterThan(-1);
+  expect(settles).toBeLessThan(push.indexOf('run("build", ["cargo", "build", "--quiet"]);'));
+  expect(push.indexOf("the tree changed while it was checked; nothing pushed")).toBeLessThan(push.indexOf('git("push", "-q", "origin", "HEAD:main")'));
+});
+
+// An untracked file git doesn't ignore, there as a push starts, would be
+// read by its check and not pushed: refused, naming where scratch goes
+// (#2415).
+test("a push refuses to start with an untracked file its check would read", () => {
+  expect(untrackedRefusal([])).toBeUndefined();
+  expect(untrackedRefusal(["test/corpus/new_case.rs", "notes.txt"])).toBe(
+    "untracked test/corpus/new_case.rs, notes.txt would be tested but not pushed; commit it, delete it, or move it under target/",
+  );
+  const push = readFileSync(join(root, "scripts/push.ts"), "utf8");
+  expect(push.indexOf("untrackedRefusal([...filesWritten(untrackedArgs).keys()])")).toBeLessThan(push.indexOf("const remade = rebase();"));
+});
+

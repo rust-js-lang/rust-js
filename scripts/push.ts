@@ -41,6 +41,10 @@
 //             compiler built (`portRegen`), which no build in the check
 //             takes from under it (#2317)
 //   files     `git diff origin/main` holds only the pushed commits' files
+//   files     the diff against origin/main its commits' alone; and the
+//             tree as the round checked it: a file written since the round
+//             settled, though put back, or one made since, is what the
+//             check saw and the push wouldn't carry, refused (#2415)
 //   push      `git push origin HEAD:main`, once `origin/main` is where the
 //             check saw it: where it moved meanwhile, the branch is rebased and
 //             its sanity pass run again, so no commit lands that no pass saw
@@ -59,7 +63,7 @@
 // how far behind it is (scripts/select.ts); the machine and agent each
 // machine's sessions name (`whoRuns`). Written on every exit, a signal's too.
 import { spawn, spawnSync } from "node:child_process";
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { isCompilerSource } from "./compiler-crates";
 import { ownCompiler } from "./own-compiler";
 import { selectionFile } from "./select";
@@ -230,6 +234,52 @@ export function roundRefused(round: Round, base: string, git: (...args: string[]
   return undefined;
 }
 
+/** The work tree as a round checks it: when it settled, before the round
+ * builds, past the push's own amends, and the untracked files it held then
+ * (#2415). */
+export type Settled = { at: number; untracked: ReadonlySet<string> };
+
+/** Of the tree as it is, its tracked files' and its untracked files' times
+ * of their last write, `tracked` and `untracked`, those that differ from the
+ * tree `settled` was: one written since, though put back as it was, which a
+ * build or a test may have read meanwhile, and an untracked one made since,
+ * a corpus case a test lists. What the check saw isn't what the push
+ * carries: an agent's edit beside its push was built by its check (#2415). */
+export function changedWhileChecked(
+  settled: Settled,
+  tracked: ReadonlyMap<string, number>,
+  untracked: ReadonlyMap<string, number>,
+): string[] {
+  const written = (files: ReadonlyMap<string, number>) => [...files].filter(([, at]) => at > settled.at).map(([file]) => file);
+  const made = [...untracked.keys()].filter((file) => !settled.untracked.has(file));
+  return [...new Set([...written(tracked), ...written(untracked), ...made])].sort();
+}
+
+/** The tree's files, `ls-files`' of `which`, each with the time of its last
+ * write; one gone since it was listed is left out. */
+function filesWritten(which: string[]): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const file of git("ls-files", "-z", ...which).out.split("\0").filter(Boolean)) {
+    try {
+      out.set(file, statSync(file).mtimeMs);
+    } catch {
+      // Gone: a tracked file deleted shows in `git status`, refused there.
+    }
+  }
+  return out;
+}
+
+const untrackedArgs = ["--others", "--exclude-standard"];
+
+/** Why a push can't start with `untracked`, the tree's untracked files git
+ * doesn't ignore: each would be read by its check, a corpus case a test
+ * lists, and not pushed (#2415); `undefined` where there are none. Scratch
+ * files go where git ignores them, under `target/`. */
+export function untrackedRefusal(untracked: string[]): string | undefined {
+  if (untracked.length === 0) return undefined;
+  return `untracked ${untracked.join(", ")} would be tested but not pushed; commit it, delete it, or move it under target/`;
+}
+
 /** The checkout's files this process has loaded, by their path in it. */
 export function loadedModules(): string[] {
   const root = process.cwd();
@@ -307,6 +357,8 @@ async function main() {
     if (lines(git("status", "--porcelain", "--untracked-files=no").out).length > 0) {
       throw new Refused("a tracked change isn't committed: the check would see it and the push wouldn't; commit it first");
     }
+    const untracked = untrackedRefusal([...filesWritten(untrackedArgs).keys()]);
+    if (untracked !== undefined) throw new Refused(untracked);
     let checked = "";
     // The commit `checked` was rebased onto, whose incoming commits since a
     // later round asks of.
@@ -320,6 +372,8 @@ async function main() {
     let given = givenRound(process.env);
     // The round's map fetch, beside it (#2385).
     let fetching: Beside | undefined;
+    // The tree as the round checking it settled (#2415).
+    let settled: Settled | undefined;
     for (;;) {
       const remade = rebase();
       phase("rebase");
@@ -363,6 +417,7 @@ async function main() {
       phase("fast");
       if (checked === "" || git("rev-parse", "HEAD").out.trim() !== checked) {
         for (const file of new Set([...remade, ...(bless ? ["docs/readability.txt"] : [])])) if (file in regenerated) regenerate(file);
+        settled = { at: Date.now(), untracked: new Set(filesWritten(untrackedArgs).keys()) };
         run("build", ["cargo", "build", "--quiet"]);
         phase("build");
         // std/'s generated files the rebase resolved as main's, written
@@ -442,6 +497,13 @@ async function main() {
         lines(git("log", "--format=", "--name-only", `${base}..HEAD`).out),
       );
       if (stray.length > 0) throw new Refused(`the diff against origin/main holds files no pushed commit changes:\n${stray.join("\n")}`);
+      // The tree as the round checked it: a change meanwhile, put back or not,
+      // was built and tested, and isn't pushed (#2415).
+      const touched =
+        settled === undefined ? [] : changedWhileChecked(settled, filesWritten([]), filesWritten(untrackedArgs));
+      if (touched.length > 0 || lines(git("status", "--porcelain", "--untracked-files=no").out).length > 0) {
+        throw new Refused(`the tree changed while it was checked; nothing pushed. Leave the checkout alone during a push, then push again:\n${touched.join("\n")}`);
+      }
       phase("files");
       // Something of its own to push: none, its commits lost, is refused,
       // where a push of `origin/main` as it was said it had landed.

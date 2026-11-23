@@ -314,4 +314,20 @@ export const mutations: Mutation[] = [
     replace: '  return { cmd: ["bun", "scripts/react-in-rust.ts", "regen"], env: {} };\n',
     tests: ["test/push.test.ts", "-t", "the round's own compiler"],
   },
+  {
+    name: "push-tree-written-meanwhile-unseen",
+    breaks: "a file written while a push's check ran, though put back, isn't seen, so a push whose check built and tested an edit it doesn't carry goes on (#2415)",
+    file: "scripts/push.ts",
+    find: "  const written = (files: ReadonlyMap<string, number>) => [...files].filter(([, at]) => at > settled.at).map(([file]) => file);\n",
+    replace: "  const written = (files: ReadonlyMap<string, number>) => [...files].filter(() => false).map(([file]) => file);\n",
+    tests: ["test/push.test.ts", "-t", "a push refuses a tree written while it was checked"],
+  },
+  {
+    name: "push-untracked-start-unrefused",
+    breaks: "a push starts with an untracked file git doesn't ignore, a corpus case a test lists, which its check reads and it doesn't push (#2415)",
+    file: "scripts/push.ts",
+    find: "  if (untracked.length === 0) return undefined;\n",
+    replace: "  if (untracked.length >= 0) return undefined;\n",
+    tests: ["test/push.test.ts", "-t", "a push refuses to start with an untracked file"],
+  },
 ];
