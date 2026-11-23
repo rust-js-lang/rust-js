@@ -313,6 +313,7 @@ pub(super) fn declares_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
             adt.non_enum_variant().ctor.is_none()
                 || super::recognition::transparent_field(tcx, adt).is_some()
                 || named_unit(tcx, did).is_some()
+                || structures::sealed_tuple(tcx, did)
         }
         DefKind::Enum | DefKind::Union => true,
         DefKind::TyAlias => true,

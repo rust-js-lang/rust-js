@@ -1079,4 +1079,12 @@ export const mutations: Mutation[] = [
     replace: "                    declared[\"default\"] = self.ts(default);",
     tests: ["test/declarations-type-maps.test.ts", "-t", "written event aliases"],
   },
+  {
+    name: "sealed-tuple-referenced-any",
+    breaks: "what names a tuple struct of a private field names it `any`, `welcome(email: any)`, though it's declared (#2356, ADR 1187)",
+    file: "crates/rust-js-lower/src/declarations.rs",
+    find: "                || structures::sealed_tuple(tcx, did)\n",
+    replace: "",
+    tests: ["test/declarations-sealed.test.ts", "-t", "a tuple struct of a private field"],
+  },
 ];

@@ -2544,6 +2544,7 @@ export { delete$ as delete };
 | `Vec<T>`, a slice, a tuple | `T[]`, `[A, B]` |
 | `HashMap<K, V>`, `BTreeMap<K, V>`; `HashSet<T>`, `BTreeSet<T>` | `Map<K, V>`; `Set<T>` ([ADR 0876](../../decisions/0876-a-maps-declaration-is-map.md)) |
 | a struct with named fields | an `interface` of its fields, and of each `pub` method of `self` its impl binds of the JS object, `#[rust_js::link_name = "isPersistent"] pub fn is_persistent(&self) -> bool`'s `isPersistent(): boolean` ([ADR 0196](../../decisions/0196-typescript-declarations.md), amended) |
+| a tuple struct of a private field, which only its crate makes, `pub struct Email(String)` | an `interface` branded by a `unique symbol` its module declares and doesn't export, `interface Email { readonly [emailBrand]: never }`, which TypeScript only takes of what rust-js gave, a string, an array or `"x" as Email` refused ([ADR 1187](../../decisions/1187-a-tuple-struct-no-caller-can-make-is-declared-opaque.md), #2356); one of `pub` fields, a generic one, a binding's type or a `PhantomData` handle is `any` |
 | an enum without fields | the union of its names, `"Red" \| "Green"` |
 | an enum with fields | the union of its variants' objects, `{ TAG: "Loading"; percent: number }` |
 | `Cow<'_, B>` | the union of what it borrowed or owns, as its JS is, `Cow<'_, str>`'s `{ TAG: "Borrowed"; _0: string } \| { TAG: "Owned"; _0: string }`, its `Owned` what `ToOwned` makes of `B` (#1748) |
@@ -2655,7 +2656,8 @@ export function zeros(N: number): number[];
 app.ts:3:7`, and `zeros(3)` is `[0, 0, 0]`, as `zeros::<3>()`.
 
 Some types aren't declared yet, and a caller of them isn't checked: a
-tuple struct, an `impl Iterator` and a counted `Rc` are `any`, and a type's methods object, `Counter`, has its
+tuple struct a caller can make, one of `pub` fields or a generic one, an
+`impl Iterator` and a counted `Rc` are `any`, and a type's methods object, `Counter`, has its
 `interface` but no declaration of its methods.
 
 A unit struct named as a string, `#[cfg_attr(rust_js, rust_js::name =
