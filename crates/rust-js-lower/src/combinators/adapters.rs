@@ -665,18 +665,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(copy) => method(items, "map", vec![copy]),
                     None => items,
                 };
+                // Each side as std fills it, `Default` then `Extend` (#2377).
+                let side = generic_args.types().nth(1).expect("rustc checked `partition`'s `B`");
+                self.fillable_sides("partition", &[side, side], span)?;
                 let mut args = vec![items, next()];
                 args.extend(self.item_drop_of(receiver_ty, span)?);
-                Expr::call(Expr::helper("$partition"), args)
+                let parts = Expr::call(Expr::helper("$partition"), args);
+                self.filled_sides(&[side, side], parts, generic_args, span, out)?
             }
             // Each side a `Vec`, or a map or a set made empty and extended
             // by its items, as std's `unzip` does: `unzip::<A, B, FromA,
             // FromB>`'s last two.
             IterComb::Unzip => {
                 let sides: Vec<Ty<'tcx>> = generic_args.types().skip(3).collect();
-                if !sides.iter().all(|&side| self.is_vec_like(side) || self.is_map(side)) {
-                    return Err(self.unsupported(span, "`unzip` into what isn't a `Vec`, a map or a set"));
-                }
+                self.fillable_sides("unzip", &sides, span)?;
                 // What each side collected dropped as a panic stepping it
                 // unwinds, `A`'s then `B`'s (#1150).
                 let mut args = vec![items];
@@ -696,33 +698,83 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     );
                 }
                 let pairs = Expr::call(Expr::helper("$unzip"), args);
-                if sides.iter().all(|&side| self.is_vec_like(side)) {
-                    return Ok(pairs);
-                }
-                let pairs = self.spill(Role::Unzipped, pairs, out);
-                let mut parts = Vec::new();
-                for (i, &side) in sides.iter().enumerate() {
-                    let part = Expr::index(pairs.clone(), Expr::int(i as i128));
-                    parts.push(match side.kind() {
-                        ty::Adt(_, args) if self.is_map(side) => {
-                            let set = self.is_set(side);
-                            let entry = (args.types().next(), args.types().nth(1).filter(|_| !set));
-                            let class = self.map_class(set, self.is_sorted(side), entry, span)?;
-                            let made = Expr::new_(class, Vec::new());
-                            self.map_values(
-                                crate::std_types::map::MapOp::Extend,
-                                (vec![made, part], &[side, side]),
-                                generic_args,
-                                span,
-                                out,
-                            )?
-                        }
-                        _ => part,
-                    });
-                }
-                Expr::array(parts)
+                self.filled_sides(&sides, pairs, generic_args, span, out)?
             }
         })
+    }
+
+    /// Whether rust-js makes each of `partition`'s or `unzip`'s sides as
+    /// std fills it, `Default::default()` then `Extend` of each item: the one
+    /// answer of which it does (#2377). A `Vec`, a `VecDeque` or a `String`
+    /// is the array its helper gives that side; a map or a set the empty one
+    /// extended by it after (`filled_sides`), which std fills item by item,
+    /// so one whose items have a destructor, a duplicate dropped as it's
+    /// filled, beside the predicate's or the map's calls, is refused; and
+    /// anything else, a crate's own `Extend + Default`, as std would call its
+    /// impls (#2378).
+    fn fillable_sides(&self, op: &str, sides: &[Ty<'tcx>], span: Span) -> R<()> {
+        for &side in sides {
+            // A type parameter's, which its callers give, the array as it
+            // was: refusing it refused `either`'s forwarding `partition`, and
+            // `itertools` with it; filling it by its dictionaries is #2387's.
+            if self.is_vec_like(side) || crate::generic_facts::is_type_parameter(side) {
+                continue;
+            }
+            if !self.is_map(side) {
+                let what = format!("`{op}` into what isn't a `Vec`, a map or a set, a crate's own `Extend` (#2378)");
+                return Err(self.unsupported(span, &what));
+            }
+            let ty::Adt(_, args) = side.kind() else { continue };
+            if args
+                .types()
+                .any(|item| self.drops(item) != crate::drops::Drops::Nothing)
+            {
+                let what = format!(
+                    "`{op}` into a map or a set of what has a destructor, which std drops a duplicate of as it fills each item (#2378)"
+                );
+                return Err(self.unsupported(span, &what));
+            }
+        }
+        Ok(())
+    }
+
+    /// `filled`, the arrays `$partition` or `$unzip` gives each side, made
+    /// what each side is (`fillable_sides`): an array side as it is, a map
+    /// or a set the empty one extended by its items, as std's `extend` keeps
+    /// one of each key, where it was an array of every item (#2377).
+    fn filled_sides(
+        &mut self,
+        sides: &[Ty<'tcx>],
+        filled: Expr,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        if sides.iter().all(|&side| self.is_vec_like(side)) {
+            return Ok(filled);
+        }
+        let filled = self.spill(Role::Unzipped, filled, out);
+        let mut parts = Vec::new();
+        for (i, &side) in sides.iter().enumerate() {
+            let part = Expr::index(filled.clone(), Expr::int(i as i128));
+            parts.push(match side.kind() {
+                ty::Adt(_, args) if self.is_map(side) => {
+                    let set = self.is_set(side);
+                    let entry = (args.types().next(), args.types().nth(1).filter(|_| !set));
+                    let class = self.map_class(set, self.is_sorted(side), entry, span)?;
+                    let made = Expr::new_(class, Vec::new());
+                    self.map_values(
+                        crate::std_types::map::MapOp::Extend,
+                        (vec![made, part], &[side, side]),
+                        generic_args,
+                        span,
+                        out,
+                    )?
+                }
+                _ => part,
+            });
+        }
+        Ok(Expr::array(parts))
     }
 }
 

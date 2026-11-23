@@ -256,11 +256,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unzip-into-a-map-refused",
-    breaks: "`unzip` into a map or a set is refused",
+    breaks: "`unzip` into a map or a set is refused (the side rule `partition` shares, #2377)",
     file: "crates/rust-js-lower/src/combinators/adapters.rs",
-    find: "                if !sides.iter().all(|&side| self.is_vec_like(side) || self.is_map(side)) {\n",
-    replace:
-      "                if !sides.iter().all(|&side| self.is_vec_like(side)) {\n",
+    find: "            if !self.is_map(side) {\n",
+    replace: "            if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^unzip_into_maps.rs$"],
   },
 
@@ -448,5 +447,37 @@ export const mutations: Mutation[] = [
     find: "                Some(fused) => vec![Expr::call_helper(\"$unfusedUnless\", vec![fused])],\n",
     replace: "                Some(_) => vec![Expr::helper(\"$unfused\")],\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_flatten_of_a_source_fused_as_its_caller_says.rs$"],
+  },
+  {
+    name: "partition-sides-unasked",
+    breaks: "`partition` into a crate's own `Extend + Default` makes `$partition`'s arrays, which never call its impls, a `TypeError` and every `extend` lost, where it's refused (#2377)",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
+    find: "        self.fillable_sides(\"partition\", &[side, side], span)?;\n",
+    replace: "",
+    tests: ["test/lowering-collections.test.ts", "-t", "partition or unzip into"],
+  },
+  {
+    name: "partition-set-sides-unfilled",
+    breaks: "`partition` into sets gives each side `$partition`'s array of every item, a duplicate kept and its `len()` undefined, where std's set keeps one of each (#2377)",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
+    find: "                self.filled_sides(&[side, side], parts, generic_args, span, out)?\n",
+    replace: "                parts\n",
+    tests: ["test/corpus.test.ts", "-t", "^partition_into_sets_keeps_one_of_each\\.rs$"],
+  },
+  {
+    name: "filled-sides-of-destructors-unrefused",
+    breaks: "`partition` or `unzip` into a set of what has a destructor fills it after every item is stepped, a duplicate's drop moved past the predicate's later calls, where it's refused (#2378)",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
+    find: "                .any(|item| self.drops(item) != crate::drops::Drops::Nothing)\n",
+    replace: "                .any(|_| false)\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "partition or unzip into"],
+  },
+  {
+    name: "partition-param-side-refused",
+    breaks: "a `partition` or an `unzip` whose side is a type parameter, `either`'s forwarding `partition::<B, F>`, is refused, and `either` with it, and `itertools`, which depends on it (#2387)",
+    file: "crates/rust-js-lower/src/combinators/adapters.rs",
+    find: "            if self.is_vec_like(side) || crate::generic_facts::is_type_parameter(side) {\n",
+    replace: "            if self.is_vec_like(side) {\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "partition or unzip into"],
   },
 ];

@@ -232,6 +232,47 @@ impl Drop for Loud {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
 });
 
+// `partition()` and `unzip()` fill each side as std does, `Default` then
+// `Extend` of each item: a crate's own `Extend + Default`, whose impls std
+// calls, and a map or a set of what has a destructor, a duplicate dropped
+// as each item fills it, are refused, where they were arrays that never
+// called the impls, a `TypeError`, or a set of every item (#2377, #2378).
+test("partition or unzip into a crate's Extend, or a set of what has a destructor, is refused", () => {
+  const dir = fixture("partition-sides");
+  const bag = `use std::collections::BTreeSet;
+#[derive(Default)]
+pub struct Bag(pub Vec<u32>);
+impl Extend<u32> for Bag {
+    fn extend<I: IntoIterator<Item = u32>>(&mut self, items: I) {
+        self.0.extend(items)
+    }
+}
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+pub struct Loud(pub u32);
+impl Drop for Loud {
+    fn drop(&mut self) {}
+}
+`;
+  const refused = (body: string, message: string) => {
+    writeFileSync(join(dir, "lib.rs"), bag + body);
+    const p = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { stderr: "pipe" });
+    expect(p.exitCode).not.toBe(0);
+    expect(p.stderr.toString()).toContain(message);
+  };
+  refused("pub fn split(v: Vec<u32>) -> (Bag, Bag) { v.into_iter().partition(|&n| n > 1) }\n", "`partition` into what isn't a `Vec`, a map or a set, a crate's own `Extend` (#2378)");
+  refused("pub fn split(v: Vec<(u32, u32)>) -> (Bag, Vec<u32>) { v.into_iter().unzip() }\n", "`unzip` into what isn't a `Vec`, a map or a set, a crate's own `Extend` (#2378)");
+  refused(
+    "pub fn split(v: Vec<Loud>) -> (BTreeSet<Loud>, BTreeSet<Loud>) { v.into_iter().partition(|l| l.0 > 1) }\n",
+    "`partition` into a map or a set of what has a destructor",
+  );
+  writeFileSync(join(dir, "lib.rs"), bag + "pub fn split(v: Vec<u32>) -> (BTreeSet<u32>, Vec<u32>) { v.into_iter().map(|n| (n, n)).unzip() }\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  // A type parameter's side, its callers', compiles as it did, as `either`'s
+  // forwarding `partition` does (#2387).
+  writeFileSync(join(dir, "lib.rs"), bag + "pub fn split<B: Default + Extend<u32>>(v: Vec<u32>) -> (B, B) { v.into_iter().partition(|&n| n > 1) }\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+});
+
 // `VecDeque::remove` is `$removeOpt`; of items that may look like `None`,
 // refused, as its `Some` isn't boxed.
 test("a deque's remove gives what was there", async () => {

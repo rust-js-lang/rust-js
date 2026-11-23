@@ -24,6 +24,7 @@
 //! | what dropping one runs, its drop slot (ADR 0421) | Given | `crates/rust-js-lower/src/traits/drop_params.rs drop_slot` |
 //! | whether a derived `Clone` or `Default` of a type makes a field of it before another, which it drops as a later one panics, so the derive is given drops (#1517) | Given | `crates/rust-js-lower/src/generic_facts.rs makes_a_param_field_first` |
 //! | whether a type holds a function's type parameter, as `repeat_n`'s `RepeatN<T>` holds its `T`, so a std maker of a compiled iterator is given its drop (#1458) | Given | `crates/rust-js-lower/src/generic_facts.rs holds_type_parameter` |
+//! | whether a `partition`'s or an `unzip`'s side is a type parameter, its caller's, which std fills by its `Default` and `Extend`, so it's the helper's array as before #2377; filling it by its dictionaries is #2387's | Given | `crates/rust-js-lower/src/generic_facts.rs is_type_parameter` |
 //! | whether a type names a type parameter, so what it is isn't known: of a walk for a kept raw pointer, it may be the `&mut`'s pointee or a reference to it, so it may keep it (#1781); of a type a `dyn` in a cell may be, its trait's impls may hold of it, so it may be (#1006); of what a property read reads, a getter of the program's may answer it, each caller's instance settling it (#2109) | Given | `crates/rust-js-lower/src/generic_facts.rs may_be_any_type` |
 //! | whether each parameter a type names, of the body that made it, is another body's own, by index and name, so what its drop runs is asked in that body's env, where a caller's `SIZE` isn't and rustc crashes (#1608) | Instances | `crates/rust-js-lower/src/generic_facts.rs params_owned_by` |
 //! | whether what a `Box<I>` holds is stepped by a dictionary its caller gives, which may carry the crate's own `fold` or `count` std's `Box<I>` never calls, so no default passes on to it (#1611) | Given | `crates/rust-js-lower/src/generic_facts.rs boxed_steps_given` |
@@ -1152,7 +1153,11 @@ pub(crate) fn may_hold_for_some<'tcx>(tcx: rustc_middle::ty::TyCtxt<'tcx>, ty: T
 }
 
 /// Whether `ty` is a type parameter itself, as decision coverage counts a
-/// typed answer of one apart (`recognition::kind_of`, ADR 1124).
+/// typed answer of one apart (`recognition::kind_of`, ADR 1124); and as a
+/// `partition`'s or an `unzip`'s side is its caller's, which std fills by
+/// its `Default` and `Extend`, the helper's array as before #2377, where a
+/// type that holds one, a crate's `Bag<T>`, is the crate's own `Extend`
+/// (filling it by its dictionaries is #2387's).
 pub(crate) fn is_type_parameter(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Param(_))
 }
