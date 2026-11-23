@@ -378,8 +378,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What's left of `it`, a `$iter` of std's iterator over an array, of
     /// type `ty`: `it.items.slice(it.at, it.end)`, copies of the items it
-    /// `owns` that need one (ADR 0181). Of one just made, `$iter(items)`,
-    /// nothing's stepped: `items`, which Rust lends it or it owns.
+    /// `owns` that need one (ADR 0181), as an array's clone makes them,
+    /// `clone_items`', which drops those made before one whose clone panics,
+    /// as std's `vec::IntoIter::clone` does (#2412). Of one just made,
+    /// `$iter(items)`, nothing's stepped: `items`, which Rust lends it or it
+    /// owns.
     pub fn stepped_left(&mut self, it: Expr, ty: ty::Ty<'tcx>, owns: bool, span: Span) -> R<Expr> {
         // A slice's chunks or windows: what they were cut of kept, of what's
         // left, which std's `Debug` of one shows (`$partsStepped`, #2252).
@@ -395,10 +398,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let item = self.iterator_item(ty).expect("an iterator's item");
         Ok(match owns && self.needs_clone(item) {
-            true => {
-                let clone = self.clone_fn("item", item, span)?;
-                Expr::builtin(left, "map", vec![clone])
-            }
+            true => self.clone_items(left, item, span)?,
             false => left,
         })
     }

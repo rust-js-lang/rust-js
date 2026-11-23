@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "    if (low === 0 && high === 0) return [0, 0];\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^empty_cycle_hinted_to_generic_code\\.rs$"],
   },
   {
     name: "cycle-close-stops-at-a-panic",
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "        $inTurn(\n          () => drop?.(cycled.orig),\n          () => drop?.(cycled.iter),\n        ),\n",
     replace: "        (drop?.(cycled.orig), drop?.(cycled.iter)),\n",
-    tests: ["test/corpus.test.ts", "-t", "^cycle_drops_both_as_one_panics.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^cycle_closed_by_its_consumer_drops_both_as_one_panics\\.rs$"],
   },
   {
     name: "cycle-hint-of-its-source-unasked",
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "  const orig = $unwinds(() => clone(iterator), drop && (() => drop(iterator)));\n",
     replace: "  const orig = clone(iterator);\n",
-    tests: ["test/corpus.test.ts", "-t", "^cycle_clone_or_drop_panics_drops_what_it_holds.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^cycle_whose_clone_panics_drops_what_it_was_given\\.rs$"],
   },
   {
     name: "cycle-replaced-drop-unwinding-keeps-old",

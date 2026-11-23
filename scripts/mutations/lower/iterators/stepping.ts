@@ -644,4 +644,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_std_adapters.rs$"],
   },
+  {
+    name: "into-iter-clone-left-unguarded",
+    breaks: "a clone of a `Vec`'s `into_iter()` whose item's clone panics never drops the items it cloned before it, where std's `vec::IntoIter::clone` does, an array's clone's (#2412)",
+    file: "crates/rust-js-lower/src/iterators/stepping.rs",
+    find: "            true => self.clone_items(left, item, span)?,\n",
+    replace: "            true => Expr::builtin(left, \"map\", vec![self.clone_fn(\"item\", item, span)?]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_into_iter_clone_(that_panics_drops_what_it_cloned|whose_dropped_clone_panics_aborts)\\.rs$"],
+  },
 ];
