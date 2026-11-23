@@ -185,7 +185,11 @@ library behavior from local source.
    `cargo test` filter, in place of `tests`. A survivor's evidence is the
    whole suite and React's port, `bun scripts/mutations.ts --retire=<name>`,
    never one suite: it names the rows that catch it, or shows its code is
-   reached by none, which is then removed.
+   reached by none, which is then removed. A runtime helper's mutation is
+   caught only by a case that reaches that helper: a chain is made in place,
+   where the runtime steps it, only in some forms (of a crate's own
+   iterator, where its own `next_back` is called elsewhere, ADR 0456), so
+   its case forces that form, and is checked against the mutant.
 5. **Record the decision.** A new semantic choice or important architectural
    tradeoff gets a design decision in `docs/decisions/`, indexed in
    [docs/decisions/README.md](docs/decisions/README.md), its number

@@ -1472,3 +1472,27 @@ wasm rebuilt per mutant, is left until such a mutation exists. A mutant of
 a module run as a script, whose top level throws before the load mark
 appended at its end, reads as not executed; a mutation there is placed where
 a test imports the module instead (#2346's notes).
+
+## Amendment: a runtime site's case forces the form that reaches it (#1979)
+
+A runtime helper's mutation survived the whole corpus where the corpus
+reached its site hundreds of times: of #1979's survivors, the runtime
+`enumerate`'s three. The cases their mutations named had moved to std's
+compiled `Enumerate`, and those that still reached the helper's site could
+not tell its mutant apart. The runtime steps a chain only where it's made in
+place (ADR 0456), and a crate's own iterator is made in place only where its
+own `next_back` is called elsewhere in the program; so a case that holds a
+runtime site forces that form, and is checked against the mutant, not only
+against native Rust (ca1a3508e: a `size_hint` that doesn't shrink, an own
+`count` that prints, a closure that drops beside a `take()`'s leftovers).
+
+Whether a runtime site is reached is asked of the runtime itself, a marker
+written into `std/runtime.js` at the site that appends its name to a file as
+it runs, over the whole evidence (check:fast --all, the nets, React's port,
+the crate corpus). A marker is a statement of its own or a comma expression
+inside the one it marks: placed between an arrow's `=>` and the expression
+that is its body, it became the body, and every enumerate threw before it
+ran, so an evidence run called reached sites unreached. Each marked runtime
+passes `node --check` and runs a case that reaches each site before the
+evidence counts.
+
