@@ -68,8 +68,28 @@ function tokens(text: string): string[] {
   return text.match(/->|'[a-z_]+|[A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*|[&<>()[\],+:]/g) ?? [];
 }
 
-function parseType(ts: string[], at = { i: 0 }): Ty {
+// The type names a case's own items take, declared or imported, which
+// hide std's prelude and primitive types of those names, as rustc resolves
+// them: a case's own `struct String` is no `std::string::String` (#1875).
+function ownNames(source: string): Set<string> {
+  const bare = source.replace(/\/\/[^\n]*/g, "");
+  const declared = [...bare.matchAll(/\b(?:struct|enum|union|type|trait)\s+([A-Za-z_]\w*)/g)].map((m) => m[1]);
+  // Of a `use`, each name it brings in: a path's last segment, or what it's
+  // renamed `as`; of std's, `use std::string::String`, only a rename, as
+  // the rest are std's own.
+  const imported = [...bare.matchAll(/\buse\s+([^;]*);/g)].flatMap((m) => {
+    const ofStd = /^(::)?(std|core|alloc)::/.test(m[1].trim());
+    const pattern = ofStd ? /\bas\s+([A-Za-z_]\w*)/g : /([A-Za-z_]\w*)\s*(?=[,}]|$)/g;
+    return [...m[1].matchAll(pattern)].map((n) => n[1]);
+  });
+  return new Set([...declared, ...imported].filter((name) => name !== "self"));
+}
+
+// A type `ts` writes from `at.i` on, its names resolved in `at.own`, the
+// case's own (`ownNames`).
+function parseType(ts: string[], at: { i: number; own: Set<string> }): Ty {
   const t = ts[at.i++];
+  if (at.own.has(t)) return { k: "named", n: t };
   if (t === "&") {
     while (ts[at.i]?.startsWith("'")) at.i++;
     const mut = ts[at.i] === "mut";
@@ -109,7 +129,7 @@ function parseType(ts: string[], at = { i: 0 }): Ty {
 }
 
 // `Fn(A, B) -> R`, its name read.
-function parseFnBound(ts: string[], at: { i: number }): Ty {
+function parseFnBound(ts: string[], at: { i: number; own: Set<string> }): Ty {
   at.i++;
   const inputs: Ty[] = [];
   while (ts[at.i] !== ")") {
@@ -172,10 +192,11 @@ type Impl = { ty: Ty; dictionary: string };
 // its module exports.
 function impls(source: string): Map<string, Impl[]> {
   const found = new Map<string, Impl[]>();
+  const own = ownNames(source);
   for (const m of source.matchAll(/^impl (\w+) for (\w+) \{/gm)) {
     if (!new RegExp(`^pub trait ${m[1]}\\b`, "m").test(source)) continue;
     const dictionary = `${m[2][0].toLowerCase()}${m[2].slice(1)}${m[1]}`;
-    found.set(m[1], [...(found.get(m[1]) ?? []), { ty: parseType(tokens(m[2])), dictionary }]);
+    found.set(m[1], [...(found.get(m[1]) ?? []), { ty: parseType(tokens(m[2]), { i: 0, own }), dictionary }]);
   }
   return found;
 }
@@ -187,6 +208,7 @@ function impls(source: string): Map<string, Impl[]> {
 function functions(source: string): Fn[] {
   const found: Fn[] = [];
   const implsOf = impls(source);
+  const own = ownNames(source);
   for (const m of source.matchAll(/^pub fn (\w+)/gm)) {
     let at = m.index! + m[0].length;
     const generics: Record<string, Ty | null> = {};
@@ -204,7 +226,7 @@ function functions(source: string): Fn[] {
       const [name, ...said] = bound.split(":");
       const by = said.join(":").trim();
       const fnBound = /^(?:Fn|FnMut|FnOnce)\(/.exec(by);
-      generics[name.trim()] = fnBound ? parseFnBound(tokens(by), { i: 1 }) : /^[A-Z][A-Za-z]*$/.test(name.trim()) && /^(?:(?:Clone|Copy|PartialOrd|PartialEq|Ord|Eq|Debug|'static)\s*\+?\s*)*$/.test(by) ? { k: "num", n: "u32" } : null;
+      generics[name.trim()] = fnBound ? parseFnBound(tokens(by), { i: 1, own }) : /^[A-Z][A-Za-z]*$/.test(name.trim()) && /^(?:(?:Clone|Copy|PartialOrd|PartialEq|Ord|Eq|Debug|'static)\s*\+?\s*)*$/.test(by) ? { k: "num", n: "u32" } : null;
       if (implsOf.has(by)) ofTraits.push([name.trim(), implsOf.get(by)!]);
     }
     const replace = (ty: Ty): Ty | null => {
@@ -241,10 +263,10 @@ function functions(source: string): Fn[] {
       });
       const typed = split(params).map((p) => {
         const colon = p.indexOf(":");
-        return { name: p.slice(0, colon).replace(/^mut\s+/, "").trim(), ty: replace(parseType(tokens(p.slice(colon + 1)))) };
+        return { name: p.slice(0, colon).replace(/^mut\s+/, "").trim(), ty: replace(parseType(tokens(p.slice(colon + 1)), { i: 0, own })) };
       });
       const arrow = ret.indexOf("->");
-      const output = arrow < 0 ? { k: "tuple" as const, items: [] } : replace(parseType(tokens(ret.slice(arrow + 2))));
+      const output = arrow < 0 ? { k: "tuple" as const, items: [] } : replace(parseType(tokens(ret.slice(arrow + 2)), { i: 0, own }));
       const dictionaries = chosen.map((imp) => imp.dictionary);
       if (typed.every((p) => p.ty) && typed.length > 0) found.push({ name: m[1], params: typed as Fn["params"], output, dictionaries });
     }
@@ -262,12 +284,13 @@ function structs(source: string): Map<string, Struct> {
   // A class, made by its constructor (ADR 0761), is no sealed struct.
   const classes = new Set([...source.matchAll(/rust_js::class\)?\]\s*(?:#\[[^\]]*\]\s*)*(?:pub )?struct (\w+)/g)].map((m) => m[1]));
   const bare = source.replace(/#\[[^\]]*\]/g, "").replace(/\/\/[^\n]*/g, "");
+  const own = ownNames(source);
   for (const m of bare.matchAll(/^(pub )?struct (\w+) \{/gm)) {
     const [body] = enclosed(bare, m.index! + m[0].length - 1, "{", "}");
     const written = split(body);
     const fields = written.map((f) => {
       const [name, ...ty] = f.replace(/^pub(\([^)]*\))?\s+/, "").split(":");
-      return { name: name.trim(), ty: parseType(tokens(ty.join(":"))), written: ty.join(":").trim() };
+      return { name: name.trim(), ty: parseType(tokens(ty.join(":")), { i: 0, own }), written: ty.join(":").trim() };
     });
     found.set(m[2], { name: m[2], fields, sealed: m[1] !== undefined && !classes.has(m[2]) && written.some((f) => !/^pub\s/.test(f)) });
   }
@@ -709,6 +732,21 @@ function conformance(name: string): number {
   if (noneForms.some((form) => formsGiven[form] > 0)) formCases.add(name);
   return rs.length;
 }
+
+// The reader resolves a type's name as rustc does: a case's own `String`,
+// `Vec`, `Option` or `Box`, declared or imported, is its own type, not
+// std's, which it took by name (#1875); std's, imported by name, is std's.
+test("a case's own type of a std type's name is its own", () => {
+  const read = (source: string, ty: string) => parseType(tokens(ty), { i: 0, own: ownNames(source) });
+  expect(read("pub fn f(s: String) {}", "String")).toEqual({ k: "string" });
+  expect(read("use std::string::String;\npub fn f(s: String) {}", "String")).toEqual({ k: "string" });
+  expect(read("pub struct String(u8);", "String")).toEqual({ k: "named", n: "String" });
+  expect(read("mod m { pub enum Option { A } }\nuse m::Option;", "Option<u32>")).toEqual({ k: "named", n: "Option" });
+  expect(read("use std::collections::HashMap as Vec;", "Vec<u8>")).toEqual({ k: "named", n: "Vec" });
+  expect(read("use crate::boxes::{Box, Other};", "Box<u8>")).toEqual({ k: "named", n: "Box" });
+  expect(read("type u32 = bool;", "&u32")).toEqual({ k: "ref", mut: false, inner: { k: "named", n: "u32" } });
+  expect(read("pub struct Wrap(u8);", "Vec<Box<String>>")).toEqual({ k: "vec", inner: { k: "box", inner: { k: "string" } } });
+});
 
 test("each exported function's TypeScript caller type-checks and does what Rust does", () => {
   let calls = 0;
