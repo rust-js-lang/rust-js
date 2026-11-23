@@ -346,4 +346,12 @@ export const mutations: Mutation[] = [
     replace: "  return wasm ? { run: chosen.filter(needs), elsewhere: [] } : { run: chosen, elsewhere: [] };\n",
     tests: ["test/mutations.test.ts", "-t", "a mutation that needs the wasm is judged in the wasm job"],
   },
+  {
+    name: "wasm-left-on-stdout",
+    breaks: "a mutation left to the wasm job is said on stdout, before `--browser`'s answer, which CI writes into `$GITHUB_OUTPUT`, so every mutations job of a change that selects one fails (#2346's follow-up)",
+    file: "scripts/mutations.ts",
+    find: "  leftToTheWasmJob = split.elsewhere.map((m) => m.name);\n",
+    replace: "  leftToTheWasmJob = split.elsewhere.map((m) => m.name);\n  for (const m of split.elsewhere) console.log(`${m.name}\\t${judgedInTheWasmJob}`);\n",
+    tests: ["test/mutations.test.ts", "-t", "--browser's stdout is its one answer"],
+  },
 ];

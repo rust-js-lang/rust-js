@@ -2049,7 +2049,6 @@ async function main() {
   const split = wasmSplit(chosen, wasm);
   chosen = split.run;
   leftToTheWasmJob = split.elsewhere.map((m) => m.name);
-  for (const m of split.elsewhere) console.log(`${m.name}\t${judgedInTheWasmJob}`);
   if (wasm && chosen.length > 0) {
     if (!existsSync(wasmPath)) throw new Error(`--wasm judges what reads rust-js.wasm, and there's none at ${wasmPath}: \`bun run wasm\` builds it`);
     // A test that reads it fails without it, never skips (test/playground.test.ts).
@@ -2086,6 +2085,9 @@ async function main() {
     console.log(`${chosen.length} mutations chosen${harness ? ", and the corpus harness's mutants" : ""}`);
     return;
   }
+  // Those left to the wasm job, said on stderr: a run's stdout is its
+  // answers alone, which CI reads (`--browser`'s into `$GITHUB_OUTPUT`).
+  for (const m of split.elsewhere) console.error(`${m.name}\t${judgedInTheWasmJob}`);
   if (chosen.length === 0 && !harness) {
     writeResults(new Map(), new Map());
     console.log("no mutations to run");

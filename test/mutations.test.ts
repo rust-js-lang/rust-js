@@ -494,6 +494,18 @@ test("a mutation that needs the wasm is judged in the wasm job, and elsewhere sa
   expect(refusedFlags(["--wasm"])).toEqual([]);
 });
 
+// What `--browser` prints is its one answer, which CI's check writes into
+// `$GITHUB_OUTPUT` as `needed=..`: a line saying a wasm mutation is left to
+// the wasm job, printed there too, made the file no output CI could read,
+// and every mutations job of main failed (#2346's follow-up).
+test("--browser's stdout is its one answer, a wasm mutation selected", () => {
+  const wasm = mutations.find((m) => m.needs === "wasm")!;
+  const plain = mutations.find((m) => m.needs === undefined && m.tests !== undefined)!;
+  const asked = runSync([process.execPath, join(root, "scripts", "mutations.ts"), wasm.name, plain.name, "--browser"], root, 120_000);
+  expect(asked.code).toBe(0);
+  expect(asked.stdout).toMatch(/^(browser|none)\n$/);
+});
+
 test("each mutation list names one existing source file", () => {
   const owners = lists.flatMap(list => list.mutations.length ? [list.mutations[0].file] : []);
   expect(new Set(owners).size).toBe(owners.length);
