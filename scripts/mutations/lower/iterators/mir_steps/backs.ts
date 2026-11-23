@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
     find: "            Some(IterMethod::Enumerate)\n                if self.knows_its_back(output)\n                    || self.knows_its_length(output)\n",
     replace: "            Some(IterMethod::Enumerate)\n                if false\n                    || false\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_stepped_from_its_back_past_an_arguments_statement\\.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^held_map_made_knowing_its_back_given_apart\\.rs$"],
   },
   {
     name: "rev-stored-items-lazy",

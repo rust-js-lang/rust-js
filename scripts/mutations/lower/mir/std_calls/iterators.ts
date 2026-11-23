@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/std_calls/iterators.rs",
     find: "                        IterComb::FilterMap,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^filter_map_of_given_from_its_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^holding_adapter_counted_or_last_drops_its_function.rs$"],
   },
   {
     name: "chain-stepped-from-back-made-unknowing",
