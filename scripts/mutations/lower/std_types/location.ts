@@ -3,6 +3,13 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "linked-untold-unrefused",
+    breaks: "a binary that links a library whose body makes an untold `#[track_caller]` value isn't refused, and writes the library's caller's line, a wrong location (#2335)",
+    file: "crates/rust-js-lower/src/std_types/location.rs",
+    find: "    if !crate::recognition::prints_panic_locations(tcx) {\n        return;\n    }\n    for library in dependencies.libraries.values() {\n",
+    replace: "    if crate::recognition::prints_panic_locations(tcx) {\n        return;\n    }\n    for library in dependencies.libraries.values() {\n",
+    tests: ["test/binaries.test.ts", "-t", "links a library whose body"],
+  },  {
     name: "std-shim-named-where-this-machine-keeps-it",
     breaks: "a std shim's location names the file where this machine keeps std's source, not `/rustc/<commit>/library/..`, so the JS differs from machine to machine (#2335, #2343)",
     file: "crates/rust-js-lower/src/std_types/location.rs",

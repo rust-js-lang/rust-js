@@ -130,7 +130,11 @@ pub use dependencies::Dependencies;
 /// 46: `elided`, the shapes of the types a function's JS leaves copies of
 /// out, its own and its callees' (#2112's change D): an older library,
 /// listing none, would be read as copying all it should.
-pub const VERSION: u32 = 46;
+/// 47: `untold_locations`, the `#[track_caller]` functions it makes values
+/// whose calls its bodies don't say, which a binary that links it is
+/// refused for (#2335): an older library, listing none, would be read as
+/// having none.
+pub const VERSION: u32 = 47;
 
 /// What begins the name a library's JS exports its private state by, for
 /// its consumers' compiles of its functions, `$$LIMIT` of `LIMIT` (#2017,
@@ -438,6 +442,17 @@ pub struct Reexported {
     pub export: String,
 }
 
+/// A `#[track_caller]` function a library's body makes a value of whose
+/// calls it doesn't say (#2335): the value as written, `Option::unwrap`,
+/// where, `src/lib.rs:4:13`, and the closure to write instead,
+/// `|x| Option::unwrap(x)`.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct UntoldLocation {
+    pub value: String,
+    pub at: String,
+    pub closure: String,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Library {
     pub version: u32,
@@ -496,6 +511,13 @@ pub struct Library {
     /// (ADR 0914, amended; #1026).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub reads_formatter_options: Vec<String>,
+    /// Each `#[track_caller]` function its bodies make a value of whose
+    /// calls they don't say, which says the location its panic names: a
+    /// library compiles it at its caller's line, and a binary that links it,
+    /// which writes the location, is refused, naming each (#2335, ADR 0427
+    /// amended).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub untold_locations: Vec<UntoldLocation>,
     /// The keys of its functions whose JS may give one function where Rust
     /// makes two, as it compares none: an `Rc<dyn Fn>` it doesn't count made
     /// of a closure cloned (ADR 0959), an arrow that's the function it
@@ -943,6 +965,9 @@ pub struct Exports {
     pub dyn_debug_hex: bool,
     /// Its functions that read a `Formatter`'s options, by key (#1026).
     pub reads_formatter_options: IndexSet<String>,
+    /// The `#[track_caller]` functions it makes values of whose calls its
+    /// bodies don't say (#2335).
+    pub untold_locations: Vec<UntoldLocation>,
     /// Its functions whose JS may merge what Rust keeps apart, by key (#1052).
     pub merges_identities: IndexSet<String>,
     /// Whether it makes a `dyn Any` of what drops (ADR 0691, amended).
@@ -1084,6 +1109,7 @@ impl Exports {
             dyn_debug_pretty,
             dyn_debug_hex,
             reads_formatter_options,
+            untold_locations,
             merges_identities,
             makes_dropping_iterators,
             drops_any,
@@ -1136,6 +1162,7 @@ impl Exports {
             dyn_debug_pretty,
             dyn_debug_hex,
             reads_formatter_options: reads_formatter_options.into_iter().collect(),
+            untold_locations,
             merges_identities: merges_identities.into_iter().collect(),
             makes_dropping_iterators,
             drops_any,

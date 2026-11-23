@@ -53,7 +53,7 @@ pub(super) mod heap;
 pub(super) mod io;
 pub(super) mod io_error;
 pub(super) mod lazy;
-pub(super) mod location;
+pub mod location;
 pub mod map;
 pub mod map_entries;
 mod map_keys;

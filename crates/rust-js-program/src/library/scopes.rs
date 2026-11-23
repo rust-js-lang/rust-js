@@ -104,6 +104,7 @@ pub enum ContractField {
     LibraryDynDebugPretty,
     LibraryDynDebugHex,
     LibraryReadsFormatterOptions,
+    LibraryUntoldLocations,
     LibraryWritesMayFail,
     LibraryMakesDroppingAnys,
     LibraryMakesDroppingErrors,
@@ -384,6 +385,13 @@ impl ContractField {
                 ClosedWorld(Agree("as `dyn_debug_pretty`")),
                 "as `dyn_debug_pretty`, in hex",
             ),
+            LibraryUntoldLocations => (
+                "Library.untold_locations",
+                ClosedWorld(Refuse(
+                    "a binary that links it, which writes where a panic was raised, is refused, naming each (#2335)",
+                )),
+                "the `#[track_caller]` functions it makes values of whose calls its bodies don't say",
+            ),
             LibraryReadsFormatterOptions => (
                 "Library.reads_formatter_options",
                 ClosedWorld(CompileOwn(
@@ -626,6 +634,7 @@ fields! {
     dyn_debug_pretty => LibraryDynDebugPretty,
     dyn_debug_hex => LibraryDynDebugHex,
     reads_formatter_options => LibraryReadsFormatterOptions,
+    untold_locations => LibraryUntoldLocations,
     merges_identities => LibraryMergesIdentities,
     makes_dropping_anys => LibraryMakesDroppingAnys,
     makes_dropping_errors => LibraryMakesDroppingErrors,
@@ -823,7 +832,7 @@ mod tests {
         let to = page.find(end).expect("the table's end");
         let made = table();
         if std::env::var_os("BLESS").is_some() {
-            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("docs/library-contract.md");
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/library-contract.md");
             std::fs::write(path, format!("{}{made}{}", &page[..from], &page[to..])).expect("the page written");
         } else {
             assert_eq!(

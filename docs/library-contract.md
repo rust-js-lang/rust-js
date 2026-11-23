@@ -50,6 +50,7 @@ new one is m6-react's to see first (#1462).
 | `Library.dyn_debug_pretty` | closed-world: agrees | whether it shows a `dyn Debug` it's given pretty | its writers of a type it makes a `dyn Debug` take that option (#1335) |
 | `Library.dyn_debug_hex` | closed-world: agrees | as `dyn_debug_pretty`, in hex | as `dyn_debug_pretty` |
 | `Library.reads_formatter_options` | closed-world: compiles its own | its functions that read a `Formatter`'s options | compiles its own of each, where its writers take more (#1026) |
+| `Library.untold_locations` | closed-world: refused | the `#[track_caller]` functions it makes values of whose calls its bodies don't say | a binary that links it, which writes where a panic was raised, is refused, naming each (#2335) |
 | `Library.merges_identities` | closed-world: compiles its own | its functions whose JS may give one function where Rust makes two, as it compares none | compiles its own of each, where it compares a function's identity (#1052) |
 | `Library.makes_dropping_anys` | closed-world: agrees | whether it makes a `dyn Any` of a value that drops | its `dyn Any`s carry a drop (ADR 0691) |
 | `Library.makes_dropping_errors` | closed-world: agrees | whether it makes a `dyn Error` of a value that drops | its `dyn Error`s and `io::Error`s carry a drop (ADR 0462) |

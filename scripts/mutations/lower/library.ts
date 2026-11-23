@@ -2,6 +2,7 @@
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
+
   {
     name: "library-check-every-crate-of-its-name",
     breaks:

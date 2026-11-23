@@ -199,6 +199,8 @@ pub struct Contracts<'a, 'tcx> {
     /// Its functions whose JS may merge what Rust keeps apart, each that
     /// calls one among them (`merging`, #1052).
     pub merges_identities: &'a IndexSet<DefId>,
+    /// Its untold `#[track_caller]` values (`untold_location`, #2335).
+    pub untold_locations: &'a [rust_js_program::library::UntoldLocation],
     /// The npm packages its JS imports through bindings, its libraries' too
     /// (#1799).
     pub bound: &'a [rust_js_program::library::Bound],

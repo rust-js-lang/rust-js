@@ -897,36 +897,18 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         let shim = match crate::shims::through(tcx, (state.body, state.facts.promoted().as_slice()), def_id, span) {
             crate::shims::Called::Through(way) => way.shim(tcx, def_id),
             crate::shims::Called::Never => None,
-            crate::shims::Called::Untold
-                if state.body.source.def_id().is_local() && rust_js_lower::recognition::prints_panic_locations(tcx) =>
-            {
-                // As written, `Option::unwrap`, and a closure of its arity.
-                let name =
-                    (tcx.sess.source_map().span_to_snippet(span).ok()).unwrap_or_else(|| tcx.def_path_str(def_id));
-                let sig = tcx.fn_sig(def_id).instantiate_identity().skip_normalization();
-                let arity = tcx.instantiate_bound_regions_with_erased(sig).inputs().len();
-                let params = match arity {
-                    1 => "x".to_string(),
-                    n => (0..n)
-                        .map(|i| ((b'a' + i as u8) as char).to_string())
-                        .collect::<Vec<_>>()
-                        .join(", "),
-                };
-                return Err(refuse(
-                    tcx,
-                    span,
-                    Refused::Instead(
-                        &format!(
-                            "a value of `{name}`, a `#[track_caller]` function, called where this function \
-                             doesn't say how (#2335)"
-                        ),
-                        &format!(
-                            "where it's called says the location its panic names: give it straight to the \
-                             function that calls it, or write a closure, `|{params}| {name}({params})`, whose \
-                             line is the location, as in Rust"
-                        ),
-                    ),
-                ));
+            // Of the crate's own body: refused where a panic's location is
+            // written, a binary's (Tu's decision); a library keeps its
+            // caller's line, and says so to a binary that links it.
+            crate::shims::Called::Untold if state.body.source.def_id().is_local() => {
+                let untold = self.untold_location(def_id, span);
+                if rust_js_lower::recognition::prints_panic_locations(tcx) {
+                    return Err(rust_js_lower::std_types::location::refuse_untold(
+                        tcx, span, &untold, None,
+                    ));
+                }
+                self.dependencies.borrow_mut().untold_locations.push(untold);
+                None
             }
             crate::shims::Called::Untold => None,
         };

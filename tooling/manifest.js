@@ -3,7 +3,7 @@
 // The library ABI a contract is of: `src/library.rs`' `VERSION`, its
 // authority, mirrored here across the compiler's boundary; every library
 // a test builds and reads holds the two equal.
-export const LIBRARY_ABI = 46;
+export const LIBRARY_ABI = 47;
 
 // The facts a contract's sets hold, by name: `src/library.rs`' `ItemFact`,
 // `ParamFact` and `FieldFact`, their authority, mirrored here across the
@@ -86,6 +86,11 @@ export function parseManifest(text) {
         // out, by key, each a list of shapes; none where it's absent.
         || !(library.elided === undefined || Array.isArray(library.elided) && library.elided.every(elided => object(elided)
           && typeof elided.key === "string" && Array.isArray(elided.shapes) && elided.shapes.every(rcShape)))
+        // #2335: the `#[track_caller]` values its bodies don't say the calls
+        // of, each as written, where, and its closure; none where it's absent.
+        || !(library.untold_locations === undefined || Array.isArray(library.untold_locations)
+          && library.untold_locations.every(untold => object(untold)
+            && ["value", "at", "closure"].every(part => typeof untold[part] === "string")))
         // ADR 0863: what it does with its `RefCell`s, each a list of shapes.
         || !(library.ref_cells === undefined || object(library.ref_cells)
           && ["boxed", "counted", "unchecked", "handed"].every(kind => library.ref_cells[kind] === undefined

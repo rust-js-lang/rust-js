@@ -88,6 +88,9 @@ pub fn lower_crate<'tcx>(
     // place, decided once the crate's `Recognition` exists, before anything
     // reads it, a collect's hint where the program sees it among what
     // decides it (#1327).
+    // A binary that links a library that keeps a tracked value's caller's
+    // line, which it would write (#2335).
+    std_types::location::refuse_untold_locations(tcx, dependencies);
     let ground = analysis::ground(tcx, all_bodies, dependencies, (library, std_bodies), instances);
     for bodies in [&mut *all_bodies, &mut *initializers] {
         let facts = (&ground.cloned, ground.keeps_capacity());
@@ -691,6 +694,9 @@ pub fn lower_crate<'tcx>(
         );
     let reached = rust_js_program::reachability::reachable(roots, edges);
     let fmt_into_left = lowered_items.iter().any(|(_, item)| item.dependencies.fmt_into_left);
+    let untold_locations: Vec<rust_js_program::library::UntoldLocation> = (lowered_items.iter())
+        .flat_map(|(_, item)| item.dependencies.untold_locations.iter().cloned())
+        .collect();
     let mut pass = Pass::default();
     for (def_id, mut lowered) in lowered_items
         .into_iter()
@@ -1306,6 +1312,7 @@ pub fn lower_crate<'tcx>(
                         debug_hex: writer_facts.debug_hex,
                         reads_formatter_options: &writer_facts.reads_options,
                         merges_identities: &merges_identities,
+                        untold_locations: &untold_locations,
                         bound: &bound,
                         makes_dropping_anys: closure_facts.any_dyns_drop,
                         makes_dropping_errors: closure_facts.error_dyns_drop,

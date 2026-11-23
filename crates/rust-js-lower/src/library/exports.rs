@@ -39,6 +39,7 @@ pub fn exports<'tcx>(
         debug_hex,
         reads_formatter_options,
         merges_identities,
+        untold_locations,
         bound,
         makes_dropping_anys,
         makes_dropping_errors,
@@ -237,6 +238,12 @@ pub fn exports<'tcx>(
         dyn_debug_pretty: dyn_debug_shown.pretty,
         dyn_debug_hex: dyn_debug_shown.hex,
         reads_formatter_options: sorted_keys(tcx, reads_formatter_options.iter()),
+        untold_locations: {
+            let mut untold = untold_locations.to_vec();
+            untold.sort();
+            untold.dedup();
+            untold
+        },
         // Its own: what it compiles of another library's is that one's.
         merges_identities: sorted_keys(tcx, merges_identities.iter().filter(|id| id.is_local())),
         bound: bound.to_vec(),

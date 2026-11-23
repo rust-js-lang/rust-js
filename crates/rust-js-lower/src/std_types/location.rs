@@ -14,6 +14,82 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 use rustc_span::{RemapPathScopeComponents, Span};
 
+/// The refusal of a `#[track_caller]` function made a value whose calls the
+/// body doesn't say, which says the location its panic names (#2335, ADR
+/// 0427 amended): of the crate's own body, at `span`, where a binary
+/// writes the location; of a library's, `linked`, its crate's name, where
+/// a binary links it. One wording, with what to write.
+pub fn refuse_untold(
+    tcx: TyCtxt<'_>,
+    span: Span,
+    untold: &rust_js_program::library::UntoldLocation,
+    linked: Option<&str>,
+) -> crate::refusal::Refusal {
+    let UntoldLocation { value, at, closure } = untold;
+    let what = match linked {
+        None => format!(
+            "a value of `{value}`, a `#[track_caller]` function, called where this function doesn't say how (#2335)"
+        ),
+        Some(library) => format!(
+            "a library whose function makes a value of `{value}`, a `#[track_caller]` function, called where it \
+             doesn't say how, `{library}`'s at {at}, in a binary, which writes where a panic was raised (#2335)"
+        ),
+    };
+    let help = format!(
+        "where it's called says the location its panic names: give it straight to the function that calls it, or \
+         write a closure, `{closure}`, whose line is the location, as in Rust"
+    );
+    crate::refusal::refuse(tcx, span, crate::refusal::Refused::Instead(&what, &help))
+}
+
+/// A binary that links a library whose bodies make a `#[track_caller]`
+/// function a value whose calls they don't say, refused, naming each: the
+/// library keeps its caller's line, which the binary would write where its
+/// panic is raised (#2335, ADR 0427 amended). Of a library at all, however
+/// much of it the binary reaches: a value it hands out, a `dyn Fn` or a
+/// `fn` pointer, is called where no call of the binary's names it.
+pub fn refuse_untold_locations(tcx: TyCtxt<'_>, dependencies: &rust_js_program::library::Dependencies) {
+    if !crate::recognition::prints_panic_locations(tcx) {
+        return;
+    }
+    for library in dependencies.libraries.values() {
+        for untold in &library.untold_locations {
+            let span = tcx.def_span(rustc_span::def_id::CRATE_DEF_ID);
+            refuse_untold(tcx, span, untold, Some(&library.name));
+        }
+    }
+}
+
+use rust_js_program::library::UntoldLocation;
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A `#[track_caller]` function `def_id` made a value at `span` whose
+    /// calls this body doesn't say (#2335): as written, `Option::unwrap`,
+    /// where, as a location is written, and a closure of its arity to
+    /// write instead, `|x| Option::unwrap(x)`.
+    pub fn untold_location(&self, def_id: DefId, span: Span) -> UntoldLocation {
+        let tcx = self.tcx;
+        let value = (tcx.sess.source_map().span_to_snippet(span).ok()).unwrap_or_else(|| tcx.def_path_str(def_id));
+        let sig = tcx.fn_sig(def_id).instantiate_identity().skip_normalization();
+        let params = match tcx.instantiate_bound_regions_with_erased(sig).inputs().len() {
+            1 => "x".to_string(),
+            n => (0..n)
+                .map(|i| char::from(b'a' + i as u8).to_string())
+                .collect::<Vec<_>>()
+                .join(", "),
+        };
+        let at = match &self.location_at(span).kind {
+            ExprKind::Str(text) => text.to_string(),
+            _ => tcx.sess.source_map().span_to_diagnostic_string(span),
+        };
+        UntoldLocation {
+            closure: format!("|{params}| {value}({params})"),
+            value,
+            at,
+        }
+    }
+}
+
 /// What's asked of a `Location`.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum LocationOp {

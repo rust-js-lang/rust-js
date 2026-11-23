@@ -447,6 +447,10 @@ pub struct Dependencies {
     /// identity: one where Rust has two, which a library's consumer that
     /// compares them compiles its own of (ADR 0605, amended; #1052).
     pub merges_identities: bool,
+    /// Each `#[track_caller]` function it made a value of whose calls it
+    /// doesn't say, in a library, which a binary that links it is refused
+    /// for (#2335).
+    pub untold_locations: Vec<rust_js_program::library::UntoldLocation>,
 }
 
 pub struct FnCx<'a, 'tcx> {

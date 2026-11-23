@@ -8,6 +8,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
+import { compileJs, compileJsBinary, compileJsLibrary } from "./programs";
 import { compiler, fixture, installStd, nativeBinary, programFlags, root, run, shippedStd } from "./support";
 
 const flags = programFlags("2024");
@@ -213,6 +214,27 @@ test("a `#[track_caller]` function made a value whose calls the body doesn't say
     expect(lib.stderr).toBe("");
     expect(lib.code).toBe(0);
   });
+}, 300_000);
+
+test("a binary that links a library whose body makes an untold `#[track_caller]` value is refused, naming its site; a library that links it compiles", () => {
+  // The library keeps its caller's line, which a binary would write: its
+  // manifest lists the site, and a binary that links it is refused (#2335).
+  const dir = fixture("untold-linked");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "lib.rs"), "pub fn pair(v: Vec<Option<i32>>) -> (Vec<i32>, Option<i32>) {\n    let f = Option::unwrap;\n    (v.into_iter().map(f).collect(), Some(Some(1)).map(f))\n}\n");
+  const lib = compileJsLibrary(join(dir, "lib.rs"), dir, "2024", "tracked");
+  if (!("manifest" in lib)) throw new Error(lib.error);
+  const untold = JSON.parse(readFileSync(lib.manifest, "utf8")).library.untold_locations;
+  expect(untold).toEqual([{ value: "Option::unwrap", at: expect.stringMatching(/lib\.rs:2:13$/), closure: "|x| Option::unwrap(x)" }]);
+  writeFileSync(join(dir, "main.rs"), "fn main() {\n    println!(\"{:?}\", tracked::pair(vec![Some(1)]));\n}\n");
+  const linking = [["--dependency", lib.manifest], ["--extern", `tracked=${lib.rmeta}`, "-L", dir]];
+  const bin = compileJsBinary(join(dir, "main.rs"), dir, "2024", ...linking);
+  expect("js" in bin).toBe(false);
+  expect("js" in bin ? "" : bin.error).toMatch(/a library whose function makes a value of `Option::unwrap`, a `#\[track_caller\]` function, called where it doesn't say how, `tracked`'s at [^ ]*lib\.rs:2:13, in a binary/);
+  expect("js" in bin ? "" : bin.error).toContain("or write a closure, `|x| Option::unwrap(x)`");
+  mkdirSync(join(dir, "user"), { recursive: true });
+  const user = compileJs(join(dir, "main.rs"), join(dir, "user"), "2024", false, {}, ...linking);
+  expect("js" in user ? "" : user.error).toBe("");
 }, 300_000);
 
 test("a `Repeat`'s `count` and `last` name where they're called, through generic code and nested in another count too", () => {

@@ -322,3 +322,25 @@ value returned, captured or in a struct given whole, and the crate's own,
 each refused in a binary and compiled in a library. The guide's
 limitations page lists it, its example compiled as a binary.
 
+**A library a binary links says so** (Tu's decision kept: libraries
+compile, and no binary writes a wrong location). A library's untold value
+is recorded as its function's lowering finds it (`Dependencies`'
+`untold_locations`, by `FnCx::untold_location`: the value as written,
+where, and its closure) and listed in its manifest,
+`Library.untold_locations` (library ABI 47; a closed-world fact whose
+consumer that differs is refused, docs/library-contract.md). A binary that
+links a library listing any is refused before it's lowered, naming each,
+``rust-js does not support a library whose function makes a value of
+`Option::unwrap`, a `#[track_caller]` function, called where it doesn't
+say how, `tracked`'s at src/lib.rs:2:13, in a binary, which writes where a
+panic was raised (#2335) yet``, with the same help
+(`location.rs`' `refuse_untold_locations`, asking `prints_panic_locations`;
+one wording, its `refuse_untold`). Of the library at all, however
+much of it the binary calls: a value the library hands out, a `dyn Fn` or
+a `fn` pointer, is called where no call of the binary's names its
+function, so a list per function, closed over its callers, would miss
+those. Measured: none of the crate corpus's 150 compiled crates, none of
+React's port's crates, and not `@rust-js/std`, lists one; the binding
+crates, `js`, `webapi` and `react`, are checked by rustc alone and make no
+such value.
+

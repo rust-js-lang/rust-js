@@ -402,9 +402,9 @@ export function compileCommand(file: string, dir: string, edition: string, libra
  * `compileJs` compiles it as a library: what a binary refuses that a
  * library keeps compiling, a `#[track_caller]` function made a value whose
  * calls the body doesn't say (#2335), is refused here. */
-export function compileJsBinary(file: string, dir: string, edition: string, flags: string[] = []): { js: string } | CompileError {
+export function compileJsBinary(file: string, dir: string, edition: string, flags: string[] = [], rustc: string[] = []): { js: string } | CompileError {
   const js = join(dir, "binary.js");
-  const cmd = [compiler, file, "-o", js, ...flags, "--", `--edition=${edition}`, "--crate-type", "bin", "-Awarnings", remapRoot];
+  const cmd = [compiler, file, "-o", js, ...flags, "--", `--edition=${edition}`, "--crate-type", "bin", "-Awarnings", remapRoot, ...rustc];
   return compiled(runSync(cmd, root, compileTimeout), js);
 }
 
