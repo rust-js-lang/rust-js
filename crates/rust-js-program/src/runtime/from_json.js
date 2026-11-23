@@ -189,7 +189,7 @@ function $fromJson(text, read) {
     json.end();
     return { TAG: "Ok", _0: value };
   } catch (e) {
-    if (e instanceof $JsonError) return { TAG: "Err", _0: { message: e.message, line: e.line, column: e.column } };
+    if (e instanceof $JsonError) return { TAG: "Err", _0: $jsonErrorOf(e) };
     throw e;
   }
 }

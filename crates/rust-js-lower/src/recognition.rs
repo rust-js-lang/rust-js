@@ -19,6 +19,7 @@ pub use io::{
 mod held;
 mod iterators;
 pub(crate) use iterators::{ShownLeft, SliceShown};
+pub(crate) use json::is_json_error_def;
 mod js_items;
 mod json;
 mod lengths;

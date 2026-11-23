@@ -859,6 +859,8 @@ export function area(shape) {
 ```
 
 ```ts
+import type { JsonError } from "@rust-js/std";
+
 export type Shape = {
     type: "circle";
     radius: number;
@@ -872,7 +874,7 @@ export function parse(text: string): {
     _0: Shape;
 } | {
     TAG: "Err";
-    _0: any;
+    _0: JsonError;
 };
 
 export function area(shape: Shape): number;

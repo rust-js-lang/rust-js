@@ -293,7 +293,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
     pub(crate) fn is_json_error(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate).as_str() == "serde_json"
-            && self.tcx.item_name(adt.did()).as_str() == "Error")
+        matches!(ty.kind(), ty::Adt(adt, _) if is_json_error_def(self.tcx, adt.did()))
     }
+}
+
+/// Whether `did` is `serde_json::Error`, which the runtime's `$JsonError`
+/// is, and `@rust-js/std`'s `JsonError` declares (#2373).
+pub(crate) fn is_json_error_def(tcx: TyCtxt<'_>, did: rustc_hir::def_id::DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "serde_json" && tcx.item_name(did).as_str() == "Error"
 }

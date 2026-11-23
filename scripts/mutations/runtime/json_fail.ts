@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "  if (e < -7 || e > 20) return",
     tests: ["test/serde.test.ts", "-t", "numbers are written and read as serde_json does"],
   },
+  {
+    name: "json-error-of-column-dropped",
+    breaks: "a `serde_json::Error` JS holds, `Err`'s payload, has no `column`, which `@rust-js/std`'s `JsonError` declares, serde_json's `column()` (#2373)",
+    file: "crates/rust-js-program/src/runtime/json_fail.js",
+    find: "  return { message: e.message, line: e.line, column: e.column };\n",
+    replace: "  return { message: e.message, line: e.line };\n",
+    tests: ["test/declarations-json-error.test.ts"],
+  },
 ];

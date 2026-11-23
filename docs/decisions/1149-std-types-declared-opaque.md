@@ -57,3 +57,43 @@ written there.
   `test/std-package.test.ts`'s "the committed @rust-js/std's types are the
   catalog's"; mutations `std-opaque-undeclared`, `std-opaque-unbranded`
   and `std-opaque-of-its-item-alone`.
+
+## Amendment: `serde_json::Error` is `@rust-js/std`'s opaque `JsonError` (2026-11-23, #2373)
+
+A `Result<T, serde_json::Error>` a crate gives was declared `{ TAG: "Err";
+_0: any }`: TypeScript took anything for the error, and a caller couldn't
+see what it may read. The runtime gives serde_json's error as `{ message,
+line, column }`, and the catalogue declares it so, `JsonError`, branded as
+`LazyLock<T>` is, and with no type parameter:
+
+```ts
+import type { JsonError } from "@rust-js/std";
+export function parse(text: string): { TAG: "Ok"; _0: Point } | { TAG: "Err"; _0: JsonError };
+```
+
+Its keys are a contract, unlike a cell's `{ init }`. They mirror what
+serde_json's API lets a caller read: `line()`, `column()`, and its text,
+`Display` without where. `JSON_ERROR_KEYS`, in
+`declarations/std_types.rs`, is the one list of them. The runtime's
+`$jsonErrorOf`, which JS can't share it with, writes them as listed; it
+replaces the four places that each built the object.
+`test/declarations-json-error.test.ts` holds the two to each other by the
+JS a crate runs.
+
+- **`Display`'s text is documented, not given.** It is `message`, then
+  ` at line ${line} column ${column}` where `line` isn't 0. A `toString()`
+  returning it would be a one-off second way: rust-js has no rule that
+  `Display` becomes `toString`.
+- **`classify()` and the `is_*` tests have no key.** The runtime keeps no
+  category, so they're left out.
+- **One answer of what `serde_json::Error` is:** `recognition`'s
+  `is_json_error_def`, which `is_json_error` and the catalogue read.
+- **Held by:**
+  - `test/declarations-json-error.test.ts`: the declaration and its
+    import; strict TypeScript reading the keys and refused a hand-made
+    one; the runtime's payload having exactly the declared keys; and its
+    `Display` built of them;
+  - `test/std-package.test.ts`' catalogue check;
+  - mutations `json-error-opaque-unmatched`, `json-error-keys-undeclared`,
+    `json-error-holds-a-type` and `json-error-of-column-dropped`.
+

@@ -269,7 +269,7 @@ function $fromJsonValue(value, read) {
   try {
     return { TAG: "Ok", _0: read(new $JsonValueReader(value)) };
   } catch (e) {
-    if (e instanceof $JsonError) return { TAG: "Err", _0: { message: e.message, line: e.line, column: e.column } };
+    if (e instanceof $JsonError) return { TAG: "Err", _0: $jsonErrorOf(e) };
     throw e;
   }
 }

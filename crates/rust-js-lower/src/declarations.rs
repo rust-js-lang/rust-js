@@ -1213,7 +1213,12 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 // a value of (ADR 1149).
                 if let Some(opaque) = std_types::opaque(tcx, did) {
                     let name = self.imported_from(Some(std_types::PACKAGE), opaque.name, None);
-                    return reference(&name, vec![self.ts(args.type_at(0))]);
+                    let held = if opaque.holds() {
+                        vec![self.ts(args.type_at(0))]
+                    } else {
+                        Vec::new()
+                    };
+                    return reference(&name, held);
                 }
                 // A binding's, as it says it's typed: React's `MemoExoticComponent<P>`,
                 // `react#NamedExoticComponent`, is `NamedExoticComponent<P>`,

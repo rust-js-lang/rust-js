@@ -13,6 +13,15 @@ export interface LazyLock<T> {
   readonly [lazyLock]: T;
 }
 
+declare const jsonError: unique symbol;
+/** A `serde_json::Error`: `line` and `column` its `line()` and `column()`, `message` its text, its `Display` `message`, then ` at line ${line} column ${column}` where `line` isn't 0; `classify()` and the `is_*` tests have no key (#2373). */
+export interface JsonError {
+  readonly [jsonError]: never;
+  readonly message: string;
+  readonly line: number;
+  readonly column: number;
+}
+
 /** A `DoubleEndedIterator`: a JS iterator that knows its back, `back()` its last item, as `next()` its first (#1999). */
 export interface DoubleEndedIterator<T> extends IterableIterator<T> {
   back(): IteratorResult<T>;

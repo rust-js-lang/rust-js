@@ -7500,6 +7500,12 @@ export class $JsonError extends Error {
 export function $jsonError(message) {
   return new $JsonError(message);
 }
+// A `serde_json::Error` as JS holds it, `Err`'s payload: its message, line
+// and column, the keys `@rust-js/std`'s `JsonError` declares, as
+// declarations/std_types.rs' `JSON_ERROR_KEYS` lists them (#2373).
+export function $jsonErrorOf(e) {
+  return { message: e.message, line: e.line, column: e.column };
+}
 // A float as serde_json writes one: its shortest digits, fixed from 1e-5
 // to 1e15, else `1.5e+16`.
 export function $jsonNumber(x) {
@@ -16598,7 +16604,7 @@ export function $toJson(value, write, pretty) {
   try {
     write(value, json);
   } catch (e) {
-    if (e instanceof $JsonError) return { TAG: "Err", _0: { message: e.message, line: e.line, column: e.column } };
+    if (e instanceof $JsonError) return { TAG: "Err", _0: $jsonErrorOf(e) };
     throw e;
   }
   return { TAG: "Ok", _0: json.text };
@@ -18550,7 +18556,7 @@ export function $fromJsonValue(value, read) {
   try {
     return { TAG: "Ok", _0: read(new $JsonValueReader(value)) };
   } catch (e) {
-    if (e instanceof $JsonError) return { TAG: "Err", _0: { message: e.message, line: e.line, column: e.column } };
+    if (e instanceof $JsonError) return { TAG: "Err", _0: $jsonErrorOf(e) };
     throw e;
   }
 }
@@ -18782,7 +18788,7 @@ export function $fromJson(text, read) {
     json.end();
     return { TAG: "Ok", _0: value };
   } catch (e) {
-    if (e instanceof $JsonError) return { TAG: "Err", _0: { message: e.message, line: e.line, column: e.column } };
+    if (e instanceof $JsonError) return { TAG: "Err", _0: $jsonErrorOf(e) };
     throw e;
   }
 }
@@ -19067,7 +19073,7 @@ export function $toJsonValue(value, write) {
   try {
     write(value, builder);
   } catch (e) {
-    if (e instanceof $JsonError) return { TAG: "Err", _0: { message: e.message, line: e.line, column: e.column } };
+    if (e instanceof $JsonError) return { TAG: "Err", _0: $jsonErrorOf(e) };
     throw e;
   }
   return { TAG: "Ok", _0: root };

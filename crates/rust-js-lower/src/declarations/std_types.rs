@@ -9,36 +9,67 @@
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::TyCtxt;
 
-use super::super::recognition::{StdCrate, StdItem, is_std_def, of_std_crate};
+use super::super::recognition::{StdCrate, StdItem, is_json_error_def, is_std_def, of_std_crate};
 
 /// One of std's types `@rust-js/std` declares opaque.
 pub(crate) struct Opaque {
     /// Its name, std's and the declaration's, `LazyLock`.
     pub(crate) name: &'static str,
-    /// Of what std item it is, and whether it's its lock, `std`'s, of
-    /// `core`'s cell.
-    item: StdItem,
-    lock: bool,
+    /// Of what item it is.
+    of: Of,
     /// What its JS is, the declaration's comment.
     doc: &'static str,
+}
+
+/// What an opaque type is of: a std cell, its one type parameter what it
+/// holds, of whether it's its lock, `std`'s, of `core`'s cell; or
+/// `serde_json::Error`, whose keys a caller reads (`JSON_ERROR_KEYS`).
+enum Of {
+    Cell { item: StdItem, lock: bool },
+    JsonError,
+}
+
+impl Opaque {
+    /// Whether it holds a type, `LazyLock<T>`'s `T`, its one parameter.
+    pub(crate) fn holds(&self) -> bool {
+        matches!(self.of, Of::Cell { .. })
+    }
 }
 
 /// The package these are declared by.
 pub(crate) const PACKAGE: &str = "@rust-js/std";
 
-/// Each std type declared opaque, its one type parameter what it holds.
+/// What JS reads of a `serde_json::Error`, `Err`'s payload, `{ message,
+/// line, column }`, each key's type: serde_json's `line()` and `column()`,
+/// and its message, its `Display` without where, `message at line L column
+/// C` where `line` isn't 0. The one list of them: the runtime's
+/// `$jsonErrorOf`, which JS can't share it with, writes them as here, and
+/// test/declarations-json-error.test.ts holds the two to each other by the
+/// JS a crate runs (#2373).
+pub(crate) const JSON_ERROR_KEYS: &[(&str, &str)] = &[("message", "string"), ("line", "number"), ("column", "number")];
+
+/// Each std type declared opaque.
 pub(crate) const OPAQUE: &[Opaque] = &[
     Opaque {
         name: "LazyCell",
-        item: StdItem::LazyCell,
-        lock: false,
+        of: Of::Cell {
+            item: StdItem::LazyCell,
+            lock: false,
+        },
         doc: "A `LazyCell<T>`: the cell, whose `T` its init makes the first time Rust reads it.",
     },
     Opaque {
         name: "LazyLock",
-        item: StdItem::LazyCell,
-        lock: true,
+        of: Of::Cell {
+            item: StdItem::LazyCell,
+            lock: true,
+        },
         doc: "A `LazyLock<T>`: the cell, whose `T` its init makes the first time Rust reads it.",
+    },
+    Opaque {
+        name: "JsonError",
+        of: Of::JsonError,
+        doc: "A `serde_json::Error`: `line` and `column` its `line()` and `column()`, `message` its text, its `Display` `message`, then ` at line ${line} column ${column}` where `line` isn't 0; `classify()` and the `is_*` tests have no key (#2373).",
     },
 ];
 
@@ -56,7 +87,10 @@ pub(crate) const SOME_NONE: &str = "SomeNone";
 /// The opaque std type `did` is, if it's one.
 pub(crate) fn opaque(tcx: TyCtxt<'_>, did: DefId) -> Option<&'static Opaque> {
     let lock = of_std_crate(tcx, did, StdCrate::Std);
-    (OPAQUE.iter()).find(|opaque| is_std_def(tcx, did, opaque.item) && opaque.lock == lock)
+    (OPAQUE.iter()).find(|opaque| match opaque.of {
+        Of::Cell { item, lock: its } => is_std_def(tcx, did, item) && its == lock,
+        Of::JsonError => is_json_error_def(tcx, did),
+    })
 }
 
 /// `@rust-js/std`'s `index.d.ts`, `--std-declarations`': each opaque type,
@@ -69,8 +103,18 @@ pub fn module() -> String {
     for opaque in OPAQUE {
         let mut brand = opaque.name.to_string();
         brand[..1].make_ascii_lowercase();
+        let (params, held) = match opaque.holds() {
+            true => ("<T>", "T"),
+            false => ("", "never"),
+        };
+        let keys: String = match opaque.of {
+            Of::JsonError => (JSON_ERROR_KEYS.iter())
+                .map(|(key, ty)| format!("  readonly {key}: {ty};\n"))
+                .collect(),
+            Of::Cell { .. } => String::new(),
+        };
         out.push_str(&format!(
-            "\ndeclare const {brand}: unique symbol;\n/** {} */\nexport interface {}<T> {{\n  readonly [{brand}]: T;\n}}\n",
+            "\ndeclare const {brand}: unique symbol;\n/** {} */\nexport interface {}{params} {{\n  readonly [{brand}]: {held};\n{keys}}}\n",
             opaque.doc, opaque.name
         ));
     }

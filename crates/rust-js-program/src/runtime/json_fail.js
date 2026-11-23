@@ -9,6 +9,12 @@ class $JsonError extends Error {
 function $jsonError(message) {
   return new $JsonError(message);
 }
+// A `serde_json::Error` as JS holds it, `Err`'s payload: its message, line
+// and column, the keys `@rust-js/std`'s `JsonError` declares, as
+// declarations/std_types.rs' `JSON_ERROR_KEYS` lists them (#2373).
+function $jsonErrorOf(e) {
+  return { message: e.message, line: e.line, column: e.column };
+}
 // A float as serde_json writes one: its shortest digits, fixed from 1e-5
 // to 1e15, else `1.5e+16`.
 function $jsonNumber(x) {

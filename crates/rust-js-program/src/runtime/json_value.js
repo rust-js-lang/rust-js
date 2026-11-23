@@ -279,7 +279,7 @@ function $toJsonValue(value, write) {
   try {
     write(value, builder);
   } catch (e) {
-    if (e instanceof $JsonError) return { TAG: "Err", _0: { message: e.message, line: e.line, column: e.column } };
+    if (e instanceof $JsonError) return { TAG: "Err", _0: $jsonErrorOf(e) };
     throw e;
   }
   return { TAG: "Ok", _0: root };
