@@ -136,13 +136,5 @@ function $cycleFrom(orig, iter, clone, next, boxed, drop) {
     if (low === 0 && high === 0) return [0, 0];
     return low === 0 ? [0, undefined] : [4294967295, undefined];
   };
-  // Its derived `Clone`, each field's in turn: where the clone of what it
-  // steps throws, a panic, the clone of what it started with is dropped as
-  // it unwinds (#1585).
-  cycled[$cloneKey] = () => {
-    const orig = clone(cycled.orig);
-    const iter = $unwinds(() => clone(cycled.iter), drop && (() => drop(orig)));
-    return $cycleFrom(orig, iter, clone, next, boxed, drop);
-  };
   return cycled;
 }

@@ -36,14 +36,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cloned_apart_map_drops_its_closure\\.rs$"],
   },
   {
-    name: "cycle-clone-restarts",
-    breaks: "a held `Cycle`'s clone steps from what it started with, not where it is",
-    file: "crates/rust-js-program/src/runtime/cycle.js",
-    find: "$unwinds(() => clone(cycled.iter), drop",
-    replace: "$unwinds(() => clone(cycled.orig), drop",
-    tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
-  },
-  {
     name: "cycle-hint-of-empty-unknown",
     breaks: "an empty `Cycle`'s size hint isn't `(0, Some(0))`",
     file: "crates/rust-js-program/src/runtime/cycle.js",
@@ -90,14 +82,6 @@ export const mutations: Mutation[] = [
     find: "      () => {\n        cycled.iter = fresh;\n      },\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cloned_apart_map_drops_its_closure.rs$"],
-  },
-  {
-    name: "cycle-clone-unwinding-keeps-orig-clone",
-    breaks: "where a held `Cycle`'s clone of what it steps panics, the clone of what it started with is never dropped (#1585)",
-    file: "crates/rust-js-program/src/runtime/cycle.js",
-    find: "    const iter = $unwinds(() => clone(cycled.iter), drop && (() => drop(orig)));\n",
-    replace: "    const iter = clone(cycled.iter);\n",
-    tests: ["test/corpus.test.ts", "-t", "^cycle_clone_or_drop_panics_drops_what_it_holds.rs$"],
   },
   {
     name: "cycle-of-items-js-own-iterator",
