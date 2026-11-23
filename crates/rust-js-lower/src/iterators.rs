@@ -21,7 +21,8 @@ mod transparent;
 mod value;
 
 pub use self::eager::*;
-pub(crate) use self::hint_asks::{Room, Shunted, refuse_unknown_capacity_extends};
+pub(crate) use self::hint_asks::refuse_unknown_capacity_extends;
+pub(crate) use self::hint_asks::{Room, Shunted};
 pub(crate) use self::in_place::*;
 pub(crate) use self::stepping::{cloned_apart, stepped_by_parts};
 pub(crate) use self::transparent::{Transparency, chains, count_chains};

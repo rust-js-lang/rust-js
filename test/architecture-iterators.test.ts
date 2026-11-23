@@ -642,8 +642,10 @@ test("a reversed zip has one form, never `$zipBack`", () => {
 // is no collect, through lengths.rs's `filter_count_asks_own_hint` (#2210),
 // alone.
 test("when a collect asks its hint is hint_asks's alone", () => {
-  const owner = "crates/rust-js-lower/src/iterators/hint_asks.rs";
-  const lowering = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs") && file !== owner);
+  // hint_asks.rs and its submodules, `hint_asks/unknown_extends.rs`'s
+  // `extend` of what generic code is given among them.
+  const owner = (file: string) => file === "crates/rust-js-lower/src/iterators/hint_asks.rs" || file.startsWith("crates/rust-js-lower/src/iterators/hint_asks/");
+  const lowering = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs") && !owner(file));
   const code = (file: string) => read(file).split("\n").filter((line) => !/^\s*\/\//.test(line));
   const making = lowering.flatMap((file) =>
     code(file).filter((line) => /"\$(?:roomForHint|reserveHint|grownBy)"/.test(line)).map((line) => `${file}: ${line.trim()}`));

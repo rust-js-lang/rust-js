@@ -56,7 +56,8 @@ crates/rust-js-lower/src/instances/failing.rs	1
 crates/rust-js-lower/src/instances/needed.rs	7
 crates/rust-js-lower/src/iterators.rs	11
 crates/rust-js-lower/src/iterators/clones.rs	3
-crates/rust-js-lower/src/iterators/hint_asks.rs	9
+crates/rust-js-lower/src/iterators/hint_asks.rs	6
+crates/rust-js-lower/src/iterators/hint_asks/unknown_extends.rs	3
 crates/rust-js-lower/src/iterators/knowing.rs	7
 crates/rust-js-lower/src/iterators/stepping.rs	9
 crates/rust-js-lower/src/lent.rs	1
