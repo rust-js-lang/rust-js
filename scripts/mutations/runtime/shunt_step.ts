@@ -18,6 +18,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/shunt_step.js",
     find: "  if (!it.held) it.return?.();\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^shunt_steps_by_try_fold.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^collect_into_option_drops_what_take_while_left\\.rs$"],
   },
 ];
