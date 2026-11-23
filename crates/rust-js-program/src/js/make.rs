@@ -465,23 +465,20 @@ impl Expr {
             // holds `o.f`, which its `value` reads and writes; not a
             // nullable one's, `$fieldCell(o, "f", true)`, which writes its
             // `None` `null` (ADR 0863, amended).
-            if let ExprKind::Call(callee, args) = &object.kind
-                && callee.helper_name() == Some("$fieldCell")
-                && let [holder, key] = args.as_slice()
+            if let Some(cell) = object
+                .helper_call_of("$fieldCell")
+                .filter(|cell| !cell.given("nullable"))
+                && let (Some(holder), Some(key)) = (cell.arg("object"), cell.arg("key"))
                 && let ExprKind::Str(key) = &key.kind
             {
                 return Expr::member(holder.clone(), key.clone());
             }
             // And of a handle through an `Option`'s box, `$someMut`, what
             // the box holds, `$someValue(o)` (ADR 0486).
-            if let ExprKind::Call(callee, args) = &object.kind
-                && callee.helper_name() == Some("$someMut")
-                && let [
-                    Expr {
-                        kind: ExprKind::Handle(place, _),
-                        ..
-                    },
-                ] = args.as_slice()
+            if let Some(Expr {
+                kind: ExprKind::Handle(place, _),
+                ..
+            }) = object.helper_call_of("$someMut").and_then(|some| some.arg("option"))
             {
                 return Expr::call_helper("$someValue", vec![(**place).clone()]);
             }

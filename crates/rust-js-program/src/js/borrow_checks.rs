@@ -26,14 +26,14 @@ impl Expr {
         if !self.facts.has(Known::Momentary) {
             return None;
         }
-        let ExprKind::Call(callee, given) = &self.kind else {
-            return None;
-        };
-        match (callee.helper_name(), given.as_slice()) {
-            (Some("$borrowMut"), [cell, raised]) => Some((cell, true, raised)),
-            (Some("$borrow"), [cell, raised]) => Some((cell, false, raised)),
-            _ => None,
+        // Its cell and where it's raised alone: one held, `hold`, or given
+        // a value to drop, `dropGiven`, is counted, never momentary.
+        if let Some(borrow) = self.helper_call_of("$borrowMut") {
+            let borrow = Some(borrow).filter(|borrow| !borrow.given("hold") && !borrow.given("dropGiven"))?;
+            return Some((borrow.arg("cell")?, true, borrow.arg("raisedAt")?));
         }
+        let borrow = self.helper_call_of("$borrow").filter(|borrow| !borrow.given("hold"))?;
+        Some((borrow.arg("cell")?, false, borrow.arg("raisedAt")?))
     }
 }
 

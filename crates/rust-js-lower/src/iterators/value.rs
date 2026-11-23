@@ -173,17 +173,14 @@ impl IterValue {
 /// `s[Symbol.iterator]()`, or the runtime's, `$chars(s)` or
 /// `$charIndices(s)`, none of which has a `return()`.
 pub fn made_string_iterator(e: &Expr) -> bool {
-    super::string_iterated(e).is_some()
-        || matches!(&e.kind, js::ExprKind::Call(callee, _) if matches!(callee.helper_name(), Some("$chars" | "$charIndices")))
+    super::string_iterated(e).is_some() || e.helper_call_of_any(&["$chars", "$charIndices"]).is_some()
 }
 
 /// Of the runtime's `chars()` made here, `$chars(s)` as `e` is, the
 /// string, whose JS iteration steps the same `char`s (#1186).
 pub fn chars_made_of(e: &Expr) -> Option<&Expr> {
-    match &e.kind {
-        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$chars") && args.len() == 1 => args.first(),
-        _ => None,
-    }
+    let chars = e.helper_call_of("$chars").filter(|chars| !chars.given("indexed"))?;
+    chars.arg("s")
 }
 
 /// Of a string's iterator made here lent, `$lent(s[Symbol.iterator]())`
@@ -191,23 +188,22 @@ pub fn chars_made_of(e: &Expr) -> Option<&Expr> {
 /// being called, and which nothing else holds, so it's lent as it is
 /// (#1186).
 pub fn lent_string_iterator(e: &Expr) -> Option<&Expr> {
-    let js::ExprKind::Call(callee, args) = &e.kind else {
-        return None;
-    };
-    let [it] = &args[..] else { return None };
-    (callee.helper_name() == Some("$lent") && made_string_iterator(it)).then_some(it)
+    // Lent, its default `kind`, not owned by a box that lends it.
+    let it = e
+        .helper_call_of("$lent")
+        .filter(|lent| !lent.given("kind"))?
+        .arg("it")?;
+    made_string_iterator(it).then_some(it)
 }
 
 /// Of a variable lent, `$lent(v)` as `e` is, `v` (#1955).
 pub fn lent_variable(e: &Expr) -> Option<&js::Name> {
-    let js::ExprKind::Call(callee, args) = &e.kind else {
-        return None;
-    };
-    match &args[..] {
-        [it] if callee.helper_name() == Some("$lent") => match &it.kind {
-            js::ExprKind::Var(v) => Some(v),
-            _ => None,
-        },
+    let it = e
+        .helper_call_of("$lent")
+        .filter(|lent| !lent.given("kind"))?
+        .arg("it")?;
+    match &it.kind {
+        js::ExprKind::Var(v) => Some(v),
         _ => None,
     }
 }
@@ -297,17 +293,12 @@ pub fn unlent(e: &Expr) -> &Expr {
 /// "boxed")`, holds: the box owns it, so closing what it holds is closing
 /// the box (#2219). `None` of another.
 pub fn held_by_a_box(e: &Expr) -> Option<&Expr> {
-    match &e.kind {
-        // A box owns what it holds, so its lend isn't marked lent
-        // (`Known::IterLent`, `emit`'s).
-        js::ExprKind::Call(callee, of)
-            if callee.helper_name() == Some("$lent")
-                && matches!(of.get(1).map(|k| &k.kind), Some(js::ExprKind::Str(k)) if Some(k.as_str()) == lent_kind(Wrapper::BoxSized)) =>
-        {
-            of.first()
-        }
-        _ => None,
-    }
+    // A box owns what it holds, so its lend isn't marked lent
+    // (`Known::IterLent`, `emit`'s).
+    let lent = e.helper_call_of("$lent")?;
+    let kind = lent.arg("kind")?;
+    matches!(&kind.kind, js::ExprKind::Str(k) if Some(k.as_str()) == lent_kind(Wrapper::BoxSized))
+        .then(|| lent.arg("it"))?
 }
 
 /// Whether `e` is lent, a JS iterator nothing closes (`unlent`).
@@ -419,13 +410,10 @@ pub fn enumerated_of(e: &Expr) -> Option<Enumerated<'_>> {
             source: &args[0],
             form: EnumeratedForm::Made,
         }),
-        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$enumerate") && args.len() == 1 => {
-            Some(Enumerated {
-                source: &args[0],
-                form: EnumeratedForm::Passing,
-            })
-        }
-        _ => None,
+        _ => e.helper_call_of("$enumerate")?.arg("iter").map(|source| Enumerated {
+            source,
+            form: EnumeratedForm::Passing,
+        }),
     }
 }
 
@@ -460,20 +448,15 @@ pub struct ZipParts<'e> {
 }
 
 pub fn zip_parts(e: &Expr) -> Option<ZipParts<'_>> {
-    let js::ExprKind::Call(callee, args) = &e.kind else {
-        return None;
-    };
-    let by_index = match callee.helper_name() {
-        Some("$lazyZip") => false,
-        Some("$trustedZip") => true,
-        _ => return None,
-    };
-    let (a, b, drop_a) = match args.as_slice() {
-        [a, b] => (a, b, None),
-        [a, b, drop_a] => (a, b, Some(drop_a)),
-        _ => return None,
-    };
-    Some(ZipParts { a, b, drop_a, by_index })
+    let zip = e.helper_call_of_any(&["$lazyZip", "$trustedZip"])?;
+    let by_index = zip.name() == "$trustedZip";
+    Some(ZipParts {
+        a: zip.arg("a")?,
+        b: zip.arg("b")?,
+        // Of a lazy zip, what drops `a`'s item where `b`'s step throws.
+        drop_a: e.helper_call_of("$lazyZip").and_then(|lazy| lazy.arg("dropA")),
+        by_index,
+    })
 }
 
 /// No more items than `e` gives, read of its form alone where it's sure: a
@@ -552,20 +535,17 @@ pub fn mapped_parts(e: &Expr) -> Option<(&Expr, &Expr)> {
     };
     match (&callee.kind, args.as_slice()) {
         (js::ExprKind::Member(source, method), [f]) if method == "map" => Some((source, f)),
-        (_, [source, f]) if callee.helper_name() == Some("$mapEnds") => Some((source, f)),
-        _ => None,
+        _ => {
+            let map = e.helper_call_of("$mapEnds")?;
+            Some((map.arg("it")?, map.arg("f")?))
+        }
     }
 }
 
 /// A chain made here, `$lazyChain(a, b)`: its two halves.
 pub fn chain_parts(e: &Expr) -> Option<(&Expr, &Expr)> {
-    let js::ExprKind::Call(callee, args) = &e.kind else {
-        return None;
-    };
-    match (callee.helper_name(), args.as_slice()) {
-        (Some("$lazyChain"), [a, b, ..]) => Some((a, b)),
-        _ => None,
-    }
+    let chain = e.helper_call_of("$lazyChain")?;
+    Some((chain.arg("a")?, chain.arg("b")?))
 }
 
 /// `$zipEnds(a, b, dropA, dropB)`, or of a zip `by_index`
@@ -743,10 +723,7 @@ pub fn held_by_its_owner(e: Expr) -> Expr {
 
 /// What `e`, `held_by_its_owner`'s, holds: `it` of `$held(it)`.
 pub fn held_of(e: &Expr) -> Option<&Expr> {
-    match &e.kind {
-        js::ExprKind::Call(callee, of) if callee.helper_name() == Some("$held") && of.len() == 1 => Some(&of[0]),
-        _ => None,
-    }
+    e.helper_call_of("$held")?.arg("it")
 }
 
 /// Whether `e` was made knowing its back (`made_knowing_its_back`).
@@ -790,7 +767,15 @@ pub fn knows_its_back_by_form(e: &Expr) -> bool {
             | "$enumerate" | "$lent" | "$closing" | "$held" | "$taking" | "$skipping" | "$stepByEnds",
         ) => args.first().is_some_and(knows_its_back_by_form),
         Some("$lazyChain") => matches!(&args[..], [a, b, ..] if knows_its_back_by_form(a) && knows_its_back_by_form(b)),
-        Some("$iterator" | "$given") => args.get(3).is_some_and(|back| *back != Expr::js_undefined()),
+        // Its back given, `$iterator`'s `nextBack`, `$given`'s `back`.
+        Some("$iterator") => e
+            .helper_call_of("$iterator")
+            .and_then(|made| made.arg("nextBack"))
+            .is_some_and(|back| *back != Expr::js_undefined()),
+        Some("$given") => e
+            .helper_call_of("$given")
+            .and_then(|given| given.arg("back"))
+            .is_some_and(|back| *back != Expr::js_undefined()),
         _ => false,
     }
 }
@@ -841,11 +826,8 @@ pub fn form_lacks_a_length(e: &Expr) -> bool {
     if let Some((source, _)) = passes_its_length_on(e) {
         return form_lacks_a_length(source);
     }
-    let js::ExprKind::Call(callee, args) = &e.kind else {
-        return false;
-    };
-    matches!(callee.helper_name(), Some("$iterator" | "$given"))
-        && args.get(4).is_none_or(|len| *len == Expr::js_undefined())
+    e.helper_call_of_any(&["$iterator", "$given"])
+        .is_some_and(|made| made.arg("len").is_none_or(|len| *len == Expr::js_undefined()))
 }
 
 /// `e`, an adapter's call, of `source` in place of what it steps, its first
@@ -906,12 +888,9 @@ pub fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
     if !e.facts.has(Known::IterRange) {
         return None;
     }
-    let js::ExprKind::Call(_, args) = &e.kind else {
-        return None;
-    };
-    let [range, step] = &args[..] else {
-        return None;
-    };
+    // `$iterator(range, next)`, its step, no more given.
+    let made = e.helper_call_of("$iterator").filter(|made| !made.given("boxed"))?;
+    let (range, step) = (made.arg("iterator")?, made.arg("next")?);
     let (js::ExprKind::Object(bounds, ..), Some(next)) = (&range.kind, step.helper_name()) else {
         return None;
     };
@@ -959,20 +938,17 @@ pub fn bounds_read(e: &Expr) -> Option<SteppedRange<'_>> {
 /// 1 up, which every step adds (rd260); of `s..` itself, `$iterator({
 /// start: s }, $rangeFromStep(..))`, `s` and 1.
 pub fn stepped_from(e: &Expr) -> Option<(&Expr, i128)> {
-    let js::ExprKind::Call(callee, args) = &e.kind else {
+    // Its `step_by(n)`, numbers given no drop; or the range itself.
+    let (made, n) = match e.helper_call_of("$stepBy").filter(|by| !by.given("drop")) {
+        Some(by) => (by.arg("it")?, by.arg("step")?.as_int().filter(|&n| n >= 1)?),
+        None => (e, 1),
+    };
+    // A range's numbers made there, `$iterator(range, next)`, nothing more given.
+    let parts = made.helper_call_of("$iterator").filter(|parts| !parts.given("boxed"))?;
+    if !made.facts.has(Known::IterRange) {
         return None;
-    };
-    let (made, n) = match (callee.helper_name(), &args[..]) {
-        (Some("$stepBy"), [made, n]) => (made, n.as_int().filter(|&n| n >= 1)?),
-        (_, [_, _]) if e.facts.has(Known::IterRange) => (e, 1),
-        _ => return None,
-    };
-    let js::ExprKind::Call(_, parts) = &made.kind else {
-        return None;
-    };
-    let ([range, next], true) = (&parts[..], made.facts.has(Known::IterRange)) else {
-        return None;
-    };
+    }
+    let (range, next) = (parts.arg("iterator")?, parts.arg("next")?);
     let js::ExprKind::Call(stepper, _) = &next.kind else {
         return None;
     };
@@ -988,21 +964,18 @@ pub fn stepped_from(e: &Expr) -> Option<(&Expr, i128)> {
 /// Of `e`, `$closing($given(src, IIterator), drop)`, generic code's source
 /// closed to drop what it steps: `src` (#1981).
 pub fn closed_given_source(e: &Expr) -> Option<&Expr> {
-    let js::ExprKind::Call(callee, args) = &e.kind else {
-        return None;
-    };
-    let js::ExprKind::Call(given, given_args) = &args.first()?.kind else {
-        return None;
-    };
-    (callee.helper_name() == Some("$closing") && given.helper_name() == Some("$given")).then(|| given_args.first())?
+    let closed = e.helper_call_of("$closing")?.arg("it")?;
+    closed.helper_call_of("$given")?.arg("value")
 }
 
 /// `e`, a `$closing`, closing `inner` in place of what it closed, its
 /// facts kept (#1981).
 pub fn closed_around(e: &Expr, inner: Expr) -> Expr {
     let mut closed = e.clone();
-    if let js::ExprKind::Call(_, args) = &mut closed.kind {
-        args[0] = inner;
+    if let Some(mut closing) = closed.helper_call_of_mut("$closing")
+        && let Some(it) = closing.arg_mut("it")
+    {
+        *it = inner;
     }
     closed
 }
@@ -1022,21 +995,26 @@ mod tests {
             step: Expr::helper("$rangeNext"),
         })
         .emit();
-        assert!(matches!(&range.kind, js::ExprKind::Call(callee, args)
-            if callee.helper_name() == Some("$iterator") && args.len() == 2));
+        assert!(
+            range
+                .helper_call_of("$iterator")
+                .is_some_and(|made| !made.given("boxed"))
+        );
         assert!(range.facts.has(Known::IterStepped) && range.facts.has(Known::IterRange));
         let closed = IterValue::js(var("it"))
             .closed(var("drop"), true)
             .lent(Wrapper::MutRefSized)
             .emit();
         assert!(closed.facts.has(Known::IterLent) && !closed.facts.has(Known::IterClosing));
-        let js::ExprKind::Call(_, inner) = &closed.kind else {
-            panic!("a call")
-        };
-        assert!(inner[0].facts.has(Known::IterClosing));
-        let js::ExprKind::Call(_, parts) = &inner[0].kind else {
-            panic!("a call")
-        };
-        assert_eq!(parts.len(), 3);
+        let inner = closed
+            .helper_call_of("$lent")
+            .and_then(|lent| lent.arg("it"))
+            .expect("what's lent");
+        assert!(inner.facts.has(Known::IterClosing));
+        assert!(
+            inner
+                .helper_call_of("$closing")
+                .is_some_and(|closing| closing.given("slices"))
+        );
     }
 }

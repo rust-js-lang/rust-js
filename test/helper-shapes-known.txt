@@ -15,7 +15,7 @@ crates/rust-js-lower/src/iterators/knowing.rs	6
 crates/rust-js-lower/src/iterators/mir_steps/backs.rs	2
 crates/rust-js-lower/src/iterators/mir_steps/closing.rs	1
 crates/rust-js-lower/src/iterators/mir_steps/sources.rs	2
-crates/rust-js-lower/src/iterators/value.rs	23
+crates/rust-js-lower/src/iterators/value.rs	9
 crates/rust-js-lower/src/passed_on.rs	1
 crates/rust-js-lower/src/pointers.rs	7
 crates/rust-js-lower/src/pointers/lending.rs	1
@@ -23,7 +23,7 @@ crates/rust-js-lower/src/representation/cells.rs	2
 crates/rust-js-lower/src/std_impls.rs	1
 crates/rust-js-lower/src/std_types/cell.rs	3
 crates/rust-js-lower/src/std_types/cell/variables.rs	3
-crates/rust-js-lower/src/std_types/map_entries.rs	4
+crates/rust-js-lower/src/std_types/map_entries.rs	2
 crates/rust-js-lower/src/std_types/map_keys.rs	1
 crates/rust-js-lower/src/std_types/map.rs	3
 crates/rust-js-lower/src/std_types/number/generic.rs	1
@@ -45,10 +45,9 @@ crates/rust-js-mir/src/tidy/loops.rs	2
 crates/rust-js-mir/src/tidy/mut_items.rs	2
 crates/rust-js-mir/src/tidy/stability.rs	1
 crates/rust-js-mir/src/tidy/values.rs	2
-crates/rust-js-program/src/js/borrow_checks.rs	1
 crates/rust-js-program/src/js/expr_walk.rs	3
 crates/rust-js-program/src/js/helper_call.rs	2
-crates/rust-js-program/src/js/make.rs	4
+crates/rust-js-program/src/js/make.rs	2
 crates/rust-js-program/src/js/make/unwinding.rs	4
 crates/rust-js-program/src/js/stmt_walk.rs	2
 crates/rust-js-program/src/js/through_box.rs	1

@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	2873
-lines	396355
+files	2877
+lines	396424
 temporaries	0	0
 labeled blocks	0	0
 while (true)	242	6.1
 $iter	3458	87.2
 Iterator.from	312	7.9
 return;	452	11.4
-renamed x$1	17530	442.3
+renamed x$1	17530	442.2
 role fallbacks	9740	245.7
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	51	0	0	0	1	0	0	0	1
@@ -2393,6 +2393,10 @@ test/corpus/std_flat_map.js	161	0	0	0	6	0	0	10	8
 test/corpus/std_flatten.js	343	0	0	0	13	0	0	34	13
 test/corpus/std_function_pointer_panic.js	15	0	0	0	0	0	0	0	0
 test/corpus/std_function_value_as_a_dyn_panic.js	19	0	0	0	0	0	0	0	0
+test/corpus/std_function_value_borrowed_panic.js	19	0	0	0	0	0	0	0	0
+test/corpus/std_function_value_boxed_once_panic.js	15	0	0	0	0	0	0	0	0
+test/corpus/std_function_value_called_itself_panic.js	19	0	0	0	0	0	0	0	0
+test/corpus/std_function_value_in_a_box_panic.js	16	0	0	0	0	0	0	0	0
 test/corpus/std_function_value_in_a_local_panic.js	16	0	0	0	0	0	0	0	0
 test/corpus/std_function_value_panic.js	27	0	0	0	0	0	0	0	0
 test/corpus/std_function_value_panic_fn.js	19	0	0	0	0	0	0	0	0

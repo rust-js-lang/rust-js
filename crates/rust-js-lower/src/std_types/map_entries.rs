@@ -97,11 +97,16 @@ pub fn inserted_entries(stmts: &mut Vec<Stmt>) {
 /// where the helper's maker would; `$orInsert`'s only of variables, which
 /// Rust evaluates whether or not it's put in.
 fn put_in(e: &Expr) -> Option<(Expr, Expr, Expr)> {
-    let js::ExprKind::Call(callee, args) = &e.kind else {
-        return None;
-    };
-    match (callee.helper_name(), args.as_slice()) {
-        (Some("$orInsertWith"), [map, key, make]) if map.reads_same() && key.reads_same() => match &make.kind {
+    // Of a call given no drops: what drops the key it's given where the
+    // entry's there, or the maker, would be lost (#2334's step 1).
+    if let Some(call) = e
+        .helper_call_of("$orInsertWith")
+        .filter(|call| !call.given("dropKey") && !call.given("dropMake"))
+        && let (Some(map), Some(key), Some(make)) = (call.arg("map"), call.arg("key"), call.arg("make"))
+        && map.reads_same()
+        && key.reads_same()
+    {
+        return match &make.kind {
             js::ExprKind::Arrow(params, body) if params.is_empty() => match body.as_slice() {
                 [
                     Stmt {
@@ -112,12 +117,13 @@ fn put_in(e: &Expr) -> Option<(Expr, Expr, Expr)> {
                 _ => None,
             },
             _ => None,
-        },
-        (Some("$orInsert"), [map, key, made]) if map.reads_same() && key.reads_same() && made.reads_only_vars() => {
-            Some((map.clone(), key.clone(), made.clone()))
-        }
-        _ => None,
+        };
     }
+    let call = e
+        .helper_call_of("$orInsert")
+        .filter(|call| !call.given("drop") && !call.given("dropKey"))?;
+    let (map, key, made) = (call.arg("map")?, call.arg("key")?, call.arg("value")?);
+    (map.reads_same() && key.reads_same() && made.reads_only_vars()).then(|| (map.clone(), key.clone(), made.clone()))
 }
 
 /// Whether two keys an entry's steps are given are one: one path, or one
@@ -127,11 +133,9 @@ fn same_key(a: &Expr, b: &Expr) -> bool {
 }
 
 /// `$mutGet(m, k)`'s map and key.
-fn got(e: &Expr) -> Option<&[Expr; 2]> {
-    match &e.kind {
-        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$mutGet") => args.as_slice().try_into().ok(),
-        _ => None,
-    }
+fn got(e: &Expr) -> Option<[&Expr; 2]> {
+    let got = e.helper_call_of("$mutGet")?;
+    Some([got.arg("m")?, got.arg("key")?])
 }
 
 /// The expression a statement's value is, of those `inserted_entries`
