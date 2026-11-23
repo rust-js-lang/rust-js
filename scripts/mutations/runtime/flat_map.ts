@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "        if (ended) return { done: true, value: undefined };\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_last_takes_each_inner_last.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_holds_its_source_fused_from_its_first_end\\.rs$"],
   },
   {
     name: "flat-map-last-source-unfused",
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/flat_map.js",
     find: "    const source = ended ? undefined : it;\n",
     replace: "    const source = it;\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_last_takes_each_inner_last.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_holds_its_source_fused_from_its_first_end\\.rs$"],
   },
   {
     name: "flat-map-fold-by-next",

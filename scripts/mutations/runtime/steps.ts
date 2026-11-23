@@ -388,7 +388,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/steps.js",
     find: "          if (step.done) {\n            ended = true;\n            this.return();\n",
     replace: "          if (step.done) {\n            ended = true;\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_drops_its_source_at_its_end.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_holds_its_source_fused_from_its_first_end\\.rs$"],
   },
   {
     name: "steps-of-an-array-hintless",
