@@ -1,7 +1,9 @@
 //! A struct's declaration, `export interface TagProps { variant: RouteTag;
 //! text?: string; }` (ADR 0196): its fields, each by the name its JS has,
 //! an `Option`'s optional; a `#[repr(transparent)]` one its field's type
-//! (ADR 0584). Split by concept from declarations.rs at its cap.
+//! (ADR 0584); a tuple struct its tuple, `[number, number]`; and one no
+//! other crate can make opaque, `interface Email { readonly [$emailBrand]:
+//! never }` (ADR 1187). Split by concept from declarations.rs at its cap.
 
 use rustc_hir as hir;
 use rustc_middle::ty;
@@ -15,6 +17,108 @@ use super::parts::flattened_keys;
 use super::{Declarations, is_any, keyword, or_undefined, reference};
 
 impl<'tcx> Declarations<'_, 'tcx> {
+    /// A struct's declaration where it's declared, exported or its module's
+    /// own: opaque where no other crate can make it (`sealed`), else its
+    /// `structure`. A class's and a global's fields are `structure`'s, as JS
+    /// makes those.
+    pub(super) fn struct_declaration(&mut self, def_id: DefId) -> Option<Value> {
+        match sealed(self.tcx, def_id) {
+            true => Some(self.opaque(def_id)),
+            false => self.structure(def_id),
+        }
+    }
+
+    /// A struct no other crate can make, `pub struct Email(String)`, as
+    /// TypeScript is told of it: an interface branded by a `unique symbol` of
+    /// its module's, as std's opaque types are (ADR 1149), which TypeScript
+    /// takes only of what rust-js's JS gave, `readonly [$idBrand]: T` of its
+    /// type parameters, its `pub` fields and methods; not its other fields,
+    /// which no other crate reads, nor its JS, which is no API (ADR 1187).
+    fn opaque(&mut self, def_id: DefId) -> Value {
+        let name = super::type_name(self.tcx, def_id);
+        // `$emailBrand`: a name no Rust item's JS name can take, as none has
+        // a `$`, so no export of the module meets it.
+        let mut brand = format!("${name}Brand");
+        brand[1..2].make_ascii_lowercase();
+        if !self.unexported.contains_key(&brand) {
+            let declared = json!({ "kind": "const", "name": brand, "exported": false, "declare": true, "type": { "kind": "unique-symbol" } });
+            self.unexported.insert(brand.clone(), Some(declared));
+        }
+        let generics = self.generics(def_id);
+        let mut held: Vec<Value> = (generics.iter())
+            .map(|param| json!({ "kind": "reference", "name": param["name"], "args": [] }))
+            .collect();
+        let held = match held.len() {
+            0 => keyword("never"),
+            1 => held.remove(0),
+            _ => json!({ "kind": "tuple", "elements": held }),
+        };
+        let mut members = vec![json!({
+            "kind": "property",
+            "name": { "computed": brand },
+            "optional": false,
+            "readonly": true,
+            "type": held,
+        })];
+        // Its `pub` fields, which another crate reads and writes: a named
+        // one's as `structure` declares it, with its methods; a tuple
+        // struct's by its index, `"0": number`.
+        let variant = self.tcx.adt_def(def_id).non_enum_variant();
+        if let Some(at) = crate::recognition::transparent_field(self.tcx, self.tcx.adt_def(def_id)) {
+            // A `#[repr(transparent)]` one's JS is its field (ADR 0584): one
+            // whose field is `pub`, which another crate reads, is that
+            // field's type, branded, `string & { readonly [$taggedBrand]: T }`.
+            let field = &variant.fields.raw[at];
+            if field.vis.is_public() {
+                let ty = self.tcx.type_of(field.did).instantiate_identity().skip_normalization();
+                return json!({
+                    "kind": "type",
+                    "name": name,
+                    "exported": true,
+                    "declare": false,
+                    "typeParameters": generics,
+                    "type": { "kind": "intersection", "types": [self.ts(ty), { "kind": "object", "members": members }] },
+                });
+            }
+            self.methods(def_id, &mut members);
+        } else if variant.ctor.is_some() {
+            for (index, field) in variant.fields.iter().enumerate() {
+                if field.vis.is_public() {
+                    let ty = self.tcx.type_of(field.did).instantiate_identity().skip_normalization();
+                    let property = json!({ "kind": "property", "name": index.to_string(), "optional": false, "readonly": false, "type": self.ts(ty) });
+                    members.push(documented(property, self.tcx, field.did));
+                }
+            }
+            self.methods(def_id, &mut members);
+        } else {
+            let unseen: Vec<Value> = (variant.fields.iter())
+                .filter(|field| !field.vis.is_public())
+                .map(|field| self.member_name(field))
+                .collect();
+            match self.structure(def_id) {
+                Some(declared) if declared["kind"] == "interface" => members.extend(
+                    (declared["members"].as_array().into_iter().flatten())
+                        .filter(|member| !(member["kind"] == "property" && unseen.contains(&member["name"])))
+                        .cloned(),
+                ),
+                _ => self.methods(def_id, &mut members),
+            }
+        }
+        documented(
+            json!({
+                "kind": "interface",
+                "name": name,
+                "exported": true,
+                "declare": false,
+                "typeParameters": generics,
+                "extends": [],
+                "members": members,
+            }),
+            self.tcx,
+            def_id,
+        )
+    }
+
     /// `export interface TagProps { variant: RouteTag; text?: string; }`
     pub(super) fn structure(&mut self, def_id: DefId) -> Option<Value> {
         let adt = self.tcx.adt_def(def_id);
@@ -48,46 +152,24 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 "type": { "kind": "literal", "value": value.literal() },
             }));
         }
+        // A tuple struct is its array (ADR 0020): its tuple, `type Point =
+        // [number, number]`; not one of no value, a unit struct or a handle
+        // of `PhantomData`, nor one whose `#[rust_js::types]` names JS's.
         if variant.ctor.is_some() {
-            // A tuple struct a caller outside its crate can't make, one with
-            // a field that isn't `pub`, `Email(String)`, which only its
-            // crate's checks make: opaque, an interface branded by a `unique
-            // symbol` of its own, which TypeScript takes only of what
-            // rust-js's JS gave, as std's opaque types are (ADR 1149). Its JS,
-            // `[text]`, is no API. Of one with type parameters, `any`, as
-            // before (ADR 1187).
-            if sealed_tuple(self.tcx, def_id) {
-                let name = super::type_name(self.tcx, def_id);
-                // `$emailBrand`: a name no Rust item's JS name can take, as
-                // none has a `$`, so no export of the module meets it.
-                let mut brand = format!("${name}Brand");
-                brand[1..2].make_ascii_lowercase();
-                if !self.unexported.contains_key(&brand) {
-                    let declared = json!({ "kind": "const", "name": brand, "exported": false, "declare": true, "type": { "kind": "unique-symbol" } });
-                    self.unexported.insert(brand.clone(), Some(declared));
-                }
-                let member = json!({
-                    "kind": "property",
-                    "name": { "computed": brand },
-                    "optional": false,
-                    "readonly": true,
-                    "type": keyword("never"),
-                });
-                return Some(documented(
-                    json!({
-                        "kind": "interface",
-                        "name": name,
-                        "exported": true,
-                        "declare": false,
-                        "typeParameters": [],
-                        "extends": [],
-                        "members": [member],
-                    }),
-                    self.tcx,
-                    def_id,
-                ));
+            if !holds_a_value(self.tcx, def_id) || super::written_types(self.tcx, def_id).is_some() {
+                return None;
             }
-            return None;
+            let elements: Vec<Value> = (variant.fields.iter())
+                .map(|field| self.ts(self.tcx.type_of(field.did).instantiate_identity().skip_normalization()))
+                .collect();
+            return Some(json!({
+                "kind": "type",
+                "name": super::type_name(self.tcx, def_id),
+                "exported": true,
+                "declare": false,
+                "typeParameters": self.generics(def_id),
+                "type": { "kind": "tuple", "elements": elements },
+            }));
         }
         // A flattened field's struct is what this one extends (ADR 0204):
         // one TypeScript can't see, another module's (`any`), is what a
@@ -262,44 +344,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
             });
             members.push(documented(property, self.tcx, field.did));
         }
-        // An object of methods' own, `containsNode(node: unknown): boolean`,
-        // each that's `pub` (ADR 0943).
-        for method in crate::classes::own_methods(self.tcx, def_id) {
-            if !self.tcx.visibility(method).is_public() {
-                continue;
-            }
-            let name = format!("{}.{}", self.tcx.item_name(def_id), self.js_name(method));
-            if self.leave_out(method, &name) {
-                continue;
-            }
-            let function = self.function(method);
-            let declared = json!({
-                "kind": "method",
-                "name": crate::classes::property(self.tcx, method),
-                "optional": false,
-                "typeParameters": function["typeParameters"],
-                "params": function["params"],
-                "returns": function["returns"],
-            });
-            members.push(documented(declared, self.tcx, method));
-        }
-        // A method its impls bind of the JS object it is, `isPersistent():
-        // boolean`, where no field has its name (rd144).
-        for (method, name) in crate::bindings::bound_methods(self.tcx, def_id) {
-            if members.iter().any(|m| m["name"].as_str() == Some(name.as_str())) {
-                continue;
-            }
-            let function = self.function(method);
-            let declared = json!({
-                "kind": "method",
-                "name": name,
-                "optional": false,
-                "typeParameters": function["typeParameters"],
-                "params": function["params"],
-                "returns": function["returns"],
-            });
-            members.push(documented(declared, self.tcx, method));
-        }
+        self.methods(def_id, &mut members);
         if let Some(flattened) = intersected {
             return Some(json!({
                 "kind": "type",
@@ -356,6 +401,47 @@ impl<'tcx> Declarations<'_, 'tcx> {
         }))
     }
 
+    /// Its methods JS calls on it: its own, `containsNode(node: unknown):
+    /// boolean`, each that's `pub` (ADR 0943), and those its impls bind of
+    /// the JS object it is, `isPersistent(): boolean`, where no member has
+    /// its name (rd144).
+    fn methods(&mut self, def_id: DefId, members: &mut Vec<Value>) {
+        for method in crate::classes::own_methods(self.tcx, def_id) {
+            if !self.tcx.visibility(method).is_public() {
+                continue;
+            }
+            let name = format!("{}.{}", self.tcx.item_name(def_id), self.js_name(method));
+            if self.leave_out(method, &name) {
+                continue;
+            }
+            let function = self.function(method);
+            let declared = json!({
+                "kind": "method",
+                "name": crate::classes::property(self.tcx, method),
+                "optional": false,
+                "typeParameters": function["typeParameters"],
+                "params": function["params"],
+                "returns": function["returns"],
+            });
+            members.push(documented(declared, self.tcx, method));
+        }
+        for (method, name) in crate::bindings::bound_methods(self.tcx, def_id) {
+            if members.iter().any(|m| m["name"].as_str() == Some(name.as_str())) {
+                continue;
+            }
+            let function = self.function(method);
+            let declared = json!({
+                "kind": "method",
+                "name": name,
+                "optional": false,
+                "typeParameters": function["typeParameters"],
+                "params": function["params"],
+                "returns": function["returns"],
+            });
+            members.push(documented(declared, self.tcx, method));
+        }
+    }
+
     /// A field's name as its declaration has it: its text, or the key a
     /// symbol names it by, `[Symbol.asyncIterator]` of JS's, and
     /// `[RESPONSE_SYMBOL]` of this module's own, declared a `unique symbol`,
@@ -406,21 +492,38 @@ fn with_null(ty: Value) -> Value {
     json!({ "kind": "union", "types": types })
 }
 
-/// A tuple struct a caller outside its crate can't make, one with a field
-/// that isn't `pub`, `Email(String)`, and no type parameters: declared
-/// opaque, branded by a `unique symbol` of its own, as std's opaque types
-/// are (ADR 1149). Not a binding's type, one whose `#[rust_js::types]`
-/// names JS's, nor a handle of `PhantomData` alone, which JS gives and
-/// declares (ADR 1187).
-pub(super) fn sealed_tuple(tcx: rustc_middle::ty::TyCtxt<'_>, did: DefId) -> bool {
-    let variant = tcx.adt_def(did).non_enum_variant();
-    let holds_a_value = variant.fields.iter().any(|field| {
+/// Whether `did`, a struct, holds a value JS sees: a field that isn't a
+/// `PhantomData`.
+fn holds_a_value(tcx: rustc_middle::ty::TyCtxt<'_>, did: DefId) -> bool {
+    (tcx.adt_def(did).non_enum_variant().fields.iter()).any(|field| {
         let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
         !matches!(ty.kind(), ty::Adt(adt, _) if adt.is_phantom_data())
-    });
-    variant.ctor.is_some()
-        && holds_a_value
-        && variant.fields.iter().any(|field| !field.vis.is_public())
-        && tcx.generics_of(did).own_params.is_empty()
+    })
+}
+
+/// Whether another crate can name `did`, a struct, but not make it, as Rust
+/// says: it's `pub`, and one of its fields isn't, `Email(String)`, or it's
+/// `#[non_exhaustive]`; so declared opaque (ADR 1187). Not a private one,
+/// which no other crate names, whose one outside maker is JS, a caller of
+/// what names it, as TypeScript's interface it isn't exported (ADR 0385);
+/// nor a class, nor a binding's type, whose `#[rust_js::types]` names JS's,
+/// nor one that holds no value, a unit struct or a handle of `PhantomData`,
+/// each JS's to make.
+pub(super) fn sealed(tcx: rustc_middle::ty::TyCtxt<'_>, did: DefId) -> bool {
+    let variant = tcx.adt_def(did).non_enum_variant();
+    tcx.visibility(did).is_public()
+        && (variant.is_field_list_non_exhaustive() || variant.fields.iter().any(|field| !field.vis.is_public()))
+        && holds_a_value(tcx, did)
+        && !crate::classes::is_class(tcx, did)
         && super::written_types(tcx, did).is_none()
+}
+
+/// Whether a struct's module declares it, so another names it (ADR 0210,
+/// amended): one of named fields, a unit struct named as a string (ADR
+/// 1164), and each tuple struct that holds a value, a `#[repr(transparent)]`
+/// one among them; not a unit struct or a handle of `PhantomData`, JS's.
+pub(super) fn declared(tcx: rustc_middle::ty::TyCtxt<'_>, did: DefId) -> bool {
+    tcx.adt_def(did).non_enum_variant().ctor.is_none()
+        || super::named_unit(tcx, did).is_some()
+        || holds_a_value(tcx, did)
 }

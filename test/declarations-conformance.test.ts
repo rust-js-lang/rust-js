@@ -252,21 +252,39 @@ function functions(source: string): Fn[] {
   return found;
 }
 
-type Struct = { name: string; fields: { name: string; ty: Ty }[] };
+type Struct = { name: string; fields: { name: string; ty: Ty; written: string }[]; sealed: boolean };
 
-// Each struct of named fields, each of a type it has a value of.
+// Each struct of named fields, each of a type it has a value of; `sealed`
+// where it's `pub` and a field isn't, which no other crate makes, nor
+// TypeScript, whose declaration is opaque (ADR 1187).
 function structs(source: string): Map<string, Struct> {
   const found = new Map<string, Struct>();
+  // A class, made by its constructor (ADR 0761), is no sealed struct.
+  const classes = new Set([...source.matchAll(/rust_js::class\)?\]\s*(?:#\[[^\]]*\]\s*)*(?:pub )?struct (\w+)/g)].map((m) => m[1]));
   const bare = source.replace(/#\[[^\]]*\]/g, "").replace(/\/\/[^\n]*/g, "");
-  for (const m of bare.matchAll(/^(?:pub )?struct (\w+) \{/gm)) {
+  for (const m of bare.matchAll(/^(pub )?struct (\w+) \{/gm)) {
     const [body] = enclosed(bare, m.index! + m[0].length - 1, "{", "}");
-    const fields = split(body).map((f) => {
+    const written = split(body);
+    const fields = written.map((f) => {
       const [name, ...ty] = f.replace(/^pub(\([^)]*\))?\s+/, "").split(":");
-      return { name: name.trim(), ty: parseType(tokens(ty.join(":"))) };
+      return { name: name.trim(), ty: parseType(tokens(ty.join(":"))), written: ty.join(":").trim() };
     });
-    found.set(m[1], { name: m[1], fields });
+    found.set(m[2], { name: m[2], fields, sealed: m[1] !== undefined && !classes.has(m[2]) && written.some((f) => !/^pub\s/.test(f)) });
   }
   return found;
+}
+
+// What a sealed struct's TypeScript caller has of one: its crate's own
+// maker's, `makeClicks(3)`, as another crate's caller would, which the
+// harness adds to the crate, `pub fn make_clicks(n: u32) -> Clicks`; none
+// of one whose fields aren't each owned.
+const makerOf = (struct: Struct) => `make_${struct.name.replace(/[A-Z]/g, (c, i: number) => `${i ? "_" : ""}${c.toLowerCase()}`)}`;
+const owned = (ty: Ty): boolean => ty.k !== "ref" && ty.k !== "fn" && ty.k !== "slice" && !("inner" in ty && !owned(ty.inner)) && !(ty.k === "tuple" && !ty.items.every(owned));
+function makers(structsOf: Map<string, Struct>): string {
+  return [...structsOf.values()]
+    .filter((s) => s.sealed && s.fields.every((f) => owned(f.ty)))
+    .map((s) => `pub fn ${makerOf(s)}(${s.fields.map((f) => `${f.name}: ${f.written}`).join(", ")}) -> ${s.name} {\n    ${s.name} { ${s.fields.map((f) => f.name).join(", ")} }\n}\n`)
+    .join("");
 }
 
 const camel = (name: string) => name.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
@@ -369,6 +387,13 @@ function value(ty: Ty, seed: number, variant: number, structsOf: Map<string, Str
       const declaredFields = ask.interfaces.get(struct.name);
       const fields = struct.fields.map((f, i) => [f.name, value(f.ty, seed + i, variant, structsOf, { ...ask, decl: declaredFields?.get(camel(f.name)), depth: (ask.depth ?? 0) + 1 })] as const);
       if (fields.some(([, v]) => !v)) return null;
+      if (struct.sealed) {
+        if (!struct.fields.every((f) => owned(f.ty))) return null;
+        return {
+          rs: `${struct.name} { ${fields.map(([n, v]) => `${n}: ${v!.rs}`).join(", ")} }`,
+          ts: `${camel(makerOf(struct))}(${fields.map(([, v]) => (v!.absent ? "undefined" : v!.ts)).join(", ")})`,
+        };
+      }
       return {
         rs: `${struct.name} { ${fields.map(([n, v]) => `${n}: ${v!.rs}`).join(", ")} }`,
         ts: `{ ${fields.filter(([, v]) => !v!.absent).map(([n, v]) => `${camel(n)}: ${v!.ts}`).join(", ")} }`,
@@ -484,8 +509,11 @@ function tsShow(ty: Ty, x: string, structsOf: Map<string, Struct>, depth = 0): s
     case "tuple":
       return ty.items.length === 0 ? `"null"` : `"[" + [${ty.items.map((t, i) => tsShow(t, `${x}[${i}]`, structsOf, depth)).join(", ")}].join(",") + "]"`;
     case "named": {
-      const fields = structsOf.get(ty.n)!.fields;
-      return `"{" + [${fields.map((f) => `${JSON.stringify(`"${camel(f.name)}":`)} + ${tsShow(f.ty, `${x}.${camel(f.name)}`, structsOf, depth)}`).join(", ")}].join(",") + "}"`;
+      const struct = structsOf.get(ty.n)!;
+      // A sealed one's fields, which its opaque declaration doesn't name,
+      // read of its JS to compare with Rust's (ADR 1187).
+      const of = struct.sealed ? `(${x} as unknown as Record<string, any>)` : x;
+      return `"{" + [${struct.fields.map((f) => `${JSON.stringify(`"${camel(f.name)}":`)} + ${tsShow(f.ty, `${of}.${camel(f.name)}`, structsOf, depth)}`).join(", ")}].join(",") + "}"`;
     }
     default:
       return `show(${x})`;
@@ -588,12 +616,12 @@ function conformance(name: string): number {
   const file = join(root, "test/corpus", `${name}.rs`);
   const source = readFileSync(file, "utf8");
   const dir = fixture(`declarations-conformance-${name}`);
-  writeFileSync(join(dir, "lib.rs"), `include!(${JSON.stringify(file)});\npub fn entry() {\n    main()\n}\n`);
+  const structsOf = structs(source);
+  writeFileSync(join(dir, "lib.rs"), `include!(${JSON.stringify(file)});\npub fn entry() {\n    main()\n}\n${makers(structsOf)}`);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--edition=2024", "-Awarnings"]);
   const dts = readFileSync(join(dir, "lib.d.ts"), "utf8");
   const params = declared(dts);
   const declaredInterfaces = interfaces(dts);
-  const structsOf = structs(source);
   const rs: string[] = [];
   const tsLines: string[] = [];
   const imported = new Set<string>();
@@ -644,6 +672,8 @@ function conformance(name: string): number {
       while (tsArgs.at(-1)?.absent) tsArgs.pop();
       const given = tsArgs.map((a) => (a.absent ? "undefined" : a.ts));
       imported.add(jsName);
+      // A sealed struct's maker its arguments call (`makers`).
+      for (const maker of given.join(" ").matchAll(/\b(make[A-Z]\w*)\(/g)) imported.add(maker[1]!);
       // Each impl's dictionary, after the arguments, as declared.
       for (const dictionary of fn.dictionaries) imported.add(dictionary);
       given.push(...fn.dictionaries);

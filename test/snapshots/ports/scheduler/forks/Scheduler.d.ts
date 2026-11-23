@@ -9,6 +9,13 @@ import type { PriorityLevel } from "../SchedulerPriorities.js";
 
 export { IdlePriority as unstable_IdlePriority, ImmediatePriority as unstable_ImmediatePriority, LowPriority as unstable_LowPriority, NormalPriority as unstable_NormalPriority, UserBlockingPriority as unstable_UserBlockingPriority } from "../SchedulerPriorities.js";
 
+declare const $taskBrand: unique symbol;
+
+// Its field is `pub`, as upstream's `Callback` is a plain function type
+// anyone can make: another Rust crate calling `unstable_schedule_callback`
+// couldn't build one otherwise, and its declaration is upstream's own,
+// `type Callback = (value: boolean) => Callback | null | undefined` (ADR
+// 1187, amended).
 /**
  * A task's work: given whether it timed out, it does some, and gives
  * what's left of it, or nothing where it's done.
@@ -16,12 +23,8 @@ export { IdlePriority as unstable_IdlePriority, ImmediatePriority as unstable_Im
 export type Callback = (value: boolean) => Callback | null | undefined;
 
 export interface Task {
+    readonly [$taskBrand]: never;
     id: number;
-    callback?: Callback | undefined;
-    priorityLevel: PriorityLevel;
-    startTime: number;
-    expirationTime: number;
-    sortIndex: number;
 }
 
 /** What `unstable_scheduleCallback` is given: how long to wait first. */

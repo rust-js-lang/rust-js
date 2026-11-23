@@ -61,15 +61,6 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations-type-maps.test.ts", "-t", "its keys and its lookup"],
   },
   {
-    name: "named-unit-not-declared",
-    breaks: "a unit struct named as a string isn't declared, so a function giving one returns `any`, where its value is the string",
-    file: "crates/rust-js-lower/src/declarations.rs",
-    find: "                || named_unit(tcx, did).is_some()\n",
-    replace: "",
-    tests: ["test/declarations-type-maps.test.ts", "-t", "its keys and its lookup"],
-  },
-
-  {
     name: "item-erased-asked-of-the-module",
     breaks: "a library's `front`, whose `impl FnMut(&mut U)` asks a `&mut`'s form, is declared in the crate root's context, a rustc ICE, `generics_of: unexpected node kind` (#1029)",
     file: "crates/rust-js-lower/src/declarations.rs",
@@ -550,18 +541,6 @@ export const mutations: Mutation[] = [
     find: "        (self.fns.get(&def_id)).map_or_else(|| fn_name(self.tcx, def_id), |info| info.name.clone())\n",
     replace: "        fn_name(self.tcx, def_id)\n",
     tests: ["test/declarations.test.ts", "-t", "as its JS does"],
-  },
-  {
-    name: "transparent-tuple-struct-any",
-    breaks: "a `#[repr(transparent)]` tuple struct a function takes is `any`",
-    file: "crates/rust-js-lower/src/declarations.rs",
-    find: "                || super::recognition::transparent_field(tcx, adt).is_some()\n",
-    replace: "",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "transparent struct is declared",
-    ],
   },
   {
     name: "bound-global-undeclared",
@@ -1081,10 +1060,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "sealed-tuple-referenced-any",
-    breaks: "what names a tuple struct of a private field names it `any`, `welcome(email: any)`, though it's declared (#2356, ADR 1187)",
+    breaks: "what names a struct no other crate can make names it `any`, `welcome(email: any)`, though it's declared (#2356, ADR 1187)",
     file: "crates/rust-js-lower/src/declarations.rs",
-    find: "                || structures::sealed_tuple(tcx, did)\n",
-    replace: "",
+    find: "        DefKind::Struct => structures::declared(tcx, did),\n",
+    replace: "        DefKind::Struct => structures::declared(tcx, did) && !structures::sealed(tcx, did),\n",
     tests: ["test/declarations-sealed.test.ts", "-t", "a tuple struct of a private field"],
   },
 ];

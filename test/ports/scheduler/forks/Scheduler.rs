@@ -23,10 +23,15 @@ use scheduler_priorities::{
     USER_BLOCKING_PRIORITY,
 };
 
+// Its field is `pub`, as upstream's `Callback` is a plain function type
+// anyone can make: another Rust crate calling `unstable_schedule_callback`
+// couldn't build one otherwise, and its declaration is upstream's own,
+// `type Callback = (value: boolean) => Callback | null | undefined` (ADR
+// 1187, amended).
 /// A task's work: given whether it timed out, it does some, and gives
 /// what's left of it, or nothing where it's done.
 #[repr(transparent)]
-pub struct Callback(Box<dyn FnMut(bool) -> Option<Callback>>);
+pub struct Callback(pub Box<dyn FnMut(bool) -> Option<Callback>>);
 
 pub struct Task {
     pub id: f64,

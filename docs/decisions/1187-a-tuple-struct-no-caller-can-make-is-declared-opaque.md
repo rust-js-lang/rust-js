@@ -114,3 +114,85 @@ Alternatives:
   `sealed-tuple-of-pub-fields`, `sealed-tuple-generic`,
   `sealed-tuple-handle`, `sealed-tuple-binding-type` and
   `sealed-tuple-referenced-any`.
+
+## Amendment: every struct another crate names but can't make, and a tuple struct of `pub` fields its tuple (2026-11-23)
+
+The decision's first form left four cases apart: a generic tuple struct, a
+transparent one, one of named fields, and one whose fields are all `pub`.
+They are closed by the one question Rust asks of each, whether another
+crate can make it: **a `pub` struct with a field that isn't `pub`, or
+`#[non_exhaustive]`, is opaque, whatever its JS is.** That covers a tuple
+struct, a struct of named fields and a `#[repr(transparent)]` one alike.
+`declarations/structures.rs`' `sealed` is the one answer, and replaces
+`sealed_tuple`. `struct_declaration`, which both places a struct is
+declared call, declares a sealed one by `opaque`, and any other by
+`structure`. A class's and a global's fields stay `structure`'s, as JS
+makes those.
+
+- **What another crate reads stays readable.** A sealed struct's `pub`
+  fields are declared on its interface beside the brand, `interface User {
+  readonly [$userBrand]: never; name: string }`, and so are its `pub`
+  methods. A tuple struct's `pub` field is declared by its index, `"0":
+  number`, as its JS is its array.
+- **A transparent one whose field is `pub`** is that field's type, branded:
+  `type Tagged<T> = string & { readonly [$taggedBrand]: T }`. It reads as
+  the string its JS is (ADR 0584) but isn't made of one, `"made"` refused.
+  One whose field isn't `pub`, `Meters(f64)`, is the brand alone, and is
+  no longer `type Meters = number`.
+- **A generic one carries its type parameters** in the brand: `readonly
+  [$idBrand]: T`, or a tuple of them, `[T, U]`, as `LazyLock<T>`'s does.
+  So `Id<User>` given for `Id<Post>` is refused wherever TypeScript can
+  tell `User` from `Post`.
+- **A tuple struct whose fields are all `pub`** is its tuple, `type Point =
+  [number, number]`, as its JS is its array, where it was `any`. With
+  that, every struct that holds a value is declared (`declared`, read by
+  `declares_type`). A unit struct or a handle of `PhantomData` holds none,
+  and stays JS's.
+
+**A private struct is not sealed.** No other crate can name it, so Rust's
+question doesn't arise for it. Its only outside maker is JS, a caller of
+the exported function that names it, which ADR 0385 declares it for, a
+non-exported interface of its fields, as TypeScript's own non-exported
+props interface is: react.dev's `struct DiagramGroupProps { children }`,
+the guide's `TodoItemProps`. Sealing those would have made every such
+component uncallable from TypeScript, and bent idiomatic Rust, private
+props of an in-crate component, to fit the declarations. A `pub` struct a
+JS caller must make, a component's props another crate's TypeScript gives,
+has `pub` fields, which another crate's `jsx!` making it would need too:
+`test/declarations-flatten.test.ts`' `CardProps` writes `pub far` so.
+
+Measured before landing:
+
+- react-in-rust at its pin: 21 internal types flip from an interface to
+  opaque (`Segment`, `SuspenseBoundary`, `Task`, `Effect`, …). Upstream's
+  `export opaque type EventPriority` is now opaque here too, and the tuple
+  struct `KeyNode` is declared where it was `any`. No TypeScript in the
+  port imports a changed module, and declarations change no JS.
+- floating-ui: no sealed struct.
+- The crate corpus writes no declarations.
+
+Also held by:
+
+- `test/declarations-sealed.test.ts`, with these rows:
+  - a named struct's `pub` field read and its private one refused;
+  - a tuple struct's `pub` field by index;
+  - `#[non_exhaustive]`;
+  - `Id<User>` refused for `Id<Post>`;
+  - a transparent struct of a private field;
+  - a tuple struct of `pub` fields made as its tuple;
+  - a private props struct made by TypeScript;
+- `test/declarations.test.ts`' transparent `Tagged<T>`, read as its string
+  and refused when forged;
+- `test/declarations-conformance.test.ts`, whose generated TypeScript
+  caller gets a sealed struct from a maker it adds to the crate, `pub fn
+  make_clicks(n: u32) -> Clicks`, as another crate's caller would;
+- the scheduler port's snapshot, blessed for its `Task`, opaque with its `pub`
+  `id`; its `Callback`, `pub` on its field as upstream's function type is
+  one anyone makes, keeps upstream's declaration;
+- mutations:
+  - this decision's eight, now against `sealed` and `opaque`;
+  - `sealed-private-struct`, `sealed-pub-fields-hidden`,
+    `sealed-transparent-pub-unbranded`, `tuple-struct-undeclared` and
+    `sealed-non-exhaustive-open`;
+  - `named-unit-not-declared` and `transparent-tuple-struct-any`, moved
+    with `declares_type`'s struct arm to `declared` and `structure`.

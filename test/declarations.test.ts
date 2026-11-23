@@ -504,7 +504,7 @@ pub struct BadgeProps<'a> {
   // A trailing `Option` is optional, left out by a caller (ADR 0443).
   expect(declarations).toContain("export function shown(name?: string | null | undefined): string;");
   // A nullable field is there, `T | null` (ADR 1072, amended).
-  expect(declarations).toContain("export interface BadgeProps {\n    label: string | null;\n    title?: string | undefined;\n    data?: unknown;\n    width?: any;\n    mid?: string | null | undefined;\n}");
+  expect(declarations).toContain("export interface BadgeProps {\n    label: string | null;\n    title?: string | undefined;\n    data?: unknown;\n    width?: Meters | undefined;\n    mid?: string | null | undefined;\n}");
   writeFileSync(join(dir, "use.tsx"), `import { LanguagesContext, shown, type BadgeProps } from "./lib.jsx";
 const languages: { code: string }[] | null = null;
 export const ok = [<LanguagesContext value={languages}>{shown(null)}</LanguagesContext>, shown(undefined), shown("a"), shown()];
@@ -1409,7 +1409,7 @@ pub fn tagged(m: &Meters) -> Tagged<Meters> {
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain("export type Meters = number;");
-  expect(declarations).toContain("export type Tagged<T> = string;");
+  expect(declarations).toContain("export type Tagged<T> = string & {\n    readonly [$taggedBrand]: T;\n};");
   expect(declarations).toContain("export function tagged(m: Meters): Tagged<Meters>;");
   writeFileSync(join(dir, "use.ts"), `import { double, tagged } from "./lib.js";
 export const twice: number = double(2);

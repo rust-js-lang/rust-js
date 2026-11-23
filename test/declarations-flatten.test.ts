@@ -28,7 +28,7 @@ test("a flattened field of a type TypeScript can't see extends nothing", () => {
 pub struct CardProps {
     pub title: Option<&'static str>,
     #[cfg_attr(rust_js, rust_js::flatten)]
-    far: far::Far,
+    pub far: far::Far,
 }
 
 impl CardProps {

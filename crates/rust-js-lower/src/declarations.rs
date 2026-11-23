@@ -173,7 +173,7 @@ pub fn module<'tcx>(
             DefKind::Struct if super::classes::is_class(tcx, def_id) => {
                 super::classes::declared_by(tcx, def_id, module).map(|class| out.class(class))
             }
-            DefKind::Struct => out.structure(def_id),
+            DefKind::Struct => out.struct_declaration(def_id),
             DefKind::Enum => Some(out.enumeration(def_id)),
             DefKind::Union => Some(out.union_type(def_id)),
             DefKind::TyAlias => Some(out.alias(def_id)),
@@ -299,22 +299,15 @@ fn by_own_name(fns: &IndexMap<DefId, super::FnInfo>, item: DefId, export: &str) 
 
 /// Whether the declarations of `did`'s module declare it, a struct, an
 /// enum or a union of the crate's another module's or a library's consumer
-/// names by its name (ADR 0210, amended): an enum, a union, a
-/// `#[repr(transparent)]` struct, one of named fields, or a unit struct
-/// named as a string (ADR 1164); not a tuple struct, which has no
-/// declaration; and an alias, a library's plain one
+/// names by its name (ADR 0210, amended): an enum, a union, a struct
+/// (`structures::declared`, each that holds a value, ADR 1187); and an
+/// alias, a library's plain one
 /// too, as the crate's own is (rd642). One whose `#[rust_js::types]` names
 /// a type is declared as well, but is that type where it's written
 /// (`aliases::written_alias`).
 pub(super) fn declares_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
     match tcx.def_kind(did) {
-        DefKind::Struct => {
-            let adt = tcx.adt_def(did);
-            adt.non_enum_variant().ctor.is_none()
-                || super::recognition::transparent_field(tcx, adt).is_some()
-                || named_unit(tcx, did).is_some()
-                || structures::sealed_tuple(tcx, did)
-        }
+        DefKind::Struct => structures::declared(tcx, did),
         DefKind::Enum | DefKind::Union => true,
         DefKind::TyAlias => true,
         _ => false,
@@ -1288,7 +1281,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         let inner = self.erased(did);
                         let outer = std::mem::replace(&mut self.erased, inner);
                         let declared = match tcx.def_kind(did) {
-                            DefKind::Struct => self.structure(did),
+                            DefKind::Struct => self.struct_declaration(did),
                             DefKind::Union => Some(self.union_type(did)),
                             _ => Some(self.enumeration(did)),
                         };

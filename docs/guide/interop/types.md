@@ -581,10 +581,11 @@ export function parsed(id) {
   `lane`, and a map by it is the option, `lane.map(EventPriority::from)`'s
   `lane`, the crate's `from` that nothing else names written nowhere (the
   user's decision, ADR 0584, amended).
-  A newtype without the attribute is an array of one, `[id]`; one of a
-  private field, which only its crate makes, is declared opaque, so
-  TypeScript takes it only of what rust-js gave
-  ([ADR 1187](../../decisions/1187-a-tuple-struct-no-caller-can-make-is-declared-opaque.md)).
+  A newtype without the attribute is an array of one, `[id]`, declared as
+  its tuple, `[number]`. A `pub` one of a private field, which only its
+  crate makes, is declared opaque, as is a transparent one, so TypeScript
+  takes it only of what rust-js gave
+  ([ADR 1187](../../decisions/1187-a-tuple-struct-no-caller-can-make-is-declared-opaque.md), amended).
 
 [Structs, enums and traits as JavaScript sees them](objects.md) covers
 methods, `impl` blocks and copies.

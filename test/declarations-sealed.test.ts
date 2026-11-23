@@ -1,9 +1,12 @@
-// What a crate's declarations say of a tuple struct no caller outside the
-// crate can make, one with a field that isn't `pub`, `Email(String)`, which
-// only its crate's checks make (#2356, ADR 1187): an interface branded by a
-// `unique symbol` of its module's own, as std's opaque types are (ADR 1149),
-// not `any`. TypeScript then takes one only of what rust-js gave, as Rust
-// takes one only of what the crate made.
+// What a crate's declarations say of a struct no other crate can make, a
+// `pub` one with a field that isn't `pub`, `Email(String)`, which only its
+// crate's checks make, or `#[non_exhaustive]` (#2356, ADR 1187): an
+// interface branded by a `unique symbol` of its module's own, as std's
+// opaque types are (ADR 1149), with its `pub` fields and the type
+// parameters it holds, not `any`. TypeScript then takes one only of what
+// rust-js gave, as Rust takes one only of what the crate made. A tuple
+// struct of `pub` fields is its tuple, as its JS is its array; a private
+// struct, which no other crate names, ADR 0385's interface, which JS makes.
 
 import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -84,7 +87,7 @@ welcome(name, "not an email" as Email);
   expect(lib.welcome(lib.Name.new("Ada"), parse("ada@example.com")._0)).toBe("Welcome, Ada! We'll write to ada@example.com.");
 });
 
-test("a tuple struct its crate's callers can make, a JS handle, a binding's type or a generic one is declared as before", () => {
+test("a tuple struct of pub fields is its tuple; a binding's type, a JS handle and a private struct are declared as before", () => {
   const dir = fixture("declarations-sealed-open");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
 use std::marker::PhantomData;
@@ -102,17 +105,29 @@ pub struct Id<T>(u64, PhantomData<T>);
 #[repr(transparent)]
 pub struct Meters(f64);
 
+struct BadgeProps {
+    label: String,
+}
+
 pub fn open(o: &Open) -> usize { o.0.len() }
 pub fn handle(_h: &Handle) {}
 pub fn id(i: &Id<u8>) -> u64 { i.0 }
 pub fn meters(m: Meters) -> f64 { m.0 }
 pub fn kept(s: &Scores) -> &Scores { s }
+pub fn badge(BadgeProps { label }: BadgeProps) -> String { label }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  expect(declarations).not.toContain("unique symbol");
-  expect(declarations).toContain("export type Meters = number;");
+  expect(declarations).toContain("export type Open = [\n    string\n];");
+  expect(declarations).toContain("export interface Id<T> {\n    readonly [$idBrand]: T;\n}");
+  expect(declarations).toContain("export interface Meters {\n    readonly [$metersBrand]: never;\n}");
+  expect(declarations).toContain("interface BadgeProps {\n    label: string;\n}");
   expect(declarations).toContain("export function kept(s: Map<string, number>): Map<string, number>;");
+  for (const unbranded of ["$scoresBrand", "$handleBrand", "$badgePropsBrand", "$openBrand"]) expect(declarations).not.toContain(unbranded);
+  writeFileSync(join(dir, "use.ts"), `import { badge, open } from "./lib.js";
+export const shown: string = badge({ label: "new" }) + open(["four"]);
+`);
+  expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
 });
 
 test("a sealed tuple struct's brand meets no export of its module, a function named as the brand was", () => {
@@ -143,4 +158,176 @@ pub fn show(name: &Name) -> String {
 export const shown: string = show(Name.new("Ada")) + nameBrand();
 `);
   expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
+});
+
+test("a named, generic, non-exhaustive or transparent struct no other crate can make is opaque, its pub fields read", async () => {
+  const dir = fixture("declarations-sealed-structs");
+  writeFileSync(join(dir, "lib.rs"), `use std::marker::PhantomData;
+
+/// An address that passed its check.
+pub struct Email(String);
+
+pub fn email(text: &str) -> Result<Email, String> {
+    match text.contains('@') {
+        true => Ok(Email(text.to_string())),
+        false => Err(format!("{text} has no @")),
+    }
+}
+
+pub fn welcome(email: &Email) -> String {
+    format!("welcome, {}", email.0)
+}
+
+pub struct Pair(pub u32, String);
+
+pub fn pair(n: u32) -> Pair {
+    Pair(n, n.to_string())
+}
+
+pub fn label(pair: &Pair) -> String {
+    pair.1.clone()
+}
+
+pub struct Point(pub f64, pub f64);
+
+pub fn norm(p: &Point) -> f64 {
+    (p.0 * p.0 + p.1 * p.1).sqrt()
+}
+
+pub struct User {
+    pub name: String,
+    age: u32,
+}
+
+pub fn user(name: &str) -> User {
+    User { name: name.to_string(), age: 3 }
+}
+
+pub fn age(user: &User) -> u32 {
+    user.age
+}
+
+#[non_exhaustive]
+pub struct Settings {
+    pub dark: bool,
+}
+
+pub fn settings() -> Settings {
+    Settings { dark: true }
+}
+
+pub struct Id<T>(u64, PhantomData<T>);
+
+pub struct Post {
+    pub title: String,
+}
+
+pub fn post_id() -> Id<Post> {
+    Id(7, PhantomData)
+}
+
+pub fn user_id() -> Id<User> {
+    Id(8, PhantomData)
+}
+
+pub fn raw_post(id: &Id<Post>) -> u32 {
+    id.0 as u32
+}
+
+#[repr(transparent)]
+pub struct Meters(f64);
+
+pub fn meters(n: f64) -> Meters {
+    Meters(n)
+}
+
+pub fn doubled(m: &Meters) -> f64 {
+    m.0 * 2.0
+}
+
+#[repr(transparent)]
+pub struct Open(pub f64);
+
+pub fn open(o: Open) -> f64 {
+    o.0
+}
+
+#[repr(transparent)]
+pub struct Tagged<T> {
+    _kind: PhantomData<T>,
+    pub name: String,
+}
+
+pub fn tagged(name: &str) -> Tagged<Point> {
+    Tagged { _kind: PhantomData, name: name.to_string() }
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  for (const expected of [
+    "declare const $emailBrand: unique symbol;",
+    "/** An address that passed its check. */\nexport interface Email {\n    readonly [$emailBrand]: never;\n}",
+    "export interface Pair {\n    readonly [$pairBrand]: never;\n    \"0\": number;\n}",
+    "export type Point = [\n    number,\n    number\n];",
+    "export interface User {\n    readonly [$userBrand]: never;\n    name: string;\n}",
+    "export interface Settings {\n    readonly [$settingsBrand]: never;\n    dark: boolean;\n}",
+    "export interface Id<T> {\n    readonly [$idBrand]: T;\n}",
+    "export interface Meters {\n    readonly [$metersBrand]: never;\n}",
+    "export type Open = number;",
+    "export type Tagged<T> = string & {\n    readonly [$taggedBrand]: T;\n};",
+    "export function welcome(email: Email): string;",
+  ]) {
+    expect(declarations).toContain(expected);
+  }
+  expect(declarations).not.toContain("export const $emailBrand");
+  expect(declarations).not.toContain("any");
+  writeFileSync(join(dir, "use.ts"), `import { age, doubled, email, label, meters, norm, open, pair, postId, rawPost, settings, tagged, user, welcome, type Email } from "./lib.js";
+const made = email("a@b.c");
+if (made.TAG !== "Ok") throw new Error(made._0);
+export const kept: Email = made._0;
+export const greeting: string = welcome(kept);
+export const first: number = pair(4)[0];
+export const labelled: string = label(pair(4));
+export const length: number = norm([3, 4]);
+const someone = user("ada");
+export const name: string = someone.name;
+export const years: number = age(someone);
+export const dark: boolean = settings().dark;
+export const raw: number = rawPost(postId());
+export const twice: number = doubled(meters(2));
+export const opened: number = open(1.5);
+export const named: string = tagged("ada").toUpperCase();
+`);
+  expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
+  writeFileSync(join(dir, "wrong.ts"), `import { age, doubled, label, rawPost, userId, welcome, type Email, type Point, type Tagged } from "./lib.js";
+welcome("not an email");
+welcome(["not an email"]);
+welcome("x" as Email);
+label([1, "1"]);
+age({ name: "ada" });
+rawPost(userId());
+doubled(2);
+export const forged: Tagged<Point> = "made";
+`);
+  expect(typeChecked(dir, "wrong.ts", checking)).toEqual([
+    expect.stringContaining("error TS2345: Argument of type 'string' is not assignable to parameter of type 'Email'"),
+    expect.stringContaining("error TS2741: Property '[$emailBrand]' is missing in type 'string[]' but required in type 'Email'"),
+    expect.stringContaining("error TS2352: Conversion of type 'string' to type 'Email' may be a mistake"),
+    expect.stringContaining("error TS2741: Property '[$pairBrand]' is missing in type '[number, string]' but required in type 'Pair'"),
+    expect.stringContaining("error TS2741: Property '[$userBrand]' is missing in type '{ name: string; }' but required in type 'User'"),
+    expect.stringContaining("error TS2345: Argument of type 'Id<User>' is not assignable to parameter of type 'Id<Post>'"),
+    expect.stringContaining("error TS2345: Argument of type 'number' is not assignable to parameter of type 'Meters'"),
+    expect.stringContaining("error TS2322: Type 'string' is not assignable to type 'Tagged<Point>'"),
+  ]);
+  const lib = await import(join(dir, "lib.js"));
+  const kept = lib.email("a@b.c")._0;
+  expect([lib.welcome(kept), lib.pair(4)[0], lib.label(lib.pair(4)), lib.norm([3, 4]), lib.age(lib.user("ada")), lib.rawPost(lib.postId()), lib.doubled(lib.meters(2))]).toEqual([
+    "welcome, a@b.c",
+    4,
+    "4",
+    5,
+    3,
+    7,
+    4,
+  ]);
 });
