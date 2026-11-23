@@ -326,4 +326,12 @@ export const mutations: Mutation[] = [
     replace: 'self.emit(json, "int", vec![value], out);',
     tests: ["test/serde-std.test.ts", "-t", "an i128, a u128 and a Saturating"],
   },
+  {
+    name: "serde-own-codec-as-compiled",
+    breaks: "`deserialize_with = \"Option::deserialize\"`, serde's own impl, is taken for a function the crate compiles, and the compiler panics (#2383)",
+    file: "crates/rust-js-lower/src/serde.rs",
+    find: "        if (self.tcx.trait_of_assoc(f)).is_some_and(|t| crate::serde::serde_trait(self.tcx, t).is_some()) {\n",
+    replace: "        if false && (self.tcx.trait_of_assoc(f)).is_some_and(|t| crate::serde::serde_trait(self.tcx, t).is_some()) {\n",
+    tests: ["test/serde-attributes.test.ts", "-t", "its own reader that isn't there"],
+  },
 ];

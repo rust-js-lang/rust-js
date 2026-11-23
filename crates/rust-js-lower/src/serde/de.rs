@@ -487,6 +487,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             let read = self.field_reader(field.did, &attrs, field_ty, span)?;
+            // A field of its own reader that isn't there is serde's derive's
+            // `missing field`, its reader never called, an `Option`'s too:
+            // `$jsonPresent(read)` (#2382). Its default, where it has one,
+            // comes first, `missing`.
+            let read = match attrs.deserialize_with {
+                Some(_) => Expr::call(Expr::helper("$jsonPresent"), vec![read]),
+                None => read,
+            };
             let missing = missing.map(|value| {
                 let params = defaults.iter().map(|d| Pattern::Name(d.clone())).collect();
                 Expr::arrow(params, vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
