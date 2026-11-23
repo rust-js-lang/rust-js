@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/back_steps.js",
     find: "    const step = enumerated.iter.back();\n    return step.done ? step : pair(step, enumerated.count + enumerated.iter.len());\n",
     replace: "    const left = enumerated.iter.len();\n    const step = enumerated.iter.back();\n    return step.done ? step : pair(step, enumerated.count + left - 1);\n",
-    tests: ["test/corpus.test.ts", "-t", "^back_predicate_unwinds.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_from_its_back_counts_by_its_source_after\\.rs$"],
   },
   {
     name: "enumerate-try-rfold-of-back-unasked",
@@ -496,7 +496,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/back_steps.js",
     find: "  $ownsAs(enumerated, iter, \"count\");\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_count_where_adapters_call_them.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^skip_of_an_enumerate_counts_by_its_source_own_count\\.rs$"],
   },
   {
     name: "filter-ends-fold-by-next",
@@ -616,7 +616,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/back_steps.js",
     find: "    enumerated.iter.fold(init, (a, x) => f(a, [enumerated.count++, x]), unwind, ends);\n",
     replace: "    enumerated.iter.fold(init, (a, x) => f(a, [enumerated.count++, x]), unwind);\n",
-    tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_fold_drops_its_closure_before_what_is_left\\.rs$"],
   },
   {
     name: "step-by-first-step-acc-first",
