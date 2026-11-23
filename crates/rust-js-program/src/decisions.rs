@@ -60,7 +60,7 @@ pub(crate) const CATALOGUE: &[Decision] = &[
     Decision {
         name: "generic-form",
         owner: "crates/rust-js-lower/src/generic_facts.rs form_of",
-        answers: &["as-it-is", "handle", "box", "held-box", "tagged"],
+        answers: &["as-it-is", "handle", "box", "held-box", "tagged", "placed"],
         typed: false,
     },
     Decision {

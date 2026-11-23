@@ -38,8 +38,16 @@ export const mutations: Mutation[] = [
     name: "generic-form-tagged-uncatalogued",
     breaks: "`generic_facts`' `form_of` answers `tagged`, a result generic code writes, where the catalogue has no such answer, so every compile the nightly counts that reaches one crashes (nightly 43133510260)",
     file: "crates/rust-js-program/src/decisions.rs",
-    find: "        answers: &[\"as-it-is\", \"handle\", \"box\", \"held-box\", \"tagged\"],\n",
-    replace: "        answers: &[\"as-it-is\", \"handle\", \"box\", \"held-box\"],\n",
+    find: "        answers: &[\"as-it-is\", \"handle\", \"box\", \"held-box\", \"tagged\", \"placed\"],\n",
+    replace: "        answers: &[\"as-it-is\", \"handle\", \"box\", \"held-box\", \"placed\"],\n",
     tests: ["test/decisions.test.ts", "-t", "tagged form of a write's result"],
+  },
+  {
+    name: "generic-form-placed-uncatalogued",
+    breaks: "generic code's placed form, which `generic_facts.rs`' `form_of` records, isn't in the catalogue, so every counting run, the Nightly's and Crater's, panics on a placed iterator given to generic code (#2370)",
+    file: "crates/rust-js-program/src/decisions.rs",
+    find: '"held-box", "tagged", "placed"],',
+    replace: '"held-box", "tagged"],',
+    tests: ["test/decisions.test.ts", "-t", "each record names a catalogued decision|placed form"],
   },
 ];

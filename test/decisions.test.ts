@@ -4,7 +4,7 @@
 // is of a name the report doesn't know, and no catalogued answer is one no
 // code gives (docs/finding-wrong-answers.md).
 import { expect, test } from "bun:test";
-import { readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { underLoad } from "../scripts/timing";
@@ -36,16 +36,26 @@ test("each catalogued decision is recorded by its owner", () => {
   expect(unrecorded).toEqual([]);
 });
 
+// The compiler's Rust: the binary's `src/` and each of its crates' (ADR
+// 1181), where a record of the lowering's is since the split; `src/` alone
+// missed `generic_facts.rs`' `placed` (#2370).
+const compilerSources = (): string[] => [
+  ...sources("src"),
+  ...readdirSync(join(root, "crates")).flatMap((crate) => (existsSync(join(root, "crates", crate, "src")) ? sources(join("crates", crate, "src")) : [])),
+];
+
 test("each record names a catalogued decision and its answers", () => {
   const decisions = new Map(catalogue().map((d) => [d.name, d.answers]));
   const wrong: string[] = [];
-  for (const file of sources("src")) {
+  let records = 0;
+  for (const file of compilerSources()) {
     const text = readFileSync(join(root, file), "utf8");
     // A record's decision, and each answer it gives in its call or the
     // answer `match` that feeds it, as literals: of an answer a local
     // holds, each value its `let` gives, a literal not an argument of a
     // call (`unreachable!("..")`'s).
     for (const record of text.matchAll(/decisions::record(?:_typed)?\(\s*"([^"]+)",\s*([^;]*)\);/g)) {
+      records++;
       const [call, name, rest] = record;
       const answers = decisions.get(name);
       if (!answers) {
@@ -62,6 +72,8 @@ test("each record names a catalogued decision and its answers", () => {
     }
   }
   expect(wrong).toEqual([]);
+  // Each catalogued decision's record among them, so none is read nowhere.
+  expect(records).toBeGreaterThanOrEqual(catalogue().length);
 });
 
 // A compile asked to count, `RUST_JS_DECISIONS`, into a file that has
@@ -224,6 +236,24 @@ test("a compile asked counts generic code's tagged form of a write's result", ()
     .filter(([decision, answer]) => decision === "generic-form" && answer === "tagged")
     .reduce((n, row) => n + Number(row[4]), 0);
   expect(tagged).toBeGreaterThan(0);
+}, underLoad(120_000));
+
+// And its placed form, an iterator JS holds as no object given generic
+// code that holds one (1977f0c77), which panicked as uncatalogued (#2370).
+test("a compile asked counts generic code's placed form of a crate's iterator", () => {
+  const dir = fixture("decisions-placed");
+  const counts = join(dir, "counts.tsv");
+  rmSync(counts, { force: true });
+  const source = join(root, "test/corpus/conversion_dictionary_given_the_crates_iterator.rs");
+  const compiled = Bun.spawnSync([compiler, source, "-o", join(dir, "main.js")], {
+    cwd: root,
+    env: { ...process.env, RUST_JS_DECISIONS: counts },
+  });
+  expect([compiled.exitCode, compiled.stderr.toString().match(/panicked.*\n.*/)?.[0]]).toEqual([0, undefined]);
+  const placed = readFileSync(counts, "utf8").trim().split("\n").map((line) => line.split("\t"))
+    .filter(([decision, answer]) => decision === "generic-form" && answer === "placed")
+    .reduce((n, row) => n + Number(row[4]), 0);
+  expect(placed).toBeGreaterThan(0);
 }, underLoad(120_000));
 
 // A workflow gives an empty setting where it asks no counts, a run not the
