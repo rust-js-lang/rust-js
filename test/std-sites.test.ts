@@ -3,11 +3,12 @@
 // std's MIR makes (#2292, ADR 1184): `bun run std` writes it, and one a
 // change to the walk would move is caught here.
 import { expect, test } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { runSync } from "./child";
-import { raisedBuild, stdSites, stdSitesFile } from "../scripts/std";
+import { builtRlibs, raisedBuild, stdSites, stdSitesFile } from "../scripts/std";
 import { compiler, fixture, root, run } from "./support";
 
 // A path into a machine's own copy of std's source or its home, which no
@@ -46,3 +47,22 @@ test("the runtime's sites of std's panics are what std's MIR says", () => {
   expect(built.code).toBe(0);
   expect(stdSites(readFileSync(out, "utf8"), root)).toBe(readFileSync(stdSitesFile, "utf8"));
 }, 300_000);
+
+// A library Cargo puts in two directories, a build step's `out` and `deps`,
+// is linked into the sysroot once; two of one name that differ are said
+// (run 45092210652's `EEXIST`).
+test("std's build's libraries are each linked once, and two of one name that differ are said", () => {
+  const dir = mkdtempSync(join(tmpdir(), "rust-js-rlibs-"));
+  try {
+    for (const at of ["deps", "build/std_detect/a1/out"]) {
+      mkdirSync(join(dir, at), { recursive: true });
+      writeFileSync(join(dir, at, "libstd_detect-a1.rlib"), "same");
+    }
+    const once = builtRlibs(dir);
+    expect(typeof once === "string" ? once : [...once.keys()]).toEqual(["libstd_detect-a1.rlib"]);
+    writeFileSync(join(dir, "deps", "libstd_detect-a1.rlib"), "other");
+    expect(builtRlibs(dir)).toContain("two libraries of one name differ");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

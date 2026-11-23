@@ -46,10 +46,36 @@ export function wholeStd(root: string): { sysroot: string } | { error: string } 
   const lib = join(dir, "sysroot", "lib", "rustlib", target, "lib");
   rmSync(join(dir, "sysroot"), { recursive: true, force: true });
   mkdirSync(lib, { recursive: true });
-  const rlibs = (at: string): string[] =>
-    readdirSync(at, { withFileTypes: true }).flatMap((entry) => (entry.isDirectory() ? rlibs(join(at, entry.name)) : entry.name.endsWith(".rlib") && entry.name !== "libstd_raised.rlib" ? [join(at, entry.name)] : []));
-  for (const rlib of rlibs(join(dir, "target", target, "release"))) symlinkSync(rlib, join(lib, basename(rlib)));
+  const rlibs = builtRlibs(join(dir, "target", target, "release"));
+  if (typeof rlibs === "string") return { error: rlibs };
+  for (const rlib of rlibs.values()) symlinkSync(rlib, join(lib, basename(rlib)));
   return { sysroot: join(dir, "sysroot") };
+}
+
+/** Each library Cargo built under `at`, by its file's name, `libstd_detect-
+ * <hash>.rlib`: one of each, as a sysroot's library holds it, though Cargo
+ * puts a build step's crate in its `out` and in `deps` both, CI's Cargo
+ * the same file twice, which a second link of its name collided with
+ * (`EEXIST`, run 45092210652). Of two of one name that differ, which is the
+ * crate isn't known: said, never one chosen. */
+export function builtRlibs(at: string): Map<string, string> | string {
+  const found = new Map<string, string>();
+  const walk = (dir: string): string | undefined => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        const differing = walk(path);
+        if (differing) return differing;
+        continue;
+      }
+      if (!entry.name.endsWith(".rlib") || entry.name === "libstd_raised.rlib") continue;
+      const seen = found.get(entry.name);
+      if (seen === undefined) found.set(entry.name, path);
+      else if (!readFileSync(seen).equals(readFileSync(path))) return `two libraries of one name differ: ${seen} and ${path}`;
+    }
+    return undefined;
+  };
+  return walk(at) ?? found;
 }
 
 /** Where std raises the panics std's hook names its own lines of,

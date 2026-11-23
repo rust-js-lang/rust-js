@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-tracked-method-unrefused",
     breaks:
-      "a library's trait method without a default whose entries take its caller's location is exported, which its manifest can't say",
+      "a library's trait method without a default whose impl alone tracks its caller and reads it is exported, which its manifest can't say",
     file: "crates/rust-js-lower/src/library.rs",
     find: "        .filter(|&&id| tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))\n",
     replace:
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/crates.test.ts",
       "-t",
-      "tracked trait method without a default",
+      "whose impl alone tracks its caller and reads it",
     ],
   },
   {
