@@ -255,4 +255,21 @@ export const mutations: Mutation[] = [
     replace: "        true => holding,\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_by_index_of_holding_maps.rs$"],
   },
+  {
+    name: "made-again-calls-run-nothing",
+    breaks: "a source a call of the program's makes is said to run nothing made again, so a map giving each item as it is of it, stepped by `&mut`, is made again where it's stepped and the call runs twice (#2367)",
+    file: "crates/rust-js-lower/src/iterators/value.rs",
+    find: "        None => made.reads_only_vars(),\n",
+    replace: "        None => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_of_a_call_made_once\\.rs$"],
+  },
+  {
+    name: "made-again-items-unread",
+    breaks: "an array's `$iter` of variables is said to run something made again, so a map as it is of a `Vec` held first steps a held `$iter`, not its array, `$nextBack($iter(v))` (#2367, #1406)",
+    file: "crates/rust-js-lower/src/iterators/value.rs",
+    find: "        Some(items) => made_again_runs_nothing(items),\n",
+    replace: "        Some(_) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_stepped_from_its_back\\.rs$"],
+    snapshots: true,
+  },
 ];

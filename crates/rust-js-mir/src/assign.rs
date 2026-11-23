@@ -925,7 +925,23 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         }
         // And one of a variable that holds an array's `$iter`, `it.map(f)`,
         // as MIR holds a `Vec`'s `IntoIter` before a closure that copies a
-        // field of a value with a destructor is made (#780).
+        // field of a value with a destructor is made (#780). And a map
+        // giving each item as it is (#1406), its source's value.
+        // Of a source that runs something made again, a call of the
+        // program's, `note(1, v)`: the source held first, where Rust makes
+        // it, and the map of what holds it, so what steps the map makes it
+        // again of that and runs the call once, in its place (#2367).
+        let mut expr = expr;
+        if place.projection.is_empty()
+            && !state.locals.user[local]
+            && let Some(source) = rust_js_lower::iterators::source_mapped_as_it_is(&expr)
+            && !rust_js_lower::iterators::made_again_runs_nothing(&source)
+        {
+            self.flush(state, out)?;
+            let mut held = self.spill(Role::Iter, source, out);
+            held.facts = expr.facts;
+            expr = held;
+        }
         let of_held_items = || {
             rust_js_lower::iterators::mapped_var(&expr).is_some_and(|name| {
                 (state.locals.names.iter_enumerated())

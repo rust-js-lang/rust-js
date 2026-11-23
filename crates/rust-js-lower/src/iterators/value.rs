@@ -668,6 +668,23 @@ pub fn mapped_as_it_is(mut source: Expr) -> Expr {
     source
 }
 
+/// Whether `made`, an iterator a temporary holds, runs nothing where it's
+/// made again, as what steps the temporary makes it of what the temporary
+/// was given (`IterLocals::maps`, ADR 0545). It asks the purity owner and
+/// walks nothing of its own: what reads only variables
+/// (`Expr::reads_only_vars`), which no call nor property read is, as what
+/// ran between may have changed either; or an array's `$iter(items)`
+/// (`fresh_iter_source`), which makes an iterator of what it's given and
+/// runs nothing else, of items that run nothing made again either. Not a
+/// call of the program's own, `note(1, v)`, which ran twice where a map
+/// giving each item as it is was made again (#2367).
+pub fn made_again_runs_nothing(made: &Expr) -> bool {
+    match super::fresh_iter_source(made) {
+        Some(items) => made_again_runs_nothing(items),
+        None => made.reads_only_vars(),
+    }
+}
+
 /// Of `e`, a map's source as it was (`mapped_as_it_is`), that source, as
 /// the map was given it: not the marks its maker gave the map, made in
 /// place (`Known::InPlace`), which a map's own call holds where it's

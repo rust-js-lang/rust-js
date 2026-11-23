@@ -31,11 +31,11 @@ pub use self::value::{
     closed_around, closed_given_source, closed_parts, count_bound, enumerated_in, enumerated_knowing, enumerated_of,
     form_lacks_a_back, form_lacks_a_length, held_by_a_box, held_by_its_owner, held_of, holding, is_knowing, is_lent,
     is_range_stepped, is_reversed, iterator_parts, its_facts, knows_its_back_by_form, knows_its_given_length,
-    lazily_made, lent_of, lent_string_iterator, lent_variable, made_knowing_its_length, made_string_iterator,
-    mapped_as_it_is, mapped_parts, passes_its_length_on, repeating_n, repeating_n_parts, reversed_by, reversed_of,
-    source_mapped_as_it_is, stepped_by_ends, stepped_by_ends_parts, stepped_every, stepped_every_parts, stepped_from,
-    stepped_range, stepped_value, steps, unlent, was_made_knowing_its_back, was_made_knowing_its_length, with_source,
-    zip_parts,
+    lazily_made, lent_of, lent_string_iterator, lent_variable, made_again_runs_nothing, made_knowing_its_length,
+    made_string_iterator, mapped_as_it_is, mapped_parts, passes_its_length_on, repeating_n, repeating_n_parts,
+    reversed_by, reversed_of, source_mapped_as_it_is, stepped_by_ends, stepped_by_ends_parts, stepped_every,
+    stepped_every_parts, stepped_from, stepped_range, stepped_value, steps, unlent, was_made_knowing_its_back,
+    was_made_knowing_its_length, with_source, zip_parts,
 };
 
 use super::calls::Call;
@@ -700,14 +700,14 @@ pub(super) fn made_array(e: &Expr) -> bool {
 
 /// Whether `e` is `$iter(items)`, `stepped_items`'s.
 /// `$iter(v).map(f)`, a map of an array's items, made and not yet stepped:
-/// nothing runs till it is.
+/// nothing runs till it is, nor made again (`made_again_runs_nothing`).
 pub fn is_items_map(e: &Expr) -> bool {
     if let js::ExprKind::Call(callee, args) = &e.kind
         && let [f] = args.as_slice()
         && let js::ExprKind::Member(source, method) = &callee.kind
-        && let Some(made) = source.helper_call_of("$iter")
+        && source.helper_call_of("$iter").is_some()
     {
-        method == "map" && f.reads_only_vars() && made.args_from("items").iter().all(Expr::reads_only_vars)
+        method == "map" && f.reads_only_vars() && made_again_runs_nothing(source)
     } else {
         false
     }

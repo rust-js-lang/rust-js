@@ -1028,4 +1028,12 @@ export const mutations: Mutation[] = [  {
     tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "as-is-source-made-again",
+    breaks: "a map giving each item as it is of a source a call of the program's makes, `note(1, v).into_iter().map(|x| x).any(..)`, is made again of that source where it's stepped, and the call runs twice (#2367)",
+    file: "crates/rust-js-mir/src/assign.rs",
+    find: "            && !rust_js_lower::iterators::made_again_runs_nothing(&source)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_of_a_call_made_once\\.rs$"],
+  },
 ];

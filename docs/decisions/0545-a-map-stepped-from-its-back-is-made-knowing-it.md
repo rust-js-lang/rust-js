@@ -2039,3 +2039,34 @@ the list and of `structure.rs`' mark (`filter-stepped-by-its-type`,
 `chain-stepped-by-its-type`, `lent-adapter-unmarked`,
 `chain-made-unmarked`) are retired with their code. Their cases now catch
 the makers' marks instead.
+
+## Amendment: a map as it is is made again only of what runs nothing (#2367)
+
+#1406's amendment kept a map giving each item as it is in
+`IterLocals::maps`, its temporary's value, so what steps the temporary
+by `&mut` (`next_back`, `any`, `all`, `find`, `position`) makes the map
+again of its source in place. `maps` holds only what runs nothing when
+it's made again: an array's map of variables (`is_items_map`) and a map
+of a held array (#780). The as-is entry had no such condition. Of a
+source a call of the program's makes,
+`note(16, v).into_iter().rev().map(|x| x).any(..)`, the temporary's
+statement ran the call, and the consumer's copy of the source ran it
+again. The generated programs found this, fuzz seed 12467875, in a
+`while` condition after `&&`. ADR 0262: the results change (a side
+effect runs twice), so Rust's behaviour is kept.
+
+One rule now answers it. `iterators::made_again_runs_nothing` holds where
+a value is made of what reads only variables (`Expr::reads_only_vars`,
+the purity owner's), or is an array's `$iter` (`fresh_iter_source`) of
+such items. It walks nothing of its own. Not `is_pure` either: it allows
+a property read, which something run in between could change, and a
+call. `is_items_map` asks it of its source. Where an as-is source runs
+something, `assign.rs` holds the source first, where Rust makes it,
+`const iter = $iter(note(1, v))`. The map is then of that variable,
+which `maps` keeps and which runs nothing when made again. `next_back`
+of such a map compiles and steps the held source,
+`$nextBack(iter)`. Held by
+`test/corpus/map_as_it_is_of_a_call_made_once.rs` against native Rust,
+and by the mutations `as-is-source-made-again`,
+`made-again-calls-run-nothing` and `made-again-items-unread`. Every other
+corpus snapshot is unchanged.
