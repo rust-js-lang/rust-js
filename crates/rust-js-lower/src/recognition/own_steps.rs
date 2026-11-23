@@ -205,6 +205,54 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             })
     }
 
+    /// The source a catalog's ask names, `src`, `other` or `inner`, of an
+    /// adapter of type `ty`, of type arguments `args`: lengths.rs's
+    /// `step_asks_own_hint`'s, by `asked_source`.
+    pub(super) fn hint_asked_of(&self, ty: Ty<'tcx>, args: ty::GenericArgsRef<'tcx>, of: &str) -> Option<Ty<'tcx>> {
+        self.asked_source(ty, args, asked_at(of))
+    }
+
+    /// Whether a consumer of `ty`'s `step`, `count` or `last`, takes its own
+    /// step, `$count`'s or `$last`'s, not the default by its `fold`: where
+    /// std's step of it may be observably its own (`observably_owns`, of
+    /// std's adapter as the catalog names it) and what it asks reaches the
+    /// crate's own (`reaches_its_own`), or a hint it asks may run the
+    /// crate's code (`step_asks_own_hint`). The one answer, of a count or a
+    /// last made in place, of a flatten's own, and of a map that hides
+    /// them (#2112, Change A step 3a).
+    pub fn owns_its_step(&self, ty: Ty<'tcx>, step: OwnStep) -> bool {
+        let name = self.catalog_name(ty);
+        let observed = name
+            .as_deref()
+            .and_then(|name| super::std_steps::observably_owns(name, step.method()));
+        // What it asks reaches the crate's own, or a hint it asks of what it
+        // holds may run the crate's code, `Filter::count`'s of its source
+        // first (filter.rs:135, #733): std's catalog's ask,
+        // `step_asks_own_hint`'s answer.
+        let asks_own_hint = || {
+            name.as_deref()
+                .is_some_and(|name| self.step_asks_own_hint(ty, (name, step.method())))
+        };
+        observed != Some(super::std_steps::Observed::Never)
+            && (self.reaches_its_own(ty, step, Reach::Sure) || asks_own_hint())
+    }
+
+    /// The name std's catalog gives std's adapter of type `ty`, `Filter`,
+    /// and a flatten of `Option`s', `Flatten<Option>`, which the
+    /// recognizers make a filter of the `Some`s (`flattened_options`);
+    /// `None` of another type.
+    fn catalog_name(&self, ty: Ty<'tcx>) -> Option<String> {
+        let ty = self.reveal(ty);
+        let ty::Adt(adt, _) = ty.kind() else {
+            return None;
+        };
+        let named = std_item_in(self.tcx, adt.did(), StdPath::IterMod)?;
+        Some(match named.as_str() {
+            name @ ("Flatten" | "FlatMap") if self.flattened_options(ty).is_some() => format!("{name}<Option>"),
+            name => name.to_string(),
+        })
+    }
+
     /// Whether a type generic code doesn't know, or a `dyn`, `ty`, may be
     /// given an iterator that writes `step`: a `DoubleEndedIterator`'s step
     /// only of one its bounds, or its `dyn`'s trait and what that trait
@@ -298,9 +346,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// that passes it on gives, a `fuse()`'s `count` its source's, and a
     /// `map` doesn't, its `count` its `fold`'s (#235, #1240).
     pub fn reaches_own_steps(&self, ty: Ty<'tcx>) -> bool {
-        [OwnStep::Nth, OwnStep::Last, OwnStep::NthBack, OwnStep::Count]
+        // `last` and `count` as a consumer of them takes them
+        // (`owns_its_step`); `nth` and `nth_back`, whose default is no one
+        // step, as they're reached, until #2213 says otherwise.
+        [OwnStep::Last, OwnStep::Count]
             .into_iter()
-            .any(|step| self.reaches_its_own(ty, step, Reach::Sure))
+            .any(|step| self.owns_its_step(ty, step))
+            || [OwnStep::Nth, OwnStep::NthBack]
+                .into_iter()
+                .any(|step| self.reaches_its_own(ty, step, Reach::Sure))
     }
 
     /// Whether an iterator of type `ty`, or one it holds through std's

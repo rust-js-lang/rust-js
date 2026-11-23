@@ -2,8 +2,8 @@
 //! drops, and the last value.
 
 use super::*;
+use crate::recognition::OwnStep;
 use crate::recognition::{EqSide, TypeFact};
-use crate::recognition::{OwnStep, Reach};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What's stepped as it is: `by_ref()` of the crate's iterator, a `&mut`
@@ -582,7 +582,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let repeats = self.recognition().may_be_repeat(iter_ty);
         let unwinds_holding = self.drops(iter_ty) != crate::drops::Drops::Nothing && self.steps_may_panic(iter_ty);
         if drops_none
-            && (self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)
+            && (self.recognition().owns_its_step(iter_ty, OwnStep::Last)
                 || self.compiled_struct(iter_ty, &it)
                 || unwinds_holding)
         {

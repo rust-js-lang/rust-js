@@ -86,6 +86,41 @@ pub(crate) fn writes(name: &str, step: &str) -> bool {
     catalog().get(name).is_some_and(|steps| steps.writes.contains(&step))
 }
 
+/// Whether std's `step` of `name`, a catalog name, is observably its own,
+/// not what its `fold` asks: in each of the probe's runs, what the step
+/// asked of what it holds against what `fold` did. `Never` where every run
+/// asks the same, so a form's own of it, which a form may mark where the
+/// two are alike (the runtime net's rule), is never what tells them apart;
+/// `Always` where every run differs, `Filter::count`'s hint first; and
+/// `Depends` where it differs only as what it holds writes it, a pass-on's,
+/// `Copied::count`'s, which `reaches_its_own` answers of the source. `None`
+/// of a name or a step the catalog hasn't run. The one answer of whether a
+/// consumer of std's adapter may take its own step for its default (#2112,
+/// Change A step 3a), derived from the committed runs, which
+/// test/iterator-steps.test.ts reads the same (`asked !== folded`).
+pub(crate) fn observably_owns(name: &str, step: &str) -> Option<Observed> {
+    let steps = catalog().get(name)?;
+    let (asked, folded) = (steps.runs.get(step)?, steps.runs.get("fold")?);
+    let differing = asked
+        .iter()
+        .zip(folded)
+        .filter(|(asked, folded)| asked != folded)
+        .count();
+    Some(match differing {
+        0 => Observed::Never,
+        n if n == asked.len() => Observed::Always,
+        _ => Observed::Depends,
+    })
+}
+
+/// `observably_owns`' answer.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum Observed {
+    Always,
+    Never,
+    Depends,
+}
+
 /// The steps of `DoubleEndedIterator` past its `next_back`, the entry of
 /// its dictionary (`extension_entry`), that std's impls of an adapter or a
 /// wrapper write: what a dictionary of it carries beside its entry, and
@@ -394,5 +429,35 @@ mod tests {
                 Own
             ]
         );
+    }
+}
+
+#[cfg(test)]
+mod observed_tests {
+    use super::{Observed, observably_owns};
+
+    /// Each std type's `count` and `last` against its `fold`, as std's own
+    /// runs ask them: pinned, as the consumers' shortcut reads them (#2112,
+    /// Change A step 3a).
+    #[test]
+    fn observably_owns_reads_the_runs() {
+        use Observed::*;
+        for (name, step, wanted) in [
+            ("Filter", "count", Always),
+            ("Filter", "last", Never),
+            ("FilterMap", "count", Never),
+            ("Flatten<Option>", "count", Never),
+            ("Flatten<Option>", "last", Never),
+            ("Map", "count", Never),
+            ("Map", "last", Never),
+            ("Copied", "count", Always),
+            ("Skip", "count", Depends),
+            ("Flatten", "last", Depends),
+            ("Take", "last", Never),
+            ("Chain", "last", Always),
+        ] {
+            assert_eq!(observably_owns(name, step), Some(wanted), "{name}'s {step}");
+        }
+        assert_eq!(observably_owns("Nonesuch", "count"), None);
     }
 }

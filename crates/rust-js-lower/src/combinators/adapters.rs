@@ -3,7 +3,7 @@
 
 use super::*;
 use crate::iterators::in_place_forms::InPlaceForm;
-use crate::recognition::{OwnStep, Reach};
+use crate::recognition::OwnStep;
 use crate::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -367,7 +367,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // which counts them and takes their last so.
         let own_count = [OwnStep::Count, OwnStep::Last]
             .into_iter()
-            .any(|step| self.recognition().reaches_its_own(output, step, Reach::Sure));
+            .any(|step| self.recognition().owns_its_step(output, step));
         let mut next = || rest.next().expect("rustc checked the arguments");
         let method = |items: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(items, name), list);
         // Whether the item is `Some`, `item != null`, whatever it holds

@@ -80,13 +80,25 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }) || inner()
     }
 
-    /// Whether std's `Filter::count` of a `ty`, a filter, asks a hint that
-    /// may run the crate's code: it asks its source's first (filter.rs:135,
-    /// `hint_reaches_own`, #733). The one answer, of the count itself and of
-    /// a `Map` over it that gives each item as it is, whose `count`, its
-    /// fold, asks none, so it isn't dropped (#2210).
-    pub fn filter_count_asks_own_hint(&self, ty: ty::Ty<'tcx>) -> bool {
-        filtered_source(self.tcx, self.reveal(ty)).is_some_and(|source| self.hint_reaches_own(source))
+    /// Whether std's `step` of a `ty`, one of std's adapters, asks a hint
+    /// of what it holds that may run the crate's code: each source std's
+    /// catalog says it asks `size_hint` of (`std_steps::asks`), as
+    /// `Filter::count` asks its source's first (filter.rs:135,
+    /// `hint_reaches_own`, #733). What `reaches_its_own` asks of a step
+    /// (#2112, Change A step 3a), so a count of a filter and a `Map` over one
+    /// that gives each item as it is, whose `count`, its fold, asks none,
+    /// both read it (#2210).
+    pub(crate) fn step_asks_own_hint(&self, ty: ty::Ty<'tcx>, (adapter, step): (&str, &str)) -> bool {
+        let ty = self.reveal(ty);
+        let ty::Adt(_, args) = ty.kind() else {
+            return false;
+        };
+        (super::std_steps::asks(adapter, step).into_iter())
+            .filter(|asked| asked.step == "size_hint")
+            .any(|asked| {
+                self.hint_asked_of(ty, args, asked.of)
+                    .is_some_and(|source| self.hint_reaches_own(source))
+            })
     }
 
     /// Whether an iterator of type `ty` gives no more items than an array's

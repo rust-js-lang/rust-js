@@ -124,8 +124,8 @@ export const mutations: Mutation[] = [
     name: "identity-map-shows-own-count",
     breaks: "a `map(|x| x)` of a `fuse()` of the crate's iterator with its own `count` is left out, so a `count()` of it reaches the crate's `count` through the fuse, where std's `Map` counts by its `fold` (#1240)",
     file: "crates/rust-js-lower/src/recognition/own_steps.rs",
-    find: "        [OwnStep::Nth, OwnStep::Last, OwnStep::NthBack, OwnStep::Count]",
-    replace: "        [OwnStep::Nth, OwnStep::Last, OwnStep::NthBack]",
+    find: "        [OwnStep::Last, OwnStep::Count]\n            .into_iter()\n            .any(|step| self.owns_its_step(ty, step))\n",
+    replace: "        [OwnStep::Last]\n            .into_iter()\n            .any(|step| self.owns_its_step(ty, step))\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_its_sources_own_count\\.rs$"],
   },
   {
@@ -232,5 +232,33 @@ export const mutations: Mutation[] = [
     find: "            return step.through_a_box() && self.reaches_its_own(inner, step, reach);\n",
     replace: "            return false && step.through_a_box() && self.reaches_its_own(inner, step, reach);\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_box_own_last_taken_once.rs$"],
+  },
+  {
+    name: "flatten-of-options-counted-as-its-filter",
+    breaks:
+      "a flatten of `Option`s made in place, a filter of the `Some`s, is counted by `$count`, the form's own, where it reads as the fold it is (#2197). Since `$somes`' own `count` is its fold (#2199), the answer is the same and only the JS moves, so it's held by the case's snapshot",
+    file: "crates/rust-js-lower/src/recognition/own_steps.rs",
+    find: "        observed != Some(super::std_steps::Observed::Never)\n            && (",
+    replace: "        (",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_counted_asks_no_hint.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "filter-count-asks-no-hint",
+    breaks: "a `filter()`'s `count()` of the crate's iterator asks its source's hint not first, as std's `Filter::count` does (#733)",
+    file: "crates/rust-js-lower/src/recognition/own_steps.rs",
+    find: "            && (self.reaches_its_own(ty, step, Reach::Sure) || asks_own_hint())\n",
+    replace: "            && (self.reaches_its_own(ty, step, Reach::Sure))\n",
+    tests: ["test/corpus.test.ts", "-t", "^(generic_map_folded_and_rfolded|map_ends_size_hint).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "identity-map-over-a-counted-filter-dropped",
+    breaks:
+      "an identity `map` over a filter whose source's hint is the crate's is dropped, so generic code's `count()` of it is `Filter::count`'s, which asks that hint, where std's `Map::count`, its fold, asks none (#2210)",
+    file: "crates/rust-js-lower/src/recognition/own_steps.rs",
+    find: "            .any(|step| self.owns_its_step(ty, step))\n            || [OwnStep::Nth",
+    replace: "            .any(|step| self.reaches_its_own(ty, step, Reach::Sure) && self.owns_its_step(ty, step))\n            || [OwnStep::Nth",
+    tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_a_filters_count.rs$"],
   },
 ];

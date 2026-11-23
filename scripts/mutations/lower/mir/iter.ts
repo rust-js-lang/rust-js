@@ -342,8 +342,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an identity `map` over the crate's iterator is dropped, so a `skip` and `last()` past it reach its own `nth` and `last`, which std's `Map` hides (#235)",
     file: "crates/rust-js-mir/src/iter.rs",
-    find: "            recognition.reaches_own_steps(iter_ty) || recognition.filter_count_asks_own_hint(iter_ty.peel_refs());\n",
-    replace: "            recognition.filter_count_asks_own_hint(iter_ty.peel_refs());\n",
+    find: "        let hides = self.recognition().reaches_own_steps(iter_ty);\n",
+    replace: "        let hides = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^evidence_paths.rs$"],
     snapshots: true,
   },
@@ -367,8 +367,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Skip::count` counts its `Take` by folding it, not its own `count`, so a reversed `Vec`'s items are dropped back to front, not as one slice (ADR 0913)",
     file: "crates/rust-js-mir/src/iter.rs",
-    find: "        let own_count = reached\n",
-    replace: "        let own_count = false && reached\n",
+    find: "        let own_count = owns\n",
+    replace: "        let own_count = false && owns\n",
     tests: [
       "test/std-package.test.ts",
       "-t",
@@ -510,30 +510,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iterator_drop_consumed.rs$"],
   },
   {
-    name: "flatten-count-by-reduce",
-    breaks: "a flatten made in place is counted by `reduce`, never by `$count`, so the inner iterators' own `count` that `$flatMap` asks is never reached (#736)",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "                && (!in_place_flatten || inners_own);\n",
-    replace: "                && !in_place_flatten;\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
-  },
-  {
     name: "flatten-count-always-own",
     breaks: "every flatten made in place is counted by `$count`, where JS's `flatMap` of inner iterators with no own `count` reads as `reduce` (#736)",
     file: "crates/rust-js-mir/src/iter.rs",
-    find: "                && (!in_place_flatten || inners_own);\n",
+    find: "                && !in_place_flatten;\n",
     replace: "                && true;\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "flatten-of-options-counted-as-its-filter",
-    breaks:
-      "a flatten of `Option`s made in place, a filter of the `Some`s, is counted by `$count`, the form's own, where it reads as the fold it is (#2197). Since `$somes`' own `count` is its fold (#2199), the answer is the same and only the JS moves, so it's held by the case's snapshot",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "        let inners_own = self.recognition().counts_by_its_own(iter_ty);\n",
-    replace: "        let inners_own = self.recognition().reaches_its_own(iter_ty, OwnStep::Count, Reach::Sure);\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_counted_asks_no_hint.rs$"],
     snapshots: true,
   },
   {
@@ -579,15 +561,6 @@ export const mutations: Mutation[] = [
     find: "        if of_text && !own && !self.struct_hint_known(iter_ty) {\n",
     replace: "        if of_text && !own {\n",
     tests: ["test/corpus.test.ts", "-t", "^std_flatten.rs$"],
-  },
-  {
-    name: "filter-count-asks-no-hint",
-    breaks: "a `filter()`'s `count()` of the crate's iterator asks its source's hint not first, as std's `Filter::count` does (#733)",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "            || filter_asks\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(generic_map_folded_and_rfolded|map_ends_size_hint).rs$"],
-    snapshots: true,
   },
   {
     name: "keyed-extreme-dropped-after",
@@ -820,8 +793,8 @@ export const mutations: Mutation[] = [
     name: "into-iter-count-reduced",
     breaks: "generic code's `count()` of a `T::IntoIter` is folded by `reduce`, a type parameter's alone its own `count`: the crate's own `count` never runs and the iterator is never dropped (#1602)",
     file: "crates/rust-js-mir/src/iter.rs",
-    find: "        let own_count = reached\n",
-    replace: "        let own_count = (reached && !matches!(iter_ty.kind(), ty::Alias(..)))\n",
+    find: "        let own_count = owns\n",
+    replace: "        let own_count = (owns && !matches!(iter_ty.kind(), ty::Alias(..)))\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_count_of_an_into_iter_by_its_own.rs$"],
   },
 
@@ -839,8 +812,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`count()` never asks whether std's catalog reaches the crate's own, so a `copied()`'s of an iterator that writes `count` steps its `next`, where std's `Copied` asks its source's `count` (#2122)",
     file: "crates/rust-js-mir/src/iter.rs",
-    find: "        let reached = !in_place_flatten\n",
-    replace: "        let reached = false\n",
+    find: "        let owns = self.recognition().owns_its_step(receiver_ty, OwnStep::Count);\n",
+    replace: "        let owns = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^(copied_and_cloned_ask_what_std_does|copied_structs_ask_their_sources_own_steps).rs$"],
   },
   {
@@ -848,8 +821,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`by_ref().count()` is asked of what it lends, whose own `count` it takes for its own, where std's `&mut I` counts by its default (#2122)",
     file: "crates/rust-js-mir/src/iter.rs",
-    find: "                .reaches_its_own(receiver_ty, OwnStep::Count, Reach::Sure);\n",
-    replace: "                .reaches_its_own(iter_ty, OwnStep::Count, Reach::Sure);\n",
+    find: "        let owns = self.recognition().owns_its_step(receiver_ty, OwnStep::Count);\n",
+    replace: "        let owns = self.recognition().owns_its_step(iter_ty, OwnStep::Count);\n",
     tests: ["test/corpus.test.ts", "-t", "^(mut_of_an_iterator_passes_on_what_std_does|own_count_through_adapters).rs$"],
     snapshots: true,
   },
@@ -869,15 +842,6 @@ export const mutations: Mutation[] = [
     find: "            && enumerated.form == rust_js_lower::iterators::EnumeratedForm::Mapped\n",
     replace: "            && enumerated.form == rust_js_lower::iterators::EnumeratedForm::Mapped\n            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_count_of_an_iterator_stepped_from_its_back.rs$"],
-  },
-  {
-    name: "identity-map-over-a-counted-filter-dropped",
-    breaks:
-      "an identity `map` over a filter whose source's hint is the crate's is dropped, so generic code's `count()` of it is `Filter::count`'s, which asks that hint, where std's `Map::count`, its fold, asks none (#2210)",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "            recognition.reaches_own_steps(iter_ty) || recognition.filter_count_asks_own_hint(iter_ty.peel_refs());\n",
-    replace: "            recognition.reaches_own_steps(iter_ty);\n",
-    tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_a_filters_count.rs$"],
   },
   {
     name: "cloned-apart-hint-unmade",

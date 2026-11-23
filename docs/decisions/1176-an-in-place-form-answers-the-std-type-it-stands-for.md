@@ -223,3 +223,58 @@ from either end, boxed, and in generic code. Mutations: `flatten-of-options-a-fi
 is gone with the list it mutated. `in-place-somes-filter-of-any-source`,
 `somes-never`, `somes-of-any-type`, `filter-map-ends-unmade` and
 `somes-not-made-knowing` were retargeted.
+
+## Amended: a consumer takes a form's own step by what std's runs observe (2026-11-24, #2112 Change A step 3a)
+
+A consumer of a value that may be an in-place form, `count`, `last`, a
+flatten's own count and last, and a `map` that hides its source's, chose
+between the form's own step (`$count`, `$last`) and the default by its
+`fold` with a type predicate of its own at each site: `counts_by_its_own`,
+`filter_count_asks_own_hint`, the flatten's own test. The forms' marks
+(`ownCount`, `ownLast`, via `$ownStep`) can't decide it statically: a form
+may mark a step where std's asks what its `fold` does (the runtime net's
+rule: such a mark is unobservable, and allowed), and a pass-on form marks it
+only where its source owns it, so measured over the corpus the marks would
+have moved 1,331 compile visits from the default to the helper and 339 to
+the form's own, for no change of behavior.
+
+- **The observable answer, derived** (recognition/std_steps.rs
+  `observably_owns(name, step)`): from std's committed runs, each run's
+  asks of the step against its `fold`'s, `Always`, `Never` or `Depends`.
+  It's what test/iterator-steps.test.ts reads as `asked !== folded` of the
+  same lines, and a form must mark each step that's so (the net's
+  existing mark test), so the catalog is the one owner and the net its
+  check, no second column. A unit test pins its rows.
+- **One consumer answer** (recognition/own_steps.rs `owns_its_step`): a
+  consumer takes `ty`'s own `count` or `last` where std's may be observably
+  its own (not `Never`) and what it asks reaches the crate's own
+  (`reaches_its_own`) or a hint that may run the crate's code
+  (lengths.rs's `step_asks_own_hint`, the catalog's `size_hint` asks, as
+  `Filter::count`'s of its source first). The four sites ask it alone;
+  `counts_by_its_own` and `filter_count_asks_own_hint` are gone, and
+  `reaches_own_steps` asks it of `last` and `count`.
+- What stays, each a rule that isn't about the form's own step: std's
+  compiled struct's own `count` (`compiled_step`, a value behind an
+  `impl Iterator` too, `Peekable::count`, which drops what it peeked last),
+  the slice-drop count (#862), `repeat`'s panic (`may_be_repeat`), the
+  `last` of what holds items with a destructor and may panic
+  (`unwinds_holding`), and the crate's own iterator, whose own steps ride on
+  `OwnMethods`.
+- **`nth` and `nth_back` aren't asked so yet:** their default is no one
+  step, so `asked !== folded` doesn't say what's observable of them (the
+  net's own note, #2213). `nth/enumerate` (mir_steps/backs.rs) and
+  `reaches_own_steps`' `nth` keep `reaches_its_own` until #2213 gives them
+  an answer.
+
+No corpus snapshot moves, and nothing runs otherwise than before: the 22
+visits the measurement named own-to-default were a flatten of `Option`s,
+whose form is chosen apart from it, and seven `last`s that
+`unwinds_holding` keeps. Mutations: `observably-owns-never-read-as-depends`,
+`observably-owns-always-read-as-depends`, `observably-owns-against-its-next`;
+`flatten-of-options-counted-as-its-filter`, `filter-count-asks-no-hint`,
+`filter-count-asks-no-own-hint`, `identity-map-shows-own-count`,
+`identity-map-over-a-counted-filter-dropped`, `identity-map-dropped-over-own-steps`,
+`param-count-reduced`, `into-iter-count-reduced`, `count-reached-unasked`,
+`count-reached-of-the-lent`, `flatten-count-always-own`,
+`own-last-of-destructors-undropped` retargeted; `flatten-count-by-reduce`
+retired with its redundant term.

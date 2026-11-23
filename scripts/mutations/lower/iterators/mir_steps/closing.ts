@@ -226,8 +226,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`last()` of items with a destructor through a `chain` of the crate's iterators with their own `last` is the chain's own `last`, which drops neither side's `a` where `b` has one (#494)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
-    find: "        if drops_none\n            && (self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)\n                || self.compiled_struct(iter_ty, &it)\n                || unwinds_holding)\n",
-    replace: "        if self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)\n            || drops_none && (self.compiled_struct(iter_ty, &it) || unwinds_holding)\n",
+    find: "        if drops_none\n            && (self.recognition().owns_its_step(iter_ty, OwnStep::Last)\n                || self.compiled_struct(iter_ty, &it)\n                || unwinds_holding)\n",
+    replace: "        if self.recognition().owns_its_step(iter_ty, OwnStep::Last)\n            || drops_none && (self.compiled_struct(iter_ty, &it) || unwinds_holding)\n",
     tests: ["test/corpus.test.ts", "-t", "^count_of_a_flatten_skipped_from_its_back\\.rs$"],
     snapshots: true,
   },

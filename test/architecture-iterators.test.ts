@@ -639,7 +639,7 @@ test("a reversed zip has one form, never `$zipBack`", () => {
 // #849) are made there alone, and
 // whether asking the hint may run the crate's own is asked there, by the
 // analysis through `grows_by_callers_size`, and by `Filter::count`, which
-// is no collect, through lengths.rs's `filter_count_asks_own_hint` (#2210),
+// is no collect, through lengths.rs's `step_asks_own_hint` (#2210, #2112),
 // alone.
 test("when a collect asks its hint is hint_asks's alone", () => {
   // hint_asks.rs and its submodules, `hint_asks/unknown_extends.rs`'s

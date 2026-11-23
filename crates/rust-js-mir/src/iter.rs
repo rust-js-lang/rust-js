@@ -826,9 +826,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// #2210).
     fn mapped(&mut self, it: Expr, (f, own): (Expr, bool), drops_nothing: bool, iter_ty: Ty<'tcx>) -> Expr {
         let f = self.unary_callback(f, own);
-        let recognition = self.recognition();
-        let hides =
-            recognition.reaches_own_steps(iter_ty) || recognition.filter_count_asks_own_hint(iter_ty.peel_refs());
+        let hides = self.recognition().reaches_own_steps(iter_ty);
         match f.is_identity() && drops_nothing && !hides {
             true => rust_js_lower::iterators::mapped_as_it_is(it),
             false => rust_js_lower::iterators::lazily_made(Expr::builtin(it, "map", vec![f])),
@@ -1169,50 +1167,34 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         if !body.is_empty() {
             params.push(x.into());
         }
-        // Its own `count` where it may have one, `$count`'s: std's compiled
-        // one, a `Take`'s, which advances its source and asks no `nth`
-        // (#213, ADR 0913), a `Skip`'s, whose `nth` drops a reversed `Vec`'s
-        // as one slice (#261), and a type's only a caller knows, a type
-        // parameter's or an associated type's, `T::IntoIter` (`is_unknown`,
-        // #1602), which its caller's iterator may have, `Take`'s in std's
-        // `Skip::count`. A flatten made
-        // in place has one where its inner iterators' own count is reached,
-        // `$flatMap`'s (#736); JS's `flatMap` has none.
+        // Its own `count` where a consumer of it takes it, `$count`'s: where
+        // std's may be observably its own and what it asks reaches the
+        // crate's own, or a std source's (`owns_its_step`, #2112, Change A
+        // step 3a), a `Take`'s, which advances its source and asks no `nth`
+        // (#213), a `Skip`'s, whose `nth` drops a reversed `Vec`'s as one
+        // slice (#261), a filter's, which asks its source's hint first
+        // (#733), a flatten's of inner iterators that write it (#736), and
+        // a type's only a caller knows, `T::IntoIter` (#1602); of the
+        // receiver as it is, a `by_ref()`'s, whose `count` is std's default.
         let iterator = std_item(self.tcx, StdItem::Iterator);
-        let in_place_flatten = rust_js_lower::recognition::flattened_source(self.tcx, iter_ty).is_some()
-            && !self.compiled_struct(iter_ty, &it);
-        // Not a flatten of `Option`s, a filter of the `Some`s made in place,
-        // whose own count is `Filter::count`'s (#2197).
-        let inners_own = self.recognition().counts_by_its_own(iter_ty);
-        // And a filter's, std's `Filter::count`, which asks its source's
-        // hint first, where that may reach what the program sees (#733).
-        let filtered = rust_js_lower::recognition::filtered_source(self.tcx, iter_ty);
-        let filter_asks = !self.compiled_struct(iter_ty, &it) && self.recognition().filter_count_asks_own_hint(iter_ty);
         // And a `Vec`'s, an array's or a `VecDeque`'s `IntoIter`'s, `len()`,
         // then what it has left dropped as one slice, where its items have
         // a drop, which the default would drop each as it's folded (#862).
         let slice_count = !body.is_empty() && self.recognition().drops_passed_as_slice(iter_ty);
-        // And what std's catalog says reaches the crate's own, or a std
-        // source's, `repeat_n`'s, its length, which clones none (#1124,
-        // `source_writes`); a `copied()`'s
-        // of one that writes `count`, which `Copied::count` asks, where a
-        // `cloned()`'s, std's default of its `fold`, doesn't (#2122); of the
-        // receiver as it is, a `by_ref()`'s, whose `count` is std's default;
-        // and a type generic code doesn't know, whose caller's may have one.
-        let reached = !in_place_flatten
-            && self
-                .recognition()
-                .reaches_its_own(receiver_ty, OwnStep::Count, Reach::Sure);
-        let own_count = reached
-            || filter_asks
+        // And std's compiled one, of std's struct, which a value behind an
+        // `impl Iterator` is, `Peekable::count`'s, which drops what it peeked
+        // last (ADR 0871); but of a filter or a flatten made in place, a JS
+        // iterator of a type std's is held as, as a consumer takes it
+        // (#1681's change 2, `owns_its_step`).
+        let filtered = rust_js_lower::recognition::filtered_source(self.tcx, iter_ty);
+        let in_place_flatten = rust_js_lower::recognition::flattened_source(self.tcx, iter_ty).is_some()
+            && !self.compiled_struct(iter_ty, &it);
+        let owns = self.recognition().owns_its_step(receiver_ty, OwnStep::Count);
+        let own_count = owns
             || slice_count
-            // Std's compiled one, but of a filter made in place, a JS iterator
-            // of a type std's is held as, `v.iter().filter(f)` counted where
-            // it's made, `v.filter(f).length`, as it was before its flip
-            // (#1681's change 2).
             || self.compiled_step(iter_ty, iterator, "count")
                 && (filtered.is_none() || self.compiled_struct(iter_ty, &it))
-                && (!in_place_flatten || inners_own);
+                && !in_place_flatten;
         if own_count {
             let mut given = vec![it];
             if let Some(item) = item

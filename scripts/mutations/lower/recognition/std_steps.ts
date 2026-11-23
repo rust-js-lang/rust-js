@@ -72,4 +72,28 @@ export const mutations: Mutation[] = [
     replace: "            && wrapper.passes(step) == Passed::Own && false\n        {\n            held = inner;\n",
     tests: ["test/corpus.test.ts", "-t", "^len_of_a_mut_box_is_what_it_holds.rs$"],
   },
+  {
+    name: "observably-owns-never-read-as-depends",
+    breaks: "a step whose every run asks what its `fold` does is read as one that may be observably its own, so a consumer takes a form's own `count` where it's only marked, as the runtime net allows where the two are alike (#2112, Change A step 3a)",
+    file: "crates/rust-js-lower/src/recognition/std_steps.rs",
+    find: "        0 => Observed::Never,\n",
+    replace: "        0 => Observed::Depends,\n",
+    unitTests: "recognition::std_steps::observed_tests::observably_owns_reads_the_runs",
+  },
+  {
+    name: "observably-owns-always-read-as-depends",
+    breaks: "a step whose every run asks otherwise than its `fold` is read as one that depends on what it holds, `Filter::count`'s hint first (#2112, Change A step 3a)",
+    file: "crates/rust-js-lower/src/recognition/std_steps.rs",
+    find: "        n if n == asked.len() => Observed::Always,\n",
+    replace: "        n if n == asked.len() => Observed::Depends,\n",
+    unitTests: "recognition::std_steps::observed_tests::observably_owns_reads_the_runs",
+  },
+  {
+    name: "observably-owns-against-its-next",
+    breaks: "a step's runs are read against its `next`'s, not its `fold`'s, so what's observably a form's own isn't what tells it from its default (#2112, Change A step 3a)",
+    file: "crates/rust-js-lower/src/recognition/std_steps.rs",
+    find: "    let (asked, folded) = (steps.runs.get(step)?, steps.runs.get(\"fold\")?);\n",
+    replace: "    let (asked, folded) = (steps.runs.get(step)?, steps.runs.get(\"next\")?);\n",
+    unitTests: "recognition::std_steps::observed_tests::observably_owns_reads_the_runs",
+  },
 ];
