@@ -465,3 +465,26 @@ Mutations: `assoc-iterator-a-js-iterator`,
 `assoc-iterator-impl-trait-in-trait-as-it-is`; two retargeted. This
 supersedes ADR 0106's #972 and #1292 amendments where they make a JS
 iterator of an associated type's value.
+
+## Amendment: a provided method's `Self`, given its dictionary (2026-11-24, #2423)
+
+#1962's "one given its dictionary is what that dictionary steps, as it is"
+holds where the compiled body is given that dictionary too, a generic
+function's `I: Iterator`'s. A trait's provided method compiled into
+`@rust-js/std` isn't given one for `Self`: `iterator_partition(self, f,
+BDefault, BExtendSelfItem, ..)` steps `self` as a JS iterator. So a type
+parameter generic code holds with its dictionary, `w.0` of a `Wrap<L>`'s
+or `it.into()` of an `impl Into<I>`'s, consumed by one, `partition` or
+`unzip` into generic sides, `peekable`, was given the value itself, and
+threw (`TypeError`) where native gives its sides. Now a value given its
+dictionary to a compiled body that has no slot for that bound
+(`takes_iterator_dictionary`, stepping.rs) is the JS iterator that
+dictionary steps, `$given(w[0], LIterator)`, as generic code's own
+consumers are given it, `$partition($given(w[0], LIterator), f)`. No new
+form.
+
+Results changed, so this follows ADR 0262's third case. Corpus
+`provided_methods_of_a_dictionary_held_iterator_into_generic_sides`
+(`partition`, `unzip` and `peekable` of a field's, `partition` of an
+`impl Into<I>`'s) agrees with native; mutation
+`dictionary-held-self-given-raw`.

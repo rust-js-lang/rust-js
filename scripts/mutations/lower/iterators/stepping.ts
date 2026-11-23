@@ -518,8 +518,8 @@ export const mutations: Mutation[] = [
     name: "compiled-given-a-param-as-it-is",
     breaks: "a std body compiled into `@rust-js/std` given an `impl Iterator` parameter is given it as it is, so a JS caller's array, which ADR 0061 lets it give, is stepped by `.next()` and throws (#1962)",
     file: "crates/rust-js-lower/src/iterators/stepping.rs",
-    find: "            && self.given_js_iterator(value.clone(), given, false, false).is_none()\n",
-    replace: "            && self.given_js_iterator(value.clone(), given, false, false).is_none()\n            && false\n",
+    find: "                    *value = Expr::call_helper(\"$stepsOf\", vec![held]);\n",
+    replace: "                    *value = held;\n",
     tests: ["test/lowering-generic-iterators.test.ts", "-t", "a std body compiled given a generic iterator takes an array too"],
   },
   {
@@ -659,5 +659,13 @@ export const mutations: Mutation[] = [
     find: "            if self.exact_size_param(callee, input) {\n                held = self.as_exact_size(held, inner, back, span)?;\n            } else if back {\n                held = self.as_double_ended(held, inner, span)?;\n            }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^box_of_an_adapter_given_to_generic_code_knows_its_length_and_back.rs$"],
+  },
+  {
+    name: "dictionary-held-self-given-raw",
+    breaks: "a type parameter's iterator generic code holds with its dictionary, a field's `w.0`, is given std's compiled `partition` into generic sides as the value itself, which it steps as a JS iterator, and throws (#2423)",
+    file: "crates/rust-js-lower/src/iterators/stepping.rs",
+    find: "                Some(made) if !self.takes_iterator_dictionary(callee, index) => *value = made,\n",
+    replace: "                Some(made) if false => *value = made,\n",
+    tests: ["test/corpus.test.ts", "-t", "^provided_methods_of_a_dictionary_held_iterator_into_generic_sides.rs$"],
   },
 ];

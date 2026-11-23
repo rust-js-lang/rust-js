@@ -684,10 +684,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && crate::recognition::is_compiled_std(self.tcx, callee)
             && bound_by_iterator(self.tcx, callee, index)
             && !is_js_iterator(value)
-            && self.given_js_iterator(value.clone(), given, false, false).is_none()
         {
-            let held = std::mem::replace(value, Expr::taken());
-            *value = Expr::call_helper("$stepsOf", vec![held]);
+            // Given its dictionary, one the body is given too steps it as it
+            // is; a provided method's `Self`, `iterator_partition`'s, which
+            // it isn't given, the JS iterator that dictionary steps,
+            // `$given(w[0], LIterator)`, as generic code's own consumers are.
+            match self.given_js_iterator(value.clone(), given, false, false) {
+                None => {
+                    let held = std::mem::replace(value, Expr::taken());
+                    *value = Expr::call_helper("$stepsOf", vec![held]);
+                }
+                Some(made) if !self.takes_iterator_dictionary(callee, index) => *value = made,
+                Some(_) => {}
+            }
         }
         // A `Vec`'s, given its steps that drop what they pass as one
         // slice, where generic code can't tell it from a `Drain`'s
@@ -972,6 +981,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => None,
                 },
             },
+        })
+    }
+
+    /// Whether `callee` is given the `Iterator` dictionary of its type
+    /// parameter at `index`, a slot of its evidence: a generic function's
+    /// `I`'s, not a provided method's `Self`, which its trait's own bound
+    /// gives no slot.
+    fn takes_iterator_dictionary(&self, callee: DefId, index: u32) -> bool {
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        (self.evidence_slots(callee, crate::traits::Scope::Whole).into_iter()).any(|slot| {
+            matches!(slot, crate::traits::Slot::Bound(tr)
+                if tr.def_id == iterator && crate::generic_facts::type_parameter_of(tr.self_ty()) == Some(index))
         })
     }
 
