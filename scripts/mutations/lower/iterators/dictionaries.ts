@@ -488,10 +488,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-provided-undictionaried",
-    breaks: "a crate's iterator's `Iterator` dictionary carries none of its own provided methods, so generic code given it by one runs std's `partition` (#2414)",
+    breaks: "a crate's iterator's `Iterator` dictionary carries no `provided` object, so the JS iterator `$given` makes of it carries none of its own, and generic code given it by a dictionary runs std's `partition` (#2414, #2421)",
     file: "crates/rust-js-lower/src/iterators/dictionaries.rs",
-    find: "        if self.is_user_iterator(ty) {\n            for (id, own) in self.own_provided(ty, span)? {\n",
-    replace: "        if false {\n            for (id, own) in self.own_provided(ty, span)? {\n",
+    find: "        if self.is_user_iterator(ty) {\n            let provided: Vec<js::Prop> =",
+    replace: "        if false {\n            let provided: Vec<js::Prop> =",
     tests: ["test/corpus.test.ts", "-t", "^iterator_provided_methods_a_type_writes_are_its_own.rs$"],
   },
 ];

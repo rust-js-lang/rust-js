@@ -15,6 +15,7 @@ pub(super) enum Forms {
 mod cells_compared;
 mod known_calls;
 mod passed_on;
+mod provided;
 
 impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A call of a function pointer, which may be JS's (ADR 0330): called
@@ -930,7 +931,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             }
         };
         if given.is_empty() {
-            return self.mir_call_values_of(
+            return self.mir_call_values_dispatched(
                 state,
                 (def_id, generic_args),
                 (values, arg_tys, nulled),
@@ -955,7 +956,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             }
         }
         let mut call = Vec::new();
-        let value = self.mir_call_values_of(
+        let value = self.mir_call_values_dispatched(
             state,
             (def_id, generic_args),
             (values, arg_tys, nulled),

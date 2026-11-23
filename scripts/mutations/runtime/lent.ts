@@ -126,4 +126,12 @@ export const mutations: Mutation[] = [
     tests: ["test/iterator-forms.test.ts", "-t", "^held_adapters_by_ref with std's iterator structs$"],
     env: { ITERATOR_FORMS: "corpus" },
   },
+  {
+    name: "referent-stops-at-the-lend",
+    breaks: "`$referent` gives the lend, never what it lends, so a `by_ref()`'s call of the crate's own `position` asks the lend, which carries none, and std's runs (#2421)",
+    file: "crates/rust-js-program/src/runtime/lent.js",
+    find: "  while (it.lends !== undefined) it = it.lends;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_overrides_std_lowers_itself.rs$"],
+  },
 ];

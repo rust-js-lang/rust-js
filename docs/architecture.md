@@ -784,7 +784,7 @@ area's sweep phrases it as one.
 | What does awaiting a value or a call's bound ask: a `dyn Future`, the crate's own `IntoFuture`, an unlowered future? (ADRs 0029, 0571) | `recognition/wrappers.rs` | `is_dyn_future`, `own_into_future`, `own_into_future_given`, `awaited_unlowered_future`, `unsized_unlowered_future` | | 1 |
 | Is a type known here only by its bounds, a caller's type parameter or associated type, so what's called of it is its dictionary's; is it an iterator, bound by `Any`, or by a `Fn`, by them? (ADRs 0106, 0331, 0533) | `recognition/traits.rs` | `is_unknown`, `is_unknown_in`, `is_unknown_where`, `known_by_bounds`, `known_by_a_dictionary`, `bounded_iterator`, `bounded_by`, `bound_by_any`, `function_kind`, `indexes_by_dictionary` | | 1 |
 | Whose impl of a trait is a type's: the crate's own or a dependency's, `#[derive]`d, unlowered, one a std dictionary holds; can the crate implement it; is a struct's value its fields? (ADRs 0100, 0320, 0463, #409) | `recognition/traits.rs` | `user_impl`, `is_user_impl`, `has_user_impl`, `derived_impl`, `derives`, `is_derived_impl`, `is_unlowered_impl`, `implementable`, `in_std_dictionary`, `struct_is_its_fields` | | 1 |
-| Does an impl in reach, std's, the crate's or a library's, write its own of a trait's provided method, so a call of it on a type parameter or a `dyn` is Rust's dispatch, `$provided`, and each dictionary of the trait carries it? (#2414) | `recognition/overrides.rs`; `traits/calls.rs`; `traits/evidence.rs`; `iterators/iterator_form.rs` | `overridden_in_reach`; `provided_call`, `provided_dispatch`, `provided_on_value`, `provided_took`; `provided_entry`; `own_provided_key` | | 1 |
+| Does an impl in reach, std's, the crate's or a library's, write its own of a trait's provided method, so a call of it on a type parameter or a `dyn` is Rust's dispatch, `$provided`, and each dictionary of the trait carries it? (#2414) | `recognition/overrides.rs`; `traits/calls.rs`; `traits/evidence.rs`; `iterators/iterator_form.rs` | `overridden_in_reach`, `dispatched_override`; `provided_call`, `provided_dispatches`, `provided_steps`, `provided_on_steps`; `provided_entry`; `own_provided_key` | | 1 |
 | Does a type's `Clone` write its own `clone_from`, or reach one? (#919, #922) | `recognition/traits.rs` | `has_clone_from`, `is_clone_from`, `own_clone_from`, `reaches_clone_from` | | 1 |
 | How is a trait passed: as dictionaries, holding its supertraits', a `dyn` of it a pair or a function? (ADRs 0049, 0324, 0394, #1156) | `recognition/traits.rs` | `operational`, `holds_supertraits`, `is_pair_trait`, `is_std_pair_trait`, `is_pair_dyn`, `is_fn_dyn`, `is_fn_once_dyn` | | 1 |
 | Which of std's traits is a trait or method: an operator's, `Hasher`, hashing's, `io::Read` and its kin, a provided method its dictionary has? (ADRs 0141, 0463) | `recognition/traits.rs` | `is_operator`, `is_hasher`, `is_hashing`, `is_io_reading`, `is_error_type_id` | | 1 |
@@ -821,8 +821,11 @@ area's sweep phrases it as one.
 arguments to `mir_call_values`. A method std's impl for a `&mut W` or a
 `Box<I>` passes on to `W`'s or `I`'s is that method's call, of what the
 receiver is to (`mir/dispatch/passed_on.rs`, asking recognition's
-`passed_through_mut_ref` and `passed_through_box`). Calls then go to iterator, trait, binding or
-crate-function lowering. Recognized std calls go through `mir_std_call`
+`passed_through_mut_ref` and `passed_through_box`). Generic code's call of
+an `Iterator`'s provided method an impl not std's writes is Rust's
+dispatch on the steps it holds, `$provided`, its default the call's
+lowering as it is (`mir/dispatch/provided.rs`, #2421). Calls then go to
+iterator, trait, binding or crate-function lowering. Recognized std calls go through `mir_std_call`
 in `mir/dispatch/known_calls.rs`, which asks each kind in `mir/std_calls.rs`
 of what it reads alone and runs the lowering of the one that takes the call
 (ADR 0791), delegating place-sensitive behavior to `mir/std_calls.rs`

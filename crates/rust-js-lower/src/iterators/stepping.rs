@@ -1017,10 +1017,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut provided = Vec::new();
         for item in tcx.associated_items(iterator).in_definition_order() {
             let id = item.def_id;
-            if !matches!(item.kind, ty::AssocKind::Fn { .. })
-                || !crate::recognition::is_compiled_std(tcx, id)
-                || !crate::recognition::overridden_in_reach(tcx, id)
-            {
+            if !matches!(item.kind, ty::AssocKind::Fn { .. }) || !crate::recognition::dispatched_override(tcx, id) {
                 continue;
             }
             // Its own bounds' evidence the call gives, in what follows `self`

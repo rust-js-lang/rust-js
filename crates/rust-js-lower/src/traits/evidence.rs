@@ -96,6 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let method = instance.def_id();
         let impl_parent = tcx.generics_of(method).parent_count as u32;
         let names = crate::signatures::taken_parameter_names(tcx, id, None, false);
+        let inputs = names.len();
         let mut params: Vec<js::Name> = (names.into_iter().enumerate())
             .map(|(at, name)| match (at, name) {
                 (0, _) | (_, None) => self.fresh(Base::Named(if at == 0 { "iterator" } else { "arg" })),
@@ -154,6 +155,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         values.extend(self.evidence_args_given(method, instance.args, location, given, span)?);
         let call = Expr::call(self.fn_ref(method), values);
+        // What the call gives after its values that the impl's function
+        // takes none of, at the end, a drop of a `B` it never drops, isn't
+        // named: JS leaves it unread.
+        while params.len() > inputs && params.last().is_some_and(|last| !call.mentions_name(last)) {
+            params.pop();
+        }
         let entry = Expr::arrow(
             params.into_iter().map(Into::into).collect(),
             vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],

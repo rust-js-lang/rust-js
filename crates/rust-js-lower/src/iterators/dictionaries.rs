@@ -383,13 +383,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let size_hint = crate::bindings::trait_method_name(self.tcx, iterator, "size_hint");
             props.push(js::Prop::Field(size_hint, hint));
         }
-        // The crate's own of `Iterator`'s provided methods an impl in reach
-        // overrides, `partition`, which generic code's `$provided` asks of
-        // its dictionary (#2414); of a `&mut` or a `Box` of it none, its
-        // impl's, which writes none, as std's pass none on.
+        // The crate's own of `Iterator`'s provided methods an impl not std's
+        // writes, `provided: { ownPartition }`, the object its `$iterator`
+        // takes, which `$given` passes on to the JS iterator it makes, which
+        // generic code's `$provided` asks (#2414, #2421); of a `&mut` or a
+        // `Box` of it none, its impl's, which writes none, as std's pass none on.
         if self.is_user_iterator(ty) {
-            for (id, own) in self.own_provided(ty, span)? {
-                props.push(js::Prop::Field(crate::bindings::fn_name(self.tcx, id), own));
+            let provided: Vec<js::Prop> = (self.own_provided(ty, span)?.into_iter())
+                .map(|(id, own)| js::Prop::Field(crate::iterators::own_provided_key(self.tcx, id), own))
+                .collect();
+            if !provided.is_empty() {
+                props.push(js::Prop::Field("provided".into(), Expr::object(provided)));
             }
         }
         // And its own `fold`, `nth` and `last`, which std's consumers of it

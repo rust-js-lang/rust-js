@@ -189,6 +189,7 @@ function $given(value, iterator, boxed = false, back, len) {
     back?.tryRfold,
     iterator.count,
     back?.advanceBackBy,
+    iterator.provided,
   );
   // Its own steps that drop what they pass as one slice, a `Vec`'s
   // `$slicing` gave it, where its dictionary has none of its own: so a

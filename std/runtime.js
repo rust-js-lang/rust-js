@@ -944,6 +944,7 @@ export function $given(value, iterator, boxed = false, back, len) {
     back?.tryRfold,
     iterator.count,
     back?.advanceBackBy,
+    iterator.provided,
   );
   // Its own steps that drop what they pass as one slice, a `Vec`'s
   // `$slicing` gave it, where its dictionary has none of its own: so a
@@ -24303,6 +24304,16 @@ export const $ownStepNames = /* @__PURE__ */ (() => new Set($stepOf.keys()))();
 // (#162, #1986): an inclusive range's ends it exhausted at its last (#414).
 // Its `count` and `last` std's defaults, of those, so none reaches `it`'s
 // own, which would take it from its lender (#747, #749).
+// What `it`, a lend of an iterator, `$lent`'s, lends, a lend's of a lend
+// to its end; `it` itself of one that's no lend: the iterator a call of its
+// own method through a `&mut` reaches, `it.by_ref().position(..)` of an
+// `I` whose impl writes `position`, as Rust's `I::position` runs on the `I`
+// (#2421).
+export function $referent(it) {
+  while (it.lends !== undefined) it = it.lends;
+  return it;
+}
+
 export function $lent(it, kind = "lent") {
   // Of an iterable that's no iterator, an array a caller gives, a JS
   // iterator of it. Never `Iterator.from` of one: it calls a `$Steps`'

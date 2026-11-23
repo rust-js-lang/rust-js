@@ -159,13 +159,37 @@ function main() {
       undefined,
       undefined,
       countIterator_fold,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      { ownFind: countIterator_find },
     ),
   ).reduce((sum, n) => (sum + n) >>> 0, 0);
   console.log(`${sum}`);
 
   held = [0];
   const find = $lent(
-    $iterator(held, countIterator_next, false, undefined, undefined, undefined, countIterator_fold),
+    $iterator(
+      held,
+      countIterator_next,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      countIterator_fold,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      { ownFind: countIterator_find },
+    ),
   ).find((n) => n === 2);
   console.log(`${find == null ? "None" : `Some(${find})`}`);
 

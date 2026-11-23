@@ -2107,10 +2107,12 @@ What JS sees of a crate:
   it's written, and a `Vec` side generic code's `unzip()` fills reserves
   by its own `reserve`, `extendReserve`
   ([1191](../decisions/1191-a-provided-method-an-impl-writes-is-its-own.md), #2414).
-  A crate's iterator's own `partition` or `peekable` rides on its value,
-  `$provided(it, "ownPartition", [f, ..], () => $partition(..))`; one std's
-  lowering writes, its own `position` or `any`, isn't yet: generic code runs
-  std's (#2421).
+  A crate's iterator's own provided method of `Iterator`, `partition`,
+  `position`, `max`, rides on its value, `provided: { ownPosition }`, which
+  its dictionary carries too: generic code's call of it is
+  `$provided(it, "ownPosition", [f], () => $position($lent(it), f))`, std's
+  only where its impl writes none (#2421). Its own `collect` isn't yet:
+  generic code runs std's (#2430).
 - **A `dyn Debug` stored or passed is `{ value, impl }` too,** shown as
   `d.impl.fmt(d.value)`, or `d.impl.fmt(d.value, { alternate: true })` for
   `{:#?}`, so its `fmt` runs each time it's shown, as Rust's does. One

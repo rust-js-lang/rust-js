@@ -25,7 +25,7 @@ function wIterator_next(w, LIterator) {
 }
 function wIterator_partition(w, f, LIterator, BDefault, BExtendU32) {
   console.log("own partition of W");
-  return $provided(LIterator, "partition", [w[0], f, BDefault, BExtendU32], () =>
+  return $provided($given(w[0], LIterator), "ownPartition", [f, BDefault, BExtendU32], () =>
     iterator_partition($given(w[0], LIterator), f, BDefault, BExtendU32),
   );
 }
@@ -35,8 +35,11 @@ function spelledIterator_next(spelled, LIterator) {
 }
 function spelledIterator_partition(spelled, f, LIterator, BDefault, BExtendSpelledItem) {
   console.log("own partition of Spelled");
-  return $provided(LIterator, "partition", [spelled[0], f, BDefault, BExtendSpelledItem], () =>
-    iterator_partition($given(spelled[0], LIterator), f, BDefault, BExtendSpelledItem),
+  return $provided(
+    $given(spelled[0], LIterator),
+    "ownPartition",
+    [f, BDefault, BExtendSpelledItem],
+    () => iterator_partition($given(spelled[0], LIterator), f, BDefault, BExtendSpelledItem),
   );
 }
 
@@ -93,15 +96,22 @@ function total(it) {
 }
 
 function main() {
-  const counterIterator = {
-    next: counterIterator_next,
-    partition: (iterator, f, BDefault, BExtendU32, dropB, dropF) =>
-      counterIterator_partition(iterator, f, BDefault, BExtendU32),
-  };
   const wIterator = {
-    next: (iterator) => wIterator_next(iterator, counterIterator),
-    partition: (iterator, f, BDefault, BExtendU32, dropB, dropF) =>
-      wIterator_partition(iterator, f, counterIterator, BDefault, BExtendU32),
+    next: (iterator) =>
+      wIterator_next(iterator, {
+        next: counterIterator_next,
+        provided: { ownPartition: counterIterator_partition },
+      }),
+    provided: {
+      ownPartition: (iterator, f, BDefault, BExtendU32) =>
+        wIterator_partition(
+          iterator,
+          f,
+          { next: counterIterator_next, provided: { ownPartition: counterIterator_partition } },
+          BDefault,
+          BExtendU32,
+        ),
+    },
   };
   console.log(
     `${total(
@@ -121,7 +131,7 @@ function main() {
         undefined,
         undefined,
         {
-          ownPartition: (iterator, f, BDefault, BExtendU32, dropB, dropF) =>
+          ownPartition: (iterator, f, BDefault, BExtendU32) =>
             wIterator_partition(iterator, f, { next: $rangeNext }, BDefault, BExtendU32),
         },
       ),
@@ -144,7 +154,7 @@ function main() {
       undefined,
       undefined,
       {
-        ownPartition: (iterator, f, BDefault, BExtendU32, dropB, dropF) =>
+        ownPartition: (iterator, f, BDefault, BExtendU32) =>
           wIterator_partition(iterator, f, { next: $rangeNext }, BDefault, BExtendU32),
       },
     ),
@@ -153,7 +163,11 @@ function main() {
   const value$1 = evens(
     $iterator(
       [[0]],
-      (iterator) => wIterator_next(iterator, counterIterator),
+      (iterator) =>
+        wIterator_next(iterator, {
+          next: counterIterator_next,
+          provided: { ownPartition: counterIterator_partition },
+        }),
       false,
       undefined,
       undefined,
@@ -167,8 +181,14 @@ function main() {
       undefined,
       undefined,
       {
-        ownPartition: (iterator, f, BDefault, BExtendU32, dropB, dropF) =>
-          wIterator_partition(iterator, f, counterIterator, BDefault, BExtendU32),
+        ownPartition: (iterator, f, BDefault, BExtendU32) =>
+          wIterator_partition(
+            iterator,
+            f,
+            { next: counterIterator_next, provided: { ownPartition: counterIterator_partition } },
+            BDefault,
+            BExtendU32,
+          ),
       },
     ),
   );
@@ -190,7 +210,7 @@ function main() {
       undefined,
       undefined,
       {
-        ownPartition: (iterator, f, BDefault, BExtendU32, dropB, dropF) =>
+        ownPartition: (iterator, f, BDefault, BExtendU32) =>
           wIterator_partition(iterator, f, wIterator, BDefault, BExtendU32),
       },
     ),
@@ -212,10 +232,7 @@ function main() {
       undefined,
       undefined,
       undefined,
-      {
-        ownPartition: (iterator, f, BDefault, BExtendU32, dropB, dropF) =>
-          looseIterator_partition(iterator, f, BDefault),
-      },
+      { ownPartition: looseIterator_partition },
     ),
   );
   console.log(`([${value$3[0].join(", ")}], [${value$3[1].join(", ")}])`);
@@ -236,7 +253,7 @@ function main() {
       undefined,
       undefined,
       {
-        ownPartition: (iterator, f, BDefault, BExtendU32, dropB, dropF) =>
+        ownPartition: (iterator, f, BDefault, BExtendU32) =>
           spelledIterator_partition(
             iterator,
             f,
@@ -266,7 +283,7 @@ function main() {
         undefined,
         undefined,
         {
-          ownPartition: (iterator, f, BDefault, BExtendU32, dropB, dropF) =>
+          ownPartition: (iterator, f, BDefault, BExtendU32) =>
             spelledIterator_partition(
               iterator,
               f,

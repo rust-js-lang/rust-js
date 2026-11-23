@@ -118,7 +118,7 @@ impl OwnStep {
 
     /// The step of std's name `method`, of those the crate's iterator may
     /// write.
-    fn of_method(method: &str) -> Option<OwnStep> {
+    pub(super) fn of_method(method: &str) -> Option<OwnStep> {
         OwnStep::ALL.into_iter().find(|step| step.method() == method)
     }
 

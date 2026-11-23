@@ -176,3 +176,57 @@ generic code given a dictionary handing it to generic code given none, or
 back, which runs std's. Both by one holding, a `provided` object
 `$iterator` and the dictionary carry and `$given` passes on, and one
 dispatch on the steps generic code holds.
+
+## Amended: one holding, one dispatch, every provided method (2026-11-24, #2421)
+
+The amendment above covered the provided methods compiled into
+`@rust-js/std`, dispatched at three places (traits/calls.rs, the
+combinators' lowering, and the drop after a consumer, `provided_took`),
+the value carrying its own and the dictionary its own apart. A crate's own
+`position`, `any`, `find` or `max`, which rust-js lowers itself, ran std's
+through generic code; and a value handed from generic code given its
+dictionary to generic code given none, or back, lost its own.
+
+- **One rule** (recognition/overrides.rs `dispatched_override`): a provided
+  method of `Iterator` an impl not std's writes, and none of the steps a
+  JS iterator carries of its own already (`OwnStep`'s, `size_hint`). std's
+  own impls' are what their JS forms step as and give the default's
+  result, so they ask none. `collect` is left as it was, undispatched,
+  pending the user's decision of whether an impl's own `collect` is ADR
+  0262's exception or its entry carries the facts it asks (#2430):
+  itertools writes it for its generic adapters, whose entries ask a fact of
+  `T::Item` a generic maker's dictionary doesn't carry.
+- **One holding:** the impl's own of each, `provided: { ownPosition:
+  counterIterator_position }`, the object `$iterator` takes, which the
+  crate's iterator's dictionary carries too and `$given` passes on to the JS
+  iterator it makes: so a value crossing between the two holdings keeps
+  its own.
+- **One dispatch,** where every call MIR lowers is asked
+  (`dispatch/provided.rs`, `mir_call_values_dispatched`): where `Self` is
+  a type parameter (`provided_dispatches`), `$provided(steps, "ownX",
+  [..], () => { ..; return v; })`, `steps` the JS iterator generic code
+  steps (`provided_steps`: the value given no dictionary, else `$given(it,
+  IIterator)`; of a `&mut I` given as a value, a `by_ref()`'s, what it
+  lends, `$referent`'s, as Rust's `I::position` runs on the `I`), and the default std's lowering of the call,
+  `mir_call_values_of`'s, statements and all, unchanged, made only where it
+  runs: what it drops after it too, so the impl's own, which drops what it
+  consumes, is never followed by a second drop. traits/calls.rs's Iterator
+  branch, the combinators' dispatch and `provided_took` are gone.
+- Each entry is `provided_entry`'s; one the call gives drops after its
+  values that the impl's function takes none of names none of them, so it's
+  the function itself.
+
+Output moves only where an impl not std's writes one of them: of the
+corpus, `std_method_of_a_mut_to_a_held_mut`, whose iterator writes `find`.
+
+Corpus `iterator_overrides_std_lowers_itself` (own `position` through a
+type parameter, a `&mut I` and a `by_ref()`; `any`, `find`, `max`; a
+`map` of it, std's; both crossings) agrees with native. Mutations:
+`provided-never-dispatched`, `provided-default-made-before`,
+`dispatched-override-of-its-own-steps`, `provided-on-a-lent-value`,
+`provided-dictionary-taken-for-the-value`, `own-provided-undictionaried`
+retargeted; `provided-lend-asked-as-it-is`, `referent-stops-at-the-lend`. `$referent`
+walks a lend of a lend to its end, but no mutation of that can be caught on
+this path: `$lent` makes a `&mut` of a `&mut` the lend itself, so a
+`by_ref().by_ref()` is one lend. `provided-never-on-the-value` and `provided-took-dropped-again`
+retired with their sites.

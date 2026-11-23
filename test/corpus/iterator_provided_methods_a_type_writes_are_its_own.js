@@ -104,49 +104,50 @@ function tInto2T_into2(self, dropT) {
 function givenEvens(it, IIterator, Into2I, dropI) {
   const iter = Into2I.into2(it);
   const arg = (n) => n % 2 === 0;
-  let result;
-  try {
-    result = $provided(
-      IIterator,
-      "partition",
-      [
-        iter,
-        arg,
-        { default: () => [] },
-        {
-          extend(collection, items, inPlace, dropItems, dropIter) {
-            const it = $intoIter(items);
-            $unwinds(
-              () => $extend(collection.value, it),
-              () => dropIter?.(it),
-            );
-            dropIter?.(it);
-          },
-          extendReserve(collection, additional) {
-            $roomFor(collection.value.length + additional, 4);
-          },
+  return $provided(
+    $given(iter, IIterator),
+    "ownPartition",
+    [
+      arg,
+      { default: () => [] },
+      {
+        extend(collection, items, inPlace, dropItems, dropIter) {
+          const it = $intoIter(items);
+          $unwinds(
+            () => $extend(collection.value, it),
+            () => dropIter?.(it),
+          );
+          dropIter?.(it);
         },
-      ],
-      () => $partition($given(iter, IIterator), arg),
-    );
-  } catch (error) {
-    $cleanup(() => {
-      if (!$took(IIterator.fold, iter) && !$took(IIterator.partition, iter)) {
+        extendReserve(collection, additional) {
+          $roomFor(collection.value.length + additional, 4);
+        },
+      },
+    ],
+    () => {
+      let result;
+      try {
+        result = $partition($given(iter, IIterator), arg);
+      } catch (error) {
+        if (!$took(IIterator.fold, iter)) {
+          dropI?.(iter);
+        }
+        throw error;
+      }
+      if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
-    }, error);
-    throw error;
-  }
-  if (!$took(IIterator.fold, iter) && !$took(IIterator.partition, iter)) {
-    dropI?.(iter);
-  }
-  return result;
+      return result;
+    },
+  );
 }
 
 function givenPeeked(it, IIterator, Into2I, dropI) {
-  const arg = $held(Into2I.into2(it));
+  const iter = $held(Into2I.into2(it));
   const peekable = $held(
-    $provided(IIterator, "peekable", [arg], () => iterator_peekable(arg, IIterator, dropI)),
+    $provided($given(iter, IIterator), "ownPeekable", [], () =>
+      iterator_peekable(iter, IIterator, dropI),
+    ),
   );
   let result;
   try {
@@ -163,42 +164,42 @@ function givenPeeked(it, IIterator, Into2I, dropI) {
 
 function evens(it, dropI) {
   const arg = (n) => n % 2 === 0;
-  let result;
-  try {
-    result = $provided(
-      it,
-      "ownPartition",
-      [
-        arg,
-        { default: () => [] },
-        {
-          extend(collection, items, inPlace, dropItems, dropIter) {
-            const it = $intoIter(items);
-            $unwinds(
-              () => $extend(collection.value, it),
-              () => dropIter?.(it),
-            );
-            dropIter?.(it);
-          },
-          extendReserve(collection, additional) {
-            $roomFor(collection.value.length + additional, 4);
-          },
+  return $provided(
+    it,
+    "ownPartition",
+    [
+      arg,
+      { default: () => [] },
+      {
+        extend(collection, items, inPlace, dropItems, dropIter) {
+          const it = $intoIter(items);
+          $unwinds(
+            () => $extend(collection.value, it),
+            () => dropIter?.(it),
+          );
+          dropIter?.(it);
         },
-      ],
-      () => $partition(Iterator.from(it), arg),
-    );
-  } catch (error) {
-    $cleanup(() => {
-      if (!it.ownFold && !it.ownPartition) {
+        extendReserve(collection, additional) {
+          $roomFor(collection.value.length + additional, 4);
+        },
+      },
+    ],
+    () => {
+      let result;
+      try {
+        result = $partition(Iterator.from(it), arg);
+      } catch (error) {
+        if (!it.ownFold) {
+          dropI?.(it);
+        }
+        throw error;
+      }
+      if (!it.ownFold) {
         dropI?.(it);
       }
-    }, error);
-    throw error;
-  }
-  if (!it.ownFold && !it.ownPartition) {
-    dropI?.(it);
-  }
-  return result;
+      return result;
+    },
+  );
 }
 
 function evensLent(it) {
@@ -229,8 +230,7 @@ function main() {
     [0],
     {
       next: counterIterator_next,
-      peekable: counterIterator_peekable,
-      partition: counterIterator_partition,
+      provided: { ownPeekable: counterIterator_peekable, ownPartition: counterIterator_partition },
     },
     BoxInto2Box,
     counterDrop_drop,
@@ -243,8 +243,10 @@ function main() {
           [0],
           {
             next: counterIterator_next,
-            peekable: counterIterator_peekable,
-            partition: counterIterator_partition,
+            provided: {
+              ownPeekable: counterIterator_peekable,
+              ownPartition: counterIterator_partition,
+            },
           },
           BoxInto2Box,
           counterDrop_drop,
@@ -352,8 +354,10 @@ function main() {
         () => true,
         {
           next: counterIterator_next,
-          peekable: counterIterator_peekable,
-          partition: counterIterator_partition,
+          provided: {
+            ownPeekable: counterIterator_peekable,
+            ownPartition: counterIterator_partition,
+          },
         },
         counterDrop_drop,
       ),
