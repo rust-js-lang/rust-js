@@ -1081,6 +1081,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1090 An iterator conformance matrix, against native Rust in both builds](1090-an-iterator-conformance-matrix.md) *(amended, #731: a fixed slice in each push's check of the iterators' code, with closures that capture and types stepped from their back)*
 - [1093 The check before a push is the push's check, held to it by a test](1093-the-check-before-a-push-is-the-pushs-check.md) *(the user's decision, 2026-11-05, #732; amended, #766: each part a setting selects runs per push or at night, by name; amended 2026-11-07: the browsers' files run beside the rest, each file a job of the pool's; amended by 1101: plain `check:fast` runs what a change reaches, `--all` unchanged)*
 - [1032 An `if` whose branches are alike is its branch](1032-an-if-whose-branches-are-alike-is-its-branch.md)
+- [1187 A tuple struct no caller can make is declared opaque](1187-a-tuple-struct-no-caller-can-make-is-declared-opaque.md) *(#2356: `pub struct Email(String)` is an interface branded by its module's unexported `unique symbol`, not `any`, as std's opaque types are; not one of `pub` fields, a generic one, a binding's type or a `PhantomData` handle; extends 0196, 1149)*
 
 **Architecture boundaries**
 

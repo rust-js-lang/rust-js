@@ -49,6 +49,42 @@ impl<'tcx> Declarations<'_, 'tcx> {
             }));
         }
         if variant.ctor.is_some() {
+            // A tuple struct a caller outside its crate can't make, one with
+            // a field that isn't `pub`, `Email(String)`, which only its
+            // crate's checks make: opaque, an interface branded by a `unique
+            // symbol` of its own, which TypeScript takes only of what
+            // rust-js's JS gave, as std's opaque types are (ADR 1149). Its JS,
+            // `[text]`, is no API. Of one with type parameters, `any`, as
+            // before (ADR 1187).
+            if sealed_tuple(self.tcx, def_id) {
+                let name = super::type_name(self.tcx, def_id);
+                let mut brand = format!("{name}Brand");
+                brand[..1].make_ascii_lowercase();
+                if !self.unexported.contains_key(&brand) {
+                    let declared = json!({ "kind": "const", "name": brand, "exported": false, "declare": true, "type": { "kind": "unique-symbol" } });
+                    self.unexported.insert(brand.clone(), Some(declared));
+                }
+                let member = json!({
+                    "kind": "property",
+                    "name": { "computed": brand },
+                    "optional": false,
+                    "readonly": true,
+                    "type": keyword("never"),
+                });
+                return Some(documented(
+                    json!({
+                        "kind": "interface",
+                        "name": name,
+                        "exported": true,
+                        "declare": false,
+                        "typeParameters": [],
+                        "extends": [],
+                        "members": [member],
+                    }),
+                    self.tcx,
+                    def_id,
+                ));
+            }
             return None;
         }
         // A flattened field's struct is what this one extends (ADR 0204):
@@ -366,4 +402,23 @@ fn with_null(ty: Value) -> Value {
     };
     types.push(keyword("null"));
     json!({ "kind": "union", "types": types })
+}
+
+/// A tuple struct a caller outside its crate can't make, one with a field
+/// that isn't `pub`, `Email(String)`, and no type parameters: declared
+/// opaque, branded by a `unique symbol` of its own, as std's opaque types
+/// are (ADR 1149). Not a binding's type, one whose `#[rust_js::types]`
+/// names JS's, nor a handle of `PhantomData` alone, which JS gives and
+/// declares (ADR 1187).
+pub(super) fn sealed_tuple(tcx: rustc_middle::ty::TyCtxt<'_>, did: DefId) -> bool {
+    let variant = tcx.adt_def(did).non_enum_variant();
+    let holds_a_value = variant.fields.iter().any(|field| {
+        let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+        !matches!(ty.kind(), ty::Adt(adt, _) if adt.is_phantom_data())
+    });
+    variant.ctor.is_some()
+        && holds_a_value
+        && variant.fields.iter().any(|field| !field.vis.is_public())
+        && tcx.generics_of(did).own_params.is_empty()
+        && super::written_types(tcx, did).is_none()
 }
